@@ -11,9 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` - Lint code with ESLint
 - `npm run lint:fix` - Lint and fix code with ESLint
 - `npm run typecheck` - Run TypeScript type checking
+- `npm run test` - Run tests with Vitest
+- `npm run test:watch` - Run tests in watch mode
+- `npm run docs:dev` - Start VitePress documentation server
+- `npm run docs:build` - Build documentation
 - `task build` - Build and optionally copy to plugin directory (if PLUGIN_DIR is set)
-- `task pr` - Prepare for PR (format, lint, and type check)
-- `task release` - Release a new minor version (includes format and lint checks)
+- `task pr` - Prepare for PR (format, lint, type check, and test)
+- `task release` - Release a new minor version (includes format, lint, type check, and test)
 
 ## Code Style
 - **TypeScript:** Use strict typing (noImplicitAny, strictNullChecks)
@@ -39,6 +43,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Views: Handle code block parsing and rendering (extend BaseView)
   - Components: React components for UI elements
   - Domains: Business logic for D&D mechanics (abilities, skills, combat)
-  - Services: KV store for state persistence
+  - Services: KV store for state persistence and event bus for communication
 - **Rendering:** Views register markdown post-processors that transform YAML into interactive React components
 - **Plugin Settings:** Configurable color scheme and state file path in settings tab
+- **Event System:** Uses message bus (msgbus) for communication between components and frontmatter changes
+- **Frontmatter Integration:** Automatically syncs with Obsidian frontmatter for character data like proficiency bonus and level
+
+## Testing
+- **Framework:** Vitest with Node environment
+- **Test Files:** Place tests alongside source files with `.test.ts` extension
+- **Coverage:** Configured to exclude config files, main.ts, and build outputs
+- **Running Tests:** Use `npm run test` for single run or `npm run test:watch` for watch mode
+
+## Development Workflow
+- **Plugin Development:** Set PLUGIN_DIR environment variable to auto-copy built files to Obsidian plugin directory
+- **Documentation:** VitePress documentation in `/docs` with examples and component references
+- **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
