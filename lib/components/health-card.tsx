@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ParsedHealthBlock } from "lib/types";
-import { HealthState } from "lib/domains/healthpoints";
+import { HealthState, isSingleHitDiceState, isMultiHitDiceState, hasSingleHitDice } from "lib/domains/healthpoints";
 import { Checkbox } from "lib/components/checkbox";
 
 export type HealthCardProps = {
@@ -81,23 +81,41 @@ export function HealthCard(props: HealthCardProps) {
     setInputValue("1");
   };
 
-  // Handle hit dice interaction
-  const toggleHitDie = (index: number) => {
-    const isUsed = index < props.state.hitdiceUsed;
-    let newHitDiceUsed = props.state.hitdiceUsed;
-
+  // Helper function to calculate new used count based on toggle action
+  const calculateNewUsedCount = (currentUsed: number, index: number): number => {
+    const isUsed = index < currentUsed;
     if (isUsed) {
       // Uncheck this die and all dice after it
-      newHitDiceUsed = index;
+      return index;
     } else {
       // Check this die and all dice before it
-      newHitDiceUsed = index + 1;
+      return index + 1;
     }
+  };
 
-    props.onStateChange({
-      ...props.state,
-      hitdiceUsed: newHitDiceUsed,
-    });
+  // Handle hit dice interaction
+  const toggleHitDie = (diceType: string | null, index: number) => {
+    if (!diceType && isSingleHitDiceState(props.state)) {
+      // Legacy single dice type
+      const newHitDiceUsed = calculateNewUsedCount(props.state.hitdiceUsed, index);
+
+      props.onStateChange({
+        ...props.state,
+        hitdiceUsed: newHitDiceUsed,
+      });
+    } else if (diceType && isMultiHitDiceState(props.state)) {
+      // Multiple dice types
+      const currentUsed = props.state.hitdiceUsed[diceType] || 0;
+      const newUsed = calculateNewUsedCount(currentUsed, index);
+
+      props.onStateChange({
+        ...props.state,
+        hitdiceUsed: {
+          ...(props.state.hitdiceUsed as Record<string, number>),
+          [diceType]: newUsed,
+        },
+      });
+    }
   };
 
   // Handle death save interaction
@@ -125,15 +143,43 @@ export function HealthCard(props: HealthCardProps) {
 
   // Handle hit dice rendering
   const renderHitDice = () => {
-    if (!props.static.hitdice) return null;
+    if (!props.static.hitdice || props.static.hitdice.length === 0) return null;
 
-    const hitDiceArray = [];
-    for (let i = 0; i < props.static.hitdice.value; i++) {
-      hitDiceArray.push(
-        <Checkbox key={i} checked={i < props.state.hitdiceUsed} id={`hit-dice-${i}`} onChange={() => toggleHitDie(i)} />
-      );
-    }
-    return hitDiceArray;
+    return (
+      <div className="hit-dice-list">
+        {props.static.hitdice.map((hd) => {
+          // Get the used count based on state structure
+          let used: number = 0;
+
+          if (hasSingleHitDice(props.static) && isSingleHitDiceState(props.state)) {
+            // Legacy single dice with number state
+            used = props.state.hitdiceUsed;
+          } else if (isMultiHitDiceState(props.state)) {
+            // Multiple dice or migrated state
+            used = props.state.hitdiceUsed[hd.dice] || 0;
+          }
+
+          const hitDiceArray = [];
+          for (let i = 0; i < hd.value; i++) {
+            hitDiceArray.push(
+              <Checkbox
+                key={`${hd.dice}-${i}`}
+                checked={i < used}
+                id={`hit-dice-${hd.dice}-${i}`}
+                onChange={() => toggleHitDie(hasSingleHitDice(props.static) ? null : hd.dice, i)}
+              />
+            );
+          }
+
+          return (
+            <div key={hd.dice} className="hit-dice-row">
+              <p className="hit-dice-label">HIT DICE ({hd.dice})</p>
+              <div className="hit-dice-boxes">{hitDiceArray}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // Handle death saves rendering
@@ -207,15 +253,10 @@ export function HealthCard(props: HealthCardProps) {
         </button>
       </div>
 
-      {props.static.hitdice && (
+      {props.static.hitdice && props.static.hitdice.length > 0 && (
         <>
           <div className="health-divider" />
-          <div className="hit-dice-container">
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <p className="hit-dice-label">Hit Dice ({props.static.hitdice.dice})</p>
-              <div className="hit-dice-boxes">{renderHitDice()}</div>
-            </div>
-          </div>
+          <div className="hit-dice-container">{renderHitDice()}</div>
         </>
       )}
 
