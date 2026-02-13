@@ -193,6 +193,7 @@ name: "D&D 5e"
 | _(new)_        | `rpg inventory`   |
 | _(new)_        | `rpg features`    |
 | _(new)_        | `rpg log`         |
+| _(new)_        | `rpg map`         |
 | _(new)_        | `rpg system`      |
 | _(new)_        | `rpg expression`  |
 | _(new)_        | `rpg skill-list`  |
@@ -909,7 +910,171 @@ The log block reads data from entity files (character sheets, monster stat block
 
 ---
 
-## Part 7: Phased Delivery
+## Part 7: New Block — Battle Map (`rpg map`)
+
+### Purpose
+
+Render hex and square grid maps from a text-based syntax. Maps are **static renderings of state** — they don't support drag-and-drop, but show positions and can step through moves already made. Integrated with the session log to visualize combat scenes.
+
+The syntax is adapted from the hex-map-editor project (to be ported into this plugin).
+
+### Grid types
+
+Two grid modes, selected via a `grid` property:
+
+- **Hex** (`grid: hex`) — hexagonal grid with axial coordinates (e.g. `0101`, `0203`). Supports flat-top and pointy-top orientations.
+- **Square** (`grid: square`) — traditional battle map grid with `x,y` coordinates (e.g. `1,1`, `5,3`).
+
+### YAML + map syntax
+
+The block has a YAML header and a map body separated by `---`:
+
+~~~markdown
+```rpg map
+state_key: goblin-ambush-map
+grid: hex
+orientation: flat  # flat (default) or pointy
+size: 10           # cells across
+theme: forest
+legend:
+  T: { terrain: tree, color: "#2d5a1b" }
+  W: { terrain: water, color: "#1a4a7a" }
+  R: { terrain: road, color: "#8a7a5a" }
+  .: { terrain: grass, color: "#3a7a2a" }
+---
+0101 T
+0102 .
+0103 R
+0104 .
+0201 T
+0202 . [PC:Elara]
+0203 R
+0204 W
+0301 .
+0302 . [N:Goblin#1]
+0303 R [N:Goblin Boss]
+0304 W
+```
+~~~
+
+Square grid version:
+
+~~~markdown
+```rpg map
+state_key: dungeon-room-1
+grid: square
+size: 8x6
+theme: dungeon
+legend:
+  "#": { terrain: wall, color: "#444" }
+  ".": { terrain: floor, color: "#888" }
+  D: { terrain: door, color: "#a0522d" }
+---
+# # # # D # # #
+# . . . . . . #
+# . . . . . . #
+# . . . . . . #
+# . . . . . . #
+# # # # # # # #
+
+tokens:
+  1,2 [PC:Elara]
+  4,3 [N:Goblin Boss]
+  5,4 [N:Goblin#1]
+```
+~~~
+
+### Entity tokens on the map
+
+Entities are placed using the same Lonelog tag syntax:
+- `[PC:Name]` — player character token
+- `[N:Name]` — NPC/monster token
+- Tokens link to entity files (same resolution as session log)
+- Clicking a token could open a tooltip with entity summary (HP, AC, conditions)
+
+### Step-by-step replay
+
+Maps can include a **moves** section that defines sequential state changes. The UI renders a step slider/buttons to walk through the moves:
+
+~~~markdown
+```rpg map
+state_key: ambush-replay
+grid: hex
+size: 8
+legend:
+  .: { terrain: grass }
+  T: { terrain: tree }
+---
+0101 T
+0202 . [PC:Elara]
+0303 . [N:Goblin#1]
+0404 . [PC:Thorne]
+
+moves:
+  - step: 1
+    label: "Elara sneaks forward"
+    move: [PC:Elara] 0202 -> 0302
+  - step: 2
+    label: "Goblin spots Thorne"
+    move: [N:Goblin#1] 0303 -> 0403
+    note: "@ Goblin attacks Thorne"
+  - step: 3
+    label: "Elara flanks"
+    move: [PC:Elara] 0302 -> 0303
+    add: [N:Goblin#1|HP-8]
+    note: "d: d20+7=19 vs AC 15 -> Hit, 8 slashing"
+```
+~~~
+
+The UI shows:
+- The map at its initial state
+- Step controls: `|< < Step 2/3 > >|` (first, prev, current, next, last)
+- Current step label and note displayed below the map
+- Tokens animate (slide) between positions on step change
+- State changes (damage, conditions) reflected in token tooltips
+
+### Integration with session log
+
+When a `rpg log` block references entities and includes combat, a `rpg map` block in the same file can visualize the positions. The connection is implicit via shared entity tags — if `[PC:Elara]` appears in both the log and the map, they refer to the same entity.
+
+Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a linked map block.
+
+### Rendering
+
+- **SVG-based** — renders as inline SVG for crisp scaling and easy styling
+- Hex cells rendered as `<polygon>` elements with fill from terrain legend
+- Square cells rendered as `<rect>` elements
+- Entity tokens rendered as labeled circles/icons overlaid on cells
+- CSS variables for theming (uses the plugin's existing color system)
+- Responsive — scales to container width
+
+### Implementation
+
+- **Domain** (`lib/domains/battlemap/`):
+  - `parser.ts` — Parse map syntax (header + grid coordinates + tokens + moves)
+  - `hex-grid.ts` — Hex coordinate math (axial coordinates, pixel positions, neighbors)
+  - `square-grid.ts` — Square coordinate math
+  - `replay.ts` — Step-through state machine for moves
+- **Component** (`lib/components/battlemap/`):
+  - `map-renderer.tsx` — SVG rendering for hex and square grids
+  - `token.tsx` — Entity token overlay with tooltip
+  - `step-controls.tsx` — Replay step slider/buttons
+  - `legend.tsx` — Map legend display
+- **View** (`lib/views/BattleMapView.tsx`): Stateful (current replay step in KV store)
+- **Styles** (`lib/styles/components/battlemap.css`)
+
+### Key features
+- **Text-based maps** — define maps in plain text, version-controllable, readable without the plugin
+- **Hex and square grids** — two grid types covering most TTRPG needs
+- **Step-by-step replay** — walk through combat moves with a slider
+- **Entity integration** — tokens use the same `[PC:]`/`[N:]` tags as Lonelog
+- **SVG rendering** — crisp at any zoom, themeable via CSS variables
+- **Static by design** — shows what happened, not a live VTT; complements the session log
+- **Portable syntax** — adapted from hex-map-editor (syntax details TBD pending repo review)
+
+---
+
+## Part 8: Phased Delivery
 
 ### Phase 1 — Unified `rpg` namespace + new blocks
 1. Migrate all existing views to unified `rpg` code block processor with meta dispatch
@@ -944,6 +1109,16 @@ All existing character sheets continue working — D&D 5e is the default.
 
 The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers. The Lonelog parser itself (steps 13-14) has no dependencies and can be developed in parallel with Phase 2/3.
 
+### Phase 5 — Battle Maps
+20. Port hex-map-editor syntax parser and adapt for `rpg map` block (syntax details TBD pending repo review)
+21. Implement hex grid math (axial coordinates, pixel positions)
+22. Implement square grid math
+23. Build SVG map renderer component (terrains, legend, tokens)
+24. Implement step-by-step replay (moves parser, state machine, step controls)
+25. Wire entity tokens to entity resolver (shared `[PC:]`/`[N:]` tags with Lonelog)
+
+The map renderer itself (steps 20-23) has minimal dependencies — it can be built alongside Phase 4. Step 25 requires the entity resolver from Phase 4.
+
 ---
 
 ## Summary of New Files
@@ -975,14 +1150,26 @@ lib/
 │       ├── entity-summary.tsx # Per-entity HP/AC/equipment display
 │       ├── scene-header.tsx   # Scene marker with variant styles
 │       └── tag-pill.tsx       # Inline tag rendering (NPC, Location, etc.)
+├── domains/battlemap/
+│   ├── parser.ts             # Parse map syntax (header + grid + tokens + moves)
+│   ├── hex-grid.ts           # Hex coordinate math (axial, pixel positions, neighbors)
+│   ├── square-grid.ts        # Square coordinate math
+│   └── replay.ts             # Step-through state machine for moves
+├── components/battlemap/
+│   ├── map-renderer.tsx       # SVG rendering for hex and square grids
+│   ├── token.tsx              # Entity token overlay with tooltip
+│   ├── step-controls.tsx      # Replay step slider/buttons
+│   └── legend.tsx             # Map legend display
 ├── views/
 │   ├── InventoryView.tsx      # Inventory code block processor
 │   ├── FeaturesView.tsx       # Features code block processor
-│   └── SessionLogView.tsx     # Session log code block processor
+│   ├── SessionLogView.tsx     # Session log code block processor
+│   └── BattleMapView.tsx      # Battle map code block processor
 └── styles/components/
     ├── inventory.css
     ├── features.css
-    └── session-log.css
+    ├── session-log.css
+    └── battlemap.css
 ```
 
 ## Modified Files
