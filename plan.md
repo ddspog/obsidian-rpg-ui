@@ -659,27 +659,33 @@ sections:
 
 ---
 
-## Part 6: New Block — Session Log
+## Part 6: New Block — Session Log (Lonelog)
 
 ### Purpose
 
-A session play tracker that compiles a play session into a structured sequence of **scenes** containing **events**. It tracks state changes across characters, NPCs, monsters, and other entities. Multiple `rpg log` blocks can appear in a single file (one per scene, or one per session segment).
+A session play tracker that uses **Lonelog notation** (CC BY-SA 4.0, by Roberto Bisceglie) as the content syntax inside `rpg log` blocks. The plugin parses Lonelog's structured shorthand, renders it as a rich interactive UI, and tracks state changes across entities.
 
-### Core concepts
+Multiple `rpg log` blocks can appear in a single file (one per scene or session segment).
 
-**Scene**: A narrative unit within a session (e.g. "Entering the Dungeon", "Battle with the Dragon"). Each log block represents one scene.
+### Lonelog — the notation system
 
-**Event**: An atomic entry within a scene — something that happened. Events can be:
-- **Narrative**: Free text describing what happened
-- **State change**: HP damage/healing, item gained/lost, consumable used, condition applied/removed
-- **Combat**: Initiative rolls, attacks, saves, spell casts
-- **Oracle/Roll**: Dice rolls, random table results, oracle questions/answers
+Lonelog is a lightweight notation for solo RPG session logging. It separates mechanics from fiction using five core symbols:
 
-**HUD (Heads-Up Display)**: An interactive panel rendered at the top of each log block showing the active entities. It pulls live data from character/NPC/monster files and provides quick-action buttons. Clicking a HUD button appends a new event entry to the log.
+| Symbol | Meaning | Example |
+|--------|---------|---------|
+| `@` | Player action | `@ Pick the lock` |
+| `?` | Oracle question | `? Is anyone inside?` |
+| `d:` | Mechanics roll | `d: d20+5=17 vs DC 15 -> Success` |
+| `->` | Resolution (dice or oracle) | `-> Yes, but... (d6=3)` |
+| `=>` | Consequence | `=> The door creaks open` |
 
-**Change overview**: After the last `rpg log` block in a file, a summary of all state changes accumulated across all log blocks in the file is rendered automatically.
+Plus persistent element tags: `[N:Name|tags]` (NPC), `[L:Location|tags]`, `[E:Event X/Y]`, `[Thread:Name|State]`, `[PC:Name|stats]`, and progress trackers: `[Clock:X/Y]`, `[Track:X/Y]`, `[Timer:X]`.
 
-### YAML syntax (preliminary — full syntax TBD)
+The full Lonelog spec (v1.0.0) is the authoritative reference. The plugin implements a parser for this notation.
+
+### Block structure
+
+The `rpg log` block has two parts: a **YAML header** (metadata) and a **Lonelog body** (the session content). The header is separated from the body by `---`:
 
 ~~~markdown
 ```rpg log
@@ -695,106 +701,211 @@ entities:
   - file: "NPCs/Goblin.md"
     type: monster
     count: 3
+---
+S1 *Dark forest clearing, dusk*
+@ Elara sneaks toward the goblin camp
+d: Stealth d20+5=18 vs DC 14 -> Success
+=> She slips between the trees unnoticed. [N:Goblin Lookout|distracted]
+
+? Does the lookout have allies nearby?
+-> Yes, but... (d6=4)
+=> Two more goblins, but they're arguing. [N:Goblin#2|armed] [N:Goblin#3|armed]
+
+@ Thorne charges in
+d: Athletics d20+3=12 vs DC 10 -> Success
+=> He crashes through the underbrush, drawing their attention
+
+@ Elara attacks Goblin Lookout
+d: d20+7=19 vs AC 15 -> Hit
+d: 1d8+4=9 slashing damage
+=> [N:Goblin Lookout|HP-9|dead]
+
+? Do the other goblins flee?
+-> No, and... (d6=2)
+=> They rage and call for the boss. [N:Goblin Boss|hostile|emerging]
+[Clock:Reinforcements 1/4]
 ```
 ~~~
 
+### What the plugin does with Lonelog
+
+The plugin **parses** the Lonelog body and renders it as structured UI. Each line type gets visual treatment:
+
+| Lonelog line | Rendered as |
+|---|---|
+| `S1 *Location*` | Scene header with location context |
+| `@ Action` | Action card with actor highlight |
+| `d: roll -> result` | Dice result badge (color-coded success/fail) |
+| `-> Oracle answer` | Oracle answer chip |
+| `=> Consequence` | Consequence block (indented, connected to action) |
+| `? Question` | Oracle question (italicized) |
+| `[N:Name\|tags]` | NPC tag pill (clickable → opens linked file if exists) |
+| `[L:Location\|tags]` | Location tag pill |
+| `[E:Event X/Y]` / `[Clock:X/Y]` | Progress bar inline |
+| `[Track:X/Y]` | Progress track inline |
+| `[Timer:X]` | Countdown badge |
+| `[Thread:Name\|State]` | Thread pill (Open=green, Closed=gray) |
+| `[PC:Name\|stats]` | PC stat changes highlight |
+| `N (Name): "..."` | Dialogue bubble |
+| `tbl:` / `gen:` | Table/generator result card |
+| `(note: ...)` | Meta note (dimmed, italic) |
+| Prose between notation | Narrative block (regular text) |
+
 ### HUD behavior
 
-The HUD renders at the top of the log block and provides:
+The HUD renders at the top of each log block and provides:
 
-1. **Entity selector** — tabs or dropdown to pick the active entity
+1. **Entity selector** — tabs or dropdown to pick the active entity (from the `entities` header list)
 2. **Entity summary** — for the selected entity, shows at a glance:
-   - HP bar (current / max)
+   - HP bar (current / max, reflecting deltas from `[PC:HP-2]` or damage events)
    - AC
-   - Equipped items (from inventory block)
+   - Equipped items (from `rpg inventory` block in linked file)
    - Available actions / consumables / spell slots
-   - Active conditions
-3. **Quick-action buttons** — clicking these appends a new event to the log:
-   - Attack (prompts for target, roll)
-   - Cast Spell (from available spells/slots)
-   - Use Item/Consumable
-   - Take Damage / Heal
-   - Roll (generic dice roll)
-   - Add Note (free text)
-4. **Initiative tracker** — when combat is active, shows turn order inline
+   - Active conditions (from tags like `[N:Name|wounded]`)
+3. **Quick-action buttons** — clicking these appends Lonelog notation to the body:
+   - **Action** (`@`) — prompts for description, appends `@ [Entity] [action]`
+   - **Roll** (`d:`) — dice roller UI, appends `d: [roll] -> [result]`
+   - **Oracle** (`?` / `->`) — question input + oracle roller, appends `? [question]` + `-> [answer]`
+   - **Damage/Heal** — target picker + amount, appends `=> [PC:HP-X]` or `=> [N:Name|HP-X]`
+   - **Use Item** — from inventory, appends `=> [Entity] uses [Item]`
+   - **Note** — free text, appends `=> [text]` or `(note: [text])`
+4. **Initiative tracker** — when combat starts, shows turn order; advances via button
 
-The HUD reads entity data by resolving the linked files through the system registry (respecting frontmatter types) and reading their `rpg attributes`, `rpg inventory`, `rpg features`, `rpg healthpoints` blocks.
+The HUD reads entity data by resolving linked files through the system registry.
 
-### Event log rendering
+### Lonelog parser
 
-Below the HUD, the log renders as a chronological list of events:
+The parser (`lib/domains/lonelog/parser.ts`) tokenizes each line of the Lonelog body into structured events:
 
+```typescript
+type LonelogEntry =
+  | { type: "scene"; number: string; context: string }
+  | { type: "action"; text: string }
+  | { type: "roll"; roll: string; result: string; success?: boolean }
+  | { type: "oracle_question"; text: string }
+  | { type: "oracle_answer"; text: string; roll?: string }
+  | { type: "consequence"; text: string; tags: PersistentTag[] }
+  | { type: "dialogue"; speaker: string; text: string }
+  | { type: "table_roll"; source: string; roll: string; result: string }
+  | { type: "generator"; source: string; result: string }
+  | { type: "meta_note"; text: string }
+  | { type: "narrative"; text: string };
+
+type PersistentTag =
+  | { kind: "npc"; name: string; tags: string[]; ref: boolean }
+  | { kind: "location"; name: string; tags: string[] }
+  | { kind: "event"; name: string; current: number; max: number }
+  | { kind: "clock"; name: string; current: number; max: number }
+  | { kind: "track"; name: string; current: number; max: number }
+  | { kind: "timer"; name: string; value: number }
+  | { kind: "thread"; name: string; state: string }
+  | { kind: "pc"; name: string; changes: string[] };
 ```
-🎬 Scene: The Goblin Ambush
-─────────────────────────────
-⚔️  Elara attacks Goblin #1 — hits (17 vs AC 15), deals 8 slashing damage
-❤️  Goblin #1: 7 → -1 HP (dead)
-🎲  Thorne rolls Perception: 14
-📝  The party finds a hidden passage behind the waterfall
-🧪  Elara uses Potion of Healing — restores 8 HP
-⚔️  Goblin Boss attacks Thorne — misses (9 vs AC 18)
-🔮  Elara casts Fireball (3rd level slot) — 24 fire damage
-```
 
-Each event is timestamped in state and carries:
-- The acting entity
-- The event type (attack, damage, heal, use, roll, note, etc.)
-- The target (if applicable)
-- The result / values
-- Any state mutations (HP changes, consumable decrements, item additions/removals)
+The parser handles:
+- Core symbols (`@`, `?`, `d:`, `->`, `=>`)
+- Inline tags (`[N:...]`, `[L:...]`, `[E:...]`, `[Clock:...]`, `[Track:...]`, `[Timer:...]`, `[Thread:...]`, `[PC:...]`)
+- Reference tags (`[#N:Name]`)
+- Scene markers (`S1`, `S1a`, `T1-S1`, `S1.1`)
+- Dialogue (`N (Name): "..."`, `PC: "..."`)
+- Table/generator results (`tbl:`, `gen:`)
+- Meta notes (`(note: ...)`)
+- Comparison shorthand (`5>=4 S`, `2<=4 F`)
+- Narrative prose (anything that doesn't match a symbol)
+
+### State tracking from Lonelog
+
+The parser extracts **state mutations** from tags embedded in consequence lines:
+
+| Tag pattern | Mutation |
+|---|---|
+| `[PC:Alex\|HP-2]` | Alex loses 2 HP |
+| `[PC:Alex\|HP+3\|Stress-1]` | Alex gains 3 HP, loses 1 Stress |
+| `[N:Goblin\|dead]` | Goblin marked as dead |
+| `[N:Guard\|alert→unconscious]` | Guard status change |
+| `[N:Guard\|+captured]` | Add tag |
+| `[N:Guard\|-wounded]` | Remove tag |
+| `[E:AlertClock 2/6]` | Clock progress update |
+| `[Clock:Ritual 5/12]` | Clock at 5 of 12 |
+| `[Track:Escape 3/8]` | Track at 3 of 8 |
+| `[Timer:Dawn 3]` | Timer at 3 |
+| `[Thread:Find Sister\|Closed]` | Thread resolved |
+
+These mutations are accumulated as deltas per entity, per scene.
 
 ### Change overview (end of file)
 
-After the last `rpg log` block in a file, the plugin automatically renders a **change summary** showing the net state delta across all scenes:
+After the last `rpg log` block in a file, the plugin automatically renders a **change summary** by replaying all deltas across all log blocks:
 
 ```
-📊 Session Overview
-═══════════════════
-Elara:        HP 45 → 37 (-8)  |  Used: Potion of Healing, Fireball (3rd)
-Thorne:       HP 52 → 52 (—)   |  Gained: Goblin Boss's Key
-Goblin Boss:  HP 30 → 0 (dead)
-Goblin #1-3:  all dead
+Session Overview
+════════════════
+PC: Elara       HP 45 → 37 (-8)  |  Used: Potion of Healing, Fireball (3rd)
+PC: Thorne      HP 52 → 52 (—)   |  Gained: Goblin Boss's Key
+NPC: Goblin Boss  HP 30 → 0 (dead)
+NPC: Goblin #1-3  all dead
 
-Items gained: Goblin Boss's Key, 45 gold
-Items used: Potion of Healing ×1
-Spell slots: Elara 3rd level (2 → 1)
+Threads: [Find Sister: Open → Closed]
+Clocks:  [AlertClock: 0/6 → 4/6]
+Items:   +Goblin Boss's Key, +45 gold, -Potion of Healing ×1
+Slots:   Elara 3rd level (2 → 1)
 ```
+
+### Scene numbering support
+
+The plugin understands Lonelog's scene numbering variants:
+- **Sequential**: `S1`, `S2`, `S3` — standard linear play
+- **Flashbacks**: `S5a`, `S5b` — branching from a scene
+- **Parallel threads**: `T1-S1`, `T2-S1` — simultaneous storylines
+- **Montages**: `S7.1`, `S7.2`, `S7.3` — time-lapse sequences
+
+Each scene variant is rendered with appropriate visual treatment (flashback = dimmed/italic, parallel = thread-colored sidebar, montage = compact/condensed).
 
 ### State management
 
-- **Per-scene state** stored in KV store via `state_key`
-- Events are an append-only array in state — the log grows as the session is played
-- Entity state changes are **tracked as deltas**, not applied directly to entity files (non-destructive)
-- The overview is computed by replaying all event deltas across all log blocks in the file
+- **Per-block state** stored in KV store via `state_key`
+- The Lonelog body text is the source of truth — events are parsed from it
+- State deltas are computed by parsing tags, not stored separately
+- The HUD **appends** Lonelog text to the block when buttons are clicked (writes back to the markdown)
+- The overview is computed by replaying all parsed deltas across all `rpg log` blocks in the file
 - Optional: "Apply changes" button to persist deltas back to entity files at end of session
 
 ### Cross-file data access
 
-The log block needs to read data from other markdown files (character sheets, monster stat blocks). This requires:
-- Resolving Obsidian wiki-links or file paths to actual vault files
-- Reading their frontmatter (type, attributes) and code blocks (inventory, features, healthpoints)
-- The system registry determines how to interpret each file based on its folder and frontmatter type
+The log block reads data from entity files (character sheets, monster stat blocks) listed in the `entities` header:
+- Resolves `file:` paths to vault files (supports wiki-link syntax too)
+- Reads frontmatter (type, attributes via typed frontmatter system)
+- Reads code blocks (`rpg attributes`, `rpg inventory`, `rpg features`, `rpg healthpoints`) from those files
+- The system registry determines how to interpret each file based on its folder assignment and frontmatter type
+- Entity data is cached and refreshed on file change events
 
 ### Implementation
 
-- **Domain** (`lib/domains/session-log.ts`): Event types, state delta tracking, change accumulation, event serialization
+- **Parser** (`lib/domains/lonelog/parser.ts`): Tokenizes Lonelog notation into `LonelogEntry[]`
+- **Parser tests** (`lib/domains/lonelog/parser.test.ts`): Comprehensive tests for all Lonelog syntax
+- **Delta tracker** (`lib/domains/lonelog/deltas.ts`): Extracts state mutations from parsed tags, accumulates per entity
+- **Domain** (`lib/domains/session-log.ts`): Orchestrates parsing, delta accumulation, scene management
 - **Component** (`lib/components/session-log/`): Folder with sub-components:
   - `hud.tsx` — Entity selector + summary panel + quick-action buttons
-  - `event-list.tsx` — Chronological event rendering
+  - `event-list.tsx` — Renders parsed `LonelogEntry[]` as styled cards
   - `change-overview.tsx` — End-of-file delta summary
   - `entity-summary.tsx` — Per-entity HP/AC/equipment/actions display
-- **View** (`lib/views/SessionLogView.tsx`): Stateful, reads cross-file data, manages event append, renders HUD + event list
+  - `scene-header.tsx` — Scene marker rendering with variant styles
+  - `tag-pill.tsx` — Inline tag rendering (NPC, Location, Clock, etc.)
+- **View** (`lib/views/SessionLogView.tsx`): Stateful, reads cross-file data, manages HUD interactions that append Lonelog text, renders parsed log
 - **Styles** (`lib/styles/components/session-log.css`)
 - **Service** (`lib/services/entity-resolver.ts`): Reads and caches entity data from linked vault files
 
 ### Key features
-- Append-only event log — never lose session history
-- HUD-driven interaction — click to log, don't type YAML
-- Cross-file entity resolution — pulls live character/monster data
-- Non-destructive deltas — state changes tracked but not applied until user confirms
-- Multi-scene support — multiple log blocks per file, each is a scene
-- Auto-generated change overview at end of file
-- Works with any system — entity resolution uses the system registry and typed frontmatter
+- **Lonelog as source of truth** — the notation IS the data; no separate state for events
+- **HUD writes Lonelog** — clicking buttons appends proper Lonelog notation to the markdown
+- **Round-trip fidelity** — parse → render → edit → re-parse, nothing lost
+- **Append-only** — never lose session history
+- **Cross-file entity resolution** — pulls live character/monster data from linked files
+- **Non-destructive deltas** — state changes tracked from tags but not applied to entity files until confirmed
+- **Multi-scene support** — sequential, flashbacks, parallel threads, montages
+- **Works with any system** — entity resolution uses system registry and typed frontmatter
+- **Works analog too** — Lonelog is readable as plain text if the plugin is absent
 
 ---
 
@@ -822,14 +933,16 @@ All existing character sheets continue working — D&D 5e is the default.
 11. Add folder-to-system settings UI
 12. Wire registry to resolve system per file path
 
-### Phase 4 — Session Log
-13. Build entity resolver service (cross-file data reading)
-14. Implement log domain (event types, delta tracking, change accumulation)
-15. Implement HUD component (entity selector, summary, quick-action buttons)
-16. Implement event list + change overview components
-17. Wire SessionLogView with KV store, entity resolver, and event bus
+### Phase 4 — Session Log (Lonelog)
+13. Implement Lonelog parser (`lonelog/parser.ts`) with comprehensive tests
+14. Implement delta tracker (`lonelog/deltas.ts`) — extract state mutations from parsed tags
+15. Build entity resolver service (cross-file data reading + cache)
+16. Implement event-list component (renders `LonelogEntry[]` as styled cards with tag pills, scene headers)
+17. Implement HUD component (entity selector, summary, quick-action buttons that append Lonelog text)
+18. Implement change overview component (end-of-file delta summary)
+19. Wire SessionLogView with KV store, entity resolver, event bus, and Lonelog parser
 
-The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers.
+The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers. The Lonelog parser itself (steps 13-14) has no dependencies and can be developed in parallel with Phase 2/3.
 
 ---
 
@@ -845,7 +958,11 @@ lib/
 ├── domains/
 │   ├── inventory.ts          # Inventory parsing & logic
 │   ├── features.ts           # Features parsing & logic
-│   └── session-log.ts        # Event types, delta tracking, change accumulation
+│   ├── session-log.ts        # Orchestrates parsing, delta accumulation, scene management
+│   └── lonelog/
+│       ├── parser.ts         # Lonelog notation tokenizer → LonelogEntry[]
+│       ├── parser.test.ts    # Parser tests for all Lonelog syntax
+│       └── deltas.ts         # Extract state mutations from parsed tags
 ├── services/
 │   └── entity-resolver.ts    # Cross-file entity data reading + cache
 ├── components/
@@ -853,9 +970,11 @@ lib/
 │   ├── features.tsx           # Features React component
 │   └── session-log/           # Session log sub-components
 │       ├── hud.tsx            # Entity selector + summary + quick actions
-│       ├── event-list.tsx     # Chronological event rendering
+│       ├── event-list.tsx     # Renders parsed LonelogEntry[] as styled cards
 │       ├── change-overview.tsx # End-of-file delta summary
-│       └── entity-summary.tsx # Per-entity HP/AC/equipment display
+│       ├── entity-summary.tsx # Per-entity HP/AC/equipment display
+│       ├── scene-header.tsx   # Scene marker with variant styles
+│       └── tag-pill.tsx       # Inline tag rendering (NPC, Location, etc.)
 ├── views/
 │   ├── InventoryView.tsx      # Inventory code block processor
 │   ├── FeaturesView.tsx       # Features code block processor
