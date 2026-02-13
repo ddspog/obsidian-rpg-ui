@@ -6,6 +6,145 @@ Evolve the plugin from D&D 5e-only into a multi-system RPG toolkit. System rules
 
 ---
 
+## Part 0: Typed Frontmatter
+
+### The problem today
+
+Currently, frontmatter parsing is **untyped and D&D-hardcoded**:
+
+- `frontmatter.ts` has a hardcoded alias map (`FrontMatterKeys`) that only knows about `proficiency_bonus` and `level`
+- `levelToProficiencyBonus()` is a D&D 5e-specific lookup table baked into the parser
+- The `Frontmatter` type has `proficiency_bonus: number` as a fixed required field
+- Every view reads frontmatter the same way regardless of what the markdown file represents (character, monster, item, etc.)
+
+### The solution: `type` field in frontmatter
+
+Users declare what kind of entity the file represents:
+
+```yaml
+---
+type: character
+level: 5
+class: Wizard
+---
+```
+
+```yaml
+---
+type: monster
+cr: 5
+size: large
+creature_type: dragon
+---
+```
+
+```yaml
+---
+type: item
+rarity: rare
+attunement: true
+weight: 3
+---
+```
+
+### How it works
+
+The `system` code block in the system definition file declares **which frontmatter fields each type expects**:
+
+```markdown
+\`\`\`system
+name: "D&D 5e"
+
+types:
+  character:
+    fields:
+      - name: level
+        type: number
+        default: 1
+      - name: proficiency_bonus
+        type: number
+        derived: "{{level_to_proficiency level}}"
+        aliases: [proficiencyBonus, "Proficiency Bonus"]
+      - name: class
+        type: string
+      - name: subclass
+        type: string
+
+  monster:
+    fields:
+      - name: cr
+        type: number
+        default: 0
+      - name: size
+        type: string
+        default: medium
+      - name: creature_type
+        type: string
+      - name: legendary_actions
+        type: number
+        default: 0
+
+  item:
+    fields:
+      - name: rarity
+        type: string
+        default: common
+      - name: attunement
+        type: boolean
+        default: false
+      - name: weight
+        type: number
+        default: 0
+\`\`\`
+```
+
+### Parsing flow (revised)
+
+1. Read raw frontmatter from Obsidian's `metadataCache`
+2. Look for `type` field (defaults to `"character"` if missing — backwards compatible)
+3. Look up the type definition from the active system
+4. For each field in the type definition:
+   - Check frontmatter for the field name and its aliases (case-insensitive)
+   - If missing, check if there's a `derived` formula and evaluate it
+   - If still missing, use the `default` value
+5. Pass through any extra frontmatter keys as-is (preserves existing behavior)
+
+### What changes in `frontmatter.ts`
+
+The current code:
+```typescript
+const FrontMatterKeys: Record<keyof Frontmatter, string[]> = {
+  proficiency_bonus: ["proficiencyBonus", "Proficiency Bonus", "proficiency_bonus"],
+  level: ["level", "Level"],
+};
+```
+
+Becomes driven by the system's type definitions instead of a hardcoded map. The `levelToProficiencyBonus()` function moves into a `derived` expression in the D&D 5e system definition (or an `expression` code block like `level_to_proficiency`).
+
+### Type in `Frontmatter`
+
+```typescript
+export type Frontmatter = {
+  type: string;              // "character" | "monster" | "item" | custom
+  [key: string]: any;        // All other fields are dynamic, driven by type definition
+};
+```
+
+No more hardcoded `proficiency_bonus` as a required field. The system definition decides what exists.
+
+### Impact on views
+
+Views that currently read `frontmatter.proficiency_bonus` directly will instead access it as `frontmatter["proficiency_bonus"]`. Since the type system guarantees the field exists (with a default), this is safe. Views can also check `frontmatter.type` to conditionally render — e.g. show hit dice only for `character`, show CR badge only for `monster`.
+
+### Backwards compatibility
+
+- If `type` is missing from frontmatter → defaults to `"character"`
+- If no system is assigned → built-in D&D 5e type definitions apply
+- Existing character sheets with `proficiency_bonus` or `level` continue working unchanged
+- The alias system (`proficiencyBonus` → `proficiency_bonus`) is preserved, just moved from hardcoded map to system definition
+
+---
+
 ## Part 1: How System Definitions Work
 
 ### The system markdown file
@@ -29,13 +168,43 @@ attributes:
   - wisdom
   - charisma
 
-frontmatter:
-  - name: proficiency_bonus
-    type: number
-    default: 2
-  - name: level
-    type: number
-    default: 1
+types:
+  character:
+    fields:
+      - name: level
+        type: number
+        default: 1
+      - name: proficiency_bonus
+        type: number
+        derived: "{{level_to_proficiency level}}"
+        aliases: [proficiencyBonus, "Proficiency Bonus"]
+      - name: class
+        type: string
+      - name: subclass
+        type: string
+
+  monster:
+    fields:
+      - name: cr
+        type: number
+        default: 0
+      - name: size
+        type: string
+        default: medium
+      - name: creature_type
+        type: string
+
+  item:
+    fields:
+      - name: rarity
+        type: string
+        default: common
+      - name: attunement
+        type: boolean
+        default: false
+      - name: weight
+        type: number
+        default: 0
 \`\`\`
 
 ## Modifier Calculation
@@ -120,10 +289,25 @@ attributes:
   - quick
   - sneaky
 
-frontmatter:
-  - name: refresh
-    type: number
-    default: 3
+types:
+  character:
+    fields:
+      - name: refresh
+        type: number
+        default: 3
+      - name: high_concept
+        type: string
+      - name: trouble
+        type: string
+
+  npc:
+    fields:
+      - name: refresh
+        type: number
+        default: 1
+      - name: aspects
+        type: number
+        default: 2
 \`\`\`
 
 ## Approach Modifier
@@ -167,7 +351,8 @@ interface RPGUIToolkitSettings {
   // existing fields unchanged...
 
   // new
-  systemAssignments: { folder: string; file: string }[];
+  systemAssignments: { folder: string; systemFile: string }[];
+  // no defaultSystem needed — built-in D&D 5e is always the fallback
 }
 ```
 
@@ -181,9 +366,21 @@ interface RPGUIToolkitSettings {
 export interface RPGSystem {
   name: string;
   attributes: string[];
+  types: Record<string, EntityTypeDef>;     // "character" | "monster" | "item" | custom
   skills: SkillDefinition[];
   expressions: Map<string, ExpressionDef>;  // id → compiled expression
-  frontmatterFields: FrontmatterFieldDef[];
+}
+
+export interface EntityTypeDef {
+  fields: FrontmatterFieldDef[];
+}
+
+export interface FrontmatterFieldDef {
+  name: string;
+  type: "number" | "string" | "boolean";
+  default?: any;
+  derived?: string;                         // Handlebars formula, evaluated if value not set
+  aliases?: string[];                       // Alternative frontmatter key names
 }
 
 export interface ExpressionDef {
@@ -196,12 +393,6 @@ export interface ExpressionDef {
 export interface SkillDefinition {
   label: string;
   attribute: string;
-}
-
-export interface FrontmatterFieldDef {
-  name: string;
-  type: "number" | "string";
-  default: any;
 }
 ```
 
@@ -420,10 +611,16 @@ lib/
 
 ```
 main.ts                        # Register new views, create system registry
-settings.ts                    # Add systemAssignments field
+settings.ts                    # Add systemAssignments field + settings UI
+lib/types.ts                   # Frontmatter type becomes { type: string; [key: string]: any }
+lib/domains/frontmatter.ts     # Type-driven parsing; remove hardcoded FrontMatterKeys and levelToProficiencyBonus
+lib/domains/frontmatter.test.ts # Update tests for type-driven parsing
 lib/views/BaseView.ts          # Accept system registry
+lib/views/filecontext.ts       # Resolve system + entity type when building frontmatter
 lib/views/AbilityScoreView.tsx # Use system.expressions instead of hardcoded modifier
 lib/views/SkillsView.tsx       # Use system.skills instead of hardcoded list
+lib/views/HealthView.tsx       # Can check frontmatter.type for conditional rendering
+lib/views/BadgesView.tsx       # Template context uses typed frontmatter
 lib/domains/abilities.ts       # calculateModifier delegates to system expression
 lib/domains/skills.ts          # Skills array replaced by system.skills
 lib/utils/template.ts          # modifier helper delegates to active system
