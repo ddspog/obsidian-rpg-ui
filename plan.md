@@ -192,6 +192,7 @@ name: "D&D 5e"
 | `event-buttons`| `rpg events`      |
 | _(new)_        | `rpg inventory`   |
 | _(new)_        | `rpg features`    |
+| _(new)_        | `rpg log`         |
 | _(new)_        | `rpg system`      |
 | _(new)_        | `rpg expression`  |
 | _(new)_        | `rpg skill-list`  |
@@ -658,7 +659,146 @@ sections:
 
 ---
 
-## Part 6: Phased Delivery
+## Part 6: New Block — Session Log
+
+### Purpose
+
+A session play tracker that compiles a play session into a structured sequence of **scenes** containing **events**. It tracks state changes across characters, NPCs, monsters, and other entities. Multiple `rpg log` blocks can appear in a single file (one per scene, or one per session segment).
+
+### Core concepts
+
+**Scene**: A narrative unit within a session (e.g. "Entering the Dungeon", "Battle with the Dragon"). Each log block represents one scene.
+
+**Event**: An atomic entry within a scene — something that happened. Events can be:
+- **Narrative**: Free text describing what happened
+- **State change**: HP damage/healing, item gained/lost, consumable used, condition applied/removed
+- **Combat**: Initiative rolls, attacks, saves, spell casts
+- **Oracle/Roll**: Dice rolls, random table results, oracle questions/answers
+
+**HUD (Heads-Up Display)**: An interactive panel rendered at the top of each log block showing the active entities. It pulls live data from character/NPC/monster files and provides quick-action buttons. Clicking a HUD button appends a new event entry to the log.
+
+**Change overview**: After the last `rpg log` block in a file, a summary of all state changes accumulated across all log blocks in the file is rendered automatically.
+
+### YAML syntax (preliminary — full syntax TBD)
+
+~~~markdown
+```rpg log
+state_key: session-2024-03-15-scene-1
+scene: "The Goblin Ambush"
+entities:
+  - file: "Characters/Elara.md"
+    type: character
+  - file: "Characters/Thorne.md"
+    type: character
+  - file: "NPCs/Goblin Boss.md"
+    type: monster
+  - file: "NPCs/Goblin.md"
+    type: monster
+    count: 3
+```
+~~~
+
+### HUD behavior
+
+The HUD renders at the top of the log block and provides:
+
+1. **Entity selector** — tabs or dropdown to pick the active entity
+2. **Entity summary** — for the selected entity, shows at a glance:
+   - HP bar (current / max)
+   - AC
+   - Equipped items (from inventory block)
+   - Available actions / consumables / spell slots
+   - Active conditions
+3. **Quick-action buttons** — clicking these appends a new event to the log:
+   - Attack (prompts for target, roll)
+   - Cast Spell (from available spells/slots)
+   - Use Item/Consumable
+   - Take Damage / Heal
+   - Roll (generic dice roll)
+   - Add Note (free text)
+4. **Initiative tracker** — when combat is active, shows turn order inline
+
+The HUD reads entity data by resolving the linked files through the system registry (respecting frontmatter types) and reading their `rpg attributes`, `rpg inventory`, `rpg features`, `rpg healthpoints` blocks.
+
+### Event log rendering
+
+Below the HUD, the log renders as a chronological list of events:
+
+```
+🎬 Scene: The Goblin Ambush
+─────────────────────────────
+⚔️  Elara attacks Goblin #1 — hits (17 vs AC 15), deals 8 slashing damage
+❤️  Goblin #1: 7 → -1 HP (dead)
+🎲  Thorne rolls Perception: 14
+📝  The party finds a hidden passage behind the waterfall
+🧪  Elara uses Potion of Healing — restores 8 HP
+⚔️  Goblin Boss attacks Thorne — misses (9 vs AC 18)
+🔮  Elara casts Fireball (3rd level slot) — 24 fire damage
+```
+
+Each event is timestamped in state and carries:
+- The acting entity
+- The event type (attack, damage, heal, use, roll, note, etc.)
+- The target (if applicable)
+- The result / values
+- Any state mutations (HP changes, consumable decrements, item additions/removals)
+
+### Change overview (end of file)
+
+After the last `rpg log` block in a file, the plugin automatically renders a **change summary** showing the net state delta across all scenes:
+
+```
+📊 Session Overview
+═══════════════════
+Elara:        HP 45 → 37 (-8)  |  Used: Potion of Healing, Fireball (3rd)
+Thorne:       HP 52 → 52 (—)   |  Gained: Goblin Boss's Key
+Goblin Boss:  HP 30 → 0 (dead)
+Goblin #1-3:  all dead
+
+Items gained: Goblin Boss's Key, 45 gold
+Items used: Potion of Healing ×1
+Spell slots: Elara 3rd level (2 → 1)
+```
+
+### State management
+
+- **Per-scene state** stored in KV store via `state_key`
+- Events are an append-only array in state — the log grows as the session is played
+- Entity state changes are **tracked as deltas**, not applied directly to entity files (non-destructive)
+- The overview is computed by replaying all event deltas across all log blocks in the file
+- Optional: "Apply changes" button to persist deltas back to entity files at end of session
+
+### Cross-file data access
+
+The log block needs to read data from other markdown files (character sheets, monster stat blocks). This requires:
+- Resolving Obsidian wiki-links or file paths to actual vault files
+- Reading their frontmatter (type, attributes) and code blocks (inventory, features, healthpoints)
+- The system registry determines how to interpret each file based on its folder and frontmatter type
+
+### Implementation
+
+- **Domain** (`lib/domains/session-log.ts`): Event types, state delta tracking, change accumulation, event serialization
+- **Component** (`lib/components/session-log/`): Folder with sub-components:
+  - `hud.tsx` — Entity selector + summary panel + quick-action buttons
+  - `event-list.tsx` — Chronological event rendering
+  - `change-overview.tsx` — End-of-file delta summary
+  - `entity-summary.tsx` — Per-entity HP/AC/equipment/actions display
+- **View** (`lib/views/SessionLogView.tsx`): Stateful, reads cross-file data, manages event append, renders HUD + event list
+- **Styles** (`lib/styles/components/session-log.css`)
+- **Service** (`lib/services/entity-resolver.ts`): Reads and caches entity data from linked vault files
+
+### Key features
+- Append-only event log — never lose session history
+- HUD-driven interaction — click to log, don't type YAML
+- Cross-file entity resolution — pulls live character/monster data
+- Non-destructive deltas — state changes tracked but not applied until user confirms
+- Multi-scene support — multiple log blocks per file, each is a scene
+- Auto-generated change overview at end of file
+- Works with any system — entity resolution uses the system registry and typed frontmatter
+
+---
+
+## Part 7: Phased Delivery
 
 ### Phase 1 — Unified `rpg` namespace + new blocks
 1. Migrate all existing views to unified `rpg` code block processor with meta dispatch
@@ -669,18 +809,27 @@ sections:
 Delivers unified namespace + new user value immediately, D&D-only, no breaking changes to logic.
 
 ### Phase 2 — System abstraction
-4. Define `RPGSystem` interface
-5. Create built-in D&D 5e system (extract from domains)
-6. Create system registry
-7. Thread system into existing views (refactor `AbilityScoreView`, `SkillsView`, domains)
-8. Add `system`, `expression`, `skill-list` meta handlers (read-only, they define rules not render UI)
+5. Define `RPGSystem` interface
+6. Create built-in D&D 5e system (extract from domains)
+7. Create system registry
+8. Thread system into existing views (refactor `AbilityScoreView`, `SkillsView`, domains)
+9. Add `system`, `expression`, `skill-list` meta handlers (read-only, they define rules not render UI)
 
 All existing character sheets continue working — D&D 5e is the default.
 
 ### Phase 3 — User-defined systems
-9. Implement system markdown parser (reads `rpg system`, `rpg expression`, `rpg skill-list` blocks from vault files)
-10. Add folder-to-system settings UI
-11. Wire registry to resolve system per file path
+10. Implement system markdown parser (reads `rpg system`, `rpg expression`, `rpg skill-list` blocks from vault files)
+11. Add folder-to-system settings UI
+12. Wire registry to resolve system per file path
+
+### Phase 4 — Session Log
+13. Build entity resolver service (cross-file data reading)
+14. Implement log domain (event types, delta tracking, change accumulation)
+15. Implement HUD component (entity selector, summary, quick-action buttons)
+16. Implement event list + change overview components
+17. Wire SessionLogView with KV store, entity resolver, and event bus
+
+The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers.
 
 ---
 
@@ -695,16 +844,26 @@ lib/
 │   └── parser.ts             # Parse system markdown files into RPGSystem
 ├── domains/
 │   ├── inventory.ts          # Inventory parsing & logic
-│   └── features.ts           # Features parsing & logic
+│   ├── features.ts           # Features parsing & logic
+│   └── session-log.ts        # Event types, delta tracking, change accumulation
+├── services/
+│   └── entity-resolver.ts    # Cross-file entity data reading + cache
 ├── components/
 │   ├── inventory.tsx          # Inventory React component
-│   └── features.tsx           # Features React component
+│   ├── features.tsx           # Features React component
+│   └── session-log/           # Session log sub-components
+│       ├── hud.tsx            # Entity selector + summary + quick actions
+│       ├── event-list.tsx     # Chronological event rendering
+│       ├── change-overview.tsx # End-of-file delta summary
+│       └── entity-summary.tsx # Per-entity HP/AC/equipment display
 ├── views/
 │   ├── InventoryView.tsx      # Inventory code block processor
-│   └── FeaturesView.tsx       # Features code block processor
+│   ├── FeaturesView.tsx       # Features code block processor
+│   └── SessionLogView.tsx     # Session log code block processor
 └── styles/components/
     ├── inventory.css
-    └── features.css
+    ├── features.css
+    └── session-log.css
 ```
 
 ## Modified Files
