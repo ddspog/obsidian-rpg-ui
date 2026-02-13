@@ -52,7 +52,7 @@ weight: 3
 The `system` code block in the system definition file declares **which frontmatter fields each type expects**:
 
 ```markdown
-\`\`\`system
+\`\`\`rpg system
 name: "D&D 5e"
 
 types:
@@ -145,18 +145,116 @@ Views that currently read `frontmatter.proficiency_bonus` directly will instead 
 
 ---
 
-## Part 1: How System Definitions Work
+## Part 1: Unified `rpg` Code Block Namespace
+
+### Current state
+
+Each view registers its own code block language: `ability`, `skills`, `healthpoints`, `stats`, `badges`, `consumable`, `initiative`, `spell-components`, `event-buttons`. These are all top-level names in Obsidian's code block processor registry.
+
+### New pattern: `rpg <meta>`
+
+All blocks move under a single `rpg` language with a **meta attribute** after the language name:
+
+~~~
+```rpg attributes
+strength: 10
+dexterity: 12
+```
+
+```rpg skills
+proficiencies:
+  - Stealth
+  - Perception
+```
+
+```rpg healthpoints
+state_key: wizard-hp
+health: "{{add 6 (multiply (subtract level 1) 4) (multiply constitution (modifier constitution))}}"
+```
+
+```rpg system
+name: "D&D 5e"
+```
+~~~
+
+### Block type mapping (old → new)
+
+| Old            | New meta          |
+|----------------|-------------------|
+| `ability`      | `rpg attributes`  |
+| `skills`       | `rpg skills`      |
+| `healthpoints` | `rpg healthpoints`|
+| `stats`        | `rpg stats`       |
+| `badges`       | `rpg badges`      |
+| `consumable`   | `rpg consumable`  |
+| `initiative`   | `rpg initiative`  |
+| `spell-components` | `rpg spell`   |
+| `event-buttons`| `rpg events`      |
+| _(new)_        | `rpg inventory`   |
+| _(new)_        | `rpg features`    |
+| _(new)_        | `rpg system`      |
+| _(new)_        | `rpg expression`  |
+| _(new)_        | `rpg skill-list`  |
+
+### Registration approach
+
+Register a **single code block processor** for `"rpg"`. Obsidian passes the full info string to the processor — the text after the triple backticks. The processor:
+
+1. Extracts the meta (first word after `rpg` in the info string, available via `ctx.getSectionInfo()`)
+2. Dispatches to the corresponding view's `render()` method
+3. If the meta is unknown, renders an error message
+
+```typescript
+// main.ts — single registration
+this.registerMarkdownCodeBlockProcessor("rpg", (source, el, ctx) => {
+  const meta = extractMeta(ctx, el);  // e.g. "attributes", "skills", "system"
+  const view = viewRegistry.get(meta);
+  if (view) {
+    view.register(source, el, ctx);
+  } else {
+    el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
+  }
+});
+```
+
+The `extractMeta` function reads the full info string from the source document via `ctx.getSectionInfo()` and parses out the meta attribute after `rpg `.
+
+### Impact on `codeblock-extractor.ts`
+
+The `extractCodeBlocks(text, blockType)` function currently matches `` ```ability ``, `` ```skills ``, etc. It needs to match `` ```rpg attributes ``, `` ```rpg skills ``, etc. instead. The regex changes from matching a bare block type to matching `rpg <blockType>`.
+
+### BaseView changes
+
+The `codeblock` property on each view changes from the language name to just the **meta identifier**:
+
+```typescript
+// Before
+class AbilityScoreView extends BaseView {
+  public codeblock = "ability";
+}
+
+// After
+class AbilityScoreView extends BaseView {
+  public codeblock = "attributes";  // meta, not the language
+}
+```
+
+Views are collected into a `Map<string, BaseView>` keyed by meta, and the single `rpg` processor dispatches to them.
+
+---
+
+## Part 2: How System Definitions Work
 
 ### The system markdown file
 
-A system is a regular Obsidian markdown file (e.g. `Systems/DnD 5e.md`) containing code blocks that define the rules. The entry point is a `system` code block:
+A system is a regular Obsidian markdown file (e.g. `Systems/DnD 5e.md`) containing `rpg` code blocks that define the rules. The entry point is a `rpg system` block:
 
 ```markdown
 # D&D 5e System
 
 This file defines the D&D 5th Edition rules for the RPG UI Toolkit.
 
-\`\`\`system
+\`\`\`rpg system
 name: "D&D 5e"
 version: "1.0"
 
@@ -211,7 +309,7 @@ types:
 
 How ability modifiers are derived from scores:
 
-\`\`\`expression
+\`\`\`rpg expression
 id: modifier
 description: "Calculate ability modifier from score"
 params:
@@ -221,7 +319,7 @@ formula: "{{floor (divide (subtract score 10) 2)}}"
 
 ## Saving Throw Calculation
 
-\`\`\`expression
+\`\`\`rpg expression
 id: saving_throw
 description: "Calculate saving throw bonus"
 params:
@@ -234,7 +332,7 @@ formula: "{{add modifier (if proficient proficiency_bonus 0) bonus}}"
 
 ## Skill Modifier
 
-\`\`\`expression
+\`\`\`rpg expression
 id: skill_modifier
 description: "Calculate skill modifier"
 params:
@@ -251,7 +349,7 @@ Then in a separate section (or the same file), skills are defined with a `skill-
 ```markdown
 ## Skills
 
-\`\`\`skill-list
+\`\`\`rpg skill-list
 skills:
   - label: "Acrobatics"
     attribute: dexterity
@@ -266,10 +364,11 @@ skills:
 ### Key insight: it's markdown all the way down
 
 - The system file is **browsable in Obsidian** — users can read the descriptions, see the formulas, and understand the rules
+- Every block uses the unified `rpg <meta>` syntax — system definitions and character sheets share the same namespace
 - Each code block is self-contained and identified by its `id`
-- The `system` code block is the entry point that declares attributes and frontmatter fields
-- `expression` blocks define named formulas the plugin evaluates at runtime
-- `skill-list` blocks define the skills available in the system
+- The `rpg system` block is the entry point that declares attributes, types, and frontmatter fields
+- `rpg expression` blocks define named formulas the plugin evaluates at runtime
+- `rpg skill-list` blocks define the skills available in the system
 - The existing Handlebars template engine (with `floor`, `ceil`, `add`, `subtract`, `multiply`, `divide` helpers) already supports these formulas
 
 ### For a different system (e.g. Fate):
@@ -277,7 +376,7 @@ skills:
 ```markdown
 # Fate Core System
 
-\`\`\`system
+\`\`\`rpg system
 name: "Fate Core"
 version: "1.0"
 
@@ -312,7 +411,7 @@ types:
 
 ## Approach Modifier
 
-\`\`\`expression
+\`\`\`rpg expression
 id: modifier
 params:
   - score
@@ -320,7 +419,7 @@ formula: "{{score}}"
 \`\`\`
 ```
 
-No skills block → no skills panel rendered. Different attributes → the ability view adapts. Different modifier formula → calculations change.
+No `rpg skill-list` block → no skills panel rendered. Different attributes → the ability view adapts. Different modifier formula → calculations change.
 
 ---
 
@@ -408,13 +507,13 @@ This is a pure refactor — extracts existing constants, no behavior change.
 
 ### Step 3: System parser (`lib/systems/parser.ts`)
 
-Reads a markdown file from the vault, extracts code blocks:
-1. Find `system` code block → parse attributes, frontmatter fields
-2. Find all `expression` code blocks → compile formulas via Handlebars into `evaluate` functions
-3. Find `skill-list` code block → parse skill definitions
+Reads a markdown file from the vault, extracts `rpg` code blocks:
+1. Find `rpg system` block → parse attributes, types, frontmatter field definitions
+2. Find all `rpg expression` blocks → compile formulas via Handlebars into `evaluate` functions
+3. Find `rpg skill-list` block → parse skill definitions
 4. Return an `RPGSystem` object
 
-Uses the existing `extractFirstCodeBlock` utility (extended to extract all blocks of a type).
+Uses the updated `extractCodeBlocks` utility (now matches `rpg <meta>` patterns).
 
 ### Step 4: System registry (`lib/systems/registry.ts`)
 
@@ -455,7 +554,7 @@ Track items, equipment, currency, and encumbrance.
 ### YAML syntax
 
 ~~~markdown
-```inventory
+```rpg inventory
 state_key: ranger-inventory
 currency:
   gold: 50
@@ -505,7 +604,7 @@ Track class features, racial traits, feats — level-gated, optional, and with c
 ### YAML syntax
 
 ~~~markdown
-```features
+```rpg features
 state_key: wizard-features
 class: "Wizard"
 sections:
@@ -561,24 +660,25 @@ sections:
 
 ## Part 6: Phased Delivery
 
-### Phase 1 — New blocks (no system changes)
-1. Implement Inventory block (domain, component, view, styles)
-2. Implement Features block (domain, component, view, styles)
-3. Register both in `main.ts`
+### Phase 1 — Unified `rpg` namespace + new blocks
+1. Migrate all existing views to unified `rpg` code block processor with meta dispatch
+2. Update `codeblock-extractor.ts` to match `rpg <meta>` patterns
+3. Implement Inventory block (domain, component, view, styles)
+4. Implement Features block (domain, component, view, styles)
 
-Delivers user value immediately, D&D-only, no breaking changes.
+Delivers unified namespace + new user value immediately, D&D-only, no breaking changes to logic.
 
 ### Phase 2 — System abstraction
 4. Define `RPGSystem` interface
 5. Create built-in D&D 5e system (extract from domains)
 6. Create system registry
 7. Thread system into existing views (refactor `AbilityScoreView`, `SkillsView`, domains)
-8. Register `system`, `expression`, `skill-list` code block parsers (read-only, they define rules not render UI)
+8. Add `system`, `expression`, `skill-list` meta handlers (read-only, they define rules not render UI)
 
 All existing character sheets continue working — D&D 5e is the default.
 
 ### Phase 3 — User-defined systems
-9. Implement system markdown parser (reads `system`, `expression`, `skill-list` blocks from vault files)
+9. Implement system markdown parser (reads `rpg system`, `rpg expression`, `rpg skill-list` blocks from vault files)
 10. Add folder-to-system settings UI
 11. Wire registry to resolve system per file path
 
@@ -610,7 +710,7 @@ lib/
 ## Modified Files
 
 ```
-main.ts                        # Register new views, create system registry
+main.ts                        # Single "rpg" processor with meta dispatch, create system registry
 settings.ts                    # Add systemAssignments field + settings UI
 lib/types.ts                   # Frontmatter type becomes { type: string; [key: string]: any }
 lib/domains/frontmatter.ts     # Type-driven parsing; remove hardcoded FrontMatterKeys and levelToProficiencyBonus
@@ -624,4 +724,6 @@ lib/views/BadgesView.tsx       # Template context uses typed frontmatter
 lib/domains/abilities.ts       # calculateModifier delegates to system expression
 lib/domains/skills.ts          # Skills array replaced by system.skills
 lib/utils/template.ts          # modifier helper delegates to active system
+lib/utils/codeblock-extractor.ts  # Match "rpg <meta>" patterns instead of bare block types
+lib/utils/codeblock-extractor.test.ts # Update tests for new patterns
 ```
