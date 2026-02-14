@@ -6,145 +6,6 @@ Evolve the plugin from D&D 5e-only into a multi-system RPG toolkit. System rules
 
 ---
 
-## Part 0: Typed Frontmatter
-
-### The problem today
-
-Currently, frontmatter parsing is **untyped and D&D-hardcoded**:
-
-- `frontmatter.ts` has a hardcoded alias map (`FrontMatterKeys`) that only knows about `proficiency_bonus` and `level`
-- `levelToProficiencyBonus()` is a D&D 5e-specific lookup table baked into the parser
-- The `Frontmatter` type has `proficiency_bonus: number` as a fixed required field
-- Every view reads frontmatter the same way regardless of what the markdown file represents (character, monster, item, etc.)
-
-### The solution: `type` field in frontmatter
-
-Users declare what kind of entity the file represents:
-
-```yaml
----
-type: character
-level: 5
-class: Wizard
----
-```
-
-```yaml
----
-type: monster
-cr: 5
-size: large
-creature_type: dragon
----
-```
-
-```yaml
----
-type: item
-rarity: rare
-attunement: true
-weight: 3
----
-```
-
-### How it works
-
-The `system` code block in the system definition file declares **which frontmatter fields each type expects**:
-
-```markdown
-\`\`\`rpg system
-name: "D&D 5e"
-
-types:
-  character:
-    fields:
-      - name: level
-        type: number
-        default: 1
-      - name: proficiency_bonus
-        type: number
-        derived: "{{level_to_proficiency level}}"
-        aliases: [proficiencyBonus, "Proficiency Bonus"]
-      - name: class
-        type: string
-      - name: subclass
-        type: string
-
-  monster:
-    fields:
-      - name: cr
-        type: number
-        default: 0
-      - name: size
-        type: string
-        default: medium
-      - name: creature_type
-        type: string
-      - name: legendary_actions
-        type: number
-        default: 0
-
-  item:
-    fields:
-      - name: rarity
-        type: string
-        default: common
-      - name: attunement
-        type: boolean
-        default: false
-      - name: weight
-        type: number
-        default: 0
-\`\`\`
-```
-
-### Parsing flow (revised)
-
-1. Read raw frontmatter from Obsidian's `metadataCache`
-2. Look for `type` field (defaults to `"character"` if missing — backwards compatible)
-3. Look up the type definition from the active system
-4. For each field in the type definition:
-   - Check frontmatter for the field name and its aliases (case-insensitive)
-   - If missing, check if there's a `derived` formula and evaluate it
-   - If still missing, use the `default` value
-5. Pass through any extra frontmatter keys as-is (preserves existing behavior)
-
-### What changes in `frontmatter.ts`
-
-The current code:
-```typescript
-const FrontMatterKeys: Record<keyof Frontmatter, string[]> = {
-  proficiency_bonus: ["proficiencyBonus", "Proficiency Bonus", "proficiency_bonus"],
-  level: ["level", "Level"],
-};
-```
-
-Becomes driven by the system's type definitions instead of a hardcoded map. The `levelToProficiencyBonus()` function moves into a `derived` expression in the D&D 5e system definition (or an `expression` code block like `level_to_proficiency`).
-
-### Type in `Frontmatter`
-
-```typescript
-export type Frontmatter = {
-  type: string;              // "character" | "monster" | "item" | custom
-  [key: string]: any;        // All other fields are dynamic, driven by type definition
-};
-```
-
-No more hardcoded `proficiency_bonus` as a required field. The system definition decides what exists.
-
-### Impact on views
-
-Views that currently read `frontmatter.proficiency_bonus` directly will instead access it as `frontmatter["proficiency_bonus"]`. Since the type system guarantees the field exists (with a default), this is safe. Views can also check `frontmatter.type` to conditionally render — e.g. show hit dice only for `character`, show CR badge only for `monster`.
-
-### Backwards compatibility
-
-- If `type` is missing from frontmatter → defaults to `"character"`
-- If no system is assigned → built-in D&D 5e type definitions apply
-- Existing character sheets with `proficiency_bonus` or `level` continue working unchanged
-- The alias system (`proficiencyBonus` → `proficiency_bonus`) is preserved, just moved from hardcoded map to system definition
-
----
-
 ## Part 1: Unified `rpg` Code Block Namespace
 
 ### Current state
@@ -194,9 +55,11 @@ name: "D&D 5e"
 | _(new)_        | `rpg features`    |
 | _(new)_        | `rpg log`         |
 | _(new)_        | `rpg map`         |
-| _(new)_        | `rpg system`      |
-| _(new)_        | `rpg expression`  |
-| _(new)_        | `rpg skill-list`  |
+| _(new)_        | `rpg system`      | _(definition block — not rendered as UI)_ |
+| _(new)_        | `rpg expression`  | _(definition block — not rendered as UI)_ |
+| _(new)_        | `rpg skill-list`  | _(definition block — not rendered as UI)_ |
+
+> **Note:** System definition blocks (`system`, `expression`, `skill-list`) define rules and formulas — they are parsed but not rendered as interactive UI. Character sheet blocks (`attributes`, `skills`, etc.) render interactive components. The naming avoids collision: `rpg skills` (character sheet) vs `rpg skill-list` (system definition). Attributes are defined inline in the `rpg system` block, so no separate `rpg attributes-list` block is needed.
 
 ### Registration approach
 
@@ -219,7 +82,12 @@ this.registerMarkdownCodeBlockProcessor("rpg", (source, el, ctx) => {
 });
 ```
 
-The `extractMeta` function reads the full info string from the source document via `ctx.getSectionInfo()` and parses out the meta attribute after `rpg `.
+The `extractMeta` function works as follows:
+1. Calls `ctx.getSectionInfo(el)` to get the section's line range in the source document
+2. Reads the opening fence line (e.g. `` ```rpg attributes ``) from `sectionInfo.text` using `sectionInfo.lineStart`
+3. Strips the `rpg ` prefix to extract the meta identifier (e.g. `"attributes"`)
+
+This approach is necessary because Obsidian's `registerMarkdownCodeBlockProcessor` only passes the **body** of the code block as `source` — the info string (text after the language name on the fence line) is not directly available. `getSectionInfo()` provides access to the raw markdown to recover it.
 
 ### Impact on `codeblock-extractor.ts`
 
@@ -246,6 +114,33 @@ Views are collected into a `Map<string, BaseView>` keyed by meta, and the single
 ---
 
 ## Part 2: How System Definitions Work
+
+### Typed frontmatter (replaces hardcoded parsing)
+
+Currently, frontmatter parsing is **untyped and D&D-hardcoded**: `frontmatter.ts` has a hardcoded alias map (`FrontMatterKeys`) for `proficiency_bonus` and `level`, a baked-in `levelToProficiencyBonus()` lookup, and a fixed `Frontmatter` type with `proficiency_bonus: number`.
+
+The system definition solves this. Users declare what kind of entity a file represents via a `type` field in frontmatter:
+
+```yaml
+---
+type: character  # or "monster", "item", custom types
+level: 5
+class: Wizard
+---
+```
+
+The `types:` section in the `rpg system` block defines which frontmatter fields each type expects, with defaults, derived values, and aliases. The `Frontmatter` TypeScript type becomes dynamic:
+
+```typescript
+export type Frontmatter = {
+  type: string;              // "character" | "monster" | "item" | custom
+  [key: string]: any;        // All fields driven by type definition
+};
+```
+
+**Parsing flow:** Read raw frontmatter → look for `type` (defaults to `"character"`) → look up type definition from active system → resolve each field (check aliases, evaluate `derived` formulas, apply `default`) → pass through extra keys as-is.
+
+**Backwards compatibility:** Missing `type` defaults to `"character"`, no system defaults to built-in D&D 5e, existing aliases preserved via system definition.
 
 ### The system markdown file
 
@@ -373,6 +268,16 @@ skills:
 - `rpg skill-list` blocks define the skills available in the system
 - The existing Handlebars template engine (with `floor`, `ceil`, `add`, `subtract`, `multiply`, `divide` helpers) already supports these formulas
 
+### Template engine and expression registration
+
+The plugin already uses a Handlebars-based template engine (`lib/utils/template.ts`) for dynamic content in YAML values (e.g. `"{{dex_mod}}"` in ability descriptions). System expressions extend this:
+
+1. **Built-in helpers** (already exist): `floor`, `ceil`, `add`, `subtract`, `multiply`, `divide`, `if`
+2. **Expression registration**: When a system is loaded, each `rpg expression` block is compiled into a Handlebars template and registered as a **named helper**. This means expressions can call other expressions — e.g. `saving_throw` can reference `modifier` because `modifier` is registered as a helper.
+3. **Registration order**: Expressions are registered in document order. Forward references work because Handlebars resolves helpers at render time, not registration time.
+4. **Expression scope**: Expressions from the active system are available in all template contexts (YAML values, `derived` frontmatter fields, ability descriptions, etc.)
+5. **Return types**: Expressions can return `number`, `string`, or `boolean` — the formula result is coerced based on the context where it's used (e.g. a `derived` field with `type: number` coerces the result to a number)
+
 ### For a different system (e.g. Fate):
 
 ```markdown
@@ -425,7 +330,7 @@ No `rpg skill-list` block → no skills panel rendered. Different attributes →
 
 ---
 
-## Part 2: Settings — Folder-to-System Assignment
+## Part 3: Settings — Folder-to-System Assignment
 
 In plugin settings, users map vault folders to system definition markdown files:
 
@@ -462,7 +367,7 @@ interface RPGUIToolkitSettings {
 
 ---
 
-## Part 3: Implementation — System Abstraction Layer
+## Part 4: Implementation — System Abstraction Layer
 
 ### Step 1: Define `RPGSystem` interface (`lib/systems/types.ts`)
 
@@ -491,7 +396,7 @@ export interface ExpressionDef {
   id: string;
   params: string[];
   formula: string;                          // Handlebars template string
-  evaluate: (context: Record<string, number | boolean>) => number;
+  evaluate: (context: Record<string, number | string | boolean>) => number | string | boolean;
 }
 
 export interface SkillDefinition {
@@ -554,24 +459,31 @@ Add a "Map Tiles" section in settings tab:
 - When empty (default), the renderer uses built-in SVG pattern fills (color-based: grass green, water blue, etc.)
 - When set, the renderer loads tile images from `<tilePacksFolder>/<pack>/<terrain>.<ext>` (e.g. `Tiles/fantasy/forest.svg`)
 - Pack name matches the `pack:` field in the `rpg map` YAML header
-- Folder structure:
+- Tile packs are organized by grid type, then by pack name:
   ```
   Tiles/              ← tilePacksFolder setting
-  ├── fantasy/        ← pack name
-  │   ├── grass.svg
-  │   ├── forest.svg
-  │   ├── forest-snowy.svg   ← variant: forest[snowy]
-  │   ├── water.svg
-  │   ├── mountain.svg
-  │   └── mountain-rocky.svg ← variant: mountain[rocky]
-  └── scifi/          ← another pack
-      ├── metal.svg
-      └── void.svg
+  ├── hex/            ← hex grid tiles
+  │   ├── fantasy/    ← pack name
+  │   │   ├── grass.svg
+  │   │   ├── forest.svg
+  │   │   ├── forest-snowy.svg   ← variant: forest[snowy]
+  │   │   ├── water.svg
+  │   │   ├── mountain.svg
+  │   │   └── mountain-rocky.svg ← variant: mountain[rocky]
+  │   └── scifi/      ← another pack
+  │       ├── metal.svg
+  │       └── void.svg
+  └── square/         ← square grid tiles
+      └── dungeon/    ← pack name
+          ├── stone.png
+          ├── grass.png
+          └── water.png
   ```
+- **Square grid background images**: Square maps can also use a full `background:` image (e.g. a dungeon map scan) with the grid overlaid as a transparent layer. The legend's `color` becomes the fallback when no background is set.
 
 ---
 
-## Part 4: New Block — Inventory
+## Part 5: New Block — Inventory
 
 ### Purpose
 Track items, equipment, currency, and encumbrance.
@@ -611,20 +523,34 @@ encumbrance:
 ```
 ~~~
 
+### Editing via UI
+
+The inventory component supports **inline editing** that writes changes back to the code block in the markdown file:
+
+- **Add item**: Button opens a form; on submit, appends a new item YAML entry to the section
+- **Remove item**: Swipe or delete button removes the item's YAML entry from the code block
+- **Update quantity**: +/- buttons modify the `quantity:` value in-place in the YAML
+- **Use consumable**: Decrements quantity (removes item at 0)
+- **Edit currency**: Inline editable currency values written back to the YAML
+
+All edits use Obsidian's `vault.process()` API to atomically read-modify-write the code block content. The component re-renders from the updated YAML on each change — no separate state needed for item lists.
+
+> **KV store vs code block**: Transient UI state (section collapse, scroll position) uses the KV store. Persistent game data (items, quantities, currency) lives in the code block YAML itself, so it's version-controllable and visible in plain text.
+
 ### Implementation
-- **Domain** (`lib/domains/inventory.ts`): Parse YAML, weight calculation, consumable state
-- **Component** (`lib/components/inventory.tsx`): Collapsible sections, currency row, weight/encumbrance bar, consumable use buttons
-- **View** (`lib/views/InventoryView.tsx`): Stateful (KV store for quantities, consumable usage, section collapse)
+- **Domain** (`lib/domains/inventory.ts`): Parse YAML, weight calculation, consumable state, YAML serialization for write-back
+- **Component** (`lib/components/inventory.tsx`): Collapsible sections, currency row, weight/encumbrance bar, consumable use buttons, add/remove/edit UI
+- **View** (`lib/views/InventoryView.tsx`): Stateful (KV store for UI state like section collapse); uses `vault.process()` for code block edits
 - **Styles** (`lib/styles/components/inventory.css`)
 - Consumable items integrate with event system (reset_on rest events)
 - Template support for computed values like carry capacity
 
 ---
 
-## Part 5: New Block — Features
+## Part 6: New Block — Features
 
 ### Purpose
-Track class features, racial traits, feats — level-gated, optional, and with choices.
+Track class features, racial traits, feats — with categories, level gating, prerequisite requirements, limited uses, and choices.
 
 ### YAML syntax
 
@@ -632,8 +558,9 @@ Track class features, racial traits, feats — level-gated, optional, and with c
 ```rpg features
 state_key: wizard-features
 class: "Wizard"
-sections:
+categories:
   - name: "Class Features"
+    icon: "⚔️"
     features:
       - name: "Arcane Recovery"
         level: 1
@@ -646,6 +573,9 @@ sections:
         description: "Choose a 1st and 2nd level spell to cast at will."
 
   - name: "Subclass: School of Evocation"
+    icon: "🔥"
+    requires:
+      level: 2
     features:
       - name: "Sculpt Spells"
         level: 2
@@ -653,11 +583,19 @@ sections:
       - name: "Potent Cantrip"
         level: 6
         description: "Cantrips deal half damage on successful save."
+      - name: "Overchannel"
+        level: 14
+        requires:
+          feature: "Potent Cantrip"
+        description: "Deal max damage with a spell of 5th level or lower."
 
   - name: "Feats"
+    icon: "🏅"
     features:
       - name: "War Caster"
         description: "Advantage on CON saves for concentration."
+        requires:
+          attribute: { constitution: 13 }
         optional: true
 
   - name: "Choices"
@@ -673,17 +611,38 @@ sections:
 ```
 ~~~
 
+### Category system
+
+Categories group related features visually (collapsible sections with optional icons). Each category can have:
+- `name` — section heading
+- `icon` — optional emoji or icon string displayed in the header
+- `requires` — category-level gate (e.g. `level: 2` hides the whole section until level 2)
+- `features` — list of features in this category
+- `choices` — list of pick-N-from-M choice groups
+
+### Requirement tracking
+
+Features and categories support a `requires` block for prerequisite checks:
+
+| Requirement | Example | Behavior |
+|---|---|---|
+| Level gate | `level: 6` | Hidden/dimmed until character reaches level 6 |
+| Feature prerequisite | `feature: "Potent Cantrip"` | Dimmed until the named feature is available (i.e. its own level gate is met) |
+| Attribute minimum | `attribute: { constitution: 13 }` | Dimmed until attribute score meets threshold |
+
+Requirements are evaluated against frontmatter (level, attributes) and the feature list itself (feature prerequisites). Unmet requirements show the feature as dimmed with a tooltip explaining what's needed.
+
 ### Implementation
-- **Domain** (`lib/domains/features.ts`): Parse YAML, level filtering (from frontmatter `level`), choice management
-- **Component** (`lib/components/features.tsx`): Collapsible sections, level badges, limited-use tracking (reuses consumable pattern), choice picker
-- **View** (`lib/views/FeaturesView.tsx`): Stateful (KV store for choices + limited-use counts), listens to `fm:changed` for level gating
+- **Domain** (`lib/domains/features.ts`): Parse YAML, category management, requirement evaluation (level, feature, attribute), choice management
+- **Component** (`lib/components/features.tsx`): Collapsible categories with icons, level badges, requirement status indicators, limited-use tracking (reuses consumable pattern), choice picker
+- **View** (`lib/views/FeaturesView.tsx`): Stateful (KV store for choices + limited-use counts), listens to `fm:changed` for level gating and attribute requirements
 - **Styles** (`lib/styles/components/features.css`)
 - Limited-use features reuse the existing consumable/reset infrastructure
 - Template support in descriptions
 
 ---
 
-## Part 6: New Block — Session Log (Lonelog)
+## Part 7: New Block — Session Log (Lonelog)
 
 ### Purpose
 
@@ -890,7 +849,8 @@ Each scene variant is rendered with appropriate visual treatment (flashback = di
 - **Per-block state** stored in KV store via `state_key`
 - The Lonelog body text is the source of truth — events are parsed from it
 - State deltas are computed by parsing tags, not stored separately
-- The HUD **appends** Lonelog text to the block when buttons are clicked (writes back to the markdown)
+- The HUD **appends** Lonelog text to the end of the block body when buttons are clicked (writes back to the markdown via `vault.process()`)
+- Append-only design avoids conflicts: the HUD never modifies existing lines, only adds new ones at the end. Since Lonelog is sequential, appending is always safe — no concurrent edit conflicts can occur within a single block.
 - The overview is computed by replaying all parsed deltas across all `rpg log` blocks in the file
 - Optional: "Apply changes" button to persist deltas back to entity files at end of session
 
@@ -902,6 +862,7 @@ The log block reads data from entity files (character sheets, monster stat block
 - Reads code blocks (`rpg attributes`, `rpg inventory`, `rpg features`, `rpg healthpoints`) from those files
 - The system registry determines how to interpret each file based on its folder assignment and frontmatter type
 - Entity data is cached and refreshed on file change events
+- **Cache invalidation**: The entity resolver listens to Obsidian's `vault.on('modify', ...)` event. When a referenced entity file changes, its cache entry is evicted and re-parsed on next access. The resolver also invalidates when the system registry detects a system file change (since that may alter how frontmatter fields are interpreted).
 
 ### Implementation
 
@@ -933,7 +894,7 @@ The log block reads data from entity files (character sheets, monster stat block
 
 ---
 
-## Part 7: New Block — Battle Map (`rpg map`)
+## Part 8: New Block — Battle Map (`rpg map`)
 
 ### Purpose
 
@@ -971,11 +932,18 @@ Height groups create topological layers:
   * t(2,0): mountain[rocky]
 ```
 
+### Syntax differences from Lonelog
+
+The hex-map-editor syntax uses `[` brackets for variants (e.g. `forest[snowy]`), which could be confused with Lonelog's persistent element tags (e.g. `[N:Name]`). To avoid ambiguity:
+- **Variants** always appear immediately after a terrain name with no space: `forest[snowy]`
+- **Entity tokens** always start with `[PC:` or `[N:` — these prefixes never appear as terrain variant names
+- The parser distinguishes them by context: variants follow terrain names, tokens appear at the end of a cell line or in the `tokens:` section
+
 ### Adapted syntax for `rpg map`
 
 The `rpg map` block extends the hex-map-editor syntax with:
 - Square grid support (`grid: square`)
-- Entity token placement using Lonelog tags (`[PC:Name]`, `[N:Name]`)
+- Entity token placement using Lonelog tags (`[PC:Name]`, `[N:Name]`) — supported on **both** hex and square grid cells
 - Step-by-step move replay
 - YAML header separated from map body by `---`
 
@@ -1033,7 +1001,7 @@ tokens:
 ```
 ~~~
 
-The hex grid uses the existing hex-map-editor syntax (axial coordinates, terrain/stack/path layers, packs, variants, height groups). The square grid uses a simpler character-based layout with a legend, plus a `tokens:` section for entity placement.
+The hex grid uses the existing hex-map-editor syntax (axial coordinates, terrain/stack/path layers, packs, variants, height groups). The square grid uses a simpler character-based layout with a legend. Both grid types support entity tokens via either inline placement (appended to a cell line) or a dedicated `tokens:` section.
 
 ### Entity tokens on the map
 
@@ -1148,24 +1116,24 @@ Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a
 
 ---
 
-## Part 8: Phased Delivery
+## Part 9: Phased Delivery
 
-### Phase 1 — Unified `rpg` namespace + new blocks
+### Phase 1 — Unified `rpg` namespace
 1. Migrate all existing views to unified `rpg` code block processor with meta dispatch
 2. Update `codeblock-extractor.ts` to match `rpg <meta>` patterns
-3. Implement Inventory block (domain, component, view, styles)
-4. Implement Features block (domain, component, view, styles)
 
-Delivers unified namespace + new user value immediately, D&D-only, no breaking changes to logic.
+Delivers unified namespace with no breaking changes to logic. All existing blocks work under `rpg <meta>`.
 
-### Phase 2 — System abstraction
-5. Define `RPGSystem` interface
-6. Create built-in D&D 5e system (extract from domains)
-7. Create system registry
-8. Thread system into existing views (refactor `AbilityScoreView`, `SkillsView`, domains)
-9. Add `system`, `expression`, `skill-list` meta handlers (read-only, they define rules not render UI)
+### Phase 2 — System abstraction + new blocks
+3. Define `RPGSystem` interface
+4. Create built-in D&D 5e system (extract from domains)
+5. Create system registry
+6. Thread system into existing views (refactor `AbilityScoreView`, `SkillsView`, domains)
+7. Add `system`, `expression`, `skill-list` meta handlers (read-only, they define rules not render UI)
+8. Implement Inventory block (domain, component, view, styles)
+9. Implement Features block (domain, component, view, styles)
 
-All existing character sheets continue working — D&D 5e is the default.
+All existing character sheets continue working — D&D 5e is the default. Inventory and features are built on top of the system abstraction so they can use typed frontmatter and expressions from the start.
 
 ### Phase 3 — User-defined systems
 10. Implement system markdown parser (reads `rpg system`, `rpg expression`, `rpg skill-list` blocks from vault files)
@@ -1181,7 +1149,7 @@ All existing character sheets continue working — D&D 5e is the default.
 18. Implement change overview component (end-of-file delta summary)
 19. Wire SessionLogView with KV store, entity resolver, event bus, and Lonelog parser
 
-The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers. The Lonelog parser itself (steps 13-14) has no dependencies and can be developed in parallel with Phase 2/3.
+The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers. The Lonelog parser itself (steps 13–14) has no dependencies and can be developed in parallel with Phase 2/3.
 
 ### Phase 5 — Battle Maps
 20. Port hex-map-editor parser (`hexmap-parser.ts`) → `lib/domains/battlemap/hex-parser.ts`, extend with `rpg map` YAML header + entity token parsing
@@ -1192,7 +1160,7 @@ The log block depends on inventory, features, and system abstraction being in pl
 25. Implement step-by-step replay (moves parser, state machine, step controls)
 26. Wire entity tokens to entity resolver (shared `[PC:]`/`[N:]` tags with Lonelog)
 
-The hex parser/renderer port (steps 20-23) has no dependencies and can be built in parallel with Phase 4. Step 26 requires the entity resolver from Phase 4.
+The hex parser/renderer port (steps 20–23) has no dependencies and can be built in parallel with Phase 4. Step 26 requires the entity resolver from Phase 4.
 
 ---
 
