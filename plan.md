@@ -916,64 +916,90 @@ The log block reads data from entity files (character sheets, monster stat block
 
 Render hex and square grid maps from a text-based syntax. Maps are **static renderings of state** — they don't support drag-and-drop, but show positions and can step through moves already made. Integrated with the session log to visualize combat scenes.
 
-The syntax is adapted from the hex-map-editor project (to be ported into this plugin).
+The hex syntax is ported from the **hex-map-editor** project (same author), adapted to fit the `rpg` block namespace.
 
-### Grid types
+### Hex-map-editor syntax (existing, to be ported)
 
-Two grid modes, selected via a `grid` property:
+The hex-map-editor uses a code block with three-layer rendering:
 
-- **Hex** (`grid: hex`) — hexagonal grid with axial coordinates (e.g. `0101`, `0203`). Supports flat-top and pointy-top orientations.
-- **Square** (`grid: square`) — traditional battle map grid with `x,y` coordinates (e.g. `1,1`, `5,3`).
+```
+t(q,r): content   — terrain layer (ground: grass, water, forest, mountain)
+s(q,r): content   — stack layer (structures: buildings, towers, monuments)
+p(q,r): content   — path layer (roads, rivers, walls)
+```
 
-### YAML + map syntax
+Coordinates are **axial (q, r)** for flat-top hex grids. Content follows the pattern:
+```
+type(q,r): (Label) terrain[variant] + #color
+```
 
-The block has a YAML header and a map body separated by `---`:
+All parts optional:
+- `(Label)` — text displayed on the hex
+- `terrain` — terrain type name (e.g. `grass`, `forest`, `water`, `mountain`)
+- `[variant]` — specific variant (e.g. `forest[snowy]`, `mountain[rocky]`)
+- `+ #color` — color tint overlay
+
+Height groups create topological layers:
+```
+0m:
+  * t(0,0): grass
+  * t(1,0): water
+100m:
+  * t(2,0): mountain[rocky]
+```
+
+### Adapted syntax for `rpg map`
+
+The `rpg map` block extends the hex-map-editor syntax with:
+- Square grid support (`grid: square`)
+- Entity token placement using Lonelog tags (`[PC:Name]`, `[N:Name]`)
+- Step-by-step move replay
+- YAML header separated from map body by `---`
+
+#### Hex grid example
 
 ~~~markdown
 ```rpg map
 state_key: goblin-ambush-map
 grid: hex
-orientation: flat  # flat (default) or pointy
-size: 10           # cells across
-theme: forest
-legend:
-  T: { terrain: tree, color: "#2d5a1b" }
-  W: { terrain: water, color: "#1a4a7a" }
-  R: { terrain: road, color: "#8a7a5a" }
-  .: { terrain: grass, color: "#3a7a2a" }
+pack: svg
+title: "The Goblin Ambush"
 ---
-0101 T
-0102 .
-0103 R
-0104 .
-0201 T
-0202 . [PC:Elara]
-0203 R
-0204 W
-0301 .
-0302 . [N:Goblin#1]
-0303 R [N:Goblin Boss]
-0304 W
+0m:
+  * t(0,0): forest
+  * t(1,0): grass
+  * t(2,0): grass [PC:Elara]
+  * t(0,1): grass
+  * t(1,1): (Bridge) grass + #8a7a5a
+  * t(2,1): grass [N:Goblin#1]
+  * t(0,2): water
+  * t(1,2): water
+  * t(2,2): forest [N:Goblin Boss]
+
+  * s(1,1): (Watchtower) stone + #654321
+  * p(0,1): roads[clean]
+  * p(1,1): roads[clean]
 ```
 ~~~
 
-Square grid version:
+#### Square grid example
 
 ~~~markdown
 ```rpg map
 state_key: dungeon-room-1
 grid: square
 size: 8x6
-theme: dungeon
+title: "Dungeon Entrance"
 legend:
-  "#": { terrain: wall, color: "#444" }
-  ".": { terrain: floor, color: "#888" }
-  D: { terrain: door, color: "#a0522d" }
+  "#": { terrain: stone, color: "#444" }
+  ".": { terrain: grass, color: "#888" }
+  D: { terrain: stone, color: "#a0522d" }
+  ~: { terrain: water, color: "#2196F3" }
 ---
 # # # # D # # #
 # . . . . . . #
 # . . . . . . #
-# . . . . . . #
+# . . ~ ~ . . #
 # . . . . . . #
 # # # # # # # #
 
@@ -984,43 +1010,43 @@ tokens:
 ```
 ~~~
 
+The hex grid uses the existing hex-map-editor syntax (axial coordinates, terrain/stack/path layers, packs, variants, height groups). The square grid uses a simpler character-based layout with a legend, plus a `tokens:` section for entity placement.
+
 ### Entity tokens on the map
 
-Entities are placed using the same Lonelog tag syntax:
+Entities are placed using Lonelog tag syntax, either inline on a hex cell or in a `tokens:` section:
 - `[PC:Name]` — player character token
 - `[N:Name]` — NPC/monster token
 - Tokens link to entity files (same resolution as session log)
-- Clicking a token could open a tooltip with entity summary (HP, AC, conditions)
+- Clicking a token opens a tooltip with entity summary (HP, AC, conditions)
 
 ### Step-by-step replay
 
-Maps can include a **moves** section that defines sequential state changes. The UI renders a step slider/buttons to walk through the moves:
+Maps can include a **moves** section for sequential state changes. The UI renders step controls to walk through:
 
 ~~~markdown
 ```rpg map
 state_key: ambush-replay
 grid: hex
-size: 8
-legend:
-  .: { terrain: grass }
-  T: { terrain: tree }
+pack: svg
 ---
-0101 T
-0202 . [PC:Elara]
-0303 . [N:Goblin#1]
-0404 . [PC:Thorne]
+0m:
+  * t(0,0): forest
+  * t(1,0): grass [PC:Elara]
+  * t(2,0): grass [N:Goblin#1]
+  * t(3,0): grass [PC:Thorne]
 
 moves:
   - step: 1
     label: "Elara sneaks forward"
-    move: [PC:Elara] 0202 -> 0302
+    move: [PC:Elara] (1,0) -> (2,0)
   - step: 2
     label: "Goblin spots Thorne"
-    move: [N:Goblin#1] 0303 -> 0403
+    move: [N:Goblin#1] (2,0) -> (3,0)
     note: "@ Goblin attacks Thorne"
   - step: 3
     label: "Elara flanks"
-    move: [PC:Elara] 0302 -> 0303
+    move: [PC:Elara] (2,0) -> (2,1)
     add: [N:Goblin#1|HP-8]
     note: "d: d20+7=19 vs AC 15 -> Hit, 8 slashing"
 ```
@@ -1035,28 +1061,51 @@ The UI shows:
 
 ### Integration with session log
 
-When a `rpg log` block references entities and includes combat, a `rpg map` block in the same file can visualize the positions. The connection is implicit via shared entity tags — if `[PC:Elara]` appears in both the log and the map, they refer to the same entity.
+When a `rpg log` block references entities and includes combat, a `rpg map` block in the same file can visualize positions. The connection is implicit via shared entity tags — if `[PC:Elara]` appears in both the log and the map, they refer to the same entity.
 
 Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a linked map block.
 
 ### Rendering
 
-- **SVG-based** — renders as inline SVG for crisp scaling and easy styling
-- Hex cells rendered as `<polygon>` elements with fill from terrain legend
-- Square cells rendered as `<rect>` elements
-- Entity tokens rendered as labeled circles/icons overlaid on cells
+- **SVG-based** — renders as inline SVG for crisp scaling (same approach as hex-map-editor)
+- Hex cells: flat-top hexagons using axial coordinate → pixel position math
+- Terrain: pattern fills from terrain packs (SVG patterns embedded, or simplified color fills)
+- Three-layer rendering: terrain (bottom) → stack (middle) → path (top), same z-ordering as hex-map-editor
+- Height groups: higher altitude renders on top
+- Square cells: `<rect>` elements with character-based layout
+- Entity tokens: labeled circles/icons overlaid on cells
 - CSS variables for theming (uses the plugin's existing color system)
 - Responsive — scales to container width
+
+### What to port from hex-map-editor
+
+| Component | Source | Action |
+|---|---|---|
+| Parser | `src/lib/hexmap-parser.ts` | Port to `lib/domains/battlemap/hex-parser.ts`, adapt for `rpg map` header |
+| Types | `src/lib/types.ts` | Port `HexCell`, `HexMap`, `ParsedContent` interfaces |
+| Hex geometry | `src/components/HexGrid.tsx` | Extract coordinate math into `hex-grid.ts`, port SVG renderer to React component |
+| Terrain loader | `src/lib/terrain-loader.ts` | Simplify — embed SVG patterns or use color fills instead of external image packs |
+| Pack config | `src/lib/pack-config.ts` | Port display config (zoom, offset) for terrain types |
+| Fallback patterns | `HexGrid.tsx` fallbacks | Port SVG pattern defs for water, forest, mountain, grass, etc. |
+
+### What NOT to port
+- External WebP/PNG image assets (too heavy for an Obsidian plugin — use SVG patterns and color fills)
+- The editor UI (TextEditor, tabs) — the code block IS the editor
+- Vite-specific asset loading (`import.meta.glob`) — assets will be embedded
 
 ### Implementation
 
 - **Domain** (`lib/domains/battlemap/`):
-  - `parser.ts` — Parse map syntax (header + grid coordinates + tokens + moves)
-  - `hex-grid.ts` — Hex coordinate math (axial coordinates, pixel positions, neighbors)
+  - `hex-parser.ts` — Ported hex-map-editor parser, adapted for `rpg map` header + entity tokens
+  - `hex-parser.test.ts` — Parser tests
+  - `square-parser.ts` — New parser for character-based square grid layout
+  - `hex-grid.ts` — Hex coordinate math (axial → pixel, neighbors), ported from HexGrid.tsx
   - `square-grid.ts` — Square coordinate math
-  - `replay.ts` — Step-through state machine for moves
+  - `replay.ts` — Step-through state machine for moves section
+  - `terrain-patterns.ts` — Embedded SVG pattern definitions for terrain types
 - **Component** (`lib/components/battlemap/`):
-  - `map-renderer.tsx` — SVG rendering for hex and square grids
+  - `hex-renderer.tsx` — SVG hex grid renderer (ported from HexGrid.tsx)
+  - `square-renderer.tsx` — SVG square grid renderer
   - `token.tsx` — Entity token overlay with tooltip
   - `step-controls.tsx` — Replay step slider/buttons
   - `legend.tsx` — Map legend display
@@ -1065,12 +1114,14 @@ Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a
 
 ### Key features
 - **Text-based maps** — define maps in plain text, version-controllable, readable without the plugin
+- **Hex-map-editor syntax** — ported from existing project, proven syntax with terrain/stack/path layers
 - **Hex and square grids** — two grid types covering most TTRPG needs
+- **Height groups** — topological layering for elevation
+- **Terrain variants** — `forest[snowy]`, `mountain[rocky]`, seeded randomization for consistency
 - **Step-by-step replay** — walk through combat moves with a slider
 - **Entity integration** — tokens use the same `[PC:]`/`[N:]` tags as Lonelog
 - **SVG rendering** — crisp at any zoom, themeable via CSS variables
 - **Static by design** — shows what happened, not a live VTT; complements the session log
-- **Portable syntax** — adapted from hex-map-editor (syntax details TBD pending repo review)
 
 ---
 
@@ -1110,14 +1161,15 @@ All existing character sheets continue working — D&D 5e is the default.
 The log block depends on inventory, features, and system abstraction being in place first — it reads entity data across files through those layers. The Lonelog parser itself (steps 13-14) has no dependencies and can be developed in parallel with Phase 2/3.
 
 ### Phase 5 — Battle Maps
-20. Port hex-map-editor syntax parser and adapt for `rpg map` block (syntax details TBD pending repo review)
-21. Implement hex grid math (axial coordinates, pixel positions)
-22. Implement square grid math
-23. Build SVG map renderer component (terrains, legend, tokens)
-24. Implement step-by-step replay (moves parser, state machine, step controls)
-25. Wire entity tokens to entity resolver (shared `[PC:]`/`[N:]` tags with Lonelog)
+20. Port hex-map-editor parser (`hexmap-parser.ts`) → `lib/domains/battlemap/hex-parser.ts`, extend with `rpg map` YAML header + entity token parsing
+21. Port hex geometry from `HexGrid.tsx` → `hex-grid.ts` (axial → pixel, flat-top layout, z-ordering)
+22. Create embedded SVG terrain patterns (`terrain-patterns.ts`) — simplified from hex-map-editor's image packs
+23. Port SVG hex renderer from `HexGrid.tsx` → `hex-renderer.tsx` (three-layer terrain/stack/path rendering)
+24. Implement square grid parser + renderer (new, character-based layout with legend)
+25. Implement step-by-step replay (moves parser, state machine, step controls)
+26. Wire entity tokens to entity resolver (shared `[PC:]`/`[N:]` tags with Lonelog)
 
-The map renderer itself (steps 20-23) has minimal dependencies — it can be built alongside Phase 4. Step 25 requires the entity resolver from Phase 4.
+The hex parser/renderer port (steps 20-23) has no dependencies and can be built in parallel with Phase 4. Step 26 requires the entity resolver from Phase 4.
 
 ---
 
@@ -1151,15 +1203,19 @@ lib/
 │       ├── scene-header.tsx   # Scene marker with variant styles
 │       └── tag-pill.tsx       # Inline tag rendering (NPC, Location, etc.)
 ├── domains/battlemap/
-│   ├── parser.ts             # Parse map syntax (header + grid + tokens + moves)
-│   ├── hex-grid.ts           # Hex coordinate math (axial, pixel positions, neighbors)
-│   ├── square-grid.ts        # Square coordinate math
-│   └── replay.ts             # Step-through state machine for moves
+│   ├── hex-parser.ts          # Ported hex-map-editor parser + entity tokens
+│   ├── hex-parser.test.ts     # Hex parser tests
+│   ├── square-parser.ts       # Character-based square grid parser
+│   ├── hex-grid.ts            # Hex coordinate math (axial → pixel, neighbors)
+│   ├── square-grid.ts         # Square coordinate math
+│   ├── replay.ts              # Step-through state machine for moves
+│   └── terrain-patterns.ts    # Embedded SVG pattern defs for terrain types
 ├── components/battlemap/
-│   ├── map-renderer.tsx       # SVG rendering for hex and square grids
-│   ├── token.tsx              # Entity token overlay with tooltip
-│   ├── step-controls.tsx      # Replay step slider/buttons
-│   └── legend.tsx             # Map legend display
+│   ├── hex-renderer.tsx        # SVG hex grid renderer (ported from HexGrid.tsx)
+│   ├── square-renderer.tsx     # SVG square grid renderer
+│   ├── token.tsx               # Entity token overlay with tooltip
+│   ├── step-controls.tsx       # Replay step slider/buttons
+│   └── legend.tsx              # Map legend display
 ├── views/
 │   ├── InventoryView.tsx      # Inventory code block processor
 │   ├── FeaturesView.tsx       # Features code block processor
