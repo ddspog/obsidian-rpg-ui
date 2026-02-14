@@ -74,12 +74,14 @@ categories:
     features:
       - name: "Arcane Recovery"
         level: 1
+        type: active
         description: "Recover spell slots on short rest. Slots = {{ceil (divide level 2)}}."
         reset_on: short-rest
         uses: 1
         state_key: arcane-recovery
       - name: "Spell Mastery"
         level: 18
+        type: passive
         description: "Choose a 1st and 2nd level spell to cast at will."
 
   - name: "Subclass: School of Evocation"
@@ -89,15 +91,19 @@ categories:
     features:
       - name: "Sculpt Spells"
         level: 2
+        type: passive
         description: "Protect allies from your evocation spells."
       - name: "Potent Cantrip"
         level: 6
+        type: passive
         description: "Cantrips deal half damage on successful save."
       - name: "Empowered Evocation"
         level: 10
+        type: passive
         description: "Add Intelligence modifier to evocation spell damage."
       - name: "Overchannel"
         level: 14
+        type: active
         requires:
           feature: "Potent Cantrip"
         description: "Deal max damage with a spell of 5th level or lower."
@@ -256,6 +262,53 @@ categories:
 
 ---
 
+## Feature Types Showcase
+
+This test demonstrates all D&D 5e feature types:
+
+```rpg features
+state_key: test-feature-types
+class: "Fighter"
+categories:
+  - name: "Action Types"
+    icon: "⚔️"
+    features:
+      - name: "Attack"
+        level: 1
+        type: action
+        description: "Make a weapon attack."
+      - name: "Second Wind"
+        level: 1
+        type: bonus_action
+        description: "Regain 1d10 + fighter level HP."
+        uses: 1
+        reset_on: short-rest
+      - name: "Opportunity Attack"
+        level: 1
+        type: reaction
+        description: "Attack when enemy leaves reach."
+      - name: "Fighting Style"
+        level: 1
+        type: passive
+        description: "Choose a fighting style benefit."
+      - name: "Action Surge"
+        level: 2
+        type: active
+        description: "Take one additional action on your turn."
+        uses: 1
+        reset_on: short-rest
+```
+
+**Expected Display:**
+- Each feature should show its type badge with icon:
+  - ⚔️ Action
+  - ⚡ Bonus Action
+  - 🛡️ Reaction
+  - 👁️ Passive
+  - ✨ Active
+
+---
+
 ## What to Check
 
 ✅ **Class Header**
@@ -269,6 +322,7 @@ categories:
 
 ✅ **Features**
 - Feature names are displayed
+- **Feature types display with icon and label** (e.g., "⚔️ Action", "⚡ Bonus Action")
 - Level badges show when feature has a level requirement
 - Descriptions are readable and can contain templates
 - Limited use counts display (e.g., "1 use")

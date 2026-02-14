@@ -5,7 +5,7 @@
  * This is the default system when no custom system is assigned.
  */
 
-import { EntityTypeDef, ExpressionDef, RPGSystem, SkillDefinition } from "./types";
+import { EntityTypeDef, ExpressionDef, FeatureTypeDefinition, RPGSystem, SkillDefinition } from "./types";
 
 /**
  * D&D 5e ability names
@@ -42,6 +42,17 @@ const DND5E_SKILLS: SkillDefinition[] = [
   { label: "Sleight of Hand", attribute: "dexterity" },
   { label: "Stealth", attribute: "dexterity" },
   { label: "Survival", attribute: "wisdom" },
+];
+
+/**
+ * D&D 5e feature types
+ */
+const DND5E_FEATURE_TYPES: FeatureTypeDefinition[] = [
+  { id: "action", label: "Action", icon: "⚔️" },
+  { id: "bonus_action", label: "Bonus Action", icon: "⚡" },
+  { id: "reaction", label: "Reaction", icon: "🛡️" },
+  { id: "passive", label: "Passive", icon: "👁️" },
+  { id: "active", label: "Active", icon: "✨" },
 ];
 
 /**
@@ -127,4 +138,5 @@ export const DND5E_SYSTEM: RPGSystem = {
     ["saving_throw", savingThrowExpression],
     ["skill_modifier", skillModifierExpression],
   ]),
+  featureTypes: DND5E_FEATURE_TYPES,
 };

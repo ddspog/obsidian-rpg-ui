@@ -17,6 +17,7 @@ export class FeaturesView extends BaseView {
   public codeblock = "features";
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
+    const system = this.getSystem(ctx);
     const featuresBlock = FeaturesService.parseFeaturesBlock(source);
 
     const fc = useFileContext(this.app, ctx);
@@ -69,6 +70,7 @@ export class FeaturesView extends BaseView {
         level,
         attributes,
         availableFeatures: availableFeatureNames,
+        system,
       })
     );
   }

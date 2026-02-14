@@ -75,6 +75,22 @@
   color: var(--text-normal);
 }
 
+.rpg-feature-type {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.rpg-feature-type-icon {
+  font-size: 0.875rem;
+}
+
 .rpg-feature-level {
   font-size: 0.75rem;
   padding: 0.125rem 0.5rem;
