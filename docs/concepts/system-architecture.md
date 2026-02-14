@@ -87,23 +87,37 @@ The `providers` and `collectors` arrays define which entity types participate in
 
 ### Entity Type Definitions
 
-Each entity type in `entities` is simply an array of frontmatter field definitions:
+Each entity type in `entities` has two parts: frontmatter field definitions and default features:
 
 ```typescript
 entities: {
-  character: [
-    { name: "proficiency_bonus", type: "number", default: 2 },
-    { name: "level", type: "number", default: 1 }
-  ],
-  class: [
-    { name: "hit_die", type: "string", default: "d8" }
-  ],
-  race: [
-    { name: "size", type: "string", default: "medium" },
-    { name: "speed", type: "number", default: 30 }
-  ]
+  character: {
+    frontmatter: [
+      { name: "proficiency_bonus", type: "number", default: 2 },
+      { name: "level", type: "number", default: 1 }
+    ],
+    features: [
+      { name: "Dash", type: "action", description: "Double your speed..." },
+      { name: "Opportunity Attack", type: "reaction", description: "..." }
+    ]
+  },
+  class: {
+    frontmatter: [
+      { name: "hit_die", type: "string", default: "d8" }
+    ]
+  },
+  race: {
+    frontmatter: [
+      { name: "size", type: "string", default: "medium" },
+      { name: "speed", type: "number", default: 30 }
+    ]
+  }
 }
 ```
+
+**Frontmatter fields** define the data structure for notes of that entity type.
+
+**Default features** (optional) define features available to all entities of that type. For example, in D&D 5e, all characters can Dash, Dodge, and make Opportunity Attacks. These default features are automatically available without needing to be defined in individual character notes.
 
 Entity roles (provider vs collector) are defined in the `features.providers` and `features.collectors` arrays, not in the entity definitions themselves.
 
