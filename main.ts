@@ -8,6 +8,11 @@ import { BadgesView, StatsView } from "lib/views/BadgesView";
 import { InitiativeView } from "lib/views/InitiativeView";
 import { SpellComponentsView } from "lib/views/SpellComponentsView";
 import { EventButtonsView } from "lib/views/EventButtonsView";
+import { SystemDefinitionView } from "lib/views/SystemDefinitionView";
+import { ExpressionDefinitionView } from "lib/views/ExpressionDefinitionView";
+import { SkillListDefinitionView } from "lib/views/SkillListDefinitionView";
+import { InventoryView } from "lib/views/InventoryView";
+import { FeaturesView } from "lib/views/FeaturesView";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
@@ -89,6 +94,15 @@ export default class DndUIToolkitPlugin extends Plugin {
       new HealthView(app, kv),
       new ConsumableView(app, kv),
       new InitiativeView(app, kv),
+
+      // New blocks
+      new InventoryView(app),
+      new FeaturesView(app),
+
+      // Definition blocks (parse-only, no UI)
+      new SystemDefinitionView(app),
+      new ExpressionDefinitionView(app),
+      new SkillListDefinitionView(app),
     ];
 
     // Build a map of meta -> view for dispatch
