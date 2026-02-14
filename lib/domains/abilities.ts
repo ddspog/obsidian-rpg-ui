@@ -8,7 +8,11 @@ export function parseAbilityBlockFromDocument(el: HTMLElement, ctx: MarkdownPost
   const sectionInfo = ctx.getSectionInfo(el);
   const documentText = sectionInfo?.text || "";
 
-  const abilityContent = extractFirstCodeBlock(documentText, "ability");
+  // Try new format first (rpg attributes), then fall back to old format (ability)
+  let abilityContent = extractFirstCodeBlock(documentText, "rpg attributes");
+  if (!abilityContent) {
+    abilityContent = extractFirstCodeBlock(documentText, "ability");
+  }
 
   if (!abilityContent) {
     throw new Error("No ability code blocks found");

@@ -3,17 +3,21 @@ import { stripCalloutMarkers } from "./callout";
 /**
  * Extracts code blocks of a specific type from text.
  * Handles callout markers automatically.
+ * Supports both old format (e.g., "ability") and new format (e.g., "rpg attributes").
  *
  * @param text - The text to search for code blocks
- * @param blockType - The type of code block to extract (e.g., "ability", "skills")
+ * @param blockType - The type of code block to extract (e.g., "ability", "skills", or "rpg attributes", "rpg skills")
  * @returns Array of code block contents (without the backticks and type)
  */
 export function extractCodeBlocks(text: string, blockType: string): string[] {
   // Strip callout markers first
   const cleanedText = stripCalloutMarkers(text);
 
+  // Escape special regex characters in blockType
+  const escapedBlockType = blockType.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   // Create regex pattern for the specific code block type
-  const pattern = new RegExp(`\\\`\\\`\\\`${blockType}[\\s\\S]*?\\\`\\\`\\\``, "g");
+  const pattern = new RegExp(`\\\`\\\`\\\`${escapedBlockType}[\\s\\S]*?\\\`\\\`\\\``, "g");
   const matches = cleanedText.match(pattern);
 
   if (!matches) {
@@ -23,7 +27,7 @@ export function extractCodeBlocks(text: string, blockType: string): string[] {
   // Extract content from each match
   return matches.map((match) => {
     // Remove the backticks and block type
-    return match.replace(new RegExp(`\\\`\\\`\\\`${blockType}|\\\`\\\`\\\``, "g"), "").trim();
+    return match.replace(new RegExp(`\\\`\\\`\\\`${escapedBlockType}|\\\`\\\`\\\``, "g"), "").trim();
   });
 }
 

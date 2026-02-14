@@ -97,7 +97,11 @@ export function createTemplateContext(el: HTMLElement, fileContext: FileContext)
     const sectionInfo = fileContext.md().getSectionInfo(el);
     const documentText = sectionInfo?.text || "";
 
-    const skillsContent = extractFirstCodeBlock(documentText, "skills");
+    // Try new format first (rpg skills), then fall back to old format (skills)
+    let skillsContent = extractFirstCodeBlock(documentText, "rpg skills");
+    if (!skillsContent) {
+      skillsContent = extractFirstCodeBlock(documentText, "skills");
+    }
 
     if (skillsContent) {
       skills = parseSkillsBlock(skillsContent);

@@ -88,6 +88,65 @@ skills: test
       expect(blocks).toHaveLength(1);
       expect(blocks[0]).toBe("");
     });
+
+    it("should extract rpg meta blocks with single word meta", () => {
+      const text = `Some text
+\`\`\`rpg attributes
+strength: 10
+dexterity: 12
+\`\`\``;
+
+      const blocks = extractCodeBlocks(text, "rpg attributes");
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toBe("strength: 10\ndexterity: 12");
+    });
+
+    it("should extract multiple rpg meta blocks", () => {
+      const text = `First block:
+\`\`\`rpg skills
+proficiencies:
+  - Stealth
+\`\`\`
+
+Second block:
+\`\`\`rpg skills
+proficiencies:
+  - Perception
+\`\`\``;
+
+      const blocks = extractCodeBlocks(text, "rpg skills");
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0]).toBe("proficiencies:\n  - Stealth");
+      expect(blocks[1]).toBe("proficiencies:\n  - Perception");
+    });
+
+    it("should extract rpg blocks from callouts", () => {
+      const text = `> \`\`\`rpg attributes
+> strength: 15
+> \`\`\``;
+
+      const blocks = extractCodeBlocks(text, "rpg attributes");
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toBe("strength: 15");
+    });
+
+    it("should only extract rpg blocks with matching meta", () => {
+      const text = `\`\`\`rpg attributes
+str: 10
+\`\`\`
+
+\`\`\`rpg skills
+stealth: 5
+\`\`\``;
+
+      const attrBlocks = extractCodeBlocks(text, "rpg attributes");
+      expect(attrBlocks).toHaveLength(1);
+      expect(attrBlocks[0]).toBe("str: 10");
+
+      const skillBlocks = extractCodeBlocks(text, "rpg skills");
+      expect(skillBlocks).toHaveLength(1);
+      expect(skillBlocks[0]).toBe("stealth: 5");
+    });
   });
 
   describe("extractFirstCodeBlock", () => {

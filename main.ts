@@ -74,7 +74,7 @@ export default class DndUIToolkitPlugin extends Plugin {
     const kv = new KeyValueStore(this.dataStore);
     const { app } = this;
 
-    // In your plugin's onload method
+    // Create view registry with meta-based keys
     const views: BaseView[] = [
       // Static
       new StatsView(app),
@@ -90,10 +90,59 @@ export default class DndUIToolkitPlugin extends Plugin {
       new InitiativeView(app, kv),
     ];
 
+    // Build a map of meta -> view for dispatch
+    const viewRegistry = new Map<string, BaseView>();
     for (const view of views) {
-      // Use an arrow function to preserve the 'this' context
-      this.registerMarkdownCodeBlockProcessor(view.codeblock, (source, el, ctx) => {
+      viewRegistry.set(view.codeblock, view);
+    }
+
+    // Register single "rpg" code block processor with meta dispatch
+    this.registerMarkdownCodeBlockProcessor("rpg", (source, el, ctx) => {
+      // Extract meta from the fence line
+      const sectionInfo = ctx.getSectionInfo(el);
+      if (!sectionInfo) {
+        el.innerHTML = '<div class="notice">Error: Unable to extract code block info</div>';
+        return;
+      }
+
+      const lines = sectionInfo.text.split("\n");
+      const fenceLine = lines[sectionInfo.lineStart] || "";
+      const metaMatch = fenceLine.match(/^```rpg\s+(.+)$/);
+
+      if (!metaMatch || !metaMatch[1]) {
+        el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., ```rpg attributes)</div>';
+        return;
+      }
+
+      const meta = metaMatch[1].trim();
+      const view = viewRegistry.get(meta);
+
+      if (view) {
         view.register(source, el, ctx);
+      } else {
+        el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
+      }
+    });
+
+    // Keep backward compatibility: register old block types that redirect to views
+    const legacyMappings: { [key: string]: string } = {
+      ability: "attributes",
+      skills: "skills",
+      healthpoints: "healthpoints",
+      stats: "stats",
+      badges: "badges",
+      consumable: "consumable",
+      initiative: "initiative",
+      "spell-components": "spell",
+      "event-btns": "events",
+    };
+
+    for (const [oldType, meta] of Object.entries(legacyMappings)) {
+      this.registerMarkdownCodeBlockProcessor(oldType, (source, el, ctx) => {
+        const view = viewRegistry.get(meta);
+        if (view) {
+          view.register(source, el, ctx);
+        }
       });
     }
 
