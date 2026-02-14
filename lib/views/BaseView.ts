@@ -1,5 +1,7 @@
 import { MarkdownPostProcessorContext } from "obsidian";
 import { App } from "obsidian";
+import { SystemRegistry } from "lib/systems/registry";
+import { RPGSystem } from "lib/systems/types";
 
 /**
  * BaseView handles the basic registration of components and creates consistent logic for rendering.
@@ -10,9 +12,19 @@ import { App } from "obsidian";
 export abstract class BaseView {
   public app: App;
   public abstract codeblock: string;
+  protected systemRegistry: SystemRegistry;
 
   constructor(app: App) {
     this.app = app;
+    this.systemRegistry = SystemRegistry.getInstance();
+  }
+
+  /**
+   * Get the RPG system for the current file context
+   */
+  protected getSystem(ctx: MarkdownPostProcessorContext): RPGSystem {
+    const filePath = ctx.sourcePath;
+    return this.systemRegistry.getSystemForFile(filePath);
   }
 
   // Changed return type from string to HTMLElement or void
