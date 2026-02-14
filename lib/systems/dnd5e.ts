@@ -56,9 +56,10 @@ const DND5E_FEATURE_TYPES: FeatureTypeDefinition[] = [
 ];
 
 /**
- * Character type definition for D&D 5e
+ * Character type definition for D&D 5e (collector)
  */
 const DND5E_CHARACTER_TYPE: EntityTypeDef = {
+  role: "collector",
   fields: [
     {
       name: "proficiency_bonus",
@@ -69,6 +70,53 @@ const DND5E_CHARACTER_TYPE: EntityTypeDef = {
       name: "level",
       type: "number",
       default: 1,
+    },
+  ],
+};
+
+/**
+ * Class type definition for D&D 5e (provider)
+ */
+const DND5E_CLASS_TYPE: EntityTypeDef = {
+  role: "provider",
+  fields: [
+    {
+      name: "hit_die",
+      type: "string",
+      default: "d8",
+    },
+  ],
+};
+
+/**
+ * Race type definition for D&D 5e (provider)
+ */
+const DND5E_RACE_TYPE: EntityTypeDef = {
+  role: "provider",
+  fields: [
+    {
+      name: "size",
+      type: "string",
+      default: "medium",
+    },
+    {
+      name: "speed",
+      type: "number",
+      default: 30,
+    },
+  ],
+};
+
+/**
+ * Monster type definition for D&D 5e (collector)
+ */
+const DND5E_MONSTER_TYPE: EntityTypeDef = {
+  role: "collector",
+  fields: [
+    {
+      name: "cr",
+      type: "number",
+      default: 0,
     },
   ],
 };
@@ -131,6 +179,9 @@ export const DND5E_SYSTEM: RPGSystem = {
   attributes: DND5E_ATTRIBUTES,
   types: {
     character: DND5E_CHARACTER_TYPE,
+    class: DND5E_CLASS_TYPE,
+    race: DND5E_RACE_TYPE,
+    monster: DND5E_MONSTER_TYPE,
   },
   skills: DND5E_SKILLS,
   expressions: new Map([
@@ -139,4 +190,6 @@ export const DND5E_SYSTEM: RPGSystem = {
     ["skill_modifier", skillModifierExpression],
   ]),
   featureTypes: DND5E_FEATURE_TYPES,
+  featureProviders: ["class", "race"],
+  featureCollectors: ["character", "monster"],
 };

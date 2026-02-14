@@ -1,0 +1,127 @@
+# System Architecture
+
+The RPG UI Toolkit uses a flexible system abstraction layer that allows multiple RPG systems (D&D 5e, Fate, etc.) to be supported with their own rules and mechanics.
+
+## Overview
+
+A **system** defines:
+- Core attributes (e.g., Strength, Dexterity for D&D 5e)
+- Skills and their attribute associations
+- Mathematical expressions for calculations
+- Feature types and their display order
+- Entity types (character, class, race, monster, etc.)
+- Provider/Collector relationships for features
+
+## Feature Provider/Collector Pattern
+
+The system uses a provider/collector pattern to manage features across different entity types:
+
+### Feature Collectors
+
+**Collectors** are entity types that **receive and display** features from other files. Examples:
+- `character` - Player characters
+- `monster` - NPCs and creatures
+
+A character note automatically collects features from:
+- Their class (based on frontmatter `class` field)
+- Their race (based on frontmatter `race` field)
+- Direct features defined in the character's own `rpg features` block
+
+### Feature Providers
+
+**Providers** are entity types that **define features to pass on** to collectors. Examples:
+- `class` - D&D classes (Fighter, Wizard, etc.)
+- `race` - D&D races (Human, Elf, etc.)
+
+A class note defines features that characters of that class will receive, often with level requirements.
+
+### Example Flow
+
+```
+Fighter.md (class provider)
+├─ rpg features
+│  └─ Second Wind (level 1, type: bonus_action)
+│  └─ Action Surge (level 2, type: active)
+│  └─ Extra Attack (level 5, type: passive)
+
+Human.md (race provider)
+├─ rpg features
+│  └─ Extra Language (no level requirement)
+│  └─ Versatile (+1 to all abilities)
+
+Conan.md (character collector)
+├─ frontmatter: class: Fighter, race: Human, level: 5
+└─ Displays all features:
+   - Second Wind (from Fighter)
+   - Action Surge (from Fighter)
+   - Extra Attack (from Fighter)
+   - Extra Language (from Human)
+   - Versatile (from Human)
+```
+
+## System Definition
+
+In the system configuration (`lib/systems/dnd5e.ts` for D&D 5e), you define:
+
+### Feature Types (with ordering)
+
+```typescript
+featureTypes: [
+  { id: "action", label: "Action", icon: "⚔️" },
+  { id: "bonus_action", label: "Bonus Action", icon: "⚡" },
+  { id: "reaction", label: "Reaction", icon: "🛡️" },
+  { id: "passive", label: "Passive", icon: "👁️" },
+  { id: "active", label: "Active", icon: "✨" },
+]
+```
+
+**The order in this array determines the display order** when features are grouped by type.
+
+### Feature Providers and Collectors
+
+```typescript
+featureProviders: ["class", "race"],
+featureCollectors: ["character", "monster"],
+```
+
+### Entity Type Roles
+
+Each entity type in `types` can have a `role` field:
+
+```typescript
+types: {
+  character: {
+    role: "collector",
+    fields: [ /* frontmatter fields */ ]
+  },
+  class: {
+    role: "provider",
+    fields: [ /* frontmatter fields */ ]
+  },
+  race: {
+    role: "provider",
+    fields: [ /* frontmatter fields */ ]
+  }
+}
+```
+
+## Phase 2 vs Phase 3
+
+**Phase 2 (Current):**
+- System defined in code (`lib/systems/dnd5e.ts`)
+- D&D 5e is the only built-in system
+- All files use D&D 5e system
+
+**Phase 3 (Future):**
+- Systems defined in markdown files using `rpg system` blocks
+- Multiple systems can coexist
+- Folder-based system assignment
+- Custom systems without code changes
+
+## Benefits
+
+1. **Separation of Concerns**: Features are defined where they logically belong (class notes, race notes)
+2. **Reusability**: Multiple characters can reference the same class/race notes
+3. **Maintainability**: Update a class feature once, all characters of that class see the change
+4. **Extensibility**: Easy to add new provider types (backgrounds, feats, magic items)
+5. **Flexibility**: Works with any RPG system, not just D&D 5e
