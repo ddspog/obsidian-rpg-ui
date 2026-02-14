@@ -8,7 +8,7 @@ import { useFileContext } from "./filecontext";
 import { msgbus } from "lib/services/event-bus";
 
 export class AbilityScoreView extends BaseView {
-  public codeblock = "ability";
+  public codeblock = "attributes";
 
   public render(source: string, __: HTMLElement, ctx: MarkdownPostProcessorContext): string {
     const abilityBlock = AbilityService.parseAbilityBlock(source);

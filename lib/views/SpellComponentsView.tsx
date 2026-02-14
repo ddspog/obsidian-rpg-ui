@@ -6,7 +6,7 @@ import { SpellComponentsBlock } from "lib/types";
 import { parse } from "yaml";
 
 export class SpellComponentsView extends BaseView {
-  public codeblock = "spell-components";
+  public codeblock = "spell";
 
   public render(source: string, __: HTMLElement, _: MarkdownPostProcessorContext): string {
     const parsed = parse(source);

@@ -8,7 +8,7 @@ import * as ReactDOM from "react-dom/client";
 import { msgbus } from "lib/services/event-bus";
 
 export class EventButtonsView extends BaseView {
-  public codeblock = "event-btns";
+  public codeblock = "events";
 
   constructor(app: App) {
     super(app);
