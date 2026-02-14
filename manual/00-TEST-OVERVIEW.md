@@ -21,6 +21,8 @@ Phase 1 migrates all code block types to a unified `rpg` namespace. Both old and
 - **Old format**: `` ```consumable ``
 - **New format**: `` ```rpg consumable ``
 
+Phase 2 adds system abstraction and new blocks for inventory and features.
+
 ## Test Files
 
 0. **00-BUILD-VERIFICATION.md** - ⚠️ **START HERE** - Verify plugin build and loading
@@ -34,6 +36,8 @@ Phase 1 migrates all code block types to a unified `rpg` namespace. Both old and
 8. **08-TEST-SPELL.md** - Test spell components
 9. **09-TEST-EVENTS.md** - Test event buttons
 10. **10-TEST-ALL-BLOCKS.md** - Complete character sheet test
+11. **11-TEST-INVENTORY.md** - ✨ **NEW** - Test inventory block (Phase 2)
+12. **12-TEST-FEATURES.md** - ✨ **NEW** - Test features block (Phase 2)
 
 ## How to Test
 
@@ -79,3 +83,5 @@ If a block doesn't render:
 | `initiative` | `rpg initiative` | Initiative |
 | `spell-components` | `rpg spell` | Spell Info |
 | `event-btns` | `rpg events` | Event Buttons |
+| _(none)_ | `rpg inventory` | ✨ **NEW** - Inventory (Phase 2) |
+| _(none)_ | `rpg features` | ✨ **NEW** - Features (Phase 2) |
