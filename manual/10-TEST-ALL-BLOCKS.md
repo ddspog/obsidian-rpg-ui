@@ -1,7 +1,7 @@
 # Test 10: Complete Character Sheet
 
 ## Test Objective
-Verify all block types work together in a complete character sheet using the new `rpg` namespace.
+Verify all block types work together in a complete character sheet using the new `rpg` namespace, including Phase 2 inventory and features blocks.
 
 ## Test Steps
 
@@ -95,6 +95,68 @@ somatic: true
 material: true
 ```
 
+```rpg inventory
+state_key: complete_test_inventory
+currency:
+  gold: 125
+  silver: 45
+  copper: 18
+sections:
+  - name: "Equipped"
+    items:
+      - name: "Rapier +1"
+        weight: 2
+        quantity: 1
+        tags: [weapon, magical, finesse]
+        description: "+1 to attack and damage rolls"
+      - name: "Studded Leather Armor"
+        weight: 13
+        quantity: 1
+        tags: [armor, light]
+  - name: "Backpack"
+    items:
+      - name: "Thieves' Tools"
+        weight: 1
+        quantity: 1
+        tags: [tool]
+      - name: "Healing Potion"
+        weight: 0.5
+        quantity: 2
+        tags: [potion, consumable]
+encumbrance:
+  capacity: "{{multiply strength 15}}"
+```
+
+```rpg features
+state_key: complete_test_features
+class: "Rogue"
+categories:
+  - name: "Class Features"
+    icon: "⚔️"
+    features:
+      - name: "Sneak Attack"
+        level: 1
+        description: "Deal extra 3d6 damage when you have advantage."
+      - name: "Cunning Action"
+        level: 2
+        description: "Bonus action: Dash, Disengage, or Hide."
+      - name: "Uncanny Dodge"
+        level: 5
+        description: "Use reaction to halve damage from an attack."
+        
+  - name: "Subclass: Arcane Trickster"
+    icon: "🎭"
+    requires:
+      level: 3
+    features:
+      - name: "Spellcasting"
+        level: 3
+        description: "You can cast wizard spells (Intelligence-based)."
+      - name: "Mage Hand Legerdemain"
+        level: 3
+        description: "Your Mage Hand is invisible and can perform tasks."
+```
+
 ---
 
 ## What to Check
@@ -108,12 +170,19 @@ material: true
 ✅ **HP tracker** with hit dice
 ✅ **Consumables** with checkboxes
 ✅ **Spell components** display
+✅ **Inventory** with currency and items (Phase 2)
+✅ **Features** with categorized abilities (Phase 2)
 
 ### Interactivity
 ✅ **Consumable checkboxes** toggle
 ✅ **HP adjustments** work
 ✅ **Event buttons** trigger resets
 ✅ **Hit dice** can be used
+
+### Phase 2 Features
+✅ **Inventory** shows currency, sections, and encumbrance
+✅ **Features** show level badges and category icons
+✅ **Features** properly gate high-level abilities (currently level 5)
 
 ### Console Output
 Check for these messages (should appear multiple times):
@@ -131,13 +200,15 @@ DnD UI Toolkit: Processing rpg block with meta: badges
 
 ## Success Criteria
 
-- [ ] All 8 block types render correctly
+- [ ] All 10 block types render correctly (8 Phase 1 + 2 Phase 2)
 - [ ] Character sheet looks complete and professional
 - [ ] All interactive elements work
 - [ ] No error messages in console
 - [ ] All debug messages show successful meta extraction
 - [ ] Event buttons reset consumables
 - [ ] HP and consumable state persists
+- [ ] Inventory displays items, currency, and encumbrance bar
+- [ ] Features show with proper level gating and category organization
 
 ## Expected Layout Order (top to bottom)
 
@@ -149,7 +220,9 @@ DnD UI Toolkit: Processing rpg block with meta: badges
 6. Health Points (HP bar and hit dice)
 7. Consumables (3 items with checkboxes)
 8. Spell Components (V, S, M indicators)
+9. **Inventory** (currency, equipped items, backpack) - ✨ NEW
+10. **Features** (class features and subclass features) - ✨ NEW
 
 ## Notes
 
-This represents a typical D&D 5e character sheet using only the new `rpg` format. If this works, it proves the migration is successful.
+This represents a complete D&D 5e character sheet using only the new `rpg` format. It includes both Phase 1 (unified namespace) and Phase 2 (system abstraction + new blocks) features. If this works, it proves both migrations are successful.
