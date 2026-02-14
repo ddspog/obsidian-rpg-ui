@@ -14,6 +14,7 @@ export function extractCodeBlocks(text: string, blockType: string): string[] {
   const cleanedText = stripCalloutMarkers(text);
 
   // Escape special regex characters in blockType
+  // Note: Spaces don't need escaping and will remain as literal space characters
   const escapedBlockType = blockType.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   // Create regex pattern for the specific code block type
