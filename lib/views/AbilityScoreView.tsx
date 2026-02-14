@@ -11,6 +11,7 @@ export class AbilityScoreView extends BaseView {
   public codeblock = "attributes";
 
   public render(source: string, __: HTMLElement, ctx: MarkdownPostProcessorContext): string {
+    const system = this.getSystem(ctx);
     const abilityBlock = AbilityService.parseAbilityBlock(source);
 
     const data: Ability[] = [];
@@ -31,7 +32,7 @@ export class AbilityScoreView extends BaseView {
       );
 
       // Calculate saving throw with base modifier + proficiency + saving throw bonuses
-      let savingThrowValue = AbilityService.calculateModifier(totalScore);
+      let savingThrowValue = AbilityService.calculateModifier(totalScore, system);
       if (isProficient) {
         savingThrowValue += frontmatter.proficiency_bonus;
       }
@@ -45,7 +46,7 @@ export class AbilityScoreView extends BaseView {
       data.push({
         label: abbreviation,
         total: totalScore,
-        modifier: AbilityService.calculateModifier(totalScore),
+        modifier: AbilityService.calculateModifier(totalScore, system),
         isProficient: isProficient,
         savingThrow: savingThrowValue,
       });

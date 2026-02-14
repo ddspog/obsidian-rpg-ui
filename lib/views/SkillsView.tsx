@@ -11,6 +11,8 @@ export class SkillsView extends BaseView {
   public codeblock = "skills";
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
+    const system = this.getSystem(ctx);
+    
     let abilityBlock: AbilityBlock;
 
     try {
@@ -38,7 +40,8 @@ export class SkillsView extends BaseView {
     const fc = useFileContext(this.app, ctx);
     const frontmatter = fc.frontmatter();
 
-    for (const skill of SkillsService.Skills) {
+    // Use system's skill list instead of hardcoded Skills
+    for (const skill of system.skills) {
       const isHalfProficient =
         skillsBlock.half_proficiencies.find((x) => {
           return x.toLowerCase() === skill.label.toLowerCase();
@@ -54,18 +57,18 @@ export class SkillsView extends BaseView {
           return x.toLowerCase() === skill.label.toLowerCase();
         }) !== undefined;
 
-      const skillAbility = abilityBlock.abilities[skill.ability as keyof AbilityBlock["abilities"]];
+      const skillAbility = abilityBlock.abilities[skill.attribute as keyof AbilityBlock["abilities"]];
       if (!skillAbility) {
-        throw new Error(`Skill ${skill.ability} not found in Skills list`);
+        throw new Error(`Skill ${skill.attribute} not found in abilities`);
       }
 
       const totalAbilityScore = AbilityService.getTotalScore(
         skillAbility,
-        skill.ability as keyof AbilityScores,
+        skill.attribute as keyof AbilityScores,
         abilityBlock.bonuses
       );
 
-      let skillCheckValue = AbilityService.calculateModifier(totalAbilityScore);
+      let skillCheckValue = AbilityService.calculateModifier(totalAbilityScore, system);
       if (isExpert) {
         skillCheckValue += frontmatter.proficiency_bonus * 2;
       } else if (isProficient) {
@@ -80,7 +83,7 @@ export class SkillsView extends BaseView {
         }
       }
 
-      const abbreviation = skill.ability.substring(0, 3).toUpperCase();
+      const abbreviation = skill.attribute.substring(0, 3).toUpperCase();
 
       data.push({
         label: skill.label,

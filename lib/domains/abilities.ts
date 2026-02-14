@@ -3,6 +3,7 @@ import { MarkdownPostProcessorContext } from "obsidian";
 import * as Utils from "lib/utils/utils";
 import { parse } from "yaml";
 import { extractFirstCodeBlock } from "../utils/codeblock-extractor";
+import { RPGSystem } from "lib/systems/types";
 
 export function parseAbilityBlockFromDocument(el: HTMLElement, ctx: MarkdownPostProcessorContext): AbilityBlock {
   const sectionInfo = ctx.getSectionInfo(el);
@@ -39,8 +40,17 @@ export function parseAbilityBlock(yamlString: string): AbilityBlock {
   return Utils.mergeWithDefaults(parsed, def);
 }
 
-// Calculate ability modifier according to D&D 5e rules
-export function calculateModifier(score: number): number {
+// Calculate ability modifier according to system rules
+// Defaults to D&D 5e formula if system is not provided
+export function calculateModifier(score: number, system?: RPGSystem): number {
+  if (system) {
+    const modifierExpr = system.expressions.get("modifier");
+    if (modifierExpr) {
+      return Number(modifierExpr.evaluate({ score }));
+    }
+  }
+  
+  // Fallback to D&D 5e formula
   return Math.floor((score - 10) / 2);
 }
 
