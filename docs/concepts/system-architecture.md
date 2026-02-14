@@ -63,26 +63,27 @@ Conan.md (character collector)
 
 In the system configuration (`lib/systems/dnd5e.ts` for D&D 5e), you define:
 
-### Feature Types (with ordering)
+### Feature System Configuration
+
+The `features` object in the system defines the complete feature system:
 
 ```typescript
-featureTypes: [
-  { id: "action", label: "Action", icon: "⚔️" },
-  { id: "bonus_action", label: "Bonus Action", icon: "⚡" },
-  { id: "reaction", label: "Reaction", icon: "🛡️" },
-  { id: "passive", label: "Passive", icon: "👁️" },
-  { id: "active", label: "Active", icon: "✨" },
-]
+features: {
+  categories: [
+    { id: "action", label: "Action", icon: "⚔️" },
+    { id: "bonus_action", label: "Bonus Action", icon: "⚡" },
+    { id: "reaction", label: "Reaction", icon: "🛡️" },
+    { id: "passive", label: "Passive", icon: "👁️" },
+    { id: "active", label: "Active", icon: "✨" },
+  ],
+  providers: ["class", "race"],
+  collectors: ["character", "monster"],
+}
 ```
 
-**The order in this array determines the display order** when features are grouped by type.
+**The order in the `categories` array determines the display order** when features are grouped by type.
 
-### Feature Providers and Collectors
-
-```typescript
-featureProviders: ["class", "race"],
-featureCollectors: ["character", "monster"],
-```
+The `providers` and `collectors` arrays define which entity types participate in the feature inheritance system.
 
 ### Entity Type Roles
 

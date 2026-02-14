@@ -24,14 +24,8 @@ export interface RPGSystem {
   /** Expression registry (id → compiled expression) */
   expressions: Map<string, ExpressionDef>;
   
-  /** Feature type definitions (action, bonus action, reaction, passive, etc.) - order determines display order */
-  featureTypes: FeatureTypeDefinition[];
-  
-  /** Feature provider types (class, race, etc.) - entity types that provide features to others */
-  featureProviders: string[];
-  
-  /** Feature collector types (character, monster, etc.) - entity types that collect features from providers */
-  featureCollectors: string[];
+  /** Feature system configuration */
+  features: FeatureSystemConfig;
 }
 
 /**
@@ -105,4 +99,18 @@ export interface FeatureTypeDefinition {
   
   /** Optional icon or emoji for the feature type */
   icon?: string;
+}
+
+/**
+ * Feature system configuration
+ */
+export interface FeatureSystemConfig {
+  /** Feature categories (action, bonus action, reaction, etc.) - order determines display order */
+  categories: FeatureTypeDefinition[];
+  
+  /** Feature provider types (class, race, etc.) - entity types that provide features to others */
+  providers: string[];
+  
+  /** Feature collector types (character, monster, etc.) - entity types that collect features from providers */
+  collectors: string[];
 }

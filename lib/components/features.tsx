@@ -27,7 +27,7 @@ function FeatureItem({
 }) {
   // Find feature type definition from system
   const featureType = feature.type
-    ? system.featureTypes.find((ft) => ft.id === feature.type)
+    ? system.features.categories.find((ft) => ft.id === feature.type)
     : undefined;
 
   return (
