@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext } from "obsidian";
 import { AbilityScoreView } from "lib/views/AbilityScoreView";
 import { BaseView } from "lib/views/BaseView";
 import { SkillsView } from "lib/views/SkillsView";
@@ -130,7 +130,7 @@ export default class DndUIToolkitPlugin extends Plugin {
     };
 
     for (const [oldType, meta] of Object.entries(legacyMappings)) {
-      this.registerMarkdownCodeBlockProcessor(oldType, (source, el, ctx) => {
+      this.registerMarkdownCodeBlockProcessor(oldType, (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
         const view = viewRegistry.get(meta);
         if (view) {
           view.register(source, el, ctx);
