@@ -454,6 +454,9 @@ interface RPGUIToolkitSettings {
   // new
   systemAssignments: { folder: string; systemFile: string }[];
   // no defaultSystem needed — built-in D&D 5e is always the fallback
+
+  tilePacksFolder: string; // vault folder containing terrain tile assets (SVG/PNG)
+  // default: "" (uses built-in SVG pattern fills)
 }
 ```
 
@@ -545,6 +548,26 @@ Add a "Systems" section in settings tab:
 - List of folder → file assignments with remove buttons
 - "Add" button with text inputs for folder path and file path
 - "(default)" row showing the built-in D&D 5e fallback (not removable)
+
+Add a "Map Tiles" section in settings tab:
+- **Tile Packs Folder** — vault folder containing terrain tile assets (SVG or PNG files organized in subfolders per pack)
+- When empty (default), the renderer uses built-in SVG pattern fills (color-based: grass green, water blue, etc.)
+- When set, the renderer loads tile images from `<tilePacksFolder>/<pack>/<terrain>.<ext>` (e.g. `Tiles/fantasy/forest.svg`)
+- Pack name matches the `pack:` field in the `rpg map` YAML header
+- Folder structure:
+  ```
+  Tiles/              ← tilePacksFolder setting
+  ├── fantasy/        ← pack name
+  │   ├── grass.svg
+  │   ├── forest.svg
+  │   ├── forest-snowy.svg   ← variant: forest[snowy]
+  │   ├── water.svg
+  │   ├── mountain.svg
+  │   └── mountain-rocky.svg ← variant: mountain[rocky]
+  └── scifi/          ← another pack
+      ├── metal.svg
+      └── void.svg
+  ```
 
 ---
 
@@ -1069,7 +1092,7 @@ Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a
 
 - **SVG-based** — renders as inline SVG for crisp scaling (same approach as hex-map-editor)
 - Hex cells: flat-top hexagons using axial coordinate → pixel position math
-- Terrain: pattern fills from terrain packs (SVG patterns embedded, or simplified color fills)
+- Terrain: if a tile packs folder is configured in settings, loads SVG/PNG tile images from `<tilePacksFolder>/<pack>/<terrain>.<ext>`; otherwise falls back to built-in SVG pattern fills (color-based)
 - Three-layer rendering: terrain (bottom) → stack (middle) → path (top), same z-ordering as hex-map-editor
 - Height groups: higher altitude renders on top
 - Square cells: `<rect>` elements with character-based layout
@@ -1084,7 +1107,7 @@ Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a
 | Parser | `src/lib/hexmap-parser.ts` | Port to `lib/domains/battlemap/hex-parser.ts`, adapt for `rpg map` header |
 | Types | `src/lib/types.ts` | Port `HexCell`, `HexMap`, `ParsedContent` interfaces |
 | Hex geometry | `src/components/HexGrid.tsx` | Extract coordinate math into `hex-grid.ts`, port SVG renderer to React component |
-| Terrain loader | `src/lib/terrain-loader.ts` | Simplify — embed SVG patterns or use color fills instead of external image packs |
+| Terrain loader | `src/lib/terrain-loader.ts` | Adapt — load tiles from vault's tile packs folder (configured in settings); fall back to built-in SVG pattern fills when no folder is set |
 | Pack config | `src/lib/pack-config.ts` | Port display config (zoom, offset) for terrain types |
 | Fallback patterns | `HexGrid.tsx` fallbacks | Port SVG pattern defs for water, forest, mountain, grass, etc. |
 
@@ -1102,7 +1125,7 @@ Future: the HUD's quick-action buttons could auto-generate `moves:` entries in a
   - `hex-grid.ts` — Hex coordinate math (axial → pixel, neighbors), ported from HexGrid.tsx
   - `square-grid.ts` — Square coordinate math
   - `replay.ts` — Step-through state machine for moves section
-  - `terrain-patterns.ts` — Embedded SVG pattern definitions for terrain types
+  - `terrain-loader.ts` — Loads tile images from vault's tile packs folder; falls back to embedded SVG patterns
 - **Component** (`lib/components/battlemap/`):
   - `hex-renderer.tsx` — SVG hex grid renderer (ported from HexGrid.tsx)
   - `square-renderer.tsx` — SVG square grid renderer
@@ -1163,7 +1186,7 @@ The log block depends on inventory, features, and system abstraction being in pl
 ### Phase 5 — Battle Maps
 20. Port hex-map-editor parser (`hexmap-parser.ts`) → `lib/domains/battlemap/hex-parser.ts`, extend with `rpg map` YAML header + entity token parsing
 21. Port hex geometry from `HexGrid.tsx` → `hex-grid.ts` (axial → pixel, flat-top layout, z-ordering)
-22. Create embedded SVG terrain patterns (`terrain-patterns.ts`) — simplified from hex-map-editor's image packs
+22. Create terrain loader (`terrain-loader.ts`) — loads tiles from vault's tile packs folder (per settings), falls back to embedded SVG patterns
 23. Port SVG hex renderer from `HexGrid.tsx` → `hex-renderer.tsx` (three-layer terrain/stack/path rendering)
 24. Implement square grid parser + renderer (new, character-based layout with legend)
 25. Implement step-by-step replay (moves parser, state machine, step controls)
@@ -1209,7 +1232,7 @@ lib/
 │   ├── hex-grid.ts            # Hex coordinate math (axial → pixel, neighbors)
 │   ├── square-grid.ts         # Square coordinate math
 │   ├── replay.ts              # Step-through state machine for moves
-│   └── terrain-patterns.ts    # Embedded SVG pattern defs for terrain types
+│   └── terrain-loader.ts      # Loads tiles from vault folder; built-in SVG pattern fallbacks
 ├── components/battlemap/
 │   ├── hex-renderer.tsx        # SVG hex grid renderer (ported from HexGrid.tsx)
 │   ├── square-renderer.tsx     # SVG square grid renderer
@@ -1232,7 +1255,7 @@ lib/
 
 ```
 main.ts                        # Single "rpg" processor with meta dispatch, create system registry
-settings.ts                    # Add systemAssignments field + settings UI
+settings.ts                    # Add systemAssignments + tilePacksFolder fields + settings UI
 lib/types.ts                   # Frontmatter type becomes { type: string; [key: string]: any }
 lib/domains/frontmatter.ts     # Type-driven parsing; remove hardcoded FrontMatterKeys and levelToProficiencyBonus
 lib/domains/frontmatter.test.ts # Update tests for type-driven parsing
