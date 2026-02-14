@@ -57,57 +57,121 @@ const DND5E_FEATURE_TYPES: FeatureTypeDefinition[] = [
 
 /**
  * Character entity type for D&D 5e
+ * Includes default combat actions available to all characters
  */
-const DND5E_CHARACTER_TYPE: EntityTypeDef = [
-  {
-    name: "proficiency_bonus",
-    type: "number",
-    default: 2,
-  },
-  {
-    name: "level",
-    type: "number",
-    default: 1,
-  },
-];
+const DND5E_CHARACTER_TYPE: EntityTypeDef = {
+  frontmatter: [
+    {
+      name: "proficiency_bonus",
+      type: "number",
+      default: 2,
+    },
+    {
+      name: "level",
+      type: "number",
+      default: 1,
+    },
+  ],
+  features: [
+    {
+      name: "Dash",
+      type: "action",
+      description: "Double your speed for the current turn.",
+    },
+    {
+      name: "Disengage",
+      type: "action",
+      description: "Your movement doesn't provoke opportunity attacks for the rest of the turn.",
+    },
+    {
+      name: "Dodge",
+      type: "action",
+      description: "Attack rolls against you have disadvantage until your next turn.",
+    },
+    {
+      name: "Help",
+      type: "action",
+      description: "Give an ally advantage on their next ability check or attack roll.",
+    },
+    {
+      name: "Hide",
+      type: "action",
+      description: "Make a Dexterity (Stealth) check to hide.",
+    },
+    {
+      name: "Ready",
+      type: "action",
+      description: "Prepare an action to trigger in response to a specified circumstance.",
+    },
+    {
+      name: "Search",
+      type: "action",
+      description: "Make a Wisdom (Perception) or Intelligence (Investigation) check to find something.",
+    },
+    {
+      name: "Use an Object",
+      type: "action",
+      description: "Interact with an object or the environment.",
+    },
+    {
+      name: "Opportunity Attack",
+      type: "reaction",
+      description: "Make a melee attack against a creature that leaves your reach.",
+    },
+  ],
+};
 
 /**
  * Class entity type for D&D 5e
  */
-const DND5E_CLASS_TYPE: EntityTypeDef = [
-  {
-    name: "hit_die",
-    type: "string",
-    default: "d8",
-  },
-];
+const DND5E_CLASS_TYPE: EntityTypeDef = {
+  frontmatter: [
+    {
+      name: "hit_die",
+      type: "string",
+      default: "d8",
+    },
+  ],
+};
 
 /**
  * Race entity type for D&D 5e
  */
-const DND5E_RACE_TYPE: EntityTypeDef = [
-  {
-    name: "size",
-    type: "string",
-    default: "medium",
-  },
-  {
-    name: "speed",
-    type: "number",
-    default: 30,
-  },
-];
+const DND5E_RACE_TYPE: EntityTypeDef = {
+  frontmatter: [
+    {
+      name: "size",
+      type: "string",
+      default: "medium",
+    },
+    {
+      name: "speed",
+      type: "number",
+      default: 30,
+    },
+  ],
+};
 
 /**
  * Monster entity type for D&D 5e
+ * Includes default combat actions available to all monsters
  */
-const DND5E_MONSTER_TYPE: EntityTypeDef = [
-  {
-    name: "cr",
-    type: "number",
-    default: 0,
-  },
-];
+const DND5E_MONSTER_TYPE: EntityTypeDef = {
+  frontmatter: [
+    {
+      name: "cr",
+      type: "number",
+      default: 0,
+    },
+  ],
+  features: [
+    {
+      name: "Opportunity Attack",
+      type: "reaction",
+      description: "Make a melee attack against a creature that leaves your reach.",
+    },
+  ],
+};
 
 /**
  * D&D 5e ability modifier expression

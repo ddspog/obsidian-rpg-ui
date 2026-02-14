@@ -30,9 +30,29 @@ export interface RPGSystem {
 
 /**
  * Entity type definition (character, monster, item, etc.)
- * Defines frontmatter fields for an entity type.
+ * Defines frontmatter fields and default features for an entity type.
  */
-export type EntityTypeDef = FrontmatterFieldDef[];
+export interface EntityTypeDef {
+  /** Frontmatter field definitions for this entity type */
+  frontmatter: FrontmatterFieldDef[];
+  
+  /** Default features available to all entities of this type (e.g., Dash, Opportunity Attack for characters) */
+  features?: Feature[];
+}
+
+/**
+ * Feature definition for default entity features
+ */
+export interface Feature {
+  name: string;
+  level?: number;
+  description?: string;
+  type?: string;
+  reset_on?: string;
+  uses?: number;
+  state_key?: string;
+  optional?: boolean;
+}
 
 /**
  * Frontmatter field definition
