@@ -1,6 +1,6 @@
 # Skills
 
-The `skills` block is used for automatically calculating your skills modifier. It pulls from the first `abilities` block it can find in your file and calculates your scores based on those values.
+The `rpg skills` block is used for automatically calculating your skills modifier. It pulls from the first `rpg attributes` (or `ability`) block it can find in your file and calculates your scores based on those values.
 
 ## Features
 
@@ -10,7 +10,7 @@ The `skills` block is used for automatically calculating your skills modifier. I
 ## Example
 
 ````yaml
-```skills
+```rpg skills
 proficiencies:
   - arcana
   - deception
@@ -30,6 +30,10 @@ half_proficiencies:
   - history
 ```
 ````
+
+::: tip Backward Compatibility
+The old `skills` block format still works, but `rpg skills` is now the recommended format.
+:::
 
 ## Image
 

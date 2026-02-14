@@ -1,6 +1,6 @@
 # Consumables
 
-The `consumable` component allows you to create generic trackers for different states of your character. This can be for anything like Spell Slots, Luck Points, or Channel Divinity.
+The `rpg consumable` component allows you to create generic trackers for different states of your character. This can be for anything like Spell Slots, Luck Points, or Channel Divinity.
 
 ![Rendered Example](../images/example-consumable.webp)
 
@@ -15,7 +15,7 @@ See the [Event Systems](../concepts/event-systems.md) page for more information 
 ## Basic Example
 
 ````yaml
-```consumable
+```rpg consumable
 items:
   - label: "Level 1"
     state_key: din_luck_spell_1
@@ -34,6 +34,10 @@ items:
       - event: long-rest  # Full reset on long rest (no amount = complete reset)
 ```
 ````
+
+::: tip Backward Compatibility
+The old `consumable` block format still works, but `rpg consumable` is now the recommended format.
+:::
 
 ## Configuration
 

@@ -1,13 +1,13 @@
 # Ability Scores
 
-The `ability` block is used to generate a 6 column grid of your ability scores and their saving throws. Fill in the code block with your abilities, proficiencies, and any bonuses that are applied to either the ability scores themselves or their saving throws.
+The `rpg attributes` block is used to generate a 6 column grid of your ability scores and their saving throws. Fill in the code block with your abilities, proficiencies, and any bonuses that are applied to either the ability scores themselves or their saving throws.
 
 ![Rendered Example](../images/example-ability-scores.webp)
 
 ## Example
 
 ````yaml
-```ability
+```rpg attributes
 abilities:
   strength: 9
   dexterity: 14
@@ -27,6 +27,10 @@ proficiencies:
   - wisdom
 ```
 ````
+
+::: tip Backward Compatibility
+The old `ability` block format still works, but `rpg attributes` is now the recommended format.
+:::
 
 ## Configuration
 

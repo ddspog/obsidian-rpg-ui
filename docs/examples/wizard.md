@@ -22,7 +22,7 @@ items:
     value: 15
 ```
 
-```healthpoints
+```rpg healthpoints
 state_key: din_health
 health: 24
 hitdice:
@@ -32,7 +32,7 @@ hitdice:
 
 ## Abilities
 
-```ability
+```rpg attributes
 abilities:
   strength: 9
   dexterity: 14
@@ -48,7 +48,7 @@ proficiencies:
 
 ## Skills
 
-```skills
+```rpg skills
 proficiencies:
   - arcana
   - deception
@@ -59,7 +59,7 @@ proficiencies:
 
 ## Spell Slots
 
-```consumable
+```rpg consumable
 items:
   - label: "Level 1"
     state_key: din_spells_1
@@ -71,7 +71,7 @@ items:
 
 ### Fey Touched
 
-```consumable
+```rpg consumable
 items:
   - label: "Misty Step"
     state_key: din_fey_touched_misty_step
@@ -85,7 +85,7 @@ items:
 ## Features
 
 ### Luck Points
-```consumable
+```rpg consumable
 label: ""
 state_key: din_luck_points
 uses: 3
@@ -102,7 +102,7 @@ If more than one creature spends a luck point to influence the outcome of a roll
 You regain your expended luck points when you finish a long rest.
 
 ### Arcane Recovery
-```consumable
+```rpg consumable
 label: ""
 state_key: din_arcane_recovery
 uses: 1
@@ -115,7 +115,7 @@ For example, if you're a 4th-level wizard, you can recover up to two levels wort
 ### Magic Items
 
 #### Ring of Investigation
-```consumable
+```rpg consumable
 label: ""
 state_key: din_items__ring_of_investigation
 uses: 3
