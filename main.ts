@@ -14,6 +14,7 @@ import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { THEMES } from "lib/themes";
 import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
+import { extractMeta } from "lib/utils/meta-extractor";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -99,22 +100,13 @@ export default class DndUIToolkitPlugin extends Plugin {
     // Register single "rpg" code block processor with meta dispatch
     this.registerMarkdownCodeBlockProcessor("rpg", (source, el, ctx) => {
       // Extract meta from the fence line
-      const sectionInfo = ctx.getSectionInfo(el);
-      if (!sectionInfo) {
-        el.innerHTML = '<div class="notice">Error: Unable to extract code block info</div>';
+      const meta = extractMeta(ctx, el);
+
+      if (!meta) {
+        el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
         return;
       }
 
-      const lines = sectionInfo.text.split("\n");
-      const fenceLine = lines[sectionInfo.lineStart] || "";
-      const metaMatch = fenceLine.match(/^```rpg\s+(.+)$/);
-
-      if (!metaMatch || !metaMatch[1]) {
-        el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., ```rpg attributes)</div>';
-        return;
-      }
-
-      const meta = metaMatch[1].trim();
       const view = viewRegistry.get(meta);
 
       if (view) {
