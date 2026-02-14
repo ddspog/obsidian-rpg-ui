@@ -189,7 +189,9 @@ export const DND5E_SYSTEM: RPGSystem = {
     ["saving_throw", savingThrowExpression],
     ["skill_modifier", skillModifierExpression],
   ]),
-  featureTypes: DND5E_FEATURE_TYPES,
-  featureProviders: ["class", "race"],
-  featureCollectors: ["character", "monster"],
+  features: {
+    categories: DND5E_FEATURE_TYPES,
+    providers: ["class", "race"],
+    collectors: ["character", "monster"],
+  },
 };

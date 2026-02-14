@@ -17,7 +17,7 @@ Entity types that **define** features to pass to collectors (e.g., `class`, `rac
 2. A "Human" race note (provider) defines "Extra Language" 
 3. A character note (collector) with `class: Fighter` and `race: Human` automatically collects and displays both features
 
-The system's `featureProviders` and `featureCollectors` arrays define which entity types can provide or collect features.
+The system's `features.providers` and `features.collectors` arrays define which entity types can provide or collect features.
 
 ## Basic Example
 
@@ -107,7 +107,7 @@ In D&D 5e, the feature types are (in display order):
 | `passive` | Passive | 👁️ | Always active |
 | `active` | Active | ✨ | Active ability (not action-based) |
 
-Features are grouped and sorted by their type when displayed, following the order defined in the system's `featureTypes` array.
+Features are grouped and sorted by their type when displayed, following the order defined in the system's `features.categories` array.
 
 Example:
 ```yaml
