@@ -2,6 +2,23 @@
 
 The `rpg features` block allows you to track class features, racial traits, feats, and other character abilities with level gating and prerequisite tracking.
 
+## Feature Provider/Collector Architecture
+
+The system uses a **provider/collector** pattern for features:
+
+### Feature Collectors
+Entity types that **receive** features from other files (e.g., `character`, `monster`). These notes display all features they collect from their class, race, and other sources.
+
+### Feature Providers
+Entity types that **define** features to pass to collectors (e.g., `class`, `race`). These notes declare what features are available at different levels.
+
+**Example flow:**
+1. A "Fighter" class note (provider) defines "Second Wind" at level 1
+2. A "Human" race note (provider) defines "Extra Language" 
+3. A character note (collector) with `class: Fighter` and `race: Human` automatically collects and displays both features
+
+The system's `featureProviders` and `featureCollectors` arrays define which entity types can provide or collect features.
+
 ## Basic Example
 
 ~~~markdown
@@ -78,7 +95,9 @@ Each feature has:
 
 ### Feature Types
 
-The `type` field categorizes features by their action cost in D&D 5e:
+The `type` field categorizes features by their action cost. Feature types are defined in the system configuration and their **order in the system definition determines the display order** when features are presented.
+
+In D&D 5e, the feature types are (in display order):
 
 | Type | Label | Icon | Usage |
 |------|-------|------|-------|
@@ -87,6 +106,8 @@ The `type` field categorizes features by their action cost in D&D 5e:
 | `reaction` | Reaction | 🛡️ | Triggered reaction |
 | `passive` | Passive | 👁️ | Always active |
 | `active` | Active | ✨ | Active ability (not action-based) |
+
+Features are grouped and sorted by their type when displayed, following the order defined in the system's `featureTypes` array.
 
 Example:
 ```yaml
