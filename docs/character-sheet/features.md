@@ -68,12 +68,33 @@ Each category groups related features:
 Each feature has:
 - `name`: Feature name (required)
 - `level` (optional): Character level when feature becomes available
+- `type` (optional): Feature type identifier ("action", "bonus_action", "reaction", "passive", "active")
 - `description` (optional): Feature description (supports templates)
 - `reset_on` (optional): When limited uses reset ("short-rest", "long-rest", etc.)
 - `uses` (optional): Number of uses per reset period
 - `state_key` (optional): Unique identifier for tracking uses
 - `requires` (optional): Feature requirements (see Requirements section)
 - `optional` (optional): Boolean indicating if feature is optional
+
+### Feature Types
+
+The `type` field categorizes features by their action cost in D&D 5e:
+
+| Type | Label | Icon | Usage |
+|------|-------|------|-------|
+| `action` | Action | ⚔️ | Requires a full action |
+| `bonus_action` | Bonus Action | ⚡ | Requires a bonus action |
+| `reaction` | Reaction | 🛡️ | Triggered reaction |
+| `passive` | Passive | 👁️ | Always active |
+| `active` | Active | ✨ | Active ability (not action-based) |
+
+Example:
+```yaml
+features:
+  - name: "Second Wind"
+    type: bonus_action
+    description: "Regain 1d10 + fighter level HP."
+```
 
 ### Requirements
 

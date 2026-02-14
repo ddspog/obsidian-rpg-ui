@@ -24,6 +24,7 @@ export interface Feature {
   name: string;
   level?: number;
   description?: string;
+  type?: string; // Feature type identifier (e.g., "action", "bonus_action", "reaction", "passive")
   reset_on?: string;
   uses?: number;
   state_key?: string;

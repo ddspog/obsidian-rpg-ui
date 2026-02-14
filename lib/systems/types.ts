@@ -23,6 +23,9 @@ export interface RPGSystem {
   
   /** Expression registry (id → compiled expression) */
   expressions: Map<string, ExpressionDef>;
+  
+  /** Feature type definitions (action, bonus action, reaction, passive, etc.) */
+  featureTypes: FeatureTypeDefinition[];
 }
 
 /**
@@ -79,4 +82,18 @@ export interface SkillDefinition {
   
   /** Associated attribute identifier */
   attribute: string;
+}
+
+/**
+ * Feature type definition
+ */
+export interface FeatureTypeDefinition {
+  /** Feature type identifier (e.g., "action", "bonus_action") */
+  id: string;
+  
+  /** Display label (e.g., "Action", "Bonus Action") */
+  label: string;
+  
+  /** Optional icon or emoji for the feature type */
+  icon?: string;
 }
