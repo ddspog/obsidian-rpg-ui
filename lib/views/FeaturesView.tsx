@@ -43,7 +43,7 @@ export class FeaturesView extends BaseView {
         wisdom: AbilityService.getTotalScore(abilityBlock.abilities.wisdom, "wisdom", abilityBlock.bonuses),
         charisma: AbilityService.getTotalScore(abilityBlock.abilities.charisma, "charisma", abilityBlock.bonuses),
       };
-    } catch (e) {
+    } catch {
       console.debug("DnD UI Toolkit: No ability block found for features view, using defaults");
       attributes = {
         strength: 10,
