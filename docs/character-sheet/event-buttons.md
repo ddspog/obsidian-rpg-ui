@@ -1,17 +1,17 @@
 # Event Buttons
 
-The `event-btns` component creates clickable buttons that trigger reset events for other components within the same file. This is perfect for managing rest mechanics in D&D, allowing you to reset spell slots, health, and other resources with a single click.
+The `rpg events` component creates clickable buttons that trigger reset events for other components within the same file. This is perfect for managing rest mechanics in D&D, allowing you to reset spell slots, health, and other resources with a single click.
 
 ## How It Works
 
-Event buttons dispatch file-scoped events that other components (like `consumable` and `healthpoints`) can listen to. Components with matching `reset_on` values will automatically reset their state when the corresponding button is clicked.
+Event buttons dispatch file-scoped events that other components (like `rpg consumable` and `rpg healthpoints`) can listen to. Components with matching `reset_on` values will automatically reset their state when the corresponding button is clicked.
 
 See the [Event Systems](../concepts/event-systems.md) page for a deeper dive into events.
 
 ## Example
 
 ````yaml
-```event-btns
+```rpg events
 items:
   - name: Short Rest
     value: short-rest
@@ -21,6 +21,10 @@ items:
     value: level-up
 ```
 ````
+
+::: tip Backward Compatibility
+The old `event-btns` block format still works, but `rpg events` is now the recommended format.
+:::
 
 ## Event Types
 

@@ -1,6 +1,6 @@
 # Health Points
 
-Your Players HP can be tracked using the `healthpoints` widget. This widget requires a `state_key` be provided so that the plugin can save the character's state within the plugins state file.
+Your Players HP can be tracked using the `rpg healthpoints` widget. This widget requires a `state_key` be provided so that the plugin can save the character's state within the plugins state file.
 
 ::: warning State Key Requirement
 Each `state_key` defined in **any** component needs to be unique as they are all stored within the same key value store internally.
@@ -21,7 +21,7 @@ Each `state_key` defined in **any** component needs to be unique as they are all
 
 ### Basic Example
 ````yaml
-```healthpoints
+```rpg healthpoints
 state_key: din_health
 health: 24
 hitdice:
@@ -32,7 +32,7 @@ hitdice:
 
 ### Multiclass Example
 ````yaml
-```healthpoints
+```rpg healthpoints
 state_key: multiclass_health
 health: 58
 hitdice:
@@ -43,12 +43,16 @@ hitdice:
 ```
 ````
 
+::: tip Backward Compatibility
+The old `healthpoints` block format still works, but `rpg healthpoints` is now the recommended format.
+:::
+
 ### Dynamic Health Example
 ::: tip
 The `health` key supports dynamic content. This allows you to read your HP from frontmatter.
 
 ````yaml
-```healthpoints
+```rpg healthpoints
 state_key: din_health
 health: '{{ frontmatter.hp }}'
 hitdice:

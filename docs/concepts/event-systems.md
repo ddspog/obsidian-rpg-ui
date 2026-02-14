@@ -47,7 +47,7 @@ in both the button and the component you want to reset.
 The only way to trigger events is through [Event Buttons](../character-sheet/event-buttons.md):
 
 ````yaml
-```event-btns
+```rpg events
 items:
   - name: Short Rest
     value: short-rest
@@ -74,7 +74,7 @@ Components can reset in different ways when they receive an event:
 #### Example: Partial Reset Configuration
 
 ```yaml
-```consumable
+```rpg consumable
 items:
   - label: "Warlock Spell Slots"
     state_key: warlock_slots

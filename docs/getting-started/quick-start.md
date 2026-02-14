@@ -25,7 +25,7 @@ level: 1
 proficiency_bonus: 2
 ---
 
-```event-btns
+```rpg events
 items:
   - name: Short Rest
     value: short-rest
@@ -33,7 +33,7 @@ items:
     value: long-rest
 ```
 
-```healthpoints
+```rpg healthpoints
 state_key: my_character_hp
 health: 28
 hitdice:
@@ -41,7 +41,7 @@ hitdice:
   value: 3
 ```
 
-```ability
+```rpg attributes
 abilities:
   strength: 14
   dexterity: 16
@@ -55,7 +55,7 @@ proficiencies:
   - intelligence
 ```
 
-```skills
+```rpg skills
 proficiencies:
   - stealth
   - investigation
@@ -65,7 +65,7 @@ expertise:
   - stealth
 ```
 
-```consumable
+```rpg consumable
 items:
   - label: "Level 1 Spells"
     state_key: my_character_spells_1
@@ -77,6 +77,12 @@ items:
     reset_on: ["short-rest", "long-rest"]
 ```
 ````
+
+::: tip New Unified Format
+All code blocks now use the `rpg <type>` format (e.g., `rpg attributes`, `rpg skills`). The old format (`ability`, `consumable`, etc.) still works for backward compatibility, but the new format is recommended for all new documents.
+
+See the [Migration Guide](../migration-guide.md) for more details.
+:::
 
 ## What You Get
 
