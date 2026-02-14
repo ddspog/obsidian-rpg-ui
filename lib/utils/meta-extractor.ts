@@ -12,11 +12,13 @@ export function extractMeta(ctx: MarkdownPostProcessorContext, el: HTMLElement):
   try {
     const sectionInfo = ctx.getSectionInfo(el);
     if (!sectionInfo) {
+      console.error("DnD UI Toolkit: getSectionInfo returned null");
       return null;
     }
 
     const lines = sectionInfo.text.split("\n");
     if (lines.length === 0) {
+      console.error("DnD UI Toolkit: No lines in section text");
       return null;
     }
 
@@ -25,15 +27,22 @@ export function extractMeta(ctx: MarkdownPostProcessorContext, el: HTMLElement):
     const fenceLine = lines[lineStart];
 
     if (!fenceLine) {
+      console.error(`DnD UI Toolkit: No fence line at index ${lineStart}`);
       return null;
     }
 
+    console.log(`DnD UI Toolkit: Fence line: "${fenceLine}"`);
+
     // Match the pattern ```rpg <meta>
-    const match = fenceLine.match(/^```rpg\s+(.+)$/);
+    // Allow for optional trailing content after the meta
+    const match = fenceLine.match(/^```rpg\s+(\S+)/);
     if (match && match[1]) {
-      return match[1].trim();
+      const meta = match[1].trim();
+      console.log(`DnD UI Toolkit: Extracted meta: "${meta}"`);
+      return meta;
     }
 
+    console.error(`DnD UI Toolkit: Fence line did not match expected pattern: "${fenceLine}"`);
     return null;
   } catch (e) {
     console.error("Error extracting meta from code block:", e);

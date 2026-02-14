@@ -98,20 +98,23 @@ export default class DndUIToolkitPlugin extends Plugin {
     }
 
     // Register single "rpg" code block processor with meta dispatch
-    this.registerMarkdownCodeBlockProcessor("rpg", (source, el, ctx) => {
+    this.registerMarkdownCodeBlockProcessor("rpg", (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       // Extract meta from the fence line
       const meta = extractMeta(ctx, el);
 
       if (!meta) {
+        console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
         el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
         return;
       }
 
+      console.log(`DnD UI Toolkit: Processing rpg block with meta: ${meta}`);
       const view = viewRegistry.get(meta);
 
       if (view) {
         view.register(source, el, ctx);
       } else {
+        console.error(`DnD UI Toolkit: Unknown rpg block type: ${meta}`);
         el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
       }
     });
