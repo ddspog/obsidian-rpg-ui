@@ -56,70 +56,58 @@ const DND5E_FEATURE_TYPES: FeatureTypeDefinition[] = [
 ];
 
 /**
- * Character type definition for D&D 5e (collector)
+ * Character entity type for D&D 5e
  */
-const DND5E_CHARACTER_TYPE: EntityTypeDef = {
-  role: "collector",
-  fields: [
-    {
-      name: "proficiency_bonus",
-      type: "number",
-      default: 2,
-    },
-    {
-      name: "level",
-      type: "number",
-      default: 1,
-    },
-  ],
-};
+const DND5E_CHARACTER_TYPE: EntityTypeDef = [
+  {
+    name: "proficiency_bonus",
+    type: "number",
+    default: 2,
+  },
+  {
+    name: "level",
+    type: "number",
+    default: 1,
+  },
+];
 
 /**
- * Class type definition for D&D 5e (provider)
+ * Class entity type for D&D 5e
  */
-const DND5E_CLASS_TYPE: EntityTypeDef = {
-  role: "provider",
-  fields: [
-    {
-      name: "hit_die",
-      type: "string",
-      default: "d8",
-    },
-  ],
-};
+const DND5E_CLASS_TYPE: EntityTypeDef = [
+  {
+    name: "hit_die",
+    type: "string",
+    default: "d8",
+  },
+];
 
 /**
- * Race type definition for D&D 5e (provider)
+ * Race entity type for D&D 5e
  */
-const DND5E_RACE_TYPE: EntityTypeDef = {
-  role: "provider",
-  fields: [
-    {
-      name: "size",
-      type: "string",
-      default: "medium",
-    },
-    {
-      name: "speed",
-      type: "number",
-      default: 30,
-    },
-  ],
-};
+const DND5E_RACE_TYPE: EntityTypeDef = [
+  {
+    name: "size",
+    type: "string",
+    default: "medium",
+  },
+  {
+    name: "speed",
+    type: "number",
+    default: 30,
+  },
+];
 
 /**
- * Monster type definition for D&D 5e (collector)
+ * Monster entity type for D&D 5e
  */
-const DND5E_MONSTER_TYPE: EntityTypeDef = {
-  role: "collector",
-  fields: [
-    {
-      name: "cr",
-      type: "number",
-      default: 0,
-    },
-  ],
-};
+const DND5E_MONSTER_TYPE: EntityTypeDef = [
+  {
+    name: "cr",
+    type: "number",
+    default: 0,
+  },
+];
 
 /**
  * D&D 5e ability modifier expression
@@ -177,7 +165,7 @@ const skillModifierExpression: ExpressionDef = {
 export const DND5E_SYSTEM: RPGSystem = {
   name: "D&D 5e",
   attributes: DND5E_ATTRIBUTES,
-  types: {
+  entities: {
     character: DND5E_CHARACTER_TYPE,
     class: DND5E_CLASS_TYPE,
     race: DND5E_RACE_TYPE,

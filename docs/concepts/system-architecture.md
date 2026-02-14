@@ -83,28 +83,29 @@ features: {
 
 **The order in the `categories` array determines the display order** when features are grouped by type.
 
-The `providers` and `collectors` arrays define which entity types participate in the feature inheritance system.
+The `providers` and `collectors` arrays define which entity types participate in the feature inheritance system. These arrays reference entity type names defined in the `entities` configuration.
 
-### Entity Type Roles
+### Entity Type Definitions
 
-Each entity type in `types` can have a `role` field:
+Each entity type in `entities` is simply an array of frontmatter field definitions:
 
 ```typescript
-types: {
-  character: {
-    role: "collector",
-    fields: [ /* frontmatter fields */ ]
-  },
-  class: {
-    role: "provider",
-    fields: [ /* frontmatter fields */ ]
-  },
-  race: {
-    role: "provider",
-    fields: [ /* frontmatter fields */ ]
-  }
+entities: {
+  character: [
+    { name: "proficiency_bonus", type: "number", default: 2 },
+    { name: "level", type: "number", default: 1 }
+  ],
+  class: [
+    { name: "hit_die", type: "string", default: "d8" }
+  ],
+  race: [
+    { name: "size", type: "string", default: "medium" },
+    { name: "speed", type: "number", default: 30 }
+  ]
 }
 ```
+
+Entity roles (provider vs collector) are defined in the `features.providers` and `features.collectors` arrays, not in the entity definitions themselves.
 
 ## Phase 2 vs Phase 3
 

@@ -16,7 +16,7 @@ export interface RPGSystem {
   attributes: string[];
   
   /** Entity type definitions (character, monster, item, etc.) */
-  types: Record<string, EntityTypeDef>;
+  entities: Record<string, EntityTypeDef>;
   
   /** Skill definitions with attribute associations */
   skills: SkillDefinition[];
@@ -30,14 +30,9 @@ export interface RPGSystem {
 
 /**
  * Entity type definition (character, monster, item, etc.)
+ * Defines frontmatter fields for an entity type.
  */
-export interface EntityTypeDef {
-  /** Frontmatter field definitions for this entity type */
-  fields: FrontmatterFieldDef[];
-  
-  /** Role of this entity type in the feature system */
-  role?: "provider" | "collector";
-}
+export type EntityTypeDef = FrontmatterFieldDef[];
 
 /**
  * Frontmatter field definition
