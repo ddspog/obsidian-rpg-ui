@@ -2,7 +2,7 @@ import { MarkdownPostProcessorContext } from "obsidian";
 
 /**
  * Extracts the meta identifier from an rpg code block.
- * The meta is the word(s) after "rpg" in the fence line (e.g., "attributes" from ```rpg attributes).
+ * The meta is the word(s) after "rpg" in the fence line (e.g., "attributes" from the fence rpg attributes).
  *
  * @param ctx - The markdown post processor context
  * @param el - The HTML element containing the code block
