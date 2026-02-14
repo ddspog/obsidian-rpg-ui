@@ -5,7 +5,7 @@
  * Phase 2: Read-only display of items and currency.
  */
 
-import { InventoryBlock, InventorySection, calculateTotalWeight } from "lib/domains/inventory";
+import { InventoryBlock } from "lib/domains/inventory";
 
 interface InventoryProps {
   data: InventoryBlock;
