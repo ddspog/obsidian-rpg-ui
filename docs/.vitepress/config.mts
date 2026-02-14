@@ -23,6 +23,7 @@ export default withMermaid(
 					items: [
 						{ text: "Quick Start", link: "/getting-started/quick-start" },
 						{ text: "Installation", link: "/getting-started/installation" },
+						{ text: "Migration Guide", link: "/migration-guide" },
 					],
 				},
 				{
