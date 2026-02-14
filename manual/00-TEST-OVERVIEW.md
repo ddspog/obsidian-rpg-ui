@@ -2,6 +2,18 @@
 
 This directory contains step-by-step manual test cases to verify that the unified `rpg` namespace is working correctly in Obsidian.
 
+## ⚠️ IMPORTANT: Build Verification First!
+
+**Before running any tests, verify the plugin is built correctly:**
+
+👉 **Start with `00-BUILD-VERIFICATION.md`** 👈
+
+This ensures:
+- Plugin is built with latest changes
+- `rpg` processor is registered
+- Debug logging is active
+- No console messages = plugin not loaded correctly
+
 ## Purpose
 
 Phase 1 migrates all code block types to a unified `rpg` namespace. Both old and new formats should work:
@@ -11,6 +23,7 @@ Phase 1 migrates all code block types to a unified `rpg` namespace. Both old and
 
 ## Test Files
 
+0. **00-BUILD-VERIFICATION.md** - ⚠️ **START HERE** - Verify plugin build and loading
 1. **01-TEST-CONSUMABLE.md** - Test consumable blocks
 2. **02-TEST-ATTRIBUTES.md** - Test ability/attributes blocks  
 3. **03-TEST-SKILLS.md** - Test skills blocks
