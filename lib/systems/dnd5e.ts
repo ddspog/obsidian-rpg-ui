@@ -72,6 +72,21 @@ const DND5E_SPELL_CIRCLES: import("./types").SpellCircleDefinition[] = [
 ];
 
 /**
+ * D&D 5e spell lists (spell sources by class)
+ */
+const DND5E_SPELL_LISTS: import("./types").SpellListDefinition[] = [
+  { id: "artificer", label: "Artificer Spells", icon: "🔧" },
+  { id: "bard", label: "Bard Spells", icon: "🎵" },
+  { id: "cleric", label: "Cleric Spells", icon: "✝️" },
+  { id: "druid", label: "Druid Spells", icon: "🌿" },
+  { id: "paladin", label: "Paladin Spells", icon: "⚔️" },
+  { id: "ranger", label: "Ranger Spells", icon: "🏹" },
+  { id: "sorcerer", label: "Sorcerer Spells", icon: "🔮" },
+  { id: "warlock", label: "Warlock Spells", icon: "👁️" },
+  { id: "wizard", label: "Wizard Spells", icon: "📚" },
+];
+
+/**
  * Character entity type for D&D 5e
  * Includes default combat actions available to all characters
  */
@@ -278,6 +293,7 @@ export const DND5E_SYSTEM: RPGSystem = {
   },
   spellcasting: {
     circles: DND5E_SPELL_CIRCLES,
+    lists: DND5E_SPELL_LISTS,
     providers: ["class", "subclass"],
     collectors: ["character", "monster"],
   },

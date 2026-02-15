@@ -152,11 +152,28 @@ export interface SpellCircleDefinition {
 }
 
 /**
+ * Spell list definition
+ */
+export interface SpellListDefinition {
+  /** Spell list identifier (e.g., "wizard", "cleric", "druid") */
+  id: string;
+  
+  /** Display label (e.g., "Wizard Spells", "Cleric Spells") */
+  label: string;
+  
+  /** Optional icon or emoji for the spell list */
+  icon?: string;
+}
+
+/**
  * Spellcasting system configuration
  */
 export interface SpellcastingSystemConfig {
   /** Spell circles/levels (cantrip, 1st, 2nd, etc.) - order determines display order */
   circles: SpellCircleDefinition[];
+  
+  /** Spell lists (wizard, cleric, etc.) - different categories of spells available to different classes */
+  lists?: SpellListDefinition[];
   
   /** Spellcasting provider types (class, subclass, etc.) - entity types that provide spells to others */
   providers: string[];
