@@ -20,6 +20,7 @@ import { THEMES } from "lib/themes";
 import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
 import { extractMeta } from "lib/utils/meta-extractor";
+import { SystemRegistry } from "lib/systems/registry";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -66,6 +67,17 @@ export default class DndUIToolkitPlugin extends Plugin {
 
     // Initialize the JsonDataStore with the configured path
     this.initDataStore();
+
+    // Initialize system registry with vault access and folder mappings
+    const registry = SystemRegistry.getInstance();
+    registry.initialize(this.app.vault);
+    
+    // Load system mappings from settings
+    const mappings = new Map<string, string>();
+    for (const mapping of this.settings.systemMappings) {
+      mappings.set(mapping.folderPath, mapping.systemFilePath);
+    }
+    registry.setFolderMappings(mappings);
 
     // Setup Listener for frontmatter changes
     this.registerEvent(
@@ -177,6 +189,14 @@ export default class DndUIToolkitPlugin extends Plugin {
     await this.saveData(this.settings);
     // Reinitialize data store with the new path
     this.initDataStore();
+    
+    // Update system registry with new mappings
+    const registry = SystemRegistry.getInstance();
+    const mappings = new Map<string, string>();
+    for (const mapping of this.settings.systemMappings) {
+      mappings.set(mapping.folderPath, mapping.systemFilePath);
+    }
+    registry.setFolderMappings(mappings);
   }
 }
 
@@ -208,6 +228,31 @@ class DndSettingsTab extends PluginSettingTab {
             this.plugin.settings.statePath = value;
             await this.plugin.saveSettings();
           })
+      );
+
+    // Systems section
+    containerEl.createEl("h3", { text: "Systems" });
+    containerEl.createEl("p", {
+      text: "Map folders to RPG system definition files. Files in these folders will use the specified system rules.",
+      cls: "setting-item-description",
+    });
+
+    // Display current mappings
+    const mappingsContainer = containerEl.createDiv({ cls: "rpg-systems-mappings" });
+    this.renderSystemMappings(mappingsContainer);
+
+    // Add new mapping button
+    new Setting(containerEl)
+      .setName("Add System Mapping")
+      .setDesc("Add a folder-to-system mapping")
+      .addButton((button) =>
+        button.setButtonText("Add").onClick(() => {
+          this.plugin.settings.systemMappings.push({
+            folderPath: "",
+            systemFilePath: "",
+          });
+          this.display(); // Refresh to show new mapping
+        })
       );
 
     containerEl.createEl("h3", { text: "Styles" });
@@ -268,11 +313,74 @@ class DndSettingsTab extends PluginSettingTab {
     });
   }
 
+  private renderSystemMappings(containerEl: HTMLElement): void {
+    containerEl.empty();
+
+    if (this.plugin.settings.systemMappings.length === 0) {
+      containerEl.createEl("p", {
+        text: "No system mappings configured. Using D&D 5e as default for all files.",
+        cls: "setting-item-description",
+      });
+      return;
+    }
+
+    for (let i = 0; i < this.plugin.settings.systemMappings.length; i++) {
+      const mapping = this.plugin.settings.systemMappings[i];
+      
+      const mappingSetting = new Setting(containerEl)
+        .setName(`Mapping ${i + 1}`)
+        .addText((text) => {
+          text
+            .setPlaceholder("Folder path (e.g., Characters/Pathfinder)")
+            .setValue(mapping.folderPath)
+            .onChange(async (value) => {
+              mapping.folderPath = value;
+              await this.saveAndUpdateRegistry();
+            });
+          text.inputEl.style.width = "200px";
+          return text;
+        })
+        .addText((text) => {
+          text
+            .setPlaceholder("System file (e.g., Systems/Pathfinder 2e.md)")
+            .setValue(mapping.systemFilePath)
+            .onChange(async (value) => {
+              mapping.systemFilePath = value;
+              await this.saveAndUpdateRegistry();
+            });
+          text.inputEl.style.width = "250px";
+          return text;
+        })
+        .addButton((button) =>
+          button
+            .setIcon("trash")
+            .setTooltip("Remove mapping")
+            .onClick(async () => {
+              this.plugin.settings.systemMappings.splice(i, 1);
+              await this.saveAndUpdateRegistry();
+              this.display(); // Refresh display
+            })
+        );
+    }
+  }
+
+  private async saveAndUpdateRegistry(): Promise<void> {
+    await this.plugin.saveSettings();
+    
+    // Update system registry with new mappings
+    const registry = SystemRegistry.getInstance();
+    const mappings = new Map<string, string>();
+    for (const mapping of this.plugin.settings.systemMappings) {
+      mappings.set(mapping.folderPath, mapping.systemFilePath);
+    }
+    registry.setFolderMappings(mappings);
+  }
+
   // Helper method to add color picker setting
   private addColorSetting(containerEl: HTMLElement, name: string, settingKey: keyof DndUIToolkitSettings): void {
     new Setting(containerEl).setName(name).addColorPicker((colorPicker) =>
       colorPicker.setValue(this.plugin.settings[settingKey] as string).onChange(async (value) => {
-        this.plugin.settings[settingKey] = value;
+        (this.plugin.settings as any)[settingKey] = value;
         await this.plugin.saveSettings();
         this.plugin.applyColorSettings();
       })
