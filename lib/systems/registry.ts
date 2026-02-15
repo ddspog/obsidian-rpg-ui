@@ -184,9 +184,24 @@ export class SystemRegistry {
         return null;
       }
 
+      // Create a file loader for referenced files
+      const fileLoader = async (refPath: string): Promise<string | null> => {
+        try {
+          const refFile = this.vault!.getAbstractFileByPath(refPath);
+          if (!refFile || !(refFile instanceof TFile)) {
+            console.error(`Referenced file not found: ${refPath}`);
+            return null;
+          }
+          return await this.vault!.cachedRead(refFile as TFile);
+        } catch (error) {
+          console.error(`Failed to load referenced file ${refPath}:`, error);
+          return null;
+        }
+      };
+
       // Read file content
       const content = await this.vault.cachedRead(file as TFile);
-      const system = parseSystemFromMarkdown(content);
+      const system = await parseSystemFromMarkdown(content, fileLoader);
       
       if (!system) {
         console.error(`Failed to parse system from ${systemFilePath}`);

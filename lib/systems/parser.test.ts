@@ -3,16 +3,16 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseSystemFromMarkdown } from "./parser";
+import { parseSystemFromMarkdown, FileLoader } from "./parser";
 
 describe("parseSystemFromMarkdown", () => {
-  it("should return null when no system block is found", () => {
+  it("should return null when no system block is found", async () => {
     const markdown = "# Just a title\nSome content";
-    const result = parseSystemFromMarkdown(markdown);
+    const result = await parseSystemFromMarkdown(markdown);
     expect(result).toBeNull();
   });
 
-  it("should parse a basic system definition", () => {
+  it("should parse a basic system definition", async () => {
     const markdown = `
 # Test System
 
@@ -25,13 +25,13 @@ attributes:
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(system?.name).toBe("Test RPG");
     expect(system?.attributes).toEqual(["strength", "dexterity", "intelligence"]);
   });
 
-  it("should parse entity types with frontmatter fields", () => {
+  it("should parse entity types with frontmatter fields", async () => {
     const markdown = `
 \`\`\`rpg system
 name: "Test System"
@@ -52,7 +52,7 @@ types:
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(system?.entities.character).toBeDefined();
     
@@ -75,7 +75,7 @@ types:
     });
   });
 
-  it("should parse expression blocks", () => {
+  it("should parse expression blocks", async () => {
     const markdown = `
 \`\`\`rpg system
 name: "Test System"
@@ -98,7 +98,7 @@ formula: "{{add a b}}"
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(system?.expressions.size).toBe(2);
     
@@ -112,7 +112,7 @@ formula: "{{add a b}}"
     expect(simpleAddExpr).toBeDefined();
   });
 
-  it("should parse skill-list blocks", () => {
+  it("should parse skill-list blocks", async () => {
     const markdown = `
 \`\`\`rpg system
 name: "Test System"
@@ -130,7 +130,7 @@ skills:
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(system?.skills).toHaveLength(3);
     
@@ -145,7 +145,7 @@ skills:
     });
   });
 
-  it("should handle multiple entity types", () => {
+  it("should handle multiple entity types", async () => {
     const markdown = `
 \`\`\`rpg system
 name: "Multi-Type System"
@@ -167,21 +167,21 @@ types:
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(Object.keys(system?.entities || {})).toContain("character");
     expect(Object.keys(system?.entities || {})).toContain("monster");
     expect(Object.keys(system?.entities || {})).toContain("item");
   });
 
-  it("should use default values for missing system properties", () => {
+  it("should use default values for missing system properties", async () => {
     const markdown = `
 \`\`\`rpg system
 name: "Minimal System"
 \`\`\`
     `;
 
-    const system = parseSystemFromMarkdown(markdown);
+    const system = await parseSystemFromMarkdown(markdown);
     expect(system).not.toBeNull();
     expect(system?.name).toBe("Minimal System");
     expect(system?.attributes).toEqual([]);
@@ -195,6 +195,107 @@ name: "Minimal System"
     });
     expect(system?.spellcasting).toEqual({
       circles: [],
+      providers: [],
+      collectors: [],
+    });
+  });
+
+  it("should load features from external file when path is provided", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with External Features"
+attributes: [strength]
+features: "features/dnd5e-features.md"
+\`\`\`
+    `;
+
+    const featuresFile = `
+\`\`\`rpg system-features
+categories:
+  - id: action
+    label: Action
+    icon: ⚔️
+  - id: bonus_action
+    label: Bonus Action
+    icon: ⚡
+providers: [class, race]
+collectors: [character]
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "features/dnd5e-features.md") {
+        return featuresFile;
+      }
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.features.categories).toHaveLength(2);
+    expect(system?.features.categories[0]).toEqual({
+      id: "action",
+      label: "Action",
+      icon: "⚔️",
+    });
+    expect(system?.features.providers).toEqual(["class", "race"]);
+    expect(system?.features.collectors).toEqual(["character"]);
+  });
+
+  it("should load spellcasting from external file when path is provided", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with External Spellcasting"
+attributes: [intelligence]
+spellcasting: "spells/dnd5e-spells.md"
+\`\`\`
+    `;
+
+    const spellsFile = `
+\`\`\`rpg system-spellcasting
+circles:
+  - id: cantrip
+    label: Cantrip
+  - id: "1"
+    label: 1st Level
+providers: [class]
+collectors: [character]
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "spells/dnd5e-spells.md") {
+        return spellsFile;
+      }
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.spellcasting.circles).toHaveLength(2);
+    expect(system?.spellcasting.circles[0]).toEqual({
+      id: "cantrip",
+      label: "Cantrip",
+    });
+    expect(system?.spellcasting.providers).toEqual(["class"]);
+    expect(system?.spellcasting.collectors).toEqual(["character"]);
+  });
+
+  it("should use defaults when external file cannot be loaded", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Missing File"
+attributes: [strength]
+features: "missing-file.md"
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async () => null;
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.features).toEqual({
+      categories: [],
       providers: [],
       collectors: [],
     });
