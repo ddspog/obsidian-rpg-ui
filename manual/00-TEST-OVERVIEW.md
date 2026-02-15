@@ -38,6 +38,7 @@ Phase 2 adds system abstraction and new blocks for inventory and features.
 10. **10-TEST-ALL-BLOCKS.md** - Complete character sheet test
 11. **11-TEST-INVENTORY.md** - ✨ **NEW** - Test inventory block (Phase 2)
 12. **12-TEST-FEATURES.md** - ✨ **NEW** - Test features block (Phase 2)
+13. **13-TEST-SESSION-LOG.md** - ✨ **NEW** - Test session log with Lonelog notation (Phase 4)
 
 ## How to Test
 
@@ -85,3 +86,4 @@ If a block doesn't render:
 | `event-btns` | `rpg events` | Event Buttons |
 | _(none)_ | `rpg inventory` | ✨ **NEW** - Inventory (Phase 2) |
 | _(none)_ | `rpg features` | ✨ **NEW** - Features (Phase 2) |
+| _(none)_ | `rpg log` | ✨ **NEW** - Session Log with Lonelog (Phase 4) |
