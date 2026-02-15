@@ -11,6 +11,8 @@ import { EventButtonsView } from "lib/views/EventButtonsView";
 import { SystemDefinitionView } from "lib/views/SystemDefinitionView";
 import { ExpressionDefinitionView } from "lib/views/ExpressionDefinitionView";
 import { SkillListDefinitionView } from "lib/views/SkillListDefinitionView";
+import { SystemFeaturesDefinitionView } from "lib/views/SystemFeaturesDefinitionView";
+import { SystemSpellcastingDefinitionView } from "lib/views/SystemSpellcastingDefinitionView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { KeyValueStore } from "lib/services/kv/kv";
@@ -115,6 +117,8 @@ export default class DndUIToolkitPlugin extends Plugin {
       new SystemDefinitionView(app),
       new ExpressionDefinitionView(app),
       new SkillListDefinitionView(app),
+      new SystemFeaturesDefinitionView(app),
+      new SystemSpellcastingDefinitionView(app),
     ];
 
     // Build a map of meta -> view for dispatch
