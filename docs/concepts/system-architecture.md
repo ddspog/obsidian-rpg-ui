@@ -85,6 +85,33 @@ features: {
 
 The `providers` and `collectors` arrays define which entity types participate in the feature inheritance system. These arrays reference entity type names defined in the `entities` configuration.
 
+### Spellcasting System Configuration
+
+The `spellcasting` object in the system defines spell circles (levels) and caster relationships:
+
+```typescript
+spellcasting: {
+  circles: [
+    { id: "cantrip", label: "Cantrip", icon: "✨" },
+    { id: "1", label: "1st Level", icon: "1️⃣" },
+    { id: "2", label: "2nd Level", icon: "2️⃣" },
+    // ... up to 9th level
+  ],
+  providers: ["class", "subclass"],
+  collectors: ["character", "monster"],
+}
+```
+
+**The order in the `circles` array determines the display order** when spells are grouped by level.
+
+Similar to features, spellcasting uses a provider/collector pattern:
+- **Providers** (class, subclass) define spell lists
+- **Collectors** (character, monster) learn and cast spells from those lists
+
+This allows different magic systems:
+- D&D 5e uses 10 circles (Cantrip + 1st-9th level)
+- Other systems might use different structures (e.g., Fate uses "spells" as aspects)
+
 ### Entity Type Definitions
 
 Each entity type in `entities` has two parts: frontmatter field definitions and default features:
@@ -104,6 +131,11 @@ entities: {
   class: {
     frontmatter: [
       { name: "hit_die", type: "string", default: "d8" }
+    ]
+  },
+  subclass: {
+    frontmatter: [
+      { name: "parent_class", type: "string", default: "" }
     ]
   },
   race: {

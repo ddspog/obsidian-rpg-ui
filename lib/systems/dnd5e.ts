@@ -56,6 +56,22 @@ const DND5E_FEATURE_TYPES: FeatureTypeDefinition[] = [
 ];
 
 /**
+ * D&D 5e spell circles (spell levels)
+ */
+const DND5E_SPELL_CIRCLES: import("./types").SpellCircleDefinition[] = [
+  { id: "cantrip", label: "Cantrip", icon: "✨" },
+  { id: "1", label: "1st Level", icon: "1️⃣" },
+  { id: "2", label: "2nd Level", icon: "2️⃣" },
+  { id: "3", label: "3rd Level", icon: "3️⃣" },
+  { id: "4", label: "4th Level", icon: "4️⃣" },
+  { id: "5", label: "5th Level", icon: "5️⃣" },
+  { id: "6", label: "6th Level", icon: "6️⃣" },
+  { id: "7", label: "7th Level", icon: "7️⃣" },
+  { id: "8", label: "8th Level", icon: "8️⃣" },
+  { id: "9", label: "9th Level", icon: "9️⃣" },
+];
+
+/**
  * Character entity type for D&D 5e
  * Includes default combat actions available to all characters
  */
@@ -130,6 +146,19 @@ const DND5E_CLASS_TYPE: EntityTypeDef = {
       name: "hit_die",
       type: "string",
       default: "d8",
+    },
+  ],
+};
+
+/**
+ * Subclass entity type for D&D 5e
+ */
+const DND5E_SUBCLASS_TYPE: EntityTypeDef = {
+  frontmatter: [
+    {
+      name: "parent_class",
+      type: "string",
+      default: "",
     },
   ],
 };
@@ -232,6 +261,7 @@ export const DND5E_SYSTEM: RPGSystem = {
   entities: {
     character: DND5E_CHARACTER_TYPE,
     class: DND5E_CLASS_TYPE,
+    subclass: DND5E_SUBCLASS_TYPE,
     race: DND5E_RACE_TYPE,
     monster: DND5E_MONSTER_TYPE,
   },
@@ -244,6 +274,11 @@ export const DND5E_SYSTEM: RPGSystem = {
   features: {
     categories: DND5E_FEATURE_TYPES,
     providers: ["class", "race"],
+    collectors: ["character", "monster"],
+  },
+  spellcasting: {
+    circles: DND5E_SPELL_CIRCLES,
+    providers: ["class", "subclass"],
     collectors: ["character", "monster"],
   },
 };

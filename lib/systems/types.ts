@@ -26,6 +26,9 @@ export interface RPGSystem {
   
   /** Feature system configuration */
   features: FeatureSystemConfig;
+  
+  /** Spellcasting system configuration */
+  spellcasting: SpellcastingSystemConfig;
 }
 
 /**
@@ -131,5 +134,33 @@ export interface FeatureSystemConfig {
   providers: string[];
   
   /** Feature collector types (character, monster, etc.) - entity types that collect features from providers */
+  collectors: string[];
+}
+
+/**
+ * Spell circle/level definition
+ */
+export interface SpellCircleDefinition {
+  /** Circle identifier (e.g., "cantrip", "1", "2", ..., "9") */
+  id: string;
+  
+  /** Display label (e.g., "Cantrip", "1st Level", "2nd Level") */
+  label: string;
+  
+  /** Optional icon or emoji for the spell circle */
+  icon?: string;
+}
+
+/**
+ * Spellcasting system configuration
+ */
+export interface SpellcastingSystemConfig {
+  /** Spell circles/levels (cantrip, 1st, 2nd, etc.) - order determines display order */
+  circles: SpellCircleDefinition[];
+  
+  /** Spellcasting provider types (class, subclass, etc.) - entity types that provide spells to others */
+  providers: string[];
+  
+  /** Spellcasting collector types (character, monster, etc.) - entity types that can cast spells */
   collectors: string[];
 }
