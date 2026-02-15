@@ -3,7 +3,7 @@
  * Renders inline tags from Lonelog entries (NPC, Location, Clock, etc.)
  */
 
-import React from "react";
+import * as React from "react";
 import type { PersistentTag } from "lib/domains/lonelog/types";
 
 export interface TagPillProps {
@@ -43,7 +43,7 @@ export function TagPill({ tag, onClick }: TagPillProps) {
         return `🧵 ${tag.name}: ${tag.state}`;
 
       default:
-        return tag.name;
+        return "";
     }
   };
 

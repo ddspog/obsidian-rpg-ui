@@ -3,7 +3,7 @@
  * Provides entity selector, summary panel, and quick-action buttons
  */
 
-import React, { useState } from "react";
+import * as React from "react";
 import type { EntityData } from "lib/services/entity-resolver";
 import { EntitySummary } from "./entity-summary";
 
@@ -13,7 +13,7 @@ export interface HUDProps {
 }
 
 export function HUD({ entities, onAppendText }: HUDProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
 
   if (entities.length === 0) {
     return (
@@ -89,7 +89,11 @@ export function HUD({ entities, onAppendText }: HUDProps) {
 
           <button
             className="quick-action-btn consequence-btn"
-            onClick={() => handleAppendText("=> Something happens\n")}
+            onClick={() => {
+              if (onAppendText) {
+                onAppendText("=> Something happens\n");
+              }
+            }}
             title="Add Consequence"
           >
             ⇒ Consequence
@@ -97,7 +101,11 @@ export function HUD({ entities, onAppendText }: HUDProps) {
 
           <button
             className="quick-action-btn note-btn"
-            onClick={() => handleAppendText("(note: Add a note)\n")}
+            onClick={() => {
+              if (onAppendText) {
+                onAppendText("(note: Add a note)\n");
+              }
+            }}
             title="Add Note"
           >
             📝 Note

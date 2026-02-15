@@ -15,6 +15,7 @@ import { SystemFeaturesDefinitionView } from "lib/views/SystemFeaturesDefinition
 import { SystemSpellcastingDefinitionView } from "lib/views/SystemSpellcastingDefinitionView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
+import { SessionLogView } from "lib/views/SessionLogView";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
@@ -108,6 +109,7 @@ export default class DndUIToolkitPlugin extends Plugin {
       new HealthView(app, kv),
       new ConsumableView(app, kv),
       new InitiativeView(app, kv),
+      new SessionLogView(app, kv),
 
       // New blocks
       new InventoryView(app),

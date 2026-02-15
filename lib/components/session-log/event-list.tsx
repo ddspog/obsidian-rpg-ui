@@ -3,7 +3,7 @@
  * Renders parsed LonelogEntry[] as styled cards
  */
 
-import React from "react";
+import * as React from "react";
 import type { LonelogEntry } from "lib/domains/lonelog/types";
 import { SceneHeader } from "./scene-header";
 import { TagPillList } from "./tag-pill";

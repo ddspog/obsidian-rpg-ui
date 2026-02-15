@@ -3,7 +3,7 @@
  * Renders scene markers with variant styles for flashbacks, parallel threads, and montages
  */
 
-import React from "react";
+import * as React from "react";
 import type { SceneEntry } from "lib/domains/lonelog/types";
 
 export interface SceneHeaderProps {

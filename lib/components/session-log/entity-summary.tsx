@@ -3,7 +3,7 @@
  * Displays HP, AC, equipment, and status for a single entity
  */
 
-import React from "react";
+import * as React from "react";
 import type { EntityData } from "lib/services/entity-resolver";
 
 export interface EntitySummaryProps {
