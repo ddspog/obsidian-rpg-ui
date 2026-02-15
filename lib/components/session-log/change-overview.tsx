@@ -3,7 +3,7 @@
  * Displays a summary of all state changes (deltas) from the session
  */
 
-import React from "react";
+import * as React from "react";
 import type { EntityDelta, ProgressChange, ThreadChange } from "lib/domains/lonelog/types";
 import {
   calculateTotalHPChange,
