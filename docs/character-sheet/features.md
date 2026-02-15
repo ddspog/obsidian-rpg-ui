@@ -92,6 +92,38 @@ Each feature has:
 - `state_key` (optional): Unique identifier for tracking uses
 - `requires` (optional): Feature requirements (see Requirements section)
 - `optional` (optional): Boolean indicating if feature is optional
+- `detailed` (optional): Boolean controlling display style
+  - `true`: Display feature in full text with complete description
+  - `false` or omitted: Display as compact badge, showing details on hover
+
+### Feature Display Modes
+
+The `detailed` field controls how features are presented:
+
+**Detailed mode** (`detailed: true`):
+- Feature displays with full name and description text
+- Best for important features that should always be visible
+- Takes more space but provides immediate information
+
+**Badge mode** (default):
+- Feature displays as a compact badge with name and type icon
+- Hover over the badge to see the full description in a tooltip
+- Saves space while keeping information accessible
+- Ideal for simple actions like Dash, Dodge, or Opportunity Attack
+
+Example:
+```yaml
+features:
+  - name: "Action Surge"
+    type: action
+    description: "Take an additional action on your turn."
+    detailed: true  # Always show full description
+    
+  - name: "Dash"
+    type: action
+    description: "Double your speed for the current turn."
+    # detailed omitted - shows as badge with hover tooltip
+```
 
 ### Feature Types
 
