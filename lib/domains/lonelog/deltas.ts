@@ -160,6 +160,31 @@ function processNPCTag(tag: NPCTag, entityDeltas: Map<string, EntityDelta>): voi
 }
 
 /**
+ * Known status keywords for parsing
+ */
+const STATUS_KEYWORDS = [
+  "dead",
+  "unconscious",
+  "wounded",
+  "hostile",
+  "alert",
+  "distracted",
+  "prone",
+  "stunned",
+  "paralyzed",
+  "frightened",
+  "charmed",
+  "blinded",
+  "deafened",
+  "invisible",
+  "poisoned",
+  "grappled",
+  "restrained",
+  "incapacitated",
+  "petrified",
+];
+
+/**
  * Parse a change string into a StateChange
  * Examples:
  * - "HP-9" -> HP change of -9
@@ -206,29 +231,7 @@ function parseChange(change: string): StateChange | null {
 
   // Simple status (e.g., "dead", "wounded", "hostile")
   // Only consider as status if it's a known status word
-  const statusWords = [
-    "dead",
-    "unconscious",
-    "wounded",
-    "hostile",
-    "alert",
-    "distracted",
-    "prone",
-    "stunned",
-    "paralyzed",
-    "frightened",
-    "charmed",
-    "blinded",
-    "deafened",
-    "invisible",
-    "poisoned",
-    "grappled",
-    "restrained",
-    "incapacitated",
-    "petrified",
-  ];
-
-  if (statusWords.includes(change.toLowerCase())) {
+  if (STATUS_KEYWORDS.includes(change.toLowerCase())) {
     return { type: "status", from: null, to: change };
   }
 
