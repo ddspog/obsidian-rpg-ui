@@ -1,8 +1,20 @@
 import { THEMES } from "lib/themes";
 
+/**
+ * Folder-to-system mapping entry
+ */
+export interface SystemMapping {
+  folderPath: string;
+  systemFilePath: string;
+}
+
 export interface DndUIToolkitSettings {
   statePath: string;
   selectedTheme: string;
+
+  // System mappings: folder path → system definition file path
+  // Empty folder path ("") represents the root/default for the entire vault
+  systemMappings: SystemMapping[];
 
   // Color variables
   colorBgPrimary: string;
@@ -32,6 +44,7 @@ export interface DndUIToolkitSettings {
 export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   statePath: ".dnd-ui-toolkit-state.json",
   selectedTheme: "default",
+  systemMappings: [],
 
   ...THEMES.default.colors,
 };
