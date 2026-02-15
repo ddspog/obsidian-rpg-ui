@@ -210,7 +210,7 @@ features: "features/dnd5e-features.md"
     `;
 
     const featuresFile = `
-\`\`\`rpg system-features
+\`\`\`rpg system.features
 categories:
   - id: action
     label: Action
@@ -252,7 +252,7 @@ spellcasting: "spells/dnd5e-spells.md"
     `;
 
     const spellsFile = `
-\`\`\`rpg system-spellcasting
+\`\`\`rpg system.spellcasting
 circles:
   - id: cantrip
     label: Cantrip
@@ -291,14 +291,13 @@ skills: "skills/dnd5e-skills.md"
     `;
 
     const skillsFile = `
-\`\`\`rpg system-skills
-skills:
-  - label: "Acrobatics"
-    attribute: dexterity
-  - label: "Athletics"
-    attribute: strength
-  - label: "Stealth"
-    attribute: dexterity
+\`\`\`rpg system.skills
+- label: "Acrobatics"
+  attribute: dexterity
+- label: "Athletics"
+  attribute: strength
+- label: "Stealth"
+  attribute: dexterity
 \`\`\`
     `;
 
@@ -334,22 +333,20 @@ skills:
     `;
 
     const physicalSkills = `
-\`\`\`rpg system-skills
-skills:
-  - label: "Acrobatics"
-    attribute: dexterity
-  - label: "Athletics"
-    attribute: strength
+\`\`\`rpg system.skills
+- label: "Acrobatics"
+  attribute: dexterity
+- label: "Athletics"
+  attribute: strength
 \`\`\`
     `;
 
     const mentalSkills = `
-\`\`\`rpg system-skills
-skills:
-  - label: "Insight"
-    attribute: wisdom
-  - label: "Perception"
-    attribute: wisdom
+\`\`\`rpg system.skills
+- label: "Insight"
+  attribute: wisdom
+- label: "Perception"
+  attribute: wisdom
 \`\`\`
     `;
 
@@ -380,14 +377,13 @@ expressions: "expressions/dnd5e-expressions.md"
     `;
 
     const expressionsFile = `
-\`\`\`rpg system-expressions
-expressions:
-  - id: modifier
-    params: [score]
-    formula: "{{floor (divide (subtract score 10) 2)}}"
-  - id: saving_throw
-    params: [modifier, proficient, proficiency_bonus]
-    formula: "{{add modifier (if proficient proficiency_bonus 0)}}"
+\`\`\`rpg system.expressions
+- id: modifier
+  params: [score]
+  formula: "{{floor (divide (subtract score 10) 2)}}"
+- id: saving_throw
+  params: [modifier, proficient, proficiency_bonus]
+  formula: "{{add modifier (if proficient proficiency_bonus 0)}}"
 \`\`\`
     `;
 

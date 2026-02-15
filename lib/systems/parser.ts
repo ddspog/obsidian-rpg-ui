@@ -2,7 +2,7 @@
  * System markdown parser
  * 
  * Parses RPG system definitions from markdown files containing rpg code blocks.
- * Reads `rpg system`, `rpg expression`, `rpg skill-list`, `rpg system-features`, and `rpg system-spellcasting` blocks.
+ * Reads `rpg system`, `rpg expression`, `rpg skill-list`, `rpg system.features`, and `rpg system.spellcasting` blocks.
  */
 
 import { parse as parseYaml } from "yaml";
@@ -167,13 +167,13 @@ function parseFieldDefinitions(fields: any[]): FrontmatterFieldDef[] {
 }
 
 /**
- * Parse all rpg expression or rpg system-expressions blocks from markdown
+ * Parse all rpg expression or rpg system.expressions blocks from markdown
  */
 function parseExpressions(fileContent: string): Map<string, ExpressionDef> {
   const expressionMap = new Map<string, ExpressionDef>();
   
-  // Try both rpg expression and rpg system-expressions (new format)
-  let expressionBlocks = extractCodeBlocks(fileContent, "rpg system-expressions");
+  // Try both rpg expression and rpg system.expressions (new format)
+  let expressionBlocks = extractCodeBlocks(fileContent, "rpg system.expressions");
   if (expressionBlocks.length === 0) {
     // Fall back to rpg expression (backward compatibility)
     expressionBlocks = extractCodeBlocks(fileContent, "rpg expression");
@@ -185,8 +185,19 @@ function parseExpressions(fileContent: string): Map<string, ExpressionDef> {
       continue;
     }
 
-    // Support both single expression and array of expressions
-    const expressions = Array.isArray(exprYaml.expressions) ? exprYaml.expressions : [exprYaml];
+    // Support both array of expressions (new format without wrapper)
+    // and single expression or expressions wrapped in 'expressions:' field (old format)
+    let expressions: any[];
+    if (Array.isArray(exprYaml)) {
+      // Direct array (new format): [{id: "modifier", ...}, {id: "saving_throw", ...}]
+      expressions = exprYaml;
+    } else if (Array.isArray(exprYaml.expressions)) {
+      // Array in 'expressions' field (old format): {expressions: [{...}, {...}]}
+      expressions = exprYaml.expressions;
+    } else {
+      // Single expression object: {id: "modifier", ...}
+      expressions = [exprYaml];
+    }
 
     for (const expr of expressions) {
       const id = expr.id;
@@ -241,11 +252,11 @@ function parseExpressions(fileContent: string): Map<string, ExpressionDef> {
 }
 
 /**
- * Parse rpg skill-list or rpg system-skills blocks from markdown
+ * Parse rpg skill-list or rpg system.skills blocks from markdown
  */
 function parseSkills(fileContent: string): SkillDefinition[] {
-  // Try rpg system-skills first (new format)
-  let skillBlocks = extractCodeBlocks(fileContent, "rpg system-skills");
+  // Try rpg system.skills first (new format)
+  let skillBlocks = extractCodeBlocks(fileContent, "rpg system.skills");
   if (skillBlocks.length === 0) {
     // Fall back to rpg skill-list (backward compatibility)
     skillBlocks = extractCodeBlocks(fileContent, "rpg skill-list");
@@ -260,8 +271,16 @@ function parseSkills(fileContent: string): SkillDefinition[] {
     return [];
   }
 
-  const skills = skillYaml.skills;
-  if (!Array.isArray(skills)) {
+  // Support both direct array (new format without wrapper)
+  // and wrapped in 'skills' field (old format)
+  let skills: any[];
+  if (Array.isArray(skillYaml)) {
+    // Direct array (new format): [{label: "Acrobatics", attribute: "dexterity"}, ...]
+    skills = skillYaml;
+  } else if (Array.isArray(skillYaml.skills)) {
+    // Array in 'skills' field (old format): {skills: [{...}, {...}]}
+    skills = skillYaml.skills;
+  } else {
     return [];
   }
 
@@ -297,7 +316,7 @@ function parseSpellcastingConfig(spellcastingObj: any): SpellcastingSystemConfig
 /**
  * Load features configuration from external file
  * 
- * @param filePath - Path to file containing rpg system-features block
+ * @param filePath - Path to file containing rpg system.features block
  * @param fileLoader - Function to load file content
  * @returns Parsed features configuration
  */
@@ -316,9 +335,9 @@ async function loadFeaturesFromFile(
       };
     }
 
-    const featureBlocks = extractCodeBlocks(content, "rpg system-features");
+    const featureBlocks = extractCodeBlocks(content, "rpg system.features");
     if (featureBlocks.length === 0) {
-      console.error(`No rpg system-features block found in ${filePath}`);
+      console.error(`No rpg system.features block found in ${filePath}`);
       return {
         categories: [],
         providers: [],
@@ -350,7 +369,7 @@ async function loadFeaturesFromFile(
 /**
  * Load spellcasting configuration from external file
  * 
- * @param filePath - Path to file containing rpg system-spellcasting block
+ * @param filePath - Path to file containing rpg system.spellcasting block
  * @param fileLoader - Function to load file content
  * @returns Parsed spellcasting configuration
  */
@@ -369,9 +388,9 @@ async function loadSpellcastingFromFile(
       };
     }
 
-    const spellcastingBlocks = extractCodeBlocks(content, "rpg system-spellcasting");
+    const spellcastingBlocks = extractCodeBlocks(content, "rpg system.spellcasting");
     if (spellcastingBlocks.length === 0) {
-      console.error(`No rpg system-spellcasting block found in ${filePath}`);
+      console.error(`No rpg system.spellcasting block found in ${filePath}`);
       return {
         circles: [],
         providers: [],
@@ -403,7 +422,7 @@ async function loadSpellcastingFromFile(
 /**
  * Load skills from external file
  * 
- * @param filePath - Path to file containing rpg skill-list or rpg system-skills block
+ * @param filePath - Path to file containing rpg skill-list or rpg system.skills block
  * @param fileLoader - Function to load file content
  * @returns Parsed skill definitions
  */
@@ -418,14 +437,14 @@ async function loadSkillsFromFile(
       return [];
     }
 
-    // Try both rpg system-skills and rpg skill-list (backward compatibility)
-    let skillBlocks = extractCodeBlocks(content, "rpg system-skills");
+    // Try both rpg system.skills and rpg skill-list (backward compatibility)
+    let skillBlocks = extractCodeBlocks(content, "rpg system.skills");
     if (skillBlocks.length === 0) {
       skillBlocks = extractCodeBlocks(content, "rpg skill-list");
     }
 
     if (skillBlocks.length === 0) {
-      console.error(`No rpg system-skills or rpg skill-list block found in ${filePath}`);
+      console.error(`No rpg system.skills or rpg skill-list block found in ${filePath}`);
       return [];
     }
 
@@ -435,8 +454,13 @@ async function loadSkillsFromFile(
       return [];
     }
 
-    const skills = skillYaml.skills;
-    if (!Array.isArray(skills)) {
+    // Support both direct array (new format) and wrapped in 'skills' field (old format)
+    let skills: any[];
+    if (Array.isArray(skillYaml)) {
+      skills = skillYaml;
+    } else if (Array.isArray(skillYaml.skills)) {
+      skills = skillYaml.skills;
+    } else {
       return [];
     }
 
@@ -474,7 +498,7 @@ async function loadSkillsFromFiles(
 /**
  * Load expressions from external file
  * 
- * @param filePath - Path to file containing rpg expression or rpg system-expressions blocks
+ * @param filePath - Path to file containing rpg expression or rpg system.expressions blocks
  * @param fileLoader - Function to load file content
  * @returns Parsed expression definitions
  */
@@ -489,7 +513,7 @@ async function loadExpressionsFromFile(
       return new Map();
     }
 
-    // Parse expressions from the file (supports both rpg expression and rpg system-expressions)
+    // Parse expressions from the file (supports both rpg expression and rpg system.expressions)
     return parseExpressions(content);
   } catch (error) {
     console.error(`Error loading expressions from ${filePath}:`, error);
