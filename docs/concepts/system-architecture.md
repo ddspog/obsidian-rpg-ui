@@ -87,7 +87,7 @@ The `providers` and `collectors` arrays define which entity types participate in
 
 ### Spellcasting System Configuration
 
-The `spellcasting` object in the system defines spell circles (levels) and caster relationships:
+The `spellcasting` object in the system defines spell circles (levels), spell lists, and caster relationships:
 
 ```typescript
 spellcasting: {
@@ -97,6 +97,12 @@ spellcasting: {
     { id: "2", label: "2nd Level", icon: "2️⃣" },
     // ... up to 9th level
   ],
+  lists: [
+    { id: "wizard", label: "Wizard Spells", icon: "📚" },
+    { id: "cleric", label: "Cleric Spells", icon: "✝️" },
+    { id: "druid", label: "Druid Spells", icon: "🌿" },
+    // ... other spell lists
+  ],
   providers: ["class", "subclass"],
   collectors: ["character", "monster"],
 }
@@ -104,13 +110,18 @@ spellcasting: {
 
 **The order in the `circles` array determines the display order** when spells are grouped by level.
 
+**The `lists` array defines different spell sources** available in the system. In D&D 5e, each class has its own spell list (Wizard Spells, Cleric Spells, etc.). This allows:
+- Spells to be categorized by which classes can access them
+- Different spell sources for multiclass characters
+- Spell list filtering and organization
+
 Similar to features, spellcasting uses a provider/collector pattern:
-- **Providers** (class, subclass) define spell lists
+- **Providers** (class, subclass) define spell lists and grant access to specific spells
 - **Collectors** (character, monster) learn and cast spells from those lists
 
 This allows different magic systems:
-- D&D 5e uses 10 circles (Cantrip + 1st-9th level)
-- Other systems might use different structures (e.g., Fate uses "spells" as aspects)
+- D&D 5e uses 10 circles (Cantrip + 1st-9th level) and 9 spell lists (one per spellcasting class)
+- Other systems might use different structures (e.g., Fate uses "spells" as aspects, or systems without discrete spell lists)
 
 ### Entity Type Definitions
 
