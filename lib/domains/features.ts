@@ -30,6 +30,7 @@ export interface Feature {
   state_key?: string;
   requires?: FeatureRequirement;
   optional?: boolean;
+  detailed?: boolean; // Whether to display in full text (true) or as badge with hover (false)
 }
 
 /**

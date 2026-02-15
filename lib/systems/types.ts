@@ -41,17 +41,21 @@ export interface EntityTypeDef {
 }
 
 /**
- * Feature definition for default entity features
+ * Feature definition for default entity features in system definitions
+ * Simplified version with only essential fields for default features
  */
 export interface Feature {
+  /** Feature name */
   name: string;
-  level?: number;
+  
+  /** Feature description */
   description?: string;
+  
+  /** Feature type identifier (e.g., "action", "bonus_action", "reaction") */
   type?: string;
-  reset_on?: string;
-  uses?: number;
-  state_key?: string;
-  optional?: boolean;
+  
+  /** Whether this feature should be displayed in detail (full text) or as a badge with hover details */
+  detailed?: boolean;
 }
 
 /**
