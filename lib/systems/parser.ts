@@ -64,11 +64,31 @@ export async function parseSystemFromMarkdown(
     }
   }
 
-  // Extract and parse expressions
-  const expressions = parseExpressions(fileContent);
+  // Parse expressions (either from inline blocks, external file, or file list)
+  let expressions: Map<string, ExpressionDef>;
+  if (typeof systemYaml.expressions === "string" && fileLoader) {
+    // Load from external file
+    expressions = await loadExpressionsFromFile(systemYaml.expressions, fileLoader);
+  } else if (Array.isArray(systemYaml.expressions) && fileLoader) {
+    // Load from multiple files
+    expressions = await loadExpressionsFromFiles(systemYaml.expressions, fileLoader);
+  } else {
+    // Parse from inline blocks in current file (backward compatibility)
+    expressions = parseExpressions(fileContent);
+  }
 
-  // Extract and parse skills
-  const skills = parseSkills(fileContent);
+  // Parse skills (either from inline blocks, external file, or file list)
+  let skills: SkillDefinition[];
+  if (typeof systemYaml.skills === "string" && fileLoader) {
+    // Load from external file
+    skills = await loadSkillsFromFile(systemYaml.skills, fileLoader);
+  } else if (Array.isArray(systemYaml.skills) && fileLoader) {
+    // Load from multiple files
+    skills = await loadSkillsFromFiles(systemYaml.skills, fileLoader);
+  } else {
+    // Parse from inline blocks in current file (backward compatibility)
+    skills = parseSkills(fileContent);
+  }
 
   // Parse features (either inline or from external file)
   let features: FeatureSystemConfig;
@@ -147,11 +167,17 @@ function parseFieldDefinitions(fields: any[]): FrontmatterFieldDef[] {
 }
 
 /**
- * Parse all rpg expression blocks from markdown
+ * Parse all rpg expression or rpg system-expressions blocks from markdown
  */
 function parseExpressions(fileContent: string): Map<string, ExpressionDef> {
   const expressionMap = new Map<string, ExpressionDef>();
-  const expressionBlocks = extractCodeBlocks(fileContent, "rpg expression");
+  
+  // Try both rpg expression and rpg system-expressions (new format)
+  let expressionBlocks = extractCodeBlocks(fileContent, "rpg system-expressions");
+  if (expressionBlocks.length === 0) {
+    // Fall back to rpg expression (backward compatibility)
+    expressionBlocks = extractCodeBlocks(fileContent, "rpg expression");
+  }
 
   for (const block of expressionBlocks) {
     const exprYaml = parseYaml(block);
@@ -159,61 +185,72 @@ function parseExpressions(fileContent: string): Map<string, ExpressionDef> {
       continue;
     }
 
-    const id = exprYaml.id;
-    const params = exprYaml.params || [];
-    const formula = exprYaml.formula || "";
+    // Support both single expression and array of expressions
+    const expressions = Array.isArray(exprYaml.expressions) ? exprYaml.expressions : [exprYaml];
 
-    if (!id) {
-      console.warn("Expression block missing 'id' field");
-      continue;
-    }
+    for (const expr of expressions) {
+      const id = expr.id;
+      const params = expr.params || [];
+      const formula = expr.formula || "";
 
-    // Compile the Handlebars template
-    let compiledTemplate: HandlebarsTemplateDelegate;
-    try {
-      compiledTemplate = Handlebars.compile(formula);
-    } catch (error) {
-      console.error(`Failed to compile expression '${id}':`, error);
-      continue;
-    }
-
-    // Create evaluate function
-    const evaluate = (context: Record<string, number | string | boolean>): number | string | boolean => {
-      try {
-        const result = compiledTemplate(context);
-        // Try to parse as number if possible
-        const numResult = parseFloat(result);
-        if (!isNaN(numResult)) {
-          return numResult;
-        }
-        // Return as boolean if it's a boolean string
-        if (result === "true") return true;
-        if (result === "false") return false;
-        return result;
-      } catch (error) {
-        console.error(`Failed to evaluate expression '${id}':`, error);
-        return 0;
+      if (!id) {
+        console.warn("Expression missing 'id' field");
+        continue;
       }
-    };
 
-    const expressionDef: ExpressionDef = {
-      id,
-      params,
-      formula,
-      evaluate,
-    };
+      // Compile the Handlebars template
+      let compiledTemplate: HandlebarsTemplateDelegate;
+      try {
+        compiledTemplate = Handlebars.compile(formula);
+      } catch (error) {
+        console.error(`Failed to compile expression '${id}':`, error);
+        continue;
+      }
 
-    expressionMap.set(id, expressionDef);
+      // Create evaluate function
+      const evaluate = (context: Record<string, number | string | boolean>): number | string | boolean => {
+        try {
+          const result = compiledTemplate(context);
+          // Try to parse as number if possible
+          const numResult = parseFloat(result);
+          if (!isNaN(numResult)) {
+            return numResult;
+          }
+          // Return as boolean if it's a boolean string
+          if (result === "true") return true;
+          if (result === "false") return false;
+          return result;
+        } catch (error) {
+          console.error(`Failed to evaluate expression '${id}':`, error);
+          return 0;
+        }
+      };
+
+      const expressionDef: ExpressionDef = {
+        id,
+        params,
+        formula,
+        evaluate,
+      };
+
+      expressionMap.set(id, expressionDef);
+    }
   }
 
   return expressionMap;
 }
 
 /**
- * Parse rpg skill-list blocks from markdown
+ * Parse rpg skill-list or rpg system-skills blocks from markdown
  */
 function parseSkills(fileContent: string): SkillDefinition[] {
-  const skillBlocks = extractCodeBlocks(fileContent, "rpg skill-list");
+  // Try rpg system-skills first (new format)
+  let skillBlocks = extractCodeBlocks(fileContent, "rpg system-skills");
+  if (skillBlocks.length === 0) {
+    // Fall back to rpg skill-list (backward compatibility)
+    skillBlocks = extractCodeBlocks(fileContent, "rpg skill-list");
+  }
+  
   if (skillBlocks.length === 0) {
     return [];
   }
@@ -361,4 +398,125 @@ async function loadSpellcastingFromFile(
       collectors: [],
     };
   }
+}
+
+/**
+ * Load skills from external file
+ * 
+ * @param filePath - Path to file containing rpg skill-list or rpg system-skills block
+ * @param fileLoader - Function to load file content
+ * @returns Parsed skill definitions
+ */
+async function loadSkillsFromFile(
+  filePath: string,
+  fileLoader: FileLoader
+): Promise<SkillDefinition[]> {
+  try {
+    const content = await fileLoader(filePath);
+    if (!content) {
+      console.error(`Failed to load skills file: ${filePath}`);
+      return [];
+    }
+
+    // Try both rpg system-skills and rpg skill-list (backward compatibility)
+    let skillBlocks = extractCodeBlocks(content, "rpg system-skills");
+    if (skillBlocks.length === 0) {
+      skillBlocks = extractCodeBlocks(content, "rpg skill-list");
+    }
+
+    if (skillBlocks.length === 0) {
+      console.error(`No rpg system-skills or rpg skill-list block found in ${filePath}`);
+      return [];
+    }
+
+    const skillYaml = parseYaml(skillBlocks[0]);
+    if (!skillYaml || typeof skillYaml !== "object") {
+      console.error(`Invalid skills YAML in ${filePath}`);
+      return [];
+    }
+
+    const skills = skillYaml.skills;
+    if (!Array.isArray(skills)) {
+      return [];
+    }
+
+    return skills.map((skill) => ({
+      label: skill.label || "",
+      attribute: skill.attribute || "",
+    }));
+  } catch (error) {
+    console.error(`Error loading skills from ${filePath}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Load skills from multiple external files
+ * 
+ * @param filePaths - Array of paths to files containing skill definitions
+ * @param fileLoader - Function to load file content
+ * @returns Merged skill definitions from all files
+ */
+async function loadSkillsFromFiles(
+  filePaths: string[],
+  fileLoader: FileLoader
+): Promise<SkillDefinition[]> {
+  const allSkills: SkillDefinition[] = [];
+
+  for (const filePath of filePaths) {
+    const skills = await loadSkillsFromFile(filePath, fileLoader);
+    allSkills.push(...skills);
+  }
+
+  return allSkills;
+}
+
+/**
+ * Load expressions from external file
+ * 
+ * @param filePath - Path to file containing rpg expression or rpg system-expressions blocks
+ * @param fileLoader - Function to load file content
+ * @returns Parsed expression definitions
+ */
+async function loadExpressionsFromFile(
+  filePath: string,
+  fileLoader: FileLoader
+): Promise<Map<string, ExpressionDef>> {
+  try {
+    const content = await fileLoader(filePath);
+    if (!content) {
+      console.error(`Failed to load expressions file: ${filePath}`);
+      return new Map();
+    }
+
+    // Parse expressions from the file (supports both rpg expression and rpg system-expressions)
+    return parseExpressions(content);
+  } catch (error) {
+    console.error(`Error loading expressions from ${filePath}:`, error);
+    return new Map();
+  }
+}
+
+/**
+ * Load expressions from multiple external files
+ * 
+ * @param filePaths - Array of paths to files containing expression definitions
+ * @param fileLoader - Function to load file content
+ * @returns Merged expression definitions from all files
+ */
+async function loadExpressionsFromFiles(
+  filePaths: string[],
+  fileLoader: FileLoader
+): Promise<Map<string, ExpressionDef>> {
+  const allExpressions = new Map<string, ExpressionDef>();
+
+  for (const filePath of filePaths) {
+    const expressions = await loadExpressionsFromFile(filePath, fileLoader);
+    // Merge expressions (later files override earlier ones if same id)
+    for (const [id, expr] of expressions.entries()) {
+      allExpressions.set(id, expr);
+    }
+  }
+
+  return allExpressions;
 }

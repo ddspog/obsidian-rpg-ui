@@ -11,6 +11,8 @@ import { EventButtonsView } from "lib/views/EventButtonsView";
 import { SystemDefinitionView } from "lib/views/SystemDefinitionView";
 import { ExpressionDefinitionView } from "lib/views/ExpressionDefinitionView";
 import { SkillListDefinitionView } from "lib/views/SkillListDefinitionView";
+import { SystemExpressionsDefinitionView } from "lib/views/SystemExpressionsDefinitionView";
+import { SystemSkillsDefinitionView } from "lib/views/SystemSkillsDefinitionView";
 import { SystemFeaturesDefinitionView } from "lib/views/SystemFeaturesDefinitionView";
 import { SystemSpellcastingDefinitionView } from "lib/views/SystemSpellcastingDefinitionView";
 import { InventoryView } from "lib/views/InventoryView";
@@ -119,6 +121,8 @@ export default class DndUIToolkitPlugin extends Plugin {
       new SystemDefinitionView(app),
       new ExpressionDefinitionView(app),
       new SkillListDefinitionView(app),
+      new SystemExpressionsDefinitionView(app),
+      new SystemSkillsDefinitionView(app),
       new SystemFeaturesDefinitionView(app),
       new SystemSpellcastingDefinitionView(app),
     ];

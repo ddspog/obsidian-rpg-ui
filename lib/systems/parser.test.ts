@@ -281,6 +281,223 @@ collectors: [character]
     expect(system?.spellcasting.collectors).toEqual(["character"]);
   });
 
+  it("should load skills from external file when path is provided", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with External Skills"
+attributes: [strength, dexterity]
+skills: "skills/dnd5e-skills.md"
+\`\`\`
+    `;
+
+    const skillsFile = `
+\`\`\`rpg system-skills
+skills:
+  - label: "Acrobatics"
+    attribute: dexterity
+  - label: "Athletics"
+    attribute: strength
+  - label: "Stealth"
+    attribute: dexterity
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "skills/dnd5e-skills.md") {
+        return skillsFile;
+      }
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(3);
+    expect(system?.skills[0]).toEqual({
+      label: "Acrobatics",
+      attribute: "dexterity",
+    });
+    expect(system?.skills[1]).toEqual({
+      label: "Athletics",
+      attribute: "strength",
+    });
+  });
+
+  it("should load skills from multiple external files", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Multiple Skill Files"
+attributes: [strength, dexterity, wisdom]
+skills:
+  - "skills/physical.md"
+  - "skills/mental.md"
+\`\`\`
+    `;
+
+    const physicalSkills = `
+\`\`\`rpg system-skills
+skills:
+  - label: "Acrobatics"
+    attribute: dexterity
+  - label: "Athletics"
+    attribute: strength
+\`\`\`
+    `;
+
+    const mentalSkills = `
+\`\`\`rpg system-skills
+skills:
+  - label: "Insight"
+    attribute: wisdom
+  - label: "Perception"
+    attribute: wisdom
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "skills/physical.md") return physicalSkills;
+      if (path === "skills/mental.md") return mentalSkills;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(4);
+    expect(system?.skills.map(s => s.label)).toEqual([
+      "Acrobatics",
+      "Athletics",
+      "Insight",
+      "Perception",
+    ]);
+  });
+
+  it("should load expressions from external file when path is provided", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with External Expressions"
+attributes: [strength]
+expressions: "expressions/dnd5e-expressions.md"
+\`\`\`
+    `;
+
+    const expressionsFile = `
+\`\`\`rpg system-expressions
+expressions:
+  - id: modifier
+    params: [score]
+    formula: "{{floor (divide (subtract score 10) 2)}}"
+  - id: saving_throw
+    params: [modifier, proficient, proficiency_bonus]
+    formula: "{{add modifier (if proficient proficiency_bonus 0)}}"
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "expressions/dnd5e-expressions.md") {
+        return expressionsFile;
+      }
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.expressions.size).toBe(2);
+    expect(system?.expressions.has("modifier")).toBe(true);
+    expect(system?.expressions.has("saving_throw")).toBe(true);
+    
+    const modifierExpr = system?.expressions.get("modifier");
+    expect(modifierExpr?.params).toEqual(["score"]);
+    expect(modifierExpr?.evaluate({ score: 16 })).toBe(3);
+  });
+
+  it("should load expressions from multiple external files", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Multiple Expression Files"
+attributes: [strength]
+expressions:
+  - "expressions/basic.md"
+  - "expressions/advanced.md"
+\`\`\`
+    `;
+
+    const basicExpressions = `
+\`\`\`rpg expression
+id: modifier
+params: [score]
+formula: "{{floor (divide (subtract score 10) 2)}}"
+\`\`\`
+    `;
+
+    const advancedExpressions = `
+\`\`\`rpg expression
+id: saving_throw
+params: [modifier, proficient, proficiency_bonus]
+formula: "{{add modifier (if proficient proficiency_bonus 0)}}"
+\`\`\`
+
+\`\`\`rpg expression
+id: attack_bonus
+params: [modifier, proficient, proficiency_bonus]
+formula: "{{add modifier (if proficient proficiency_bonus 0)}}"
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "expressions/basic.md") return basicExpressions;
+      if (path === "expressions/advanced.md") return advancedExpressions;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.expressions.size).toBe(3);
+    expect(system?.expressions.has("modifier")).toBe(true);
+    expect(system?.expressions.has("saving_throw")).toBe(true);
+    expect(system?.expressions.has("attack_bonus")).toBe(true);
+  });
+
+  it("should support backward compatibility with inline skill-list blocks", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Inline Skills"
+attributes: [strength, dexterity]
+\`\`\`
+
+\`\`\`rpg skill-list
+skills:
+  - label: "Acrobatics"
+    attribute: dexterity
+  - label: "Athletics"
+    attribute: strength
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+    expect(system?.skills[0].label).toBe("Acrobatics");
+  });
+
+  it("should support backward compatibility with inline expression blocks", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Inline Expressions"
+attributes: [strength]
+\`\`\`
+
+\`\`\`rpg expression
+id: modifier
+params: [score]
+formula: "{{floor (divide (subtract score 10) 2)}}"
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.expressions.size).toBe(1);
+    expect(system?.expressions.has("modifier")).toBe(true);
+  });
+
   it("should use defaults when external file cannot be loaded", async () => {
     const markdown = `
 \`\`\`rpg system
