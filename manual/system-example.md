@@ -1,6 +1,6 @@
 # D&D 5e System Example
 
-This is an example of how to define a custom RPG system. This file demonstrates the syntax for defining system rules.
+This is an example of how to define a custom RPG system. This file demonstrates the syntax for defining system rules, including how to reference external files for sub-configurations.
 
 ## System Definition
 
@@ -13,6 +13,10 @@ attributes:
   - intelligence
   - wisdom
   - charisma
+
+# Reference external files for features and spellcasting
+features: "Systems/DnD5e-Features.md"
+spellcasting: "Systems/DnD5e-Spellcasting.md"
 
 types:
   character:
@@ -37,6 +41,37 @@ types:
       - name: type
         type: string
         default: "beast"
+```
+
+## Alternative: Inline Features and Spellcasting
+
+Instead of referencing external files, you can define features and spellcasting inline:
+
+```rpg system
+name: "D&D 5th Edition"
+attributes: [strength, dexterity, constitution, intelligence, wisdom, charisma]
+
+# Inline features configuration
+features:
+  categories:
+    - id: action
+      label: Action
+      icon: ⚔️
+    - id: bonus_action
+      label: Bonus Action
+      icon: ⚡
+  providers: [class, race]
+  collectors: [character]
+
+# Inline spellcasting configuration
+spellcasting:
+  circles:
+    - id: cantrip
+      label: Cantrip
+    - id: "1"
+      label: 1st Level
+  providers: [class]
+  collectors: [character]
 ```
 
 ## Expressions
