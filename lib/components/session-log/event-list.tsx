@@ -4,13 +4,13 @@
  */
 
 import * as React from "react";
-import type { LonelogEntry } from "lib/domains/lonelog/types";
+import type { LonelogEntry, PersistentTag } from "lib/domains/lonelog/types";
 import { SceneHeader } from "./scene-header";
 import { TagPillList } from "./tag-pill";
 
 export interface EventListProps {
   entries: LonelogEntry[];
-  onTagClick?: (tag: any) => void;
+  onTagClick?: (tag: PersistentTag) => void;
 }
 
 export function EventList({ entries, onTagClick }: EventListProps) {
@@ -25,7 +25,7 @@ export function EventList({ entries, onTagClick }: EventListProps) {
 
 interface EventCardProps {
   entry: LonelogEntry;
-  onTagClick?: (tag: any) => void;
+  onTagClick?: (tag: PersistentTag) => void;
 }
 
 function EventCard({ entry, onTagClick }: EventCardProps) {
