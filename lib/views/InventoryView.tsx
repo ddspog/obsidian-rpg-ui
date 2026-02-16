@@ -11,7 +11,7 @@ import { BaseView } from "./BaseView";
 import { MarkdownPostProcessorContext } from "obsidian";
 import * as InventoryService from "lib/domains/inventory";
 import { useFileContext } from "./filecontext";
-import { evaluateTemplate } from "lib/utils/template";
+import { createTemplateContext, hasTemplateVariables, processTemplate } from "lib/utils/template";
 
 export class InventoryView extends BaseView {
   public codeblock = "inventory";
@@ -24,10 +24,20 @@ export class InventoryView extends BaseView {
     let capacity: number | undefined;
     if (inventoryBlock.encumbrance?.capacity) {
       const fc = useFileContext(this.app, ctx);
-      const context = fc.templateContext(el, ctx);
       try {
-        const result = evaluateTemplate(inventoryBlock.encumbrance.capacity, context);
-        capacity = Number(result);
+        if (hasTemplateVariables(inventoryBlock.encumbrance.capacity)) {
+          const templateContext = createTemplateContext(el, fc);
+          const result = processTemplate(inventoryBlock.encumbrance.capacity, templateContext);
+          const numericResult = Number(result);
+          if (!Number.isNaN(numericResult)) {
+            capacity = numericResult;
+          }
+        } else {
+          const numericResult = Number(inventoryBlock.encumbrance.capacity);
+          if (!Number.isNaN(numericResult)) {
+            capacity = numericResult;
+          }
+        }
       } catch (e) {
         console.error("DnD UI Toolkit: Error evaluating encumbrance capacity:", e);
       }
