@@ -225,15 +225,24 @@ For each test file, verify:
 
 ## Settings Test
 
-To test system folder configuration in plugin settings:
+### Test 14: System Mapping (NEW)
 
-1. Open Plugin Settings → RPG UI Toolkit
-2. Look for "System Folders" or similar setting
-3. Add both system folders:
-   - `System-Inline`
-   - `System-Split/System`
-4. Verify both systems load
-5. Check they're available in character creation
+**File:** `14-TEST-SYSTEM-MAPPING.md`
+
+**Features tested:**
+- ✅ File autocomplete for system selection
+- ✅ Folder-to-system mappings
+- ✅ Multiple mapping support
+- ✅ Default system fallback
+- ✅ Mapping add/remove functionality
+
+**How to test:**
+1. Open Plugin Settings → DnD UI Toolkit → Systems
+2. Click "Add System Mapping"
+3. Test autocomplete in system file field
+4. Create mappings for test folders
+5. Verify files in mapped folders use correct system
+6. See `14-TEST-SYSTEM-MAPPING.md` for detailed test steps
 
 ## Success Criteria Summary
 
@@ -248,6 +257,8 @@ To test system folder configuration in plugin settings:
 ✅ **Dialogue:** PC and NPC speech formatted correctly  
 ✅ **Tables/Generators:** Special formatting for procedural content  
 ✅ **Meta Notes:** GM notes visually distinct  
+✅ **HUD Buttons:** Quick-action buttons append to log (NEW)  
+✅ **System Mapping:** File autocomplete and folder mappings work (NEW)  
 ✅ **Entity Resolution:** Character/NPC data loads from files  
 ✅ **Delta Tracking:** All state changes captured and displayed  
 ✅ **No Console Errors:** Clean execution

@@ -26,6 +26,7 @@ import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
 import { extractMeta } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
+import { FileSuggest } from "lib/utils/file-suggest";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -334,6 +335,8 @@ class DndSettingsTab extends PluginSettingTab {
       return;
     }
 
+    const fileSuggests: FileSuggest[] = [];
+
     for (let i = 0; i < this.plugin.settings.systemMappings.length; i++) {
       const mapping = this.plugin.settings.systemMappings[i];
       
@@ -359,6 +362,11 @@ class DndSettingsTab extends PluginSettingTab {
               await this.saveAndUpdateRegistry();
             });
           text.inputEl.style.width = "250px";
+          
+          // Add autocomplete for system file path
+          const fileSuggest = new FileSuggest(this.app, text);
+          fileSuggests.push(fileSuggest);
+          
           return text;
         })
         .addButton((button) =>
@@ -368,6 +376,8 @@ class DndSettingsTab extends PluginSettingTab {
             .onClick(async () => {
               this.plugin.settings.systemMappings.splice(i, 1);
               await this.saveAndUpdateRegistry();
+              // Clean up file suggests
+              fileSuggests.forEach(fs => fs.destroy());
               this.display(); // Refresh display
             })
         );
