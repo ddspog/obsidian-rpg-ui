@@ -4,17 +4,17 @@ This folder is a **ready-to-use Obsidian vault** for testing the RPG UI Toolkit 
 
 ## Quick Start
 
-1. **Copy this entire `obsidian-test-vault` folder** to a location of your choice
+1. **Copy this entire `vault` folder** to a location of your choice
 2. **Open it as an Obsidian vault**:
    - In Obsidian: `Open folder as vault`
-   - Select the `obsidian-test-vault` folder
+   - Select the `vault` folder
 3. **Enable the RPG UI Toolkit plugin** in Settings → Community Plugins
 4. **Open test files** and switch to Reading View to see rendered components
 
 ## Folder Structure
 
 ```
-obsidian-test-vault/
+vault/
 ├── System-Inline/          # Test system with all components in one file
 │   └── DnD5e-System.md     # Complete inline system definition
 │

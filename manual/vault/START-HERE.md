@@ -7,7 +7,7 @@ Welcome! This is a **ready-to-use test vault** for the Obsidian RPG UI Toolkit p
 1. **Open this folder as an Obsidian vault**
    - Launch Obsidian
    - Click "Open folder as vault"
-   - Select this `obsidian-test-vault` folder
+   - Select this `vault` folder
 
 2. **Enable the RPG UI Toolkit plugin**
    - Go to Settings → Community Plugins
@@ -105,7 +105,7 @@ See **README.md** for:
 ## 📝 File Structure
 
 ```
-obsidian-test-vault/
+vault/
 ├── START-HERE.md (you are here!)
 ├── README.md (detailed guide)
 ├── System-Inline/
