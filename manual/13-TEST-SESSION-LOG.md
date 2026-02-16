@@ -5,84 +5,28 @@ Verify that the session log block renders correctly with Lonelog notation parsin
 
 ## Prerequisites
 - Plugin installed in Obsidian
-- This file open in Obsidian
-- Switch to **Reading View** to see rendered output
-- Create test character files for entity resolution testing
+- **Recommended:** Use the ready-to-use test vault at `manual/vault/` for complete visual testing
+- **Alternative:** This file can be opened in Obsidian (switch to **Reading View**)
 
-## Test Character Files Setup
+## Easy Testing Option 🎯
 
-### Create: Characters/Elara.md
-```markdown
----
-proficiency_bonus: 3
-level: 5
----
+**For the best testing experience, use the complete test vault:**
 
-# Elara - Rogue
+1. Copy the entire `manual/vault/` folder to a location of your choice
+2. Open it as an Obsidian vault
+3. Open the session test files in Reading View:
+   - `Session-Tests/Test-01-Basic-Combat.md`
+   - `Session-Tests/Test-02-Scene-Variants.md`
+   - `Session-Tests/Test-03-Dialogue-Tables.md`
 
-```rpg attributes
-strength: 10
-dexterity: 18
-constitution: 14
-intelligence: 12
-wisdom: 13
-charisma: 8
-```
+The vault includes all necessary entity files (characters, NPCs) and is ready to use immediately.
 
-```rpg healthpoints
-state_key: elara-hp
-label: "Hit Points"
-health: 38
-```
+See `manual/vault/START-HERE.md` for quick start instructions.
 
-```rpg inventory
-state_key: elara-inventory
-items:
-  - name: "Shortsword +1"
-    quantity: 1
-  - name: "Leather Armor"
-    quantity: 1
-  - name: "Potion of Healing"
-    quantity: 2
-```
-```
+## Manual Testing (Alternative)
 
-### Create: Characters/Thorne.md
-```markdown
----
-proficiency_bonus: 3
-level: 5
----
-
-# Thorne - Cleric
-
-```rpg attributes
-strength: 14
-dexterity: 10
-constitution: 16
-intelligence: 10
-wisdom: 16
-charisma: 12
-```
-
-```rpg healthpoints
-state_key: thorne-hp
-label: "Hit Points"
-health: 42
-```
-```
-
-### Create: NPCs/Goblin.md
-```markdown
----
-proficiency_bonus: 2
-level: 1
----
-
-# Goblin
-
-Basic goblin enemy. AC 15, HP 7.
-```
+If you prefer to test in your own vault, you'll need character entity files for entity resolution.
+Use the files from `manual/vault/Session-Tests/Characters/` and `manual/vault/Session-Tests/NPCs/` as templates.
 
 ## Test Steps
 

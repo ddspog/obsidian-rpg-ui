@@ -2,7 +2,9 @@
 
 This file contains the spellcasting system configuration for D&D 5e.
 
-```rpg system-spellcasting
+**Note:** This uses the new `rpg system.spellcasting` dot notation format. For a complete working example, see `manual/vault/System-Inline/DnD5e-System.md`.
+
+```rpg system.spellcasting
 circles:
   - id: cantrip
     label: Cantrip
