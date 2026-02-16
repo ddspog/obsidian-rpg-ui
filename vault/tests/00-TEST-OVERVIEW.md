@@ -46,16 +46,16 @@ Phase 2 adds system abstraction and new blocks for inventory and features.
 
 **For comprehensive visual testing:**
 
-1. Copy the entire `manual/vault/` folder to a location of your choice
+1. Copy the entire `vault/` folder to a location of your choice
 2. Open it as an Obsidian vault in Obsidian
 3. Enable the RPG UI Toolkit plugin in Settings → Community Plugins
 4. Open test files in Reading View:
-   - System tests: `System-Inline/DnD5e-System.md` and `System-Split/System/DnD5e-System.md`
-   - Session logs: `Session-Tests/Test-01-Basic-Combat.md`, etc.
+   - System tests: `systems/inline-system/DnD5e-System.md` and `systems/split-system/System/DnD5e-System.md`
+   - Session logs: `sessions/Test-01-Basic-Combat.md`, etc.
 
 The vault includes all necessary entity files and is ready for immediate testing.
 
-See `manual/vault/START-HERE.md` for quick start guide.
+See `START-HERE.md` for quick start guide.
 
 ### Option 2: Use Individual Test Files
 

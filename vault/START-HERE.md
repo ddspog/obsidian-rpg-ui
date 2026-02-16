@@ -14,29 +14,37 @@ Welcome! This is a **ready-to-use test vault** for the Obsidian RPG UI Toolkit p
    - Find and enable "D&D UI Toolkit" or "RPG UI Toolkit"
 
 3. **Open any test file and switch to Reading View**
-   - Try `Session-Tests/Test-01-Basic-Combat.md` first
+   - Try `sessions/Test-01-Basic-Combat.md` first
    - Press `Ctrl/Cmd + E` to toggle Reading View
 
 ## 📋 What's Inside
 
 ### 🔧 System Tests (2 formats)
 
-- **System-Inline/DnD5e-System.md** - Everything in one file
-- **System-Split/System/DnD5e-System.md** - Split across multiple files
+- **systems/inline-system/DnD5e-System.md** - Everything in one file
+- **systems/split-system/System/DnD5e-System.md** - Split across multiple files
 
 👉 **Try both to see the difference!**
 
+### 📚 Example Files (Component Documentation)
+
+- **DnD5e-Attributes-Example.md** - System attributes block configuration
+- **DnD5e-Features-Example.md** - Features block setup and configuration
+- **DnD5e-Spellcasting-Example.md** - Spellcasting system configuration
+
+👉 **Reference guides - copy & adapt for your own systems!**
+
 ### 🎮 Session Log Tests (3 scenarios)
 
-- **Test-01-Basic-Combat.md** - Combat, rolls, HP tracking
-- **Test-02-Scene-Variants.md** - Flashbacks, progress trackers, threads
-- **Test-03-Dialogue-Tables.md** - Dialogue, random tables, GM notes
+- **sessions/Test-01-Basic-Combat.md** - Combat, rolls, HP tracking
+- **sessions/Test-02-Scene-Variants.md** - Flashbacks, progress trackers, threads
+- **sessions/Test-03-Dialogue-Tables.md** - Dialogue, random tables, GM notes
 
 👉 **Visual tests - see the rendered output!**
 
 ## ✅ Quick Visual Check
 
-Open `Session-Tests/Test-01-Basic-Combat.md` in Reading View.
+Open `sessions/Test-01-Basic-Combat.md` in Reading View.
 
 **You should see:**
 - ✨ Styled scene header (S1)
@@ -87,8 +95,8 @@ See **README.md** for:
 
 **Entity files not found?**
 - Paths are relative to vault root
-- Character files: `Session-Tests/Characters/`
-- NPC files: `Session-Tests/NPCs/`
+- Character files: `sessions/Characters/`
+- NPC files: `sessions/NPCs/`
 
 **System not loading?**
 - Open the system file first
@@ -108,16 +116,24 @@ See **README.md** for:
 vault/
 ├── START-HERE.md (you are here!)
 ├── README.md (detailed guide)
-├── System-Inline/
-│   └── DnD5e-System.md
-├── System-Split/
-│   ├── System/
-│   ├── Skills/
-│   └── Expressions/
-└── Session-Tests/
-    ├── Characters/
-    ├── NPCs/
-    └── Test-*.md files
+├── DnD5e-Attributes-Example.md (📚 example)
+├── DnD5e-Features-Example.md (📚 example)
+├── DnD5e-Spellcasting-Example.md (📚 example)
+├── system-example.md
+├── systems/
+│   ├── inline-system/
+│   │   └── DnD5e-System.md
+│   └── split-system/
+│       ├── System/
+│       ├── Attributes/
+│       ├── Skills/
+│       └── Expressions/
+├── sessions/
+│   ├── Characters/
+│   ├── NPCs/
+│   └── Test-*.md files
+└── tests/
+   └── 00-TEST-OVERVIEW.md
 ```
 
 ## 🎉 Have Fun!

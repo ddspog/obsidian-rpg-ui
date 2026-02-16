@@ -13,10 +13,10 @@ attributes:
   - intelligence
   - wisdom
   - charisma
-skills: "System-Split/Skills/DnD5e-Skills.md"
+skills: "systems/split-system/Skills/DnD5e-Skills.md"
 expressions:
-  - "System-Split/Expressions/DnD5e-Core-Expressions.md"
-  - "System-Split/Expressions/DnD5e-Combat-Expressions.md"
+  - "systems/split-system/Expressions/DnD5e-Core-Expressions.md"
+  - "systems/split-system/Expressions/DnD5e-Combat-Expressions.md"
 ```
 
 ## Expected Visual
@@ -24,10 +24,10 @@ expressions:
 **You should see a system info card showing:**
 - ⚙️ System name: "D&D 5e Split"
 - Attributes section with 6 colored pills (strength, dexterity, constitution, intelligence, wisdom, charisma)
-- Skills section showing: 📄 System-Split/Skills/DnD5e-Skills.md
+- Skills section showing: 📄 systems/split-system/Skills/DnD5e-Skills.md
 - Expressions section showing:
-  - 📄 System-Split/Expressions/DnD5e-Core-Expressions.md
-  - 📄 System-Split/Expressions/DnD5e-Combat-Expressions.md
+  - 📄 systems/split-system/Expressions/DnD5e-Core-Expressions.md
+  - 📄 systems/split-system/Expressions/DnD5e-Combat-Expressions.md
 
 ## How This Works
 

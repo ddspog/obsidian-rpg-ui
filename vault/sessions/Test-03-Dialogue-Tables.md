@@ -6,9 +6,9 @@ This test demonstrates dialogue formatting, table/generator rolls, and meta note
 state_key: test-dialogue-tables
 scene: "The Mysterious Stranger"
 entities:
-  - file: "Session-Tests/Characters/Elara.md"
+  - file: "sessions/Characters/Elara.md"
     type: character
-  - file: "Session-Tests/Characters/Thorne.md"
+  - file: "sessions/Characters/Thorne.md"
     type: character
 ---
 S1 *A hooded figure approaches the party at the crossroads.*

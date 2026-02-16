@@ -1,8 +1,9 @@
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { parse as parseYaml } from "yaml";
+import { MarkdownPostProcessorContext } from "obsidian";
 import { AttributesDisplay } from "../components/system-definition/attributes-display";
-import BaseView from "./BaseView";
+import { BaseView } from "./BaseView";
 
 interface AttributeDefinition {
   name: string;
@@ -11,19 +12,11 @@ interface AttributeDefinition {
   description?: string;
 }
 
-export default class SystemAttributesDefinitionView extends BaseView {
+export class SystemAttributesDefinitionView extends BaseView {
+  public codeblock = "system.attributes";
   private roots: Map<HTMLElement, Root> = new Map();
 
-  registerView(): void {
-    this.plugin.registerMarkdownCodeBlockProcessor(
-      "rpg system.attributes",
-      (source, el, ctx) => {
-        this.render(source, el, ctx);
-      }
-    );
-  }
-
-  render(source: string, el: HTMLElement, ctx: any): void {
+  render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     try {
       const parsed = parseYaml(source);
       
@@ -47,7 +40,7 @@ export default class SystemAttributesDefinitionView extends BaseView {
       root.render(
         <AttributesDisplay 
           attributes={attributes}
-          vault={this.plugin.app.vault}
+          vault={this.app.vault}
         />
       );
     } catch (error) {

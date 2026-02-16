@@ -4,7 +4,7 @@
 Verify all block types work together in a complete character sheet using the new `rpg` namespace, including Phase 2 inventory and features blocks.
 
 ## Alternative: Use Test Vault
-For a complete character example with entity files, see `manual/vault/Session-Tests/Characters/Elara.md` in the test vault.
+For a complete character example with entity files, see `sessions/Characters/Elara.md` in the test vault.
 
 ## Test Steps
 
