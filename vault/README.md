@@ -20,9 +20,11 @@ vault/
 │
 ├── System-Split/           # Test system with components in separate files
 │   ├── System/
-│   │   └── DnD5e-System.md        # Main system (references other files)
+│   │   └── DnD5e-System.md              # Main system (references other files)
 │   ├── Skills/
-│   │   └── DnD5e-Skills.md        # External skills file (rpg system.skills)
+│   │   └── DnD5e-Skills.md              # External skills file (rpg system.skills)
+│   ├── Attributes/
+│   │   └── DnD5e-Attributes.md          # Detailed attribute cards (rpg system.attributes)
 │   └── Expressions/
 │       ├── DnD5e-Core-Expressions.md    # Core math expressions
 │       └── DnD5e-Combat-Expressions.md  # Combat expressions
@@ -223,6 +225,34 @@ For each test file, verify:
 - Verify entity files have required frontmatter
 - Check entity type matches file content
 
+### Test 15: Detailed Attribute Cards (NEW)
+
+**File:** `System-Split/Attributes/DnD5e-Attributes.md`
+
+**Features tested:**
+- ✅ D&D-style attribute card display
+- ✅ Attribute name with alias (e.g., "STRENGTH (STR)")
+- ✅ Subtitle with associated skills
+- ✅ Markdown-formatted descriptions
+- ✅ Responsive grid layout
+- ✅ Professional card styling with hover effects
+
+**Expected results:**
+- Each attribute appears as a distinct card
+- Header shows attribute name in uppercase with alias
+- Subtitle displays associated skills in italic
+- Description supports full markdown (lists, bold, etc.)
+- Cards have colored headers and hover effects
+- Layout adapts to screen size (responsive grid)
+
+**How to test:**
+1. Open `System-Split/Attributes/DnD5e-Attributes.md`
+2. Switch to Reading View
+3. Verify all 6 attributes (STR, DEX, CON, INT, WIS, CHA) render as cards
+4. Hover over cards to see hover effect
+5. Check that bullet lists and markdown formatting display correctly
+6. Resize window to verify responsive layout
+
 ## Settings Test
 
 ### Test 14: System Mapping (NEW)
@@ -259,6 +289,7 @@ For each test file, verify:
 ✅ **Meta Notes:** GM notes visually distinct  
 ✅ **HUD Buttons:** Quick-action buttons append to log (NEW)  
 ✅ **System Mapping:** File autocomplete and folder mappings work (NEW)  
+✅ **Attribute Cards:** D&D-style detailed attribute display (NEW)  
 ✅ **Entity Resolution:** Character/NPC data loads from files  
 ✅ **Delta Tracking:** All state changes captured and displayed  
 ✅ **No Console Errors:** Clean execution
