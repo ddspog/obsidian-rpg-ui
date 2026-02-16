@@ -6,9 +6,9 @@ This test demonstrates different scene types and progress tracking mechanisms.
 state_key: test-scene-variants
 scene: "The Heist"
 entities:
-  - file: "Session-Tests/Characters/Elara.md"
+  - file: "sessions/Characters/Elara.md"
     type: character
-  - file: "Session-Tests/Characters/Thorne.md"
+  - file: "sessions/Characters/Thorne.md"
     type: character
 ---
 S1 *Present: Planning the heist in a shadowy tavern.*

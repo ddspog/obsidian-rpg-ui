@@ -103,7 +103,7 @@ formula: "{{add attribute_mod (if proficient proficiency_bonus 0)}}"
 - ❌ No visual for `rpg expression` blocks (old format - not rendered)
 
 **To see visual system definitions:**
-Look at the `System-Split` folder which uses the new `rpg system.skills` and `rpg system.expressions` formats!
+Look at the `systems/split-system` folder which uses the new `rpg system.skills` and `rpg system.expressions` formats!
 
 **Console Messages:**
 - "DnD UI Toolkit: Loaded system: D&D 5e"

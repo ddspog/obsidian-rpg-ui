@@ -4,7 +4,7 @@
  */
 
 import { BaseView } from "./BaseView";
-import { App, MarkdownPostProcessorContext } from "obsidian";
+import { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { KeyValueStore } from "lib/services/kv/kv";
@@ -105,13 +105,13 @@ class SessionLogMarkdown extends ReactMarkdown {
   private async appendToLogBody(newText: string) {
     try {
       const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
-      if (!file || !(file instanceof (this.baseView.app.vault.getAbstractFileByPath(this.filePath)?.constructor))) {
+      if (!file || !(file instanceof TFile)) {
         console.error("File not found:", this.filePath);
         return;
       }
 
       // Read current file content
-      const content = await this.baseView.app.vault.read(file as any);
+      const content = await this.baseView.app.vault.read(file);
       
       // Find the rpg log code block
       const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;

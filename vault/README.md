@@ -15,29 +15,34 @@ This folder is a **ready-to-use Obsidian vault** for testing the RPG UI Toolkit 
 
 ```
 vault/
-├── System-Inline/          # Test system with all components in one file
-│   └── DnD5e-System.md     # Complete inline system definition
-│
-├── System-Split/           # Test system with components in separate files
-│   ├── System/
-│   │   └── DnD5e-System.md              # Main system (references other files)
-│   ├── Skills/
-│   │   └── DnD5e-Skills.md              # External skills file (rpg system.skills)
-│   ├── Attributes/
-│   │   └── DnD5e-Attributes.md          # Detailed attribute cards (rpg system.attributes)
-│   └── Expressions/
-│       ├── DnD5e-Core-Expressions.md    # Core math expressions
-│       └── DnD5e-Combat-Expressions.md  # Combat expressions
-│
-└── Session-Tests/          # Session Log feature tests
-    ├── Characters/
-    │   ├── Elara.md        # Test character (Rogue)
-    │   └── Thorne.md       # Test character (Cleric)
-    ├── NPCs/
-    │   └── Goblin.md       # Test monster
-    ├── Test-01-Basic-Combat.md      # Combat with actions, rolls, HP tracking
-    ├── Test-02-Scene-Variants.md    # Scene types & progress trackers
-    └── Test-03-Dialogue-Tables.md   # Dialogue, tables, generators, meta notes
+├── DnD5e-Attributes-Example.md      # Example: rpg system.attributes
+├── DnD5e-Features-Example.md        # Example: rpg system.features
+├── DnD5e-Spellcasting-Example.md    # Example: rpg system.spellcasting
+├── system-example.md               # Full system definition example
+├── systems/
+│   ├── inline-system/              # Test system with all components in one file
+│   │   └── DnD5e-System.md          # Complete inline system definition
+│   └── split-system/               # Test system with components in separate files
+│       ├── System/
+│       │   └── DnD5e-System.md              # Main system (references other files)
+│       ├── Skills/
+│       │   └── DnD5e-Skills.md              # External skills file (rpg system.skills)
+│       ├── Attributes/
+│       │   └── DnD5e-Attributes.md          # Detailed attribute cards (rpg system.attributes)
+│       └── Expressions/
+│           ├── DnD5e-Core-Expressions.md    # Core math expressions
+│           └── DnD5e-Combat-Expressions.md  # Combat expressions
+├── sessions/                       # Session Log feature tests
+│   ├── Characters/
+│   │   ├── Elara.md        # Test character (Rogue)
+│   │   └── Thorne.md       # Test character (Cleric)
+│   ├── NPCs/
+│   │   └── Goblin.md       # Test monster
+│   ├── Test-01-Basic-Combat.md      # Combat with actions, rolls, HP tracking
+│   ├── Test-02-Scene-Variants.md    # Scene types & progress trackers
+│   └── Test-03-Dialogue-Tables.md   # Dialogue, tables, generators, meta notes
+└── tests/                          # Component-by-component test files
+    └── 00-TEST-OVERVIEW.md
 ```
 
 ## Test Scenarios
@@ -45,7 +50,7 @@ vault/
 ### System Definition Tests
 
 #### Test 1: Inline System Format
-**File:** `System-Inline/DnD5e-System.md`
+**File:** `systems/inline-system/DnD5e-System.md`
 
 **What to test:**
 - ✅ System loads from single file
@@ -61,32 +66,32 @@ vault/
 4. System available for use in character files
 
 #### Test 2: Split System Format
-**File:** `System-Split/System/DnD5e-System.md`
+**File:** `systems/split-system/System/DnD5e-System.md`
 
 **What to test:**
 - ✅ System references external skill file (single file)
 - ✅ System references multiple expression files (array)
-- ✅ Skills loaded from `System-Split/Skills/DnD5e-Skills.md`
+- ✅ Skills loaded from `systems/split-system/Skills/DnD5e-Skills.md`
 - ✅ Expressions loaded from both expression files
 - ✅ New dot notation format (`rpg system.skills`, `rpg system.expressions`)
 - ✅ No wrapper fields (direct arrays in YAML)
 
 **How to verify:**
-1. Open `System-Split/System/DnD5e-System.md`
+1. Open `systems/split-system/System/DnD5e-System.md`
 2. Check console for file loading messages
 3. Check that all skills from external file are loaded
 4. Check that expressions from both files are merged
 5. Verify system works in character files
 
 **Related files to inspect:**
-- `System-Split/Skills/DnD5e-Skills.md` - Uses `rpg system.skills` with direct array
-- `System-Split/Expressions/DnD5e-Core-Expressions.md` - Core expressions
-- `System-Split/Expressions/DnD5e-Combat-Expressions.md` - Combat expressions
+- `systems/split-system/Skills/DnD5e-Skills.md` - Uses `rpg system.skills` with direct array
+- `systems/split-system/Expressions/DnD5e-Core-Expressions.md` - Core expressions
+- `systems/split-system/Expressions/DnD5e-Combat-Expressions.md` - Combat expressions
 
 ### Session Log Tests
 
 #### Test 1: Basic Combat
-**File:** `Session-Tests/Test-01-Basic-Combat.md`
+**File:** `sessions/Test-01-Basic-Combat.md`
 
 **Features tested:**
 - ✅ Scene headers (S1)
@@ -105,7 +110,7 @@ vault/
 - Final summary shows all HP changes
 
 #### Test 2: Scene Variants & Progress Trackers
-**File:** `Session-Tests/Test-02-Scene-Variants.md`
+**File:** `sessions/Test-02-Scene-Variants.md`
 
 **Features tested:**
 - ✅ Normal scenes (S1, S2, S3)
@@ -127,7 +132,7 @@ vault/
 - Oracle query formatting
 
 #### Test 3: Dialogue, Tables & Meta Notes
-**File:** `Session-Tests/Test-03-Dialogue-Tables.md`
+**File:** `sessions/Test-03-Dialogue-Tables.md`
 
 **Features tested:**
 - ✅ NPC dialogue (N (Name): "text")
@@ -227,7 +232,7 @@ For each test file, verify:
 
 ### Test 15: Detailed Attribute Cards (NEW)
 
-**File:** `System-Split/Attributes/DnD5e-Attributes.md`
+**File:** `systems/split-system/Attributes/DnD5e-Attributes.md`
 
 **Features tested:**
 - ✅ D&D-style attribute card display
@@ -246,7 +251,7 @@ For each test file, verify:
 - Layout adapts to screen size (responsive grid)
 
 **How to test:**
-1. Open `System-Split/Attributes/DnD5e-Attributes.md`
+1. Open `systems/split-system/Attributes/DnD5e-Attributes.md`
 2. Switch to Reading View
 3. Verify all 6 attributes (STR, DEX, CON, INT, WIS, CHA) render as cards
 4. Hover over cards to see hover effect
@@ -273,6 +278,39 @@ For each test file, verify:
 4. Create mappings for test folders
 5. Verify files in mapped folders use correct system
 6. See `14-TEST-SYSTEM-MAPPING.md` for detailed test steps
+
+## Example Files Reference
+
+These standalone documentation files demonstrate how to use specific system blocks and can be referenced or copied as templates:
+
+### 📚 System Block Examples
+
+**DnD5e-Attributes-Example.md**
+- Demonstrates the `rpg system.attributes` block
+- Shows basic format with just names
+- Shows extended format with subtitles and descriptions
+- Shows custom system example
+- Documents all attribute properties
+- Use this as a template for defining attributes in your own systems
+
+**DnD5e-Features-Example.md**
+- Demonstrates the `rpg system.features` block
+- Shows categories, providers, and collectors configuration
+- Explains how to integrate with system definitions
+- Reference for organizing feature types (actions, bonus actions, reactions)
+
+**DnD5e-Spellcasting-Example.md**
+- Demonstrates the `rpg system.spellcasting` block
+- Shows spell slot configurations
+- Shows prepared spell lists
+- Reference for magic system setup
+
+### How to Use These Files
+
+1. **Learning:** Open these files to understand the syntax and structure
+2. **Copying:** Copy sections into your own system definition files
+3. **Reference:** Keep them open as you build your custom systems
+4. **Adaptation:** Modify the examples to match your RPG system's needs
 
 ## Success Criteria Summary
 

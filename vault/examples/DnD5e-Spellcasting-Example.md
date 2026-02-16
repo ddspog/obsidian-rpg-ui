@@ -2,7 +2,7 @@
 
 This file contains the spellcasting system configuration for D&D 5e.
 
-**Note:** This uses the new `rpg system.spellcasting` dot notation format. For a complete working example, see `manual/vault/System-Inline/DnD5e-System.md`.
+**Note:** This uses the new `rpg system.spellcasting` dot notation format. For a complete working example, see `systems/inline-system/DnD5e-System.md`.
 
 ```rpg system.spellcasting
 circles:
@@ -79,5 +79,5 @@ Reference this file in your system definition:
 ```yaml
 rpg system
 name: "My D&D System"
-spellcasting: "Systems/DnD5e-Spellcasting.md"
+spellcasting: "DnD5e-Spellcasting-Example.md"
 ```

@@ -6,9 +6,9 @@ This test demonstrates basic combat with actions, rolls, and consequences.
 state_key: test-basic-combat
 scene: "Goblin Ambush"
 entities:
-  - file: "Session-Tests/Characters/Elara.md"
+  - file: "sessions/Characters/Elara.md"
     type: character
-  - file: "Session-Tests/NPCs/Goblin.md"
+  - file: "sessions/NPCs/Goblin.md"
     type: monster
 ---
 S1 *Dark forest clearing at dusk. Goblins lurk in the shadows.*
