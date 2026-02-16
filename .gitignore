@@ -26,3 +26,8 @@ styles.css
 .claude
 docs/.vitepress/cache/deps
 docs/.vitepress/dist
+
+# Playwright E2E tests
+/test-results/
+/playwright-report/
+/playwright/.cache/
