@@ -19,23 +19,35 @@ expressions:
   - "System-Split/Expressions/DnD5e-Combat-Expressions.md"
 ```
 
-## Visual Test
+## Expected Visual
 
-You should see no UI rendered on this page (definition blocks don't render).
+**You should see a system info card showing:**
+- ⚙️ System name: "D&D 5e Split"
+- Attributes section with 6 colored pills (strength, dexterity, constitution, intelligence, wisdom, charisma)
+- Skills section showing: 📄 System-Split/Skills/DnD5e-Skills.md
+- Expressions section showing:
+  - 📄 System-Split/Expressions/DnD5e-Core-Expressions.md
+  - 📄 System-Split/Expressions/DnD5e-Combat-Expressions.md
 
-**Expected Console Messages:**
-- "DnD UI Toolkit: Loaded system: D&D 5e Split"
-- "Loading skills from System-Split/Skills/DnD5e-Skills.md"
-- "Loading expressions from System-Split/Expressions/DnD5e-Core-Expressions.md"
-- "Loading expressions from System-Split/Expressions/DnD5e-Combat-Expressions.md"
-- System should be registered in the global registry
+## How This Works
 
-**To verify this system works:**
-1. Create a character file using this system
-2. Use `rpg skills` blocks referencing this system
-3. Use expressions in ability/skill blocks
+**File References:**
+1. **Single file** - `skills` points to one file containing all skills
+2. **Multiple files** - `expressions` is an array pointing to multiple files (core and combat expressions)
+
+**External Files:**
+- Navigate to referenced files to see their visual cards
+- Each file uses `rpg system.X` blocks with visual rendering
+
+## Benefits
+
+✅ **Better organization** - Related components grouped in folders
+✅ **Easier maintenance** - Edit skills/expressions without touching main system file
+✅ **Visual feedback** - System card shows all file references
+✅ **Reusability** - Share skill/expression definitions across multiple systems
 
 **This demonstrates:**
 - ✅ Single file reference for skills
 - ✅ Multiple file references for expressions (array)
 - ✅ Cleaner organization with components split across files
+- ✅ **All blocks now render visually!**
