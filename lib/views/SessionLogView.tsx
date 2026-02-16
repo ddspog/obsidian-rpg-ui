@@ -102,6 +102,47 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
   }
 
+  private async appendToLogBody(newText: string) {
+    try {
+      const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
+      if (!file || !(file instanceof (this.baseView.app.vault.getAbstractFileByPath(this.filePath)?.constructor))) {
+        console.error("File not found:", this.filePath);
+        return;
+      }
+
+      // Read current file content
+      const content = await this.baseView.app.vault.read(file as any);
+      
+      // Find the rpg log code block
+      const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;
+      const match = content.match(codeBlockRegex);
+      
+      if (!match) {
+        console.error("Could not find rpg log code block in file");
+        return;
+      }
+
+      // Extract parts: header (with YAML), body, closing backticks
+      const [fullMatch, header, body, closing] = match;
+      
+      // Append new text to the body
+      const updatedBody = body + newText;
+      
+      // Reconstruct the code block
+      const updatedBlock = `${header}${updatedBody}${closing}`;
+      
+      // Replace the old block with the updated one
+      const updatedContent = content.replace(codeBlockRegex, updatedBlock);
+      
+      // Write back to file
+      await this.baseView.app.vault.modify(file as any, updatedContent);
+      
+      console.log("Successfully appended text to log");
+    } catch (error) {
+      console.error("Error appending to log:", error);
+    }
+  }
+
   private renderSessionLog() {
     if (!this.logData) {
       this.containerEl.innerHTML =
@@ -111,10 +152,8 @@ class SessionLogMarkdown extends ReactMarkdown {
 
     const root = ReactDOM.createRoot(this.containerEl);
 
-    const handleAppendText = (text: string) => {
-      console.log("Append text requested:", text);
-      // TODO: Implement append-only text updates to the markdown file
-      // This would use app.vault.process() to append to the Lonelog body
+    const handleAppendText = async (text: string) => {
+      await this.appendToLogBody(text);
     };
 
     root.render(
