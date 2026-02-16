@@ -15,6 +15,8 @@ attributes:
   - charisma
 ```
 
+**Expected Visual:** System info card showing the system name, attributes as pills. No file references since this is inline format.
+
 ## Skills (Inline)
 
 ```rpg skill-list
@@ -57,6 +59,8 @@ skills:
     attribute: wisdom
 ```
 
+**Note:** The `rpg skill-list` block uses the old format with `skills:` wrapper. This still works for backward compatibility, but won't render visually in this version.
+
 ## Expressions (Inline)
 
 ```rpg expression
@@ -89,11 +93,19 @@ params: [attribute_mod, proficient, proficiency_bonus]
 formula: "{{add attribute_mod (if proficient proficiency_bonus 0)}}"
 ```
 
+**Note:** The `rpg expression` blocks use the old single-expression format. These won't render visually in this version.
+
 ## Visual Test
 
-You should see no UI rendered on this page (definition blocks don't render).
+**What you should see on this page:**
+- ✅ System info card at the top showing "D&D 5e" with 6 attribute pills
+- ❌ No visual for `rpg skill-list` (old format - not rendered)
+- ❌ No visual for `rpg expression` blocks (old format - not rendered)
 
-**Expected Console Messages:**
+**To see visual system definitions:**
+Look at the `System-Split` folder which uses the new `rpg system.skills` and `rpg system.expressions` formats!
+
+**Console Messages:**
 - "DnD UI Toolkit: Loaded system: D&D 5e"
 - System should be registered in the global registry
 

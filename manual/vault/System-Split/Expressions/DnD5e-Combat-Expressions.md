@@ -18,12 +18,24 @@ This file contains combat-related expressions for D&D 5e using the new **dot not
   formula: "{{add 10 (add dex_mod (add armor_bonus shield_bonus))}}"
 ```
 
+## Expected Visual
+
+**You should see:**
+- 🔢 Header showing "Expressions Definition" with icon and count (3 expressions)
+- Three expression cards showing saving_throw, attack_bonus, and armor_class formulas
+
+**Visual Features:**
+- Clean card-based layout
+- Formula displayed in monospace code block
+- Parameter lists shown clearly
+
 ## Notes
 
 **Demonstrates:**
 - Multiple expression files can be loaded
 - Expressions are merged from all referenced files
 - Combat-specific calculations separated from core
+- **Now renders visually!**
 
 **Expressions Included:**
 1. **saving_throw** - Calculate saving throw modifier

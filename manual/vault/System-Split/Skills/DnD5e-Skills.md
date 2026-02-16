@@ -43,14 +43,29 @@ This file contains the skill definitions for D&D 5e using the new **dot notation
   attribute: wisdom
 ```
 
+## Expected Visual
+
+**You should see:**
+- 🎯 Header showing "Skills Definition" with icon and count (18 skills)
+- Grid of skill cards, each showing skill name and attribute abbreviation (DEX, WIS, etc.)
+- Summary section grouping skills by attribute
+- Hover effects on skill cards
+
+**Visual Features:**
+- Skills organized in responsive grid
+- Color-coded attribute badges
+- Grouped summary at the bottom showing which skills belong to each attribute
+
 ## Notes
 
 **New Format Benefits:**
 - Uses `rpg system.skills` (dot notation) instead of `rpg system-skills` (hyphen)
 - Direct array format - no `skills:` wrapper needed
 - Cleaner, more concise YAML
+- **Now renders visually!**
 
 **This file:**
 - Is referenced by the main system file
 - Contains all 18 D&D 5e skills
 - Uses the streamlined format without wrapper fields
+- Displays as a visual card when viewed in Reading Mode
