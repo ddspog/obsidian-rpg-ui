@@ -6,14 +6,34 @@
  */
 
 /**
+ * Attribute definition
+ */
+export interface AttributeDefinition {
+  /** Attribute identifier (e.g., "strength", "intelligence") */
+  name: string;
+  
+  /** Subtitle with associated skills or special description */
+  subtitle?: string;
+  
+  /** Abbreviated form (e.g., "STR", "INT") */
+  alias?: string;
+  
+  /** Description in markdown format */
+  description?: string;
+}
+
+/**
  * Core RPG system interface
  */
 export interface RPGSystem {
   /** System name (e.g., "D&D 5e", "Fate Core") */
   name: string;
   
-  /** Core attributes (e.g., ["strength", "dexterity", ...]) */
+  /** Core attributes (e.g., ["strength", "dexterity", ...]) - simple string array for backward compatibility */
   attributes: string[];
+  
+  /** Detailed attribute definitions with descriptions (optional, for enhanced display) */
+  attributeDefinitions?: AttributeDefinition[];
   
   /** Entity type definitions (character, monster, item, etc.) */
   entities: Record<string, EntityTypeDef>;
