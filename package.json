@@ -14,6 +14,9 @@
     "typecheck": "tsc --noEmit --skipLibCheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -23,6 +26,7 @@
   "license": "MIT",
   "devDependencies": {
     "@mermaid-js/mermaid-mindmap": "^9.3.0",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^24.0.13",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
@@ -32,6 +36,7 @@
     "esbuild": "^0.25.6",
     "mermaid": "^10.9.0",
     "obsidian": "latest",
+    "obsidian-testing-framework": "^0.2.5",
     "prettier": "^3.6.2",
     "tslib": "^2.8.1",
     "typescript": "^5.8.3",
