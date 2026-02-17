@@ -38,11 +38,29 @@ Phase 2 adds system abstraction and new blocks for inventory and features.
 10. **10-TEST-ALL-BLOCKS.md** - Complete character sheet test
 11. **11-TEST-INVENTORY.md** - ✨ **NEW** - Test inventory block (Phase 2)
 12. **12-TEST-FEATURES.md** - ✨ **NEW** - Test features block (Phase 2)
+13. **13-TEST-SESSION-LOG.md** - ✨ **NEW** - Test session log with Lonelog notation (Phase 4)
 
 ## How to Test
 
+### Option 1: Use the Ready-Made Test Vault (Recommended) 🎯
+
+**For comprehensive visual testing:**
+
+1. Copy the entire `vault/` folder to a location of your choice
+2. Open it as an Obsidian vault in Obsidian
+3. Enable the RPG UI Toolkit plugin in Settings → Community Plugins
+4. Open test files in Reading View:
+   - System tests: `systems/inline-system/DnD5e-System.md` and `systems/split-system/System/DnD5e-System.md`
+   - Session logs: `sessions/Test-01-Basic-Combat.md`, etc.
+
+The vault includes all necessary entity files and is ready for immediate testing.
+
+See `START-HERE.md` for quick start guide.
+
+### Option 2: Use Individual Test Files
+
 1. Install the plugin in your Obsidian vault using BRAT
-2. Open each test file in Obsidian
+2. Open each test file (01-TEST-*.md) in Obsidian
 3. Switch to **Reading View** (Preview Mode)
 4. Compare the rendered output
 5. Check browser console (Ctrl+Shift+I / Cmd+Option+I) for debug messages
@@ -85,3 +103,4 @@ If a block doesn't render:
 | `event-btns` | `rpg events` | Event Buttons |
 | _(none)_ | `rpg inventory` | ✨ **NEW** - Inventory (Phase 2) |
 | _(none)_ | `rpg features` | ✨ **NEW** - Features (Phase 2) |
+| _(none)_ | `rpg log` | ✨ **NEW** - Session Log with Lonelog (Phase 4) |

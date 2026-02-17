@@ -1,0 +1,96 @@
+/* Session Log - Change Overview Module
+ * Handles session change summary display (entity changes, progress, threads)
+ */
+
+.lonelog-change-overview {
+	margin-top: 2rem;
+	padding: 1.5rem;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	border: 2px solid var(--background-modifier-border);
+}
+
+.lonelog-change-overview h3 {
+	margin: 0 0 1rem 0;
+	font-size: 1.3em;
+	border-bottom: 2px solid var(--background-modifier-border);
+	padding-bottom: 0.5rem;
+}
+
+.lonelog-change-overview h4 {
+	margin: 1rem 0 0.5rem 0;
+	font-size: 1.1em;
+	color: var(--text-muted);
+}
+
+.overview-section {
+	margin-bottom: 1.5rem;
+}
+
+/* Entity Change Summary */
+.entity-change-summary {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.5rem;
+	border-radius: 4px;
+	background: var(--background-primary);
+	margin-bottom: 0.5rem;
+}
+
+.entity-name {
+	font-weight: 600;
+	min-width: 10em;
+}
+
+.entity-hp {
+	font-family: monospace;
+	font-weight: bold;
+}
+
+.hp-gain {
+	color: var(--color-success);
+}
+
+.hp-loss {
+	color: var(--color-danger);
+}
+
+.entity-status,
+.entity-tags {
+	font-size: 0.9em;
+	color: var(--text-muted);
+}
+
+/* Progress and Thread Summary */
+.progress-change-summary,
+.thread-change-summary {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem;
+	border-radius: 4px;
+	background: var(--background-primary);
+	margin-bottom: 0.25rem;
+}
+
+.progress-icon {
+	font-size: 1.2em;
+}
+
+.thread-state {
+	padding: 0.25rem 0.75rem;
+	border-radius: 12px;
+	font-size: 0.85em;
+	font-weight: 500;
+}
+
+.thread-open {
+	background: var(--background-modifier-success);
+	color: var(--color-success);
+}
+
+.thread-closed {
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+}

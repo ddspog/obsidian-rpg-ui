@@ -1,0 +1,72 @@
+/* System Info (main system block) */
+.system-info-container {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.system-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.system-info-icon {
+  font-size: 24px;
+}
+
+.system-info-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.system-info-section {
+  margin: 12px 0;
+}
+
+.system-info-label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-bottom: 6px;
+}
+
+.system-info-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.system-info-attribute {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.system-info-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.system-info-file {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  color: var(--text-normal);
+}

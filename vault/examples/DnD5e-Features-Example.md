@@ -2,7 +2,9 @@
 
 This file contains the features system configuration for D&D 5e.
 
-```rpg system-features
+**Note:** This uses the new `rpg system.features` dot notation format. For a complete working example, see `systems/inline-system/DnD5e-System.md`.
+
+```rpg system.features
 categories:
   - id: action
     label: Action
@@ -35,5 +37,5 @@ Reference this file in your system definition:
 ```yaml
 rpg system
 name: "My D&D System"
-features: "Systems/DnD5e-Features.md"
+features: "DnD5e-Features-Example.md"
 ```

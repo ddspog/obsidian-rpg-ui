@@ -9,7 +9,7 @@
 import { Vault, TFile } from "obsidian";
 import { DND5E_SYSTEM } from "./dnd5e";
 import { RPGSystem } from "./types";
-import { parseSystemFromMarkdown } from "./parser";
+import { parseSystemFromMarkdown } from "./parser/index";
 
 /**
  * System registry singleton

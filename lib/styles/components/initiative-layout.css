@@ -1,0 +1,159 @@
+/* Initiative Tracker - Layout Module
+ * Handles main tracker structure, headers, controls, and responsive styling
+ */
+
+.initiative-tracker {
+	display: grid;
+	gap: var(--std-gap);
+}
+
+.initiative-tracker-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+	margin-bottom: 0.5rem;
+}
+
+.initiative-tracker-title {
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: var(--color-text-secondary);
+	margin: 0;
+}
+
+.initiative-tracker-controls {
+	display: flex;
+	align-items: center;
+	margin: 0.5rem 0;
+	gap: 0.3rem;
+}
+
+.initiative-round-counter {
+	font-size: 0.9rem;
+	color: var(--color-text-secondary);
+	padding: 0.3rem 0.6rem;
+	background-color: var(--color-bg-secondary);
+	border: 1px solid var(--color-border-primary);
+	border-radius: 0.25rem;
+}
+
+.initiative-round-value {
+	font-weight: bold;
+	color: var(--color-text-primary);
+}
+
+.initiative-control-button {
+	background-color: var(--color-bg-secondary);
+	border: 1px solid var(--color-border-primary);
+	border-radius: 0.25rem;
+	color: var(--color-text-primary);
+	padding: 0.3rem 0.5rem;
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.initiative-control-button:hover {
+	background-color: var(--color-bg-hover);
+}
+
+.initiative-prev {
+	margin-left: auto;
+}
+
+.initiative-prev,
+.initiative-next {
+	border-color: var(--color-border-active);
+	color: var(--color-text-secondary);
+}
+
+.initiative-reset {
+	border-color: var(--color-accent-red);
+	color: var(--color-accent-red);
+}
+
+.initiative-list {
+	width: 100%;
+}
+
+.initiative-items {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	width: 100%;
+}
+
+.initiative-item {
+	display: flex;
+	flex-direction: column;
+	padding: 0.3rem;
+	border-radius: 0.3rem;
+	background-color: var(--color-bg-secondary);
+	border: 1px solid var(--color-border-primary);
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease;
+}
+
+.initiative-item-active {
+	background-color: var(--color-bg-tertiary);
+	border-color: var(--color-border-active);
+}
+
+.initiative-item-main {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	width: 100%;
+}
+
+.divider {
+	width: 100%;
+	height: 1.5px;
+	background-color: var(--color-text-bright);
+	margin-top: 0.5rem;
+	margin-bottom: 0.3rem;
+	opacity: 25%;
+}
+
+.initiative-item-actions {
+	display: flex;
+	gap: 0.3rem;
+	margin-top: 0.3rem;
+	padding-top: 0.3rem;
+	align-items: center;
+	margin-left: auto;
+}
+
+.initiative-empty-state {
+	padding: 1rem;
+	text-align: center;
+	color: var(--color-text-secondary);
+	font-style: italic;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 600px) {
+	.initiative-item-main {
+		flex-wrap: wrap;
+	}
+
+	.initiative-roll {
+		flex: 0 0 2.5rem;
+	}
+
+	.initiative-name {
+		flex: 1 1 calc(100% - 7rem);
+	}
+
+	.initiative-ac,
+	.initiative-hp {
+		flex: 0 0 auto;
+	}
+
+	.initiative-group-hp {
+		grid-template-columns: 1fr;
+	}
+}

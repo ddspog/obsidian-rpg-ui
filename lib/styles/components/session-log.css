@@ -1,0 +1,14 @@
+/* DEPRECATED: This file has been split into focused modules
+ *
+ * This file is no longer maintained. All session log styles have been
+ * reorganized into the following modules for better maintainability:
+ *
+ *   - session-log-scene.css   (Scene headers and variants)
+ *   - session-log-events.css  (Event cards with type-specific styling)
+ *   - session-log-tags.css    (Tag pills with color variants)
+ *   - session-log-hud.css     (HUD: entity selector, quick actions, summary)
+ *   - session-log-overview.css (Session change overview display)
+ *
+ * These modules are imported in lib/styles/index.css.
+ * Do NOT import this file directly; use the modular imports instead.
+ */

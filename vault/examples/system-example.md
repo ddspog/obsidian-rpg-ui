@@ -2,6 +2,18 @@
 
 This is an example of how to define a custom RPG system. This file demonstrates the syntax for defining system rules, including how to reference external files for sub-configurations.
 
+## 💡 Complete Working Examples
+
+For fully working system definitions, see:
+- **Inline format:** `systems/inline-system/DnD5e-System.md` - All components in one file
+- **Split format:** `systems/split-system/System/DnD5e-System.md` - Components in separate files
+
+The split format demonstrates:
+- Using `skills: "path/to/file.md"` to load skills from external file
+- Using `expressions: ["file1.md", "file2.md"]` to load from multiple files
+- New `rpg system.skills` and `rpg system.expressions` dot notation
+- Direct arrays without wrapper fields
+
 ## System Definition
 
 ```rpg system
@@ -15,8 +27,8 @@ attributes:
   - charisma
 
 # Reference external files for features and spellcasting
-features: "Systems/DnD5e-Features.md"
-spellcasting: "Systems/DnD5e-Spellcasting.md"
+features: "DnD5e-Features-Example.md"
+spellcasting: "DnD5e-Spellcasting-Example.md"
 
 types:
   character:
@@ -158,11 +170,11 @@ skills:
 
 To use this system:
 
-1. Save this file in your vault (e.g., `Systems/DnD 5e.md`)
+1. Save this file in your vault (e.g., `systems/DnD 5e.md`)
 2. Open plugin settings
 3. Add a system mapping:
    - Folder: `Characters/DnD` (or leave empty for vault-wide default)
-   - System file: `Systems/DnD 5e.md`
+  - System file: `systems/DnD 5e.md`
 4. All character files in that folder will use this system's rules
 
 ## Notes

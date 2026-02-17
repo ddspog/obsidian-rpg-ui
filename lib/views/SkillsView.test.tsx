@@ -3,6 +3,31 @@ import { SkillsView } from "./SkillsView";
 import { App, MarkdownPostProcessorContext } from "obsidian";
 import * as AbilityService from "../domains/abilities";
 
+// Mock the system registry
+vi.mock("lib/systems/registry", () => {
+  const mockSystem = {
+    name: "Test System",
+    attributes: ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"],
+    entities: {},
+    skills: [
+      { label: "Athletics", attribute: "strength" },
+      { label: "Acrobatics", attribute: "dexterity" },
+      { label: "Stealth", attribute: "dexterity" },
+    ],
+    expressions: new Map(),
+    features: { categories: [], providers: [], collectors: [] },
+    spellcasting: { circles: [], providers: [], collectors: [] },
+  };
+
+  return {
+    SystemRegistry: {
+      getInstance: vi.fn(() => ({
+        getSystemForFile: vi.fn(() => mockSystem),
+      })),
+    },
+  };
+});
+
 // Mock the React render function
 vi.mock("react-dom/client", () => ({
   createRoot: vi.fn(() => ({
@@ -14,13 +39,26 @@ vi.mock("react-dom/client", () => ({
 vi.mock("./filecontext", () => ({
   useFileContext: vi.fn(() => ({
     frontmatter: vi.fn(() => ({
-      proficiency: 3,
+      proficiency_bonus: 2,
+      level: 1,
       expertise: [],
       proficiencies: [],
       half_proficiencies: [],
       jack_of_all_trades: false,
     })),
+    md: vi.fn(() => ({})),
+    onFrontmatterChange: vi.fn(() => () => {}),
   })),
+}));
+
+// Mock HTML templates
+vi.mock("lib/html-templates", () => ({
+  Render: vi.fn((component) => "<div></div>"),
+}));
+
+// Mock skill cards component
+vi.mock("lib/components/skill-cards", () => ({
+  SkillGrid: vi.fn((props) => "skill-grid"),
 }));
 
 describe("SkillsView", () => {

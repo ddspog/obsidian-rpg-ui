@@ -1,0 +1,13 @@
+/* DEPRECATED: This file has been split into focused modules:
+ * - system-info.css
+ * - skills-display.css
+ * - expressions-display.css
+ * - features-display.css
+ * - spellcasting-display.css
+ * - attributes-display.css
+ * 
+ * Import these files from index.css instead of this file.
+ * This file is kept for backwards compatibility and should be removed
+ * after verifying all components work with the new modular structure.
+ */
+

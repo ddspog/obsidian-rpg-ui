@@ -1,0 +1,105 @@
+/* Session Log - Event List Module
+ * Handles event card display with type-specific styling (action, oracle, roll, dialogue, etc)
+ */
+
+.lonelog-event-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.lonelog-event-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding: 0.75rem;
+	border-radius: 4px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.event-symbol {
+	font-weight: bold;
+	min-width: 1.5em;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.event-text {
+	flex: 1;
+}
+
+/* Event Type Specific Styles */
+.event-action {
+	border-left: 3px solid var(--color-primary, #646cff);
+}
+
+.event-oracle-question {
+	font-style: italic;
+	background: var(--background-secondary);
+}
+
+.event-oracle-answer {
+	padding-left: 2rem;
+	border-left: 3px solid var(--color-accent, #ffa500);
+}
+
+.event-roll {
+	background: var(--background-secondary);
+	font-family: monospace;
+}
+
+.roll-success {
+	border-left: 3px solid var(--color-success, #10b981);
+}
+
+.roll-failure {
+	border-left: 3px solid var(--color-danger, #ef4444);
+}
+
+.roll-expression {
+	font-weight: 600;
+}
+
+.roll-arrow {
+	margin: 0 0.5em;
+	color: var(--text-muted);
+}
+
+.roll-result {
+	font-weight: bold;
+}
+
+.event-consequence {
+	padding-left: 2rem;
+	background: var(--background-secondary);
+}
+
+.consequence-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	flex: 1;
+}
+
+.event-dialogue {
+	font-style: italic;
+	padding-left: 1.5rem;
+}
+
+.dialogue-speaker {
+	font-weight: 600;
+	margin-right: 0.5em;
+}
+
+.event-meta-note {
+	color: var(--text-muted);
+	font-size: 0.9em;
+	font-style: italic;
+}
+
+.event-narrative {
+	border: none;
+	background: transparent;
+	padding: 0.5rem 0.75rem;
+}

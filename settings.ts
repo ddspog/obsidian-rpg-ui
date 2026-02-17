@@ -4,13 +4,16 @@ import { THEMES } from "lib/themes";
  * Folder-to-system mapping entry
  */
 export interface SystemMapping {
-  folderPath: string;
+  folderPaths: string[];
   systemFilePath: string;
 }
 
 export interface DndUIToolkitSettings {
   statePath: string;
   selectedTheme: string;
+
+  // Show system definition blocks in the UI
+  showSystemBlocks: boolean;
 
   // System mappings: folder path → system definition file path
   // Empty folder path ("") represents the root/default for the entire vault
@@ -45,6 +48,7 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   statePath: ".dnd-ui-toolkit-state.json",
   selectedTheme: "default",
   systemMappings: [],
+  showSystemBlocks: false,
 
   ...THEMES.default.colors,
 };
