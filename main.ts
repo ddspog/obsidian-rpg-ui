@@ -963,7 +963,17 @@ function buildInlineCards(data: DataRecord[], fields: string[], ctx: MarkdownPos
     const alias = formatValue(item.alias ?? "");
     const header = document.createElement("div");
     header.className = "rpg-inline-card-header";
-    header.textContent = alias ? `${name} (${alias})` : name;
+    // Display uppercase name as the main header
+    header.textContent = name.toUpperCase();
+    
+    // If alias exists and is different from name, show it inline with parentheses
+    if (alias && alias.toUpperCase() !== name.toUpperCase()) {
+      const aliasEl = document.createElement("span");
+      aliasEl.className = "rpg-inline-card-alias";
+      aliasEl.textContent = ` (${alias.toUpperCase()})`;
+      header.appendChild(aliasEl);
+    }
+    
     card.appendChild(header);
 
     if (item.subtitle) {

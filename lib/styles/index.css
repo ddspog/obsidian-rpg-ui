@@ -30,4 +30,5 @@
 @import "./components/features-display.css";
 @import "./components/spellcasting-display.css";
 @import "./components/attributes-display.css";
+@import "./components/inline-display.css";
 @import "./file-suggest.css";

@@ -8,78 +8,96 @@ This file demonstrates how to define and configure system attributes using the `
 
 ```rpg system.attributes
 - name: strength
-  subtitle: STR
+  alias: STR
+  subtitle: "Associated Skills: Athletics"
+  description: |
+    Strength measures bodily power, athletic aptitude, and the extent to which you can exert raw physical force. STR is used to: 
+    - Calculate attack rolls and damage with melee weapons 
+    - Determine how much weight can be lifted or carried 
+
+    Use STR for checks that involve feats of bodily force, such as: 
+
+    - Kicking down a door, breaking free of bonds, or smashing a lock 
+    - Pulling, pushing, or lifting heavy objects 
+    - Climbing a rope or swimming against the current 
+    - Resisting an attempt to grab, pull, or push you
+  measures: Physical might
 - name: dexterity
-  subtitle: DEX
+  alias: DEX
+  subtitle: "Associated Skills: Acrobatics, Sleight of Hand, Stealth"
+  description: |
+    Dexterity measures agility, reflexes, and balance. DEX is used to:
+    - Calculate attack rolls and damage with ranged weapons or melee weapons with the Finesse property
+    - Calculate Armor Class
+    - Determine initiative order during encounter gameplay
+
+    Use DEX for checks that involve reflexes, precise motion, or swift response time such as:
+    - Maintaining balance while on a moving vehicle or scooting along a narrow ledge
+    - Picking a pocket without being noticed
+    - Picking a lock or disabling a trap
+    - Crafting a small or detailed object
+    - Moving silently or sneaking up on prey
+    - Resisting an attempt to grab, pull, or push you
+  measures: Agility, reflexes, and balance
 - name: constitution
-  subtitle: CON
+  alias: CON
+  subtitle: "Associated Skills: None"
+  description: |
+    Constitution measures health, stamina, and vital force. CON is used to:
+    - Calculate hit points (HP)
+
+    Use CON for checks that involve endurance or weathering extreme conditions, such as:
+    - Holding your breath
+    - Extended marching or labor without rest
+    - Going without sleep
+    - Surviving without food or water
+    - Quaffing an entire stein of ale in one go
+  measures: Health and stamina
 - name: intelligence
-  subtitle: INT
+  alias: INT
+  subtitle: "Associated Skills: Arcana, History, Investigation, Nature, Religion"
+  description: |
+    Intelligence measures mental acuity, accuracy of recall, and the ability to reason. INT is used to:
+    - Calculate certain class spellcasting abilities
+
+    Use INT for checks to draw on logic, education, memory, or deductive reasoning, such as:
+    - Communicating without using words
+    - Estimating the value of a precious item
+    - Forging a document
+    - Recalling lore about a craft or trade
+    - Winning a game of skill
+  measures: Reasoning and memory
 - name: wisdom
-  subtitle: WIS
+  alias: WIS
+  subtitle: "Associated Skills: Animal Handling, Insight, Medicine, Perception, Survival"
+  description: |
+    Wisdom reflects how attuned you are to the world around you and represents perceptiveness and intuition. WIS is used to:
+    - Calculate certain class spellcasting abilities
+
+    Use WIS for checks to intuit clues about the environment and people or treat the injured, such as:
+    - Getting a gut feeling about next steps
+    - Discerning if a seemingly dead creature is Undead
+    - Picking up on subtle signals happening around you
+    - Bandage a wound or recognize a disease
+  measures: Perceptiveness and mental fortitude
 - name: charisma
-  subtitle: CHA
+  alias: CHA
+  subtitle: "Associated Skills: Deception, Intimidation, Performance, Persuasion"
+  description: |
+    Charisma measures your ability to interact with others and can represent a charming or commanding personality. CHA is used to:
+    - Calculate certain class spellcasting abilities
+
+    Use CHA for checks to influence or entertain, make an impression, tell a convincing lie, or navigate a tricky social situation, such as:
+    - Finding the best person to talk to for news, rumors, and gossip
+    - Pulling together a disguise to pass as a city guard
+    - Blending into a crowd to get the sense of key topics of conversation
+  measures: Confidence, poise, and charm
 ```
 
-### Inline Cards and Table
+`rpg.cards(attributes, ['name', 'subtitle', 'description'])`
 
-rpg.cards(attributes, ['name', 'subtitle'])
 
-rpg.table(attributes, [{ header: 'Attribute', property: 'name' }, { header: 'abbr', property: 'subtitle' }])
-
-## Extended Format with Descriptions
-
-```rpg system.attributes
-- name: strength
-  subtitle: STR
-  description: "Physical power and athletic ability"
-  alias: str
-  
-- name: dexterity
-  subtitle: DEX
-  description: "Agility, reflexes, and balance"
-  alias: dex
-  
-- name: constitution
-  subtitle: CON
-  description: "Endurance, health, and vitality"
-  alias: con
-  
-- name: intelligence
-  subtitle: INT
-  description: "Reasoning and memory"
-  alias: int
-  
-- name: wisdom
-  subtitle: WIS
-  description: "Awareness and insight"
-  alias: wis
-  
-- name: charisma
-  subtitle: CHA
-  description: "Force of personality and leadership"
-  alias: cha
-```
-
-## Custom System Example
-
-```rpg system.attributes
-- name: might
-  subtitle: MIG
-  description: "Raw physical power"
-  
-- name: agility
-  subtitle: AGI
-  description: "Speed and coordination"
-  
-- name: mind
-  subtitle: MND
-  description: "Mental acuity and intellect"
-  
-- name: spirit
-  subtitle: SPI
-  description: "Spiritual connection and willpower"
-```
+`rpg.table(attributes, [{ header: 'Attribute', property: 'name'}, { header: 'Score Measures ...', property: 'measures'}])`
 
 ## Configuration Reference
 
