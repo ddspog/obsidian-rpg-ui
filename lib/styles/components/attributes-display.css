@@ -1,0 +1,78 @@
+/* Attributes Display (D&D style cards) */
+.attributes-display-container {
+  margin: 16px 0;
+}
+
+.attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.attribute-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.attribute-card:hover {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.attribute-header {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.attribute-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-on-accent);
+}
+
+.attribute-subtitle {
+  padding: 8px 12px;
+  font-style: italic;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  background: var(--background-primary-alt);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.attribute-description {
+  padding: 12px;
+  font-size: 0.9em;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+.attribute-description p {
+  margin: 0 0 8px 0;
+}
+
+.attribute-description p:last-child {
+  margin-bottom: 0;
+}
+
+.attribute-description ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.attribute-description li {
+  margin: 4px 0;
+}
+
+.attribute-description strong {
+  color: var(--text-accent);
+  font-weight: 600;
+}

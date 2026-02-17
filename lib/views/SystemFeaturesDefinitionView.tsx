@@ -15,6 +15,10 @@ export class SystemFeaturesDefinitionView extends BaseView {
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
     try {
+      if (!this.shouldShowSystemBlocks()) {
+        const placeholder = this.createSystemPlaceholder("system.features");
+        return placeholder.outerHTML;
+      }
       const data = parseYaml(source);
 
       // Handle both direct array and wrapped array formats

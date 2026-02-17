@@ -1,8 +1,5 @@
-import * as React from "react";
-import { createRoot, Root } from "react-dom/client";
 import { parse as parseYaml } from "yaml";
 import { MarkdownPostProcessorContext } from "obsidian";
-import { AttributesDisplay } from "../components/system-definition/attributes-display";
 import { BaseView } from "./BaseView";
 
 interface AttributeDefinition {
@@ -10,14 +7,18 @@ interface AttributeDefinition {
   subtitle?: string;
   alias?: string;
   description?: string;
+  [key: string]: unknown;
 }
 
 export class SystemAttributesDefinitionView extends BaseView {
   public codeblock = "system.attributes";
-  private roots: Map<HTMLElement, Root> = new Map();
 
   render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     try {
+      if (!this.shouldShowSystemBlocks()) {
+        el.appendChild(this.createSystemPlaceholder("system.attributes"));
+        return;
+      }
       const parsed = parseYaml(source);
       
       // Handle both direct array format and wrapped format
@@ -33,16 +34,20 @@ export class SystemAttributesDefinitionView extends BaseView {
         return;
       }
 
-      const container = el.createDiv({ cls: "system-attributes-view" });
-      const root = createRoot(container);
-      this.roots.set(container, root);
+      const summary = attributes
+        .map((attr) => (typeof attr === "string" ? attr : attr.name))
+        .filter((name) => !!name)
+        .map((name) => String(name).trim())
+        .filter((name) => name.length > 0)
+        .map((name) => name[0].toUpperCase() + name.slice(1))
+        .join(", ");
 
-      root.render(
-        <AttributesDisplay 
-          attributes={attributes}
-          vault={this.app.vault}
-        />
-      );
+      const container = el.createDiv({ cls: "system-attributes-summary" });
+      container.createSpan({ cls: "system-attributes-icon", text: "⚙" });
+      container.createSpan({
+        cls: "system-attributes-text",
+        text: `Defining system attributes: ${summary}`,
+      });
     } catch (error) {
       console.error("Failed to render system.attributes:", error);
       el.createEl("div", {
@@ -50,16 +55,5 @@ export class SystemAttributesDefinitionView extends BaseView {
         cls: "system-error-message",
       });
     }
-  }
-
-  cleanup(): void {
-    this.roots.forEach((root) => {
-      try {
-        root.unmount();
-      } catch (e) {
-        console.warn("Error unmounting attribute view:", e);
-      }
-    });
-    this.roots.clear();
   }
 }

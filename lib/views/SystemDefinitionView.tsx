@@ -15,6 +15,10 @@ export class SystemDefinitionView extends BaseView {
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
     try {
+      if (!this.shouldShowSystemBlocks()) {
+        const placeholder = this.createSystemPlaceholder("system");
+        return placeholder.outerHTML;
+      }
       const data = parseYaml(source) as {
         name?: string;
         attributes?: string[];

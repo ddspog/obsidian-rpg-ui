@@ -1,0 +1,135 @@
+/* Initiative Tracker - Entities Module
+ * Handles display of player and monster entities in the initiative list
+ */
+
+.initiative-roll {
+	flex: 0 0 2.5rem;
+	position: relative;
+	font-size: 1.2rem !important;
+}
+
+.initiative-input {
+	width: 100%;
+	background-color: var(--color-bg-primary);
+	border: 1px solid var(--color-border-primary);
+	border-radius: 0.25rem;
+	color: var(--color-text-primary);
+	padding: 0.3rem 0.5rem;
+	text-align: center;
+	font-size: 1.2rem !important;
+	height: 100% !important;
+}
+
+.initiative-name {
+	flex: 1;
+	font-weight: bold;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 1rem;
+}
+
+.initiative-link {
+	font-weight: bold;
+	color: var(--color-text-bright);
+	text-decoration: none !important;
+}
+
+.initiative-ac {
+	font-style: italic;
+	font-size: 0.7rem;
+	opacity: 70%;
+}
+
+.initiative-ac-value {
+	font-weight: bold;
+}
+
+.initiative-hp {
+	display: flex;
+	align-items: center;
+	gap: 0.2rem;
+	flex: 0 0 auto;
+	padding: 0.1rem 0.3rem;
+	background-color: var(--color-bg-primary);
+	border-radius: 0.25rem;
+	font-size: 0.9rem;
+	margin-bottom: auto;
+	margin-left: auto;
+}
+
+.initiative-hp-value {
+	font-weight: bold;
+	color: var(--color-text-primary);
+}
+
+.initiative-hp-separator {
+	color: var(--color-border-active);
+}
+
+.initiative-hp-max {
+	color: var(--color-text-secondary);
+}
+
+/* Group monster styles */
+.initiative-group-container {
+	margin-top: 0.3rem;
+	width: 100%;
+}
+
+.initiative-group-header {
+	padding: 0.3rem 0.5rem;
+	margin-bottom: 0.5rem;
+	background-color: var(--color-bg-group);
+	border-radius: 0.25rem;
+	font-weight: bold;
+	font-size: 0.9rem;
+	color: var(--color-text-group);
+	letter-spacing: 0.5px;
+}
+
+.initiative-group-hp {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 0.3rem;
+	width: 100%;
+}
+
+.initiative-monster {
+	background-color: var(--color-bg-primary);
+	border-radius: 0.25rem;
+	padding: 0.2rem 0.3rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	border: 1px solid var(--color-border-primary);
+}
+
+.initiative-monster-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex: 1;
+}
+
+.initiative-monster-name {
+	font-size: 0.8rem;
+	font-weight: bold;
+	color: var(--color-text-primary);
+}
+
+.initiative-monster-hp {
+	display: flex;
+	align-items: center;
+	gap: 0.2rem;
+	background-color: var(--color-bg-darker);
+	padding: 0.1rem 0.3rem;
+	border-radius: 0.2rem;
+	font-size: 0.8rem;
+}
+
+.initiative-monster-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+}

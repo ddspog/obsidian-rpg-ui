@@ -1,0 +1,93 @@
+/* Expressions Display */
+.system-expressions-display {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.system-expressions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.system-expressions-icon {
+  font-size: 20px;
+}
+
+.system-expressions-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+  flex: 1;
+}
+
+.system-expressions-count {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.system-expressions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.system-expression-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.system-expression-card:hover {
+  background: var(--background-primary-alt);
+  border-color: var(--interactive-accent);
+}
+
+.system-expression-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.system-expression-id {
+  background: var(--code-background);
+  color: var(--code-normal);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.system-expression-params {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.system-expression-formula {
+  background: var(--code-background);
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.system-expression-formula code {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  color: var(--code-normal);
+}
