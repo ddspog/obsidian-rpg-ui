@@ -2,6 +2,7 @@ import { MarkdownPostProcessorContext } from "obsidian";
 import { App } from "obsidian";
 import { SystemRegistry } from "lib/systems/registry";
 import { RPGSystem } from "lib/systems/types";
+import { settingsStore } from "lib/services/settings-store";
 
 /**
  * BaseView handles the basic registration of components and creates consistent logic for rendering.
@@ -25,6 +26,18 @@ export abstract class BaseView {
   protected getSystem(ctx: MarkdownPostProcessorContext): RPGSystem {
     const filePath = ctx.sourcePath;
     return this.systemRegistry.getSystemForFile(filePath);
+  }
+
+  protected shouldShowSystemBlocks(): boolean {
+    return settingsStore.getSettings()?.showSystemBlocks ?? false;
+  }
+
+  protected createSystemPlaceholder(blockType: string): HTMLElement {
+    const aside = document.createElement("aside");
+    aside.className = "rpg-system-placeholder";
+    aside.textContent = `System block hidden: rpg ${blockType}`;
+    aside.setAttribute("title", `System block hidden (rpg ${blockType}). Enable in settings to show.`);
+    return aside;
   }
 
   // Changed return type from string to HTMLElement or void

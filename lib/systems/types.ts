@@ -20,6 +20,9 @@ export interface AttributeDefinition {
   
   /** Description in markdown format */
   description?: string;
+
+  /** Custom properties for tables/cards */
+  [key: string]: unknown;
 }
 
 /**

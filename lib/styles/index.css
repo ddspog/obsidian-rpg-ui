@@ -1,3 +1,4 @@
+@import "./utilities.css";
 @import "./common.css";
 
 /* Components */
@@ -7,11 +8,26 @@
 @import "./components/badge.css";
 @import "./components/consumables.css";
 @import "./components/checkbox.css";
-@import "./components/initiative.css";
+/* Initiative Tracker Components - Split from monolithic file */
+@import "./components/initiative-layout.css";
+@import "./components/initiative-entities.css";
+@import "./components/initiative-controls.css";
+@import "./components/initiative-status.css";
 @import "./components/spell-components.css";
 @import "./components/event-buttons.css";
 @import "./components/inventory.css";
 @import "./components/features.css";
-@import "./components/system-definition.css";
-@import "./components/session-log.css";
+/* Session Log Components - Split from monolithic file */
+@import "./components/session-log-scene.css";
+@import "./components/session-log-events.css";
+@import "./components/session-log-tags.css";
+@import "./components/session-log-hud.css";
+@import "./components/session-log-overview.css";
+/* System Definition Components - Split from monolithic file */
+@import "./components/system-info.css";
+@import "./components/skills-display.css";
+@import "./components/expressions-display.css";
+@import "./components/features-display.css";
+@import "./components/spellcasting-display.css";
+@import "./components/attributes-display.css";
 @import "./file-suggest.css";

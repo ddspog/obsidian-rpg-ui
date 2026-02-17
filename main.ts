@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext, MarkdownRenderer, parseYaml, TFile } from "obsidian";
 import { AbilityScoreView } from "lib/views/AbilityScoreView";
 import { BaseView } from "lib/views/BaseView";
 import { SkillsView } from "lib/views/SkillsView";
@@ -28,6 +28,10 @@ import * as Fm from "lib/domains/frontmatter";
 import { extractMeta } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { FileSuggest } from "lib/utils/file-suggest";
+import { FolderSuggest } from "lib/utils/folder-suggest";
+import { settingsStore } from "lib/services/settings-store";
+import { RPGSystem } from "lib/systems/types";
+import { extractCodeBlocks } from "lib/utils/codeblock-extractor";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -60,6 +64,7 @@ export default class DndUIToolkitPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+    settingsStore.setSettings(this.settings);
 
     // Apply color settings on load
     this.applyColorSettings();
@@ -82,7 +87,9 @@ export default class DndUIToolkitPlugin extends Plugin {
     // Load system mappings from settings
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
-      mappings.set(mapping.folderPath, mapping.systemFilePath);
+      for (const folderPath of mapping.folderPaths) {
+        mappings.set(folderPath, mapping.systemFilePath);
+      }
     }
     registry.setFolderMappings(mappings);
 
@@ -180,6 +187,8 @@ export default class DndUIToolkitPlugin extends Plugin {
       });
     }
 
+    this.registerInlineDataRenderers();
+
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new DndSettingsTab(this.app, this));
   }
@@ -196,10 +205,12 @@ export default class DndUIToolkitPlugin extends Plugin {
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings.systemMappings = this.normalizeSystemMappings(this.settings.systemMappings);
   }
 
   async saveSettings() {
     await this.saveData(this.settings);
+    settingsStore.setSettings(this.settings);
     // Reinitialize data store with the new path
     this.initDataStore();
     
@@ -207,9 +218,37 @@ export default class DndUIToolkitPlugin extends Plugin {
     const registry = SystemRegistry.getInstance();
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
-      mappings.set(mapping.folderPath, mapping.systemFilePath);
+      for (const folderPath of mapping.folderPaths) {
+        mappings.set(folderPath, mapping.systemFilePath);
+      }
     }
     registry.setFolderMappings(mappings);
+  }
+
+  private normalizeSystemMappings(rawMappings: unknown): DndUIToolkitSettings["systemMappings"] {
+    if (!Array.isArray(rawMappings)) {
+      return [];
+    }
+
+    return rawMappings.map((mapping) => {
+      const typed = mapping as { folderPath?: string; folderPaths?: string[]; systemFilePath?: string };
+      const folderPaths = Array.isArray(typed.folderPaths)
+        ? typed.folderPaths
+        : typed.folderPath !== undefined
+          ? [typed.folderPath]
+          : [];
+
+      return {
+        folderPaths: folderPaths.filter((path) => path !== undefined) as string[],
+        systemFilePath: typed.systemFilePath ?? "",
+      };
+    });
+  }
+
+  private registerInlineDataRenderers(): void {
+    this.registerMarkdownPostProcessor(async (el, ctx) => {
+      await processInlineRpgCalls(el, ctx, this);
+    });
   }
 }
 
@@ -250,6 +289,18 @@ class DndSettingsTab extends PluginSettingTab {
       cls: "setting-item-description",
     });
 
+    new Setting(containerEl)
+      .setName("Show system definition blocks")
+      .setDesc("Show visual rendering for system definition blocks (system, system.skills, system.expressions, etc.).")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showSystemBlocks)
+          .onChange(async (value) => {
+            this.plugin.settings.showSystemBlocks = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Display current mappings
     const mappingsContainer = containerEl.createDiv({ cls: "rpg-systems-mappings" });
     this.renderSystemMappings(mappingsContainer);
@@ -261,7 +312,7 @@ class DndSettingsTab extends PluginSettingTab {
       .addButton((button) =>
         button.setButtonText("Add").onClick(() => {
           this.plugin.settings.systemMappings.push({
-            folderPath: "",
+            folderPaths: [],
             systemFilePath: "",
           });
           this.display(); // Refresh to show new mapping
@@ -338,23 +389,92 @@ class DndSettingsTab extends PluginSettingTab {
     }
 
     const fileSuggests: FileSuggest[] = [];
+    const folderSuggests: FolderSuggest[] = [];
 
     for (let i = 0; i < this.plugin.settings.systemMappings.length; i++) {
       const mapping = this.plugin.settings.systemMappings[i];
       
       const mappingSetting = new Setting(containerEl)
-        .setName(`Mapping ${i + 1}`)
-        .addText((text) => {
-          text
-            .setPlaceholder("Folder path (e.g., Characters/Pathfinder)")
-            .setValue(mapping.folderPath)
-            .onChange(async (value) => {
-              mapping.folderPath = value;
-              await this.saveAndUpdateRegistry();
-            });
-          text.inputEl.style.width = "200px";
-          return text;
-        })
+        .setName(`Mapping ${i + 1}`);
+
+      const folderContainer = mappingSetting.controlEl.createDiv({ cls: "rpg-folder-mapping" });
+      const folderList = folderContainer.createDiv({ cls: "rpg-folder-list" });
+
+      const renderFolderList = () => {
+        folderList.empty();
+        const paths = mapping.folderPaths.length > 0 ? mapping.folderPaths : [];
+        paths.forEach((path) => {
+          const chip = folderList.createDiv({ cls: "rpg-folder-chip" });
+          const label = path === "" ? "(root)" : path;
+          chip.createSpan({ text: label, cls: "rpg-folder-chip-label" });
+          const removeButton = chip.createEl("button", { text: "x", cls: "rpg-folder-chip-remove" });
+          removeButton.addEventListener("click", async () => {
+            mapping.folderPaths = mapping.folderPaths.filter((entry) => entry !== path);
+            await this.saveAndUpdateRegistry();
+            renderFolderList();
+          });
+        });
+      };
+
+      renderFolderList();
+
+      mappingSetting.addText((text) => {
+        text
+          .setPlaceholder("Add folders (Enter to add)")
+          .setValue("")
+          .onChange(() => {
+            // No-op: handled on Enter/Comma for multi-add
+          });
+        text.inputEl.classList.add("rpg-folder-input");
+        text.inputEl.style.width = "200px";
+
+        const addFromInput = async () => {
+          const value = text.inputEl.value;
+          const entries = value
+            .split(/[\n,;]+/)
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0)
+            .map((entry) => normalizeFolderPath(entry));
+
+          const uniqueEntries = entries
+            .filter((entry): entry is string => entry !== null)
+            .filter((entry) => !mapping.folderPaths.includes(entry));
+
+          if (uniqueEntries.length === 0) {
+            text.setValue("");
+            return;
+          }
+
+          mapping.folderPaths = [...mapping.folderPaths, ...uniqueEntries];
+          text.setValue("");
+          await this.saveAndUpdateRegistry();
+          renderFolderList();
+        };
+
+        text.inputEl.addEventListener("keydown", async (event) => {
+          if (event.key === "Enter" || event.key === ",") {
+            event.preventDefault();
+            await addFromInput();
+          }
+        });
+
+        const folderSuggest = new FolderSuggest(this.app, text, async (selection) => {
+          const normalized = normalizeFolderPath(selection);
+          if (normalized === null || mapping.folderPaths.includes(normalized)) {
+            text.setValue("");
+            return;
+          }
+          mapping.folderPaths = [...mapping.folderPaths, normalized];
+          text.setValue("");
+          await this.saveAndUpdateRegistry();
+          renderFolderList();
+        });
+        folderSuggests.push(folderSuggest);
+
+        return text;
+      });
+
+      mappingSetting
         .addText((text) => {
           text
             .setPlaceholder("System file (e.g., Systems/Pathfinder 2e.md)")
@@ -380,6 +500,7 @@ class DndSettingsTab extends PluginSettingTab {
               await this.saveAndUpdateRegistry();
               // Clean up file suggests
               fileSuggests.forEach(fs => fs.destroy());
+              folderSuggests.forEach(fs => fs.destroy());
               this.display(); // Refresh display
             })
         );
@@ -393,7 +514,9 @@ class DndSettingsTab extends PluginSettingTab {
     const registry = SystemRegistry.getInstance();
     const mappings = new Map<string, string>();
     for (const mapping of this.plugin.settings.systemMappings) {
-      mappings.set(mapping.folderPath, mapping.systemFilePath);
+      for (const folderPath of mapping.folderPaths) {
+        mappings.set(folderPath, mapping.systemFilePath);
+      }
     }
     registry.setFolderMappings(mappings);
   }
@@ -408,4 +531,502 @@ class DndSettingsTab extends PluginSettingTab {
       })
     );
   }
+}
+
+function normalizeFolderPath(value: string): string | null {
+  const trimmed = value.replace(/\\/g, "/").trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed === "/" || trimmed === ".") return "";
+  const normalized = trimmed.replace(/^\/+|\/+$/g, "");
+  return normalized.length === 0 ? "" : normalized;
+}
+
+type InlineCallType = "table" | "cards";
+type InlineCall = {
+  type: InlineCallType;
+  argsText: string;
+  start: number;
+  end: number;
+};
+
+type DataRecord = Record<string, unknown>;
+
+async function processInlineRpgCalls(el: HTMLElement, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<void> {
+  console.debug("DnD UI Toolkit: inline postprocessor start", {
+    sourcePath: ctx.sourcePath,
+    tagName: el.tagName,
+    className: el.className,
+  });
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (parent.closest("code, pre")) return NodeFilter.FILTER_REJECT;
+      if (!node.textContent || !node.textContent.includes("rpg.")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode as Text);
+  }
+
+  console.debug("DnD UI Toolkit: inline text nodes", {
+    sourcePath: ctx.sourcePath,
+    count: textNodes.length,
+    textContentLength: el.textContent?.length ?? 0,
+  });
+
+  if (textNodes.length === 0 && !el.hasAttribute("data-rpg-inline-retry")) {
+    el.setAttribute("data-rpg-inline-retry", "1");
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+    await processInlineRpgCalls(el, ctx, plugin);
+    return;
+  }
+
+  for (const node of textNodes) {
+    const text = node.textContent ?? "";
+    if (text.includes("rpg.")) {
+      console.debug("DnD UI Toolkit: inline candidate", {
+        sourcePath: ctx.sourcePath,
+        text,
+      });
+    }
+    const fragments = await replaceInlineCalls(text, ctx, plugin);
+    if (!fragments) continue;
+    node.parentNode?.replaceChild(fragments, node);
+  }
+
+  await processInlineCodeElements(el, ctx, plugin);
+}
+
+async function processInlineCodeElements(el: HTMLElement, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<void> {
+  const codeNodes = Array.from(el.querySelectorAll("code"))
+    .filter((node) => !node.closest("pre"));
+
+  for (const codeNode of codeNodes) {
+    const raw = codeNode.textContent?.trim() ?? "";
+    if (!raw.startsWith("rpg.")) continue;
+
+    const call = findNextInlineCall(raw, 0);
+    if (!call || call.start !== 0 || call.end !== raw.length) continue;
+
+    console.debug("DnD UI Toolkit: inline code call", {
+      sourcePath: ctx.sourcePath,
+      raw,
+    });
+
+    const replacement = await renderInlineCall(call, ctx, plugin);
+    const parent = codeNode.parentElement;
+
+    if (parent && parent.tagName === "P" && parent.textContent?.trim() === raw) {
+      parent.replaceWith(replacement);
+    } else {
+      codeNode.replaceWith(replacement);
+    }
+  }
+}
+
+async function replaceInlineCalls(text: string, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<DocumentFragment | null> {
+  let cursor = 0;
+  const fragment = document.createDocumentFragment();
+  let replaced = false;
+
+  while (cursor < text.length) {
+    const call = findNextInlineCall(text, cursor);
+    if (!call) break;
+
+    if (call.start > cursor) {
+      fragment.append(document.createTextNode(text.slice(cursor, call.start)));
+    }
+
+    const replacement = await renderInlineCall(call, ctx, plugin);
+    fragment.appendChild(replacement);
+    cursor = call.end;
+    replaced = true;
+  }
+
+  if (!replaced) return null;
+
+  if (cursor < text.length) {
+    fragment.append(document.createTextNode(text.slice(cursor)));
+  }
+
+  return fragment;
+}
+
+function findNextInlineCall(text: string, startIndex: number): InlineCall | null {
+  const regex = /rpg\.(table|cards)\(/g;
+  regex.lastIndex = startIndex;
+  const match = regex.exec(text);
+  if (!match) return null;
+
+  const type = match[1] as InlineCallType;
+  const openParenIndex = match.index + match[0].length - 1;
+  const argsResult = readArgs(text, openParenIndex + 1);
+  if (!argsResult) return null;
+
+  return {
+    type,
+    argsText: argsResult.argsText,
+    start: match.index,
+    end: argsResult.endIndex + 1,
+  };
+}
+
+function readArgs(text: string, startIndex: number): { argsText: string; endIndex: number } | null {
+  let depth = 1;
+  let inString: string | null = null;
+  let escapeNext = false;
+
+  for (let i = startIndex; i < text.length; i++) {
+    const char = text[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escapeNext = true;
+      continue;
+    }
+
+    if (inString) {
+      if (char === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      inString = char;
+      continue;
+    }
+
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+
+    if (depth === 0) {
+      return { argsText: text.slice(startIndex, i), endIndex: i };
+    }
+  }
+
+  return null;
+}
+
+function splitArgs(argsText: string): [string, string] | null {
+  let depth = 0;
+  let inString: string | null = null;
+  let escapeNext = false;
+
+  for (let i = 0; i < argsText.length; i++) {
+    const char = argsText[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escapeNext = true;
+      continue;
+    }
+
+    if (inString) {
+      if (char === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      inString = char;
+      continue;
+    }
+
+    if (char === "[" || char === "{" || char === "(") depth += 1;
+    if (char === "]" || char === "}" || char === ")") depth -= 1;
+
+    if (char === "," && depth === 0) {
+      const left = argsText.slice(0, i).trim();
+      const right = argsText.slice(i + 1).trim();
+      return [left, right];
+    }
+  }
+
+  return null;
+}
+
+async function renderInlineCall(call: InlineCall, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<HTMLElement> {
+  console.debug("DnD UI Toolkit: inline call", {
+    sourcePath: ctx.sourcePath,
+    type: call.type,
+    argsText: call.argsText,
+  });
+  const errorEl = (message: string): HTMLElement => {
+    const span = document.createElement("span");
+    span.className = "rpg-inline-error";
+    span.textContent = message;
+    return span;
+  };
+
+  const args = splitArgs(call.argsText);
+  if (!args) {
+    return errorEl(`Invalid rpg.${call.type} arguments`);
+  }
+
+  const dataName = args[0].replace(/^['"]|['"]$/g, "").trim();
+  const system = SystemRegistry.getInstance().getSystemForFile(ctx.sourcePath);
+  const dataResult = await resolveDataSource(dataName, system, ctx, plugin);
+  console.debug("DnD UI Toolkit: inline data source", {
+    sourcePath: ctx.sourcePath,
+    dataName,
+    hasData: !!dataResult.data,
+    error: dataResult.error,
+    count: dataResult.data?.length ?? 0,
+  });
+  if (!dataResult.data) {
+    return errorEl(dataResult.error ?? `Unknown data source: ${dataName}`);
+  }
+  const data = dataResult.data;
+
+  if (call.type === "table") {
+    let columns: unknown;
+    try {
+      columns = parseYaml(args[1]);
+    } catch (error) {
+      return errorEl("Invalid table columns");
+    }
+    if (!Array.isArray(columns)) {
+      return errorEl("Invalid table columns");
+    }
+    return buildInlineTable(data, columns as Array<Record<string, unknown>>);
+  }
+
+  let fields: unknown;
+  try {
+    fields = parseYaml(args[1]);
+  } catch (error) {
+    return errorEl("Invalid card fields");
+  }
+  if (!Array.isArray(fields)) {
+    return errorEl("Invalid card fields");
+  }
+  return buildInlineCards(data, fields as string[], ctx, plugin);
+}
+
+async function resolveDataSource(
+  name: string,
+  system: RPGSystem,
+  ctx: MarkdownPostProcessorContext,
+  plugin: DndUIToolkitPlugin
+): Promise<{ data: DataRecord[] | null; error?: string }> {
+  if (name !== "attributes") return { data: null };
+
+  const hasMapping = hasSystemMapping(ctx.sourcePath);
+  if (!hasMapping) {
+    const localAttributes = await loadAttributesFromFile(ctx, plugin);
+    if (localAttributes && localAttributes.length > 0) {
+      return { data: normalizeAttributeRecords(localAttributes) };
+    }
+    return { data: null, error: "No system mapping for this file and no rpg system.attributes block found." };
+  }
+
+  if (system.attributeDefinitions && system.attributeDefinitions.length > 0) {
+    return { data: normalizeAttributeRecords(system.attributeDefinitions as DataRecord[]) };
+  }
+
+  return { data: system.attributes.map((attribute) => ({ name: attribute })) };
+}
+
+function hasSystemMapping(filePath: string): boolean {
+  const settings = settingsStore.getSettings();
+  if (!settings || settings.systemMappings.length === 0) return false;
+
+  const parts = filePath.split("/");
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const folderPath = parts.slice(0, i).join("/");
+    if (settings.systemMappings.some((mapping) => mapping.folderPaths.includes(folderPath))) {
+      return true;
+    }
+  }
+
+  return settings.systemMappings.some((mapping) => mapping.folderPaths.includes(""));
+}
+
+async function loadAttributesFromFile(
+  ctx: MarkdownPostProcessorContext,
+  plugin: DndUIToolkitPlugin
+): Promise<Array<Record<string, unknown> | string> | null> {
+  const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
+  if (!file || !(file instanceof TFile)) {
+    return null;
+  }
+
+  const content = await plugin.app.vault.cachedRead(file);
+  const blocks = extractCodeBlocks(content, "rpg system.attributes");
+  for (const block of blocks) {
+    const parsed = parseAttributeDefinitions(block);
+    if (parsed && parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function parseAttributeDefinitions(block: string): Array<Record<string, unknown> | string> | null {
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(block);
+  } catch (error) {
+    return null;
+  }
+
+  if (Array.isArray(parsed)) {
+    return parsed as Array<Record<string, unknown> | string>;
+  }
+
+  if (parsed && typeof parsed === "object" && "attributes" in parsed) {
+    const attributes = (parsed as { attributes?: unknown }).attributes;
+    if (Array.isArray(attributes)) {
+        return attributes as Array<Record<string, unknown> | string>;
+    }
+  }
+
+  return null;
+}
+
+function normalizeAttributeRecords(records: Array<Record<string, unknown> | string>): DataRecord[] {
+  return records.map((record) => {
+    if (typeof record === "string") {
+      return { name: record };
+    }
+    return record;
+  });
+}
+
+function buildInlineTable(data: DataRecord[], columns: Array<Record<string, unknown>>): HTMLElement {
+  const table = document.createElement("table");
+  table.className = "rpg-inline-table";
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  const normalizedColumns = columns.map((column) => {
+    const property = String(column.property ?? column.data ?? column.key ?? "").trim();
+    const header = String(column.header ?? column.label ?? property).trim();
+    return { property, header };
+  }).filter((column) => column.property.length > 0);
+
+  for (const column of normalizedColumns) {
+    const th = document.createElement("th");
+    th.textContent = column.header || column.property;
+    headerRow.appendChild(th);
+  }
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  for (const row of data) {
+    const tr = document.createElement("tr");
+    for (const column of normalizedColumns) {
+      const td = document.createElement("td");
+      const value = getValue(row, column.property);
+      td.textContent = formatValue(value);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+
+  table.appendChild(tbody);
+  return table;
+}
+
+function buildInlineCards(data: DataRecord[], fields: string[], ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "rpg-inline-cards";
+
+  const normalizedFields = fields.map((field) => String(field).trim()).filter((field) => field.length > 0);
+
+  for (const item of data) {
+    const card = document.createElement("div");
+    card.className = "rpg-inline-card";
+
+    const name = formatValue(item.name ?? "");
+    const alias = formatValue(item.alias ?? "");
+    const header = document.createElement("div");
+    header.className = "rpg-inline-card-header";
+    header.textContent = alias ? `${name} (${alias})` : name;
+    card.appendChild(header);
+
+    if (item.subtitle) {
+      const subtitle = document.createElement("div");
+      subtitle.className = "rpg-inline-card-subtitle";
+      subtitle.textContent = formatValue(item.subtitle);
+      card.appendChild(subtitle);
+    }
+
+    if (item.description) {
+      const description = document.createElement("div");
+      description.className = "rpg-inline-card-description";
+      MarkdownRenderer.renderMarkdown(String(item.description), description, ctx.sourcePath, plugin);
+      card.appendChild(description);
+    }
+
+    const extras = normalizedFields.filter((field) => !["name", "alias", "subtitle", "description"].includes(field));
+    if (extras.length > 0) {
+      const list = document.createElement("div");
+      list.className = "rpg-inline-card-fields";
+      for (const field of extras) {
+        const value = getValue(item, field);
+        const row = document.createElement("div");
+        row.className = "rpg-inline-card-field";
+        const label = document.createElement("span");
+        label.className = "rpg-inline-card-field-label";
+        label.textContent = formatFieldLabel(field);
+        const content = document.createElement("span");
+        content.className = "rpg-inline-card-field-value";
+        content.textContent = formatValue(value);
+        row.append(label, content);
+        list.appendChild(row);
+      }
+      card.appendChild(list);
+    }
+
+    container.appendChild(card);
+  }
+
+  return container;
+}
+
+function getValue(record: DataRecord, path: string): unknown {
+  if (!path) return "";
+  const parts = path.split(".");
+  let current: unknown = record;
+  for (const part of parts) {
+    if (!current || typeof current !== "object") return "";
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current ?? "";
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return value.map((item) => formatValue(item)).join(", ");
+  return JSON.stringify(value);
+}
+
+function formatFieldLabel(field: string): string {
+  return field
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }

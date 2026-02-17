@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseSystemFromMarkdown, FileLoader } from "./parser";
+import { parseSystemFromMarkdown, FileLoader } from "./parser/index";
 
 describe("parseSystemFromMarkdown", () => {
   it("should return null when no system block is found", async () => {

@@ -1,0 +1,119 @@
+/* Initiative Tracker - Controls Module
+ * Handles HP controls, damage/heal buttons, inputs, and inline HP displays
+ */
+
+/* Action buttons container */
+.initiative-hp {
+	display: flex;
+	align-items: center;
+	gap: 0.2rem;
+	flex: 0 0 auto;
+	padding: 0.1rem 0.3rem;
+	background-color: var(--color-bg-primary);
+	border-radius: 0.25rem;
+	font-size: 0.9rem;
+	margin-bottom: auto;
+	margin-left: auto;
+}
+
+.initiative-hp-value {
+	font-weight: bold;
+	color: var(--color-text-primary);
+}
+
+.initiative-hp-separator {
+	color: var(--color-border-active);
+}
+
+.initiative-hp-max {
+	color: var(--color-text-secondary);
+}
+
+/* Primary HP input field */
+.initiative-hp-input {
+	width: 3rem;
+	background-color: var(--color-bg-primary);
+	border: 1px solid var(--color-border-primary);
+	border-radius: 0.25rem;
+	color: var(--color-text-primary);
+	padding: 0.2rem;
+	text-align: center;
+	font-size: 0.8rem;
+}
+
+/* Action buttons with icons */
+.initiative-hp-button {
+	flex: 0 0 auto;
+	background-color: transparent;
+	border: 1px solid var(--color-border-primary);
+	border-radius: 0.25rem;
+	color: var(--color-text-primary);
+	width: 1.8rem;
+	height: 1.8rem;
+	font-size: 0.8rem;
+	padding: 0;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.2s ease;
+}
+
+.initiative-hp-button:hover {
+	background-color: var(--color-bg-darker);
+}
+
+/* Damage button variant (red) */
+.initiative-damage {
+	border-color: var(--color-accent-red);
+	color: var(--color-accent-red);
+}
+
+/* Heal button variant (teal) */
+.initiative-heal {
+	border-color: var(--color-accent-teal);
+	color: var(--color-accent-teal);
+}
+
+/* Inline health display and controls for dense layout */
+.initiative-hp-inline {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	flex: 0 0 auto;
+	margin-left: auto;
+}
+
+.initiative-hp-display {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.2rem;
+	padding: 0.2rem 0.4rem;
+	background-color: var(--color-bg-primary);
+	border-radius: 0.25rem;
+	font-size: 0.9rem;
+	height: 1.8rem;
+	box-sizing: border-box;
+}
+
+.initiative-hp-controls {
+	display: flex;
+	align-items: center;
+	gap: 0.2rem;
+}
+
+.initiative-hp-controls .initiative-hp-input {
+	width: 2.5rem;
+	height: 2rem;
+	padding: 0.2rem;
+	font-size: 0.8rem;
+	box-sizing: border-box;
+}
+
+.initiative-hp-controls .initiative-hp-button {
+	width: 1.8rem;
+	height: 1.8rem;
+	font-size: 0.8rem;
+	box-sizing: border-box;
+}

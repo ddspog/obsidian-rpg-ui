@@ -1,0 +1,92 @@
+/* Spellcasting Display */
+.system-spellcasting-display {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.system-spellcasting-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.system-spellcasting-icon {
+  font-size: 20px;
+}
+
+.system-spellcasting-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.system-spellcasting-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.system-spellcasting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+
+.system-spellcasting-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.system-spellcasting-value {
+  font-weight: 600;
+  color: var(--text-normal);
+  text-transform: capitalize;
+}
+
+.system-spellcasting-slots {
+  background: var(--background-primary);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.system-spellcasting-slots .system-spellcasting-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.system-spellcasting-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.system-spellcasting-slot {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.system-slot-level {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.system-slot-count {
+  font-weight: 600;
+  color: var(--text-accent);
+}

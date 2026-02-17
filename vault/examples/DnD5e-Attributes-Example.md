@@ -21,6 +21,12 @@ This file demonstrates how to define and configure system attributes using the `
   subtitle: CHA
 ```
 
+### Inline Cards and Table
+
+rpg.cards(attributes, ['name', 'subtitle'])
+
+rpg.table(attributes, [{ header: 'Attribute', property: 'name' }, { header: 'abbr', property: 'subtitle' }])
+
 ## Extended Format with Descriptions
 
 ```rpg system.attributes

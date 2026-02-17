@@ -1,0 +1,76 @@
+/* Session Log - Tag Pills Module
+ * Handles tag display with color variants by tag type (NPC, location, PC, clock, thread)
+ */
+
+.lonelog-tag-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+.lonelog-tag-pill {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: stretch;
+	padding: 0.25rem 0.75rem;
+	border-radius: 12px;
+	font-size: 0.85em;
+	font-weight: 500;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	gap: 0.25rem;
+}
+
+.lonelog-tag-pill.clickable {
+	cursor: pointer;
+}
+
+.lonelog-tag-pill.clickable:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--color-primary);
+}
+
+/* Tag Type Color Variants */
+.tag-npc {
+	background: var(--background-modifier-success);
+	border-color: var(--color-success);
+}
+
+.tag-location {
+	background: var(--background-modifier-info);
+	border-color: var(--color-info);
+}
+
+.tag-pc {
+	background: var(--background-modifier-accent);
+	border-color: var(--color-accent);
+	font-weight: 600;
+}
+
+.tag-clock,
+.tag-track,
+.tag-event {
+	background: var(--background-modifier-warning);
+	border-color: var(--color-warning);
+}
+
+.tag-thread {
+	background: var(--background-modifier-primary);
+	border-color: var(--color-primary);
+}
+
+/* Tag Progress Indicator */
+.tag-progress-bar {
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+	overflow: hidden;
+	margin-top: 0.25rem;
+}
+
+.tag-progress-fill {
+	height: 100%;
+	background: var(--color-primary);
+	transition: width 0.3s ease;
+}

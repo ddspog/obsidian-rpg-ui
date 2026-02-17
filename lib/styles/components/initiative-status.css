@@ -1,0 +1,71 @@
+/* Initiative Tracker - Status Module
+ * Handles status indicators, consumables display, and damage/heal visual states
+ */
+
+/* Status indicators for monsters */
+.monster-status-dead {
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+
+.monster-status-injured {
+	color: var(--color-accent-red);
+}
+
+/* Apply dead status only to HP display, not controls */
+.initiative-hp-inline.monster-status-dead {
+	text-decoration: none;
+	opacity: 1;
+}
+
+.initiative-hp-inline.monster-status-dead .initiative-hp-display {
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+
+/* Consumables section styles */
+.initiative-consumables {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	margin-top: 0.5rem;
+	padding: 0.3rem;
+	background-color: var(--color-bg-secondary);
+	border-radius: 0.3rem;
+	border: 1px solid var(--color-border-primary);
+}
+
+.initiative-consumable {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.initiative-consumable-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.initiative-consumable-label {
+	font-weight: bold;
+	color: var(--color-text-primary);
+	font-size: 0.8rem;
+}
+
+.initiative-consumable-reset-indicator {
+	font-size: 0.6rem;
+	color: var(--color-text-secondary);
+	font-style: italic;
+	background-color: var(--color-bg-primary);
+	padding: 0.05rem 0.2rem;
+	border-radius: 0.2rem;
+	border: 1px solid var(--color-border-primary);
+}
+
+.initiative-consumable-boxes {
+	display: flex;
+	gap: 0.3rem;
+	flex-wrap: wrap;
+}
