@@ -1,0 +1,26 @@
+/* System Attributes Definition Summary */
+.system-attributes-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--background-secondary) 0,
+    var(--background-secondary) 12px,
+    transparent 12px,
+    transparent 24px
+  );
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.system-attributes-icon {
+  font-size: 18px;
+  color: var(--text-accent);
+}
+
+.system-attributes-text {
+  font-size: 0.95em;
+  color: var(--text-muted);
+}

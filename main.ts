@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext, MarkdownRenderer, parseYaml, TFile } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext, MarkdownRenderer, parseYaml, TFile, MarkdownView } from "obsidian";
 import { AbilityScoreView } from "lib/views/AbilityScoreView";
 import { BaseView } from "lib/views/BaseView";
 import { SkillsView } from "lib/views/SkillsView";
@@ -19,6 +19,7 @@ import { SystemAttributesDefinitionView } from "lib/views/SystemAttributesDefini
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { SessionLogView } from "lib/views/SessionLogView";
+import { ShowView } from "lib/views/ShowView";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
@@ -32,6 +33,7 @@ import { FolderSuggest } from "lib/utils/folder-suggest";
 import { settingsStore } from "lib/services/settings-store";
 import { RPGSystem } from "lib/systems/types";
 import { extractCodeBlocks } from "lib/utils/codeblock-extractor";
+import { buildInlineCards, buildInlineTable, DataRecord, getValue, formatValue, formatFieldLabel } from "lib/utils/inline-rendering";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -125,6 +127,7 @@ export default class DndUIToolkitPlugin extends Plugin {
       // New blocks
       new InventoryView(app),
       new FeaturesView(app),
+      new ShowView(app),
 
       // Definition blocks (parse-only, no UI)
       new SystemDefinitionView(app),
@@ -153,8 +156,6 @@ export default class DndUIToolkitPlugin extends Plugin {
         el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
         return;
       }
-
-      console.log(`DnD UI Toolkit: Processing rpg block with meta: ${meta}`);
       const view = viewRegistry.get(meta);
 
       if (view) {
@@ -246,10 +247,13 @@ export default class DndUIToolkitPlugin extends Plugin {
   }
 
   private registerInlineDataRenderers(): void {
-    this.registerMarkdownPostProcessor(async (el, ctx) => {
-      await processInlineRpgCalls(el, ctx, this);
-    });
+    // Inline rendering has been replaced with rpg show code blocks for better Live Preview support
+    // See ShowView.tsx for the new implementation
   }
+
+  // Disabled - using enhanced post-processor instead
+  // All inline rendering methods have been replaced with the ShowView code block handler
+  // See lib/views/ShowView.tsx for the new implementation
 }
 
 class DndSettingsTab extends PluginSettingTab {
@@ -549,18 +553,43 @@ type InlineCall = {
   end: number;
 };
 
-type DataRecord = Record<string, unknown>;
+async function aggressiveInlineCodeReplacement(el: HTMLElement, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<void> {
+  // This is a more aggressive approach: find ALL code elements and try to process them
+  const codeElements = Array.from(el.querySelectorAll("code"));
+
+  for (const codeEl of codeElements) {
+    const text = codeEl.textContent?.trim() ?? "";
+    
+    if (!text.startsWith("rpg.")) {
+      continue;
+    }
+
+    // Try to parse as an inline call
+    const call = findNextInlineCall(text, 0);
+    if (!call) {
+      continue;
+    }
+
+    // Check if this code element contains the full call
+    if (call.start === 0 && call.end === text.length) {
+
+      try {
+        const replacement = await renderInlineCall(call, ctx, plugin);
+        codeEl.replaceWith(replacement);
+      } catch (err) {
+        console.error("DnD UI Toolkit: Error in aggressive replacement:", err, { text });
+      }
+    }
+  }
+}
 
 async function processInlineRpgCalls(el: HTMLElement, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<void> {
-  console.debug("DnD UI Toolkit: inline postprocessor start", {
-    sourcePath: ctx.sourcePath,
-    tagName: el.tagName,
-    className: el.className,
-  });
+  
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
       const parent = node.parentElement;
       if (!parent) return NodeFilter.FILTER_REJECT;
+      // Don't filter on .cm-line - we need to process Live Preview content!
       if (parent.closest("code, pre")) return NodeFilter.FILTER_REJECT;
       if (!node.textContent || !node.textContent.includes("rpg.")) {
         return NodeFilter.FILTER_REJECT;
@@ -574,34 +603,20 @@ async function processInlineRpgCalls(el: HTMLElement, ctx: MarkdownPostProcessor
     textNodes.push(walker.currentNode as Text);
   }
 
-  console.debug("DnD UI Toolkit: inline text nodes", {
-    sourcePath: ctx.sourcePath,
-    count: textNodes.length,
-    textContentLength: el.textContent?.length ?? 0,
-  });
-
-  if (textNodes.length === 0 && !el.hasAttribute("data-rpg-inline-retry")) {
-    el.setAttribute("data-rpg-inline-retry", "1");
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve());
-    });
-    await processInlineRpgCalls(el, ctx, plugin);
-    return;
-  }
-
-  for (const node of textNodes) {
-    const text = node.textContent ?? "";
-    if (text.includes("rpg.")) {
-      console.debug("DnD UI Toolkit: inline candidate", {
-        sourcePath: ctx.sourcePath,
-        text,
-      });
+  if (textNodes.length === 0) {
+    // No text nodes found with rpg. - still try to process code elements
+    // Don't return early, continue to processInlineCodeElements
+  } else {
+    // Process text nodes that have inline rpg calls
+    for (const node of textNodes) {
+      const text = node.textContent ?? "";
+      const fragments = await replaceInlineCalls(text, ctx, plugin);
+      if (!fragments) continue;
+      node.parentNode?.replaceChild(fragments, node);
     }
-    const fragments = await replaceInlineCalls(text, ctx, plugin);
-    if (!fragments) continue;
-    node.parentNode?.replaceChild(fragments, node);
   }
 
+  // Always process inline code elements regardless of text nodes
   await processInlineCodeElements(el, ctx, plugin);
 }
 
@@ -611,15 +626,15 @@ async function processInlineCodeElements(el: HTMLElement, ctx: MarkdownPostProce
 
   for (const codeNode of codeNodes) {
     const raw = codeNode.textContent?.trim() ?? "";
-    if (!raw.startsWith("rpg.")) continue;
+    
+    if (!raw.startsWith("rpg.")) {
+      continue;
+    }
 
     const call = findNextInlineCall(raw, 0);
-    if (!call || call.start !== 0 || call.end !== raw.length) continue;
-
-    console.debug("DnD UI Toolkit: inline code call", {
-      sourcePath: ctx.sourcePath,
-      raw,
-    });
+    if (!call || call.start !== 0 || call.end !== raw.length) {
+      continue;
+    }
 
     const replacement = await renderInlineCall(call, ctx, plugin);
     const parent = codeNode.parentElement;
@@ -764,11 +779,6 @@ function splitArgs(argsText: string): [string, string] | null {
 }
 
 async function renderInlineCall(call: InlineCall, ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): Promise<HTMLElement> {
-  console.debug("DnD UI Toolkit: inline call", {
-    sourcePath: ctx.sourcePath,
-    type: call.type,
-    argsText: call.argsText,
-  });
   const errorEl = (message: string): HTMLElement => {
     const span = document.createElement("span");
     span.className = "rpg-inline-error";
@@ -784,13 +794,6 @@ async function renderInlineCall(call: InlineCall, ctx: MarkdownPostProcessorCont
   const dataName = args[0].replace(/^['"]|['"]$/g, "").trim();
   const system = SystemRegistry.getInstance().getSystemForFile(ctx.sourcePath);
   const dataResult = await resolveDataSource(dataName, system, ctx, plugin);
-  console.debug("DnD UI Toolkit: inline data source", {
-    sourcePath: ctx.sourcePath,
-    dataName,
-    hasData: !!dataResult.data,
-    error: dataResult.error,
-    count: dataResult.data?.length ?? 0,
-  });
   if (!dataResult.data) {
     return errorEl(dataResult.error ?? `Unknown data source: ${dataName}`);
   }
@@ -818,7 +821,9 @@ async function renderInlineCall(call: InlineCall, ctx: MarkdownPostProcessorCont
   if (!Array.isArray(fields)) {
     return errorEl("Invalid card fields");
   }
-  return buildInlineCards(data, fields as string[], ctx, plugin);
+  return buildInlineCards(data, fields as string[], ctx.sourcePath, (text, element, path) => {
+    MarkdownRenderer.renderMarkdown(text, element, path, plugin);
+  });
 }
 
 async function resolveDataSource(
@@ -912,131 +917,8 @@ function normalizeAttributeRecords(records: Array<Record<string, unknown> | stri
   });
 }
 
-function buildInlineTable(data: DataRecord[], columns: Array<Record<string, unknown>>): HTMLElement {
-  const table = document.createElement("table");
-  table.className = "rpg-inline-table";
 
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
 
-  const normalizedColumns = columns.map((column) => {
-    const property = String(column.property ?? column.data ?? column.key ?? "").trim();
-    const header = String(column.header ?? column.label ?? property).trim();
-    return { property, header };
-  }).filter((column) => column.property.length > 0);
 
-  for (const column of normalizedColumns) {
-    const th = document.createElement("th");
-    th.textContent = column.header || column.property;
-    headerRow.appendChild(th);
-  }
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
 
-  const tbody = document.createElement("tbody");
-  for (const row of data) {
-    const tr = document.createElement("tr");
-    for (const column of normalizedColumns) {
-      const td = document.createElement("td");
-      const value = getValue(row, column.property);
-      td.textContent = formatValue(value);
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
 
-  table.appendChild(tbody);
-  return table;
-}
-
-function buildInlineCards(data: DataRecord[], fields: string[], ctx: MarkdownPostProcessorContext, plugin: DndUIToolkitPlugin): HTMLElement {
-  const container = document.createElement("div");
-  container.className = "rpg-inline-cards";
-
-  const normalizedFields = fields.map((field) => String(field).trim()).filter((field) => field.length > 0);
-
-  for (const item of data) {
-    const card = document.createElement("div");
-    card.className = "rpg-inline-card";
-
-    const name = formatValue(item.name ?? "");
-    const alias = formatValue(item.alias ?? "");
-    const header = document.createElement("div");
-    header.className = "rpg-inline-card-header";
-    // Display uppercase name as the main header
-    header.textContent = name.toUpperCase();
-    
-    // If alias exists and is different from name, show it inline with parentheses
-    if (alias && alias.toUpperCase() !== name.toUpperCase()) {
-      const aliasEl = document.createElement("span");
-      aliasEl.className = "rpg-inline-card-alias";
-      aliasEl.textContent = ` (${alias.toUpperCase()})`;
-      header.appendChild(aliasEl);
-    }
-    
-    card.appendChild(header);
-
-    if (item.subtitle) {
-      const subtitle = document.createElement("div");
-      subtitle.className = "rpg-inline-card-subtitle";
-      subtitle.textContent = formatValue(item.subtitle);
-      card.appendChild(subtitle);
-    }
-
-    if (item.description) {
-      const description = document.createElement("div");
-      description.className = "rpg-inline-card-description";
-      MarkdownRenderer.renderMarkdown(String(item.description), description, ctx.sourcePath, plugin);
-      card.appendChild(description);
-    }
-
-    const extras = normalizedFields.filter((field) => !["name", "alias", "subtitle", "description"].includes(field));
-    if (extras.length > 0) {
-      const list = document.createElement("div");
-      list.className = "rpg-inline-card-fields";
-      for (const field of extras) {
-        const value = getValue(item, field);
-        const row = document.createElement("div");
-        row.className = "rpg-inline-card-field";
-        const label = document.createElement("span");
-        label.className = "rpg-inline-card-field-label";
-        label.textContent = formatFieldLabel(field);
-        const content = document.createElement("span");
-        content.className = "rpg-inline-card-field-value";
-        content.textContent = formatValue(value);
-        row.append(label, content);
-        list.appendChild(row);
-      }
-      card.appendChild(list);
-    }
-
-    container.appendChild(card);
-  }
-
-  return container;
-}
-
-function getValue(record: DataRecord, path: string): unknown {
-  if (!path) return "";
-  const parts = path.split(".");
-  let current: unknown = record;
-  for (const part of parts) {
-    if (!current || typeof current !== "object") return "";
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current ?? "";
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  if (Array.isArray(value)) return value.map((item) => formatValue(item)).join(", ");
-  return JSON.stringify(value);
-}
-
-function formatFieldLabel(field: string): string {
-  return field
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}

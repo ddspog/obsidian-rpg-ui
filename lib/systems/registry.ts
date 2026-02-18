@@ -208,7 +208,7 @@ export class SystemRegistry {
         return null;
       }
 
-      console.log(`Loaded RPG system: ${system.name} from ${systemFilePath}`);
+
       return system;
     } catch (error) {
       console.error(`Failed to load system from ${systemFilePath}:`, error);

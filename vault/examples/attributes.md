@@ -1,11 +1,7 @@
-# D&D 5e System Attributes Configuration
+# Defining Attributes
 
-This file demonstrates how to define and configure system attributes using the `rpg system.attributes` block. This is part of the system definition framework that allows you to specify the core attributes/abilities for your RPG system.
-
-**Note:** This uses the `rpg system.attributes` dot notation format. For a complete working example, see the system definition files in `systems/inline-system/` or `systems/split-system/` directories.
-
-## Basic Usage
-
+This file demonstrates how to define, configure and inspect system attributes using the `rpg system.attributes` block and `rpg show` block. This is part of the system definition framework that allows you to specify the core attributes/abilities for your RPG system.
+## Filling system.attributes
 ```rpg system.attributes
 - name: strength
   alias: STR
@@ -93,50 +89,65 @@ This file demonstrates how to define and configure system attributes using the `
     - Blending into a crowd to get the sense of key topics of conversation
   measures: Confidence, poise, and charm
 ```
-
-`rpg.cards(attributes, ['name', 'subtitle', 'description'])`
-
-
-`rpg.table(attributes, [{ header: 'Attribute', property: 'name'}, { header: 'Score Measures ...', property: 'measures'}])`
-
+## Visualizing Attributes data
+### Cards
+```rpg show
+cards:
+  data: attributes
+  properties:
+    - name
+    - subtitle
+    - description 
+```
+### Table
+```rpg show
+table:
+  data: attributes
+  columns:
+    - header: Attribute
+      property: name
+    - header: Score Measures ...
+      property: measures
+```
 ## Configuration Reference
 
 ### Attribute Properties
 
-| Property      | Type   | Required | Description                                              |
-| ------------- | ------ | -------- | -------------------------------------------------------- |
-| `name`        | String | Yes      | Unique identifier for the attribute                      |
-| `subtitle`    | String | No       | Short label (typically 2-3 characters)                   |
-| `description` | String | No       | Detailed explanation of the attribute's purpose          |
-| `alias`       | String | No       | Alternative name for the attribute (for templates)       |
+| Property      | Type   | Required | Description                                        |
+| ------------- | ------ | -------- | -------------------------------------------------- |
+| `name`        | String | Yes      | Unique identifier for the attribute                |
+| `alias`       | String | No       | Alias, abbreviature                                |
+| `subtitle`    | String | No       | Short label (typically 2-3 characters)             |
+| `description` | String | No       | Detailed explanation of the attribute's purpose    |
+| `measures`    | String | No       | A custom property, able to be accessed for custom views |
 
 ## Integration with System Definition
 
 Reference this file in your complete system definition:
 
-```yaml
-rpg system
+```yaml (rpg system)
 name: "My Custom RPG System"
-attributes: "systems/MySystem-Attributes.md"
+
+attributes: "examples/attributes.md"
 # ... other system definitions
 ```
 
 Or include it inline:
 
-```yaml
-rpg system
+```yaml (rpg system)
 name: "D&D 5th Edition"
+
 attributes:
-  - strength
-  - dexterity
-  - constitution
-  - intelligence
-  - wisdom
-  - charisma
+  - name: strength
+    alias: STR
+  - name: dexterity
+    alias: DEX
+  - name: constitution
+    alias: CON
+  - name: intelligence
+    alias: INT
+  - name: wisdom
+    alias: WIS
+  - name: charisma
+    alias: CHA
 ```
-
-## See Also
-
-- [System Architecture Documentation](../docs/concepts/system-architecture.md)
-- [Dynamic Content & Templating](../docs/concepts/dynamic-content.md)
-- [Complete D&D 5e Examples](./systems/inline-system/) and [Split Format](./systems/split-system/)
