@@ -31,14 +31,11 @@ export function extractMeta(ctx: MarkdownPostProcessorContext, el: HTMLElement):
       return null;
     }
 
-    console.log(`DnD UI Toolkit: Fence line: "${fenceLine}"`);
-
     // Match the pattern ```rpg <meta>
     // Allow for optional trailing content after the meta
     const match = fenceLine.match(/^```rpg\s+(\S+)/);
     if (match && match[1]) {
       const meta = match[1].trim();
-      console.log(`DnD UI Toolkit: Extracted meta: "${meta}"`);
       return meta;
     }
 

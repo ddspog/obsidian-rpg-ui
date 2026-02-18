@@ -88,8 +88,6 @@ export function createTemplateContext(el: HTMLElement, fileContext: FileContext)
     };
   } catch (error) {
     // If no ability block found, use defaults
-    console.debug("No ability block found, using default values");
-    console.log("Error: ", error);
   }
 
   try {
@@ -107,8 +105,7 @@ export function createTemplateContext(el: HTMLElement, fileContext: FileContext)
       skills = parseSkillsBlock(skillsContent);
     }
   } catch (error) {
-    console.debug("No skills block found, using default values");
-    console.log("Error: ", error);
+    // If no skills block found, use defaults
   }
 
   return {
