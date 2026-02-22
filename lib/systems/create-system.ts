@@ -19,6 +19,7 @@ import type {
   ConditionsSystemConfig,
   ConditionDefinition,
   EntityConfig,
+  BlockDefinition,
 } from "./types";
 
 /**
@@ -93,8 +94,9 @@ function buildEntity(
 ): { entityDef: EntityTypeDef; computedExpressions: Map<string, ExpressionDef> } {
   const frontmatter: FrontmatterFieldDef[] = (entityConfig.fields ?? []).map(normalizeField);
   const features = entityConfig.features ?? [];
+  const blocks = entityConfig.blocks as Record<string, BlockDefinition> | undefined;
 
-  const entityDef: EntityTypeDef = { frontmatter, features };
+  const entityDef: EntityTypeDef = { frontmatter, features, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
   for (const [fnName, fn] of Object.entries(entityConfig.computed ?? {})) {

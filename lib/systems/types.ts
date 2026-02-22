@@ -30,6 +30,38 @@ export interface EntityConfig {
    * The function receives a context record and returns a value.
    */
   computed?: Record<string, (context: Record<string, unknown>) => unknown>;
+  /**
+   * Block component definitions.
+   * Each key becomes the `rpg entity.<key>` code block handler.
+   */
+  blocks?: Record<string, BlockDefinition>;
+}
+
+/**
+ * Props schema entry for a block — shorthand type string or a full definition
+ * describing the expected YAML field type, default, and requirements.
+ */
+export type BlockPropSchema =
+  | "string"
+  | "number"
+  | "boolean"
+  | {
+      type: "string" | "number" | "boolean";
+      default?: unknown;
+      required?: boolean;
+      description?: string;
+    };
+
+/**
+ * Block definition — a React component registered for an `rpg entity.<name>`
+ * code block. The plugin parses the YAML body and passes it as props to the
+ * component.
+ */
+export interface BlockDefinition {
+  /** Props schema describing the expected YAML fields */
+  props?: Record<string, BlockPropSchema>;
+  /** React component that receives the parsed YAML fields as props */
+  component: (props: Record<string, unknown>) => unknown;
 }
 
 /** User-facing configuration shape for CreateSystem */
@@ -100,6 +132,8 @@ export interface EntityTypeDef {
   frontmatter: FrontmatterFieldDef[];
   /** Default features available to all entities of this type */
   features?: Feature[];
+  /** Block component definitions for `rpg entity.<name>` code blocks */
+  blocks?: Record<string, BlockDefinition>;
 }
 
 /** Feature definition for default entity features in system definitions */
