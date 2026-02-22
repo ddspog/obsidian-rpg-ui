@@ -15,10 +15,11 @@
 
 import type { Vault, TFile } from "obsidian";
 import type { RPGSystem } from "./types";
+import type * as EsbuildWasm from "esbuild-wasm";
 
 // Lazy esbuild-wasm initialisation — module-level promise so init runs once.
 let esbuildInitialized: Promise<void> | null = null;
-let esbuildModule: typeof import("esbuild-wasm") | null = null;
+let esbuildModule: typeof EsbuildWasm | null = null;
 
 /**
  * Initialize esbuild-wasm.  Safe to call multiple times — subsequent calls
@@ -66,11 +67,11 @@ export async function loadSystemFromTypeScript(
 
     // Virtual filesystem plugin: intercepts all `.ts` file reads and serves
     // them from the Obsidian vault via `vault.cachedRead()`.
-    const vaultPlugin: import("esbuild-wasm").Plugin = {
+    const vaultPlugin: EsbuildWasm.Plugin = {
       name: "obsidian-vault",
-      setup(build) {
+      setup(build: EsbuildWasm.PluginBuild) {
         // Resolve relative imports against the system folder
-        build.onResolve({ filter: /.*/ }, (args) => {
+        build.onResolve({ filter: /.*/ }, (args: EsbuildWasm.OnResolveArgs) => {
           if (args.kind === "entry-point") {
             return { path: args.path, namespace: "vault" };
           }
@@ -87,7 +88,7 @@ export async function loadSystemFromTypeScript(
         });
 
         // Load vault files
-        build.onLoad({ filter: /.*/, namespace: "vault" }, async (args) => {
+        build.onLoad({ filter: /.*/, namespace: "vault" }, async (args: EsbuildWasm.OnLoadArgs) => {
           try {
             const file = vault.getAbstractFileByPath(args.path);
             if (!file) {
