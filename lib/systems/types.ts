@@ -1,5 +1,61 @@
 /** System abstraction layer types — defines the interface for RPG systems to enable multi-system support. */
 
+// ─────────────────────────────────────────────────────────────────────────────
+// User-facing CreateSystem API types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Trait definition — represents character capabilities (proficiency, expertise, racial traits) */
+export interface TraitDefinition {
+  /** Trait name (e.g., "Darkvision", "Lucky") */
+  name: string;
+  /** Optional description of the trait */
+  description?: string;
+  /** Whether this trait has mechanical effects */
+  mechanical?: boolean;
+  /** Optional effect function applied to a context */
+  effect?: (context: Record<string, unknown>) => void;
+}
+
+/** Entity configuration — user-facing shape for entities in SystemConfig */
+export interface EntityConfig {
+  /** Frontmatter field definitions (shorthand or full definition) */
+  fields?: Array<
+    | string
+    | { name: string; type?: "number" | "string" | "boolean"; default?: unknown; derived?: string; aliases?: string[] }
+  >;
+  /** Default features available to all entities of this type */
+  features?: Feature[];
+  /**
+   * Computed functions — these become `ExpressionDef` entries in the system.
+   * The function receives a context record and returns a value.
+   */
+  computed?: Record<string, (context: Record<string, unknown>) => unknown>;
+}
+
+/** User-facing configuration shape for CreateSystem */
+export interface SystemConfig {
+  /** System name (e.g., "D&D 5e", "Fate Core") */
+  name: string;
+  /**
+   * Core attributes — may be simple strings (auto-expanded) or full AttributeDefinition objects.
+   * Strings are automatically expanded into AttributeDefinition with `name` set.
+   */
+  attributes: Array<string | AttributeDefinition>;
+  /** Entity type configurations */
+  entities?: Record<string, EntityConfig>;
+  /** Skill definitions */
+  skills?: SkillDefinition[];
+  /** Feature system configuration (plain object, not a Map) */
+  features?: Partial<FeatureSystemConfig>;
+  /** Spellcasting system configuration */
+  spellcasting?: Partial<SpellcastingSystemConfig>;
+  /** Conditions system configuration or array of conditions */
+  conditions?: Partial<ConditionsSystemConfig> | ConditionDefinition[];
+  /** Trait definitions for character capabilities */
+  traits?: TraitDefinition[];
+}
+
+
 /** Attribute definition */
 export interface AttributeDefinition {
   /** Attribute identifier (e.g., "strength", "intelligence") */
@@ -34,6 +90,8 @@ export interface RPGSystem {
   spellcasting: SpellcastingSystemConfig;
   /** Conditions system configuration */
   conditions: ConditionsSystemConfig;
+  /** Trait definitions for character capabilities */
+  traits?: TraitDefinition[];
 }
 
 /** Entity type definition — defines frontmatter fields and default features for an entity type */

@@ -14,6 +14,7 @@ import * as Fm from "lib/domains/frontmatter";
 import { extractMeta } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { settingsStore } from "lib/services/settings-store";
+import { initEsbuild } from "lib/systems/ts-loader";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -48,12 +49,19 @@ export default class DndUIToolkitPlugin extends Plugin {
 
     this.initDataStore();
 
+    // Initialize esbuild-wasm early, using the bundled WASM file if available
+    const pluginDir = (this.manifest as any).dir ?? `.obsidian/plugins/${this.manifest.id}`;
+    const localWasmURL = `${this.app.vault.adapter.getResourcePath?.(`${pluginDir}/esbuild.wasm`) ?? ""}`;
+    initEsbuild(localWasmURL || undefined).catch((err) => {
+      console.warn("RPG UI: Failed to initialize esbuild-wasm (TypeScript systems disabled):", err);
+    });
+
     const registry = SystemRegistry.getInstance();
     registry.initialize(this.app.vault);
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
       for (const folderPath of mapping.folderPaths) {
-        mappings.set(folderPath, mapping.systemFilePath);
+        mappings.set(folderPath, mapping.systemFolderPath);
       }
     }
     registry.setFolderMappings(mappings);
@@ -183,7 +191,7 @@ export default class DndUIToolkitPlugin extends Plugin {
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
       for (const folderPath of mapping.folderPaths) {
-        mappings.set(folderPath, mapping.systemFilePath);
+        mappings.set(folderPath, mapping.systemFolderPath);
       }
     }
     sysRegistry.setFolderMappings(mappings);
@@ -192,15 +200,17 @@ export default class DndUIToolkitPlugin extends Plugin {
   private normalizeSystemMappings(rawMappings: unknown): DndUIToolkitSettings["systemMappings"] {
     if (!Array.isArray(rawMappings)) return [];
     return rawMappings.map((mapping) => {
-      const typed = mapping as { folderPath?: string; folderPaths?: string[]; systemFilePath?: string };
+      const typed = mapping as { folderPath?: string; folderPaths?: string[]; systemFolderPath?: string; systemFilePath?: string };
       const folderPaths = Array.isArray(typed.folderPaths)
         ? typed.folderPaths
         : typed.folderPath !== undefined
           ? [typed.folderPath]
           : [];
+      // Migrate: if only the old systemFilePath key exists, use it as systemFolderPath
+      const systemFolderPath = typed.systemFolderPath ?? typed.systemFilePath ?? "";
       return {
         folderPaths: folderPaths.filter((p) => p !== undefined) as string[],
-        systemFilePath: typed.systemFilePath ?? "",
+        systemFolderPath,
       };
     });
   }

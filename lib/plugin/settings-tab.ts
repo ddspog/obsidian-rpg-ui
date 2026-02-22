@@ -49,19 +49,9 @@ export class DndSettingsTab extends PluginSettingTab {
 
     containerEl.createEl("h3", { text: "Systems" });
     containerEl.createEl("p", {
-      text: "Map folders to RPG system definition files. Files in these folders will use the specified system rules.",
+      text: "Map content folders to TypeScript system definitions. Files in these folders will use the specified system rules.",
       cls: "setting-item-description",
     });
-
-    new Setting(containerEl)
-      .setName("Show system definition blocks")
-      .setDesc("Show visual rendering for system definition blocks (system, system.skills, system.expressions, etc.).")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.showSystemBlocks).onChange(async (value) => {
-          this.plugin.settings.showSystemBlocks = value;
-          await this.plugin.saveSettings();
-        })
-      );
 
     const mappingsContainer = containerEl.createDiv({ cls: "rpg-systems-mappings" });
     renderSystemMappings(mappingsContainer, {
@@ -76,7 +66,7 @@ export class DndSettingsTab extends PluginSettingTab {
       .setDesc("Add a folder-to-system mapping")
       .addButton((button) =>
         button.setButtonText("Add").onClick(() => {
-          this.plugin.settings.systemMappings.push({ folderPaths: [], systemFilePath: "" });
+          this.plugin.settings.systemMappings.push({ folderPaths: [], systemFolderPath: "" });
           this.display();
         })
       );

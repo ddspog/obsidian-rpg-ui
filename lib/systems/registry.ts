@@ -6,7 +6,7 @@
 import { Vault } from "obsidian";
 import { DND5E_SYSTEM } from "./dnd5e";
 import { RPGSystem } from "./types";
-import { loadSystemFromVault } from "./system-file-loader";
+import { loadSystemFromTypeScript } from "./ts-loader";
 
 export class SystemRegistry {
   private static instance: SystemRegistry;
@@ -70,43 +70,35 @@ export class SystemRegistry {
     return this.defaultSystem;
   }
 
-  private async loadSystemAsync(systemFilePath: string): Promise<RPGSystem | null> {
+  private async loadSystemAsync(systemFolderPath: string): Promise<RPGSystem | null> {
     if (!this.vault) return null;
-    if (this.systemCache.has(systemFilePath)) return this.systemCache.get(systemFilePath)!;
-    if (this.isLoading.has(systemFilePath)) return this.isLoading.get(systemFilePath)!;
+    if (this.systemCache.has(systemFolderPath)) return this.systemCache.get(systemFolderPath)!;
+    if (this.isLoading.has(systemFolderPath)) return this.isLoading.get(systemFolderPath)!;
 
-    const loadPromise = loadSystemFromVault(this.vault, systemFilePath);
-    this.isLoading.set(systemFilePath, loadPromise);
+    const loadPromise = loadSystemFromTypeScript(this.vault, systemFolderPath);
+    this.isLoading.set(systemFolderPath, loadPromise);
     try {
       const system = await loadPromise;
-      if (system) this.systemCache.set(systemFilePath, system);
+      if (system) this.systemCache.set(systemFolderPath, system);
       return system;
     } finally {
-      this.isLoading.delete(systemFilePath);
+      this.isLoading.delete(systemFolderPath);
     }
   }
 
-  /**
-   * Actually load the system file
-   */
-  private async doLoadSystem(systemFilePath: string): Promise<RPGSystem | null> {
-    if (!this.vault) return null;
-    return loadSystemFromVault(this.vault, systemFilePath);
-  }
-
-  public invalidateSystem(systemFilePath: string): void {
-    this.systemCache.delete(systemFilePath);
-    if (this.folderMappings.has(systemFilePath)) this.loadSystemAsync(systemFilePath);
+  public invalidateSystem(systemFolderPath: string): void {
+    this.systemCache.delete(systemFolderPath);
+    if (this.folderMappings.has(systemFolderPath)) this.loadSystemAsync(systemFolderPath);
   }
 
   public clearCache(): void { this.systemCache.clear(); }
 
   public getFolderMappings(): Map<string, string> { return new Map(this.folderMappings); }
 
-  public registerFolderMapping(folderPath: string, systemFilePath: string): void {
-    this.folderMappings.set(folderPath, systemFilePath);
+  public registerFolderMapping(folderPath: string, systemFolderPath: string): void {
+    this.folderMappings.set(folderPath, systemFolderPath);
     this.systemCache.clear();
-    this.loadSystemAsync(systemFilePath);
+    this.loadSystemAsync(systemFolderPath);
   }
 
   public clearFolderMappings(): void {
