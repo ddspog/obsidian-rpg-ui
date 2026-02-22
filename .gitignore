@@ -27,3 +27,7 @@ styles.css
 docs/.vitepress/cache/deps
 docs/.vitepress/dist
 
+# Build artifacts (copied from lib by esbuild.config.mjs on production build)
+/api.d.ts
+/esbuild.wasm
+
