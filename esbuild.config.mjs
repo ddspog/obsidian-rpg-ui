@@ -66,6 +66,13 @@ if (prod) {
     await buildCSS();
     // Then build JS
     await context.rebuild();
+    // Copy api.d.ts to build output so users can reference it for TypeScript autocompletion
+    fs.copyFileSync("lib/systems/api.d.ts", "api.d.ts");
+    // Copy esbuild.wasm to build output for offline WASM loading
+    const wasmSrc = "node_modules/esbuild-wasm/esbuild.wasm";
+    if (fs.existsSync(wasmSrc)) {
+        fs.copyFileSync(wasmSrc, "esbuild.wasm");
+    }
     process.exit(0);
 } else {
     // Initial CSS build

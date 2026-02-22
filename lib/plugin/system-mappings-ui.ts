@@ -4,7 +4,6 @@
  */
 
 import { App, Setting } from "obsidian";
-import { FileSuggest } from "lib/utils/file-suggest";
 import { FolderSuggest } from "lib/utils/folder-suggest";
 import { DndUIToolkitSettings } from "settings";
 import { SystemRegistry } from "lib/systems/registry";
@@ -28,7 +27,6 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
     return;
   }
 
-  const fileSuggests: FileSuggest[] = [];
   const folderSuggests: FolderSuggest[] = [];
 
   for (let i = 0; i < ctx.settings.systemMappings.length; i++) {
@@ -98,14 +96,14 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
     mappingSetting
       .addText((text) => {
         text
-          .setPlaceholder("System file (e.g., Systems/Pathfinder 2e.md)")
-          .setValue(mapping.systemFilePath)
+          .setPlaceholder("System folder (e.g., systems/dnd5e)")
+          .setValue(mapping.systemFolderPath)
           .onChange(async (value) => {
-            mapping.systemFilePath = value;
+            mapping.systemFolderPath = value;
             await saveAndSync(ctx);
           });
         text.inputEl.style.width = "250px";
-        fileSuggests.push(new FileSuggest(ctx.app, text));
+        folderSuggests.push(new FolderSuggest(ctx.app, text));
         return text;
       })
       .addButton((button) =>
@@ -115,7 +113,6 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
           .onClick(async () => {
             ctx.settings.systemMappings.splice(i, 1);
             await saveAndSync(ctx);
-            fileSuggests.forEach((fs) => fs.destroy());
             folderSuggests.forEach((fs) => fs.destroy());
             ctx.onRefresh();
           })
@@ -129,7 +126,7 @@ async function saveAndSync(ctx: SystemMappingsContext): Promise<void> {
   const mappings = new Map<string, string>();
   for (const mapping of ctx.settings.systemMappings) {
     for (const folderPath of mapping.folderPaths) {
-      mappings.set(folderPath, mapping.systemFilePath);
+      mappings.set(folderPath, mapping.systemFolderPath);
     }
   }
   registry.setFolderMappings(mappings);

@@ -13,15 +13,6 @@ import { BadgesView, StatsView } from "lib/views/BadgesView";
 import { InitiativeView } from "lib/views/InitiativeView";
 import { SpellComponentsView } from "lib/views/SpellComponentsView";
 import { EventButtonsView } from "lib/views/EventButtonsView";
-import { SystemDefinitionView } from "lib/views/SystemDefinitionView";
-import { ExpressionDefinitionView } from "lib/views/ExpressionDefinitionView";
-import { SkillListDefinitionView } from "lib/views/SkillListDefinitionView";
-import { SystemExpressionsDefinitionView } from "lib/views/SystemExpressionsDefinitionView";
-import { SystemSkillsDefinitionView } from "lib/views/SystemSkillsDefinitionView";
-import { SystemFeaturesDefinitionView } from "lib/views/SystemFeaturesDefinitionView";
-import { SystemSpellcastingDefinitionView } from "lib/views/SystemSpellcastingDefinitionView";
-import { SystemConditionsDefinitionView } from "lib/views/SystemConditionsDefinitionView";
-import { SystemAttributesDefinitionView } from "lib/views/SystemAttributesDefinitionView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { SessionLogView } from "lib/views/SessionLogView";
@@ -62,17 +53,6 @@ export function createViews(app: App, kv: KeyValueStore): BaseView[] {
     new InventoryView(app),
     new FeaturesView(app),
     new ShowView(app),
-
-    // Definition blocks (parse-only, no UI)
-    new SystemDefinitionView(app),
-    new ExpressionDefinitionView(app),
-    new SkillListDefinitionView(app),
-    new SystemExpressionsDefinitionView(app),
-    new SystemSkillsDefinitionView(app),
-    new SystemAttributesDefinitionView(app),
-    new SystemFeaturesDefinitionView(app),
-    new SystemSpellcastingDefinitionView(app),
-    new SystemConditionsDefinitionView(app),
   ];
 }
 
