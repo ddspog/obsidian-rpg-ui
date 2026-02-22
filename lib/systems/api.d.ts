@@ -45,6 +45,55 @@ export interface TraitDefinition {
   effect?: (context: Record<string, unknown>) => void;
 }
 
+/**
+ * Props schema entry for a block definition.
+ * A string shorthand ("string" | "number" | "boolean") or a full object
+ * with `type`, optional `default`, and an optional `required` flag.
+ */
+export type BlockPropSchema =
+  | "string"
+  | "number"
+  | "boolean"
+  | {
+      type: "string" | "number" | "boolean";
+      default?: unknown;
+      required?: boolean;
+      description?: string;
+    };
+
+/**
+ * Block definition — registers a React component for an `rpg entity.<blockName>`
+ * code block in Obsidian notes.
+ *
+ * When the plugin encounters `\`\`\`rpg entity.<blockName>\`\`\`` in a note, it:
+ * 1. Parses the YAML body into a props object (validated against `props` schema)
+ * 2. Renders the `component` with those parsed props
+ *
+ * @example
+ * ```ts
+ * blocks: {
+ *   stats: {
+ *     props: {
+ *       strength: { type: "number", default: 10 },
+ *       dexterity: { type: "number", default: 10 },
+ *     },
+ *     component: ({ strength, dexterity }) => (
+ *       <div>STR: {strength} | DEX: {dexterity}</div>
+ *     ),
+ *   },
+ * }
+ * ```
+ */
+export interface BlockDefinition {
+  /**
+   * Props schema — describes the YAML fields the block expects.
+   * Each key maps to a type shorthand or a full prop definition.
+   */
+  props?: Record<string, BlockPropSchema>;
+  /** React component that receives the parsed YAML fields as props */
+  component: (props: Record<string, unknown>) => unknown;
+}
+
 /** Entity configuration for use in SystemConfig */
 export interface EntityConfig {
   fields?: Array<
@@ -58,7 +107,16 @@ export interface EntityConfig {
       }
   >;
   features?: FeatureEntry[];
+  /**
+   * Computed expressions — functions that calculate values from entity
+   * frontmatter data (e.g., ability modifiers, saving throws).
+   */
   computed?: Record<string, (context: Record<string, unknown>) => unknown>;
+  /**
+   * Block component definitions.
+   * Each key becomes the `rpg entity.<key>` code block handler.
+   */
+  blocks?: Record<string, BlockDefinition>;
 }
 
 /** Simple feature entry used in entity default features */
@@ -187,11 +245,27 @@ export interface SystemConfig {
  */
 export declare function CreateSystem(config: SystemConfig): {
   name: string;
-  attributes: string[];
-  attributeDefinitions?: AttributeDefinition[];
-  entities: Record<string, { frontmatter: unknown[]; features?: FeatureEntry[] }>;
+  /**
+   * Attributes for this system.
+   * - String entries (e.g. `"strength"`) are automatically expanded at runtime
+   *   into full `AttributeDefinition` objects with just `name` set.
+   * - Full `AttributeDefinition` objects are passed through unchanged.
+   */
+  attributes: Array<string | AttributeDefinition>;
+  entities: Record<
+    string,
+    {
+      frontmatter: unknown[];
+      features?: FeatureEntry[];
+      /** Computed expressions scoped to this entity */
+      computed?: Record<string, (context: Record<string, unknown>) => unknown>;
+      /** Compiled expression map for this entity */
+      expressions?: Map<string, unknown>;
+      /** Block component definitions for `rpg entity.<blockName>` code blocks */
+      blocks?: Record<string, BlockDefinition>;
+    }
+  >;
   skills: SkillDefinition[];
-  expressions: Map<string, unknown>;
   features: FeatureSystemConfig;
   spellcasting: SpellcastingSystemConfig;
   conditions: ConditionsSystemConfig;
