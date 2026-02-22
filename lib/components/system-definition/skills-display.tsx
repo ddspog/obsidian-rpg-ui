@@ -1,7 +1,7 @@
 import * as React from "react";
 
 interface Skill {
-  label: string;
+  name: string;
   attribute: string;
 }
 
@@ -31,7 +31,7 @@ export function SkillsDisplay(props: SkillsDisplayProps): JSX.Element {
       <div className="system-skills-grid">
         {props.skills.map((skill, index) => (
           <div key={index} className="system-skill-card">
-            <div className="system-skill-label">{skill.label}</div>
+            <div className="system-skill-label">{skill.name}</div>
             <div className="system-skill-attribute">{skill.attribute.substring(0, 3).toUpperCase()}</div>
           </div>
         ))}
@@ -42,7 +42,7 @@ export function SkillsDisplay(props: SkillsDisplayProps): JSX.Element {
         <div className="system-skills-by-attr">
           {Object.entries(skillsByAttribute).map(([attr, skills]) => (
             <div key={attr} className="system-attr-group">
-              <strong>{attr}:</strong> {skills.map(s => s.label).join(", ")}
+              <strong>{attr}:</strong> {skills.map(s => s.name).join(", ")}
             </div>
           ))}
         </div>

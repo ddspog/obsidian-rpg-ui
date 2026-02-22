@@ -2,13 +2,16 @@
  * System expressions definition view
  * 
  * Handles `rpg system.expressions` blocks - displays expressions definition visually.
+ * Supports both YAML-based Handlebars expressions and JavaScript function definitions.
  */
 
 import * as Tmpl from "lib/html-templates";
 import { ExpressionsDisplay } from "lib/components/system-definition/expressions-display";
+import { FunctionExpressionsDisplay } from "lib/components/system-definition/function-expressions-display";
 import { BaseView } from "./BaseView";
 import { MarkdownPostProcessorContext } from "obsidian";
 import { parseYaml } from "obsidian";
+import { isFunctionExpressionBlock, parseFunctionBlock } from "lib/systems/parser/function-expressions";
 
 export class SystemExpressionsDefinitionView extends BaseView {
   public codeblock = "system.expressions";
@@ -19,6 +22,17 @@ export class SystemExpressionsDefinitionView extends BaseView {
         const placeholder = this.createSystemPlaceholder("system.expressions");
         return placeholder.outerHTML;
       }
+
+      // Check if this is a JS function expression block
+      if (isFunctionExpressionBlock(source)) {
+        const functions = parseFunctionBlock(source);
+        if (functions.length === 0) {
+          return "<div class='system-expressions-display'><p>No function expressions defined</p></div>";
+        }
+        return Tmpl.Render(FunctionExpressionsDisplay({ functions }));
+      }
+
+      // Original YAML-based expression display
       const data = parseYaml(source);
 
       // Handle both direct array and wrapped array formats

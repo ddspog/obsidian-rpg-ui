@@ -7,6 +7,7 @@ interface SystemInfoProps {
   expressionsSource?: string | string[];
   featuresSource?: string | string[];
   spellcastingSource?: string | string[];
+  conditionsSource?: string | string[];
 }
 
 export function SystemInfo(props: SystemInfoProps): JSX.Element {
@@ -53,6 +54,7 @@ export function SystemInfo(props: SystemInfoProps): JSX.Element {
       {renderFileReference(props.expressionsSource, "Expressions")}
       {renderFileReference(props.featuresSource, "Features")}
       {renderFileReference(props.spellcastingSource, "Spellcasting")}
+      {renderFileReference(props.conditionsSource, "Conditions")}
     </div>
   );
 }

@@ -42,19 +42,21 @@ export class SkillsView extends BaseView {
 
     // Use system's skill list instead of hardcoded Skills
     for (const skill of system.skills) {
+      const skillLabel = (skill.name ?? (skill as any).label ?? "").toString();
+
       const isHalfProficient =
         skillsBlock.half_proficiencies.find((x) => {
-          return x.toLowerCase() === skill.label.toLowerCase();
+          return x.toLowerCase() === skillLabel.toLowerCase();
         }) !== undefined;
 
       const isProficient =
         skillsBlock.proficiencies.find((x) => {
-          return x.toLowerCase() === skill.label.toLowerCase();
+          return x.toLowerCase() === skillLabel.toLowerCase();
         }) !== undefined;
 
       const isExpert =
         skillsBlock.expertise.find((x) => {
-          return x.toLowerCase() === skill.label.toLowerCase();
+          return x.toLowerCase() === skillLabel.toLowerCase();
         }) !== undefined;
 
       const skillAbility = abilityBlock.abilities[skill.attribute as keyof AbilityBlock["abilities"]];
@@ -78,15 +80,15 @@ export class SkillsView extends BaseView {
       }
 
       for (const bonus of skillsBlock.bonuses) {
-        if (bonus.target.toLowerCase() === skill.label.toLowerCase()) {
+        if ((bonus.target ?? "").toLowerCase() === skillLabel.toLowerCase()) {
           skillCheckValue += bonus.value;
         }
       }
 
-      const abbreviation = skill.attribute.substring(0, 3).toUpperCase();
+      const abbreviation = (skill.attribute ?? "").substring(0, 3).toUpperCase();
 
       data.push({
-        label: skill.label,
+        label: skillLabel,
         ability: abbreviation,
         modifier: skillCheckValue,
         isProficient: isProficient,

@@ -45,3 +45,4 @@ export {
   parseAttributeDefinitionsFromMarkdown,
 } from "./parser/attributes";
 export { parseFieldDefinitions } from "./parser/fields";
+export { extractWikilinkRef, normalizeRef } from "./parser/wikilink-ref";

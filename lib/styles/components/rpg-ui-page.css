@@ -1,0 +1,17 @@
+/* RPG UI Page Layout - subtitle and source decorators for files with cssclass rpg-ui */
+
+.rpg-ui-subtitle {
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--color-text-secondary, var(--text-muted));
+  margin-top: -0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.rpg-ui-source {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-primary, var(--background-modifier-border));
+  font-size: 0.85rem;
+  color: var(--color-text-muted, var(--text-muted));
+}

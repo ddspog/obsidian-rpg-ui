@@ -17,6 +17,7 @@ skills: "systems/split-system/Skills/DnD5e-Skills.md"
 expressions:
   - "systems/split-system/Expressions/DnD5e-Core-Expressions.md"
   - "systems/split-system/Expressions/DnD5e-Combat-Expressions.md"
+conditions: "systems/split-system/Conditions/DnD5e-Conditions.md"
 ```
 
 ## Expected Visual
@@ -28,6 +29,7 @@ expressions:
 - Expressions section showing:
   - 📄 systems/split-system/Expressions/DnD5e-Core-Expressions.md
   - 📄 systems/split-system/Expressions/DnD5e-Combat-Expressions.md
+- Conditions section showing: 📄 systems/split-system/Conditions/DnD5e-Conditions.md
 
 ## How This Works
 
@@ -49,5 +51,6 @@ expressions:
 **This demonstrates:**
 - ✅ Single file reference for skills
 - ✅ Multiple file references for expressions (array)
+- ✅ Single file reference for conditions
 - ✅ Cleaner organization with components split across files
 - ✅ **All blocks now render visually!**

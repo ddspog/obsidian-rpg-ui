@@ -20,6 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `task pr` - Prepare for PR (format, lint, type check, and test)
 - `task release` - Release a new minor version (includes format, lint, type check, and test)
 
+Recommended workflow: After running tests and fixing any issues, run `npm run build` to catch TypeScript or bundling errors that tests may not surface.
+
 ## Code Style
 
 - **TypeScript:** Use strict typing (noImplicitAny, strictNullChecks)

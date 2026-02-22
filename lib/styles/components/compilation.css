@@ -1,0 +1,119 @@
+/* ── Compilation Bases View ────────────────────────────────────────────────── */
+
+.rpg-compilation-container {
+  padding: 0 16px 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  outline: none;
+}
+
+/* ── Entry card ───────────────────────────────────────────────────────────── */
+
+.rpg-compilation-entry {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-compilation-entry:last-child {
+  border-bottom: none;
+}
+
+/* ── Header / title ───────────────────────────────────────────────────────── */
+
+.rpg-compilation-header {
+  margin-bottom: 4px;
+}
+
+.rpg-compilation-title {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.rpg-compilation-title-link {
+  color: var(--text-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rpg-compilation-title-link:hover {
+  color: var(--text-accent-hover);
+  text-decoration: underline;
+}
+
+/* ── Subtitle ─────────────────────────────────────────────────────────────── */
+
+.rpg-compilation-subtitle {
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+/* ── File contents (rendered markdown) ────────────────────────────────────── */
+
+.rpg-compilation-content {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.rpg-compilation-content > :first-child {
+  margin-top: 0;
+}
+
+.rpg-compilation-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Properties ───────────────────────────────────────────────────────────── */
+
+.rpg-compilation-properties {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rpg-compilation-property {
+  font-size: 0.9em;
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+
+.rpg-compilation-property strong {
+  color: var(--text-normal);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+
+.rpg-compilation-footer {
+  margin-top: 8px;
+  padding-top: 4px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Empty / loading states ───────────────────────────────────────────────── */
+
+.rpg-compilation-empty,
+.rpg-compilation-empty-content {
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 16px 0;
+}
+
+.rpg-compilation-loading {
+  color: var(--text-faint);
+  padding: 8px 0;
+}
+
+.rpg-compilation-error {
+  color: var(--text-error);
+  padding: 8px 0;
+}
+
+/* ── Infinite scroll sentinel (invisible) ─────────────────────────────────── */
+
+.rpg-compilation-sentinel {
+  height: 1px;
+  visibility: hidden;
+}

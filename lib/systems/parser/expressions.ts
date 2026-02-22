@@ -2,17 +2,23 @@
  * Expression Parser
  * 
  * Handles parsing and loading of mathematical expressions with Handlebars templates
+ * and JavaScript function definitions.
  */
 
 import { parse as parseYaml } from "yaml";
 import * as Handlebars from "handlebars";
 import { ExpressionDef } from "../types";
 import { extractCodeBlocks } from "../../utils/codeblock-extractor";
+import { isFunctionExpressionBlock, parseFunctionExpressions } from "./function-expressions";
 
 export type FileLoader = (filePath: string) => Promise<string | null>;
 
 /**
- * Parse all rpg expression or rpg system.expressions blocks from markdown content
+ * Parse all rpg expression or rpg system.expressions blocks from markdown content.
+ * 
+ * Supports two formats:
+ * 1. YAML with Handlebars formulas (original format)
+ * 2. JavaScript function definitions (new format)
  * 
  * @param fileContent - Markdown content containing expression blocks
  * @returns Map of expression ID to expression definition
@@ -28,6 +34,16 @@ export function parseExpressions(fileContent: string): Map<string, ExpressionDef
   }
 
   for (const block of expressionBlocks) {
+    // Detect if this block contains JS function definitions
+    if (isFunctionExpressionBlock(block)) {
+      const funcExpressions = parseFunctionExpressions(block);
+      for (const [id, expr] of funcExpressions.entries()) {
+        expressionMap.set(id, expr);
+      }
+      continue;
+    }
+
+    // Original YAML-based expression parsing
     const exprYaml = parseYaml(block);
     if (!exprYaml || typeof exprYaml !== "object") {
       continue;
@@ -67,7 +83,7 @@ export function parseExpressions(fileContent: string): Map<string, ExpressionDef
       }
 
       // Create evaluate function
-      const evaluate = (context: Record<string, number | string | boolean>): number | string | boolean => {
+      const evaluate = (context: Record<string, unknown>): unknown => {
         try {
           const result = compiledTemplate(context);
           // Try to parse as number if possible
