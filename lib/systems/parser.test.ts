@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseSystemFromMarkdown, FileLoader } from "./parser/index";
+import { parseSystemFromMarkdown, FileLoader, FolderLister } from "./parser/index";
 
 describe("parseSystemFromMarkdown", () => {
   it("should return null when no system block is found", async () => {
@@ -281,6 +281,137 @@ collectors: [character]
     expect(system?.spellcasting.collectors).toEqual(["character"]);
   });
 
+  it("should load spellcasting from wikilink reference [[path]]", async () => {
+    // In YAML, [[07. Spellcasting]] is parsed as [["07. Spellcasting"]]
+    const markdown = `
+\`\`\`rpg system
+name: "System with Wikilink Spellcasting"
+attributes: [intelligence]
+spellcasting: [[07. Spellcasting]]
+\`\`\`
+    `;
+
+    const spellsFile = `
+\`\`\`rpg system.spellcasting
+circles:
+  - id: cantrip
+    label: Cantrip
+providers: [class]
+collectors: [character]
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "07. Spellcasting") return spellsFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.spellcasting.circles).toHaveLength(1);
+    expect(system?.spellcasting.circles[0].id).toBe("cantrip");
+    expect(system?.spellcasting.providers).toEqual(["class"]);
+  });
+
+  it("should load attributes from wikilink reference [[path]]", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Wikilink Attributes"
+attributes: [[Ability Modifier]]
+\`\`\`
+    `;
+
+    const attributesFile = `
+\`\`\`rpg system.attributes
+- name: strength
+  alias: STR
+- name: dexterity
+  alias: DEX
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "Ability Modifier") return attributesFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.attributes).toEqual(["strength", "dexterity"]);
+    expect(system?.attributeDefinitions).toHaveLength(2);
+    expect(system?.attributeDefinitions?.[0].alias).toBe("STR");
+  });
+
+  it("should load features from wikilink reference [[path]]", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Wikilink Features"
+features: [[Features Definition]]
+\`\`\`
+    `;
+
+    const featuresFile = `
+\`\`\`rpg system.features
+categories:
+  - id: action
+    label: Action
+    icon: ⚔️
+providers: [class]
+collectors: [character]
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "Features Definition") return featuresFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.features.categories).toHaveLength(1);
+    expect(system?.features.categories[0].id).toBe("action");
+    expect(system?.features.providers).toEqual(["class"]);
+  });
+
+  it("should parse inline features with traits", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Traits"
+features:
+  categories:
+    - id: action
+      label: Action
+      icon: ⚔️
+  traits:
+    - id: hit-points
+      label: Hit Points
+      icon: 💔
+    - id: save-proficiency
+      label: Saves
+      icon: 💾
+  providers: [class, lineage]
+  collectors: [character]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.features.categories).toHaveLength(1);
+    expect(system?.features.traits).toHaveLength(2);
+    expect(system?.features.traits?.[0]).toEqual({
+      id: "hit-points",
+      label: "Hit Points",
+      icon: "💔",
+    });
+    expect(system?.features.traits?.[1]).toEqual({
+      id: "save-proficiency",
+      label: "Saves",
+      icon: "💾",
+    });
+    expect(system?.features.providers).toEqual(["class", "lineage"]);
+    expect(system?.features.collectors).toEqual(["character"]);
+  });
+
   it("should load skills from external file when path is provided", async () => {
     const markdown = `
 \`\`\`rpg system
@@ -365,6 +496,236 @@ skills:
       "Insight",
       "Perception",
     ]);
+  });
+
+  it("should parse inline wikilink-format system.skills block", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Wikilink Skills System"
+attributes: [strength, dexterity]
+\`\`\`
+
+\`\`\`rpg system.skills
+- [[Acrobatics]]
+- [[Athletics]]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+    expect(system?.skills[0].name).toBe("Acrobatics");
+    expect(system?.skills[1].name).toBe("Athletics");
+    // attribute is empty when no fileLoader is present
+    expect(system?.skills[0].attribute).toBe("");
+  });
+
+  it("should load wikilink skills from external file and resolve attribute/description from linked notes", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Wikilink Skills"
+attributes: [strength, dexterity]
+skills: "skills/dnd5e-skills.md"
+\`\`\`
+    `;
+
+    const skillsIndexFile = `
+\`\`\`rpg system.skills
+- [[skills/Acrobatics]]
+- [[skills/Athletics]]
+\`\`\`
+    `;
+
+    const acrobaticsNote = `---
+attribute: dexterity
+---
+Your ability to stay on your feet and maintain balance.
+`;
+
+    const athleticsNote = `---
+attribute: strength
+---
+Covers difficult situations you encounter while climbing, jumping, or swimming.
+`;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "skills/dnd5e-skills.md") return skillsIndexFile;
+      if (path === "skills/Acrobatics.md") return acrobaticsNote;
+      if (path === "skills/Athletics.md") return athleticsNote;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+
+    const acrobatics = system?.skills[0];
+    expect(acrobatics?.name).toBe("Acrobatics");
+    expect(acrobatics?.attribute).toBe("dexterity");
+    expect(acrobatics?.description).toContain("stay on your feet");
+
+    const athletics = system?.skills[1];
+    expect(athletics?.name).toBe("Athletics");
+    expect(athletics?.attribute).toBe("strength");
+    expect(athletics?.description).toContain("climbing");
+  });
+
+  it("should parse wikilink-format system.skills block wrapped in skills: key", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Wrapped Wikilink Skills System"
+attributes: [strength, dexterity]
+\`\`\`
+
+\`\`\`rpg system.skills
+skills:
+  - [[Acrobatics]]
+  - [[Athletics]]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+    expect(system?.skills[0].name).toBe("Acrobatics");
+    expect(system?.skills[1].name).toBe("Athletics");
+    expect(system?.skills[0].attribute).toBe("");
+  });
+
+  it("should parse all 18 wikilink skills with skills: key wrapper", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Full DnD5e Wikilink Skills"
+attributes: [strength, dexterity, constitution, intelligence, wisdom, charisma]
+\`\`\`
+
+\`\`\`rpg system.skills
+skills:
+  - [[Acrobatics]]
+  - [[Animal Handling]]
+  - [[Arcana]]
+  - [[Athletics]]
+  - [[Deception]]
+  - [[History]]
+  - [[Insight]]
+  - [[Intimidation]]
+  - [[Investigation]]
+  - [[Medicine]]
+  - [[Nature]]
+  - [[Perception]]
+  - [[Performance]]
+  - [[Persuasion]]
+  - [[Religion]]
+  - [[Sleight of Hand]]
+  - [[Stealth]]
+  - [[Survival]]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(18);
+    expect(system?.skills.map((s) => s.name)).toEqual([
+      "Acrobatics", "Animal Handling", "Arcana", "Athletics",
+      "Deception", "History", "Insight", "Intimidation",
+      "Investigation", "Medicine", "Nature", "Perception",
+      "Performance", "Persuasion", "Religion", "Sleight of Hand",
+      "Stealth", "Survival",
+    ]);
+  });
+
+  it("should support wikilink display-name alias in skills block", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Alias Skills System"
+attributes: [dexterity]
+\`\`\`
+
+\`\`\`rpg system.skills
+- [[skills/acrobatics|Acrobatics]]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(1);
+    expect(system?.skills[0].name).toBe("Acrobatics");
+  });
+
+  it("should load individual skill note files deriving name from filename", async () => {
+    // Each path in the skills array points directly to a skill note file – no
+    // rpg system.skills block inside it.  Name comes from the filename.
+    const markdown = `
+\`\`\`rpg system
+name: "Individual Skill Notes"
+attributes: [strength, dexterity]
+skills:
+  - "skills/Acrobatics.md"
+  - "skills/Athletics.md"
+\`\`\`
+    `;
+
+    const acrobaticsNote = `---
+attribute: dexterity
+subtitle: "Associated Ability: DEX"
+---
+Your ability to stay on your feet in a tricky situation.
+`;
+
+    const athleticsNote = `---
+attribute: strength
+---
+Covers difficult situations you encounter while climbing, jumping, or swimming.
+`;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "skills/Acrobatics.md") return acrobaticsNote;
+      if (path === "skills/Athletics.md") return athleticsNote;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+
+    const acrobatics = system?.skills[0];
+    expect(acrobatics?.name).toBe("Acrobatics");
+    expect(acrobatics?.attribute).toBe("dexterity");
+    expect(acrobatics?.subtitle).toBe("Associated Ability: DEX");
+    expect(acrobatics?.description).toContain("stay on your feet");
+
+    const athletics = system?.skills[1];
+    expect(athletics?.name).toBe("Athletics");
+    expect(athletics?.attribute).toBe("strength");
+    expect(athletics?.description).toContain("climbing");
+  });
+
+  it("should derive skill name from filename without .md extension", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Name From Filename Test"
+attributes: [wisdom]
+skills:
+  - "skills/Perception.md"
+\`\`\`
+    `;
+
+    const note = `---
+attribute: wisdom
+---
+Lets you spot, hear, or otherwise detect the presence of something.
+`;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "skills/Perception.md") return note;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(1);
+    expect(system?.skills[0].name).toBe("Perception");
+    expect(system?.skills[0].attribute).toBe("wisdom");
   });
 
   it("should load expressions from external file when path is provided", async () => {
@@ -512,5 +873,329 @@ features: "missing-file.md"
       providers: [],
       collectors: [],
     });
+  });
+
+  it("should parse inline conditions as array of objects", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Conditions"
+attributes: [strength]
+conditions:
+  - name: Blinded
+    icon: "🙈"
+    description: "A blinded creature can't see."
+  - name: Charmed
+    icon: "💖"
+    description: "A charmed creature can't attack the charmer."
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.conditions.conditions).toHaveLength(2);
+    expect(system?.conditions.conditions[0].name).toBe("Blinded");
+    expect(system?.conditions.conditions[0].icon).toBe("🙈");
+    expect(system?.conditions.conditions[0].description).toBe("A blinded creature can't see.");
+    expect(system?.conditions.conditions[1].name).toBe("Charmed");
+  });
+
+  it("should parse conditions from external file", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with External Conditions"
+attributes: [strength]
+conditions: "conditions.md"
+\`\`\`
+    `;
+
+    const conditionsFile = `
+# Conditions
+
+\`\`\`rpg system.conditions
+- name: Poisoned
+  icon: "🤢"
+  description: "A poisoned creature has disadvantage on attack rolls."
+- name: Prone
+  icon: "🛌"
+  description: "A prone creature's only movement option is to crawl."
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "conditions.md") return conditionsFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.conditions.conditions).toHaveLength(2);
+    expect(system?.conditions.conditions[0].name).toBe("Poisoned");
+    expect(system?.conditions.conditions[1].name).toBe("Prone");
+  });
+
+  it("should parse conditions with wikilink list format from external file", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Wikilink Conditions"
+attributes: [strength]
+conditions: "conditions.md"
+\`\`\`
+    `;
+
+    const conditionsFile = `
+# Conditions
+
+\`\`\`rpg system.conditions
+- [[Blinded]]
+- [[Charmed]]
+- [[conditions/Poisoned|Poisoned]]
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "conditions.md") return conditionsFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.conditions.conditions).toHaveLength(3);
+    expect(system?.conditions.conditions[0].name).toBe("Blinded");
+    expect(system?.conditions.conditions[1].name).toBe("Charmed");
+    expect(system?.conditions.conditions[2].name).toBe("Poisoned");
+  });
+
+  it("should default to empty conditions when not specified", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System without Conditions"
+attributes: [strength]
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.conditions).toEqual({ conditions: [] });
+  });
+
+  it("should use defaults when external conditions file cannot be loaded", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Missing Conditions"
+attributes: [strength]
+conditions: "missing-conditions.md"
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async () => null;
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.conditions).toEqual({ conditions: [] });
+  });
+
+  it("should parse conditions as simple string names in inline array", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "System with Simple Conditions"
+attributes: [strength]
+conditions:
+  - Blinded
+  - Charmed
+  - Poisoned
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.conditions.conditions).toHaveLength(3);
+    expect(system?.conditions.conditions[0].name).toBe("Blinded");
+    expect(system?.conditions.conditions[1].name).toBe("Charmed");
+    expect(system?.conditions.conditions[2].name).toBe("Poisoned");
+  });
+
+  // ── Folder-based loading tests ─────────────────────────────────────────
+
+  it("should load skills from a folder path", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Folder Skills System"
+attributes: [strength, dexterity]
+skills: "skills/"
+\`\`\`
+    `;
+
+    const files: Record<string, string> = {
+      "skills/Acrobatics.md": `---\nattribute: dexterity\nsubtitle: "DEX"\n---\nYour DEX check covers acrobatic stunts.`,
+      "skills/Athletics.md": `---\nattribute: strength\nsubtitle: "STR"\n---\nYour STR check covers climbing and jumping.`,
+    };
+
+    const fileLoader: FileLoader = async (path) => files[path] ?? null;
+    const folderLister: FolderLister = async (folder) => {
+      if (folder === "skills/") return ["skills/Acrobatics.md", "skills/Athletics.md"];
+      return [];
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader, folderLister);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(2);
+    expect(system?.skills[0].name).toBe("Acrobatics");
+    expect(system?.skills[0].attribute).toBe("dexterity");
+    expect(system?.skills[0].description).toBe("Your DEX check covers acrobatic stunts.");
+    expect(system?.skills[1].name).toBe("Athletics");
+    expect(system?.skills[1].attribute).toBe("strength");
+  });
+
+  it("should load conditions from a folder path", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Folder Conditions System"
+attributes: [strength]
+conditions: "conditions/"
+\`\`\`
+    `;
+
+    const files: Record<string, string> = {
+      "conditions/Blinded.md": `\`\`\`rpg system.conditions\n- name: Blinded\n  icon: "🙈"\n  description: "Can't see."\n\`\`\``,
+      "conditions/Poisoned.md": `\`\`\`rpg system.conditions\n- name: Poisoned\n  icon: "🤢"\n  description: "Disadvantage on attacks."\n\`\`\``,
+    };
+
+    const fileLoader: FileLoader = async (path) => files[path] ?? null;
+    const folderLister: FolderLister = async (folder) => {
+      if (folder === "conditions/") return ["conditions/Blinded.md", "conditions/Poisoned.md"];
+      return [];
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader, folderLister);
+    expect(system).not.toBeNull();
+    expect(system?.conditions.conditions).toHaveLength(2);
+    expect(system?.conditions.conditions[0].name).toBe("Blinded");
+    expect(system?.conditions.conditions[1].name).toBe("Poisoned");
+  });
+
+  it("should load attributes from a folder path", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Folder Attributes System"
+attributes: "attributes/"
+\`\`\`
+    `;
+
+    const files: Record<string, string> = {
+      "attributes/Strength.md": `---\nname: strength\nalias: STR\n---\nPhysical power and carrying capacity.`,
+      "attributes/Dexterity.md": `---\nname: dexterity\nalias: DEX\n---\nAgility, reflexes, and balance.`,
+    };
+
+    const fileLoader: FileLoader = async (path) => files[path] ?? null;
+    const folderLister: FolderLister = async (folder) => {
+      if (folder === "attributes/") return ["attributes/Dexterity.md", "attributes/Strength.md"];
+      return [];
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader, folderLister);
+    expect(system).not.toBeNull();
+    expect(system?.attributes).toHaveLength(2);
+    expect(system?.attributes).toContain("strength");
+    expect(system?.attributes).toContain("dexterity");
+    expect(system?.attributeDefinitions).toHaveLength(2);
+    const strDef = system?.attributeDefinitions?.find(d => d.name === "strength");
+    expect(strDef?.alias).toBe("STR");
+    expect(strDef?.description).toBe("Physical power and carrying capacity.");
+  });
+
+  it("should fall back to file loading when folder is empty", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Fallback System"
+attributes: [strength]
+skills: "skills.md"
+\`\`\`
+    `;
+
+    const skillsFile = `\`\`\`rpg system.skills\n- name: Acrobatics\n  attribute: dexterity\n\`\`\``;
+
+    const fileLoader: FileLoader = async (path) => {
+      if (path === "skills.md") return skillsFile;
+      return null;
+    };
+    const folderLister: FolderLister = async () => [];
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader, folderLister);
+    expect(system).not.toBeNull();
+    expect(system?.skills).toHaveLength(1);
+    expect(system?.skills[0].name).toBe("Acrobatics");
+  });
+
+  it("should parse JavaScript function expressions in rpg system.expressions blocks", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "Custom JS Expressions System"
+attributes: [strength, dexterity]
+\`\`\`
+
+\`\`\`rpg system.expressions
+function PB(this) {
+  return 2 + Math.floor((this.level - 1) / 4);
+}
+
+function AttributeMod(this, ability) {
+  return Math.floor((this[ability] - 10) / 2);
+}
+
+function Modifier(ability) {
+  return AttributeMod(ability) + PB();
+}
+\`\`\`
+    `;
+
+    const system = await parseSystemFromMarkdown(markdown);
+    expect(system).not.toBeNull();
+    expect(system?.expressions.size).toBe(3);
+    expect(system?.expressions.has("PB")).toBe(true);
+    expect(system?.expressions.has("AttributeMod")).toBe(true);
+    expect(system?.expressions.has("Modifier")).toBe(true);
+
+    // Test PB at level 5 → 2 + floor(4/4) = 3
+    const pb = system?.expressions.get("PB");
+    expect(pb?.evaluate({ level: 5 })).toBe(3);
+
+    // Test AttributeMod for strength 16 → floor((16-10)/2) = 3
+    const attrMod = system?.expressions.get("AttributeMod");
+    expect(attrMod?.evaluate({ ability: "strength", strength: 16 })).toBe(3);
+
+    // Test Modifier: AttributeMod(3) + PB(3) = 6
+    const modifier = system?.expressions.get("Modifier");
+    expect(modifier?.evaluate({ ability: "strength", strength: 16, level: 5 })).toBe(6);
+  });
+
+  it("should load JavaScript function expressions from external file", async () => {
+    const markdown = `
+\`\`\`rpg system
+name: "External JS Expressions"
+attributes: [strength]
+expressions: "expressions/functions.md"
+\`\`\`
+    `;
+
+    const expressionsFile = `
+\`\`\`rpg system.expressions
+function Modifier(this, ability) {
+  return Math.floor((this[ability] - 10) / 2);
+}
+\`\`\`
+    `;
+
+    const fileLoader: FileLoader = async (path: string) => {
+      if (path === "expressions/functions.md") return expressionsFile;
+      return null;
+    };
+
+    const system = await parseSystemFromMarkdown(markdown, fileLoader);
+    expect(system).not.toBeNull();
+    expect(system?.expressions.size).toBe(1);
+    expect(system?.expressions.has("Modifier")).toBe(true);
+
+    const mod = system?.expressions.get("Modifier");
+    expect(mod?.evaluate({ ability: "strength", strength: 14 })).toBe(2);
   });
 });

@@ -1,12 +1,12 @@
 import * as React from "react";
 
-interface Expression {
+export interface Expression {
   id: string;
   params?: string[];
   formula: string;
 }
 
-interface ExpressionsDisplayProps {
+export interface ExpressionsDisplayProps {
   expressions: Expression[];
 }
 

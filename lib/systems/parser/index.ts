@@ -14,10 +14,11 @@ import {
   SkillDefinition,
   FeatureSystemConfig,
   SpellcastingSystemConfig,
+  ConditionsSystemConfig,
 } from "../types";
 import { extractCodeBlocks } from "../../utils/codeblock-extractor";
 import { parseFieldDefinitions } from "./fields";
-import { resolveAttributes, FileLoader } from "./attributes";
+import { resolveAttributes, FileLoader, FolderLister, resolveFileOrFolder } from "./attributes";
 import {
   parseExpressions,
   loadExpressionsFromFile,
@@ -36,6 +37,12 @@ import {
   parseSpellcastingConfig,
   loadSpellcastingFromFile,
 } from "./spellcasting";
+import {
+  parseConditionsConfig,
+  loadConditionsFromFile,
+  loadConditionsFromFiles,
+} from "./conditions";
+import { normalizeRef } from "./wikilink-ref";
 
 // Initialize Handlebars helpers on module load
 import "./handlebars";
@@ -45,11 +52,13 @@ import "./handlebars";
  * 
  * @param fileContent - Raw markdown content containing rpg code blocks
  * @param fileLoader - Optional function to load external files
+ * @param folderLister - Optional function to list files in a folder
  * @returns Parsed RPG system or null if no valid system block found
  */
 export async function parseSystemFromMarkdown(
   fileContent: string,
-  fileLoader?: FileLoader
+  fileLoader?: FileLoader,
+  folderLister?: FolderLister,
 ): Promise<RPGSystem | null> {
   // Extract system block
   const systemBlocks = extractCodeBlocks(fileContent, "rpg system");
@@ -65,10 +74,20 @@ export async function parseSystemFromMarkdown(
 
   // Parse basic system properties
   const name = systemYaml.name || "Unnamed System";
+
+  // Normalize wikilink references: [[Path]] is parsed by YAML as [["Path"]]
+  const attributesField = normalizeRef(systemYaml.attributes);
+  const expressionsField = normalizeRef(systemYaml.expressions);
+  const skillsField = normalizeRef(systemYaml.skills);
+  const featuresField = normalizeRef(systemYaml.features);
+  const spellcastingField = normalizeRef(systemYaml.spellcasting);
+  const conditionsField = normalizeRef(systemYaml.conditions);
+
   const { attributes, attributeDefinitions } = await resolveAttributes(
-    systemYaml.attributes,
+    attributesField,
     fileContent,
-    fileLoader
+    fileLoader,
+    folderLister,
   );
   
   // Parse entity types
@@ -87,25 +106,30 @@ export async function parseSystemFromMarkdown(
 
   // Parse expressions (either from inline blocks, external file, or file list)
   let expressions: Map<string, ExpressionDef>;
-  if (typeof systemYaml.expressions === "string" && fileLoader) {
+  if (typeof expressionsField === "string" && fileLoader) {
     // Load from external file
-    expressions = await loadExpressionsFromFile(systemYaml.expressions, fileLoader);
-  } else if (Array.isArray(systemYaml.expressions) && fileLoader) {
+    expressions = await loadExpressionsFromFile(expressionsField, fileLoader);
+  } else if (Array.isArray(expressionsField) && fileLoader) {
     // Load from multiple files
-    expressions = await loadExpressionsFromFiles(systemYaml.expressions, fileLoader);
+    expressions = await loadExpressionsFromFiles(expressionsField, fileLoader);
   } else {
     // Parse from inline blocks in current file (backward compatibility)
     expressions = parseExpressions(fileContent);
   }
 
-  // Parse skills (either from inline blocks, external file, or file list)
+  // Parse skills (either from inline blocks, external file, folder, or file list)
   let skills: SkillDefinition[];
-  if (typeof systemYaml.skills === "string" && fileLoader) {
-    // Load from external file
-    skills = await loadSkillsFromFile(systemYaml.skills, fileLoader);
-  } else if (Array.isArray(systemYaml.skills) && fileLoader) {
+  if (typeof skillsField === "string" && fileLoader) {
+    // Load from external file or folder
+    const filePaths = await resolveFileOrFolder(skillsField, folderLister);
+    if (filePaths.length === 1 && filePaths[0] === skillsField) {
+      skills = await loadSkillsFromFile(skillsField, fileLoader);
+    } else {
+      skills = await loadSkillsFromFiles(filePaths, fileLoader);
+    }
+  } else if (Array.isArray(skillsField) && fileLoader) {
     // Load from multiple files
-    skills = await loadSkillsFromFiles(systemYaml.skills, fileLoader);
+    skills = await loadSkillsFromFiles(skillsField, fileLoader);
   } else {
     // Parse from inline blocks in current file (backward compatibility)
     skills = parseSkills(fileContent);
@@ -113,12 +137,12 @@ export async function parseSystemFromMarkdown(
 
   // Parse features (either inline or from external file)
   let features: FeatureSystemConfig;
-  if (typeof systemYaml.features === "string" && fileLoader) {
+  if (typeof featuresField === "string" && fileLoader) {
     // Load from external file
-    features = await loadFeaturesFromFile(systemYaml.features, fileLoader);
-  } else if (systemYaml.features && typeof systemYaml.features === "object") {
+    features = await loadFeaturesFromFile(featuresField, fileLoader);
+  } else if (featuresField && typeof featuresField === "object") {
     // Parse inline definition
-    features = parseFeaturesConfig(systemYaml.features);
+    features = parseFeaturesConfig(featuresField);
   } else {
     // Use default
     features = {
@@ -130,18 +154,41 @@ export async function parseSystemFromMarkdown(
 
   // Parse spellcasting (either inline or from external file)
   let spellcasting: SpellcastingSystemConfig;
-  if (typeof systemYaml.spellcasting === "string" && fileLoader) {
+  if (typeof spellcastingField === "string" && fileLoader) {
     // Load from external file
-    spellcasting = await loadSpellcastingFromFile(systemYaml.spellcasting, fileLoader);
-  } else if (systemYaml.spellcasting && typeof systemYaml.spellcasting === "object") {
+    spellcasting = await loadSpellcastingFromFile(spellcastingField, fileLoader);
+  } else if (spellcastingField && typeof spellcastingField === "object") {
     // Parse inline definition
-    spellcasting = parseSpellcastingConfig(systemYaml.spellcasting);
+    spellcasting = parseSpellcastingConfig(spellcastingField);
   } else {
     // Use default
     spellcasting = {
       circles: [],
       providers: [],
       collectors: [],
+    };
+  }
+
+  // Parse conditions (either inline, from external file, or file list)
+  let conditions: ConditionsSystemConfig;
+  if (typeof conditionsField === "string" && fileLoader) {
+    // Load from external file or folder
+    const filePaths = await resolveFileOrFolder(conditionsField, folderLister);
+    if (filePaths.length === 1 && filePaths[0] === conditionsField) {
+      conditions = await loadConditionsFromFile(conditionsField, fileLoader);
+    } else {
+      conditions = await loadConditionsFromFiles(filePaths, fileLoader);
+    }
+  } else if (Array.isArray(conditionsField) && conditionsField.length > 0 && typeof conditionsField[0] === "string" && fileLoader) {
+    // Load from multiple files (array of strings)
+    conditions = await loadConditionsFromFiles(conditionsField as string[], fileLoader);
+  } else if (conditionsField && typeof conditionsField === "object") {
+    // Parse inline definition (array of objects or wrapped object)
+    conditions = parseConditionsConfig(conditionsField);
+  } else {
+    // Use default
+    conditions = {
+      conditions: [],
     };
   }
 
@@ -155,18 +202,27 @@ export async function parseSystemFromMarkdown(
     expressions,
     features,
     spellcasting,
+    conditions,
   };
 
   return system;
 }
 
 // Re-export types and functions for consumers
-export type { FileLoader };
+export type { FileLoader, FolderLister };
+export { resolveFileOrFolder } from "./attributes";
 export {
   parseExpressions,
   loadExpressionsFromFile,
   loadExpressionsFromFiles,
 } from "./expressions";
+export {
+  parseFunctionBlock,
+  parseFunctionExpressions,
+  compileFunctionExpressions,
+  isFunctionExpressionBlock,
+} from "./function-expressions";
+export type { ParsedFunction } from "./function-expressions";
 export {
   parseSkills,
   loadSkillsFromFile,
@@ -180,6 +236,11 @@ export {
   parseSpellcastingConfig,
   loadSpellcastingFromFile,
 } from "./spellcasting";
+export {
+  parseConditionsConfig,
+  loadConditionsFromFile,
+  loadConditionsFromFiles,
+} from "./conditions";
 export {
   resolveAttributes,
   parseAttributeDefinitionsFromMarkdown,

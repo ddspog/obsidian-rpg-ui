@@ -28,9 +28,10 @@
 @import "./components/system-attributes-definition.css";
 @import "./components/skills-display.css";
 @import "./components/expressions-display.css";
+@import "./components/rpg-ui-page.css";
 @import "./components/features-display.css";
 @import "./components/spellcasting-display.css";
 @import "./components/attributes-display.css";
 @import "./components/inline-display.css";
-@import "./components/entries.css";
+@import "./components/compilation.css";
 @import "./file-suggest.css";

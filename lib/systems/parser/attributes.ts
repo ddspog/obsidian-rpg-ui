@@ -11,17 +11,67 @@ import { extractCodeBlocks } from "../../utils/codeblock-extractor";
 export type FileLoader = (filePath: string) => Promise<string | null>;
 
 /**
- * Resolve attributes from various sources (inline, array, or external file)
+ * Lists markdown file paths inside a folder.
+ * Returns an array of vault-relative `.md` file paths, or an empty array
+ * if the path is not a folder.
+ */
+export type FolderLister = (folderPath: string) => Promise<string[]>;
+
+/**
+ * Resolve a string reference that may be a single file path or a folder path.
+ * When a `folderLister` is provided and the path resolves to a non-empty list
+ * of files, those file paths are returned. Otherwise the original path is
+ * returned as a single-element array so the caller can load it as a file.
+ */
+export async function resolveFileOrFolder(
+  refPath: string,
+  folderLister?: FolderLister,
+): Promise<string[]> {
+  if (folderLister) {
+    const files = await folderLister(refPath);
+    if (files.length > 0) return files;
+  }
+  return [refPath];
+}
+
+/**
+ * Derive a name from a file path by taking the last segment and stripping .md
+ */
+function nameFromFilePath(filePath: string): string {
+  const base = filePath.split("/").pop() ?? filePath;
+  return base.replace(/\.md$/i, "");
+}
+
+/** Extract YAML frontmatter from a markdown file. */
+function parseMarkdownFrontmatter(content: string): Record<string, unknown> {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return {};
+  try {
+    return (parseYaml(match[1]) as Record<string, unknown>) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Strip YAML frontmatter, returning only the body. */
+function getMarkdownBody(content: string): string {
+  return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
+}
+
+/**
+ * Resolve attributes from various sources (inline, array, or external file/folder)
  * 
  * @param attributesField - Raw attributes field from system YAML
  * @param fileContent - Current file content for parsing inline definitions
  * @param fileLoader - Optional function to load external files
+ * @param folderLister - Optional function to list files in a folder
  * @returns Object with attributes array and definitions
  */
 export async function resolveAttributes(
   attributesField: unknown,
   fileContent: string,
-  fileLoader?: FileLoader
+  fileLoader?: FileLoader,
+  folderLister?: FolderLister,
 ): Promise<{ attributes: string[]; attributeDefinitions: AttributeDefinition[] }> {
   const attributeDefinitions: AttributeDefinition[] = [];
 
@@ -48,12 +98,33 @@ export async function resolveAttributes(
   }
 
   if (typeof attributesField === "string" && fileLoader) {
-    const content = await fileLoader(attributesField);
-    if (content) {
-      const definitions = parseAttributeDefinitionsFromMarkdown(content);
+    const filePaths = await resolveFileOrFolder(attributesField, folderLister);
+    const allDefinitions: AttributeDefinition[] = [];
+    for (const fp of filePaths) {
+      const content = await fileLoader(fp);
+      if (content) {
+        const defs = parseAttributeDefinitionsFromMarkdown(content);
+        if (defs.length > 0) {
+          allDefinitions.push(...defs);
+        } else {
+          // Single-file note: derive attribute from frontmatter or filename
+          const fm = parseMarkdownFrontmatter(content);
+          const name = typeof fm.name === "string" && fm.name
+            ? fm.name
+            : nameFromFilePath(fp);
+          allDefinitions.push({
+            name,
+            ...(typeof fm.alias === "string" && fm.alias && { alias: fm.alias }),
+            ...(typeof fm.subtitle === "string" && fm.subtitle && { subtitle: fm.subtitle }),
+            ...(getMarkdownBody(content) && { description: getMarkdownBody(content) }),
+          });
+        }
+      }
+    }
+    if (allDefinitions.length > 0) {
       return {
-        attributes: definitions.map((attr) => attr.name),
-        attributeDefinitions: definitions,
+        attributes: allDefinitions.map((attr) => attr.name),
+        attributeDefinitions: allDefinitions,
       };
     }
   }

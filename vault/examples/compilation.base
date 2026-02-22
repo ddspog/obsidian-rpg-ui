@@ -1,0 +1,5 @@
+views:
+  - type: compilation
+    name: "NPC Compendium"
+
+source: '"examples"'

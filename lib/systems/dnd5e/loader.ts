@@ -17,6 +17,7 @@ import * as featureTypes from "./data/feature-types";
 import * as spellCircles from "./data/spell-circles";
 import * as spellLists from "./data/spell-lists";
 import * as entities from "./data/entities";
+import * as conditions from "./data/conditions";
 
 /**
  * Build the D&D 5e system from data files and logic
@@ -42,6 +43,9 @@ export function buildDND5ESystem(): RPGSystem {
 			lists: spellLists.default,
 			providers: ["class", "subclass"],
 			collectors: ["character", "monster"],
+		},
+		conditions: {
+			conditions: conditions.default,
 		},
 	};
 }

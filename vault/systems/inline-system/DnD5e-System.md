@@ -113,3 +113,25 @@ Look at the `systems/split-system` folder which uses the new `rpg system.skills`
 1. Create a character file using this system
 2. Use `rpg skills` blocks referencing this system
 3. Use expressions in ability/skill blocks
+
+## Conditions (Inline)
+
+```rpg system.conditions
+- name: Blinded
+  icon: "🙈"
+  description: "Can't see. Auto-fails sight checks."
+- name: Charmed
+  icon: "💖"
+  description: "Can't attack the charmer."
+- name: Poisoned
+  icon: "🤢"
+  description: "Disadvantage on attack rolls and ability checks."
+- name: Prone
+  icon: "🛌"
+  description: "Can only crawl. Own attacks have disadvantage."
+- name: Stunned
+  icon: "😵"
+  description: "Incapacitated, can't move."
+```
+
+**Expected Visual:** A conditions grid showing 5 condition cards with icons and descriptions.

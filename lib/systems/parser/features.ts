@@ -19,6 +19,7 @@ export type FileLoader = (filePath: string) => Promise<string | null>;
 export function parseFeaturesConfig(featuresObj: any): FeatureSystemConfig {
   return {
     categories: featuresObj.categories || [],
+    ...(featuresObj.traits ? { traits: featuresObj.traits } : {}),
     providers: featuresObj.providers || [],
     collectors: featuresObj.collectors || [],
   };

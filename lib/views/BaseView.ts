@@ -57,8 +57,6 @@ export abstract class BaseView {
         div.appendChild(result);
       } else if (typeof result === "string") {
         div.innerHTML = result;
-      } else {
-        console.debug("No result to render");
       }
     } catch (e) {
       console.error("Error rendering code block", e);
