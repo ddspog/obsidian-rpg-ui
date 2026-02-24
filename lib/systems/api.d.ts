@@ -123,6 +123,13 @@ export interface EntityConfig {
    */
   xpTable?: number[];
   /**
+   * Spell slot progression table for this entity.
+   * Each entry is an array of slot counts per spell level at a given character level.
+   * Index 0 = level 1, index 1 = level 2, etc.
+   * Example: `[[2], [3], [4, 2]]` means level 1: 2×1st, level 2: 3×1st, level 3: 4×1st + 2×2nd.
+   */
+  spellcastTable?: number[][];
+  /**
    * Computed expressions — functions that calculate values from entity
    * frontmatter data (e.g., ability modifiers, saving throws).
    */
@@ -228,6 +235,17 @@ export interface ConditionDefinition {
 
 // ─── User-facing CreateSystem config ─────────────────────────────────────────
 
+/** Caster type definition — describes a spellcasting progression style */
+export interface CasterTypeDefinition {
+  /** Display name for this caster type (e.g., "Full Caster", "Half Caster") */
+  name: string;
+  /**
+   * Converts a character level into a spellcaster level for this caster type.
+   * For example, a half-caster divides the character level by 2.
+   */
+  levelConversion: (characterLevel: number) => number;
+}
+
 /** User-facing configuration shape for CreateSystem */
 export interface SystemConfig {
   name: string;
@@ -238,6 +256,11 @@ export interface SystemConfig {
   spellcasting?: Partial<SpellcastingSystemConfig>;
   conditions?: ConditionDefinition[];
   traits?: TraitDefinition[];
+  /**
+   * Caster type definitions — describe spellcasting progression styles (full, half, third, etc.).
+   * Each key is a caster type identifier, and the value defines the name and level conversion.
+   */
+  casterTypes?: Record<string, CasterTypeDefinition>;
 }
 
 /** Result of fetching a file from the vault — includes frontmatter and contents */
@@ -335,6 +358,13 @@ export declare function CreateSystem(
       expressions?: Map<string, unknown>;
       /** Block component definitions for `rpg entity.<blockName>` code blocks */
       blocks?: Record<string, BlockDefinition>;
+      /** XP thresholds per level for this entity */
+      xpTable?: number[];
+      /**
+       * Spell slot progression table for this entity.
+       * Each entry is an array of slot counts per spell level at a given character level.
+       */
+      spellcastTable?: number[][];
     }
   >;
   skills: SkillDefinition[];
@@ -342,4 +372,8 @@ export declare function CreateSystem(
   spellcasting: SpellcastingSystemConfig;
   conditions: ConditionDefinition[];
   traits?: TraitDefinition[];
+  /**
+   * Caster type definitions — describe spellcasting progression styles.
+   */
+  casterTypes?: Record<string, CasterTypeDefinition>;
 }>;

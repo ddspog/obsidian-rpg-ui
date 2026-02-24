@@ -19,6 +19,7 @@ import type {
   ConditionDefinition,
   EntityConfig,
   BlockDefinition,
+  CasterTypeDefinition,
 } from "./types";
 
 /**
@@ -79,6 +80,7 @@ export function CreateSystem(
       spellcasting,
       conditions,
       traits: config.traits,
+      casterTypes: config.casterTypes,
     };
   };
 
@@ -150,6 +152,43 @@ export function CreateEntity(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const VALID_PROP_TYPES = ["string", "number", "boolean"] as const;
+type ValidPropType = (typeof VALID_PROP_TYPES)[number];
+
+function isValidPropType(value: unknown): value is ValidPropType {
+  return VALID_PROP_TYPES.includes(value as ValidPropType);
+}
+
+/**
+ * Validate block definitions for an entity, ensuring each block has a callable
+ * `component` and that props schema entries are well-formed.
+ * Returns the validated blocks map, or undefined if no blocks were provided.
+ */
+function validateBlocks(
+  entityName: string,
+  blocks: Record<string, BlockDefinition> | undefined,
+): Record<string, BlockDefinition> | undefined {
+  if (!blocks) return undefined;
+  for (const [blockName, block] of Object.entries(blocks)) {
+    if (typeof block.component !== "function") {
+      throw new Error(
+        `CreateSystem: entity '${entityName}' block '${blockName}' must have a callable 'component'`,
+      );
+    }
+    for (const [propName, schema] of Object.entries(block.props ?? {})) {
+      const isValid =
+        isValidPropType(schema) ||
+        (typeof schema === "object" && schema !== null && isValidPropType((schema as { type?: unknown }).type));
+      if (!isValid) {
+        throw new Error(
+          `CreateSystem: entity '${entityName}' block '${blockName}' prop '${propName}' has invalid schema`,
+        );
+      }
+    }
+  }
+  return blocks;
+}
+
 function normalizeAttribute(attr: string | AttributeDefinition): AttributeDefinition {
   if (typeof attr === "string") {
     return { $name: attr };
@@ -163,10 +202,11 @@ function buildEntity(
 ): { entityDef: EntityTypeDef; computedExpressions: Map<string, ExpressionDef> } {
   const frontmatter: FrontmatterFieldDef[] = (entityConfig.fields ?? []).map(normalizeField);
   const features = entityConfig.features ?? [];
-  const blocks = entityConfig.blocks as Record<string, BlockDefinition> | undefined;
+  const blocks = validateBlocks(entityName, entityConfig.blocks);
   const xpTable = entityConfig.xpTable;
+  const spellcastTable = entityConfig.spellcastTable;
 
-  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, blocks };
+  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, spellcastTable, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
   for (const [fnName, fn] of Object.entries(entityConfig.computed ?? {})) {

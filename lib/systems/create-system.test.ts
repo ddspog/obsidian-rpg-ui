@@ -206,6 +206,109 @@ describe("CreateSystem", () => {
     });
   });
 
+  describe("casterTypes", () => {
+    it("should pass casterTypes through to the system", async () => {
+      const system = await CreateSystem({
+        name: "Test",
+        attributes: ["str"],
+        casterTypes: {
+          full: { name: "Full Caster", levelConversion: (l) => l },
+          half: { name: "Half Caster", levelConversion: (l) => Math.floor(l / 2) },
+        },
+      });
+      expect(system.casterTypes).toBeDefined();
+      expect(system.casterTypes!.full.name).toBe("Full Caster");
+      expect(system.casterTypes!.half.name).toBe("Half Caster");
+      expect(system.casterTypes!.full.levelConversion(10)).toBe(10);
+      expect(system.casterTypes!.half.levelConversion(10)).toBe(5);
+    });
+
+    it("should have undefined casterTypes when not provided", async () => {
+      const system = await CreateSystem({ name: "Test", attributes: ["str"] });
+      expect(system.casterTypes).toBeUndefined();
+    });
+  });
+
+  describe("entity spellcastTable", () => {
+    it("should carry spellcastTable through to the entity", async () => {
+      const system = await CreateSystem({
+        name: "Test",
+        attributes: ["str"],
+        entities: {
+          character: {
+            spellcastTable: [[2], [3], [4, 2]],
+          },
+        },
+      });
+      expect(system.entities.character.spellcastTable).toEqual([[2], [3], [4, 2]]);
+    });
+
+    it("should have undefined spellcastTable when not provided", async () => {
+      const system = await CreateSystem({
+        name: "Test",
+        attributes: ["str"],
+        entities: { character: {} },
+      });
+      expect(system.entities.character.spellcastTable).toBeUndefined();
+    });
+  });
+
+  describe("block validation", () => {
+    it("should accept valid block definitions", async () => {
+      const system = await CreateSystem({
+        name: "Test",
+        attributes: ["str"],
+        entities: {
+          character: {
+            blocks: {
+              header: {
+                component: (props) => props,
+                props: { name: "string", level: { type: "number", default: 1 } },
+              },
+            },
+          },
+        },
+      });
+      expect(system.entities.character.blocks).toBeDefined();
+      expect(system.entities.character.blocks!.header).toBeDefined();
+    });
+
+    it("should throw when block component is not a function", () => {
+      expect(() =>
+        CreateSystem({
+          name: "Test",
+          attributes: ["str"],
+          entities: {
+            character: {
+              blocks: {
+                header: { component: "not-a-function" as any },
+              },
+            },
+          },
+        }),
+      ).toThrow("block 'header' must have a callable 'component'");
+    });
+
+    it("should throw when block prop schema is invalid", () => {
+      expect(() =>
+        CreateSystem({
+          name: "Test",
+          attributes: ["str"],
+          entities: {
+            character: {
+              blocks: {
+                header: {
+                  component: (props) => props,
+                  props: { level: { type: "invalid" as any } },
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow("prop 'level' has invalid schema");
+    });
+  });
+
   describe("full system build", () => {
     it("should build a complete system similar to D&D 5e", async () => {
       const config: SystemConfig = {
