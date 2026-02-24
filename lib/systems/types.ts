@@ -31,13 +31,6 @@ export interface EntityConfig {
    */
   xpTable?: number[];
   /**
-   * Spell slot progression table for this entity.
-   * Each entry is an array of slot counts per spell level at a given character level.
-   * Index 0 = level 1, index 1 = level 2, etc.
-   * Example: `[[2], [3], [4, 2]]` means level 1: 2×1st, level 2: 3×1st, level 3: 4×1st + 2×2nd.
-   */
-  spellcastTable?: number[][];
-  /**
    * Computed functions — these become `ExpressionDef` entries in the system.
    * The function receives a context record and returns a value.
    */
@@ -108,11 +101,6 @@ export interface SystemConfig {
   conditions?: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
-  /**
-   * Caster type definitions — describe spellcasting progression styles (full, half, third, etc.).
-   * Each key is a caster type identifier, and the value defines the name and level conversion.
-   */
-  casterTypes?: Record<string, CasterTypeDefinition>;
 }
 
 
@@ -150,11 +138,6 @@ export interface RPGSystem {
   conditions: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
-  /**
-   * Caster type definitions — describe spellcasting progression styles.
-   * Carried through from SystemConfig.casterTypes.
-   */
-  casterTypes?: Record<string, CasterTypeDefinition>;
 }
 
 /** Entity type definition — defines frontmatter fields and default features for an entity type */
@@ -168,11 +151,6 @@ export interface EntityTypeDef {
    * Carried through from EntityConfig.xpTable.
    */
   xpTable?: number[];
-  /**
-   * Spell slot progression table for this entity.
-   * Carried through from EntityConfig.spellcastTable.
-   */
-  spellcastTable?: number[][];
   /** Block component definitions for `rpg entity.<name>` code blocks */
   blocks?: Record<string, BlockDefinition>;
 }
@@ -322,11 +300,17 @@ export interface SpellcastingSystemConfig {
   /** Spellcasting collector types (character, monster, etc.) */
   collectors: string[];
   /**
-   * Default spell slot progression table for full casters in this system.
-   * Each entry defines how many spell slots are available per circle at a given caster level.
-   * Specific classes may override this with their own table.
+   * Default spell slot progression table for this system.
+   * Each entry is an array of slot counts per spell level at a given caster level.
+   * Index 0 = level 1, index 1 = level 2, etc.
+   * Example: `[[2], [3], [4, 2]]` means level 1: 2×1st, level 2: 3×1st, level 3: 4×1st + 2×2nd.
    */
-  spellcastTable?: SpellSlotDistribution[];
+  slots?: number[][];
+  /**
+   * Caster type definitions — describe spellcasting progression styles (full, half, third, etc.).
+   * Each key is a caster type identifier, and the value defines the name and level conversion.
+   */
+  casters?: Record<string, CasterTypeDefinition>;
 }
 
 /** Condition definition */

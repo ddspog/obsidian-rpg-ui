@@ -19,7 +19,6 @@ import type {
   ConditionDefinition,
   EntityConfig,
   BlockDefinition,
-  CasterTypeDefinition,
 } from "./types";
 
 /**
@@ -80,7 +79,6 @@ export function CreateSystem(
       spellcasting,
       conditions,
       traits: config.traits,
-      casterTypes: config.casterTypes,
     };
   };
 
@@ -204,9 +202,8 @@ function buildEntity(
   const features = entityConfig.features ?? [];
   const blocks = validateBlocks(entityName, entityConfig.blocks);
   const xpTable = entityConfig.xpTable;
-  const spellcastTable = entityConfig.spellcastTable;
 
-  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, spellcastTable, blocks };
+  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
   for (const [fnName, fn] of Object.entries(entityConfig.computed ?? {})) {
@@ -297,7 +294,8 @@ function normalizeSpellcasting(spellcasting?: Partial<SpellcastingSystemConfig>)
     spellElements: spellcasting?.spellElements,
     providers: spellcasting?.providers ?? [],
     collectors: spellcasting?.collectors ?? [],
-    spellcastTable: spellcasting?.spellcastTable,
+    slots: spellcasting?.slots,
+    casters: spellcasting?.casters,
   };
 }
 

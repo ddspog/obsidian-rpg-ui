@@ -206,50 +206,52 @@ describe("CreateSystem", () => {
     });
   });
 
-  describe("casterTypes", () => {
-    it("should pass casterTypes through to the system", async () => {
+  describe("spellcasting casters", () => {
+    it("should pass casters through spellcasting config", async () => {
       const system = await CreateSystem({
         name: "Test",
         attributes: ["str"],
-        casterTypes: {
-          full: { name: "Full Caster", levelConversion: (l) => l },
-          half: { name: "Half Caster", levelConversion: (l) => Math.floor(l / 2) },
-        },
-      });
-      expect(system.casterTypes).toBeDefined();
-      expect(system.casterTypes!.full.name).toBe("Full Caster");
-      expect(system.casterTypes!.half.name).toBe("Half Caster");
-      expect(system.casterTypes!.full.levelConversion(10)).toBe(10);
-      expect(system.casterTypes!.half.levelConversion(10)).toBe(5);
-    });
-
-    it("should have undefined casterTypes when not provided", async () => {
-      const system = await CreateSystem({ name: "Test", attributes: ["str"] });
-      expect(system.casterTypes).toBeUndefined();
-    });
-  });
-
-  describe("entity spellcastTable", () => {
-    it("should carry spellcastTable through to the entity", async () => {
-      const system = await CreateSystem({
-        name: "Test",
-        attributes: ["str"],
-        entities: {
-          character: {
-            spellcastTable: [[2], [3], [4, 2]],
+        spellcasting: {
+          circles: [],
+          providers: [],
+          collectors: [],
+          casters: {
+            full: { name: "Full Caster", levelConversion: (l) => l },
+            half: { name: "Half Caster", levelConversion: (l) => Math.floor(l / 2) },
           },
         },
       });
-      expect(system.entities.character.spellcastTable).toEqual([[2], [3], [4, 2]]);
+      expect(system.spellcasting.casters).toBeDefined();
+      expect(system.spellcasting.casters!.full.name).toBe("Full Caster");
+      expect(system.spellcasting.casters!.half.name).toBe("Half Caster");
+      expect(system.spellcasting.casters!.full.levelConversion(10)).toBe(10);
+      expect(system.spellcasting.casters!.half.levelConversion(10)).toBe(5);
     });
 
-    it("should have undefined spellcastTable when not provided", async () => {
+    it("should have undefined casters when not provided", async () => {
+      const system = await CreateSystem({ name: "Test", attributes: ["str"] });
+      expect(system.spellcasting.casters).toBeUndefined();
+    });
+  });
+
+  describe("spellcasting slots", () => {
+    it("should carry slots through spellcasting config", async () => {
       const system = await CreateSystem({
         name: "Test",
         attributes: ["str"],
-        entities: { character: {} },
+        spellcasting: {
+          circles: [],
+          providers: [],
+          collectors: [],
+          slots: [[2], [3], [4, 2]],
+        },
       });
-      expect(system.entities.character.spellcastTable).toBeUndefined();
+      expect(system.spellcasting.slots).toEqual([[2], [3], [4, 2]]);
+    });
+
+    it("should have undefined slots when not provided", async () => {
+      const system = await CreateSystem({ name: "Test", attributes: ["str"] });
+      expect(system.spellcasting.slots).toBeUndefined();
     });
   });
 
