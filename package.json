@@ -16,7 +16,9 @@
     "test:watch": "vitest",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "rebuild:loader": "esbuild lib/systems/ts-loader.ts --bundle --platform=node --format=cjs --outfile=scripts/tmp-ts-loader.js --alias:obsidian=scripts/obsidian-shim.js --external:esbuild-wasm --external:esbuild --log-level=warning",
+    "dump:system": "npm run rebuild:loader && node scripts/run-loader-bundled.js | jq '.' > last-system.json"
   },
   "keywords": [],
   "author": "",
@@ -37,7 +39,8 @@
     "typescript": "^5.8.3",
     "vitepress": "^1.6.3",
     "vitepress-plugin-mermaid": "^2.0.17",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "jq-cli": "^1.6.0"
   },
   "dependencies": {
     "esbuild-wasm": "^0.27.3",

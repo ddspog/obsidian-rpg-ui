@@ -16,6 +16,7 @@
 import type { Vault, TFile } from "obsidian";
 import type { RPGSystem } from "./types";
 import type * as EsbuildWasm from "esbuild-wasm";
+import { resolveWikiFile, resolveWikiFolder } from "../utils/wiki-file";
 
 // Lazy esbuild-wasm initialisation — module-level promise so init runs once.
 let esbuildInitialized: Promise<void> | null = null;
@@ -33,6 +34,18 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
   if (esbuildInitialized) return esbuildInitialized;
 
   esbuildInitialized = (async () => {
+    // In a Node.js environment (e.g. local scripts), prefer the native esbuild
+    // package which doesn't require WASM initialisation.
+    if (typeof process !== "undefined" && process.versions?.node) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+        const native = require("esbuild") as typeof EsbuildWasm;
+        esbuildModule = native;
+        return;
+      } catch {
+        // fall through to esbuild-wasm
+      }
+    }
     const esbuild = await import("esbuild-wasm");
     await esbuild.initialize({
       // Use the provided URL (production: .obsidian/plugins/obsidian-rpg-ui/esbuild.wasm)
@@ -129,7 +142,7 @@ export async function loadSystemFromTypeScript(
       return null;
     }
 
-    return evaluateSystemBundle(bundleText, systemFolderPath);
+    return await evaluateSystemBundle(bundleText, systemFolderPath, vault);
   } catch (error) {
     console.error(`Failed to load TypeScript system from ${systemFolderPath}:`, error);
     return null;
@@ -145,29 +158,77 @@ export async function loadSystemFromTypeScript(
  *
  * Exported for unit testing.
  */
-export function evaluateSystemBundle(bundleText: string, systemFolderPath: string): RPGSystem | null {
+export async function evaluateSystemBundle(
+  bundleText: string,
+  systemFolderPath: string,
+  vault?: Vault,
+): Promise<RPGSystem | null> {
   try {
     // Create a minimal global-like scope for the IIFE
     const scope: Record<string, unknown> = {};
     // The IIFE assigns to `__system_module` on `globalThis` / the outer scope.
     // We wrap execution so that `__system_module` is intercepted.
-    const wrappedBundle = `
-var __system_module;
-${bundleText}
-return __system_module;
-    `;
+    const wrappedBundle = `var __system_module;\n${bundleText}\nreturn __system_module;`;
+
+    // Provide a small `require` shim to resolve known internal imports used by
+    // user-authored system bundles (e.g., `rpg-ui-toolkit`). This avoids the
+    // runtime `Cannot find module 'rpg-ui-toolkit'` error by mapping that
+    // specifier to our local implementation.
+    const requireShim = (name: string) => {
+      try {
+        if (name === "rpg-ui-toolkit") {
+          // load the plugin's create-system module to expose CreateSystem
+          // Note: path is relative to this file at runtime (lib/systems)
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          return require("./create-system");
+        }
+        // Fallback to normal require for other modules (may throw)
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+        return require(name);
+      } catch (e) {
+        // Return an empty object for unresolved externals to avoid crashes
+        return {};
+      }
+    };
+
+    // Provide a wiki fixture available to system definitions via
+    // `globalThis.__rpg_wiki`. Helpers are async and read from the vault
+    // when available; frontmatter is parsed and merged onto the descriptor.
+    const wikiFixture = {
+      file: (name: string) => resolveWikiFile(vault, name),
+      folder: (folderPath: string) => resolveWikiFolder(vault, folderPath),
+    };
+
+    try {
+      (globalThis as any).__rpg_wiki = wikiFixture;
+    } catch {}
+
     // eslint-disable-next-line no-new-func
-    const factory = new Function(wrappedBundle);
-    const mod = factory.call(scope);
+    const factory = new Function("require", wrappedBundle);
+    const mod = factory.call(scope, requireShim as any);
+
+    // Clean up the wiki fixture after evaluation
+    try {
+      delete (globalThis as any).__rpg_wiki;
+    } catch {}
 
     if (!mod) {
       console.error(`System bundle for ${systemFolderPath} did not export __system_module`);
       return null;
     }
-
     // The user exports `export const system = CreateSystem({...})`.
     // After IIFE bundling, this becomes `__system_module.system`.
-    const system = (mod as Record<string, unknown>).system;
+    let system = (mod as Record<string, unknown>).system as unknown;
+    // If CreateSystem returned a Promise (async factory), await it.
+    if (system && typeof (system as any).then === "function") {
+      try {
+        system = await (system as Promise<unknown>);
+      } catch (e) {
+        console.error(`System factory promise rejected for ${systemFolderPath}:`, e);
+        return null;
+      }
+    }
+
     if (!system || typeof system !== "object") {
       console.error(
         `System bundle for ${systemFolderPath} does not export a 'system' object. ` +

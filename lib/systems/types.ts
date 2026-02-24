@@ -7,9 +7,9 @@
 /** Trait definition — represents character capabilities (proficiency, expertise, racial traits) */
 export interface TraitDefinition {
   /** Trait name (e.g., "Darkvision", "Lucky") */
-  name: string;
+  $name: string;
   /** Optional description of the trait */
-  description?: string;
+  $contents?: string;
   /** Whether this trait has mechanical effects */
   mechanical?: boolean;
   /** Optional effect function applied to a context */
@@ -70,7 +70,7 @@ export interface SystemConfig {
   name: string;
   /**
    * Core attributes — may be simple strings (auto-expanded) or full AttributeDefinition objects.
-   * Strings are automatically expanded into AttributeDefinition with `name` set.
+   * Strings are automatically expanded into AttributeDefinition with `$name` set.
    */
   attributes: Array<string | AttributeDefinition>;
   /** Entity type configurations */
@@ -81,8 +81,8 @@ export interface SystemConfig {
   features?: Partial<FeatureSystemConfig>;
   /** Spellcasting system configuration */
   spellcasting?: Partial<SpellcastingSystemConfig>;
-  /** Conditions system configuration or array of conditions */
-  conditions?: Partial<ConditionsSystemConfig> | ConditionDefinition[];
+  /** Condition definitions */
+  conditions?: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
 }
@@ -91,13 +91,13 @@ export interface SystemConfig {
 /** Attribute definition */
 export interface AttributeDefinition {
   /** Attribute identifier (e.g., "strength", "intelligence") */
-  name: string;
+  $name: string;
   /** Subtitle with associated skills or special description */
   subtitle?: string;
   /** Abbreviated form (e.g., "STR", "INT") */
   alias?: string;
   /** Description in markdown format */
-  description?: string;
+  $contents?: string;
   /** Custom properties for tables/cards */
   [key: string]: unknown;
 }
@@ -106,10 +106,8 @@ export interface AttributeDefinition {
 export interface RPGSystem {
   /** System name (e.g., "D&D 5e", "Fate Core") */
   name: string;
-  /** Core attributes — simple string array for backward compatibility */
-  attributes: string[];
-  /** Detailed attribute definitions with descriptions (optional, for enhanced display) */
-  attributeDefinitions?: AttributeDefinition[];
+  /** Attribute definitions — always full objects, strings are normalized at build time */
+  attributes: AttributeDefinition[];
   /** Entity type definitions (character, monster, item, etc.) */
   entities: Record<string, EntityTypeDef>;
   /** Skill definitions with attribute associations */
@@ -120,8 +118,8 @@ export interface RPGSystem {
   features: FeatureSystemConfig;
   /** Spellcasting system configuration */
   spellcasting: SpellcastingSystemConfig;
-  /** Conditions system configuration */
-  conditions: ConditionsSystemConfig;
+  /** Condition definitions */
+  conditions: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
 }
@@ -139,9 +137,9 @@ export interface EntityTypeDef {
 /** Feature definition for default entity features in system definitions */
 export interface Feature {
   /** Feature name */
-  name: string;
+  $name: string;
   /** Feature description */
-  description?: string;
+  $contents?: string;
   /** Feature type identifier (e.g., "action", "bonus_action", "reaction") */
   type?: string;
   /** Whether this feature should be displayed in detail or as a badge with hover details */
@@ -181,13 +179,13 @@ export interface ExpressionDef {
 /** Skill definition */
 export interface SkillDefinition {
   /** Skill display name */
-  name: string;
+  $name: string;
   /** Associated attribute identifier */
   attribute: string;
   /** Optional subtitle describing the skill */
   subtitle?: string;
   /** Optional description of the skill */
-  description?: string;
+  $contents?: string;
   /** Custom properties for tables/cards */
   [key: string]: unknown;
 }
@@ -271,17 +269,13 @@ export interface SpellcastingSystemConfig {
 /** Condition definition */
 export interface ConditionDefinition {
   /** Condition identifier (e.g., "blinded", "charmed") */
-  name: string;
+  $name: string;
   /** Optional icon or emoji for the condition */
   icon?: string;
   /** Brief description of the condition's effect */
-  description?: string;
+  $contents?: string;
   /** Custom properties for tables/cards */
   [key: string]: unknown;
 }
 
-/** Conditions system configuration */
-export interface ConditionsSystemConfig {
-  /** Condition definitions */
-  conditions: ConditionDefinition[];
-}
+

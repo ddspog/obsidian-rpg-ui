@@ -17,18 +17,18 @@ describe("evaluateSystemBundle", () => {
     return `(()=>{__system_module={"system":${json}};})();`;
   }
 
-  it("should return null for an empty bundle", () => {
-    const result = evaluateSystemBundle("", "systems/test");
+  it("should return null for an empty bundle", async () => {
+    const result = await evaluateSystemBundle("", "systems/test");
     expect(result).toBeNull();
   });
 
-  it("should return null when bundle does not export 'system'", () => {
+  it("should return null when bundle does not export 'system'", async () => {
     const bundle = `(()=>{ __system_module = {}; })();`;
-    const result = evaluateSystemBundle(bundle, "systems/test");
+    const result = await evaluateSystemBundle(bundle, "systems/test");
     expect(result).toBeNull();
   });
 
-  it("should return the system object when 'system' is exported", () => {
+  it("should return the system object when 'system' is exported", async () => {
     const systemObj = {
       name: "Test System",
       attributes: ["str"],
@@ -39,26 +39,26 @@ describe("evaluateSystemBundle", () => {
       conditions: { conditions: [] },
     };
     const bundle = makeBundleWithSystem(systemObj);
-    const result = evaluateSystemBundle(bundle, "systems/test");
+    const result = await evaluateSystemBundle(bundle, "systems/test");
     expect(result).not.toBeNull();
     expect(result!.name).toBe("Test System");
     expect(result!.attributes).toEqual(["str"]);
   });
 
-  it("should return null when bundle throws during evaluation", () => {
+  it("should return null when bundle throws during evaluation", async () => {
     const bundle = `throw new Error("intentional error");`;
-    const result = evaluateSystemBundle(bundle, "systems/test");
+    const result = await evaluateSystemBundle(bundle, "systems/test");
     expect(result).toBeNull();
   });
 
-  it("should return null when 'system' export is not an object", () => {
+  it("should return null when 'system' export is not an object", async () => {
     // system is a string instead of an RPGSystem object
     const bundle = `(()=>{ __system_module = { system: "not-an-object" }; })();`;
-    const result = evaluateSystemBundle(bundle, "systems/test");
+    const result = await evaluateSystemBundle(bundle, "systems/test");
     expect(result).toBeNull();
   });
 
-  it("should handle system objects with a Map-like expressions field", () => {
+  it("should handle system objects with a Map-like expressions field", async () => {
     // Real CreateSystem returns expressions as a Map, but in JSON it becomes {}
     // In this test we verify the evaluator returns whatever the bundle produces
     const systemObj = {
@@ -71,7 +71,7 @@ describe("evaluateSystemBundle", () => {
       conditions: { conditions: [] },
     };
     const bundle = makeBundleWithSystem(systemObj);
-    const result = evaluateSystemBundle(bundle, "systems/dnd5e");
+    const result = await evaluateSystemBundle(bundle, "systems/dnd5e");
     expect(result).not.toBeNull();
     expect(result!.name).toBe("D&D 5e");
     expect(result!.attributes).toHaveLength(2);

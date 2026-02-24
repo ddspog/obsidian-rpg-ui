@@ -30,17 +30,17 @@
 
 /** Attribute definition */
 export interface AttributeDefinition {
-  name: string;
+  $name: string;
   subtitle?: string;
   alias?: string;
-  description?: string;
+  $contents?: string;
   [key: string]: unknown;
 }
 
 /** Trait definition — represents character capabilities */
 export interface TraitDefinition {
-  name: string;
-  description?: string;
+  $name: string;
+  $contents?: string;
   mechanical?: boolean;
   effect?: (context: Record<string, unknown>) => void;
 }
@@ -60,6 +60,16 @@ export type BlockPropSchema =
       required?: boolean;
       description?: string;
     };
+
+    /**
+     * Create an entity definition. Accepts either a plain `EntityConfig` or a
+     * factory function which receives `{ wiki }` and returns an `EntityConfig`
+     * (or a Promise thereof). Returned value is consumed by `CreateSystem` which
+     * will resolve any factories before building the system.
+     */
+    export declare function CreateEntity(
+      cfg: EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>),
+    ): EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>);
 
 /**
  * Block definition — registers a React component for an `rpg entity.<blockName>`
@@ -121,18 +131,18 @@ export interface EntityConfig {
 
 /** Simple feature entry used in entity default features */
 export interface FeatureEntry {
-  name: string;
-  description?: string;
+  $name: string;
+  $contents?: string;
   type?: string;
   detailed?: boolean;
 }
 
 /** Skill definition */
 export interface SkillDefinition {
-  name: string;
+  $name: string;
   attribute: string;
   subtitle?: string;
-  description?: string;
+  $contents?: string;
   [key: string]: unknown;
 }
 
@@ -185,15 +195,10 @@ export interface SpellcastingSystemConfig {
 
 /** Condition definition */
 export interface ConditionDefinition {
-  name: string;
+  $name: string;
   icon?: string;
-  description?: string;
+  $contents?: string;
   [key: string]: unknown;
-}
-
-/** Conditions system configuration */
-export interface ConditionsSystemConfig {
-  conditions: ConditionDefinition[];
 }
 
 // ─── User-facing CreateSystem config ─────────────────────────────────────────
@@ -206,8 +211,51 @@ export interface SystemConfig {
   skills?: SkillDefinition[];
   features?: Partial<FeatureSystemConfig>;
   spellcasting?: Partial<SpellcastingSystemConfig>;
-  conditions?: Partial<ConditionsSystemConfig> | ConditionDefinition[];
+  conditions?: ConditionDefinition[];
   traits?: TraitDefinition[];
+}
+
+/** Result of fetching a file from the vault — includes frontmatter and contents */
+export interface WikiFileResult {
+  [key: string]: any;
+  /** Vault-relative path to the file. */
+  $path: string;
+  /** Bare file name used to reference the file (typically without extension). */
+  $name: string;
+  /** Body text that follows the frontmatter block. */
+  $contents: string;
+  /** Deduplicated list of tags extracted from frontmatter, normalised to `#tag` form. */
+  $tags: string[];
+  /** List of aliases extracted from frontmatter `alias` / `aliases` keys. */
+  $aliases: string[];
+}
+
+/** Function to fetch a single file by name from the vault */
+export interface WikiFileFunction {
+  (filename: string): Promise<WikiFileResult>;
+}
+
+/** Function to fetch all files in a folder from the vault */
+export interface WikiFolderFunction {
+  (folderPath: string): Promise<WikiFileResult[]>;
+}
+
+/**
+ * Wiki fixture providing file and folder access utilities.
+ *
+ * @example
+ * ```ts
+ * CreateSystem(({ wiki }) => ({
+ *   skills: wiki.folder("systems/dnd5e/skills"),
+ *   conditions: [wiki.file("Poisoned")]
+ * }))
+ * ```
+ */
+export interface Wiki {
+  /** Fetch a single file by name from the vault */
+  file: WikiFileFunction;
+  /** Fetch all files in a folder from the vault */
+  folder: WikiFolderFunction;
 }
 
 // ─── Factory function ─────────────────────────────────────────────────────────
@@ -215,18 +263,18 @@ export interface SystemConfig {
 /**
  * Create a type-safe RPGSystem from a SystemConfig.
  *
- * @param config - System configuration
+ * @param configFn - Function that receives wiki utilities and returns system configuration
  * @returns A fully realized RPGSystem ready for use by the plugin
  *
  * @example
  * ```ts
  * import { CreateSystem } from "rpg-ui-toolkit";
  *
- * export const system = CreateSystem({
+ * export const system = CreateSystem(({ wiki }) => ({
  *   name: "D&D 5e",
  *   attributes: [
- *     { name: "strength", alias: "STR" },
- *     { name: "dexterity", alias: "DEX" },
+ *     { $name: "strength", alias: "STR" },
+ *     { $name: "dexterity", alias: "DEX" },
  *   ],
  *   entities: {
  *     character: {
@@ -240,18 +288,17 @@ export interface SystemConfig {
  *     },
  *   },
  *   skills: [{ name: "Acrobatics", attribute: "dexterity" }],
- * });
+ *   // Use wiki to load data from vault files
+ *   conditions: [wiki.file("conditions/Poisoned")],
+ * }));
  * ```
  */
-export declare function CreateSystem(config: SystemConfig): {
+export declare function CreateSystem(
+  configFn: (context: { wiki: Wiki }) => SystemConfig | Promise<SystemConfig>,
+): Promise<{
   name: string;
-  /**
-   * Attributes for this system.
-   * - String entries (e.g. `"strength"`) are automatically expanded at runtime
-   *   into full `AttributeDefinition` objects with just `name` set.
-   * - Full `AttributeDefinition` objects are passed through unchanged.
-   */
-  attributes: Array<string | AttributeDefinition>;
+  /** Attribute definitions — strings in the config are normalized to full objects at build time */
+  attributes: AttributeDefinition[];
   entities: Record<
     string,
     {
@@ -268,6 +315,6 @@ export declare function CreateSystem(config: SystemConfig): {
   skills: SkillDefinition[];
   features: FeatureSystemConfig;
   spellcasting: SpellcastingSystemConfig;
-  conditions: ConditionsSystemConfig;
+  conditions: ConditionDefinition[];
   traits?: TraitDefinition[];
-};
+}>;
