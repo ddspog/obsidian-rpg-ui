@@ -164,8 +164,9 @@ function buildEntity(
   const frontmatter: FrontmatterFieldDef[] = (entityConfig.fields ?? []).map(normalizeField);
   const features = entityConfig.features ?? [];
   const blocks = entityConfig.blocks as Record<string, BlockDefinition> | undefined;
+  const xpTable = entityConfig.xpTable;
 
-  const entityDef: EntityTypeDef = { frontmatter, features, blocks };
+  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
   for (const [fnName, fn] of Object.entries(entityConfig.computed ?? {})) {
@@ -256,6 +257,7 @@ function normalizeSpellcasting(spellcasting?: Partial<SpellcastingSystemConfig>)
     spellElements: spellcasting?.spellElements,
     providers: spellcasting?.providers ?? [],
     collectors: spellcasting?.collectors ?? [],
+    spellcastTable: spellcasting?.spellcastTable,
   };
 }
 

@@ -13,6 +13,8 @@ import * as featureTypes from "./data/feature-types";
 import * as spellCircles from "./data/spell-circles";
 import * as spellLists from "./data/spell-lists";
 import * as conditions from "./data/conditions";
+import * as xpTableData from "./data/xp-table";
+import * as spellcastTableData from "./data/spellcast-table";
 
 /**
  * Build the D&D 5e system from data files using CreateSystem
@@ -27,6 +29,7 @@ export function buildDND5ESystem(): RPGSystem {
           { name: "proficiency_bonus", type: "number", default: 2 },
           { name: "level", type: "number", default: 1 },
         ],
+        xpTable: xpTableData.default,
         features: [
           { $name: "Dash", type: "action", $contents: "Double your speed for the current turn." },
           {
@@ -120,6 +123,7 @@ export function buildDND5ESystem(): RPGSystem {
       lists: spellLists.default,
       providers: ["class", "subclass"],
       collectors: ["character", "monster"],
+      spellcastTable: spellcastTableData.default,
     },
     conditions: conditions.default,
   });
