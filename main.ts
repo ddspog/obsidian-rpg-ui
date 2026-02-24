@@ -1,4 +1,4 @@
-import { Plugin, MarkdownPostProcessorContext, MarkdownRenderer, Notice } from "obsidian";
+import { Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, parseYaml } from "obsidian";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import {
@@ -15,6 +15,8 @@ import { extractMeta } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { settingsStore } from "lib/services/settings-store";
 import { initEsbuild } from "lib/systems/ts-loader";
+import * as React from "react";
+import * as ReactDOM from "react-dom/client";
 
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
@@ -99,10 +101,25 @@ export default class DndUIToolkitPlugin extends Plugin {
       const view = viewRegistry.get(meta);
       if (view) {
         view.register(source, el, ctx);
-      } else {
-        console.error(`DnD UI Toolkit: Unknown rpg block type: ${meta}`);
-        el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
+        return;
       }
+
+      // Handle entity blocks: meta of the form "entityType.blockName"
+      const dotIndex = meta.indexOf(".");
+      if (dotIndex > 0) {
+        const entityType = meta.slice(0, dotIndex);
+        const blockName = meta.slice(dotIndex + 1);
+        const system = registry.getSystemForFile(ctx.sourcePath);
+        const blockDef = system.entities[entityType]?.blocks?.[blockName];
+        if (blockDef) {
+          const child = new EntityBlockRenderChild(el, source, blockDef.component);
+          ctx.addChild(child);
+          return;
+        }
+      }
+
+      console.error(`DnD UI Toolkit: Unknown rpg block type: ${meta}`);
+      el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
     });
 
     for (const [oldType, meta] of Object.entries(LEGACY_MAPPINGS)) {
@@ -213,5 +230,54 @@ export default class DndUIToolkitPlugin extends Plugin {
         systemFolderPath,
       };
     });
+  }
+}
+
+/**
+ * MarkdownRenderChild that renders an entity block component via React.
+ * Parses the YAML source, calls the block's component function, and mounts
+ * the result into the container element. Cleans up the React root on unload.
+ */
+class EntityBlockRenderChild extends MarkdownRenderChild {
+  private source: string;
+  private component: (props: Record<string, unknown>) => unknown;
+  private reactRoot: ReactDOM.Root | null = null;
+
+  constructor(
+    el: HTMLElement,
+    source: string,
+    component: (props: Record<string, unknown>) => unknown,
+  ) {
+    super(el);
+    this.source = source;
+    this.component = component;
+  }
+
+  onload() {
+    try {
+      const parsed = parseYaml(this.source);
+      const props: Record<string, unknown> =
+        parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : {};
+      this.reactRoot = ReactDOM.createRoot(this.containerEl);
+      // component signature matches React.FC – cast needed because BlockDefinition uses `unknown` return
+      const Comp = this.component as React.FC<Record<string, unknown>>;
+      this.reactRoot.render(React.createElement(Comp, props));
+    } catch (err) {
+      console.error("DnD UI Toolkit: Error rendering entity block:", err);
+      this.containerEl.innerHTML = `<div class="notice">Error rendering block: ${err}</div>`;
+    }
+  }
+
+  onunload() {
+    if (this.reactRoot) {
+      try {
+        this.reactRoot.unmount();
+      } catch (e) {
+        console.error("DnD UI Toolkit: Error unmounting entity block:", e);
+      }
+      this.reactRoot = null;
+    }
   }
 }

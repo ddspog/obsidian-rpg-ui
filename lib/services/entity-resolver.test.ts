@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { EntityReference, EntityData } from "./entity-resolver";
+import { EntityResolver } from "./entity-resolver";
 
 // Mock Obsidian types
 const mockApp = {
@@ -16,6 +17,48 @@ const mockApp = {
     getFileCache: vi.fn(),
   },
 };
+
+// Mock TFile so instanceof checks work
+vi.mock("obsidian", () => {
+  class TFile {}
+  class CachedMetadata {}
+  return { TFile, CachedMetadata };
+});
+
+// Mock system registry for dynamic block extraction tests
+const mockSystemWithBlocks = {
+  name: "Test System",
+  attributes: [],
+  entities: {
+    character: {
+      frontmatter: [],
+      blocks: {
+        header: { component: (props: Record<string, unknown>) => props },
+        health: { component: (props: Record<string, unknown>) => props },
+      },
+    },
+    statblock: {
+      frontmatter: [],
+      blocks: {
+        header: { component: (props: Record<string, unknown>) => props },
+        traits: { component: (props: Record<string, unknown>) => props },
+      },
+    },
+  },
+  skills: [],
+  expressions: new Map(),
+  features: { categories: [], providers: [], collectors: [] },
+  spellcasting: { circles: [], providers: [], collectors: [] },
+  conditions: [],
+};
+
+vi.mock("lib/systems/registry", () => ({
+  SystemRegistry: {
+    getInstance: vi.fn(() => ({
+      getSystemForFile: vi.fn(() => mockSystemWithBlocks),
+    })),
+  },
+}));
 
 describe("Entity Resolver", () => {
   describe("File path resolution", () => {
@@ -193,6 +236,84 @@ describe("Entity Resolver", () => {
       expect(refs).toHaveLength(3);
       expect(refs[0].file).toBe("Characters/Elara.md");
       expect(refs[2].count).toBe(3);
+    });
+  });
+
+  describe("Dynamic entity block extraction", () => {
+    let resolver: EntityResolver;
+
+    beforeEach(() => {
+      resolver = new EntityResolver(mockApp as any);
+    });
+
+    it("should extract entity blocks from note content using system definition", async () => {
+      const noteContent = `# Aria
+
+\`\`\`rpg character.header
+name: Aria
+race: Elf
+\`\`\`
+
+\`\`\`rpg character.health
+hp: 45
+\`\`\`
+`;
+      const mockFile = { basename: "Aria", path: "Characters/Aria.md" };
+      mockApp.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+      mockApp.vault.read.mockResolvedValue(noteContent);
+      mockApp.metadataCache.getFileCache.mockReturnValue(null);
+
+      // Make TFile instanceof check pass by using the actual TFile from our mock
+      const { TFile } = await import("obsidian");
+      Object.setPrototypeOf(mockFile, TFile.prototype);
+
+      const entityData = await resolver.resolveEntity({ file: "Characters/Aria.md" });
+
+      expect(entityData.exists).toBe(true);
+      expect(entityData.codeBlocks.has("character.header")).toBe(true);
+      expect(entityData.codeBlocks.get("character.header")?.[0]).toContain("name: Aria");
+      expect(entityData.codeBlocks.has("character.health")).toBe(true);
+      expect(entityData.codeBlocks.get("character.health")?.[0]).toContain("hp: 45");
+    });
+
+    it("should still extract legacy block types alongside entity blocks", async () => {
+      const noteContent = `\`\`\`attributes
+strength: 16
+\`\`\`
+
+\`\`\`rpg character.header
+name: Aria
+\`\`\`
+`;
+      const mockFile = { basename: "Aria", path: "Characters/Aria.md" };
+      mockApp.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+      mockApp.vault.read.mockResolvedValue(noteContent);
+      mockApp.metadataCache.getFileCache.mockReturnValue(null);
+
+      const { TFile } = await import("obsidian");
+      Object.setPrototypeOf(mockFile, TFile.prototype);
+
+      const entityData = await resolver.resolveEntity({ file: "Characters/Aria.md" });
+
+      expect(entityData.codeBlocks.has("attributes")).toBe(true);
+      expect(entityData.codeBlocks.has("character.header")).toBe(true);
+    });
+
+    it("should return empty codeBlocks for entity blocks not present in content", async () => {
+      const noteContent = `# Empty Note\nNo code blocks here.`;
+      const mockFile = { basename: "Empty", path: "Characters/Empty.md" };
+      mockApp.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+      mockApp.vault.read.mockResolvedValue(noteContent);
+      mockApp.metadataCache.getFileCache.mockReturnValue(null);
+
+      const { TFile } = await import("obsidian");
+      Object.setPrototypeOf(mockFile, TFile.prototype);
+
+      const entityData = await resolver.resolveEntity({ file: "Characters/Empty.md" });
+
+      expect(entityData.codeBlocks.has("character.header")).toBe(false);
+      expect(entityData.codeBlocks.has("character.health")).toBe(false);
+      expect(entityData.codeBlocks.size).toBe(0);
     });
   });
 });
