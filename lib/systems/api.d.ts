@@ -232,7 +232,7 @@ export interface ConditionDefinition {
 export interface SystemConfig {
   name: string;
   attributes: Array<string | AttributeDefinition>;
-  entities?: Record<string, EntityConfig>;
+  entities?: Record<string, EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>)>;
   skills?: SkillDefinition[];
   features?: Partial<FeatureSystemConfig>;
   spellcasting?: Partial<SpellcastingSystemConfig>;
