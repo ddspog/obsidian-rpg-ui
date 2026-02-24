@@ -3,10 +3,11 @@
  * Manages folder-path → RPG system mappings. Caches parsed systems.
  */
 
-import { Vault } from "obsidian";
+import { Vault, TFile } from "obsidian";
 import { DND5E_SYSTEM } from "./dnd5e";
 import { RPGSystem } from "./types";
 import { loadSystemFromTypeScript } from "./ts-loader";
+import { loadMarkdownSystem } from "./parser";
 
 export class SystemRegistry {
   private static instance: SystemRegistry;
@@ -75,7 +76,9 @@ export class SystemRegistry {
     if (this.systemCache.has(systemFolderPath)) return this.systemCache.get(systemFolderPath)!;
     if (this.isLoading.has(systemFolderPath)) return this.isLoading.get(systemFolderPath)!;
 
-    const loadPromise = loadSystemFromTypeScript(this.vault, systemFolderPath);
+    const loadPromise = systemFolderPath.endsWith(".md")
+      ? this.loadMarkdownSystemFromVault(systemFolderPath)
+      : loadSystemFromTypeScript(this.vault, systemFolderPath);
     this.isLoading.set(systemFolderPath, loadPromise);
     try {
       const system = await loadPromise;
@@ -84,6 +87,25 @@ export class SystemRegistry {
     } finally {
       this.isLoading.delete(systemFolderPath);
     }
+  }
+
+  /** Read a vault file by path and return its text content, or null if not found. */
+  private async readVaultFile(path: string): Promise<string | null> {
+    if (!this.vault) return null;
+    const file = this.vault.getAbstractFileByPath(path);
+    if (!file || !(file instanceof TFile)) return null;
+    try {
+      return await this.vault.cachedRead(file);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Load a markdown system file from the vault. */
+  private async loadMarkdownSystemFromVault(filePath: string): Promise<RPGSystem | null> {
+    const content = await this.readVaultFile(filePath);
+    if (!content) return null;
+    return loadMarkdownSystem(content, (path) => this.readVaultFile(path));
   }
 
   public invalidateSystem(systemFolderPath: string): void {
