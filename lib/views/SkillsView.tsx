@@ -42,7 +42,7 @@ export class SkillsView extends BaseView {
 
     // Use system's skill list instead of hardcoded Skills
     for (const skill of system.skills) {
-      const skillLabel = (skill.name ?? (skill as any).label ?? "").toString();
+      const skillLabel = (skill.$name ?? (skill as any).label ?? "").toString();
 
       const isHalfProficient =
         skillsBlock.half_proficiencies.find((x) => {

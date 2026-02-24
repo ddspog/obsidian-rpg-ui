@@ -17,8 +17,8 @@ export async function resolveData(
   ctx: MarkdownPostProcessorContext
 ): Promise<DataRecord[] | null> {
   const system = SystemRegistry.getInstance().getSystemForFile(ctx.sourcePath);
-  if (system && dataName === "attributes" && system.attributeDefinitions) {
-    return system.attributeDefinitions as DataRecord[];
+  if (system && dataName === "attributes") {
+    return system.attributes as DataRecord[];
   }
   return null;
 }
@@ -41,16 +41,16 @@ export async function resolveSystemData(
     if (parts.length === 1) return system.skills;
     if (parts.length === 2) {
       const skillName = parts[1].toLowerCase();
-      const skill = system.skills.find((s) => s.name.toLowerCase() === skillName);
+      const skill = system.skills.find((s) => s.$name.toLowerCase() === skillName);
       return skill ? [skill] : null;
     }
   }
 
   if (rootKey === "attributes") {
-    if (parts.length === 1) return system.attributeDefinitions || [];
+    if (parts.length === 1) return system.attributes;
     if (parts.length === 2) {
       const attrName = parts[1].toLowerCase();
-      const attr = system.attributeDefinitions?.find((a) => a.name.toLowerCase() === attrName);
+      const attr = system.attributes.find((a) => a.$name.toLowerCase() === attrName);
       return attr ? [attr] : null;
     }
   }

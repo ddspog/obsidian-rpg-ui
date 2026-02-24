@@ -22,6 +22,7 @@ export default defineConfig({
     alias: {
       "@": "/lib",
       "@lib": "/lib",
+      obsidian: new URL("./scripts/obsidian-shim.js", import.meta.url).pathname,
     },
   },
 });
