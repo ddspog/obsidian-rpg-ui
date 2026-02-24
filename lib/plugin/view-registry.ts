@@ -17,6 +17,13 @@ import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { SessionLogView } from "lib/views/SessionLogView";
 import { ShowView } from "lib/views/ShowView";
+import {
+  SystemView,
+  SystemAttributesView,
+  SystemSkillsView,
+  SystemExpressionsView,
+  SystemConditionsView,
+} from "lib/views/SystemViews";
 import { KeyValueStore } from "lib/services/kv/kv";
 
 /** Legacy block type → rpg meta key mappings for backward compatibility. */
@@ -53,6 +60,13 @@ export function createViews(app: App, kv: KeyValueStore): BaseView[] {
     new InventoryView(app),
     new FeaturesView(app),
     new ShowView(app),
+
+    // System definition blocks (read-only display)
+    new SystemView(app),
+    new SystemAttributesView(app),
+    new SystemSkillsView(app),
+    new SystemExpressionsView(app),
+    new SystemConditionsView(app),
   ];
 }
 
