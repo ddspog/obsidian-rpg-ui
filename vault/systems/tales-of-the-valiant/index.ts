@@ -26,6 +26,8 @@
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
 import { ConditionDefinition, CreateSystem, CreateEntity, SkillDefinition } from "rpg-ui-toolkit";
 import attributes from './attributes';
+import xpTable from './xp-table';
+import spellcastTable from './spellcast-table';
 
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
@@ -46,6 +48,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
           { name: "proficiency_bonus", type: "number", default: 2 },
           { name: "level", type: "number", default: 1 },
         ],
+        xpTable,
         features: [
           { $name: "Dash", type: "action", $contents: "Double your speed for the current turn." },
           {
@@ -174,6 +177,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
     ],
     providers: ["class", "subclass"],
     collectors: ["character", "monster"],
+    spellcastTable,
   },
 
   // ── Traits ────────────────────────────────────────────────────────────────────

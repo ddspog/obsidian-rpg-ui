@@ -14,7 +14,7 @@
     "lib": ["DOM", "ES5", "ES6", "ES7"],
     "jsx": "react-jsx",
      "paths": {
-       "rpg-ui-toolkit": ["./api.d.ts"]
+       "rpg-ui-toolkit": ["./lib/systems/api.d.ts"]
      }
   },
   "include": ["**/*.ts", "lib/views/ReactMarkdown.tsx"],
