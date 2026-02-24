@@ -31,6 +31,13 @@ export interface EntityConfig {
    */
   xpTable?: number[];
   /**
+   * Spell slot progression table for this entity.
+   * Each entry is an array of slot counts per spell level at a given character level.
+   * Index 0 = level 1, index 1 = level 2, etc.
+   * Example: `[[2], [3], [4, 2]]` means level 1: 2×1st, level 2: 3×1st, level 3: 4×1st + 2×2nd.
+   */
+  spellcastTable?: number[][];
+  /**
    * Computed functions — these become `ExpressionDef` entries in the system.
    * The function receives a context record and returns a value.
    */
@@ -69,6 +76,17 @@ export interface BlockDefinition {
   component: (props: Record<string, unknown>) => unknown;
 }
 
+/** Caster type definition — describes a spellcasting progression style */
+export interface CasterTypeDefinition {
+  /** Display name for this caster type (e.g., "Full Caster", "Half Caster") */
+  name: string;
+  /**
+   * Converts a character level into a spellcaster level for this caster type.
+   * For example, a half-caster divides the character level by 2.
+   */
+  levelConversion: (characterLevel: number) => number;
+}
+
 /** User-facing configuration shape for CreateSystem */
 export interface SystemConfig {
   /** System name (e.g., "D&D 5e", "Fate Core") */
@@ -90,6 +108,11 @@ export interface SystemConfig {
   conditions?: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
+  /**
+   * Caster type definitions — describe spellcasting progression styles (full, half, third, etc.).
+   * Each key is a caster type identifier, and the value defines the name and level conversion.
+   */
+  casterTypes?: Record<string, CasterTypeDefinition>;
 }
 
 
@@ -127,6 +150,11 @@ export interface RPGSystem {
   conditions: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
+  /**
+   * Caster type definitions — describe spellcasting progression styles.
+   * Carried through from SystemConfig.casterTypes.
+   */
+  casterTypes?: Record<string, CasterTypeDefinition>;
 }
 
 /** Entity type definition — defines frontmatter fields and default features for an entity type */
@@ -140,6 +168,11 @@ export interface EntityTypeDef {
    * Carried through from EntityConfig.xpTable.
    */
   xpTable?: number[];
+  /**
+   * Spell slot progression table for this entity.
+   * Carried through from EntityConfig.spellcastTable.
+   */
+  spellcastTable?: number[][];
   /** Block component definitions for `rpg entity.<name>` code blocks */
   blocks?: Record<string, BlockDefinition>;
 }
