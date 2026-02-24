@@ -118,6 +118,11 @@ export interface EntityConfig {
   >;
   features?: FeatureEntry[];
   /**
+   * Experience point thresholds per level (index 0 = XP needed to reach level 1, etc.).
+   * Used to calculate the current level from total XP and to track level-up progress.
+   */
+  xpTable?: number[];
+  /**
    * Computed expressions — functions that calculate values from entity
    * frontmatter data (e.g., ability modifiers, saving throws).
    */
@@ -135,6 +140,8 @@ export interface FeatureEntry {
   $contents?: string;
   type?: string;
   detailed?: boolean;
+  /** Sub-features (aspects) that further detail this feature */
+  aspects?: FeatureEntry[];
 }
 
 /** Skill definition */
@@ -182,6 +189,18 @@ export interface SpellSchoolDefinition {
   icon?: string;
 }
 
+/** Spell slot distribution for a single caster level */
+export interface SpellSlotDistribution {
+  /** Caster level (1–20) */
+  level: number;
+  /**
+   * Number of spell slots per spell circle at this caster level.
+   * Index 0 = 1st-level spell slots, index 1 = 2nd-level, etc.
+   * Cantrips are unlimited and are not included here.
+   */
+  slots: number[];
+}
+
 /** Spellcasting system configuration */
 export interface SpellcastingSystemConfig {
   circles: SpellCircleDefinition[];
@@ -191,6 +210,12 @@ export interface SpellcastingSystemConfig {
   spellElements?: string[];
   providers: string[];
   collectors: string[];
+  /**
+   * Default spell slot progression table for full casters in this system.
+   * Each entry defines how many spell slots are available per circle at a given caster level.
+   * Specific classes may override this with their own table.
+   */
+  spellcastTable?: SpellSlotDistribution[];
 }
 
 /** Condition definition */

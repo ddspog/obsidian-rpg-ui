@@ -26,6 +26,11 @@ export interface EntityConfig {
   /** Default features available to all entities of this type */
   features?: Feature[];
   /**
+   * Experience point thresholds per level (index 0 = XP needed to reach level 1, etc.).
+   * Used to calculate the current level from total XP and to track level-up progress.
+   */
+  xpTable?: number[];
+  /**
    * Computed functions — these become `ExpressionDef` entries in the system.
    * The function receives a context record and returns a value.
    */
@@ -130,6 +135,11 @@ export interface EntityTypeDef {
   frontmatter: FrontmatterFieldDef[];
   /** Default features available to all entities of this type */
   features?: Feature[];
+  /**
+   * Experience point thresholds per level (index 0 = XP to reach level 1, etc.).
+   * Carried through from EntityConfig.xpTable.
+   */
+  xpTable?: number[];
   /** Block component definitions for `rpg entity.<name>` code blocks */
   blocks?: Record<string, BlockDefinition>;
 }
@@ -144,6 +154,8 @@ export interface Feature {
   type?: string;
   /** Whether this feature should be displayed in detail or as a badge with hover details */
   detailed?: boolean;
+  /** Sub-features (aspects) that further detail this feature */
+  aspects?: Feature[];
 }
 
 /** Frontmatter field definition */
@@ -248,6 +260,18 @@ export type SpellTagDefinition = string;
 /** Spell element definition (e.g., Casting, Range, Area) */
 export type SpellElementDefinition = string;
 
+/** Spell slot distribution for a single caster level */
+export interface SpellSlotDistribution {
+  /** Caster level (1–20) */
+  level: number;
+  /**
+   * Number of spell slots per spell circle at this caster level.
+   * Index 0 = 1st-level spell slots, index 1 = 2nd-level, etc.
+   * Cantrips are unlimited and are not included here.
+   */
+  slots: number[];
+}
+
 /** Spellcasting system configuration */
 export interface SpellcastingSystemConfig {
   /** Spell circles/levels (cantrip, 1st, 2nd, etc.) */
@@ -264,6 +288,12 @@ export interface SpellcastingSystemConfig {
   providers: string[];
   /** Spellcasting collector types (character, monster, etc.) */
   collectors: string[];
+  /**
+   * Default spell slot progression table for full casters in this system.
+   * Each entry defines how many spell slots are available per circle at a given caster level.
+   * Specific classes may override this with their own table.
+   */
+  spellcastTable?: SpellSlotDistribution[];
 }
 
 /** Condition definition */
