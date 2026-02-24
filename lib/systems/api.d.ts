@@ -300,6 +300,24 @@ export interface Wiki {
   folder: WikiFolderFunction;
 }
 
+// ─── UI Components ───────────────────────────────────────────────────────────
+
+export {
+  CharacterHeaderBlock,
+  HealthBlock,
+  FeaturesCollectorBlock,
+  SpellsCollectorBlock,
+  ClassFeaturesBlock,
+  SpellInfoBlock,
+  SpellEffectsBlock,
+  FeatureEntryBlock,
+  FeatureAspectsBlock,
+  StatblockHeaderBlock,
+  StatblockTraitsBlock,
+  StatblockAttributesBlock,
+  StatblockFeaturesBlock,
+} from "../ui";
+
 // ─── Factory function ─────────────────────────────────────────────────────────
 
 /**

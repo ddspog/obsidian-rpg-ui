@@ -16,3 +16,19 @@ export type { SpellsProps, SpellEntry } from "./Spells";
 
 export { Statblock } from "./Statblock";
 export type { StatblockProps } from "./Statblock";
+
+// ─── Entity Block Components ──────────────────────────────────────────────────
+
+export { CharacterHeaderBlock } from "./CharacterHeaderBlock";
+export { HealthBlock } from "./HealthBlock";
+export { FeaturesCollectorBlock } from "./FeaturesCollectorBlock";
+export { SpellsCollectorBlock } from "./SpellsCollectorBlock";
+export { ClassFeaturesBlock } from "./ClassFeaturesBlock";
+export { SpellInfoBlock } from "./SpellInfoBlock";
+export { SpellEffectsBlock } from "./SpellEffectsBlock";
+export { FeatureEntryBlock } from "./FeatureEntryBlock";
+export { FeatureAspectsBlock } from "./FeatureAspectsBlock";
+export { StatblockHeaderBlock } from "./StatblockHeaderBlock";
+export { StatblockTraitsBlock } from "./StatblockTraitsBlock";
+export { StatblockAttributesBlock } from "./StatblockAttributesBlock";
+export { StatblockFeaturesBlock } from "./StatblockFeaturesBlock";

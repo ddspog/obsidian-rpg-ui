@@ -123,7 +123,7 @@ export function buildDND5ESystem(): RPGSystem {
       lists: spellLists.default,
       providers: ["class", "subclass"],
       collectors: ["character", "monster"],
-      spellcastTable: spellcastTableData.default,
+      slots: spellcastTableData.default.map((d) => d.slots),
     },
     conditions: conditions.default,
   });
