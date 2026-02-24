@@ -24,7 +24,25 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { ConditionDefinition, CreateSystem, CreateEntity, SkillDefinition } from "rpg-ui-toolkit";
+import {
+  ConditionDefinition,
+  CreateSystem,
+  CreateEntity,
+  SkillDefinition,
+  CharacterHeaderBlock,
+  HealthBlock,
+  FeaturesCollectorBlock,
+  SpellsCollectorBlock,
+  ClassFeaturesBlock,
+  SpellInfoBlock,
+  SpellEffectsBlock,
+  FeatureEntryBlock,
+  FeatureAspectsBlock,
+  StatblockHeaderBlock,
+  StatblockTraitsBlock,
+  StatblockAttributesBlock,
+  StatblockFeaturesBlock,
+} from "rpg-ui-toolkit";
 import attributes from './attributes';
 import xpTable from './xp-table';
 import spellcastTable from './spellcast-table';
@@ -49,6 +67,12 @@ export const system = CreateSystem(async ({ wiki }) => ({
           { name: "level", type: "number", default: 1 },
         ],
         xpTable,
+        blocks: {
+          header: { component: CharacterHeaderBlock },
+          health: { component: HealthBlock },
+          features: { component: FeaturesCollectorBlock },
+          spells: { component: SpellsCollectorBlock },
+        },
         features: [
           { $name: "Dash", type: "action", $contents: "Double your speed for the current turn." },
           {
@@ -116,7 +140,12 @@ export const system = CreateSystem(async ({ wiki }) => ({
       };
     }),
 
-    class: CreateEntity(({ wiki }: { wiki?: any }) => ({ fields: [{ name: "hit_die", type: "string", default: "d8" }] })),
+    class: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      fields: [{ name: "hit_die", type: "string", default: "d8" }],
+      blocks: {
+        features: { component: ClassFeaturesBlock },
+      },
+    })),
 
     subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({ fields: [{ name: "parent_class", type: "string", default: "" }] })),
 
@@ -136,6 +165,34 @@ export const system = CreateSystem(async ({ wiki }) => ({
         ],
       };
     }),
+
+    spell: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      fields: [
+        { name: "level", type: "number", default: 0 },
+        { name: "school", type: "string", default: "" },
+      ],
+      blocks: {
+        info: { component: SpellInfoBlock },
+        effects: { component: SpellEffectsBlock },
+      },
+    })),
+
+    feature: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      blocks: {
+        feature: { component: FeatureEntryBlock },
+        aspects: { component: FeatureAspectsBlock },
+      },
+    })),
+
+    statblock: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      fields: [{ name: "cr", type: "number", default: 0 }],
+      blocks: {
+        header: { component: StatblockHeaderBlock },
+        traits: { component: StatblockTraitsBlock },
+        attributes: { component: StatblockAttributesBlock },
+        features: { component: StatblockFeaturesBlock },
+      },
+    })),
   },
 
   // ── Features ──────────────────────────────────────────────────────────────────
@@ -178,6 +235,11 @@ export const system = CreateSystem(async ({ wiki }) => ({
     providers: ["class", "subclass"],
     collectors: ["character", "monster"],
     spellcastTable,
+    casters: {
+      full: { name: "Full Caster", levelConversion: (l: number) => l },
+      half: { name: "Half Caster", levelConversion: (l: number) => Math.floor(l / 2) },
+      third: { name: "Third Caster", levelConversion: (l: number) => Math.floor(l / 3) },
+    },
   },
 
   // ── Traits ────────────────────────────────────────────────────────────────────
