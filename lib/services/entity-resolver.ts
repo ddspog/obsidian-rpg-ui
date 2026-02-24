@@ -77,7 +77,7 @@ export class EntityResolver {
     }
     const content = await this.app.vault.read(file);
     const cache = this.app.metadataCache.getFileCache(file);
-    return { name: file.basename, filePath, frontmatter: this.parseFrontmatter(cache), codeBlocks: this.extractCodeBlocks(content), exists: true };
+    return { name: file.basename, filePath, frontmatter: this.parseFrontmatter(cache), codeBlocks: this.extractCodeBlocks(content, filePath), exists: true };
   }
 
   private parseFrontmatter(cache: CachedMetadata | null): Frontmatter {
@@ -85,13 +85,24 @@ export class EntityResolver {
     return Fm.anyIntoFrontMatter(cache.frontmatter);
   }
 
-  private extractCodeBlocks(content: string): Map<string, string[]> {
+  private extractCodeBlocks(content: string, filePath: string): Map<string, string[]> {
     const blocks = new Map<string, string[]>();
-    const blockTypes = ["attributes", "skills", "healthpoints", "stats", "badges", "consumable", "initiative", "spell", "events", "inventory", "features"];
-    for (const blockType of blockTypes) {
+    const legacyBlockTypes = ["attributes", "skills", "healthpoints", "stats", "badges", "consumable", "initiative", "spell", "events", "inventory", "features"];
+    for (const blockType of legacyBlockTypes) {
       const extracted = extractCodeBlocks(content, blockType);
       if (extracted.length > 0) blocks.set(blockType, extracted);
     }
+
+    // Dynamic entity block types from the system definition
+    const system = this.systemRegistry.getSystemForFile(filePath);
+    for (const [entityType, entityDef] of Object.entries(system.entities)) {
+      for (const blockName of Object.keys(entityDef.blocks ?? {})) {
+        const meta = `${entityType}.${blockName}`;
+        const extracted = extractCodeBlocks(content, `rpg ${meta}`);
+        if (extracted.length > 0) blocks.set(meta, extracted);
+      }
+    }
+
     return blocks;
   }
 

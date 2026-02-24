@@ -179,4 +179,50 @@ second: 2
       expect(content).toBe("test: value");
     });
   });
+
+  describe("entity block extraction (rpg entityType.blockName)", () => {
+    it("should extract rpg entity block by dotted meta", () => {
+      const text = `\`\`\`rpg character.header
+name: Aria
+race: Elf
+\`\`\``;
+
+      const blocks = extractCodeBlocks(text, "rpg character.header");
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toBe("name: Aria\nrace: Elf");
+    });
+
+    it("should extract multiple entity blocks of the same type", () => {
+      const text = `\`\`\`rpg statblock.header
+name: Goblin
+\`\`\`
+
+\`\`\`rpg statblock.header
+name: Orc
+\`\`\``;
+
+      const blocks = extractCodeBlocks(text, "rpg statblock.header");
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0]).toBe("name: Goblin");
+      expect(blocks[1]).toBe("name: Orc");
+    });
+
+    it("should not confuse different entity block types", () => {
+      const text = `\`\`\`rpg character.header
+name: Aria
+\`\`\`
+
+\`\`\`rpg character.health
+hp: 45
+\`\`\``;
+
+      const headerBlocks = extractCodeBlocks(text, "rpg character.header");
+      expect(headerBlocks).toHaveLength(1);
+      expect(headerBlocks[0]).toBe("name: Aria");
+
+      const healthBlocks = extractCodeBlocks(text, "rpg character.health");
+      expect(healthBlocks).toHaveLength(1);
+      expect(healthBlocks[0]).toBe("hp: 45");
+    });
+  });
 });
