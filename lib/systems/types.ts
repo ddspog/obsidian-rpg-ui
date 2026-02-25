@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 /** System abstraction layer types — defines the interface for RPG systems to enable multi-system support. */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -17,30 +19,40 @@ export interface TraitDefinition {
 }
 
 /** Entity configuration — user-facing shape for entities in SystemConfig */
-export interface EntityConfig {
-  /** Frontmatter field definitions (shorthand or full definition) */
-  fields?: Array<
-    | string
-    | { name: string; type?: "number" | "string" | "boolean"; default?: unknown; derived?: string; aliases?: string[] }
-  >;
-  /** Default features available to all entities of this type */
+type BaseEntityConfig<
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+> = {
   features?: Feature[];
-  /**
-   * Experience point thresholds per level (index 0 = XP needed to reach level 1, etc.).
-   * Used to calculate the current level from total XP and to track level-up progress.
-   */
   xpTable?: number[];
+  lookup?: Readonly<TLookup>;
+  /** @deprecated use `expressions` instead */
+  computed?: Record<string, (context: any) => unknown>;
   /**
-   * Computed functions — these become `ExpressionDef` entries in the system.
-   * The function receives a context record and returns a value.
+   * Named expressions — receive `(args, props)` at definition time;
+   * exposed as call-ready functions in block/expression props.
+   *
+   * @example
+   * ```ts
+   * expressions: {
+   *   calc_y: ([a, b], { frontmatter }) => a + b + frontmatter.total,
+   * }
+   * // called inside blocks:
+   * expressions.calc_y(2, 4)
+   * ```
    */
-  computed?: Record<string, (context: Record<string, unknown>) => unknown>;
-  /**
-   * Block component definitions.
-   * Each key becomes the `rpg entity.<key>` code block handler.
-   */
-  blocks?: Record<string, BlockDefinition>;
-}
+  expressions?: {
+    [K in keyof TExpressions]: TExpressions[K] extends (...args: infer A) => infer R
+      ? (args: A, props: ExpressionProps<TLookup, TFrontmatter, TBlocks, TExpressions>) => R
+      : never;
+  };
+  blocks?: { [K in keyof TBlocks]: Component<TBlocks[K], TLookup, TFrontmatter, TBlocks, TExpressions> };
+};
+
+export type EntityConfig<TFrontmatter = Record<string, unknown>, TLookup = Record<string, unknown>, TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>, TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>> =
+  TFrontmatter extends never ? BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions> : BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions> & { frontmatter?: TFrontmatter };
 
 /**
  * Props schema entry for a block — shorthand type string or a full definition
@@ -61,13 +73,100 @@ export type BlockPropSchema =
  * Block definition — a React component registered for an `rpg entity.<name>`
  * code block. The plugin parses the YAML body and passes it as props to the
  * component.
+ * @deprecated Use Component (returned by CreateComponent) instead.
  */
 export interface BlockDefinition {
   /** Props schema describing the expected YAML fields */
   props?: Record<string, BlockPropSchema>;
   /** React component that receives the parsed YAML fields as props */
-  component: (props: Record<string, unknown>) => unknown;
+  component: (props: Record<string, unknown>) => ReactNode;
 }
+
+/** System context passed to every block component */
+export interface SystemContext {
+  skills: SkillDefinition[];
+  attributes: AttributeDefinition[];
+  conditions?: ConditionDefinition[];
+  traits?: TraitDefinition[];
+}
+
+/**
+ * Context passed to expression functions — entity + system without the `self` block props.
+ */
+export interface ExpressionProps<
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+> {
+  lookup: TLookup;
+  frontmatter: TFrontmatter;
+  blocks: TBlocks;
+  /** Sibling expressions bound to entity context — call directly: `expressions.mod()` */
+  expressions: TExpressions;
+  system: SystemContext;
+}
+
+/**
+ * Derives a setter function for every key in T, following React useState convention.
+ *
+ * `{ xp: number; label: string }` → `{ setXp: (v: number | ((p: number) => number)) => void; setLabel: ... }`
+ *
+ * The setter accepts either a plain value or an updater function, identical to
+ * the dispatch overload returned by `useState`.
+ */
+export type Setters<T> = {
+  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]:
+    (value: T[K] | ((prev: T[K]) => T[K])) => void;
+};
+
+/**
+ * Full props object passed to a block component created with CreateComponent.
+ *
+ * @typeParam TProps - This block's own YAML-parsed props
+ * @typeParam TLookup - Entity lookup type (from CreateEntity)
+ * @typeParam TFrontmatter - Entity frontmatter type (from CreateEntity)
+ * @typeParam TBlocks - All blocks' prop shapes (from CreateEntity)
+ */
+export interface ComponentProps<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+> {
+  /** Block's own YAML props, augmented with a `setFoo` setter for every `foo` key. */
+  self: TProps & Setters<TProps>;
+  lookup: TLookup;
+  frontmatter: TFrontmatter;
+  blocks: TBlocks;
+  /** Entity expressions bound to context — call directly: `expressions.mod()` */
+  expressions: TExpressions;
+  system: SystemContext;
+  /**
+   * Trigger a named event scoped to this entity instance (file).
+   * All blocks within the same note share the same event scope.
+   * @param eventName - One of the event names declared in the system's `events` array.
+   */
+  trigger: (eventName: string) => void;
+}
+
+/**
+ * A typed block React component.
+ * Registered directly as a value in the entity `blocks` map.
+ *
+ * @typeParam TProps - This block's own YAML-parsed props
+ * @typeParam TLookup - Entity lookup type
+ * @typeParam TFrontmatter - Entity frontmatter type
+ * @typeParam TBlocks - All blocks' prop shapes
+ */
+export type Component<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+> = (props: ComponentProps<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>) => ReactNode;
 
 /** Caster type definition — describes a spellcasting progression style */
 export interface CasterTypeDefinition {
@@ -90,7 +189,7 @@ export interface SystemConfig {
    */
   attributes: Array<string | AttributeDefinition>;
   /** Entity type configurations */
-  entities?: Record<string, EntityConfig>;
+  entities?: Record<string, any>;
   /** Skill definitions */
   skills?: SkillDefinition[];
   /** Feature system configuration (plain object, not a Map) */
@@ -101,6 +200,11 @@ export interface SystemConfig {
   conditions?: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
+  /**
+   * Named events that can be triggered from entity block components via `trigger(eventName)`.
+   * Scoped per entity instance — triggering in one note file does not affect other notes.
+   */
+  events?: string[];
 }
 
 
@@ -138,10 +242,12 @@ export interface RPGSystem {
   conditions: ConditionDefinition[];
   /** Trait definitions for character capabilities */
   traits?: TraitDefinition[];
+  /** Named events that blocks may trigger (scoped per entity file). */
+  events: string[];
 }
 
 /** Entity type definition — defines frontmatter fields and default features for an entity type */
-export interface EntityTypeDef {
+export interface EntityTypeDef<TLookup = Record<string, unknown>> {
   /** Frontmatter field definitions for this entity type */
   frontmatter: FrontmatterFieldDef[];
   /** Default features available to all entities of this type */
@@ -151,8 +257,13 @@ export interface EntityTypeDef {
    * Carried through from EntityConfig.xpTable.
    */
   xpTable?: number[];
+  /**
+   * Read-only lookup values carried from entity config (constants, tables).
+   * Typed by the `TLookup` generic parameter when using `CreateEntity`.
+   */
+  lookup?: Readonly<TLookup>;
   /** Block component definitions for `rpg entity.<name>` code blocks */
-  blocks?: Record<string, BlockDefinition>;
+  blocks?: Record<string, Component>;
 }
 
 /** Feature definition for default entity features in system definitions */
@@ -195,8 +306,8 @@ export interface ExpressionDef {
   isAsync?: boolean;
   /** Raw function body for JS function expressions */
   body?: string;
-  /** Compiled evaluation function — context can include any values for JS function expressions */
-  evaluate: (context: Record<string, unknown>) => unknown;
+  /** Compiled evaluation function */
+  evaluate: (context: any) => unknown;
 }
 
 /** Skill definition */

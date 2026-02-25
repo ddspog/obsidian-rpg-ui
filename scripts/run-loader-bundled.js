@@ -32,9 +32,13 @@ const vaultShim = {
 
 (async () => {
   try {
+    console.log('[run-loader-bundled] require tmp-ts-loader');
     const mod = require('./tmp-ts-loader');
     const loadSystemFromTypeScript = mod.loadSystemFromTypeScript;
-    const system = await loadSystemFromTypeScript(vaultShim, 'systems/tales-of-the-valiant');
+    const requested = process.argv[2] || process.env.SYSTEM_PATH || 'systems/tales-of-the-valiant';
+    console.log('[run-loader-bundled] calling loadSystemFromTypeScript for', requested);
+    const system = await loadSystemFromTypeScript(vaultShim, requested);
+    console.log('[run-loader-bundled] loadSystemFromTypeScript returned');
     if (!system) {
       console.error('No system returned');
       process.exitCode = 2;

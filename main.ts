@@ -1,4 +1,4 @@
-import { Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, parseYaml } from "obsidian";
+import { App, Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, MarkdownSectionInformation, parseYaml } from "obsidian";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import {
@@ -14,8 +14,11 @@ import * as Fm from "lib/domains/frontmatter";
 import { extractMeta } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { settingsStore } from "lib/services/settings-store";
+import { getEntityBus } from "lib/services/entity-event-bus";
+import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild } from "lib/systems/ts-loader";
 import * as React from "react";
+import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
 
 export default class DndUIToolkitPlugin extends Plugin {
@@ -112,7 +115,25 @@ export default class DndUIToolkitPlugin extends Plugin {
         const system = registry.getSystemForFile(ctx.sourcePath);
         const blockDef = system.entities[entityType]?.blocks?.[blockName];
         if (blockDef) {
-          const child = new EntityBlockRenderChild(el, source, blockDef.component);
+          const entityBus = getEntityBus(ctx.sourcePath);
+          const trigger = (eventName: string) => entityBus.trigger(eventName);
+          const systemCtx = {
+            skills: system.skills,
+            attributes: system.attributes,
+            conditions: system.conditions ?? [],
+            traits: system.traits,
+          };
+          const sectionInfo = ctx.getSectionInfo(el);
+          const child = new EntityBlockRenderChild(
+            el,
+            source,
+            blockDef as unknown as (props: Record<string, unknown>) => ReactNode,
+            trigger,
+            ctx.sourcePath,
+            this.app,
+            systemCtx,
+            sectionInfo,
+          );
           ctx.addChild(child);
           return;
         }
@@ -240,30 +261,95 @@ export default class DndUIToolkitPlugin extends Plugin {
  */
 class EntityBlockRenderChild extends MarkdownRenderChild {
   private source: string;
-  private component: (props: Record<string, unknown>) => unknown;
+  private component: (props: Record<string, unknown>) => ReactNode;
+  private trigger: (eventName: string) => void;
+  private sourcePath: string;
+  private app: App;
+  private systemCtx: { skills: unknown[]; attributes: unknown[]; conditions: unknown[]; traits?: unknown[] };
+  private sectionInfo: MarkdownSectionInformation | null;
   private reactRoot: ReactDOM.Root | null = null;
 
   constructor(
     el: HTMLElement,
     source: string,
-    component: (props: Record<string, unknown>) => unknown,
+    component: (props: Record<string, unknown>) => ReactNode,
+    trigger: (eventName: string) => void,
+    sourcePath: string,
+    app: App,
+    systemCtx: { skills: unknown[]; attributes: unknown[]; conditions: unknown[]; traits?: unknown[] },
+    sectionInfo: MarkdownSectionInformation | null,
   ) {
     super(el);
     this.source = source;
     this.component = component;
+    this.trigger = trigger;
+    this.sourcePath = sourcePath;
+    this.app = app;
+    this.systemCtx = systemCtx;
+    this.sectionInfo = sectionInfo;
   }
 
   onload() {
     try {
       const parsed = parseYaml(this.source);
-      const props: Record<string, unknown> =
+      const initialSelf: Record<string, unknown> =
         parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
           ? (parsed as Record<string, unknown>)
           : {};
-      this.reactRoot = ReactDOM.createRoot(this.containerEl);
-      // component signature matches React.FC – cast needed because BlockDefinition uses `unknown` return
+      const fm = this.app.metadataCache.getCache(this.sourcePath)?.frontmatter ?? {};
       const Comp = this.component as React.FC<Record<string, unknown>>;
-      this.reactRoot.render(React.createElement(Comp, props));
+      const app = this.app;
+      const sourcePath = this.sourcePath;
+      const sectionInfo = this.sectionInfo;
+      const trigger = this.trigger;
+      const systemCtx = this.systemCtx;
+
+      // Stateful wrapper — holds self in React state and exposes setFoo setters
+      // that both update local state (instant re-render) and patch the vault file.
+      const EntityBlockWrapper: React.FC = () => {
+        const [self, setSelf] = React.useState<Record<string, unknown>>(initialSelf);
+
+        const selfWithSetters = React.useMemo(() => {
+          const setters: Record<string, unknown> = {};
+          for (const key of Object.keys(self)) {
+            const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+            setters[setterName] = (valueOrUpdater: unknown) => {
+              setSelf((prev) => {
+                const newValue =
+                  typeof valueOrUpdater === "function"
+                    ? (valueOrUpdater as (p: unknown) => unknown)(prev[key])
+                    : valueOrUpdater;
+                if (sectionInfo) {
+                  patchYamlBlock(
+                    app,
+                    sourcePath,
+                    sectionInfo.lineStart,
+                    sectionInfo.lineEnd,
+                    key,
+                    newValue,
+                  ).catch((err) => console.error("RPG UI: yaml patch failed:", err));
+                }
+                return { ...prev, [key]: newValue };
+              });
+            };
+          }
+          return { ...self, ...setters };
+        }, [self]);
+
+        const props: Record<string, unknown> = {
+          self: selfWithSetters,
+          lookup: {},
+          frontmatter: fm,
+          blocks: {},
+          expressions: {},
+          system: systemCtx,
+          trigger,
+        };
+        return React.createElement(Comp, props);
+      };
+
+      this.reactRoot = ReactDOM.createRoot(this.containerEl);
+      this.reactRoot.render(React.createElement(EntityBlockWrapper, null));
     } catch (err) {
       console.error("DnD UI Toolkit: Error rendering entity block:", err);
       this.containerEl.innerHTML = `<div class="notice">Error rendering block: ${err}</div>`;

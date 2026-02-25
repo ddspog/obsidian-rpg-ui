@@ -1,0 +1,56 @@
+.rpg-inspirational-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--background-secondary), var(--background-primary));
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.rpg-inspirational-level__level {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.06);
+  color: var(--text-normal);
+  min-width: 36px;
+  text-align: center;
+}
+
+.rpg-inspirational-level__points {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.rpg-inspirational-level__point {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--background-modifier-border);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rpg-inspirational-level__point-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.02) inset;
+}
+
+.rpg-inspirational-level__point.is-active {
+  background: var(--interactive-accent);
+  border-color: transparent;
+}
+
+.rpg-inspirational-level__point.is-active .rpg-inspirational-level__point-dot {
+  background: var(--text-on-accent);
+  box-shadow: none;
+}

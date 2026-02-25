@@ -17,6 +17,6 @@
        "rpg-ui-toolkit": ["./lib/systems/api.d.ts"]
      }
   },
-  "include": ["**/*.ts", "lib/views/ReactMarkdown.tsx"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist", "inspiration"]
 }

@@ -1,0 +1,34 @@
+.rpg-progress-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rpg-progress-bar__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rpg-progress-bar__track {
+  width: 100%;
+  height: 8px;
+  background: var(--background-modifier-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rpg-progress-bar__fill {
+  height: 100%;
+  background: var(--interactive-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.rpg-progress-bar__values {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}

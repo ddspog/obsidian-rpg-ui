@@ -34,6 +34,7 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
   if (esbuildInitialized) return esbuildInitialized;
 
   esbuildInitialized = (async () => {
+    console.log('[ts-loader] initEsbuild()');
     // In a Node.js environment (e.g. local scripts), prefer the native esbuild
     // package which doesn't require WASM initialisation.
     if (typeof process !== "undefined" && process.versions?.node) {
@@ -70,7 +71,9 @@ export async function loadSystemFromTypeScript(
   systemFolderPath: string,
 ): Promise<RPGSystem | null> {
   try {
+    console.log('[ts-loader] loadSystemFromTypeScript()', systemFolderPath);
     await initEsbuild();
+    console.log('[ts-loader] initEsbuild returned');
     if (!esbuildModule) {
       console.error("esbuild-wasm failed to initialize");
       return null;
@@ -118,6 +121,7 @@ export async function loadSystemFromTypeScript(
       },
     };
 
+    console.log('[ts-loader] about to call esbuildModule.build');
     const result = await esbuildModule.build({
       entryPoints: [entryPoint],
       bundle: true,
@@ -131,6 +135,7 @@ export async function loadSystemFromTypeScript(
       logLevel: "silent",
     });
 
+    console.log('[ts-loader] esbuild build completed, errors:', result.errors?.length);
     if (result.errors.length > 0) {
       console.error("TypeScript system bundle errors:", result.errors);
       return null;
@@ -143,6 +148,10 @@ export async function loadSystemFromTypeScript(
     }
 
     return await evaluateSystemBundle(bundleText, systemFolderPath, vault);
+    console.log('[ts-loader] calling evaluateSystemBundle');
+    const evaluated = await evaluateSystemBundle(bundleText, systemFolderPath, vault);
+    console.log('[ts-loader] evaluateSystemBundle returned');
+    return evaluated;
   } catch (error) {
     console.error(`Failed to load TypeScript system from ${systemFolderPath}:`, error);
     return null;
@@ -177,10 +186,18 @@ export async function evaluateSystemBundle(
     const requireShim = (name: string) => {
       try {
         if (name === "rpg-ui-toolkit") {
-          // load the plugin's create-system module to expose CreateSystem
-          // Note: path is relative to this file at runtime (lib/systems)
+          // Expose the runtime surface expected by in-vault system bundles.
+          // Merge the system factory exports with the UI/runtime helpers so
+          // that imports like `import { CreateEntity, TitleAnchor } from "rpg-ui-toolkit"`
+          // resolve at runtime.
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-          return require("./create-system");
+          const core = require("./create-system");
+          let ui = {};
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+            ui = require("../ui");
+          } catch {}
+          return Object.assign({}, core, ui);
         }
         // Fallback to normal require for other modules (may throw)
         // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports

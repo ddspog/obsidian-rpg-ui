@@ -1,0 +1,38 @@
+.rpg-trigger-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.rpg-trigger-button:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+
+.rpg-trigger-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.rpg-trigger-button:active {
+  opacity: 0.85;
+}
+
+.rpg-trigger-button__icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.rpg-trigger-button__label {
+  display: inline-block;
+}
