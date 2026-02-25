@@ -25,9 +25,21 @@ export function TitleAnchor(props: TitleAnchorProps) {
     // ignore — fall back to children or empty
   }
 
+  // also try to surface any `banner` frontmatter for quick visual debugging
+  let bannerValue: string | undefined = undefined;
+  try {
+    const file = app?.workspace?.getActiveFile?.();
+    const cache = file ? app?.metadataCache?.getFileCache?.(file) : undefined;
+    const fm = cache?.frontmatter as Record<string, unknown> | undefined;
+    if (fm && typeof fm.banner === "string") bannerValue = fm.banner;
+  } catch {
+    // ignore
+  }
+
   return (
     <div className="rpg-title-anchor" {...rest}>
       {title || children || null}
+      {bannerValue ? <div className="rpg-title-banner">{bannerValue}</div> : null}
     </div>
   );
 }

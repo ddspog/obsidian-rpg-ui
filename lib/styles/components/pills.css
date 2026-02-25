@@ -1,25 +1,41 @@
 .rpg-title-anchor {
-  display: block;
-  margin: 0 0 6px 0;
-  padding: 2px 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-normal);
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-on-accent, #fff);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  line-height: 1.1;
+  min-height: 2.4em;
+}
+
+.rpg-title-banner {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin-left: 12px;
+  color: rgba(255,255,255,0.9);
 }
 
 .rpg-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-normal);
-  font-size: 0.85rem;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.75rem;
   font-weight: 500;
-  text-transform: none;
-  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 0;
 }
 
 .rpg-pill[role="button"] {
@@ -27,9 +43,8 @@
 }
 
 .rpg-pill[role="button"]:hover {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: transparent;
+  color: #fff;
+  border-bottom-color: var(--interactive-accent);
 }
 
 .rpg-pill:focus {

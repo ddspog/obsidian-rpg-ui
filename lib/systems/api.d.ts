@@ -74,15 +74,24 @@ export type BlockPropSchema =
      * @typeParam TFrontmatter - Frontmatter type for this entity
      */
     export declare function CreateEntity<
+          TEntity extends EntityDescriptor<any, any, any, any> = EntityDescriptor
+        >(
+          cfg: TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>),
+        ):
+          | TEntity
+          | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>);
+
+    /**
+     * Bundled entity descriptor type to simplify CreateEntity generics.
+     *
+     * Order: TBlocks, TLookup, TExpressions, TFrontmatter (friendly for authors)
+     */
+    export type EntityDescriptor<
       TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
-      TLookup = never,
+      TLookup = Record<string, unknown>,
       TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
-      TFrontmatter = never
-    >(
-      cfg: EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | ((ctx: { wiki: Wiki }) => EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | Promise<EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>>),
-    ):
-      | EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>
-      | ((ctx: { wiki: Wiki }) => EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | Promise<EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>>);
+      TFrontmatter = Record<string, unknown>
+    > = EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>;
 
 /**
  * Block definition — registers a React component for an `rpg entity.<blockName>`
@@ -239,6 +248,41 @@ export declare function CreateComponent<
 >(
   fn: Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>
 ): Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>;
+
+/**
+ * Helper type extractors for EntityDescriptor generics
+ */
+type _EntityLookup<T> = T extends EntityDescriptor<any, infer L, any, any> ? L : Record<string, unknown>;
+type _EntityFrontmatter<T> = T extends EntityDescriptor<any, any, any, infer F> ? F : Record<string, unknown>;
+type _EntityBlocks<T> = T extends EntityDescriptor<infer B, any, any, any> ? B : Record<string, Record<string, unknown>>;
+type _EntityExpressions<T> = T extends EntityDescriptor<any, any, infer E, any> ? E : Record<string, (...args: any[]) => unknown>;
+
+/** Map extracted expression signatures into callable functions preserving parameters */
+type _CallableExpressions<T> = {
+  [K in keyof _EntityExpressions<T>]: _EntityExpressions<T>[K] extends (...args: infer A) => infer R
+    ? (...args: A) => R
+    : (...args: any[]) => unknown;
+};
+
+/**
+ * Typed function signature for an entity block.
+ *
+ * TBlock is the shape of this block's own YAML-parsed props.
+ * TEntity is an EntityDescriptor describing the parent entity; its generic
+ * parameters are used to derive lookup/frontmatter/blocks/expressions types.
+ */
+export type EntityBlock<
+  TBlock = Record<string, unknown>,
+  TEntity = EntityDescriptor
+> = (
+  props: ComponentProps<
+    TBlock,
+    _EntityLookup<TEntity>,
+    _EntityFrontmatter<TEntity>,
+    _EntityBlocks<TEntity>,
+    _CallableExpressions<TEntity>
+  >
+) => ReactNode;
 
 /**
  * Entity configuration for use in CreateEntity / SystemConfig.
@@ -537,6 +581,7 @@ export declare function CreateSystem(
       xpTable?: number[];
     }
   >;
+
   skills: SkillDefinition[];
   features: FeatureSystemConfig;
   spellcasting: SpellcastingSystemConfig;

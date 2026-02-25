@@ -28,19 +28,6 @@ import { CreateSystem, CreateEntity } from "rpg-ui-toolkit";
 import type {
   ConditionDefinition,
   SkillDefinition,
-  CharacterHeaderBlock,
-  HealthBlock,
-  FeaturesCollectorBlock,
-  SpellsCollectorBlock,
-  ClassFeaturesBlock,
-  SpellInfoBlock,
-  SpellEffectsBlock,
-  FeatureEntryBlock,
-  FeatureAspectsBlock,
-  StatblockHeaderBlock,
-  StatblockTraitsBlock,
-  StatblockAttributesBlock,
-  StatblockFeaturesBlock,
 } from "rpg-ui-toolkit";
 import attributes from './attributes';
 import spellcastTable from './spellslots';
@@ -54,10 +41,6 @@ export const system = CreateSystem(async ({ wiki }) => ({
 
   // ── Entity Types ─────────────────────────────────────────────────────────────
   entities: {
-    // Use CreateEntity so the definition can be authored as a factory that
-    // receives the `wiki` fixture. This lets you keep complex entity
-    // definitions in separate vault files and load them here via `wiki.file`
-    // or `wiki.folder`.
     character,
 
     class: CreateEntity(({ wiki }: { wiki?: any }) => ({

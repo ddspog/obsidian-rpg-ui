@@ -144,16 +144,9 @@ async function resolveEntityFactories(config: SystemConfig, wiki?: any): Promise
  * provided value; `CreateSystem` will detect and resolve function-typed
  * entity entries at build time.
  */
-export function CreateEntity<
-  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
-  TLookup = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
-  TFrontmatter = Record<string, unknown>
->(
-  cfg: EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | ((ctx: { wiki?: any }) => EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | Promise<EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>>),
-):
-  | EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>
-  | ((ctx: { wiki?: any }) => EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions> | Promise<EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>>) {
+export function CreateEntity<TEntity extends EntityConfig = EntityConfig>(
+  cfg: TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>),
+): TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>) {
   return cfg as any;
 }
 
