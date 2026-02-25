@@ -71,7 +71,7 @@ export class SystemRegistry {
     return this.defaultSystem;
   }
 
-  private async loadSystemAsync(systemFolderPath: string): Promise<RPGSystem | null> {
+  public async loadSystemAsync(systemFolderPath: string): Promise<RPGSystem | null> {
     if (!this.vault) return null;
     if (this.systemCache.has(systemFolderPath)) return this.systemCache.get(systemFolderPath)!;
     if (this.isLoading.has(systemFolderPath)) return this.isLoading.get(systemFolderPath)!;
@@ -87,6 +87,22 @@ export class SystemRegistry {
     } finally {
       this.isLoading.delete(systemFolderPath);
     }
+  }
+
+  /**
+   * Return the configured system folder path for the given file path, or null
+   * if none is configured. This does not attempt to load the system.
+   */
+  public findSystemFolderForFile(filePath: string): string | null {
+    if (!this.vault) return null;
+    const parts = filePath.split("/");
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const folderPath = parts.slice(0, i).join("/");
+      const systemPath = this.folderMappings.get(folderPath);
+      if (systemPath) return systemPath;
+    }
+    const rootPath = this.folderMappings.get("");
+    return rootPath ?? null;
   }
 
   /** Read a vault file by path and return its text content, or null if not found. */

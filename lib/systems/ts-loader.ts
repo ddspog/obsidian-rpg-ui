@@ -90,7 +90,14 @@ export async function loadSystemFromTypeScript(
         build.onResolve({ filter: /.*/ }, (args: EsbuildWasm.OnResolveArgs) => {
           console.log('[ts-loader] onResolve', args.path, 'importer=', args.importer, 'kind=', args.kind);
           if (args.kind === "entry-point") {
-            return { path: args.path, namespace: "vault" };
+            // Normalize entry-point path to remove leading './' which can
+            // confuse vault lookups. Keep the full normalized path so that
+            // Obsidian's Vault API can resolve files correctly.
+            // Use POSIX normalization to keep paths consistent across platforms.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+            const pathPosix = require('path').posix;
+            const normalized = pathPosix.normalize(args.path).replace(/^\.\//, '');
+            return { path: normalized, namespace: "vault" };
           }
           // Resolve relative paths robustly using posix normalization
           if (args.path.startsWith(".")) {
@@ -136,7 +143,23 @@ export async function loadSystemFromTypeScript(
         build.onLoad({ filter: /.*/, namespace: "vault" }, async (args: EsbuildWasm.OnLoadArgs) => {
           console.log('[ts-loader] onLoad', args.path);
           try {
-            const file = vault.getAbstractFileByPath(args.path);
+            let file = vault.getAbstractFileByPath(args.path);
+            // Compatibility fallback: some test shims expect the path to be
+            // relative to the provided systemFolderPath (e.g., 'index.ts')
+            // whereas Obsidian's Vault expects full paths. If the direct
+            // lookup fails and the args.path contains the systemFolderPath
+            // prefix, try the suffix as a fallback.
+            if (!file) {
+              try {
+                const prefix = (systemFolderPath || '').replace(/\\/g, '/');
+                if (prefix && args.path.startsWith(prefix + '/')) {
+                  const alt = args.path.slice(prefix.length + 1);
+                  file = vault.getAbstractFileByPath(alt);
+                }
+              } catch (e) {
+                // ignore fallback errors
+              }
+            }
             if (!file) {
               return { errors: [{ text: `File not found in vault: ${args.path}` }] };
             }
@@ -232,6 +255,15 @@ export async function evaluateSystemBundle(
           } catch {}
           return Object.assign({}, core, ui);
         }
+        // Provide React and ReactDOM from the plugin runtime if available.
+        if (name === "react") {
+          // Prefer globalThis.React (set by plugin runtime), fall back to require.
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return (globalThis as any).React ?? require("react");
+        }
+        if (name === "react-dom" || name === "react-dom/client") {
+          return (globalThis as any).ReactDOM ?? (() => { try { return require("react-dom/client"); } catch { return require("react-dom"); } })();
+        }
         // Fallback to normal require for other modules (may throw)
         // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
         return require(name);
@@ -254,8 +286,10 @@ export async function evaluateSystemBundle(
     } catch {}
 
     // eslint-disable-next-line no-new-func
-    const factory = new Function("require", wrappedBundle);
-    const mod = factory.call(scope, requireShim as any);
+    const factory = new Function("require", "React", "ReactDOM", wrappedBundle);
+    const reactRuntime = (globalThis as any).React ?? (() => { try { return require('react'); } catch { return undefined; } })();
+    const reactDomRuntime = (globalThis as any).ReactDOM ?? (() => { try { return require('react-dom/client'); } catch { try { return require('react-dom'); } catch { return undefined; } } })();
+    const mod = factory.call(scope, requireShim as any, reactRuntime, reactDomRuntime);
 
     // Clean up the wiki fixture after evaluation
     try {
