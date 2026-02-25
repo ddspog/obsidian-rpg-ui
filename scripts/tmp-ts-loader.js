@@ -11754,26 +11754,46 @@ async function loadSystemFromTypeScript(vault, systemFolderPath) {
       name: "obsidian-vault",
       setup(build) {
         build.onResolve({ filter: /.*/ }, (args) => {
+          console.log("[ts-loader] onResolve", args.path, "importer=", args.importer, "kind=", args.kind);
           if (args.kind === "entry-point") {
             return { path: args.path, namespace: "vault" };
           }
           if (args.path.startsWith(".")) {
-            const baseParts = args.importer.split("/");
-            baseParts.pop();
-            const relative = args.path.replace(/\.(ts|js)$/, "");
-            const resolved = [...baseParts, relative].join("/");
-            return { path: `${resolved}.ts`, namespace: "vault" };
+            const pathPosix = require("path").posix;
+            const importerDir = pathPosix.dirname(args.importer || "");
+            const extMatch = args.path.match(/\.(tsx|ts|jsx|js)$/);
+            const hasExt = !!extMatch;
+            const base = hasExt ? args.path.replace(/\.(tsx|ts|jsx|js)$/, "") : args.path;
+            const joined = pathPosix.join(importerDir, base);
+            const normalized = pathPosix.normalize(joined);
+            if (hasExt) {
+              const finalPath = `${normalized}${extMatch[0]}`;
+              return { path: finalPath, namespace: "vault" };
+            }
+            const candidates = [".ts", ".tsx", ".js", ".jsx"];
+            for (const ext of candidates) {
+              const candidate = `${normalized}${ext}`;
+              try {
+                const f = vault.getAbstractFileByPath(candidate);
+                if (f) return { path: candidate, namespace: "vault" };
+              } catch (e) {
+              }
+            }
+            return { path: `${normalized}.ts`, namespace: "vault" };
           }
           return { external: true };
         });
         build.onLoad({ filter: /.*/, namespace: "vault" }, async (args) => {
+          console.log("[ts-loader] onLoad", args.path);
           try {
             const file = vault.getAbstractFileByPath(args.path);
             if (!file) {
               return { errors: [{ text: `File not found in vault: ${args.path}` }] };
             }
             const contents = await vault.cachedRead(file);
-            return { contents, loader: "ts" };
+            console.log("[ts-loader] loaded", args.path, "len=", contents.length);
+            const loader = args.path.endsWith(".tsx") ? "tsx" : args.path.endsWith(".ts") ? "ts" : args.path.endsWith(".jsx") ? "jsx" : "js";
+            return { contents, loader };
           } catch (error) {
             return {
               errors: [{ text: `Failed to read ${args.path}: ${String(error)}` }]
@@ -11805,7 +11825,6 @@ async function loadSystemFromTypeScript(vault, systemFolderPath) {
       console.error("Empty bundle output for system:", systemFolderPath);
       return null;
     }
-    return await evaluateSystemBundle(bundleText, systemFolderPath, vault);
     console.log("[ts-loader] calling evaluateSystemBundle");
     const evaluated = await evaluateSystemBundle(bundleText, systemFolderPath, vault);
     console.log("[ts-loader] evaluateSystemBundle returned");

@@ -1,0 +1,389 @@
+{
+  "name": "Tales of the Valiant",
+  "attributes": [
+    {
+      "$name": "Strength",
+      "alias": "STR",
+      "subtitle": "Associated Skills: Athletics",
+      "measures": "Physical might",
+      "$contents": "Strength measures bodily power, athletic aptitude, and the extent to which you can exert raw physical force. STR is used to: \n- Calculate attack rolls and damage with melee weapons \n- Determine how much weight can be lifted or carried \n\nUse STR for checks that involve feats of bodily force, such as: \n\n- Kicking down a door, breaking free of bonds, or smashing a lock \n- Pulling, pushing, or lifting heavy objects \n- Climbing a rope or swimming against the current \n- Resisting an attempt to grab, pull, or push you"
+    },
+    {
+      "$name": "Dexterity",
+      "alias": "DEX",
+      "subtitle": "Associated Skills: Acrobatics, Sleight of Hand, Stealth",
+      "measures": "Agility, reflexes, and balance",
+      "$contents": "Dexterity measures agility, reflexes, and balance. DEX is used to:\n- Calculate attack rolls and damage with ranged weapons or melee weapons with the Finesse property\n- Calculate Armor Class\n- Determine initiative order during encounter gameplay\n\nUse DEX for checks that involve reflexes, precise motion, or swift response time such as:\n- Maintaining balance while on a moving vehicle or scooting along a narrow ledge\n- Picking a pocket without being noticed\n- Picking a lock or disabling a trap\n- Crafting a small or detailed object\n- Moving silently or sneaking up on prey\n- Resisting an attempt to grab, pull, or push you"
+    },
+    {
+      "$name": "Constitution",
+      "alias": "CON",
+      "subtitle": "Associated Skills: None",
+      "measures": "Health and stamina",
+      "$contents": "Constitution measures health, stamina, and vital force. CON is used to:\n- Calculate hit points (HP)\n\nUse CON for checks that involve endurance or weathering extreme conditions, such as:\n- Holding your breath\n- Extended marching or labor without rest\n- Going without sleep\n- Surviving without food or water\n- Quaffing an entire stein of ale in one go"
+    },
+    {
+      "$name": "Intelligence",
+      "alias": "INT",
+      "subtitle": "Associated Skills: Arcana, History, Investigation, Nature, Religion",
+      "measures": "Reasoning and memory",
+      "$contents": "Intelligence measures mental acuity, accuracy of recall, and the ability to reason. INT is used to:\n- Calculate certain class spellcasting abilities\n\nUse INT for checks to draw on logic, education, memory, or deductive reasoning, such as:\n- Communicating without using words\n- Estimating the value of a precious item\n- Forging a document\n- Recalling lore about a craft or trade\n- Winning a game of skill"
+    },
+    {
+      "$name": "Wisdom",
+      "alias": "WIS",
+      "subtitle": "Associated Skills: Animal Handling, Insight, Medicine, Perception, Survival",
+      "measures": "Perceptiveness and mental fortitude",
+      "$contents": "Wisdom reflects how attuned you are to the world around you and represents perceptiveness and intuition. WIS is used to:\n- Calculate certain class spellcasting abilities\n\nUse WIS for checks to intuit clues about the environment and people or treat the injured, such as:\n- Getting a gut feeling about next steps\n- Discerning if a seemingly dead creature is Undead\n- Picking up on subtle signals happening around you\n- Bandage a wound or recognize a disease"
+    },
+    {
+      "$name": "Charisma",
+      "alias": "CHA",
+      "subtitle": "Associated Skills: Deception, Intimidation, Performance, Persuasion",
+      "measures": "Confidence, poise, and charm",
+      "$contents": "Charisma measures your ability to interact with others and can represent a charming or commanding personality. CHA is used to:\n- Calculate certain class spellcasting abilities\n\nUse CHA for checks to influence or entertain, make an impression, tell a convincing lie, or navigate a tricky social situation, such as:\n- Finding the best person to talk to for news, rumors, and gossip\n- Pulling together a disguise to pass as a city guard\n- Blending into a crowd to get the sense of key topics of conversation"
+    }
+  ],
+  "entities": {
+    "character": {
+      "frontmatter": [],
+      "features": [
+        {
+          "$name": "Dash",
+          "type": "action",
+          "$contents": "Double your speed for the current turn."
+        },
+        {
+          "$name": "Disengage",
+          "type": "action",
+          "$contents": "Your movement doesn't provoke opportunity attacks for the rest of the turn."
+        },
+        {
+          "$name": "Dodge",
+          "type": "action",
+          "$contents": "Attack rolls against you have disadvantage until your next turn."
+        },
+        {
+          "$name": "Help",
+          "type": "action",
+          "$contents": "Give an ally advantage on their next ability check or attack roll."
+        },
+        {
+          "$name": "Hide",
+          "type": "action",
+          "$contents": "Make a Dexterity (Stealth) check to hide."
+        },
+        {
+          "$name": "Ready",
+          "type": "action",
+          "$contents": "Prepare an action to trigger in response to a specified circumstance."
+        },
+        {
+          "$name": "Search",
+          "type": "action",
+          "$contents": "Make a Wisdom (Perception) or Intelligence (Investigation) check to find something."
+        },
+        {
+          "$name": "Use an Object",
+          "type": "action",
+          "$contents": "Interact with an object or the environment."
+        },
+        {
+          "$name": "Opportunity Attack",
+          "type": "reaction",
+          "$contents": "Make a melee attack against a creature that leaves your reach."
+        }
+      ],
+      "lookup": {
+        "table": {
+          "xp": [
+            0,
+            300,
+            900,
+            2700,
+            6500,
+            14000,
+            23000,
+            34000,
+            48000,
+            64000,
+            85000,
+            100000,
+            120000,
+            140000,
+            165000,
+            195000,
+            225000,
+            265000,
+            305000,
+            355000
+          ]
+        }
+      },
+      "blocks": {}
+    },
+    "class": {
+      "frontmatter": [
+        {
+          "name": "hit_die",
+          "type": "string",
+          "default": "d8"
+        }
+      ],
+      "features": [],
+      "blocks": {}
+    },
+    "subclass": {
+      "frontmatter": [
+        {
+          "name": "parent_class",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "features": []
+    },
+    "race": {
+      "frontmatter": [
+        {
+          "name": "size",
+          "type": "string",
+          "default": "medium"
+        },
+        {
+          "name": "speed",
+          "type": "number",
+          "default": 30
+        }
+      ],
+      "features": []
+    },
+    "monster": {
+      "frontmatter": [
+        {
+          "name": "cr",
+          "type": "number",
+          "default": 0
+        }
+      ],
+      "features": [
+        {
+          "$name": "Opportunity Attack",
+          "type": "reaction",
+          "$contents": "Make a melee attack against a creature that leaves your reach."
+        },
+        {
+          "$name": "extra",
+          "$contents": ""
+        }
+      ]
+    },
+    "spell": {
+      "frontmatter": [
+        {
+          "name": "level",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "name": "school",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "features": [],
+      "blocks": {}
+    },
+    "feature": {
+      "frontmatter": [],
+      "features": [],
+      "blocks": {}
+    },
+    "statblock": {
+      "frontmatter": [
+        {
+          "name": "cr",
+          "type": "number",
+          "default": 0
+        }
+      ],
+      "features": [],
+      "blocks": {}
+    }
+  },
+  "skills": [],
+  "expressions": {},
+  "features": {
+    "categories": [
+      {
+        "id": "action",
+        "label": "Action",
+        "icon": "⚔️"
+      },
+      {
+        "id": "bonus_action",
+        "label": "Bonus Action",
+        "icon": "⚡"
+      },
+      {
+        "id": "reaction",
+        "label": "Reaction",
+        "icon": "🛡️"
+      },
+      {
+        "id": "free_action",
+        "label": "Free Action",
+        "icon": "✨"
+      },
+      {
+        "id": "passive",
+        "label": "Passive",
+        "icon": "📋"
+      }
+    ],
+    "providers": [
+      "class",
+      "race"
+    ],
+    "collectors": [
+      "character",
+      "monster"
+    ]
+  },
+  "spellcasting": {
+    "circles": [
+      {
+        "id": "cantrip",
+        "label": "Cantrip",
+        "icon": "0"
+      },
+      {
+        "id": "1",
+        "label": "1st Level",
+        "icon": "1"
+      },
+      {
+        "id": "2",
+        "label": "2nd Level",
+        "icon": "2"
+      },
+      {
+        "id": "3",
+        "label": "3rd Level",
+        "icon": "3"
+      },
+      {
+        "id": "4",
+        "label": "4th Level",
+        "icon": "4"
+      },
+      {
+        "id": "5",
+        "label": "5th Level",
+        "icon": "5"
+      },
+      {
+        "id": "6",
+        "label": "6th Level",
+        "icon": "6"
+      },
+      {
+        "id": "7",
+        "label": "7th Level",
+        "icon": "7"
+      },
+      {
+        "id": "8",
+        "label": "8th Level",
+        "icon": "8"
+      },
+      {
+        "id": "9",
+        "label": "9th Level",
+        "icon": "9"
+      }
+    ],
+    "lists": [
+      {
+        "id": "bard",
+        "label": "Bard Spells"
+      },
+      {
+        "id": "cleric",
+        "label": "Cleric Spells"
+      },
+      {
+        "id": "druid",
+        "label": "Druid Spells"
+      },
+      {
+        "id": "paladin",
+        "label": "Paladin Spells"
+      },
+      {
+        "id": "ranger",
+        "label": "Ranger Spells"
+      },
+      {
+        "id": "sorcerer",
+        "label": "Sorcerer Spells"
+      },
+      {
+        "id": "warlock",
+        "label": "Warlock Spells"
+      },
+      {
+        "id": "wizard",
+        "label": "Wizard Spells"
+      }
+    ],
+    "providers": [
+      "class",
+      "subclass"
+    ],
+    "collectors": [
+      "character",
+      "monster"
+    ],
+    "casters": {
+      "full": {
+        "name": "Full Caster"
+      },
+      "half": {
+        "name": "Half Caster"
+      },
+      "third": {
+        "name": "Third Caster"
+      }
+    }
+  },
+  "conditions": [],
+  "traits": [
+    {
+      "$name": "Proficiency",
+      "mechanical": true,
+      "$contents": "Standard proficiency with weapons, tools, or skills."
+    },
+    {
+      "$name": "Expertise",
+      "mechanical": true,
+      "$contents": "Double proficiency bonus with specific skills or tools."
+    },
+    {
+      "$name": "Darkvision",
+      "mechanical": true,
+      "$contents": "See in darkness up to a specified range."
+    },
+    {
+      "$name": "Resistance",
+      "mechanical": true,
+      "$contents": "Take half damage from a specified damage type."
+    },
+    {
+      "$name": "Immunity",
+      "mechanical": true,
+      "$contents": "Take no damage from a specified damage type."
+    }
+  ],
+  "events": []
+}
