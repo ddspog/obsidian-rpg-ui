@@ -40,6 +40,9 @@ export { TriggerButton } from "./TriggerButton";
 export type { TriggerButtonProps } from "./TriggerButton";
 export { InspirationalLevel } from "./InspirationalLevel";
 export type { InspirationalLevelProps } from "./InspirationalLevel";
+export { getBannerStyle } from "./bannerStyle";
+export type { BannerValue } from "./bannerStyle";
+ 
 export { Stat } from "./Stat";
 export type { StatProps } from "./Stat";
 export { StatUL } from "./StatUL";

@@ -1,17 +1,23 @@
 ---
-xp: 34000
-luck: 2
+cssclasses:
+  - hide-title
+  - hide-properties
 ---
 ```rpg character.header
-name: Aldric Ironveil
 classes:
   - name: [[Druid]]
-    level: 6
+    level: 1
   - name: [[Ranger]]
     level: 2
-lineage: [[Elf]]
-heritage: [[Cosmopolitan]]
-background: [[Adherent]]
+lineage:
+  file: [[Elf]]
+heritage:
+  file: [[Cosmopolitan]]
+background:
+  file: [[Adherent]]
+xp: 40
+luck: 4
+banner: #ac8080
 ```
 ```rpg character.health
 max_hp: 68

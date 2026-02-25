@@ -324,8 +324,6 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
   private sectionInfo: MarkdownSectionInformation | null;
   private reactRoot: ReactDOM.Root | null = null;
   private appliedCssClasses: string[] = [];
-  // Elements where classes were applied (container, preview section, reading view)
-  private appliedClassTargets: HTMLElement[] = [];
 
     constructor(
     el: HTMLElement,
@@ -484,36 +482,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           // ignore
         }
 
-        // Apply any cssclasses from the file frontmatter onto the container
-        // so consumers can write note-level CSS (e.g., hide title/properties).
-        try {
-          const css = (fm as any)?.cssclasses;
-          if (css) {
-            const classes: string[] = Array.isArray(css)
-              ? css.map(String)
-              : String(css).split(/\s+/).filter(Boolean);
-            // Apply to the block container
-            for (const c of classes) this.containerEl.classList.add(c);
-            this.appliedClassTargets.push(this.containerEl);
-
-            // Also apply to preview section and reading view so note-level
-            // selectors can target page title and other surrounding UI.
-            const previewSection = this.containerEl.closest('.markdown-preview-section') as HTMLElement | null;
-            if (previewSection) {
-              for (const c of classes) previewSection.classList.add(c);
-              this.appliedClassTargets.push(previewSection);
-            }
-            const readingView = this.containerEl.closest('.markdown-reading-view') as HTMLElement | null;
-            if (readingView) {
-              for (const c of classes) readingView.classList.add(c);
-              this.appliedClassTargets.push(readingView);
-            }
-
-            this.appliedCssClasses = classes;
-          }
-        } catch (e) {
-          // ignore
-        }
+        // cssclasses are applied by Obsidian itself; do not mutate DOM here.
 
         const props: Record<string, unknown> = {
           self: selfWithSetters,
@@ -544,15 +513,6 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       }
       this.reactRoot = null;
     }
-    // Remove any cssclasses we added to avoid leaking classes across renders
-    try {
-      for (const el of this.appliedClassTargets) {
-        for (const c of this.appliedCssClasses) el.classList.remove(c);
-      }
-      this.appliedCssClasses = [];
-      this.appliedClassTargets = [];
-    } catch (e) {
-      // ignore
-    }
+    // No DOM mutation to clean up for cssclasses (handled by Obsidian)
   }
 }
