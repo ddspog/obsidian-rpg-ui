@@ -1,0 +1,96 @@
+/* =================================================================
+   Inspirational Level — radial badge widget
+   ================================================================= */
+
+.rpg-inspirational-level {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+/* ---- Decorative 4-pointed star ring (outer frame) -------------- */
+.rpg-inspirational-level::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  background: rgba(255, 255, 255, 0.15);
+  clip-path: polygon(
+    50% 0%,
+    56% 44%,
+    100% 50%,
+    56% 56%,
+    50% 100%,
+    44% 56%,
+    0% 50%,
+    44% 44%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Central badge (shows inspiration count) ------------------- */
+.rpg-inspirational-level__level {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.70);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Radial points area ---------------------------------------- */
+.rpg-inspirational-level__points {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Each inspiration-point button is positioned via inline style */
+.rpg-inspirational-level__point {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.rpg-inspirational-level__point:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.rpg-inspirational-level__point-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rpg-inspirational-level__point.is-active {
+  background: var(--interactive-accent, rgba(255, 200, 0, 0.9));
+  border-color: transparent;
+}
+
+.rpg-inspirational-level__point.is-active .rpg-inspirational-level__point-dot {
+  background: rgba(255, 255, 255, 0.9);
+}

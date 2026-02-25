@@ -58,7 +58,7 @@ describe("CreateSystem", () => {
         name: "Test",
         attributes: ["str"],
         entities: {
-          character: { fields: ["level", "name"] },
+          character: { frontmatter: ["level", "name"] },
         },
       });
       expect(system.entities.character.frontmatter).toHaveLength(2);
@@ -70,7 +70,7 @@ describe("CreateSystem", () => {
         name: "Test",
         attributes: ["str"],
         entities: {
-          character: { fields: [{ name: "level", type: "number", default: 1 }] },
+          character: { frontmatter: [{ name: "level", type: "number", default: 1 }] },
         },
       });
       expect(system.entities.character.frontmatter[0]).toMatchObject({
@@ -95,7 +95,7 @@ describe("CreateSystem", () => {
 
   describe("computed expressions", () => {
     it("should convert computed functions to ExpressionDef entries", async () => {
-      const modifier = (ctx: Record<string, unknown>) => {
+      const modifier = (_args: any, ctx: any) => {
         const score = Number(ctx.score) || 0;
         return Math.floor((score - 10) / 2);
       };
@@ -104,7 +104,7 @@ describe("CreateSystem", () => {
         name: "Test",
         attributes: ["str"],
         entities: {
-          character: { computed: { modifier } },
+          character: { expressions: { modifier } },
         },
       });
 
@@ -121,8 +121,8 @@ describe("CreateSystem", () => {
         name: "Test",
         attributes: ["str"],
         entities: {
-          character: { computed: { charFn: () => 1 } },
-          monster: { computed: { monsterFn: () => 2 } },
+          character: { expressions: { charFn: () => 1 } },
+          monster: { expressions: { monsterFn: () => 2 } },
         },
       });
 
@@ -135,7 +135,7 @@ describe("CreateSystem", () => {
         name: "Test",
         attributes: ["str"],
         entities: {
-          character: { computed: { modifier: (ctx: Record<string, unknown>) => ctx.score } },
+          character: { expressions: { modifier: (_args: any, ctx: any) => ctx.score } },
         },
       });
       const expr = system.expressions.get("modifier")!;
@@ -263,10 +263,7 @@ describe("CreateSystem", () => {
         entities: {
           character: {
             blocks: {
-              header: {
-                component: (props) => props,
-                props: { name: "string", level: { type: "number", default: 1 } },
-              },
+              header: (props: any) => null,
             },
           },
         },
@@ -283,31 +280,12 @@ describe("CreateSystem", () => {
           entities: {
             character: {
               blocks: {
-                header: { component: "not-a-function" as any },
+                header: "not-a-function" as any,
               },
             },
           },
         }),
       ).toThrow("block 'header' must have a callable 'component'");
-    });
-
-    it("should throw when block prop schema is invalid", () => {
-      expect(() =>
-        CreateSystem({
-          name: "Test",
-          attributes: ["str"],
-          entities: {
-            character: {
-              blocks: {
-                header: {
-                  component: (props) => props,
-                  props: { level: { type: "invalid" as any } },
-                },
-              },
-            },
-          },
-        }),
-      ).toThrow("prop 'level' has invalid schema");
     });
   });
 
@@ -321,12 +299,12 @@ describe("CreateSystem", () => {
         ],
         entities: {
           character: {
-            fields: [
+            frontmatter: [
               { name: "proficiency_bonus", type: "number", default: 2 },
               { name: "level", type: "number", default: 1 },
             ],
-            computed: {
-              modifier: (ctx: Record<string, unknown>) => Math.floor((Number(ctx.score) - 10) / 2),
+            expressions: {
+              modifier: (_args: any, ctx: any) => Math.floor((Number(ctx.score) - 10) / 2),
             },
           },
         },

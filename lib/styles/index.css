@@ -25,6 +25,15 @@
 @import "./components/session-log-overview.css";
 /* System Definition Components - Split from monolithic file */
 @import "./components/system-info.css";
+@import "./components/header.css";
+@import "./components/pills.css";
+@import "./components/progress-bar.css";
+@import "./components/trigger-button.css";
+@import "./components/inspirational-level.css";
+@import "./components/hide-classes.css";
+@import "./components/stat.css";
+@import "./components/stat-ul.css";
+@import "./components/skill-li.css";
 @import "./components/system-attributes-definition.css";
 @import "./components/skills-display.css";
 @import "./components/expressions-display.css";

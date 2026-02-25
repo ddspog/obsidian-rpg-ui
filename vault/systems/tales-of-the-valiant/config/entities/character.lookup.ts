@@ -8,7 +8,7 @@
  * Source: Tales of the Valiant Player's Guide (Kobold Press)
  */
 
-const xpTable: number[] = [
+export const xpTable: number[] = [
   0,      // Level 1
   300,    // Level 2
   900,    // Level 3
@@ -30,5 +30,3 @@ const xpTable: number[] = [
   305000, // Level 19
   355000, // Level 20
 ];
-
-export default xpTable;

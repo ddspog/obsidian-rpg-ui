@@ -86,26 +86,39 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
     headerSetting.addButton((btn) => {
       btn.setButtonText("Process").onClick(async () => {
         // process mapping on click: load the RPG system definition for the mapped system folder
-        const systemFolder = mapping.systemFolderPath;
-        if (!systemFolder) {
+        const rawFolder = mapping.systemFolderPath;
+        if (!rawFolder) {
           new Notice('No system folder set for this mapping');
           return;
         }
 
-        const system = await loadSystemFromTypeScript(ctx.app.vault, systemFolder);
+        // Try a set of candidate folder paths to be forgiving when users point
+        // to the system root rather than the config subfolder.
+        const candidates = [rawFolder, `${rawFolder}/config`].map(normalizeFolderPath).filter((c): c is string => !!c);
+        let system = null as any;
+        let lastErr: any = null;
+        for (const cand of candidates) {
+          try {
+            system = await loadSystemFromTypeScript(ctx.app.vault, cand);
+            if (system) { mapping.systemFolderPath = cand; break; }
+          } catch (e) {
+            lastErr = e;
+          }
+        }
         if (!system) {
-          new Notice(`Failed to load system from ${systemFolder}`);
+          console.error('Failed to load system for mapping', rawFolder, lastErr);
+          new Notice(`Failed to load system from ${rawFolder} (tried candidates: ${candidates.join(', ')})`);
           return;
         }
 
         // Build a concise summary of the RPGSystem (user-visible)
         const summary: Record<string, unknown> = {
           name: system.name,
-          attributes: system.attributes.map((a) => ({ name: a.$name, alias: a.alias, subtitle: a.subtitle })),
+          attributes: system.attributes.map((a: any) => ({ name: a.$name, alias: a.alias, subtitle: a.subtitle })),
           entities: Object.keys(system.entities || {}).map((k) => k),
-          skills: (system.skills || []).map((s) => ({ name: s.$name, attribute: s.attribute })),
-          featureCategories: (system.features?.categories || []).map((c) => ({ id: c.id, label: c.label })),
-          conditions: (system.conditions || []).map((c) => ({ name: c.$name, icon: c.icon })),
+          skills: (system.skills || []).map((s: any) => ({ name: s.$name, attribute: s.attribute })),
+          featureCategories: (system.features?.categories || []).map((c: any) => ({ id: c.id, label: c.label })),
+          conditions: (system.conditions || []).map((c: any) => ({ name: c.$name, icon: c.icon })),
           expressions: Array.from(system.expressions?.keys() || []),
         };
 

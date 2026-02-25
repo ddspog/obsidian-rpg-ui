@@ -18,8 +18,9 @@ import type {
   SpellcastingSystemConfig,
   ConditionDefinition,
   EntityConfig,
-  BlockDefinition,
+  Component,
 } from "./types";
+import type { ReactNode } from "react";
 
 /**
  * Build a fully realized RPGSystem from a user-facing SystemConfig.
@@ -79,6 +80,7 @@ export function CreateSystem(
       spellcasting,
       conditions,
       traits: config.traits,
+      events: config.events ?? [],
     };
   };
 
@@ -114,7 +116,7 @@ export function CreateSystem(
  */
 async function resolveEntityFactories(config: SystemConfig, wiki?: any): Promise<SystemConfig> {
   const entities = config.entities ?? {};
-  const resolved: Record<string, EntityConfig> = {};
+    const resolved: Record<string, EntityConfig<any, any>> = {};
   for (const [key, val] of Object.entries(entities)) {
     try {
       if (typeof val === "function") {
@@ -142,46 +144,46 @@ async function resolveEntityFactories(config: SystemConfig, wiki?: any): Promise
  * provided value; `CreateSystem` will detect and resolve function-typed
  * entity entries at build time.
  */
-export function CreateEntity(
-  cfg: EntityConfig | ((ctx: { wiki?: any }) => EntityConfig | Promise<EntityConfig>),
-): EntityConfig | ((ctx: { wiki?: any }) => EntityConfig | Promise<EntityConfig>) {
+export function CreateEntity<TEntity extends EntityConfig = EntityConfig>(
+  cfg: TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>),
+): TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>) {
   return cfg as any;
+}
+
+/**
+ * Create a typed block React component.
+ *
+ * An identity helper — returns the function typed as
+ * `Component<TProps, TLookup, TFrontmatter, TBlocks>`.
+ */
+export function CreateComponent<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>
+>(
+  fn: Component<TProps, TLookup, TFrontmatter, TBlocks>,
+): Component<TProps, TLookup, TFrontmatter, TBlocks> {
+  return fn;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const VALID_PROP_TYPES = ["string", "number", "boolean"] as const;
-type ValidPropType = (typeof VALID_PROP_TYPES)[number];
-
-function isValidPropType(value: unknown): value is ValidPropType {
-  return VALID_PROP_TYPES.includes(value as ValidPropType);
-}
-
 /**
- * Validate block definitions for an entity, ensuring each block has a callable
- * `component` and that props schema entries are well-formed.
+ * Validate block definitions for an entity, ensuring each entry is a callable
+ * React component.
  * Returns the validated blocks map, or undefined if no blocks were provided.
  */
 function validateBlocks(
   entityName: string,
-  blocks: Record<string, BlockDefinition> | undefined,
-): Record<string, BlockDefinition> | undefined {
+  blocks: Record<string, Component> | undefined,
+): Record<string, Component> | undefined {
   if (!blocks) return undefined;
   for (const [blockName, block] of Object.entries(blocks)) {
-    if (typeof block.component !== "function") {
+    if (typeof block !== "function") {
       throw new Error(
         `CreateSystem: entity '${entityName}' block '${blockName}' must have a callable 'component'`,
       );
-    }
-    for (const [propName, schema] of Object.entries(block.props ?? {})) {
-      const isValid =
-        isValidPropType(schema) ||
-        (typeof schema === "object" && schema !== null && isValidPropType((schema as { type?: unknown }).type));
-      if (!isValid) {
-        throw new Error(
-          `CreateSystem: entity '${entityName}' block '${blockName}' prop '${propName}' has invalid schema`,
-        );
-      }
     }
   }
   return blocks;
@@ -197,22 +199,24 @@ function normalizeAttribute(attr: string | AttributeDefinition): AttributeDefini
 function buildEntity(
   entityName: string,
   entityConfig: EntityConfig,
-): { entityDef: EntityTypeDef; computedExpressions: Map<string, ExpressionDef> } {
-  const frontmatter: FrontmatterFieldDef[] = (entityConfig.fields ?? []).map(normalizeField);
-  const features = entityConfig.features ?? [];
-  const blocks = validateBlocks(entityName, entityConfig.blocks);
-  const xpTable = entityConfig.xpTable;
+  ): { entityDef: EntityTypeDef<any>; computedExpressions: Map<string, ExpressionDef> } {
+    const frontmatter: FrontmatterFieldDef[] = normalizeFrontmatter(entityConfig.frontmatter);
+    const features = entityConfig.features ?? [];
+    const blocks = validateBlocks(entityName, entityConfig.blocks as Record<string, Component> | undefined);
+    const xpTable = entityConfig.xpTable;
+    const lookup = (entityConfig as any).lookup;
 
-  const entityDef: EntityTypeDef = { frontmatter, features, xpTable, blocks };
+    const entityDef: EntityTypeDef<any> = { frontmatter, features, xpTable, lookup, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
-  for (const [fnName, fn] of Object.entries(entityConfig.computed ?? {})) {
+  const expressionMap: Record<string, (args: any[], ctx: any) => unknown> = (entityConfig as any).expressions ?? entityConfig.computed ?? {};
+  for (const [fnName, fn] of Object.entries(expressionMap)) {
     const exprId = fnName;
     const expr: ExpressionDef = {
       id: exprId,
       params: getFunctionParams(fn),
       formula: buildFormulaDescription(entityName, fnName, fn),
-      evaluate: fn,
+      evaluate: (ctx: any) => fn(ctx?.args ?? [], ctx),
     };
     computedExpressions.set(exprId, expr);
   }
@@ -235,6 +239,18 @@ function normalizeField(
     derived: field.derived,
     aliases: field.aliases,
   };
+}
+
+function normalizeFrontmatter(fm: any): FrontmatterFieldDef[] {
+  if (!fm) return [];
+  if (Array.isArray(fm)) return fm.map((f: any) => normalizeField(f));
+  return Object.entries(fm).map(([name, def]: [string, any]) => ({
+    name,
+    type: def?.type ?? "string",
+    default: def?.default,
+    derived: def?.derived,
+    aliases: def?.aliases,
+  }));
 }
 
 /**

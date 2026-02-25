@@ -18,7 +18,7 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "rebuild:loader": "esbuild lib/systems/ts-loader.ts --bundle --platform=node --format=cjs --outfile=scripts/tmp-ts-loader.js --alias:obsidian=scripts/obsidian-shim.js --external:esbuild-wasm --external:esbuild --log-level=warning",
-    "dump:system": "npm run rebuild:loader && node scripts/run-loader-bundled.js | jq '.' > last-system.json"
+    "dump:system": "npm run rebuild:loader && node scripts/run-loader-bundled.js systems/tales-of-the-valiant/config | jq '.' > last-system.json"
   },
   "keywords": [],
   "author": "",

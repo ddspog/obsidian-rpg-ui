@@ -12,7 +12,7 @@
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
 import type { SpellSlotDistribution } from "rpg-ui-toolkit";
 
-const spellcastTable: SpellSlotDistribution[] = [
+const table: SpellSlotDistribution[] = [
   { level: 1,  slots: [2, 0, 0, 0, 0, 0, 0, 0, 0] },
   { level: 2,  slots: [3, 0, 0, 0, 0, 0, 0, 0, 0] },
   { level: 3,  slots: [4, 2, 0, 0, 0, 0, 0, 0, 0] },
@@ -32,7 +32,7 @@ const spellcastTable: SpellSlotDistribution[] = [
   { level: 17, slots: [4, 3, 3, 3, 2, 1, 1, 1, 1] },
   { level: 18, slots: [4, 3, 3, 3, 3, 1, 1, 1, 1] },
   { level: 19, slots: [4, 3, 3, 3, 3, 2, 1, 1, 1] },
-  { level: 20, slots: [4, 3, 3, 3, 3, 2, 2, 1, 1] },
+  { level: 20, slots: [4, 3, 3, 3, 3, 2, 1, 1, 1] },
 ];
 
-export default spellcastTable;
+export default table;

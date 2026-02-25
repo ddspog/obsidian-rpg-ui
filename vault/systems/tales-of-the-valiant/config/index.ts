@@ -24,10 +24,14 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { ConditionDefinition, CreateSystem, CreateEntity, SkillDefinition } from "rpg-ui-toolkit";
+import { CreateSystem, CreateEntity } from "rpg-ui-toolkit";
+import type {
+  ConditionDefinition,
+  SkillDefinition,
+} from "rpg-ui-toolkit";
 import attributes from './attributes';
-import xpTable from './xp-table';
-import spellcastTable from './spellcast-table';
+import spellcastTable from './spellslots';
+import character from "./entities/character";
 
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
@@ -37,95 +41,23 @@ export const system = CreateSystem(async ({ wiki }) => ({
 
   // ── Entity Types ─────────────────────────────────────────────────────────────
   entities: {
-    // Use CreateEntity so the definition can be authored as a factory that
-    // receives the `wiki` fixture. This lets you keep complex entity
-    // definitions in separate vault files and load them here via `wiki.file`
-    // or `wiki.folder`.
-    character: CreateEntity(async ({ wiki }: { wiki?: any }) => {
-      const externalFeatures = (await wiki.folder("compendium/entities/character/features").catch(() => [])) as any[];
-      return {
-        fields: [
-          { name: "proficiency_bonus", type: "number", default: 2 },
-          { name: "level", type: "number", default: 1 },
-        ],
-        xpTable,
-        features: [
-          { $name: "Dash", type: "action", $contents: "Double your speed for the current turn." },
-          {
-            $name: "Disengage",
-            type: "action",
-            $contents: "Your movement doesn't provoke opportunity attacks for the rest of the turn.",
-          },
-          {
-            $name: "Dodge",
-            type: "action",
-            $contents: "Attack rolls against you have disadvantage until your next turn.",
-          },
-          {
-            $name: "Help",
-            type: "action",
-            $contents: "Give an ally advantage on their next ability check or attack roll.",
-          },
-          { $name: "Hide", type: "action", $contents: "Make a Dexterity (Stealth) check to hide." },
-          {
-            $name: "Ready",
-            type: "action",
-            $contents: "Prepare an action to trigger in response to a specified circumstance.",
-          },
-          {
-            $name: "Search",
-            type: "action",
-            $contents: "Make a Wisdom (Perception) or Intelligence (Investigation) check to find something.",
-          },
-          {
-            $name: "Use an Object",
-            type: "action",
-            $contents: "Interact with an object or the environment.",
-          },
-          {
-            $name: "Opportunity Attack",
-            type: "reaction",
-            $contents: "Make a melee attack against a creature that leaves your reach.",
-          },
-          // merge any external features defined in the vault
-          ...externalFeatures.map((f) => ({ $name: f.$name ?? f.$path, $contents: f.$contents ?? "" })),
-        ],
-        computed: {
-          /** Ability modifier: floor((score - 10) / 2) */
-          modifier: (ctx: Record<string, unknown>) => {
-            const score = Number(ctx.score) || 0;
-            return Math.floor((score - 10) / 2);
-          },
-          /** Saving throw: modifier + proficiency_bonus (if proficient) */
-          saving_throw: (ctx: Record<string, unknown>) => {
-            const score = Number(ctx.score) || 0;
-            const proficiencyBonus = Number(ctx.proficiency_bonus) || 0;
-            const isProficient = Boolean(ctx.is_proficient);
-            const mod = Math.floor((score - 10) / 2);
-            return mod + (isProficient ? proficiencyBonus : 0);
-          },
-          /** Skill modifier: modifier + proficiency_bonus * proficiency_level */
-          skill_modifier: (ctx: Record<string, unknown>) => {
-            const score = Number(ctx.score) || 0;
-            const proficiencyBonus = Number(ctx.proficiency_bonus) || 0;
-            const proficiencyLevel = Number(ctx.proficiency_level) || 0;
-            const mod = Math.floor((score - 10) / 2);
-            return mod + proficiencyBonus * proficiencyLevel;
-          },
-        },
-      };
-    }),
+    character,
 
-    class: CreateEntity(({ wiki }: { wiki?: any }) => ({ fields: [{ name: "hit_die", type: "string", default: "d8" }] })),
+    class: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      frontmatter: [{ name: "hit_die", type: "string", default: "d8" }],
+      blocks: {
+        features: () => null,
+      },
+    })),
 
-    subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({ fields: [{ name: "parent_class", type: "string", default: "" }] })),
+    subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "parent_class", type: "string", default: "" }] })),
 
-    race: CreateEntity(({ wiki }: { wiki?: any }) => ({ fields: [{ name: "size", type: "string", default: "medium" }, { name: "speed", type: "number", default: 30 }] })),
+    race: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "size", type: "string", default: "medium" }, { name: "speed", type: "number", default: 30 }] })),
 
     monster: CreateEntity(async ({ wiki }: { wiki?: any }) => {
       const external = (await wiki.file("compendium/entities/monster/extra").catch(() => null)) as any;
       return {
-        fields: [{ name: "cr", type: "number", default: 0 }],
+        frontmatter: [{ name: "cr", type: "number", default: 0 }],
         features: [
           {
             $name: "Opportunity Attack",
@@ -136,6 +68,34 @@ export const system = CreateSystem(async ({ wiki }) => ({
         ],
       };
     }),
+
+    spell: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      frontmatter: [
+        { name: "level", type: "number", default: 0 },
+        { name: "school", type: "string", default: "" },
+      ],
+      blocks: {
+        info: () => null,
+        effects: () => null,
+      },
+    })),
+
+    feature: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      blocks: {
+        feature: () => null,
+        aspects: () => null,
+      },
+    })),
+
+    statblock: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      frontmatter: [{ name: "cr", type: "number", default: 0 }],
+      blocks: {
+        header: () => null,
+        traits: () => null,
+        attributes: () => null,
+        features: () => null,
+      },
+    })),
   },
 
   // ── Features ──────────────────────────────────────────────────────────────────
@@ -178,6 +138,11 @@ export const system = CreateSystem(async ({ wiki }) => ({
     providers: ["class", "subclass"],
     collectors: ["character", "monster"],
     spellcastTable,
+    casters: {
+      full: { name: "Full Caster", levelConversion: (l: number) => l },
+      half: { name: "Half Caster", levelConversion: (l: number) => Math.floor(l / 2) },
+      third: { name: "Third Caster", levelConversion: (l: number) => Math.floor(l / 3) },
+    },
   },
 
   // ── Traits ────────────────────────────────────────────────────────────────────

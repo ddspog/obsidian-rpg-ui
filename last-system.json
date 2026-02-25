@@ -46,18 +46,7 @@
   ],
   "entities": {
     "character": {
-      "frontmatter": [
-        {
-          "name": "proficiency_bonus",
-          "type": "number",
-          "default": 2
-        },
-        {
-          "name": "level",
-          "type": "number",
-          "default": 1
-        }
-      ],
+      "frontmatter": [],
       "features": [
         {
           "$name": "Dash",
@@ -104,7 +93,34 @@
           "type": "reaction",
           "$contents": "Make a melee attack against a creature that leaves your reach."
         }
-      ]
+      ],
+      "lookup": {
+        "table": {
+          "xp": [
+            0,
+            300,
+            900,
+            2700,
+            6500,
+            14000,
+            23000,
+            34000,
+            48000,
+            64000,
+            85000,
+            100000,
+            120000,
+            140000,
+            165000,
+            195000,
+            225000,
+            265000,
+            305000,
+            355000
+          ]
+        }
+      },
+      "blocks": {}
     },
     "class": {
       "frontmatter": [
@@ -114,7 +130,8 @@
           "default": "d8"
         }
       ],
-      "features": []
+      "features": [],
+      "blocks": {}
     },
     "subclass": {
       "frontmatter": [
@@ -154,264 +171,47 @@
           "$name": "Opportunity Attack",
           "type": "reaction",
           "$contents": "Make a melee attack against a creature that leaves your reach."
+        },
+        {
+          "$name": "extra",
+          "$contents": ""
         }
       ]
+    },
+    "spell": {
+      "frontmatter": [
+        {
+          "name": "level",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "name": "school",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "features": [],
+      "blocks": {}
+    },
+    "feature": {
+      "frontmatter": [],
+      "features": [],
+      "blocks": {}
+    },
+    "statblock": {
+      "frontmatter": [
+        {
+          "name": "cr",
+          "type": "number",
+          "default": 0
+        }
+      ],
+      "features": [],
+      "blocks": {}
     }
   },
-  "skills": [
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "dexterity",
-      "subtitle": "Associated Ability: Dexterity (DEX)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Acrobatics.md",
-      "$name": "Acrobatics",
-      "$contents": "Your DEX (Acrobatics) check covers your attempt to stay on your feet in a tricky situation, such as running across a sheet of ice, balancing on a tightrope, or staying upright on a rocking ship’s deck. The GM might also call for a DEX (Acrobatics) check to see if you can perform acrobatic stunts, including dives, rolls, somersaults, and flips. \n###### Avoid or Escape a Grapple \nEscaping a grapple is a unique way that a PC can use the Acrobatics skill. When a creature attempts to grapple you in combat, you can use the Acrobatics skill to attempt to avoid or escape it. See the **Special Melee Attacks** section in this chapter for more detail.\n![[acrobatics.webp|384]]",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "wisdom",
-      "subtitle": "Associated Ability: Wisdom (WIS)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Animal Handling.md",
-      "$name": "Animal Handling",
-      "$contents": "When you want to calm a domesticated animal, keep a mount from getting spooked, or intuit an animal’s intentions, the GM might call for a WIS (Animal Handling) check. You also make a WIS (Animal Handling) check to control your mount when you try something risky.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "intelligence",
-      "subtitle": "Associated Ability: Intelligence (INT)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Arcana.md",
-      "$name": "Arcana",
-      "$contents": "Your INT (Arcana) check measures your ability to recall lore about matters such as spells, magic items, eldritch symbols, magical traditions, the planes of existence, and inhabitants of those planes.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "strength",
-      "subtitle": "Associated Ability: Strength (STR)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Athletics.md",
-      "$name": "Athletics",
-      "$contents": "Your STR (Athletics) check covers difficult situations you encounter while climbing, jumping, or swimming. Examples include scaling a rain-slicked cliff, avoiding hazards on a climb, jumping unusually far, pulling off a stunt while jumping, swimming in treacherous currents, or staying afloat when a creature tries to pull you underwater. \n###### Grappling and Shoving \nGrappling and shoving are unique ways that a PC can use the Athletics skill. See the **Special Melee Attacks** section in this chapter for more detail.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "charisma",
-      "subtitle": "Associated Ability: Charisma (CHA)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Deception.md",
-      "$name": "Deception",
-      "$contents": "Your CHA (Deception) check determines whether you can convincingly hide the truth, verbally or through actions. Deception ranges from misleading through ambiguity to telling outright lies. Typical situations include trying to fast-talk a guard, con a merchant, cheat at gambling, or wear a convincing disguise. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "intelligence",
-      "subtitle": "Associated Ability: Intelligence (INT)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/History.md",
-      "$name": "History",
-      "$contents": "Your INT (History) check measures your ability to recall lore about matters such as legendary people, ancient kingdoms, past disputes, recent wars, and lost civilizations. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "wisdom",
-      "subtitle": "Associated Ability: Wisdom (WIS)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Insight.md",
-      "$name": "Insight",
-      "$contents": "Your WIS (Insight) check decides whether you can determine the true intentions of a creature, such as when searching out a lie or predicting someone’s next move. This involves gleaning clues from body language, speech habits, and changes in mannerisms. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "charisma",
-      "subtitle": "Associated Ability: Charisma (CHA)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Intimidation.md",
-      "$name": "Intimidation",
-      "$contents": "An attempt to influence someone through threats, hostility, and physical violence requires a CHA (Intimidation) check. Examples include prying information out of a prisoner, convincing street thugs to back down, or using a broken bottle to suggest that a sneering vizier reconsider.\n\n>[!rules] ABILITY MODIFIERS AND ASSOCIATED SKILLS\n> A skill is usually paired with a specific ability. That’s why a certain ability appears in parentheses after each skill on the character sheet. For example, the Athletics skill is almost always used to modify STR ability checks, so it’s listed as “Athletics (STR)” on the character sheet. \n>\n>However, some situations might call for a different approach, and the GM might ask for a check using an unusual combination of ability and skill. You might also want to ask to use a different combination if it seems appropriate. \n>\n>For example, if you have to swim to an island, the GM might call for a CON (Athletics) check to see if you have the stamina to make it there. If your character is proficient in Athletics, you would add your PB to the CON check instead of the normal STR (Athletics) check. Similarly, if your barbarian smashes a table to intimidate an enemy, your GM might ask for a STR (Intimidation) check, even though Intimidation is normally associated with CHA.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "intelligence",
-      "subtitle": "Associated Ability: Intelligence (INT)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Investigation.md",
-      "$name": "Investigation",
-      "$contents": "Looking around for clues and making deductions based on those clues involves an INT (Investigation) check. You might deduce the location of a hidden object, discern from a wound what kind of weapon dealt it, or determine the weakest point in a tunnel that could cause it to collapse. Poring through ancient scrolls for a fragment of hidden knowledge might also call for an INT (Investigation) check. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "wisdom",
-      "subtitle": "Associated Ability: Wisdom (WIS)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Medicine.md",
-      "$name": "Medicine",
-      "$contents": "A WIS (Medicine) check lets you try to stabilize an unconscious companion at 0 HP or diagnose an illness. \n###### Stabilize \nStabilizing a creature is a unique way that a PC can use the Medicine skill. When a PC is reduced to 0 HP during encounter gameplay, you can make a Medicine check to try to stabilize the fallen character so that they stop having to make death saves and risk death (see **Stabilizing a Creature** under **Death Saves** in this chapter). ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "intelligence",
-      "subtitle": "Associated Ability: Intelligence (INT)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Nature.md",
-      "$name": "Nature",
-      "$contents": "Your INT (Nature) check measures your ability to recall lore about matters such as terrain, plants and animals, weather, and natural cycles. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "wisdom",
-      "subtitle": "Associated Ability: Wisdom (WIS)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Perception.md",
-      "$name": "Perception",
-      "$contents": "Your WIS (Perception) check lets you spot, hear, or otherwise detect the presence of something. It measures your general awareness of surroundings and keenness of senses. For example, you might try to overhear a conversation through a closed door, eavesdrop under an open window, or catch the scent of monsters skulking through the forest. You might also try to spot things that are obscured or easy to miss, such as orcs lying in ambush, thugs hiding in the shadows of an alley, or candlelight under a closed secret door. \n###### Passive Perception \nPassive Perception is a unique way that a PC can use the Perception skill. Calculating passive Perception works the same as calculating any passive check (see **Passive Checks** in this chapter). Passive Perception gives you a chance to spot hidden threats, such as ambushes, even when you aren’t looking for them and lets you discover hazards or traps before you trigger them.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "charisma",
-      "subtitle": "Associated Ability: Charisma (CHA)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Performance.md",
-      "$name": "Performance",
-      "$contents": "Your CHA (Performance) check determines how well you delight an audience with music, dance, acting, storytelling, or other forms of entertainment.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "charisma",
-      "subtitle": "Associated Ability: Charisma (CHA)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Persuasion.md",
-      "$name": "Persuasion",
-      "$contents": "When you attempt to influence someone or a group of people with tact, social graces, or good nature, the GM might ask for a CHA (Persuasion) check. You use Persuasion when acting in good faith, to foster friendships, make cordial requests, or exhibit proper etiquette. Examples include convincing a chamberlain to let your party see the king, negotiating peace between warring tribes, or inspiring a crowd. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "intelligence",
-      "subtitle": "Associated Ability: Intelligence (INT)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Religion.md",
-      "$name": "Religion",
-      "$contents": "Your INT (Religion) check measures your ability to recall lore about matters such as deities, rites and prayers, religious hierarchies, holy symbols, and secret cults. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "dexterity",
-      "subtitle": "Associated Ability: Dexterity (DEX)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Sleight of Hand.md",
-      "$name": "Sleight of Hand",
-      "$contents": "An act of legerdemain or manual trickery, such as planting an item on someone else or concealing an object on your person, calls for a DEX (Sleight of Hand) check. The GM might also call for a DEX (Sleight of Hand) check to determine whether you lift a coin purse off another person or slip something out of another person’s pocket.",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "dexterity",
-      "subtitle": "Associated Ability: Dexterity (DEX)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Stealth.md",
-      "$name": "Stealth",
-      "$contents": "Make a DEX (Stealth) check when you attempt to conceal yourself from enemies, slink past guards, slip away without being noticed, or sneak up on someone. \n###### Hiding \nHiding is a unique way that a PC can use the Stealth skill. It’s tied to taking the Hide action in combat encounters (see **Actions in Combat** in this chapter). Any character can attempt to hide, even if they don’t have proficiency in the Stealth skill. \n\nThe GM decides when circumstances are appropriate for hiding. When you attempt to hide, make a DEX (Stealth) check. Until you are discovered or stop hiding, that check result is contested by the Perception score of a creature that might discover you. \n\nYou can’t attempt to hide from a creature that can sense you clearly, and you give away your position if you make noise, such as shouting a warning or knocking over a vase. \n\nA creature with the invisible condition (see **Appendix A: Conditions**) can always attempt to hide and has advantage on DEX (Stealth) checks to do so. \n\nIn combat, most creatures stay alert for signs of danger, so if you come out of hiding and approach a creature, it typically detects you. However, under certain circumstances, the GM might allow you to stay hidden as you approach a distracted creature, granting you advantage on an attack roll (see **Unseen Attackers and Targets** under **Making an Attack** in this chapter). \n\n**_Perception Score._** In a monster or NPC stat block, each creature has a Perception score. Whether a monster is actively searching for you or just going about their business, the GM compares your DEX (Stealth) check result to the creature’s Perception score to see whether they notice you. ",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "cssclasses": [
-        "note-feature",
-        "rpg-ui"
-      ],
-      "attribute": "wisdom",
-      "subtitle": "Associated Ability: Wisdom (WIS)",
-      "source": "\"_From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**_\"",
-      "$path": "systems/tales-of-the-valiant/compendium/skills/Survival.md",
-      "$name": "Survival",
-      "$contents": "The GM might ask you to make a WIS (Survival) check to follow tracks, hunt wild game, guide your group through frozen wastelands, identify signs that owlbears live nearby, predict the weather, or avoid quicksand and other natural hazards. \n###### Tracking \nTracking is a unique way that a PC can use the Survival skill. It involves detecting and following signs of a creature’s passage through an area. Any character can attempt to track, even if they don’t have proficiency in the Survival skill. \n\nA PC who wants to track a creature declares their intention to do so. Then the GM determines whether tracking is possible. For example, a GM could rule it is impossible to track a creature that moved through an area weeks ago because too much time has passed. \n\nIf a GM determines tracking is possible, they decide whether a check is necessary. For example, clear signs of passage, such as muddy footprints on a wooden floor, might mean tracking automatically succeeds. \n\nIf a GM determines a check is necessary, the tracking PC must succeed on a WIS (Survival) check. The DC for this check is set by the GM.",
-      "$tags": [],
-      "$aliases": []
-    }
-  ],
+  "skills": [],
   "expressions": {},
   "features": {
     "categories": [
@@ -544,85 +344,20 @@
     "collectors": [
       "character",
       "monster"
-    ]
-  },
-  "conditions": [
-    {
-      "$name": "Blinded",
-      "icon": "🙈",
-      "$contents": "A blinded creature can't see."
-    },
-    {
-      "$name": "Charmed",
-      "icon": "💖",
-      "$contents": "A charmed creature can't attack the charmer."
-    },
-    {
-      "$name": "Deafened",
-      "icon": "🔇",
-      "$contents": "A deafened creature can't hear."
-    },
-    {
-      "$name": "Frightened",
-      "icon": "😱",
-      "$contents": "A frightened creature has disadvantage while it can see the source."
-    },
-    {
-      "$name": "Grappled",
-      "icon": "🤼",
-      "$contents": "A grappled creature's speed becomes 0."
-    },
-    {
-      "$name": "Incapacitated",
-      "icon": "💫",
-      "$contents": "An incapacitated creature can't take actions or reactions."
-    },
-    {
-      "$name": "Invisible",
-      "icon": "👻",
-      "$contents": "An invisible creature is impossible to see."
-    },
-    {
-      "$name": "Paralyzed",
-      "icon": "⚡",
-      "$contents": "A paralyzed creature is incapacitated and can't move or speak."
-    },
-    {
-      "$name": "Petrified",
-      "icon": "🪨",
-      "$contents": "A petrified creature is transformed into stone."
-    },
-    {
-      "subtitle": "Disadvantage on attack rolls and ability checks",
-      "source": "Player's Handbook",
-      "icon": "😲",
-      "$path": "systems/tales-of-the-valiant/compendium/conditions/Poisoned.md",
-      "$name": "Poisoned",
-      "$contents": "A poisoned creature has disadvantage on attack rolls and ability checks.\n",
-      "$tags": [],
-      "$aliases": []
-    },
-    {
-      "$name": "Prone",
-      "icon": "🛏️",
-      "$contents": "A prone creature is on the ground."
-    },
-    {
-      "$name": "Restrained",
-      "icon": "⛓️",
-      "$contents": "A restrained creature's speed becomes 0."
-    },
-    {
-      "$name": "Stunned",
-      "icon": "💥",
-      "$contents": "A stunned creature is incapacitated."
-    },
-    {
-      "$name": "Unconscious",
-      "icon": "💤",
-      "$contents": "An unconscious creature is incapacitated."
+    ],
+    "casters": {
+      "full": {
+        "name": "Full Caster"
+      },
+      "half": {
+        "name": "Half Caster"
+      },
+      "third": {
+        "name": "Third Caster"
+      }
     }
-  ],
+  },
+  "conditions": [],
   "traits": [
     {
       "$name": "Proficiency",
@@ -649,5 +384,6 @@
       "mechanical": true,
       "$contents": "Take no damage from a specified damage type."
     }
-  ]
+  ],
+  "events": []
 }
