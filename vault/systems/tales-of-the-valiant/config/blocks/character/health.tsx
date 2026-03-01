@@ -22,8 +22,12 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
             </>
           ) : (
             <>
-              <TriggerButton onClick={() => trigger("damage-1")} icon="➖">-1</TriggerButton>
-              <TriggerButton onClick={() => trigger("heal-1")} icon="➕">+1</TriggerButton>
+              <TriggerButton onClick={() => trigger("damage-1")}>
+                ➖ -1
+              </TriggerButton>
+              <TriggerButton onClick={() => trigger("heal-1")}>
+                ➕ +1
+              </TriggerButton>
             </>
           )}
         </div>

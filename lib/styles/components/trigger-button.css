@@ -1,48 +1,48 @@
-.rpg-trigger-button {
+/* Trigger Button — circular badge used in headers (styled to match banner image)
+   Design: black inner circle with an inner black stroke and an outer yellow ring
+           to match the progress bar treatment. */
+button[aria-details="Trigger Button"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--color-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s;
   flex-shrink: 0;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.18);
+  }
+
+  &:active {
+    transform: translateY(0);
+    opacity: 0.96;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.22);
+  }
+
+  svg {
+    color: var(--color-yellow);
+  }
 }
 
-.rpg-trigger-button:hover {
-  background: rgba(0, 0, 0, 0.75);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.rpg-trigger-button:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
-}
-
-.rpg-trigger-button:active {
-  opacity: 0.85;
-}
-
-.rpg-trigger-button__icon {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-/* Label visually hidden — accessible via aria-label */
-.rpg-trigger-button__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+/* Dark mode tweak: keep yellow ring but slightly dimmer background */
+.theme-dark button[aria-details="Trigger Button"] {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: var(--color-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
 }

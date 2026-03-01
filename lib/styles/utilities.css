@@ -100,19 +100,25 @@
 }
 
 /* Progress bar */
+
 .progress-container {
     width: 100%;
     height: 0.5rem;
-    background-color: var(--color-bg-secondary);
-    border-radius: 0.25rem;
+    /* Black track for consistent black/yellow styling */
+    background-color: #000000;
+    /* squared corners */
+    border-radius: 0;
     overflow: hidden;
     margin: 0.3rem 0;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.03);
 }
 
 .progress-bar {
     height: 100%;
-    background-color: var(--color-border-active);
+    /* Yellow fill */
+    background-color: #FFD400;
     transition: width 0.3s ease;
+    border-radius: 0; /* squared */
 }
 
 /* Input field styling */

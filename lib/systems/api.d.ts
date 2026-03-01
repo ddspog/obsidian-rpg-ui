@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, ComponentType } from "react";
 
 /**
  * RPG UI Toolkit – Public API type declarations
@@ -510,12 +510,17 @@ export {
   StatblockTraitsBlock,
   StatblockAttributesBlock,
   StatblockFeaturesBlock,
-  TitleAnchor,
+  Title,
   Pill,
   ProgressBar,
   TriggerButton,
+  Button,
   InspirationalLevel,
-  getBannerStyle,
+  Header,
+  Line,
+  Pills,
+  BigElements,
+  Buttons,
 } from "../ui";
 export type { ProgressBarProps } from "../ui";
 export type { TriggerButtonProps } from "../ui";
@@ -524,24 +529,23 @@ export { Stat } from "../ui";
 export type { StatProps } from "../ui";
 export { StatUL, SkillLI } from "../ui";
 export type { StatULProps, SkillLIProps } from "../ui";
+export type { LineType, LinePillsProps } from "../ui";
+export type { LineBigElementsProps } from "../ui";
+export type { LineButtonsProps } from "../ui";
+
+/** Runtime Lucide icon collection exported by the UI toolkit. */
+export type LucideModule = typeof import("lucide-react");
+export const Lucide: LucideModule;
 
 /**
  * Convert a banner frontmatter value into a style object usable in React.
  * Accepts a string (URL or CSS color) or other values; returns an object
  * with either `backgroundImage` or `backgroundColor`, or `undefined`.
  */
-export type BannerValue =
-  | `#${string}`
-  | `rgb(${string})`
-  | `rgba(${string})`
-  | `hsl(${string})`
-  | `hsla(${string})`
-  | `http://${string}`
-  | `https://${string}`
-  | `data:${string}`
-  | string;
-
-export declare function getBannerStyle(raw?: BannerValue | unknown): { backgroundImage: string } | { backgroundColor: string } | undefined;
+export type BannerHeaderProps = {
+  background?: string;
+  distribution?: string;
+};
 
 
 // ─── Factory function ─────────────────────────────────────────────────────────

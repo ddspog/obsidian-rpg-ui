@@ -1,0 +1,92 @@
+/* Line component styles — target elements by aria-label to avoid requiring className in markup */
+menu[aria-details="Line of Pills"] {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ensure child items don't get unexpected list margins */
+menu[aria-details="Line of Pills"] > * {
+  margin: 0;
+}
+
+/* Styles for larger action elements — intended for prominent buttons and controls */
+menu[aria-details="Line of Big Elements"] {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+menu[aria-details="Line of Big Elements"] > * {
+  margin: 0;
+}
+
+/* Button group inside BigElements — compact left-aligned row */
+menu[aria-details="Line Buttons"] {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  /* Ensure the button group remains compact when used inside BigElements */
+  flex: 0 0 auto;
+}
+
+menu[aria-details="Line Buttons"] > * {
+  flex: 0 0 auto;
+}
+
+/* Keep leading items compact, and push the final element (e.g. InspirationalLevel)
+   to the right via auto margin. The final element remains compact (won't stretch)
+   so its radial layout stays correct. */
+menu[aria-details="Line of Big Elements"] > *:not(:last-child) {
+  flex: 0 0 auto;
+}
+
+menu[aria-details="Line of Big Elements"] > *:last-child,
+menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  width: auto;
+  min-width: 72px;
+}
+
+/* Strong override for environments where other rules block margin-left from applying */
+/* Use a single, high-specificity selector to position the inspirational widget.
+   Avoid !important by relying on specificity and load order. */
+header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
+  margin-left: auto;
+}
+
+/* Stack the Leveling controls so each child can take full width.
+   This makes BigElements sit above the progress bar and allows the
+   progress bar to span the full width of the fieldset. */
+header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+/* Ensure the BigElements menu fills the available width so its children
+   (and the inspirational widget using margin-left:auto) position correctly. */
+header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Make the progress bar span the full width */
+header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] .rpg-progress-bar {
+  width: 100%;
+}
+
+/* Explicit class-based push for instances where other specificity fails */
+/* (removed) temporary class-based override — no longer needed */

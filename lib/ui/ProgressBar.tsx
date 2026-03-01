@@ -30,7 +30,7 @@ export function ProgressBar({ value, max, label, className }: ProgressBarProps):
       aria-valuenow={safeValue}
       aria-valuemin={0}
       aria-valuemax={safeMax}
-      aria-label={label ?? "Progress"}
+      aria-details={label ?? "Progress"}
     >
       {label && <span className="rpg-progress-bar__label">{label}</span>}
       <div className="rpg-progress-bar__track">

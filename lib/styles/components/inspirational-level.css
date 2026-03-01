@@ -2,95 +2,122 @@
    Inspirational Level — radial badge widget
    ================================================================= */
 
-.rpg-inspirational-level {
+.rpg-inspirational-level,
+figure[aria-details="Inspirational Level"] {
   position: relative;
   width: 72px;
   height: 72px;
   flex-shrink: 0;
-}
-
-/* ---- Decorative 4-pointed star ring (outer frame) -------------- */
-.rpg-inspirational-level::before {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  background: rgba(255, 255, 255, 0.15);
-  clip-path: polygon(
-    50% 0%,
-    56% 44%,
-    100% 50%,
-    56% 56%,
-    50% 100%,
-    44% 56%,
-    0% 50%,
-    44% 44%
-  );
-  pointer-events: none;
-  z-index: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
 }
 
 /* ---- Central badge (shows inspiration count) ------------------- */
-.rpg-inspirational-level__level {
+.rpg-inspirational-level__level,
+figure[aria-details="Inspirational Level"] output {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.70);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  /* inset look with thin gold stroke */
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.85));
+  border: 2px solid #FFD400; /* thin yellow stroke */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: #fff;
   z-index: 2;
   pointer-events: none;
   user-select: none;
+  box-shadow:
+    inset 0 -4px 8px rgba(0,0,0,0.6), /* inset shadow for depth */
+    0 2px 8px rgba(0,0,0,0.45);       /* outer shadow */
 }
 
 /* ---- Radial points area ---------------------------------------- */
-.rpg-inspirational-level__points {
+.rpg-inspirational-level__points,
+figure[aria-details="Inspirational Level"] menu {
+  /* Ensure the points container exactly overlays the figure so CSS % offsets
+     used to position the point buttons are calculated from a square area. */
   position: absolute;
+  display: block;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   inset: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   z-index: 1;
+  overflow: visible;
 }
 
 /* Each inspiration-point button is positioned via inline style */
 .rpg-inspirational-level__point {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.50);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.45);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.12s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  z-index: 3; /* ensure points sit above the central badge when overlapping */
 }
 
 .rpg-inspirational-level__point:hover {
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255,255,255,0.7);
 }
 
-.rpg-inspirational-level__point-dot {
+.rpg-inspirational-level__point-dot,
+figure[aria-details="Inspirational Level"] menu button > .rpg-inspirational-level__point-dot {
   width: 6px;
   height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
 }
 
-.rpg-inspirational-level__point.is-active {
-  background: var(--interactive-accent, rgba(255, 200, 0, 0.9));
-  border-color: transparent;
+.rpg-inspirational-level__point.is-active,
+figure[aria-details="Inspirational Level"] menu button.is-active {
+  background: #FFD400;
+  border-color: rgba(0,0,0,0.4);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.55) inset;
 }
 
-.rpg-inspirational-level__point.is-active .rpg-inspirational-level__point-dot {
-  background: rgba(255, 255, 255, 0.9);
+.rpg-inspirational-level__point-dot,
+figure[aria-details="Inspirational Level"] menu button > .rpg-inspirational-level__point-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.85);
+}
+
+.rpg-inspirational-level__point.is-active .rpg-inspirational-level__point-dot,
+figure[aria-details="Inspirational Level"] menu button.is-active > .rpg-inspirational-level__point-dot {
+  background: rgba(255,255,255,0.96);
+}
+
+/* Optional braided texture ring */
+.rpg-inspirational-level::after,
+figure[aria-details="Inspirational Level"]::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  z-index: 1;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(45deg, rgba(255,212,0,0.06) 0 4px, rgba(0,0,0,0.06) 4px 8px);
+  opacity: 0.35;
+  mix-blend-mode: overlay;
 }

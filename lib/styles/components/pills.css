@@ -1,57 +1,38 @@
-.rpg-title-anchor {
-  display: flex;
-  align-items: flex-end;
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-on-accent, #fff);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-  line-height: 1.1;
-  min-height: 2.4em;
-}
+/* Title anchor styles moved to lib/styles/components/title-anchor.css */
 
-.rpg-title-banner {
-  font-size: 0.75rem;
-  opacity: 0.85;
-  margin-left: 12px;
-  color: rgba(255,255,255,0.9);
-}
-
-.rpg-pill {
+span[aria-details="Link Pill"] {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 0;
   background: transparent;
   border: none;
-  border-bottom: 1px solid currentColor;
   border-radius: 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-yellow);
   font-size: 0.75rem;
+  font-family: var(--inline-title-font);
+  
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: -0.015em;
   margin-right: 0;
-}
 
-.rpg-pill[role="button"] {
-  cursor: pointer;
-}
+  &:hover {
+    color: var(--color-yellow);
+  }
 
-.rpg-pill[role="button"]:hover {
-  color: #fff;
-  border-bottom-color: var(--interactive-accent);
-}
+  &:focus {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+  }
 
-.rpg-pill:focus {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
-}
+  a.internal-link {
+    display: inline-block;
+    text-decoration-line: none;
+    color: inherit;
 
-.rpg-pill__content {
-  display: inline-block;
+    &:hover {
+      text-decoration-line: none;
+    }
+  }
 }

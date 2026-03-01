@@ -8,6 +8,13 @@
     --std-grid-gap: 0.5rem;
 
     /* Colors set by user */
+    /* Default icon color for small header trigger buttons */
+    --rpg-trigger-icon-color: rgba(255,255,255,0.92);
+}
+
+/* Dark theme overrides */
+.theme-dark {
+    --rpg-trigger-icon-color: rgba(255,255,255,0.96);
 }
 
 .card-grid {

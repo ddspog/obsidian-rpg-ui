@@ -24,27 +24,30 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
 
   // Radius as a percentage of the container's half-width (container is 72px, half = 36px).
   // Buttons are positioned along a circle whose radius leaves them on the edge (≈ 85% from centre).
-  const radiusPct = 50; // % offset from the 50% centre, reaching the outer rim
+  const radiusPct = 92; // % offset from the 50% centre — make placement much more pronounced (clearly outside badge)
 
   return (
-    <div
+    <figure
       className={["rpg-inspirational-level", className].filter(Boolean).join(" ")}
-      role="group"
+      aria-details="Inspirational Level"
       aria-label={`Inspiration: ${inspiration} of ${maxPoints}, level ${level}`}
       title="Inspiration"
     >
-      {/* Central badge — shows current inspiration count */}
-      <div className="rpg-inspirational-level__level">{inspiration}</div>
+      {/* Central badge — shows current inspiration count (semantic output) */}
+      <output className="rpg-inspirational-level__level">{inspiration}</output>
 
-      {/* Radially-positioned dot buttons */}
-      <div className="rpg-inspirational-level__points" aria-hidden={true}>
+      {/* Radially-positioned dot buttons (semantic menu) */}
+      <menu className="rpg-inspirational-level__points" aria-label="Inspiration points">
         {buttons.map((n) => {
           // Distribute buttons evenly, starting from the top (−90°)
           const angleDeg = (n - 1) / count * 360 - 90;
           const angleRad = (angleDeg * Math.PI) / 180;
-          // Convert to percentage offsets from the top-left of the container
-          const leftPct = 50 + radiusPct * Math.cos(angleRad);
-          const topPct  = 50 + radiusPct * Math.sin(angleRad);
+          // Convert to percentage offsets from the top-left of the container.
+          // radiusPct is a percentage of the container's half-width (e.g. 72 means 72% of 36px).
+          // To convert that to a percent offset of the full container (for CSS %), halve it.
+          const offsetPercent = radiusPct / 2;
+          const leftPct = 50 + offsetPercent * Math.cos(angleRad);
+          const topPct  = 50 + offsetPercent * Math.sin(angleRad);
 
           return (
             <button
@@ -60,7 +63,7 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
             </button>
           );
         })}
-      </div>
-    </div>
+      </menu>
+    </figure>
   );
 }

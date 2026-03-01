@@ -1,0 +1,112 @@
+/* =====================================================================
+   Banner Header Layout
+   Structural styles for the Banner Header component.
+   These rules target the header element by aria-label so the BannerHeader
+   component does not need to set a className. Child elements continue to
+   use the existing rpg-banner-header__* class names for specific layout.
+   ===================================================================== */
+
+header[aria-details="Banner Header"] {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  min-height: 100px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  /* Default dark background — overridden when backgroundImage is applied */
+  background-color: var(--background-secondary);
+  border: none;
+  border-radius: 0;
+
+  /* Background image support ----------------------------------------- */
+  &[style*="background-image"] {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    /* When a solid color banner is used we don't need the heavy scrim; keep it transparent */
+    &::before {
+      background: transparent;
+    }
+  }
+
+  /* Dark scrim overlay to keep text legible over the background image */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right,
+        rgba(0, 0, 0, 0.65) 0%,
+        rgba(0, 0, 0, 0.45) 60%,
+        rgba(0, 0, 0, 0.30) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* All direct children sit above the scrim */
+  & > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---- Identity column (left, hgroup) ------------------------------ */
+  hgroup {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* ---- Leveling column (right, fieldset) --------------------------- */
+  fieldset {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    min-width: 180px;
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
+}
+
+/* ---- Pills menu -------------------------------------------------- */
+header[aria-details="Banner Header"] .rpg-banner-header__pills,
+.rpg-banner-header__pills {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ---- Actions menu (trigger buttons + inspiration) ---------------- */
+header[aria-details="Banner Header"] .rpg-banner-header__actions,
+.rpg-banner-header__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  /* slightly larger gap for breathing room */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+/* Progress bar fills the bottom of the leveling column */
+header[aria-details="Banner Header"] .rpg-banner-header__leveling > .rpg-progress-bar,
+.rpg-banner-header__leveling > .rpg-progress-bar {
+  width: 100%;
+  min-width: 140px;
+}

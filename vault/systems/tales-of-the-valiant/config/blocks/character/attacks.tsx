@@ -15,7 +15,7 @@ export const attacks: EntityBlock<AttacksProps, CharacterEntity> = ({ self, trig
               {atk.damage && <span className="rpg-attack-item__damage">{atk.damage.roll} {atk.damage.type}</span>}
             </td>
             <td className="rpg-attack-actions">
-              <TriggerButton onClick={() => trigger(`attack:${i}`)} icon="🎲">Roll</TriggerButton>
+              <TriggerButton onClick={() => trigger(`attack:${i}`)}>🎲 Roll</TriggerButton>
             </td>
           </tr>
         ))}

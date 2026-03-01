@@ -12,7 +12,7 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
             <>
               <dt>WEAPONS:</dt>
               <dd>
-                <ul className="rpg-proficiencies-list--inline">{fromBlocks.weapons.map((w: string, i: number) => <li key={i}><Pill link={w}>{w}</Pill></li>)}</ul>
+                <ul className="rpg-proficiencies-list--inline">{fromBlocks.weapons.map((w: string, i: number) => <li key={i}><Pill.Link link={w}>{w}</Pill.Link></li>)}</ul>
               </dd>
             </>
           )}
@@ -20,7 +20,7 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
             <>
               <dt>ARMOR:</dt>
               <dd>
-                <ul className="rpg-proficiencies-list--inline">{fromBlocks.armor.map((a: string, i: number) => <li key={i}><Pill link={a}>{a}</Pill></li>)}</ul>
+                <ul className="rpg-proficiencies-list--inline">{fromBlocks.armor.map((a: string, i: number) => <li key={i}><Pill.Link link={a}>{a}</Pill.Link></li>)}</ul>
               </dd>
             </>
           )}
@@ -28,7 +28,7 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
             <>
               <dt>TOOLS:</dt>
               <dd>
-                <ul className="rpg-proficiencies-list--inline">{fromBlocks.tools.map((t: string, i: number) => <li key={i}><Pill link={t}>{t}</Pill></li>)}</ul>
+                <ul className="rpg-proficiencies-list--inline">{fromBlocks.tools.map((t: string, i: number) => <li key={i}><Pill.Link link={t}>{t}</Pill.Link></li>)}</ul>
               </dd>
             </>
           )}
@@ -51,7 +51,7 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
       <ul className="rpg-proficiencies-list">
         {list.map((p: any, i: number) => (
           <li key={i} className="rpg-proficiency-item">
-            {typeof p === "string" ? <Pill link={p}>{p}</Pill> : <Pill link={p.file ?? p.name ?? String(p)}>{p.name ?? p.label ?? String(p)}</Pill>}
+            {typeof p === "string" ? <Pill.Link link={p}>{p}</Pill.Link> : <Pill.Link link={p.file ?? p.name ?? String(p)}>{p.name ?? p.label ?? String(p)}</Pill.Link>}
           </li>
         ))}
       </ul>
