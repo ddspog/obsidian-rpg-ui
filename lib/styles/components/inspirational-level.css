@@ -11,6 +11,18 @@ figure[aria-details="Inspirational Level"] {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
 }
 
+/* ---- Decorative medallion background SVG ---------------------- */
+.rpg-inspirational-level__circle-bg,
+figure[aria-details="Inspirational Level"] > svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
 /* ---- Central badge (shows inspiration count) ------------------- */
 .rpg-inspirational-level__level,
 figure[aria-details="Inspirational Level"] output {
@@ -21,9 +33,9 @@ figure[aria-details="Inspirational Level"] output {
   width: 48px;
   height: 48px;
   border-radius: 999px;
-  /* inset look with thin gold stroke */
-  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.85));
-  border: 2px solid #FFD400; /* thin yellow stroke */
+  /* dark fill so number reads over the SVG ring */
+  background: rgba(0,0,0,0.72);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,9 +45,6 @@ figure[aria-details="Inspirational Level"] output {
   z-index: 2;
   pointer-events: none;
   user-select: none;
-  box-shadow:
-    inset 0 -4px 8px rgba(0,0,0,0.6), /* inset shadow for depth */
-    0 2px 8px rgba(0,0,0,0.45);       /* outer shadow */
 }
 
 /* ---- Radial points area ---------------------------------------- */
@@ -60,64 +69,49 @@ figure[aria-details="Inspirational Level"] menu {
 /* Each inspiration-point button is positioned via inline style */
 .rpg-inspirational-level__point {
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   transform: translate(-50%, -50%);
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.45);
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  outline: none;
+  background-color: unset;
+  box-shadow: unset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.12s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  transition: transform 0.15s, filter 0.15s;
   z-index: 3; /* ensure points sit above the central badge when overlapping */
 }
 
 .rpg-inspirational-level__point:hover {
-  border-color: rgba(255,255,255,0.7);
+  transform: translate(-50%, -50%) scale(1.2);
+  filter: brightness(1.3);
+  background-color: unset;
+  box-shadow: unset;
 }
 
-.rpg-inspirational-level__point-dot,
-figure[aria-details="Inspirational Level"] menu button > .rpg-inspirational-level__point-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.rpg-inspirational-level__point.is-active,
-figure[aria-details="Inspirational Level"] menu button.is-active {
-  background: #FFD400;
-  border-color: rgba(0,0,0,0.4);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.55) inset;
-}
-
-.rpg-inspirational-level__point-dot,
-figure[aria-details="Inspirational Level"] menu button > .rpg-inspirational-level__point-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.85);
-}
-
-.rpg-inspirational-level__point.is-active .rpg-inspirational-level__point-dot,
-figure[aria-details="Inspirational Level"] menu button.is-active > .rpg-inspirational-level__point-dot {
-  background: rgba(255,255,255,0.96);
-}
-
-/* Optional braided texture ring */
-.rpg-inspirational-level::after,
-figure[aria-details="Inspirational Level"]::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: 999px;
-  z-index: 1;
+/* Star SVG inside each point button */
+.rpg-inspirational-level__star-dot,
+figure[aria-details="Inspirational Level"] menu button > svg {
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  background-image: repeating-linear-gradient(45deg, rgba(255,212,0,0.06) 0 4px, rgba(0,0,0,0.06) 4px 8px);
-  opacity: 0.35;
-  mix-blend-mode: overlay;
+  display: block;
 }
+
+/* Active state: brighten & scale a little */
+.rpg-inspirational-level__point.is-active {
+  filter: drop-shadow(0 0 3px rgba(255, 212, 0, 0.7));
+}
+
+.rpg-inspirational-level__point.is-active:hover {
+  filter: drop-shadow(0 0 5px rgba(255, 212, 0, 0.9)) brightness(1.2);
+  background-color: unset;
+  box-shadow: unset;
+}
+
+/* The CircleBadge SVG provides its own decorative ring — no pseudo-element needed. */
