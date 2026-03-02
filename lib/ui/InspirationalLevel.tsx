@@ -30,23 +30,19 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
 
   return (
     <figure
-      className={["rpg-inspirational-level", className].filter(Boolean).join(" ")}
       aria-details="Inspirational Level"
-      aria-label={`Inspiration: ${inspiration} of ${maxPoints}, level ${level}`}
-      title="Inspiration"
     >
       {/* Decorative medallion ring — fills the full figure area */}
       <CircleBadge
-        className="rpg-inspirational-level__circle-bg"
         ringColor="var(--rpg-badge-ring, #2d2a27)"
         decorColor="var(--rpg-badge-decor, #e3dcce)"
       />
 
       {/* Central badge — shows current character level (semantic output) */}
-      <output className="rpg-inspirational-level__level">{level}</output>
+      <output aria-details="Character Level">{level}</output>
 
       {/* Radially-positioned dot buttons (semantic menu) */}
-      <menu className="rpg-inspirational-level__points" aria-label="Inspiration points">
+      <menu aria-details="Inspiration Points">
         {buttons.map((n) => {
           // Distribute buttons evenly, starting from the top (−90°)
           const angleDeg = (n - 1) / count * 360 - 90;
@@ -63,13 +59,11 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
               key={n}
               type="button"
               style={{ left: `${leftPct}%`, top: `${topPct}%` }}
-              className={"rpg-inspirational-level__point " + (n <= inspiration ? "is-active" : "")}
               aria-pressed={n <= inspiration}
               aria-label={`${n} inspiration point${n > 1 ? "s" : ""}`}
               onClick={() => handleClick(n)}
             >
               <StarDot
-                className="rpg-inspirational-level__star-dot"
                 fillColor={n <= inspiration
                   ? "var(--rpg-star-active-fill, #7a5500)"
                   : "var(--rpg-star-fill, #2d2a27)"}
