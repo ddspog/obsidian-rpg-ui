@@ -17,6 +17,7 @@ import type { Vault, TFile } from "obsidian";
 import type { RPGSystem } from "./types";
 import type * as EsbuildWasm from "esbuild-wasm";
 import { resolveWikiFile, resolveWikiFolder } from "../utils/wiki-file";
+import * as UIModule from "../ui";
 
 // Lazy esbuild-wasm initialisation — module-level promise so init runs once.
 let esbuildInitialized: Promise<void> | null = null;
@@ -248,12 +249,7 @@ export async function evaluateSystemBundle(
           // resolve at runtime.
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const core = require("./create-system");
-          let ui = {};
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-            ui = require("../ui");
-          } catch {}
-          return Object.assign({}, core, ui);
+          return Object.assign({}, core, UIModule);
         }
         // Provide React and ReactDOM from the plugin runtime if available.
         if (name === "react") {
