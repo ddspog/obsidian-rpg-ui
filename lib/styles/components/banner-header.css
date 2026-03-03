@@ -105,8 +105,8 @@ header[aria-details="Banner Header"] .rpg-banner-header__actions,
 }
 
 /* Progress bar fills the bottom of the leveling column */
-header[aria-details="Banner Header"] .rpg-banner-header__leveling > .rpg-progress-bar,
-.rpg-banner-header__leveling > .rpg-progress-bar {
+header[aria-details="Banner Header"] .rpg-banner-header__leveling > figure[aria-details="Progress Bar"],
+.rpg-banner-header__leveling > figure[aria-details="Progress Bar"] {
   width: 100%;
   min-width: 140px;
 }

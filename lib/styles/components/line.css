@@ -84,7 +84,7 @@ header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] > menu[ar
 }
 
 /* Make the progress bar span the full width */
-header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] .rpg-progress-bar {
+header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] figure[aria-details="Progress Bar"] {
   width: 100%;
 }
 

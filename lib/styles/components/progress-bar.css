@@ -1,48 +1,47 @@
-.rpg-progress-bar {
+figure[aria-details="Progress Bar"] {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
+  margin: 0;
 
-.rpg-progress-bar__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  /* Left-align label and use the yellow color requested */
-  color: #FFD400;
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+  /* Values row rendered ABOVE the bar */
+  figcaption {
+    font-size: 0.82rem;
+    color: var(--color-yellow);
+    text-align: left;
+    order: -1;
 
-/* Values row rendered ABOVE the bar */
-.rpg-progress-bar__values {
-  font-size: 0.78rem;
-  color: var(--color-yellow);
-  text-align: left;
-  order: -1;
-}
+    span {
+      font-weight: 600;
+      color: #FFD400;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 0.25em;
+    }
+  }
+  /* progress element — reset native appearance */
+  progress {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 8px;
+    border: 1px solid #000000;
+    box-shadow: 0 0 0 2px var(--color-yellow);
+    border-radius: 0;
 
-.rpg-progress-bar__track {
-  width: 100%;
-  height: 8px;
-  /* Squared track with double border: inner black border + outer yellow ring */
-  background: #000000;
-  border: 1px solid #000000; /* inner black border */
-  box-shadow: 0 0 0 2px var(--color-yellow); /* outer yellow ring */
-  border-radius: 0; /* squared */
-  overflow: hidden;
-}
+    /* WebKit: track */
+    &::-webkit-progress-bar {
+      background: #000000;
+      border-radius: 0;
+    }
 
-.rpg-progress-bar__fill {
-  height: 100%;
-  /* Bright yellow fill with good contrast against the black track */
-  background: var(--color-yellow);
-  border-radius: 0; /* squared fill to match track */
-  transition: width 0.3s ease;
-  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);
-}
-
-/* Slightly larger values row on headers to improve legibility */
-.rpg-progress-bar__values {
-  font-size: 0.82rem;
+    /* WebKit, Firefox: fill */
+    &::-webkit-progress-value, &::-moz-progress-bar {
+      background: var(--color-yellow);
+      border-radius: 0;
+      transition: width 0.3s ease;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+    }
+  }
 }
