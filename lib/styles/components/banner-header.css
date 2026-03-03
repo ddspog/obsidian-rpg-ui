@@ -16,7 +16,7 @@ header[aria-details="Banner Header"] {
   position: relative;
   overflow: hidden;
   /* Default dark background — overridden when backgroundImage is applied */
-  background-color: var(--background-secondary);
+  /* background-color: var(--background-secondary); */
   border: none;
   border-radius: 0;
 
