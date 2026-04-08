@@ -18,5 +18,5 @@
      }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "inspiration"]
+  "exclude": ["node_modules", "dist", "inspiration", "stories"]
 }
