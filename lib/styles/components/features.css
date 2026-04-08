@@ -3,7 +3,7 @@
  */
 
 .rpg-features {
-  font-family: var(--font-text);
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   padding: 1rem;
   background: var(--background-primary);
   border-radius: 8px;

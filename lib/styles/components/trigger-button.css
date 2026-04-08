@@ -10,7 +10,7 @@ button[aria-details="Trigger Button"] {
   padding: 0;
   border-radius: 8px;
   background: transparent;
-  border: 1px solid var(--color-yellow);
+  border: 1px solid var(--color-yellow, #e0ac00);
   box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
   color: #ffffff;
   font-size: 1rem;
@@ -36,13 +36,13 @@ button[aria-details="Trigger Button"] {
   }
 
   svg {
-    color: var(--color-yellow);
+    color: var(--color-yellow, #e0ac00);
   }
 }
 
 /* Dark mode tweak: keep yellow ring but slightly dimmer background */
 .theme-dark button[aria-details="Trigger Button"] {
   background: rgba(0, 0, 0, 0.18);
-  border-color: var(--color-yellow);
+  border-color: var(--color-yellow, #e0ac00);
   box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
 }

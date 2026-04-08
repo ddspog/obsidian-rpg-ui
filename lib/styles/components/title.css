@@ -6,6 +6,7 @@ figure[aria-details="Page Title"] {
   padding: 0;
   font-size: 2rem;
   font-weight: 700;
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-on-accent, #fff);

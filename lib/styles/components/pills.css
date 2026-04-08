@@ -8,9 +8,9 @@ span[aria-details="Link Pill"] {
   background: transparent;
   border: none;
   border-radius: 0;
-  color: var(--color-yellow);
+  color: var(--color-yellow, #e0ac00);
   font-size: 0.75rem;
-  font-family: var(--inline-title-font);
+  font-family: var(--inline-title-font, "SF Compact Display", "SF Pro Display", system-ui, sans-serif);
   
   font-weight: 500;
   text-transform: uppercase;
@@ -18,7 +18,7 @@ span[aria-details="Link Pill"] {
   margin-right: 0;
 
   &:hover {
-    color: var(--color-yellow);
+    color: var(--link-color-hover, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
   }
 
   &:focus {

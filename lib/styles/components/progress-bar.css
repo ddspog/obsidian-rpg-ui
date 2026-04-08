@@ -7,7 +7,8 @@ figure[aria-details="Progress Bar"] {
   /* Values row rendered ABOVE the bar */
   figcaption {
     font-size: 0.82rem;
-    color: var(--color-yellow);
+    font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
+    color: var(--color-yellow, #e0ac00);
     text-align: left;
     order: -1;
 
@@ -27,21 +28,26 @@ figure[aria-details="Progress Bar"] {
     width: 100%;
     height: 8px;
     border: 1px solid #000000;
-    box-shadow: 0 0 0 2px var(--color-yellow);
+    box-shadow: 0 0 0 2px var(--color-yellow, #e0ac00);
     border-radius: 0;
+  }
 
-    /* WebKit: track */
-    &::-webkit-progress-bar {
-      background: #000000;
-      border-radius: 0;
-    }
+  progress::-webkit-progress-bar {
+    background: var(--background-modifier-border, rgba(255, 255, 255, 0.08));
+    border-radius: 0;
+  }
 
-    /* WebKit, Firefox: fill */
-    &::-webkit-progress-value, &::-moz-progress-bar {
-      background: var(--color-yellow);
-      border-radius: 0;
-      transition: width 0.3s ease;
-      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
-    }
+  progress::-webkit-progress-value {
+    background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
+    border-radius: 0;
+    transition: width 0.3s ease;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  progress::-moz-progress-bar {
+    background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
+    border-radius: 0;
+    transition: width 0.3s ease;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
   }
 }

@@ -27,7 +27,7 @@ menu[aria-details="Line of Big Elements"] > * {
 }
 
 /* Button group inside BigElements — compact left-aligned row */
-menu[aria-details="Line Buttons"] {
+menu[aria-details="Line of Buttons"] {
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -37,7 +37,7 @@ menu[aria-details="Line Buttons"] {
   flex: 0 0 auto;
 }
 
-menu[aria-details="Line Buttons"] > * {
+menu[aria-details="Line of Buttons"] > * {
   flex: 0 0 auto;
 }
 
@@ -61,14 +61,14 @@ menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
 /* Strong override for environments where other rules block margin-left from applying */
 /* Use a single, high-specificity selector to position the inspirational widget.
    Avoid !important by relying on specificity and load order. */
-header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
+header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
   margin-left: auto;
 }
 
 /* Stack the Leveling controls so each child can take full width.
    This makes BigElements sit above the progress bar and allows the
    progress bar to span the full width of the fieldset. */
-header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] {
+header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -77,14 +77,14 @@ header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] {
 
 /* Ensure the BigElements menu fills the available width so its children
    (and the inspirational widget using margin-left:auto) position correctly. */
-header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] {
+header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] {
   width: 100%;
   display: flex;
   align-items: center;
 }
 
 /* Make the progress bar span the full width */
-header[aria-details="Banner Header"] fieldset[aria-details="Leveling"] figure[aria-details="Progress Bar"] {
+header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] figure[aria-details="Progress Bar"] {
   width: 100%;
 }
 
