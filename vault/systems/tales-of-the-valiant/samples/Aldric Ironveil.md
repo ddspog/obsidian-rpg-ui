@@ -16,14 +16,33 @@ heritage:
 background:
   file: [[Adherent]]
 xp: 40
-luck: 4
-banner: #ac8080
+luck: 5
+banner: "#ac8080"
 ```
 ```rpg character.health
+portrait: [[cleric-harold-davies.webp]]
 max_hp: 68
 current_hp: 52
 temp_hp: 5
-label: Hit Points
+hit_dice:
+  d6:
+    max: 2
+    current: 2
+death_saves:
+  successes: 1
+  failures: 2
+exhaustion: 3
+conditions:
+  - [[systems/tales-of-the-valiant/compendium/conditions/Poisoned|Poisoned]]
+  - [[systems/tales-of-the-valiant/compendium/conditions/Blinded|Blinded]]
+initiative:
+  proficiency: 0
+  vantage: 1
+  bonus: 0
+natural_ac: 10
+speed:
+  value: 30
+  type: walking
 ```
 ```rpg character.stats
 STR:

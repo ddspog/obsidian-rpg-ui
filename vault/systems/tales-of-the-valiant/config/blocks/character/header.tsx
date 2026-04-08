@@ -4,7 +4,7 @@ import { CharacterEntity } from "../../entities/character.types";
 import { HeaderProps } from "./header.types";
 
 export const header: EntityBlock<HeaderProps, CharacterEntity> = ({ self, lookup, expressions, trigger }) => (
-  <Header.Banner background={self.banner} distribution="2 1">
+  <Header.Banner label="Character" background={self.banner} distribution="2 1">
     <hgroup aria-details="Name & Summary">
       <Title />
       <Line.Pills>

@@ -34,11 +34,11 @@ export type HealthProps = {
     initiative: SkillDetails;
     /** Natural Armor Class of the character */
     natural_ac: number;
-    /** Movement speed details */
-    speed: {
+    /** Movement speed details (one entry per movement type) */
+    speed: Array<{
       /** Speed in feet */
       value: number;
       /** Type of movement, e.g. "walk", "fly", "swim", etc. */
       type: string;
-    };
+    }>;
 }
