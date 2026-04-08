@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { App } from "obsidian";
-import { getFileTitle } from "../utils/getFileTitle";
+import { getFileTitle } from "../../utils/getFileTitle";
 
 export interface TitleProps extends React.HTMLAttributes<HTMLFigureElement> {
   // aria-label or other attributes may be passed through

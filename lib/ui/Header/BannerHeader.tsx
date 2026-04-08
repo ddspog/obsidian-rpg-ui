@@ -1,6 +1,7 @@
 import * as React from "react";
 
 export type BannerHeaderProps = {
+  label: string;
   background?: string;
   distribution?: string; // e.g. "2 1" — space-separated flex numbers matching children
   children?: React.ReactNode;
@@ -18,7 +19,7 @@ function parseBannerStyle(value?: string): React.CSSProperties | undefined {
   }
 }
 
-export const BannerHeader: React.FC<BannerHeaderProps> = ({ background, distribution = "1 1", children }) => {
+export const BannerHeader: React.FC<BannerHeaderProps> = ({ label, background, distribution = "1 1", children }) => {
   const style = parseBannerStyle(background);
   // We no longer apply a className on the header; styles target the header via its aria-label
   // so simply render the header with the computed style.
@@ -51,7 +52,7 @@ export const BannerHeader: React.FC<BannerHeaderProps> = ({ background, distribu
   });
 
   return (
-    <header aria-details="Banner Header" style={style}>
+    <header aria-details={`${label} Banner`} style={style}>
       {elems}
     </header>
   );

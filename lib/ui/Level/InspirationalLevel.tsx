@@ -1,6 +1,6 @@
 import * as React from "react";
-import { CircleBadge } from "./CircleBadge";
-import { StarDot } from "./StarDot";
+import { CircleBadge } from "../Badge/CircleBadge";
+import { StarDot } from "../Stat/StarDot";
 
 export interface InspirationalLevelProps {
   /** Current computed character level */

@@ -33,22 +33,44 @@ export type LineButtonsProps = {
 export const Buttons: React.FC<LineButtonsProps> = ({ children }) => {
   // Group small inline buttons; styled via menu[aria-label="Line Buttons"]
   return (
-    <menu aria-details="Line Buttons">
+    <menu aria-details="Line of Buttons">
       {children}
     </menu>
   );
+};
+
+export type LineControlProps = {
+  children?: React.ReactNode;
+  style?: React.CSSProperties;
+};
+
+export const Control: React.FC<LineControlProps> = ({ children, style }) => {
+  return <div aria-details="Line Control" style={style}>{children}</div>;
+};
+
+export type LineStatsProps = {
+  children?: React.ReactNode;
+  style?: React.CSSProperties;
+};
+
+export const Stats: React.FC<LineStatsProps> = ({ children, style }) => {
+  return <div aria-details="Line Stats" style={style}>{children}</div>;
 };
 
 export const Line = {
   Pills,
   BigElements,
   Buttons,
+  Control,
+  Stats,
 } as const;
 
 export namespace Line {
   export type PillsProps = LinePillsProps;
   export type BigElementsProps = LineBigElementsProps;
   export type ButtonsProps = LineButtonsProps;
+  export type ControlProps = LineControlProps;
+  export type StatsProps = LineStatsProps;
 }
 
 export type LineType = typeof Line;
