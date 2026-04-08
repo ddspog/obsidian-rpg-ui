@@ -24,6 +24,8 @@ data.json
 .task/checksum
 styles.css
 .claude
+.playwright-cli
+debug-storybook.log
 docs/.vitepress/cache/deps
 docs/.vitepress/dist
 
