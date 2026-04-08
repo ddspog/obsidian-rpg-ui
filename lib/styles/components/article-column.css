@@ -1,0 +1,8 @@
+/* ── Article Column ───────────────────────────────────────────────────────── */
+
+article[aria-details*=" Column"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}

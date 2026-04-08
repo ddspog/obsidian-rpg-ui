@@ -1,0 +1,15 @@
+/* ── Section Row ──────────────────────────────────────────────────────────── */
+
+section[aria-details*=" Row"] {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  background-color: var(--rpg-section-bg, #1a1816);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 12px 12px 12px;
+  /* Cancel Obsidian's default paragraph spacing to glue below Banner Header */
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  overflow: visible;
+}
+

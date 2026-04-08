@@ -29,6 +29,7 @@
 @import "./components/pills.css";
 @import "./components/title.css";
 @import "./components/progress-bar.css";
+@import "./components/progress-health.css";
 @import "./components/trigger-button.css";
 @import "./components/inspirational-level.css";
 @import "./components/line.css";
@@ -45,4 +46,18 @@
 @import "./components/attributes-display.css";
 @import "./components/inline-display.css";
 @import "./components/compilation.css";
+@import "./components/section-row.css";
+@import "./components/portrait-thumb.css";
+@import "./components/badge-shield.css";
+@import "./components/article-column.css";
+@import "./components/hgroup-row.css";
+@import "./components/figure-column.css";
+@import "./components/line-control-stats.css";
+@import "./components/fieldset-health.css";
+@import "./components/progress-numbered.css";
+@import "./components/status-panel.css";
+@import "./components/stat-diamond.css";
+@import "./components/death-save-dots.css";
+@import "./components/dice-tray.css";
+@import "./components/dice-roll-modal.css";
 @import "./file-suggest.css";

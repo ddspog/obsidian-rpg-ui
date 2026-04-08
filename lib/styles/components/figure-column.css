@@ -1,0 +1,36 @@
+/* ── Figure Column ────────────────────────────────────────────────────────── */
+
+figure[aria-details*=" Column"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+/* ── Defense Stats: decorative side-lines ─────────────────────────────────── */
+
+figure[aria-details="Defense Stats Column"] {
+  align-items: stretch;
+}
+
+figure[aria-details="Defense Stats Column"] > div::before,
+figure[aria-details="Defense Stats Column"] > div::after {
+  content: "";
+  flex: 1;
+  align-self: center;
+  min-width: 12px;
+  height: 0;
+  border-top: 2px solid var(--rpg-diamond-border, #5a5450);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+figure[aria-details="Defense Stats Column"] > div::before {
+  mask-image: linear-gradient(to right, transparent 0%, black 40%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%);
+}
+
+figure[aria-details="Defense Stats Column"] > div::after {
+  mask-image: linear-gradient(to left, transparent 0%, black 40%);
+  -webkit-mask-image: linear-gradient(to left, transparent 0%, black 40%);
+}

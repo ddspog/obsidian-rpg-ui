@@ -1,0 +1,21 @@
+/* ── Line Control ─────────────────────────────────────────────────────────── */
+
+[aria-details="Line Control"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+/* ── Line Stats ───────────────────────────────────────────────────────────── */
+
+[aria-details="Line Stats"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0;
+}
