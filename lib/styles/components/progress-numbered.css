@@ -1,0 +1,40 @@
+/* ── Progress Numbered ────────────────────────────────────────────────────── */
+
+[aria-details="Progress Numbered"] {
+  position: relative;
+  height: 32px;
+  width: 100%;
+  background: var(--rpg-progress-numbered-track, rgba(255,255,255,0.07));
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+[aria-details="Progress Numbered Fill"] {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  background: var(--rpg-progress-numbered-fill, linear-gradient(90deg, #4a9 0%, #e07b39 60%, #c0392b 100%));
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+[aria-details="Progress Numbered Tick"] {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 32px;
+  color: var(--rpg-progress-numbered-tick-inactive, rgba(255,255,255,0.45));
+  pointer-events: none;
+  z-index: 1;
+}
+
+[aria-details="Progress Numbered Tick"][data-active="true"] {
+  color: var(--rpg-progress-numbered-tick-active, rgba(255,255,255,0.95));
+  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
