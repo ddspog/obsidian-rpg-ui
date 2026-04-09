@@ -39,6 +39,15 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **CSS:** Prefix all styles with plugin namespace; place component styles in lib/styles/components/
 - **File Structure:** Keep code aligned with domain separation (domains, components, views)
 
+## UI Components (Storybook)
+
+When working on UI components, use the `/component` skill to look up accurate prop definitions, usage patterns, and story examples from the live Storybook MCP. Run `/component <name>` (e.g. `/component Stat`) before creating or editing any component to avoid guessing props or inventing APIs.
+
+- **Storybook MCP** is the source of truth for component props, types, and variants
+- **Always preview** stories after changes — include preview URLs in responses
+- **Story files** live in `stories/` and follow Storybook 9 conventions (import from `@storybook/react-vite`, test utils from `storybook/test`)
+- **Run Storybook** with `npm run storybook` (uses portless for a stable URL)
+
 ## Architecture
 
 - **Plugin Structure:** Obsidian plugin with React components for D&D UI elements
