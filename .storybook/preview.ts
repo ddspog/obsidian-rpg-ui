@@ -62,17 +62,22 @@ document.head.appendChild(style);
 const preview: Preview = {
   parameters: {
     backgrounds: {
-      default: "dark",
-      values: [
-        { name: "dark", value: "#1a1816" },
-        { name: "light", value: "#f5f0eb" },
-      ],
+      options: {
+        dark: { name: "dark", value: "#1a1816" },
+        light: { name: "light", value: "#f5f0eb" }
+      }
     },
     a11y: {
       // Run accessibility checks automatically on all stories
       manual: false,
     },
   },
+
+  initialGlobals: {
+    backgrounds: {
+      value: "dark"
+    }
+  }
 };
 
 export default preview;
