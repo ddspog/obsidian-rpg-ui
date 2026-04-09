@@ -49,12 +49,12 @@ const meta: Meta<StatsArgs> = {
     intelligence: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
     wisdom:       { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
     charisma:     { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
-    str_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "STR Save Proficiency" },
-    dex_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "DEX Save Proficiency" },
-    con_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CON Save Proficiency" },
-    int_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "INT Save Proficiency" },
-    wis_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "WIS Save Proficiency" },
-    cha_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CHA Save Proficiency" },
+    str_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "STR Save Proficiency" },
+    dex_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "DEX Save Proficiency" },
+    con_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "CON Save Proficiency" },
+    int_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "INT Save Proficiency" },
+    wis_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "WIS Save Proficiency" },
+    cha_save_prof: { control: { type: "range", min: 0, max: 2, step: 0.5 }, name: "CHA Save Proficiency" },
     proficiency_bonus: { control: { type: "number" }, name: "Proficiency Bonus" },
     level:             { control: { type: "number" }, name: "Level" },
   },
@@ -119,7 +119,13 @@ CHA:
         wisdom: args.wisdom,
         charisma: args.charisma,
       }}
-      blocks={{}}
+      blocks={{
+        header: `
+classes:
+  - name: Fighter
+    level: ${args.level}
+`,
+      }}
     />
   );
 }

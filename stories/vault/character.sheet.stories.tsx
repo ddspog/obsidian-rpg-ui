@@ -18,6 +18,9 @@ import { system as systemPromise } from "../../vault/systems/tales-of-the-valian
 // ─── Args type ────────────────────────────────────────────────────────────────
 
 type SheetArgs = {
+  // Sheet args
+  background: string;
+
   // Header args
   filename: string;
   xp: number;
@@ -60,6 +63,9 @@ const meta: Meta<SheetArgs> = {
     }),
   ],
   argTypes: {
+    // Sheet controls
+    background: { control: "color", name: "Sheet Background" },
+
     // Header controls
     filename: { control: "text", name: "Character Name" },
     banner: { control: "color", name: "Banner Color" },
@@ -67,12 +73,12 @@ const meta: Meta<SheetArgs> = {
     xp: { control: { type: "number" }, name: "XP" },
 
     // Stats controls
-    strength:     { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
-    dexterity:    { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
+    strength: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
+    dexterity: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
     constitution: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Constitution" },
     intelligence: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
-    wisdom:       { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
-    charisma:     { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
+    wisdom: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
+    charisma: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
     str_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "STR Save Proficiency" },
     con_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CON Save Proficiency" },
 
@@ -212,7 +218,7 @@ function renderSheet(args: SheetArgs, system: RPGSystem) {
   const blocksYaml = buildBlocksYaml(args);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, background: args.background }}>
       {orderedBlocks.map((blockName) => (
         <SheetBlock key={blockName} blockName={blockName} args={args} system={system} blocksYaml={blocksYaml} />
       ))}
@@ -263,6 +269,9 @@ function SheetBlock({ blockName, args, system, blocksYaml }: SheetBlockProps): R
 export const Default: Story = {
   name: "Default state",
   args: {
+    // Sheet
+    background: "#1e1e1e",
+
     // Header
     filename: "Aldric Ironveil",
     xp: 6500,
