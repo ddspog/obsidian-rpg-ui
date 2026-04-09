@@ -34,19 +34,19 @@ menu[aria-details="Dice List"] button {
   height: 40px;
   padding: 0;
   border: none;
-  background-color: var(--rpg-die-health-bg, #7a2828);
+  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.25));
   color: var(--rpg-die-health-text, #f0d8d0);
   font-size: 0.7em;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.15s, opacity 0.15s;
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 0 1.5px rgba(90, 32, 32, 0.9));
   /* Default: square (d6) */
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
 
 menu[aria-details="Dice List"] button:hover:not([aria-disabled="true"]) {
-  background-color: var(--rpg-die-health-hover, #963030);
+  background-color: var(--rpg-die-health-hover, rgba(150, 48, 48, 0.4));
 }
 
 menu[aria-details="Dice List"] button[aria-disabled="true"] {

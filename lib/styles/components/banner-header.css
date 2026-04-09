@@ -19,6 +19,10 @@ header[aria-details*=" Banner"] {
   /* background-color: var(--background-secondary); */
   border: none;
   border-radius: 0;
+  /* Elevation shadow — header floats above health block */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5),
+              0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 2;
 
   /* Background image support ----------------------------------------- */
   &[style*="background-image"] {
