@@ -1,18 +1,33 @@
+import * as React from "react";
 import { EntityBlock, Stat } from "rpg-ui-toolkit";
 import { CharacterEntity } from "../../entities/character.types";
 import { StatsProps } from "./stats.types";
 
+const ATTRS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const;
+
 /**
  * Block for displaying character stats, including core attributes and their saving throw details.
  */
-export const stats: EntityBlock<StatsProps, CharacterEntity> = ({ self }) => (
+export const stats: EntityBlock<StatsProps, CharacterEntity> = ({ self, expressions }) => (
   <article aria-label="Character Stats">
-    <Stat value={self.STR.value} save={self.STR.save}>STR</Stat>
-    <Stat value={self.DEX.value} save={self.DEX.save}>DEX</Stat>
-    <Stat value={self.CON.value} save={self.CON.save}>CON</Stat>
-    <Stat value={self.INT.value} save={self.INT.save}>INT</Stat>
-    <Stat value={self.WIS.value} save={self.WIS.save}>WIS</Stat>
-    <Stat value={self.CHA.value} save={self.CHA.save}>CHA</Stat>
+    {ATTRS.map((attr) => {
+      const { value, save } = self[attr];
+      const saveBonus = expressions.ModifierTotal({
+        attribute: attr,
+        proficiency: save.proficiency,
+        bonus: save.bonus,
+      });
+      return (
+        <Stat
+          key={attr}
+          value={value}
+          saveBonus={saveBonus}
+          proficiency={save.proficiency}
+        >
+          {attr}
+        </Stat>
+      );
+    })}
   </article>
 );
 

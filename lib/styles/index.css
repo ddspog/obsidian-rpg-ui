@@ -57,6 +57,7 @@
 @import "./components/progress-numbered.css";
 @import "./components/status-panel.css";
 @import "./components/stat-diamond.css";
+@import "./components/stat-hex-pair.css";
 @import "./components/death-save-dots.css";
 @import "./components/dice-tray.css";
 @import "./components/dice-roll-modal.css";

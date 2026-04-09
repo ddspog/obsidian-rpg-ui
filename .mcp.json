@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "storybook": {
+      "command": "bash",
+      "args": [".claude/storybook-mcp.sh"]
+    }
+  }
+}
