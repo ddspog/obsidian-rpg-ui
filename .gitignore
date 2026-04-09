@@ -23,7 +23,8 @@ data.json
 .env
 .task/checksum
 styles.css
-.claude
+.claude/*
+!.claude/commands/
 .playwright-cli
 debug-storybook.log
 docs/.vitepress/cache/deps
