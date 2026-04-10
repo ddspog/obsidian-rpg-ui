@@ -41,12 +41,9 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 
 ## UI Components (Storybook)
 
-When working on UI components, use the `/component` skill to look up accurate prop definitions, usage patterns, and story examples from the live Storybook MCP. Run `/component <name>` (e.g. `/component Stat`) before creating or editing any component to avoid guessing props or inventing APIs.
-
-- **Storybook MCP** is the source of truth for component props, types, and variants
-- **Always preview** stories after changes — include preview URLs in responses
 - **Story files** live in `stories/` and follow Storybook 9 conventions (import from `@storybook/react-vite`, test utils from `storybook/test`)
 - **Run Storybook** with `npm run storybook` (uses portless for a stable URL)
+- When working on components, read their source files in `lib/components/` and existing stories in `stories/` directly — do not rely on a Storybook MCP
 
 ## Architecture
 
