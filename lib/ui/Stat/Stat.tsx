@@ -41,6 +41,7 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, children }: 
         <span aria-details="Hex Border" />
         <span aria-details="Hex Fill" />
         {profAttr && <span aria-details="Prof Ring" data-prof={profAttr} />}
+        {profAttr === "double" && <span aria-details="Prof Ring" data-prof="double-inner" />}
         <small>SAVE</small>
         <output>{saveText ?? modText}</output>
       </div>
