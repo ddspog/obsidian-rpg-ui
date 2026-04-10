@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
+import { buildSkillsYaml, buildStatsYaml, type AbilityScores } from "../lib/character-yaml";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
@@ -53,6 +54,11 @@ type SheetArgs = {
   con_save_prof: number;
   dot_padding: number;
   dot_inset: number;
+
+  // Senses / Skills args
+  perception_prof: number;
+  insight_prof: number;
+  investigation_prof: number;
 };
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
@@ -86,6 +92,11 @@ const meta: Meta<SheetArgs> = {
     dot_padding: { control: { type: "range", min: 0, max: 60, step: 4 }, name: "Dot Padding (px)" },
     dot_inset: { control: { type: "range", min: 0, max: 40, step: 2 }, name: "Dot Inset (px)" },
 
+    // Senses / Skills controls
+    perception_prof:    { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Perception Prof." },
+    insight_prof:       { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Insight Prof." },
+    investigation_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Investigation Prof." },
+
     // Health controls
     current_hp: { control: { type: "number" }, name: "Current HP" },
     max_hp: { control: { type: "number" }, name: "Max HP" },
@@ -112,7 +123,7 @@ type Story = StoryObj<SheetArgs>;
  * Preferred order for character sheet blocks. Blocks not in this list will
  * appear at the end in alphabetical order.
  */
-const PREFERRED_BLOCK_ORDER = ["header", "health", "stats"];
+const PREFERRED_BLOCK_ORDER = ["header", "health", "stats", "senses", "skills"];
 
 function getOrderedBlocks(system: RPGSystem): string[] {
   const entityDef = (system.entities as Record<string, any>)?.character;
@@ -175,43 +186,35 @@ conditions:
 `;
 
   // Stats YAML
-  blocksYaml.stats = `
-STR:
-  value: ${args.strength}
-  save:
-    proficiency: ${args.str_save_prof}
-    vantage: 0
-    bonus: 0
-DEX:
-  value: ${args.dexterity}
-  save:
-    proficiency: 0
-    vantage: 0
-    bonus: 0
-CON:
-  value: ${args.constitution}
-  save:
-    proficiency: ${args.con_save_prof}
-    vantage: 0
-    bonus: 0
-INT:
-  value: ${args.intelligence}
-  save:
-    proficiency: 0
-    vantage: 0
-    bonus: 0
-WIS:
-  value: ${args.wisdom}
-  save:
-    proficiency: 0
-    vantage: 0
-    bonus: 0
-CHA:
-  value: ${args.charisma}
-  save:
-    proficiency: 0
-    vantage: 0
-    bonus: 0
+  const abilities: AbilityScores = {
+    strength: args.strength,
+    dexterity: args.dexterity,
+    constitution: args.constitution,
+    intelligence: args.intelligence,
+    wisdom: args.wisdom,
+    charisma: args.charisma,
+  };
+  blocksYaml.stats = buildStatsYaml(abilities, {
+    str: args.str_save_prof,
+    con: args.con_save_prof,
+  });
+
+  // Skills YAML (computed from ability scores + proficiency_bonus + proficiency args)
+  const proficient: string[] = [];
+  const expert: string[] = [];
+  const push = (prof: number, name: string) => {
+    if (prof === 1) proficient.push(name);
+    if (prof === 2) expert.push(name);
+  };
+  push(args.perception_prof, "Perception");
+  push(args.insight_prof, "Insight");
+  push(args.investigation_prof, "Investigation");
+  blocksYaml.skills = buildSkillsYaml(abilities, args.proficiency_bonus, proficient, expert);
+
+  // Senses YAML (High Elf darkvision)
+  blocksYaml.senses = `senses_list:
+  - type: darkvision
+    range: 60
 `;
 
   return blocksYaml;
@@ -317,6 +320,11 @@ export const Default: Story = {
     exhaustion: 0,
     proficiency_bonus: 3,
     level: 5,
+
+    // Senses / Skills
+    perception_prof: 1,
+    insight_prof: 0,
+    investigation_prof: 0,
   },
   render: (args, { loaded }) => renderSheet(args, loaded.system),
 };

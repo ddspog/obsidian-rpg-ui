@@ -186,3 +186,73 @@ export const Dying: Story = {
     renderHealth(args, loaded.system, ["Unconscious"]),
 };
 
+// ─── Multiclass ──────────────────────────────────────────────────────────
+
+export const Multiclass: Story = {
+  name: "Multiclass (mixed hit dice)",
+  args: {
+    current_hp: 45,
+    max_hp: 62,
+    temp_hp: 8,
+    natural_ac: 14,
+    speed_walk: 30,
+    speed_fly: 0,
+    hit_dice_max: 7,
+    hit_dice_current: 5,
+    death_successes: 0,
+    death_failures: 0,
+    exhaustion: 0,
+    proficiency_bonus: 3,
+    level: 7,
+  },
+  render: (_, { loaded }) => (
+    <RpgBlock
+      system={loaded.system}
+      entity="character"
+      block="health"
+      yaml={`
+current_hp: 45
+max_hp: 62
+temp_hp: 8
+natural_ac: 14
+portrait: [[character-portrait.webp]]
+speed:
+  - type: Walk
+    value: 30
+hit_dice:
+  d10:
+    max: 4
+    current: 3
+  d8:
+    max: 3
+    current: 2
+death_saves:
+  successes: 0
+  failures: 0
+exhaustion: 0
+conditions:
+  []
+`}
+      frontmatter={{
+        proficiency_bonus: 3,
+        level: 7,
+        strength: 16,
+        dexterity: 14,
+        constitution: 14,
+        intelligence: 12,
+        wisdom: 10,
+        charisma: 14,
+      }}
+      blocks={{
+        header: `
+classes:
+  - name: Fighter
+    level: 4
+  - name: Bard
+    level: 3
+`,
+      }}
+    />
+  ),
+};
+
