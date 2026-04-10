@@ -1769,9 +1769,7 @@ header[aria-details*=" Banner"] {
   overflow: hidden;
   border: none;
   border-radius: 0;
-  /* Elevation shadow — header floats above health block */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5),
-              0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   z-index: 2;
   &[style*=background-image] {
     background-size: cover;
@@ -1911,46 +1909,46 @@ figure[aria-details="Progress Bar"] {
   flex-direction: column;
   gap: 4px;
   margin: 0;
-}
-figure[aria-details="Progress Bar"] figcaption {
-  font-size: 0.82rem;
-  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
-  color: var(--color-yellow, #e0ac00);
-  text-align: left;
-  order: -1;
-}
-figure[aria-details="Progress Bar"] figcaption span {
-  font-weight: 600;
-  color: #FFD400;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-right: 0.25em;
-}
-figure[aria-details="Progress Bar"] progress {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  width: 100%;
-  height: 8px;
-  border: 1px solid #000000;
-  box-shadow: 0 0 0 2px var(--color-yellow, #e0ac00);
-  border-radius: 0;
-}
-figure[aria-details="Progress Bar"] progress::-webkit-progress-bar {
-  background: var(--background-modifier-border, rgba(255, 255, 255, 0.08));
-  border-radius: 0;
-}
-figure[aria-details="Progress Bar"] progress::-webkit-progress-value {
-  background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
-  border-radius: 0;
-  transition: width 0.3s ease;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
-}
-figure[aria-details="Progress Bar"] progress::-moz-progress-bar {
-  background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
-  border-radius: 0;
-  transition: width 0.3s ease;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  figcaption {
+    font-size: 0.82rem;
+    font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
+    color: var(--color-yellow, #e0ac00);
+    text-align: left;
+    order: -1;
+    span {
+      font-weight: 600;
+      color: #FFD400;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 0.25em;
+    }
+  }
+  progress {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 8px;
+    border: 1px solid #000000;
+    box-shadow: 0 0 0 2px var(--color-yellow, #e0ac00);
+    border-radius: 0;
+  }
+  progress::-webkit-progress-bar {
+    background: var(--background-modifier-border, rgba(255, 255, 255, 0.08));
+    border-radius: 0;
+  }
+  progress::-webkit-progress-value {
+    background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
+    border-radius: 0;
+    transition: width 0.3s ease;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  }
+  progress::-moz-progress-bar {
+    background: var(--interactive-accent, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
+    border-radius: 0;
+    transition: width 0.3s ease;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  }
 }
 
 /* lib/styles/components/progress-health.css */
@@ -1968,7 +1966,7 @@ figure[aria-details="Progress Health"] figcaption {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-figure[aria-details="Progress Health"] [role="progressbar"] {
+figure[aria-details="Progress Health"] [role=progressbar] {
   position: relative;
   width: 100%;
   height: 32px;
@@ -2274,172 +2272,6 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
   font-size: 0.7rem;
   padding: 3px 6px;
   border-radius: 999px;
-}
-
-/* lib/styles/components/stat-hex-pair.css */
-figure[aria-details="Stat Hex Pair"] {
-  position: relative;
-  margin: 0;
-  --front-w: 76px;
-  --front-h: 86px;
-  --back-w: 60px;
-  --back-h: 68px;
-  --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  width: calc(var(--front-w) + 34px);
-  height: calc(var(--front-h) + 24px);
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Border"],
-[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
-  position: absolute;
-  inset: 0;
-  clip-path: var(--hex-clip);
-  pointer-events: none;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Border"] {
-  background: var(--rpg-hex-border, #6a6258);
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-  background-image: radial-gradient(
-    ellipse at 40% 30%,
-    rgba(255, 255, 255, 0.06) 0%,
-    transparent 60%
-  );
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: var(--front-w);
-  height: var(--front-h);
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > small {
-  position: relative;
-  z-index: 1;
-  font-size: 0.6em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--rpg-hex-label, #b0a890);
-  line-height: 1;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > output {
-  position: relative;
-  z-index: 1;
-  font-size: 1.6em;
-  font-weight: 700;
-  color: var(--rpg-hex-value, #e3dcce);
-  line-height: 1;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: var(--back-w);
-  height: var(--back-h);
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > small {
-  position: relative;
-  z-index: 1;
-  font-size: 0.5em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--rpg-hex-label, #b0a890);
-  line-height: 1;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > output {
-  position: relative;
-  z-index: 1;
-  font-size: 1.1em;
-  font-weight: 700;
-  color: var(--rpg-hex-value, #e3dcce);
-  line-height: 1;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Prof Ring"] {
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  width: 88%;
-  height: 88%;
-  transform: translate(-50%, -50%);
-  clip-path: var(--hex-clip);
-  pointer-events: none;
-}
-[aria-details="Prof Ring"][data-prof="full"] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"][data-prof="half"] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"][data-prof="double"] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"]::after {
-  content: "";
-  position: absolute;
-  clip-path: var(--hex-clip);
-}
-[aria-details="Prof Ring"][data-prof="full"]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Prof Ring"][data-prof="half"]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-  mask-image: conic-gradient(from 0deg, black 0deg, black 15deg, transparent 15deg, transparent 30deg, black 30deg, black 45deg, transparent 45deg, transparent 60deg, black 60deg, black 75deg, transparent 75deg, transparent 90deg, black 90deg, black 105deg, transparent 105deg, transparent 120deg, black 120deg, black 135deg, transparent 135deg, transparent 150deg, black 150deg, black 165deg, transparent 165deg, transparent 180deg, black 180deg, black 195deg, transparent 195deg, transparent 210deg, black 210deg, black 225deg, transparent 225deg, transparent 240deg, black 240deg, black 255deg, transparent 255deg, transparent 270deg, black 270deg, black 285deg, transparent 285deg, transparent 300deg, black 300deg, black 315deg, transparent 315deg, transparent 330deg, black 330deg, black 345deg, transparent 345deg, transparent 360deg);
-  -webkit-mask-image: conic-gradient(from 0deg, black 0deg, black 15deg, transparent 15deg, transparent 30deg, black 30deg, black 45deg, transparent 45deg, transparent 60deg, black 60deg, black 75deg, transparent 75deg, transparent 90deg, black 90deg, black 105deg, transparent 105deg, transparent 120deg, black 120deg, black 135deg, transparent 135deg, transparent 150deg, black 150deg, black 165deg, transparent 165deg, transparent 180deg, black 180deg, black 195deg, transparent 195deg, transparent 210deg, black 210deg, black 225deg, transparent 225deg, transparent 240deg, black 240deg, black 255deg, transparent 255deg, transparent 270deg, black 270deg, black 285deg, transparent 285deg, transparent 300deg, black 300deg, black 315deg, transparent 315deg, transparent 330deg, black 330deg, black 345deg, transparent 345deg, transparent 360deg);
-}
-[aria-details="Prof Ring"][data-prof="double"]::after {
-  inset: 3px;
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Prof Ring"][data-prof="double"]::before {
-  content: "";
-  position: absolute;
-  inset: 1.5px;
-  clip-path: var(--hex-clip);
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Score"] {
-  position: absolute;
-  right: 2px;
-  bottom: -2px;
-  z-index: 3;
-  font-size: 1.1em;
-  font-weight: 700;
-  color: var(--rpg-hex-score, #b0a890);
-  line-height: 1;
-  text-align: center;
-}
-article[aria-label="Character Stats"] {
-  display: flex;
-  justify-content: space-evenly;
-  padding: calc(var(--spacing-2, 8px) + var(--spacing-3, 12px)) var(--spacing-2, 8px);
-  position: relative;
-  margin-block-start: calc(-1 * var(--p-spacing, 1em));
-  background-color: transparent;
-  background-image: radial-gradient(
-    circle,
-    rgba(0, 0, 0, 0.25) 1px,
-    transparent 1px
-  );
-  background-size: 8px 8px;
 }
 
 /* lib/styles/components/stat-ul.css */
@@ -3310,12 +3142,28 @@ figure[aria-details="Defense Stats Column"] > div::after {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 figure[aria-details="Defense Stats Column"] > div::before {
-  mask-image: linear-gradient(to right, transparent 0%, black 40%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%);
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      black 40%);
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      black 40%);
 }
 figure[aria-details="Defense Stats Column"] > div::after {
-  mask-image: linear-gradient(to left, transparent 0%, black 40%);
-  -webkit-mask-image: linear-gradient(to left, transparent 0%, black 40%);
+  mask-image:
+    linear-gradient(
+      to left,
+      transparent 0%,
+      black 40%);
+  -webkit-mask-image:
+    linear-gradient(
+      to left,
+      transparent 0%,
+      black 40%);
 }
 
 /* lib/styles/components/line-control-stats.css */
@@ -3368,7 +3216,7 @@ fieldset[aria-details*="Health "] [aria-details="HP Row"] output[aria-details="T
   border-radius: 3px;
   padding: 0 6px;
   background: rgba(91, 163, 217, 0.08);
-  height: 24px;
+  height: 32px;
   line-height: 32px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
@@ -3541,6 +3389,295 @@ figure[aria-details="Stat Diamond"] figcaption {
   text-overflow: ellipsis;
 }
 
+/* lib/styles/components/stat-hex-pair.css */
+figure[aria-details="Stat Hex Pair"] {
+  position: relative;
+  margin: 0;
+  --front-w: 76px;
+  --front-h: 86px;
+  --back-w: 60px;
+  --back-h: 68px;
+  --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  width: calc(var(--front-w) + 34px);
+  height: calc(var(--front-h) + 24px);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Border"],
+[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--hex-clip);
+  pointer-events: none;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Border"] {
+  background: var(--rpg-hex-border, #6a6258);
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
+  inset: 1.5px;
+  background: var(--rpg-hex-bg, #4a4440);
+  background-image:
+    radial-gradient(
+      ellipse at 40% 30%,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 60%);
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--front-w);
+  height: var(--front-h);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > small {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-hex-label, #b0a890);
+  line-height: 1;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > output {
+  position: relative;
+  z-index: 1;
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--rpg-hex-value, #e3dcce);
+  line-height: 1;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--back-w);
+  height: var(--back-h);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > small {
+  position: relative;
+  z-index: 1;
+  font-size: 0.65em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-hex-label, #b0a890);
+  line-height: 1;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > output {
+  position: relative;
+  z-index: 1;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--rpg-hex-value, #e3dcce);
+  line-height: 1;
+}
+[aria-details="Stat Hex Pair"] [aria-details="Prof Ring"] {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  height: 88%;
+  transform: translate(-50%, -50%);
+  clip-path: var(--hex-clip);
+  pointer-events: none;
+}
+[aria-details="Prof Ring"][data-prof=full] {
+  background: var(--rpg-hex-prof-ring, #d4a840);
+}
+[aria-details="Prof Ring"][data-prof=half] {
+  background: var(--rpg-hex-prof-ring, #d4a840);
+}
+[aria-details="Prof Ring"][data-prof=double] {
+  background: var(--rpg-hex-prof-ring, #d4a840);
+}
+[aria-details="Prof Ring"]::after {
+  content: "";
+  position: absolute;
+  clip-path: var(--hex-clip);
+}
+[aria-details="Prof Ring"][data-prof=full]::after {
+  inset: 1.5px;
+  background: var(--rpg-hex-bg, #4a4440);
+}
+[aria-details="Prof Ring"][data-prof=half]::after {
+  inset: 1.5px;
+  background: var(--rpg-hex-bg, #4a4440);
+  mask-image:
+    conic-gradient(
+      from 0deg,
+      black 0deg,
+      black 15deg,
+      transparent 15deg,
+      transparent 30deg,
+      black 30deg,
+      black 45deg,
+      transparent 45deg,
+      transparent 60deg,
+      black 60deg,
+      black 75deg,
+      transparent 75deg,
+      transparent 90deg,
+      black 90deg,
+      black 105deg,
+      transparent 105deg,
+      transparent 120deg,
+      black 120deg,
+      black 135deg,
+      transparent 135deg,
+      transparent 150deg,
+      black 150deg,
+      black 165deg,
+      transparent 165deg,
+      transparent 180deg,
+      black 180deg,
+      black 195deg,
+      transparent 195deg,
+      transparent 210deg,
+      black 210deg,
+      black 225deg,
+      transparent 225deg,
+      transparent 240deg,
+      black 240deg,
+      black 255deg,
+      transparent 255deg,
+      transparent 270deg,
+      black 270deg,
+      black 285deg,
+      transparent 285deg,
+      transparent 300deg,
+      black 300deg,
+      black 315deg,
+      transparent 315deg,
+      transparent 330deg,
+      black 330deg,
+      black 345deg,
+      transparent 345deg,
+      transparent 360deg);
+  -webkit-mask-image:
+    conic-gradient(
+      from 0deg,
+      black 0deg,
+      black 15deg,
+      transparent 15deg,
+      transparent 30deg,
+      black 30deg,
+      black 45deg,
+      transparent 45deg,
+      transparent 60deg,
+      black 60deg,
+      black 75deg,
+      transparent 75deg,
+      transparent 90deg,
+      black 90deg,
+      black 105deg,
+      transparent 105deg,
+      transparent 120deg,
+      black 120deg,
+      black 135deg,
+      transparent 135deg,
+      transparent 150deg,
+      black 150deg,
+      black 165deg,
+      transparent 165deg,
+      transparent 180deg,
+      black 180deg,
+      black 195deg,
+      transparent 195deg,
+      transparent 210deg,
+      black 210deg,
+      black 225deg,
+      transparent 225deg,
+      transparent 240deg,
+      black 240deg,
+      black 255deg,
+      transparent 255deg,
+      transparent 270deg,
+      black 270deg,
+      black 285deg,
+      transparent 285deg,
+      transparent 300deg,
+      black 300deg,
+      black 315deg,
+      transparent 315deg,
+      transparent 330deg,
+      black 330deg,
+      black 345deg,
+      transparent 345deg,
+      transparent 360deg);
+}
+[aria-details="Prof Ring"][data-prof=double]::after {
+  inset: 1.5px;
+  background: var(--rpg-hex-bg, #4a4440);
+}
+[aria-details="Prof Ring"][data-prof=double-inner] {
+  width: 82%;
+  height: 82%;
+  background: var(--rpg-hex-prof-ring, #d4a840);
+}
+[aria-details="Prof Ring"][data-prof=double-inner]::after {
+  inset: 1.5px;
+  background: var(--rpg-hex-bg, #4a4440);
+}
+[aria-details="Stat Hex Pair"] [aria-details="Hex Score"] {
+  position: absolute;
+  right: 2px;
+  bottom: -2px;
+  z-index: 3;
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--rpg-hex-score, #e3dcce);
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+[data-rpg=stats] {
+  container-type: inline-size;
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+}
+article[aria-label="Character Stats"] {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  justify-content: space-evenly;
+  padding: var(--spacing-3, 12px);
+  position: relative;
+}
+@container (max-width: 680px) {
+  article[aria-label="Character Stats"] {
+    grid-template-columns: repeat(3, auto);
+    row-gap: 8px;
+  }
+}
+article[aria-label="Character Stats"]::before {
+  content: "";
+  position: absolute;
+  inset: 24px;
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0.25) 1px,
+      transparent 1px);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+article[aria-label="Character Stats"] > figure[aria-details="Stat Hex Pair"] {
+  margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
+  position: relative;
+  z-index: 1;
+}
+
 /* lib/styles/components/death-save-dots.css */
 menu[aria-details="Death Save Successes"],
 menu[aria-details="Death Save Failures"] {
@@ -3618,23 +3755,23 @@ menu[aria-details="Dice List"] button[aria-disabled=true] {
   opacity: 0.3;
   cursor: default;
 }
-menu[aria-details="Dice List"] button[data-die="d4"] {
+menu[aria-details="Dice List"] button[data-die=d4] {
   clip-path: polygon(50% 2%, 98% 98%, 2% 98%);
   padding-top: 10px;
 }
-menu[aria-details="Dice List"] button[data-die="d6"] {
+menu[aria-details="Dice List"] button[data-die=d6] {
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
-menu[aria-details="Dice List"] button[data-die="d8"] {
+menu[aria-details="Dice List"] button[data-die=d8] {
   clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
 }
-menu[aria-details="Dice List"] button[data-die="d10"] {
+menu[aria-details="Dice List"] button[data-die=d10] {
   clip-path: polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
 }
-menu[aria-details="Dice List"] button[data-die="d12"] {
+menu[aria-details="Dice List"] button[data-die=d12] {
   clip-path: polygon(50% 2%, 98% 38%, 80% 98%, 20% 98%, 2% 38%);
 }
-menu[aria-details="Dice List"] button[data-die="d20"] {
+menu[aria-details="Dice List"] button[data-die=d20] {
   clip-path: polygon(50% 2%, 100% 98%, 0% 98%);
   padding-top: 8px;
 }

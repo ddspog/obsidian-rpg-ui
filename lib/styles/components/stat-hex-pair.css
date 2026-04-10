@@ -62,7 +62,7 @@ figure[aria-details="Stat Hex Pair"] {
 [aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > small {
   position: relative;
   z-index: 1;
-  font-size: 0.6em;
+  font-size: 0.75em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -98,7 +98,7 @@ figure[aria-details="Stat Hex Pair"] {
 [aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > small {
   position: relative;
   z-index: 1;
-  font-size: 0.5em;
+  font-size: 0.65em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -189,19 +189,22 @@ figure[aria-details="Stat Hex Pair"] {
   );
 }
 
+/* Double proficiency — outer ring uses same hollow as full */
 [aria-details="Prof Ring"][data-prof="double"]::after {
-  inset: 3px;
+  inset: 1.5px;
   background: var(--rpg-hex-bg, #4a4440);
 }
 
-/* Second ring for double proficiency */
-[aria-details="Prof Ring"][data-prof="double"]::before {
-  content: "";
-  position: absolute;
+/* Double proficiency — inner ring (smaller concentric ring) */
+[aria-details="Prof Ring"][data-prof="double-inner"] {
+  width: 82%;
+  height: 82%;
+  background: var(--rpg-hex-prof-ring, #d4a840);
+}
+
+[aria-details="Prof Ring"][data-prof="double-inner"]::after {
   inset: 1.5px;
-  clip-path: var(--hex-clip);
   background: var(--rpg-hex-bg, #4a4440);
-  /* Leave a gap, then the inner ring shows the gold again */
 }
 
 /* ── Score (bottom-right, plain number) ───────────────────────────────────── */
@@ -211,29 +214,56 @@ figure[aria-details="Stat Hex Pair"] {
   right: 2px;
   bottom: -2px;
   z-index: 3;
-  font-size: 1.1em;
+  font-size: 1.6em;
   font-weight: 700;
-  color: var(--rpg-hex-score, #b0a890);
+  color: var(--rpg-hex-score, #e3dcce);
   line-height: 1;
   text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
 }
 
 /* ── Stats row container ──────────────────────────────────────────────────── */
 
-article[aria-label="Character Stats"] {
-  display: flex;
-  justify-content: space-evenly;
-  padding: calc(var(--spacing-2, 8px) + var(--spacing-3, 12px)) var(--spacing-2, 8px);
-  position: relative;
+/* Wrapper is the container context — allows @container to target the article */
+[data-rpg="stats"] {
+  container-type: inline-size;
   /* Cancel Obsidian's default paragraph spacing to glue below previous block */
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
+}
 
-  /* Dotted background */
-  background-color: transparent;
+article[aria-label="Character Stats"] {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  justify-content: space-evenly;
+  padding: var(--spacing-3, 12px);
+  position: relative;
+}
+
+/* Narrow container: 3 stats per row */
+@container (max-width: 680px) {
+  article[aria-label="Character Stats"] {
+    grid-template-columns: repeat(3, auto);
+    row-gap: 8px;
+  }
+}
+
+/* Dotted background via pseudo-element — inset is fully customizable */
+article[aria-label="Character Stats"]::before {
+  content: "";
+  position: absolute;
+  inset: 24px;
   background-image: radial-gradient(
     circle,
     rgba(0, 0, 0, 0.25) 1px,
     transparent 1px
   );
   background-size: 8px 8px;
+  pointer-events: none;
+}
+
+/* Hex pairs overflow above the dotted background padding */
+article[aria-label="Character Stats"] > figure[aria-details="Stat Hex Pair"] {
+  margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
+  position: relative;
+  z-index: 1;
 }
