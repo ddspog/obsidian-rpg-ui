@@ -13,18 +13,29 @@ export function ProgressNumbered({ value = 0, max = 6 }: ProgressNumberedProps) 
   const ticks = Array.from({ length: max }, (_, i) => i + 1);
 
   return (
-    <div aria-details="Progress Numbered">
-      <div aria-details="Progress Numbered Fill" style={{ width: `${pct}%` }} />
+    <svg aria-details="Progress Numbered" height="32">
+      <defs>
+        <linearGradient id="rpg-numbered-fill-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#4a9" />
+          <stop offset="60%" stopColor="#e07b39" />
+          <stop offset="100%" stopColor="#c0392b" />
+        </linearGradient>
+      </defs>
+      <rect className="rpg-numbered-track" x="0" y="0" width="100%" height="100%" rx="3" />
+      <rect className="rpg-numbered-fill" x="0" y="0" width={`${pct}%`} height="100%" rx="3" />
       {ticks.map((n) => (
-        <span
+        <text
           key={n}
-          aria-details="Progress Numbered Tick"
-          style={{ left: `${((n - 0.5) / max) * 100}%` }}
+          className="rpg-numbered-tick"
+          x={`${((n - 0.5) / max) * 100}%`}
+          y="50%"
+          dominantBaseline="central"
+          textAnchor="middle"
           data-active={n <= clamped ? "true" : "false"}
         >
           {n}
-        </span>
+        </text>
       ))}
-    </div>
+    </svg>
   );
 }

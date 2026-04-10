@@ -1,32 +1,14 @@
 /* ── Dice Tray ────────────────────────────────────────────────────────────── */
 
-figure[aria-details="Dice Tray"] {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 4px 0 0;
-}
-
-figure[aria-details="Dice Tray"] > figcaption {
-  font-size: 0.65em;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--rpg-dice-label-color, #c8a84b);
-}
-
-menu[aria-details="Dice List"] {
+dd[aria-label="Dice Tray"] {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 
 /* ── Base die button ─────────────────────────────────────────────────────── */
 
-menu[aria-details="Dice List"] button {
+dd[aria-label="Dice Tray"] > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,11 +27,11 @@ menu[aria-details="Dice List"] button {
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
 
-menu[aria-details="Dice List"] button:hover:not([aria-disabled="true"]) {
+dd[aria-label="Dice Tray"] > button:hover:not([aria-disabled="true"]) {
   background-color: var(--rpg-die-health-hover, rgba(150, 48, 48, 0.4));
 }
 
-menu[aria-details="Dice List"] button[aria-disabled="true"] {
+dd[aria-label="Dice Tray"] > button[aria-disabled="true"] {
   opacity: 0.3;
   cursor: default;
 }
@@ -57,33 +39,33 @@ menu[aria-details="Dice List"] button[aria-disabled="true"] {
 /* ── Die shapes by type ──────────────────────────────────────────────────── */
 
 /* d4 — triangle */
-menu[aria-details="Dice List"] button[data-die="d4"] {
+dd[aria-label="Dice Tray"] > button[data-die="d4"] {
   clip-path: polygon(50% 2%, 98% 98%, 2% 98%);
   padding-top: 10px;
 }
 
 /* d6 — square */
-menu[aria-details="Dice List"] button[data-die="d6"] {
+dd[aria-label="Dice Tray"] > button[data-die="d6"] {
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
 
 /* d8 — diamond */
-menu[aria-details="Dice List"] button[data-die="d8"] {
+dd[aria-label="Dice Tray"] > button[data-die="d8"] {
   clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
 }
 
 /* d10 — kite */
-menu[aria-details="Dice List"] button[data-die="d10"] {
+dd[aria-label="Dice Tray"] > button[data-die="d10"] {
   clip-path: polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
 }
 
 /* d12 — pentagon */
-menu[aria-details="Dice List"] button[data-die="d12"] {
+dd[aria-label="Dice Tray"] > button[data-die="d12"] {
   clip-path: polygon(50% 2%, 98% 38%, 80% 98%, 20% 98%, 2% 38%);
 }
 
 /* d20 — wide triangle */
-menu[aria-details="Dice List"] button[data-die="d20"] {
+dd[aria-label="Dice Tray"] > button[data-die="d20"] {
   clip-path: polygon(50% 2%, 100% 98%, 0% 98%);
   padding-top: 8px;
 }

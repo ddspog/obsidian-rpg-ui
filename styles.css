@@ -1952,71 +1952,41 @@ figure[aria-details="Progress Bar"] {
 }
 
 /* lib/styles/components/progress-health.css */
-figure[aria-details="Progress Health"] {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  --temp-min-w: 36px;
-}
-figure[aria-details="Progress Health"] figcaption {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-yellow, #FFD400);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-figure[aria-details="Progress Health"] [role=progressbar] {
-  position: relative;
+svg[aria-details="Progress Health"] {
+  display: block;
   width: 100%;
   height: 32px;
-  background: var(--rpg-hp-bar-bg, rgba(255, 255, 255, 0.08));
   border: 1px solid #000;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   border-radius: 3px;
   overflow: hidden;
 }
-figure[aria-details="Progress Health"] [aria-details="Bar Fill"] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: var(--rpg-hp-bar-color, #4a8c3f);
+svg[aria-details="Progress Health"] .rpg-hp-track {
+  fill: var(--rpg-hp-bar-bg, rgba(255, 255, 255, 0.08));
+}
+svg[aria-details="Progress Health"] .rpg-hp-fill {
+  fill: var(--rpg-hp-bar-color, #4a8c3f);
   transition: width 0.3s ease;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-  border-radius: 2px 0 0 2px;
 }
-figure[aria-details="Progress Health"] [aria-details="Bar Secondary"] {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  min-width: var(--temp-min-w);
-  background: var(--rpg-temp-hp-color, #3a7abd);
-  transition: width 0.3s ease, left 0.3s ease;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-  border-radius: 0 2px 2px 0;
-  border-left: 2px solid rgba(0, 0, 0, 0.4);
+svg[aria-details="Progress Health"] .rpg-hp-secondary {
+  fill: var(--rpg-temp-hp-color, #3a7abd);
+  transition: width 0.3s ease, x 0.3s ease;
 }
-figure[aria-details="Progress Health"] [aria-details="Bar Secondary"][data-empty] {
-  background: transparent;
-  box-shadow: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-figure[aria-details="Progress Health"] output {
-  position: relative;
-  z-index: 1;
+svg[aria-details="Progress Health"] output {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
   height: 100%;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--rpg-hp-bar-text, #ffffff);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   padding: 0 8px;
+  box-sizing: border-box;
 }
-figure[aria-details="Progress Health"] [aria-details="Secondary Value"] {
+svg[aria-details="Progress Health"] [aria-details="Secondary Value"] {
   color: var(--rpg-hp-bar-text, #ffffff);
   font-size: 0.85em;
   margin-left: auto;
@@ -3108,8 +3078,21 @@ hgroup[aria-details*=" Row"] {
   align-items: flex-start;
   gap: 8px;
 }
-hgroup[aria-details="Health Management Row"] figcaption,
-hgroup[aria-details="Health Management Row"] h6 {
+p[aria-details="Health Management Row"] {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+p[aria-details="Health Management Row"] dl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+p[aria-details="Health Management Row"] dt {
   font-size: 0.7rem !important;
   font-weight: 600 !important;
   color: var(--color-yellow, #FFD400) !important;
@@ -3118,6 +3101,17 @@ hgroup[aria-details="Health Management Row"] h6 {
   line-height: 1.2;
   margin: 0;
   padding: 0;
+}
+p[aria-details="Health Management Row"] dt + dt {
+  margin-top: 6px;
+}
+p[aria-details="Health Management Row"] dd {
+  margin: 0;
+  padding: 0;
+}
+p[aria-details="Health Management Row"] dl:last-child {
+  padding-left: 8px;
+  border-left: 2px solid var(--rpg-diamond-border, #5a5450);
 }
 
 /* lib/styles/components/figure-column.css */
@@ -3128,11 +3122,12 @@ figure[aria-details*=" Column"] {
   gap: 4px;
   margin: 0;
 }
-figure[aria-details="Defense Stats Column"] {
+hgroup[aria-details="Defense Stats Row"] {
+  flex-direction: column;
   align-items: stretch;
 }
-figure[aria-details="Defense Stats Column"] > div::before,
-figure[aria-details="Defense Stats Column"] > div::after {
+hgroup[aria-details="Defense Stats Row"] > menu::before,
+hgroup[aria-details="Defense Stats Row"] > menu::after {
   content: "";
   flex: 1;
   align-self: center;
@@ -3141,7 +3136,7 @@ figure[aria-details="Defense Stats Column"] > div::after {
   border-top: 2px solid var(--rpg-diamond-border, #5a5450);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-figure[aria-details="Defense Stats Column"] > div::before {
+hgroup[aria-details="Defense Stats Row"] > menu::before {
   mask-image:
     linear-gradient(
       to right,
@@ -3153,7 +3148,7 @@ figure[aria-details="Defense Stats Column"] > div::before {
       transparent 0%,
       black 40%);
 }
-figure[aria-details="Defense Stats Column"] > div::after {
+hgroup[aria-details="Defense Stats Row"] > menu::after {
   mask-image:
     linear-gradient(
       to left,
@@ -3174,6 +3169,8 @@ figure[aria-details="Defense Stats Column"] > div::after {
   justify-content: center;
   gap: 6px;
   padding: 8px 0 4px;
+  list-style: none;
+  margin: 0;
 }
 [aria-details="Line Stats"] {
   display: flex;
@@ -3182,6 +3179,8 @@ figure[aria-details="Defense Stats Column"] > div::after {
   justify-content: center;
   gap: 8px;
   padding: 4px 0;
+  list-style: none;
+  margin: 0;
 }
 
 /* lib/styles/components/fieldset-health.css */
@@ -3222,40 +3221,28 @@ fieldset[aria-details*="Health "] [aria-details="HP Row"] output[aria-details="T
 }
 
 /* lib/styles/components/progress-numbered.css */
-[aria-details="Progress Numbered"] {
-  position: relative;
-  height: 32px;
+svg[aria-details="Progress Numbered"] {
+  display: block;
   width: 100%;
-  background: var(--rpg-progress-numbered-track, rgba(255,255,255,0.07));
+  height: 32px;
   border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: 3px;
   overflow: visible;
 }
-[aria-details="Progress Numbered Fill"] {
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  background: var(--rpg-progress-numbered-fill, linear-gradient(90deg, #4a9 0%, #e07b39 60%, #c0392b 100%));
-  border-radius: 3px;
+svg[aria-details="Progress Numbered"] .rpg-numbered-track {
+  fill: var(--rpg-progress-numbered-track, rgba(255, 255, 255, 0.07));
+}
+svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
+  fill: url(#rpg-numbered-fill-grad);
   transition: width 0.2s ease;
 }
-[aria-details="Progress Numbered Tick"] {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
   font-size: 0.8em;
   font-weight: 700;
-  line-height: 32px;
-  color: var(--rpg-progress-numbered-tick-inactive, rgba(255,255,255,0.45));
-  pointer-events: none;
-  z-index: 1;
+  fill: var(--rpg-progress-numbered-tick-inactive, rgba(255, 255, 255, 0.45));
 }
-[aria-details="Progress Numbered Tick"][data-active=true] {
-  color: var(--rpg-progress-numbered-tick-active, rgba(255,255,255,0.95));
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick[data-active=true] {
+  fill: var(--rpg-progress-numbered-tick-active, rgba(255, 255, 255, 0.95));
 }
 
 /* lib/styles/components/status-panel.css */
@@ -3281,7 +3268,7 @@ fieldset[aria-details*="Health "] [aria-details="HP Row"] output[aria-details="T
 [aria-details*=" Status"] h6 + h6 {
   margin-top: 6px;
 }
-[aria-details="Conditions List"] {
+dd[aria-label="Conditions List"] {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -3679,17 +3666,17 @@ article[aria-label="Character Stats"] > figure[aria-details="Stat Hex Pair"] {
 }
 
 /* lib/styles/components/death-save-dots.css */
-menu[aria-details="Death Save Successes"],
-menu[aria-details="Death Save Failures"] {
+fieldset[aria-details="Death Save Successes"],
+fieldset[aria-details="Death Save Failures"] {
   display: flex;
   align-items: center;
   gap: 8px;
-  list-style: none;
+  border: none;
   padding: 0;
   margin: 0;
 }
-menu[aria-details="Death Save Successes"] button,
-menu[aria-details="Death Save Failures"] button {
+fieldset[aria-details="Death Save Successes"] button,
+fieldset[aria-details="Death Save Failures"] button {
   display: block;
   width: 34px;
   height: 34px;
@@ -3700,38 +3687,22 @@ menu[aria-details="Death Save Failures"] button {
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
 }
-menu[aria-details="Death Save Failures"] button[aria-pressed=true] {
+fieldset[aria-details="Death Save Failures"] button[aria-pressed=true] {
   background-color: var(--rpg-death-failure-color, #c0392b);
   border-color: var(--rpg-death-failure-color, #c0392b);
 }
-menu[aria-details="Death Save Successes"] button[aria-pressed=true] {
+fieldset[aria-details="Death Save Successes"] button[aria-pressed=true] {
   background-color: var(--rpg-death-success-color, #27ae60);
   border-color: var(--rpg-death-success-color, #27ae60);
 }
 
 /* lib/styles/components/dice-tray.css */
-figure[aria-details="Dice Tray"] {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 4px 0 0;
-}
-figure[aria-details="Dice Tray"] > figcaption {
-  font-size: 0.65em;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--rpg-dice-label-color, #c8a84b);
-}
-menu[aria-details="Dice List"] {
+dd[aria-label="Dice Tray"] {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
-menu[aria-details="Dice List"] button {
+dd[aria-label="Dice Tray"] > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3748,30 +3719,30 @@ menu[aria-details="Dice List"] button {
   filter: drop-shadow(0 0 1.5px rgba(90, 32, 32, 0.9));
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
-menu[aria-details="Dice List"] button:hover:not([aria-disabled=true]) {
+dd[aria-label="Dice Tray"] > button:hover:not([aria-disabled=true]) {
   background-color: var(--rpg-die-health-hover, rgba(150, 48, 48, 0.4));
 }
-menu[aria-details="Dice List"] button[aria-disabled=true] {
+dd[aria-label="Dice Tray"] > button[aria-disabled=true] {
   opacity: 0.3;
   cursor: default;
 }
-menu[aria-details="Dice List"] button[data-die=d4] {
+dd[aria-label="Dice Tray"] > button[data-die=d4] {
   clip-path: polygon(50% 2%, 98% 98%, 2% 98%);
   padding-top: 10px;
 }
-menu[aria-details="Dice List"] button[data-die=d6] {
+dd[aria-label="Dice Tray"] > button[data-die=d6] {
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
 }
-menu[aria-details="Dice List"] button[data-die=d8] {
+dd[aria-label="Dice Tray"] > button[data-die=d8] {
   clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
 }
-menu[aria-details="Dice List"] button[data-die=d10] {
+dd[aria-label="Dice Tray"] > button[data-die=d10] {
   clip-path: polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
 }
-menu[aria-details="Dice List"] button[data-die=d12] {
+dd[aria-label="Dice Tray"] > button[data-die=d12] {
   clip-path: polygon(50% 2%, 98% 38%, 80% 98%, 20% 98%, 2% 38%);
 }
-menu[aria-details="Dice List"] button[data-die=d20] {
+dd[aria-label="Dice Tray"] > button[data-die=d20] {
   clip-path: polygon(50% 2%, 100% 98%, 0% 98%);
   padding-top: 8px;
 }

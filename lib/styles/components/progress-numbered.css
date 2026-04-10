@@ -1,40 +1,29 @@
 /* ── Progress Numbered ────────────────────────────────────────────────────── */
 
-[aria-details="Progress Numbered"] {
-  position: relative;
-  height: 32px;
+svg[aria-details="Progress Numbered"] {
+  display: block;
   width: 100%;
-  background: var(--rpg-progress-numbered-track, rgba(255,255,255,0.07));
+  height: 32px;
   border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: 3px;
   overflow: visible;
 }
 
-[aria-details="Progress Numbered Fill"] {
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  background: var(--rpg-progress-numbered-fill, linear-gradient(90deg, #4a9 0%, #e07b39 60%, #c0392b 100%));
-  border-radius: 3px;
+svg[aria-details="Progress Numbered"] .rpg-numbered-track {
+  fill: var(--rpg-progress-numbered-track, rgba(255, 255, 255, 0.07));
+}
+
+svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
+  fill: url(#rpg-numbered-fill-grad);
   transition: width 0.2s ease;
 }
 
-[aria-details="Progress Numbered Tick"] {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
   font-size: 0.8em;
   font-weight: 700;
-  line-height: 32px;
-  color: var(--rpg-progress-numbered-tick-inactive, rgba(255,255,255,0.45));
-  pointer-events: none;
-  z-index: 1;
+  fill: var(--rpg-progress-numbered-tick-inactive, rgba(255, 255, 255, 0.45));
 }
 
-[aria-details="Progress Numbered Tick"][data-active="true"] {
-  color: var(--rpg-progress-numbered-tick-active, rgba(255,255,255,0.95));
-  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick[data-active="true"] {
+  fill: var(--rpg-progress-numbered-tick-active, rgba(255, 255, 255, 0.95));
 }

@@ -12,52 +12,44 @@ export interface ProgressHealthProps {
 }
 
 /**
- * A health-specific progress bar with values displayed inside the fill.
- * Supports a secondary segment (temp HP) rendered in a different color.
+ * A health-specific progress bar rendered as an inline SVG.
  *
  * ```tsx
- * <ProgressHealth label="HIT POINTS" value={32} max={58} secondary={5} />
+ * <ProgressHealth value={32} max={58} secondary={5} />
  * ```
  */
-export function ProgressHealth({ value, max, secondary = 0, label }: ProgressHealthProps): React.ReactElement {
+export function ProgressHealth({ value, max, secondary = 0 }: ProgressHealthProps): React.ReactElement {
   const safeMax = max > 0 ? max : 1;
   const safeValue = Math.max(0, Math.min(value ?? 0, safeMax));
   const safeSecondary = Math.max(0, secondary ?? 0);
   const total = safeMax + safeSecondary;
 
-  // Green fill: current HP relative to the full bar (max + temp)
-  const primaryPercent = (safeValue / total) * 100;
+  const primaryPct = `${(safeValue / total) * 100}%`;
 
-  // Blue segment position: starts where max HP ends on the full bar scale
-  const secondaryLeft = (safeMax / total) * 100;
-
-  // Blue segment width:
-  // - 0 or 1: CSS min-width only (no proportional growth)
-  // - 2+: proportional to temp / total
-  const secondaryWidth = safeSecondary >= 2
-    ? `calc(var(--temp-min-w) + ${(safeSecondary / total) * 100}%)`
-    : undefined;
+  // Enforce minimum visible width for the secondary segment
+  const rawSecondaryPct = safeSecondary >= 1 ? (safeSecondary / total) * 100 : 0;
+  const secondaryPct = rawSecondaryPct > 0 ? `${Math.max(rawSecondaryPct, 8)}%` : "0%";
 
   return (
-    <figure aria-details="Progress Health">
-      {label && <figcaption>{label}</figcaption>}
-      <div
-        role="progressbar"
-        aria-valuenow={safeValue}
-        aria-valuemin={0}
-        aria-valuemax={safeMax}
-      >
-        <div aria-details="Bar Fill" style={{ width: `${primaryPercent}%` }} />
-        <div
-          aria-details="Bar Secondary"
-          data-empty={safeSecondary === 0 || undefined}
-          style={{ left: `${secondaryLeft}%`, width: secondaryWidth }}
-        />
-        <output>
+    <svg
+      aria-details="Progress Health"
+      role="progressbar"
+      aria-valuenow={safeValue}
+      aria-valuemin={0}
+      aria-valuemax={safeMax}
+      height="32"
+    >
+      <rect className="rpg-hp-track" x="0" y="0" width="100%" height="100%" />
+      <rect className="rpg-hp-fill" x="0" y="0" width={primaryPct} height="100%" />
+      {rawSecondaryPct > 0 && (
+        <rect className="rpg-hp-secondary" x={`calc(100% - ${secondaryPct})`} y="0" width={secondaryPct} height="100%" />
+      )}
+      <foreignObject x="0" y="0" width="100%" height="100%">
+        <output aria-label="HP Summary">
           {safeValue} / {safeMax}
           <span aria-details="Secondary Value">+{safeSecondary}</span>
         </output>
-      </div>
-    </figure>
+      </foreignObject>
+    </svg>
   );
 }
