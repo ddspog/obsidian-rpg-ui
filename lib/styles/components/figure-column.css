@@ -10,12 +10,13 @@ figure[aria-details*=" Column"] {
 
 /* ── Defense Stats: decorative side-lines ─────────────────────────────────── */
 
-figure[aria-details="Defense Stats Column"] {
+hgroup[aria-details="Defense Stats Row"] {
+  flex-direction: column;
   align-items: stretch;
 }
 
-figure[aria-details="Defense Stats Column"] > div::before,
-figure[aria-details="Defense Stats Column"] > div::after {
+hgroup[aria-details="Defense Stats Row"] > menu::before,
+hgroup[aria-details="Defense Stats Row"] > menu::after {
   content: "";
   flex: 1;
   align-self: center;
@@ -25,12 +26,12 @@ figure[aria-details="Defense Stats Column"] > div::after {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-figure[aria-details="Defense Stats Column"] > div::before {
+hgroup[aria-details="Defense Stats Row"] > menu::before {
   mask-image: linear-gradient(to right, transparent 0%, black 40%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%);
 }
 
-figure[aria-details="Defense Stats Column"] > div::after {
+hgroup[aria-details="Defense Stats Row"] > menu::after {
   mask-image: linear-gradient(to left, transparent 0%, black 40%);
   -webkit-mask-image: linear-gradient(to left, transparent 0%, black 40%);
 }

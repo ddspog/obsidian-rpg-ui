@@ -45,7 +45,7 @@ export type LineControlProps = {
 };
 
 export const Control: React.FC<LineControlProps> = ({ children, style }) => {
-  return <div aria-details="Line Control" style={style}>{children}</div>;
+  return <menu aria-details="Line Control" style={style}>{children}</menu>;
 };
 
 export type LineStatsProps = {
@@ -54,7 +54,7 @@ export type LineStatsProps = {
 };
 
 export const Stats: React.FC<LineStatsProps> = ({ children, style }) => {
-  return <div aria-details="Line Stats" style={style}>{children}</div>;
+  return <menu aria-details="Line Stats" style={style}>{children}</menu>;
 };
 
 export const Line = {

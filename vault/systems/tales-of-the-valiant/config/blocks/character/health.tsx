@@ -1,5 +1,5 @@
 import * as React from "react";
-import { EntityBlock, Section, Article, HGroup, Figure, Line, Fieldset, Badge, Stat, DeathSaveDots, Progress, DiceTray, PortraitThumb, Panel, ConditionPill } from "rpg-ui-toolkit";
+import { EntityBlock, Section, Article, HGroup, Line, Badge, Stat, DeathSaveDots, Progress, DiceTray, PortraitThumb, ConditionPill } from "rpg-ui-toolkit";
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
 
@@ -36,7 +36,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expres
     <Section.Row label="Health Management" distribution="1 2">
       <PortraitThumb src={self.portrait} />
       <Article.Column label="Content">
-        <Figure.Column label="Defense Stats">
+        <HGroup.Row label="Defense Stats">
           <Line.Control>
             <DeathSaveDots
               side="failures"
@@ -60,21 +60,27 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expres
             ))}
             <Stat.Diamond label="Proficiency" value={expressions.ProficiencyBonus()} format="bonus" />
           </Line.Stats>
-        </Figure.Column>
+        </HGroup.Row>
 
-        <HGroup.Row label="Health Management" style={{ alignItems: "stretch" }}>
-          <Fieldset.Health label="Controller" style={{ flex: 3 }}>
-            <div aria-details="HP Row">
-              <Progress.Health label="HIT POINTS" value={self.current_hp ?? 0} max={self.max_hp ?? 0} secondary={self.temp_hp ?? 0} />
-            </div>
-            <DiceTray dice={hitDice} onSpend={handleSpendDie} />
-          </Fieldset.Health>
+        <p aria-details="Health Management Row" style={{ alignItems: "stretch" }}>
+          <dl aria-label="Health Controller" style={{ flex: 3 }}>
+            <dt>HIT POINTS</dt>
+            <dd aria-label="Progress Health">
+              <Progress.Health value={self.current_hp ?? 0} max={self.max_hp ?? 0} secondary={self.temp_hp ?? 0} />
+            </dd>
+            <dt>Hit Dice</dt>
+            <dd aria-label="Dice Tray">
+              <DiceTray dice={hitDice} onSpend={handleSpendDie} />
+            </dd>
+          </dl>
 
-          <Panel.Status label="Character" style={{ flex: 2 }}>
-            <h6>Exhaustion</h6>
-            <Progress.Numbered value={exhaustion} max={6} />
-            <h6>Conditions</h6>
-            <Line.Pills>
+          <dl aria-label="Character Status" style={{ flex: 2 }}>
+            <dt>Exhaustion</dt>
+            <dd aria-label="Progress Numbered">
+              <Progress.Numbered value={exhaustion} max={6} />
+            </dd>
+            <dt>Conditions</dt>
+            <dd aria-label="Conditions List">
               {conditions.length === 0 ? (
                 <span aria-details="No Conditions">—</span>
               ) : (
@@ -83,13 +89,12 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expres
                   return <ConditionPill key={i} value={raw} label={label} linkpath={linkpath} />;
                 })
               )}
-            </Line.Pills>
-          </Panel.Status>
-        </HGroup.Row>
+            </dd>
+          </dl>
+        </p>
       </Article.Column>
     </Section.Row>
   );
 };
 
 export default health;
-

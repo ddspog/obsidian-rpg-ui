@@ -1,17 +1,17 @@
 /* ── Death Save Dots ──────────────────────────────────────────────────────── */
 
-menu[aria-details="Death Save Successes"],
-menu[aria-details="Death Save Failures"] {
+fieldset[aria-details="Death Save Successes"],
+fieldset[aria-details="Death Save Failures"] {
   display: flex;
   align-items: center;
   gap: 8px;
-  list-style: none;
+  border: none;
   padding: 0;
   margin: 0;
 }
 
-menu[aria-details="Death Save Successes"] button,
-menu[aria-details="Death Save Failures"] button {
+fieldset[aria-details="Death Save Successes"] button,
+fieldset[aria-details="Death Save Failures"] button {
   display: block;
   width: 34px;
   height: 34px;
@@ -24,13 +24,13 @@ menu[aria-details="Death Save Failures"] button {
 }
 
 /* Failures — filled dots turn red */
-menu[aria-details="Death Save Failures"] button[aria-pressed="true"] {
+fieldset[aria-details="Death Save Failures"] button[aria-pressed="true"] {
   background-color: var(--rpg-death-failure-color, #c0392b);
   border-color: var(--rpg-death-failure-color, #c0392b);
 }
 
 /* Successes — filled dots turn green */
-menu[aria-details="Death Save Successes"] button[aria-pressed="true"] {
+fieldset[aria-details="Death Save Successes"] button[aria-pressed="true"] {
   background-color: var(--rpg-death-success-color, #27ae60);
   border-color: var(--rpg-death-success-color, #27ae60);
 }

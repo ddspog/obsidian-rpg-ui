@@ -18,7 +18,7 @@ export function DeathSaveDots({ side, count = 3, filled, onChange }: DeathSaveDo
   };
 
   return (
-    <menu aria-details={`Death Save ${side === "successes" ? "Successes" : "Failures"}`}>
+    <fieldset aria-details={`Death Save ${side === "successes" ? "Successes" : "Failures"}`}>
       {Array.from({ length: count }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
@@ -28,6 +28,6 @@ export function DeathSaveDots({ side, count = 3, filled, onChange }: DeathSaveDo
           onClick={() => handleClick(n)}
         />
       ))}
-    </menu>
+    </fieldset>
   );
 }
