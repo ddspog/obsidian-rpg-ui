@@ -51,6 +51,8 @@ type SheetArgs = {
   charisma: number;
   str_save_prof: number;
   con_save_prof: number;
+  dot_padding: number;
+  dot_inset: number;
 };
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
@@ -81,6 +83,8 @@ const meta: Meta<SheetArgs> = {
     charisma: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
     str_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "STR Save Proficiency" },
     con_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CON Save Proficiency" },
+    dot_padding: { control: { type: "range", min: 0, max: 60, step: 4 }, name: "Dot Padding (px)" },
+    dot_inset: { control: { type: "range", min: 0, max: 40, step: 2 }, name: "Dot Inset (px)" },
 
     // Health controls
     current_hp: { control: { type: "number" }, name: "Current HP" },
@@ -218,7 +222,16 @@ function renderSheet(args: SheetArgs, system: RPGSystem) {
   const blocksYaml = buildBlocksYaml(args);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, background: args.background }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        background: args.background,
+        ["--rpg-stats-dot-padding" as string]: `${args.dot_padding}px`,
+        ["--rpg-stats-dot-inset" as string]: `${args.dot_inset}px`,
+      }}
+    >
       {orderedBlocks.map((blockName) => (
         <SheetBlock key={blockName} blockName={blockName} args={args} system={system} blocksYaml={blocksYaml} />
       ))}
@@ -270,7 +283,7 @@ export const Default: Story = {
   name: "Default state",
   args: {
     // Sheet
-    background: "#1e1e1e",
+    background: "transparent",
 
     // Header
     filename: "Aldric Ironveil",
@@ -287,6 +300,8 @@ export const Default: Story = {
     charisma: 8,
     str_save_prof: 1,
     con_save_prof: 1,
+    dot_padding: 4,
+    dot_inset: 18,
 
     // Health
     current_hp: 32,
