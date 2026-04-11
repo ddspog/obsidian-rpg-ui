@@ -9,8 +9,7 @@ const ATTRS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const;
  * Block for displaying character stats, including core attributes and their saving throw details.
  */
 export const stats: EntityBlock<StatsProps, CharacterEntity> = ({ self, expressions }) => (
-  <div data-rpg="stats">
-  <article aria-label="Character Stats">
+  <section aria-label="Character Stats">
     {ATTRS.map((attr) => {
       const { value, save } = self[attr];
       const saveBonus = expressions.ModifierTotal({
@@ -29,8 +28,7 @@ export const stats: EntityBlock<StatsProps, CharacterEntity> = ({ self, expressi
         </Stat>
       );
     })}
-  </article>
-  </div>
+  </section>
 );
 
 export default stats;

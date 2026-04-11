@@ -196,7 +196,11 @@
   --rpg-trigger-icon-color: rgba(255,255,255,0.92);
 }
 .theme-dark {
+  color-scheme: dark;
   --rpg-trigger-icon-color: rgba(255,255,255,0.96);
+}
+.theme-light {
+  color-scheme: light;
 }
 .card-grid {
   display: grid;
@@ -3377,277 +3381,70 @@ figure[aria-details="Stat Diamond"] figcaption {
 }
 
 /* lib/styles/components/stat-hex-pair.css */
-figure[aria-details="Stat Hex Pair"] {
-  position: relative;
-  margin: 0;
-  --front-w: 76px;
-  --front-h: 86px;
-  --back-w: 60px;
-  --back-h: 68px;
-  --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  width: calc(var(--front-w) + 34px);
-  height: calc(var(--front-h) + 24px);
+svg[aria-details="Stat Hex Pair"] {
+  width: 110px;
+  height: 110px;
+  overflow: visible;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Border"],
-[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
-  position: absolute;
-  inset: 0;
-  clip-path: var(--hex-clip);
-  pointer-events: none;
+.rpg-hex-border {
+  fill: var(--rpg-hex-border, #6a6258);
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Border"] {
-  background: var(--rpg-hex-border, #6a6258);
+.rpg-hex-fill {
+  fill: var(--rpg-hex-bg, #4a4440);
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Fill"] {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-  background-image:
-    radial-gradient(
-      ellipse at 40% 30%,
-      rgba(255, 255, 255, 0.06) 0%,
-      transparent 60%);
+.rpg-hex-prof-ring {
+  fill: var(--rpg-hex-prof-ring, #d4a840);
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: var(--front-w);
-  height: var(--front-h);
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
+.rpg-hex-prof-dash {
+  fill: none;
+  stroke: var(--rpg-hex-bg, #4a4440);
+  stroke-width: 1.5;
+  stroke-dasharray: 7.35 7.35;
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > small {
-  position: relative;
-  z-index: 1;
-  font-size: 0.75em;
+.rpg-hex-label {
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--rpg-hex-label, #b0a890);
-  line-height: 1;
+  fill: var(--rpg-hex-label, #b0a890);
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Front"] > output {
-  position: relative;
-  z-index: 1;
-  font-size: 1.6em;
+.rpg-hex-value {
+  font-size: 22px;
   font-weight: 700;
-  color: var(--rpg-hex-value, #e3dcce);
-  line-height: 1;
+  fill: var(--rpg-hex-value, #e3dcce);
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: var(--back-w);
-  height: var(--back-h);
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
+.rpg-hex-value--back {
+  font-size: 14px;
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > small {
-  position: relative;
-  z-index: 1;
-  font-size: 0.65em;
+.rpg-hex-label--back {
+  font-size: 9px;
+}
+.rpg-hex-score {
+  font-size: 20px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--rpg-hex-label, #b0a890);
-  line-height: 1;
+  fill: var(--rpg-hex-score, #e3dcce);
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 3;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
 }
-[aria-details="Stat Hex Pair"] [aria-details="Hex Back"] > output {
-  position: relative;
-  z-index: 1;
-  font-size: 1.1em;
-  font-weight: 700;
-  color: var(--rpg-hex-value, #e3dcce);
-  line-height: 1;
-}
-[aria-details="Stat Hex Pair"] [aria-details="Prof Ring"] {
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  width: 88%;
-  height: 88%;
-  transform: translate(-50%, -50%);
-  clip-path: var(--hex-clip);
-  pointer-events: none;
-}
-[aria-details="Prof Ring"][data-prof=full] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"][data-prof=half] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"][data-prof=double] {
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"]::after {
-  content: "";
-  position: absolute;
-  clip-path: var(--hex-clip);
-}
-[aria-details="Prof Ring"][data-prof=full]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Prof Ring"][data-prof=half]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-  mask-image:
-    conic-gradient(
-      from 0deg,
-      black 0deg,
-      black 15deg,
-      transparent 15deg,
-      transparent 30deg,
-      black 30deg,
-      black 45deg,
-      transparent 45deg,
-      transparent 60deg,
-      black 60deg,
-      black 75deg,
-      transparent 75deg,
-      transparent 90deg,
-      black 90deg,
-      black 105deg,
-      transparent 105deg,
-      transparent 120deg,
-      black 120deg,
-      black 135deg,
-      transparent 135deg,
-      transparent 150deg,
-      black 150deg,
-      black 165deg,
-      transparent 165deg,
-      transparent 180deg,
-      black 180deg,
-      black 195deg,
-      transparent 195deg,
-      transparent 210deg,
-      black 210deg,
-      black 225deg,
-      transparent 225deg,
-      transparent 240deg,
-      black 240deg,
-      black 255deg,
-      transparent 255deg,
-      transparent 270deg,
-      black 270deg,
-      black 285deg,
-      transparent 285deg,
-      transparent 300deg,
-      black 300deg,
-      black 315deg,
-      transparent 315deg,
-      transparent 330deg,
-      black 330deg,
-      black 345deg,
-      transparent 345deg,
-      transparent 360deg);
-  -webkit-mask-image:
-    conic-gradient(
-      from 0deg,
-      black 0deg,
-      black 15deg,
-      transparent 15deg,
-      transparent 30deg,
-      black 30deg,
-      black 45deg,
-      transparent 45deg,
-      transparent 60deg,
-      black 60deg,
-      black 75deg,
-      transparent 75deg,
-      transparent 90deg,
-      black 90deg,
-      black 105deg,
-      transparent 105deg,
-      transparent 120deg,
-      black 120deg,
-      black 135deg,
-      transparent 135deg,
-      transparent 150deg,
-      black 150deg,
-      black 165deg,
-      transparent 165deg,
-      transparent 180deg,
-      black 180deg,
-      black 195deg,
-      transparent 195deg,
-      transparent 210deg,
-      black 210deg,
-      black 225deg,
-      transparent 225deg,
-      transparent 240deg,
-      black 240deg,
-      black 255deg,
-      transparent 255deg,
-      transparent 270deg,
-      black 270deg,
-      black 285deg,
-      transparent 285deg,
-      transparent 300deg,
-      black 300deg,
-      black 315deg,
-      transparent 315deg,
-      transparent 330deg,
-      black 330deg,
-      black 345deg,
-      transparent 345deg,
-      transparent 360deg);
-}
-[aria-details="Prof Ring"][data-prof=double]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Prof Ring"][data-prof=double-inner] {
-  width: 82%;
-  height: 82%;
-  background: var(--rpg-hex-prof-ring, #d4a840);
-}
-[aria-details="Prof Ring"][data-prof=double-inner]::after {
-  inset: 1.5px;
-  background: var(--rpg-hex-bg, #4a4440);
-}
-[aria-details="Stat Hex Pair"] [aria-details="Hex Score"] {
-  position: absolute;
-  right: 2px;
-  bottom: -2px;
-  z-index: 3;
-  font-size: 1.6em;
-  font-weight: 700;
-  color: var(--rpg-hex-score, #e3dcce);
-  line-height: 1;
-  text-align: center;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
-}
-[data-rpg=stats] {
+section[aria-label="Character Stats"] {
   container-type: inline-size;
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
-}
-article[aria-label="Character Stats"] {
   display: grid;
-  grid-template-columns: repeat(6, auto);
-  justify-content: space-evenly;
+  grid-template-columns: repeat(6, 1fr);
+  justify-items: center;
+  row-gap: 8px;
   padding: var(--spacing-3, 12px);
   position: relative;
 }
 @container (max-width: 680px) {
-  article[aria-label="Character Stats"] {
-    grid-template-columns: repeat(3, auto);
-    row-gap: 8px;
+  svg[aria-details="Stat Hex Pair"] {
+    grid-column: span 2;
   }
 }
-article[aria-label="Character Stats"]::before {
+section[aria-label="Character Stats"]::before {
   content: "";
   position: absolute;
   inset: 24px;
@@ -3659,10 +3456,186 @@ article[aria-label="Character Stats"]::before {
   background-size: 8px 8px;
   pointer-events: none;
 }
-article[aria-label="Character Stats"] > figure[aria-details="Stat Hex Pair"] {
+section[aria-label="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
   margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
   position: relative;
   z-index: 1;
+}
+
+/* lib/styles/components/senses-row.css */
+section[aria-label="Character Senses"] {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.5fr;
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+section[aria-label="Character Senses"] > output + output,
+section[aria-label="Character Senses"] > output + dl,
+section[aria-label="Character Senses"] > dl + output {
+  border-left: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+section[aria-label="Character Senses"] > output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px 8px;
+}
+section[aria-label="Character Senses"] > output > data {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--rpg-senses-value, light-dark(#1a1208, #ffffff));
+  line-height: 1;
+}
+section[aria-label="Character Senses"] > output > small {
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-senses-label, light-dark(#3a3020, #c0b8a4));
+  line-height: 1;
+}
+section[aria-label="Character Senses"] > dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-content: center;
+  gap: 0 10px;
+  padding: 8px 12px;
+  margin: 0;
+}
+section[aria-label="Character Senses"] > dl > dt {
+  grid-row: 1 / span 10;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-senses-header, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.4;
+}
+section[aria-label="Character Senses"] > dl > dt > svg {
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+section[aria-label="Character Senses"] > dl > dd {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--rpg-senses-text, light-dark(#1a1208, #e3dcce));
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+section[aria-label="Character Senses"] > dl > dd > [aria-details="Sense Range"] {
+  font-variant-numeric: tabular-nums;
+  font-size: 1em;
+  text-transform: none;
+  opacity: 0.7;
+}
+@container (max-width: 480px) {
+  section[aria-label="Character Senses"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  section[aria-label="Character Senses"] > dl {
+    grid-column: 1 / -1;
+    border-left: none;
+    border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  }
+}
+
+/* lib/styles/components/skills-row.css */
+section[aria-label="Character Skills"] {
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+section[aria-label="Character Skills"] > menu {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  column-count: 2;
+  column-gap: 24px;
+}
+section[aria-label="Character Skills"] > menu > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 20px;
+  break-inside: avoid;
+  font-size: 1.3em;
+  color: light-dark(#1a1208, #e3dcce);
+}
+section[aria-label="Character Skills"] > menu > li > svg {
+  flex-shrink: 0;
+  color: light-dark(#5a5040, #a09880);
+}
+section[aria-label="Character Skills"] > menu > li > [aria-details="Skill Name"] {
+  flex: 1;
+  font-weight: 600;
+}
+section[aria-label="Character Skills"] > menu > li > data {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  justify-content: flex-end;
+}
+section[aria-label="Character Skills"] > menu > li[data-vantage=adv] > data {
+  color: light-dark(#2d6a2e, #5cb85c);
+}
+section[aria-label="Character Skills"] > menu > li[data-vantage=dis] > data {
+  color: light-dark(#a02020, #d9534f);
+}
+section[aria-label="Character Skills"] > menu > li > data > [aria-details=Vantage] {
+  font-size: 0.6em;
+  line-height: 1;
+}
+section[aria-label="Character Senses"]:has(+ section[aria-label="Character Skills"]) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+section[aria-label="Character Senses"] + section[aria-label="Character Skills"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-block-start: -2px;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+div:has(> section[aria-label="Character Senses"]):has(+ div > section[aria-label="Character Skills"]) > section[aria-label="Character Senses"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+div:has(> section[aria-label="Character Senses"]) + div > section[aria-label="Character Skills"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-block-start: -2px;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* lib/styles/components/death-save-dots.css */
