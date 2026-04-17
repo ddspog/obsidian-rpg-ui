@@ -32,6 +32,9 @@ import type {
 import attributes from './attributes';
 import spellcastTable from './spellslots';
 import character from "./entities/character";
+import featureDetails from "./blocks/feature/details";
+import featureChoice from "./blocks/feature/choice";
+import featureUnlock from "./blocks/feature/unlock";
 
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
@@ -82,8 +85,9 @@ export const system = CreateSystem(async ({ wiki }) => ({
 
     feature: CreateEntity(({ wiki }: { wiki?: any }) => ({
       blocks: {
-        feature: () => null,
-        aspects: () => null,
+        details: featureDetails,
+        choice: featureChoice,
+        unlock: featureUnlock,
       },
     })),
 
