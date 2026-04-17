@@ -10,7 +10,7 @@
  */
 
 import { parse as parseYaml } from "yaml";
-import { extractCodeBlocks } from "lib/utils/codeblock-extractor";
+import { extractCodeBlocks } from "../../utils/codeblock-extractor";
 import type {
   FeatureChoiceOption,
   FeatureDetails,
