@@ -1,6 +1,8 @@
 import { CreateEntity, FeatureEntry } from "rpg-ui-toolkit";
 import { xpTable as xp } from './character.lookup';
 import type { CharacterEntity } from "./character.types";
+import { parseSourceDocs } from "../../../../../lib/domains/features/parse-source-doc";
+import type { CompendiumLib } from "../../../../../lib/domains/features/types";
 import header from '../blocks/character/header';
 import health from '../blocks/character/health';
 import stats from '../blocks/character/stats';
@@ -8,9 +10,27 @@ import senses from '../blocks/character/senses';
 import skills from '../blocks/character/skills';
 import attacks from '../blocks/character/attacks';
 import proficiencies from '../blocks/character/proficiencies';
+import features from '../blocks/character/features';
 
-const character = CreateEntity<CharacterEntity>(async ({ wiki }) => ({
-    lookup: { table: { xp } },
+const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
+    const [classDocs, subclassDocs, lineageDocs, heritageDocs, backgroundDocs] = await Promise.all([
+        wiki.folder("compendium/classes") as Promise<any[]>,
+        wiki.folder("compendium/subclasses") as Promise<any[]>,
+        wiki.folder("compendium/lineages") as Promise<any[]>,
+        wiki.folder("compendium/heritages") as Promise<any[]>,
+        wiki.folder("compendium/backgrounds") as Promise<any[]>,
+    ]);
+
+    const compendium: CompendiumLib = {
+        classes: parseSourceDocs(classDocs ?? [], "class"),
+        subclasses: parseSourceDocs(subclassDocs ?? [], "subclass"),
+        lineages: parseSourceDocs(lineageDocs ?? [], "lineage"),
+        heritages: parseSourceDocs(heritageDocs ?? [], "heritage"),
+        backgrounds: parseSourceDocs(backgroundDocs ?? [], "background"),
+    };
+
+    return {
+    lookup: { table: { xp }, $compendium: compendium },
     blocks: {
         header,
         health,
@@ -19,7 +39,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => ({
         skills,
         attacks,
         proficiencies,
-        features: ({ self, blocks, lookup, system }) => null,
+        features,
         spells: ({ self, blocks, lookup, system }) => null,
         inventory: ({ self, blocks, lookup, system }) => null,
         description: ({ self, blocks, lookup, system }) => null,
@@ -86,6 +106,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => ({
           return 10 + expressions.ModifierTotal({ attribute, proficiency, bonus }) + 5 * vantage;
         }
     },
-}));
+};
+});
 
 export default character;

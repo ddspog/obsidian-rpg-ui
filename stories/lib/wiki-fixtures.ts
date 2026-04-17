@@ -27,6 +27,31 @@ const rawConditions = import.meta.glob(
   { query: "?raw", import: "default", eager: true },
 ) as Record<string, string>;
 
+const rawClasses = import.meta.glob(
+  "../../vault/systems/tales-of-the-valiant/compendium/classes/*.md",
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
+const rawSubclasses = import.meta.glob(
+  "../../vault/systems/tales-of-the-valiant/compendium/subclasses/*.md",
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
+const rawLineages = import.meta.glob(
+  "../../vault/systems/tales-of-the-valiant/compendium/lineages/*.md",
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
+const rawHeritages = import.meta.glob(
+  "../../vault/systems/tales-of-the-valiant/compendium/heritages/*.md",
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
+const rawBackgrounds = import.meta.glob(
+  "../../vault/systems/tales-of-the-valiant/compendium/backgrounds/*.md",
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
 // ── Frontmatter parser ────────────────────────────────────────────────────────
 
 function splitFrontmatter(raw: string): { fm: Record<string, unknown>; body: string } {
@@ -88,3 +113,28 @@ export const conditions: ConditionDefinition[] = Object.entries(rawConditions).m
     };
   },
 );
+
+// ── Compendium docs (classes / subclasses / lineages / heritages / backgrounds) ──
+//
+// Each entry mirrors what the real Obsidian wiki.folder() returns: the
+// frontmatter is spread onto the object alongside `$name` and `$contents`.
+// parseSourceDoc(raw, kind) consumes this shape directly.
+
+export interface CompendiumRaw {
+  $name: string;
+  $contents: string;
+  [key: string]: unknown;
+}
+
+function buildCompendium(rawMap: Record<string, string>): CompendiumRaw[] {
+  return Object.entries(rawMap).map(([path, raw]) => {
+    const { fm, body } = splitFrontmatter(raw);
+    return { $name: basename(path), $contents: body, ...fm };
+  });
+}
+
+export const classes: CompendiumRaw[] = buildCompendium(rawClasses);
+export const subclasses: CompendiumRaw[] = buildCompendium(rawSubclasses);
+export const lineages: CompendiumRaw[] = buildCompendium(rawLineages);
+export const heritages: CompendiumRaw[] = buildCompendium(rawHeritages);
+export const backgrounds: CompendiumRaw[] = buildCompendium(rawBackgrounds);

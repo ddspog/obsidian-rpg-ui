@@ -55,7 +55,11 @@ export const system = CreateSystem(async ({ wiki }) => ({
 
     subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "parent_class", type: "string", default: "" }] })),
 
-    race: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "size", type: "string", default: "medium" }, { name: "speed", type: "number", default: 30 }] })),
+    lineage: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "size", type: "string", default: "medium" }, { name: "speed", type: "number", default: 30 }] })),
+
+    heritage: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [] })),
+
+    background: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [] })),
 
     monster: CreateEntity(async ({ wiki }: { wiki?: any }) => {
       const external = (await wiki.file("compendium/entities/monster/extra").catch(() => null)) as any;
@@ -111,7 +115,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
       { id: "free_action", label: "Free Action", icon: "✨" },
       { id: "passive", label: "Passive", icon: "📋" },
     ],
-    providers: ["class", "race"],
+    providers: ["class", "subclass", "lineage", "heritage", "background"],
     collectors: ["character", "monster"],
   },
 

@@ -1,7 +1,7 @@
 import type { Preview } from "@storybook/react";
 import { TFile } from "obsidian";
 import "../styles.css";
-import { skills, conditions } from "../stories/lib/wiki-fixtures";
+import { skills, conditions, classes, subclasses, lineages, heritages, backgrounds } from "../stories/lib/wiki-fixtures";
 
 // ── Obsidian theme CSS variables ───────────────────────────────────────────
 // Obsidian's theme sets these on :root. Without them, components fall back to
@@ -32,8 +32,13 @@ document.head.appendChild(style);
 // Path-aware routing serves real compendium data loaded via import.meta.glob.
 (globalThis as any).__rpg_wiki = {
   folder: async (path: string) => {
-    if (path.includes("skills")) return skills;
-    if (path.includes("conditions")) return conditions;
+    if (path.includes("compendium/skills")) return skills;
+    if (path.includes("compendium/conditions")) return conditions;
+    if (path.includes("compendium/classes")) return classes;
+    if (path.includes("compendium/subclasses")) return subclasses;
+    if (path.includes("compendium/lineages")) return lineages;
+    if (path.includes("compendium/heritages")) return heritages;
+    if (path.includes("compendium/backgrounds")) return backgrounds;
     return [];
   },
   file: async (_path: string) => null,

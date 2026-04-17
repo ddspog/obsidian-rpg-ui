@@ -6,6 +6,8 @@ import { SensesProps } from "../blocks/character/senses.types";
 import { SkillsProps } from "../blocks/character/skills.types";
 import { AttacksProps } from "../blocks/character/attacks.types";
 import { ProficienciesProps } from "../blocks/character/proficiencies.types";
+import type { FeaturesBlockData } from "../blocks/character/features.types";
+import type { CompendiumLib } from "../../../../../lib/domains/features/types";
 
 /**
  * Types for the Character Entity, defining the shape of its blocks, lookup, and expressions.
@@ -15,7 +17,9 @@ export type CharacterLookup = {
   table: {
     /** Table of Experience Milestone to advance on Character Levels */
     xp: number[];
-  }
+  };
+  /** Compendium libraries (classes, subclasses, lineages, heritages, backgrounds) loaded from wiki.folder. */
+  $compendium: CompendiumLib;
 }
 
 /** Return types of each named expression on the character entity */
@@ -40,9 +44,7 @@ export type CharacterBlocks = {
   skills: SkillsProps,
   attacks: AttacksProps,
   proficiencies: ProficienciesProps;
-  features: {
-    filter?: string;
-  };
+  features: FeaturesBlockData;
   spells: {
     filter?: string;
   };
