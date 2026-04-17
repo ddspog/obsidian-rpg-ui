@@ -10,7 +10,7 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
 import { buildHeaderYaml, buildFeaturesYaml, type HeaderFixture } from "../lib/feature-fixtures";
@@ -160,6 +160,13 @@ export const PendingChoices: Story = {
     const medicine = c.getByRole("button", { name: "Medicine" });
     await expect(medicine).toBeEnabled();
     await expect(medicine).toHaveAttribute("aria-pressed", "false");
+
+    // Pick two options → the pending row disappears.
+    await userEvent.click(medicine);
+    await userEvent.click(c.getByRole("button", { name: "Insight" }));
+    await waitFor(async () => {
+      await expect(c.queryByText("Choices to make")).not.toBeInTheDocument();
+    });
   },
 };
 

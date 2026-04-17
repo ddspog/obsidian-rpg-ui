@@ -7,9 +7,9 @@ import { resolveFeatures } from "../../../../../../lib/domains/features/resolver
 import { tagLabel } from "../../../../../../lib/domains/features/grants";
 import type {
   CharacterDecl,
-  PendingChoice,
   ResolvedSource,
 } from "../../../../../../lib/domains/features/types";
+import { PendingChoiceRow } from "../../../../../../lib/components/pending-choice-row";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -59,32 +59,6 @@ function SourceGroup({ src }: { src: ResolvedSource }) {
   );
 }
 
-function PendingChoiceRow({ pending }: { pending: PendingChoice }) {
-  return (
-    <aside className="rpg-feature-pending" aria-label={`Pending ${pending.feature.name}`}>
-      <p>
-        <strong>{pending.source}</strong>: pick {pending.remaining} more for{" "}
-        <em>{pending.feature.name}</em>
-      </p>
-      {pending.options.length > 0 && (
-        <menu aria-label="Choice Options">
-          {pending.options.map((o, i) => {
-            const label = o.name ?? o.value ?? "(unnamed)";
-            const alreadyPicked = pending.picked.includes(label);
-            return (
-              <li key={i}>
-                <button type="button" disabled={alreadyPicked} aria-pressed={alreadyPicked}>
-                  {label}
-                </button>
-              </li>
-            );
-          })}
-        </menu>
-      )}
-    </aside>
-  );
-}
-
 // ─── Main block ──────────────────────────────────────────────────────────────
 
 export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
@@ -109,6 +83,32 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
 
   const view = resolveFeatures(decl, lib);
 
+  // Build a toggle handler if the wrapper exposes setChoices. Picking adds
+  // the option to the slot; clicking an already-picked option removes it.
+  const setChoices = (self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }).setChoices;
+  const makeToggle = (source: string, featureName: string) =>
+    setChoices
+      ? (option: string) => {
+          setChoices((prev) => {
+            const next: NonNullable<FeaturesBlockData["choices"]> = { ...(prev ?? {}) };
+            const sourcePicks = { ...(next[source] ?? {}) };
+            const current = sourcePicks[featureName];
+            const currentArr = Array.isArray(current)
+              ? [...current]
+              : current
+                ? [current]
+                : [];
+            const idx = currentArr.indexOf(option);
+            if (idx >= 0) currentArr.splice(idx, 1);
+            else currentArr.push(option);
+            if (currentArr.length === 0) delete sourcePicks[featureName];
+            else sourcePicks[featureName] = currentArr;
+            next[source] = sourcePicks;
+            return next;
+          });
+        }
+      : undefined;
+
   return (
     <article aria-label="Character Features" className="rpg-feature-source-groups">
       <h3>Traits</h3>
@@ -121,7 +121,11 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
         <section aria-label="Pending Choices" className="rpg-feature-pending-list">
           <h3>Choices to make</h3>
           {view.pendingChoices.map((p) => (
-            <PendingChoiceRow key={`${p.source}:${p.feature.name}`} pending={p} />
+            <PendingChoiceRow
+              key={`${p.source}:${p.feature.name}`}
+              pending={p}
+              onToggle={makeToggle(p.source, p.feature.name)}
+            />
           ))}
         </section>
       )}
