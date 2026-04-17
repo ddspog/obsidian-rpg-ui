@@ -13,10 +13,19 @@ import { PendingChoiceRow } from "../../../../../../lib/components/pending-choic
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Pull "Human" out of a PillDetails like { file: "[[Human]]" } or { file: "Human.md" }. */
-function pillStem(p: { file?: string } | undefined): string | undefined {
+/**
+ * Pull "Human" out of a PillDetails.file. Two shapes can arrive depending on
+ * how the source YAML was written:
+ *   - quoted: `file: "[[Human]]"`   → string `"[[Human]]"`
+ *   - bare:   `file: [[Human]]`     → nested flow array `[["Human"]]`
+ * Both yield the same stem.
+ */
+function pillStem(p: { file?: unknown } | undefined): string | undefined {
   if (!p?.file) return undefined;
-  const stem = p.file.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").trim();
+  let raw: unknown = p.file;
+  while (Array.isArray(raw)) raw = raw[0];
+  if (typeof raw !== "string") return undefined;
+  const stem = raw.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").trim();
   return stem || undefined;
 }
 
