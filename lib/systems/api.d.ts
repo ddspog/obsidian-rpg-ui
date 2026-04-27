@@ -1,4 +1,4 @@
-import type { ReactNode, ComponentType } from "react";
+import type { ReactNode, ComponentType, FunctionComponent } from "react";
 
 /**
  * RPG UI Toolkit – Public API type declarations
@@ -642,3 +642,125 @@ export declare function CreateSystem(
   conditions: ConditionDefinition[];
   traits?: TraitDefinition[];
 }>;
+
+// ─── Features API (re-exported from lib/domains/features) ─────────────────
+// Available at runtime via the `rpg-ui-toolkit` shim; declared here so
+// system-config TypeScript files can import them without crossing the vault
+// boundary into the plugin's `lib/`.
+
+export type TraitValue = string | string[];
+export type TraitMap = Record<string, TraitValue>;
+
+export interface ChooseSpec {
+  type: "traits";
+  category: string;
+  number: number;
+  options: string[];
+}
+
+export interface FeatureLevelAddition {
+  level: number;
+  traits?: TraitMap;
+}
+
+export interface FeatureDetails {
+  name: string;
+  subtitle?: string;
+  text?: string;
+  traits?: TraitMap;
+  choose?: ChooseSpec;
+  levels?: FeatureLevelAddition[];
+  type?: string;
+  level?: number;
+  uses?: number;
+  link?: string;
+  pick?: number;
+}
+
+export interface FeatureChoiceOption {
+  parent: string;
+  name?: string;
+  text?: string;
+  traits?: TraitMap;
+  type?: string;
+  link?: string;
+  features?: FeatureDetails[];
+}
+
+export interface UnlockBlock {
+  kind: "subclass";
+  level: number;
+}
+
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background";
+
+export interface SourceDoc {
+  name: string;
+  kind: SourceDocKind;
+  meta: Record<string, unknown>;
+  details: FeatureDetails[];
+  options: FeatureChoiceOption[];
+  unlocks: UnlockBlock[];
+  parent_class?: string;
+}
+
+export interface CharacterDecl {
+  classes: Array<{ name: string; level: number; subclass?: string }>;
+  lineage?: string;
+  heritage?: string;
+  background?: string;
+  choices?: Record<string, Record<string, string | string[]>>;
+}
+
+export interface CompendiumLib {
+  classes: Record<string, SourceDoc>;
+  subclasses: Record<string, SourceDoc>;
+  lineages: Record<string, SourceDoc>;
+  heritages: Record<string, SourceDoc>;
+  backgrounds: Record<string, SourceDoc>;
+}
+
+export interface PendingChoice {
+  source: string;
+  feature: FeatureDetails;
+  options: FeatureChoiceOption[];
+  picked: string[];
+  remaining: number;
+}
+
+export interface ResolvedSource {
+  source: string;
+  kind: SourceDocKind;
+  level?: number;
+  features: FeatureDetails[];
+  pendingChoices: PendingChoice[];
+}
+
+export interface ResolvedView {
+  sources: ResolvedSource[];
+  traits: Record<string, string[]>;
+  pendingChoices: PendingChoice[];
+}
+
+export interface SourceDocInput {
+  $name: string;
+  $contents?: string;
+  [key: string]: unknown;
+}
+
+export declare function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): SourceDoc;
+export declare function parseSourceDocs(raws: SourceDocInput[], kind: SourceDocKind): Record<string, SourceDoc>;
+export declare function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView;
+
+export interface PendingChoiceRowProps {
+  pending: PendingChoice;
+  onToggle?: (option: string) => void;
+}
+export declare const PendingChoiceRow: FunctionComponent<PendingChoiceRowProps>;
+
+export interface MarkdownProps {
+  source: string;
+  sourcePath?: string;
+  className?: string;
+}
+export declare const Markdown: FunctionComponent<MarkdownProps>;
