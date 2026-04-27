@@ -15,6 +15,21 @@ section[aria-label="Character Skills"] {
 
 /* ── Skills list ────────────────────────────────────────────────────────── */
 
+section[aria-label="Character Skills"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-skills-header, light-dark(#6a4e2a, #d4a840));
+}
+
+section[aria-label="Character Skills"] > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+
 section[aria-label="Character Skills"] > menu {
   list-style: none;
   margin: 0;
@@ -39,6 +54,18 @@ section[aria-label="Character Skills"] > menu > li {
 section[aria-label="Character Skills"] > menu > li > svg {
   flex-shrink: 0;
   color: light-dark(#5a5040, #a09880);
+}
+
+/* Skill attribute abbreviation */
+section[aria-label="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+  flex-shrink: 0;
+  font-size: 0.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: none;
+  opacity: 0.5;
+  min-width: 2.5em;
+  text-align: center;
 }
 
 /* Skill name */

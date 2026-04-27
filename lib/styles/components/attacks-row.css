@@ -1,0 +1,146 @@
+/* ── Attacks Row (inset table between skills & proficiencies) ─────────────── */
+
+section[aria-label="Favorite Attacks"] {
+  position: relative;
+  padding: 0 12px;
+  margin-inline: 16px;
+  border-left: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-right: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ── Merge: skills → attacks → proficiencies ──────────────────────────── */
+
+/* Direct siblings (Storybook) */
+section[aria-label="Character Skills"]:has(+ section[aria-label="Favorite Attacks"]) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+section[aria-label="Character Skills"] + section[aria-label="Favorite Attacks"] {
+  margin-block-start: 0;
+}
+
+section[aria-label="Favorite Attacks"]:has(+ section[aria-label="Character Proficiencies"]) {
+  margin-block-end: 0;
+}
+
+section[aria-label="Favorite Attacks"] + section[aria-label="Character Proficiencies"] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+
+/* Through wrapper divs (Obsidian) */
+div:has(> section[aria-label="Character Skills"]):has(+ div > section[aria-label="Favorite Attacks"]) > section[aria-label="Character Skills"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+div:has(> section[aria-label="Favorite Attacks"]):has(+ div > section[aria-label="Character Proficiencies"]) > section[aria-label="Favorite Attacks"] {
+  margin-block-end: 0;
+}
+
+div:has(> section[aria-label="Favorite Attacks"]) + div > section[aria-label="Character Proficiencies"] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+section[aria-label="Favorite Attacks"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  margin: 0 -12px;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-attacks-header, light-dark(#6a4e2a, #d4a840));
+}
+
+section[aria-label="Favorite Attacks"] > header > span {
+  clip-path: none;
+  padding: 2px 12px;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+
+section[aria-label="Favorite Attacks"] table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* ── Header row ────────────────────────────────────────────────────────── */
+
+section[aria-label="Favorite Attacks"] thead th {
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(#6a4e2a, #d4a840);
+  text-align: left;
+  padding: 6px 6px 4px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+/* ── Body rows ─────────────────────────────────────────────────────────── */
+
+section[aria-label="Favorite Attacks"] tbody tr + tr > td {
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+}
+
+section[aria-label="Favorite Attacks"] tbody td {
+  padding: 6px;
+  font-size: 0.9em;
+  color: light-dark(#1a1208, #e3dcce);
+  vertical-align: baseline;
+}
+
+/* ── Column-specific styles ────────────────────────────────────────────── */
+
+section[aria-label="Favorite Attacks"] th[aria-label="Icon"],
+section[aria-label="Favorite Attacks"] .rpg-attack-icon {
+  width: 24px;
+  padding: 4px 2px;
+  text-align: center;
+  color: light-dark(#8a7a5a, #a09880);
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-icon svg {
+  display: block;
+  opacity: 0.6;
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-hit {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-range {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: light-dark(#5a5040, #a09880);
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-damage {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+section[aria-label="Favorite Attacks"] .rpg-attack-notes {
+  color: light-dark(#5a5040, #a09880);
+  font-size: 0.85em;
+}

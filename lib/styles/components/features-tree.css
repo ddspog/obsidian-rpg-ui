@@ -1,0 +1,212 @@
+/* ── Features Tree (collapsible category → feature tree) ──────────────────── */
+
+article[aria-label="Character Features"] {
+  --_wood-border: 3px solid light-dark(#8b6914, #a07830);
+  display: flex;
+  flex-direction: column;
+  border-top: 4px ridge light-dark(#8b6914, #a07830);
+  border-bottom: 4px ridge light-dark(#8b6914, #a07830);
+}
+
+/* ── Category group (collapsed = one row per type) ─────────────────────── */
+
+.rpg-feature-group {
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.15));
+  border-left: 3px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04));
+  border-right: 3px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04));
+  border-radius: 0;
+  margin: 0 8px -1px;
+  background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.06));
+}
+
+.rpg-feature-group:first-child {
+  border-left: var(--_wood-border);
+  border-right: var(--_wood-border);
+  border-image: linear-gradient(
+    to bottom,
+    light-dark(#8b6914, #a07830),
+    light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
+  ) 1;
+}
+
+.rpg-feature-group:last-child {
+  border-left: var(--_wood-border);
+  border-right: var(--_wood-border);
+  border-image: linear-gradient(
+    to top,
+    light-dark(#8b6914, #a07830),
+    light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
+  ) 1;
+}
+
+.rpg-feature-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-feature-group > summary::-webkit-details-marker { display: none; }
+.rpg-feature-group > summary::marker { content: ""; }
+
+.rpg-feature-group-icon { flex-shrink: 0; }
+.rpg-feature-group-name { flex: 1; }
+
+.rpg-feature-group-count {
+  font-weight: 400;
+  font-size: 0.85em;
+  opacity: 0.5;
+}
+
+/* ── Category open: summary becomes vertical label, list beside it ─────── */
+
+.rpg-feature-group[open] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.1));
+}
+
+.rpg-feature-group[open] > summary {
+  grid-row: 1 / -1;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  justify-content: center;
+  padding: 8px 4px;
+  min-width: 24px;
+  font-size: 0.65em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--rpg-features-label, light-dark(#6a4e2a, #d4a840));
+  border-right: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+}
+
+.rpg-feature-group[open] > summary .rpg-feature-group-icon,
+.rpg-feature-group[open] > summary .rpg-feature-group-count {
+  display: none;
+}
+
+/* ── Feature list (right column when category is open) ─────────────────── */
+
+.rpg-feature-group-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Feature entry ─────────────────────────────────────────────────────── */
+
+.rpg-feature-entry {
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+.rpg-feature-entry:last-of-type {
+  border-bottom: none;
+}
+
+.rpg-feature-entry > summary {
+  display: flex;
+  padding: 5px 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.85em;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-feature-entry > summary::-webkit-details-marker { display: none; }
+.rpg-feature-entry > summary::marker { content: ""; }
+
+/* ── Feature collapsed/expanded toggle ─────────────────────────────────── */
+
+.rpg-feature-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.rpg-feature-expanded {
+  display: none;
+  flex: 1;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.rpg-feature-entry[open] .rpg-feature-collapsed { display: none; }
+.rpg-feature-entry[open] .rpg-feature-expanded { display: flex; }
+
+.rpg-feature-entry-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.rpg-feature-entry-type {
+  font-size: 0.8em;
+  font-weight: 500;
+  text-transform: capitalize;
+  opacity: 0.5;
+}
+
+.rpg-feature-entry-uses {
+  font-size: 0.8em;
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.rpg-feature-origin {
+  font-weight: 500;
+  font-size: 0.85em;
+  opacity: 0.5;
+}
+
+/* Override pill link font-size inside features */
+.rpg-feature-expanded [aria-details="Link Pill"] {
+  font-size: inherit;
+}
+
+/* ── Feature body (picture | description) ──────────────────────────────── */
+
+.rpg-feature-body {
+  display: flex;
+  gap: 8px;
+  padding: 2px 10px 8px;
+}
+
+.rpg-feature-image {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
+}
+
+.rpg-feature-description {
+  margin: 0;
+  font-size: 0.8em;
+  line-height: 1.5;
+  color: light-dark(#3a3020, #c0b8a4);
+}
+
+/* ── Trivial features (compact link row) ───────────────────────────────── */
+
+.rpg-feature-trivial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 0.8em;
+  color: light-dark(#5a5040, #a09880);
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+.rpg-feature-trivial [aria-details="Link Pill"] {
+  font-size: inherit;
+}
+
+.rpg-feature-trivial-sep {
+  opacity: 0.4;
+}

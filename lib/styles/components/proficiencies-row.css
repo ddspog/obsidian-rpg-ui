@@ -1,0 +1,75 @@
+/* ── Proficiencies Row (frosted glass two-column dl) ──────────────────────── */
+
+section[aria-label="Character Proficiencies"] {
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+
+/* ── Definition list ───────────────────────────────────────────────────── */
+
+section[aria-label="Character Proficiencies"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-proficiencies-header, light-dark(#6a4e2a, #d4a840));
+}
+
+section[aria-label="Character Proficiencies"] > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+
+section[aria-label="Character Proficiencies"] > dl {
+  margin: 0;
+  padding: 8px 12px;
+  column-count: 2;
+  column-gap: 24px;
+}
+
+/* ── Category group (dt + dd set) ──────────────────────────────────────── */
+
+section[aria-label="Character Proficiencies"] > dl > div {
+  break-inside: avoid;
+  margin-bottom: 6px;
+}
+
+/* ── Category header ───────────────────────────────────────────────────── */
+
+section[aria-label="Character Proficiencies"] > dl dt {
+  font-size: 1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-proficiencies-header, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.4;
+  padding: 2px 20px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+/* ── Proficiency item ──────────────────────────────────────────────────── */
+
+section[aria-label="Character Proficiencies"] > dl dd {
+  margin: -1px 0 0 20px;
+  padding: 2px 20px 2px 8px;
+  border-left: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  font-size: 1em;
+  font-weight: 600;
+  color: light-dark(#1a1208, #e3dcce);
+  line-height: 1.4;
+}
+
+/* Override pill link font-size inside proficiencies */
+section[aria-label="Character Proficiencies"] > dl dd [aria-details="Link Pill"] {
+  font-size: inherit;
+}
