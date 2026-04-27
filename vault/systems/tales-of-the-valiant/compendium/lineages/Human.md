@@ -12,33 +12,51 @@ Versatile and adaptable. The most numerous and widespread lineage.
 
 ```rpg feature.details
 name: Speed
-tag: speed
-value: "30 ft."
+text: |
+  Your base walking speed is 30 feet.
+traits:
+  Speed: "30 ft."
 ```
 
 ```rpg feature.details
 name: Skill Versatility
-tag: skill_proficiency
 pick: 1
-description: "Choose one additional skill you have proficiency in."
+text: |
+  Choose one additional skill you have proficiency in.
 ```
 
 ```rpg feature.choice
 parent: Skill Versatility
-value: Acrobatics
+name: Acrobatics
+text: |
+  **_Acrobatics._** You gain proficiency in [[Acrobatics]].
+traits:
+  Skill Proficiency: "+Acrobatics"
 ```
 
 ```rpg feature.choice
 parent: Skill Versatility
-value: Insight
+name: Insight
+text: |
+  **_Insight._** You gain proficiency in [[Insight]].
+traits:
+  Skill Proficiency: "+Insight"
 ```
 
 ```rpg feature.choice
 parent: Skill Versatility
-value: Perception
+name: Perception
+text: |
+  **_Perception._** You gain proficiency in [[Perception]].
+traits:
+  Skill Proficiency: "+Perception"
 ```
 
 ```rpg feature.choice
 parent: Skill Versatility
-value: Stealth
+name: Stealth
+text: |
+  **_Stealth._** You gain proficiency in [[Stealth]].
+traits:
+  Skill Proficiency: "+Stealth"
 ```

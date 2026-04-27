@@ -10,39 +10,59 @@ Servant of a divine cause. Your life is shaped by faith and practice.
 
 ```rpg feature.details
 name: Talent
-tag: talent
-value: Devout
+text: |
+  **_Devout._** You start with the Devout talent.
+traits:
+  Talent: "+Devout"
 ```
 
 ```rpg feature.details
 name: Background Skills
-tag: skill_proficiency
 pick: 2
-description: "Pick two skills shaped by your faith study."
+text: |
+  Pick two skills shaped by your faith study.
 ```
 
 ```rpg feature.choice
 parent: Background Skills
-value: Insight
+name: Insight
+text: |
+  **_Insight._** You gain proficiency in [[Insight]].
+traits:
+  Skill Proficiency: "+Insight"
 ```
 
 ```rpg feature.choice
 parent: Background Skills
-value: Investigation
+name: Investigation
+text: |
+  **_Investigation._** You gain proficiency in [[Investigation]].
+traits:
+  Skill Proficiency: "+Investigation"
 ```
 
 ```rpg feature.choice
 parent: Background Skills
-value: Religion
+name: Religion
+text: |
+  **_Religion._** You gain proficiency in [[Religion]].
+traits:
+  Skill Proficiency: "+Religion"
 ```
 
 ```rpg feature.choice
 parent: Background Skills
-value: Persuasion
+name: Persuasion
+text: |
+  **_Persuasion._** You gain proficiency in [[Persuasion]].
+traits:
+  Skill Proficiency: "+Persuasion"
 ```
 
 ```rpg feature.details
 name: Tool Proficiency
-tag: tool
-value: Calligrapher's Supplies
+text: |
+  You gain proficiency with [[Calligrapher's Supplies]].
+traits:
+  Tool Proficiency: "+Calligrapher's Supplies"
 ```

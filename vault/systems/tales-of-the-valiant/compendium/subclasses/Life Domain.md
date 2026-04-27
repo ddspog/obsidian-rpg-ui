@@ -15,12 +15,17 @@ Subclass of Cleric. Specializes in healing and bolstering allies.
 name: Disciple of Life
 type: passive
 level: 3
-description: "Healing spells you cast restore additional HP equal to 2 + spell level."
+text: |
+  Healing spells you cast restore additional HP equal to 2 + the spell's circle.
+traits:
+  Healing Bonus: "+2 + spell circle to healing spells"
 ```
 
 ```rpg feature.details
 name: Bonus Proficiency
-tag: armor
 level: 3
-values: [Heavy Armor]
+text: |
+  You gain proficiency with [[Heavy Armor]].
+traits:
+  Armor Proficiency: "+Heavy Armor"
 ```

@@ -11,32 +11,51 @@ Born into a noble family with influence and obligations.
 ```rpg feature.details
 name: Noble Connections
 type: passive
-description: "You are recognized by other nobles. They are inclined to be civil and grant audience."
+text: |
+  You are recognized by other nobles. They are inclined to be civil and grant audience.
+traits:
+  Social: "Recognized by nobles; grants audience by default"
 ```
 
 ```rpg feature.details
 name: Language
-tag: language
 pick: 1
-description: "You speak one additional language reflecting your house's allies or trading partners."
+text: |
+  You speak one additional language reflecting your house's allies or trading partners.
 ```
 
 ```rpg feature.choice
 parent: Language
-value: Dwarvish
+name: Dwarvish
+text: |
+  **_Dwarvish._** You speak Dwarvish.
+traits:
+  Languages: "+Dwarvish"
 ```
 
 ```rpg feature.choice
 parent: Language
-value: Elvish
+name: Elvish
+text: |
+  **_Elvish._** You speak Elvish.
+traits:
+  Languages: "+Elvish"
 ```
 
 ```rpg feature.choice
 parent: Language
-value: Celestial
+name: Celestial
+text: |
+  **_Celestial._** You speak Celestial.
+traits:
+  Languages: "+Celestial"
 ```
 
 ```rpg feature.choice
 parent: Language
-value: Infernal
+name: Infernal
+text: |
+  **_Infernal._** You speak Infernal.
+traits:
+  Languages: "+Infernal"
 ```
