@@ -247,9 +247,27 @@ export async function evaluateSystemBundle(
           // Merge the system factory exports with the UI/runtime helpers so
           // that imports like `import { CreateEntity, TitleAnchor } from "rpg-ui-toolkit"`
           // resolve at runtime.
+          // The features module (resolver, parseSourceDocs, FeatureDetails type, …)
+          // and PendingChoiceRow component are also bundled in so vault-root
+          // system files can import them without crossing the vault boundary
+          // via relative paths into the plugin's `lib/`.
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const core = require("./create-system");
-          return Object.assign({}, core, UIModule);
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const parseSourceDocMod = require("../domains/features/parse-source-doc");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const resolverMod = require("../domains/features/resolver");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const pendingChoiceRow = require("../components/pending-choice-row");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const markdown = require("../components/markdown");
+          return Object.assign({}, core, UIModule, {
+            parseSourceDoc: parseSourceDocMod.parseSourceDoc,
+            parseSourceDocs: parseSourceDocMod.parseSourceDocs,
+            resolveFeatures: resolverMod.resolveFeatures,
+            PendingChoiceRow: pendingChoiceRow.PendingChoiceRow,
+            Markdown: markdown.Markdown,
+          });
         }
         // Provide React and ReactDOM from the plugin runtime if available.
         if (name === "react") {
