@@ -10,7 +10,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
-import { buildSkillsYaml, buildStatsYaml, type AbilityScores } from "../lib/character-yaml";
+import { buildAttacksYaml, buildFeaturesYaml, buildProficienciesYaml, buildSkillsYaml, buildStatsYaml, type AbilityScores } from "../lib/character-yaml";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
@@ -123,7 +123,7 @@ type Story = StoryObj<SheetArgs>;
  * Preferred order for character sheet blocks. Blocks not in this list will
  * appear at the end in alphabetical order.
  */
-const PREFERRED_BLOCK_ORDER = ["header", "health", "stats", "senses", "skills"];
+const PREFERRED_BLOCK_ORDER = ["header", "health", "stats", "senses", "skills", "attacks", "proficiencies", "features"];
 
 function getOrderedBlocks(system: RPGSystem): string[] {
   const entityDef = (system.entities as Record<string, any>)?.character;
@@ -217,6 +217,44 @@ conditions:
     range: 60
 `;
 
+  // Attacks YAML
+  blocksYaml.attacks = buildAttacksYaml([
+    { name: "Longsword", to_hit: 7, range: "5 ft.", damage: { roll: "1d8+4", type: "slashing" } },
+    { name: "Javelin", to_hit: 7, range: "30/120 ft.", damage: { roll: "1d6+4", type: "piercing" } },
+  ]);
+
+  // Proficiencies YAML
+  blocksYaml.proficiencies = buildProficienciesYaml({
+    armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Shields"],
+    weapons: ["Simple Weapons", "Martial Weapons"],
+    tools: ["Smith's Tools"],
+    languages: ["Common", "Elvish"],
+  });
+
+  // Features YAML
+  blocksYaml.features = buildFeaturesYaml([
+    {
+      name: "Class Features",
+      features: [
+        { name: "Fighting Style: Defense", level: 1, type: "passive", link: "[[Fighting Style]]", description: "While wearing armor, you gain a +1 bonus to AC." },
+        { name: "Second Wind", level: 1, type: "bonus_action", uses: 1, link: "[[Second Wind]]", description: "Regain 1d10 + fighter level hit points." },
+        { name: "Action Surge", level: 2, type: "free_action", uses: 1, link: "[[Action Surge]]", description: "Take one additional action on your turn." },
+        { name: "Extra Attack", level: 5, type: "passive", link: "[[Extra Attack]]", description: "Attack twice when you take the Attack action." },
+        { name: "Dash", type: "action", trivial: true, link: "[[Dash]]" },
+        { name: "Dodge", type: "action", trivial: true, link: "[[Dodge]]" },
+        { name: "Help", type: "action", trivial: true, link: "[[Help]]" },
+        { name: "Search", type: "action", trivial: true, link: "[[Search]]" },
+        { name: "Opportunity Attack", type: "reaction", trivial: true, link: "[[Opportunity Attack]]" },
+      ],
+    },
+    {
+      name: "Feats",
+      features: [
+        { name: "Great Weapon Master", link: "[[Great Weapon Master]]", description: "Heavy weapon attacks: -5 to hit, +10 damage." },
+      ],
+    },
+  ]);
+
   return blocksYaml;
 }
 
@@ -244,6 +282,11 @@ function renderSheet(args: SheetArgs, system: RPGSystem) {
 
 // ─── Individual block renderer ─────────────────────────────────────────────────
 
+/** User-authored headings that appear before certain blocks (simulates Obsidian note content) */
+const BLOCK_HEADINGS: Record<string, string> = {
+  features: "Features",
+};
+
 interface SheetBlockProps {
   blockName: string;
   args: SheetArgs;
@@ -258,8 +301,12 @@ function SheetBlock({ blockName, args, system, blocksYaml }: SheetBlockProps): R
     return null;
   }
 
+  const heading = BLOCK_HEADINGS[blockName];
+
   return (
-    <RpgBlock
+    <>
+      {heading && <h2 style={{ margin: "1em 0 0.25em" }}>{heading}</h2>}
+      <RpgBlock
       system={system}
       entity="character"
       block={blockName}
@@ -277,6 +324,7 @@ function SheetBlock({ blockName, args, system, blocksYaml }: SheetBlockProps): R
         charisma: args.charisma,
       }}
     />
+    </>
   );
 }
 

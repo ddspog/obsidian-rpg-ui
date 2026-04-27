@@ -75,6 +75,89 @@ export function buildSkillsYaml(
  * Build a YAML string for the stats block from ability scores and optional
  * save proficiency multipliers (0 = none, 1 = proficient, 2 = expert).
  */
+/** Attack entry used to build attacks YAML */
+export interface AttackDef {
+  name: string;
+  to_hit: number;
+  range: string;
+  damage: { roll: string; type: string };
+}
+
+/** Build a YAML string for the attacks block */
+export function buildAttacksYaml(attacks: AttackDef[]): string {
+  return `attacks:\n${attacks
+    .map(
+      (a) =>
+        `  - name: ${a.name}\n    to_hit: ${a.to_hit}\n    range: "${a.range}"\n    damage:\n      roll: "${a.damage.roll}"\n      type: ${a.damage.type}`,
+    )
+    .join("\n")}`;
+}
+
+/** Build a YAML string for the proficiencies block */
+export function buildProficienciesYaml(profs: {
+  armor?: string[];
+  weapons?: string[];
+  tools?: string[];
+  languages?: string[];
+}): string {
+  const lines: string[] = [];
+  const renderList = (key: string, items: string[]) => {
+    if (items.length === 0) {
+      lines.push(`${key}: []`);
+    } else {
+      lines.push(`${key}:`);
+      items.forEach((item) => lines.push(`  - ${item}`));
+    }
+  };
+  renderList("armor", profs.armor ?? []);
+  renderList("weapons", profs.weapons ?? []);
+  renderList("tools", profs.tools ?? []);
+  renderList("languages", profs.languages ?? []);
+  return lines.join("\n");
+}
+
+/** Feature entry for building features YAML */
+export interface FeatureDef {
+  name: string;
+  level?: number;
+  description?: string;
+  type?: string;
+  uses?: number;
+  trivial?: boolean;
+  image?: string;
+  origin?: string;
+  link?: string;
+}
+
+/** Feature category for building features YAML */
+export interface FeatureCategoryDef {
+  name: string;
+  icon?: string;
+  features: FeatureDef[];
+}
+
+/** Build a YAML string for the features block */
+export function buildFeaturesYaml(categories: FeatureCategoryDef[]): string {
+  const lines: string[] = ["categories:"];
+  for (const cat of categories) {
+    lines.push(`  - name: "${cat.name}"`);
+    if (cat.icon) lines.push(`    icon: "${cat.icon}"`);
+    lines.push("    features:");
+    for (const f of cat.features) {
+      lines.push(`      - name: "${f.name}"`);
+      if (f.level != null) lines.push(`        level: ${f.level}`);
+      if (f.type) lines.push(`        type: ${f.type}`);
+      if (f.uses != null) lines.push(`        uses: ${f.uses}`);
+      if (f.trivial) lines.push(`        trivial: true`);
+      if (f.image) lines.push(`        image: "${f.image}"`);
+      if (f.origin) lines.push(`        origin: "${f.origin}"`);
+      if (f.link) lines.push(`        link: "${f.link}"`);
+      if (f.description) lines.push(`        description: "${f.description}"`);
+    }
+  }
+  return lines.join("\n");
+}
+
 export function buildStatsYaml(
   abilities: AbilityScores,
   saves: Partial<Record<"str" | "dex" | "con" | "int" | "wis" | "cha", number>> = {},

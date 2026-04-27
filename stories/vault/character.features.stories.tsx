@@ -70,10 +70,7 @@ export const Lv1Cleric: Story = {
         background: "Adherent",
       },
       {
-        Cleric: {
-          "Skill Proficiencies": ["Medicine", "Insight"],
-          "Divine Order": "Protector",
-        },
+        Cleric: { "Manifestation of Faith": "Manifest Might" },
         Human: { "Skill Versatility": ["Stealth"] },
         "Great House": { Language: "Dwarvish" },
         Adherent: { "Background Skills": ["Investigation", "Religion"] },
@@ -85,19 +82,19 @@ export const Lv1Cleric: Story = {
     await expect(c.getByText("Human")).toBeInTheDocument();
     await expect(c.getByText("Great House")).toBeInTheDocument();
     await expect(c.getByText("Adherent")).toBeInTheDocument();
-    // Picked skill proficiency surfaces as a tagged grant
-    await expect(c.getByText("+Medicine")).toBeInTheDocument();
-    await expect(c.getByText("+Insight")).toBeInTheDocument();
-    // Protector picked → grants Heavy Armor and adds Manifestation of Faith
-    await expect(c.getByText("+Heavy Armor")).toBeInTheDocument();
-    await expect(c.getByText("Manifestation of Faith")).toBeInTheDocument();
+    // Manifest Might picked → its `Armor Proficiency: +Heavy Armor` trait
+    // is aggregated into the top Traits section.
+    await expect(c.getByText("Armor Proficiency")).toBeInTheDocument();
+    await expect(c.getByText(/\+Heavy Armor/)).toBeInTheDocument();
+    // Cleric Lv 1 brings Spellcasting in the source list
+    await expect(c.getByText("Spellcasting")).toBeInTheDocument();
     // No pending choices when everything is resolved
     await expect(c.queryByText("Choices to make")).not.toBeInTheDocument();
   },
 };
 
 export const LevelProgression: Story = {
-  name: "Cleric Lv 3 (HP accumulates, Channel Divinity unlocked)",
+  name: "Cleric Lv 3 (Channel Divinity + Cleric Subclass unlocked)",
   render: (_args, { loaded }) =>
     renderFeatures(
       loaded.system,
@@ -108,10 +105,7 @@ export const LevelProgression: Story = {
         background: "Adherent",
       },
       {
-        Cleric: {
-          "Skill Proficiencies": ["Medicine", "Insight"],
-          "Divine Order": "Thaumaturge",
-        },
+        Cleric: { "Manifestation of Faith": "Manifest Miracles" },
         Human: { "Skill Versatility": ["Perception"] },
         "Great House": { Language: "Elvish" },
         Adherent: { "Background Skills": ["Religion", "Persuasion"] },
@@ -121,16 +115,15 @@ export const LevelProgression: Story = {
     const c = within(canvasElement);
     // Channel Divinity becomes available at Lv 2
     await expect(c.getByText("Channel Divinity")).toBeInTheDocument();
-    // Three HP grants accumulate (one per level)
-    const plus8 = c.getAllByText(/\+\+8 \+CON mod/);
-    await expect(plus8.length).toBeGreaterThanOrEqual(1);
-    // Thaumaturge grants Extra Cantrip via nested feature
-    await expect(c.getByText("Extra Cantrip")).toBeInTheDocument();
+    // Hit Dice trait is aggregated at the top
+    await expect(c.getByText("Hit Dice")).toBeInTheDocument();
+    // Cleric Subclass unlocks at Lv 3
+    await expect(c.getByText("Cleric Subclass")).toBeInTheDocument();
   },
 };
 
 export const PendingChoices: Story = {
-  name: "Cleric Lv 1 (Skill Proficiencies unresolved)",
+  name: "Cleric Lv 1 (Manifestation of Faith unresolved)",
   render: (_args, { loaded }) =>
     renderFeatures(
       loaded.system,
@@ -142,8 +135,7 @@ export const PendingChoices: Story = {
       },
       {
         Cleric: {
-          // Skill Proficiencies deliberately omitted
-          "Divine Order": "Protector",
+          // Manifestation of Faith deliberately omitted
         },
         Human: { "Skill Versatility": ["Stealth"] },
         "Great House": { Language: "Dwarvish" },
@@ -154,16 +146,15 @@ export const PendingChoices: Story = {
     const c = within(canvasElement);
     await expect(c.getByText("Choices to make")).toBeInTheDocument();
     // Pending row mentions the parent feature
-    await expect(c.getByText(/pick 2 more/i)).toBeInTheDocument();
-    await expect(c.getByText("Skill Proficiencies")).toBeInTheDocument();
+    await expect(c.getByText(/pick 1 more/i)).toBeInTheDocument();
+    await expect(c.getAllByText("Manifestation of Faith").length).toBeGreaterThan(0);
     // Option buttons render and are not yet pressed
-    const medicine = c.getByRole("button", { name: "Medicine" });
-    await expect(medicine).toBeEnabled();
-    await expect(medicine).toHaveAttribute("aria-pressed", "false");
+    const might = c.getByRole("button", { name: "Manifest Might" });
+    await expect(might).toBeEnabled();
+    await expect(might).toHaveAttribute("aria-pressed", "false");
 
-    // Pick two options → the pending row disappears.
-    await userEvent.click(medicine);
-    await userEvent.click(c.getByRole("button", { name: "Insight" }));
+    // Pick one option → the pending row disappears.
+    await userEvent.click(might);
     await waitFor(async () => {
       await expect(c.queryByText("Choices to make")).not.toBeInTheDocument();
     });
@@ -186,10 +177,7 @@ export const MulticlassFighterCleric: Story = {
       },
       {
         Fighter: { "Fighting Style": "Defense" },
-        Cleric: {
-          "Skill Proficiencies": ["Medicine", "Insight"],
-          "Divine Order": "Protector",
-        },
+        Cleric: { "Manifestation of Faith": "Manifest Might" },
         Human: { "Skill Versatility": ["Acrobatics"] },
         "Great House": { Language: "Dwarvish" },
         Adherent: { "Background Skills": ["Investigation", "Religion"] },
@@ -204,7 +192,7 @@ export const MulticlassFighterCleric: Story = {
     await expect(c.getByText("Action Surge")).toBeInTheDocument();
     // Cleric Lv 1 brings Spellcasting
     await expect(c.getByText("Spellcasting")).toBeInTheDocument();
-    // Picked Fighting Style: Defense
-    await expect(c.getByText("+Defense")).toBeInTheDocument();
+    // Picked Fighting Style: Defense → traits AC +1
+    await expect(c.getByText(/\+1 \(while wearing armor\)/)).toBeInTheDocument();
   },
 };
