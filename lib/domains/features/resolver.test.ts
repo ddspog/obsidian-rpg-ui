@@ -1,54 +1,64 @@
 import { describe, it, expect } from "vitest";
-import { resolveFeatures } from "./resolver";
+import { resolveFeatures, normalizeTraitValue } from "./resolver";
 import type { CompendiumLib, SourceDoc } from "./types";
 
-// ─── Hand-rolled fixtures ─────────────────────────────────────────────────────
+// ─── Hand-rolled fixtures (new shape: text + traits) ────────────────────────
 
 const cleric: SourceDoc = {
   name: "Cleric",
   kind: "class",
   meta: { hit_die: "d8" },
   details: [
-    { name: "Hit Points", tag: "hp", level: 1, value: "+8 +CON mod" },
+    {
+      name: "Hit Points",
+      level: 1,
+      traits: { "Hit Dice": "+8 +CON mod" },
+    },
     {
       name: "Armor Proficiency",
-      tag: "armor",
       level: 1,
-      values: ["Light Armor", "Medium Armor", "Shields"],
+      traits: { "Armor Proficiency": "Light Armor, Medium Armor, Shields" },
     },
-    { name: "Spellcasting", type: "passive", level: 1, description: "Divine power conduit." },
-    { name: "Skill Proficiencies", tag: "skill_proficiency", level: 1, pick: 2 },
-    { name: "Divine Order", level: 1, pick: 1, description: "Pick a divine path." },
-    { name: "Hit Points", tag: "hp", level: 2, value: "+1d8 +CON mod" },
+    { name: "Spellcasting", type: "passive", level: 1, text: "Divine power conduit." },
+    {
+      name: "Skill Proficiencies",
+      level: 1,
+      pick: 2,
+      text: "Pick two skills from the cleric list.",
+    },
+    { name: "Divine Order", level: 1, pick: 1, text: "Pick a divine path." },
     {
       name: "Channel Divinity",
       type: "free_action",
       level: 2,
       uses: 1,
-      description: "Channel deity's energy.",
+      text: "Channel deity's energy.",
+      traits: { "Channel Divinity": "1/short rest" },
     },
-    { name: "Hit Points", tag: "hp", level: 3, value: "+1d8 +CON mod" },
-    { name: "Way of the Mountain", level: 5, description: "A high-level feature." },
+    { name: "Way of the Mountain", level: 5, text: "A high-level feature." },
   ],
   options: [
-    { parent: "Skill Proficiencies", value: "History" },
-    { parent: "Skill Proficiencies", value: "Insight" },
-    { parent: "Skill Proficiencies", value: "Medicine" },
-    { parent: "Skill Proficiencies", value: "Religion" },
+    { parent: "Skill Proficiencies", name: "History", traits: { "Skill Proficiency": "+History" } },
+    { parent: "Skill Proficiencies", name: "Insight", traits: { "Skill Proficiency": "+Insight" } },
+    { parent: "Skill Proficiencies", name: "Medicine", traits: { "Skill Proficiency": "+Medicine" } },
+    { parent: "Skill Proficiencies", name: "Religion", traits: { "Skill Proficiency": "+Religion" } },
     {
       parent: "Divine Order",
       name: "Protector",
-      description: "Heavy armor and martial weapons.",
-      tag: "armor",
-      values: ["Heavy Armor"],
+      text: "Heavy armor and martial weapons.",
+      traits: { "Armor Proficiency": "+Heavy Armor" },
       features: [
-        { name: "Manifestation of Faith", type: "passive", description: "Faith made flesh." },
+        {
+          name: "Manifestation of Faith",
+          type: "passive",
+          text: "Faith made flesh.",
+        },
       ],
     },
     {
       parent: "Divine Order",
       name: "Thaumaturge",
-      description: "Extra cantrip.",
+      text: "Extra cantrip.",
       features: [{ name: "Extra Cantrip", type: "passive" }],
     },
   ],
@@ -60,7 +70,15 @@ const lifeDomain: SourceDoc = {
   kind: "subclass",
   meta: {},
   parent_class: "Cleric",
-  details: [{ name: "Disciple of Life", type: "passive", level: 3, description: "Heal more." }],
+  details: [
+    {
+      name: "Disciple of Life",
+      type: "passive",
+      level: 3,
+      text: "Heal more.",
+      traits: { "Healing Bonus": "+2 + spell circle" },
+    },
+  ],
   options: [],
   unlocks: [],
 };
@@ -70,12 +88,12 @@ const human: SourceDoc = {
   kind: "lineage",
   meta: { size: "medium", speed: 30 },
   details: [
-    { name: "Speed", tag: "speed", value: "30 ft." },
-    { name: "Skill Versatility", tag: "skill_proficiency", pick: 1 },
+    { name: "Speed", traits: { Speed: "30 ft." } },
+    { name: "Skill Versatility", pick: 1, text: "Choose one extra skill." },
   ],
   options: [
-    { parent: "Skill Versatility", value: "Acrobatics" },
-    { parent: "Skill Versatility", value: "Stealth" },
+    { parent: "Skill Versatility", name: "Acrobatics", traits: { "Skill Proficiency": "+Acrobatics" } },
+    { parent: "Skill Versatility", name: "Stealth", traits: { "Skill Proficiency": "+Stealth" } },
   ],
   unlocks: [],
 };
@@ -84,7 +102,7 @@ const greatHouse: SourceDoc = {
   name: "Great House",
   kind: "heritage",
   meta: {},
-  details: [{ name: "Noble Connections", type: "passive", description: "You know nobles." }],
+  details: [{ name: "Noble Connections", type: "passive", text: "You know nobles." }],
   options: [],
   unlocks: [],
 };
@@ -96,17 +114,29 @@ const fighter: SourceDoc = {
   details: [
     {
       name: "Armor Proficiency",
-      tag: "armor",
       level: 1,
-      values: ["Light Armor", "Medium Armor", "Heavy Armor", "Shields"],
+      traits: { "Armor Proficiency": "Light, Medium, Heavy, Shields" },
     },
-    { name: "Fighting Style", level: 1, pick: 1 },
-    { name: "Hit Points", tag: "hp", level: 1, value: "+10 +CON mod" },
-    { name: "Hit Points", tag: "hp", level: 2, value: "+1d10 +CON mod" },
+    { name: "Fighting Style", level: 1, pick: 1, text: "Choose a combat specialization." },
+    {
+      name: "Hit Points",
+      level: 1,
+      traits: { "Hit Dice": "+10 +CON mod" },
+    },
   ],
   options: [
-    { parent: "Fighting Style", name: "Defense", description: "+1 AC while wearing armor." },
-    { parent: "Fighting Style", name: "Dueling", description: "+2 damage one-handed." },
+    {
+      parent: "Fighting Style",
+      name: "Defense",
+      text: "+1 AC while wearing armor.",
+      traits: { AC: "+1 (while wearing armor)" },
+    },
+    {
+      parent: "Fighting Style",
+      name: "Dueling",
+      text: "+2 damage one-handed.",
+      traits: { Damage: "+2 one-handed melee" },
+    },
   ],
   unlocks: [{ kind: "subclass", level: 3 }],
 };
@@ -126,31 +156,38 @@ describe("resolveFeatures", () => {
     const view = resolveFeatures(
       {
         classes: [{ name: "Cleric", level: 3 }],
-        choices: { Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" } },
+        choices: {
+          Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
+        },
       },
       lib,
     );
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    const featNames = cleric.features.map((f) => f.name);
+    const c = view.sources.find((s) => s.source === "Cleric")!;
+    const featNames = c.features.map((f) => f.name);
     expect(featNames).toContain("Spellcasting");
     expect(featNames).toContain("Channel Divinity");
     expect(featNames).not.toContain("Way of the Mountain");
   });
 
-  it("merges duplicate-tag grants into one grouped list, preserving order", () => {
+  it("aggregates traits across features into the top-level view.traits map", () => {
     const view = resolveFeatures(
       {
         classes: [{ name: "Cleric", level: 3 }],
-        choices: { Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" } },
+        choices: {
+          Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
+        },
       },
       lib,
     );
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    const tags = cleric.grants.map((g) => g.tag);
-    // Each tag appears only once after grouping
-    expect(tags).toEqual([...new Set(tags)]);
-    const hp = cleric.grants.find((g) => g.tag === "hp")!;
-    expect(hp.values).toEqual(["+8 +CON mod", "+1d8 +CON mod"]);
+    expect(view.traits["Hit Dice"]).toEqual(["+8 +CON mod"]);
+    expect(view.traits["Channel Divinity"]).toEqual(["1/short rest"]);
+    // Skill picks contribute their own trait values
+    expect(view.traits["Skill Proficiency"]).toEqual(["+Medicine", "+Insight"]);
+    // Picked rich option contributes its traits
+    expect(view.traits["Armor Proficiency"]).toEqual([
+      "Light Armor, Medium Armor, Shields",
+      "+Heavy Armor",
+    ]);
   });
 
   it("applies a single picked option (Skill Proficiencies pick: 2)", () => {
@@ -161,11 +198,11 @@ describe("resolveFeatures", () => {
       },
       lib,
     );
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    const skills = cleric.grants.find((g) => g.tag === "skill_proficiency")!;
-    expect(skills.values).toEqual(["Medicine", "Insight"]);
+    const c = view.sources.find((s) => s.source === "Cleric")!;
+    // Two skill traits aggregated globally
+    expect(view.traits["Skill Proficiency"]).toEqual(["+Medicine", "+Insight"]);
     // No pending choice for skills
-    expect(cleric.pendingChoices.find((p) => p.feature.name === "Skill Proficiencies")).toBeUndefined();
+    expect(c.pendingChoices.find((p) => p.feature.name === "Skill Proficiencies")).toBeUndefined();
   });
 
   it("applies a complex picked option with nested features (Divine Order: Protector)", () => {
@@ -178,11 +215,9 @@ describe("resolveFeatures", () => {
       },
       lib,
     );
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    const armor = cleric.grants.find((g) => g.tag === "armor")!;
-    expect(armor.values).toContain("Heavy Armor");
-    expect(armor.values).toContain("Light Armor");
-    expect(cleric.features.map((f) => f.name)).toContain("Manifestation of Faith");
+    expect(view.traits["Armor Proficiency"]).toContain("+Heavy Armor");
+    const c = view.sources.find((s) => s.source === "Cleric")!;
+    expect(c.features.map((f) => f.name)).toContain("Manifestation of Faith");
   });
 
   it("surfaces unresolved details in pendingChoices with the right remaining count", () => {
@@ -193,8 +228,8 @@ describe("resolveFeatures", () => {
       },
       lib,
     );
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    const skills = cleric.pendingChoices.find((p) => p.feature.name === "Skill Proficiencies")!;
+    const c = view.sources.find((s) => s.source === "Cleric")!;
+    const skills = c.pendingChoices.find((p) => p.feature.name === "Skill Proficiencies")!;
     expect(skills.remaining).toBe(1);
     expect(skills.picked).toEqual(["Medicine"]);
     expect(skills.options.length).toBe(4);
@@ -216,6 +251,8 @@ describe("resolveFeatures", () => {
     const subclass = view.sources.find((s) => s.source === "Life Domain")!;
     expect(subclass.kind).toBe("subclass");
     expect(subclass.features.map((f) => f.name)).toContain("Disciple of Life");
+    // Subclass traits aggregated too
+    expect(view.traits["Healing Bonus"]).toEqual(["+2 + spell circle"]);
   });
 
   it("does not include subclass before its unlock level", () => {
@@ -265,11 +302,11 @@ describe("resolveFeatures", () => {
     );
     const sources = view.sources.map((s) => s.source);
     expect(sources).toEqual(["Cleric", "Human", "Great House"]);
-    const human = view.sources.find((s) => s.source === "Human")!;
-    expect(human.grants.find((g) => g.tag === "skill_proficiency")?.values).toEqual(["Stealth"]);
+    // Human's trait contribution is in the global traits map
+    expect(view.traits["Skill Proficiency"]).toContain("+Stealth");
   });
 
-  it("multiclass: combines two class entries (header-driven)", () => {
+  it("multiclass: combines two class entries and aggregates their traits", () => {
     const view = resolveFeatures(
       {
         classes: [
@@ -286,13 +323,10 @@ describe("resolveFeatures", () => {
     const sources = view.sources.map((s) => s.source);
     expect(sources).toEqual(["Fighter", "Cleric"]);
 
-    const fighter = view.sources.find((s) => s.source === "Fighter")!;
-    expect(fighter.level).toBe(2);
-    const fighterArmor = fighter.grants.find((g) => g.tag === "armor")!;
-    expect(fighterArmor.values).toContain("Heavy Armor");
-
-    const cleric = view.sources.find((s) => s.source === "Cleric")!;
-    expect(cleric.level).toBe(1);
+    // Hit Dice aggregated from both classes (Fighter +10, Cleric +8)
+    expect(view.traits["Hit Dice"]).toEqual(["+10 +CON mod", "+8 +CON mod"]);
+    // Defense pick contributes AC trait
+    expect(view.traits["AC"]).toEqual(["+1 (while wearing armor)"]);
   });
 
   it("flat pendingChoices aggregates pendings from every source", () => {
@@ -316,5 +350,183 @@ describe("resolveFeatures", () => {
       lib,
     );
     expect(view.sources).toEqual([]);
+  });
+});
+
+// ─── normalizeTraitValue ─────────────────────────────────────────────────────
+
+describe("normalizeTraitValue", () => {
+  it("returns plain strings as a single-element array", () => {
+    expect(normalizeTraitValue("+8 +CON mod")).toEqual(["+8 +CON mod"]);
+  });
+
+  it("flattens an array of plain strings", () => {
+    expect(normalizeTraitValue(["WIS", "CHA"])).toEqual(["WIS", "CHA"]);
+  });
+
+  it("reconstructs unquoted [[wikilink]] (parsed as nested arrays)", () => {
+    // YAML `[[Heavy Armor]]` parses as [["Heavy Armor"]]
+    expect(normalizeTraitValue([["Heavy Armor"]])).toEqual(["[[Heavy Armor]]"]);
+  });
+
+  it("walks a list of unquoted wikilinks element-by-element", () => {
+    // YAML
+    //   - [[Light Armor]]
+    //   - [[Medium Armor]]
+    // parses as [[["Light Armor"]], [["Medium Armor"]]]
+    const parsed = [[["Light Armor"]], [["Medium Armor"]], [["Shields"]]];
+    expect(normalizeTraitValue(parsed)).toEqual([
+      "[[Light Armor]]",
+      "[[Medium Armor]]",
+      "[[Shields]]",
+    ]);
+  });
+
+  it("returns empty array for null/undefined/objects", () => {
+    expect(normalizeTraitValue(null)).toEqual([]);
+    expect(normalizeTraitValue(undefined)).toEqual([]);
+    expect(normalizeTraitValue({ unexpected: "shape" })).toEqual([]);
+  });
+});
+
+// ─── choose spec (inline pick → trait category) ──────────────────────────────
+
+describe("resolveFeatures: inline `choose` spec", () => {
+  const proficiencies: SourceDoc = {
+    name: "Proficiencies",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Skills",
+        traits: { Saves: ["WIS", "CHA"] },
+        choose: {
+          type: "traits",
+          category: "Skill P.",
+          number: 2,
+          options: ["[[History]]", "[[Insight]]", "[[Medicine]]", "[[Religion]]"],
+        },
+      },
+    ],
+    options: [],
+    unlocks: [],
+  };
+  const profLib: CompendiumLib = {
+    classes: { Proficiencies: proficiencies },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+  };
+
+  it("aggregates fixed traits and surfaces the choose pick as pending when unset", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "Proficiencies", level: 1 }] },
+      profLib,
+    );
+    // Fixed Saves trait still aggregates
+    expect(view.traits["Saves"]).toEqual(["WIS", "CHA"]);
+    // Skill P. has no values yet
+    expect(view.traits["Skill P."]).toBeUndefined();
+    // Pending: 2 picks for the Skills feature
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Skills");
+    expect(pending?.remaining).toBe(2);
+    // The synthetic options carry the wikilink-wrapped option strings
+    expect(pending?.options.map((o) => o.name)).toEqual([
+      "[[History]]",
+      "[[Insight]]",
+      "[[Medicine]]",
+      "[[Religion]]",
+    ]);
+  });
+
+  it("collects picked choose values into the named trait category", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Proficiencies", level: 1 }],
+        choices: { Proficiencies: { Skills: ["[[Medicine]]", "[[Insight]]"] } },
+      },
+      profLib,
+    );
+    expect(view.traits["Skill P."]).toEqual(["[[Medicine]]", "[[Insight]]"]);
+    // Picks fully satisfied → no pending
+    expect(view.pendingChoices.find((p) => p.feature.name === "Skills")).toBeUndefined();
+  });
+
+  it("partial picks leave the right `remaining` count", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Proficiencies", level: 1 }],
+        choices: { Proficiencies: { Skills: ["[[Medicine]]"] } },
+      },
+      profLib,
+    );
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Skills")!;
+    expect(pending.remaining).toBe(1);
+    expect(pending.picked).toEqual(["[[Medicine]]"]);
+    expect(view.traits["Skill P."]).toEqual(["[[Medicine]]"]);
+  });
+});
+
+// ─── feature.level augmentations ─────────────────────────────────────────────
+
+describe("resolveFeatures: feature.level (per-level additions)", () => {
+  const spellcaster: SourceDoc = {
+    name: "Spellcaster",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Spellcasting",
+        level: 1,
+        traits: { Spellcasting: "WIS Divine: 3 Cantrips, 1 Ritual" },
+        levels: [
+          { level: 3, traits: { Spellcasting: "2º Ritual" } },
+          { level: 4, traits: { Spellcasting: "4th Cantrip" } },
+        ],
+      },
+    ],
+    options: [],
+    unlocks: [],
+  };
+  const lib: CompendiumLib = {
+    classes: { Spellcaster: spellcaster },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+  };
+
+  it("applies no additions below the threshold", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "Spellcaster", level: 1 }] },
+      lib,
+    );
+    expect(view.traits["Spellcasting"]).toEqual([
+      "WIS Divine: 3 Cantrips, 1 Ritual",
+    ]);
+  });
+
+  it("applies one addition at the matching level", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "Spellcaster", level: 3 }] },
+      lib,
+    );
+    expect(view.traits["Spellcasting"]).toEqual([
+      "WIS Divine: 3 Cantrips, 1 Ritual",
+      "2º Ritual",
+    ]);
+  });
+
+  it("applies every addition up to and including the character's level", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "Spellcaster", level: 5 }] },
+      lib,
+    );
+    expect(view.traits["Spellcasting"]).toEqual([
+      "WIS Divine: 3 Cantrips, 1 Ritual",
+      "2º Ritual",
+      "4th Cantrip",
+    ]);
   });
 });

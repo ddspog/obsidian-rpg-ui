@@ -5,15 +5,17 @@
  * `WikiFileDescriptor` as produced by `wiki.folder()`/`wiki.file()` — body text
  * lives in `$contents`, frontmatter keys are spread on top.
  *
- * We extract `rpg feature.details`, `rpg feature.choice`, `rpg feature.unlock`
- * code blocks from the body and parse each one's YAML payload.
+ * We walk `rpg feature.{details,choice,unlock,level}` code blocks in document
+ * order so `feature.level` blocks can attach to the most recent
+ * `feature.details` without requiring an explicit parent field.
  */
 
 import { parse as parseYaml } from "yaml";
-import { extractCodeBlocks } from "../../utils/codeblock-extractor";
+import { stripCalloutMarkers } from "../../utils/callout";
 import type {
   FeatureChoiceOption,
   FeatureDetails,
+  FeatureLevelAddition,
   SourceDoc,
   SourceDocKind,
   UnlockBlock,
@@ -46,6 +48,31 @@ function safeParse<T>(yaml: string, ctx: string): T | null {
   }
 }
 
+type FeatureBlockKind = "details" | "choice" | "unlock" | "level";
+
+interface OrderedBlock {
+  kind: FeatureBlockKind;
+  yaml: string;
+}
+
+/**
+ * Scan a document body for every `rpg feature.{details,choice,unlock,level}`
+ * fence and return them in document order. Callout markers are stripped first
+ * so fences inside callouts are still picked up.
+ */
+function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
+  const cleaned = stripCalloutMarkers(body);
+  const re = /```rpg feature\.(details|choice|unlock|level)\s*\n([\s\S]*?)```/g;
+  const blocks: OrderedBlock[] = [];
+  for (const m of cleaned.matchAll(re)) {
+    blocks.push({
+      kind: m[1] as FeatureBlockKind,
+      yaml: m[2].replace(/\n+$/, ""),
+    });
+  }
+  return blocks;
+}
+
 export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): SourceDoc {
   const body = (raw.$contents as string | undefined) ?? "";
   const metaKey = META_KEYS[kind];
@@ -53,21 +80,77 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
   const parent_class = (raw[metaKey] as { parent_class?: string } | undefined)?.parent_class;
 
   const details: FeatureDetails[] = [];
-  for (const yaml of extractCodeBlocks(body, "rpg feature.details")) {
-    const parsed = safeParse<FeatureDetails>(yaml, `feature.details in ${raw.$name}`);
-    if (parsed && parsed.name) details.push(parsed);
-  }
-
   const options: FeatureChoiceOption[] = [];
-  for (const yaml of extractCodeBlocks(body, "rpg feature.choice")) {
-    const parsed = safeParse<FeatureChoiceOption>(yaml, `feature.choice in ${raw.$name}`);
-    if (parsed && parsed.parent) options.push(parsed);
+  const unlocks: UnlockBlock[] = [];
+
+  // Track the most recent details block so feature.level can attach without
+  // needing an explicit `parent:` field.
+  let currentDetails: FeatureDetails | null = null;
+
+  for (const block of extractOrderedFeatureBlocks(body)) {
+    const ctx = `feature.${block.kind} in ${raw.$name}`;
+    switch (block.kind) {
+      case "details": {
+        const parsed = safeParse<FeatureDetails>(block.yaml, ctx);
+        if (parsed && parsed.name) {
+          details.push(parsed);
+          currentDetails = parsed;
+        }
+        break;
+      }
+      case "choice": {
+        const parsed = safeParse<FeatureChoiceOption>(block.yaml, ctx);
+        if (parsed && parsed.parent) options.push(parsed);
+        break;
+      }
+      case "unlock": {
+        const parsed = safeParse<UnlockBlock>(block.yaml, ctx);
+        if (parsed && parsed.kind && typeof parsed.level === "number") {
+          unlocks.push(parsed);
+        }
+        break;
+      }
+      case "level": {
+        const parsed = safeParse<FeatureLevelAddition>(block.yaml, ctx);
+        if (!parsed || typeof parsed.level !== "number") break;
+        if (!currentDetails) {
+          console.warn(
+            `[parseSourceDoc] feature.level in ${raw.$name} has no preceding feature.details — skipping`,
+          );
+          break;
+        }
+        if (!currentDetails.levels) currentDetails.levels = [];
+        currentDetails.levels.push(parsed);
+        break;
+      }
+    }
   }
 
-  const unlocks: UnlockBlock[] = [];
-  for (const yaml of extractCodeBlocks(body, "rpg feature.unlock")) {
-    const parsed = safeParse<UnlockBlock>(yaml, `feature.unlock in ${raw.$name}`);
-    if (parsed && parsed.kind && typeof parsed.level === "number") unlocks.push(parsed);
+  // Frontmatter `.features` — alternate data source for compendium docs that
+  // keep their bodies as pure markdown (so they render cleanly in Obsidian).
+  // Existing rpg feature.* code blocks above remain supported; both sources
+  // contribute to the same lists.
+  const fmFeatures = (raw[".features"] as
+    | {
+        details?: FeatureDetails[];
+        choices?: FeatureChoiceOption[];
+        unlocks?: UnlockBlock[];
+      }
+    | undefined) ?? {};
+  if (Array.isArray(fmFeatures.details)) {
+    for (const f of fmFeatures.details) {
+      if (f && f.name) details.push(f);
+    }
+  }
+  if (Array.isArray(fmFeatures.choices)) {
+    for (const c of fmFeatures.choices) {
+      if (c && c.parent) options.push(c);
+    }
+  }
+  if (Array.isArray(fmFeatures.unlocks)) {
+    for (const u of fmFeatures.unlocks) {
+      if (u && u.kind && typeof u.level === "number") unlocks.push(u);
+    }
   }
 
   return {

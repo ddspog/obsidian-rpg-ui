@@ -5,62 +5,97 @@
  * No Obsidian / vault dependencies; safe to import from tests and the resolver.
  */
 
-// ─── Tags ─────────────────────────────────────────────────────────────────────
-
-/**
- * Inline grant tags. A `FeatureDetails` (or `FeatureChoiceOption`) carrying one
- * of these tags is rendered inline as `Skill P. (+Medicine, +Insight)` rather
- * than as a feature card.
- *
- * Action category tags (`passive`, `action`, `bonus_action`, …) live on the
- * `type` field, not here.
- */
-export type TagId =
-  | "hp"
-  | "armor"
-  | "weapons"
-  | "save"
-  | "skill_proficiency"
-  | "tool"
-  | "language"
-  | "speed"
-  | "size"
-  | "talent";
-
 // ─── Source-document blocks ───────────────────────────────────────────────────
 
 /**
+ * Mapping of trait group → contribution. The character sheet aggregates
+ * traits across all loaded features by key.
+ *
+ * A value can be a single string (`"+8 +CON mod"`) or a string array
+ * (`["[[Light Armor]]", "[[Medium Armor]]"]`) when a feature contributes
+ * multiple discrete entries to the same group. YAML wikilinks (`[[X]]`)
+ * authored without quotes parse as nested arrays — the resolver normalises
+ * those back to `"[[X]]"` strings so the rendered output keeps the link.
+ */
+export type TraitValue = string | string[];
+export type TraitMap = Record<string, TraitValue>;
+
+/**
+ * Inline pick spec on a `feature.details` block. Each picked option is added
+ * verbatim as a value to the named trait `category`. No separate
+ * `feature.choice` blocks needed — handy for simple "pick N from list"
+ * features like proficiency choices.
+ */
+export interface ChooseSpec {
+  type: "traits";
+  category: string;
+  number: number;
+  options: string[];
+}
+
+/**
+ * A `feature.level` block: extra contributions applied to the preceding
+ * `feature.details` once the character reaches the specified class level.
+ * Data-only — renders no visible UI in the compendium doc.
+ */
+export interface FeatureLevelAddition {
+  level: number;
+  traits?: TraitMap;
+}
+
+/**
  * One feature, parsed from a `rpg feature.details` code block.
+ *
  * If `pick` is set, the feature is a choice slot — its options come from
  * `feature.choice` blocks that declare `parent: <this name>`.
+ *
+ * If `choose` is set, the feature offers an inline pick that aggregates
+ * picked values into a named trait category.
+ *
+ * `text` is multiline Obsidian markdown rendered as the body of the feature
+ * card; the surrounding compendium prose is folded into this field.
+ * `traits` describe the contributions this feature makes to a character
+ * sheet's aggregated traits row.
  */
 export interface FeatureDetails {
   name: string;
-  tag?: TagId;
-  value?: string;
-  values?: string[];
+  /**
+   * Explicit subtitle line (e.g. `"2nd, 6th, 13th, and 18th-Level Cleric Feature"`).
+   * When set, it replaces the auto-composed `Lv. N · type · uses · Pick N` row
+   * so compendium docs can match book phrasing verbatim.
+   */
+  subtitle?: string;
+  /** Multiline Obsidian-flavored markdown rendered as the feature body. */
+  text?: string;
+  /** Group → contribution. Aggregated across features in the character sheet. */
+  traits?: TraitMap;
+  /** Inline pick spec that contributes picked values to `traits[category]`. */
+  choose?: ChooseSpec;
+  /**
+   * Per-level augmentations from sibling `rpg feature.level` blocks. Each
+   * entry's traits are applied to the running aggregate when the character's
+   * class level is at or above the entry's `level`.
+   */
+  levels?: FeatureLevelAddition[];
   type?: string;
   level?: number;
   uses?: number;
   link?: string;
-  description?: string;
   pick?: number;
 }
 
 /**
  * One option for a choice slot, parsed from a `rpg feature.choice` code block.
- * Carries a full feature object — picking it can grant tagged values AND
+ * Carries a full feature object — picking it can grant traits and/or
  * additional sub-features.
  */
 export interface FeatureChoiceOption {
   parent: string;
   name?: string;
-  value?: string;
-  values?: string[];
-  tag?: TagId;
+  text?: string;
+  traits?: TraitMap;
   type?: string;
   link?: string;
-  description?: string;
   features?: FeatureDetails[];
 }
 
@@ -119,24 +154,25 @@ export interface PendingChoice {
   remaining: number;
 }
 
-export interface Grant {
-  tag: TagId;
-  values: string[];
-}
-
 export interface ResolvedSource {
   source: string;
   kind: SourceDocKind;
   level?: number;
-  /** Already-grouped grants ready to render as `Skill P. (+Medicine, +Insight)`. */
-  grants: Grant[];
-  /** Non-grant features (Spellcasting, Channel Divinity, Manifestation of Faith). */
+  /** Features that apply at the character's level (already filtered). */
   features: FeatureDetails[];
   pendingChoices: PendingChoice[];
 }
 
+/**
+ * The resolver's top-level output.
+ *
+ * `traits` aggregates every contributing feature's `traits` map into a single
+ * key → values list, ready for the character sheet to render one line per
+ * group (`Hit Dice: +8 +CON mod  +1d10`).
+ */
 export interface ResolvedView {
   sources: ResolvedSource[];
-  /** Flat list of every pending choice across sources, for "you still need to pick" CTAs. */
+  traits: Record<string, string[]>;
+  /** Flat list of every pending choice across sources. */
   pendingChoices: PendingChoice[];
 }

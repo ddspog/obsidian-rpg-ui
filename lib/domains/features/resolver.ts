@@ -4,47 +4,98 @@
  * The resolver iterates `decl.classes` (multiclass), pulls features from each
  * class doc up to the declared level, optionally appends the subclass once its
  * unlock threshold is met, then appends lineage / heritage / background
- * sources. Tagged grants are merged by tag; picked options are expanded into
- * grants and any nested features; unresolved picks bundle into `pendingChoices`.
+ * sources. Each picked option (whether from a separate `feature.choice` block
+ * or from an inline `choose` spec) contributes its values to the running
+ * traits aggregate, and any unresolved picks bundle into `pendingChoices`.
  *
  * No I/O — fully testable from hand-rolled SourceDoc fixtures.
  */
 
-import { groupByTag } from "./grants";
 import type {
   CharacterDecl,
+  ChooseSpec,
   CompendiumLib,
   FeatureChoiceOption,
   FeatureDetails,
-  Grant,
   PendingChoice,
   ResolvedSource,
   ResolvedView,
   SourceDoc,
-  SourceDocKind,
-  TagId,
+  TraitMap,
+  TraitValue,
 } from "./types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Read either `value` or `values[]` from anything that carries grant data. */
-function valuesOf(f: { value?: string; values?: string[] }): string[] {
-  if (f.values && f.values.length > 0) return f.values;
-  if (f.value) return [f.value];
-  return [];
-}
-
-/** Pick label = explicit `name`, else fallback to first `value` for simple picks. */
-function optionLabel(o: FeatureChoiceOption): string {
-  if (o.name) return o.name;
-  const vs = valuesOf(o);
-  return vs[0] ?? "(unnamed option)";
-}
 
 /** Coerce a choice payload to `string[]` regardless of single vs multi pick. */
 function pickedNames(picked: string | string[] | undefined): string[] {
   if (!picked) return [];
   return Array.isArray(picked) ? picked : [picked];
+}
+
+/**
+ * Normalise a YAML-parsed trait value (or option list entry) into a flat
+ * `string[]`.
+ *
+ * Plain strings come through unchanged. Arrays are walked recursively. The
+ * `[[X]]` wikilink shape — which YAML parses as a nested flow array
+ * `[["X"]]` when authored without quotes — is reconstructed back to the
+ * literal `"[[X]]"` string so the rendered output keeps the link.
+ */
+export function normalizeTraitValue(val: unknown): string[] {
+  if (val == null) return [];
+  if (typeof val === "string") return [val];
+  if (typeof val === "number" || typeof val === "boolean") return [String(val)];
+  if (Array.isArray(val)) {
+    // Detect the [[X]] flow shape: a 1-element array containing a 1-element
+    // array containing a string. Only matches the leaf, so a list-of-wikilinks
+    // recurses element-by-element.
+    if (
+      val.length === 1 &&
+      Array.isArray(val[0]) &&
+      val[0].length === 1 &&
+      typeof val[0][0] === "string"
+    ) {
+      return [`[[${val[0][0]}]]`];
+    }
+    return val.flatMap(normalizeTraitValue);
+  }
+  return [];
+}
+
+/** Merge a feature/option's `traits` into the running aggregate map. */
+function collectTraits(
+  agg: Record<string, string[]>,
+  traits: TraitMap | undefined,
+): void {
+  if (!traits) return;
+  for (const [key, value] of Object.entries(traits)) {
+    const values = normalizeTraitValue(value as TraitValue);
+    if (values.length === 0) continue;
+    if (!agg[key]) agg[key] = [];
+    agg[key].push(...values);
+  }
+}
+
+/** Strip wikilink delimiters for a clean display label inside a button. */
+function stripWikilink(s: string): string {
+  return s.replace(/^\[\[/, "").replace(/\]\]$/, "");
+}
+
+/**
+ * Build synthetic `FeatureChoiceOption` objects for an inline `choose` spec
+ * so the existing PendingChoice rendering path works uniformly.
+ */
+function inlineChooseOptions(
+  parent: FeatureDetails,
+  choose: ChooseSpec,
+): FeatureChoiceOption[] {
+  const opts = normalizeTraitValue(choose.options as unknown);
+  return opts.map((value) => ({
+    parent: parent.name,
+    name: value,
+    traits: { [choose.category]: value },
+  }));
 }
 
 // ─── Single-source resolution ─────────────────────────────────────────────────
@@ -58,9 +109,9 @@ function resolveSource(
   doc: SourceDoc,
   level: number | undefined,
   picksForSource: Record<string, string | string[]> | undefined,
+  traitsAgg: Record<string, string[]>,
   opts: ResolveOpts = {},
 ): ResolvedSource {
-  const grants: Grant[] = [];
   const features: FeatureDetails[] = [];
   const pendingChoices: PendingChoice[] = [];
 
@@ -69,30 +120,49 @@ function resolveSource(
       continue;
     }
 
+    // Always contribute the feature's own traits.
+    collectTraits(traitsAgg, detail.traits);
+
+    // Apply per-level augmentations (feature.level blocks) whose level is met.
+    if (detail.levels && detail.levels.length > 0) {
+      const cap = opts.maxLevel ?? 0;
+      for (const add of detail.levels) {
+        if (add.level <= cap) collectTraits(traitsAgg, add.traits);
+      }
+    }
+
+    // Inline choose spec — picks add values to the named trait category.
+    if (detail.choose && detail.choose.type === "traits") {
+      const picked = pickedNames(picksForSource?.[detail.name]);
+      const cat = detail.choose.category;
+      if (picked.length > 0) {
+        if (!traitsAgg[cat]) traitsAgg[cat] = [];
+        for (const p of picked) traitsAgg[cat].push(p);
+      }
+      const remaining = Math.max(0, detail.choose.number - picked.length);
+      if (remaining > 0) {
+        pendingChoices.push({
+          source: doc.name,
+          feature: detail,
+          options: inlineChooseOptions(detail, detail.choose),
+          picked,
+          remaining,
+        });
+      }
+    }
+
+    // `pick` slot with separate feature.choice blocks.
     if (detail.pick != null) {
       const allOptions = doc.options.filter((o) => o.parent === detail.name);
       const picked = pickedNames(picksForSource?.[detail.name]);
 
-      // Apply each picked option's grants and nested features
       for (const pickedName of picked) {
-        const option = allOptions.find((o) => optionLabel(o) === pickedName);
+        const option = allOptions.find((o) => (o.name ?? "") === pickedName);
         if (!option) continue;
-        if (option.tag) {
-          const vs = valuesOf(option);
-          if (vs.length > 0) grants.push({ tag: option.tag, values: vs });
-          else grants.push({ tag: option.tag, values: [pickedName] });
-        } else if (detail.tag) {
-          // Simple pick against a tagged parent (e.g. skill_proficiency)
-          const vs = valuesOf(option);
-          grants.push({ tag: detail.tag, values: vs.length > 0 ? vs : [pickedName] });
-        }
+        collectTraits(traitsAgg, option.traits);
         for (const nested of option.features ?? []) {
-          if (nested.tag) {
-            const vs = valuesOf(nested);
-            if (vs.length > 0) grants.push({ tag: nested.tag, values: vs });
-          } else {
-            features.push(nested);
-          }
+          collectTraits(traitsAgg, nested.traits);
+          features.push(nested);
         }
       }
 
@@ -106,13 +176,6 @@ function resolveSource(
           remaining,
         });
       }
-      continue;
-    }
-
-    if (detail.tag) {
-      const vs = valuesOf(detail);
-      if (vs.length > 0) grants.push({ tag: detail.tag, values: vs });
-      continue;
     }
 
     features.push(detail);
@@ -122,7 +185,6 @@ function resolveSource(
     source: doc.name,
     kind: doc.kind,
     level,
-    grants: groupByTag(grants),
     features,
     pendingChoices,
   };
@@ -132,32 +194,35 @@ function resolveSource(
 
 export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView {
   const sources: ResolvedSource[] = [];
+  const traits: Record<string, string[]> = {};
 
   for (const entry of decl.classes ?? []) {
     const classDoc = lib.classes[entry.name];
     if (!classDoc) continue;
 
     const classPicks = decl.choices?.[entry.name];
-    sources.push(resolveSource(classDoc, entry.level, classPicks, { maxLevel: entry.level }));
+    sources.push(
+      resolveSource(classDoc, entry.level, classPicks, traits, { maxLevel: entry.level }),
+    );
 
     if (entry.subclass) {
       const subclassDoc = lib.subclasses[entry.subclass];
       if (subclassDoc && subclassUnlockedAt(classDoc, entry.level)) {
         const subclassPicks = decl.choices?.[entry.subclass];
         sources.push(
-          resolveSource(subclassDoc, entry.level, subclassPicks, { maxLevel: entry.level }),
+          resolveSource(subclassDoc, entry.level, subclassPicks, traits, { maxLevel: entry.level }),
         );
       }
     }
   }
 
-  appendIf(sources, lib.lineages, decl.lineage, decl.choices);
-  appendIf(sources, lib.heritages, decl.heritage, decl.choices);
-  appendIf(sources, lib.backgrounds, decl.background, decl.choices);
+  appendIf(sources, lib.lineages, decl.lineage, decl.choices, traits);
+  appendIf(sources, lib.heritages, decl.heritage, decl.choices, traits);
+  appendIf(sources, lib.backgrounds, decl.background, decl.choices, traits);
 
   const pendingChoices = sources.flatMap((s) => s.pendingChoices);
 
-  return { sources, pendingChoices };
+  return { sources, traits, pendingChoices };
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -173,12 +238,14 @@ function appendIf(
   lib: Record<string, SourceDoc>,
   name: string | undefined,
   choices: CharacterDecl["choices"],
+  traitsAgg: Record<string, string[]>,
 ) {
   if (!name) return;
   const doc = lib[name];
   if (!doc) return;
-  sources.push(resolveSource(doc, undefined, choices?.[name]));
+  sources.push(resolveSource(doc, undefined, choices?.[name], traitsAgg));
 }
 
-// Re-export TagId for convenience
-export type { TagId };
+// Re-exports for callers that touch the resolver API
+export type { FeatureChoiceOption };
+export { stripWikilink };

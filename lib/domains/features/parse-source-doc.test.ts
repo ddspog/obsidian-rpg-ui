@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { parseSourceDoc, parseSourceDocs } from "./parse-source-doc";
 
 const CLERIC_BODY = `
@@ -10,33 +10,39 @@ Full-caster divine class.
 
 \`\`\`rpg feature.details
 name: Hit Points
-tag: hp
 level: 1
-value: "+8 +CON mod"
+text: |
+  **Hit Dice:** 1d8 per cleric level
+traits:
+  Hit Dice: "+8 +CON mod"
 \`\`\`
 
 \`\`\`rpg feature.details
 name: Armor Proficiency
-tag: armor
 level: 1
-values: [Light Armor, Medium Armor, Shields]
+traits:
+  Armor Proficiency: "Light Armor, Medium Armor, Shields"
 \`\`\`
 
 \`\`\`rpg feature.details
 name: Skill Proficiencies
-tag: skill_proficiency
 level: 1
 pick: 2
+text: Choose two skills.
 \`\`\`
 
 \`\`\`rpg feature.choice
 parent: Skill Proficiencies
-value: History
+name: History
+traits:
+  Skill Proficiency: "+History"
 \`\`\`
 
 \`\`\`rpg feature.choice
 parent: Skill Proficiencies
-value: Insight
+name: Insight
+traits:
+  Skill Proficiency: "+Insight"
 \`\`\`
 
 ## Level 3
@@ -57,16 +63,21 @@ describe("parseSourceDoc", () => {
     expect(doc.kind).toBe("class");
     expect(doc.details).toHaveLength(3);
     const hp = doc.details.find((d) => d.name === "Hit Points");
-    expect(hp).toMatchObject({ tag: "hp", level: 1, value: "+8 +CON mod" });
+    expect(hp).toMatchObject({
+      name: "Hit Points",
+      level: 1,
+      traits: { "Hit Dice": "+8 +CON mod" },
+    });
     const armor = doc.details.find((d) => d.name === "Armor Proficiency");
-    expect(armor?.values).toEqual(["Light Armor", "Medium Armor", "Shields"]);
+    expect(armor?.traits?.["Armor Proficiency"]).toBe("Light Armor, Medium Armor, Shields");
   });
 
   it("pulls FeatureChoiceOption out of feature.choice code blocks and links by parent name", () => {
     const doc = parseSourceDoc({ $name: "Cleric", $contents: CLERIC_BODY }, "class");
     expect(doc.options).toHaveLength(2);
     expect(doc.options.every((o) => o.parent === "Skill Proficiencies")).toBe(true);
-    expect(doc.options.map((o) => o.value)).toEqual(["History", "Insight"]);
+    expect(doc.options.map((o) => o.name)).toEqual(["History", "Insight"]);
+    expect(doc.options[0].traits?.["Skill Proficiency"]).toBe("+History");
   });
 
   it("pulls UnlockBlock out of feature.unlock code blocks", () => {
@@ -96,7 +107,6 @@ describe("parseSourceDoc", () => {
     const body = `
 \`\`\`rpg feature.details
 name: Good
-tag: hp
 \`\`\`
 
 \`\`\`rpg feature.details
@@ -117,6 +127,61 @@ name: "Broken
     expect(doc.options).toEqual([]);
     expect(doc.unlocks).toEqual([]);
   });
+
+  it("reads features from frontmatter `.features` for pure-markdown docs", () => {
+    const doc = parseSourceDoc(
+      {
+        $name: "Cleric",
+        $contents: "Pure markdown body, no rpg blocks.",
+        ".features": {
+          details: [
+            {
+              name: "Hit Points",
+              level: 1,
+              traits: { "Hit Dice": "+8 +CON mod" },
+            },
+            {
+              name: "Manifestation of Faith",
+              subtitle: "1st-Level Cleric Feature",
+              level: 1,
+              pick: 1,
+            },
+          ],
+          choices: [
+            {
+              parent: "Manifestation of Faith",
+              name: "Manifest Might",
+              traits: { "Armor Proficiency": "+Heavy Armor" },
+            },
+          ],
+          unlocks: [{ kind: "subclass", level: 3 }],
+        },
+      },
+      "class",
+    );
+    expect(doc.details).toHaveLength(2);
+    expect(doc.details[0]).toMatchObject({ name: "Hit Points", level: 1 });
+    expect(doc.options).toHaveLength(1);
+    expect(doc.options[0]).toMatchObject({ parent: "Manifestation of Faith", name: "Manifest Might" });
+    expect(doc.unlocks).toEqual([{ kind: "subclass", level: 3 }]);
+  });
+
+  it("merges code-block features and frontmatter features when both are present", () => {
+    const doc = parseSourceDoc(
+      {
+        $name: "Mixed",
+        $contents: "```rpg feature.details\nname: From Body\n```",
+        ".features": {
+          details: [{ name: "From Frontmatter" }],
+        },
+      },
+      "class",
+    );
+    expect(doc.details.map((d) => d.name).sort()).toEqual([
+      "From Body",
+      "From Frontmatter",
+    ]);
+  });
 });
 
 describe("parseSourceDocs", () => {
@@ -130,5 +195,76 @@ describe("parseSourceDocs", () => {
     );
     expect(Object.keys(map).sort()).toEqual(["Cleric", "Fighter"]);
     expect(map.Cleric.details.length).toBeGreaterThan(0);
+  });
+});
+
+describe("parseSourceDoc — feature.level attachment", () => {
+  it("attaches feature.level blocks to the most recent feature.details", () => {
+    const body = `
+\`\`\`rpg feature.details
+name: Spellcasting
+level: 1
+traits:
+  Spellcasting: "WIS Divine: 3 Cantrips"
+\`\`\`
+
+\`\`\`rpg feature.level
+level: 3
+traits:
+  Spellcasting: "2º Ritual"
+\`\`\`
+
+\`\`\`rpg feature.level
+level: 4
+traits:
+  Spellcasting: "4th Cantrip"
+\`\`\`
+`;
+    const doc = parseSourceDoc({ $name: "Cleric", $contents: body }, "class");
+    expect(doc.details).toHaveLength(1);
+    const spell = doc.details[0];
+    expect(spell.name).toBe("Spellcasting");
+    expect(spell.levels).toEqual([
+      { level: 3, traits: { Spellcasting: "2º Ritual" } },
+      { level: 4, traits: { Spellcasting: "4th Cantrip" } },
+    ]);
+  });
+
+  it("re-targets `levels` when a new feature.details appears", () => {
+    const body = `
+\`\`\`rpg feature.details
+name: A
+\`\`\`
+\`\`\`rpg feature.level
+level: 2
+traits: { A: "+a2" }
+\`\`\`
+\`\`\`rpg feature.details
+name: B
+\`\`\`
+\`\`\`rpg feature.level
+level: 5
+traits: { B: "+b5" }
+\`\`\`
+`;
+    const doc = parseSourceDoc({ $name: "Test", $contents: body }, "class");
+    const a = doc.details.find((d) => d.name === "A")!;
+    const b = doc.details.find((d) => d.name === "B")!;
+    expect(a.levels).toEqual([{ level: 2, traits: { A: "+a2" } }]);
+    expect(b.levels).toEqual([{ level: 5, traits: { B: "+b5" } }]);
+  });
+
+  it("skips a dangling feature.level that has no preceding feature.details", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const body = `
+\`\`\`rpg feature.level
+level: 2
+traits: { Orphan: "+x" }
+\`\`\`
+`;
+    const doc = parseSourceDoc({ $name: "Test", $contents: body }, "class");
+    expect(doc.details).toEqual([]);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

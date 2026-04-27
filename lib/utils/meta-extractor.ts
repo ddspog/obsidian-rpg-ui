@@ -45,11 +45,49 @@ function detectMetaFromSource(source: string): string | null {
     if (m) topLevelKeys.add(m[1]);
   }
 
+  // Feature blocks — checked BEFORE the SOURCE_KEY_TO_META table so the
+  // generic `name → system` fallback doesn't capture them. The fence is the
+  // authoritative meta source (preferred via getSectionInfo), but in reading
+  // mode that can fail; these heuristics keep `rpg feature.{details,choice,unlock,level}`
+  // dispatching correctly.
+  if (topLevelKeys.has("parent")) return "feature.choice";
+  if (topLevelKeys.has("kind") && topLevelKeys.has("level")) return "feature.unlock";
+  // feature.level is data-only: just `level` (+ maybe `traits`) with no name,
+  // parent, or kind markers.
+  if (
+    topLevelKeys.has("level") &&
+    !topLevelKeys.has("name") &&
+    !topLevelKeys.has("parent") &&
+    !topLevelKeys.has("kind")
+  ) {
+    return "feature.level";
+  }
+  const featureMarkers = ["subtitle", "tag", "pick", "uses", "link", "value", "values", "type"];
+  if (
+    topLevelKeys.has("name") &&
+    featureMarkers.some((k) => topLevelKeys.has(k))
+  ) {
+    return "feature.details";
+  }
+
+  // Skip the generic `name → system` fallback for bare-`name` blocks: that
+  // mapping was too permissive and would steal `rpg feature.details` blocks
+  // whose YAML happens to be just `name: …`. We retain the more specific
+  // entries (attributes, skills, etc.) but prefer feature.details when only
+  // `name` is present, since system-definition fences in practice carry
+  // additional system-specific keys (attributes, expressions, …).
   for (const { keys, meta } of SOURCE_KEY_TO_META) {
+    if (meta === "system") continue;
     if (keys.some((k) => topLevelKeys.has(k))) {
       return meta;
     }
   }
+
+  // Final fallback: a block with `name:` and no other recognised marker is
+  // overwhelmingly a feature.details in compendium docs. Route it that way
+  // rather than misrouting to SystemView.
+  if (topLevelKeys.has("name")) return "feature.details";
+
   return null;
 }
 

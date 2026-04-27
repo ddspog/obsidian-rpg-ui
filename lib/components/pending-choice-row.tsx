@@ -22,8 +22,11 @@ export function PendingChoiceRow({ pending, onToggle }: PendingChoiceRowProps) {
       {pending.options.length > 0 && (
         <menu aria-label="Choice Options">
           {pending.options.map((o, i) => {
-            const label = o.name ?? o.value ?? "(unnamed)";
-            const alreadyPicked = pending.picked.includes(label);
+            const raw = o.name ?? "(unnamed)";
+            // Strip [[wikilink]] delimiters for a clean button label; the
+            // underlying option keeps the wikilink so traits render as links.
+            const label = raw.replace(/^\[\[/, "").replace(/\]\]$/, "");
+            const alreadyPicked = pending.picked.includes(raw);
             const slotsFull = pending.remaining === 0;
             return (
               <li key={i}>
@@ -31,7 +34,7 @@ export function PendingChoiceRow({ pending, onToggle }: PendingChoiceRowProps) {
                   type="button"
                   aria-pressed={alreadyPicked}
                   disabled={!onToggle || (slotsFull && !alreadyPicked)}
-                  onClick={() => onToggle?.(label)}
+                  onClick={() => onToggle?.(raw)}
                 >
                   {label}
                 </button>
