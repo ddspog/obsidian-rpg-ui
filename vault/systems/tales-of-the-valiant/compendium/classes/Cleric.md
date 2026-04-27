@@ -111,17 +111,14 @@ text: |
   As a conduit for divine power, you can cast Divine spells. See [[07. Spellcasting]] for general rules of spellcasting and the [[Divine]] spell list.
 
   #### Cantrips
-
   At 1st level, choose three cantrips from the Divine spell list to learn. You choose more Divine cantrips to learn at higher levels, as shown in the Cantrips Known column of the **Cleric Progression** table.
 
   #### Preparing Spells
-
-  You must prepare spells in advance before you can cast them. You can prepare any spell on the [[Divine]] spell list from circles for which you have Divine spell slots. You can choose a number of spells equal to your WIS modifier + your cleric level (minimum of one spell). This is your list of prepared spells from which you can cast.
+  You must prepare spells in advance before you can cast them. You can prepare any spell on the [[Divine]] spell list from circles for which you have Divine spell slots. (You determine which spell slots you can access by checking your level on the **Cleric Progression** table). You can choose a number of spells equal to your WIS modifier + your cleric level (minimum of one spell). This is your list of prepared spells from which you can cast. 
 
   Preparing a new list of spells requires time spent in prayer and meditation: at least 1 minute per spell circle for each spell you change. You can change your list of prepared spells as part of a long rest.
 
   #### Casting Spells
-
   You have prepared a number of spells and can cast any of them by using a Divine spell slot of the spell's circle or higher.
 
   The **Cleric Progression** table shows how many Divine spell slots you have at a given level. For example, at 3rd level, you have four 1st-circle and two 2nd-circle spell slots, and with a 16 WIS, you can have six prepared spells of 1st or 2nd circle, in any combination. You only have two spell slots for 2nd-circle spells though, so if you prepare only 2nd-circle spells, you won't be able to use your 1st-circle spell slots at all.
@@ -129,21 +126,18 @@ text: |
   Casting a spell doesn't remove it from your list of prepared spells, it just uses up a spell slot. You regain all used spell slots when you finish a long rest.
 
   #### Spellcasting Ability
-
   Wisdom (WIS) is your spellcasting ability. Your WIS modifier determines the save DC and the attack modifier for certain spells you cast:
 
   - **Spell save DC** = 8 + your proficiency bonus (PB) + your WIS modifier
   - **Spell attack modifier** = your proficiency bonus (PB) + your WIS modifier
 
   #### Rituals
-
   You can also cast a type of long-form spell called a ritual. Rituals don't need to be prepared, and they don't use up spell slots.
 
   At 1st level, choose one ritual from the [[07. Spellcasting#Divine Ritual List|Divine Ritual List]]. You learn more rituals at higher levels, as shown in the Rituals Known column of the **Cleric Progression** table, but only from a circle for which you have spell slots. Rituals you learn don't count against the number of spells you learn at each level.
 
   #### Spellcasting Focus
-
-  You can use a holy symbol as a spellcasting focus for your Divine spells.
+  You can use a holy symbol (see **Adventuring Gear** in **Chapter 5**) as a spellcasting focus for your Divine spells.
 traits:
   Spellcasting: "WIS [[Divine]]: 3 Cantrips, Prepare WIS + LV Spells, 1 Ritual, Full-Caster"
 ```
@@ -157,12 +151,12 @@ level: 4
 traits:
   Spellcasting: "4th Cantrip"
 ```
->[!rules] Cleric Quick Build
->To quickly create a cleric, follow these steps during character creation:
->- For ability scores, prioritize WIS and then either STR or CON (depending on if you take Manifest Might or Manifest Miracles).
->- For lineage and heritage, choose any combination you like.
->- For background and talent, choose Adherent and Mental Fortitude.
->- For spells, choose _guidance_, _sacred flame_, and _thaumaturgy_ cantrips (plus _ray of frost_ if taking Manifest Miracles).
+>[!rules] CLERIC QUICK BUILD  
+>To quickly create a cleric, follow these steps during character creation: 
+>- For ability scores, prioritize WIS and then either STR or CON (depending on if you take Manifest Might or Manifest Miracles). 
+>- For lineage and heritage, choose any combination you like. 
+>- For background and talent, choose Adherent and Mental Fortitude. 
+>- For spells, choose the [[Guidance]], _sacred flame_, and _thaumaturgy_ cantrips (plus _ray of frost_ if taking Manifest Miracles). Then prepare your 1st-circle Divine spells (choose a number of the following spells equal to your WIS modifier + 1): _bless_, [[Cure Wounds]], _guiding bolt_, _healing word_, and _shield of faith_. Finally, choose your 1st-circle ritual: _detect poison and disease_.
 
 ```rpg feature.details
 name: Manifestation of Faith
@@ -172,10 +166,9 @@ pick: 1
 text: |
   Clerics demonstrate their faith in one of two primary ways, wielding it as a holy warrior or calling it as a miracle worker. Choose how you manifest your faith with one of the following.
 ```
-
 ```rpg feature.choice
 parent: Manifestation of Faith
-name: Manifest Might
+name: Might
 text: |
   **_Manifest Might._** You gain proficiency with [[Heavy Armor]] and one type of [[Martial]] weapon of your choice. Once per turn, when you hit a creature with a weapon attack, you can deal additional radiant or necrotic damage (your choice) equal to your PB.
 traits:
