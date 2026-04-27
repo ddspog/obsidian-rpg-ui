@@ -1,4 +1,4 @@
-import { EntityDescriptor } from "rpg-ui-toolkit";
+import { EntityDescriptor, CompendiumLib } from "rpg-ui-toolkit";
 import { HeaderProps } from "../blocks/character/header.types";
 import { HealthProps } from "../blocks/character/health.types";
 import { StatsProps } from "../blocks/character/stats.types";
@@ -7,7 +7,6 @@ import { SkillsProps } from "../blocks/character/skills.types";
 import { AttacksProps } from "../blocks/character/attacks.types";
 import { ProficienciesProps } from "../blocks/character/proficiencies.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
-import type { CompendiumLib } from "../../../../../lib/domains/features/types";
 
 /**
  * Types for the Character Entity, defining the shape of its blocks, lookup, and expressions.

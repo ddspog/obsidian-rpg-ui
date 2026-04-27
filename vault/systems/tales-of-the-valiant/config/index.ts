@@ -35,6 +35,7 @@ import character from "./entities/character";
 import featureDetails from "./blocks/feature/details";
 import featureChoice from "./blocks/feature/choice";
 import featureUnlock from "./blocks/feature/unlock";
+import featureLevel from "./blocks/feature/level";
 
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
@@ -92,6 +93,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
         details: featureDetails,
         choice: featureChoice,
         unlock: featureUnlock,
+        level: featureLevel,
       },
     })),
 

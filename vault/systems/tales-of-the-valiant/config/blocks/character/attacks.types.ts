@@ -17,6 +17,8 @@ export type AttackEntry = {
   };
   property?: string[];
   options?: string[];
+  /** Freeform notes */
+  notes?: string;
 };
 
 export type AttacksProps = {

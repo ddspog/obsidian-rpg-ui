@@ -1,8 +1,11 @@
-import { CreateEntity, FeatureEntry } from "rpg-ui-toolkit";
+import {
+  CreateEntity,
+  FeatureEntry,
+  parseSourceDocs,
+  CompendiumLib,
+} from "rpg-ui-toolkit";
 import { xpTable as xp } from './character.lookup';
 import type { CharacterEntity } from "./character.types";
-import { parseSourceDocs } from "../../../../../lib/domains/features/parse-source-doc";
-import type { CompendiumLib } from "../../../../../lib/domains/features/types";
 import header from '../blocks/character/header';
 import health from '../blocks/character/health';
 import stats from '../blocks/character/stats';

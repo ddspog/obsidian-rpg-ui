@@ -1,6 +1,5 @@
 import * as React from "react";
-import { EntityBlock } from "rpg-ui-toolkit";
-import type { UnlockBlock } from "../../../../../../lib/domains/features/types";
+import { EntityBlock, UnlockBlock } from "rpg-ui-toolkit";
 
 export const unlock: EntityBlock<UnlockBlock> = ({ self }) => (
   <aside className="rpg-feature-card rpg-feature-card-unlock" aria-label="Feature Unlock">

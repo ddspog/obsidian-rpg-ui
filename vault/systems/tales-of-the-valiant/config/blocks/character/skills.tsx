@@ -67,6 +67,7 @@ function ProfDot({ level }: { level: number }) {
 
 export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({ self, expressions }) => (
   <section aria-label="Character Skills">
+    <header className="rpg-tag-heading"><span>Skills</span></header>
     <menu>
       {SKILLS.map(({ name, attr }) => {
         const skill = self[name];
@@ -79,6 +80,7 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({ self, expres
         return (
           <li key={name} data-vantage={vantage > 0 ? "adv" : vantage < 0 ? "dis" : undefined}>
             <ProfDot level={skill.proficiency} />
+            <abbr aria-details="Skill Attribute">{attr}</abbr>
             <span aria-details="Skill Name">{name}</span>
             <data value={mod}>
               {vantage > 0 && <span aria-details="Vantage">{"\u25B2"}</span>}
