@@ -189,8 +189,14 @@ traits:
 ```rpg feature.details
 name: Channel Divinity
 subtitle: "2nd, 6th, 13th, and 18th-Level Cleric Feature"
+type: resource
 level: 2
-uses: 1
+max:
+  2: 1
+  6: 2
+  13: 3
+  18: 4
+recovery: short or long rest
 link: "[[Channel Divinity]]"
 text: |
   You gain the ability to channel divine energy directly from your deity to produce effects beyond spells. You start with one effect: Turn the Profane. Some subclasses grant additional effects as you advance in levels.
@@ -284,8 +290,10 @@ text: |
 ```rpg feature.details
 name: Divine Intervention
 subtitle: "9th-Level Cleric Feature"
+type: resource
 level: 9
-uses: 1
+max: 1
+recovery: 1/week on success, 1/long rest on failure
 text: |
   You can call on your deity to intervene on your behalf when your need is great. At the start of your turn, roll a d20 and add your PB. If the result is 19 or lower, your request fails. If the result is 20 or higher, your deity intervenes on your behalf.
 

@@ -111,6 +111,53 @@
   font-size: var(--font-ui-smaller);
 }
 
+/* ─── Aggregated traits / resources sections ──────────────────────────── */
+.rpg-feature-traits,
+.rpg-feature-resources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2, 0.25rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  background: var(--background-modifier-hover);
+  border-radius: var(--radius-s, 4px);
+}
+
+.rpg-feature-traits h4,
+.rpg-feature-resources h4 {
+  margin: 0;
+  font-size: var(--font-ui-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.rpg-feature-traits dl,
+.rpg-feature-resources dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--size-4-3, 0.75rem);
+  row-gap: var(--size-2-2, 0.25rem);
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-feature-traits dt,
+.rpg-feature-resources dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rpg-feature-traits dd,
+.rpg-feature-resources dd {
+  margin: 0;
+  color: var(--text-normal);
+}
+
+.rpg-feature-resources dd small {
+  color: var(--text-muted);
+  font-size: 0.95em;
+}
+
 /* ─── Pending choices section ─────────────────────────────────────────── */
 .rpg-feature-pending-list {
   display: flex;

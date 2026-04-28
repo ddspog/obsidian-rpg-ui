@@ -675,6 +675,9 @@ export interface FeatureDetails {
   uses?: number;
   link?: string;
   pick?: number;
+  max?: number | Record<number, number>;
+  recovery?: string;
+  uses_resource?: string;
 }
 
 export interface FeatureChoiceOption {
@@ -685,6 +688,7 @@ export interface FeatureChoiceOption {
   type?: string;
   link?: string;
   features?: FeatureDetails[];
+  uses_resource?: string;
 }
 
 export interface UnlockBlock {

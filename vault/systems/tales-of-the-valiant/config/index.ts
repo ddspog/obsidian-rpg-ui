@@ -116,6 +116,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
       { id: "reaction", label: "Reaction", icon: "🛡️" },
       { id: "free_action", label: "Free Action", icon: "✨" },
       { id: "passive", label: "Passive", icon: "📋" },
+      { id: "resource", label: "Resource" },
     ],
     providers: ["class", "subclass", "lineage", "heritage", "background"],
     collectors: ["character", "monster"],

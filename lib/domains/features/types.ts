@@ -82,6 +82,15 @@ export interface FeatureDetails {
   uses?: number;
   link?: string;
   pick?: number;
+  /**
+   * When `type === "resource"`: max charges. Scalar or per-level map
+   * (`{ 2: 1, 6: 2 }` → 1 charge at Lv 2, 2 at Lv 6, …).
+   */
+  max?: number | Record<number, number>;
+  /** When `type === "resource"`: free-form recovery cadence ("short rest", "1/day"). */
+  recovery?: string;
+  /** Optional reference to another feature (a resource) by name — purely declarative. */
+  uses_resource?: string;
 }
 
 /**
@@ -97,6 +106,8 @@ export interface FeatureChoiceOption {
   type?: string;
   link?: string;
   features?: FeatureDetails[];
+  /** Optional reference to a `feature.resource` by name. */
+  uses_resource?: string;
 }
 
 /** Non-feature progression marker (e.g. "subclass becomes pickable at level 3"). */

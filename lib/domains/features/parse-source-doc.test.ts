@@ -268,3 +268,29 @@ traits: { Orphan: "+x" }
     warnSpy.mockRestore();
   });
 });
+
+describe("parseSourceDoc — resource-typed details", () => {
+  it("parses max and recovery alongside the standard details fields", () => {
+    const body = `
+\`\`\`rpg feature.details
+name: Channel Divinity
+type: resource
+level: 2
+max:
+  2: 1
+  6: 2
+recovery: short or long rest
+text: A pool of divine energy.
+\`\`\`
+`;
+    const doc = parseSourceDoc({ $name: "Cleric", $contents: body }, "class");
+    expect(doc.details).toHaveLength(1);
+    expect(doc.details[0]).toMatchObject({
+      name: "Channel Divinity",
+      type: "resource",
+      level: 2,
+      max: { 2: 1, 6: 2 },
+      recovery: "short or long rest",
+    });
+  });
+});
