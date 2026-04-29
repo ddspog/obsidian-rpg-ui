@@ -1,0 +1,30 @@
+/* ─── rpg table styling bridge ─────────────────────────────────────────────
+ *
+ * Base table styling is inherited from the active theme via the `.el-table`
+ * wrapper `renderTableBlock` emits — themes that ship `.el-table > table`
+ * rules (Ribbons, the default Obsidian theme, etc.) apply their full table
+ * look with no additional CSS here.
+ *
+ * The rules below handle the few tx-style variant selectors that are scoped
+ * to `.block-language-tx` in typical themes, so our `.rpg-table` output
+ * mirrors them. Each variant keys off a hidden `<a href="#<class>">` child
+ * emitted by the renderer from the block's footer line (`[#css/tx/...]`).
+ */
+
+/* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression
+ * tables where row content may be long but should stay on one line. */
+.rpg-table:has(a[href="#css/tx/s/wide"]) th,
+.rpg-table:has(a[href="#css/tx/s/wide"]) td {
+  white-space: nowrap;
+}
+
+/* Variant: `#css/tx/s/no-top-header-border` */
+.rpg-table:has(a[href="#css/tx/s/no-top-header-border"]) thead tr:first-child {
+  border-top: none;
+}
+
+/* The hidden anchor markers themselves — keep them non-interactive so a stray
+ * click can't navigate to a broken `#css/...` fragment. */
+.rpg-table a[href^="#css/"] {
+  display: none;
+}

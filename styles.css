@@ -4022,6 +4022,18 @@ div:has(> section[aria-label="Character Senses"]) + div > section[aria-label="Ch
   cursor: default;
 }
 
+/* lib/styles/components/rpg-table.css */
+.rpg-table:has(a[href="#css/tx/s/wide"]) th,
+.rpg-table:has(a[href="#css/tx/s/wide"]) td {
+  white-space: nowrap;
+}
+.rpg-table:has(a[href="#css/tx/s/no-top-header-border"]) thead tr:first-child {
+  border-top: none;
+}
+.rpg-table a[href^="#css/"] {
+  display: none;
+}
+
 /* lib/styles/components/death-save-dots.css */
 fieldset[aria-details="Death Save Successes"],
 fieldset[aria-details="Death Save Failures"] {
