@@ -12,6 +12,8 @@
 
 import { parse as parseYaml } from "yaml";
 import { stripCalloutMarkers } from "../../utils/callout";
+import { parseTableBlock } from "../tables/parse-table-block";
+import type { TableDef } from "../tables/types";
 import type {
   FeatureChoiceOption,
   FeatureDetails,
@@ -71,6 +73,21 @@ function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
     });
   }
   return blocks;
+}
+
+/**
+ * Scan a document body for every `rpg table.<name>` fence and parse each into
+ * a `TableDef`. `<name>` is captured from the fence info string and becomes
+ * the table's local name inside its source doc.
+ */
+function extractTableBlocks(body: string): TableDef[] {
+  const cleaned = stripCalloutMarkers(body);
+  const re = /```rpg table\.([A-Za-z0-9_-]+)\s*\n([\s\S]*?)```/g;
+  const out: TableDef[] = [];
+  for (const m of cleaned.matchAll(re)) {
+    out.push(parseTableBlock(m[1], m[2]));
+  }
+  return out;
 }
 
 export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): SourceDoc {
@@ -160,6 +177,7 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
     details,
     options,
     unlocks,
+    tables: extractTableBlocks(body).map((t) => ({ ...t, source: raw.$name })),
     parent_class,
   };
 }

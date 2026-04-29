@@ -11,6 +11,7 @@
  * No I/O — fully testable from hand-rolled SourceDoc fixtures.
  */
 
+import type { TableDef } from "../tables/types";
 import type {
   CharacterDecl,
   ChooseSpec,
@@ -221,8 +222,35 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
   appendIf(sources, lib.backgrounds, decl.background, decl.choices, traits);
 
   const pendingChoices = sources.flatMap((s) => s.pendingChoices);
+  const tables = aggregateTables(decl, lib);
 
-  return { sources, traits, pendingChoices };
+  return { sources, traits, pendingChoices, tables };
+}
+
+/**
+ * Collect every `TableDef` from the sources referenced by `decl` into a flat
+ * lookup keyed by both `<source>:<name>` and bare `<name>` (latest loaded
+ * wins on bare-name collisions). The ordering mirrors resolver load order:
+ * classes → subclasses → lineage → heritage → background.
+ */
+function aggregateTables(decl: CharacterDecl, lib: CompendiumLib): Record<string, TableDef> {
+  const out: Record<string, TableDef> = {};
+  const add = (doc: SourceDoc | undefined) => {
+    if (!doc) return;
+    for (const t of doc.tables ?? []) {
+      const tagged: TableDef = { ...t, source: doc.name };
+      out[`${doc.name}:${t.name}`] = tagged;
+      out[t.name] = tagged;
+    }
+  };
+  for (const entry of decl.classes ?? []) {
+    add(lib.classes[entry.name]);
+    if (entry.subclass) add(lib.subclasses[entry.subclass]);
+  }
+  if (decl.lineage) add(lib.lineages[decl.lineage]);
+  if (decl.heritage) add(lib.heritages[decl.heritage]);
+  if (decl.background) add(lib.backgrounds[decl.background]);
+  return out;
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────

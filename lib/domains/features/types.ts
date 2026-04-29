@@ -5,6 +5,8 @@
  * No Obsidian / vault dependencies; safe to import from tests and the resolver.
  */
 
+import type { TableDef } from "../tables/types";
+
 // ─── Source-document blocks ───────────────────────────────────────────────────
 
 /**
@@ -126,6 +128,7 @@ export interface SourceDoc {
   details: FeatureDetails[];
   options: FeatureChoiceOption[];
   unlocks: UnlockBlock[];
+  tables: TableDef[];
   parent_class?: string;
 }
 
@@ -186,4 +189,10 @@ export interface ResolvedView {
   traits: Record<string, string[]>;
   /** Flat list of every pending choice across sources. */
   pendingChoices: PendingChoice[];
+  /**
+   * Every table from every loaded source, keyed both by `<source>:<name>`
+   * (fully qualified) and by bare `<name>` (latest-wins when multiple sources
+   * declare the same name). Ready to hand to the expression evaluator.
+   */
+  tables: Record<string, TableDef>;
 }

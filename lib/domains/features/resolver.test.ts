@@ -63,6 +63,7 @@ const cleric: SourceDoc = {
     },
   ],
   unlocks: [{ kind: "subclass", level: 3 }],
+  tables: [],
 };
 
 const lifeDomain: SourceDoc = {
@@ -81,6 +82,7 @@ const lifeDomain: SourceDoc = {
   ],
   options: [],
   unlocks: [],
+  tables: [],
 };
 
 const human: SourceDoc = {
@@ -96,6 +98,7 @@ const human: SourceDoc = {
     { parent: "Skill Versatility", name: "Stealth", traits: { "Skill Proficiency": "+Stealth" } },
   ],
   unlocks: [],
+  tables: [],
 };
 
 const greatHouse: SourceDoc = {
@@ -105,6 +108,7 @@ const greatHouse: SourceDoc = {
   details: [{ name: "Noble Connections", type: "passive", text: "You know nobles." }],
   options: [],
   unlocks: [],
+  tables: [],
 };
 
 const fighter: SourceDoc = {
@@ -139,6 +143,7 @@ const fighter: SourceDoc = {
     },
   ],
   unlocks: [{ kind: "subclass", level: 3 }],
+  tables: [],
 };
 
 const lib: CompendiumLib = {
@@ -410,6 +415,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
     ],
     options: [],
     unlocks: [],
+    tables: [],
   };
   const profLib: CompendiumLib = {
     classes: { Proficiencies: proficiencies },
@@ -488,6 +494,7 @@ describe("resolveFeatures: feature.level (per-level additions)", () => {
     ],
     options: [],
     unlocks: [],
+    tables: [],
   };
   const lib: CompendiumLib = {
     classes: { Spellcaster: spellcaster },
@@ -528,5 +535,51 @@ describe("resolveFeatures: feature.level (per-level additions)", () => {
       "2º Ritual",
       "4th Cantrip",
     ]);
+  });
+});
+
+// ─── Table aggregation ───────────────────────────────────────────────────────
+
+describe("resolveFeatures: tables", () => {
+  const clericWithTable: SourceDoc = {
+    name: "Cleric",
+    kind: "class",
+    meta: {},
+    details: [],
+    options: [],
+    unlocks: [],
+    tables: [
+      {
+        name: "progression",
+        columns: ["level", "pb"],
+        columnLabels: ["LEVEL", "PB"],
+        rows: [
+          { cells: [{ value: "1" }, { value: "+2" }] },
+          { cells: [{ value: "2" }, { value: "+2" }] },
+        ],
+        headerRows: [{ cells: [{ value: "LEVEL" }, { value: "PB" }] }],
+        keyColumn: "level",
+        classes: [],
+      },
+    ],
+  };
+  const lib: CompendiumLib = {
+    classes: { Cleric: clericWithTable },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+  };
+
+  it("keys tables both by <source>:<name> and by bare <name>", () => {
+    const view = resolveFeatures({ classes: [{ name: "Cleric", level: 1 }] }, lib);
+    expect(Object.keys(view.tables).sort()).toEqual(["Cleric:progression", "progression"]);
+    expect(view.tables["Cleric:progression"].source).toBe("Cleric");
+    expect(view.tables.progression.rows).toHaveLength(2);
+  });
+
+  it("skips tables from sources the character hasn't taken", () => {
+    const emptyView = resolveFeatures({ classes: [] }, lib);
+    expect(Object.keys(emptyView.tables)).toEqual([]);
   });
 });
