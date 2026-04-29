@@ -1,5 +1,11 @@
 import * as React from "react";
-import { EntityBlock, FeatureDetails, Markdown } from "rpg-ui-toolkit";
+import {
+  EntityBlock,
+  EvalContext,
+  FeatureDetails,
+  Markdown,
+  TableDef,
+} from "rpg-ui-toolkit";
 
 /** Resolve `[[Target]]` against the vault — returns null if no file exists. */
 function resolveWikilink(link: string): string | null {
@@ -20,9 +26,22 @@ function formatMax(max: FeatureDetails["max"]): string {
     .join(", ");
 }
 
-export const details: EntityBlock<FeatureDetails> = ({ self }) => {
+interface DetailsLookup {
+  /** Tables declared in the same compendium document, keyed by name. */
+  $tables?: Record<string, TableDef>;
+}
+
+export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = ({
+  self,
+  lookup,
+}) => {
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
+
+  const context: EvalContext = React.useMemo(
+    () => ({ tables: lookup?.$tables ?? {}, vars: {} }),
+    [lookup?.$tables],
+  );
 
   return (
     <article className="rpg-feature-card" aria-label={`Feature ${self.name}`}>
@@ -49,7 +68,7 @@ export const details: EntityBlock<FeatureDetails> = ({ self }) => {
       </hgroup>
 
       {self.text && (
-        <Markdown source={self.text} className="rpg-feature-text" />
+        <Markdown source={self.text} context={context} className="rpg-feature-text" />
       )}
 
       {resolvedLink && (
