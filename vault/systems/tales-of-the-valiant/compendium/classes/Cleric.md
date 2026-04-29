@@ -126,19 +126,63 @@ text: |
 
   #### Spellcasting Focus
   You can use a holy symbol (see **Adventuring Gear** in **Chapter 5**) as a spellcasting focus for your Divine spells.
+spellcasting:
+  prepare: WIS + LV
+  ritual: 1
+  cantrips: 3
+  list: #Divine
 traits:
-  Spellcasting: "WIS [[Divine]]: 3 Cantrips, Prepare WIS + LV Spells, 1 Ritual, Full-Caster"
-
+  Spellcasting: "WIS [[Divine]]: Prepared Full-Caster"
 ```
 ```rpg feature.level
 level: 3
-traits:
-  Spellcasting: "2º Ritual"
+spellcasting:
+  ritual: 1
 ```
 ```rpg feature.level
 level: 4
-traits:
-  Spellcasting: "4th Cantrip"
+spellcasting:
+  cantrip: 1
+```
+```rpg feature.level
+level: 5
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 7
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 9
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 10
+spellcasting:
+  cantrip: 1
+```
+```rpg feature.level
+level: 11
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 13
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 15
+spellcasting:
+  ritual: 1
+```
+```rpg feature.level
+level: 17
+spellcasting:
+  ritual: 1
 ```
 >[!rules] CLERIC QUICK BUILD  
 >To quickly create a cleric, follow these steps during character creation: 
