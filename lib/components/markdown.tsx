@@ -11,6 +11,7 @@
 
 import * as React from "react";
 import { Component, MarkdownRenderer } from "obsidian";
+import { substituteExpressions, type EvalContext } from "../domains/tables/expressions";
 
 export interface MarkdownProps {
   /** Source markdown text. */
@@ -22,12 +23,19 @@ export interface MarkdownProps {
   sourcePath?: string;
   /** Optional className applied to the rendered container. */
   className?: string;
+  /**
+   * Optional expression-substitution context. When supplied, `{{ helper … }}`
+   * expressions in `source` are resolved (against the context's tables /
+   * vars) before Obsidian renders the markdown.
+   */
+  context?: EvalContext;
 }
 
 export function Markdown({
   source,
   sourcePath = "",
   className,
+  context,
 }: MarkdownProps) {
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -37,6 +45,8 @@ export function Markdown({
     container.empty?.();
     container.innerHTML = "";
     if (!source) return;
+
+    const rendered = context ? substituteExpressions(source, context) : source;
 
     const component = new Component();
     component.load();
@@ -65,8 +75,8 @@ export function Markdown({
 
     const promise =
       typeof renderer.render === "function" && app
-        ? renderer.render(app, source, container, sourcePath, component)
-        : renderer.renderMarkdown?.(source, container, sourcePath, component);
+        ? renderer.render(app, rendered, container, sourcePath, component)
+        : renderer.renderMarkdown?.(rendered, container, sourcePath, component);
 
     Promise.resolve(promise).catch((err) => {
       console.error("rpg-ui-toolkit Markdown: render failed", err);
@@ -75,7 +85,7 @@ export function Markdown({
     return () => {
       component.unload();
     };
-  }, [source, sourcePath]);
+  }, [source, sourcePath, context]);
 
   return <div ref={ref} className={className} />;
 }

@@ -83,6 +83,17 @@ function detectMetaFromSource(source: string): string | null {
     }
   }
 
+  // `rpg table.<name>` body — a markdown table, sometimes preceded by a
+  // `key:` option line. The fence's `<name>` suffix can't be recovered from
+  // the body alone, so we return the bare meta `"table"` and let the
+  // dispatcher recover the name from `sectionInfo.text` when needed.
+  const lines = source.split("\n");
+  const hasPipeRow = lines.some((l) => /^\s*\|.*\|/.test(l.trim()));
+  const hasSeparator = lines.some((l) =>
+    /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()),
+  );
+  if (hasPipeRow && hasSeparator) return "table";
+
   // Final fallback: a block with `name:` and no other recognised marker is
   // overwhelmingly a feature.details in compendium docs. Route it that way
   // rather than misrouting to SystemView.

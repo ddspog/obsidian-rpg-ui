@@ -261,12 +261,18 @@ export async function evaluateSystemBundle(
           const pendingChoiceRow = require("../components/pending-choice-row");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const markdown = require("../components/markdown");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const tableParser = require("../domains/tables/parse-table-block");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const tableExpr = require("../domains/tables/expressions");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
             resolveFeatures: resolverMod.resolveFeatures,
             PendingChoiceRow: pendingChoiceRow.PendingChoiceRow,
             Markdown: markdown.Markdown,
+            parseTableBlock: tableParser.parseTableBlock,
+            substituteExpressions: tableExpr.substituteExpressions,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.

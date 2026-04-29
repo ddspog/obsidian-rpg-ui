@@ -18,6 +18,8 @@ import { settingsStore } from "lib/services/settings-store";
 import { getEntityBus } from "lib/services/entity-event-bus";
 import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild } from "lib/systems/ts-loader";
+import { parseTableBlock } from "lib/domains/tables/parse-table-block";
+import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -119,9 +121,38 @@ export default class DndUIToolkitPlugin extends Plugin {
 
       // Handle entity blocks: meta of the form "entityType.blockName"
       const dotIndex = meta.indexOf(".");
+      // `rpg table.<name>` is a standalone table block. The body is a
+      // markdown table (not YAML), so it's dispatched to a plain-DOM
+      // renderer rather than the entity-block YAML pipeline. The reading-view
+      // path may collapse the fence info to a bare `"table"` meta — recover
+      // the name from the file's raw text via `getSectionInfo` then.
+      if (meta === "table" || meta.startsWith("table.")) {
+        let blockName = meta.startsWith("table.") ? meta.slice("table.".length) : "";
+        if (!blockName) {
+          const sectionText = ctx.getSectionInfo(el)?.text ?? "";
+          for (const line of sectionText.split("\n")) {
+            const fenceMatch = line.match(/^```rpg\s+table\.([A-Za-z0-9_-]+)/);
+            if (fenceMatch) {
+              blockName = fenceMatch[1];
+              break;
+            }
+          }
+        }
+        if (!blockName) blockName = "unnamed";
+        try {
+          const def = parseTableBlock(blockName, source);
+          renderTableBlock(el, def);
+        } catch (err) {
+          console.error("rpg table.* render failed", err);
+          el.innerHTML = '<div class="notice">Error rendering rpg table</div>';
+        }
+        return;
+      }
+
       if (dotIndex > 0) {
         const entityType = meta.slice(0, dotIndex);
         const blockName = meta.slice(dotIndex + 1);
+
         const system = registry.getSystemForFile(ctx.sourcePath);
         const blockDef = system.entities[entityType]?.blocks?.[blockName];
         if (blockDef) {
@@ -483,6 +514,27 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
         }
 
         // cssclasses are applied by Obsidian itself; do not mutate DOM here.
+
+        // File-local tables: scan the current file's raw text (available via
+        // sectionInfo) for `rpg table.<name>` fences, parse each, and expose
+        // them on `lookup.$tables` so block renderers can run
+        // `substituteExpressions` against them. Tables declared in the same
+        // compendium doc are reachable by bare `<name>`; cross-source reads
+        // against a character's full compendium remain a sheet-side concern.
+        let fileTables: Record<string, unknown> = {};
+        try {
+          const fileText = sectionInfo?.text;
+          if (fileText) {
+            const re = /```rpg table\.([A-Za-z0-9_-]+)\s*\n([\s\S]*?)```/g;
+            for (const m of fileText.matchAll(re)) {
+              const def = parseTableBlock(m[1], m[2]);
+              fileTables[def.name] = def;
+            }
+          }
+        } catch {
+          // leave fileTables empty on error
+        }
+        lookupObj = { ...lookupObj, $tables: fileTables };
 
         const props: Record<string, unknown> = {
           self: selfWithSetters,

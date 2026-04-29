@@ -705,6 +705,7 @@ export interface SourceDoc {
   details: FeatureDetails[];
   options: FeatureChoiceOption[];
   unlocks: UnlockBlock[];
+  tables: TableDef[];
   parent_class?: string;
 }
 
@@ -744,6 +745,7 @@ export interface ResolvedView {
   sources: ResolvedSource[];
   traits: Record<string, string[]>;
   pendingChoices: PendingChoice[];
+  tables: Record<string, TableDef>;
 }
 
 export interface SourceDocInput {
@@ -756,6 +758,36 @@ export declare function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind)
 export declare function parseSourceDocs(raws: SourceDocInput[], kind: SourceDocKind): Record<string, SourceDoc>;
 export declare function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView;
 
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+export interface TableCell {
+  value: string;
+  colspan?: number;
+}
+export interface TableRow {
+  cells: TableCell[];
+}
+export interface TableDef {
+  name: string;
+  source?: string;
+  columns: string[];
+  columnLabels: string[];
+  rows: TableRow[];
+  headerRows: TableRow[];
+  keyColumn?: string;
+  caption?: string;
+  classes: string[];
+}
+
+export interface EvalContext {
+  tables: Record<string, TableDef>;
+  vars: Record<string, string | number>;
+  defaultSeed?: string;
+}
+
+export declare function parseTableBlock(name: string, body: string): TableDef;
+export declare function substituteExpressions(source: string, ctx: EvalContext): string;
+
 export interface PendingChoiceRowProps {
   pending: PendingChoice;
   onToggle?: (option: string) => void;
@@ -766,5 +798,11 @@ export interface MarkdownProps {
   source: string;
   sourcePath?: string;
   className?: string;
+  /**
+   * Optional expression-substitution context. When supplied, the component
+   * runs `substituteExpressions(source, context)` before handing the text to
+   * Obsidian's MarkdownRenderer.
+   */
+  context?: EvalContext;
 }
 export declare const Markdown: FunctionComponent<MarkdownProps>;
