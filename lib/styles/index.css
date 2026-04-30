@@ -58,9 +58,13 @@
 @import "./components/status-panel.css";
 @import "./components/stat-diamond.css";
 @import "./components/stat-hex-pair.css";
+@import "./components/tag-heading.css";
 @import "./components/senses-row.css";
 @import "./components/skills-row.css";
+@import "./components/attacks-row.css";
+@import "./components/proficiencies-row.css";
 @import "./components/feature-card.css";
+@import "./components/feature-accordion.css";
 @import "./components/features-source-groups.css";
 @import "./components/rpg-table.css";
 @import "./components/death-save-dots.css";

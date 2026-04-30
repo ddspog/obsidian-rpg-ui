@@ -52,6 +52,8 @@ type SheetArgs = {
   charisma: number;
   str_save_prof: number;
   con_save_prof: number;
+  wis_save_prof: number;
+  cha_save_prof: number;
   dot_padding: number;
   dot_inset: number;
 
@@ -89,6 +91,8 @@ const meta: Meta<SheetArgs> = {
     charisma: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
     str_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "STR Save Proficiency" },
     con_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CON Save Proficiency" },
+    wis_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "WIS Save Proficiency" },
+    cha_save_prof: { control: { type: "range", min: 0, max: 1, step: 1 }, name: "CHA Save Proficiency" },
     dot_padding: { control: { type: "range", min: 0, max: 60, step: 4 }, name: "Dot Padding (px)" },
     dot_inset: { control: { type: "range", min: 0, max: 40, step: 2 }, name: "Dot Inset (px)" },
 
@@ -148,7 +152,7 @@ function buildBlocksYaml(args: SheetArgs): Record<string, string> {
   // Header YAML
   blocksYaml.header = `
 classes:
-  - name: [[Fighter]]
+  - name: [[Cleric]]
     level: ${args.level}
 lineage:
   file: [[High Elf]]
@@ -173,7 +177,7 @@ portrait: [[character-portrait.webp]]
 speed:
 ${speedEntries.join("\n")}
 hit_dice:
-  d10:
+  d8:
     max: ${args.hit_dice_max}
     current: ${args.hit_dice_current}
 death_saves:
@@ -197,6 +201,8 @@ conditions:
   blocksYaml.stats = buildStatsYaml(abilities, {
     str: args.str_save_prof,
     con: args.con_save_prof,
+    wis: args.wis_save_prof,
+    cha: args.cha_save_prof,
   });
 
   // Skills YAML (computed from ability scores + proficiency_bonus + proficiency args)
@@ -225,35 +231,16 @@ conditions:
 
   // Proficiencies YAML
   blocksYaml.proficiencies = buildProficienciesYaml({
-    armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Shields"],
-    weapons: ["Simple Weapons", "Martial Weapons"],
-    tools: ["Smith's Tools"],
+    armor: ["Light Armor", "Medium Armor", "Shields"],
+    weapons: ["Simple Weapons"],
+    tools: [],
     languages: ["Common", "Elvish"],
   });
 
-  // Features YAML
-  blocksYaml.features = buildFeaturesYaml([
-    {
-      name: "Class Features",
-      features: [
-        { name: "Fighting Style: Defense", level: 1, type: "passive", link: "[[Fighting Style]]", description: "While wearing armor, you gain a +1 bonus to AC." },
-        { name: "Second Wind", level: 1, type: "bonus_action", uses: 1, link: "[[Second Wind]]", description: "Regain 1d10 + fighter level hit points." },
-        { name: "Action Surge", level: 2, type: "free_action", uses: 1, link: "[[Action Surge]]", description: "Take one additional action on your turn." },
-        { name: "Extra Attack", level: 5, type: "passive", link: "[[Extra Attack]]", description: "Attack twice when you take the Attack action." },
-        { name: "Dash", type: "action", trivial: true, link: "[[Dash]]" },
-        { name: "Dodge", type: "action", trivial: true, link: "[[Dodge]]" },
-        { name: "Help", type: "action", trivial: true, link: "[[Help]]" },
-        { name: "Search", type: "action", trivial: true, link: "[[Search]]" },
-        { name: "Opportunity Attack", type: "reaction", trivial: true, link: "[[Opportunity Attack]]" },
-      ],
-    },
-    {
-      name: "Feats",
-      features: [
-        { name: "Great Weapon Master", link: "[[Great Weapon Master]]", description: "Heavy weapon attacks: -5 to hit, +10 damage." },
-      ],
-    },
-  ]);
+  // Features YAML — resolver pulls Cleric features from the compendium based
+  // on the header's declared class; the per-source feature list lives there,
+  // so this block just carries any pending-choice picks.
+  blocksYaml.features = buildFeaturesYaml([]);
 
   return blocksYaml;
 }
@@ -343,14 +330,16 @@ export const Default: Story = {
     banner: "#ac8080",
 
     // Stats
-    strength: 18,
-    dexterity: 14,
-    constitution: 16,
+    strength: 12,
+    dexterity: 10,
+    constitution: 14,
     intelligence: 10,
-    wisdom: 12,
-    charisma: 8,
-    str_save_prof: 1,
-    con_save_prof: 1,
+    wisdom: 18,
+    charisma: 13,
+    str_save_prof: 0,
+    con_save_prof: 0,
+    wis_save_prof: 1,
+    cha_save_prof: 1,
     dot_padding: 4,
     dot_inset: 18,
 

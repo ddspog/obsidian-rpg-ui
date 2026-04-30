@@ -59,6 +59,29 @@ export interface FeatureLevelAddition {
  * `traits` describe the contributions this feature makes to a character
  * sheet's aggregated traits row.
  */
+/**
+ * A single aspect of a feature. Authored as a sub-object under one of the
+ * recognised aspect keys (`action`, `bonus`, `reaction`, `active`, `passive`,
+ * `resource`) on `FeatureDetails`. When present, each aspect produces its
+ * own entry in the character sheet's type-grouped accordion, with the
+ * aspect's `text` shown on the card instead of the parent feature's full
+ * compendium prose.
+ */
+export interface FeatureAspect {
+  /** Aspect-specific name, overrides the parent feature's name in the bucket. */
+  name?: string;
+  /** Aspect card text on the character sheet. Falls back to parent `text`. */
+  text?: string;
+  /** Name of a resource feature this aspect consumes (by-name reference). */
+  resource?: string;
+  /** Pool max when the aspect is itself a resource. Scalar or per-level map. */
+  max?: number | Record<number, number>;
+  /** Free-form recovery cadence ("short rest", "1/long rest", …). */
+  recovery?: string;
+  /** Inline cooldown within a single turn ("once per turn", "once per round"). */
+  recharge?: string;
+}
+
 export interface FeatureDetails {
   name: string;
   /**
@@ -93,6 +116,18 @@ export interface FeatureDetails {
   recovery?: string;
   /** Optional reference to another feature (a resource) by name — purely declarative. */
   uses_resource?: string;
+  /**
+   * Aspect sub-objects. Each key, when present, places the feature in that
+   * type's bucket on the character-sheet accordion with the aspect's own
+   * `text` on the card. A feature can carry multiple aspects (e.g. an
+   * `active:` and a `passive:` version of the same ability).
+   */
+  action?: FeatureAspect;
+  bonus?: FeatureAspect;
+  reaction?: FeatureAspect;
+  active?: FeatureAspect;
+  passive?: FeatureAspect;
+  resource?: FeatureAspect;
 }
 
 /**

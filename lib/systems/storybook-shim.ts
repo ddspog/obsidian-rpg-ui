@@ -9,3 +9,9 @@
 
 export { CreateSystem, CreateEntity } from "./create-system";
 export * from "../ui";
+export { parseSourceDoc, parseSourceDocs } from "../domains/features/parse-source-doc";
+export { resolveFeatures, normalizeTraitValue, stripWikilink } from "../domains/features/resolver";
+export { PendingChoiceRow } from "../components/pending-choice-row";
+export { Markdown } from "../components/markdown";
+export { parseTableBlock } from "../domains/tables/parse-table-block";
+export { substituteExpressions } from "../domains/tables/expressions";

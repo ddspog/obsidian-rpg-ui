@@ -1,11 +1,14 @@
 import * as React from "react";
 import {
   EntityBlock,
+  FeatureAspect,
+  FeatureDetails,
+  Markdown,
   PendingChoiceRow,
+  ResolvedSource,
+  ResolvedView,
   resolveFeatures,
   CharacterDecl,
-  FeatureDetails,
-  ResolvedSource,
 } from "rpg-ui-toolkit";
 import { CharacterEntity } from "../../entities/character.types";
 import type { HeaderProps } from "./header.types";
@@ -29,33 +32,9 @@ function pillStem(p: { file?: unknown } | undefined): string | undefined {
   return stem || undefined;
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function TraitsSection({
-  traits,
-}: {
-  traits: Record<string, string[]>;
-}) {
-  const entries = Object.entries(traits);
-  if (entries.length === 0) return null;
-  return (
-    <section className="rpg-feature-traits" aria-label="Aggregated Traits">
-      <h4>Traits</h4>
-      <dl>
-        {entries.map(([key, values]) => (
-          <React.Fragment key={key}>
-            <dt>{key}</dt>
-            <dd>{values.join(" ")}</dd>
-          </React.Fragment>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
-/** Format `max` for display — scalar passes through, level map picks the
- *  highest entry whose level <= the character's level. */
-function maxAtLevel(max: FeatureDetails["max"], characterLevel?: number): string {
+/** Pretty-print a resource `max` — scalar passes through; per-level map picks
+ *  the value whose level is highest while still ≤ the character's level. */
+function maxAtLevel(max: FeatureAspect["max"], characterLevel?: number): string {
   if (max == null) return "—";
   if (typeof max === "number") return String(max);
   const entries = Object.entries(max)
@@ -71,55 +50,191 @@ function maxAtLevel(max: FeatureDetails["max"], characterLevel?: number): string
   return String(chosen);
 }
 
-function ResourcesSection({
-  resources,
-  characterLevel,
-}: {
-  resources: FeatureDetails[];
-  characterLevel?: number;
-}) {
-  if (resources.length === 0) return null;
+// ─── Bucketing ───────────────────────────────────────────────────────────────
+
+/**
+ * Accordion buckets in display order. Each id is both a valid `type:` value
+ * and a valid aspect sub-key on `FeatureDetails`.
+ */
+const BUCKETS: Array<{ id: BucketId; label: string }> = [
+  { id: "action", label: "Action" },
+  { id: "bonus", label: "Bonus Action" },
+  { id: "reaction", label: "Reaction" },
+  { id: "active", label: "Active" },
+  { id: "passive", label: "Passive" },
+  { id: "resource", label: "Resource" },
+];
+type BucketId = "action" | "bonus" | "reaction" | "active" | "passive" | "resource";
+const BUCKET_IDS = new Set<string>(BUCKETS.map((b) => b.id));
+
+interface BucketEntry {
+  feature: FeatureDetails;
+  aspect: FeatureAspect;
+  bucket: BucketId;
+  source: string;
+  level?: number;
+}
+
+/**
+ * Classify each resolved feature into zero or more buckets:
+ *  - every aspect sub-object on the feature emits its own entry in that bucket
+ *  - a feature without any aspect falls back to its `type:` (backwards compat)
+ *  - resource shorthand: `max:`/`recovery:` on the parent places the feature
+ *    in the Resource bucket when no `resource:` aspect was declared
+ *
+ * Features that match none of those rules are intentionally skipped — their
+ * contributions (trait maps, pick prompts, spellcasting configs) already
+ * surface in the Traits bucket, the "Choices to make" section, or dedicated
+ * renderers. No generic catch-all bucket.
+ */
+function bucketize(sources: ResolvedSource[]): Record<string, BucketEntry[]> {
+  const byBucket: Record<string, BucketEntry[]> = {};
+
+  for (const src of sources) {
+    for (const feature of src.features) {
+      let placed = false;
+
+      for (const { id } of BUCKETS) {
+        const raw = (feature as unknown as Record<string, unknown>)[id];
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          (byBucket[id] ??= []).push({
+            feature,
+            aspect: raw as FeatureAspect,
+            bucket: id,
+            source: src.source,
+            level: src.level,
+          });
+          placed = true;
+        }
+      }
+
+      if (!placed && feature.type && BUCKET_IDS.has(feature.type)) {
+        const bucket = feature.type as BucketId;
+        (byBucket[bucket] ??= []).push({
+          feature,
+          aspect: {},
+          bucket,
+          source: src.source,
+          level: src.level,
+        });
+        placed = true;
+      }
+
+      if (!placed && feature.max != null) {
+        (byBucket.resource ??= []).push({
+          feature,
+          aspect: { max: feature.max, recovery: feature.recovery },
+          bucket: "resource",
+          source: src.source,
+          level: src.level,
+        });
+      }
+    }
+  }
+
+  return byBucket;
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function EntryRow({ entry, characterLevel }: { entry: BucketEntry; characterLevel?: number }) {
+  const { feature, aspect, source, level } = entry;
+  const displayName = aspect.name ?? feature.name;
+  const cardText = aspect.text ?? feature.text;
+  const isResource = entry.bucket === "resource";
+
   return (
-    <section className="rpg-feature-resources" aria-label="Resources">
-      <h4>Resources</h4>
-      <dl>
-        {resources.map((r) => (
-          <React.Fragment key={r.name}>
-            <dt>{r.name}</dt>
-            <dd>
-              {maxAtLevel(r.max, characterLevel)}
-              {r.recovery && <small> · {r.recovery}</small>}
-            </dd>
-          </React.Fragment>
-        ))}
-      </dl>
-    </section>
+    <li className="rpg-feature-bucket-entry">
+      <header>
+        <strong>{displayName}</strong>
+        {feature.subtitle && <small aria-details="Feature Subtitle">{feature.subtitle}</small>}
+        {feature.level != null && !feature.subtitle && (
+          <small aria-details="Feature Level">Lv. {feature.level}</small>
+        )}
+        {aspect.resource && (
+          <small aria-details="Resource Consumed">⟶ {aspect.resource}</small>
+        )}
+        {aspect.recharge && (
+          <small aria-details="Recharge">↻ {aspect.recharge}</small>
+        )}
+        {isResource && aspect.max != null && (
+          <small aria-details="Resource Max">Max: {maxAtLevel(aspect.max, characterLevel)}</small>
+        )}
+        {(isResource || aspect.resource != null) && aspect.recovery && (
+          <small aria-details="Resource Recovery">Recovery: {aspect.recovery}</small>
+        )}
+        <small aria-details="Feature Source" className="rpg-feature-bucket-source">
+          · {source}
+          {level != null && ` Lv ${level}`}
+        </small>
+      </header>
+      {cardText && <Markdown source={cardText} className="rpg-feature-bucket-text" />}
+    </li>
   );
 }
 
-function SourceGroup({ src }: { src: ResolvedSource }) {
-  // Resource-typed features render in the dedicated Resources section, so
-  // hide them from the per-source feature list.
-  const features = src.features.filter((f) => f.type !== "resource");
+function Bucket({
+  id,
+  label,
+  entries,
+  characterLevel,
+}: {
+  id: string;
+  label: string;
+  entries: BucketEntry[];
+  characterLevel?: number;
+}) {
+  if (entries.length === 0) return null;
   return (
-    <section className="rpg-feature-source" aria-label={`Source ${src.source}`}>
-      <hgroup className={`rpg-feature-source-header rpg-feature-source-${src.kind}`}>
-        <h4>{src.source}</h4>
-        {src.level != null && <p><small>Lv. {src.level}</small></p>}
-      </hgroup>
+    <details className={`rpg-feature-bucket rpg-feature-bucket-${id}`}>
+      <summary>
+        <span className="rpg-feature-bucket-label">{label}</span>
+        <span className="rpg-feature-bucket-count">{entries.length}</span>
+      </summary>
+      <ul>
+        {entries.map((entry, i) => (
+          <EntryRow key={i} entry={entry} characterLevel={characterLevel} />
+        ))}
+      </ul>
+    </details>
+  );
+}
 
-      {features.length > 0 && (
-        <ul aria-label="Source Features">
-          {features.map((f, i) => (
-            <li key={i} className="rpg-feature-entry">
-              <strong>{f.name}</strong>
-              {f.subtitle && <small> · {f.subtitle}</small>}
-              {f.type && <small> · {f.type.replace(/_/g, " ")}</small>}
-              {f.uses != null && <small> · {f.uses} use{f.uses === 1 ? "" : "s"}</small>}
-            </li>
-          ))}
-        </ul>
-      )}
+function TraitsBucket({ traits }: { traits: Record<string, string[]> }) {
+  const entries = Object.entries(traits);
+  if (entries.length === 0) return null;
+  return (
+    <details className="rpg-feature-bucket rpg-feature-bucket-traits">
+      <summary>
+        <span className="rpg-feature-bucket-label">Traits</span>
+        <span className="rpg-feature-bucket-count">{entries.length}</span>
+      </summary>
+      <dl>
+        {entries.map(([key, values]) => (
+          <React.Fragment key={key}>
+            <dt>{key}</dt>
+            <dd>{values.join(" ")}</dd>
+          </React.Fragment>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
+function FeaturesAccordion({ view, characterLevel }: { view: ResolvedView; characterLevel?: number }) {
+  const byBucket = React.useMemo(() => bucketize(view.sources), [view.sources]);
+  return (
+    <section className="rpg-feature-accordion" aria-label="Features by Type">
+      {BUCKETS.map(({ id, label }) => (
+        <Bucket
+          key={id}
+          id={id}
+          label={label}
+          entries={byBucket[id] ?? []}
+          characterLevel={characterLevel}
+        />
+      ))}
+      <TraitsBucket traits={view.traits} />
     </section>
   );
 }
@@ -147,16 +262,8 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
   };
 
   const view = resolveFeatures(decl, lib);
+  const characterLevel = (header.classes ?? [])[0]?.level;
 
-  // Pull resource-typed features out of the resolved sources for the
-  // dedicated Resources section. They still appear in `view.sources`, but
-  // SourceGroup hides them from the per-source list.
-  const resources = view.sources.flatMap((s) =>
-    s.features.filter((f) => f.type === "resource"),
-  );
-
-  // Build a toggle handler if the wrapper exposes setChoices. Picking adds
-  // the option to the slot; clicking an already-picked option removes it.
   const setChoices = (self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }).setChoices;
   const makeToggle = (source: string, featureName: string) =>
     setChoices
@@ -183,15 +290,10 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
 
   return (
     <article aria-label="Character Features" className="rpg-feature-source-groups">
-      <ResourcesSection
-        resources={resources}
-        characterLevel={(header.classes ?? [])[0]?.level}
-      />
-      <TraitsSection traits={view.traits} />
       {view.sources.length === 0 ? (
         <p aria-details="No Sources"><em>No class, lineage, or background declared.</em></p>
       ) : (
-        view.sources.map((src) => <SourceGroup key={`${src.source}:${src.kind}`} src={src} />)
+        <FeaturesAccordion view={view} characterLevel={characterLevel} />
       )}
       {view.pendingChoices.length > 0 && (
         <section aria-label="Pending Choices" className="rpg-feature-pending-list">

@@ -663,6 +663,15 @@ export interface FeatureLevelAddition {
   traits?: TraitMap;
 }
 
+export interface FeatureAspect {
+  name?: string;
+  text?: string;
+  resource?: string;
+  max?: number | Record<number, number>;
+  recovery?: string;
+  recharge?: string;
+}
+
 export interface FeatureDetails {
   name: string;
   subtitle?: string;
@@ -678,6 +687,12 @@ export interface FeatureDetails {
   max?: number | Record<number, number>;
   recovery?: string;
   uses_resource?: string;
+  action?: FeatureAspect;
+  bonus?: FeatureAspect;
+  reaction?: FeatureAspect;
+  active?: FeatureAspect;
+  passive?: FeatureAspect;
+  resource?: FeatureAspect;
 }
 
 export interface FeatureChoiceOption {

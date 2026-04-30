@@ -3462,6 +3462,22 @@ section[aria-label="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
   z-index: 1;
 }
 
+/* lib/styles/components/tag-heading.css */
+.rpg-tag-heading {
+  --_cut: var(--rpg-tag-cut, 10px);
+  --_bg: var(--rpg-tag-bg, light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.22)));
+  --_border: var(--rpg-tag-border, light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25)));
+  filter: drop-shadow(1px 0 0 var(--_border)) drop-shadow(-1px 0 0 var(--_border)) drop-shadow(0 1px 0 var(--_border)) drop-shadow(0 -1px 0 var(--_border));
+}
+.rpg-tag-heading > * {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px calc(var(--_cut) + 6px) 4px 8px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--_cut)), calc(100% - var(--_cut)) 100%, 0 100%);
+  background: var(--_bg);
+}
+
 /* lib/styles/components/senses-row.css */
 section[aria-label="Character Senses"] {
   container-type: inline-size;
@@ -3675,6 +3691,175 @@ div:has(> section[aria-label="Character Senses"]) + div > section[aria-label="Ch
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
+/* lib/styles/components/attacks-row.css */
+section[aria-label="Favorite Attacks"] {
+  position: relative;
+  padding: 0 12px;
+  margin-inline: 16px;
+  border-left: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-right: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+section[aria-label="Character Skills"]:has(+ section[aria-label="Favorite Attacks"]) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+section[aria-label="Character Skills"] + section[aria-label="Favorite Attacks"] {
+  margin-block-start: 0;
+}
+section[aria-label="Favorite Attacks"]:has(+ section[aria-label="Character Proficiencies"]) {
+  margin-block-end: 0;
+}
+section[aria-label="Favorite Attacks"] + section[aria-label="Character Proficiencies"] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+div:has(> section[aria-label="Character Skills"]):has(+ div > section[aria-label="Favorite Attacks"]) > section[aria-label="Character Skills"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+div:has(> section[aria-label="Favorite Attacks"]):has(+ div > section[aria-label="Character Proficiencies"]) > section[aria-label="Favorite Attacks"] {
+  margin-block-end: 0;
+}
+div:has(> section[aria-label="Favorite Attacks"]) + div > section[aria-label="Character Proficiencies"] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+section[aria-label="Favorite Attacks"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  margin: 0 -12px;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-attacks-header, light-dark(#6a4e2a, #d4a840));
+}
+section[aria-label="Favorite Attacks"] > header > span {
+  clip-path: none;
+  padding: 2px 12px;
+}
+section[aria-label="Favorite Attacks"] table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+section[aria-label="Favorite Attacks"] thead th {
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(#6a4e2a, #d4a840);
+  text-align: left;
+  padding: 6px 6px 4px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+section[aria-label="Favorite Attacks"] tbody tr + tr > td {
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+}
+section[aria-label="Favorite Attacks"] tbody td {
+  padding: 6px;
+  font-size: 0.9em;
+  color: light-dark(#1a1208, #e3dcce);
+  vertical-align: baseline;
+}
+section[aria-label="Favorite Attacks"] th[aria-label=Icon],
+section[aria-label="Favorite Attacks"] .rpg-attack-icon {
+  width: 24px;
+  padding: 4px 2px;
+  text-align: center;
+  color: light-dark(#8a7a5a, #a09880);
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-icon svg {
+  display: block;
+  opacity: 0.6;
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-hit {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-range {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: light-dark(#5a5040, #a09880);
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-damage {
+  font-weight: 600;
+  white-space: nowrap;
+}
+section[aria-label="Favorite Attacks"] .rpg-attack-notes {
+  color: light-dark(#5a5040, #a09880);
+  font-size: 0.85em;
+}
+
+/* lib/styles/components/proficiencies-row.css */
+section[aria-label="Character Proficiencies"] {
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+section[aria-label="Character Proficiencies"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-proficiencies-header, light-dark(#6a4e2a, #d4a840));
+}
+section[aria-label="Character Proficiencies"] > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+section[aria-label="Character Proficiencies"] > dl {
+  margin: 0;
+  padding: 8px 12px;
+  column-count: 2;
+  column-gap: 24px;
+}
+section[aria-label="Character Proficiencies"] > dl > div {
+  break-inside: avoid;
+  margin-bottom: 6px;
+}
+section[aria-label="Character Proficiencies"] > dl dt {
+  font-size: 1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-proficiencies-header, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.4;
+  padding: 2px 20px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+section[aria-label="Character Proficiencies"] > dl dd {
+  margin: -1px 0 0 20px;
+  padding: 2px 20px 2px 8px;
+  border-left: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  font-size: 1em;
+  font-weight: 600;
+  color: light-dark(#1a1208, #e3dcce);
+  line-height: 1.4;
+}
+section[aria-label="Character Proficiencies"] > dl dd [aria-details="Link Pill"] {
+  font-size: inherit;
+}
+
 /* lib/styles/components/feature-card.css */
 .rpg-feature-card {
   --rpg-feature-marker-color: var(--text-accent, #7c2d12);
@@ -3836,6 +4021,156 @@ div:has(> section[aria-label="Character Senses"]) + div > section[aria-label="Ch
   font-style: italic;
   color: var(--text-muted);
   font-size: var(--font-ui-small);
+}
+
+/* lib/styles/components/feature-accordion.css */
+.rpg-feature-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3, 0.375rem);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: var(--size-2-2, 0.25rem);
+}
+.rpg-feature-bucket {
+  background: var(--background-secondary);
+  border-radius: var(--radius-m, 6px);
+  border-left: 3px solid var(--interactive-accent);
+  overflow: hidden;
+}
+.rpg-feature-bucket-action {
+  border-left-color: var(--color-red, #c33);
+}
+.rpg-feature-bucket-bonus_action {
+  border-left-color: var(--color-orange, #e08a00);
+}
+.rpg-feature-bucket-reaction {
+  border-left-color: var(--color-cyan, #1f6feb);
+}
+.rpg-feature-bucket-free_action {
+  border-left-color: var(--color-yellow, #e0ac00);
+}
+.rpg-feature-bucket-resource {
+  border-left-color: var(--color-purple, #8957e5);
+}
+.rpg-feature-bucket-passive {
+  border-left-color: var(--color-green, #2ea043);
+}
+.rpg-feature-bucket-other {
+  border-left-color: var(--background-modifier-border);
+}
+.rpg-feature-bucket-traits {
+  border-left-color: var(--text-muted);
+}
+.rpg-feature-bucket summary {
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-2, 0.5rem);
+  list-style: none;
+  user-select: none;
+}
+.rpg-feature-bucket summary::-webkit-details-marker,
+.rpg-feature-bucket summary::marker {
+  display: none;
+  content: "";
+}
+.rpg-feature-bucket summary::before {
+  content: "\25b8";
+  display: inline-block;
+  margin-right: var(--size-2-2, 0.25rem);
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+.rpg-feature-bucket[open] summary::before {
+  transform: rotate(90deg);
+}
+.rpg-feature-bucket-label {
+  flex: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--font-ui-small);
+}
+.rpg-feature-bucket-count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-feature-bucket ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--size-4-3, 0.75rem) var(--size-4-3, 0.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3, 0.375rem);
+}
+.rpg-feature-bucket-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2, 0.25rem);
+  font-size: var(--font-ui-small);
+  padding: var(--size-2-3, 0.375rem) 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.rpg-feature-bucket-entry:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.rpg-feature-bucket-entry header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-4-2, 0.5rem);
+  margin: 0;
+}
+.rpg-feature-bucket-entry strong {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.rpg-feature-bucket-entry small {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.rpg-feature-bucket-entry .rpg-feature-bucket-source {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-style: italic;
+}
+.rpg-feature-bucket-text {
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+.rpg-feature-bucket-text p:first-child {
+  margin-top: 0;
+}
+.rpg-feature-bucket-text p:last-child {
+  margin-bottom: 0;
+}
+.rpg-feature-bucket-traits dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--size-4-3, 0.75rem);
+  row-gap: var(--size-2-2, 0.25rem);
+  margin: 0;
+  padding: 0 var(--size-4-3, 0.75rem) var(--size-4-3, 0.75rem);
+  font-size: var(--font-ui-small);
+}
+.rpg-feature-bucket-traits dt {
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--font-ui-smaller);
+}
+.rpg-feature-bucket-traits dd {
+  margin: 0;
+  color: var(--text-normal);
 }
 
 /* lib/styles/components/features-source-groups.css */

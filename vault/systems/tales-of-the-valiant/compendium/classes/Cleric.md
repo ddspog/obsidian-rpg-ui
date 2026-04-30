@@ -234,14 +234,14 @@ choose:
 name: Channel Divinity
 subtitle: "2nd, 6th, 13th, and 18th-Level Cleric Feature"
 level: 2
-resources:
+resource:
   max:
     2: 1
     6: 2
     13: 3
     18: 4
   recovery: short or long rest
-actions:
+action:
   name: Turn the Profane
   resource: Channel Divinity
   text: |
