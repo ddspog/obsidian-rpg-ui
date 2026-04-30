@@ -241,6 +241,7 @@ resource:
     13: 3
     18: 4
   recovery: short or long rest
+  text: You gain the ability to channel divine energy directly from your deity to produce effects beyond spells. When you use your Channel Divinity feature, choose which specific effect you want. Some effects require a save; the DC is equal to your cleric spell save DC.
 action:
   name: Turn the Profane
   resource: Channel Divinity

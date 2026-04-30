@@ -25,7 +25,7 @@ text: |
   As an action, you present your holy symbol and evoke healing energy that can restore a number of hit points equal to 5 × your cleric level.
 
   Choose any creatures within 30 feet of you and divide those hit points among them. This feature can restore a creature to no more than half of its hit point maximum. This healing has no effect on Undead or Constructs.
-active:
+action:
   name: Preserve Life
   resource: Channel Divinity
   text: |
@@ -83,7 +83,7 @@ text: |
   - End one of the following conditions affecting the target: [[blinded]], [[deafened]], [[paralyzed]], or [[poisoned]]. 
   - Neutralize all poisons affecting the target.
 update:
-  active: Preserve Life
+  action: Preserve Life
   text: |
     As an action, you present your holy symbol and evoke healing energy that can restore a number of hit points equal to 5 × your cleric level.
 

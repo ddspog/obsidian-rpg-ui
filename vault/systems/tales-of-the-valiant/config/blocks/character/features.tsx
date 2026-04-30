@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   EntityBlock,
+  EvalContext,
   FeatureAspect,
   FeatureDetails,
   Markdown,
@@ -137,23 +138,29 @@ function bucketize(sources: ResolvedSource[]): Record<string, BucketEntry[]> {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function EntryRow({ entry, characterLevel }: { entry: BucketEntry; characterLevel?: number }) {
+function EntryRow({
+  entry,
+  characterLevel,
+  context,
+}: {
+  entry: BucketEntry;
+  characterLevel?: number;
+  context?: EvalContext;
+}) {
   const { feature, aspect, source, level } = entry;
   const displayName = aspect.name ?? feature.name;
-  const cardText = aspect.text ?? feature.text;
   const isResource = entry.bucket === "resource";
+  // Resource entries render their own aspect text only; the parent feature's
+  // long prose belongs to the Action/Passive aspects, not the bare pool.
+  const cardText = isResource ? aspect.text : (aspect.text ?? feature.text);
 
   return (
     <li className="rpg-feature-bucket-entry">
-      <header>
-        <strong>{displayName}</strong>
-        {feature.subtitle && <small aria-details="Feature Subtitle">{feature.subtitle}</small>}
-        {feature.level != null && !feature.subtitle && (
-          <small aria-details="Feature Level">Lv. {feature.level}</small>
-        )}
-        {aspect.resource && (
-          <small aria-details="Resource Consumed">⟶ {aspect.resource}</small>
-        )}
+      <strong className="rpg-feature-bucket-entry-name">{displayName}</strong>
+      <div className="rpg-feature-bucket-entry-meta">
+        <small aria-details="Feature Source" className="rpg-feature-bucket-source">
+          {source}
+        </small>
         {aspect.recharge && (
           <small aria-details="Recharge">↻ {aspect.recharge}</small>
         )}
@@ -163,12 +170,15 @@ function EntryRow({ entry, characterLevel }: { entry: BucketEntry; characterLeve
         {(isResource || aspect.resource != null) && aspect.recovery && (
           <small aria-details="Resource Recovery">Recovery: {aspect.recovery}</small>
         )}
-        <small aria-details="Feature Source" className="rpg-feature-bucket-source">
-          · {source}
-          {level != null && ` Lv ${level}`}
-        </small>
-      </header>
-      {cardText && <Markdown source={cardText} className="rpg-feature-bucket-text" />}
+      </div>
+      <figure className="rpg-feature-bucket-entry-image" aria-hidden="true" />
+      {cardText && (
+        <Markdown
+          source={cardText}
+          context={context}
+          className="rpg-feature-bucket-entry-desc"
+        />
+      )}
     </li>
   );
 }
@@ -178,11 +188,13 @@ function Bucket({
   label,
   entries,
   characterLevel,
+  context,
 }: {
   id: string;
   label: string;
   entries: BucketEntry[];
   characterLevel?: number;
+  context?: EvalContext;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -193,7 +205,7 @@ function Bucket({
       </summary>
       <ul>
         {entries.map((entry, i) => (
-          <EntryRow key={i} entry={entry} characterLevel={characterLevel} />
+          <EntryRow key={i} entry={entry} characterLevel={characterLevel} context={context} />
         ))}
       </ul>
     </details>
@@ -221,7 +233,15 @@ function TraitsBucket({ traits }: { traits: Record<string, string[]> }) {
   );
 }
 
-function FeaturesAccordion({ view, characterLevel }: { view: ResolvedView; characterLevel?: number }) {
+function FeaturesAccordion({
+  view,
+  characterLevel,
+  context,
+}: {
+  view: ResolvedView;
+  characterLevel?: number;
+  context?: EvalContext;
+}) {
   const byBucket = React.useMemo(() => bucketize(view.sources), [view.sources]);
   return (
     <section className="rpg-feature-accordion" aria-label="Features by Type">
@@ -232,6 +252,7 @@ function FeaturesAccordion({ view, characterLevel }: { view: ResolvedView; chara
           label={label}
           entries={byBucket[id] ?? []}
           characterLevel={characterLevel}
+          context={context}
         />
       ))}
       <TraitsBucket traits={view.traits} />
@@ -245,6 +266,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
   self,
   blocks,
   lookup,
+  frontmatter,
 }) => {
   const lib = lookup.$compendium;
   const header = (blocks.header ?? {}) as Partial<HeaderProps>;
@@ -262,7 +284,49 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
   };
 
   const view = resolveFeatures(decl, lib);
-  const characterLevel = (header.classes ?? [])[0]?.level;
+  const primaryClass = (header.classes ?? [])[0];
+  const characterLevel = primaryClass?.level;
+
+  /* Build the expression context handed to every feature-card <Markdown>:
+   *   - `tables` comes from the resolved view (every loaded source's tables
+   *     keyed by bare `<name>` and fully-qualified `<source>:<name>`).
+   *   - `vars` carries common identifiers authors use in `{{ … }}`
+   *     expressions: class level, ability scores + modifiers, PB. Frontmatter
+   *     is the source of truth; sensible defaults keep things rendering when
+   *     a character file hasn't filled in every stat yet. */
+  const context: EvalContext = React.useMemo(() => {
+    const fm = (frontmatter ?? {}) as Record<string, unknown>;
+    const num = (key: string, fallback: number) => {
+      const v = fm[key];
+      const n = typeof v === "number" ? v : Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const mod = (score: number) => Math.floor((score - 10) / 2);
+    const str = num("strength", 10);
+    const dex = num("dexterity", 10);
+    const con = num("constitution", 10);
+    const intel = num("intelligence", 10);
+    const wis = num("wisdom", 10);
+    const cha = num("charisma", 10);
+    const lv = characterLevel ?? num("level", 1);
+
+    return {
+      tables: view.tables,
+      vars: {
+        LV: lv,
+        CLASS_LEVEL: lv,
+        CLASS: primaryClass?.name ?? "",
+        PB: num("proficiency_bonus", 2),
+        STR: str, DEX: dex, CON: con, INT: intel, WIS: wis, CHA: cha,
+        STR_MOD: mod(str),
+        DEX_MOD: mod(dex),
+        CON_MOD: mod(con),
+        INT_MOD: mod(intel),
+        WIS_MOD: mod(wis),
+        CHA_MOD: mod(cha),
+      },
+    };
+  }, [view.tables, characterLevel, primaryClass, frontmatter]);
 
   const setChoices = (self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }).setChoices;
   const makeToggle = (source: string, featureName: string) =>
@@ -289,11 +353,11 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
       : undefined;
 
   return (
-    <article aria-label="Character Features" className="rpg-feature-source-groups">
+    <section aria-label="Character Features" className="rpg-feature-source-groups">
       {view.sources.length === 0 ? (
         <p aria-details="No Sources"><em>No class, lineage, or background declared.</em></p>
       ) : (
-        <FeaturesAccordion view={view} characterLevel={characterLevel} />
+        <FeaturesAccordion view={view} characterLevel={characterLevel} context={context} />
       )}
       {view.pendingChoices.length > 0 && (
         <section aria-label="Pending Choices" className="rpg-feature-pending-list">
@@ -307,7 +371,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
           ))}
         </section>
       )}
-    </article>
+    </section>
   );
 };
 

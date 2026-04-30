@@ -64,24 +64,81 @@ export class TFile {
   }
 }
 
-/** MarkdownRenderer stub — parses [[link|alias]] and creates a real internal-link anchor.
- *  Pill.Link unwraps the first a.internal-link it finds; plain DOM is enough here.
- */
+/** MarkdownRenderer stub — renders a subset of markdown inline for Storybook.
+ *  Obsidian's real renderer handles far more, but this stub covers the
+ *  patterns feature-card descriptions actually use: paragraphs, line breaks,
+ *  wikilinks (`[[X]]` / `[[X|Y]]`), bold (`**x**`), italic (`*x*` / `_x_`),
+ *  inline code (`` `x` ``), unordered lists (`- …`), and h1–h6 headings.
+ *  Everything else comes through as plain text. */
+const escapeHtml = (s) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function renderInline(text) {
+  // Wikilinks first — they're greedy brackets and shouldn't be turned into
+  // other constructs. Followed by emphasis and inline code.
+  let out = escapeHtml(text);
+  out = out.replace(
+    /\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]/g,
+    (_, link, alias) =>
+      `<a class="internal-link" href="${link}">${alias || link}</a>`,
+  );
+  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+  out = out.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/(^|[^*])\*([^*\n][^*]*?)\*(?!\*)/g, "$1<em>$2</em>");
+  out = out.replace(/(^|[^_])_([^_\n][^_]*?)_(?!_)/g, "$1<em>$2</em>");
+  return out;
+}
+
+function renderMarkdownToHtml(md) {
+  const blocks = [];
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Blank — skip, acts as paragraph separator.
+    if (!line.trim()) { i++; continue; }
+
+    // Heading
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      blocks.push(`<h${h[1].length}>${renderInline(h[2])}</h${h[1].length}>`);
+      i++;
+      continue;
+    }
+
+    // Unordered list — a run of lines starting with `- ` or `* `.
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        items.push(`<li>${renderInline(lines[i].replace(/^\s*[-*]\s+/, ""))}</li>`);
+        i++;
+      }
+      blocks.push(`<ul>${items.join("")}</ul>`);
+      continue;
+    }
+
+    // Paragraph — collect until a blank line or a block marker.
+    const para = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^#{1,6}\s+/.test(lines[i]) &&
+      !/^\s*[-*]\s+/.test(lines[i])
+    ) {
+      para.push(lines[i]);
+      i++;
+    }
+    blocks.push(`<p>${renderInline(para.join("\n")).replace(/\n/g, "<br>")}</p>`);
+  }
+  return blocks.join("");
+}
+
 export const MarkdownRenderer = {
-  render: async () => {},
+  render: async (_app, md, el) => {
+    el.innerHTML = renderMarkdownToHtml(String(md ?? ""));
+  },
   renderMarkdown: async (md, el, _sourcePath, _comp) => {
-    const match = md.match(/\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]/);
-    if (!match) return;
-    const [, link, alias] = match;
-    const a = document.createElement("a");
-    a.className = "internal-link";
-    a.setAttribute("href", link);
-    a.textContent = alias || link;
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log(`[Story] Navigate → ${link}`);
-    });
-    el.appendChild(a);
+    el.innerHTML = renderMarkdownToHtml(String(md ?? ""));
   },
 };
 
