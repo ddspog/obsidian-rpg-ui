@@ -16,7 +16,7 @@
  * unchanged to `<thead>`.
  */
 
-import type { TableCell, TableDef, TableRow } from "./types";
+import type { FooterCell, FooterRow, FooterSegment, TableCell, TableDef, TableRow } from "./types";
 
 /** Normalise a column label into a stable key: lowercase, non-alphanum → `_`. */
 export function normalizeColumnKey(label: string): string {
@@ -87,6 +87,151 @@ function parseFooter(
 }
 
 /**
+ * Detect a `|= … =|` roll-footer row. Must begin with `|=` and end with
+ * `=|` (tolerating surrounding whitespace). Distinct from a `||`-prefixed
+ * colspan row since the `=` suffix is required.
+ */
+function isFooterRollLine(line: string): boolean {
+  const t = line.trim();
+  return t.startsWith("|=") && t.endsWith("=|");
+}
+
+/**
+ * Parse the inside of `{{ roll[ : … ] }}`. Grammar:
+ *
+ *   roll                                   — default: roll on key column,
+ *                                            show every non-weight column
+ *   roll : <target>[, <target>…]           — specific target columns
+ *   roll : … by = <col>                    — override weight column
+ *   roll by = <col>                        — bare roll, custom weight col
+ *
+ * Targets and the `by=` value can be bare identifiers (single word, no
+ * spaces) or single-quoted strings (`'Adventuring Motivation'`) for labels
+ * with spaces or capitals. Column refs are normalised to the same keying
+ * scheme as the table's `columns` field so the renderer can look them up.
+ *
+ * Returns null when the expression isn't a well-formed `roll` call.
+ */
+function parseRollExpression(inner: string): { targets: string[]; by?: string } | null {
+  const src = inner.trim();
+  let i = 0;
+
+  function skipWs(): void {
+    while (i < src.length && /\s/.test(src[i])) i++;
+  }
+
+  function readColumnRef(): string | null {
+    if (src[i] === "'") {
+      i++;
+      let out = "";
+      while (i < src.length && src[i] !== "'") out += src[i++];
+      if (src[i] !== "'") return null;
+      i++;
+      return normalizeColumnKey(out);
+    }
+    const m = src.slice(i).match(/^[A-Za-z_][A-Za-z0-9_]*/);
+    if (!m) return null;
+    i += m[0].length;
+    return normalizeColumnKey(m[0]);
+  }
+
+  skipWs();
+  const helperMatch = src.slice(i).match(/^roll\b/);
+  if (!helperMatch) return null;
+  i += helperMatch[0].length;
+  skipWs();
+
+  const targets: string[] = [];
+  let by: string | undefined;
+
+  // Optional `:` introducing the target list. When absent, the target list
+  // stays empty → renderer interprets as "all non-weight columns".
+  if (src[i] === ":") {
+    i++;
+    skipWs();
+    const first = readColumnRef();
+    if (!first) return null;
+    targets.push(first);
+    skipWs();
+
+    while (src[i] === ",") {
+      i++;
+      skipWs();
+      const next = readColumnRef();
+      if (!next) return null;
+      targets.push(next);
+      skipWs();
+    }
+  }
+
+  // Optional `by=<col>` kwarg (works with or without a target list).
+  if (i < src.length) {
+    const kw = src.slice(i).match(/^by\s*=\s*/);
+    if (!kw) return null;
+    i += kw[0].length;
+    skipWs();
+    const byCol = readColumnRef();
+    if (!byCol) return null;
+    by = byCol;
+    skipWs();
+  }
+
+  if (i < src.length) return null; // trailing garbage
+  return { by, targets };
+}
+
+/**
+ * Tokenize a footer cell body into `{ kind: "text" | "roll" }` segments.
+ * Literal text outside `{{ }}` becomes a text segment; a well-formed
+ * `{{ roll : … }}` becomes a roll segment. A `{{ … }}` that isn't a roll
+ * expression is preserved verbatim as text so the raw author intent
+ * round-trips (the same policy `substituteExpressions` uses).
+ */
+function tokenizeFooterCell(body: string): FooterSegment[] {
+  const out: FooterSegment[] = [];
+  const re = /\{\{([^{}]+)\}\}/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(body)) !== null) {
+    if (match.index > lastIndex) {
+      out.push({ kind: "text", text: body.slice(lastIndex, match.index) });
+    }
+    const parsed = parseRollExpression(match[1]);
+    if (parsed) {
+      out.push({ kind: "roll", targets: parsed.targets, by: parsed.by });
+    } else {
+      // Unknown expression — keep verbatim so other helpers downstream
+      // (e.g. `substituteExpressions`) still see it.
+      out.push({ kind: "text", text: match[0] });
+    }
+    lastIndex = re.lastIndex;
+  }
+
+  if (lastIndex < body.length) {
+    out.push({ kind: "text", text: body.slice(lastIndex) });
+  }
+  return out;
+}
+
+/**
+ * Parse a `|= … =|` line into a FooterRow. Inner cells are split on
+ * unescaped `|`. Each cell body is then tokenized into markdown + roll
+ * segments. Leading/trailing whitespace on each cell is preserved on the
+ * surrounding text segments so authored spacing round-trips.
+ */
+function parseFooterRollLine(line: string): FooterRow {
+  const t = line.trim();
+  // Strip `|=` prefix and `=|` suffix.
+  const inner = t.slice(2, -2);
+  const parts = inner.split("|");
+  const cells: FooterCell[] = parts.map((body) => ({
+    segments: tokenizeFooterCell(body),
+  }));
+  return { cells };
+}
+
+/**
  * Parse the body of a `rpg table.<name>` fence.
  *
  * Key column resolution: a header cell ending in `*` (e.g. `LEVEL*`) marks
@@ -97,13 +242,19 @@ function parseFooter(
 export function parseTableBlock(name: string, body: string): TableDef {
   const lines = body.split("\n");
 
-  // ── Split into: table lines, footer ──
+  // ── Split into: table lines, footer caption, roll-footer rows ──
   const tableLines: string[] = [];
+  const footerRollLines: string[] = [];
   let footer: { caption: string; classes: string[] } | null = null;
 
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line) continue;
+
+    if (isFooterRollLine(line)) {
+      footerRollLines.push(line);
+      continue;
+    }
 
     if (line.trim().startsWith("|")) {
       tableLines.push(line);
@@ -162,5 +313,6 @@ export function parseTableBlock(name: string, body: string): TableDef {
     keyColumn,
     caption: footer?.caption,
     classes: footer?.classes ?? [],
+    footerRows: footerRollLines.map(parseFooterRollLine),
   };
 }

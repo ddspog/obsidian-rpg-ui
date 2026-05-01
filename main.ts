@@ -141,7 +141,15 @@ export default class DndUIToolkitPlugin extends Plugin {
         if (!blockName) blockName = "unnamed";
         try {
           const def = parseTableBlock(blockName, source);
-          renderTableBlock(el, def);
+          const disposers = renderTableBlock(el, def, { filePath: ctx.sourcePath });
+          if (disposers.length > 0) {
+            const child = new (class extends MarkdownRenderChild {
+              onunload(): void {
+                for (const d of disposers) d();
+              }
+            })(el);
+            ctx.addChild(child);
+          }
         } catch (err) {
           console.error("rpg table.* render failed", err);
           el.innerHTML = '<div class="notice">Error rendering rpg table</div>';

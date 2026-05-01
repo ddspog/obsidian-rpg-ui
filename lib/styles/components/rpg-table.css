@@ -28,3 +28,87 @@
 .rpg-table a[href^="#css/"] {
   display: none;
 }
+
+/* ─── Roll-footer rows (|= {{ roll : … }} =|) ──────────────────────────────
+ *
+ * The renderer emits each `|= … =|` row as a `.el-p` sibling immediately
+ * after the `.el-table`, matching the DOM shape the Ribbons theme's
+ * dice-roller rules already target. That shape gets the theme's gold bottom
+ * border, condensed result font, and `text-title` tint for free.
+ *
+ * The extras here layer on the interactive bits the theme doesn't ship:
+ * a subtle pointer affordance, a dice-6 icon revealed on hover as a
+ * `mask-image` background (tinted via the theme's `--text-title` token so
+ * it stays consistent across themes), and a faint separator between cells
+ * on multi-cell footer rows.
+ */
+.rpg-table-footer-row > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+}
+
+.rpg-table-roll-cell {
+  position: relative;
+  flex: 1 1 auto;
+  padding: var(--size-2-2, 6px) var(--size-4-3, 12px);
+  /* Reserve space equal to one line of body text so the row never collapses
+   * to the 2px gold border when the roll result is empty (pre-click or
+   * unresolvable). Keeps scroll layout stable across rolls. */
+  min-height: calc(1em * var(--line-height-normal, 1.5));
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 120ms ease-out;
+}
+
+/* Non-interactive cells (no {{ roll }} inside): render as plain text. */
+.rpg-table-roll-cell-static {
+  cursor: default;
+}
+
+/* Thin vertical divider between cells — only shows between siblings. */
+.rpg-table-roll-cell + .rpg-table-roll-cell {
+  border-left: 1px solid var(--text-title, var(--text-muted));
+}
+
+/* Hover / focus affordance: reveal a dice-6 icon on the right side of the
+ * cell, tinted with text-title so it blends with the theme's accent. */
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: var(--size-4-3, 12px);
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  opacity: 0;
+  background-color: var(--text-title, var(--text-muted));
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1'/><circle cx='15.5' cy='8.5' r='1'/><circle cx='8.5' cy='15.5' r='1'/><circle cx='15.5' cy='15.5' r='1'/><circle cx='12' cy='12' r='1'/></svg>");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1'/><circle cx='15.5' cy='8.5' r='1'/><circle cx='8.5' cy='15.5' r='1'/><circle cx='15.5' cy='15.5' r='1'/><circle cx='12' cy='12' r='1'/></svg>");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  transition: opacity 120ms ease-out;
+  pointer-events: none;
+}
+
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):hover,
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):focus-visible {
+  background-color: color-mix(in srgb, var(--text-title, var(--text-muted)) 8%, transparent);
+  outline: none;
+}
+
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):hover::after,
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):focus-visible::after {
+  opacity: 0.4;
+}
+
+/* Click feedback: quick flash so the re-roll is acknowledged. */
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):active {
+  background-color: color-mix(in srgb, var(--text-title, var(--text-muted)) 16%, transparent);
+}

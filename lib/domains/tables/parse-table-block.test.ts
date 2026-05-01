@@ -113,3 +113,120 @@ describe("parseTableBlock", () => {
     expect(t.rows).toHaveLength(2);
   });
 });
+
+describe("parseTableBlock: |= … =| footer rows", () => {
+  it("parses a single-cell footer with one roll expression", () => {
+    const body = `| dice | Motivation |
+|---|---|
+| 1-2 | First |
+| 3   | Second |
+|= {{ roll : motivation }} =|`;
+    const t = parseTableBlock("npc", body);
+    expect(t.footerRows).toHaveLength(1);
+    expect(t.footerRows[0].cells).toHaveLength(1);
+    expect(t.footerRows[0].cells[0].segments).toEqual([
+      { kind: "text", text: " " },
+      { kind: "roll", targets: ["motivation"] },
+      { kind: "text", text: " " },
+    ]);
+  });
+
+  it("parses a bare {{ roll }} with no target list", () => {
+    const body = `| d8* | Motivation |
+|---|---|
+| 1 | First |
+| 2 | Second |
+|= {{ roll }} =|`;
+    const t = parseTableBlock("npc", body);
+    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({ kind: "roll", targets: [] });
+  });
+
+  it("parses a bare {{ roll by=weight }} with no targets but a by= override", () => {
+    const body = `| k | w | Motivation |
+|---|---|---|
+| a | 1 | First |
+|= {{ roll by=w }} =|`;
+    const t = parseTableBlock("npc", body);
+    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({ kind: "roll", targets: [], by: "w" });
+  });
+
+  it("splits a multi-cell footer on internal pipes", () => {
+    const body = `| dice | name | title |
+|---|---|---|
+| 1 | A | X |
+|= {{ roll : name }} | {{ roll : title }} =|`;
+    const t = parseTableBlock("npc", body);
+    expect(t.footerRows[0].cells).toHaveLength(2);
+    expect(t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll")).toEqual({
+      kind: "roll",
+      targets: ["name"],
+    });
+    expect(t.footerRows[0].cells[1].segments.find((s) => s.kind === "roll")).toEqual({
+      kind: "roll",
+      targets: ["title"],
+    });
+  });
+
+  it("mixes markdown text and roll expressions within one cell", () => {
+    const body = `| dice | name | motivation |
+|---|---|---|
+| 1 | A | X |
+|= You are {{ roll : name }} who desires {{ roll : motivation }}. =|`;
+    const t = parseTableBlock("npc", body);
+    const segs = t.footerRows[0].cells[0].segments;
+    expect(segs).toHaveLength(5);
+    expect(segs[0]).toEqual({ kind: "text", text: " You are " });
+    expect(segs[1]).toEqual({ kind: "roll", targets: ["name"] });
+    expect(segs[2]).toEqual({ kind: "text", text: " who desires " });
+    expect(segs[3]).toEqual({ kind: "roll", targets: ["motivation"] });
+    expect(segs[4]).toEqual({ kind: "text", text: ". " });
+  });
+
+  it("supports multi-column rolls and the `by=` override", () => {
+    const body = `| weight | name | motivation |
+|---|---|---|
+| 3 | A | X |
+|= {{ roll : name, motivation by=weight }} =|`;
+    const t = parseTableBlock("npc", body);
+    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({
+      kind: "roll",
+      targets: ["name", "motivation"],
+      by: "weight",
+    });
+  });
+
+  it("normalises single-quoted labels with spaces and caps", () => {
+    const body = `| dice | Adventuring Motivation |
+|---|---|
+| 1 | Line |
+|= {{ roll : 'Adventuring Motivation' }} =|`;
+    const t = parseTableBlock("npc", body);
+    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({ kind: "roll", targets: ["adventuring_motivation"] });
+  });
+
+  it("keeps an unknown {{ … }} expression verbatim as text", () => {
+    const body = `| dice | name |
+|---|---|
+| 1 | A |
+|= {{ unknown : foo }} =|`;
+    const t = parseTableBlock("npc", body);
+    const segs = t.footerRows[0].cells[0].segments;
+    expect(segs.every((s) => s.kind === "text")).toBe(true);
+    expect(segs.map((s) => (s as { text: string }).text).join("")).toBe(
+      " {{ unknown : foo }} ",
+    );
+  });
+
+  it("does not treat ordinary `||` colspan rows as footer rows", () => {
+    const body = `| dice | name |
+|---|---|
+| 1 || A |`;
+    const t = parseTableBlock("npc", body);
+    expect(t.footerRows).toEqual([]);
+    expect(t.rows).toHaveLength(1);
+  });
+});
