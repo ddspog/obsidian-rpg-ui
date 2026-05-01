@@ -704,6 +704,7 @@ export interface FeatureChoiceOption {
   link?: string;
   features?: FeatureDetails[];
   uses_resource?: string;
+  choose?: ChooseSpec;
 }
 
 export interface UnlockBlock {
@@ -738,6 +739,8 @@ export interface CompendiumLib {
   lineages: Record<string, SourceDoc>;
   heritages: Record<string, SourceDoc>;
   backgrounds: Record<string, SourceDoc>;
+  tagIndex?: Record<string, string[]>;
+  folderIndex?: Record<string, string[]>;
 }
 
 export interface PendingChoice {
@@ -754,6 +757,8 @@ export interface ResolvedSource {
   level?: number;
   features: FeatureDetails[];
   pendingChoices: PendingChoice[];
+  baseTraits: Record<string, string[]>;
+  leveledTraits: Record<string, string[]>;
 }
 
 export interface ResolvedView {
@@ -773,6 +778,40 @@ export declare function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind)
 export declare function parseSourceDocs(raws: SourceDocInput[], kind: SourceDocKind): Record<string, SourceDoc>;
 export declare function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView;
 
+/**
+ * Input shape for `buildCompendiumIndex` — one entry per compendium doc
+ * reachable via `#Tag` or `@folder/path` references in `choose.options`.
+ */
+export interface IndexedDoc {
+  $name: string;
+  folder: string;
+  tags?: string[];
+}
+
+export interface CompendiumIndex {
+  tagIndex: Record<string, string[]>;
+  folderIndex: Record<string, string[]>;
+}
+
+/**
+ * Build `tagIndex` and `folderIndex` used by the resolver to expand
+ * `#Tag` and `@folder/path` references inside inline `choose.options`.
+ * The result maps onto `CompendiumLib.tagIndex` / `folderIndex`.
+ */
+export declare function buildCompendiumIndex(docs: IndexedDoc[]): CompendiumIndex;
+
+/**
+ * Expand `#Tag` and `@folder/path` refs in a raw option list against the
+ * given indexes. Literal strings pass through untouched; references are
+ * replaced by the concrete `"[[Item]]"` wikilinks they point at, deduped
+ * in authored order.
+ */
+export declare function expandOptionRefs(
+  options: string[],
+  tagIndex: Record<string, string[]> | undefined,
+  folderIndex: Record<string, string[]> | undefined,
+): string[];
+
 // ─── Tables ───────────────────────────────────────────────────────────────────
 
 export interface TableCell {
@@ -781,6 +820,15 @@ export interface TableCell {
 }
 export interface TableRow {
   cells: TableCell[];
+}
+export type FooterSegment =
+  | { kind: "text"; text: string }
+  | { kind: "roll"; targets: string[]; by?: string };
+export interface FooterCell {
+  segments: FooterSegment[];
+}
+export interface FooterRow {
+  cells: FooterCell[];
 }
 export interface TableDef {
   name: string;
@@ -792,6 +840,7 @@ export interface TableDef {
   keyColumn?: string;
   caption?: string;
   classes: string[];
+  footerRows: FooterRow[];
 }
 
 export interface EvalContext {

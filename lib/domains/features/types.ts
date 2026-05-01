@@ -145,6 +145,12 @@ export interface FeatureChoiceOption {
   features?: FeatureDetails[];
   /** Optional reference to a `feature.resource` by name. */
   uses_resource?: string;
+  /**
+   * Inline pick spec that fires as a sub-choice once the parent option is
+   * picked. Values picked against this choose contribute to the named trait
+   * category on the character sheet (same semantics as `FeatureDetails.choose`).
+   */
+  choose?: ChooseSpec;
 }
 
 /** Non-feature progression marker (e.g. "subclass becomes pickable at level 3"). */
@@ -190,6 +196,18 @@ export interface CompendiumLib {
   lineages: Record<string, SourceDoc>;
   heritages: Record<string, SourceDoc>;
   backgrounds: Record<string, SourceDoc>;
+  /**
+   * Flat lookup: tag name → list of `"[[Item]]"` wikilinks, built at load
+   * time from every compendium item's frontmatter `tags:`. Used to expand
+   * `"#Tag"` references inside inline `choose.options` arrays.
+   */
+  tagIndex?: Record<string, string[]>;
+  /**
+   * Flat lookup: folder path → list of `"[[Item]]"` wikilinks for each item
+   * in that folder's direct children. Used to expand `"@folder/path"`
+   * references inside inline `choose.options` arrays.
+   */
+  folderIndex?: Record<string, string[]>;
 }
 
 // ─── Outputs of the resolver ──────────────────────────────────────────────────
@@ -210,6 +228,18 @@ export interface ResolvedSource {
   /** Features that apply at the character's level (already filtered). */
   features: FeatureDetails[];
   pendingChoices: PendingChoice[];
+  /**
+   * Traits contributed by features that don't carry an explicit `level:`
+   * (the base rules of a class / lineage / heritage / background / talent).
+   * Same shape as `ResolvedView.traits` but scoped to this one source.
+   */
+  baseTraits: Record<string, string[]>;
+  /**
+   * Traits contributed by features that DO carry a `level:` annotation,
+   * plus all `feature.level` augmentations. For classes these render as a
+   * bulleted sub-list beneath the base-rules line on the character sheet.
+   */
+  leveledTraits: Record<string, string[]>;
 }
 
 /**

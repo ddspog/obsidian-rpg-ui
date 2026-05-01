@@ -12,6 +12,7 @@
  */
 
 import type { TableDef } from "../tables/types";
+import { expandOptionRefs } from "./index-builder";
 import type {
   CharacterDecl,
   ChooseSpec,
@@ -86,12 +87,19 @@ function stripWikilink(s: string): string {
 /**
  * Build synthetic `FeatureChoiceOption` objects for an inline `choose` spec
  * so the existing PendingChoice rendering path works uniformly.
+ *
+ * If `tagIndex` / `folderIndex` are provided, `#Tag` and `@folder/path`
+ * entries in `choose.options` are expanded to the concrete `[[Item]]`
+ * wikilinks those refs resolve to. Literal strings pass through untouched.
  */
 function inlineChooseOptions(
   parent: FeatureDetails,
   choose: ChooseSpec,
+  tagIndex?: Record<string, string[]>,
+  folderIndex?: Record<string, string[]>,
 ): FeatureChoiceOption[] {
-  const opts = normalizeTraitValue(choose.options as unknown);
+  const raw = normalizeTraitValue(choose.options as unknown);
+  const opts = expandOptionRefs(raw, tagIndex, folderIndex);
   return opts.map((value) => ({
     parent: parent.name,
     name: value,
@@ -104,6 +112,10 @@ function inlineChooseOptions(
 interface ResolveOpts {
   /** Filter `details` by `level <= maxLevel`. Omit to include every detail. */
   maxLevel?: number;
+  /** Index of `#Tag` → `"[[Item]]"` wikilinks for expanding `choose.options`. */
+  tagIndex?: Record<string, string[]>;
+  /** Index of `@folder/path` → `"[[Item]]"` wikilinks for expanding `choose.options`. */
+  folderIndex?: Record<string, string[]>;
 }
 
 function resolveSource(
@@ -115,20 +127,39 @@ function resolveSource(
 ): ResolvedSource {
   const features: FeatureDetails[] = [];
   const pendingChoices: PendingChoice[] = [];
+  // Per-source traits, split so the character-sheet traits bucket can show
+  // unlevelled class rules on one line and leveled features (Spellcasting,
+  // Channel Divinity, …) as a bulleted sub-list beneath.
+  const baseTraits: Record<string, string[]> = {};
+  const leveledTraits: Record<string, string[]> = {};
 
   for (const detail of doc.details) {
     if (opts.maxLevel != null && detail.level != null && detail.level > opts.maxLevel) {
       continue;
     }
 
-    // Always contribute the feature's own traits.
+    // Features that carry an explicit `level:` belong to the "leveled" bucket
+    // for the source (and stay there even at level 1 — authors use `level:`
+    // to mark a feature as a named per-level ability). Unlevelled features
+    // (the base class rules: hit points, armor, saves…) go in `baseTraits`.
+    const perSource: Record<string, string[]> =
+      detail.level != null ? leveledTraits : baseTraits;
+
+    // Contribute the feature's own traits to both the per-source bucket and
+    // the global aggregate.
+    collectTraits(perSource, detail.traits);
     collectTraits(traitsAgg, detail.traits);
 
     // Apply per-level augmentations (feature.level blocks) whose level is met.
+    // These always belong to the leveled bucket since they only apply past the
+    // feature's own declaration level.
     if (detail.levels && detail.levels.length > 0) {
       const cap = opts.maxLevel ?? 0;
       for (const add of detail.levels) {
-        if (add.level <= cap) collectTraits(traitsAgg, add.traits);
+        if (add.level <= cap) {
+          collectTraits(leveledTraits, add.traits);
+          collectTraits(traitsAgg, add.traits);
+        }
       }
     }
 
@@ -137,15 +168,19 @@ function resolveSource(
       const picked = pickedNames(picksForSource?.[detail.name]);
       const cat = detail.choose.category;
       if (picked.length > 0) {
+        if (!perSource[cat]) perSource[cat] = [];
         if (!traitsAgg[cat]) traitsAgg[cat] = [];
-        for (const p of picked) traitsAgg[cat].push(p);
+        for (const p of picked) {
+          perSource[cat].push(p);
+          traitsAgg[cat].push(p);
+        }
       }
       const remaining = Math.max(0, detail.choose.number - picked.length);
       if (remaining > 0) {
         pendingChoices.push({
           source: doc.name,
           feature: detail,
-          options: inlineChooseOptions(detail, detail.choose),
+          options: inlineChooseOptions(detail, detail.choose, opts.tagIndex, opts.folderIndex),
           picked,
           remaining,
         });
@@ -160,8 +195,47 @@ function resolveSource(
       for (const pickedName of picked) {
         const option = allOptions.find((o) => (o.name ?? "") === pickedName);
         if (!option) continue;
+        collectTraits(perSource, option.traits);
         collectTraits(traitsAgg, option.traits);
+
+        // A picked option may carry its own inline `choose` — a sub-pick that
+        // fires after the user takes the option. Example: Manifest Might →
+        // "pick 1 Martial weapon". Picks are keyed by the option's name so
+        // the decisions log can group them under the choice name later.
+        if (option.choose && option.choose.type === "traits" && option.name) {
+          const optionKey = option.name;
+          const subPicked = pickedNames(picksForSource?.[optionKey]);
+          const subCat = option.choose.category;
+          if (subPicked.length > 0) {
+            if (!perSource[subCat]) perSource[subCat] = [];
+            if (!traitsAgg[subCat]) traitsAgg[subCat] = [];
+            for (const p of subPicked) {
+              perSource[subCat].push(p);
+              traitsAgg[subCat].push(p);
+            }
+          }
+          const subRemaining = Math.max(0, option.choose.number - subPicked.length);
+          if (subRemaining > 0) {
+            // The pending-choice `feature` refers to the option itself so the
+            // sheet renders "<Parent>: pick N more for <Option>" and the
+            // toggle writes picks to `choices[source][option.name]`.
+            const optionFeature: FeatureDetails = {
+              name: optionKey,
+              subtitle: `Sub-choice of ${detail.name}`,
+              level: detail.level,
+            };
+            pendingChoices.push({
+              source: doc.name,
+              feature: optionFeature,
+              options: inlineChooseOptions(optionFeature, option.choose, opts.tagIndex, opts.folderIndex),
+              picked: subPicked,
+              remaining: subRemaining,
+            });
+          }
+        }
+
         for (const nested of option.features ?? []) {
+          collectTraits(perSource, nested.traits);
           collectTraits(traitsAgg, nested.traits);
           features.push(nested);
         }
@@ -188,6 +262,8 @@ function resolveSource(
     level,
     features,
     pendingChoices,
+    baseTraits,
+    leveledTraits,
   };
 }
 
@@ -196,6 +272,8 @@ function resolveSource(
 export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView {
   const sources: ResolvedSource[] = [];
   const traits: Record<string, string[]> = {};
+  const tagIndex = lib.tagIndex;
+  const folderIndex = lib.folderIndex;
 
   for (const entry of decl.classes ?? []) {
     const classDoc = lib.classes[entry.name];
@@ -203,7 +281,11 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
 
     const classPicks = decl.choices?.[entry.name];
     sources.push(
-      resolveSource(classDoc, entry.level, classPicks, traits, { maxLevel: entry.level }),
+      resolveSource(classDoc, entry.level, classPicks, traits, {
+        maxLevel: entry.level,
+        tagIndex,
+        folderIndex,
+      }),
     );
 
     if (entry.subclass) {
@@ -211,15 +293,19 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
       if (subclassDoc && subclassUnlockedAt(classDoc, entry.level)) {
         const subclassPicks = decl.choices?.[entry.subclass];
         sources.push(
-          resolveSource(subclassDoc, entry.level, subclassPicks, traits, { maxLevel: entry.level }),
+          resolveSource(subclassDoc, entry.level, subclassPicks, traits, {
+            maxLevel: entry.level,
+            tagIndex,
+            folderIndex,
+          }),
         );
       }
     }
   }
 
-  appendIf(sources, lib.lineages, decl.lineage, decl.choices, traits);
-  appendIf(sources, lib.heritages, decl.heritage, decl.choices, traits);
-  appendIf(sources, lib.backgrounds, decl.background, decl.choices, traits);
+  appendIf(sources, lib.lineages, decl.lineage, decl.choices, traits, tagIndex, folderIndex);
+  appendIf(sources, lib.heritages, decl.heritage, decl.choices, traits, tagIndex, folderIndex);
+  appendIf(sources, lib.backgrounds, decl.background, decl.choices, traits, tagIndex, folderIndex);
 
   const pendingChoices = sources.flatMap((s) => s.pendingChoices);
   const tables = aggregateTables(decl, lib);
@@ -267,11 +353,13 @@ function appendIf(
   name: string | undefined,
   choices: CharacterDecl["choices"],
   traitsAgg: Record<string, string[]>,
+  tagIndex?: Record<string, string[]>,
+  folderIndex?: Record<string, string[]>,
 ) {
   if (!name) return;
   const doc = lib[name];
   if (!doc) return;
-  sources.push(resolveSource(doc, undefined, choices?.[name], traitsAgg));
+  sources.push(resolveSource(doc, undefined, choices?.[name], traitsAgg, { tagIndex, folderIndex }));
 }
 
 // Re-exports for callers that touch the resolver API

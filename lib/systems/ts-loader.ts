@@ -258,6 +258,8 @@ export async function evaluateSystemBundle(
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const resolverMod = require("../domains/features/resolver");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const indexBuilderMod = require("../domains/features/index-builder");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const pendingChoiceRow = require("../components/pending-choice-row");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const markdown = require("../components/markdown");
@@ -269,6 +271,8 @@ export async function evaluateSystemBundle(
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
             resolveFeatures: resolverMod.resolveFeatures,
+            buildCompendiumIndex: indexBuilderMod.buildCompendiumIndex,
+            expandOptionRefs: indexBuilderMod.expandOptionRefs,
             PendingChoiceRow: pendingChoiceRow.PendingChoiceRow,
             Markdown: markdown.Markdown,
             parseTableBlock: tableParser.parseTableBlock,

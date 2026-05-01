@@ -176,15 +176,62 @@ section[aria-label="Character Features"] {
   padding-top: 4px;
 }
 
-.rpg-feature-bucket-entry-name {
+.rpg-feature-bucket-entry-title {
   grid-column: 1;
   grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+/* Extra breathing room between the usage dots and whatever recharge /
+ * recovery text follows, so they don't read as part of the same unit. */
+.rpg-feature-bucket-dots + small {
+  margin-left: 10px;
+}
+
+.rpg-feature-bucket-entry-name {
   align-self: baseline;
   font-weight: 700;
   font-size: 0.9em;
   line-height: 1.2;
   white-space: nowrap;
   color: light-dark(#1a1208, #e3dcce);
+}
+
+/* Usage dots — empty circles that sit next to the feature name, one per
+ * unit of `aspect.max`. Decorative/visual only for now; a click handler
+ * and spent-state tracking can plug in later via `aria-pressed`. */
+.rpg-feature-bucket-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rpg-feature-bucket-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  background: transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.rpg-feature-bucket-dot:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+.rpg-feature-bucket-dot[aria-pressed="true"] {
+  background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-feature-bucket-dot:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .rpg-feature-bucket-entry-meta {
@@ -205,12 +252,29 @@ section[aria-label="Character Features"] {
   color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
 }
 
+.rpg-feature-bucket-entry-title > small {
+  font-size: 0.82em;
+  font-weight: 400;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  color: light-dark(rgba(26, 18, 8, 0.65), rgba(227, 220, 206, 0.65));
+}
+
+/* Source displays as an internal-link to the source compendium doc. */
 .rpg-feature-bucket-entry-meta .rpg-feature-bucket-source {
   text-transform: none;
   letter-spacing: 0;
+  font-size: 0.85em;
   font-weight: 500;
   font-style: italic;
-  color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
+  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
+  text-decoration: none;
+}
+
+.rpg-feature-bucket-entry-meta .rpg-feature-bucket-source:hover {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  text-decoration: underline;
 }
 
 /* Card image slot — hidden for now; the grid drops its column width
@@ -232,32 +296,77 @@ section[aria-label="Character Features"] {
 .rpg-feature-bucket-entry-desc p:first-child { margin-top: 0; }
 .rpg-feature-bucket-entry-desc p:last-child { margin-bottom: 0; }
 
-/* ── Traits bucket (two-column dl matching proficiencies layout) ────────── */
+/* ── Traits bucket (per-source prose summary) ───────────────────────────── */
 
-.rpg-feature-bucket-traits dl {
-  margin: 0;
-  padding: 8px 12px;
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  column-gap: 16px;
-  row-gap: 2px;
+.rpg-feature-traits-summary {
+  /* Match the horizontal padding the other bucket lists use, so the prose
+   * lines up with the feature entries in the accordion above. */
+  padding: 8px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.rpg-feature-bucket-traits dt {
-  font-size: 0.85em;
+.rpg-feature-traits-source > p {
+  margin: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: light-dark(#2a2018, #c9c2b4);
+}
+
+.rpg-feature-traits-source-link {
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
-  line-height: 1.4;
+  text-decoration: none;
 }
 
-.rpg-feature-bucket-traits dd {
-  margin: 0;
-  font-size: 1em;
-  font-weight: 600;
+.rpg-feature-traits-source-link:hover {
+  text-decoration: underline;
+}
+
+.rpg-feature-traits-source-level {
+  font-weight: 500;
+  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
+}
+
+.rpg-feature-traits-source strong {
+  font-weight: 700;
   color: light-dark(#1a1208, #e3dcce);
-  line-height: 1.4;
+}
+
+.rpg-feature-traits-source a.internal-link:not(.rpg-feature-traits-source-link) {
+  color: light-dark(#2ea043, #7ad188);
+  text-decoration: none;
+}
+
+.rpg-feature-traits-source a.internal-link:not(.rpg-feature-traits-source-link):hover {
+  text-decoration: underline;
+}
+
+.rpg-feature-traits-leveled {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.rpg-feature-traits-leveled > li {
+  position: relative;
+  margin: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: light-dark(#2a2018, #c9c2b4);
+}
+
+/* Explicit dash bullet — authored here rather than via `list-style-type`
+ * so it stays visible regardless of overflow / padding elsewhere in the
+ * bucket, and so its colour matches the source label. */
+.rpg-feature-traits-leveled > li::before {
+  content: "—";
+  position: absolute;
+  left: -18px;
+  top: 0;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  font-weight: 700;
 }
 
 /* ── Pending choices ────────────────────────────────────────────────────── */
@@ -282,6 +391,122 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* ── Decisions log (collapsed review of picks already made) ─────────────── */
+
+.rpg-feature-decisions {
+  margin: 0;
+  padding: 0;
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+}
+
+.rpg-feature-decisions summary {
+  padding: 6px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  user-select: none;
+}
+
+.rpg-feature-decisions summary::-webkit-details-marker,
+.rpg-feature-decisions summary::marker {
+  display: none;
+  content: "";
+}
+
+.rpg-feature-decisions summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.75em;
+  color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
+  transition: transform 120ms ease;
+}
+
+.rpg-feature-decisions[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.rpg-feature-decisions-label {
+  flex: 1;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
+}
+
+.rpg-feature-decisions-count {
+  font-size: 0.75em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+}
+
+.rpg-feature-decisions-groups {
+  padding: 4px 0 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rpg-feature-decisions-group-label {
+  margin: 0 0 2px;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-feature-decisions-group-label a.internal-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rpg-feature-decisions-group-label a.internal-link:hover {
+  text-decoration: underline;
+}
+
+.rpg-feature-decisions-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 12px;
+}
+
+.rpg-feature-decisions-group li {
+  position: relative;
+  margin: 1px 0;
+  font-size: 0.9em;
+  line-height: 1.45;
+  color: light-dark(#2a2018, #c9c2b4);
+}
+
+.rpg-feature-decisions-group li::before {
+  content: "—";
+  position: absolute;
+  left: -10px;
+  top: 0;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  font-weight: 700;
+}
+
+.rpg-feature-decisions-group li strong {
+  font-weight: 700;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-feature-decisions-group li a.internal-link {
+  color: light-dark(#2ea043, #7ad188);
+  text-decoration: none;
+}
+
+.rpg-feature-decisions-group li a.internal-link:hover {
+  text-decoration: underline;
 }
 
 section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending {

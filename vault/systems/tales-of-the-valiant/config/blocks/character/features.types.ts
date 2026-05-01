@@ -12,4 +12,11 @@ export type FeaturesBlockData = {
    * `pick: N`) → option name(s).
    */
   choices?: Record<string, Record<string, string | string[]>>;
+  /**
+   * Number of uses spent on each feature aspect that carries a `max`. Keys
+   * are `${source}:${featureName}:${bucket}` so the same feature can track
+   * separate counters on distinct aspects. Value is the count of filled
+   * dots in the character-sheet accordion.
+   */
+  spent?: Record<string, number>;
 };

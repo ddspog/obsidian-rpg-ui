@@ -239,8 +239,12 @@ conditions:
 
   // Features YAML — resolver pulls Cleric features from the compendium based
   // on the header's declared class; the per-source feature list lives there,
-  // so this block just carries any pending-choice picks.
-  blocksYaml.features = buildFeaturesYaml([]);
+  // so this block just carries any pending-choice picks and spent-use state.
+  // Both keys are seeded empty so Storybook's RpgBlock generates matching
+  // `setChoices` / `setSpent` setters from self.
+  blocksYaml.features = `choices: {}
+spent: {}
+`;
 
   return blocksYaml;
 }

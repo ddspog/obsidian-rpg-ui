@@ -560,6 +560,7 @@ describe("resolveFeatures: tables", () => {
         headerRows: [{ cells: [{ value: "LEVEL" }, { value: "PB" }] }],
         keyColumn: "level",
         classes: [],
+        footerRows: [],
       },
     ],
   };
@@ -581,5 +582,62 @@ describe("resolveFeatures: tables", () => {
   it("skips tables from sources the character hasn't taken", () => {
     const emptyView = resolveFeatures({ classes: [] }, lib);
     expect(Object.keys(emptyView.tables)).toEqual([]);
+  });
+});
+
+// ─── Tag / folder reference expansion in choose.options ─────────────────────
+
+describe("resolveFeatures: #Tag / @folder expansion in choose.options", () => {
+  const fighter: SourceDoc = {
+    name: "Fighter",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Weapon Mastery",
+        level: 1,
+        choose: {
+          type: "traits",
+          category: "Weapons",
+          number: 1,
+          options: ["#Martial", "@compendium/weapons/simple", "[[Shield]]"],
+        },
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+
+  const lib: CompendiumLib = {
+    classes: { Fighter: fighter },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+    tagIndex: {
+      Martial: ["[[Warhammer]]", "[[Longsword]]"],
+    },
+    folderIndex: {
+      "compendium/weapons/simple": ["[[Dagger]]", "[[Club]]"],
+    },
+  };
+
+  it("expands #Tag refs and @folder refs to concrete wikilinks, preserves literals", () => {
+    const view = resolveFeatures({ classes: [{ name: "Fighter", level: 1 }] }, lib);
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Weapon Mastery");
+    expect(pending).toBeDefined();
+    const names = pending!.options.map((o) => o.name);
+    expect(names).toEqual(["[[Warhammer]]", "[[Longsword]]", "[[Dagger]]", "[[Club]]", "[[Shield]]"]);
+  });
+
+  it("leaves literal options untouched when no indexes are provided", () => {
+    const libNoIdx: CompendiumLib = { ...lib, tagIndex: undefined, folderIndex: undefined };
+    const view = resolveFeatures({ classes: [{ name: "Fighter", level: 1 }] }, libNoIdx);
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Weapon Mastery");
+    expect(pending).toBeDefined();
+    const names = pending!.options.map((o) => o.name);
+    // Unknown refs collapse to [] so only the literal survives.
+    expect(names).toEqual(["[[Shield]]"]);
   });
 });

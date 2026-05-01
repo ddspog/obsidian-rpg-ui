@@ -23,6 +23,34 @@ export interface TableRow {
 }
 
 /**
+ * One segment of a footer cell. Footer cells mix literal markdown with
+ * embedded `{{ roll … }}` expressions; each source segment is either raw
+ * text or a parsed roll expression.
+ *
+ * Targets are the column keys (normalised) the rolled row should display.
+ * `by` is the weight-column key override — when omitted the renderer falls
+ * back to the table's `keyColumn`, then the first column.
+ */
+export type FooterSegment =
+  | { kind: "text"; text: string }
+  | { kind: "roll"; targets: string[]; by?: string };
+
+/**
+ * One cell within a `|= … =|` footer row. Each cell is independently
+ * clickable; clicking re-rolls every `kind: "roll"` segment in the cell as
+ * one atomic action. Cells with no roll segments are rendered as plain text
+ * and are not interactive.
+ */
+export interface FooterCell {
+  segments: FooterSegment[];
+}
+
+/** A full footer row: one-or-more cells separated by `|`. */
+export interface FooterRow {
+  cells: FooterCell[];
+}
+
+/**
  * A single `rpg table.<name>` block.
  *
  * `columns` holds normalised column keys (lowercased, spaces → underscores)
@@ -31,6 +59,11 @@ export interface TableRow {
  * uniquely identify a row — lookups like `row=3` resolve by matching that
  * column. `headerRows` holds every header row above the `---` separator so
  * a multi-row header (via `||` colspan) round-trips to `<thead>`.
+ *
+ * `footerRows` holds the parsed `|= … =|` roll-footer rows (MVP: one per
+ * authored footer row). They render as sibling `.el-p > p > .dice-roller`
+ * elements after the `<table>`, matching the Ribbons theme's dice-roller
+ * convention so rolled values pick up the theme styling automatically.
  */
 export interface TableDef {
   /** Local name inside the source doc (e.g. `progression`). */
@@ -51,4 +84,6 @@ export interface TableDef {
   caption?: string;
   /** Classes from the footer (strings after `#`, e.g. `css/tx/table`). */
   classes: string[];
+  /** Roll-footer rows parsed from `|= … =|` lines (may be empty). */
+  footerRows: FooterRow[];
 }
