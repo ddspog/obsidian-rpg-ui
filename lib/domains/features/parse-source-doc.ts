@@ -37,6 +37,7 @@ const META_KEYS: Record<SourceDocKind, string> = {
   lineage: ".LINEAGE",
   heritage: ".HERITAGE",
   background: ".BACKGROUND",
+  talent: ".TALENT",
 };
 
 /** Parse a YAML payload safely; returns `null` on failure (with a console warn). */
@@ -109,7 +110,13 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
     switch (block.kind) {
       case "details": {
         const parsed = safeParse<FeatureDetails>(block.yaml, ctx);
-        if (parsed && parsed.name) {
+        if (parsed) {
+          // A `name:` is optional in the source. When missing, synthesize a
+          // stable positional key so downstream code (pick lookups, React
+          // keys, choice tracking) can still identify this block uniquely
+          // within its source doc. Picks under the synthetic key persist as
+          // long as block order doesn't change.
+          if (!parsed.name) parsed.name = `__auto_${details.length}`;
           details.push(parsed);
           currentDetails = parsed;
         }
@@ -156,7 +163,9 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
     | undefined) ?? {};
   if (Array.isArray(fmFeatures.details)) {
     for (const f of fmFeatures.details) {
-      if (f && f.name) details.push(f);
+      if (!f) continue;
+      if (!f.name) f.name = `__auto_${details.length}`;
+      details.push(f);
     }
   }
   if (Array.isArray(fmFeatures.choices)) {

@@ -27,12 +27,35 @@ export type TraitMap = Record<string, TraitValue>;
  * verbatim as a value to the named trait `category`. No separate
  * `feature.choice` blocks needed — handy for simple "pick N from list"
  * features like proficiency choices.
+ *
+ * `type: "asi"` (Ability Score Improvement) reuses the same picking flow but
+ * allows duplicate picks: the user may select the same option more than once
+ * up to `number` total, with each pick contributing `quantity` points (1 by
+ * default) to the chosen value.
  */
 export interface ChooseSpec {
-  type: "traits";
-  category: string;
+  type: "traits" | "asi" | "talent";
+  /** Trait bucket picks contribute to. Required for `traits`; optional for
+   *  `asi` (defaults to "Ability Scores" for display purposes) and for
+   *  `talent` (defaults to "Talent"). */
+  category?: string;
   number: number;
-  options: string[];
+  /** Points added per pick. `asi` only; defaults to 1. Ignored by `traits`. */
+  quantity?: number;
+  /**
+   * ASI only. When true (default) each option can be picked at most once
+   * — the `+` control disables for attributes already chosen. Set to
+   * `false` to allow repeat picks (e.g. stacking all three points from a
+   * talent into a single attribute).
+   */
+  unique?: boolean;
+  /**
+   * Options available to pick from. For `asi` this may be omitted — the
+   * resolver falls back to the six core attributes (Strength, Dexterity,
+   * Constitution, Intelligence, Wisdom, Charisma) so compendium authors
+   * don't have to repeat the list on every ASI spec.
+   */
+  options?: string[];
 }
 
 /**
@@ -75,7 +98,7 @@ export interface FeatureAspect {
   /** Name of a resource feature this aspect consumes (by-name reference). */
   resource?: string;
   /** Pool max when the aspect is itself a resource. Scalar or per-level map. */
-  max?: number | Record<number, number>;
+  max?: number | string | Record<number, number>;
   /** Free-form recovery cadence ("short rest", "1/long rest", …). */
   recovery?: string;
   /** Inline cooldown within a single turn ("once per turn", "once per round"). */
@@ -94,8 +117,16 @@ export interface FeatureDetails {
   text?: string;
   /** Group → contribution. Aggregated across features in the character sheet. */
   traits?: TraitMap;
-  /** Inline pick spec that contributes picked values to `traits[category]`. */
-  choose?: ChooseSpec;
+  /**
+   * Inline pick spec that contributes picked values to `traits[category]`.
+   *
+   * May be a single spec or an array of specs — an array lets one block
+   * declare multiple independent picks (e.g. the Adherent background
+   * granting a Skill P. pick and a Tool P. pick in the same feature). Each
+   * spec in an array is tracked by its own pick key so the picks don't
+   * overwrite each other.
+   */
+  choose?: ChooseSpec | ChooseSpec[];
   /**
    * Per-level augmentations from sibling `rpg feature.level` blocks. Each
    * entry's traits are applied to the running aggregate when the character's
@@ -111,7 +142,7 @@ export interface FeatureDetails {
    * When `type === "resource"`: max charges. Scalar or per-level map
    * (`{ 2: 1, 6: 2 }` → 1 charge at Lv 2, 2 at Lv 6, …).
    */
-  max?: number | Record<number, number>;
+  max?: number | string | Record<number, number>;
   /** When `type === "resource"`: free-form recovery cadence ("short rest", "1/day"). */
   recovery?: string;
   /** Optional reference to another feature (a resource) by name — purely declarative. */
@@ -128,6 +159,37 @@ export interface FeatureDetails {
   active?: FeatureAspect;
   passive?: FeatureAspect;
   resource?: FeatureAspect;
+  /**
+   * Override an aspect on a previously-loaded feature. The first present
+   * aspect key (`action`, `bonus`, `reaction`, `active`, `passive`,
+   * `resource`) names the bucket and its value identifies the aspect by
+   * name (e.g. `action: "Preserve Life"` targets the action aspect named
+   * "Preserve Life"). All other fields under `update:` are the patch:
+   * `text`, `name`, `recharge`, `recovery`, `max`, `resource` get
+   * shallow-merged onto the matched aspect, replacing any prior values.
+   *
+   * Used by progression features that rewrite an earlier ability — e.g.
+   * Cleric's Greater Preservation (Lv 11) updates Preserve Life's range
+   * from 30 ft. to 60 ft. and adds a condition-cure clause.
+   */
+  update?: FeatureUpdate;
+}
+
+export interface FeatureUpdate {
+  /** Aspect-bucket selectors. Set the one whose value names the aspect to
+   *  patch (typically just one is set). */
+  action?: string;
+  bonus?: string;
+  reaction?: string;
+  active?: string;
+  passive?: string;
+  resource?: string;
+  /** Patch fields applied on top of the matched aspect. */
+  name?: string;
+  text?: string;
+  recharge?: string;
+  recovery?: string;
+  max?: number | string | Record<number, number>;
 }
 
 /**
@@ -159,7 +221,7 @@ export interface UnlockBlock {
   level: number;
 }
 
-export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background";
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent";
 
 /** All blocks parsed from one compendium document. */
 export interface SourceDoc {
@@ -188,7 +250,27 @@ export interface CharacterDecl {
   background?: string;
   /** picks[sourceName][featureName] = string | string[] (option name(s)) */
   choices?: Record<string, Record<string, string | string[]>>;
+  /**
+   * Homebrew / one-off additions layered on top of the standard compendium
+   * sources. Each list is references to existing feature.details-bearing
+   * vault pages. The resolver loads each referenced doc and spreads its
+   * feature.details into the specified source (defaulting to a synthetic
+   * Homebrew source when `source` is omitted).
+   */
+  additional?: {
+    talents?: ExtraRef[];
+    features?: ExtraRef[];
+    boons?: ExtraRef[];
+    curses?: ExtraRef[];
+  };
 }
+
+/** Reference to an extra compendium page. Bare wikilink string is
+ *  shorthand; object form carries optional `source` (attributes the
+ *  content into a specific ResolvedSource by name) and `level`. */
+export type ExtraRef =
+  | string
+  | { ref: string; source?: string; level?: number };
 
 export interface CompendiumLib {
   classes: Record<string, SourceDoc>;
@@ -196,6 +278,14 @@ export interface CompendiumLib {
   lineages: Record<string, SourceDoc>;
   heritages: Record<string, SourceDoc>;
   backgrounds: Record<string, SourceDoc>;
+  /**
+   * Parsed talent docs keyed by their file basename. Talents aren't
+   * top-level sources — they're looked up when a `choose.type: "talent"`
+   * pick is resolved, and the talent's feature.details blocks are spread
+   * into the picking source's features attributed to the picking detail's
+   * level (e.g. Cleric's Talented Growth at Lv. 4).
+   */
+  talents?: Record<string, SourceDoc>;
   /**
    * Flat lookup: tag name → list of `"[[Item]]"` wikilinks, built at load
    * time from every compendium item's frontmatter `tags:`. Used to expand
@@ -240,6 +330,14 @@ export interface ResolvedSource {
    * bulleted sub-list beneath the base-rules line on the character sheet.
    */
   leveledTraits: Record<string, string[]>;
+  /**
+   * Per-level breakdown of every trait contribution this source made at the
+   * character's current level. Keys are level numbers (unlevelled features
+   * are bucketed at level 1, since that's when the class is taken). Used by
+   * the character sheet to render the Cleric/class traits row as one line
+   * per class level (skipping empty ones) rather than one long rules line.
+   */
+  traitsByLevel: Record<number, Record<string, string[]>>;
 }
 
 /**

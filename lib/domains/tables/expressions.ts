@@ -174,6 +174,28 @@ function rowByKey(table: TableDef, keyValue: string): Record<string, string> | u
   return undefined;
 }
 
+/** Step-function lookup for sparse numeric-key tables (Destroy the Profane,
+ *  Channel Divinity uses, …) where the table only lists threshold rows but
+ *  the value applies for every level until the next threshold. Returns the
+ *  row whose numeric key is the highest one ≤ `keyValue`. Falls back to
+ *  exact match when keys aren't all numeric. */
+function rowByKeyStep(table: TableDef, keyValue: string): Record<string, string> | undefined {
+  if (!table.keyColumn) return undefined;
+  const keyIdx = table.columns.indexOf(table.keyColumn);
+  if (keyIdx < 0) return undefined;
+  const target = Number(keyValue);
+  if (!Number.isFinite(target)) return rowByKey(table, keyValue);
+  let best: { rowKey: number; row: { cells: { value: string }[] } } | undefined;
+  for (const row of table.rows) {
+    const cell = row.cells[keyIdx];
+    if (!cell) continue;
+    const k = Number(cell.value);
+    if (!Number.isFinite(k) || k > target) continue;
+    if (!best || k > best.rowKey) best = { rowKey: k, row };
+  }
+  return best ? rowToRecord(table, best.row) : undefined;
+}
+
 function rowToRecord(table: TableDef, row: { cells: { value: string }[] }): Record<string, string> {
   const out: Record<string, string> = {};
   for (let i = 0; i < table.columns.length; i++) {
@@ -190,6 +212,10 @@ const HELPERS: Record<string, Helper> = {
   /**
    * `table "Cleric:progression" row=LV col="cantrips"` — one cell.
    * `table "progression" row=LV` — row as `key=value; key=value` string.
+   * `table "destroy-the-profane" row=CLASS_LEVEL col="cr" step=true` —
+   *   step-function lookup: the highest numeric key ≤ row wins. Use this
+   *   for sparse tables that only list threshold rows (per-level features
+   *   that change at certain milestones).
    */
   table(call, ctx) {
     const name = call.args[0];
@@ -202,7 +228,13 @@ const HELPERS: Record<string, Helper> = {
     if (!rowExpr) return undefined;
     const rowValue = resolveValue(rowExpr, ctx);
 
-    const record = rowByKey(t, rowValue);
+    const stepExpr = call.kwargs.step;
+    const stepFlag = stepExpr ? resolveValue(stepExpr, ctx).toLowerCase() : "";
+    const isStep = stepFlag === "true" || stepFlag === "1" || stepFlag === "yes";
+
+    const record = isStep
+      ? rowByKeyStep(t, rowValue)
+      : rowByKey(t, rowValue);
     if (!record) return undefined;
 
     const colExpr = call.kwargs.col;
@@ -260,7 +292,30 @@ const HELPERS: Record<string, Helper> = {
  * errors likewise leave the original text intact and log a console warn.
  */
 export function substituteExpressions(source: string, ctx: EvalContext): string {
-  return source.replace(/\{\{([^{}]+)\}\}/g, (match, inner) => {
+  // Pre-pass: `{{ leveled: { 1: 1d4, 6: 1d6, 13: 1d8, 17: 1d10 } }}` — step
+  // function keyed by the character's class level. Picks the highest key ≤
+  // `CLASS_LEVEL`. Nested `{…}` braces make this incompatible with the
+  // generic `{{helper args}}` grammar below, so we handle it separately
+  // before the main parser runs. The colon between `leveled` and the map
+  // is optional so both `leveled: { … }` and `leveled { … }` parse.
+  const withLeveled = source.replace(
+    /\{\{\s*leveled\s*:?\s*\{([^{}]*)\}\s*\}\}/g,
+    (match, body) => {
+      const levelRaw = ctx.vars["CLASS_LEVEL"] ?? ctx.vars["LV"];
+      const level = typeof levelRaw === "number" ? levelRaw : Number(levelRaw);
+      if (!Number.isFinite(level)) return match;
+      let best: { key: number; value: string } | null = null;
+      for (const entry of String(body).split(",")) {
+        const m = entry.match(/^\s*(\d+)\s*:\s*(.+?)\s*$/);
+        if (!m) continue;
+        const key = parseInt(m[1], 10);
+        if (!Number.isFinite(key) || key > level) continue;
+        if (!best || key > best.key) best = { key, value: m[2] };
+      }
+      return best?.value ?? match;
+    },
+  );
+  return withLeveled.replace(/\{\{([^{}]+)\}\}/g, (match, inner) => {
     try {
       const call = parseExpr(inner);
       const helper = HELPERS[call.helper];

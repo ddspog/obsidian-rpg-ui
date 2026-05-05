@@ -474,6 +474,217 @@ describe("resolveFeatures: inline `choose` spec", () => {
   });
 });
 
+// ─── array-form choose (multiple independent picks per block) ────────────────
+
+describe("resolveFeatures: array-form `choose` spec", () => {
+  const adherent: SourceDoc = {
+    name: "Adherent",
+    kind: "background",
+    meta: {},
+    details: [
+      {
+        name: "Proficiencies",
+        traits: { "Tool P.": "[[Artist Tools]]" },
+        choose: [
+          {
+            type: "traits",
+            category: "Skill P.",
+            number: 2,
+            options: ["[[History]]", "[[Investigation]]", "[[Religion]]"],
+          },
+          {
+            type: "traits",
+            category: "Tool P.",
+            number: 1,
+            options: ["[[Smith's Tools]]", "[[Thieves' Tools]]"],
+          },
+        ],
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+  const lib: CompendiumLib = {
+    classes: {},
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: { Adherent: adherent },
+  };
+
+  it("surfaces one pending choice per spec with distinct composite keys", () => {
+    const view = resolveFeatures({ classes: [], background: "Adherent" }, lib);
+    const skill = view.pendingChoices.find(
+      (p) => p.feature.name === "Proficiencies:Skill P.",
+    );
+    const tool = view.pendingChoices.find(
+      (p) => p.feature.name === "Proficiencies:Tool P.",
+    );
+    expect(skill?.remaining).toBe(2);
+    expect(tool?.remaining).toBe(1);
+    // Each synthetic feature carries its own single-spec choose so the UI
+    // can read the category straight off it.
+    expect(Array.isArray(skill?.feature.choose)).toBe(false);
+    expect((skill?.feature.choose as { category: string }).category).toBe("Skill P.");
+    // Fixed trait from the same block still aggregates independently.
+    expect(view.traits["Tool P."]).toEqual(["[[Artist Tools]]"]);
+  });
+
+  it("records picks separately under each spec's composite key", () => {
+    const view = resolveFeatures(
+      {
+        classes: [],
+        background: "Adherent",
+        choices: {
+          Adherent: {
+            "Proficiencies:Skill P.": ["[[History]]", "[[Religion]]"],
+            "Proficiencies:Tool P.": "[[Smith's Tools]]",
+          },
+        },
+      },
+      lib,
+    );
+    expect(view.traits["Skill P."]).toEqual(["[[History]]", "[[Religion]]"]);
+    expect(view.traits["Tool P."]).toEqual(["[[Artist Tools]]", "[[Smith's Tools]]"]);
+    expect(view.pendingChoices).toHaveLength(0);
+  });
+});
+
+// ─── asi choose type (ability score improvement, duplicates allowed) ─────────
+
+describe("resolveFeatures: `asi` choose type", () => {
+  const asiClass: SourceDoc = {
+    name: "Fighter",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Improvement",
+        pick: 1,
+      },
+    ],
+    options: [
+      {
+        parent: "Improvement",
+        name: "Ability Score Boost",
+        choose: {
+          type: "asi",
+          number: 1,
+          quantity: 2,
+          options: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+        },
+      },
+      {
+        parent: "Improvement",
+        name: "Balanced Growth",
+        choose: {
+          type: "asi",
+          number: 3,
+          quantity: 1,
+          options: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+        },
+      },
+    ],
+    unlocks: [],
+    tables: [],
+  };
+  const lib: CompendiumLib = {
+    classes: { Fighter: asiClass },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+  };
+
+  it("surfaces a pending sub-choice once the parent option is picked", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Fighter", level: 4 }],
+        choices: { Fighter: { Improvement: "Ability Score Boost" } },
+      },
+      lib,
+    );
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Ability Score Boost");
+    expect(pending?.remaining).toBe(1);
+    // The sub-choice exposes the `asi` spec so the UI can render the counter.
+    expect((pending?.feature.choose as { type: string }).type).toBe("asi");
+  });
+
+  it("accepts duplicate picks and formats each as `+{quantity} Attribute`", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Fighter", level: 4 }],
+        choices: {
+          Fighter: {
+            Improvement: "Balanced Growth",
+            // User picked Wisdom twice and Charisma once → total 3 picks.
+            "Balanced Growth": ["Wisdom", "Wisdom", "Charisma"],
+          },
+        },
+      },
+      lib,
+    );
+    // All picks consumed — no more pending.
+    expect(view.pendingChoices.find((p) => p.feature.name === "Balanced Growth")).toBeUndefined();
+    // Ability Scores trait bucket holds each pick as a formatted entry.
+    expect(view.traits["Ability Scores"]).toEqual(["+1 Wisdom", "+1 Wisdom", "+1 Charisma"]);
+  });
+
+  it("partial duplicate picks leave the right remaining count", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Fighter", level: 4 }],
+        choices: {
+          Fighter: {
+            Improvement: "Balanced Growth",
+            "Balanced Growth": ["Wisdom"],
+          },
+        },
+      },
+      lib,
+    );
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Balanced Growth")!;
+    expect(pending.remaining).toBe(2);
+    expect(pending.picked).toEqual(["Wisdom"]);
+    expect(view.traits["Ability Scores"]).toEqual(["+1 Wisdom"]);
+  });
+
+  it("defaults asi options to the six core attributes when omitted", () => {
+    const doc: SourceDoc = {
+      name: "Feat",
+      kind: "class",
+      meta: {},
+      details: [
+        {
+          name: "Score Boost",
+          choose: { type: "asi", number: 1, quantity: 2 },
+        },
+      ],
+      options: [],
+      unlocks: [],
+      tables: [],
+    };
+    const libWithFeat: CompendiumLib = {
+      classes: { Feat: doc },
+      subclasses: {},
+      lineages: {},
+      heritages: {},
+      backgrounds: {},
+    };
+    const view = resolveFeatures({ classes: [{ name: "Feat", level: 1 }] }, libWithFeat);
+    const pending = view.pendingChoices.find((p) => p.feature.name === "Score Boost")!;
+    expect(pending.options.map((o) => o.name)).toEqual([
+      "Strength",
+      "Dexterity",
+      "Constitution",
+      "Intelligence",
+      "Wisdom",
+      "Charisma",
+    ]);
+  });
+});
+
 // ─── feature.level augmentations ─────────────────────────────────────────────
 
 describe("resolveFeatures: feature.level (per-level additions)", () => {
