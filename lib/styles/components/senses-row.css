@@ -3,7 +3,11 @@
 section[aria-label="Character Senses"] {
   container-type: inline-size;
   display: grid;
+  /* Two implicit rows: header bar, then value cells. The senses dl spans
+   * both via grid-row: 1 / 3 so its own "Senses" tag heading aligns with
+   * the "Passive" header to its left. */
   grid-template-columns: repeat(3, 1fr) 1.5fr;
+  grid-template-rows: auto 1fr;
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-radius: 4px;
@@ -18,21 +22,46 @@ section[aria-label="Character Senses"] {
 
 /* ── Inner dividers between cells ───────────────────────────────────────── */
 
-section[aria-label="Character Senses"] > output + output,
-section[aria-label="Character Senses"] > output + dl,
-section[aria-label="Character Senses"] > dl + output {
+section[aria-label="Character Senses"] > output + output {
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+section[aria-label="Character Senses"] > dl {
+  border-left: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+/* ── "Passive" tag heading (mirrors the Skills section header) ──────────── */
+
+section[aria-label="Character Senses"] > header {
+  grid-column: 1 / 4;
+  grid-row: 1;
+  --rpg-tag-cut: 8px;
+  filter: none;
+  /* Match the senses dl's `dt` (0.7em + line-height 1.2) so the two
+   * heading bars top-align as a single ribbon across all four cells. */
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-senses-header, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.2;
+}
+
+section[aria-label="Character Senses"] > header > span {
+  clip-path: none;
+  padding: 2px 8px;
 }
 
 /* ── Passive value boxes ────────────────────────────────────────────────── */
 
 section[aria-label="Character Senses"] > output {
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 8px 8px;
+  gap: 6px;
+  padding: 12px 8px 14px;
 }
 
 section[aria-label="Character Senses"] > output > data {
@@ -43,17 +72,22 @@ section[aria-label="Character Senses"] > output > data {
 }
 
 section[aria-label="Character Senses"] > output > small {
-  font-size: 0.85em;
+  font-size: 0.72em;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--rpg-senses-label, light-dark(#3a3020, #c0b8a4));
-  line-height: 1;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 /* ── Senses list panel ──────────────────────────────────────────────────── */
 
 section[aria-label="Character Senses"] > dl {
+  /* Spans both grid rows so its own "Senses" header sits in line with the
+   * "Passive" header on its left. */
+  grid-column: 4;
+  grid-row: 1 / 3;
   /* --_gutter: where "Senses" text starts inside the tag heading */
   --_gutter: 21px;
   display: grid;

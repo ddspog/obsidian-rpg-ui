@@ -1,0 +1,108 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Obsidian-only overrides
+   These rules tighten the layout when the sheet is rendered inside
+   Obsidian (reading mode, live preview). All selectors are scoped to
+   `.markdown-rendered` / `.markdown-source-view` so Storybook's standalone
+   stories stay unaffected.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Constrain the health management panel — full-width is overkill in
+ * Obsidian's reading column. ~720px keeps it dense without touching
+ * the inner row layouts. */
+.markdown-rendered section[aria-label="Health Management"],
+.markdown-source-view.mod-cm6 section[aria-label="Health Management"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* The banner header sits atop the health panel and shares its width — keep
+ * it in sync so the two blocks visually stack. */
+.markdown-rendered header[aria-details*=" Banner"],
+.markdown-source-view.mod-cm6 header[aria-details*=" Banner"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* And the attribute stats block (STR/DEX/CON/...) lives right below — keep
+ * the visual column consistent. */
+.markdown-rendered section[aria-label="Character Stats"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Stats"] {
+  max-width: 720px;
+  margin-inline: auto;
+  /* Cancel the negative top margin that pulls the hex pairs UP into the
+   * health panel above. The save badges were leaking over the panel's
+   * bottom edge in Obsidian's tighter layout. */
+  margin-block-start: 0;
+}
+
+/* Skills & senses follow the same column width. */
+.markdown-rendered section[aria-label="Character Skills"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Skills"],
+.markdown-rendered section[aria-label="Character Senses"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Senses"],
+.markdown-rendered section[aria-label="Character Proficiencies"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Proficiencies"],
+.markdown-rendered section[aria-label="Character Features"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Features"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* Make the portrait bigger — 60px reads as a thumbnail when the panel is
+ * already capped at 720px. ~160px gives the face room without crowding
+ * the AC + Speed + HP column to its right. */
+.markdown-rendered figure[aria-details="Portrait Thumb"],
+.markdown-source-view.mod-cm6 figure[aria-details="Portrait Thumb"] {
+  width: 160px;
+}
+
+/* Obsidian's `.markdown-rendered li` defaults zero out paddings on list
+ * items, so the dashed divider between feature cards in a bucket sits
+ * flush against both the previous content and the next title. Re-assert
+ * the spacing with a higher-specificity selector scoped to the rendered
+ * markdown context. */
+.markdown-rendered .rpg-feature-bucket-entry,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry {
+  padding: 24px 0 16px;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry:first-child,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry:first-child {
+  padding-top: 4px;
+}
+
+/* Obsidian's default `button` styling fills with `--interactive-normal`
+ * and adds a frame, which clobbers the inline-glyph look the undo
+ * control gets in Storybook. Restore the transparent baseline so only
+ * the ↺ glyph shows until hover. */
+.markdown-rendered .rpg-feature-decisions-undo,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-undo {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.markdown-rendered .rpg-feature-decisions-undo:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-undo:hover {
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  border-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+/* Obsidian's reading-view bullet lists ship with a hefty inline-start
+ * padding (`var(--list-indent, ~1.5em)` plus extra `<li>` padding) that
+ * pushes feature-card bullet rows far past the description text. Match
+ * the Storybook layout: a slim 1.25em gutter, bullet sitting just
+ * inside that, no extra `<li>` padding. */
+.markdown-rendered .rpg-feature-bucket-entry-desc ul,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc ul,
+.markdown-rendered .rpg-feature-bucket-entry-desc ol,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc ol {
+  padding-inline-start: 1.25em;
+  margin: 0.25em 0;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry-desc li,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc li {
+  padding-inline-start: 0;
+  margin: 0;
+}

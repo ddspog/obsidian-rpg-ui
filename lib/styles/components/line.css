@@ -1,7 +1,8 @@
 /* Line component styles — target elements by aria-label to avoid requiring className in markup */
 menu[aria-details="Line of Pills"] {
   display: flex;
-  gap: 0.375rem;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
   align-items: center;
   margin: 0;
   padding: 0;

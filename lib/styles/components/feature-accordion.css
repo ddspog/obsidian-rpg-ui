@@ -23,8 +23,6 @@ section[aria-label="Character Features"] {
 .rpg-feature-accordion {
   display: flex;
   flex-direction: column;
-  max-height: 60vh;
-  overflow-y: auto;
   /* Thick inset rollers at top and bottom simulate the ends of a scroll,
    * framing the list of buckets without relying on the outer section border. */
   border-top: 6px solid light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22));
@@ -151,9 +149,37 @@ section[aria-label="Character Features"] {
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
 }
 
+/* Compact link list for "trivial" entries — universal defaults that live on
+ * their own vault pages (Dash, Disengage, Dodge, …). Rendered at the bottom
+ * of each aspect bucket, separated with middle dots. Content is rendered
+ * through Obsidian's MarkdownRenderer so each wikilink becomes a real
+ * internal-link anchor with hover-preview + click-to-open hooked up. */
+.rpg-feature-bucket-trivials {
+  padding: 4px 20px 10px;
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: light-dark(rgba(26, 18, 8, 0.75), rgba(227, 220, 206, 0.75));
+}
+
+.rpg-feature-bucket-trivials > div > p,
+.rpg-feature-bucket-trivials > p {
+  margin: 0;
+}
+
+.rpg-feature-bucket-trivials a.internal-link {
+  color: light-dark(#2ea043, #7ad188);
+  text-decoration: none;
+}
+
+.rpg-feature-bucket-trivials a.internal-link:hover {
+  text-decoration: underline;
+}
+
 /* ── Bucket content ─────────────────────────────────────────────────────── */
 
-.rpg-feature-bucket ul {
+/* Direct-child only — nested `<ul>`s inside markdown-rendered feature text
+ * (e.g. Field Medic's passive bullets) should keep their default bullets. */
+.rpg-feature-bucket > ul {
   list-style: none;
   margin: 0;
   padding: 0 20px 8px;
@@ -167,7 +193,12 @@ section[aria-label="Character Features"] {
   grid-template-columns: auto 1fr;
   column-gap: 12px;
   row-gap: 4px;
-  padding: 8px 0;
+  /* Space above gives the next feature's title room to breathe; space
+   * below gives the previous feature's content distance from the dashed
+   * divider. Obsidian's prose line-height is taller than Storybook's,
+   * so the divider needs noticeably more padding here than felt right
+   * in the standalone story. */
+  padding: 24px 0 16px;
   border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
 }
 
@@ -296,6 +327,17 @@ section[aria-label="Character Features"] {
 .rpg-feature-bucket-entry-desc p:first-child { margin-top: 0; }
 .rpg-feature-bucket-entry-desc p:last-child { margin-bottom: 0; }
 
+.rpg-feature-bucket-entry-desc ul {
+  list-style: disc;
+  padding-left: 1.25em;
+  margin: 0.25em 0;
+}
+.rpg-feature-bucket-entry-desc ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+  margin: 0.25em 0;
+}
+
 /* ── Traits bucket (per-source prose summary) ───────────────────────────── */
 
 .rpg-feature-traits-summary {
@@ -369,6 +411,13 @@ section[aria-label="Character Features"] {
   font-weight: 700;
 }
 
+/* Level tag prefixing per-level trait rows on class/subclass sources. */
+.rpg-feature-traits-level-tag {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  font-weight: 700;
+  margin-right: 4px;
+}
+
 /* ── Pending choices ────────────────────────────────────────────────────── */
 
 section[aria-label="Character Features"] > .rpg-feature-pending-list {
@@ -391,6 +440,103 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* Collapsible "Choices to make" — mirrors the Decisions Made details so
+ * both sub-sections read the same. Open by default (the `open` attribute
+ * on the React element); user can collapse when done picking. */
+.rpg-feature-pending-details {
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-feature-pending-details > summary {
+  padding: 6px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  user-select: none;
+}
+
+.rpg-feature-pending-details > summary::-webkit-details-marker,
+.rpg-feature-pending-details > summary::marker {
+  display: none;
+  content: "";
+}
+
+.rpg-feature-pending-details > summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.75em;
+  color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
+  transition: transform 120ms ease;
+}
+
+.rpg-feature-pending-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.rpg-feature-pending-label {
+  flex: 1;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
+}
+
+.rpg-feature-pending-count {
+  font-size: 0.75em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+}
+
+.rpg-feature-pending-groups {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Source-grouping headers inside the pending-choices section. Mirror the
+ * TRAITS source label styling so classes / lineages / heritages /
+ * backgrounds read consistently across the Features panel. */
+.rpg-feature-pending-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.rpg-feature-pending-group-label {
+  margin: 6px 0 2px;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-feature-pending-group-label a.internal-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rpg-feature-pending-group-label a.internal-link:hover {
+  text-decoration: underline;
+}
+
+/* Indent each pending row inside its source group so the hierarchy reads
+ * at a glance — the source header sits flush left, rows sit nested. Matches
+ * the specificity of the base `.rpg-feature-pending` rule so the shorthand
+ * `padding: 6px 0` doesn't zero out the left inset. */
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-group .rpg-feature-pending {
+  padding-left: 20px;
+}
+
+.rpg-feature-pending-group-label {
+  padding-left: 2px;
 }
 
 /* ── Decisions log (collapsed review of picks already made) ─────────────── */
@@ -457,7 +603,8 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
 }
 
 .rpg-feature-decisions-group-label {
-  margin: 0 0 2px;
+  margin: 6px 0 2px;
+  padding-left: 2px;
   font-size: 0.85em;
   font-weight: 700;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
@@ -475,7 +622,7 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
 .rpg-feature-decisions-group ul {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 12px;
+  padding: 0 0 0 20px;
 }
 
 .rpg-feature-decisions-group li {
@@ -487,9 +634,9 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
 }
 
 .rpg-feature-decisions-group li::before {
-  content: "—";
+  content: "•";
   position: absolute;
-  left: -10px;
+  left: -12px;
   top: 0;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   font-weight: 700;
@@ -507,6 +654,27 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list > h3 {
 
 .rpg-feature-decisions-group li a.internal-link:hover {
   text-decoration: underline;
+}
+
+.rpg-feature-decisions-undo {
+  appearance: none;
+  margin-left: 6px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 0.85em;
+  line-height: 1;
+  background: transparent;
+  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  vertical-align: baseline;
+}
+
+.rpg-feature-decisions-undo:hover {
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  color: light-dark(#1a1208, #e3dcce);
+  border-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
 }
 
 section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending {
@@ -580,4 +748,36 @@ section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-featur
 section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending menu button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ASI picks — counter layout with `−` / name / `+` per row. */
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-asi menu {
+  gap: 4px 10px;
+}
+
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-asi-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-asi-row .rpg-feature-pending-asi-label {
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 3.5em;
+}
+
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-asi-row .rpg-feature-pending-asi-count {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+section[aria-label="Character Features"] > .rpg-feature-pending-list .rpg-feature-pending-asi-row button {
+  padding: 0 8px;
+  font-size: 0.9em;
+  line-height: 1;
+  min-width: 1.6em;
 }

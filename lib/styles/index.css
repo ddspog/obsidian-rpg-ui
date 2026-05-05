@@ -71,3 +71,8 @@
 @import "./components/dice-tray.css";
 @import "./components/dice-roll-modal.css";
 @import "./file-suggest.css";
+
+/* Obsidian-only layout overrides — keep last so it can override component
+ * defaults without affecting Storybook (the selectors are scoped to
+ * .markdown-rendered / .markdown-source-view). */
+@import "./obsidian-overrides.css";
