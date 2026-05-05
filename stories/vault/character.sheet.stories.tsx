@@ -155,8 +155,11 @@ classes:
   - name: [[Cleric]]
     level: ${args.level}
 lineage:
-  file: [[High Elf]]
-  text: High Elf
+  file: [[Human]]
+heritage:
+  file: [[Great House]]
+background:
+  file: [[Adherent]]
 banner: "${args.banner}"
 xp: ${args.xp}
 luck: ${args.luck}
@@ -173,7 +176,7 @@ current_hp: ${args.current_hp}
 max_hp: ${args.max_hp}
 temp_hp: ${args.temp_hp}
 natural_ac: ${args.natural_ac}
-portrait: [[character-portrait.webp]]
+portrait: [[cleric-harold-davies.webp]]
 speed:
 ${speedEntries.join("\n")}
 hit_dice:
@@ -205,22 +208,14 @@ conditions:
     cha: args.cha_save_prof,
   });
 
-  // Skills YAML (computed from ability scores + proficiency_bonus + proficiency args)
-  const proficient: string[] = [];
-  const expert: string[] = [];
-  const push = (prof: number, name: string) => {
-    if (prof === 1) proficient.push(name);
-    if (prof === 2) expert.push(name);
-  };
-  push(args.perception_prof, "Perception");
-  push(args.insight_prof, "Insight");
-  push(args.investigation_prof, "Investigation");
-  blocksYaml.skills = buildSkillsYaml(abilities, args.proficiency_bonus, proficient, expert);
+  // Skills YAML — auto-derived from the resolved features view (`Skill P.`
+  // trait). Set fields under `additional:` here to promote a skill beyond
+  // what the traits granted. A non-empty stub keeps the sheet's per-block
+  // early return from skipping the render.
+  blocksYaml.skills = `additional: {}\n`;
 
-  // Senses YAML (High Elf darkvision)
-  blocksYaml.senses = `senses_list:
-  - type: darkvision
-    range: 60
+  // Senses YAML (Human has no special senses)
+  blocksYaml.senses = `senses_list: []
 `;
 
   // Attacks YAML
@@ -229,13 +224,12 @@ conditions:
     { name: "Javelin", to_hit: 7, range: "30/120 ft.", damage: { roll: "1d6+4", type: "piercing" } },
   ]);
 
-  // Proficiencies YAML
-  blocksYaml.proficiencies = buildProficienciesYaml({
-    armor: ["Light Armor", "Medium Armor", "Shields"],
-    weapons: ["Simple Weapons"],
-    tools: [],
-    languages: ["Common", "Elvish"],
-  });
+  // Proficiencies YAML — no explicit lists, so the block auto-derives from
+  // the resolved feature traits (Armor / Weapon Proficiency / Tool P. /
+  // Languages). The empty `additional:` map is a non-empty stub so the
+  // sheet's per-block early return doesn't skip rendering — set fields here
+  // to append homebrew entries on top of the auto-derived lists.
+  blocksYaml.proficiencies = `additional: {}\n`;
 
   // Features YAML — resolver pulls Cleric features from the compendium based
   // on the header's declared class; the per-source feature list lives there,
@@ -253,6 +247,35 @@ function renderSheet(args: SheetArgs, system: RPGSystem) {
   const orderedBlocks = getOrderedBlocks(system);
   const blocksYaml = buildBlocksYaml(args);
 
+  return <Sheet args={args} system={system} orderedBlocks={orderedBlocks} blocksYaml={blocksYaml} />;
+}
+
+function Sheet({
+  args,
+  system,
+  orderedBlocks,
+  blocksYaml,
+}: {
+  args: SheetArgs;
+  system: RPGSystem;
+  orderedBlocks: string[];
+  blocksYaml: Record<string, string>;
+}) {
+  // Shared state container so a pick made in one block (e.g. the features
+  // block's `setChoices`) propagates into every sibling block's `blocks`
+  // prop on the next render. Each block seeds itself from its initial YAML
+  // on first mount, then bubbles state changes up via `onBlockSelfChange`.
+  const [sharedBlocks, setSharedBlocks] = React.useState<Record<string, Record<string, unknown>>>({});
+  const handleBlockSelfChange = React.useCallback(
+    (name: string, next: Record<string, unknown>) => {
+      setSharedBlocks((prev) => {
+        if (prev[name] === next) return prev;
+        return { ...prev, [name]: next };
+      });
+    },
+    [],
+  );
+
   return (
     <div
       style={{
@@ -265,7 +288,15 @@ function renderSheet(args: SheetArgs, system: RPGSystem) {
       }}
     >
       {orderedBlocks.map((blockName) => (
-        <SheetBlock key={blockName} blockName={blockName} args={args} system={system} blocksYaml={blocksYaml} />
+        <SheetBlock
+          key={blockName}
+          blockName={blockName}
+          args={args}
+          system={system}
+          blocksYaml={blocksYaml}
+          sharedBlocks={sharedBlocks}
+          onBlockSelfChange={handleBlockSelfChange}
+        />
       ))}
     </div>
   );
@@ -283,9 +314,11 @@ interface SheetBlockProps {
   args: SheetArgs;
   system: RPGSystem;
   blocksYaml: Record<string, string>;
+  sharedBlocks: Record<string, Record<string, unknown>>;
+  onBlockSelfChange: (name: string, next: Record<string, unknown>) => void;
 }
 
-function SheetBlock({ blockName, args, system, blocksYaml }: SheetBlockProps): React.ReactNode {
+function SheetBlock({ blockName, args, system, blocksYaml, sharedBlocks, onBlockSelfChange }: SheetBlockProps): React.ReactNode {
   const yaml = blocksYaml[blockName] || "";
 
   if (!yaml) {
@@ -304,6 +337,8 @@ function SheetBlock({ blockName, args, system, blocksYaml }: SheetBlockProps): R
       filename={args.filename}
       yaml={yaml}
       blocks={blocksYaml}
+      sharedBlocks={sharedBlocks}
+      onBlockSelfChange={onBlockSelfChange}
       frontmatter={{
         proficiency_bonus: args.proficiency_bonus,
         level: args.level,
@@ -328,18 +363,18 @@ export const Default: Story = {
     background: "transparent",
 
     // Header
-    filename: "Aldric Ironveil",
+    filename: "Jacqui Ilitul",
     xp: 6500,
     luck: 3,
     banner: "#ac8080",
 
     // Stats
-    strength: 12,
-    dexterity: 10,
-    constitution: 14,
-    intelligence: 10,
+    strength: 14,
+    dexterity: 11,
+    constitution: 12,
+    intelligence: 8,
     wisdom: 18,
-    charisma: 13,
+    charisma: 10,
     str_save_prof: 0,
     con_save_prof: 0,
     wis_save_prof: 1,

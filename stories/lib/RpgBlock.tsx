@@ -24,6 +24,22 @@ export interface RpgBlockProps {
   /** Optional sibling block YAML fixtures keyed by block name */
   blocks?: Record<string, string>;
   /**
+   * Controlled-state escape hatch for the composite sheet story. When set,
+   * the wrapper uses this map (keyed by block name) as the live sibling
+   * state, and calls `onBlockSelfChange` whenever the current block's own
+   * `self` updates via a setter. Lets the sheet story share one state
+   * container across every block so a pick made in the features block
+   * flows into the proficiencies / skills / etc. blocks on the same
+   * render cycle.
+   */
+  sharedBlocks?: Record<string, Record<string, unknown>>;
+  /**
+   * Fires whenever this block's own `self` updates. The sheet story uses
+   * it to keep its `sharedBlocks` map in sync with the block's internal
+   * state.
+   */
+  onBlockSelfChange?: (blockName: string, next: Record<string, unknown>) => void;
+  /**
    * Mock file path injected into app.workspace.getActiveFile().path.
    * Defaults to "stories/sample-character.md".
    */
@@ -42,6 +58,8 @@ export function RpgBlock({
   yaml,
   frontmatter = {},
   blocks: blockFixtures = {},
+  sharedBlocks,
+  onBlockSelfChange,
   filePath,
   filename,
 }: RpgBlockProps) {
@@ -86,10 +104,16 @@ export function RpgBlock({
     initialSelf = { ...frontmatter };
   }
 
-  // Parse sibling block YAML fixtures
+  // Parse sibling block YAML fixtures — but when the parent story supplies
+  // `sharedBlocks`, prefer those objects so sibling state stays live (a
+  // pick in the features block flows into proficiencies on re-render).
   const blocksObj: Record<string, unknown> = {};
   const blockNames: string[] = entityDef ? Object.keys(entityDef.blocks ?? {}) : [];
   for (const bn of blockNames) {
+    if (sharedBlocks && bn in sharedBlocks) {
+      blocksObj[bn] = sharedBlocks[bn];
+      continue;
+    }
     const raw = blockFixtures[bn];
     if (raw) {
       try {
@@ -111,11 +135,13 @@ export function RpgBlock({
   return (
     <EntityBlockWrapper
       Comp={Comp}
+      block={block}
       initialSelf={initialSelf}
       lookupObj={lookupObj}
       blocksObj={blocksObj}
       frontmatter={frontmatter}
       system={system}
+      onBlockSelfChange={onBlockSelfChange}
     />
   );
 }
@@ -124,15 +150,24 @@ export function RpgBlock({
 
 interface WrapperProps {
   Comp: React.ComponentType<any>;
+  block: string;
   initialSelf: Record<string, unknown>;
   lookupObj: Record<string, unknown>;
   blocksObj: Record<string, unknown>;
   frontmatter: Record<string, unknown>;
   system: RPGSystem;
+  onBlockSelfChange?: (blockName: string, next: Record<string, unknown>) => void;
 }
 
-function EntityBlockWrapper({ Comp, initialSelf, lookupObj, blocksObj, frontmatter, system }: WrapperProps) {
+function EntityBlockWrapper({ Comp, block, initialSelf, lookupObj, blocksObj, frontmatter, system, onBlockSelfChange }: WrapperProps) {
   const [self, setSelf] = React.useState<Record<string, unknown>>(initialSelf);
+
+  // Bubble state changes up so the parent sheet story (or any composite
+  // wrapper) can mirror them into its `sharedBlocks` map and re-render
+  // sibling blocks with the fresh values.
+  React.useEffect(() => {
+    onBlockSelfChange?.(block, self);
+  }, [self, block, onBlockSelfChange]);
 
   const selfWithSetters = React.useMemo(() => {
     const setters: Record<string, unknown> = {};
