@@ -225,32 +225,34 @@ export async function resolveWikiFolder(
     (f: any) => f.path === name || f.path.startsWith(name + "/"),
   );
 
-  // 2. Folder suffix search — find the shortest folder whose path ends with /name
+  // 2. Folder suffix search — find a folder whose path equals or ends with `/name`
+  //    anywhere in the vault, then return every file beneath it (including
+  //    deep subfolders, e.g. `compendium/talents` → `compendium/talents/magic/Foo.md`).
   if (matched.length === 0) {
-    // Build the set of unique folder paths that end with the given suffix
-    matched = allFiles.filter((f: any) => {
-      const dir = f.path.substring(0, f.path.lastIndexOf("/"));
-      // Check if `dir` ends with /name or equals name
-      return dir === name || dir.endsWith("/" + name);
-    });
-
-    // If still nothing, try matching any path segment sequence as a suffix
-    // e.g. "compendium/skills" matches "systems/tales-of-the-valiant/compendium/skills/Foo.md"
-    if (matched.length === 0) {
-      matched = allFiles.filter((f: any) => {
-        const dir = f.path.substring(0, f.path.lastIndexOf("/"));
-        return dir.endsWith("/" + name) || dir === name;
-      });
+    // Walk every file's directory chain so we discover ancestor folders, not
+    // just the immediate parent of each file. Without this, calling
+    // `wiki.folder("compendium/talents")` against a tree where every talent
+    // lives in a `magic/`, `martial/`, or `technical/` subfolder returned
+    // nothing because no file's *immediate* parent matched.
+    const allDirs = new Set<string>();
+    for (const f of allFiles) {
+      let dir = f.path.substring(0, f.path.lastIndexOf("/"));
+      while (dir) {
+        allDirs.add(dir);
+        const slash = dir.lastIndexOf("/");
+        if (slash < 0) break;
+        dir = dir.substring(0, slash);
+      }
     }
-
-    // Pick the shortest matching folder (most specific, shallowest depth)
-    if (matched.length > 0) {
-      const dirs = [...new Set(matched.map((f: any) =>
-        f.path.substring(0, f.path.lastIndexOf("/")),
-      ))];
-      const shortest = dirs.sort((a, b) => a.length - b.length)[0];
-      matched = allFiles.filter((f: any) =>
-        f.path.startsWith(shortest + "/") || f.path === shortest,
+    const candidates = [...allDirs].filter(
+      (d) => d === name || d.endsWith("/" + name),
+    );
+    if (candidates.length > 0) {
+      // Pick the shortest matching folder (the most general / shallowest
+      // ancestor). Then sweep every file at any depth beneath it.
+      const shortest = candidates.sort((a, b) => a.length - b.length)[0];
+      matched = allFiles.filter(
+        (f: any) => f.path.startsWith(shortest + "/") || f.path === shortest,
       );
     }
   }

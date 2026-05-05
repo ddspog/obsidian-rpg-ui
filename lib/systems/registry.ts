@@ -126,7 +126,11 @@ export class SystemRegistry {
 
   public invalidateSystem(systemFolderPath: string): void {
     this.systemCache.delete(systemFolderPath);
-    if (this.folderMappings.has(systemFolderPath)) this.loadSystemAsync(systemFolderPath);
+    // Eagerly re-evaluate so the next render hits a hot cache. Pre-loading
+    // here was guarded on `folderMappings.has(systemFolderPath)`, but the
+    // map keys are character-note folders and the values are system paths
+    // — the guard never matched, so invalidation effectively never reloaded.
+    this.loadSystemAsync(systemFolderPath);
   }
 
   public clearCache(): void { this.systemCache.clear(); }

@@ -652,10 +652,12 @@ export type TraitValue = string | string[];
 export type TraitMap = Record<string, TraitValue>;
 
 export interface ChooseSpec {
-  type: "traits";
-  category: string;
+  type: "traits" | "asi" | "talent";
+  category?: string;
   number: number;
-  options: string[];
+  quantity?: number;
+  unique?: boolean;
+  options?: string[];
 }
 
 export interface FeatureLevelAddition {
@@ -667,7 +669,7 @@ export interface FeatureAspect {
   name?: string;
   text?: string;
   resource?: string;
-  max?: number | Record<number, number>;
+  max?: number | string | Record<number, number>;
   recovery?: string;
   recharge?: string;
 }
@@ -677,14 +679,14 @@ export interface FeatureDetails {
   subtitle?: string;
   text?: string;
   traits?: TraitMap;
-  choose?: ChooseSpec;
+  choose?: ChooseSpec | ChooseSpec[];
   levels?: FeatureLevelAddition[];
   type?: string;
   level?: number;
   uses?: number;
   link?: string;
   pick?: number;
-  max?: number | Record<number, number>;
+  max?: number | string | Record<number, number>;
   recovery?: string;
   uses_resource?: string;
   action?: FeatureAspect;
@@ -712,7 +714,7 @@ export interface UnlockBlock {
   level: number;
 }
 
-export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background";
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent";
 
 export interface SourceDoc {
   name: string;
@@ -731,7 +733,17 @@ export interface CharacterDecl {
   heritage?: string;
   background?: string;
   choices?: Record<string, Record<string, string | string[]>>;
+  additional?: {
+    talents?: ExtraRef[];
+    features?: ExtraRef[];
+    boons?: ExtraRef[];
+    curses?: ExtraRef[];
+  };
 }
+
+export type ExtraRef =
+  | string
+  | { ref: string; source?: string; level?: number };
 
 export interface CompendiumLib {
   classes: Record<string, SourceDoc>;
@@ -739,6 +751,7 @@ export interface CompendiumLib {
   lineages: Record<string, SourceDoc>;
   heritages: Record<string, SourceDoc>;
   backgrounds: Record<string, SourceDoc>;
+  talents?: Record<string, SourceDoc>;
   tagIndex?: Record<string, string[]>;
   folderIndex?: Record<string, string[]>;
 }
@@ -759,6 +772,7 @@ export interface ResolvedSource {
   pendingChoices: PendingChoice[];
   baseTraits: Record<string, string[]>;
   leveledTraits: Record<string, string[]>;
+  traitsByLevel: Record<number, Record<string, string[]>>;
 }
 
 export interface ResolvedView {
@@ -855,6 +869,7 @@ export declare function substituteExpressions(source: string, ctx: EvalContext):
 export interface PendingChoiceRowProps {
   pending: PendingChoice;
   onToggle?: (option: string) => void;
+  onPick?: (option: string, delta: 1 | -1) => void;
 }
 export declare const PendingChoiceRow: FunctionComponent<PendingChoiceRowProps>;
 

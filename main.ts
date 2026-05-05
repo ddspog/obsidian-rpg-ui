@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, MarkdownSectionInformation, parseYaml } from "obsidian";
+import { App, Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, MarkdownSectionInformation, parseYaml, TFile } from "obsidian";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import {
@@ -87,6 +87,33 @@ export default class DndUIToolkitPlugin extends Plugin {
       this.app.metadataCache.on("changed", (file) => {
         const filefm = this.app.metadataCache.getCache(file.path)?.frontmatter;
         msgbus.publish(file.path, "fm:changed", Fm.anyIntoFrontMatter(filefm || {}));
+      })
+    );
+
+    // Compendium-edit hot reload: when any file under a registered system
+    // folder changes, invalidate that system's cached bundle. Without this
+    // the entity factory's `compendium` (loaded via `wiki.folder`) stays
+    // frozen at first load, so edits to class / subclass / lineage docs
+    // don't surface in the character sheet until the plugin restarts.
+    // Character notes themselves live OUTSIDE the system folders (under
+    // `folderMappings`'s key paths, not its values), so they never trigger
+    // this invalidation.
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (!(file instanceof TFile)) return;
+        if (!file.path.endsWith(".md")) return;
+        const reg = SystemRegistry.getInstance();
+        for (const systemPath of reg.getFolderMappings().values()) {
+          if (file.path === systemPath || file.path.startsWith(systemPath + "/")) {
+            reg.invalidateSystem(systemPath);
+            // Re-render any open character notes whose folder maps to this
+            // system. The system bundle reload is async; once it lands,
+            // these forced re-renders re-run the markdown post-processors
+            // which then pick up the freshly-resolved compendium.
+            void this.refreshSystemConsumers(systemPath);
+            break;
+          }
+        }
       })
     );
 
@@ -307,6 +334,45 @@ export default class DndUIToolkitPlugin extends Plugin {
 
   onunload() {}
 
+  /**
+   * Re-render every open markdown view whose file lives in a folder mapped
+   * to the given system path. Called after a compendium file changes so
+   * the freshly-resolved system bundle gets surfaced without requiring a
+   * manual reload. Awaits the in-flight system load so the re-render hits
+   * the new bundle, not the still-loading one.
+   */
+  async refreshSystemConsumers(systemFolderPath: string): Promise<void> {
+    const reg = SystemRegistry.getInstance();
+    // Wait for the (re)load to finish so callers see the new system on
+    // re-render. invalidateSystem already kicked off the load.
+    await reg.loadSystemAsync(systemFolderPath);
+    const mappings = reg.getFolderMappings();
+    const consumerFolders: string[] = [];
+    for (const [folder, sys] of mappings) {
+      if (sys === systemFolderPath) consumerFolders.push(folder);
+    }
+    if (consumerFolders.length === 0) return;
+    const inMappedFolder = (path: string): boolean =>
+      consumerFolders.some((f) => f === "" || path === f || path.startsWith(f + "/"));
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      const view = leaf.view as unknown as {
+        getViewType?: () => string;
+        file?: { path?: string };
+        previewMode?: { rerender?: (full?: boolean) => void };
+      };
+      if (typeof view.getViewType !== "function") return;
+      if (view.getViewType() !== "markdown") return;
+      const path = view.file?.path;
+      if (!path || !inMappedFolder(path)) return;
+      try {
+        view.previewMode?.rerender?.(true);
+      } catch {
+        // Some views don't expose previewMode (source-mode editors, …);
+        // they'll pick up the change on next render naturally.
+      }
+    });
+  }
+
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.settings.systemMappings = this.normalizeSystemMappings(this.settings.systemMappings);
@@ -428,6 +494,10 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           if (this.entityType) break;
         }
       }
+      // Snapshot resolved entity/block names for the wrapper closure so YAML
+      // patches stay scoped to this view's fence even when `this` rebinds.
+      const entityType = this.entityType;
+      const blockName = this.blockName;
 
       // Load entity file blocks via resolver so expressions can read sibling blocks
       let entityData = { codeBlocks: new Map<string, string[]>() } as any;
@@ -443,30 +513,54 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
         const [self, setSelf] = React.useState<Record<string, unknown>>(initialSelf);
 
         const selfWithSetters = React.useMemo(() => {
+          // Setter factory shared by both the explicit pre-seeding (for keys
+          // already present in self) and the lazy Proxy fallback (so blocks
+          // can call `self.setChoices(...)` even when the YAML didn't
+          // declare `choices:` yet — patchYamlBlock will append the new
+          // top-level key on first write).
+          const makeSetter = (key: string) => (valueOrUpdater: unknown) => {
+            setSelf((prev) => {
+              const newValue =
+                typeof valueOrUpdater === "function"
+                  ? (valueOrUpdater as (p: unknown) => unknown)(prev[key])
+                  : valueOrUpdater;
+              patchYamlBlock(
+                app,
+                sourcePath,
+                entityType,
+                blockName,
+                key,
+                newValue,
+                sectionInfo ?? undefined,
+              ).catch((err) => console.error("RPG UI: yaml patch failed:", err));
+              return { ...prev, [key]: newValue };
+            });
+          };
+
           const setters: Record<string, unknown> = {};
           for (const key of Object.keys(self)) {
             const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-            setters[setterName] = (valueOrUpdater: unknown) => {
-              setSelf((prev) => {
-                const newValue =
-                  typeof valueOrUpdater === "function"
-                    ? (valueOrUpdater as (p: unknown) => unknown)(prev[key])
-                    : valueOrUpdater;
-                if (sectionInfo) {
-                  patchYamlBlock(
-                    app,
-                    sourcePath,
-                    sectionInfo.lineStart,
-                    sectionInfo.lineEnd,
-                    key,
-                    newValue,
-                  ).catch((err) => console.error("RPG UI: yaml patch failed:", err));
-                }
-                return { ...prev, [key]: newValue };
-              });
-            };
+            setters[setterName] = makeSetter(key);
           }
-          return { ...self, ...setters };
+
+          // Wrap in a Proxy so any `set<Cap>` access lazily mints a setter
+          // for the corresponding key — supports blocks that initialise
+          // optional state (like the features block writing `choices:` on
+          // first pick) without requiring the YAML to pre-declare it.
+          const merged = { ...self, ...setters };
+          return new Proxy(merged, {
+            get(target, prop, receiver) {
+              if (typeof prop === "string" && prop.startsWith("set") && prop.length > 3) {
+                const c = prop.charCodeAt(3);
+                if (c >= 0x41 && c <= 0x5a /* 'A'-'Z' */) {
+                  if (prop in target) return Reflect.get(target, prop, receiver);
+                  const key = prop.charAt(3).toLowerCase() + prop.slice(4);
+                  return makeSetter(key);
+                }
+              }
+              return Reflect.get(target, prop, receiver);
+            },
+          });
         }, [self]);
 
         // Build blocks object: parse YAML for each declared block in the entity
