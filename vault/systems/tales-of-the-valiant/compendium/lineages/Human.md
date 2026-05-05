@@ -28,7 +28,8 @@ choose:
   - type: traits
     category: "Skill P."
     number: 1
-    options: #Skills
+    options:
+      - "@compendium/skills"
   - type: talent
     number: 1
 ```

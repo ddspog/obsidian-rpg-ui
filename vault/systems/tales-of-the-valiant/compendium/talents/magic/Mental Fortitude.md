@@ -1,0 +1,19 @@
+---
+cssclasses:
+  - note-feature
+  - rpg-ui
+---
+# Mental Fortitude
+```rpg feature.details
+text: |
+  Through rigid mental exercise, you have fortified yourself against mind-altering effects. You gain these benefits:
+  - Once per short rest, when you fail an INT, WIS, or CHA save, you can choose to reroll the save and take the new result.
+  - When you start your turn [[charmed]], [[frightened]], [[paralyzed]], or [[Stunned]], you gain 1 [[Luck]].
+passive:
+  text: |
+    Through rigid mental exercise, you have fortified yourself against mind-altering effects. You gain these benefits:
+    - Once per short rest, when you fail an INT, WIS, or CHA save, you can choose to reroll the save and take the new result.
+    - When you start your turn [[charmed]], [[frightened]], [[paralyzed]], or [[Stunned]], you gain 1 [[Luck]].
+```
+
+**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

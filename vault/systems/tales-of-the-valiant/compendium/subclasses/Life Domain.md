@@ -32,15 +32,16 @@ action:
     As an action, you present your holy symbol and evoke healing energy that can restore a number of hit points equal to 5 × your cleric level.
 
     Choose any creatures within 30 feet of you and divide those hit points among them. This feature can restore a creature to no more than half of its hit point maximum. This healing has no effect on [[Undead]] or [[Constructs]]. 
+traits:
+  Channel Divinity: Preserve Life
 ```
 ```rpg feature.details
 name: Disciple of Life
 subtitle: "3rd-Level Life Feature"
 level: 3
+type: passive
 text: |
   Your healing spells are more effective. When you use a [[Divine]] spell of 1st circle or higher to restore hit points to a creature, the creature regains additional hit points equal to 2 + the spell’s circle.
-passive:
-  text: Your healing spells are more effective. When you use a [[Divine]] spell of 1st circle or higher to restore hit points to a creature, the creature regains additional hit points equal to 2 + the spell’s circle.
 ```
 ```rpg feature.details
 name: Life Domain Spells
@@ -68,10 +69,9 @@ spellcasting:
 name: Blessed Healer
 subtitle: "7th-Level Life Feature"
 level: 7
+type: passive
 text: |
   Healing spells you cast on others heal you as well. When you cast a [[Divine]] spell of 1st circle or higher that restores hit points to a creature other than you, you regain hit points equal to 2 + the spell’s circle.
-passive:
-  text: Healing spells you cast on others heal you as well. When you cast a [[Divine]] spell of 1st circle or higher that restores hit points to a creature other than you, you regain hit points equal to 2 + the spell’s circle.
 ```
 ```rpg feature.details
 name: Greater Preservation
@@ -101,7 +101,7 @@ level: 15
 text: |
   When you cast a [[Divine]] spell of 1st circle or higher that restores hit points, you automatically restore the maximum possible number of hit points. For example, if a _cure wounds_ spell heals 1d8 + 3 hit points, rather than rolling, the target heals 11 hit points.
 update:
-  active: Disciple of Life
+  passive: Disciple of Life
   text: |
     Your healing spells are more effective. When you use a [[Divine]] spell of 1st circle or higher to restore hit points to a creature, you automatically restore the maximum possible number of hit points and additional hit points equal to 2 + the spell’s circle.
 ```

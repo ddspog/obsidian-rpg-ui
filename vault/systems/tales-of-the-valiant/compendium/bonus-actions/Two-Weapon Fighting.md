@@ -3,9 +3,9 @@ cssclasses:
   - note-feature
   - rpg-ui
 ---
-# Attack
+# Two-Weapon Fighting
 ```rpg feature.details
-type: action
-text: "![[06. Playing the Game#Attack|no-h4 clean]]"
+type: bonus
+text: "![[06. Playing the Game#Two-Weapon Fighting|clean no-h6]]"
 ```
 **Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

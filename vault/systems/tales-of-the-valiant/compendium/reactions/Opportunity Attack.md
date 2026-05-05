@@ -3,9 +3,9 @@ cssclasses:
   - note-feature
   - rpg-ui
 ---
-# Attack
+# Opportunity Attack
 ```rpg feature.details
-type: action
-text: "![[06. Playing the Game#Attack|no-h4 clean]]"
+type: reaction
+text: "![[06. Playing the Game#Opportunity Attacks|no-h4 clean]]"
 ```
 **Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

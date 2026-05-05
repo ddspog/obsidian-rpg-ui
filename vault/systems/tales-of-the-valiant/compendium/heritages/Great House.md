@@ -27,11 +27,12 @@ choose:
   - type: traits
     category: "Languages"
     number: 1
-    options: #Language
+    options:
+      - "@compendium/languages"
   - type: traits
     category: "Weapons"
     number: 1
     options:
-      - #Martial
+      - "@worldbuilding/martial"
 ```
 **Source**: *From **Tales of the Valiant** "Campaign Builder: Castles & Crowns" book by **Kobold Press**.*

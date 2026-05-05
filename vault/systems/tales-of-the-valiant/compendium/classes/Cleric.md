@@ -1,11 +1,7 @@
 ---
 .metadata:
   cssclasses: [note-class, rpg-ui]
-.CLASS:
-  hit_die: d8
-  caster: full
 ---
-
 # Cleric
 ![[cleric.webp|right|384]]Clerics are as diverse as the gods they serve, but all are united in their mission to act as their faith demands. A cleric's abilities reflect the strength of their faith. The more powerful a cleric becomes, the more their features resemble those of the god they worship.
 
@@ -58,7 +54,6 @@ choose:
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background:
-
 - (_a_) a [[Mace]] or (_b_) a [[Warhammer]] (if proficient)
 - (_a_) scale mail, (_b_) [[Leather]] armor, or (_c_) [[Chain Mail]] (if proficient)
 - (_a_) [[Crossbow, light]] and 20 [[Crossbow Bolts]] or (_b_) any [[Simple]] weapon
@@ -94,7 +89,6 @@ You start with the following equipment, in addition to the equipment granted by 
 name: Spellcasting
 subtitle: "1st-Level Cleric Feature"
 level: 1
-link: "[[Spellcasting]]"
 text: |
   As a conduit for divine power, you can cast Divine spells. See [[07. Spellcasting]] for general rules of spellcasting and the [[Divine]] spell list.
 
@@ -213,8 +207,8 @@ choose:
   category: "Weapons"
   number: 1
   options:
-    - #Martial
-    - #Simple
+    - "@worldbuilding/martial"
+    - "@worldbuilding/simple"
 ```
 ```rpg feature.choice
 parent: Manifestation of Faith
@@ -228,7 +222,7 @@ choose:
   category: "Cantrips"
   number: 1
   options:
-    - #Cantrips
+    - "@worldbuilding/cantrips"
 ```
 ```rpg feature.details
 name: Channel Divinity
@@ -315,10 +309,13 @@ name: Talented Growth
 text: |
   - Increase one ability score by 1 and select a talent from the magic talents list (see **Magic Talents** in **Chapter 4**).
 choose:
-  type: talent
-  number: 1
-  options:
-    - #MagicTalent
+  - type: asi
+    number: 1
+    quantity: 1
+  - type: talent
+    number: 1
+    options:
+      - "@compendium/talents/magic"
 ```
 ```rpg feature.details
 name: Destroy the Profane
@@ -327,7 +324,7 @@ level: 5
 text: |
   When a Fiend or Undead fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating is at or below the threshold shown in the **Destroy the Profane** table below.
 passive:
-  text: When a Fiend or Undead fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating (CR) is {{ table "destroy-the-profane" row=CLASS_LEVEL col="cr" }}
+  text: When a Fiend or Undead fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating (CR) is {{ table "destroy-the-profane" row=CLASS_LEVEL col="cr" step=true }}
 ```
 ```rpg table.destroy-the-profane
 |CLERIC LEVEL|CR|
@@ -395,8 +392,6 @@ choose:
   options:
     - Radiant Damage
     - Necrotic Damage
-traits:
-  Resistance: "+radiant or necrotic (choose at level-up)"
 ```
 ```rpg feature.details
 name: Epic Boon
