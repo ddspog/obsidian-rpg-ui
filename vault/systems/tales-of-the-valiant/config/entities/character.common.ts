@@ -5,7 +5,12 @@ export type PillDetails = {
       /** File name for pulling data, and serving as link for the pill. */
       file: string;
       /** Label for showing on the pill, if you do not want solely the file name. */
-      text?: string
+      text?: string;
+      /** Author note appended after the file/text label inside the pill —
+       *  use it to annotate why this lineage / background was picked, the
+       *  flavour name in your campaign, etc. Rendered as `Label · comment`
+       *  so it stays scannable next to the link. */
+      comment?: string;
 }
 
 /**

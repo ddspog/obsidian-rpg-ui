@@ -16,10 +16,13 @@ function resolveWikilink(link: string): string | null {
   return dest ? link : null;
 }
 
-/** Pretty-print `max` for a resource — scalar or `{ level: max }` map. */
+/** Pretty-print `max` for a resource — scalar passes through (including
+ *  string tokens like `"PB"`); `{ level: max }` map renders as
+ *  `Lv1: 1, Lv6: 2`. */
 function formatMax(max: FeatureDetails["max"]): string {
   if (max == null) return "";
   if (typeof max === "number") return String(max);
+  if (typeof max === "string") return max;
   return Object.entries(max)
     .sort((a, b) => Number(a[0]) - Number(b[0]))
     .map(([lv, n]) => `Lv${lv}: ${n}`)
@@ -53,7 +56,6 @@ export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = (
           ) : (
             <>
               {self.level != null && <small aria-details="Feature Level">Lv. {self.level}</small>}
-              {self.type && <small aria-details="Feature Type">{self.type.replace(/_/g, " ")}</small>}
               {self.uses != null && <small aria-details="Feature Uses">{self.uses} use{self.uses === 1 ? "" : "s"}</small>}
               {self.pick != null && <small aria-details="Feature Pick">Pick {self.pick}</small>}
             </>

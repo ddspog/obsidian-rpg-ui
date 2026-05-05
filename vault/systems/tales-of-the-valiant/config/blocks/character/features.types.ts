@@ -19,4 +19,25 @@ export type FeaturesBlockData = {
    * dots in the character-sheet accordion.
    */
   spent?: Record<string, number>;
+  /**
+   * Homebrew / one-off additions the trait + pick system can't capture
+   * through the standard compendium sources. Each list carries wikilink
+   * references to existing `rpg feature.details`-bearing pages (talents,
+   * boons, curses, any feature page). Entries can be a bare `"[[Name]]"`
+   * shorthand or an object with optional `source` / `level` that attributes
+   * the extra's feature cards + traits to a specific ResolvedSource (e.g.
+   * a boon granted mid-campaign by the Cleric's 4th-level milestone).
+   */
+  additional?: {
+    talents?: ExtraRef[];
+    features?: ExtraRef[];
+    boons?: ExtraRef[];
+    curses?: ExtraRef[];
+  };
 };
+
+/** Shorthand `"[[Name]]"` or a fully-specified `{ ref, source?, level? }`. */
+export type ExtraRef =
+  | string
+  | { ref: string; source?: string; level?: number };
+

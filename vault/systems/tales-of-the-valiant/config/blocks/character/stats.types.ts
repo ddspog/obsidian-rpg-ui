@@ -1,26 +1,32 @@
-import { SkillDetails } from "../../entities/character.common";
-
-type AttributeDetails = {
-  /** Current attribute score */
-  value: number;
-  /** Current saving throw proficiency and vantage */
-  save: SkillDetails;
-}
-
 /**
- * Types for the Stats block of the Character Entity, defining the shape of its data and subcomponents.
+ * Types for the Stats block of the Character Entity.
+ *
+ * Each attribute is just its starting (base) score. Save proficiency now
+ * comes from the resolved features view's `Saves` trait, and ASI bumps
+ * fold into the displayed value automatically — so there's no need to
+ * carry per-attribute `save: { proficiency, vantage, bonus }` objects in
+ * the YAML anymore.
+ *
+ * The expanded object form (`STR: { value: 14, save: {...} }`) still
+ * works as an override for the rare case an author needs to set save
+ * vantage/bonus by hand.
  */
+type AttributeBase = number | {
+  value: number;
+  save?: {
+    proficiency?: number;
+    vantage?: number;
+    bonus?: number;
+  };
+};
+
 export type StatsProps = {
-    /** Each core attribute with its value and saving throw details */
-    STR: AttributeDetails;
-    /** Each core attribute with its value and saving throw details */
-    DEX: AttributeDetails;
-    /** Each core attribute with its value and saving throw details */
-    CON: AttributeDetails;
-    /** Each core attribute with its value and saving throw details */
-    INT: AttributeDetails;
-    /** Each core attribute with its value and saving throw details */
-    WIS: AttributeDetails;
-    /** Each core attribute with its value and saving throw details */
-    CHA: AttributeDetails;
+    /** Each core attribute — number shorthand for the starting score, or
+     *  an object `{ value, save: {…} }` to author save overrides. */
+    STR?: AttributeBase;
+    DEX?: AttributeBase;
+    CON?: AttributeBase;
+    INT?: AttributeBase;
+    WIS?: AttributeBase;
+    CHA?: AttributeBase;
 }

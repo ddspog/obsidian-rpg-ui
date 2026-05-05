@@ -12,8 +12,12 @@ export type HeaderProps = {
       name: string;
       /** Current level in that class */
       level: number
-      /** File name for a Subclass, if any applied */
+      /** File name for a Subclass, if any applied. Long form. */
       subclass?: string;
+      /** Short alias for `subclass` — handy when sketching out builds and
+       *  swapping subclass picks for testing. Either field works; `sub`
+       *  takes precedence when both are set. */
+      sub?: string;
     }[];
     /** Lineage defining the DNA of the character. */
     lineage: PillDetails;

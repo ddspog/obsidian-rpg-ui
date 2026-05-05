@@ -1,4 +1,4 @@
-import { EntityDescriptor, CompendiumLib } from "rpg-ui-toolkit";
+import { EntityDescriptor, CharacterDecl, CompendiumLib, FeatureEntry, ResolvedView } from "rpg-ui-toolkit";
 import { HeaderProps } from "../blocks/character/header.types";
 import { HealthProps } from "../blocks/character/health.types";
 import { StatsProps } from "../blocks/character/stats.types";
@@ -19,6 +19,26 @@ export type CharacterLookup = {
   };
   /** Compendium libraries (classes, subclasses, lineages, heritages, backgrounds) loaded from wiki.folder. */
   $compendium: CompendiumLib;
+  /**
+   * Universal character features (Dash, Disengage, Dodge, …) shared by
+   * every character regardless of class. The features block renders these
+   * as a compact comma-separated link list inside their bucket
+   * (Action/Reaction/…), rather than as full cards — each entry lives as
+   * its own page in the vault.
+   */
+  $defaultFeatures: FeatureEntry[];
+  /**
+   * Resolve features for the current character given header + recorded
+   * picks. Memoised by content within a render cycle so multiple
+   * consuming blocks (proficiencies, skills, stats…) share a single
+   * `resolveFeatures()` call. Returns the same `ResolvedView` the
+   * features block uses to render the accordion + traits bucket.
+   */
+  $features: (
+    header: unknown,
+    choices?: Record<string, Record<string, string | string[]>>,
+    additional?: CharacterDecl["additional"],
+  ) => ResolvedView;
 }
 
 /** Return types of each named expression on the character entity */

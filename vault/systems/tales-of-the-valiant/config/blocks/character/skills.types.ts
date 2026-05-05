@@ -1,44 +1,33 @@
 import { SkillDetails } from "../../entities/character.common";
 
 /**
- * Types for the Skills block, defining the shape of each skill's details.
+ * Types for the Skills block.
+ *
+ * Every skill field is optional. When omitted, the block derives the
+ * proficiency level from the resolved features view:
+ *   - `Skill P.` trait, skill present once  → proficient (level 1)
+ *   - `Skill P.` trait, skill present twice → expertise  (level 2)
+ *   - `Skill P. (½)` trait, skill present   → half-prof  (level 0.5)
+ *
+ * `additional:` supplies author-only promotions on top of whatever the
+ * traits granted — useful for homebrew or one-off adjustments the trait
+ * system can't express. Entries are skill names matching the table (e.g.
+ * `"Animal Handling"`).
  */
-export type SkillsProps = {
-
-  /** Each skill with its proficiency and vantage */
-  Acrobatics: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  "Animal Handling": SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Arcana: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Athletics: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Deception: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  History: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Insight: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Intimidation: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Investigation: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Medicine: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Nature: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Perception: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Performance: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Persuasion: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Religion: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  "Sleight of Hand": SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Stealth: SkillDetails;
-  /** Each skill with its proficiency and vantage */
-  Survival: SkillDetails;
+export type SkillsProps = Partial<Record<
+  | "Acrobatics" | "Animal Handling" | "Arcana" | "Athletics"
+  | "Deception" | "History" | "Insight" | "Intimidation"
+  | "Investigation" | "Medicine" | "Nature" | "Perception"
+  | "Performance" | "Persuasion" | "Religion" | "Sleight of Hand"
+  | "Stealth" | "Survival",
+  SkillDetails
+>> & {
+  additional?: {
+    /** Skills promoted to proficient (level 1) on top of traits. */
+    profs?: string[];
+    /** Skills promoted to expertise (level 2) on top of traits. */
+    expertise?: string[];
+    /** Skills promoted to half-proficient (level 0.5) on top of traits. */
+    half_profs?: string[];
+  };
 };
