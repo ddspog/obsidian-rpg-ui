@@ -40,8 +40,8 @@ import featureLevel from "./blocks/feature/level";
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
   attributes,
-  skills: await wiki.folder("compendium/skills") as unknown as SkillDefinition[],
-  conditions: await wiki.folder("compendium/conditions") as unknown as ConditionDefinition[],
+  skills: await wiki.folder("glossary/skills") as unknown as SkillDefinition[],
+  conditions: await wiki.folder("glossary/conditions") as unknown as ConditionDefinition[],
 
   // ── Entity Types ─────────────────────────────────────────────────────────────
   entities: {
@@ -63,7 +63,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
     background: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [] })),
 
     monster: CreateEntity(async ({ wiki }: { wiki?: any }) => {
-      const external = (await wiki.file("compendium/entities/monster/extra").catch(() => null)) as any;
+      const external = (await wiki.file("worldbuilding/bestiary/extra").catch(() => null)) as any;
       return {
         frontmatter: [{ name: "cr", type: "number", default: 0 }],
         features: [

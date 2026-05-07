@@ -35,7 +35,6 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
   if (esbuildInitialized) return esbuildInitialized;
 
   esbuildInitialized = (async () => {
-    console.log('[ts-loader] initEsbuild()');
     // In a Node.js environment (e.g. local scripts), prefer the native esbuild
     // package which doesn't require WASM initialisation.
     if (typeof process !== "undefined" && process.versions?.node) {
@@ -72,9 +71,7 @@ export async function loadSystemFromTypeScript(
   systemFolderPath: string,
 ): Promise<RPGSystem | null> {
   try {
-    console.log('[ts-loader] loadSystemFromTypeScript()', systemFolderPath);
     await initEsbuild();
-    console.log('[ts-loader] initEsbuild returned');
     if (!esbuildModule) {
       console.error("esbuild-wasm failed to initialize");
       return null;
@@ -89,7 +86,6 @@ export async function loadSystemFromTypeScript(
       setup(build: EsbuildWasm.PluginBuild) {
         // Resolve relative imports against the system folder
         build.onResolve({ filter: /.*/ }, (args: EsbuildWasm.OnResolveArgs) => {
-          console.log('[ts-loader] onResolve', args.path, 'importer=', args.importer, 'kind=', args.kind);
           if (args.kind === "entry-point") {
             // Normalize entry-point path to remove leading './' which can
             // confuse vault lookups. Keep the full normalized path so that
@@ -142,7 +138,6 @@ export async function loadSystemFromTypeScript(
 
         // Load vault files
         build.onLoad({ filter: /.*/, namespace: "vault" }, async (args: EsbuildWasm.OnLoadArgs) => {
-          console.log('[ts-loader] onLoad', args.path);
           try {
             let file = vault.getAbstractFileByPath(args.path);
             // Compatibility fallback: some test shims expect the path to be
@@ -165,7 +160,6 @@ export async function loadSystemFromTypeScript(
               return { errors: [{ text: `File not found in vault: ${args.path}` }] };
             }
             const contents = await vault.cachedRead(file as TFile);
-            console.log('[ts-loader] loaded', args.path, 'len=', contents.length);
             // Choose esbuild loader based on file extension so that TSX files
             // are parsed correctly.
             const loader = args.path.endsWith('.tsx') ? 'tsx' : args.path.endsWith('.ts') ? 'ts' : args.path.endsWith('.jsx') ? 'jsx' : 'js';
@@ -179,7 +173,6 @@ export async function loadSystemFromTypeScript(
       },
     };
 
-    console.log('[ts-loader] about to call esbuildModule.build');
     const result = await esbuildModule.build({
       entryPoints: [entryPoint],
       bundle: true,
@@ -193,7 +186,6 @@ export async function loadSystemFromTypeScript(
       logLevel: "silent",
     });
 
-    console.log('[ts-loader] esbuild build completed, errors:', result.errors?.length);
     if (result.errors.length > 0) {
       console.error("TypeScript system bundle errors:", result.errors);
       return null;
@@ -205,9 +197,7 @@ export async function loadSystemFromTypeScript(
       return null;
     }
 
-    console.log('[ts-loader] calling evaluateSystemBundle');
     const evaluated = await evaluateSystemBundle(bundleText, systemFolderPath, vault);
-    console.log('[ts-loader] evaluateSystemBundle returned');
     return evaluated;
   } catch (error) {
     console.error(`Failed to load TypeScript system from ${systemFolderPath}:`, error);
@@ -267,6 +257,8 @@ export async function evaluateSystemBundle(
           const tableParser = require("../domains/tables/parse-table-block");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const tableExpr = require("../domains/tables/expressions");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const spellCard = require("../blocks/spell-card");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
@@ -277,6 +269,7 @@ export async function evaluateSystemBundle(
             Markdown: markdown.Markdown,
             parseTableBlock: tableParser.parseTableBlock,
             substituteExpressions: tableExpr.substituteExpressions,
+            extractSpellBlocks: spellCard.extractSpellBlocks,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.

@@ -1,0 +1,126 @@
+/* ── Spell card (rendered inside compendium docs via `rpg spell`) ───── */
+/*
+ * Layout
+ *   <article class="rpg-spell-card">
+ *     <div class="rpg-spell-body">
+ *       <p class="rpg-spell-stripline">1st-Circle, <a>Divine</a>, <a>Wyrd</a> (Enchantment)</p>
+ *       <dl class="rpg-spell-stats">…</dl>
+ *       <p class="rpg-spell-summary">You Foes subtract d4 from rolls.</p>
+ *       <div class="rpg-spell-desc">prose…</div>
+ *       <figure class="rpg-spell-figure">![[bane.webp]]</figure>
+ *     </div>
+ *   </article>
+ *   <p class="rpg-spell-source"><strong>Source:</strong> <em>…</em></p>
+ *
+ * Title is intentionally omitted — the host note's H1 already serves
+ * as the heading. Source sits OUTSIDE the card as a note-level footer.
+ */
+
+.rpg-spell-card {
+  display: block;
+  margin-block: var(--size-4-3, 0.75rem) var(--size-4-2, 0.5rem);
+  font-family: var(--font-text);
+}
+
+.rpg-spell-card .rpg-spell-body {
+  padding: 0;
+}
+
+.rpg-spell-card .rpg-spell-stripline {
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  font-size: 0.95em;
+  font-style: italic;
+  color: light-dark(#5a5040, #a09880);
+}
+
+.rpg-spell-card .rpg-spell-stripline a.internal-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.rpg-spell-card .rpg-spell-stripline a.internal-link:hover {
+  text-decoration-style: solid;
+}
+
+/* ── Stats list (Casting Time, Range, Components, Duration, Style) ─── */
+
+.rpg-spell-card .rpg-spell-stats {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 10px;
+  row-gap: 6px;
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  padding: 0;
+}
+
+.rpg-spell-card .rpg-spell-stats dt {
+  font-weight: 700;
+  color: light-dark(#3a3020, #c0b8a4);
+}
+
+.rpg-spell-card .rpg-spell-stats dt::after {
+  content: ":";
+}
+
+.rpg-spell-card .rpg-spell-stats dd {
+  margin: 0;
+  color: light-dark(#2a2018, #c9c2b4);
+}
+
+/* ── Summary + description prose ──────────────────────────────────────── */
+
+.rpg-spell-card .rpg-spell-summary {
+  margin: var(--size-4-3, 0.75rem) 0;
+  font-style: italic;
+  color: light-dark(#5a5040, #a09880);
+}
+
+.rpg-spell-card .rpg-spell-desc {
+  margin: var(--size-4-3, 0.75rem) 0;
+  color: light-dark(#2a2018, #c9c2b4);
+  line-height: 1.55;
+}
+
+.rpg-spell-card .rpg-spell-desc p:first-child { margin-top: 0; }
+.rpg-spell-card .rpg-spell-desc p:last-child { margin-bottom: 0; }
+
+/* ── Portrait figure (transparent, no chrome) ─────────────────────────── */
+
+.rpg-spell-card .rpg-spell-figure {
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: center;
+}
+
+.rpg-spell-card .rpg-spell-figure img {
+  max-width: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── Source line (sibling of the card — note-level footer) ────────────── */
+
+.rpg-spell-source {
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  font-size: 0.88em;
+  color: light-dark(#5a5040, #a09880);
+}
+
+.rpg-spell-source strong {
+  font-weight: 700;
+  color: light-dark(#3a3020, #c0b8a4);
+}
+
+.rpg-spell-source em {
+  font-style: italic;
+}
+
+.rpg-spell-source em p {
+  display: inline;
+  margin: 0;
+}

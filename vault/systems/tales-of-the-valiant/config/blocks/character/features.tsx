@@ -1,5 +1,7 @@
 import * as React from "react";
 import {
+  CharacterDecl,
+  ChooseSpec,
   EntityBlock,
   EvalContext,
   FeatureAspect,
@@ -8,14 +10,15 @@ import {
   Markdown,
   PendingChoice,
   PendingChoiceRow,
+  ResolvedCaster,
   ResolvedSource,
   ResolvedView,
   resolveFeatures,
-  CharacterDecl,
 } from "rpg-ui-toolkit";
 import { CharacterEntity } from "../../entities/character.types";
 import type { HeaderProps } from "./header.types";
 import type { FeaturesBlockData } from "./features.types";
+import type { CasterState, SpellsProps } from "./spells.types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -354,6 +357,120 @@ function extractWikilinks(val: unknown): string[] {
   return [];
 }
 
+// ─── Spell → bucket classification ───────────────────────────────────────────
+
+/** Strip `[[` / `]]` / `.md` / alias pipe → bare spell stem. */
+function spellStem(raw: string): string {
+  return raw
+    .replace(/^\[\[/, "")
+    .replace(/\]\]$/, "")
+    .replace(/\.md$/, "")
+    .split("|")[0]
+    .trim();
+}
+
+/**
+ * Evaluate a `buy:` expression (literal number, or a string like `"5 + PB"`)
+ * against the character's EvalContext vars. Matches the `prepared_max`
+ * evaluator in the spells block: identifier substitution + arithmetic,
+ * nothing more. Unresolved identifiers collapse to 0 so a typo doesn't
+ * silently produce a huge budget.
+ */
+function evalBuyBudget(
+  expr: number | string | undefined,
+  vars: Record<string, number | string>,
+): number | undefined {
+  if (expr == null) return undefined;
+  if (typeof expr === "number") return Number.isFinite(expr) ? Math.max(0, Math.floor(expr)) : 0;
+  if (typeof expr !== "string") return 0;
+  let rewritten = expr.trim();
+  if (!rewritten) return 0;
+  // Longest identifiers first so `WIS_MOD` doesn't get partially clobbered
+  // by a narrower `WIS` substitution.
+  const keys = Object.keys(vars).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    const v = vars[k];
+    if (typeof v !== "number") continue;
+    rewritten = rewritten.replace(new RegExp(`\\b${k}\\b`, "g"), String(v));
+  }
+  if (!/^[-+*/() \d.]+$/.test(rewritten)) return 0;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const value = Function(`"use strict"; return (${rewritten})`)();
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Map a spell's `casting` field to one of the castable buckets, or undefined
+ *  if the casting time is something else (1 minute, 10 minutes, …). Order of
+ *  checks matters: "bonus action" contains the word "action", so the more
+ *  specific patterns run first. */
+function matchCastingBucket(
+  casting: string | undefined,
+): "action" | "bonus" | "reaction" | undefined {
+  if (!casting || typeof casting !== "string") return undefined;
+  const c = casting.toLowerCase();
+  if (/bonus\s*action/.test(c)) return "bonus";
+  if (/reaction/.test(c)) return "reaction";
+  if (/\baction\b/.test(c)) return "action";
+  return undefined;
+}
+
+/** Gather every spell available to the character (auto-granted + user
+ *  picks), classify by casting time, and emit a bucket → trivial-entries
+ *  map ready to merge into FeaturesAccordion's trivials. Deduped per
+ *  bucket+stem across casters so a spell shared by two casters doesn't
+ *  appear twice in the same list. */
+function collectSpellTrivials(
+  casters: ResolvedCaster[] | undefined,
+  castersState: Record<string, CasterState>,
+  spellLibrary: Record<string, Record<string, unknown>>,
+): Record<string, FeatureEntry[]> {
+  const out: Record<string, FeatureEntry[]> = {};
+  if (!casters || casters.length === 0) return out;
+  const seen = new Set<string>();
+  const push = (raw: string) => {
+    const stem = spellStem(raw);
+    if (!stem) return;
+    const doc = spellLibrary[stem] as { casting?: string } | undefined;
+    const bucket = matchCastingBucket(doc?.casting);
+    if (!bucket) return;
+    const key = `${bucket}:${stem}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    (out[bucket] ??= []).push({ $name: stem, type: bucket });
+  };
+  for (const caster of casters) {
+    const state = castersState[caster.source] ?? {};
+    // Auto-granted spells (prepared-caster domain picks, subclass bonus
+    // cantrips, ritual unlocks, …) — filter to grants the character has
+    // actually reached.
+    for (const [lvlStr, list] of Object.entries(caster.granted.cantrips ?? {})) {
+      if (Number(lvlStr) > caster.level) continue;
+      for (const s of list ?? []) push(s);
+    }
+    for (const [lvlStr, list] of Object.entries(caster.granted.prepared ?? {})) {
+      if (Number(lvlStr) > caster.level) continue;
+      for (const s of list ?? []) push(s);
+    }
+    for (const [lvlStr, list] of Object.entries(caster.granted.rituals ?? {})) {
+      if (Number(lvlStr) > caster.level) continue;
+      for (const s of list ?? []) push(s);
+    }
+    // User picks recorded in the spells block's YAML state.
+    for (const s of state.cantrips ?? []) push(s);
+    for (const m of [state.prepared, state.known, state.rituals] as const) {
+      if (!m) continue;
+      for (const list of Object.values(m)) {
+        for (const s of list ?? []) push(s);
+      }
+    }
+  }
+  return out;
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function EntryRow({
@@ -482,8 +599,26 @@ function Bucket({
   );
 }
 
-/** Render a trait value with its `+` prefix, keeping wikilinks as real
- *  internal-link anchors so hover-preview + click-to-open work. */
+/** Every spell auto-granted by this caster at the given class level,
+ *  across all grant buckets (cantrips / prepared / rituals). Keeps the
+ *  original wikilink shape so the renderer can resolve stems later. */
+function grantsAtLevel(caster: ResolvedCaster | undefined, level: number): string[] {
+  if (!caster) return [];
+  const buckets = [
+    caster.granted.cantrips,
+    caster.granted.prepared,
+    caster.granted.rituals,
+  ];
+  const out: string[] = [];
+  for (const m of buckets) {
+    const raws = (m ?? {})[level];
+    if (!raws) continue;
+    for (const s of raws) out.push(s);
+  }
+  return out;
+}
+
+
 function TraitValue({ value }: { value: string }) {
   const prefixed = value.startsWith("+") || value.startsWith("−") ? value : `+${value}`;
   const parts = prefixed.split(/(\[\[[^\]]+\]\])/);
@@ -535,12 +670,72 @@ function TraitsInline({ traits }: { traits: Record<string, string[]> }) {
   );
 }
 
-/** One source's contribution to the character sheet's traits bucket. */
-function TraitsSourceLine({ src }: { src: ResolvedSource }) {
+/** Append every entry from `extra` onto the matching key in `base`,
+ *  preserving insertion order of `base` then adding any new keys from
+ *  `extra` at the end. Used to fold subclass baseTraits / level-row
+ *  traits into the class's own map so the player sees one unified row
+ *  per class level instead of a separate subclass line. */
+function mergeTraitMaps(
+  ...maps: Array<Record<string, string[]> | undefined>
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const m of maps) {
+    if (!m) continue;
+    for (const [k, v] of Object.entries(m)) {
+      out[k] = [...(out[k] ?? []), ...v];
+    }
+  }
+  return out;
+}
+
+/** Normalise a granted-spell ref into a `[[Stem]]` wikilink so TraitValue
+ *  treats it like any other trait value (renders as a real internal
+ *  link with hover-preview wired up). Falls back to the raw string if
+ *  no stem can be derived. */
+function grantToWikilink(raw: string): string {
+  const stem = spellStem(raw);
+  return stem ? `[[${stem}]]` : raw;
+}
+
+/** One source's contribution to the character sheet's traits bucket.
+ *
+ *  Subclass sources don't render as their own top-level entry — the
+ *  resolver emits them right after their parent class in `sources`, and
+ *  the TraitsBucket folds them onto the class card. When a `sub:` is
+ *  passed in, its traits merge directly into the class's base + level
+ *  rows (no indented secondary line), and at the subclass-unlock level
+ *  we inject a synthetic `Subclass (+Life Domain)` trait so the player
+ *  sees where the pick happened. Granted spells fold in as a
+ *  `Granted (+Bless, +Cure Wounds)` synthetic trait on the level they
+ *  were unlocked at. */
+function TraitsSourceLine({
+  src,
+  sub,
+  casters,
+}: {
+  src: ResolvedSource;
+  sub?: ResolvedSource;
+  /** Resolved casters for the whole sheet — used to attribute granted
+   *  spells back to the class/subclass that unlocked them, per-level. */
+  casters?: ResolvedCaster[];
+}) {
   const isClass = src.kind === "class" || src.kind === "subclass";
   const hasBase = Object.keys(src.baseTraits).length > 0;
   const hasLeveled = Object.keys(src.leveledTraits).length > 0;
-  if (!hasBase && !hasLeveled) return null;
+  const subHasBase = !!sub && Object.keys(sub.baseTraits).length > 0;
+  const subHasLeveled = !!sub && Object.keys(sub.leveledTraits).length > 0;
+
+  // A class's caster (if this source declared a Spellcasting feature) feeds
+  // the per-level `Granted (+…)` synthetic trait. Subclass grants merge
+  // into the same caster via `grantedBy`, so we only need one lookup.
+  const caster = casters?.find((c) => c.source === src.source);
+  const hasAnyGrants = !!caster && Object.values({
+    ...caster.granted.cantrips,
+    ...caster.granted.prepared,
+    ...caster.granted.rituals,
+  }).some((list) => (list?.length ?? 0) > 0);
+
+  if (!hasBase && !hasLeveled && !subHasBase && !subHasLeveled && !hasAnyGrants) return null;
 
   // For class/subclass sources, break traits into per-level rows so players
   // can see which level unlocked what. Unlevelled rules (hit dice, armor,
@@ -549,11 +744,45 @@ function TraitsSourceLine({ src }: { src: ResolvedSource }) {
   // skipped. Non-class sources (lineage / heritage / background) keep the
   // single-line summary.
   if (isClass) {
-    const byLevel = src.traitsByLevel ?? {};
-    const levels = Object.keys(byLevel)
-      .map((k) => Number(k))
-      .filter((n) => Number.isFinite(n) && Object.keys(byLevel[n] ?? {}).length > 0)
-      .sort((a, b) => a - b);
+    const classByLevel = src.traitsByLevel ?? {};
+    const subByLevel = sub?.traitsByLevel ?? {};
+    const levelSet = new Set<number>();
+    for (const k of Object.keys(classByLevel)) {
+      const n = Number(k);
+      if (Number.isFinite(n) && Object.keys(classByLevel[n] ?? {}).length > 0) levelSet.add(n);
+    }
+    for (const k of Object.keys(subByLevel)) {
+      const n = Number(k);
+      if (Number.isFinite(n) && Object.keys(subByLevel[n] ?? {}).length > 0) levelSet.add(n);
+    }
+    // Spell-grant levels contribute rows too, even if the class/subclass
+    // otherwise has nothing new at that level (pure domain-spell grants).
+    if (caster) {
+      for (const m of [caster.granted.cantrips, caster.granted.prepared, caster.granted.rituals]) {
+        for (const k of Object.keys(m ?? {})) {
+          const n = Number(k);
+          if (Number.isFinite(n) && (m[n]?.length ?? 0) > 0) levelSet.add(n);
+        }
+      }
+    }
+    const levels = [...levelSet].sort((a, b) => a - b);
+
+    // Subclass "pick" level = the earliest level at which the subclass
+    // contributes anything. Falls back to sub.level from the resolver
+    // when the subclass has no leveled traits declared (unusual but
+    // possible for pure-flavour subclasses).
+    const subUnlockLevel: number | undefined = (() => {
+      if (!sub) return undefined;
+      const l = Object.keys(subByLevel)
+        .map(Number)
+        .filter((n) => Number.isFinite(n) && Object.keys(subByLevel[n] ?? {}).length > 0)
+        .sort((a, b) => a - b);
+      return l[0] ?? sub.level;
+    })();
+
+    const mergedBase = mergeTraitMaps(src.baseTraits, sub?.baseTraits);
+    const hasMergedBase = Object.keys(mergedBase).length > 0;
+
     return (
       <div className="rpg-feature-traits-source">
         <p>
@@ -567,21 +796,35 @@ function TraitsSourceLine({ src }: { src: ResolvedSource }) {
           {src.level != null && (
             <span className="rpg-feature-traits-source-level"> (Lv. {src.level})</span>
           )}
-          {hasBase && (
+          {hasMergedBase && (
             <>
               {" — "}
-              <TraitsInline traits={src.baseTraits} />
+              <TraitsInline traits={mergedBase} />
             </>
           )}
         </p>
         {levels.length > 0 && (
           <ul className="rpg-feature-traits-leveled">
-            {levels.map((lvl) => (
-              <li key={lvl}>
-                <strong className="rpg-feature-traits-level-tag">Lv. {lvl}</strong>{" "}
-                <TraitsInline traits={byLevel[lvl]} />
-              </li>
-            ))}
+            {levels.map((lvl) => {
+              const row = mergeTraitMaps(classByLevel[lvl], subByLevel[lvl]);
+              if (sub && lvl === subUnlockLevel) {
+                row["Subclass"] = [
+                  ...(row["Subclass"] ?? []),
+                  `[[${sub.source}]]`,
+                ];
+              }
+              const grants = grantsAtLevel(caster, lvl).map(grantToWikilink);
+              if (grants.length > 0) {
+                row["Granted"] = [...(row["Granted"] ?? []), ...grants];
+              }
+              if (Object.keys(row).length === 0) return null;
+              return (
+                <li key={lvl}>
+                  <strong className="rpg-feature-traits-level-tag">Lv. {lvl}</strong>{" "}
+                  <TraitsInline traits={row} />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -614,13 +857,44 @@ function TraitsSourceLine({ src }: { src: ResolvedSource }) {
   );
 }
 
-function TraitsBucket({ sources }: { sources: ResolvedSource[] }) {
-  const visible = sources.filter(
-    (s) =>
-      Object.keys(s.baseTraits).length > 0 ||
-      Object.keys(s.leveledTraits).length > 0,
-  );
-  if (visible.length === 0) return null;
+function TraitsBucket({
+  sources,
+  casters,
+}: {
+  sources: ResolvedSource[];
+  casters?: ResolvedCaster[];
+}) {
+  // Subclass sources aren't standalone traits entries — the resolver emits
+  // them right after their parent class (declaration order), and here we
+  // fold each one onto the preceding class group so the character sheet
+  // reads "Cleric → Life Domain traits interleaved" instead of showing
+  // Life Domain as a sibling source on its own row.
+  const hasCasterGrants = (sourceName: string): boolean => {
+    const caster = casters?.find((c) => c.source === sourceName);
+    if (!caster) return false;
+    for (const m of [caster.granted.cantrips, caster.granted.prepared, caster.granted.rituals]) {
+      for (const list of Object.values(m ?? {})) {
+        if ((list?.length ?? 0) > 0) return true;
+      }
+    }
+    return false;
+  };
+  const groups: Array<{ src: ResolvedSource; sub?: ResolvedSource }> = [];
+  for (const s of sources) {
+    const hasBase = Object.keys(s.baseTraits).length > 0;
+    const hasLeveled = Object.keys(s.leveledTraits).length > 0;
+    const hasSpells = hasCasterGrants(s.source);
+    if (!hasBase && !hasLeveled && !hasSpells) continue;
+    if (s.kind === "subclass") {
+      const last = groups[groups.length - 1];
+      if (last && last.src.kind === "class" && !last.sub) {
+        last.sub = s;
+        continue;
+      }
+    }
+    groups.push({ src: s });
+  }
+  if (groups.length === 0) return null;
   const noteKey = useNoteKey();
   const [open, setOpen] = usePersistentOpen(`${noteKey}:bucket:traits`, false);
   return (
@@ -631,11 +905,16 @@ function TraitsBucket({ sources }: { sources: ResolvedSource[] }) {
     >
       <summary>
         <span className="rpg-feature-bucket-label">Traits</span>
-        <span className="rpg-feature-bucket-count">{visible.length}</span>
+        <span className="rpg-feature-bucket-count">{groups.length}</span>
       </summary>
       <div className="rpg-feature-traits-summary">
-        {visible.map((src) => (
-          <TraitsSourceLine key={`${src.source}:${src.kind}`} src={src} />
+        {groups.map(({ src, sub }) => (
+          <TraitsSourceLine
+            key={`${src.source}:${src.kind}`}
+            src={src}
+            sub={sub}
+            casters={casters}
+          />
         ))}
       </div>
     </details>
@@ -730,11 +1009,22 @@ function gatherDecisions(
       const values = Array.isArray(raw) ? raw : [raw];
       if (values.length === 0) continue;
       const rawChoose = feature.choose;
-      const singleChoose = Array.isArray(rawChoose) ? undefined : rawChoose;
-      const isAsi = singleChoose?.type === "asi";
+      // Accept both a scalar `choose:` and a single-element `choose:` array
+      // as a "single spec" so the label can read the category. A true
+      // multi-spec array (len > 1) stays undefined — those decisions
+      // surface one per composite key below. Features with `buy:` keep
+      // the bare feature name as the label since the picks in that bucket
+      // are the buy options themselves (cost-spent enhancements), not a
+      // specific trait category.
+      const hasBuy = feature.buy != null;
+      const singleChoose: ChooseSpec | undefined = Array.isArray(rawChoose)
+        ? (rawChoose.length === 1 ? rawChoose[0] : undefined)
+        : rawChoose;
+      const isAsi = !hasBuy && singleChoose?.type === "asi";
       const category = prettifyLevelSuffix(
-        singleChoose?.category
-          ?? (isAsi ? "Ability Scores" : feature.name),
+        hasBuy
+          ? feature.name
+          : singleChoose?.category ?? (isAsi ? "Ability Scores" : feature.name),
       );
       // ASI picks: aggregate duplicate attribute picks into a single
       // `+{total} {attr}` entry so the log reads as "+2 Wisdom" rather than
@@ -804,23 +1094,28 @@ function DecisionsLog({
       </summary>
       <div className="rpg-feature-decisions-groups">
         {groups.map((g) => (
-          <div key={g.source} className="rpg-feature-decisions-group">
-            <h4 className="rpg-feature-decisions-group-label">
-              <a className="internal-link" href={g.source} data-href={g.source}>
-                {g.source}
-              </a>
-            </h4>
-            <ul>
-              {g.decisions.map((d, j) => (
-                <li key={j}>
+          <p key={g.source} className="rpg-feature-decisions-line">
+            <a
+              className="internal-link rpg-feature-decisions-source-link"
+              href={g.source}
+              data-href={g.source}
+            >
+              {g.source}
+            </a>
+            {" — "}
+            {g.decisions.map((d, j) => (
+              <React.Fragment key={j}>
+                {j > 0 && ", "}
+                <span className="rpg-feature-decisions-entry">
                   <strong>{d.category}</strong>
-                  {": "}
+                  {" ("}
                   {d.values.map((v, k) => (
                     <React.Fragment key={k}>
                       {k > 0 && ", "}
                       <TraitValue value={v} />
                     </React.Fragment>
                   ))}
+                  {")"}
                   {onReset && (
                     <button
                       type="button"
@@ -832,10 +1127,10 @@ function DecisionsLog({
                       ↺
                     </button>
                   )}
-                </li>
-              ))}
-            </ul>
-          </div>
+                </span>
+              </React.Fragment>
+            ))}
+          </p>
         ))}
       </div>
     </details>
@@ -898,7 +1193,7 @@ function FeaturesAccordion({
           onSpentChange={onSpentChange}
         />
       ))}
-      <TraitsBucket sources={view.sources} />
+      <TraitsBucket sources={view.sources} casters={view.casters} />
     </section>
   );
 }
@@ -1095,7 +1390,16 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
    *  entity (Dash, Disengage, Opportunity Attack, …). Each lives as its
    *  own vault page and is shown as a compact link list in its bucket
    *  rather than a full card. Group by the entry's `type`, which maps
-   *  directly to a bucket id. */
+   *  directly to a bucket id.
+   *
+   *  The character's spells also fold in here: every granted/known spell
+   *  gets classified by casting time (`1 action` / `1 bonus action` /
+   *  `1 reaction`) and listed as a trivial in the matching bucket so
+   *  the features sheet surfaces castable options alongside class
+   *  actions. Spells with other casting times (1 minute, 10 minutes,
+   *  ritual-only) stay exclusive to the Spells block. */
+  const spellsBlock = (blocks as Record<string, unknown>).spells as SpellsProps | undefined;
+  const spellLibrary = (lookup.$spells ?? {}) as Record<string, Record<string, unknown>>;
   const trivialsByBucket = React.useMemo(() => {
     const out: Record<string, FeatureEntry[]> = {};
     for (const entry of (lookup.$defaultFeatures ?? [])) {
@@ -1103,8 +1407,22 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
       if (!bucket) continue;
       (out[bucket] ??= []).push(entry);
     }
+    const spellTrivials = collectSpellTrivials(
+      view.casters,
+      spellsBlock?.casters ?? {},
+      spellLibrary,
+    );
+    for (const [bucket, entries] of Object.entries(spellTrivials)) {
+      const list = (out[bucket] ??= []);
+      const seen = new Set(list.map((e) => e.$name));
+      for (const e of entries) {
+        if (seen.has(e.$name)) continue;
+        seen.add(e.$name);
+        list.push(e);
+      }
+    }
     return out;
-  }, [lookup.$defaultFeatures]);
+  }, [lookup.$defaultFeatures, view.casters, spellsBlock, spellLibrary]);
 
   return (
     <section aria-label="Character Features" className="rpg-feature-source-groups">
@@ -1126,37 +1444,55 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
           aria-label="Pending Choices"
           className="rpg-feature-pending-list"
         >
-          {view.pendingChoices.length > 0 && (
-            <details
-              className="rpg-feature-pending-details"
-              open={pendingOpen}
-              onToggle={(e) => setPendingOpen((e.currentTarget as HTMLDetailsElement).open)}
-            >
-              <summary>
-                <span className="rpg-feature-pending-label">Choices to make</span>
-                <span className="rpg-feature-pending-count">{view.pendingChoices.length}</span>
-              </summary>
-              <div className="rpg-feature-pending-groups">
-                {groupPendingsBySource(view.pendingChoices, view.sources).map(({ source, pendings }) => (
-                  <div key={source} className="rpg-feature-pending-group">
-                    <h4 className="rpg-feature-pending-group-label">
-                      <a className="internal-link" href={source} data-href={source}>
-                        {source}
-                      </a>
-                    </h4>
-                    {pendings.map((p) => (
-                      <PendingChoiceRow
-                        key={`${p.source}:${p.feature.name}`}
-                        pending={p}
-                        onToggle={makeToggle(p.source, p.feature.name)}
-                        onPick={makePicker(p.source, p.feature.name)}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
+          {(() => {
+            // Buy-mode pendings are always emitted by the resolver (it
+            // can't evaluate the budget expression) so the UI filters
+            // them out once the player has spent every available point.
+            // The pick log still carries the picks in Decisions Made,
+            // and undoing a decision re-opens the row automatically.
+            const visiblePendings = view.pendingChoices.filter((p) => {
+              const isBuyEmission = p.feature.buy != null && p.feature.choose == null;
+              if (!isBuyEmission) return true;
+              const budget = evalBuyBudget(p.feature.buy, context.vars) ?? 0;
+              const spent = p.picked.reduce((sum, name) => {
+                const opt = p.options.find((o) => (o.name ?? "") === name);
+                return sum + (typeof opt?.cost === "number" ? opt.cost : 0);
+              }, 0);
+              return budget - spent > 0;
+            });
+            return visiblePendings.length > 0 ? (
+              <details
+                className="rpg-feature-pending-details"
+                open={pendingOpen}
+                onToggle={(e) => setPendingOpen((e.currentTarget as HTMLDetailsElement).open)}
+              >
+                <summary>
+                  <span className="rpg-feature-pending-label">Choices to make</span>
+                  <span className="rpg-feature-pending-count">{visiblePendings.length}</span>
+                </summary>
+                <div className="rpg-feature-pending-groups">
+                  {groupPendingsBySource(visiblePendings, view.sources).map(({ source, pendings }) => (
+                    <div key={source} className="rpg-feature-pending-group">
+                      <h3 className="rpg-feature-pending-group-label">
+                        <a className="internal-link" href={source} data-href={source}>
+                          {source}
+                        </a>
+                      </h3>
+                      {pendings.map((p) => (
+                        <PendingChoiceRow
+                          key={`${p.source}:${p.feature.name}`}
+                          pending={p}
+                          onToggle={makeToggle(p.source, p.feature.name)}
+                          onPick={makePicker(p.source, p.feature.name)}
+                          buyBudget={evalBuyBudget(p.feature.buy, context.vars)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : null;
+          })()}
           <DecisionsLog sources={view.sources} choices={self.choices} onReset={makeReset} />
         </section>
       )}

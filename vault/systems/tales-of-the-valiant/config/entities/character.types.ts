@@ -7,6 +7,7 @@ import { SkillsProps } from "../blocks/character/skills.types";
 import { AttacksProps } from "../blocks/character/attacks.types";
 import { ProficienciesProps } from "../blocks/character/proficiencies.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
+import type { SpellsProps } from "../blocks/character/spells.types";
 
 /**
  * Types for the Character Entity, defining the shape of its blocks, lookup, and expressions.
@@ -39,6 +40,15 @@ export type CharacterLookup = {
     choices?: Record<string, Record<string, string | string[]>>,
     additional?: CharacterDecl["additional"],
   ) => ResolvedView;
+  /**
+   * Parsed `rpg spell` fence bodies from every spell doc under
+   * `worldbuilding/spells/…`, keyed by the doc's bare wikilink stem
+   * (`Guidance`, `Bane`, `Cure Wounds`, …). The spells block reads this
+   * to surface each picked/granted/known spell's full content (range,
+   * duration, components, text, …) without re-scanning the files at
+   * render time.
+   */
+  $spells: Record<string, Record<string, unknown>>;
 }
 
 /** Return types of each named expression on the character entity */
@@ -64,9 +74,7 @@ export type CharacterBlocks = {
   attacks: AttacksProps,
   proficiencies: ProficienciesProps;
   features: FeaturesBlockData;
-  spells: {
-    filter?: string;
-  };
+  spells: SpellsProps;
   inventory: {
     filter?: string;
   };

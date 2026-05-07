@@ -47,8 +47,11 @@ if (PUSH_ONLY && PULL_ONLY) {
   process.exit(1);
 }
 
-// Sync only these directories under each system folder.
-const SYNC_SUBDIRS = ["compendium", "config"];
+// Sync only these directories under each system folder. The legacy
+// `compendium/` tree is intentionally absent — its content moved to
+// `worldbuilding/traits/` and `glossary/` and the folder itself should
+// stay deleted on both sides.
+const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary"];
 
 function fmtCount(n, label) {
   return `${n} ${label}${n === 1 ? "" : "s"}`;

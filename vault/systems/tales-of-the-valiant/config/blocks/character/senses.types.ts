@@ -14,8 +14,13 @@ export type SenseEntry =
   | {
       /** Range in feet, if applicable (e.g. darkvision), otherwise omitted (e.g. blindsight). */
       range?: number;
-      /** Type of sense, e.g. "darkvision", "blindsight", "tremorsense", "truesight". */
+      /** Type of sense, e.g. "darkvision", "blindsight", "tremorsense", "truesight".
+       *  May be a plain string or an Obsidian wikilink (`[[Darkvision]]`,
+       *  `[[path|Darvision]]`) — when a wikilink is present, the renderer
+       *  surfaces it as an internal-link anchor with Obsidian's hover-preview. */
       type: string;
+      /** Explicit link target, overriding any wikilink parsed from `type`. */
+      link?: string;
     };
 
 export type SensesProps = {

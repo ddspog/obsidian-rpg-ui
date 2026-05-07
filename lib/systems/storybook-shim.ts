@@ -16,3 +16,4 @@ export { PendingChoiceRow } from "../components/pending-choice-row";
 export { Markdown } from "../components/markdown";
 export { parseTableBlock } from "../domains/tables/parse-table-block";
 export { substituteExpressions } from "../domains/tables/expressions";
+export { extractSpellBlocks } from "../blocks/spell-card";

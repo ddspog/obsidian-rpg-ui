@@ -11,7 +11,6 @@ import { HealthView } from "lib/views/HealthView";
 import { ConsumableView } from "lib/views/ConsumableView";
 import { BadgesView, StatsView } from "lib/views/BadgesView";
 import { InitiativeView } from "lib/views/InitiativeView";
-import { SpellComponentsView } from "lib/views/SpellComponentsView";
 import { EventButtonsView } from "lib/views/EventButtonsView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
@@ -35,7 +34,6 @@ export const LEGACY_MAPPINGS: Record<string, string> = {
   badges: "badges",
   consumable: "consumable",
   initiative: "initiative",
-  "spell-components": "spell",
   "event-btns": "events",
 };
 
@@ -47,7 +45,6 @@ export function createViews(app: App, kv: KeyValueStore): BaseView[] {
     new AbilityScoreView(app),
     new SkillsView(app),
     new BadgesView(app),
-    new SpellComponentsView(app),
     new EventButtonsView(app),
 
     // Dynamic/Stateful

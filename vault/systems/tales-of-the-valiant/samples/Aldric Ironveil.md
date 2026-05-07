@@ -33,8 +33,8 @@ death_saves:
   failures: 2
 exhaustion: 3
 conditions:
-  - [[systems/tales-of-the-valiant/compendium/conditions/Poisoned|Poisoned]]
-  - [[systems/tales-of-the-valiant/compendium/conditions/Blinded|Blinded]]
+  - [[systems/tales-of-the-valiant/glossary/conditions/Poisoned|Poisoned]]
+  - [[systems/tales-of-the-valiant/glossary/conditions/Blinded|Blinded]]
 initiative:
   proficiency: 0
   vantage: 1

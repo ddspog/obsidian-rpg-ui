@@ -22,10 +22,12 @@ import type {
   FeatureChoiceOption,
   FeatureDetails,
   PendingChoice,
+  ResolvedCaster,
   ResolvedSource,
   ResolvedView,
   SourceDoc,
   SourceDocKind,
+  SpellcastingFragment,
   TraitMap,
   TraitValue,
 } from "./types";
@@ -325,13 +327,17 @@ function resolveSource(
         ? [rawChoose]
         : [];
     const multiChoose = chooseSpecs.length > 1;
+    // When a detail has a `buy:` budget, the buy-mode picker stores its
+    // picks under the bare `detail.name` key. If we also keyed the
+    // inline `choose:` picks the same way they'd collide with the buy
+    // picks (option names leaking into whichever category the choose
+    // targets). Force the composite `name:category` key in that case
+    // so the two pick buckets stay independent.
+    const useCompositeChooseKey = multiChoose || detail.buy != null;
     for (const spec of chooseSpecs) {
       if (spec.type !== "traits" && spec.type !== "asi" && spec.type !== "talent") continue;
-      // Single-spec blocks keep the historical pick key (`detail.name`) so
-      // persisted picks don't orphan. Multi-spec blocks suffix each spec's
-      // key with its category to stay unique within the feature.
       const cat = resolveCategory(spec);
-      const chooseKey = multiChoose ? `${detail.name}:${cat}` : detail.name;
+      const chooseKey = useCompositeChooseKey ? `${detail.name}:${cat}` : detail.name;
       const picked = pickedNames(picksForSource?.[chooseKey]);
       if (picked.length > 0) {
         if (!perSource[cat]) perSource[cat] = [];
@@ -357,7 +363,7 @@ function resolveSource(
         // `"parent:category"` composite names and strip them for display,
         // even when the author didn't set `category:` explicitly.
         const specWithCat: ChooseSpec = { ...spec, category: cat };
-        const featureForPending: FeatureDetails = multiChoose
+        const featureForPending: FeatureDetails = useCompositeChooseKey
           ? { ...detail, name: chooseKey, choose: specWithCat }
           : { ...detail, choose: specWithCat };
         pendingChoices.push({
@@ -483,6 +489,99 @@ function resolveSource(
       }
     }
 
+    // `buy` budget: options carry per-item `cost` and the user may pick any
+    // combination whose cost sum ≤ the numeric value of `buy`. Mutually
+    // exclusive with `pick` — a feature declares one or the other. The
+    // pending choice is always emitted (no slot-gate like `pick`) so the
+    // player can keep spending remaining points across render cycles; the
+    // UI block evaluates `buy` against the character's EvalContext to get
+    // the actual budget and disables options whose cost exceeds what's
+    // left.
+    if (detail.buy != null && detail.pick == null) {
+      const allOptions = doc.options.filter((o) => o.parent === detail.name);
+      const picked = pickedNames(picksForSource?.[detail.name]);
+      for (const pickedName of picked) {
+        const option = allOptions.find((o) => (o.name ?? "") === pickedName);
+        if (!option) continue;
+        collectTraits(perSource, option.traits);
+        collectTraits(traitsAgg, option.traits);
+        collectAtLevel(detailLevelKey, option.traits);
+        const optionFeature: FeatureDetails = {
+          ...(option as unknown as FeatureDetails),
+          name: option.name ?? pickedName,
+          level: detail.level,
+        };
+        features.push(optionFeature);
+
+        // A picked buy option may carry its own inline `choose` — e.g.
+        // Twisted Minion's "Knowledge Implant, Skills" grants one
+        // proficiency from a list. Mirrors the pick-mode sub-choose
+        // handling so buy options fire sub-picks the same way.
+        const optChoose = option.choose;
+        const optSpecs: ChooseSpec[] = Array.isArray(optChoose)
+          ? optChoose
+          : optChoose
+            ? [optChoose]
+            : [];
+        const optMulti = optSpecs.length > 1;
+        if (option.name) {
+          for (const subSpec of optSpecs) {
+            if (subSpec.type !== "traits" && subSpec.type !== "asi" && subSpec.type !== "talent") continue;
+            const subCat = resolveCategory(subSpec);
+            const optionKey = optMulti ? `${option.name}:${subCat}` : option.name;
+            const subPicked = pickedNames(picksForSource?.[optionKey]);
+            if (subPicked.length > 0) {
+              if (!perSource[subCat]) perSource[subCat] = [];
+              if (!traitsAgg[subCat]) traitsAgg[subCat] = [];
+              const subValues: string[] = [];
+              for (const p of subPicked) {
+                const val = formatPickValue(subSpec, p);
+                perSource[subCat].push(val);
+                traitsAgg[subCat].push(val);
+                subValues.push(val);
+                if (subSpec.type === "talent") applyTalentPick(p, detail);
+              }
+              collectAtLevel(detailLevelKey, { [subCat]: subValues });
+            }
+            const subRemaining = Math.max(0, subSpec.number - subPicked.length);
+            if (subRemaining > 0) {
+              const subSpecWithCat: ChooseSpec = { ...subSpec, category: subCat };
+              pendingChoices.push({
+                source: doc.name,
+                feature: { ...optionFeature, name: optionKey, choose: subSpecWithCat },
+                options: inlineChooseOptions(optionFeature, subSpec, opts.tagIndex, opts.folderIndex),
+                picked: subPicked,
+                remaining: subRemaining,
+              });
+            }
+          }
+        }
+
+        for (const nested of option.features ?? []) {
+          collectTraits(perSource, nested.traits);
+          collectTraits(traitsAgg, nested.traits);
+          collectAtLevel(detailLevelKey, nested.traits);
+          features.push(nested);
+        }
+      }
+      // Strip the detail's own `choose:` off the pending's feature — that
+      // inline choose is a SIBLING pending (rendered as a traits picker)
+      // and shouldn't leak into the buy emission, whose `feature.choose`
+      // the UI uses as a signal that this is a plain traits pick. Without
+      // the strip, both pendings would look identical to the renderer.
+      const buyFeature: FeatureDetails = { ...detail };
+      delete buyFeature.choose;
+      // `remaining` is cosmetic for buy-mode choices — the UI recomputes
+      // spent/available from cost sums against the evaluated budget.
+      pendingChoices.push({
+        source: doc.name,
+        feature: buyFeature,
+        options: allOptions,
+        picked,
+        remaining: allOptions.length,
+      });
+    }
+
     features.push(detail);
   }
 
@@ -552,13 +651,242 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
   // shouldn't render their own card.
   applyFeatureUpdates(sources);
 
+  // Fold every source's `spellcasting:` fragments into at most one
+  // ResolvedCaster per source. Emitted after updates run so a source's
+  // Spellcasting feature can itself be update-patched (rare but legal).
+  const casters = resolveCasters(sources, decl);
+
   const pendingChoices = sources.flatMap((s) => s.pendingChoices);
   const tables = aggregateTables(decl, lib);
 
-  return { sources, traits, pendingChoices, tables };
+  return { sources, traits, pendingChoices, tables, casters };
 }
 
 const ASPECT_KEYS = ["action", "bonus", "reaction", "active", "passive", "resource"] as const;
+
+/**
+ * Fold every `spellcasting:` fragment in a source into a single
+ * ResolvedCaster. A source only produces a caster if one of its
+ * fragments declares the caster (ability + type + tier all set) —
+ * every other fragment on the same source contributes additively to
+ * slot counts and merges into the `granted` maps.
+ *
+ * Multiclass: each class source resolves independently, so the caster
+ * from Cleric and the caster from Wizard stay separate and the spells
+ * block can render one sub-section per entry.
+ *
+ * Subclass handling: the user's convention is to put the subclass's
+ * spell grants (Life Domain Spells) on the subclass source itself,
+ * which doesn't carry its own declaration. Those grants fold into the
+ * parent class's caster by source-name prefix match
+ * (subclass source's `level` equals the class level, so the resolver
+ * emits both sources during class iteration and we sweep the subclass's
+ * grants into the class caster via the `decl.classes[].subclass` link).
+ */
+function resolveCasters(sources: ResolvedSource[], decl: CharacterDecl): ResolvedCaster[] {
+  const bySource = new Map<string, ResolvedSource>();
+  for (const s of sources) bySource.set(s.source, s);
+
+  const out: ResolvedCaster[] = [];
+  for (const classEntry of decl.classes ?? []) {
+    const classSrc = bySource.get(classEntry.name);
+    if (!classSrc) continue;
+    const caster = foldCasterFromSource(classSrc);
+    if (!caster) continue;
+    if (classEntry.subclass) {
+      const subSrc = bySource.get(classEntry.subclass);
+      if (subSrc) mergeFragmentsInto(caster, subSrc);
+    }
+    out.push(caster);
+  }
+  // Lineages / heritages / backgrounds can carry a caster declaration too
+  // (a ritual-casting lineage, a heritage that grants innate spells, …).
+  // Walk any remaining sources that weren't already swept by the class
+  // loop above.
+  const claimed = new Set<string>();
+  for (const c of out) claimed.add(c.source);
+  for (const classEntry of decl.classes ?? []) {
+    if (classEntry.subclass) claimed.add(classEntry.subclass);
+  }
+  // Augmenting-only sources (background, heritage, lineage, or a source
+  // synthesised by `additional:`) can carry `spellcasting:` fragments that
+  // DON'T themselves declare a caster — e.g. a Ritualist talent picked via
+  // Adherent contributes `rituals_per_circle: 1` but no ability/type/tier.
+  // Merge those fragments into every class caster so the augmentation
+  // reaches the picker. A non-class source that DOES declare its own
+  // caster (ritual-casting lineage) still falls through to the loop below
+  // and emits a standalone ResolvedCaster.
+  for (const src of sources) {
+    if (claimed.has(src.source)) continue;
+    const declares = src.features.some(
+      (f) => f.spellcasting?.ability && f.spellcasting?.type && f.spellcasting?.tier,
+    );
+    if (declares) continue;
+    for (const caster of out) mergeFragmentsInto(caster, src);
+  }
+  for (const src of sources) {
+    if (claimed.has(src.source)) continue;
+    const caster = foldCasterFromSource(src);
+    if (caster) out.push(caster);
+  }
+  return out;
+}
+
+function foldCasterFromSource(src: ResolvedSource): ResolvedCaster | undefined {
+  let caster: ResolvedCaster | undefined;
+  for (const f of src.features) {
+    const frag = f.spellcasting;
+    if (!frag) continue;
+    if (!caster) {
+      // The first fragment that declares ability + type + tier establishes
+      // the caster. Subsequent fragments fold into it even if they also
+      // re-declare (the declaration wins, augmentations contribute).
+      if (frag.ability && frag.type && frag.tier) {
+        caster = {
+          source: src.source,
+          level: src.level ?? 0,
+          ability: frag.ability,
+          type: frag.type,
+          tier: frag.tier,
+          pool: frag.pool,
+          cantrip_pool: frag.cantrip_pool ?? frag.pool,
+          ritual_pool: frag.ritual_pool,
+          style: Array.isArray(frag.style) ? [...frag.style] : [],
+          prepared_max: frag.prepared_max,
+          cantrips: 0,
+          rituals: 0,
+          ritualsByLevel: {},
+          known: 0,
+          rituals_per_circle: 0,
+          granted: { prepared: {}, cantrips: {}, rituals: {} },
+          grantedBy: {},
+        };
+      } else {
+        continue;
+      }
+    }
+    // Grants on the class's own Spellcasting feature attribute back to
+    // the declaring feature's name (e.g. `Spellcasting`). Falls back to
+    // the source name when unnamed.
+    foldFragment(caster, frag, f.name || src.source, typeof f.level === "number" ? f.level : 1);
+    if (f.levels && f.levels.length > 0) {
+      for (const lvlEntry of f.levels) {
+        if (!lvlEntry.spellcasting) continue;
+        if (lvlEntry.level > caster.level) continue;
+        foldFragment(caster, lvlEntry.spellcasting, f.name || src.source, lvlEntry.level);
+      }
+    }
+  }
+  return caster;
+}
+
+function mergeFragmentsInto(caster: ResolvedCaster, src: ResolvedSource): void {
+  // Subclass / heritage / background / talent sources merge their
+  // fragments into the parent caster. Grants attribute back to the
+  // subclass-source name (`Life Domain`, not `Cleric`) so the spells
+  // block can show the actual enabling feature in the right column.
+  for (const f of src.features) {
+    if (f.spellcasting) foldFragment(caster, f.spellcasting, src.source, typeof f.level === "number" ? f.level : 1);
+    if (f.levels && f.levels.length > 0) {
+      for (const lvlEntry of f.levels) {
+        if (!lvlEntry.spellcasting) continue;
+        if (lvlEntry.level > caster.level) continue;
+        foldFragment(caster, lvlEntry.spellcasting, src.source, lvlEntry.level);
+      }
+    }
+  }
+}
+
+function foldFragment(
+  caster: ResolvedCaster,
+  frag: SpellcastingFragment,
+  providerSource: string,
+  atLevel: number,
+): void {
+  if (typeof frag.cantrips === "number") caster.cantrips += frag.cantrips;
+  if (typeof frag.rituals === "number") {
+    caster.rituals += frag.rituals;
+    caster.ritualsByLevel[atLevel] = (caster.ritualsByLevel[atLevel] ?? 0) + frag.rituals;
+  }
+  if (typeof frag.known === "number") caster.known += frag.known;
+  if (typeof frag.rituals_per_circle === "number")
+    caster.rituals_per_circle += frag.rituals_per_circle;
+  // Augmentations on subclass / talent / heroic-boon fragments may want
+  // to extend the caster's declared style list (e.g. a subclass attunes
+  // the Cleric to a specific flavor). Merge additively, de-duped, and
+  // normalise every entry — YAML lets the author write `[[Dream]]`
+  // (a nested 1×1 flow array) alongside `"Dream"` and `"[[Dream]]"`,
+  // and all three shapes should collapse to `"Dream"`.
+  if (frag.style != null) {
+    const normaliseStyle = (v: unknown): string => {
+      let cur: unknown = v;
+      while (Array.isArray(cur)) cur = cur[0];
+      if (typeof cur !== "string") return "";
+      return cur.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+    };
+    const raws = Array.isArray(frag.style) ? frag.style : [frag.style];
+    for (const raw of raws) {
+      const s = normaliseStyle(raw);
+      if (s && !caster.style.includes(s)) caster.style.push(s);
+    }
+  }
+  // Ritual pool declared on any fragment (base or augmentation) wins
+  // on first-write; subsequent fragments don't override so the primary
+  // class declaration stays authoritative.
+  if (typeof frag.ritual_pool === "string" && !caster.ritual_pool) {
+    caster.ritual_pool = frag.ritual_pool;
+  }
+  const granted = frag.granted;
+  if (granted) {
+    mergeGrantMap(caster.granted.prepared, granted.prepared, caster.grantedBy, providerSource);
+    mergeGrantMap(caster.granted.cantrips, granted.cantrips, caster.grantedBy, providerSource);
+    mergeGrantMap(caster.granted.rituals, granted.rituals, caster.grantedBy, providerSource);
+  }
+}
+
+function mergeGrantMap(
+  target: Record<number, string[]>,
+  source: Record<number, unknown[]> | undefined,
+  providers: Record<string, string>,
+  providerSource: string,
+): void {
+  if (!source) return;
+  for (const [lvlStr, raws] of Object.entries(source)) {
+    const lvl = Number(lvlStr);
+    if (!Number.isFinite(lvl) || !Array.isArray(raws)) continue;
+    const bucket = (target[lvl] ??= []);
+    for (const raw of raws) {
+      const str = stringifyRef(raw);
+      if (!str) continue;
+      if (!bucket.includes(str)) bucket.push(str);
+      const stem = grantStem(str);
+      // First grant wins for provenance (keeps the earliest-granting
+      // feature visible when later features regrant the same spell).
+      if (stem && !providers[stem]) providers[stem] = providerSource;
+    }
+  }
+}
+
+function grantStem(raw: string): string {
+  return raw
+    .replace(/^\[\[/, "")
+    .replace(/\]\]$/, "")
+    .replace(/\.md$/, "")
+    .split("|")[0]
+    .trim();
+}
+
+function stringifyRef(raw: unknown): string | undefined {
+  let v: unknown = raw;
+  while (Array.isArray(v)) v = v[0];
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    // Preserve wikilink delimiters so the renderer can resolve them;
+    // callers that need a bare stem can strip further.
+    return trimmed || undefined;
+  }
+  return undefined;
+}
 
 /**
  * Walk every resolved feature with an `update:` block and rewrite the

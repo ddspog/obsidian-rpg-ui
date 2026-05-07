@@ -1,6 +1,15 @@
 import * as React from "react";
 import type { ChooseSpec, PendingChoice } from "../domains/features/types";
 
+/** Strip `[[` / `]]` and prefer the alias after `|` when present — Obsidian
+ *  rewrites bare `[[X]]` to `[[path/to/X|X]]` when X collides with another
+ *  note, and the alias is the reader-facing label. */
+function optionLabel(raw: string): string {
+  const inner = raw.replace(/^\[\[/, "").replace(/\]\]$/, "");
+  const pipe = inner.indexOf("|");
+  return pipe >= 0 ? inner.slice(pipe + 1).trim() : inner;
+}
+
 export interface PendingChoiceRowProps {
   pending: PendingChoice;
   /**
@@ -16,9 +25,16 @@ export interface PendingChoiceRowProps {
    * (click `−`). When omitted the counter controls render disabled.
    */
   onPick?: (option: string, delta: 1 | -1) => void;
+  /**
+   * Numeric budget for `buy`-mode picks. The caller evaluates
+   * `pending.feature.buy` (which may be a literal or expression like
+   * `"5 + PB"`) against the character's EvalContext and passes the
+   * result here. Ignored when the parent feature isn't in buy mode.
+   */
+  buyBudget?: number;
 }
 
-export function PendingChoiceRow({ pending, onToggle, onPick }: PendingChoiceRowProps) {
+export function PendingChoiceRow({ pending, onToggle, onPick, buyBudget }: PendingChoiceRowProps) {
   const featureName = pending.feature.name ?? "";
   const rawChoose = pending.feature.choose;
   const choose: ChooseSpec | undefined = Array.isArray(rawChoose) ? undefined : rawChoose;
@@ -41,13 +57,36 @@ export function PendingChoiceRow({ pending, onToggle, onPick }: PendingChoiceRow
   const cleanName = isAuto || isComposite ? category ?? baseName : baseName;
   const displayName = `${cleanName}${levelTag}`;
   const isAsi = choose?.type === "asi";
+  // A feature may carry both `buy:` (for its feature.choice options) AND
+  // an inline `choose:` (for a sibling traits pick). The resolver emits
+  // two PendingChoices off the same detail in that case — one for each.
+  // Buy-mode only applies to the emission WITHOUT a `choose:` on its
+  // feature; the inline-choose pending still renders as a plain traits
+  // picker even though the underlying `buy` budget is spread through.
+  const isBuy =
+    pending.feature.buy != null
+    && pending.feature.choose == null
+    && typeof buyBudget === "number";
+  const buySpent = isBuy
+    ? pending.picked.reduce((sum, name) => {
+        const opt = pending.options.find((o) => (o.name ?? "") === name);
+        return sum + (typeof opt?.cost === "number" ? opt.cost : 0);
+      }, 0)
+    : 0;
+  const buyRemaining = isBuy ? Math.max(0, (buyBudget ?? 0) - buySpent) : 0;
   return (
     <aside
-      className={`rpg-feature-pending${isAsi ? " rpg-feature-pending-asi" : ""}`}
+      className={`rpg-feature-pending${isAsi ? " rpg-feature-pending-asi" : ""}${isBuy ? " rpg-feature-pending-buy" : ""}`}
       aria-label={`Pending ${displayName ?? pending.source} choice`}
     >
       <p>
-        pick {pending.remaining} more
+        {isBuy ? (
+          <>
+            spend up to <strong>{buyRemaining}</strong> more <small>({buySpent} / {buyBudget} spent)</small>
+          </>
+        ) : (
+          <>pick {pending.remaining} more</>
+        )}
         {displayName && (
           <>
             {" "}for <em>{displayName}</em>
@@ -57,9 +96,48 @@ export function PendingChoiceRow({ pending, onToggle, onPick }: PendingChoiceRow
       {pending.options.length > 0 && (
         isAsi
           ? <AsiOptions pending={pending} onPick={onPick} />
-          : <TraitsOptions pending={pending} onToggle={onToggle} />
+          : isBuy
+            ? <BuyOptions pending={pending} onToggle={onToggle} remaining={buyRemaining} />
+            : <TraitsOptions pending={pending} onToggle={onToggle} />
       )}
     </aside>
+  );
+}
+
+function BuyOptions({
+  pending,
+  onToggle,
+  remaining,
+}: {
+  pending: PendingChoice;
+  onToggle?: (option: string) => void;
+  remaining: number;
+}) {
+  return (
+    <menu aria-label="Choice Options">
+      {pending.options.map((o, i) => {
+        const raw = o.name ?? "(unnamed)";
+        const label = optionLabel(raw);
+        const cost = typeof o.cost === "number" ? o.cost : 0;
+        const alreadyPicked = pending.picked.includes(raw);
+        // Already-picked items are always clickable (to refund). Unpicked
+        // items disable when their cost exceeds the remaining budget.
+        const disabled = !onToggle || (!alreadyPicked && cost > remaining);
+        return (
+          <li key={i}>
+            <button
+              type="button"
+              aria-pressed={alreadyPicked}
+              disabled={disabled}
+              onClick={() => onToggle?.(raw)}
+            >
+              {label}
+              <small className="rpg-feature-pending-buy-cost"> · {cost} pts</small>
+            </button>
+          </li>
+        );
+      })}
+    </menu>
   );
 }
 
@@ -74,7 +152,7 @@ function TraitsOptions({
     <menu aria-label="Choice Options">
       {pending.options.map((o, i) => {
         const raw = o.name ?? "(unnamed)";
-        const label = raw.replace(/^\[\[/, "").replace(/\]\]$/, "");
+        const label = optionLabel(raw);
         const alreadyPicked = pending.picked.includes(raw);
         const slotsFull = pending.remaining === 0;
         return (
@@ -116,7 +194,7 @@ function AsiOptions({
     <menu aria-label="Choice Options">
       {pending.options.map((o, i) => {
         const raw = o.name ?? "(unnamed)";
-        const label = raw.replace(/^\[\[/, "").replace(/\]\]$/, "");
+        const label = optionLabel(raw);
         const count = counts.get(raw) ?? 0;
         const incDisabled = !onPick || slotsFull || (unique && count >= 1);
         return (

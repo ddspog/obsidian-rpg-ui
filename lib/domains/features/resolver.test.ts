@@ -404,7 +404,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
     details: [
       {
         name: "Skills",
-        traits: { Saves: ["WIS", "CHA"] },
+        traits: { "Save P.": ["WIS", "CHA"] },
         choose: {
           type: "traits",
           category: "Skill P.",
@@ -430,8 +430,8 @@ describe("resolveFeatures: inline `choose` spec", () => {
       { classes: [{ name: "Proficiencies", level: 1 }] },
       profLib,
     );
-    // Fixed Saves trait still aggregates
-    expect(view.traits["Saves"]).toEqual(["WIS", "CHA"]);
+    // Fixed Save P. trait still aggregates
+    expect(view.traits["Save P."]).toEqual(["WIS", "CHA"]);
     // Skill P. has no values yet
     expect(view.traits["Skill P."]).toBeUndefined();
     // Pending: 2 picks for the Skills feature
@@ -484,7 +484,7 @@ describe("resolveFeatures: array-form `choose` spec", () => {
     details: [
       {
         name: "Proficiencies",
-        traits: { "Tool P.": "[[Artist Tools]]" },
+        traits: { Tools: "[[Artist Tools]]" },
         choose: [
           {
             type: "traits",
@@ -494,7 +494,7 @@ describe("resolveFeatures: array-form `choose` spec", () => {
           },
           {
             type: "traits",
-            category: "Tool P.",
+            category: "Tools",
             number: 1,
             options: ["[[Smith's Tools]]", "[[Thieves' Tools]]"],
           },
@@ -519,7 +519,7 @@ describe("resolveFeatures: array-form `choose` spec", () => {
       (p) => p.feature.name === "Proficiencies:Skill P.",
     );
     const tool = view.pendingChoices.find(
-      (p) => p.feature.name === "Proficiencies:Tool P.",
+      (p) => p.feature.name === "Proficiencies:Tools",
     );
     expect(skill?.remaining).toBe(2);
     expect(tool?.remaining).toBe(1);
@@ -528,7 +528,7 @@ describe("resolveFeatures: array-form `choose` spec", () => {
     expect(Array.isArray(skill?.feature.choose)).toBe(false);
     expect((skill?.feature.choose as { category: string }).category).toBe("Skill P.");
     // Fixed trait from the same block still aggregates independently.
-    expect(view.traits["Tool P."]).toEqual(["[[Artist Tools]]"]);
+    expect(view.traits["Tools"]).toEqual(["[[Artist Tools]]"]);
   });
 
   it("records picks separately under each spec's composite key", () => {
@@ -539,14 +539,14 @@ describe("resolveFeatures: array-form `choose` spec", () => {
         choices: {
           Adherent: {
             "Proficiencies:Skill P.": ["[[History]]", "[[Religion]]"],
-            "Proficiencies:Tool P.": "[[Smith's Tools]]",
+            "Proficiencies:Tools": "[[Smith's Tools]]",
           },
         },
       },
       lib,
     );
     expect(view.traits["Skill P."]).toEqual(["[[History]]", "[[Religion]]"]);
-    expect(view.traits["Tool P."]).toEqual(["[[Artist Tools]]", "[[Smith's Tools]]"]);
+    expect(view.traits["Tools"]).toEqual(["[[Artist Tools]]", "[[Smith's Tools]]"]);
     expect(view.pendingChoices).toHaveLength(0);
   });
 });

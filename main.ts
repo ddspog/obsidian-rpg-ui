@@ -20,6 +20,7 @@ import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild } from "lib/systems/ts-loader";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
+import { renderSpellBlock } from "lib/blocks/spell-card";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -184,6 +185,20 @@ export default class DndUIToolkitPlugin extends Plugin {
         return;
       }
 
+      // `rpg spell` — standalone compendium card reading the host note's
+      // frontmatter. The fence body (YAML) is optional; when present it
+      // overrides matching fields for display-only tweaks.
+      if (meta === "spell") {
+        try {
+          const child = renderSpellBlock(this.app, el, source, ctx);
+          ctx.addChild(child);
+        } catch (err) {
+          console.error("rpg spell render failed", err);
+          el.innerHTML = '<div class="notice">Error rendering rpg spell</div>';
+        }
+        return;
+      }
+
       if (dotIndex > 0) {
         const entityType = meta.slice(0, dotIndex);
         const blockName = meta.slice(dotIndex + 1);
@@ -326,6 +341,26 @@ export default class DndUIToolkitPlugin extends Plugin {
     });
 
     this.addSettingTab(new DndSettingsTab(this.app, this));
+
+    // Dev-loop helper: force a reload of every mapped system's compendium
+    // bundle and re-render open markdown views. Useful when editing class
+    // / subclass / lineage / talent docs and the in-memory system cache
+    // hasn't picked the change up yet. Bound to the Command Palette as
+    // "RPG UI: Reload systems & re-render" so it can be triggered without
+    // restarting Obsidian.
+    this.addCommand({
+      id: "rpg-ui-reload",
+      name: "Reload systems & re-render active views",
+      callback: async () => {
+        const reg = SystemRegistry.getInstance();
+        const systemPaths = new Set<string>();
+        for (const sys of reg.getFolderMappings().values()) systemPaths.add(sys);
+        for (const sys of systemPaths) reg.invalidateSystem(sys);
+        await Promise.all(
+          [...systemPaths].map((sys) => this.refreshSystemConsumers(sys)),
+        );
+      },
+    });
   }
 
   initDataStore() {

@@ -43,7 +43,9 @@
 .markdown-rendered section[aria-label="Character Proficiencies"],
 .markdown-source-view.mod-cm6 section[aria-label="Character Proficiencies"],
 .markdown-rendered section[aria-label="Character Features"],
-.markdown-source-view.mod-cm6 section[aria-label="Character Features"] {
+.markdown-source-view.mod-cm6 section[aria-label="Character Features"],
+.markdown-rendered section[aria-label="Character Spells"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Spells"] {
   max-width: 720px;
   margin-inline: auto;
 }
@@ -60,32 +62,124 @@
  * items, so the dashed divider between feature cards in a bucket sits
  * flush against both the previous content and the next title. Re-assert
  * the spacing with a higher-specificity selector scoped to the rendered
- * markdown context. */
+ * markdown context. Spells block uses the same pattern (`.rpg-spell-entry`
+ * is also an `<li>` inside `.rpg-spell-entries`) — mirror the override
+ * there so the divider gets the same breathing room. */
 .markdown-rendered .rpg-feature-bucket-entry,
-.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry {
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry,
+.markdown-rendered .rpg-spell-entry,
+.markdown-source-view.mod-cm6 .rpg-spell-entry {
   padding: 24px 0 16px;
 }
 
 .markdown-rendered .rpg-feature-bucket-entry:first-child,
-.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry:first-child {
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry:first-child,
+.markdown-rendered .rpg-spell-entry:first-child,
+.markdown-source-view.mod-cm6 .rpg-spell-entry:first-child {
   padding-top: 4px;
+}
+
+/* Spells-entry markdown descriptions live in `.rpg-spell-entry-text`,
+ * so mirror the feature-card list overrides so a <ul>/<ol> inside a
+ * spell's prose keeps its bullets / numbers without the default reading-
+ * view inset. */
+.markdown-rendered .rpg-spell-entry-text ul,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text ul,
+.markdown-rendered .rpg-spell-entry-text ol,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text ol {
+  padding-inline-start: 1.25em;
+  margin: 0.25em 0;
+}
+
+.markdown-rendered .rpg-spell-entry-text li,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text li {
+  padding-inline-start: 0;
+  margin: 0;
+}
+
+/* Obsidian's reading-view gives every <p> a hefty top/bottom margin
+ * (~1em each) which visually blows out the decisions paragraphs,
+ * making the Decisions-made drawer three times taller than needed.
+ * Keep the in-drawer paragraphs tight so several source lines stack
+ * cleanly. */
+.markdown-rendered .rpg-feature-decisions-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-line,
+.markdown-rendered .rpg-feature-decisions-source-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-source-line,
+.markdown-rendered .rpg-feature-decisions-category-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-category-line {
+  margin: 2px 0;
+}
+
+/* Obsidian's default `.markdown-preview-view h3 { font-size: 1.375em }` (or
+ * a theme equivalent) beats our `.rpg-feature-*-group-label { font-size:
+ * 0.8em }` rule on specificity ties, and renders differently across
+ * blocks because the parent font-size differs between features and
+ * spells containers. Pin the source-group heading to a root-relative
+ * size + explicit resets so it reads identically everywhere. */
+.markdown-rendered h3.rpg-feature-pending-group-label,
+.markdown-source-view.mod-cm6 h3.rpg-feature-pending-group-label,
+.markdown-rendered h3.rpg-feature-decisions-group-label,
+.markdown-source-view.mod-cm6 h3.rpg-feature-decisions-group-label {
+  margin: 6px 0 2px;
+  padding-left: 2px;
+  font-family: var(--font-interface, inherit);
+  font-size: 0.9rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* Source / enabler attribution label on a feature or spell entry. Obsidian's
+ * default `a.internal-link` rule paints these with the theme's accent color
+ * and underline — which makes the features and spells sources render very
+ * differently even though the two classes already declare matching styles.
+ * Pin both to the same muted-italic treatment inside the rendered markdown
+ * column so the accent doesn't win on specificity. */
+.markdown-rendered a.rpg-feature-bucket-source,
+.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source,
+.markdown-rendered a.rpg-spell-entry-enabler,
+.markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler {
+  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
+  text-decoration: none;
+  font-style: italic;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.markdown-rendered a.rpg-feature-bucket-source:hover,
+.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source:hover,
+.markdown-rendered a.rpg-spell-entry-enabler:hover,
+.markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler:hover {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  text-decoration: underline;
 }
 
 /* Obsidian's default `button` styling fills with `--interactive-normal`
  * and adds a frame, which clobbers the inline-glyph look the undo
- * control gets in Storybook. Restore the transparent baseline so only
- * the ↺ glyph shows until hover. */
+ * control gets in Storybook. Restore the transparent baseline + reset
+ * padding/margin so only the superscript ↺ glyph shows. */
 .markdown-rendered .rpg-feature-decisions-undo,
 .markdown-source-view.mod-cm6 .rpg-feature-decisions-undo {
   background: transparent;
   box-shadow: none;
-  border-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
 }
 
 .markdown-rendered .rpg-feature-decisions-undo:hover,
 .markdown-source-view.mod-cm6 .rpg-feature-decisions-undo:hover {
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
-  border-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  background: transparent;
 }
 
 /* Obsidian's reading-view bullet lists ship with a hefty inline-start

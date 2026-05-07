@@ -4,10 +4,15 @@ import { SkillDetails } from "../../entities/character.common";
  * Types for the Skills block.
  *
  * Every skill field is optional. When omitted, the block derives the
- * proficiency level from the resolved features view:
+ * proficiency level from the resolved features view using the `X.` trait
+ * taxonomy:
  *   - `Skill P.` trait, skill present once  → proficient (level 1)
  *   - `Skill P.` trait, skill present twice → expertise  (level 2)
- *   - `Skill P. (½)` trait, skill present   → half-prof  (level 0.5)
+ *   - `Skill E.` trait                      → expertise  (level 2)
+ *   - `Skill J.` (Jack) trait               → half-prof  (level 0.5)
+ *
+ * Vantage (`Skill A.` advantage / `Skill D.` disadvantage) and flat
+ * bonuses (`Skill B.`) fold in alongside proficiency.
  *
  * `additional:` supplies author-only promotions on top of whatever the
  * traits granted — useful for homebrew or one-off adjustments the trait

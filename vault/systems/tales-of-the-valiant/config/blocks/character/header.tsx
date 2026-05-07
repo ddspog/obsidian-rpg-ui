@@ -128,7 +128,7 @@ export const header: EntityBlock<HeaderProps, CharacterEntity> = ({ self, lookup
           maxPoints={5}
           onUpdateInspiration={(value: number) => self.setLuck(value)} />
       </Line.BigElements>
-      <Progress.Bar value={self.xp} max={lookup.table.xp[expressions.CharacterLevel() - 1]} />
+      <Progress.Bar value={self.xp} max={lookup.table.xp[expressions.CharacterLevel()] ?? lookup.table.xp[expressions.CharacterLevel() - 1]} />
     </fieldset>
   </Header.Banner>
 );

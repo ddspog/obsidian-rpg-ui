@@ -61,7 +61,9 @@ section[aria-label="Character Senses"] > output {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 8px 14px;
+  /* Extra bottom padding gives the INSIGHT / INVESTIGATION labels a clear
+   * gutter beneath so the next row below doesn't crowd them. */
+  padding: 12px 8px 22px;
 }
 
 section[aria-label="Character Senses"] > output > data {
@@ -153,6 +155,21 @@ section[aria-label="Character Senses"] > dl > dd > [aria-details="Sense Range"] 
   font-size: 1em;
   text-transform: none;
   opacity: 0.7;
+}
+
+/* Sense entries may carry an Obsidian wikilink (e.g. `[[Darkvision]] 60`)
+ * so the player can jump to the sense's rules page. Paint the anchor with
+ * the same muted text the plain-span fallback uses, and lift the text-
+ * decoration on hover only — otherwise Obsidian's global `a.internal-link`
+ * rule renders the sense name in the theme's accent color. */
+section[aria-label="Character Senses"] > dl > dd > a.internal-link {
+  color: inherit;
+  text-decoration: none;
+  text-transform: inherit;
+}
+
+section[aria-label="Character Senses"] > dl > dd > a.internal-link:hover {
+  text-decoration: underline;
 }
 
 /* ── Responsive: stack senses below passives ────────────────────────────── */

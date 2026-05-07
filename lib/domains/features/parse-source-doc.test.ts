@@ -133,7 +133,7 @@ name: "Broken
 \`\`\`rpg feature.details
 text: Hardcoded + a pick with no declared feature name.
 traits:
-  Tool P.:
+  Tools:
     - "[[Artist Tools]]"
 \`\`\`
 
@@ -147,7 +147,7 @@ text: Second block keeps its authored name.
     // Positional synthetic name — starts with the sentinel prefix so the UI
     // can recognise it and substitute a prettier label.
     expect(doc.details[0].name).toBe("__auto_0");
-    expect(doc.details[0].traits?.["Tool P."]).toEqual(["[[Artist Tools]]"]);
+    expect(doc.details[0].traits?.["Tools"]).toEqual(["[[Artist Tools]]"]);
     expect(doc.details[1].name).toBe("Talent");
   });
 

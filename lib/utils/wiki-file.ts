@@ -228,6 +228,13 @@ export async function resolveWikiFolder(
   // 2. Folder suffix search — find a folder whose path equals or ends with `/name`
   //    anywhere in the vault, then return every file beneath it (including
   //    deep subfolders, e.g. `compendium/talents` → `compendium/talents/magic/Foo.md`).
+  //
+  //    When the full name fails, progressively strip leading segments
+  //    ("worldbuilding/cantrips" → "cantrips") so a ref like
+  //    `@worldbuilding/cantrips` still resolves when the vault has
+  //    reorganised the files to `worldbuilding/spells/cantrips/*`. The
+  //    shortest-path rule picks the most general match, consistent with
+  //    how wikilinks resolve basenames.
   if (matched.length === 0) {
     // Walk every file's directory chain so we discover ancestor folders, not
     // just the immediate parent of each file. Without this, calling
@@ -244,16 +251,24 @@ export async function resolveWikiFolder(
         dir = dir.substring(0, slash);
       }
     }
-    const candidates = [...allDirs].filter(
-      (d) => d === name || d.endsWith("/" + name),
-    );
-    if (candidates.length > 0) {
-      // Pick the shortest matching folder (the most general / shallowest
-      // ancestor). Then sweep every file at any depth beneath it.
-      const shortest = candidates.sort((a, b) => a.length - b.length)[0];
-      matched = allFiles.filter(
-        (f: any) => f.path.startsWith(shortest + "/") || f.path === shortest,
+    // Try full name first, then progressively strip leading segments.
+    const attempts: string[] = [name];
+    let remainder = name;
+    while (remainder.includes("/")) {
+      remainder = remainder.slice(remainder.indexOf("/") + 1);
+      attempts.push(remainder);
+    }
+    for (const attempt of attempts) {
+      const candidates = [...allDirs].filter(
+        (d) => d === attempt || d.endsWith("/" + attempt),
       );
+      if (candidates.length > 0) {
+        const shortest = candidates.sort((a, b) => a.length - b.length)[0];
+        matched = allFiles.filter(
+          (f: any) => f.path.startsWith(shortest + "/") || f.path === shortest,
+        );
+        if (matched.length > 0) break;
+      }
     }
   }
 

@@ -95,19 +95,50 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
   const traits = view?.traits ?? {};
 
   // Count full-proficiency picks. A skill appearing twice in `Skill P.`
-  // counts as expertise (level 2). A single entry is level 1. Half-prof
-  // picks (level 0.5) come from a separate `Skill P. (½)` trait key so
-  // they never compete with full proficiency on the same skill.
+  // counts as expertise (level 2); a single entry is level 1. A skill
+  // listed in `Skill E.` is expertise outright, regardless of whether
+  // `Skill P.` also mentions it. Half-prof picks (level 0.5) come from
+  // `Skill J.` (Jack of all trades style) so they never compete with
+  // full proficiency on the same skill.
   const profCounts = new Map<string, number>();
   for (const raw of traits["Skill P."] ?? []) {
     const name = bareLabel(raw);
     if (!SKILL_SET.has(name)) continue;
     profCounts.set(name, (profCounts.get(name) ?? 0) + 1);
   }
+  for (const raw of traits["Skill E."] ?? []) {
+    const name = bareLabel(raw);
+    if (!SKILL_SET.has(name)) continue;
+    profCounts.set(name, Math.max(profCounts.get(name) ?? 0, 2));
+  }
   const halfNames = new Set<string>();
-  for (const raw of traits["Skill P. (½)"] ?? []) {
+  for (const raw of traits["Skill J."] ?? []) {
     const name = bareLabel(raw);
     if (SKILL_SET.has(name)) halfNames.add(name);
+  }
+  // Trait-driven vantage + flat bonuses. `Skill A.` grants advantage
+  // (+1 vantage), `Skill D.` disadvantage (−1), `Skill B.` contributes
+  // a flat numeric bonus added on top of the attribute+PB modifier.
+  const vantageByName = new Map<string, number>();
+  const bonusByName = new Map<string, number>();
+  for (const raw of traits["Skill A."] ?? []) {
+    const name = bareLabel(raw);
+    if (!SKILL_SET.has(name)) continue;
+    vantageByName.set(name, (vantageByName.get(name) ?? 0) + 1);
+  }
+  for (const raw of traits["Skill D."] ?? []) {
+    const name = bareLabel(raw);
+    if (!SKILL_SET.has(name)) continue;
+    vantageByName.set(name, (vantageByName.get(name) ?? 0) - 1);
+  }
+  for (const raw of traits["Skill B."] ?? []) {
+    // `Skill B.: "+2 Athletics"` — number precedes the skill name.
+    const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
+    if (!match) continue;
+    const bonus = parseFloat(match[1]);
+    const name = bareLabel(match[2]);
+    if (!Number.isFinite(bonus) || !SKILL_SET.has(name)) continue;
+    bonusByName.set(name, (bonusByName.get(name) ?? 0) + bonus);
   }
 
   // Author-only additions layered on top of the trait-derived counts.
@@ -134,8 +165,8 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
     const override = (self as Record<string, unknown>)[name] as Partial<SkillDetails> | undefined;
     return {
       proficiency: override?.proficiency ?? derivedProficiency(name),
-      vantage: override?.vantage ?? 0,
-      bonus: override?.bonus ?? 0,
+      vantage: override?.vantage ?? vantageByName.get(name) ?? 0,
+      bonus: override?.bonus ?? bonusByName.get(name) ?? 0,
     };
   };
 

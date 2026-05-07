@@ -34,12 +34,22 @@ interface DetailsLookup {
   $tables?: Record<string, TableDef>;
 }
 
+/** True when the author asked to suppress the card title — accepts any of
+ *  `"No Title"`, `"no-title"`, `"notitle"` (case-insensitive, whitespace
+ *  and hyphens ignored) so compendium YAML can use whichever spelling
+ *  reads best. */
+function isNoTitleView(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  return raw.toLowerCase().replace(/[\s\-_]+/g, "") === "notitle";
+}
+
 export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = ({
   self,
   lookup,
 }) => {
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
+  const hideTitle = isNoTitleView(self.view);
 
   const context: EvalContext = React.useMemo(
     () => ({ tables: lookup?.$tables ?? {}, vars: {} }),
@@ -49,7 +59,7 @@ export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = (
   return (
     <article className="rpg-feature-card" aria-label={`Feature ${self.name}`}>
       <hgroup>
-        <h3>{self.name}</h3>
+        {!hideTitle && <h3>{self.name}</h3>}
         <p>
           {self.subtitle ? (
             <small aria-details="Feature Subtitle">{self.subtitle}</small>
@@ -57,7 +67,6 @@ export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = (
             <>
               {self.level != null && <small aria-details="Feature Level">Lv. {self.level}</small>}
               {self.uses != null && <small aria-details="Feature Uses">{self.uses} use{self.uses === 1 ? "" : "s"}</small>}
-              {self.pick != null && <small aria-details="Feature Pick">Pick {self.pick}</small>}
             </>
           )}
           {isResource && self.max != null && (

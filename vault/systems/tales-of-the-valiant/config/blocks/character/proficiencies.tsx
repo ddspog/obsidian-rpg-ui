@@ -35,16 +35,11 @@ function bareLabel(raw: unknown): string {
 
 /** Pull a trait list, normalise each entry, and dedupe by display label
  *  (case-sensitive — "Common" and "common" are kept as separate entries on
- *  purpose). Accepts multiple trait keys so authors can use either the
- *  canonical form (`Weapon Proficiency`) or a shorter alias (`Weapons`)
- *  when emitting picks from inline choose specs. Falls back to `[]` when
- *  no key matches. */
-function readTrait(traits: Record<string, string[]> | undefined, keys: string[]): string[] {
-  const raw: string[] = [];
-  for (const k of keys) {
-    const v = traits?.[k];
-    if (v) raw.push(...v);
-  }
+ *  purpose). The categorical trait keys — `Weapons`, `Armor`, `Tools`,
+ *  `Languages` — don't follow the `P./J./E.` taxonomy since "proficiency"
+ *  here means "knows how to use" rather than "adds PB to a roll". */
+function readTrait(traits: Record<string, string[]> | undefined, key: string): string[] {
+  const raw = traits?.[key] ?? [];
   const seen = new Set<string>();
   const out: string[] = [];
   for (const v of raw) {
@@ -61,12 +56,18 @@ function buildCategories(data: {
   weapons: string[];
   tools: string[];
   languages: string[];
+  resistance: string[];
+  immunity: string[];
+  vulnerability: string[];
 }): Category[] {
   const cats: Category[] = [];
   if (data.weapons.length) cats.push({ label: "Weapons", items: data.weapons, linkItems: true });
   if (data.armor.length) cats.push({ label: "Armor", items: data.armor, linkItems: true });
   if (data.tools.length) cats.push({ label: "Tools", items: data.tools, linkItems: true });
   if (data.languages.length) cats.push({ label: "Languages", items: data.languages, linkItems: true });
+  if (data.resistance.length) cats.push({ label: "Resistance", items: data.resistance, linkItems: true });
+  if (data.immunity.length) cats.push({ label: "Immunity", items: data.immunity, linkItems: true });
+  if (data.vulnerability.length) cats.push({ label: "Vulnerability", items: data.vulnerability, linkItems: true });
   return cats;
 }
 
@@ -86,10 +87,13 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
   const traits = view?.traits ?? {};
 
   const auto = {
-    armor: readTrait(traits, ["Armor", "Armor Proficiency"]),
-    weapons: readTrait(traits, ["Weapon Proficiency", "Weapons"]),
-    tools: readTrait(traits, ["Tool P.", "Tool Proficiency", "Tools"]),
-    languages: readTrait(traits, ["Languages", "Language"]),
+    armor: readTrait(traits, "Armor"),
+    weapons: readTrait(traits, "Weapons"),
+    tools: readTrait(traits, "Tools"),
+    languages: readTrait(traits, "Languages"),
+    resistance: readTrait(traits, "Resistance"),
+    immunity: readTrait(traits, "Immunity"),
+    vulnerability: readTrait(traits, "Vulnerability"),
   };
 
   const additional = self.additional ?? {};
@@ -115,6 +119,9 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
     weapons: merge(self.weapons, auto.weapons, additional.weapons),
     tools: merge(self.tools, auto.tools, additional.tools),
     languages: merge(self.languages, auto.languages, additional.languages),
+    resistance: merge(self.resistance, auto.resistance, additional.resistance),
+    immunity: merge(self.immunity, auto.immunity, additional.immunity),
+    vulnerability: merge(self.vulnerability, auto.vulnerability, additional.vulnerability),
   };
 
   const cats = buildCategories(data);

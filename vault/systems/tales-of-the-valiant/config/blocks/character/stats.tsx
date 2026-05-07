@@ -39,19 +39,52 @@ function sumAsi(values: string[] | undefined): Record<AttrCode, number> {
   return totals;
 }
 
-/** Strip a Saves trait value (`"WIS"`, `"+CHA"`, `"WIS"`, etc.) down to a
- *  canonical 3-letter attribute code. */
+/** Strip a save-trait value (`"WIS"`, `"+CHA"`, …) down to a canonical
+ *  3-letter attribute code. Returns null when the string doesn't match
+ *  any known attribute alias. */
 function asAttrCode(raw: unknown): AttrCode | null {
   if (typeof raw !== "string") return null;
   const cleaned = raw.replace(/^\+/, "").trim().toUpperCase();
   return ATTR_ALIAS[cleaned] ?? null;
 }
 
-function saveProfsFromTraits(values: string[] | undefined): Set<AttrCode> {
-  const out = new Set<AttrCode>();
-  for (const raw of values ?? []) {
+function saveProfLevelsFromTraits(traits: Record<string, string[]>): Record<AttrCode, number> {
+  // P. = level 1, J. (Jack) = 0.5, E. = 2. Higher wins when multiple
+  // traits touch the same attribute so expertise from one source isn't
+  // downgraded by a plain P. from another.
+  const out: Record<AttrCode, number> = {
+    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
+  };
+  const bump = (code: AttrCode, lvl: number) => {
+    if (lvl > out[code]) out[code] = lvl;
+  };
+  for (const raw of traits["Save P."] ?? []) {
     const code = asAttrCode(raw);
-    if (code) out.add(code);
+    if (code) bump(code, 1);
+  }
+  for (const raw of traits["Save J."] ?? []) {
+    const code = asAttrCode(raw);
+    if (code) bump(code, 0.5);
+  }
+  for (const raw of traits["Save E."] ?? []) {
+    const code = asAttrCode(raw);
+    if (code) bump(code, 2);
+  }
+  return out;
+}
+
+function saveBonusFromTraits(traits: Record<string, string[]>): Record<AttrCode, number> {
+  // `Save B.: "+2 WIS"` → +2 to the WIS save. Aggregates across entries.
+  const out: Record<AttrCode, number> = {
+    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
+  };
+  for (const raw of traits["Save B."] ?? []) {
+    const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+([A-Za-z]+)\s*$/);
+    if (!match) continue;
+    const bonus = parseFloat(match[1]);
+    const code = asAttrCode(match[2]);
+    if (!Number.isFinite(bonus) || !code) continue;
+    out[code] += bonus;
   }
   return out;
 }
@@ -80,8 +113,9 @@ function readAttr(raw: unknown): AttrEntry {
 /**
  * Stats block. The YAML carries each attribute's starting score (number
  * shorthand or object form). Save proficiencies are derived from the
- * resolved features view's `Saves` trait — so a Cleric with `Saves:
- * [WIS, CHA]` automatically sees those two save dots filled. ASI picks
+ * resolved features view's `Save P.` / `Save J.` / `Save E.` traits —
+ * so a Cleric with `Save P.: [WIS, CHA]` automatically sees those two
+ * save dots filled. `Save B.` adds a flat per-attribute bonus. ASI picks
  * fold into the displayed score on top of the base.
  */
 export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
@@ -94,18 +128,19 @@ export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const view = lookup.$features?.(header, features?.choices, features?.additional);
   const asi = sumAsi(view?.traits?.["Ability Scores"]);
-  const saveProfsAuto = saveProfsFromTraits(view?.traits?.["Saves"]);
+  const saveProfsAuto = saveProfLevelsFromTraits(view?.traits ?? {});
+  const saveBonusAuto = saveBonusFromTraits(view?.traits ?? {});
 
   return (
     <section aria-label="Character Stats">
       {ATTRS.map((attr) => {
         const cell = readAttr((self as Record<string, unknown>)[attr]);
         const finalValue = cell.baseValue + asi[attr];
-        const proficiency = cell.saveProf ?? (saveProfsAuto.has(attr) ? 1 : 0);
+        const proficiency = cell.saveProf ?? saveProfsAuto[attr];
         const saveBonus = expressions.ModifierTotal({
           attribute: attr,
           proficiency,
-          bonus: cell.saveBonus ?? 0,
+          bonus: (cell.saveBonus ?? 0) + saveBonusAuto[attr],
         });
         return (
           <Stat

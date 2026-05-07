@@ -7,6 +7,7 @@ import {
   buildCompendiumIndex,
   resolveFeatures,
   ResolvedView,
+  extractSpellBlocks,
 } from "rpg-ui-toolkit";
 import { xpTable as xp } from './character.lookup';
 import type { CharacterEntity } from "./character.types";
@@ -18,6 +19,7 @@ import skills from '../blocks/character/skills';
 import attacks from '../blocks/character/attacks';
 import proficiencies from '../blocks/character/proficiencies';
 import features from '../blocks/character/features';
+import spells from '../blocks/character/spells';
 
 const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     const [
@@ -32,59 +34,165 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         reactionDocs,
         bonusActionDocs,
         talentDocs,
-        toolDocs,
-        martialDocs,
-        simpleDocs,
-        cantripDocs,
     ] = await Promise.all([
-        wiki.folder("compendium/classes") as Promise<any[]>,
-        wiki.folder("compendium/subclasses") as Promise<any[]>,
-        wiki.folder("compendium/lineages") as Promise<any[]>,
-        wiki.folder("compendium/heritages") as Promise<any[]>,
-        wiki.folder("compendium/backgrounds") as Promise<any[]>,
-        wiki.folder("compendium/skills") as Promise<any[]>,
-        wiki.folder("compendium/languages") as Promise<any[]>,
-        wiki.folder("compendium/actions") as Promise<any[]>,
-        wiki.folder("compendium/reactions") as Promise<any[]>,
-        wiki.folder("compendium/bonus-actions") as Promise<any[]>,
-        wiki.folder("compendium/talents") as Promise<any[]>,
-        wiki.folder("worldbuilding/tools") as Promise<any[]>,
-        wiki.folder("worldbuilding/martial") as Promise<any[]>,
-        wiki.folder("worldbuilding/simple") as Promise<any[]>,
-        wiki.folder("worldbuilding/cantrips") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/classes") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/subclasses") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/lineages") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/heritages") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/backgrounds") as Promise<any[]>,
+        wiki.folder("glossary/skills") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/languages") as Promise<any[]>,
+        wiki.folder("glossary/actions") as Promise<any[]>,
+        wiki.folder("glossary/reactions") as Promise<any[]>,
+        wiki.folder("glossary/bonus-actions") as Promise<any[]>,
+        wiki.folder("worldbuilding/traits/talents") as Promise<any[]>,
     ]);
 
-    // Build `@folder/path` and `#Tag` indexes off every worldbuilding doc so
-    // compendium authors can write `@worldbuilding/tools` or `#martial` inside
-    // `choose.options` arrays and have them expand to concrete wikilinks.
-    // Each doc is registered under every progressively-shorter folder suffix
-    // of its path so authors can abbreviate (e.g. `@worldbuilding/tools`
-    // resolves whether Obsidian surfaces the file at
-    // `systems/<system>/worldbuilding/tools/Foo.md` or `worldbuilding/tools/Foo.md`).
-    const indexDocs: { $name: string; folder: string; tags: string[] }[] = [];
+    // Auto-discover every `@folder/path` referenced inside a compendium
+    // doc's text. Compendium authors can add new folders (homebrew
+    // weapons, tool categories, spell pools, …) just by typing
+    // `@path/to/folder` in a feature's `choose.options` or caster's
+    // `pool:` — the entity resolves and indexes those folders on the fly,
+    // so the plugin / system-level code needn't enumerate them here.
+    const refPaths = new Set<string>();
+    // `@` followed by a path segment. Keep the match greedy enough to
+    // catch multi-level paths (`items/weapons/martial`) but stop before
+    // quotes / whitespace / YAML punctuation.
+    const refRe = /@([A-Za-z0-9][A-Za-z0-9/_\-]*)/g;
+    const scanForRefs = (text: string) => {
+        if (!text) return;
+        for (const m of text.matchAll(refRe)) {
+            const p = m[1].replace(/\/+$/, "");
+            if (p) refPaths.add(p);
+        }
+    };
     for (const d of [
-        ...(skillDocs ?? []),
-        ...(languageDocs ?? []),
+        ...(classDocs ?? []),
+        ...(subclassDocs ?? []),
+        ...(lineageDocs ?? []),
+        ...(heritageDocs ?? []),
+        ...(backgroundDocs ?? []),
         ...(talentDocs ?? []),
-        ...(toolDocs ?? []),
-        ...(martialDocs ?? []),
-        ...(simpleDocs ?? []),
-        ...(cantripDocs ?? []),
     ]) {
-        const $path: string = (d as any)?.$path ?? "";
-        const tags: string[] = Array.isArray((d as any)?.$tags)
-            ? (d as any).$tags.map((t: string) => t.replace(/^#/, ""))
+        scanForRefs(typeof (d as any)?.$contents === "string" ? (d as any).$contents : "");
+    }
+
+    // Load each referenced folder in parallel. A missing / stale path
+    // resolves to [] so a typo doesn't break bundle loading — it just
+    // means that `@folder/path` ref won't expand until the author fixes
+    // the path (or creates the folder).
+    const refLoads = await Promise.all(
+        [...refPaths].map(async (p) => {
+            try {
+                const docs = (await (wiki.folder(p) as Promise<any[]>)) ?? [];
+                return { path: p, docs };
+            } catch {
+                return { path: p, docs: [] as any[] };
+            }
+        }),
+    );
+
+    // Second pass: auto-load the immediate parent directory of every
+    // resolved ref so sibling content gets indexed too. E.g.,
+    // `@worldbuilding/cantrips` resolves to `worldbuilding/spells/cantrips/*`;
+    // we then also index `worldbuilding/spells/*` so a tag-filtered pool
+    // like `pool: "#Divine"` can match spells living outside the
+    // cantrips sub-tree without the author having to list every sibling
+    // folder. One level of ascension is enough to cover "pool + cantrip
+    // subset" patterns without pulling in the entire vault.
+    const parentPaths = new Set<string>();
+    for (const { docs } of refLoads) {
+        if (!docs || docs.length === 0) continue;
+        // Derive the deepest common directory of the loaded docs.
+        const dirs = docs
+            .map((d: any) => {
+                const p = (d?.$path ?? "") as string;
+                return p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+            })
+            .filter(Boolean) as string[];
+        if (dirs.length === 0) continue;
+        let common = dirs[0];
+        for (const d of dirs) {
+            while (d !== common && !d.startsWith(common + "/")) {
+                const s = common.lastIndexOf("/");
+                if (s < 0) { common = ""; break; }
+                common = common.slice(0, s);
+            }
+            if (!common) break;
+        }
+        if (!common) continue;
+        const parent = common.includes("/") ? common.slice(0, common.lastIndexOf("/")) : "";
+        if (parent && !refPaths.has(parent)) parentPaths.add(parent);
+    }
+    const parentLoads = await Promise.all(
+        [...parentPaths].map(async (p) => {
+            try {
+                const docs = (await (wiki.folder(p) as Promise<any[]>)) ?? [];
+                return { path: p, docs };
+            } catch {
+                return { path: p, docs: [] as any[] };
+            }
+        }),
+    );
+    const refDocs = [
+        ...refLoads.flatMap((r) => r.docs ?? []),
+        ...parentLoads.flatMap((r) => r.docs ?? []),
+    ];
+
+    // Build `@folder/path` and `#Tag` indexes off every worldbuilding doc so
+    // compendium authors can write `@worldbuilding/items/weapons/martial` or
+    // `#martial` inside `choose.options` arrays and have them expand to
+    // concrete wikilinks. Each doc is registered under every
+    // progressively-shorter folder suffix of its path so authors can
+    // abbreviate (e.g. `@cantrips` still resolves when the file lives at
+    // `worldbuilding/spells/cantrips/Foo.md`).
+    const indexDocs: { $name: string; folder: string; tags: string[] }[] = [];
+    // Spell docs carry their magic source and circle inside their
+    // `rpg spell` fence body (not frontmatter). Scan each doc's
+    // `$contents` for every spell fence, parse the YAML, and expose
+    // `source` + `circle` as synthetic tags. `#Divine` / `#Primordial`
+    // / `#Arcane` / `#Wyrd` then resolve to every spell whose `source`
+    // includes that source; `#Cantrip` / `#1st-Circle` / etc. resolve
+    // by circle.
+    const extraTagsFor = (d: any): string[] => {
+        if (!d || typeof d !== "object") return [];
+        const out: string[] = [];
+        const contents = typeof d.$contents === "string" ? d.$contents : "";
+        if (!contents) return out;
+        const blocks = extractSpellBlocks(contents);
+        for (const block of blocks) {
+            const sources = Array.isArray(block.source) ? block.source : [];
+            for (const raw of sources) {
+                let v: unknown = raw;
+                while (Array.isArray(v)) v = v[0];
+                if (typeof v !== "string") continue;
+                const stem = v.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+                if (stem) out.push(stem);
+            }
+            if (typeof block.circle === "string" && block.circle.trim()) {
+                out.push(block.circle.trim());
+            }
+        }
+        return out;
+    };
+    // Dedupe by $path so a doc reachable through multiple `@folder` refs
+    // (e.g. a spell in both `worldbuilding/spells` and
+    // `worldbuilding/spells/cantrips`) only indexes once — its suffix
+    // walk registers every ancestor folder anyway.
+    const indexedPaths = new Set<string>();
+    const pushIndexDoc = (d: any) => {
+        const $path: string = d?.$path ?? "";
+        if (!$path || indexedPaths.has($path)) return;
+        indexedPaths.add($path);
+        const frontmatterTags: string[] = Array.isArray(d?.$tags)
+            ? d.$tags.map((t: string) => t.replace(/^#/, ""))
             : [];
-        // Walk up every parent directory and register the file under every
-        // progressively-shorter suffix of that directory. For a talent at
-        // `compendium/talents/magic/Mental Fortitude.md`, this produces
-        // keys: `compendium/talents/magic`, `talents/magic`, `magic`,
-        // `compendium/talents`, `talents`, `compendium`.
+        const tags = [...frontmatterTags, ...extraTagsFor(d)];
         let parentDir = $path.includes("/") ? $path.slice(0, $path.lastIndexOf("/")) : "";
         while (parentDir) {
             let suffix = parentDir;
             while (suffix) {
-                indexDocs.push({ $name: (d as any)?.$name ?? "", folder: suffix, tags });
+                indexDocs.push({ $name: d?.$name ?? "", folder: suffix, tags });
                 const slash = suffix.indexOf("/");
                 if (slash < 0) break;
                 suffix = suffix.slice(slash + 1);
@@ -93,8 +201,34 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
             if (lastSlash < 0) break;
             parentDir = parentDir.slice(0, lastSlash);
         }
+    };
+    for (const d of [
+        ...(skillDocs ?? []),
+        ...(languageDocs ?? []),
+        ...(talentDocs ?? []),
+        ...refDocs,
+    ]) {
+        pushIndexDoc(d);
     }
     const { tagIndex, folderIndex } = buildCompendiumIndex(indexDocs);
+
+    // Parse each `rpg spell` fence inside the discovered docs up front so
+    // the character sheet can surface full spell content (range, duration,
+    // components, description, …) without re-scanning the file every
+    // render. Keyed by the doc's `$name` (bare wikilink stem), matching
+    // how user picks arrive in the state. Any doc containing a spell
+    // fence qualifies — doesn't matter which folder ref brought it in.
+    const spellLibrary: Record<string, Record<string, unknown>> = {};
+    for (const d of refDocs) {
+        const name = (d as any)?.$name;
+        const contents = typeof (d as any)?.$contents === "string" ? (d as any).$contents : "";
+        if (!name || !contents) continue;
+        const blocks = extractSpellBlocks(contents);
+        // One spell per doc is the canonical shape; take the first fence.
+        if (blocks.length > 0 && !spellLibrary[name]) {
+            spellLibrary[name] = blocks[0] as Record<string, unknown>;
+        }
+    }
 
     const compendium: CompendiumLib = {
         classes: parseSourceDocs(classDocs ?? [], "class"),
@@ -106,6 +240,28 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         tagIndex,
         folderIndex,
     };
+
+    // [RPG UI DEBUG] — dump index stats once at bundle load so the user
+    // can see from the DevTools console which folders/tags actually
+    // resolved. Flip DEBUG_INDEX to false once the vault layout is
+    // stable; prefix is unique so it's easy to filter for.
+    const DEBUG_INDEX = true;
+    if (DEBUG_INDEX) {
+        const sizeOf = (map: Record<string, string[]>) => {
+            const out: Record<string, number> = {};
+            for (const [k, v] of Object.entries(map)) out[k] = v.length;
+            return out;
+        };
+        /* eslint-disable no-console */
+        console.log("[RPG UI] referenced @folder paths:", [...refPaths]);
+        console.log("[RPG UI] parent-walk loaded paths:", [...parentPaths]);
+        console.log("[RPG UI] refDocs count:", refDocs.length);
+        console.log("[RPG UI] folderIndex keys/counts:", sizeOf(folderIndex));
+        console.log("[RPG UI] tagIndex keys/counts:", sizeOf(tagIndex));
+        console.log("[RPG UI] spell library size:", Object.keys(spellLibrary).length);
+        console.log("[RPG UI] spell library sample:", Object.keys(spellLibrary).slice(0, 20));
+        /* eslint-enable no-console */
+    }
 
     // Universal "default actions" available to every character. Each folder
     // supplies entries of a single aspect type (action / reaction / bonus),
@@ -186,7 +342,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     };
 
     return {
-    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features },
+    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary },
     blocks: {
         header,
         health,
@@ -196,7 +352,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         attacks,
         proficiencies,
         features,
-        spells: ({ self, blocks, lookup, system }) => null,
+        spells,
         inventory: ({ self, blocks, lookup, system }) => null,
         description: ({ self, blocks, lookup, system }) => null,
     },

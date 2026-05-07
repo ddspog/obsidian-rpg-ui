@@ -91,6 +91,22 @@ export function expandOptionRefs(
     } else if (trimmed.startsWith("@")) {
       const path = trimmed.slice(1).replace(/\/+$/, "");
       expanded = folderIndex?.[path] ?? [];
+      // Fallback: progressively strip leading segments until we find a
+      // registered folder suffix. Lets `@worldbuilding/cantrips` resolve
+      // when the vault has moved the files to `worldbuilding/spells/
+      // cantrips` — the index carries every suffix of every parent dir,
+      // so `cantrips` alone still matches the set.
+      if (expanded.length === 0 && path.includes("/")) {
+        let remainder = path;
+        while (remainder.includes("/")) {
+          remainder = remainder.slice(remainder.indexOf("/") + 1);
+          const attempt = folderIndex?.[remainder];
+          if (attempt && attempt.length > 0) {
+            expanded = attempt;
+            break;
+          }
+        }
+      }
     }
 
     if (expanded) {

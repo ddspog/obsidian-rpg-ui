@@ -2,6 +2,7 @@ import * as React from "react";
 import { EntityBlock, Section, Article, HGroup, Line, Badge, Stat, DeathSaveDots, Progress, DiceTray, PortraitThumb, ConditionPill } from "rpg-ui-toolkit";
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
+import type { FeaturesBlockData } from "./features.types";
 
 /** Extract display label and linkpath from any frontmatter condition value */
 function parseCondition(raw: unknown): { label: string; linkpath: string | null } {
@@ -19,12 +20,55 @@ function parseCondition(raw: unknown): { label: string; linkpath: string | null 
   return { label: segment.replace(/\.[^.]+$/, "").trim(), linkpath: val || null };
 }
 
-export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expressions }) => {
+/** Parse a trait value that may carry a leading sign (`+3`) or wikilink
+ *  (`[[…]]`) and extract the underlying number. Non-numeric values return 0. */
+function parseNumericTrait(raw: unknown): number {
+  if (typeof raw === "number") return raw;
+  if (typeof raw !== "string") return 0;
+  const cleaned = raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+  const n = parseFloat(cleaned.replace(/^[+\s]+/, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const deathSaves = self.death_saves ?? { successes: 0, failures: 0 };
   const hitDice = self.hit_dice ?? {};
   const conditions = (self.conditions ?? []) as unknown[];
   const exhaustion = self.exhaustion ?? 0;
   const speeds = Array.isArray(self.speed) ? self.speed : self.speed ? [self.speed] : [{ value: 30, type: "Walk" }];
+
+  // Pull traits off the resolved features view so heritages / talents that
+  // grant `Natural AC` or initiative proficiency fold automatically into
+  // the defense badges next to the portrait. Mirrors how the senses block
+  // consumes `Senses` / `Skill P.` from the same map.
+  const header = (blocks as unknown as { header?: unknown }).header;
+  const featuresBlock = (blocks as unknown as { features?: FeaturesBlockData }).features;
+  const view = lookup.$features?.(header, featuresBlock?.choices, featuresBlock?.additional);
+  const traits = view?.traits ?? {};
+
+  // Natural AC: author may set `natural_ac:` in the YAML or a feature may
+  // grant it via a `Natural AC` trait entry (Monk-style unarmored defense,
+  // heritage armored skin, …). Take the highest so a trait grant never
+  // regresses a player's written AC but a high feature floor still wins.
+  const naturalAcFromTraits = (traits["Natural AC"] ?? [])
+    .map(parseNumericTrait)
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const naturalAc = Math.max(self.natural_ac ?? 10, ...(naturalAcFromTraits.length > 0 ? naturalAcFromTraits : [0]));
+
+  // Initiative bonus: start from the YAML flat `initiative.bonus`, then
+  // add PB scaling from the trait taxonomy — `Initiative P.` = full
+  // proficiency, `Initiative J.` (Jack) = half, `Initiative E.` = expertise
+  // (double PB). Flat numeric bonuses come in via `Initiative B.`, and the
+  // advantage/disadvantage trait keys (`Initiative A.` / `Initiative D.`)
+  // are collected for potential downstream consumers (vantage isn't shown
+  // on the stat diamond itself but the values still fold into the view).
+  const pb = expressions.ProficiencyBonus();
+  const initExpertise = (traits["Initiative E."] ?? []).length > 0;
+  const initFull = (traits["Initiative P."] ?? []).length > 0;
+  const initHalf = (traits["Initiative J."] ?? []).length > 0;
+  const initProfBonus = initExpertise ? pb * 2 : initFull ? pb : initHalf ? Math.floor(pb / 2) : 0;
+  const initFlat = (traits["Initiative B."] ?? []).reduce((n, raw) => n + parseNumericTrait(raw), 0);
+  const initiativeTotal = (self.initiative?.bonus ?? 0) + initProfBonus + initFlat;
 
   const handleSpendDie = (dieType: string) => {
     const current = hitDice[dieType]?.current ?? 0;
@@ -44,8 +88,8 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expres
               filled={deathSaves.failures}
               onChange={(v) => self.setDeath_saves({ ...deathSaves, failures: v })}
             />
-            <Badge.Shield value={self.natural_ac ?? 10} label="Armor" />
-            <Badge.Shield value={(self.natural_ac ?? 10) + 2} label="Shield" />
+            <Badge.Shield value={naturalAc} label="Armor" />
+            <Badge.Shield value={naturalAc + 2} label="Shield" />
             <DeathSaveDots
               side="successes"
               count={3}
@@ -54,7 +98,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, expres
             />
           </Line.Control>
           <Line.Stats>
-            <Stat.Diamond label="Initiative" value={self.initiative?.bonus ?? 0} format="bonus" />
+            <Stat.Diamond label="Initiative" value={initiativeTotal} format="bonus" />
             {speeds.map((s, i) => (
               <Stat.Diamond key={i} label={s.type ?? "Walk"} value={s.value ?? 30} format="unit" size="lg" />
             ))}

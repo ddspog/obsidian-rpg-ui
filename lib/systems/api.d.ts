@@ -685,7 +685,9 @@ export interface FeatureDetails {
   level?: number;
   uses?: number;
   link?: string;
+  view?: string;
   pick?: number;
+  buy?: number | string;
   max?: number | string | Record<number, number>;
   recovery?: string;
   uses_resource?: string;
@@ -704,6 +706,7 @@ export interface FeatureChoiceOption {
   traits?: TraitMap;
   type?: string;
   link?: string;
+  cost?: number;
   features?: FeatureDetails[];
   uses_resource?: string;
   choose?: ChooseSpec;
@@ -780,6 +783,51 @@ export interface ResolvedView {
   traits: Record<string, string[]>;
   pendingChoices: PendingChoice[];
   tables: Record<string, TableDef>;
+  casters: ResolvedCaster[];
+}
+
+export interface SpellcastingFragment {
+  ability?: string;
+  type?: "prepared" | "known";
+  tier?: "full" | "half" | "third";
+  pool?: string;
+  cantrip_pool?: string;
+  ritual_pool?: string;
+  style?: string[];
+  prepared_max?: string;
+  cantrips?: number;
+  rituals?: number;
+  known?: number;
+  rituals_per_circle?: number;
+  granted?: {
+    prepared?: Record<number, unknown[]>;
+    cantrips?: Record<number, unknown[]>;
+    rituals?: Record<number, unknown[]>;
+  };
+}
+
+export interface ResolvedCaster {
+  source: string;
+  level: number;
+  ability: string;
+  type: "prepared" | "known";
+  tier: "full" | "half" | "third";
+  pool?: string;
+  cantrip_pool?: string;
+  ritual_pool?: string;
+  style: string[];
+  prepared_max?: string;
+  cantrips: number;
+  rituals: number;
+  ritualsByLevel: Record<number, number>;
+  known: number;
+  rituals_per_circle: number;
+  granted: {
+    prepared: Record<number, string[]>;
+    cantrips: Record<number, string[]>;
+    rituals: Record<number, string[]>;
+  };
+  grantedBy: Record<string, string>;
 }
 
 export interface SourceDocInput {
@@ -826,6 +874,27 @@ export declare function expandOptionRefs(
   folderIndex: Record<string, string[]> | undefined,
 ): string[];
 
+/**
+ * Parse every `rpg spell` fence body in a markdown doc. Returns the
+ * flat YAML bodies (shallow-typed) so consumers can pull `magic_source`
+ * / `circle` / other fields without re-rendering. Used by system
+ * entities to build the spell tag index.
+ */
+export declare function extractSpellBlocks(contents: string): Array<{
+  circle?: string;
+  source?: unknown;
+  school?: string;
+  casting?: string;
+  range?: string;
+  components?: unknown;
+  duration?: string;
+  style?: unknown;
+  summary?: string;
+  text?: string;
+  image?: string;
+  name?: string;
+}>;
+
 // ─── Tables ───────────────────────────────────────────────────────────────────
 
 export interface TableCell {
@@ -870,6 +939,7 @@ export interface PendingChoiceRowProps {
   pending: PendingChoice;
   onToggle?: (option: string) => void;
   onPick?: (option: string, delta: 1 | -1) => void;
+  buyBudget?: number;
 }
 export declare const PendingChoiceRow: FunctionComponent<PendingChoiceRowProps>;
 

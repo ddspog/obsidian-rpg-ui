@@ -66,6 +66,8 @@
 @import "./components/feature-card.css";
 @import "./components/feature-accordion.css";
 @import "./components/features-source-groups.css";
+@import "./components/spells.css";
+@import "./components/spell-card.css";
 @import "./components/rpg-table.css";
 @import "./components/death-save-dots.css";
 @import "./components/dice-tray.css";
