@@ -12,10 +12,14 @@ export type HealthProps = {
     current_hp: number;
     /** Temporary hit points */
     temp_hp: number;
-    /** Hit dice available for the character */
-    hit_dice: Record<string, {
+    /** Hit dice available for the character. Accepts two shapes:
+     *    - shorthand `hit_dice: { d8: 2, d10: 1 }` — each value is the
+     *      current (unspent) count; max re-derives from class traits.
+     *    - long form `hit_dice: { d8: { current: 2, max: 2 } }` — used
+     *      only when a DM overrides max (custom race / NPC hit dice). */
+    hit_dice: Record<string, number | {
       /* Maximum number of hit dice of this type (e.g. 2d10) */
-      max: number;
+      max?: number;
       /* Current number of hit dice of this type (e.g. 2d10) */
       current: number
     }>;

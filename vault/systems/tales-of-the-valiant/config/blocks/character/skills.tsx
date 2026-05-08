@@ -171,7 +171,7 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
   };
 
   return (
-    <section aria-label="Character Skills">
+    <section aria-details="Character Skills">
       <header className="rpg-tag-heading"><span>Skills</span></header>
       <menu>
         {SKILLS.map(({ name, attr }) => {

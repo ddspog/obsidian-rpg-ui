@@ -8,6 +8,8 @@ import { AttacksProps } from "../blocks/character/attacks.types";
 import { ProficienciesProps } from "../blocks/character/proficiencies.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
 import type { SpellsProps } from "../blocks/character/spells.types";
+import type { InventoryProps } from "../blocks/character/inventory.types";
+import type { SheetProps } from "../blocks/character/sheet.types";
 
 /**
  * Types for the Character Entity, defining the shape of its blocks, lookup, and expressions.
@@ -49,6 +51,14 @@ export type CharacterLookup = {
    * render time.
    */
   $spells: Record<string, Record<string, unknown>>;
+  /**
+   * Flat item-frontmatter lookup for the inventory block. Keyed by the
+   * bare wikilink stem (`Longsword`, `Leather`, `Backpack`, …) so
+   * `[[Longsword]]` in a `rpg character.inventory` items list resolves to
+   * the item note's frontmatter (weight, cost, type, damage, …) without
+   * the block having to round-trip through the vault at render time.
+   */
+  $items: Record<string, Record<string, unknown>>;
 }
 
 /** Return types of each named expression on the character entity */
@@ -75,9 +85,14 @@ export type CharacterBlocks = {
   proficiencies: ProficienciesProps;
   features: FeaturesBlockData;
   spells: SpellsProps;
-  inventory: {
-    filter?: string;
-  };
+  inventory: InventoryProps;
+  /**
+   * Amalgamated top-of-sheet block — header + health + stats + senses +
+   * skills + attacks + proficiencies rendered from one merged YAML
+   * body. Lets authors skip boilerplate empty fences for a default
+   * sheet layout.
+   */
+  sheet: SheetProps;
   description: {
     filter?: string;
   };

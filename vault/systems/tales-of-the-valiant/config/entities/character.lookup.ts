@@ -114,9 +114,10 @@ const THIRD_SLOTS: number[][] = [
 ];
 
 export function slotsForCaster(
-  tier: "full" | "half" | "third",
+  tier: "full" | "half" | "third" | "none",
   classLevel: number,
 ): number[] {
+  if (tier === "none") return [0, 0, 0, 0, 0, 0, 0, 0, 0];
   const table = tier === "full" ? FULL_SLOTS : tier === "half" ? HALF_SLOTS : THIRD_SLOTS;
   const clamped = Math.max(1, Math.min(20, Math.floor(classLevel)));
   return table[clamped - 1].slice();

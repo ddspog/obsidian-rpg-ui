@@ -132,7 +132,7 @@ export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
   const saveBonusAuto = saveBonusFromTraits(view?.traits ?? {});
 
   return (
-    <section aria-label="Character Stats">
+    <section aria-details="Character Stats">
       {ATTRS.map((attr) => {
         const cell = readAttr((self as Record<string, unknown>)[attr]);
         const finalValue = cell.baseValue + asi[attr];

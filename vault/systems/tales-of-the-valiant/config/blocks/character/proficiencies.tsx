@@ -4,7 +4,12 @@ import { ProficienciesProps } from "./proficiencies.types";
 import { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
 
-type Category = { label: string; items: string[]; linkItems?: boolean };
+type Category = {
+  label: string;
+  items: string[];
+  linkItems?: boolean;
+  inUse?: Set<string>;
+};
 
 /** Strip a wikilink wrapper / leading `+` so the displayed pill reads as a
  *  plain label while the underlying link target is still usable for click-
@@ -59,16 +64,123 @@ function buildCategories(data: {
   resistance: string[];
   immunity: string[];
   vulnerability: string[];
+}, inUse: {
+  armor: Set<string>;
+  weapons: Set<string>;
+  tools: Set<string>;
 }): Category[] {
   const cats: Category[] = [];
-  if (data.weapons.length) cats.push({ label: "Weapons", items: data.weapons, linkItems: true });
-  if (data.armor.length) cats.push({ label: "Armor", items: data.armor, linkItems: true });
-  if (data.tools.length) cats.push({ label: "Tools", items: data.tools, linkItems: true });
+  if (data.weapons.length) cats.push({ label: "Weapons", items: data.weapons, linkItems: true, inUse: inUse.weapons });
+  if (data.armor.length) cats.push({ label: "Armor", items: data.armor, linkItems: true, inUse: inUse.armor });
+  if (data.tools.length) cats.push({ label: "Tools", items: data.tools, linkItems: true, inUse: inUse.tools });
   if (data.languages.length) cats.push({ label: "Languages", items: data.languages, linkItems: true });
   if (data.resistance.length) cats.push({ label: "Resistance", items: data.resistance, linkItems: true });
   if (data.immunity.length) cats.push({ label: "Immunity", items: data.immunity, linkItems: true });
   if (data.vulnerability.length) cats.push({ label: "Vulnerability", items: data.vulnerability, linkItems: true });
   return cats;
+}
+
+/**
+ * Derive which proficiencies the character is *actively using* from
+ * their inventory. Drives the in-use dot next to the Weapons / Armor /
+ * Tools pills so a player can see at a glance whether their kit is
+ * legally supported by their training — e.g. a Simple Weapon pill
+ * lights up when a Mace sits in main_hand; Heavy Armor does not unless
+ * a Chain Mail is equipped.
+ *
+ * Matching is word-boundary / case-insensitive against the equipped
+ * item's `type` string (for weapons) or its declared `armor.category`
+ * (for armor / shield). Tool proficiencies match the item's bare
+ * filename — a vault author names the tool proficiency the same as
+ * the tool note itself (`Herbalist Tools`).
+ */
+function resolveInUseProficiencies(
+  blocks: unknown,
+  lookup: CharacterEntity["lookup"] | undefined,
+  profs: { armor: string[]; weapons: string[]; tools: string[] },
+): { armor: Set<string>; weapons: Set<string>; tools: Set<string> } {
+  const out = {
+    armor: new Set<string>(),
+    weapons: new Set<string>(),
+    tools: new Set<string>(),
+  };
+  const inv = (blocks as { inventory?: { items?: unknown[] } })?.inventory;
+  const rawItems = Array.isArray(inv?.items) ? inv.items : [];
+  const lib = lookup?.$items ?? {};
+
+  const equippedWeaponTypes: string[] = [];
+  const equippedWeaponNames: string[] = [];
+  const equippedArmorCategories: string[] = [];
+  let hasShield = false;
+  const invToolNames = new Set<string>();
+
+  for (const raw of rawItems) {
+    if (!raw || typeof raw !== "object") continue;
+    const o = raw as { name?: unknown; slot?: unknown };
+    if (typeof o.name !== "string") continue;
+    const name = wikiStem(o.name);
+    const fm = lib[name];
+    if (!fm) continue;
+    const type = typeof fm.type === "string" ? fm.type.toLowerCase() : "";
+    const armorBlock = fm.armor && typeof fm.armor === "object"
+      ? (fm.armor as { category?: unknown })
+      : undefined;
+    const armorCat = typeof armorBlock?.category === "string"
+      ? armorBlock.category.toLowerCase()
+      : undefined;
+
+    if (o.slot === "main_hand" || o.slot === "off_hand") {
+      equippedWeaponTypes.push(type);
+      equippedWeaponNames.push(name.toLowerCase());
+    }
+    if (o.slot === "armor" && armorCat) {
+      equippedArmorCategories.push(armorCat);
+    }
+    // Shields feed AC by mere inventory presence — same rule powers the
+    // "Shields" proficiency dot, so a cleric doesn't need to "equip" it.
+    if (armorCat === "shield") hasShield = true;
+    // Tools count as "in use" whenever they're carried, matching how
+    // ritual / identification checks work in play.
+    if (/\btools?\b|\bkits?\b|\binstruments?\b/.test(type)) {
+      invToolNames.add(name.toLowerCase());
+    }
+  }
+
+  // Weapon proficiencies can match either a category ("Simple",
+  // "Martial") against the equipped weapon's `type` tokens OR a specific
+  // weapon name ("Warhammer", "Northlands Estoc") against the equipped
+  // weapon's own bare name — so class-granted blanket profs and
+  // background-granted individual weapon profs both light up correctly.
+  for (const prof of profs.weapons) {
+    const lower = prof.toLowerCase();
+    const typeMatch = new RegExp(`\\b${escapeRegex(lower)}\\b`);
+    const matchesType = equippedWeaponTypes.some((t) => typeMatch.test(t));
+    const matchesName = equippedWeaponNames.some((n) => n === lower);
+    if (matchesType || matchesName) out.weapons.add(prof);
+  }
+  for (const prof of profs.armor) {
+    const lower = prof.toLowerCase();
+    if (lower === "shields") {
+      if (hasShield) out.armor.add(prof);
+      continue;
+    }
+    const re = new RegExp(`\\b${escapeRegex(lower.replace(/\s*armor$/, ""))}\\b`);
+    if (equippedArmorCategories.some((c) => re.test(c))) out.armor.add(prof);
+  }
+  for (const prof of profs.tools) {
+    if (invToolNames.has(prof.toLowerCase())) out.tools.add(prof);
+  }
+  return out;
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function wikiStem(raw: string): string {
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  const inner = m ? m[1] : raw;
+  return inner.split("|")[0].split("/").pop()!.trim();
 }
 
 export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = ({
@@ -124,20 +236,30 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
     vulnerability: merge(self.vulnerability, auto.vulnerability, additional.vulnerability),
   };
 
-  const cats = buildCategories(data);
+  const cats = buildCategories(data, resolveInUseProficiencies(blocks, lookup, {
+    armor: data.armor,
+    weapons: data.weapons,
+    tools: data.tools,
+  }));
 
   return (
-    <section aria-label="Character Proficiencies">
+    <section aria-details="Character Proficiencies">
       <header className="rpg-tag-heading"><span>Proficiencies</span></header>
       <dl>
-        {cats.map(({ label, items, linkItems }) => (
+        {cats.map(({ label, items, linkItems, inUse }) => (
           <div key={label}>
             <dt>{label}</dt>
-            {items.map((item, i) => (
-              <dd key={i}>
-                {linkItems ? <Pill.Link link={item}>{item}</Pill.Link> : item}
-              </dd>
-            ))}
+            {items.map((item, i) => {
+              const active = inUse?.has(item);
+              return (
+                <dd key={i} data-in-use={active ? "true" : undefined}>
+                  {linkItems ? <Pill.Link link={item}>{item}</Pill.Link> : item}
+                  {active && (
+                    <sup className="rpg-prof-in-use" aria-label="In use">•</sup>
+                  )}
+                </dd>
+              );
+            })}
           </div>
         ))}
       </dl>

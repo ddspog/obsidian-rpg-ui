@@ -182,7 +182,7 @@ export const senses: EntityBlock<SensesProps, CharacterEntity> = ({
   }
 
   return (
-    <section aria-label="Character Senses">
+    <section aria-details="Character Senses">
       <header className="rpg-tag-heading"><span>Passive</span></header>
       <output aria-label="Passive Insight">
         <data>{expressions.Passive({

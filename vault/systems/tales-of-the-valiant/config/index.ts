@@ -32,6 +32,7 @@ import type {
 import attributes from './attributes';
 import spellcastTable from './spellslots';
 import character from "./entities/character";
+import item from "./entities/item";
 import featureDetails from "./blocks/feature/details";
 import featureChoice from "./blocks/feature/choice";
 import featureUnlock from "./blocks/feature/unlock";
@@ -46,6 +47,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
   // ── Entity Types ─────────────────────────────────────────────────────────────
   entities: {
     character,
+    item,
 
     class: CreateEntity(({ wiki }: { wiki?: any }) => ({
       frontmatter: [{ name: "hit_die", type: "string", default: "d8" }],

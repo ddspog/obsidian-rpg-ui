@@ -8,6 +8,8 @@ import {
   resolveFeatures,
   ResolvedView,
   extractSpellBlocks,
+  classifySpellCircle,
+  extractItemElementBlocks,
 } from "rpg-ui-toolkit";
 import { xpTable as xp } from './character.lookup';
 import type { CharacterEntity } from "./character.types";
@@ -20,6 +22,11 @@ import attacks from '../blocks/character/attacks';
 import proficiencies from '../blocks/character/proficiencies';
 import features from '../blocks/character/features';
 import spells from '../blocks/character/spells';
+import inventory from '../blocks/character/inventory';
+import sheet from '../blocks/character/sheet';
+import type { HeaderProps } from "../blocks/character/header.types";
+import type { StatsProps } from "../blocks/character/stats.types";
+import type { FeaturesBlockData } from "../blocks/character/features.types";
 
 const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     const [
@@ -76,6 +83,19 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     ]) {
         scanForRefs(typeof (d as any)?.$contents === "string" ? (d as any).$contents : "");
     }
+
+    // Always load the spell library regardless of whether any feature YAML
+    // references it. The resolver auto-derives `cantrip_pool` / `ritual_pool`
+    // from a class's `pool:` magic, which means classes no longer need to
+    // spell out `@worldbuilding/cantrips` — but the spell docs still have
+    // to be in the index for those auto-derived pools to resolve. One ref
+    // covers cantrips + leveled spells + rituals in one sweep because
+    // `wiki.folder()` descends recursively into subfolders.
+    refPaths.add("worldbuilding/spells");
+    // Same story for items — the character inventory block looks up
+    // item frontmatter via `lookup.$items`, which is built from every
+    // `.md` under `worldbuilding/items/**`. No user ref needed.
+    refPaths.add("worldbuilding/items");
 
     // Load each referenced folder in parallel. A missing / stale path
     // resolves to [] so a typo doesn't break bundle loading — it just
@@ -139,10 +159,10 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         ...parentLoads.flatMap((r) => r.docs ?? []),
     ];
 
-    // Build `@folder/path` and `#Tag` indexes off every worldbuilding doc so
-    // compendium authors can write `@worldbuilding/items/weapons/martial` or
-    // `#martial` inside `choose.options` arrays and have them expand to
-    // concrete wikilinks. Each doc is registered under every
+    // Build `@folder/path` and `[[Tag]]` indexes off every worldbuilding doc
+    // so compendium authors can write `@worldbuilding/items/weapons/martial`
+    // or `[[Martial]]` inside `choose.options` arrays and have them expand
+    // to concrete wikilinks. Each doc is registered under every
     // progressively-shorter folder suffix of its path so authors can
     // abbreviate (e.g. `@cantrips` still resolves when the file lives at
     // `worldbuilding/spells/cantrips/Foo.md`).
@@ -150,10 +170,12 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     // Spell docs carry their magic source and circle inside their
     // `rpg spell` fence body (not frontmatter). Scan each doc's
     // `$contents` for every spell fence, parse the YAML, and expose
-    // `source` + `circle` as synthetic tags. `#Divine` / `#Primordial`
-    // / `#Arcane` / `#Wyrd` then resolve to every spell whose `source`
-    // includes that source; `#Cantrip` / `#1st-Circle` / etc. resolve
-    // by circle.
+    // `source` + `circle` as synthetic tags. `Divine` / `Primordial` /
+    // `Arcane` / `Wyrd` then resolve to every spell whose `source`
+    // includes that magic; `Cantrip` / `1st-Circle` / etc. resolve
+    // by circle. Composite tags `Divine-Cantrip`, `Divine-Ritual`,
+    // `Divine-Leveled` combine both axes so the resolver can auto-
+    // derive cantrip_pool / ritual_pool from just the class `pool:`.
     const extraTagsFor = (d: any): string[] => {
         if (!d || typeof d !== "object") return [];
         const out: string[] = [];
@@ -161,16 +183,31 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         if (!contents) return out;
         const blocks = extractSpellBlocks(contents);
         for (const block of blocks) {
+            const magics: string[] = [];
             const sources = Array.isArray(block.source) ? block.source : [];
             for (const raw of sources) {
                 let v: unknown = raw;
                 while (Array.isArray(v)) v = v[0];
                 if (typeof v !== "string") continue;
                 const stem = v.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
-                if (stem) out.push(stem);
+                if (stem) {
+                    out.push(stem);
+                    magics.push(stem);
+                }
             }
+            let circle = "";
             if (typeof block.circle === "string" && block.circle.trim()) {
-                out.push(block.circle.trim());
+                circle = block.circle.trim();
+                out.push(circle);
+            }
+            // Classify the spell for composite tags so the resolver can
+            // pair the class's `pool:` magic with the right circle band.
+            const kind = classifySpellCircle(circle);
+            if (kind) {
+                out.push(kind); // "Cantrip" | "Ritual" | "Leveled" (generic)
+                for (const magic of magics) {
+                    out.push(`${magic}-${kind}`);
+                }
             }
         }
         return out;
@@ -227,6 +264,26 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         // One spell per doc is the canonical shape; take the first fence.
         if (blocks.length > 0 && !spellLibrary[name]) {
             spellLibrary[name] = blocks[0] as Record<string, unknown>;
+        }
+    }
+
+    // Item library — every doc under `worldbuilding/items/**` gets its
+    // first `rpg item.element` fence parsed and keyed by basename. The
+    // inventory resolver reads `.weight`, `.weapon.damage`,
+    // `.armor.ac`, `.container.weight_cap`, etc. straight off this map.
+    // Pre-migration files that haven't been rewritten drop out silently
+    // (no fence → no entry); the inventory picker renders them with
+    // weight 0 so missed migrations surface immediately.
+    const itemLibrary: Record<string, Record<string, unknown>> = {};
+    for (const d of refDocs) {
+        const name = (d as any)?.$name;
+        const $path = typeof (d as any)?.$path === "string" ? (d as any).$path : "";
+        const contents = typeof (d as any)?.$contents === "string" ? (d as any).$contents : "";
+        if (!name || !$path.includes("worldbuilding/items/") || !contents) continue;
+        if (itemLibrary[name]) continue; // first-wins on name collision
+        const parsed = extractItemElementBlocks(contents);
+        if (parsed.length > 0) {
+            itemLibrary[name] = parsed[0] as Record<string, unknown>;
         }
     }
 
@@ -342,7 +399,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     };
 
     return {
-    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary },
+    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary, $items: itemLibrary },
     blocks: {
         header,
         health,
@@ -353,14 +410,19 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         proficiencies,
         features,
         spells,
-        inventory: ({ self, blocks, lookup, system }) => null,
+        inventory,
+        sheet,
         description: ({ self, blocks, lookup, system }) => null,
     },
     features: defaultFeatures,
     expressions: {
         CharacterLevel: (_, { blocks }) => {
-            const { header } = blocks;
-            return header.classes
+            // Accept `rpg character.header` or a merged `rpg character.sheet`
+            // as the source of the classes list — lets authors author a
+            // sheet block without losing expression access.
+            const header = (blocks.header ?? (blocks as unknown as { sheet?: HeaderProps }).sheet) as HeaderProps | undefined;
+            const classes = header?.classes ?? [];
+            return classes
                 .map(c => c.level)
                 .reduce((a, b) => a + b, 0);
         },
@@ -372,8 +434,10 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
           // Stats YAML accepts either `STR: 14` shorthand or the full
           // `STR: { value, save: {…} }` object — read both shapes here so
           // skills / saves / passives stay in sync regardless of how the
-          // user authored the block.
-          const cell = (blocks.stats as Record<string, unknown> | undefined)?.[attribute];
+          // user authored the block. Falls back to the merged sheet
+          // block when a dedicated stats block isn't present.
+          const statsSource = (blocks.stats ?? (blocks as unknown as { sheet?: StatsProps }).sheet) as Record<string, unknown> | undefined;
+          const cell = statsSource?.[attribute];
           let attrValue = 10;
           if (typeof cell === "number") attrValue = cell;
           else if (cell && typeof cell === "object" && typeof (cell as { value?: number }).value === "number") {
@@ -383,7 +447,9 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
           // features view so skills / saves / passives reflect the same
           // total score the stats block displays. Values like "+2 Wisdom"
           // come from asi picks recorded via `choose.type: "asi"`.
-          const asiTraits: string[] = lookup.$features?.(blocks.header, blocks.features?.choices, blocks.features?.additional)
+          const header = (blocks.header ?? (blocks as unknown as { sheet?: HeaderProps }).sheet) as HeaderProps | undefined;
+          const featuresBlock = (blocks.features ?? (blocks as unknown as { sheet?: FeaturesBlockData }).sheet) as FeaturesBlockData | undefined;
+          const asiTraits: string[] = lookup.$features?.(header, featuresBlock?.choices, featuresBlock?.additional)
             ?.traits?.["Ability Scores"] ?? [];
           const LONG: Record<string, string> = {
             STR: "STRENGTH", DEX: "DEXTERITY", CON: "CONSTITUTION",
