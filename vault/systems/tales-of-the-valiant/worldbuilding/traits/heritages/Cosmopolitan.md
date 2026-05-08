@@ -6,6 +6,8 @@ cssclasses:
 # Cosmopolitan
 Cosmopolitan characters are citizens of the world whose values, interests, and ideas are influenced by exposure to many different peoples and cultures. Creatures of this heritage hail from major cities populated by people from many different parts of the world. Alternatively, it could mean you spent your formative years moving from place to place, immersing yourself in the customs and traditions of each community you lived with. 
 ```rpg feature.details
+name: Cosmopolitan Features
+view: No Title
 text: |
   **_Languages._** You know [[Common]] and three additional languages of your choice. Typical cosmopolitan heritage characters choose [[Dwarvish]] and [[Elvish]]. 
   ###### Street Smarts

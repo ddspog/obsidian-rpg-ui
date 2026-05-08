@@ -1,7 +1,6 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
 # Comrade
 ```rpg feature.details

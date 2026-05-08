@@ -1,3 +1,8 @@
+---
+.metadata: 
+cssclasses:
+  - note-feature
+---
 # Human
 ![[human.webp|right|384]] Humans are the youngest people of the world, and their tenacity and flexibility has allowed them to quickly spread. Humans are diverse in appearance and culture, so it’s not surprising that their creation myths are similarly plentiful. 
 

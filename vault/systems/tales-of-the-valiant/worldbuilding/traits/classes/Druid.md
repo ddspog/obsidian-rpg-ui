@@ -20,7 +20,8 @@ text: |
   **Hit Points at 1st Level:** 8 + your CON modifier
   **Hit Points at Higher Levels:** 1d8 (or 5) + your CON modifier per druid level after 1st
 traits:
-  Hit Dice: "+8 +CON mod +[LV - 1][CON mod + 1d8]"
+  HP: "+8 +CON mod +[LV - 1][CON mod + 1d8]"
+  Hit Dice: 1d8
 ```
 ```rpg feature.details
 name: Proficiencies
@@ -60,7 +61,7 @@ choose:
 You start with the following equipment, in addition to the equipment granted by your background: 
 - (_a_) a [[Shield]] or (_b_) any [[Simple]] weapon
 - (_a_) a [[012. Worldbuilding/Items/Weapons/Sickle]] or (_b_) any [[Simple]] [[Melee]] weapon
-- [[Leather]] armor, an explorer's pack, and a [[druidic focus]]
+- [[Leather 1]] armor, an explorer's pack, and a [[Druidic Focus]]
 ```rpg table.progression
 | DRUID PROGRESSION  |||||| PRIMORDIAL SPELL SLOTS BY CIRCLE      |||||||||
 |LEVEL|PB|BEAST FORMS KNOWN|FEATURES|CANTRIPS KNOWN|RITUALS KNOWN|1ST|2ND|3RD|4TH|5TH|6TH|7TH|8TH|9TH|
@@ -119,8 +120,7 @@ spellcasting:
   ability: WIS
   type: prepared
   tier: full
-  pool: "#Primordial"
-  cantrip_pool: "@worldbuilding/cantrips"
+  pool: "[[Primordial]]"
   cantrips: 3
   rituals: 1
   prepared_max: "WIS_MOD + LV"

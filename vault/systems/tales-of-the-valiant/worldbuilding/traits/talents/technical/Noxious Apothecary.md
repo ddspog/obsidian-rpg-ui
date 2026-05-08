@@ -1,9 +1,7 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
-
 # Noxious Apothecary
 ```rpg feature.details
 subtitle: "Prerequisite: INT 13 or higher, or proficiency with [[Herbalist Tools]]"

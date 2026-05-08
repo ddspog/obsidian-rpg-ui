@@ -20,7 +20,8 @@ text: |
   **Hit Points at 1st Level:** 10 + your CON modifier
   **Hit Points at Higher Levels:** 1d10 (or 6) + your CON modifier per fighter level after 1st
 traits:
-  Hit Dice: "+10 +CON mod +[LV - 1][CON mod + 1d10]"
+  HP: "+10 +CON mod +[LV - 1][CON mod + 1d10]"
+  Hit Dice: 1d10
 ```
 ```rpg feature.details
 name: Proficiencies
@@ -58,7 +59,7 @@ choose:
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
-- _(a)_ [[Chain Mail]] or _(b)_ [[Leather]] armor, [[012. Worldbuilding/Items/Weapons/Longbow]], and 20 [[Arrows]]
+- _(a)_ [[systems/tales-of-the-valiant/worldbuilding/items/armor/heavy/Chain Mail]] or _(b)_ [[Leather 1]] armor, [[012. Worldbuilding/Items/Weapons/Longbow]], and 20 [[Arrows]]
 - _(a)_ a [[Martial]] weapon and a [[Shield]] or _(b)_ two [[Martial]] weapons 
 - _(a)_ a [[012. Worldbuilding/Items/Weapons/Crossbow, light]] and 20 [[Crossbow Bolts]] or _(b)_ two handaxes 
 - *(a)* a dungeoneer's pack or *(b)* an explorer's pack

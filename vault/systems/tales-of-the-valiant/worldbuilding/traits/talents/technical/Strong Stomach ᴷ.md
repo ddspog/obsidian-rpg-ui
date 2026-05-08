@@ -1,7 +1,6 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
 # Strong Stomach ᴷ
 ```rpg feature.details

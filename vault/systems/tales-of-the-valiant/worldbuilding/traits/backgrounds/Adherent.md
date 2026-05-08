@@ -1,6 +1,7 @@
 ---
-.metadata:
-  cssclasses: [note-background, rpg-ui]
+.metadata: 
+cssclasses:
+  - note-feature
 ---
 # Adherent
 Before you began adventuring, you committed yourself to a faith, belief, or cause. The exacting tasks required of this commitment—daily prayers, holy rites, or cryptic ceremonies—instilled in you a sense of duty and purpose. 

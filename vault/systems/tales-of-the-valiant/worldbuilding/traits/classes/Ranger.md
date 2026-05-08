@@ -20,7 +20,8 @@ text: |
   **Hit Points at 1st Level:** 10 + your CON modifier
   **Hit Points at Higher Levels:** 1d10 (or 6) + your CON modifier per ranger level after 1st
 traits:
-  Hit Dice: "+10 +CON mod +[LV - 1][CON mod + 1d10]"
+  HP: "+10 +CON mod +[LV - 1][CON mod + 1d10]"
+  Hit Dice: 1d10
 ```
 ```rpg feature.details
 name: Proficiencies
@@ -63,7 +64,7 @@ choose:
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
-- _(a)_ scale mail or _(b)_ [[Leather]] armor 
+- _(a)_ scale mail or _(b)_ [[Leather 1]] armor 
 - _(a)_ two [[012. Worldbuilding/Items/Weapons/Shortsword]] or _(b)_ two [[Simple]] weapons 
 - _(a)_ a dungeoneer's pack or _(b)_ an explorer's pack 
 - A [[012. Worldbuilding/Items/Weapons/Longbow]] and [[Quiver]] of 20 [[Arrows]] 
@@ -193,8 +194,7 @@ spellcasting:
   ability: WIS
   type: known
   tier: half
-  pool: "#Primordial"
-  cantrip_pool: "@worldbuilding/cantrips"
+  pool: "[[Primordial]]"
   known: 2
 traits:
   Spellcasting: "WIS [[Primordial]]: Known Half-Caster"
@@ -364,7 +364,7 @@ level: 14
 text: |
   You have keensense (see **Special Senses** in **Chapter 6**) to a range of 10 feet. Your keensense ceases to function while you are [[deafened]] or otherwise deprived of hearing. 
 traits:
-  Senses: keensense 10ft.
+  Senses: "[[Keensense]] 10ft."
 ```
 ```rpg feature.details
 name: Strider

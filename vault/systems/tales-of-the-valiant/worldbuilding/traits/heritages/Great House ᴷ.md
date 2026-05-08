@@ -1,6 +1,7 @@
 ---
-.metadata:
-  cssclasses: [note-heritage, rpg-ui]
+.metadata: 
+cssclasses:
+  - note-feature
 ---
 # Great House
 Characters with the great house heritage have a real, if distant, claim to royal power—or at least to noble authority. The traditions and values of a great house heritage vary by house, for each house and family will cultivate the qualities they wish their scions to exemplify. 
@@ -9,6 +10,8 @@ While great houses as organizations might have claims to authority and power in 
 
 Work with the GM to determine the name for the great house, their heraldic symbol, motto, location, and relevance to the campaign setting. How large is the great house, how many retainers, staff, and servants do they have, and how big is its army? These are questions that should be considered, at least vaguely. Does the great house have rivals or enemies that want to see it destroyed or unseated from power? And do they have allies in other great or lesser houses, or are they on their own? A vulnerable house is just the sort of pivot point many great legends start on, spurring heroes on to escape tragedy—or to meet it. 
 ```rpg feature.details
+name: Great House Features
+view: No Title
 text: |
   **_Languages._** You know [[Common]] and one additional language. Typical great house heritage characters choose either [[Draconic]] or the primary language of an allied nation.
   ###### Heraldic Studies.

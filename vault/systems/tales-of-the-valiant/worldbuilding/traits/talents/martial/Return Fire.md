@@ -1,7 +1,6 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
 # Return Fire
 ```rpg feature.details

@@ -1,8 +1,9 @@
 ---
-.metadata:
-  cssclasses: [note-class, rpg-ui]
 .SUBCLASS:
-  parent_class: Cleric
+parent_class: Cleric
+.metadata: 
+cssclasses:
+  - note-feature
 ---
 # Life Domain
 Gods of the Life domain celebrate natural cycles of life and death, exemplifying health and vitality. Devotees of this domain are encouraged to heal the wounded, care for the sick, and oppose the perversion of undeath.

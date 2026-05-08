@@ -1,7 +1,6 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
 # Mental Fortitude
 ```rpg feature.details

@@ -1,7 +1,6 @@
 ---
 cssclasses:
   - note-feature
-  - rpg-ui
 ---
 # Ritualist
 ```rpg feature.details

@@ -217,3 +217,31 @@ spells:
     circle: "2"
     prepared: false
 ```
+
+```rpg character.inventory
+items:
+  - "[[Longsword]]"
+  - name: "[[Longsword]]"
+    equipped: true
+    notes: "+1 magical"
+  - "[[Shield]]"
+  - name: "[[Dagger]]"
+    qty: 2
+  - name: "[[Quarterstaff]]"
+    notes: "SC Focus"
+  - name: Backpack
+    container: main
+    contents:
+      - "[[Rope, Hempen (50 ft.)]]"
+      - name: "[[Rations, Trail (1 day)]]"
+        qty: 5
+  - name: Saddlebags
+    container: other
+    contents:
+      - "[[Crossbow, light]]"
+currency:
+  pp: 0
+  gp: 42
+  sp: 15
+  cp: 3
+```

@@ -11,6 +11,7 @@ Though some twisted minions share similarities with typical supplicant communiti
 Still, twisted minions can learn solidarity in shared suffering. Within their hidden enclaves, battered creatures bound by trauma might gather, forging pockets of quiet resistance against their overlord. Others betray their overlord from within, leveraging the powers gained through cruel experiments for their own ends. However they live, twisted minions rarely find true peace; lingering remnants of the overlord’s control haunt them, a perpetual reminder of what was done.
 ```rpg feature.details
 name: Twisted Minion Features
+view: No Title
 text: |
   **_Languages._** You speak [[Common]] and one language typical of your overlord (such as [[Draconic]], Giant, or [[Undercommon]]).
   ###### Augmented

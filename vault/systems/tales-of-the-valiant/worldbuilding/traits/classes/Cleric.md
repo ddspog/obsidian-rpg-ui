@@ -1,6 +1,7 @@
 ---
-.metadata:
-  cssclasses: [note-class, rpg-ui]
+.metadata: 
+cssclasses:
+  - note-feature
 ---
 # Cleric
 ![[cleric.webp|right|384]]Clerics are as diverse as the gods they serve, but all are united in their mission to act as their faith demands. A cleric's abilities reflect the strength of their faith. The more powerful a cleric becomes, the more their features resemble those of the god they worship.
@@ -21,7 +22,8 @@ text: |
   **Hit Points at 1st Level:** 8 + your CON modifier
   **Hit Points at Higher Levels:** 1d8 (or 5) + your CON modifier per cleric level after 1st
 traits:
-  Hit Dice: "+8 +CON mod +[LV - 1][CON mod + 1d8]"
+  HP: "+8 +CON mod +[LV - 1][CON mod + 1d8]"
+  Hit Dice: 1d8
 ```
 ```rpg feature.details
 name: Proficiencies
@@ -55,7 +57,7 @@ choose:
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background:
 - (_a_) a [[012. Worldbuilding/Items/Weapons/Mace]] or (_b_) a [[012. Worldbuilding/Items/Weapons/Warhammer]] (if proficient)
-- (_a_) scale mail, (_b_) [[Leather]] armor, or (_c_) [[Chain Mail]] (if proficient)
+- (_a_) scale mail, (_b_) [[Leather 1]] armor, or (_c_) [[systems/tales-of-the-valiant/worldbuilding/items/armor/heavy/Chain Mail]] (if proficient)
 - (_a_) [[012. Worldbuilding/Items/Weapons/Crossbow, light]] and 20 [[Crossbow Bolts]] or (_b_) any [[Simple]] weapon
 - (_a_) a priest's pack or (_b_) an explorer's pack
 - A [[Shield]] and a [[Holy Symbol]]
@@ -124,8 +126,7 @@ spellcasting:
   ability: WIS
   type: prepared
   tier: full
-  pool: "#Divine"
-  cantrip_pool: "@worldbuilding/cantrips"
+  pool: "[[Divine]]"
   cantrips: 3
   rituals: 1
   prepared_max: "WIS_MOD + LV"
