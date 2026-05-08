@@ -50,8 +50,10 @@ if (PUSH_ONLY && PULL_ONLY) {
 // Sync only these directories under each system folder. The legacy
 // `compendium/` tree is intentionally absent — its content moved to
 // `worldbuilding/traits/` and `glossary/` and the folder itself should
-// stay deleted on both sides.
-const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary"];
+// stay deleted on both sides. `adventurers/` holds sample character
+// files that consume the system, so they sync alongside the compendium
+// they reference.
+const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventurers"];
 
 function fmtCount(n, label) {
   return `${n} ${label}${n === 1 ? "" : "s"}`;

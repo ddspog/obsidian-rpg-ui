@@ -652,7 +652,7 @@ export type TraitValue = string | string[];
 export type TraitMap = Record<string, TraitValue>;
 
 export interface ChooseSpec {
-  type: "traits" | "asi" | "talent";
+  type: "traits" | "asi" | "talent" | "spellcasting";
   category?: string;
   number: number;
   quantity?: number;
@@ -697,6 +697,8 @@ export interface FeatureDetails {
   active?: FeatureAspect;
   passive?: FeatureAspect;
   resource?: FeatureAspect;
+  /** Attack aspect — surfaced by `rpg character.attacks`. */
+  attack?: AttackAspect;
 }
 
 export interface FeatureChoiceOption {
@@ -776,6 +778,9 @@ export interface ResolvedSource {
   baseTraits: Record<string, string[]>;
   leveledTraits: Record<string, string[]>;
   traitsByLevel: Record<number, Record<string, string[]>>;
+  /** User's pick for a `choose: { type: spellcasting, category: ability }`
+   *  spec declared on this source. Empty string = declared but pending. */
+  spellcastingAbilityPick?: string;
 }
 
 export interface ResolvedView {
@@ -789,7 +794,7 @@ export interface ResolvedView {
 export interface SpellcastingFragment {
   ability?: string;
   type?: "prepared" | "known";
-  tier?: "full" | "half" | "third";
+  tier?: "full" | "half" | "third" | "none";
   pool?: string;
   cantrip_pool?: string;
   ritual_pool?: string;
@@ -811,7 +816,7 @@ export interface ResolvedCaster {
   level: number;
   ability: string;
   type: "prepared" | "known";
-  tier: "full" | "half" | "third";
+  tier: "full" | "half" | "third" | "none";
   pool?: string;
   cantrip_pool?: string;
   ritual_pool?: string;
@@ -893,6 +898,259 @@ export declare function extractSpellBlocks(contents: string): Array<{
   text?: string;
   image?: string;
   name?: string;
+}>;
+
+/**
+ * Classify a spell's `circle` string into one of three broad bands used
+ * for composite-tag emission and pool auto-derivation:
+ *   "Cantrip"   → cantrips
+ *   "Ritual"    → leveled rituals (circle contains "ritual")
+ *   "Leveled"   → regular leveled spells
+ * Returns null for empty / unrecognisable circles.
+ */
+export declare function classifySpellCircle(
+  circle: string,
+): "Cantrip" | "Ritual" | "Leveled" | null;
+
+/**
+ * Strip `[[…]]` wrapper and alias to get the bare wikilink target name,
+ * matching how Obsidian resolves wikilinks. Passes through non-wikilink
+ * input unchanged.
+ */
+export declare function stripWikilinkToName(raw: string): string;
+
+// ─── Inventory ───────────────────────────────────────────────────────────────
+
+export type InventorySectionId =
+  | "weapons"
+  | "armor"
+  | "tools"
+  | "visible"
+  | "main_containers"
+  | "other_containers";
+
+export type InventoryEquipSlot =
+  | "main_hand"
+  | "off_hand"
+  | "armor"
+  | "shield"
+  | "attuned";
+
+export interface InventoryYamlEntry {
+  name: string;
+  qty?: number;
+  section?: InventorySectionId;
+  container?: "main" | "other";
+  slot?: InventoryEquipSlot;
+  equipped?: boolean;
+  for_sale?: boolean;
+  notes?: string;
+  contents?: InventoryYamlEntry[];
+}
+
+export interface NewInventoryBlock {
+  state_key?: string;
+  items: InventoryYamlEntry[];
+  currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  encumbrance?: {
+    strength?: number | string;
+    encumbered?: number;
+    heavy?: number;
+    carry?: number;
+    push?: number;
+  };
+}
+
+export type LookupFn = (target: string) => Record<string, unknown> | undefined;
+
+/** Fully-materialised inventory ready to pass into the React block. */
+export interface ResolvedInventory {
+  stateKey?: string;
+  sections: Array<{
+    id: InventorySectionId;
+    items: ResolvedItem[];
+    totalWeight: number;
+  }>;
+  currency: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  totalWeight: number;
+  bands: { encumbered: number; heavy: number; carry: number; push: number };
+  load: "free" | "encumbered" | "heavy" | "over";
+  strength: number;
+  sellTotals: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+}
+
+/** A resolved inventory entry — composed from the YAML row + the looked-up
+ *  item metadata. Drives the inventory rendering pass and the equip-toggle
+ *  callback. */
+export interface ResolvedItem {
+  id: string;
+  label: string;
+  link: string | null;
+  linkTarget: string | null;
+  meta: {
+    type?: string;
+    weight: number;
+    cost?: string;
+    damage?: string;
+    properties?: string[];
+    acFormula?: string;
+    subtitle?: string;
+    containerCapacity?: number;
+    image?: string;
+  };
+  qty: number;
+  totalWeight: number;
+  equipped: boolean;
+  slot?: InventoryEquipSlot;
+  equipKind: "weapon" | "armor" | "shield" | null;
+  forSale: boolean;
+  notes?: string;
+  isContainer: boolean;
+  contents: ResolvedItem[];
+}
+
+/**
+ * Resolve a parsed inventory block into a render-ready model. Items are
+ * looked up via the injected `LookupFn` (typically backed by a character
+ * entity's `lookup.$items` table).
+ */
+export declare function resolveInventory(args: {
+  block: NewInventoryBlock;
+  lookup: LookupFn;
+  strength: number;
+}): ResolvedInventory;
+
+/** React component that renders a resolved inventory. */
+export declare const InventoryBlock: React.FC<{
+  data: ResolvedInventory;
+  onToggleEquip?: (item: ResolvedItem) => void;
+  onToggleForSale?: (item: ResolvedItem) => void;
+}>;
+
+// ─── Items ───────────────────────────────────────────────────────────────────
+
+export interface ItemWeaponData {
+  damage?: string;
+  properties?: string[];
+  options?: string[];
+  bonus?: string;
+}
+
+export interface ItemArmorData {
+  ac?: string;
+  category?: "Light" | "Medium" | "Heavy" | "Shield";
+  properties?: string[];
+}
+
+export interface ItemContainerData {
+  volume_cap?: string;
+  weight_cap?: string;
+}
+
+export interface ItemShopData {
+  cheap?: string;
+  expensive?: string;
+  availability?: string[];
+}
+
+/** Fully parsed `rpg item.element` fence body. */
+export interface ItemElementData {
+  type?: string;
+  cost?: string;
+  weight?: string | number;
+  rarity?: string;
+  source?: string;
+  image?: string;
+  desc?: string;
+  weapon?: ItemWeaponData;
+  armor?: ItemArmorData;
+  container?: ItemContainerData;
+  shop?: ItemShopData;
+  name?: string;
+}
+
+export declare function parseItemElement(yaml: string): ItemElementData | null;
+export declare function extractItemElementBlocks(contents: string): ItemElementData[];
+export declare function parseItemWeight(raw: unknown): number;
+export declare function itemKindFromType(
+  type: string | undefined,
+): "weapon" | "armor" | "shield" | "container" | null;
+
+// ─── Attack aspect ───────────────────────────────────────────────────────────
+
+export interface DamageSpec {
+  roll: string;
+  type: string;
+  bonus?: string;
+}
+
+export interface AttackSave {
+  ability: string;
+  dc?: string;
+  on_success?: string;
+}
+
+export interface AttackAspect {
+  name?: string;
+  form: "melee" | "ranged" | "spell" | "save";
+  damage?: DamageSpec | DamageSpec[];
+  to_hit?: string;
+  range?: string;
+  save?: AttackSave;
+  /** Equipment requirement. `none` = always available (spells / mental);
+   *  `one_hand` = weapon must be in a hand slot; `two_hands` = weapon in
+   *  main_hand with off_hand empty; `free_hand` = at least one hand free
+   *  (unarmed attacks). */
+  requires?: "none" | "one_hand" | "two_hands" | "free_hand";
+  notes?: string;
+}
+
+export interface WielderStats {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+  pb: number;
+}
+
+export interface WeaponOverlay {
+  attackBonus?: number;
+  extraDamage?: DamageSpec[];
+  offHand?: boolean;
+}
+
+export declare function deriveWeaponForm(type: string | undefined): "melee" | "ranged";
+export declare function parseWeaponDamage(raw: string | undefined): DamageSpec | null;
+export declare function parseWeaponBonus(raw: string | undefined): number;
+export declare function signed(n: number): string;
+export declare function deriveWeaponAttack(
+  element: ItemElementData,
+  stats: WielderStats,
+  overlay?: WeaponOverlay,
+  displayName?: string,
+): AttackAspect | null;
+
+/**
+ * Plural variant of `deriveWeaponAttack`. Prefers the element's
+ * `weapon.attacks:` explicit templates when present (one row per
+ * entry); falls back to a single-entry derivation from
+ * `weapon.damage` when the list is absent.
+ */
+export declare function deriveWeaponAttacks(
+  element: ItemElementData,
+  stats: WielderStats,
+  overlay?: WeaponOverlay,
+  displayName?: string,
+): AttackAspect[];
+
+/** React card for a parsed `rpg item.element` body. No auto-title or
+ *  source footer — the host note's own heading + markdown supply those. */
+export declare const ItemElementCard: React.FC<{
+  data: ItemElementData;
+  showDescription?: boolean;
+  renderMarkdown?: (source: string) => React.ReactNode;
 }>;
 
 // ─── Tables ───────────────────────────────────────────────────────────────────

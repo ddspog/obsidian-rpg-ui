@@ -259,6 +259,16 @@ export async function evaluateSystemBundle(
           const tableExpr = require("../domains/tables/expressions");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const spellCard = require("../blocks/spell-card");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const spellcasting = require("../domains/features/spellcasting");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const inventoryDomain = require("../domains/inventory");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const inventoryComponent = require("../components/inventory/InventoryBlock");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const itemsDomain = require("../domains/items");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const itemElementCard = require("../components/item/ItemElementCard");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
@@ -270,6 +280,21 @@ export async function evaluateSystemBundle(
             parseTableBlock: tableParser.parseTableBlock,
             substituteExpressions: tableExpr.substituteExpressions,
             extractSpellBlocks: spellCard.extractSpellBlocks,
+            classifySpellCircle: spellcasting.classifySpellCircle,
+            stripWikilinkToName: spellcasting.stripWikilinkToName,
+            resolveInventory: inventoryDomain.resolveInventory,
+            InventoryBlock: inventoryComponent.InventoryBlock,
+            extractItemElementBlocks: itemsDomain.extractItemElementBlocks,
+            parseItemElement: itemsDomain.parseItemElement,
+            parseItemWeight: itemsDomain.parseItemWeight,
+            itemKindFromType: itemsDomain.itemKindFromType,
+            deriveWeaponAttack: itemsDomain.deriveWeaponAttack,
+            deriveWeaponAttacks: itemsDomain.deriveWeaponAttacks,
+            deriveWeaponForm: itemsDomain.deriveWeaponForm,
+            parseWeaponDamage: itemsDomain.parseWeaponDamage,
+            parseWeaponBonus: itemsDomain.parseWeaponBonus,
+            signed: itemsDomain.signed,
+            ItemElementCard: itemElementCard.ItemElementCard,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.

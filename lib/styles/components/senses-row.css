@@ -1,6 +1,6 @@
 /* ── Senses Row (frosted glass passive boxes + senses list) ──────────────── */
 
-section[aria-label="Character Senses"] {
+section[aria-details="Character Senses"] {
   container-type: inline-size;
   display: grid;
   /* Two implicit rows: header bar, then value cells. The senses dl spans
@@ -22,17 +22,17 @@ section[aria-label="Character Senses"] {
 
 /* ── Inner dividers between cells ───────────────────────────────────────── */
 
-section[aria-label="Character Senses"] > output + output {
+section[aria-details="Character Senses"] > output + output {
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
 }
 
-section[aria-label="Character Senses"] > dl {
+section[aria-details="Character Senses"] > dl {
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
 }
 
 /* ── "Passive" tag heading (mirrors the Skills section header) ──────────── */
 
-section[aria-label="Character Senses"] > header {
+section[aria-details="Character Senses"] > header {
   grid-column: 1 / 4;
   grid-row: 1;
   --rpg-tag-cut: 8px;
@@ -47,14 +47,14 @@ section[aria-label="Character Senses"] > header {
   line-height: 1.2;
 }
 
-section[aria-label="Character Senses"] > header > span {
+section[aria-details="Character Senses"] > header > span {
   clip-path: none;
   padding: 2px 8px;
 }
 
 /* ── Passive value boxes ────────────────────────────────────────────────── */
 
-section[aria-label="Character Senses"] > output {
+section[aria-details="Character Senses"] > output {
   grid-row: 2;
   display: flex;
   flex-direction: column;
@@ -66,14 +66,14 @@ section[aria-label="Character Senses"] > output {
   padding: 12px 8px 22px;
 }
 
-section[aria-label="Character Senses"] > output > data {
+section[aria-details="Character Senses"] > output > data {
   font-size: 1.6em;
   font-weight: 700;
   color: var(--rpg-senses-value, light-dark(#1a1208, #ffffff));
   line-height: 1;
 }
 
-section[aria-label="Character Senses"] > output > small {
+section[aria-details="Character Senses"] > output > small {
   font-size: 0.72em;
   font-weight: 700;
   text-transform: uppercase;
@@ -85,7 +85,7 @@ section[aria-label="Character Senses"] > output > small {
 
 /* ── Senses list panel ──────────────────────────────────────────────────── */
 
-section[aria-label="Character Senses"] > dl {
+section[aria-details="Character Senses"] > dl {
   /* Spans both grid rows so its own "Senses" header sits in line with the
    * "Passive" header on its left. */
   grid-column: 4;
@@ -100,7 +100,7 @@ section[aria-label="Character Senses"] > dl {
   margin: 0;
 }
 
-section[aria-label="Character Senses"] > dl > dt {
+section[aria-details="Character Senses"] > dl > dt {
   grid-column: 1;
   grid-row: 1;
   --rpg-tag-cut: 8px;
@@ -113,18 +113,18 @@ section[aria-label="Character Senses"] > dl > dt {
   line-height: 1.2;
 }
 
-section[aria-label="Character Senses"] > dl > dt > span {
+section[aria-details="Character Senses"] > dl > dt > span {
   padding: 2px calc(var(--rpg-tag-cut, 8px) + 4px) 2px 6px;
 }
 
 /* Eye icon via CSS (ideal: inline SVG) */
-section[aria-label="Character Senses"] > dl > dt > span::before {
+section[aria-details="Character Senses"] > dl > dt > span::before {
   content: "\2299"; /* ⊙ circled dot */
 }
 
 /* ── "distance" column header ──────────────────────────────────────────── */
 
-section[aria-label="Character Senses"] > dl::after {
+section[aria-details="Character Senses"] > dl::after {
   content: "distance";
   grid-column: 2;
   grid-row: 1;
@@ -136,7 +136,7 @@ section[aria-label="Character Senses"] > dl::after {
   line-height: 1.4;
 }
 
-section[aria-label="Character Senses"] > dl > dd {
+section[aria-details="Character Senses"] > dl > dd {
   grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
@@ -150,7 +150,7 @@ section[aria-label="Character Senses"] > dl > dd {
   text-transform: capitalize;
 }
 
-section[aria-label="Character Senses"] > dl > dd > [aria-details="Sense Range"] {
+section[aria-details="Character Senses"] > dl > dd > [aria-details="Sense Range"] {
   font-variant-numeric: tabular-nums;
   font-size: 1em;
   text-transform: none;
@@ -162,24 +162,24 @@ section[aria-label="Character Senses"] > dl > dd > [aria-details="Sense Range"] 
  * the same muted text the plain-span fallback uses, and lift the text-
  * decoration on hover only — otherwise Obsidian's global `a.internal-link`
  * rule renders the sense name in the theme's accent color. */
-section[aria-label="Character Senses"] > dl > dd > a.internal-link {
+section[aria-details="Character Senses"] > dl > dd > a.internal-link {
   color: inherit;
   text-decoration: none;
   text-transform: inherit;
 }
 
-section[aria-label="Character Senses"] > dl > dd > a.internal-link:hover {
+section[aria-details="Character Senses"] > dl > dd > a.internal-link:hover {
   text-decoration: underline;
 }
 
 /* ── Responsive: stack senses below passives ────────────────────────────── */
 
 @container (max-width: 480px) {
-  section[aria-label="Character Senses"] {
+  section[aria-details="Character Senses"] {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  section[aria-label="Character Senses"] > dl {
+  section[aria-details="Character Senses"] > dl {
     grid-column: 1 / -1;
     border-left: none;
     border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));

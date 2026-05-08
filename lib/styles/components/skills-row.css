@@ -1,6 +1,6 @@
 /* ── Skills Row (frosted glass two-column skills list) ────────────────────── */
 
-section[aria-label="Character Skills"] {
+section[aria-details="Character Skills"] {
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-radius: 4px;
@@ -15,7 +15,7 @@ section[aria-label="Character Skills"] {
 
 /* ── Skills list ────────────────────────────────────────────────────────── */
 
-section[aria-label="Character Skills"] > header {
+section[aria-details="Character Skills"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
   font-size: 0.85em;
@@ -25,12 +25,12 @@ section[aria-label="Character Skills"] > header {
   color: var(--rpg-skills-header, light-dark(#6a4e2a, #d4a840));
 }
 
-section[aria-label="Character Skills"] > header > span {
+section[aria-details="Character Skills"] > header > span {
   clip-path: none;
   padding: 2px 8px;
 }
 
-section[aria-label="Character Skills"] > menu {
+section[aria-details="Character Skills"] > menu {
   list-style: none;
   margin: 0;
   padding: 8px 12px;
@@ -40,7 +40,7 @@ section[aria-label="Character Skills"] > menu {
 
 /* ── Skill row ──────────────────────────────────────────────────────────── */
 
-section[aria-label="Character Skills"] > menu > li {
+section[aria-details="Character Skills"] > menu > li {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -51,13 +51,13 @@ section[aria-label="Character Skills"] > menu > li {
 }
 
 /* Proficiency dot */
-section[aria-label="Character Skills"] > menu > li > svg {
+section[aria-details="Character Skills"] > menu > li > svg {
   flex-shrink: 0;
   color: light-dark(#5a5040, #a09880);
 }
 
 /* Skill attribute abbreviation */
-section[aria-label="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
   flex-shrink: 0;
   font-size: 0.6em;
   font-weight: 700;
@@ -69,13 +69,13 @@ section[aria-label="Character Skills"] > menu > li > [aria-details="Skill Attrib
 }
 
 /* Skill name */
-section[aria-label="Character Skills"] > menu > li > [aria-details="Skill Name"] {
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] {
   flex: 1;
   font-weight: 600;
 }
 
 /* Modifier value */
-section[aria-label="Character Skills"] > menu > li > data {
+section[aria-details="Character Skills"] > menu > li > data {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -87,15 +87,15 @@ section[aria-label="Character Skills"] > menu > li > data {
 
 /* ── Vantage (advantage / disadvantage) ─────────────────────────────────── */
 
-section[aria-label="Character Skills"] > menu > li[data-vantage="adv"] > data {
+section[aria-details="Character Skills"] > menu > li[data-vantage="adv"] > data {
   color: light-dark(#2d6a2e, #5cb85c);
 }
 
-section[aria-label="Character Skills"] > menu > li[data-vantage="dis"] > data {
+section[aria-details="Character Skills"] > menu > li[data-vantage="dis"] > data {
   color: light-dark(#a02020, #d9534f);
 }
 
-section[aria-label="Character Skills"] > menu > li > data > [aria-details="Vantage"] {
+section[aria-details="Character Skills"] > menu > li > data > [aria-details="Vantage"] {
   font-size: 0.6em;
   line-height: 1;
 }
@@ -103,13 +103,13 @@ section[aria-label="Character Skills"] > menu > li > data > [aria-details="Vanta
 /* ── Merge senses + skills into one box when adjacent ───────────────────── */
 
 /* Direct siblings (Storybook) */
-section[aria-label="Character Senses"]:has(+ section[aria-label="Character Skills"]) {
+section[aria-details="Character Senses"]:has(+ section[aria-details="Character Skills"]) {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
 }
 
-section[aria-label="Character Senses"] + section[aria-label="Character Skills"] {
+section[aria-details="Character Senses"] + section[aria-details="Character Skills"] {
   border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -120,13 +120,13 @@ section[aria-label="Character Senses"] + section[aria-label="Character Skills"] 
 }
 
 /* Through wrapper divs (Obsidian renders each block in a div) */
-div:has(> section[aria-label="Character Senses"]):has(+ div > section[aria-label="Character Skills"]) > section[aria-label="Character Senses"] {
+div:has(> section[aria-details="Character Senses"]):has(+ div > section[aria-details="Character Skills"]) > section[aria-details="Character Senses"] {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
 }
 
-div:has(> section[aria-label="Character Senses"]) + div > section[aria-label="Character Skills"] {
+div:has(> section[aria-details="Character Senses"]) + div > section[aria-details="Character Skills"] {
   border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
   border-top-left-radius: 0;
   border-top-right-radius: 0;

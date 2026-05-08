@@ -182,6 +182,101 @@
   background: transparent;
 }
 
+/* Same reset for the trivialise / restore buttons that sit inside feature
+ * cards and trivial link lists — Obsidian's default `button` styling adds
+ * fill + shadow + padding that crowd these inline-glyph controls. */
+.markdown-rendered .rpg-feature-bucket-entry-collapse,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-collapse,
+.markdown-rendered .rpg-feature-bucket-trivial-restore,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-trivial-restore {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry-collapse:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-collapse:hover,
+.markdown-rendered .rpg-feature-bucket-trivial-restore:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-trivial-restore:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Same reset for the inventory equip / unequip toggle — the circle glyph
+ * carries the on/off state, so we don't want Obsidian's default fill or
+ * frame bleeding through. */
+.markdown-rendered .rpg-inventory-block__equip-btn,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__equip-btn,
+.markdown-rendered .rpg-inventory-block__sell-btn,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.markdown-rendered .rpg-inventory-block__equip-btn:hover,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__equip-btn:hover,
+.markdown-rendered .rpg-inventory-block__sell-btn:hover,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Sell-toggle "on" state needs the filled background to win over the
+ * global reset above — the `data-for-sale` attribute bumps specificity
+ * without `!important`. */
+.markdown-rendered .rpg-inventory-block__sell-btn[data-for-sale="true"],
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn[data-for-sale="true"] {
+  background: light-dark(rgba(106, 78, 42, 0.85), rgba(212, 168, 64, 0.85));
+}
+
+/* Attacks block — Obsidian's default `.markdown-rendered table` rules
+ * ship a top + bottom margin so rendered tables breathe inside prose.
+ * The attacks block owns its own framing (section borders + thead
+ * band), so strip that table-level margin when the table is our
+ * `.rpg-attacks__table` (scoped via `:has` on the section so we don't
+ * touch any other user-authored table that happens to be nearby). */
+.markdown-rendered section[aria-details="Favorite Attacks"] table.rpg-attacks__table,
+.markdown-source-view.mod-cm6 section[aria-details="Favorite Attacks"] table.rpg-attacks__table {
+  margin: 0;
+}
+
+/* Sheet-composite margin reset — each sub-block carries a negative
+ * `margin-block-start` trick to dock against its preceding Obsidian
+ * `el-*` wrapper in the multi-block layout. In the sheet layout there
+ * is no wrapper between siblings, so the negative margin pulls each
+ * section UP over the one above — overlapping rows and hiding the
+ * last tbody row of the attacks section. Resetting the block margins
+ * inside the sheet lets each section sit in natural document flow and
+ * keeps each section's own borders visible. */
+.rpg-character-sheet > section {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+}
+
+/* Restore skills' bottom border + proficiencies' top border in the
+ * sheet layout. The multi-block case uses `:has(+)` / adjacent-sibling
+ * rules in `attacks-row.css` to MERGE those borders away — but in the
+ * sheet layout all three sections are direct siblings of
+ * `.rpg-character-sheet`, so those merge rules fire unintentionally
+ * and strip the borders. Force them back so each block keeps its
+ * own framed card look. */
+.rpg-character-sheet > section[aria-details="Character Skills"] {
+  border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25)) !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.rpg-character-sheet > section[aria-details="Character Proficiencies"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25)) !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 4px !important;
+}
+
 /* Obsidian's reading-view bullet lists ship with a hefty inline-start
  * padding (`var(--list-indent, ~1.5em)` plus extra `<li>` padding) that
  * pushes feature-card bullet rows far past the description text. Match

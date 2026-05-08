@@ -16,6 +16,8 @@
 @import "./components/spell-components.css";
 @import "./components/event-buttons.css";
 @import "./components/inventory.css";
+@import "./components/inventory-block.css";
+@import "./components/item-card.css";
 @import "./components/features.css";
 /* Session Log Components - Split from monolithic file */
 @import "./components/session-log-scene.css";
@@ -72,6 +74,7 @@
 @import "./components/death-save-dots.css";
 @import "./components/dice-tray.css";
 @import "./components/dice-roll-modal.css";
+@import "./components/references.css";
 @import "./file-suggest.css";
 
 /* Obsidian-only layout overrides — keep last so it can override component

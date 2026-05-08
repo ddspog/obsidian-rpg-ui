@@ -1,6 +1,6 @@
 /* ── Proficiencies Row (frosted glass two-column dl) ──────────────────────── */
 
-section[aria-label="Character Proficiencies"] {
+section[aria-details="Character Proficiencies"] {
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-radius: 4px;
@@ -15,7 +15,7 @@ section[aria-label="Character Proficiencies"] {
 
 /* ── Definition list ───────────────────────────────────────────────────── */
 
-section[aria-label="Character Proficiencies"] > header {
+section[aria-details="Character Proficiencies"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
   font-size: 0.85em;
@@ -25,12 +25,12 @@ section[aria-label="Character Proficiencies"] > header {
   color: var(--rpg-proficiencies-header, light-dark(#6a4e2a, #d4a840));
 }
 
-section[aria-label="Character Proficiencies"] > header > span {
+section[aria-details="Character Proficiencies"] > header > span {
   clip-path: none;
   padding: 2px 8px;
 }
 
-section[aria-label="Character Proficiencies"] > dl {
+section[aria-details="Character Proficiencies"] > dl {
   margin: 0;
   padding: 8px 12px;
   column-count: 2;
@@ -39,14 +39,14 @@ section[aria-label="Character Proficiencies"] > dl {
 
 /* ── Category group (dt + dd set) ──────────────────────────────────────── */
 
-section[aria-label="Character Proficiencies"] > dl > div {
+section[aria-details="Character Proficiencies"] > dl > div {
   break-inside: avoid;
   margin-bottom: 6px;
 }
 
 /* ── Category header ───────────────────────────────────────────────────── */
 
-section[aria-label="Character Proficiencies"] > dl dt {
+section[aria-details="Character Proficiencies"] > dl dt {
   font-size: 1em;
   font-weight: 700;
   text-transform: uppercase;
@@ -59,7 +59,7 @@ section[aria-label="Character Proficiencies"] > dl dt {
 
 /* ── Proficiency item ──────────────────────────────────────────────────── */
 
-section[aria-label="Character Proficiencies"] > dl dd {
+section[aria-details="Character Proficiencies"] > dl dd {
   margin: -1px 0 0 20px;
   padding: 2px 20px 2px 8px;
   border-left: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
@@ -70,6 +70,23 @@ section[aria-label="Character Proficiencies"] > dl dd {
 }
 
 /* Override pill link font-size inside proficiencies */
-section[aria-label="Character Proficiencies"] > dl dd [aria-details="Link Pill"] {
+section[aria-details="Character Proficiencies"] > dl dd [aria-details="Link Pill"] {
   font-size: inherit;
+}
+
+/* In-use dot — marks proficiencies the character is currently
+ * exercising (equipped weapon / armor / shield, carried tool). A
+ * superscript glyph that sits just beside the pill label, filled with
+ * the section's accent colour so it reads as an active indicator. */
+section[aria-details="Character Proficiencies"] > dl dd[data-in-use="true"] {
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
+  margin-left: 4px;
+  color: light-dark(#6a4e2a, #d4a840);
+  font-weight: 900;
+  font-size: 0.85em;
+  line-height: 1;
+  vertical-align: super;
 }

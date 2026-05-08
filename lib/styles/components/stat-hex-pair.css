@@ -67,7 +67,7 @@ svg[aria-details="Stat Hex Pair"] {
 
 /* ── Stats grid container ────────────────────────────────────────────────── */
 
-section[aria-label="Character Stats"] {
+section[aria-details="Character Stats"] {
   container-type: inline-size;
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   display: grid;
@@ -86,7 +86,7 @@ section[aria-label="Character Stats"] {
 }
 
 /* Dotted background via pseudo-element */
-section[aria-label="Character Stats"]::before {
+section[aria-details="Character Stats"]::before {
   content: "";
   position: absolute;
   inset: 24px;
@@ -100,7 +100,7 @@ section[aria-label="Character Stats"]::before {
 }
 
 /* Hex pairs overflow above the dotted background padding */
-section[aria-label="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
+section[aria-details="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
   margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
   position: relative;
   z-index: 1;

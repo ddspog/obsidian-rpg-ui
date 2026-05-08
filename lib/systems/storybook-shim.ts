@@ -17,3 +17,19 @@ export { Markdown } from "../components/markdown";
 export { parseTableBlock } from "../domains/tables/parse-table-block";
 export { substituteExpressions } from "../domains/tables/expressions";
 export { extractSpellBlocks } from "../blocks/spell-card";
+export { classifySpellCircle, stripWikilinkToName } from "../domains/features/spellcasting";
+export { resolveInventory } from "../domains/inventory";
+export { InventoryBlock } from "../components/inventory/InventoryBlock";
+export {
+  extractItemElementBlocks,
+  parseItemElement,
+  parseItemWeight,
+  itemKindFromType,
+  deriveWeaponAttack,
+  deriveWeaponAttacks,
+  deriveWeaponForm,
+  parseWeaponDamage,
+  parseWeaponBonus,
+  signed,
+} from "../domains/items";
+export { ItemElementCard } from "../components/item/ItemElementCard";
