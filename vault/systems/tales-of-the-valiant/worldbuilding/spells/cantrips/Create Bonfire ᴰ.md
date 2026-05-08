@@ -27,6 +27,16 @@ text: |-
 
   **At Higher Levels**. The spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).
 image: "![[create-bonfire.webp|384]]"
+attack:
+  form: save
+  range: 60 ft.
+  save:
+    ability: DEX
+    on_success: "no damage"
+  damage:
+    roll: 1d8
+    type: fire
+  notes: 5-ft cube, ignites flammables
 ```
 
 

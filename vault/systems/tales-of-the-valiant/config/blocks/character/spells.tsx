@@ -472,10 +472,11 @@ function CasterSection({
         <span>
           Spellcasting · {caster.source}
           <small className="rpg-caster-meta">
-            {" "}· {caster.ability} {signed(abilityMod)}
-            {" "}· DC {saveDc}
+            {caster.ability
+              ? <>{" "}· {caster.ability} {signed(abilityMod)}{" "}· DC {saveDc}</>
+              : <>{" "}· <em>pick ability</em></>}
             {" "}· {caster.type === "prepared" ? "prepared" : "known"}
-            {" "}· {caster.tier}-caster
+            {caster.tier !== "none" && <>{" "}· {caster.tier}-caster</>}
           </small>
         </span>
       </header>
@@ -1240,7 +1241,7 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
   const [pendingOpen, setPendingOpen] = usePersistentOpen(`${noteKey}:spells:pending`, true);
   if (!view || view.casters.length === 0) {
     return (
-      <section aria-label="Character Spells">
+      <section aria-details="Character Spells">
         <p aria-details="No Casters"><em>No spellcasting class declared.</em></p>
       </section>
     );
@@ -1401,7 +1402,7 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
   );
 
   return (
-    <section aria-label="Character Spells">
+    <section aria-details="Character Spells">
       {view.casters.map((caster) => {
         const state = castersState[caster.source] ?? {};
         const mod = abilityModifier(stats, caster.ability);

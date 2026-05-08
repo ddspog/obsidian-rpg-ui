@@ -4,7 +4,9 @@ source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 .metadata: 
 cssclasses:
   - simple-dataview-lists
+  - note-feature
 ---
+# Wyrd
 ![[07. Spellcasting#^e6076b|clean]]
 ## Spell List
 These spells are available to casters who draw power from the Wyrd source. 

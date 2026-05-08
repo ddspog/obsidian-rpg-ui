@@ -33,6 +33,13 @@ text: |-
 
   **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d10 for every two slot levels above 1st. When you cast this spell using a spell slot of 3rd level or higher, the d4s of the additional radiant damage become d6s.
 image: "![[lunarbolt-waxing.webp|384]]"
+attack:
+  form: spell
+  range: 120 ft.
+  damage:
+    - { roll: 1d10, type: cold }
+    - { roll: 1d4, type: radiant }
+  notes: extra radiant scales with distance (up to 3d4 at 95–120 ft)
 ```
 
 

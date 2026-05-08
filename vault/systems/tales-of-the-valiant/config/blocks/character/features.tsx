@@ -215,6 +215,51 @@ interface BucketEntry {
   bucket: BucketId;
   source: string;
   level?: number;
+  /** Stable identity for one aspect instance on one feature. Shape:
+   *  `<bucket>:<aspect.name>` if the aspect has a name, otherwise
+   *  `<bucket>:<index>` where index is the aspect's position within the
+   *  bucket on this feature. Used by collapse / restore callbacks so
+   *  multiple aspects of the same bucket on one feature can toggle
+   *  independently. */
+  aspectKey: string;
+}
+
+/**
+ * Trivial entry in a bucket — covers three render paths:
+ *   1. Entity default features (Dash / Disengage / Dodge) — shared for
+ *      every character; `source` is undefined.
+ *   2. Authored `bonus: [[Help]]` link shortcuts from the compendium —
+ *      `source` is undefined too; the link stands on its own.
+ *   3. User-trivialised aspects (runtime toggle) — `userTrivialized: true`,
+ *      `source` identifies the owning ResolvedSource, and `aspectKey`
+ *      pins the exact aspect instance so the restore button un-trivialises
+ *      only that one.
+ */
+export interface TrivialEntry extends FeatureEntry {
+  userTrivialized?: boolean;
+  source?: string;
+  aspectKey?: string;
+}
+
+/** Compute an aspect's stable identity within a (feature, bucket). */
+function computeAspectKey(
+  bucket: string,
+  aspect: FeatureAspect | null,
+  indexInBucket: number,
+): string {
+  const name = aspect?.name;
+  return `${bucket}:${name ?? indexInBucket}`;
+}
+
+/** True when `set` marks this specific aspect as trivial. Also honours
+ *  the bare-bucket shorthand (`"passive"` matches every passive aspect
+ *  on the feature) so legacy YAML keeps working. */
+function isAspectTrivialised(
+  set: Set<string>,
+  bucket: string,
+  aspectKey: string,
+): boolean {
+  return set.has(aspectKey) || set.has(bucket);
 }
 
 /**
@@ -229,9 +274,12 @@ interface BucketEntry {
  * surface in the Traits bucket, the "Choices to make" section, or dedicated
  * renderers. No generic catch-all bucket.
  */
-function bucketize(sources: ResolvedSource[]): {
+function bucketize(
+  sources: ResolvedSource[],
+  trivialized?: Record<string, Record<string, string[]>>,
+): {
   byBucket: Record<string, BucketEntry[]>;
-  grantedTrivials: Record<string, FeatureEntry[]>;
+  grantedTrivials: Record<string, TrivialEntry[]>;
 } {
   const byBucket: Record<string, BucketEntry[]> = {};
   // Features may reference an existing action/reaction/bonus-action page via
@@ -239,7 +287,7 @@ function bucketize(sources: ResolvedSource[]): {
   // `[[Name]]` as a 1×1 nested array; we normalise that back into a link
   // string and surface the referenced entry as a trivial in the matching
   // bucket rather than trying to render it as a feature card here.
-  const grantedTrivials: Record<string, FeatureEntry[]> = {};
+  const grantedTrivials: Record<string, TrivialEntry[]> = {};
 
   // Sources are already in priority order (classes first, then lineage →
   // heritage → background). Within each source, re-sort features so
@@ -259,72 +307,100 @@ function bucketize(sources: ResolvedSource[]): {
     const orderedFeatures = [...src.features].sort(
       (a, b) => featureLevel(a.level) - featureLevel(b.level),
     );
+    const sourceTrivials = trivialized?.[src.source] ?? {};
     for (const feature of orderedFeatures) {
       let placed = false;
+      const trivialSet = new Set(sourceTrivials[feature.name] ?? []);
 
       for (const { id } of BUCKETS) {
         const raw = (feature as unknown as Record<string, unknown>)[id];
         if (raw == null) continue;
-        if (typeof raw === "object" && !Array.isArray(raw)) {
-          (byBucket[id] ??= []).push({
-            feature,
-            aspect: raw as FeatureAspect,
-            bucket: id,
-            source: src.source,
-            level: src.level,
-          });
-          placed = true;
-        } else {
-          // Array-form (or single wikilink shorthand). Each item is either
-          // a wikilink (trivial link in the bucket) or an inline
-          // FeatureAspect object (full card). Mixed arrays are allowed —
-          // a feature can "grant" one existing action and define a new
-          // sibling inline on the same key.
-          const items = Array.isArray(raw) ? raw : [raw];
-          for (const item of items) {
-            const links = extractWikilinks(item);
-            if (links.length > 0) {
-              for (const link of links) {
-                const name = link.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0];
-                if (!name) continue;
-                (grantedTrivials[id] ??= []).push({ $name: name, type: id });
-              }
-              continue;
+        // Normalise every bucket value to an array of items so the
+        // per-item aspect-key loop below runs the same way for single
+        // objects, single wikilinks, and mixed arrays.
+        const items = Array.isArray(raw) ? raw : [raw];
+        let aspectIdx = 0; // counts only FeatureAspect objects, not wikilinks
+        for (const item of items) {
+          const links = extractWikilinks(item);
+          if (links.length > 0) {
+            for (const link of links) {
+              const name = link.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0];
+              if (!name) continue;
+              (grantedTrivials[id] ??= []).push({ $name: name, type: id });
             }
-            if (item && typeof item === "object" && !Array.isArray(item)) {
+            continue;
+          }
+          if (item && typeof item === "object" && !Array.isArray(item)) {
+            const aspect = item as FeatureAspect;
+            const aspectKey = computeAspectKey(id, aspect, aspectIdx);
+            if (isAspectTrivialised(trivialSet, id, aspectKey)) {
+              (grantedTrivials[id] ??= []).push({
+                $name: aspect.name ?? feature.name,
+                type: id,
+                userTrivialized: true,
+                source: src.source,
+                aspectKey,
+              });
+            } else {
               (byBucket[id] ??= []).push({
                 feature,
-                aspect: item as FeatureAspect,
+                aspect,
                 bucket: id,
                 source: src.source,
                 level: src.level,
+                aspectKey,
               });
-              placed = true;
             }
+            placed = true;
+            aspectIdx++;
           }
         }
       }
 
       if (!placed && feature.type && BUCKET_IDS.has(feature.type)) {
         const bucket = feature.type as BucketId;
-        (byBucket[bucket] ??= []).push({
-          feature,
-          aspect: {},
-          bucket,
-          source: src.source,
-          level: src.level,
-        });
+        const aspectKey = computeAspectKey(bucket, null, 0);
+        if (isAspectTrivialised(trivialSet, bucket, aspectKey)) {
+          (grantedTrivials[bucket] ??= []).push({
+            $name: feature.name,
+            type: bucket,
+            userTrivialized: true,
+            source: src.source,
+            aspectKey,
+          });
+        } else {
+          (byBucket[bucket] ??= []).push({
+            feature,
+            aspect: {},
+            bucket,
+            source: src.source,
+            level: src.level,
+            aspectKey,
+          });
+        }
         placed = true;
       }
 
       if (!placed && feature.max != null) {
-        (byBucket.resource ??= []).push({
-          feature,
-          aspect: { max: feature.max, recovery: feature.recovery },
-          bucket: "resource",
-          source: src.source,
-          level: src.level,
-        });
+        const aspectKey = computeAspectKey("resource", null, 0);
+        if (isAspectTrivialised(trivialSet, "resource", aspectKey)) {
+          (grantedTrivials.resource ??= []).push({
+            $name: feature.name,
+            type: "resource",
+            userTrivialized: true,
+            source: src.source,
+            aspectKey,
+          });
+        } else {
+          (byBucket.resource ??= []).push({
+            feature,
+            aspect: { max: feature.max, recovery: feature.recovery },
+            bucket: "resource",
+            source: src.source,
+            level: src.level,
+            aspectKey,
+          });
+        }
       }
     }
   }
@@ -479,14 +555,16 @@ function EntryRow({
   context,
   spent,
   onSpentChange,
+  onCollapse,
 }: {
   entry: BucketEntry;
   characterLevel?: number;
   context?: EvalContext;
   spent: number;
   onSpentChange?: (next: number) => void;
+  onCollapse?: (source: string, featureName: string, aspectKey: string) => void;
 }) {
-  const { feature, aspect, source } = entry;
+  const { feature, aspect, source, aspectKey } = entry;
   const displayName = prettifyLevelSuffix(aspect.name ?? feature.name);
   const isResource = entry.bucket === "resource";
   // Resource entries render their own aspect text only; the parent feature's
@@ -509,6 +587,17 @@ function EntryRow({
         )}
         {!isResource && aspect.resource && (
           <small aria-details="Uses Resource">uses {aspect.resource}</small>
+        )}
+        {onCollapse && (
+          <button
+            type="button"
+            className="rpg-feature-bucket-entry-collapse"
+            aria-label={`Minimise ${aspect.name ?? feature.name} to a link`}
+            title="Minimise this aspect to a link"
+            onClick={() => onCollapse(source, feature.name, aspectKey)}
+          >
+            ▾
+          </button>
         )}
       </div>
       <div className="rpg-feature-bucket-entry-meta">
@@ -542,6 +631,8 @@ function Bucket({
   context,
   spentMap,
   onSpentChange,
+  onCollapse,
+  onRestore,
 }: {
   id: string;
   label: string;
@@ -549,11 +640,13 @@ function Bucket({
   /** Trivial entries for this bucket — rendered as a compact comma-separated
    *  link list beneath the full-card entries. Each one is a standalone
    *  vault page rather than an inline `rpg feature.details` block. */
-  trivials: FeatureEntry[];
+  trivials: TrivialEntry[];
   characterLevel?: number;
   context?: EvalContext;
   spentMap: Record<string, number>;
   onSpentChange?: (key: string, next: number) => void;
+  onCollapse?: (source: string, featureName: string, aspectKey: string) => void;
+  onRestore?: (source: string, featureName: string, aspectKey: string) => void;
 }) {
   if (entries.length === 0 && trivials.length === 0) return null;
   const total = entries.length + trivials.length;
@@ -581,21 +674,55 @@ function Bucket({
                 context={context}
                 spent={spentMap[key] ?? 0}
                 onSpentChange={onSpentChange ? (next) => onSpentChange(key, next) : undefined}
+                onCollapse={onCollapse}
               />
             );
           })}
         </ul>
       )}
       {trivials.length > 0 && (
-        <div className="rpg-feature-bucket-trivials" aria-label="Default actions">
-          {/* Render through the Markdown component so each `[[wikilink]]`
-              becomes a real Obsidian internal-link anchor with hover-
-              preview + click-to-open wired up by MarkdownRenderer. A plain
-              `<a class="internal-link">` doesn't get those handlers. */}
-          <Markdown source={trivials.map((t) => `[[${t.$name}]]`).join(" · ")} />
+        <div className="rpg-feature-bucket-trivials" aria-label="Compact entries">
+          <TrivialsList trivials={trivials} onRestore={onRestore} />
         </div>
       )}
     </details>
+  );
+}
+
+/** Renders each trivial as a real Obsidian internal-link (via the
+ *  Markdown component so MarkdownRenderer wires hover-preview +
+ *  click-to-open). User-trivialised entries get an adjacent restore
+ *  button that passes the persisted aspectKey back so the right
+ *  aspect-instance is un-trivialised. */
+function TrivialsList({
+  trivials,
+  onRestore,
+}: {
+  trivials: TrivialEntry[];
+  onRestore?: (source: string, featureName: string, aspectKey: string) => void;
+}) {
+  return (
+    <>
+      {trivials.map((t, i) => (
+        <React.Fragment key={`${t.source ?? "shared"}:${t.$name}:${t.aspectKey ?? i}`}>
+          {i > 0 && <span className="rpg-feature-bucket-trivial-sep"> · </span>}
+          <span className="rpg-feature-bucket-trivial">
+            <Markdown source={`[[${t.$name}]]`} />
+            {t.userTrivialized && t.source && t.aspectKey && onRestore && (
+              <button
+                type="button"
+                className="rpg-feature-bucket-trivial-restore"
+                aria-label={`Restore ${t.$name} to full card`}
+                title="Restore to full card"
+                onClick={() => onRestore(t.source!, t.$name, t.aspectKey!)}
+              >
+                ↩
+              </button>
+            )}
+          </span>
+        </React.Fragment>
+      ))}
+    </>
   );
 }
 
@@ -1144,6 +1271,9 @@ function FeaturesAccordion({
   context,
   spentMap,
   onSpentChange,
+  trivialized,
+  onCollapse,
+  onRestore,
 }: {
   view: ResolvedView;
   /** Trivial entries grouped by bucket id — each has its own .md page and
@@ -1154,16 +1284,25 @@ function FeaturesAccordion({
   context?: EvalContext;
   spentMap: Record<string, number>;
   onSpentChange?: (key: string, next: number) => void;
+  trivialized?: Record<string, Record<string, string[]>>;
+  /** Called when the user clicks the collapse arrow on a feature card.
+   *  Receives `(source, featureName, aspectKey)` — adds the key to
+   *  `trivialized[source][featureName]` so only that aspect-instance
+   *  minimises. `aspectKey` has the shape `<bucket>:<name-or-index>`. */
+  onCollapse?: (source: string, featureName: string, aspectKey: string) => void;
+  /** Called when the user clicks the restore button on a trivialised
+   *  link. Removes the key from the feature's trivialised list. */
+  onRestore?: (source: string, featureName: string, aspectKey: string) => void;
 }) {
   const { byBucket, grantedTrivials } = React.useMemo(
-    () => bucketize(view.sources),
-    [view.sources],
+    () => bucketize(view.sources, trivialized),
+    [view.sources, trivialized],
   );
   // Merge entity-level defaults with any granted-trivial references (e.g.
   // Comrade's `bonus: [[Help]]`) so each bucket's trivial list is deduped
   // in one pass before rendering.
   const mergedTrivials = React.useMemo(() => {
-    const out: Record<string, FeatureEntry[]> = {};
+    const out: Record<string, TrivialEntry[]> = {};
     for (const [bucket, entries] of Object.entries(trivials)) {
       out[bucket] = [...entries];
     }
@@ -1191,6 +1330,8 @@ function FeaturesAccordion({
           context={context}
           spentMap={spentMap}
           onSpentChange={onSpentChange}
+          onCollapse={onCollapse}
+          onRestore={onRestore}
         />
       ))}
       <TraitsBucket sources={view.sources} casters={view.casters} />
@@ -1305,6 +1446,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
 
   const setChoices = (self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }).setChoices;
   const setSpent = (self as { setSpent?: (u: (prev: FeaturesBlockData["spent"]) => FeaturesBlockData["spent"]) => void }).setSpent;
+  const setTrivialized = (self as { setTrivialized?: (u: (prev: FeaturesBlockData["trivialized"]) => FeaturesBlockData["trivialized"]) => void }).setTrivialized;
   const spentMap = self.spent ?? {};
   const handleSpentChange = setSpent
     ? (key: string, next: number) => {
@@ -1313,6 +1455,41 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
           if (next <= 0) delete out[key];
           else out[key] = next;
           return out;
+        });
+      }
+    : undefined;
+  // Collapse: add `aspectKey` to `trivialized[source][featureName]`.
+  // Restore: remove it (and prune empty feature / source keys). Per-aspect-
+  // instance granularity — a feature with two passive aspects can have
+  // one collapsed while the other stays expanded.
+  const handleCollapse = setTrivialized
+    ? (source: string, featureName: string, aspectKey: string) => {
+        markScrollPending();
+        setTrivialized((prev) => {
+          const next: NonNullable<FeaturesBlockData["trivialized"]> = { ...(prev ?? {}) };
+          const bySource = { ...(next[source] ?? {}) };
+          const keys = bySource[featureName] ? [...bySource[featureName]] : [];
+          if (!keys.includes(aspectKey)) keys.push(aspectKey);
+          bySource[featureName] = keys;
+          next[source] = bySource;
+          return next;
+        });
+      }
+    : undefined;
+  const handleRestore = setTrivialized
+    ? (source: string, featureName: string, aspectKey: string) => {
+        markScrollPending();
+        setTrivialized((prev) => {
+          const next: NonNullable<FeaturesBlockData["trivialized"]> = { ...(prev ?? {}) };
+          const bySource = { ...(next[source] ?? {}) };
+          // Restoring one aspect shouldn't bulk-clear a bare-bucket entry
+          // (which the back-compat path honours) — so only drop exact matches.
+          const keys = (bySource[featureName] ?? []).filter((k) => k !== aspectKey);
+          if (keys.length === 0) delete bySource[featureName];
+          else bySource[featureName] = keys;
+          if (Object.keys(bySource).length === 0) delete next[source];
+          else next[source] = bySource;
+          return next;
         });
       }
     : undefined;
@@ -1421,11 +1598,43 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
         list.push(e);
       }
     }
+    // Equipped weapons surface their `weapon.options` (Disarm, Hamstring,
+    // Trip, …) as trivial action links so the player can see the
+    // weapon-specific maneuvers that are currently usable. Each option
+    // is a wikilink to its standalone action page; `equipped: true`
+    // (any slot) on the inventory item gates inclusion.
+    const inv = (blocks as { inventory?: { items?: unknown[] } })?.inventory;
+    const rawItems = Array.isArray(inv?.items) ? inv.items : [];
+    const equippedTargets = new Set<string>();
+    const collectEquipped = (raw: unknown) => {
+      if (typeof raw === "string") return;
+      if (!raw || typeof raw !== "object") return;
+      const o = raw as { name?: string; equipped?: boolean; slot?: string; contents?: unknown[] };
+      if (typeof o.name === "string" && (o.equipped || typeof o.slot === "string")) {
+        const stem = o.name.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop()?.trim();
+        if (stem) equippedTargets.add(stem);
+      }
+      if (Array.isArray(o.contents)) for (const c of o.contents) collectEquipped(c);
+    };
+    for (const it of rawItems) collectEquipped(it);
+    const itemsLib = (lookup as { $items?: Record<string, { weapon?: { options?: string[] } }> }).$items ?? {};
+    const actionList = (out.action ??= []);
+    const seenAction = new Set(actionList.map((e) => e.$name));
+    for (const target of equippedTargets) {
+      const item = itemsLib[target];
+      const opts = item?.weapon?.options ?? [];
+      for (const raw of opts) {
+        const stem = String(raw).replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop()?.trim();
+        if (!stem || seenAction.has(stem)) continue;
+        seenAction.add(stem);
+        actionList.push({ $name: stem, type: "action" });
+      }
+    }
     return out;
-  }, [lookup.$defaultFeatures, view.casters, spellsBlock, spellLibrary]);
+  }, [lookup.$defaultFeatures, lookup, view.casters, spellsBlock, spellLibrary, blocks]);
 
   return (
-    <section aria-label="Character Features" className="rpg-feature-source-groups">
+    <section aria-details="Character Features" className="rpg-feature-source-groups">
       {view.sources.length === 0 ? (
         <p aria-details="No Sources"><em>No class, lineage, or background declared.</em></p>
       ) : (
@@ -1436,6 +1645,9 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
           context={context}
           spentMap={spentMap}
           onSpentChange={handleSpentChange}
+          trivialized={self.trivialized}
+          onCollapse={handleCollapse}
+          onRestore={handleRestore}
         />
       )}
       {(view.pendingChoices.length > 0 || Object.keys(self.choices ?? {}).length > 0) && (

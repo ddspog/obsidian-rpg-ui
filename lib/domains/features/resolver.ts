@@ -13,6 +13,7 @@
 
 import type { TableDef } from "../tables/types";
 import { expandOptionRefs } from "./index-builder";
+import { stripWikilinkToName } from "./spellcasting";
 import type {
   CharacterDecl,
   ChooseSpec,
@@ -138,6 +139,7 @@ function resolveCategory(choose: ChooseSpec): string {
   if (choose.category) return choose.category;
   if (choose.type === "asi") return "Ability Scores";
   if (choose.type === "talent") return "Talent";
+  if (choose.type === "spellcasting") return "Spellcasting";
   return "";
 }
 
@@ -183,6 +185,11 @@ function resolveSource(
   // them when you take the class); levelled features bucket at their own
   // level; `feature.level` augmentations bucket at the augmentation's level.
   const traitsByLevel: Record<number, Record<string, string[]>> = {};
+  // Set when any detail on this source declared `choose: { type:
+  // "spellcasting", category: "ability" }`. Empty string means declared
+  // but not yet picked — still enough to flag the source as wanting its
+  // own standalone caster via `resolveCasters`.
+  let spellcastingAbilityPick: string | undefined;
 
   // Normalise a feature's declared level into a single number for bucketing.
   // `level` may be an array when a feature repeats across levels (e.g.
@@ -335,6 +342,36 @@ function resolveSource(
     // so the two pick buckets stay independent.
     const useCompositeChooseKey = multiChoose || detail.buy != null;
     for (const spec of chooseSpecs) {
+      if (spec.type === "spellcasting") {
+        // Standalone-caster ability pick (Acolyte-style heritages).
+        // Category defaults to "Spellcasting" / "ability"; anything else
+        // is ignored for now. Picks store on the source via
+        // `spellcastingAbilityPick` so `resolveCasters` can fold them
+        // into the caster's `ability` field.
+        const cat = resolveCategory(spec);
+        const chooseKey = useCompositeChooseKey ? `${detail.name}:${cat}` : detail.name;
+        const picked = pickedNames(picksForSource?.[chooseKey]);
+        const category = (spec.category ?? "").toLowerCase();
+        if (category === "ability" || category === "" || category === "spellcasting") {
+          // Record the first pick (single-select semantics — `number: 1`).
+          spellcastingAbilityPick = picked[0] ?? "";
+        }
+        const remaining = Math.max(0, spec.number - picked.length);
+        if (remaining > 0) {
+          const specWithCat: ChooseSpec = { ...spec, category: cat };
+          const featureForPending: FeatureDetails = useCompositeChooseKey
+            ? { ...detail, name: chooseKey, choose: specWithCat }
+            : { ...detail, choose: specWithCat };
+          pendingChoices.push({
+            source: doc.name,
+            feature: featureForPending,
+            options: inlineChooseOptions(featureForPending, spec, opts.tagIndex, opts.folderIndex),
+            picked,
+            remaining,
+          });
+        }
+        continue;
+      }
       if (spec.type !== "traits" && spec.type !== "asi" && spec.type !== "talent") continue;
       const cat = resolveCategory(spec);
       const chooseKey = useCompositeChooseKey ? `${detail.name}:${cat}` : detail.name;
@@ -594,6 +631,7 @@ function resolveSource(
     baseTraits,
     leveledTraits,
     traitsByLevel,
+    spellcastingAbilityPick,
   };
 }
 
@@ -688,82 +726,103 @@ function resolveCasters(sources: ResolvedSource[], decl: CharacterDecl): Resolve
   for (const s of sources) bySource.set(s.source, s);
 
   const out: ResolvedCaster[] = [];
+  const claimed = new Set<string>();
+
+  // 1) Classes — one caster per class, subclass merges into its parent.
   for (const classEntry of decl.classes ?? []) {
     const classSrc = bySource.get(classEntry.name);
     if (!classSrc) continue;
     const caster = foldCasterFromSource(classSrc);
     if (!caster) continue;
+    claimed.add(classEntry.name);
     if (classEntry.subclass) {
       const subSrc = bySource.get(classEntry.subclass);
-      if (subSrc) mergeFragmentsInto(caster, subSrc);
+      if (subSrc) {
+        mergeFragmentsInto(caster, subSrc);
+        claimed.add(classEntry.subclass);
+      }
     }
     out.push(caster);
   }
-  // Lineages / heritages / backgrounds can carry a caster declaration too
-  // (a ritual-casting lineage, a heritage that grants innate spells, …).
-  // Walk any remaining sources that weren't already swept by the class
-  // loop above.
-  const claimed = new Set<string>();
-  for (const c of out) claimed.add(c.source);
-  for (const classEntry of decl.classes ?? []) {
-    if (classEntry.subclass) claimed.add(classEntry.subclass);
-  }
-  // Augmenting-only sources (background, heritage, lineage, or a source
-  // synthesised by `additional:`) can carry `spellcasting:` fragments that
-  // DON'T themselves declare a caster — e.g. a Ritualist talent picked via
-  // Adherent contributes `rituals_per_circle: 1` but no ability/type/tier.
-  // Merge those fragments into every class caster so the augmentation
-  // reaches the picker. A non-class source that DOES declare its own
-  // caster (ritual-casting lineage) still falls through to the loop below
-  // and emits a standalone ResolvedCaster.
-  for (const src of sources) {
-    if (claimed.has(src.source)) continue;
-    const declares = src.features.some(
-      (f) => f.spellcasting?.ability && f.spellcasting?.type && f.spellcasting?.tier,
-    );
-    if (declares) continue;
-    for (const caster of out) mergeFragmentsInto(caster, src);
-  }
+
+  // 2) Non-class sources that ASSERT their own caster — either via a full
+  //    `ability + type + tier` declaration or via a `choose: { type:
+  //    spellcasting, category: ability }` pick on one of their details.
+  //    Acolyte-style heritages land here. Per-source aggregation: each
+  //    qualifying source gets its own standalone caster.
   for (const src of sources) {
     if (claimed.has(src.source)) continue;
     const caster = foldCasterFromSource(src);
-    if (caster) out.push(caster);
+    if (caster) {
+      claimed.add(src.source);
+      out.push(caster);
+    }
   }
+
+  // 3) Remaining sources with bare augment fragments (e.g. a Ritualist
+  //    talent grafted onto an Adherent background) fold into every class
+  //    caster the character has, matching the pre-Phase-B behaviour. These
+  //    sources don't declare a new caster — they just contribute slot
+  //    counts or grants to existing ones.
+  for (const src of sources) {
+    if (claimed.has(src.source)) continue;
+    const hasFragment = src.features.some((f) => f.spellcasting);
+    if (!hasFragment) continue;
+    for (const classEntry of decl.classes ?? []) {
+      const classCaster = out.find((c) => c.source === classEntry.name);
+      if (classCaster) mergeFragmentsInto(classCaster, src);
+    }
+  }
+
   return out;
 }
 
 function foldCasterFromSource(src: ResolvedSource): ResolvedCaster | undefined {
   let caster: ResolvedCaster | undefined;
+  // A source gets its own standalone caster when EITHER:
+  //   (a) some spellcasting fragment declares ability + type + tier, OR
+  //   (b) the source declared a `choose: { type: spellcasting, category:
+  //       ability }` pick — even if the pick is still pending.
+  // This covers Acolyte-style heritages (b) without disturbing bare
+  // augment sources (e.g. Ritualist talents on a background) that just
+  // contribute slot counts to an existing class caster.
+  const hasChoosePick = src.spellcastingAbilityPick !== undefined;
   for (const f of src.features) {
     const frag = f.spellcasting;
     if (!frag) continue;
     if (!caster) {
-      // The first fragment that declares ability + type + tier establishes
-      // the caster. Subsequent fragments fold into it even if they also
-      // re-declare (the declaration wins, augmentations contribute).
-      if (frag.ability && frag.type && frag.tier) {
-        caster = {
-          source: src.source,
-          level: src.level ?? 0,
-          ability: frag.ability,
-          type: frag.type,
-          tier: frag.tier,
-          pool: frag.pool,
-          cantrip_pool: frag.cantrip_pool ?? frag.pool,
-          ritual_pool: frag.ritual_pool,
-          style: Array.isArray(frag.style) ? [...frag.style] : [],
-          prepared_max: frag.prepared_max,
-          cantrips: 0,
-          rituals: 0,
-          ritualsByLevel: {},
-          known: 0,
-          rituals_per_circle: 0,
-          granted: { prepared: {}, cantrips: {}, rituals: {} },
-          grantedBy: {},
-        };
-      } else {
-        continue;
-      }
+      const fullyDeclared = !!(frag.ability && frag.type && frag.tier);
+      if (!fullyDeclared && !hasChoosePick) continue;
+      // Auto-derive cantrip_pool / ritual_pool from the class's `pool:`
+      // magic when not explicitly declared. `pool: "[[Divine]]"` gives
+      // `cantrip_pool: "[[Divine-Cantrip]]"` and `ritual_pool:
+      // "[[Divine-Ritual]]"` — composite tags synthesised by the system
+      // config from each spell's `source × circle` combination.
+      const poolMagic = frag.pool ? stripWikilinkToName(frag.pool) : undefined;
+      const autoCantrip = poolMagic ? `[[${poolMagic}-Cantrip]]` : undefined;
+      const autoRitual = poolMagic ? `[[${poolMagic}-Ritual]]` : undefined;
+      caster = {
+        source: src.source,
+        level: src.level ?? 0,
+        // Declaration wins; otherwise use the choose-pick (empty string
+        // when pending — the caster still renders, just with a placeholder
+        // ability so the user sees the source exists).
+        ability: frag.ability ?? src.spellcastingAbilityPick ?? "",
+        type: frag.type ?? "known",
+        tier: frag.tier ?? "none",
+        pool: frag.pool,
+        cantrip_pool: frag.cantrip_pool ?? autoCantrip,
+        ritual_pool: frag.ritual_pool ?? autoRitual,
+        style: Array.isArray(frag.style) ? [...frag.style] : [],
+        prepared_max: frag.prepared_max,
+        cantrips: 0,
+        rituals: 0,
+        ritualsByLevel: {},
+        known: 0,
+        rituals_per_circle: 0,
+        granted: { prepared: {}, cantrips: {}, rituals: {} },
+        grantedBy: {},
+      };
     }
     // Grants on the class's own Spellcasting feature attribute back to
     // the declaring feature's name (e.g. `Spellcasting`). Falls back to

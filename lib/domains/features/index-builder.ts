@@ -1,6 +1,7 @@
 /**
- * Build the tag and folder indexes that back `#Tag` and `@folder/path`
- * expansion inside `choose.options` arrays on the character sheet.
+ * Build the tag and folder indexes that back `[[WikiLink]]` and
+ * `@folder/path` expansion inside `choose.options` arrays on the character
+ * sheet.
  *
  * Callers feed in every compendium item they want reachable by either kind
  * of reference — typically every document returned by `wiki.folder(path)`
@@ -67,10 +68,18 @@ export function buildCompendiumIndex(docs: IndexedDoc[]): CompendiumIndex {
 }
 
 /**
- * Expand `#Tag` and `@folder/path` references in a list of raw option
- * strings against the provided indexes. Literal strings (wikilinks or plain
- * text) pass through untouched; references are replaced by the concrete
- * wikilinks they point at, deduplicated in authored order.
+ * Expand `[[WikiLink]]` and `@folder/path` references in a list of raw
+ * option strings against the provided indexes.
+ *
+ * - `@folder/path` → looks up `folderIndex`; on miss, progressively strips
+ *   leading segments to find a registered folder suffix.
+ * - `[[Name]]` or `[[path|alias]]` → if the bare target name matches a key
+ *   in `tagIndex`, expands to that tagged set. Otherwise passes through
+ *   untouched (so literal references like `[[Insight]]` to a specific note
+ *   stay intact).
+ * - Anything else → passthrough.
+ *
+ * Results are deduplicated in authored order.
  */
 export function expandOptionRefs(
   options: string[],
@@ -85,10 +94,7 @@ export function expandOptionRefs(
     if (!trimmed) continue;
 
     let expanded: string[] | null = null;
-    if (trimmed.startsWith("#")) {
-      const tag = trimmed.slice(1);
-      expanded = tagIndex?.[tag] ?? [];
-    } else if (trimmed.startsWith("@")) {
+    if (trimmed.startsWith("@")) {
       const path = trimmed.slice(1).replace(/\/+$/, "");
       expanded = folderIndex?.[path] ?? [];
       // Fallback: progressively strip leading segments until we find a
@@ -106,6 +112,21 @@ export function expandOptionRefs(
             break;
           }
         }
+      }
+    } else {
+      const wikilinkMatch = /^\[\[(.+?)\]\]$/.exec(trimmed);
+      if (wikilinkMatch) {
+        // Strip path prefix and alias to get the bare target name, matching
+        // how Obsidian resolves wikilinks. `[[foo/Divine|Div]]` → `Divine`.
+        const inner = wikilinkMatch[1];
+        const target = inner.split("|")[0];
+        const name = target.split("/").pop()!.trim();
+        const tagged = tagIndex?.[name];
+        if (tagged && tagged.length > 0) {
+          expanded = tagged;
+        }
+        // else: passthrough as a literal wikilink (e.g. `[[Insight]]` that
+        // refers to a specific note, not a tag group).
       }
     }
 

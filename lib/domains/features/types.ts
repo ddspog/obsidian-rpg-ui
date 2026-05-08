@@ -34,10 +34,12 @@ export type TraitMap = Record<string, TraitValue>;
  * default) to the chosen value.
  */
 export interface ChooseSpec {
-  type: "traits" | "asi" | "talent";
+  type: "traits" | "asi" | "talent" | "spellcasting";
   /** Trait bucket picks contribute to. Required for `traits`; optional for
-   *  `asi` (defaults to "Ability Scores" for display purposes) and for
-   *  `talent` (defaults to "Talent"). */
+   *  `asi` (defaults to "Ability Scores" for display purposes), for
+   *  `talent` (defaults to "Talent"), and for `spellcasting` (must be
+   *  `"ability"` — the picked value drives the caster's save DC / attack
+   *  modifier / prepared count expression). */
   category?: string;
   number: number;
   /** Points added per pick. `asi` only; defaults to 1. Ignored by `traits`. */
@@ -109,6 +111,10 @@ export interface FeatureAspect {
   /** Inline cooldown within a single turn ("once per turn", "once per round"). */
   recharge?: string;
 }
+
+// Re-export the attack aspect types so downstream modules can import
+// `AttackAspect` from the same surface as the other feature types.
+export type { AttackAspect, DamageSpec, AttackSave } from "./attack";
 
 export interface FeatureDetails {
   name: string;
@@ -184,6 +190,14 @@ export interface FeatureDetails {
   passive?: FeatureAspect;
   resource?: FeatureAspect;
   /**
+   * Attack aspect — describes a melee / ranged / spell / save attack
+   * this feature grants. Surfaced by `rpg character.attacks` as a row
+   * in the attacks table; NOT routed into the features accordion's
+   * aspect buckets (Action / Bonus / …) because attacks have their own
+   * renderer and picker.
+   */
+  attack?: import("./attack").AttackAspect;
+  /**
    * Spellcasting configuration. Set on a feature to declare a caster
    * (on the Spellcasting feature itself) or to augment one (feature.level
    * blocks adding slots, subclass grants, talents). The shape is the same
@@ -250,8 +264,10 @@ export interface SpellcastingFragment {
   type?: "prepared" | "known";
   /** Slot-progression tier. `full` gets the full 9-circle table, `half`
    *  the half-caster 5-circle table, `third` the third-caster 4-circle
-   *  (Eldritch Knight / Arcane Trickster style). */
-  tier?: "full" | "half" | "third";
+   *  (Eldritch Knight / Arcane Trickster style). `none` means the source
+   *  grants cantrips / rituals without any leveled spell slot progression
+   *  (Acolyte heritage, High-Elf-style cantrip grants, …). */
+  tier?: "full" | "half" | "third" | "none";
   /** Spell-list source — tag (`#Divine`) or folder (`@compendium/spells/cleric`). */
   pool?: string;
   /** Optional separate pool for cantrip picks when the caster's class
@@ -311,11 +327,14 @@ export interface ResolvedCaster {
   source: string;
   /** Character's level in that source — drives slot row lookup. */
   level: number;
-  /** Ability score used for save DC / attack rolls / prepared count. */
+  /** Ability score used for save DC / attack rolls / prepared count.
+   *  Empty string means the source declared a caster via a spellcasting
+   *  `choose: category: ability` pick that the user hasn't made yet. */
   ability: string;
   /** Prepared vs known, drives the picker UX. */
   type: "prepared" | "known";
-  tier: "full" | "half" | "third";
+  /** Slot progression. `none` = cantrips / rituals only, no leveled table. */
+  tier: "full" | "half" | "third" | "none";
   /** Spell-list source (tag or folder) used to expand pickable options. */
   pool?: string;
   /** Resolved cantrip pool (falls back to `pool` when the caster didn't
@@ -464,7 +483,9 @@ export interface CompendiumLib {
   /**
    * Flat lookup: tag name → list of `"[[Item]]"` wikilinks, built at load
    * time from every compendium item's frontmatter `tags:`. Used to expand
-   * `"#Tag"` references inside inline `choose.options` arrays.
+   * `"[[Tag]]"` references inside inline `choose.options` arrays — when a
+   * wikilink's bare target matches a key here, it expands to the tagged
+   * set; otherwise it passes through as a literal.
    */
   tagIndex?: Record<string, string[]>;
   /**
@@ -513,6 +534,15 @@ export interface ResolvedSource {
    * per class level (skipping empty ones) rather than one long rules line.
    */
   traitsByLevel: Record<number, Record<string, string[]>>;
+  /**
+   * Set when a detail on this source declared `choose: { type:
+   * "spellcasting", category: "ability" }`. The field records the user's
+   * pick (CHA / INT / WIS / …) or the empty string when the pick is
+   * still pending. Its presence tells `resolveCasters` this source wants
+   * its own standalone caster even without an explicit `ability/type/tier`
+   * declaration on any `spellcasting:` fragment.
+   */
+  spellcastingAbilityPick?: string;
 }
 
 /**

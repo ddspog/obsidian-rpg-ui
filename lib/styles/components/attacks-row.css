@@ -1,52 +1,82 @@
 /* ── Attacks Row (inset table between skills & proficiencies) ─────────────── */
 
-section[aria-label="Favorite Attacks"] {
+section[aria-details="Favorite Attacks"] {
   position: relative;
-  padding: 0 12px;
+  padding: 0;
   margin-inline: 16px;
+  margin-block: 0;
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-right: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
-  overflow: hidden;
+  /* Section stays overflow-visible so icon tooltips can escape upward
+   * without being clipped. The inner `.rpg-attacks__scroll` wrapper owns
+   * the horizontal scroll instead. */
+  overflow: visible;
   background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* Obsidian's reading view wraps each rendered block in its own
+ * `<div class="el-…">` which carries a default `--p-spacing` top
+ * margin, producing a visible gap between sibling blocks. Zero the
+ * wrapper's top AND bottom margin when it hosts an attacks section so
+ * the ribbon docks flush against both the skills block above and the
+ * proficiencies block below — the block's own borders + the thead
+ * band still provide the frame. */
+div:has(> section[aria-details="Favorite Attacks"]) {
+  margin-block: 0 !important;
+}
+
+/* Horizontal scroll wrapper — `overflow-x: auto` would force the
+ * browser to clip the vertical axis too (spec: if one axis is
+ * non-visible, the other becomes auto), which hides the last table
+ * row whenever the parent doesn't have enough intrinsic height. Leave
+ * the wrapper as plain `overflow: visible` so every row stays visible;
+ * hover-expanded effects cells now simply overflow the section
+ * normally, which is acceptable for a small-row table. */
+section[aria-details="Favorite Attacks"] .rpg-attacks__scroll {
+  overflow: visible;
+}
+
+/* Restore left padding on body cells so text doesn't hug the section
+ * edge even though the thead band extends full-width. */
+section[aria-details="Favorite Attacks"] tbody td {
+  padding: 3px 8px;
+}
+
 /* ── Merge: skills → attacks → proficiencies ──────────────────────────── */
 
-/* Direct siblings (Storybook) */
-section[aria-label="Character Skills"]:has(+ section[aria-label="Favorite Attacks"]) {
+section[aria-details="Character Skills"]:has(+ section[aria-details="Favorite Attacks"]) {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
 }
 
-section[aria-label="Character Skills"] + section[aria-label="Favorite Attacks"] {
+section[aria-details="Character Skills"] + section[aria-details="Favorite Attacks"] {
   margin-block-start: 0;
 }
 
-section[aria-label="Favorite Attacks"]:has(+ section[aria-label="Character Proficiencies"]) {
+section[aria-details="Favorite Attacks"]:has(+ section[aria-details="Character Proficiencies"]) {
   margin-block-end: 0;
 }
 
-section[aria-label="Favorite Attacks"] + section[aria-label="Character Proficiencies"] {
+section[aria-details="Favorite Attacks"] + section[aria-details="Character Proficiencies"] {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   border-top: none;
 }
 
-/* Through wrapper divs (Obsidian) */
-div:has(> section[aria-label="Character Skills"]):has(+ div > section[aria-label="Favorite Attacks"]) > section[aria-label="Character Skills"] {
+div:has(> section[aria-details="Character Skills"]):has(+ div > section[aria-details="Favorite Attacks"]) > section[aria-details="Character Skills"] {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
 }
 
-div:has(> section[aria-label="Favorite Attacks"]):has(+ div > section[aria-label="Character Proficiencies"]) > section[aria-label="Favorite Attacks"] {
+div:has(> section[aria-details="Favorite Attacks"]):has(+ div > section[aria-details="Character Proficiencies"]) > section[aria-details="Favorite Attacks"] {
   margin-block-end: 0;
 }
 
-div:has(> section[aria-label="Favorite Attacks"]) + div > section[aria-label="Character Proficiencies"] {
+div:has(> section[aria-details="Favorite Attacks"]) + div > section[aria-details="Character Proficiencies"] {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   border-top: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
@@ -54,10 +84,10 @@ div:has(> section[aria-label="Favorite Attacks"]) + div > section[aria-label="Ch
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
-section[aria-label="Favorite Attacks"] > header {
+section[aria-details="Favorite Attacks"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  margin: 0 -12px;
+  margin: 0 -12px 0;
   font-size: 0.85em;
   font-weight: 700;
   text-transform: uppercase;
@@ -65,82 +95,231 @@ section[aria-label="Favorite Attacks"] > header {
   color: var(--rpg-attacks-header, light-dark(#6a4e2a, #d4a840));
 }
 
-section[aria-label="Favorite Attacks"] > header > span {
+/* Collapse the tag-heading's default 4px top/bottom padding so the
+ * header sits tighter against the table below. */
+section[aria-details="Favorite Attacks"] > header > span {
   clip-path: none;
-  padding: 2px 12px;
+  padding: 1px 12px;
 }
 
 /* ── Table ──────────────────────────────────────────────────────────────── */
 
-section[aria-label="Favorite Attacks"] table {
+section[aria-details="Favorite Attacks"] table {
   width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
+  border: none !important;
+  font-size: 0.72em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Header row ────────────────────────────────────────────────────────── */
+/* Lock the first six columns to their content size so they never shift
+ * when the Effects cell grows on hover. The Effects column (7th) is the
+ * only one allowed to expand — it absorbs the italicised note-text when
+ * revealed and the horizontal scroll on the section handles any overflow. */
+section[aria-details="Favorite Attacks"] thead th:not(:last-child),
+section[aria-details="Favorite Attacks"] tbody td:not(:last-child) {
+  width: 1%;
+  white-space: nowrap;
+}
+section[aria-details="Favorite Attacks"] thead th:last-child,
+section[aria-details="Favorite Attacks"] tbody td:last-child {
+  width: auto;
+  white-space: nowrap;
+}
 
-section[aria-label="Favorite Attacks"] thead th {
-  font-size: 0.7em;
+/* Head band — one continuous strip spanning the full table width,
+ * mirroring the Proficiencies block's `> header` band. All column
+ * labels (Attacks / Hit / DC / Range / Damage / Effects) sit inside
+ * this band with a shared background tint + accent colour; no chamfer
+ * since the band reads as a section ribbon, not a clipped tag. */
+section[aria-details="Favorite Attacks"] thead.rpg-attacks__head-band {
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.22));
+}
+
+section[aria-details="Favorite Attacks"] thead th {
+  font-size: 0.9em !important;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: light-dark(#6a4e2a, #d4a840);
+  color: var(--rpg-attacks-header, light-dark(#6a4e2a, #d4a840));
   text-align: left;
-  padding: 6px 6px 4px;
-  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  padding: 2px 8px 2px;
+  border: none !important;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.22)) !important;
+  white-space: nowrap;
+  background: transparent !important;
 }
 
-/* ── Body rows ─────────────────────────────────────────────────────────── */
-
-section[aria-label="Favorite Attacks"] tbody tr + tr > td {
-  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+/* The "Attacks" label acts as the section's nameplate — slightly
+ * heavier letter-spacing to lean into its ribbon role. */
+section[aria-details="Favorite Attacks"] thead th.rpg-attacks__head-label {
+  letter-spacing: 0.1em;
 }
 
-section[aria-label="Favorite Attacks"] tbody td {
-  padding: 6px;
-  font-size: 0.9em;
+section[aria-details="Favorite Attacks"] tbody td {
+  padding: 3px 6px;
+  /* Force font-size at the cell level — theme-injected `td { font-size:
+   * var(--font-text-size); }` rules out-specificity any inherited size
+   * declared on the wrapping `table`. */
+  font-size: 0.97em !important;
   color: light-dark(#1a1208, #e3dcce);
-  vertical-align: baseline;
+  vertical-align: middle;
+  white-space: nowrap;
+  line-height: 1.25;
+  border: none !important;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.07)) !important;
+  background: transparent !important;
 }
 
-/* ── Column-specific styles ────────────────────────────────────────────── */
+section[aria-details="Favorite Attacks"] tbody tr:last-child td {
+  border-bottom: none !important;
+}
 
-section[aria-label="Favorite Attacks"] th[aria-label="Icon"],
-section[aria-label="Favorite Attacks"] .rpg-attack-icon {
-  width: 24px;
-  padding: 4px 2px;
+section[aria-details="Favorite Attacks"] tbody tr:hover > td {
+  background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.04)) !important;
+}
+
+section[aria-details="Favorite Attacks"] tbody tr[data-available="false"] {
+  opacity: 0.4;
+}
+
+section[aria-details="Favorite Attacks"] tbody tr[data-available="false"] td.rpg-attacks__name a {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* ── Cells ──────────────────────────────────────────────────────────────── */
+
+/* Inline form icon — sits just before the attack name in the merged
+ * first column. Mirrors the old standalone form-cell's gold accent. */
+section[aria-details="Favorite Attacks"] .rpg-attacks__form-icon {
+  display: inline-block;
+  width: 1.1em;
+  margin-right: 4px;
   text-align: center;
-  color: light-dark(#8a7a5a, #a09880);
+  color: light-dark(#6a4e2a, #d4a840);
+  font-size: 1.05em;
+  line-height: 1;
+  user-select: none;
 }
 
-section[aria-label="Favorite Attacks"] .rpg-attack-icon svg {
-  display: block;
-  opacity: 0.6;
-}
-
-section[aria-label="Favorite Attacks"] .rpg-attack-name {
+section[aria-details="Favorite Attacks"] .rpg-attacks__name {
   font-weight: 700;
-  white-space: nowrap;
 }
 
-section[aria-label="Favorite Attacks"] .rpg-attack-hit {
+section[aria-details="Favorite Attacks"] .rpg-attacks__name a.internal-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__name a.internal-link:hover {
+  text-decoration: underline;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__hit,
+section[aria-details="Favorite Attacks"] .rpg-attacks__dc {
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  color: light-dark(#1a1208, #f0e8d0);
+  /* Hit/DC are short tokens that read fine at a tighter size — keeps
+   * the table compact and lets longer columns (Name / Damage / Range)
+   * dominate the row width. */
+  font-size: 0.75em !important;
 }
 
-section[aria-label="Favorite Attacks"] .rpg-attack-range {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+section[aria-details="Favorite Attacks"] .rpg-attacks__range {
   color: light-dark(#5a5040, #a09880);
 }
 
-section[aria-label="Favorite Attacks"] .rpg-attack-damage {
+section[aria-details="Favorite Attacks"] .rpg-attacks__damage-roll {
   font-weight: 600;
-  white-space: nowrap;
 }
 
-section[aria-label="Favorite Attacks"] .rpg-attack-notes {
-  color: light-dark(#5a5040, #a09880);
-  font-size: 0.85em;
+section[aria-details="Favorite Attacks"] .rpg-attacks__damage-type {
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: 2px;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__damage-sep {
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__effects {
+  color: var(--text-muted);
+  font-size: 0.95em;
+}
+
+/* Effect glyphs — small uniform pill of colour with a tooltip on hover. */
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon {
+  position: relative;
+  display: inline-block;
+  min-width: 1.1em;
+  padding: 0 3px;
+  margin-right: 3px;
+  text-align: center;
+  font-weight: 600;
+  border-radius: 3px;
+  background: light-dark(rgba(106, 78, 42, 0.12), rgba(212, 168, 64, 0.18));
+  color: light-dark(#6a4e2a, #d4a840);
+  cursor: help;
+  user-select: none;
+}
+
+/* Custom tooltip — CSS-driven so the reveal is instant instead of
+ * waiting on the browser's native `title` delay (~1s). The overlay
+ * floats above the icon on hover / focus and fades in over 80ms. */
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  background: light-dark(#1a1208, #f0e8d0);
+  color: light-dark(#f0e8d0, #1a1208);
+  border-radius: 3px;
+  font-size: 0.95em;
+  font-weight: 500;
+  font-style: normal;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  z-index: 20;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon[data-tip]:hover::after,
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon[data-tip]:focus-visible::after {
+  opacity: 1;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon--save-half {
+  background: light-dark(rgba(220, 165, 50, 0.25), rgba(220, 165, 50, 0.28));
+}
+section[aria-details="Favorite Attacks"] .rpg-attacks__icon--save-none {
+  background: light-dark(rgba(120, 180, 120, 0.25), rgba(120, 180, 120, 0.28));
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__notes-text {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-style: italic;
+  /* Single-line reveal so the Effects cell grows sideways (not down) —
+   * the section's horizontal scroll handles the overflow. */
+  white-space: nowrap;
+  display: none;
+}
+
+section[aria-details="Favorite Attacks"] tbody tr:hover .rpg-attacks__notes-text,
+section[aria-details="Favorite Attacks"] tbody tr:focus-within .rpg-attacks__notes-text {
+  display: inline;
+}
+
+section[aria-details="Favorite Attacks"] .rpg-attacks__empty {
+  color: var(--text-muted);
+  padding: 0.5rem 6px;
+  margin: 0;
 }

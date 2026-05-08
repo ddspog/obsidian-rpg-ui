@@ -685,6 +685,276 @@ describe("resolveFeatures: `asi` choose type", () => {
   });
 });
 
+// ─── Spellcasting pool auto-derivation ───────────────────────────────────────
+
+describe("resolveFeatures: spellcasting pool auto-derivation", () => {
+  const divineCleric: SourceDoc = {
+    name: "Cleric",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Spellcasting",
+        level: 1,
+        spellcasting: {
+          ability: "WIS",
+          type: "prepared",
+          tier: "full",
+          pool: "[[Divine]]",
+        },
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+
+  const clericWithOverrides: SourceDoc = {
+    ...divineCleric,
+    name: "ClericOverrides",
+    details: [
+      {
+        name: "Spellcasting",
+        level: 1,
+        spellcasting: {
+          ability: "WIS",
+          type: "prepared",
+          tier: "full",
+          pool: "[[Divine]]",
+          cantrip_pool: "@worldbuilding/spells/cantrips",
+          ritual_pool: "[[Custom-Ritual-Tag]]",
+        },
+      },
+    ],
+  };
+
+  const lib: CompendiumLib = {
+    classes: { Cleric: divineCleric, ClericOverrides: clericWithOverrides },
+    subclasses: {},
+    lineages: {},
+    heritages: {},
+    backgrounds: {},
+  };
+
+  it("derives `[[Magic-Cantrip]]` and `[[Magic-Ritual]]` from pool when omitted", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "Cleric", level: 5 }] },
+      lib,
+    );
+    expect(view.casters).toHaveLength(1);
+    const caster = view.casters[0];
+    expect(caster.pool).toBe("[[Divine]]");
+    expect(caster.cantrip_pool).toBe("[[Divine-Cantrip]]");
+    expect(caster.ritual_pool).toBe("[[Divine-Ritual]]");
+  });
+
+  it("preserves explicit cantrip_pool / ritual_pool overrides", () => {
+    const view = resolveFeatures(
+      { classes: [{ name: "ClericOverrides", level: 5 }] },
+      lib,
+    );
+    const caster = view.casters[0];
+    expect(caster.cantrip_pool).toBe("@worldbuilding/spells/cantrips");
+    expect(caster.ritual_pool).toBe("[[Custom-Ritual-Tag]]");
+  });
+
+  it("strips wikilink path/alias when deriving the magic stem", () => {
+    const aliased: SourceDoc = {
+      ...divineCleric,
+      name: "AliasedCleric",
+      details: [
+        {
+          name: "Spellcasting",
+          level: 1,
+          spellcasting: {
+            ability: "WIS",
+            type: "prepared",
+            tier: "full",
+            pool: "[[path/to/Divine|Divine magic]]",
+          },
+        },
+      ],
+    };
+    const view = resolveFeatures(
+      { classes: [{ name: "AliasedCleric", level: 5 }] },
+      { ...lib, classes: { ...lib.classes, AliasedCleric: aliased } },
+    );
+    const caster = view.casters[0];
+    expect(caster.cantrip_pool).toBe("[[Divine-Cantrip]]");
+    expect(caster.ritual_pool).toBe("[[Divine-Ritual]]");
+  });
+});
+
+// ─── Per-source aggregation (Phase B) ───────────────────────────────────────
+
+describe("resolveFeatures: per-source caster aggregation", () => {
+  const cleric: SourceDoc = {
+    name: "Cleric",
+    kind: "class",
+    meta: {},
+    details: [
+      {
+        name: "Spellcasting",
+        level: 1,
+        spellcasting: {
+          ability: "WIS",
+          type: "prepared",
+          tier: "full",
+          pool: "[[Divine]]",
+        },
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+
+  const acolyte: SourceDoc = {
+    name: "Acolyte",
+    kind: "heritage",
+    meta: {},
+    details: [
+      {
+        name: "Acolyte Features",
+        spellcasting: {
+          cantrips: 1,
+          pool: "[[Arcane]]",
+        },
+        choose: [
+          {
+            type: "traits",
+            category: "Languages",
+            number: 2,
+            options: ["[[Elvish]]", "[[Dwarvish]]", "[[Draconic]]"],
+          },
+          {
+            type: "spellcasting",
+            category: "ability",
+            number: 1,
+            options: ["CHA", "INT", "WIS"],
+          },
+        ],
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+
+  const ritualistTalent: SourceDoc = {
+    name: "Ritualist",
+    kind: "talent",
+    meta: {},
+    details: [
+      {
+        name: "Ritualist",
+        spellcasting: { rituals_per_circle: 1 },
+      },
+    ],
+    options: [],
+    unlocks: [],
+    tables: [],
+  };
+
+  const lib: CompendiumLib = {
+    classes: { Cleric: cleric },
+    subclasses: {},
+    lineages: {},
+    heritages: { Acolyte: acolyte },
+    backgrounds: {},
+    talents: { Ritualist: ritualistTalent },
+  };
+
+  it("Acolyte heritage becomes its own caster even without ability/type/tier", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Cleric", level: 5 }],
+        heritage: "Acolyte",
+      },
+      lib,
+    );
+    expect(view.casters).toHaveLength(2);
+    const [cl, ac] = view.casters;
+    expect(cl.source).toBe("Cleric");
+    expect(cl.ability).toBe("WIS");
+    expect(cl.tier).toBe("full");
+    expect(cl.cantrips).toBe(0); // Acolyte no longer bleeds into Cleric
+    expect(ac.source).toBe("Acolyte");
+    expect(ac.ability).toBe(""); // pending — user hasn't picked
+    expect(ac.tier).toBe("none"); // defaulted
+    expect(ac.type).toBe("known"); // defaulted
+    expect(ac.cantrips).toBe(1);
+    expect(ac.cantrip_pool).toBe("[[Arcane-Cantrip]]");
+    expect(ac.ritual_pool).toBe("[[Arcane-Ritual]]");
+  });
+
+  it("Acolyte's ability pick populates the caster's ability", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Cleric", level: 5 }],
+        heritage: "Acolyte",
+        choices: {
+          Acolyte: { "Acolyte Features:ability": "INT" },
+        },
+      } as any,
+      lib,
+    );
+    const acolyteCaster = view.casters.find((c) => c.source === "Acolyte")!;
+    expect(acolyteCaster.ability).toBe("INT");
+  });
+
+  it("emits a pendingChoice for an unresolved spellcasting ability pick", () => {
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Cleric", level: 5 }],
+        heritage: "Acolyte",
+      },
+      lib,
+    );
+    const pending = view.pendingChoices.find(
+      (p) => p.source === "Acolyte" && p.feature.choose &&
+        (Array.isArray(p.feature.choose) ? p.feature.choose : [p.feature.choose])
+          .some((c) => c?.type === "spellcasting"),
+    );
+    expect(pending).toBeDefined();
+    expect(pending!.options.map((o) => o.name)).toEqual(["CHA", "INT", "WIS"]);
+    expect(pending!.remaining).toBe(1);
+  });
+
+  it("a pure-augment source (e.g. Ritualist talent picked via background) still merges into class casters", () => {
+    // Simulate a background source that pulls in the Ritualist talent.
+    const adherent: SourceDoc = {
+      name: "Adherent",
+      kind: "background",
+      meta: {},
+      details: [
+        {
+          name: "Ritualist Grant",
+          spellcasting: { rituals_per_circle: 1 },
+        },
+      ],
+      options: [],
+      unlocks: [],
+      tables: [],
+    };
+    const libWithAdherent: CompendiumLib = {
+      ...lib,
+      backgrounds: { Adherent: adherent },
+    };
+    const view = resolveFeatures(
+      {
+        classes: [{ name: "Cleric", level: 5 }],
+        background: "Adherent",
+      },
+      libWithAdherent,
+    );
+    // Only one caster — the Adherent source augments the Cleric caster.
+    expect(view.casters).toHaveLength(1);
+    expect(view.casters[0].source).toBe("Cleric");
+    expect(view.casters[0].rituals_per_circle).toBe(1);
+  });
+});
+
 // ─── feature.level augmentations ─────────────────────────────────────────────
 
 describe("resolveFeatures: feature.level (per-level additions)", () => {
@@ -796,9 +1066,9 @@ describe("resolveFeatures: tables", () => {
   });
 });
 
-// ─── Tag / folder reference expansion in choose.options ─────────────────────
+// ─── Wikilink / folder reference expansion in choose.options ────────────────
 
-describe("resolveFeatures: #Tag / @folder expansion in choose.options", () => {
+describe("resolveFeatures: [[WikiLink]] / @folder expansion in choose.options", () => {
   const fighter: SourceDoc = {
     name: "Fighter",
     kind: "class",
@@ -811,7 +1081,7 @@ describe("resolveFeatures: #Tag / @folder expansion in choose.options", () => {
           type: "traits",
           category: "Weapons",
           number: 1,
-          options: ["#Martial", "@compendium/weapons/simple", "[[Shield]]"],
+          options: ["[[Martial]]", "@compendium/weapons/simple", "[[Shield]]"],
         },
       },
     ],
@@ -834,7 +1104,7 @@ describe("resolveFeatures: #Tag / @folder expansion in choose.options", () => {
     },
   };
 
-  it("expands #Tag refs and @folder refs to concrete wikilinks, preserves literals", () => {
+  it("expands [[Tag]] refs and @folder refs to concrete wikilinks, preserves literals", () => {
     const view = resolveFeatures({ classes: [{ name: "Fighter", level: 1 }] }, lib);
     const pending = view.pendingChoices.find((p) => p.feature.name === "Weapon Mastery");
     expect(pending).toBeDefined();
@@ -842,13 +1112,13 @@ describe("resolveFeatures: #Tag / @folder expansion in choose.options", () => {
     expect(names).toEqual(["[[Warhammer]]", "[[Longsword]]", "[[Dagger]]", "[[Club]]", "[[Shield]]"]);
   });
 
-  it("leaves literal options untouched when no indexes are provided", () => {
+  it("passes wikilinks through as literals when the tag isn't indexed", () => {
     const libNoIdx: CompendiumLib = { ...lib, tagIndex: undefined, folderIndex: undefined };
     const view = resolveFeatures({ classes: [{ name: "Fighter", level: 1 }] }, libNoIdx);
     const pending = view.pendingChoices.find((p) => p.feature.name === "Weapon Mastery");
     expect(pending).toBeDefined();
     const names = pending!.options.map((o) => o.name);
-    // Unknown refs collapse to [] so only the literal survives.
-    expect(names).toEqual(["[[Shield]]"]);
+    // Wikilinks pass through as literals; @-refs with no folder index collapse.
+    expect(names).toEqual(["[[Martial]]", "[[Shield]]"]);
   });
 });

@@ -6,7 +6,7 @@
  * <details>/<summary> — starts collapsed, hides when empty.
  */
 
-section[aria-label="Character Features"] {
+section[aria-details="Character Features"] {
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   border-top: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   background: transparent;
@@ -19,7 +19,7 @@ section[aria-label="Character Features"] {
 
 /* No pending compartment → the accordion's own 6px bottom roller is the
  * closure, and a 2px hairline cap mirrors the section's top border. */
-section[aria-label="Character Features"]:not(:has(.rpg-feature-pending-list)) {
+section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) {
   border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
 }
 
@@ -174,6 +174,58 @@ section[aria-label="Character Features"]:not(:has(.rpg-feature-pending-list)) {
   margin: 0;
 }
 
+/* Each trivial is a span so the restore button can sit adjacent to its
+ * own link. Markdown renders `[[Name]]` → an internal-link anchor inside
+ * a `<p>`; we null-out the paragraph margins so inline flow works. */
+.rpg-feature-bucket-trivial {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.rpg-feature-bucket-trivial > .markdown-rendered,
+.rpg-feature-bucket-trivial > div {
+  display: inline;
+}
+
+.rpg-feature-bucket-trivial > div > p,
+.rpg-feature-bucket-trivial > p {
+  display: inline;
+  margin: 0;
+}
+
+.rpg-feature-bucket-trivial-sep {
+  margin: 0 2px;
+  opacity: 0.55;
+}
+
+.rpg-feature-bucket-trivial-restore {
+  appearance: none;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 2px;
+  margin-left: 1px;
+  font-size: 0.85em;
+  cursor: pointer;
+  color: light-dark(#8a6f3a, #d4a840);
+  opacity: 0.55;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.rpg-feature-bucket-trivial-restore:hover,
+.rpg-feature-bucket-trivial-restore:focus-visible {
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.rpg-feature-bucket-trivial-restore:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
 .rpg-feature-bucket-trivials a.internal-link {
   color: light-dark(#2ea043, #7ad188);
   text-decoration: none;
@@ -222,6 +274,41 @@ section[aria-label="Character Features"]:not(:has(.rpg-feature-pending-list)) {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
+}
+
+/* Collapse arrow — pushed to the right edge of the card title row so it
+ * doesn't compete with the feature name or usage dots. Shows on hover to
+ * stay out of the way when the user is reading. */
+.rpg-feature-bucket-entry-collapse {
+  margin-left: auto;
+  appearance: none;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 4px;
+  font-size: 0.95em;
+  line-height: 1;
+  cursor: pointer;
+  color: light-dark(#8a6f3a, #d4a840);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.rpg-feature-bucket-entry-collapse:hover,
+.rpg-feature-bucket-entry-collapse:focus-visible {
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.rpg-feature-bucket-entry:hover .rpg-feature-bucket-entry-collapse,
+.rpg-feature-bucket-entry-collapse:focus-visible {
+  opacity: 0.65;
+}
+
+.rpg-feature-bucket-entry-collapse:hover {
+  opacity: 1;
 }
 
 /* Extra breathing room between the usage dots and whatever recharge /

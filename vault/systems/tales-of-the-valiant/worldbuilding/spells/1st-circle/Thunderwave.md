@@ -26,6 +26,16 @@ text: |-
 
   **_At Higher Circles._** When you cast this spell using a spell slot of 2nd circle or higher, the damage increases by 1d8 for each slot above 1st.
 image: "![[thunderwave.webp|384]]"
+attack:
+  form: save
+  range: Self (15-ft cube)
+  save:
+    ability: CON
+    on_success: "half damage"
+  damage:
+    roll: 2d8
+    type: thunder
+  notes: pushes foes 10 ft on fail
 ```
 
 

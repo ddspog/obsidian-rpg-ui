@@ -34,6 +34,21 @@ export type FeaturesBlockData = {
     boons?: ExtraRef[];
     curses?: ExtraRef[];
   };
+  /**
+   * User-trivialised feature aspects, keyed by source → feature name →
+   * list of *aspect keys*. An aspect key identifies one specific instance
+   * of an aspect on a feature and has the form `<bucket>:<aspectId>`
+   * where `aspectId` is the aspect's `name:` if set, otherwise its index
+   * within that bucket on the feature (0-based).
+   *
+   * Per-aspect-instance granularity means a feature like "Elf Lineage
+   * Traits" with two distinct passive aspects can have one collapsed and
+   * the other left expanded. A bare bucket id without colon (e.g.
+   * `"passive"`) is still accepted for backwards compatibility with the
+   * earlier "collapse all aspects in this bucket" shape — it matches
+   * every aspect in that bucket on the feature.
+   */
+  trivialized?: Record<string, Record<string, string[]>>;
 };
 
 /** Shorthand `"[[Name]]"` or a fully-specified `{ ref, source?, level? }`. */

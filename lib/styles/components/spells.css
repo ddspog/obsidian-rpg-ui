@@ -9,7 +9,7 @@
  * stacks several scrolls vertically.
  */
 
-section[aria-label="Character Spells"] {
+section[aria-details="Character Spells"] {
   container-type: inline-size;
   display: flex;
   flex-direction: column;
@@ -21,14 +21,14 @@ section[aria-label="Character Spells"] {
 
 /* No pending compartment → keep the matching bottom hairline cap. Present
  * → the compartment below supplies its own bottom border. */
-section[aria-label="Character Spells"]:not(:has(.rpg-feature-pending-list)) {
+section[aria-details="Character Spells"]:not(:has(.rpg-feature-pending-list)) {
   border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
 }
 
 /* The pending compartment inside a Spells section glues to the last
  * caster's bottom roller — close the flex gap just for this element so
  * multi-caster stacks still keep their 14px separation above. */
-section[aria-label="Character Spells"] > .rpg-feature-pending-list {
+section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   margin-top: -14px;
 }
 

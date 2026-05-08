@@ -4,7 +4,9 @@ source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 .metadata: 
 cssclasses:
   - simple-dataview-lists
+  - note-feature
 ---
+# Divine
 ![[07. Spellcasting#^d4d209|clean]]
 ## Spell List
 These spells are available to casters who draw power from the Divine source. 

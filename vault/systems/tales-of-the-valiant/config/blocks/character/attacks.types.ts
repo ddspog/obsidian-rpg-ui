@@ -1,27 +1,39 @@
 /**
- * Types for the Attacks block, defining the structure of each attack's details.
+ * Types for the Attacks block.
+ *
+ * The block aggregates attacks from four sources at render time:
+ *   1. Equipped weapons from the sibling `rpg character.inventory`
+ *      block, auto-derived via `deriveWeaponAttacks()` (handles
+ *      Versatile / Thrown / Two-Handed property fan-out).
+ *   2. Spells whose `rpg spell` body declares an `attack:` aspect.
+ *   3. Features (class / heritage / item-granted) with an `attack:`
+ *      aspect on their `rpg feature.details` block.
+ *   4. Manual entries authored directly on this block's `attacks:`
+ *      YAML for homebrew / one-off attacks.
  */
+
+/** Legacy manual-entry shape — still accepted on `self.attacks`. */
 export type AttackEntry = {
-  /** Display name of the attack */
   name?: string;
-  /** Alternate display label */
   label?: string;
-  /** Attack bonus (positive or negative number) */
-  to_hit?: number;
-  /** Range (e.g. "5 ft.", "30/120 ft.") */
+  /** Attack bonus — scalar number OR a pre-rendered string (`"+5 (STR)"`). */
+  to_hit?: number | string;
   range?: string;
-  /** Damage roll details */
   damage?: {
     roll: string;
     type: string;
+    bonus?: string;
   };
   property?: string[];
   options?: string[];
-  /** Freeform notes */
   notes?: string;
 };
 
 export type AttacksProps = {
-  /** Named attack entries keyed by slug */
+  /** Manual attack entries — rendered alongside derived rows. */
   attacks?: AttackEntry[];
+  /** Open-ended passthrough so the block satisfies the entity-block
+   *  `Record<string, unknown>` constraint. */
+  [key: string]: unknown;
 };
+

@@ -4,7 +4,9 @@ source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 .metadata: 
 cssclasses:
   - simple-dataview-lists
+  - note-feature
 ---
+# Primordial
 ![[07. Spellcasting#^5732f8|clean]]
 ## Spell List
 These spells are available to casters who draw power from the Primordial source. 

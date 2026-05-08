@@ -25,6 +25,13 @@ text: |-
 
   **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
 image: "![[icicle-javelin.webp|384]]"
+attack:
+  form: spell
+  range: 60 ft.
+  damage:
+    roll: 3d8
+    type: cold
+  notes: may pin target adjacent to large surface
 ```
 
 
