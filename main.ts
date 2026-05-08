@@ -21,6 +21,9 @@ import { initEsbuild } from "lib/systems/ts-loader";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import { renderSpellBlock } from "lib/blocks/spell-card";
+import { FileRefCache } from "lib/domains/references";
+import { ReferenceRegistry } from "lib/plugin/reference-registry";
+import { buildReferenceProcessor } from "lib/plugin/reference-processor";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -37,6 +40,10 @@ try {
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
   dataStore: JsonDataStore;
+  /** `@[[File]].path` inline reference system — cache + DOM registry.
+   *  Instantiated on load so Obsidian event wiring can reach them. */
+  private refCache: FileRefCache | null = null;
+  private refRegistry: ReferenceRegistry | null = null;
 
   applyColorSettings(): void {
     const apply = (root: HTMLElement) => {
@@ -283,6 +290,40 @@ export default class DndUIToolkitPlugin extends Plugin {
       });
     }
 
+    // ── `@[[File]].path` inline references ────────────────────────────────
+    // Backs a dataview-ish inline reference system; the cache reads
+    // source files lazily through Obsidian's vault adapter while the
+    // registry re-renders on vault-modify / metadataCache-changed
+    // events so referenced values stay live.
+    this.refCache = new FileRefCache({
+      readFile: async (path: string) => {
+        const f = this.app.vault.getAbstractFileByPath(path);
+        return f instanceof TFile ? this.app.vault.cachedRead(f) : null;
+      },
+      getFrontmatter: (path: string) => {
+        const meta = this.app.metadataCache.getCache(path);
+        return (meta?.frontmatter as Record<string, unknown> | undefined) ?? null;
+      },
+    });
+    this.refRegistry = new ReferenceRegistry(this.refCache);
+    this.registerMarkdownPostProcessor(
+      buildReferenceProcessor({
+        app: this.app,
+        cache: this.refCache,
+        registry: this.refRegistry,
+      }),
+    );
+    this.registerEvent(
+      this.app.vault.on("modify", (f) => {
+        if (f instanceof TFile) this.refCache?.invalidate(f.path);
+      }),
+    );
+    this.registerEvent(
+      this.app.metadataCache.on("changed", (f) => {
+        this.refCache?.invalidate(f.path);
+      }),
+    );
+
     this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       const cache = this.app.metadataCache.getCache(ctx.sourcePath);
       const fm = cache?.frontmatter;
@@ -367,7 +408,12 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.dataStore = new JsonDataStore(this.app.vault, this.settings.statePath);
   }
 
-  onunload() {}
+  onunload() {
+    this.refRegistry?.dispose();
+    this.refRegistry = null;
+    this.refCache?.clear();
+    this.refCache = null;
+  }
 
   /**
    * Re-render every open markdown view whose file lives in a folder mapped

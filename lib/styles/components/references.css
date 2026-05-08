@@ -1,0 +1,54 @@
+/* ── `@[[File]].path` inline references ────────────────────────────────── */
+/*
+ * The post-processor swaps each `@[[…]].path` match for one of these
+ * inline spans. State-specific classes (`--pending`, `--missing`,
+ * `--invalid`, `--scalar`, `--object`, `--array`) drive the visual
+ * treatment so authors can spot typos without reading a tooltip.
+ */
+
+.rpg-ref {
+  display: inline;
+  font-family: inherit;
+  /* Tabular numbers keep counts / costs aligned when a reference
+   * replaces a bullet-list value. */
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-ref--pending {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.rpg-ref--missing,
+.rpg-ref--invalid {
+  color: light-dark(#a53a2a, #f08b7e);
+  background: light-dark(rgba(165, 58, 42, 0.08), rgba(240, 139, 126, 0.14));
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  cursor: help;
+}
+
+.rpg-ref--scalar a.internal-link {
+  color: inherit;
+  text-decoration: none;
+}
+.rpg-ref--scalar a.internal-link:hover {
+  text-decoration: underline;
+}
+
+.rpg-ref--object {
+  /* Compact JSON surfacing — a subtle surface tint lets the reader
+   * tell "this is a folded structure, click-through if you want more"
+   * without a full card. */
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  padding: 0 4px;
+  border-radius: 3px;
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+}
+
+.rpg-ref--array .rpg-ref__item + .rpg-ref__item {
+  /* the processor already inserts ", " separators as text nodes; this
+   * rule exists for future styling hooks (e.g. highlighting on hover). */
+}
