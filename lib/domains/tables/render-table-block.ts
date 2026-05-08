@@ -36,9 +36,83 @@ function appendRow(tr: HTMLTableRowElement, row: TableRow, cellTag: "td" | "th")
   for (const cell of row.cells) {
     const el = tr.ownerDocument.createElement(cellTag);
     if (cell.colspan && cell.colspan > 1) el.colSpan = cell.colspan;
-    el.textContent = cell.value;
+    renderCellValue(el, cell.value);
     tr.appendChild(el);
   }
+}
+
+/**
+ * Populate a cell with a light mix of markdown-ish features so tables
+ * authored in the tx idiom don't lose fidelity:
+ *
+ *   - `` `@[[File]].path` `` wrappers — backticks around a pure
+ *     reference get stripped so the post-processor's text-node pass
+ *     doesn't leave literal backticks orphaned around the resolved value.
+ *   - `[[Wikilink]]` — turned into `a.internal-link` anchors so Obsidian
+ *     recognises them as clickable targets (same treatment as inventory
+ *     notes).
+ *   - Everything else stays as plain text; bold / italic / code spans
+ *     are out of scope (cells are short labels, not prose).
+ */
+function renderCellValue(el: HTMLElement, raw: string): void {
+  // Strip backtick-wrapped refs so `@[[File]].path` inside a cell reads
+  // as a plain reference to the post-processor.
+  const cleaned = raw.replace(
+    /`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)\s*`/g,
+    "$1",
+  );
+  const doc = el.ownerDocument;
+  const re = /\[\[([^\]\n]+)\]\]/g;
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cleaned)) !== null) {
+    // Don't rewrite the `[[…]]` inside an `@[[File]].path` reference —
+    // the post-processor owns those.
+    if (m.index > 0 && cleaned[m.index - 1] === "@") continue;
+    if (m.index > cursor) {
+      el.appendChild(doc.createTextNode(cleaned.slice(cursor, m.index)));
+    }
+    const inner = m[1];
+    const pipe = inner.indexOf("|");
+    const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
+    const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
+    const a = doc.createElement("a");
+    a.className = "internal-link";
+    a.setAttribute("href", target);
+    a.setAttribute("data-href", target);
+    a.textContent = label;
+    el.appendChild(a);
+    cursor = m.index + m[0].length;
+  }
+  if (cursor < cleaned.length) {
+    el.appendChild(doc.createTextNode(cleaned.slice(cursor)));
+  }
+  if (el.childNodes.length === 0) {
+    el.textContent = cleaned;
+  }
+}
+
+/**
+ * Detect a category-divider row — a single-cell row whose colspan
+ * fills every column of the table. Authors write these the tx way
+ * (`| Light Armor ||||||`) to split a long table into visually-grouped
+ * sections; we tag them with `data-category="true"` so the stylesheet
+ * can paint the band background without anyone needing to author a
+ * `#css/row/category` class annotation.
+ */
+function isCategoryRow(row: TableRow, columnCount: number): boolean {
+  if (row.cells.length !== 1) return false;
+  const cell = row.cells[0];
+  const span = cell.colspan ?? 1;
+  return span >= columnCount && cell.value.trim().length > 0;
+}
+
+/** Strip the legacy `#css/row/...` annotation suffix that tx tables
+ *  used to hint at row styling. Authors coming from tx can leave these
+ *  in-place — the parser keeps the raw value, and the renderer drops
+ *  the trailing hashtag so the label reads clean. */
+function cleanCategoryLabel(raw: string): string {
+  return raw.replace(/\s*#css\/row\/[^\s|]+\s*$/, "").trim();
 }
 
 /**
@@ -200,7 +274,16 @@ export function renderTableBlock(
   const tbody = doc.createElement("tbody");
   for (const row of def.rows) {
     const tr = doc.createElement("tr");
-    appendRow(tr, row, "td");
+    if (isCategoryRow(row, def.columns.length)) {
+      tr.setAttribute("data-category", "true");
+      const cell = row.cells[0];
+      const td = doc.createElement("td");
+      td.colSpan = def.columns.length;
+      td.textContent = cleanCategoryLabel(cell.value);
+      tr.appendChild(td);
+    } else {
+      appendRow(tr, row, "td");
+    }
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);

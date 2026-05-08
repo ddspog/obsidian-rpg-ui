@@ -11,6 +11,20 @@
  * emitted by the renderer from the block's footer line (`[#css/tx/...]`).
  */
 
+/* Category-divider row — a full-width label splitting a long table into
+ * visually-grouped sections (Light Armor / Medium Armor / …). The
+ * parser tags these rows with `data-category="true"` whenever the
+ * authored single-cell colspan fills every column; no `#css/row/...`
+ * annotation needed. */
+.rpg-table tr[data-category="true"] > td {
+  background: light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14));
+  color: light-dark(#3a2a14, #f0e8d0);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+}
+
 /* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression
  * tables where row content may be long but should stay on one line. */
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,
