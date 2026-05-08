@@ -1,0 +1,478 @@
+/* ── Inventory Block (new schema, Phase A) ────────────────────────────────── */
+
+.rpg-inventory-block {
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino,
+      "Book Antiqua", Georgia, serif);
+  color: var(--text-normal);
+  padding: 0.35rem 0.5rem 1rem;
+  margin: 0.25rem 0;
+  background: var(--background-primary);
+  border-radius: 8px;
+  /* Stretch with horizontal overflow — content wider than the reading
+   * view scrolls inside the block rather than wrapping or truncating. */
+  overflow-x: auto;
+}
+
+/* ── Titles ────────────────────────────────────────────────────────────────── */
+
+.rpg-inventory-block__title {
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  border-bottom: 2px solid currentColor;
+  display: inline-block;
+}
+
+.rpg-inventory-block__section-title {
+  margin: 0.75rem 0 0.35rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Currency ──────────────────────────────────────────────────────────────── */
+
+/* Two-row coin display. Row 1 = coin chips, row 2 (optional) = To Sell
+ * totals. Shared grid template ensures the `+N` cells sit in the exact
+ * column of their matching chip — the label column (col 1) auto-sizes
+ * to whichever side (empty / "To Sell") needs the space. */
+.rpg-inventory-block__currency-grid {
+  display: grid;
+  grid-template-columns: auto repeat(5, minmax(3.6rem, max-content));
+  justify-content: end;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.3rem;
+  padding: 0.35rem 0;
+}
+
+/* Coin chip — denomination-colored label pill + bold value. Empty
+ * denominations stay visible as faint placeholders so the row has a
+ * consistent rhythm. The left half (label) picks up the coin colour;
+ * the right half (value) uses the text colour so the number pops. */
+.rpg-inventory-block__currency-coin {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 4px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  border: 1px solid var(--_coin-border, rgba(0, 0, 0, 0.08));
+  background: var(--_coin-bg, transparent);
+}
+
+.rpg-inventory-block__currency-coin[data-empty="true"] {
+  opacity: 0.35;
+}
+
+.rpg-inventory-block__currency-label {
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--_coin-fg, light-dark(#6a4e2a, #d4a840));
+  background: var(--_coin-label-bg, light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14)));
+}
+
+.rpg-inventory-block__currency-value {
+  padding: 4px 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: light-dark(#1a1208, #f0e8d0);
+}
+
+/* Denomination-specific coin colors — platinum cool-white, gold warm,
+ * electrum pale-yellow, silver cool-gray, copper warm-brown. */
+.rpg-inventory-block__currency-coin[data-coin="pp"] {
+  --_coin-fg: light-dark(#3a4a55, #b0c4d0);
+  --_coin-label-bg: light-dark(rgba(58, 74, 85, 0.1), rgba(176, 196, 208, 0.16));
+  --_coin-border: light-dark(rgba(58, 74, 85, 0.25), rgba(176, 196, 208, 0.3));
+}
+.rpg-inventory-block__currency-coin[data-coin="gp"] {
+  --_coin-fg: light-dark(#8a6a22, #e8c45a);
+  --_coin-label-bg: light-dark(rgba(212, 168, 64, 0.18), rgba(232, 196, 90, 0.22));
+  --_coin-border: light-dark(rgba(138, 106, 34, 0.3), rgba(232, 196, 90, 0.35));
+}
+.rpg-inventory-block__currency-coin[data-coin="ep"] {
+  --_coin-fg: light-dark(#7a7540, #d8d080);
+  --_coin-label-bg: light-dark(rgba(122, 117, 64, 0.12), rgba(216, 208, 128, 0.16));
+  --_coin-border: light-dark(rgba(122, 117, 64, 0.28), rgba(216, 208, 128, 0.3));
+}
+.rpg-inventory-block__currency-coin[data-coin="sp"] {
+  --_coin-fg: light-dark(#505a62, #c0c8d0);
+  --_coin-label-bg: light-dark(rgba(80, 90, 98, 0.1), rgba(192, 200, 208, 0.14));
+  --_coin-border: light-dark(rgba(80, 90, 98, 0.25), rgba(192, 200, 208, 0.28));
+}
+.rpg-inventory-block__currency-coin[data-coin="cp"] {
+  --_coin-fg: light-dark(#8a4a28, #d4a070);
+  --_coin-label-bg: light-dark(rgba(138, 74, 40, 0.12), rgba(212, 160, 112, 0.18));
+  --_coin-border: light-dark(rgba(138, 74, 40, 0.3), rgba(212, 160, 112, 0.32));
+}
+
+/* ── Sections & items ──────────────────────────────────────────────────────── */
+
+.rpg-inventory-block__section {
+  margin-bottom: 0.5rem;
+}
+
+.rpg-inventory-block__section-body {
+  border-top: 1px solid var(--rpg-features-header, light-dark(#d4a840, #6a4e2a));
+}
+
+.rpg-inventory-block__section-empty {
+  padding: 0.35rem 0.5rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.rpg-inventory-block__item {
+  display: grid;
+  /* sell | qty | name | stat | weight | equip */
+  grid-template-columns: 1.5rem 2.5rem 1fr 8rem auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.25rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 0.9rem;
+}
+
+.rpg-inventory-block__item:last-child {
+  border-bottom-color: var(--rpg-features-header, light-dark(#d4a840, #6a4e2a));
+}
+
+.rpg-inventory-block__item[data-nested="true"] {
+  padding-left: 0.75rem;
+  grid-template-columns: 1.5rem 2rem 1fr 8rem auto auto;
+}
+
+.rpg-inventory-block__item-sell {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 1.5rem;
+}
+
+.rpg-inventory-block__item[data-equipped="true"] .rpg-inventory-block__item-name {
+  font-weight: 600;
+}
+
+.rpg-inventory-block__item-qty {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rpg-inventory-block__item-name {
+  color: var(--text-normal);
+}
+
+.rpg-inventory-block__item-notes {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+.rpg-inventory-block__item-stat {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rpg-inventory-block__item-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.rpg-inventory-block__item-weight {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rpg-inventory-block__item-action {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 1.25rem;
+}
+
+/* Equip toggle — minimal filled/outline dot. No background / border —
+ * the circle glyph itself carries the on/off state. Hover bumps the
+ * opacity so the affordance is visible but stays out of the way when
+ * the player is just scanning the inventory list. */
+.rpg-inventory-block__equip-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: light-dark(#6a4e2a, #d4a840);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 80ms ease;
+  box-shadow: none;
+}
+
+.rpg-inventory-block__equip-btn:hover,
+.rpg-inventory-block__equip-btn:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.rpg-inventory-block__equip-btn[data-equipped="true"] {
+  opacity: 1;
+}
+
+/* Sell toggle — muted `$` glyph that lights up (filled chip) when the
+ * row is flagged. Lives beside the equip toggle in the action column;
+ * every non-container row qualifies, so the button renders for gear,
+ * tools, and trinkets alike. Hidden by default — reveals on row hover
+ * so it doesn't clutter the inventory rhythm. Rows already flagged
+ * stay visible regardless of hover state, since the `$` chip is how
+ * the player tracks what's slated for the shop. */
+.rpg-inventory-block__sell-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+  margin: 0 2px 0 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: light-dark(#6a4e2a, #d4a840);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 80ms ease, background-color 80ms ease, color 80ms ease;
+  box-shadow: none;
+  border-radius: 3px;
+  /* Keeps the nested sell button on top of any ancestor pseudo-elements
+   * (e.g. the container summary's interactive area) so clicks
+   * definitively land on the intended target rather than bubbling to
+   * the parent `<details>` summary. */
+  position: relative;
+  z-index: 1;
+}
+
+.rpg-inventory-block__item:hover .rpg-inventory-block__sell-btn,
+.rpg-inventory-block__container > summary:hover .rpg-inventory-block__sell-btn,
+.rpg-inventory-block__sell-btn:focus-visible {
+  opacity: 0.6;
+  outline: none;
+}
+
+.rpg-inventory-block__sell-btn:hover {
+  opacity: 1;
+  outline: none;
+}
+
+.rpg-inventory-block__sell-btn[data-for-sale="true"] {
+  opacity: 1;
+  background: light-dark(rgba(106, 78, 42, 0.85), rgba(212, 168, 64, 0.85));
+  color: light-dark(#fdf6e3, #1a1208);
+}
+
+/* Flagged rows read slightly dimmed so the player sees at a glance
+ * which items are slated to leave the pack at the next shop stop. */
+.rpg-inventory-block__item:has(.rpg-inventory-block__sell-btn[data-for-sale="true"]) {
+  background: light-dark(rgba(212, 168, 64, 0.06), rgba(212, 168, 64, 0.10));
+}
+
+/* ── To Sell row ───────────────────────────────────────────────────────── */
+
+.rpg-inventory-block__sell-label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: light-dark(#6a4e2a, #d4a840);
+  text-align: right;
+  padding-right: 0.25rem;
+}
+
+/* Each `+N` cell drops into the same grid column as its matching coin
+ * chip above, so the number visually sits underneath the chip. The
+ * `min-width` on the grid track (set above) guarantees the column
+ * never collapses even when both the chip value and the sell value
+ * are short single digits. */
+.rpg-inventory-block__sell-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: light-dark(#1a1208, #f0e8d0);
+}
+
+.rpg-inventory-block__sell-cell[data-empty="true"] {
+  opacity: 0.25;
+}
+
+/* ── Containers (collapsible <details>) ───────────────────────────────────── */
+
+.rpg-inventory-block__container {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-inventory-block__container[open] {
+  border-bottom-color: var(--rpg-features-header, light-dark(#d4a840, #6a4e2a));
+}
+
+.rpg-inventory-block__container-summary {
+  display: grid;
+  /* sell | caret | name | weight */
+  grid-template-columns: 1.5rem 1.25rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.25rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.rpg-inventory-block__container-summary::-webkit-details-marker,
+.rpg-inventory-block__container-summary::marker {
+  display: none;
+  content: "";
+}
+
+.rpg-inventory-block__container-caret {
+  justify-self: end;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid currentColor;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  transition: transform 120ms ease;
+}
+
+.rpg-inventory-block__container[open] > .rpg-inventory-block__container-summary .rpg-inventory-block__container-caret {
+  transform: rotate(90deg);
+}
+
+.rpg-inventory-block__container-name {
+  font-weight: 600;
+}
+
+.rpg-inventory-block__container-weight {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-inventory-block__container-contents {
+  padding-bottom: 0.25rem;
+}
+
+.rpg-inventory-block__container-empty {
+  padding: 0.35rem 0 0.35rem 2rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ── Encumbrance ───────────────────────────────────────────────────────────── */
+
+.rpg-inventory-block__encumbrance-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: start;
+  gap: 1.5rem;
+  align-items: baseline;
+  padding: 0 1rem 0.5rem 1rem;
+}
+
+.rpg-inventory-block__encumbrance-cell {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.rpg-inventory-block__encumbrance-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  white-space: nowrap;
+}
+
+.rpg-inventory-block__encumbrance-value {
+  color: var(--text-normal);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.rpg-inventory-block__encumbrance-bar {
+  position: relative;
+  height: 10px;
+  margin: 0 1rem;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
+}
+
+.rpg-inventory-block__encumbrance-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.rpg-inventory-block__encumbrance-band[data-band="free"] {
+  background: light-dark(#b8d9a3, #4d6b3a);
+}
+
+.rpg-inventory-block__encumbrance-band[data-band="encumbered"] {
+  background: light-dark(#e7d08c, #8a7634);
+}
+
+.rpg-inventory-block__encumbrance-band[data-band="heavy"] {
+  background: light-dark(#e0a97a, #8a5634);
+}
+
+.rpg-inventory-block__encumbrance-band[data-band="over"] {
+  background: light-dark(#d68686, #8a3434);
+}
+
+.rpg-inventory-block__encumbrance-marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  background: var(--text-normal);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px var(--background-primary);
+}
+
+.rpg-inventory-block__encumbrance[data-load="heavy"] .rpg-inventory-block__encumbrance-marker,
+.rpg-inventory-block__encumbrance[data-load="over"] .rpg-inventory-block__encumbrance-marker {
+  background: light-dark(#b84a4a, #ff8a8a);
+}

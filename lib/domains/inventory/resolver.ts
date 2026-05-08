@@ -1,0 +1,205 @@
+/**
+ * Resolve a parsed YAML inventory block into a fully-materialised model,
+ * ready for rendering. Item metadata (weight, cost, damage, …) is fetched
+ * through an injected `LookupFn` so the view can back it with Obsidian's
+ * metadata cache and tests / Storybook can back it with a static map.
+ */
+
+import type {
+  CurrencyPurse,
+  EquipSlot,
+  NewInventoryBlock,
+  SectionId,
+  YamlItemEntry,
+} from "./schema";
+import { wikilinkLabel, wikilinkTarget } from "./schema";
+import type { ItemMetadata } from "./item-frontmatter";
+import { itemEquipKind, parseItemMetadata } from "./item-frontmatter";
+import { classifyItem, isContainerEntry, SECTION_ORDER } from "./routing";
+import {
+  classifyLoad,
+  computeBands,
+  type EncumbranceBands,
+  type LoadState,
+} from "./encumbrance";
+
+/** Look up a compendium item's frontmatter by wikilink target or bare name. */
+export type LookupFn = (
+  target: string,
+) => Record<string, unknown> | undefined;
+
+export interface ResolvedItem {
+  id: string;
+  /** Display label (alias or basename). */
+  label: string;
+  /** Raw wikilink `[[…]]` string, or null for non-linked entries. */
+  link: string | null;
+  /** Resolved vault target (before `|` alias), or null when not a wikilink. */
+  linkTarget: string | null;
+  meta: ItemMetadata;
+  qty: number;
+  /** Total weight for this row: qty × per-item weight + contents (if container). */
+  totalWeight: number;
+  /** Effective equip state. */
+  equipped: boolean;
+  slot?: EquipSlot;
+  /** Coarse equip routing — `weapon` / `armor` / `shield` / null. Lets
+   *  the UI surface a slot-aware toggle button without re-parsing the
+   *  item type at the call site. */
+  equipKind: "weapon" | "armor" | "shield" | null;
+  /** Marked for sale — toggles the "To Sell" totals below currency. */
+  forSale: boolean;
+  notes?: string;
+  isContainer: boolean;
+  contents: ResolvedItem[];
+}
+
+export interface ResolvedSection {
+  id: SectionId;
+  items: ResolvedItem[];
+  totalWeight: number;
+}
+
+export interface ResolvedInventory {
+  stateKey?: string;
+  sections: ResolvedSection[];
+  currency: CurrencyPurse;
+  totalWeight: number;
+  bands: EncumbranceBands;
+  load: LoadState;
+  strength: number;
+  /** Sum of `cost` fields from every item flagged `for_sale: true`,
+   *  bucketed by denomination. Same shape as `currency` so the UI can
+   *  render a matching "To Sell" row beneath the coin chips. An empty
+   *  purse when nothing is flagged. */
+  sellTotals: CurrencyPurse;
+}
+
+export interface ResolveInventoryArgs {
+  block: NewInventoryBlock;
+  lookup: LookupFn;
+  /** Strength score used for encumbrance auto-calc. */
+  strength: number;
+}
+
+export function resolveInventory({
+  block,
+  lookup,
+  strength,
+}: ResolveInventoryArgs): ResolvedInventory {
+  // Resolve items and place each in its section. Containers keep their
+  // contents nested; only the container's combined weight counts toward the
+  // section / grand total.
+  const sectionsMap: Record<SectionId, ResolvedItem[]> = {
+    weapons: [],
+    armor: [],
+    tools: [],
+    visible: [],
+    main_containers: [],
+    other_containers: [],
+  };
+
+  let grandTotal = 0;
+  block.items.forEach((entry, idx) => {
+    const resolved = resolveEntry(entry, `${idx}`, lookup);
+    const section = classifyItem(entry, resolved.meta);
+    sectionsMap[section].push(resolved);
+    grandTotal += resolved.totalWeight;
+  });
+
+  const bands = computeBands(strength, block.encumbrance);
+  const load = classifyLoad(grandTotal, bands);
+
+  const sections: ResolvedSection[] = SECTION_ORDER.map((id) => ({
+    id,
+    items: sectionsMap[id],
+    totalWeight: sectionsMap[id].reduce((acc, it) => acc + it.totalWeight, 0),
+  }));
+
+  return {
+    stateKey: block.state_key,
+    sections,
+    currency: block.currency ?? {},
+    totalWeight: grandTotal,
+    bands,
+    load,
+    strength,
+    sellTotals: computeSellTotals(sections),
+  };
+}
+
+/**
+ * Sum the `cost` of every `forSale: true` row — walks top-level entries
+ * AND their nested container contents so flagging an item inside a
+ * container still counts toward the total. Values are bucketed by
+ * denomination so `3 gp` and `25 cp` don't collapse into an unreadable
+ * mixed total.
+ */
+function computeSellTotals(sections: ResolvedSection[]): CurrencyPurse {
+  const totals: CurrencyPurse = {};
+  const visit = (item: ResolvedItem): void => {
+    if (item.forSale) {
+      const parsed = parseCoin(item.meta.cost);
+      if (parsed) {
+        const amount = parsed.amount * item.qty;
+        totals[parsed.denomination] = (totals[parsed.denomination] ?? 0) + amount;
+      }
+    }
+    for (const child of item.contents) visit(child);
+  };
+  for (const section of sections) for (const item of section.items) visit(item);
+  return totals;
+}
+
+/** Split a cost string like `"15 gp"` / `"5 sp"` / `"25cp"` into
+ *  `{ amount, denomination }`. Returns null when the string doesn't
+ *  match — shop-less items (Holy Symbol = `5 gp` but sometimes just
+ *  a gift) then drop out of the sell totals silently. */
+function parseCoin(raw: string | undefined): { amount: number; denomination: keyof CurrencyPurse } | null {
+  if (!raw) return null;
+  const m = raw.match(/(-?\d+(?:\.\d+)?)\s*(pp|gp|ep|sp|cp)/i);
+  if (!m) return null;
+  const amount = Number(m[1]);
+  if (!Number.isFinite(amount)) return null;
+  return { amount, denomination: m[2].toLowerCase() as keyof CurrencyPurse };
+}
+
+function resolveEntry(
+  entry: YamlItemEntry,
+  path: string,
+  lookup: LookupFn,
+): ResolvedItem {
+  const target = wikilinkTarget(entry.name);
+  const link = target ? entry.name : null;
+  const label = target ? wikilinkLabel(entry.name) : entry.name;
+
+  const lookupKey = target ?? entry.name;
+  const fm = lookup(lookupKey);
+  const meta = parseItemMetadata(fm);
+
+  const qty = entry.qty && entry.qty > 0 ? entry.qty : 1;
+
+  const contents: ResolvedItem[] = (entry.contents ?? []).map((child, i) =>
+    resolveEntry(child, `${path}.${i}`, lookup),
+  );
+
+  const selfWeight = meta.weight * qty;
+  const contentsWeight = contents.reduce((acc, c) => acc + c.totalWeight, 0);
+
+  return {
+    id: path,
+    label,
+    link,
+    linkTarget: target,
+    meta,
+    qty,
+    totalWeight: selfWeight + contentsWeight,
+    equipped: entry.equipped === true || entry.slot !== undefined,
+    slot: entry.slot,
+    equipKind: itemEquipKind(meta.type),
+    forSale: entry.for_sale === true,
+    notes: entry.notes,
+    isContainer: isContainerEntry(entry),
+    contents,
+  };
+}
