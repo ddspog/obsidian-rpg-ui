@@ -51,6 +51,15 @@ export interface ItemArmorData {
 export interface ItemContainerData {
   volume_cap?: string;
   weight_cap?: string;
+  /** One ammo type (string) or a list of types (string[]) the
+   *  container is dedicated to. Quiver accepts `[[Arrows]]` +
+   *  `[[Crossbow Bolts]]`; Pouch may declare a single `[[Sling Bullets]]`.
+   *  Ammo-tracking render mode fires whenever `contents:` holds only
+   *  entries whose name matches ONE of the declared types. */
+  for_ammo?: string | string[];
+  /** Max count of `for_ammo` the container can hold. Renders as
+   *  `<carried> / <cap>` in the inventory's stat column. */
+  ammo_cap?: number;
 }
 
 export interface ItemShopData {

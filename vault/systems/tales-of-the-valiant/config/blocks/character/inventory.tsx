@@ -91,8 +91,19 @@ function normaliseItem(raw: unknown): InventoryItemEntry | null {
   if (typeof raw === "string") return { name: raw };
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if (typeof o.name !== "string") return null;
-  const entry: InventoryItemEntry = { name: o.name };
+  // Tolerate YAML's flow-sequence quirk: `name: [[Foo]]` (unquoted)
+  // parses as `[["Foo"]]` — rebuild the wikilink from the inner
+  // string so authors don't have to remember the quotes.
+  let name: string | null = null;
+  if (typeof o.name === "string") {
+    name = o.name;
+  } else if (Array.isArray(o.name)) {
+    let v: unknown = o.name;
+    while (Array.isArray(v)) v = v[0];
+    if (typeof v === "string") name = `[[${v}]]`;
+  }
+  if (!name) return null;
+  const entry: InventoryItemEntry = { name };
   if (typeof o.qty === "number") entry.qty = o.qty;
   else if (typeof o.quantity === "number") entry.qty = o.quantity;
   if (

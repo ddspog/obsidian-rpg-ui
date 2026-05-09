@@ -14,6 +14,8 @@ desc: |-
 container:
   volume_cap: 1/5 cubic foot
   weight_cap: 6 lb.
+  for_ammo: "[[Sling Bullets]]"
+  ammo_cap: 10
 shop:
   cheap: 3 sp
   expensive: 8 sp

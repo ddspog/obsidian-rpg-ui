@@ -996,6 +996,8 @@ export interface ResolvedItem {
     acFormula?: string;
     subtitle?: string;
     containerCapacity?: number;
+    forAmmo?: string[];
+    ammoCap?: number;
     image?: string;
   };
   qty: number;
@@ -1006,6 +1008,8 @@ export interface ResolvedItem {
   forSale: boolean;
   notes?: string;
   isContainer: boolean;
+  isAmmoTracking: boolean;
+  ammoCarried: number;
   contents: ResolvedItem[];
 }
 
@@ -1045,6 +1049,8 @@ export interface ItemArmorData {
 export interface ItemContainerData {
   volume_cap?: string;
   weight_cap?: string;
+  for_ammo?: string | string[];
+  ammo_cap?: number;
 }
 
 export interface ItemShopData {

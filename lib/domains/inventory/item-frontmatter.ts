@@ -24,6 +24,14 @@ export interface ItemMetadata {
   subtitle?: string;
   /** Container capacity in pounds. */
   containerCapacity?: number;
+  /** Wikilinks / names of the ammo the container is dedicated to.
+   *  Authors may write either a single entry (`for_ammo: "[[Arrows]]"`)
+   *  or a list (`for_ammo: [Arrows, Crossbow Bolts]`); both shapes
+   *  normalise into this array. Drives the ammo-tracking render mode
+   *  in the inventory. */
+  forAmmo?: string[];
+  /** Max count of `forAmmo` the container can hold. */
+  ammoCap?: number;
   /** Image reference (Obsidian `![[file.webp|size]]` embed). */
   image?: string;
 }
@@ -81,8 +89,49 @@ export function parseItemMetadata(
         : typeof fm.container_capacity === "number"
           ? fm.container_capacity
           : undefined,
+    forAmmo: normaliseForAmmo(container.for_ammo),
+    ammoCap:
+      typeof container.ammo_cap === "number"
+        ? container.ammo_cap
+        : typeof container.ammo_cap === "string"
+          ? Number.parseInt(container.ammo_cap, 10) || undefined
+          : undefined,
     image: asString(fm.image) ?? asString(fm.reference_img),
   };
+}
+
+/**
+ * Collapse the two authoring shapes for `container.for_ammo`:
+ *   - `"[[Arrows]]"`           → `["[[Arrows]]"]`
+ *   - `["[[Arrows]]", …]`      → same (strings only)
+ *   - `[[Arrows]]` unquoted    → YAML parses as `[["Arrows"]]` (nested
+ *                                 flow sequence); unwrap each outer
+ *                                 entry's inner string back to
+ *                                 `"[[Arrows]]"` so downstream
+ *                                 matching still works without forcing
+ *                                 authors to remember the quotes.
+ * Returns undefined when nothing parseable came through so the
+ * ammo-tracking render mode never triggers by accident.
+ */
+function normaliseForAmmo(raw: unknown): string[] | undefined {
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    return s ? [s] : undefined;
+  }
+  if (!Array.isArray(raw)) return undefined;
+  const out: string[] = [];
+  for (const entry of raw) {
+    if (typeof entry === "string") {
+      const s = entry.trim();
+      if (s) out.push(s);
+      continue;
+    }
+    // Unquoted `[[Name]]` → YAML reads as `[["Name"]]`.
+    if (Array.isArray(entry) && typeof entry[0] === "string") {
+      out.push(`[[${entry[0]}]]`);
+    }
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 /**

@@ -102,8 +102,9 @@ function normalizeItem(raw: unknown): YamlItemEntry | null {
   }
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if (typeof o.name !== "string") return null;
-  const entry: YamlItemEntry = { name: o.name };
+  const name = normaliseItemName(o.name);
+  if (!name) return null;
+  const entry: YamlItemEntry = { name };
   if (typeof o.qty === "number") entry.qty = o.qty;
   else if (typeof o.quantity === "number") entry.qty = o.quantity;
   if (isSectionId(o.section)) entry.section = o.section;
@@ -114,6 +115,27 @@ function normalizeItem(raw: unknown): YamlItemEntry | null {
   if (typeof o.notes === "string") entry.notes = o.notes;
   if (Array.isArray(o.contents)) entry.contents = normalizeItems(o.contents);
   return entry;
+}
+
+/**
+ * Normalise the `name:` field of an item entry, tolerating YAML's
+ * flow-sequence quirks:
+ *   - `name: "[[Foo]]"`  → `"[[Foo]]"` (normal quoted wikilink)
+ *   - `name: Foo`        → `"Foo"`    (plain label)
+ *   - `name: [[Foo]]`    → YAML parses as `[["Foo"]]` (nested flow
+ *                          sequence); rebuild `"[[Foo]]"` from the
+ *                          inner string so authors don't have to
+ *                          remember the quotes.
+ * Returns null when nothing stringish comes through.
+ */
+function normaliseItemName(raw: unknown): string | null {
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw)) {
+    let v: unknown = raw;
+    while (Array.isArray(v)) v = v[0];
+    if (typeof v === "string") return `[[${v}]]`;
+  }
+  return null;
 }
 
 function normalizeCurrency(raw: unknown): CurrencyPurse | undefined {

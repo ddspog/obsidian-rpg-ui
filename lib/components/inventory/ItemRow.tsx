@@ -19,12 +19,66 @@ interface ItemRowProps {
 }
 
 /** Compose the section-aware "stat" cell. Weapons show damage, armor
- *  shows AC formula, everything else falls back to the meta subtitle so
- *  category info (Tool / Focus / …) still surfaces. */
-function statCell(item: ResolvedItem, sectionId: SectionId | undefined): string {
+ *  shows AC formula, ammo-tracking containers show `<carried>/<cap>
+ *  <ammo-link>`, everything else falls back to the meta subtitle so
+ *  category info (Tool / Focus / …) still surfaces. Returned as a
+ *  React node so the ammo form can include a clickable internal-link
+ *  anchor without the caller doing extra work. */
+function statCell(item: ResolvedItem, sectionId: SectionId | undefined): React.ReactNode {
+  if (item.isAmmoTracking) {
+    const cap = item.meta.ammoCap;
+    const ammoRaw = pickAmmoLabel(item);
+    const target = ammoRaw ? wikiTarget(ammoRaw) : null;
+    const label = ammoRaw ? wikiLabel(ammoRaw) : "";
+    const capPart = cap ? ` / ${cap}` : "";
+    return (
+      <>
+        {`${item.ammoCarried}${capPart} `}
+        {target ? (
+          <a
+            className="internal-link"
+            href={target}
+            data-href={target}
+          >
+            {label}
+          </a>
+        ) : (
+          label
+        )}
+      </>
+    );
+  }
   if (sectionId === "weapons" && item.meta.damage) return item.meta.damage;
   if (sectionId === "armor" && item.meta.acFormula) return item.meta.acFormula;
   return item.meta.subtitle ?? "";
+}
+
+/** Choose which declared `for_ammo` entry to display in the stat
+ *  cell. When one ammo type is authored we just use it; when several
+ *  are authored we fall back to the first content entry's label so
+ *  "19 / 20 Crossbow Bolts" reads truthfully even when the container
+ *  could also have held Arrows. */
+function pickAmmoLabel(item: ResolvedItem): string | undefined {
+  const declared = item.meta.forAmmo ?? [];
+  if (declared.length === 1) return declared[0];
+  if (item.contents.length > 0) return item.contents[0].link ?? item.contents[0].label;
+  return declared[0];
+}
+
+/** Extract the display label from a raw wikilink / bare name. */
+function wikiLabel(raw: string): string {
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  const inner = m ? m[1] : raw;
+  const pipe = inner.indexOf("|");
+  return (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
+}
+
+/** Extract the link target (before `|`) from a raw wikilink — falls
+ *  back to the label when it's just a bare name. */
+function wikiTarget(raw: string): string {
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  if (!m) return raw;
+  return m[1].split("|")[0].trim();
 }
 
 export function ItemRow({ item, sectionId, nested = false, onToggleEquip, onToggleForSale }: ItemRowProps) {

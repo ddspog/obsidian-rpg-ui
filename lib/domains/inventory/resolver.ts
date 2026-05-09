@@ -51,6 +51,14 @@ export interface ResolvedItem {
   forSale: boolean;
   notes?: string;
   isContainer: boolean;
+  /** Ammo-tracking mode: the item declares `container.for_ammo` AND
+   *  every entry in `contents:` is that same ammo. In this mode the
+   *  inventory UI renders the item as a single row (not a collapsible
+   *  container) and shows `<carried> / <ammoCap>` in the stat column. */
+  isAmmoTracking: boolean;
+  /** Sum of `qty` across all contents entries matching `forAmmo`. Only
+   *  meaningful when `isAmmoTracking` is true. */
+  ammoCarried: number;
   contents: ResolvedItem[];
 }
 
@@ -102,7 +110,14 @@ export function resolveInventory({
   let grandTotal = 0;
   block.items.forEach((entry, idx) => {
     const resolved = resolveEntry(entry, `${idx}`, lookup);
-    const section = classifyItem(entry, resolved.meta);
+    // Ammo-tracking containers ride along with the wielder's weapons
+    // in the Weapons section — easier to glance at "do I still have
+    // arrows?" next to the Longbow row than hunting through Main
+    // Containers. Non-ammo containers (or ammo containers with mixed
+    // contents) keep their classifyItem verdict.
+    const section = resolved.isAmmoTracking
+      ? "weapons"
+      : classifyItem(entry, resolved.meta);
     sectionsMap[section].push(resolved);
     grandTotal += resolved.totalWeight;
   });
@@ -186,6 +201,26 @@ function resolveEntry(
   const selfWeight = meta.weight * qty;
   const contentsWeight = contents.reduce((acc, c) => acc + c.totalWeight, 0);
 
+  // Ammo-tracking mode: the container declares `container.for_ammo`
+  // AND every content entry carries one of those ammo names. In that
+  // case the UI renders the item as a single row with
+  // `<carried> / <cap>` in the stat column instead of a collapsible
+  // container. Mixed contents (e.g. Pouch holding Arrows + Keys) fall
+  // back to normal container rendering — the ammo declaration is
+  // still authored, it just doesn't trigger the tracking mode this
+  // render.
+  const ammoTargets = new Set(
+    (meta.forAmmo ?? []).map(wikiStem).filter(Boolean),
+  );
+  const isAmmoTracking = Boolean(
+    ammoTargets.size > 0 &&
+      contents.length > 0 &&
+      contents.every((c) => ammoTargets.has(wikiStem(c.link ?? c.label))),
+  );
+  const ammoCarried = isAmmoTracking
+    ? contents.reduce((acc, c) => acc + c.qty, 0)
+    : 0;
+
   return {
     id: path,
     label,
@@ -199,7 +234,20 @@ function resolveEntry(
     equipKind: itemEquipKind(meta.type),
     forSale: entry.for_sale === true,
     notes: entry.notes,
-    isContainer: isContainerEntry(entry),
+    // Ammo-tracking rows render as single rows, not collapsibles.
+    isContainer: isContainerEntry(entry) && !isAmmoTracking,
+    isAmmoTracking,
+    ammoCarried,
     contents,
   };
+}
+
+/** Normalise a `[[folder/Name|Alias]]` wikilink or a bare label into
+ *  the bare stem for case-insensitive matching. Mirrors the helper
+ *  used elsewhere in the inventory / attacks pipeline. */
+function wikiStem(raw: string): string {
+  if (!raw) return "";
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  const inner = m ? m[1] : raw;
+  return inner.split("|")[0].split("/").pop()!.trim().toLowerCase();
 }
