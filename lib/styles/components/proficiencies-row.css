@@ -1,7 +1,6 @@
 /* ── Proficiencies Row (frosted glass two-column dl) ──────────────────────── */
 
 section[aria-details="Character Proficiencies"] {
-  margin-block-start: calc(-1 * var(--p-spacing, 1em));
   border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-radius: 4px;
   overflow: hidden;
