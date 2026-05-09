@@ -120,19 +120,23 @@ casters:
 ```rpg character.inventory
 items:
   - name: "[[Quarterstaff]]"
+    notes: SC Focus
     slot: main_hand          # off-hand empty → 2-handed 1d8 mode unlocks
-    notes: Druidic focus (staff)
-  - name: "[[Sickle]]"
-    notes: Harvesting / ritual (carried)
   - name: "[[Leather]]"
     slot: armor
-  - name: "[[Herbalist Tools]]"
-    equipped: true
+  - name: "[[Shield]]"
+    slot: shield
+  - "[[Clothes, common]]"
+  - name: "[[Druidic Focus]]"
+    notes: Totem
   - "[[Waterskin]]"
-  - "[[Pouch]]"
+  - name: "[[Pouch]]"
+    contents:
+      - "[[Incense (one block) ᴺ]]"
+      - "[[Ceremonial Dagger ᴺ]]"
 currency:
   pp: 0
-  gp: 12
+  gp: 10
   sp: 5
   cp: 0
 ```

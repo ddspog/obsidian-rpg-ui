@@ -105,20 +105,19 @@ casters:
 ```rpg character.inventory
 items:
   - name: "[[Longbow]]"
-    notes: Primary
+    notes: Main
   - name: "[[Quiver]]"
-    equipped: true
-    notes: → 19× [[Arrows]]
+    contents:
+      - name: [[Arrows]]
+        qty: 19
   - name: "[[Shortsword]]"
     qty: 2
-    notes: Carried for melee / dual-wield
+    notes: For melee, dual
     slot: main_hand
   - name: "[[Leather]]"
     slot: armor
   - name: "[[Clothes, fine]]"
-    equipped: true
   - name: "[[Waterskin]]"
-    equipped: true
   - name: "[[Charlatan Tools]]"
   - name: "[[Kowyn's Bag]]"
     container: main

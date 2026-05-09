@@ -104,22 +104,29 @@ choices:
 ## Inventory
 ```rpg character.inventory
 items:
-  - name: "[[Glaive +1]]"
+  - name: "[[Glaive]]"
     slot: main_hand          # two-handed + reach → fills off_hand
-    notes: Primary
-  - name: "[[Longsword]]"
-    notes: Sidearm (carried)
-  - name: "[[Javelin]]"
-    qty: 4
-    notes: Throwing pile
-  - name: "[[Leather]]"
+    notes: Main Weapon
+  - name: "[[Maul]]"
+    notes: Bludgeoning
+  - name: "[[Crossbow, light]]"
+    notes: Ranged
+  - name: "[[Quiver]]"
+    contents:
+      - name: [[Crossbow Bolts]]
+        qty: 19
+  - name: "[[Chain Mail]]"
     slot: armor
-  - name: "[[Waterskin]]"
-    equipped: true
-  - "[[Constructor Tools]]"
+    notes: Heavy Armor, [[Noisy]]
+  - "[[Clothes, common]]"
+  - "[[Waterskin]]"
+  - name: "[[Pouch]]"
+    contents:
+      - name: A belaying pin
+      - name: A lucky charm
 currency:
   pp: 0
-  gp: 42
+  gp: 10
   sp: 0
   cp: 5
 ```
