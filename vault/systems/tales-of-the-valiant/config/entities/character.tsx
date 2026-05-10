@@ -10,6 +10,11 @@ import {
   extractSpellBlocks,
   classifySpellCircle,
   extractItemElementBlocks,
+  extractItemMagicBlocks,
+  extractItemPersonalBlocks,
+  extractItemContainerBlocks,
+  resolvePersonalItem,
+  resolveContainer,
 } from "rpg-ui-toolkit";
 import { xpTable as xp } from './character.lookup';
 import type { CharacterEntity } from "./character.types";
@@ -96,6 +101,19 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     // item frontmatter via `lookup.$items`, which is built from every
     // `.md` under `worldbuilding/items/**`. No user ref needed.
     refPaths.add("worldbuilding/items");
+    // Compendium magic-item templates live one level over from the
+    // base items. Keep them separate so the folder ref stays clean
+    // when authors browse the item reference.
+    refPaths.add("worldbuilding/magic-items");
+    // World-attached containers (guild stash, party bag) live under
+    // `worldbuilding/containers/`. Indexed into `$containers` so the
+    // character inventory can expand sections inline whenever a
+    // character carries one.
+    refPaths.add("worldbuilding/containers");
+    // Adventurer-owned magic items live under the adventurers' own
+    // folders (`adventurers/<name>/magic-items/**`). Scan the whole
+    // tree so `rpg item.personal` instances land in the lookup.
+    refPaths.add("adventurers");
 
     // Load each referenced folder in parallel. A missing / stale path
     // resolves to [] so a typo doesn't break bundle loading — it just
@@ -267,23 +285,42 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         }
     }
 
-    // Item library — every doc under `worldbuilding/items/**` gets its
-    // first `rpg item.element` fence parsed and keyed by basename. The
-    // inventory resolver reads `.weight`, `.weapon.damage`,
-    // `.armor.ac`, `.container.weight_cap`, etc. straight off this map.
-    // Pre-migration files that haven't been rewritten drop out silently
-    // (no fence → no entry); the inventory picker renders them with
-    // weight 0 so missed migrations surface immediately.
+    // Item library — every doc under `worldbuilding/items/**` or
+    // `adventurers/**` gets its first fence of each kind (element /
+    // magic / personal) parsed and keyed by basename. The inventory
+    // resolver reads base-element data off `$items`, personal instance
+    // data off `$personal`, and overlay templates off `$magic`. Files
+    // that don't carry a given fence drop out silently from that
+    // library.
     const itemLibrary: Record<string, Record<string, unknown>> = {};
+    const magicLibrary: Record<string, Record<string, unknown>> = {};
+    const personalLibrary: Record<string, Record<string, unknown>> = {};
+    const containerLibrary: Record<string, Record<string, unknown>> = {};
     for (const d of refDocs) {
         const name = (d as any)?.$name;
         const $path = typeof (d as any)?.$path === "string" ? (d as any).$path : "";
         const contents = typeof (d as any)?.$contents === "string" ? (d as any).$contents : "";
-        if (!name || !$path.includes("worldbuilding/items/") || !contents) continue;
-        if (itemLibrary[name]) continue; // first-wins on name collision
-        const parsed = extractItemElementBlocks(contents);
-        if (parsed.length > 0) {
-            itemLibrary[name] = parsed[0] as Record<string, unknown>;
+        if (!name || !contents) continue;
+        const isItemsFolder = $path.includes("worldbuilding/items/");
+        const isMagicItemsFolder = $path.includes("worldbuilding/magic-items/");
+        const isContainersFolder = $path.includes("worldbuilding/containers/");
+        const isAdventurersFolder = $path.includes("adventurers/");
+        if (!isItemsFolder && !isMagicItemsFolder && !isContainersFolder && !isAdventurersFolder) continue;
+        if (isItemsFolder && !itemLibrary[name]) {
+            const parsed = extractItemElementBlocks(contents);
+            if (parsed.length > 0) itemLibrary[name] = parsed[0] as Record<string, unknown>;
+        }
+        if (!magicLibrary[name]) {
+            const parsed = extractItemMagicBlocks(contents);
+            if (parsed.length > 0) magicLibrary[name] = parsed[0] as Record<string, unknown>;
+        }
+        if (!personalLibrary[name]) {
+            const parsed = extractItemPersonalBlocks(contents);
+            if (parsed.length > 0) personalLibrary[name] = parsed[0] as Record<string, unknown>;
+        }
+        if (!containerLibrary[name]) {
+            const parsed = extractItemContainerBlocks(contents);
+            if (parsed.length > 0) containerLibrary[name] = parsed[0] as Record<string, unknown>;
         }
     }
 
@@ -365,6 +402,108 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         return stem || undefined;
     };
 
+    // Walk an inventory block's raw items and collect the personal-item
+    // traits that should fold into the character's trait map. A personal
+    // entry contributes when either (a) the author marked it equipped or
+    // in a slot, or (b) the resolved base is a shield — shields are
+    // equipped-by-ownership across the sheet (health block already uses
+    // that rule for AC). Returns both the flat trait map (for consumers
+    // like skills / saves) and a per-source breakdown (for the traits
+    // bucket's per-source attribution lines).
+    // Walk an inventory block and collect every equipment contribution
+    // that should flow into the carrier's trait map:
+    //   - personal items that are equipped / in an equip slot, or whose
+    //     resolved base is a shield (shields are equipped-by-ownership);
+    //   - containers in the inventory whose magic overlays publish
+    //     traits (e.g. Bag of Holding → Weight Reduction.). Containers
+    //     are carry-based rather than equip-gated since that's how
+    //     players actually use them.
+    // Each contribution is also echoed into a per-source list so the
+    // features-panel traits bucket can attribute the trait back to the
+    // contributing magic template (or base item when there's no magic).
+    const collectEquippedPersonalTraits = (
+        inventoryRaw: unknown,
+    ): {
+        merged: Record<string, string[]>;
+        bySource: Array<{ source: string; traits: Record<string, string[]> }>;
+    } => {
+        const merged: Record<string, string[]> = {};
+        const bySource: Array<{ source: string; traits: Record<string, string[]> }> = [];
+        if (!inventoryRaw || typeof inventoryRaw !== "object") return { merged, bySource };
+        const items = (inventoryRaw as { items?: unknown[] }).items;
+        if (!Array.isArray(items)) return { merged, bySource };
+        const absorb = (
+            source: string,
+            traits: Record<string, string[]>,
+        ): void => {
+            const scoped: Record<string, string[]> = {};
+            for (const [key, values] of Object.entries(traits)) {
+                if (values.length === 0) continue;
+                (merged[key] ??= []).push(...values);
+                (scoped[key] ??= []).push(...values);
+            }
+            if (Object.keys(scoped).length > 0) {
+                bySource.push({ source, traits: scoped });
+            }
+        };
+        const walk = (entry: unknown): void => {
+            if (!entry || typeof entry !== "object") return;
+            const o = entry as {
+                name?: unknown;
+                equipped?: unknown;
+                slot?: unknown;
+                contents?: unknown[];
+            };
+            const rawName = typeof o.name === "string" ? o.name : Array.isArray(o.name)
+                ? (() => { let v: unknown = o.name; while (Array.isArray(v)) v = v[0]; return typeof v === "string" ? v : ""; })()
+                : "";
+            const stem = rawName.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop()?.trim();
+            if (stem) {
+                const personal = personalLibrary[stem] as Record<string, unknown> | undefined;
+                if (personal) {
+                    const resolution = resolvePersonalItem(
+                        personal as Parameters<typeof resolvePersonalItem>[0],
+                        {
+                            elements: itemLibrary as Parameters<typeof resolvePersonalItem>[1]["elements"],
+                            magic: magicLibrary as Parameters<typeof resolvePersonalItem>[1]["magic"],
+                        },
+                        stem,
+                    );
+                    if (resolution) {
+                        const isShield = resolution.effectiveElement.armor?.category === "Shield";
+                        const authored = o.equipped === true || typeof o.slot === "string";
+                        if (isShield || authored) {
+                            const personalName = (personal as { name?: unknown }).name;
+                            const displayName = typeof personalName === "string" ? personalName : stem;
+                            const firstMagic = resolution.magicFeatureSources[0] ?? displayName;
+                            absorb(firstMagic || displayName, resolution.traits);
+                        }
+                    }
+                }
+                const container = containerLibrary[stem] as Record<string, unknown> | undefined;
+                if (container) {
+                    const resolution = resolveContainer(
+                        container as Parameters<typeof resolveContainer>[0],
+                        {
+                            elements: itemLibrary as Parameters<typeof resolveContainer>[1]["elements"],
+                            magic: magicLibrary as Parameters<typeof resolveContainer>[1]["magic"],
+                        },
+                        stem,
+                    );
+                    if (resolution) {
+                        const containerName = (container as { name?: unknown }).name;
+                        const displayName = typeof containerName === "string" ? containerName : stem;
+                        const firstMagic = resolution.magicFeatureSources[0] ?? displayName;
+                        absorb(firstMagic || displayName, resolution.traits);
+                    }
+                }
+            }
+            if (Array.isArray(o.contents)) for (const c of o.contents) walk(c);
+        };
+        for (const it of items) walk(it);
+        return { merged, bySource };
+    };
+
     // Tiny content-keyed cache so multiple consuming blocks rendered in the
     // same tick reuse one resolveFeatures() call. Cleared on every header /
     // choices change because the cache key is their JSON.
@@ -373,6 +512,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         header: any,
         choices?: Record<string, Record<string, string | string[]>>,
         additional?: CharacterDecl["additional"],
+        inventoryRaw?: unknown,
     ): ResolvedView => {
         const decl: CharacterDecl = {
             classes: (header?.classes ?? []).map((c: any) => ({
@@ -388,10 +528,41 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
             choices,
             additional,
         };
-        const key = JSON.stringify(decl);
+        // Cache key also folds in the inventory's equipped-item names so
+        // the per-tick cache doesn't return a stale (sans-equipment) view
+        // when a later block passes the inventory and an earlier one
+        // didn't.
+        const equipped = collectEquippedPersonalTraits(inventoryRaw);
+        const key = JSON.stringify(decl) + "|" + JSON.stringify(equipped.bySource);
         const hit = featuresCache.get(key);
         if (hit) return hit;
-        const view = resolveFeatures(decl, compendium);
+        const baseView = resolveFeatures(decl, compendium);
+        // Copy traits into a fresh object so merging equipped contributions
+        // doesn't leak into the cached baseline view (other callers with
+        // no inventory would otherwise observe these extras).
+        const mergedTraits: Record<string, string[]> = {};
+        for (const [k, v] of Object.entries(baseView.traits)) mergedTraits[k] = [...v];
+        for (const [k, v] of Object.entries(equipped.merged)) {
+            (mergedTraits[k] ??= []).push(...v);
+        }
+        // Attach one synthetic ResolvedSource per equipped contribution so
+        // the features-panel traits bucket attributes each trait to its
+        // originating magic / base item. Kind `"item"` keeps it out of
+        // the class/subclass branch of TraitsSourceLine.
+        const extraSources = equipped.bySource.map((entry) => ({
+            source: entry.source,
+            kind: "item" as const,
+            features: [],
+            pendingChoices: [],
+            baseTraits: entry.traits,
+            leveledTraits: {},
+            traitsByLevel: {},
+        }));
+        const view: ResolvedView = {
+            ...baseView,
+            traits: mergedTraits,
+            sources: [...baseView.sources, ...extraSources],
+        };
         // Bound the cache so a long session can't grow it unboundedly.
         if (featuresCache.size > 8) featuresCache.clear();
         featuresCache.set(key, view);
@@ -399,7 +570,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     };
 
     return {
-    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary, $items: itemLibrary },
+    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary, $items: itemLibrary, $magic: magicLibrary, $personal: personalLibrary, $containers: containerLibrary },
     blocks: {
         header,
         health,

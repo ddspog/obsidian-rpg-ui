@@ -38,8 +38,16 @@ export interface ResolvedItem {
   linkTarget: string | null;
   meta: ItemMetadata;
   qty: number;
-  /** Total weight for this row: qty × per-item weight + contents (if container). */
+  /** Total weight for this row: qty × per-item weight + contents (if container).
+   *  For weight-fixed containers (Bag of Holding), contents weight is
+   *  excluded from this value so the carrier's encumbrance isn't fed the
+   *  extradimensional load — use `contentsWeightRaw` when displaying the
+   *  actual contents sum inside the container's UI. */
   totalWeight: number;
+  /** Sum of the contents' own weights without any weight-fixed override
+   *  applied — useful for rendering a Bag of Holding's `(<carried>/<cap>) <self>`
+   *  readout where the actual interior load matters. */
+  contentsWeightRaw: number;
   /** Effective equip state. */
   equipped: boolean;
   slot?: EquipSlot;
@@ -81,6 +89,16 @@ export interface ResolvedInventory {
    *  render a matching "To Sell" row beneath the coin chips. An empty
    *  purse when nothing is flagged. */
   sellTotals: CurrencyPurse;
+  /** Current / maximum attuned magic-item count. The cap defaults to 3
+   *  (5e standard) and is raised by any `Attunement C.` trait entries
+   *  (each contributes an additive `+N`). Active count is whatever the
+   *  caller supplied — computed at the entity-block level since
+   *  attunement state lives on the `rpg item.personal` file, not the
+   *  inventory row itself. */
+  attunement: {
+    active: number;
+    cap: number;
+  };
 }
 
 export interface ResolveInventoryArgs {
@@ -88,12 +106,17 @@ export interface ResolveInventoryArgs {
   lookup: LookupFn;
   /** Strength score used for encumbrance auto-calc. */
   strength: number;
+  /** Optional attunement summary. Defaults to `{ active: 0, cap: 3 }`
+   *  — callers with access to personal-item state compute the real
+   *  values and pass them in. */
+  attunement?: { active: number; cap: number };
 }
 
 export function resolveInventory({
   block,
   lookup,
   strength,
+  attunement,
 }: ResolveInventoryArgs): ResolvedInventory {
   // Resolve items and place each in its section. Containers keep their
   // contents nested; only the container's combined weight counts toward the
@@ -140,6 +163,7 @@ export function resolveInventory({
     load,
     strength,
     sellTotals: computeSellTotals(sections),
+    attunement: attunement ?? { active: 0, cap: 3 },
   };
 }
 
@@ -199,7 +223,13 @@ function resolveEntry(
   );
 
   const selfWeight = meta.weight * qty;
-  const contentsWeight = contents.reduce((acc, c) => acc + c.totalWeight, 0);
+  const rawContentsWeight = contents.reduce((acc, c) => acc + c.totalWeight, 0);
+  // Extradimensional containers (Bag of Holding, Handy Haversack) carry
+  // a fixed external weight regardless of how much is stuffed inside.
+  // `meta.weightFixed` marks these — we keep the raw contents sum on
+  // the resolved item (for the container's own capacity readout) but
+  // zero it out for the carrier's total.
+  const contentsWeight = meta.weightFixed ? 0 : rawContentsWeight;
 
   // Ammo-tracking mode: the container declares `container.for_ammo`
   // AND every content entry carries one of those ammo names. In that
@@ -221,6 +251,14 @@ function resolveEntry(
     ? contents.reduce((acc, c) => acc + c.qty, 0)
     : 0;
 
+  const equipKind = itemEquipKind(meta.type);
+  // Shields are equipped-by-ownership. A character carrying a shield is
+  // wielding it unless they're specifically swapping — the AC and trait
+  // contributions should always kick in, matching the health block's
+  // "strongest shield bonus from inventory" policy. Authors don't have
+  // to toggle `equipped:` on every shield entry for their magic shield's
+  // traits to reach the character sheet.
+  const autoEquipped = equipKind === "shield";
   return {
     id: path,
     label,
@@ -229,9 +267,10 @@ function resolveEntry(
     meta,
     qty,
     totalWeight: selfWeight + contentsWeight,
-    equipped: entry.equipped === true || entry.slot !== undefined,
+    contentsWeightRaw: rawContentsWeight,
+    equipped: entry.equipped === true || entry.slot !== undefined || autoEquipped,
     slot: entry.slot,
-    equipKind: itemEquipKind(meta.type),
+    equipKind,
     forSale: entry.for_sale === true,
     notes: entry.notes,
     // Ammo-tracking rows render as single rows, not collapsibles.

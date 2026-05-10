@@ -35,7 +35,7 @@ passive:
 traits:
   Speed: "30 ft."
   Senses: 
-    - "[[Darvision]] 60ft."
+    - "[[Darkvision]] 60ft."
     - "[[Far Sight]] 30ft."
   Resistance:
     - Necrotic Damage

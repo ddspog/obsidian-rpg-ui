@@ -38,6 +38,11 @@ const META_KEYS: Record<SourceDocKind, string> = {
   heritage: ".HERITAGE",
   background: ".BACKGROUND",
   talent: ".TALENT",
+  // Item sources are synthetic — emitted by the character entity from
+  // equipped personal-item resolution rather than parsed from a
+  // frontmatter-keyed compendium doc. The key stays declared here so
+  // the SourceDocKind union remains exhaustive; the value is unused.
+  item: ".ITEM",
 };
 
 /** Parse a YAML payload safely; returns `null` on failure (with a console warn). */

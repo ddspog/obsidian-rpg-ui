@@ -28,7 +28,7 @@ passive:
   text: Your innate fascination with how things work allows you to use tools with ease. When you make an ability check with a tool, you can roll a d8 and add the result to the check.
 traits:
   Speed: "30 ft."
-  Senses: "[[Darvision]] 60ft."
+  Senses: "[[Darkvision]] 60ft."
 pick: 1
 ```
 ```rpg feature.choice

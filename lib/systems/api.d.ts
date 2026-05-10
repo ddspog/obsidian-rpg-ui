@@ -719,7 +719,7 @@ export interface UnlockBlock {
   level: number;
 }
 
-export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent";
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent" | "item";
 
 export interface SourceDoc {
   name: string;
@@ -977,6 +977,7 @@ export interface ResolvedInventory {
   load: "free" | "encumbered" | "heavy" | "over";
   strength: number;
   sellTotals: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  attunement: { active: number; cap: number };
 }
 
 /** A resolved inventory entry — composed from the YAML row + the looked-up
@@ -998,10 +999,12 @@ export interface ResolvedItem {
     containerCapacity?: number;
     forAmmo?: string[];
     ammoCap?: number;
+    weightFixed?: boolean;
     image?: string;
   };
   qty: number;
   totalWeight: number;
+  contentsWeightRaw: number;
   equipped: boolean;
   slot?: InventoryEquipSlot;
   equipKind: "weapon" | "armor" | "shield" | null;
@@ -1022,6 +1025,7 @@ export declare function resolveInventory(args: {
   block: NewInventoryBlock;
   lookup: LookupFn;
   strength: number;
+  attunement?: { active: number; cap: number };
 }): ResolvedInventory;
 
 /** React component that renders a resolved inventory. */
@@ -1081,6 +1085,125 @@ export declare function parseItemWeight(raw: unknown): number;
 export declare function itemKindFromType(
   type: string | undefined,
 ): "weapon" | "armor" | "shield" | "container" | null;
+
+// ─── Magic templates ─────────────────────────────────────────────────────────
+
+export interface ItemMagicAppliesTo {
+  kinds?: Array<"shield" | "armor" | "weapon" | "ammunition" | "wondrous" | "potion" | "staff">;
+  families?: string[];
+}
+
+export interface ItemMagicVariant {
+  rarity?: string;
+  cost?: string;
+  bonus?: string;
+  damage_bonus?: number;
+  extra_damage?: DamageSpec[];
+  text?: string;
+  traits?: Record<string, string[]>;
+}
+
+export interface ItemMagicData {
+  name?: string;
+  rarity?: string;
+  attunement?: boolean;
+  cost?: string;
+  image?: string;
+  text?: string;
+  applies_to?: ItemMagicAppliesTo;
+  traits?: Record<string, string[]>;
+  bonus?: string;
+  damage_bonus?: number;
+  extra_damage?: DamageSpec[];
+  variants?: Record<string, ItemMagicVariant>;
+}
+
+export declare function parseItemMagic(yaml: string): ItemMagicData | null;
+export declare function extractItemMagicBlocks(contents: string): ItemMagicData[];
+
+// ─── Personal items ──────────────────────────────────────────────────────────
+
+export interface ItemPersonalData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  attuned?: boolean;
+  notes?: string;
+  history?: string;
+  discovered?: string[];
+  image?: string;
+}
+
+export declare function parseItemPersonal(yaml: string): ItemPersonalData | null;
+export declare function extractItemPersonalBlocks(contents: string): ItemPersonalData[];
+
+export interface PersonalResolution {
+  effectiveElement: ItemElementData;
+  weaponOverlay: WeaponOverlay;
+  traits: Record<string, string[]>;
+  magicFeatureSources: string[];
+  attuned: boolean;
+  notes?: string;
+  history?: string;
+  discovered?: string[];
+  displayName: string;
+}
+
+export declare function resolvePersonalItem(
+  personal: ItemPersonalData,
+  lookups: {
+    elements: Record<string, ItemElementData>;
+    magic: Record<string, ItemMagicData>;
+  },
+  personalStem?: string,
+): PersonalResolution | null;
+
+// ─── Container items ─────────────────────────────────────────────────────────
+
+export interface ItemContainerEntry {
+  name: string;
+  qty?: number;
+  notes?: string;
+  contents?: ItemContainerEntry[];
+}
+
+export interface ItemContainerSection {
+  name?: string;
+  items?: ItemContainerEntry[];
+}
+
+export interface ItemContainerData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  image?: string;
+  sections?: ItemContainerSection[];
+  items?: ItemContainerEntry[];
+  currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+}
+
+export declare function parseItemContainer(yaml: string): ItemContainerData | null;
+export declare function extractItemContainerBlocks(contents: string): ItemContainerData[];
+
+export interface ContainerResolution {
+  effectiveElement: ItemElementData;
+  sections: ItemContainerSection[];
+  traits: Record<string, string[]>;
+  magicFeatureSources: string[];
+  magicTexts: string[];
+  displayName: string;
+}
+
+export declare function resolveContainer(
+  container: ItemContainerData,
+  lookups: {
+    elements: Record<string, ItemElementData>;
+    magic: Record<string, ItemMagicData>;
+  },
+  containerStem?: string,
+): ContainerResolution | null;
 
 // ─── Attack aspect ───────────────────────────────────────────────────────────
 
@@ -1156,6 +1279,25 @@ export declare function deriveWeaponAttacks(
 export declare const ItemElementCard: React.FC<{
   data: ItemElementData;
   showDescription?: boolean;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+export declare const ItemMagicCard: React.FC<{
+  data: ItemMagicData;
+  showDescription?: boolean;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+export declare const ItemPersonalCard: React.FC<{
+  data: ItemPersonalData;
+  resolution: PersonalResolution | null;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+export declare const ItemContainerCard: React.FC<{
+  data: ItemContainerData;
+  resolution: ContainerResolution | null;
+  lookup?: (target: string) => Record<string, unknown> | undefined;
   renderMarkdown?: (source: string) => React.ReactNode;
 }>;
 

@@ -2,12 +2,20 @@ import * as React from "react";
 import {
   EntityBlock,
   InventoryBlock as InventoryBlockComponent,
+  resolveContainer,
   resolveInventory,
+  resolvePersonalItem,
+  type ItemContainerData,
+  type ItemContainerEntry,
+  type ItemElementData,
+  type ItemMagicData,
+  type ItemPersonalData,
   type LookupFn,
   type NewInventoryBlock,
   type ResolvedItem,
 } from "rpg-ui-toolkit";
 import type { CharacterEntity } from "../../entities/character.types";
+import type { FeaturesBlockData } from "./features.types";
 import type {
   InventoryEquipSlot,
   InventoryItemEntry,
@@ -34,26 +42,64 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
   const rawItems = Array.isArray(self.items) ? self.items : [];
   const items = normaliseItems(rawItems);
 
+  const itemsByName = (lookup?.$items ?? {}) as Record<string, ItemElementData>;
+  const magicByName = (lookup?.$magic ?? {}) as Record<string, ItemMagicData>;
+  const personalByName = (lookup?.$personal ?? {}) as Record<string, ItemPersonalData>;
+  const containersByName = (lookup?.$containers ?? {}) as Record<string, ItemContainerData>;
+
+  // Expand any inventory row that links to an `rpg item.container`
+  // stash into the container's own sections. The container file wins
+  // over the character's local `contents:` — the carrier's sheet shows
+  // the authoritative party/stash breakdown without duplication.
+  const expandedItems = items.map((entry) =>
+    expandContainerEntry(entry, { containersByName, itemsByName, magicByName }),
+  );
+
   const block: NewInventoryBlock = {
-    items,
+    items: expandedItems,
     currency: normaliseCurrency(self.currency),
     encumbrance: self.encumbrance,
   };
 
   const strength = resolveStrength(self, blocks, expressions);
 
-  const itemsByName = lookup?.$items ?? {};
+  // The inventory resolver calls `lookupFn(name)` expecting a flat
+  // item-element shape. For a compendium base item we return it
+  // directly; for a personal item we compose base + magic overlays on
+  // the fly; for a container we return the composed effective element
+  // so weight / type reflect the base container's properties (plus
+  // any magic-overlaid rarity / cost / image).
   const lookupFn: LookupFn = (target) => {
     if (!target) return undefined;
-    if (itemsByName[target]) return itemsByName[target];
-    // Wikilink like `[[path/Longsword|Alias]]` — reach for the last
-    // segment (bare stem). resolveInventory already strips brackets for us
-    // but we re-strip here to handle path-qualified targets too.
     const stem = target.split("/").pop()!;
-    return itemsByName[stem];
+    const personal = personalByName[target] ?? personalByName[stem];
+    if (personal) {
+      const resolution = resolvePersonalItem(
+        personal,
+        { elements: itemsByName, magic: magicByName },
+        stem,
+      );
+      if (resolution) return resolution.effectiveElement as unknown as Record<string, unknown>;
+    }
+    const container = containersByName[target] ?? containersByName[stem];
+    if (container) {
+      const resolution = resolveContainer(
+        container,
+        { elements: itemsByName, magic: magicByName },
+        stem,
+      );
+      if (resolution) return resolution.effectiveElement as unknown as Record<string, unknown>;
+    }
+    if (itemsByName[target]) return itemsByName[target] as unknown as Record<string, unknown>;
+    return itemsByName[stem] as unknown as Record<string, unknown> | undefined;
   };
 
-  const data = resolveInventory({ block, lookup: lookupFn, strength });
+  const data = resolveInventory({
+    block,
+    lookup: lookupFn,
+    strength,
+    attunement: resolveAttunement(items, personalByName, blocks, lookup),
+  });
 
   const setItems = (self as unknown as { setItems?: (v: InventoryItemEntry[]) => void }).setItems;
   const handleToggleEquip = setItems
@@ -75,6 +121,79 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
     />
   );
 };
+
+/**
+ * When an inventory entry's wikilink targets an `rpg item.container`
+ * file, replace its local `contents:` with entries synthesised from
+ * the container's sections. Each named section becomes a nested
+ * synthetic entry (label = section name, no wikilink → no weight
+ * lookup, nested `contents:` carries the section's items). Unnamed
+ * sections spread their items directly under the container row so the
+ * common case (one flat section) reads as a plain expandable list.
+ *
+ * The character's own `contents:` on that row is ignored — container
+ * file wins per the design contract.
+ */
+function expandContainerEntry(
+  entry: InventoryItemEntry,
+  lookups: {
+    containersByName: Record<string, ItemContainerData>;
+    itemsByName: Record<string, ItemElementData>;
+    magicByName: Record<string, ItemMagicData>;
+  },
+): InventoryItemEntry {
+  const stem = wikiStem(entry.name);
+  const container = lookups.containersByName[stem];
+  if (!container) return entry;
+  const resolution = resolveContainer(
+    container,
+    { elements: lookups.itemsByName, magic: lookups.magicByName },
+    stem,
+  );
+  if (!resolution) return entry;
+  const contents: InventoryItemEntry[] = [];
+  for (const section of resolution.sections) {
+    const sectionItems = section.items ?? [];
+    if (sectionItems.length === 0) continue;
+    if (section.name) {
+      contents.push({
+        name: section.name,
+        contents: sectionItems
+          .map(toInventoryItemEntry)
+          .filter((e): e is InventoryItemEntry => e !== null),
+      });
+    } else {
+      for (const item of sectionItems) {
+        const converted = toInventoryItemEntry(item);
+        if (converted) contents.push(converted);
+      }
+    }
+  }
+  return { ...entry, contents };
+}
+
+/**
+ * Coerce a container content entry into the inventory's normalised
+ * shape. Tolerates bare YAML strings (`"[[Foo]]"`) the same way
+ * `normaliseItem` does for the character inventory — without this
+ * coercion, `resolveEntry` later calls `wikilinkTarget(undefined)` on
+ * the string-shaped value and crashes with `.match` on undefined.
+ */
+function toInventoryItemEntry(source: unknown): InventoryItemEntry | null {
+  if (typeof source === "string") return { name: source };
+  if (!source || typeof source !== "object") return null;
+  const o = source as ItemContainerEntry & { name?: unknown };
+  if (typeof o.name !== "string") return null;
+  const out: InventoryItemEntry = { name: o.name };
+  if (typeof o.qty === "number") out.qty = o.qty;
+  if (typeof o.notes === "string") out.notes = o.notes;
+  if (Array.isArray(o.contents)) {
+    out.contents = o.contents
+      .map(toInventoryItemEntry)
+      .filter((e): e is InventoryItemEntry => e !== null);
+  }
+  return out;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -286,4 +405,51 @@ function isTwoHandedToken(raw: string): boolean {
     .split("|")[0]
     .toLowerCase();
   return bare === "two-handed" || bare === "twohanded";
+}
+
+/** Strip a wikilink wrapper / path prefix down to the bare file stem. */
+function wikiStem(raw: string): string {
+  if (!raw) return "";
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  const inner = m ? m[1] : raw;
+  return inner.split("|")[0].split("/").pop()!.trim();
+}
+
+/**
+ * Count actively-attuned magic items + compute the character's
+ * attunement cap. Default cap is 3 (5e standard); features can raise
+ * it by publishing `Attunement C.` trait entries whose values parse
+ * as signed integers (`+1`, `+2`). The `active` side is the number of
+ * top-level personal-item entries in inventory whose fence body has
+ * `attuned: true`.
+ */
+function resolveAttunement(
+  items: InventoryItemEntry[],
+  personalByName: Record<string, { attuned?: boolean } | undefined>,
+  blocks: unknown,
+  lookup: CharacterEntity["lookup"] | undefined,
+): { active: number; cap: number } {
+  let active = 0;
+  for (const entry of items) {
+    const stem = wikiStem(entry.name);
+    const personal = personalByName[stem];
+    if (personal?.attuned) active++;
+  }
+  // Trait-driven cap bump. Every `Attunement C.` trait value that
+  // parses as a number adds to the baseline. Unparseable values are
+  // ignored so authors can safely leave comment-style entries.
+  let capBonus = 0;
+  try {
+    const header = (blocks as { header?: unknown })?.header;
+    const features = (blocks as { features?: FeaturesBlockData })?.features;
+    const view = lookup?.$features?.(header, features?.choices, features?.additional);
+    const values = view?.traits?.["Attunement C."] ?? [];
+    for (const raw of values) {
+      const n = parseInt(String(raw).replace(/^\+/, ""), 10);
+      if (Number.isFinite(n)) capBonus += n;
+    }
+  } catch {
+    // Partial state during first render — trait view may be null.
+  }
+  return { active, cap: 3 + capBonus };
 }

@@ -2,11 +2,15 @@ import * as React from "react";
 import {
   EntityBlock,
   deriveWeaponAttacks,
+  resolvePersonalItem,
   signed,
   type AttackAspect,
   type DamageSpec,
   type FeatureDetails,
   type ItemElementData,
+  type ItemMagicData,
+  type ItemPersonalData,
+  type WeaponOverlay,
   type WielderStats,
 } from "rpg-ui-toolkit";
 import type { AttacksProps, AttackEntry } from "./attacks.types";
@@ -289,7 +293,9 @@ function deriveWeaponRows(
   const inv = (blocks as { inventory?: { items?: unknown[] } })?.inventory;
   const rawItems = Array.isArray(inv?.items) ? inv.items : [];
   const items = rawItems.flatMap(flattenItemEntries);
-  const library = lookup?.$items ?? {};
+  const library = (lookup?.$items ?? {}) as Record<string, ItemElementData>;
+  const magicLib = (lookup?.$magic ?? {}) as Record<string, ItemMagicData>;
+  const personalLib = (lookup?.$personal ?? {}) as Record<string, ItemPersonalData>;
   const rows: Array<Omit<AttackRow, "available">> = [];
   const handItems = new Set<string>();
   if (equip.mainHand) handItems.add(equip.mainHand);
@@ -313,10 +319,31 @@ function deriveWeaponRows(
     if (!handItems.has(target)) continue;
     if (emitted.has(target)) continue;
     emitted.add(target);
-    const itemData = library[target];
-    if (!itemData) continue;
-    const element = itemData as ItemElementData;
-    const derived = deriveWeaponAttacks(element, stats, undefined, target);
+    // Personal item? Resolve to its effective element (base merged
+    // with magic bonus / rarity / etc.) plus an optional overlay
+    // carrying extra-damage dice the magic templates add (Flame
+    // Tongue's +1d6 fire, etc.). Flat attack / damage bonuses already
+    // live on `effectiveElement.weapon.bonus`, so we don't pass them
+    // through the overlay channel — that would double-count inside
+    // `deriveWeaponAttack`.
+    const personal = personalLib[target];
+    let element: ItemElementData;
+    let overlay: WeaponOverlay | undefined;
+    if (personal) {
+      const resolution = resolvePersonalItem(
+        personal,
+        { elements: library, magic: magicLib },
+        target,
+      );
+      if (!resolution) continue;
+      element = resolution.effectiveElement;
+      overlay = resolution.weaponOverlay;
+    } else {
+      const itemData = library[target];
+      if (!itemData) continue;
+      element = itemData;
+    }
+    const derived = deriveWeaponAttacks(element, stats, overlay, target);
     if (derived.length === 0) continue;
     derived.forEach((attack, i) => {
       rows.push({
@@ -340,7 +367,7 @@ function deriveWeaponRows(
       const offHand = deriveWeaponAttacks(
         element,
         stats,
-        { offHand: true },
+        { ...overlay, offHand: true },
         `${target} (Off-hand)`,
       );
       // Only the primary-mode off-hand strike — versatile / thrown

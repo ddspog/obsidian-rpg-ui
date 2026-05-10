@@ -269,6 +269,12 @@ export async function evaluateSystemBundle(
           const itemsDomain = require("../domains/items");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const itemElementCard = require("../components/item/ItemElementCard");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const itemMagicCard = require("../components/item/ItemMagicCard");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const itemPersonalCard = require("../components/item/ItemPersonalCard");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const itemContainerCard = require("../components/item/ItemContainerCard");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
@@ -288,6 +294,14 @@ export async function evaluateSystemBundle(
             parseItemElement: itemsDomain.parseItemElement,
             parseItemWeight: itemsDomain.parseItemWeight,
             itemKindFromType: itemsDomain.itemKindFromType,
+            extractItemMagicBlocks: itemsDomain.extractItemMagicBlocks,
+            parseItemMagic: itemsDomain.parseItemMagic,
+            extractItemPersonalBlocks: itemsDomain.extractItemPersonalBlocks,
+            parseItemPersonal: itemsDomain.parseItemPersonal,
+            extractItemContainerBlocks: itemsDomain.extractItemContainerBlocks,
+            parseItemContainer: itemsDomain.parseItemContainer,
+            resolvePersonalItem: itemsDomain.resolvePersonalItem,
+            resolveContainer: itemsDomain.resolveContainer,
             deriveWeaponAttack: itemsDomain.deriveWeaponAttack,
             deriveWeaponAttacks: itemsDomain.deriveWeaponAttacks,
             deriveWeaponForm: itemsDomain.deriveWeaponForm,
@@ -295,6 +309,9 @@ export async function evaluateSystemBundle(
             parseWeaponBonus: itemsDomain.parseWeaponBonus,
             signed: itemsDomain.signed,
             ItemElementCard: itemElementCard.ItemElementCard,
+            ItemMagicCard: itemMagicCard.ItemMagicCard,
+            ItemPersonalCard: itemPersonalCard.ItemPersonalCard,
+            ItemContainerCard: itemContainerCard.ItemContainerCard,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.

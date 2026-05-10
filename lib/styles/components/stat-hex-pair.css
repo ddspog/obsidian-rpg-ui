@@ -55,6 +55,24 @@ svg[aria-details="Stat Hex Pair"] {
   font-size: 9px;
 }
 
+/* ── Save vantage badge (green A / red D sitting on the back hex) ──────── */
+
+.rpg-hex-vantage-badge {
+  fill: light-dark(#2d6a2e, #3d9140);
+  stroke: var(--rpg-hex-border, #6a6258);
+  stroke-width: 0.8;
+}
+
+[data-vantage="dis"] .rpg-hex-vantage-badge {
+  fill: light-dark(#a02020, #c94040);
+}
+
+.rpg-hex-vantage-label {
+  font-size: 9px;
+  font-weight: 700;
+  fill: #fff;
+}
+
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;

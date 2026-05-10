@@ -40,6 +40,10 @@ try {
 export default class DndUIToolkitPlugin extends Plugin {
   settings: DndUIToolkitSettings;
   dataStore: JsonDataStore;
+  /** Shared KV store instance. Held on the plugin so `saveSettings` can
+   *  hot-swap its underlying data store when the user edits the
+   *  state-file path, keeping existing view references valid. */
+  private kv: KeyValueStore | null = null;
   /** `@[[File]].path` inline reference system — cache + DOM registry.
    *  Instantiated on load so Obsidian event wiring can reach them. */
   private refCache: FileRefCache | null = null;
@@ -104,13 +108,14 @@ export default class DndUIToolkitPlugin extends Plugin {
     // frozen at first load, so edits to class / subclass / lineage docs
     // don't surface in the character sheet until the plugin restarts.
     // Character notes themselves live OUTSIDE the system folders (under
-    // `folderMappings`'s key paths, not its values), so they never trigger
-    // this invalidation.
+    // `folderMappings`'s key paths, not its values); they get a separate
+    // fence-body live-refresh pass below.
     this.registerEvent(
       this.app.vault.on("modify", (file) => {
         if (!(file instanceof TFile)) return;
         if (!file.path.endsWith(".md")) return;
         const reg = SystemRegistry.getInstance();
+        let handledBySystem = false;
         for (const systemPath of reg.getFolderMappings().values()) {
           if (file.path === systemPath || file.path.startsWith(systemPath + "/")) {
             reg.invalidateSystem(systemPath);
@@ -119,13 +124,23 @@ export default class DndUIToolkitPlugin extends Plugin {
             // these forced re-renders re-run the markdown post-processors
             // which then pick up the freshly-resolved compendium.
             void this.refreshSystemConsumers(systemPath);
+            handledBySystem = true;
             break;
           }
         }
+        if (handledBySystem) return;
+        // Character / player-side note edit. Obsidian's `metadataCache.on
+        // ("changed")` only covers frontmatter, so a manual YAML edit
+        // inside a `rpg <entity>.<block>` fence otherwise wouldn't re-
+        // render the sheet. Force a full preview re-render here — idempotent
+        // with the UI-initiated refresh in `makeSetter` — so typing into
+        // a stats / inventory / features fence propagates immediately.
+        refreshFilePreview(this.app, file.path);
       })
     );
 
     const kv = new KeyValueStore(this.dataStore);
+    this.kv = kv;
     const views = createViews(this.app, kv);
     const viewRegistry = createViewRegistry(views);
 
@@ -454,6 +469,22 @@ export default class DndUIToolkitPlugin extends Plugin {
     });
   }
 
+  /**
+   * Force a full re-render of the markdown preview for a specific file.
+   * Called after `patchYamlBlock` writes so sibling entity blocks inside
+   * the same note pick up the new YAML — without this, only the block
+   * that owns the edit re-renders (via its local `setSelf`), while
+   * consumers like `rpg character.features` keep reading the stale
+   * `blocks.inventory` snapshot captured at their own mount time.
+   *
+   * The re-render is fire-and-forget; Obsidian resolves the work on its
+   * own tick. Silently skips views that don't expose `previewMode` (the
+   * markdown source-mode editor takes a different invalidation path).
+   */
+  refreshFilePreview(sourcePath: string): void {
+    refreshFilePreview(this.app, sourcePath);
+  }
+
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.settings.systemMappings = this.normalizeSystemMappings(this.settings.systemMappings);
@@ -462,7 +493,18 @@ export default class DndUIToolkitPlugin extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
     settingsStore.setSettings(this.settings);
+    // State-file path change: rebuild the data store and swap it into
+    // the long-lived KV instance. Views that captured the KV at plugin
+    // load stay valid — `setStore` clears the in-memory cache so the
+    // next read comes from the new backing file.
     this.initDataStore();
+    if (this.kv) this.kv.setStore(this.dataStore);
+
+    // System mappings change: invalidate every cached system bundle so
+    // the entity factory rebuilds from disk on next render. New folder
+    // targets get picked up; removed ones stop surfacing. Then force a
+    // re-render of every open markdown preview so the settings take
+    // effect without a plugin reload.
     const sysRegistry = SystemRegistry.getInstance();
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
@@ -470,7 +512,20 @@ export default class DndUIToolkitPlugin extends Plugin {
         mappings.set(folderPath, mapping.systemFolderPath);
       }
     }
+    for (const systemPath of new Set(sysRegistry.getFolderMappings().values())) {
+      sysRegistry.invalidateSystem(systemPath);
+    }
     sysRegistry.setFolderMappings(mappings);
+    for (const systemPath of new Set(mappings.values())) {
+      sysRegistry.invalidateSystem(systemPath);
+    }
+
+    // Rerender every open markdown preview so each entity block re-
+    // mounts and re-reads the fresh settings (state file, system
+    // mappings, colour scheme, …). Iterates broadly since mapping
+    // changes can make formerly-unmapped notes start (or stop)
+    // resolving to a system.
+    refreshAllMarkdownPreviews(this.app);
   }
 
   private normalizeSystemMappings(rawMappings: unknown): DndUIToolkitSettings["systemMappings"] {
@@ -490,6 +545,55 @@ export default class DndUIToolkitPlugin extends Plugin {
       };
     });
   }
+}
+
+/**
+ * Force a full re-render of the markdown preview for a specific file.
+ * Called after `patchYamlBlock` writes so sibling entity blocks inside
+ * the same note pick up the new YAML — without this, only the block
+ * that owns the edit re-renders (via its local `setSelf`), while
+ * consumers like `rpg character.features` keep reading the stale
+ * `blocks.inventory` snapshot captured at their own mount time.
+ */
+function refreshFilePreview(app: App, sourcePath: string): void {
+  app.workspace.iterateAllLeaves((leaf) => {
+    const view = leaf.view as unknown as {
+      getViewType?: () => string;
+      file?: { path?: string };
+      previewMode?: { rerender?: (full?: boolean) => void };
+    };
+    if (typeof view.getViewType !== "function") return;
+    if (view.getViewType() !== "markdown") return;
+    if (view.file?.path !== sourcePath) return;
+    try {
+      view.previewMode?.rerender?.(true);
+    } catch {
+      // No previewMode on this view — nothing to do.
+    }
+  });
+}
+
+/**
+ * Rerender every open markdown preview. Called after a plugin-settings
+ * save so system-mapping and state-file-path changes land without a
+ * manual reload — the previous mappings may have decided which notes
+ * even resolved to a system, so we can't scope the refresh to one
+ * folder the way `refreshSystemConsumers` does.
+ */
+function refreshAllMarkdownPreviews(app: App): void {
+  app.workspace.iterateAllLeaves((leaf) => {
+    const view = leaf.view as unknown as {
+      getViewType?: () => string;
+      previewMode?: { rerender?: (full?: boolean) => void };
+    };
+    if (typeof view.getViewType !== "function") return;
+    if (view.getViewType() !== "markdown") return;
+    try {
+      view.previewMode?.rerender?.(true);
+    } catch {
+      // No previewMode on this view — skip it.
+    }
+  });
 }
 
 /**
@@ -613,7 +717,14 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
                 key,
                 newValue,
                 sectionInfo ?? undefined,
-              ).catch((err) => console.error("RPG UI: yaml patch failed:", err));
+              ).then(() => {
+                // Kick a full preview re-render so sibling blocks in
+                // this note re-read the patched YAML. Without this only
+                // the calling block updates (via its own setSelf); e.g.
+                // the features/traits view keeps rendering a stale
+                // `blocks.inventory` snapshot until plugin reload.
+                refreshFilePreview(app, sourcePath);
+              }).catch((err) => console.error("RPG UI: yaml patch failed:", err));
               return { ...prev, [key]: newValue };
             });
           };
@@ -651,6 +762,10 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           const entityDef = (system.entities as any)?.[this.entityType];
           lookupObj = (entityDef?.lookup as Record<string, unknown>) ?? {};
           const blockNames: string[] = entityDef ? Object.keys(entityDef.blocks ?? {}) : [];
+          // Track which blocks were authored as their own fence vs. left
+          // empty so the post-pass below can alias missing sub-blocks
+          // back to the merged `character.sheet` body when appropriate.
+          const authored = new Set<string>();
           for (const bn of blockNames) {
             const meta = `${this.entityType}.${bn}`;
             const raw = entityData.codeBlocks.get(meta)?.[0];
@@ -661,8 +776,26 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
               } catch {
                 blocksObj[bn] = {};
               }
+              authored.add(bn);
             } else {
               blocksObj[bn] = {};
+            }
+          }
+          // Composite-sheet aliasing: when an author bundles header /
+          // health / stats / senses / skills / attacks / proficiencies
+          // into a single `rpg character.sheet` fence, the sub-block
+          // entries above land as empty placeholders. Cross-block reads
+          // (`blocks.header.classes`, `blocks.stats.STR`, expressions like
+          // `CharacterLevel`) then look at the empty placeholder instead
+          // of the merged body and silently report 0 / no-class. Alias
+          // every absent sub-block to the sheet body so the placeholder
+          // path resolves to the real data.
+          if (blockNames.includes("sheet") && authored.has("sheet")) {
+            const sheetBody = blocksObj["sheet"];
+            for (const bn of ["header", "health", "stats", "senses", "skills", "attacks", "proficiencies"]) {
+              if (blockNames.includes(bn) && !authored.has(bn)) {
+                blocksObj[bn] = sheetBody;
+              }
             }
           }
         } catch (e) {

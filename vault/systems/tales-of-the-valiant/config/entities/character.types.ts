@@ -41,6 +41,7 @@ export type CharacterLookup = {
     header: unknown,
     choices?: Record<string, Record<string, string | string[]>>,
     additional?: CharacterDecl["additional"],
+    inventoryRaw?: unknown,
   ) => ResolvedView;
   /**
    * Parsed `rpg spell` fence bodies from every spell doc under
@@ -59,6 +60,28 @@ export type CharacterLookup = {
    * the block having to round-trip through the vault at render time.
    */
   $items: Record<string, Record<string, unknown>>;
+  /**
+   * Compendium magic-effect templates, keyed by bare file stem (e.g.
+   * `Sentinel Shield`, `Weapon, +1, +2 or +3`). Used by the inventory
+   * resolver to overlay bonuses + traits onto a `rpg item.personal`'s
+   * base element. See `lib/domains/items/magic-overlay.ts`.
+   */
+  $magic: Record<string, Record<string, unknown>>;
+  /**
+   * Character-owned `rpg item.personal` instances, keyed by bare file
+   * stem (`Eyeshield`, `Druid Glaive`). Inventory wikilinks pointing at
+   * a personal file take this resolution chain:
+   * personal → base element + magic templates → effective item.
+   */
+  $personal: Record<string, Record<string, unknown>>;
+  /**
+   * World-attached `rpg item.container` stashes (Guild Chest, Kowyn's
+   * Bag, party shared vaults), keyed by bare file stem. When a
+   * character's inventory row targets a container file, the inventory
+   * block pulls the container's own sections and renders them inline
+   * so the stash is visible from the carrier's sheet.
+   */
+  $containers: Record<string, Record<string, unknown>>;
 }
 
 /** Return types of each named expression on the character entity */

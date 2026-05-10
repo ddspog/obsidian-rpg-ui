@@ -99,28 +99,28 @@ export function ItemElementCard({
           surface those in note-body markdown when desired. */}
       <dl className="rpg-item-card__stripline">
         {data.type && (
-          <>
+          <div className="rpg-item-card__stripline-pair">
             <dt>Type</dt>
             <dd>{parseTypeTokens(data.type)}</dd>
-          </>
+          </div>
         )}
         {data.cost && (
-          <>
+          <div className="rpg-item-card__stripline-pair">
             <dt>Cost</dt>
             <dd>{data.cost}</dd>
-          </>
+          </div>
         )}
         {data.weight != null && (
-          <>
+          <div className="rpg-item-card__stripline-pair">
             <dt>Weight</dt>
             <dd>{typeof data.weight === "number" ? `${data.weight} lb.` : data.weight}</dd>
-          </>
+          </div>
         )}
         {data.rarity && (
-          <>
+          <div className="rpg-item-card__stripline-pair">
             <dt>Rarity</dt>
             <dd>{data.rarity}</dd>
-          </>
+          </div>
         )}
       </dl>
 

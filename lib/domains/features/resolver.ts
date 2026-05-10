@@ -53,7 +53,13 @@ function pickedNames(picked: string | string[] | undefined): string[] {
 export function normalizeTraitValue(val: unknown): string[] {
   if (val == null) return [];
   if (typeof val === "string") return [val];
-  if (typeof val === "number" || typeof val === "boolean") return [String(val)];
+  if (typeof val === "number") return [String(val)];
+  // Boolean trait values: `true` marks the key as present without any
+  // value ("bare flag" traits like `Initiative A.: true`). It lands in
+  // the trait map as an empty-string entry so downstream consumers see
+  // the key exists; the display layer skips the value parens when all
+  // entries are empty. `false` drops the trait entirely.
+  if (typeof val === "boolean") return val ? [""] : [];
   if (Array.isArray(val)) {
     // Detect the [[X]] flow shape: a 1-element array containing a 1-element
     // array containing a string. Only matches the leaf, so a list-of-wikilinks
@@ -79,6 +85,11 @@ function collectTraits(
   if (!traits) return;
   for (const [key, value] of Object.entries(traits)) {
     const values = normalizeTraitValue(value as TraitValue);
+    // `normalizeTraitValue` returns `[""]` for a bare-flag trait
+    // (`Key: true`). Pushing an empty string still marks the key as
+    // present so consumers can check existence without matching any
+    // meaningful value. An entirely empty array is the `false` case —
+    // drop it.
     if (values.length === 0) continue;
     if (!agg[key]) agg[key] = [];
     agg[key].push(...values);

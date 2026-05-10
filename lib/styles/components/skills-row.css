@@ -100,6 +100,32 @@ section[aria-details="Character Skills"] > menu > li > data > [aria-details="Van
   line-height: 1;
 }
 
+/* ── Shared A/D vantage badge (skills + initiative diamond) ─────────────── */
+
+.rpg-vantage-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: 50%;
+  margin-inline-end: 0.25em;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: light-dark(#2d6a2e, #3d9140);
+}
+
+.rpg-vantage-badge[data-vantage="dis"] {
+  background: light-dark(#a02020, #c94040);
+}
+
+.rpg-vantage-badge sup {
+  font-size: 0.65em;
+  line-height: 1;
+  top: 0;
+}
+
 /* ── Merge senses + skills into one box when adjacent ───────────────────── */
 
 /* Direct siblings (Storybook) */

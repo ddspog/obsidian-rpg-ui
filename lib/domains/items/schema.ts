@@ -10,7 +10,7 @@
  */
 
 import { parse as parseYAML } from "yaml";
-import type { AttackAspect } from "../features/attack";
+import type { AttackAspect, DamageSpec } from "../features/attack";
 
 export interface ItemWeaponData {
   damage?: string;
@@ -60,6 +60,11 @@ export interface ItemContainerData {
   /** Max count of `for_ammo` the container can hold. Renders as
    *  `<carried> / <cap>` in the inventory's stat column. */
   ammo_cap?: number;
+  /** When true, the container contributes only its own weight to the
+   *  carrier's encumbrance — contents weight is ignored. Set by
+   *  Bag-of-Holding-style magic overlays to model extradimensional
+   *  interiors. */
+  weight_fixed?: boolean;
 }
 
 export interface ItemShopData {
@@ -133,6 +138,258 @@ export function parseItemWeight(raw: unknown): number {
   if (!match) return 0;
   const n = Number(match[0]);
   return Number.isFinite(n) ? n : 0;
+}
+
+// ─── Magic items ─────────────────────────────────────────────────────────────
+
+/** Which kinds of `item.element` this magic template can overlay.
+ *  `families` is an optional tighter whitelist matched by bare file
+ *  stem (`"[[Longsword]]" → "Longsword"`). */
+export interface ItemMagicAppliesTo {
+  kinds?: Array<"shield" | "armor" | "weapon" | "ammunition" | "wondrous" | "potion" | "staff">;
+  families?: string[];
+}
+
+/** One tier of a multi-variant magic template (`+1` / `+2` / `+3`,
+ *  Potion of Healing's Common / Uncommon / Rare / Very Rare). Authored
+ *  fields override the template-level ones when the personal item
+ *  picks this variant. */
+export interface ItemMagicVariant {
+  rarity?: string;
+  cost?: string;
+  bonus?: string;
+  damage_bonus?: number;
+  extra_damage?: DamageSpec[];
+  text?: string;
+  traits?: Record<string, string[]>;
+}
+
+/**
+ * `rpg item.magic` fence body. A reusable magic effect template that a
+ * `rpg item.personal` can overlay onto a base `rpg item.element`.
+ *
+ * Static mechanical effects live inline (`bonus`, `damage_bonus`,
+ * `traits`). Feature-driven effects (reactions, passive abilities,
+ * curses) are authored as sibling `rpg feature.details` fences in the
+ * same file — the compendium card hides them; the character features
+ * resolver picks them up whenever a personal item referencing this
+ * template is equipped.
+ */
+export interface ItemMagicData {
+  /** Display name; falls back to the file stem when absent. */
+  name?: string;
+  rarity?: string;
+  /** True when the item grants its effects only once attuned. No
+   *  enforcement today — the character sheet shows an `Attunement X/3`
+   *  readout so the player can keep the count in mind. */
+  attunement?: boolean;
+  cost?: string;
+  image?: string;
+  /** Compendium prose. Rendered as markdown. */
+  text?: string;
+  applies_to?: ItemMagicAppliesTo;
+  /** Trait grants merged into the owner's feature-view traits when the
+   *  magic is active. Same taxonomy as class / heritage traits. */
+  traits?: Record<string, string[]>;
+  /** Flat bonus added to attack AND damage rolls for weapons. */
+  bonus?: string;
+  /** Flat +N damage stacked onto the weapon's base damage. */
+  damage_bonus?: number;
+  /** Additional damage dice, each rolled alongside the base. */
+  extra_damage?: DamageSpec[];
+  /** Override the effective element's own weight. Bag of Holding sets
+   *  this to `"15 lb."` so the bag always weighs 15 regardless of
+   *  contents. Pairs with `weight_fixed` below so the inventory
+   *  resolver skips contents weight for encumbrance. */
+  weight?: string | number;
+  /** Override the container's `weight_cap`. Bag of Holding's 500-lb
+   *  interior replaces the base sack's 30-lb cap. */
+  weight_cap?: string;
+  /** When true, the container's row contributes only its own weight
+   *  to the carrier — contents weight is ignored. Models extradim-
+   *  ensional-space magic items like Bag of Holding / Handy Haversack. */
+  weight_fixed?: boolean;
+  /** Multi-tier templates. Keyed by a variant label the personal item
+   *  picks via its `variants:` map (`{ "<template>": "<key>" }`). */
+  variants?: Record<string, ItemMagicVariant>;
+}
+
+/** Parse a single `rpg item.magic` fence body. */
+export function parseItemMagic(yamlSource: string): ItemMagicData | null {
+  if (!yamlSource || !yamlSource.trim()) return {};
+  try {
+    const parsed = parseYAML(yamlSource);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as ItemMagicData;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** Extract every `rpg item.magic` fence from a doc's body text.
+ *  Mirrors `extractItemElementBlocks` shape so the item entity can
+ *  build the `$magic` library at system load. */
+export function extractItemMagicBlocks(contents: string): ItemMagicData[] {
+  const out: ItemMagicData[] = [];
+  if (!contents) return out;
+  const re = /```+\s*rpg\s+item\.magic\s*\n([\s\S]*?)```+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(contents)) !== null) {
+    const parsed = parseItemMagic(m[1]);
+    if (parsed) out.push(parsed);
+  }
+  return out;
+}
+
+// ─── Personal items ──────────────────────────────────────────────────────────
+
+/**
+ * `rpg item.personal` fence body. A character-owned instance of an
+ * item, composing:
+ *   - `base` — the underlying `rpg item.element` (Shield, Glaive, …).
+ *   - `magic[]` — zero-or-more `rpg item.magic` templates, overlaid
+ *     onto the base in author order.
+ *   - `variants{}` — for each magic template whose file has variants,
+ *     the key to pick (`{ "Weapon, +1, +2 or +3": "+1" }`).
+ *   - `attuned` — player attunement state; contributes to the sheet's
+ *     `Attunement X/Y` readout.
+ *   - `rarity` — display-only override; the card shows this in the
+ *     stripline alongside type / cost / weight so the player sees the
+ *     item's overall rarity (which may differ from any single magic
+ *     template's rarity when multiple are layered).
+ *   - `image` — optional override displayed at the bottom of the card.
+ *
+ * The inventory resolver follows personal → base + magic at read time
+ * to produce the effective item the UI renders (weight sums with base,
+ * weapon overlays stack from the magic bonuses, etc.).
+ *
+ * Lore fields like `notes`, `history`, and `discovered` are NOT part
+ * of this schema — they live as plain markdown outside the fence so
+ * they can carry full Obsidian formatting without passing through YAML.
+ */
+export interface ItemPersonalData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  attuned?: boolean;
+  rarity?: string;
+  image?: string;
+}
+
+export function parseItemPersonal(yamlSource: string): ItemPersonalData | null {
+  if (!yamlSource || !yamlSource.trim()) return {};
+  try {
+    const parsed = parseYAML(yamlSource);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as ItemPersonalData;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function extractItemPersonalBlocks(contents: string): ItemPersonalData[] {
+  const out: ItemPersonalData[] = [];
+  if (!contents) return out;
+  const re = /```+\s*rpg\s+item\.personal\s*\n([\s\S]*?)```+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(contents)) !== null) {
+    const parsed = parseItemPersonal(m[1]);
+    if (parsed) out.push(parsed);
+  }
+  return out;
+}
+
+// ─── Container items ─────────────────────────────────────────────────────────
+
+/**
+ * One named bundle inside a container. Sections are optional — a plain
+ * container can declare a flat top-level `items:` list instead. When
+ * both are present `sections:` wins; `items:` is treated as a trailing
+ * unnamed section.
+ *
+ * The `items` list reuses the character-inventory YAML entry shape
+ * (name, qty, notes, nested contents, …) so the container pipeline
+ * hands straight through to the same resolver that backs
+ * `rpg character.inventory`.
+ */
+export interface ItemContainerSection {
+  name?: string;
+  items?: ItemContainerEntry[];
+}
+
+/**
+ * Container content entries. Mirror of `YamlItemEntry` from
+ * `lib/domains/inventory/schema.ts` — kept as a sibling interface so
+ * items/* doesn't take a hard dependency on the inventory module.
+ */
+export interface ItemContainerEntry {
+  name: string;
+  qty?: number;
+  notes?: string;
+  contents?: ItemContainerEntry[];
+}
+
+/**
+ * `rpg item.container` fence body. A standalone container that is
+ * attached to the world (a guild chest, a campaign stash, a party
+ * shared bag) — NOT owned by a specific character. Composes like
+ * `rpg item.personal`:
+ *   - `base`      — the underlying `rpg item.element` whose volume /
+ *                   weight_cap / rarity / image apply as defaults.
+ *   - `magic[]`   — zero-or-more `rpg item.magic` overlays. For
+ *                   containers these can declare weight reduction,
+ *                   capacity expansion, or traits that flow to whoever
+ *                   has the container equipped.
+ *   - `sections[]` — optional content grouping the container renders
+ *                   as collapsible sub-tables. When a character's
+ *                   inventory references this file, the same sections
+ *                   flow into the inventory row.
+ *
+ * Lore / history / discovery notes live OUTSIDE the fence as plain
+ * markdown, matching the `rpg item.personal` convention.
+ */
+export interface ItemContainerData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  image?: string;
+  sections?: ItemContainerSection[];
+  items?: ItemContainerEntry[];
+  /** Coin purse held inside the container. Same shape the character
+   *  inventory uses so the world-stash can carry party loot or guild
+   *  treasury totals on its own page. */
+  currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+}
+
+export function parseItemContainer(yamlSource: string): ItemContainerData | null {
+  if (!yamlSource || !yamlSource.trim()) return {};
+  try {
+    const parsed = parseYAML(yamlSource);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as ItemContainerData;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function extractItemContainerBlocks(contents: string): ItemContainerData[] {
+  const out: ItemContainerData[] = [];
+  if (!contents) return out;
+  const re = /```+\s*rpg\s+item\.container\s*\n([\s\S]*?)```+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(contents)) !== null) {
+    const parsed = parseItemContainer(m[1]);
+    if (parsed) out.push(parsed);
+  }
+  return out;
 }
 
 /**

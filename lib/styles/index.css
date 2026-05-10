@@ -18,6 +18,7 @@
 @import "./components/inventory.css";
 @import "./components/inventory-block.css";
 @import "./components/item-card.css";
+@import "./components/item-magic-card.css";
 @import "./components/features.css";
 /* Session Log Components - Split from monolithic file */
 @import "./components/session-log-scene.css";

@@ -102,7 +102,8 @@ export const senses: EntityBlock<SensesProps, CharacterEntity> = ({
 }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
-  const view = lookup.$features?.(header, features?.choices, features?.additional);
+  const inventory = (blocks as any).inventory;
+  const view = lookup.$features?.(header, features?.choices, features?.additional, inventory);
   const traits = view?.traits ?? {};
 
   // Passive Insight / Investigation / Perception derive proficiency the

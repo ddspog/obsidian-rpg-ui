@@ -415,7 +415,7 @@ export interface UnlockBlock {
   level: number;
 }
 
-export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent";
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent" | "item";
 
 /** All blocks parsed from one compendium document. */
 export interface SourceDoc {

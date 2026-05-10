@@ -42,7 +42,8 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   // consumes `Senses` / `Skill P.` from the same map.
   const header = (blocks as unknown as { header?: unknown }).header;
   const featuresBlock = (blocks as unknown as { features?: FeaturesBlockData }).features;
-  const view = lookup.$features?.(header, featuresBlock?.choices, featuresBlock?.additional);
+  const inventory = (blocks as unknown as { inventory?: unknown }).inventory;
+  const view = lookup.$features?.(header, featuresBlock?.choices, featuresBlock?.additional, inventory);
   const traits = view?.traits ?? {};
 
   // Hit dice: each class file declares its hit-die face via a
@@ -70,23 +71,30 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
     .filter((n) => Number.isFinite(n) && n > 0);
   const naturalAc = Math.max(self.natural_ac ?? 10, ...(naturalAcFromTraits.length > 0 ? naturalAcFromTraits : [0]));
 
-  // Initiative bonus: start from the YAML flat `initiative.bonus`, then
-  // add PB scaling from the trait taxonomy — `Initiative P.` = full
-  // proficiency, `Initiative J.` (Jack) = half, `Initiative E.` = expertise
-  // (double PB). Flat numeric bonuses come in via `Initiative B.`, and the
-  // advantage/disadvantage trait keys (`Initiative A.` / `Initiative D.`)
-  // are collected for potential downstream consumers (vantage isn't shown
-  // on the stat diamond itself but the values still fold into the view).
-  const pb = expressions.ProficiencyBonus();
+  // Initiative bonus: the DEX modifier sets the baseline (standard 5e /
+  // ToV rule), then the trait taxonomy layers on top — `Initiative P.` =
+  // full proficiency, `Initiative J.` (Jack) = half, `Initiative E.` =
+  // expertise (double PB). Flat numeric bonuses come in via
+  // `Initiative B.`. All three fold through `expressions.ModifierTotal`
+  // so the DEX modifier automatically reflects ASI picks. Advantage /
+  // disadvantage ride the vantage badge on the diamond (below).
   const initExpertise = (traits["Initiative E."] ?? []).length > 0;
   const initFull = (traits["Initiative P."] ?? []).length > 0;
   const initHalf = (traits["Initiative J."] ?? []).length > 0;
-  const initProfBonus = initExpertise ? pb * 2 : initFull ? pb : initHalf ? Math.floor(pb / 2) : 0;
+  const initProfLevel = initExpertise ? 2 : initFull ? 1 : initHalf ? 0.5 : 0;
   const initFlat = (traits["Initiative B."] ?? []).reduce((n, raw) => n + parseNumericTrait(raw), 0);
-  // Initiative total now lives entirely in traits — the old
-  // `self.initiative.bonus` YAML field is redundant and has been
-  // dropped from the authored shape.
-  const initiativeTotal = initProfBonus + initFlat;
+  const initiativeTotal = expressions.ModifierTotal({
+    attribute: "DEX",
+    proficiency: initProfLevel,
+    bonus: initFlat,
+  });
+  // Advantage / disadvantage for initiative are flag-shaped — presence
+  // of any value in the trait map is enough, since there's one
+  // initiative track per character.
+  const initAdv = (traits["Initiative A."] ?? []).length > 0;
+  const initDis = (traits["Initiative D."] ?? []).length > 0;
+  const initVantage: "adv" | "dis" | undefined =
+    initAdv && !initDis ? "adv" : initDis && !initAdv ? "dis" : undefined;
 
   const handleSpendDie = (dieType: string) => {
     const current = hitDice[dieType]?.current ?? 0;
@@ -135,7 +143,12 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
             />
           </Line.Control>
           <Line.Stats>
-            <Stat.Diamond label="Initiative" value={initiativeTotal} format="bonus" />
+            <Stat.Diamond
+              label="Initiative"
+              value={initiativeTotal}
+              format="bonus"
+              vantage={initVantage}
+            />
             {speeds.map((s, i) => (
               <Stat.Diamond key={i} label={s.type ?? "Walk"} value={s.value ?? 30} format="unit" size="lg" />
             ))}

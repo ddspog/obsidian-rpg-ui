@@ -32,6 +32,10 @@ export interface ItemMetadata {
   forAmmo?: string[];
   /** Max count of `forAmmo` the container can hold. */
   ammoCap?: number;
+  /** When true, the container contributes only its own weight to the
+   *  carrier — contents weight is ignored. Set by Bag-of-Holding-style
+   *  magic overlays. */
+  weightFixed?: boolean;
   /** Image reference (Obsidian `![[file.webp|size]]` embed). */
   image?: string;
 }
@@ -96,6 +100,7 @@ export function parseItemMetadata(
         : typeof container.ammo_cap === "string"
           ? Number.parseInt(container.ammo_cap, 10) || undefined
           : undefined,
+    weightFixed: container.weight_fixed === true ? true : undefined,
     image: asString(fm.image) ?? asString(fm.reference_img),
   };
 }

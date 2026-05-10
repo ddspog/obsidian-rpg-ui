@@ -13,11 +13,30 @@ interface ContainerRowProps {
 export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
   const [open, setOpen] = React.useState(true);
 
-  const totalLabel =
-    item.totalWeight > 0 ? `${formatWeight(item.totalWeight)} lb.` : "";
-  const capacityLabel =
-    item.meta.containerCapacity != null
-      ? ` / ${formatWeight(item.meta.containerCapacity)} lb.`
+  // Weight readout — split across the row's stat column (col 4) and
+  // weight column (col 5) so each value sits inside its own grid slot
+  // and the right-edge stays flush with ordinary item rows.
+  //   - Weight-fixed containers (Bag of Holding):
+  //       stat   → `(<carried> lb. / <cap> lb.)`
+  //       weight → `<true wt> lb.`
+  //     Trailing number is the weight that adds to the carrier's
+  //     encumbrance (15 lb for a Bag of Holding regardless of contents);
+  //     the parens expose the actual interior load so the player can
+  //     see when they're approaching the magic cap.
+  //   - Regular containers:
+  //       stat   → empty
+  //       weight → `<total wt> lb. [/ <cap> lb.]`
+  const hasCapacity = item.meta.containerCapacity != null;
+  const weightFixed = item.meta.weightFixed === true;
+  const statReadout = weightFixed && hasCapacity
+    ? `(${formatWeight(item.contentsWeightRaw)} lb. / ${formatWeight(item.meta.containerCapacity!)} lb.)`
+    : "";
+  const weightReadout = weightFixed
+    ? (item.totalWeight > 0 ? `${formatWeight(item.totalWeight)} lb.` : "")
+    : item.totalWeight > 0
+      ? hasCapacity
+        ? `${formatWeight(item.totalWeight)} lb. / ${formatWeight(item.meta.containerCapacity!)} lb.`
+        : `${formatWeight(item.totalWeight)} lb.`
       : "";
 
   const canSell = !!onToggleForSale;
@@ -27,7 +46,16 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
       className="rpg-inventory-block__container"
       data-for-sale={item.forSale ? "true" : undefined}
       open={open}
-      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+      onToggle={(e) => {
+        // `toggle` bubbles in React's synthetic-event system, so a
+        // nested <details> firing toggle would also run this handler
+        // with the child as `e.target` and wreck the parent's `open`
+        // state (collapsing the whole Kowyn's Bag when you just
+        // collapse a Backpack inside it). Gate on currentTarget so
+        // each container's state stays tied to its own summary.
+        if (e.target !== e.currentTarget) return;
+        setOpen((e.currentTarget as HTMLDetailsElement).open);
+      }}
     >
       <summary className="rpg-inventory-block__container-summary">
         <span className="rpg-inventory-block__item-sell">
@@ -63,10 +91,19 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
             item.label
           )}
         </span>
-        <span className="rpg-inventory-block__container-weight">
-          {totalLabel}
-          {capacityLabel}
+        {/* Column 4 (stat) — carries the `(carried / cap)` readout for
+         *  weight-fixed containers; empty for ordinary ones. The slot
+         *  is reserved either way so the 6-col grid lands at the same
+         *  right edge as item rows. */}
+        <span className="rpg-inventory-block__item-stat">
+          {statReadout}
         </span>
+        <span className="rpg-inventory-block__container-weight">
+          {weightReadout}
+        </span>
+        {/* Column 6 placeholder (equip action on item rows) — reserved
+         *  so the container's right edge aligns with item rows. */}
+        <span className="rpg-inventory-block__item-action" aria-hidden="true" />
       </summary>
       <div className="rpg-inventory-block__container-contents">
         {item.contents.length === 0 ? (

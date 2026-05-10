@@ -25,6 +25,14 @@ export {
   parseItemElement,
   parseItemWeight,
   itemKindFromType,
+  extractItemMagicBlocks,
+  parseItemMagic,
+  extractItemPersonalBlocks,
+  parseItemPersonal,
+  extractItemContainerBlocks,
+  parseItemContainer,
+  resolvePersonalItem,
+  resolveContainer,
   deriveWeaponAttack,
   deriveWeaponAttacks,
   deriveWeaponForm,
@@ -33,3 +41,6 @@ export {
   signed,
 } from "../domains/items";
 export { ItemElementCard } from "../components/item/ItemElementCard";
+export { ItemMagicCard } from "../components/item/ItemMagicCard";
+export { ItemPersonalCard } from "../components/item/ItemPersonalCard";
+export { ItemContainerCard } from "../components/item/ItemContainerCard";

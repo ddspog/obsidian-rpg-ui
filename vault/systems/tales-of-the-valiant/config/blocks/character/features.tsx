@@ -773,26 +773,37 @@ function TraitValue({ value }: { value: string }) {
   );
 }
 
-/** Inline trait list: `**TraitA** (+v1, +v2), **TraitB** (+v3)`. */
+/** Inline trait list: `**TraitA** (+v1, +v2), **TraitB** (+v3)`. A trait
+ *  whose values are all empty strings — the canonical shape for a bare
+ *  flag authored as `Key: true` — renders as `**TraitA**` alone, no
+ *  parens or value list. */
 function TraitsInline({ traits }: { traits: Record<string, string[]> }) {
   const entries = Object.entries(traits);
   if (entries.length === 0) return null;
   return (
     <>
-      {entries.map(([name, values], i) => (
-        <React.Fragment key={name}>
-          {i > 0 && ", "}
-          <strong>{name}</strong>
-          {" ("}
-          {values.map((v, j) => (
-            <React.Fragment key={j}>
-              {j > 0 && ", "}
-              <TraitValue value={v} />
-            </React.Fragment>
-          ))}
-          {")"}
-        </React.Fragment>
-      ))}
+      {entries.map(([name, values], i) => {
+        const visible = values.filter((v) => v !== "");
+        const bareFlag = visible.length === 0;
+        return (
+          <React.Fragment key={name}>
+            {i > 0 && ", "}
+            <strong>{name}</strong>
+            {!bareFlag && (
+              <>
+                {" ("}
+                {visible.map((v, j) => (
+                  <React.Fragment key={j}>
+                    {j > 0 && ", "}
+                    <TraitValue value={v} />
+                  </React.Fragment>
+                ))}
+                {")"}
+              </>
+            )}
+          </React.Fragment>
+        );
+      })}
     </>
   );
 }
@@ -1399,7 +1410,16 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
     additional: self.additional,
   };
 
-  const view = resolveFeatures(decl, lib);
+  // Route through `lookup.$features` so the character entity layers in
+  // synthetic `kind: "item"` sources for equipped personal items —
+  // that's how magic-item traits (Sentinel Shield's `Initiative A.` /
+  // `Skill A.`) show up as their own attributed line inside TraitsBucket.
+  // Fall back to a direct resolveFeatures call when the toolkit lookup
+  // isn't wired (Storybook, systems without the item entity).
+  const inventoryRaw = (blocks as { inventory?: unknown }).inventory;
+  const view = lookup.$features
+    ? lookup.$features(header, self.choices, self.additional, inventoryRaw)
+    : resolveFeatures(decl, lib);
   const primaryClass = (header.classes ?? [])[0];
   const characterLevel = primaryClass?.level;
 

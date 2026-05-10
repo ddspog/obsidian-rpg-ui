@@ -108,12 +108,12 @@ items:
     notes: Main
   - name: "[[Quiver]]"
     contents:
-      - name: [[Arrows]]
+      - name: "[[Arrows]]"
         qty: 19
   - name: "[[Shortsword]]"
     qty: 2
-    notes: For melee, dual
     slot: main_hand
+    notes: For melee, dual
   - name: "[[Leather]]"
     slot: armor
   - name: "[[Clothes, fine]]"

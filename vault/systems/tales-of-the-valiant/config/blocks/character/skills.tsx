@@ -83,6 +83,21 @@ function ProfDot({ level }: { level: number }) {
   );
 }
 
+/** Pill-shaped advantage / disadvantage indicator. Advantage is a green
+ *  dot + superscript "A"; disadvantage is red + "D". Renders beside the
+ *  modifier cell on the skill / save / initiative row. */
+function VantageBadge({ kind }: { kind: "adv" | "dis" }) {
+  return (
+    <span
+      className="rpg-vantage-badge"
+      data-vantage={kind}
+      aria-label={kind === "adv" ? "Advantage" : "Disadvantage"}
+    >
+      <sup>{kind === "adv" ? "A" : "D"}</sup>
+    </span>
+  );
+}
+
 export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
   self,
   blocks,
@@ -91,7 +106,8 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
 }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
-  const view = lookup.$features?.(header, features?.choices);
+  const inventory = (blocks as any).inventory;
+  const view = lookup.$features?.(header, features?.choices, features?.additional, inventory);
   const traits = view?.traits ?? {};
 
   // Count full-proficiency picks. A skill appearing twice in `Skill P.`
@@ -188,8 +204,8 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
               <abbr aria-details="Skill Attribute">{attr}</abbr>
               <span aria-details="Skill Name">{name}</span>
               <data value={mod}>
-                {vantage > 0 && <span aria-details="Vantage">{"\u25B2"}</span>}
-                {vantage < 0 && <span aria-details="Vantage">{"\u25BC"}</span>}
+                {vantage > 0 && <VantageBadge kind="adv" />}
+                {vantage < 0 && <VantageBadge kind="dis" />}
                 {formatMod(mod)}
               </data>
             </li>

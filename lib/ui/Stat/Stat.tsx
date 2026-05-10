@@ -9,6 +9,9 @@ export interface StatProps {
   saveBonus?: number;
   /** Proficiency level for the save: 0, 0.5, 1, or 2 */
   proficiency?: number;
+  /** Vantage on the save: "adv" renders a green "A" badge at the top of
+   *  the back hex; "dis" renders a red "D". Omit for no badge. */
+  saveVantage?: "adv" | "dis";
   className?: string;
   children?: React.ReactNode;
 }
@@ -44,7 +47,7 @@ const PROF_INNER_OUTER = "M80,6.12 L104.6,20.06 L104.6,47.94 L80,61.88 L55.4,47.
 const PROF_INNER_INNER = "M80,7.62 L56.9,20.81 L56.9,47.19 L80,60.38 L103.1,47.19 L103.1,20.81Z";
 const PROF_RING_DOUBLE_INNER = `${PROF_INNER_OUTER} ${PROF_INNER_INNER}`;
 
-export function Stat({ value, modifier, saveBonus, proficiency = 0, children }: StatProps) {
+export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage, children }: StatProps) {
   const id = React.useId();
   const mod = modifier ?? modifierFromScore(value);
   const modText = formatMod(mod);
@@ -89,6 +92,25 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, children }: 
         )}
         <text x="80" y="27" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-label rpg-hex-label--back">SAVE</text>
         <text x="80" y="43" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-value rpg-hex-value--back">{saveText ?? modText}</text>
+        {saveVantage && (
+          <g aria-details="Save Vantage" data-vantage={saveVantage}>
+            <circle
+              cx="105"
+              cy="8"
+              r="7"
+              className="rpg-hex-vantage-badge"
+            />
+            <text
+              x="105"
+              y="11"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="rpg-hex-vantage-label"
+            >
+              {saveVantage === "adv" ? "A" : "D"}
+            </text>
+          </g>
+        )}
       </g>
 
       {/* Front hex — ability modifier (drawn second, on top) */}

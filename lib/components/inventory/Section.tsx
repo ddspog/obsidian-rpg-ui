@@ -14,13 +14,20 @@ interface SectionProps {
 export function Section({ section, hideWhenEmpty = true, onToggleEquip, onToggleForSale }: SectionProps) {
   if (hideWhenEmpty && section.items.length === 0) return null;
 
+  // Fall back to the section's `id` when it's not a known character-
+  // inventory bucket. The container card reuses this component with
+  // arbitrary author-named sections (`"Ritual Supplies"`,
+  // `"Trade Goods"`) — without the fallback those render with an
+  // empty heading.
+  const label = SECTION_LABELS[section.id as keyof typeof SECTION_LABELS] ?? section.id;
+
   return (
     <section
       className="rpg-inventory-block__section"
       data-section={section.id}
     >
       <h5 className="rpg-inventory-block__section-title">
-        {SECTION_LABELS[section.id]}
+        {label}
       </h5>
       <div className="rpg-inventory-block__section-body">
         {section.items.length === 0 ? (

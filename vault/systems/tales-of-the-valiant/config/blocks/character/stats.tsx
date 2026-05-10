@@ -89,6 +89,39 @@ function saveBonusFromTraits(traits: Record<string, string[]>): Record<AttrCode,
   return out;
 }
 
+/** Vantage flags per attribute save. `Save A.: STR` → advantage on STR
+ *  saves; `Save A.: true` → advantage on every save. Disadvantage
+ *  follows the same shape on `Save D.`. When both are present for the
+ *  same attribute they net to "none" (the rules cancel). */
+function saveVantageFromTraits(
+  traits: Record<string, string[]>,
+): Record<AttrCode, "adv" | "dis" | undefined> {
+  const adv = new Set<AttrCode>();
+  const dis = new Set<AttrCode>();
+  const apply = (set: Set<AttrCode>, raw: string) => {
+    if (raw === "") {
+      // Bare-flag `Save A.: true` → applies to every save.
+      for (const code of ATTRS) set.add(code);
+      return;
+    }
+    const code = asAttrCode(raw);
+    if (code) set.add(code);
+  };
+  for (const raw of traits["Save A."] ?? []) apply(adv, raw);
+  for (const raw of traits["Save D."] ?? []) apply(dis, raw);
+  const out: Record<AttrCode, "adv" | "dis" | undefined> = {
+    STR: undefined, DEX: undefined, CON: undefined,
+    INT: undefined, WIS: undefined, CHA: undefined,
+  };
+  for (const code of ATTRS) {
+    const a = adv.has(code);
+    const d = dis.has(code);
+    if (a && !d) out[code] = "adv";
+    else if (d && !a) out[code] = "dis";
+  }
+  return out;
+}
+
 interface AttrEntry {
   baseValue: number;
   saveProf?: number;
@@ -126,10 +159,12 @@ export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
 }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
-  const view = lookup.$features?.(header, features?.choices, features?.additional);
+  const inventory = (blocks as any).inventory;
+  const view = lookup.$features?.(header, features?.choices, features?.additional, inventory);
   const asi = sumAsi(view?.traits?.["Ability Scores"]);
   const saveProfsAuto = saveProfLevelsFromTraits(view?.traits ?? {});
   const saveBonusAuto = saveBonusFromTraits(view?.traits ?? {});
+  const saveVantageAuto = saveVantageFromTraits(view?.traits ?? {});
 
   return (
     <section aria-details="Character Stats">
@@ -148,6 +183,7 @@ export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
             value={finalValue}
             saveBonus={saveBonus}
             proficiency={proficiency}
+            saveVantage={saveVantageAuto[attr]}
           >
             {attr}
           </Stat>

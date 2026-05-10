@@ -119,6 +119,9 @@ describe("resolveInventory", () => {
     const armor = result.sections.find((s) => s.id === "armor")!;
     expect(weapons.items.find((i) => i.label === "Longsword")!.equipped).toBe(true);
     expect(weapons.items.find((i) => i.label === "Dagger")!.equipped).toBe(true);
-    expect(armor.items.find((i) => i.label === "Shield")!.equipped).toBe(false);
+    // Shields are equipped-by-ownership: the resolver always treats a
+    // shield-kind entry as equipped so its AC and trait contributions
+    // reach the character sheet without a manual toggle.
+    expect(armor.items.find((i) => i.label === "Shield")!.equipped).toBe(true);
   });
 });

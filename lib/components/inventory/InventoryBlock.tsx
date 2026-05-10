@@ -16,9 +16,22 @@ interface InventoryBlockProps {
 }
 
 export function InventoryBlock({ data, onToggleEquip, onToggleForSale }: InventoryBlockProps) {
+  const { active, cap } = data.attunement;
   return (
     <div className="rpg-inventory-block">
       <CurrencyRow currency={data.currency} sellTotals={data.sellTotals} />
+      {cap > 0 && (
+        <div
+          className="rpg-inventory-block__attunement"
+          aria-label="Magic-item attunement"
+          data-over={active > cap ? "true" : undefined}
+        >
+          <span className="rpg-inventory-block__attunement-label">Attunement</span>
+          <span className="rpg-inventory-block__attunement-value">
+            {active} <span className="rpg-inventory-block__attunement-sep">/</span> {cap}
+          </span>
+        </div>
+      )}
       {data.sections.map((section) => (
         <Section
           key={section.id}

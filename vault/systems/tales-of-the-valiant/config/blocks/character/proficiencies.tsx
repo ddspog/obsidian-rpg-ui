@@ -190,12 +190,13 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
 }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
+  const inventory = (blocks as any).inventory;
 
   // Resolve the character's full feature view once; falls back to an empty
   // traits map when the helper is missing (e.g. a system that hasn't wired
   // it up). The auto-derived lists come from the standard trait keys; the
   // YAML's explicit values, if present, win as-is.
-  const view = lookup.$features?.(header, features?.choices);
+  const view = lookup.$features?.(header, features?.choices, features?.additional, inventory);
   const traits = view?.traits ?? {};
 
   const auto = {
