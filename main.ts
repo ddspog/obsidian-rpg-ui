@@ -156,6 +156,19 @@ export default class DndUIToolkitPlugin extends Plugin {
       });
     }
 
+    // Per-session memo of block types we've already complained about so
+    // a missing handler logs ONE warning instead of one-per-fence-render
+    // (every character sheet has 8-12 fences and re-renders fire the
+    // post-processor afresh on every preview rebuild).
+    const warnedUnknownMeta = new Set<string>();
+    const warnUnknown = (meta: string, el: HTMLElement): void => {
+      if (!warnedUnknownMeta.has(meta)) {
+        warnedUnknownMeta.add(meta);
+        console.error(`DnD UI Toolkit: Unknown rpg block type: ${meta}`);
+      }
+      el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
+    };
+
     this.registerMarkdownCodeBlockProcessor("rpg", (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       const meta = extractMeta(ctx, el, source);
       if (!meta) {
@@ -257,6 +270,11 @@ export default class DndUIToolkitPlugin extends Plugin {
         // an async load and re-attempt registering the block when it completes.
         const mapped = registry.findSystemFolderForFile(ctx.sourcePath);
         if (mapped) {
+          // Show a placeholder while the bundle loads — flushing the
+          // "Unknown block" notice synchronously would race the async
+          // load and spam the console with false positives every time
+          // a character sheet opens before its system finishes loading.
+          el.innerHTML = '<div class="notice">Loading…</div>';
           // kick off load (no await) and re-check once loaded
           void registry.loadSystemAsync(mapped).then(() => {
             try {
@@ -272,6 +290,7 @@ export default class DndUIToolkitPlugin extends Plugin {
                   traits: reSystem.traits,
                 };
                 const sectionInfo = ctx.getSectionInfo(el);
+                el.innerHTML = "";
                 const child = new EntityBlockRenderChild(
                   el,
                   source,
@@ -287,15 +306,20 @@ export default class DndUIToolkitPlugin extends Plugin {
                 ctx.addChild(child);
                 return;
               }
+              // Bundle loaded but the block really isn't there — surface
+              // the unknown-block notice now (and only now) so the
+              // console message reflects a genuine missing handler.
+              warnUnknown(meta, el);
             } catch (e) {
-              // ignore - fall through to unknown notice below
+              console.error(`DnD UI Toolkit: failed to render ${meta}:`, e);
+              el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
             }
           });
+          return;
         }
       }
 
-      console.error(`DnD UI Toolkit: Unknown rpg block type: ${meta}`);
-      el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
+      warnUnknown(meta, el);
     });
 
     for (const [oldType, meta] of Object.entries(LEGACY_MAPPINGS)) {

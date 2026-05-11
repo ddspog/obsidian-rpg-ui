@@ -346,9 +346,9 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
 
     // [RPG UI DEBUG] — dump index stats once at bundle load so the user
     // can see from the DevTools console which folders/tags actually
-    // resolved. Flip DEBUG_INDEX to false once the vault layout is
-    // stable; prefix is unique so it's easy to filter for.
-    const DEBUG_INDEX = true;
+    // resolved. Flip DEBUG_INDEX to true while diagnosing a missing
+    // pool / library lookup; prefix is unique so it's easy to filter for.
+    const DEBUG_INDEX = false;
     if (DEBUG_INDEX) {
         const sizeOf = (map: Record<string, string[]>) => {
             const out: Record<string, number> = {};

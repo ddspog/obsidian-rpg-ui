@@ -576,9 +576,6 @@ function collectFlavorOptions(
   spellLibrary: Record<string, Record<string, unknown>>,
 ): string[] {
   if (!caster.style || caster.style.length === 0) {
-    /* eslint-disable no-console */
-    console.log(`[RPG UI flavor] caster=${caster.source} style EMPTY — no flavor options emitted`);
-    /* eslint-enable no-console */
     return [];
   }
   // Normalise any style token — scalar, wikilink, nested array — down
@@ -619,23 +616,14 @@ function collectFlavorOptions(
   }
   if (styleSet.size === 0) return [];
   const out: string[] = [];
-  let checked = 0;
-  let matched = 0;
   for (const [stem, doc] of Object.entries(spellLibrary)) {
-    checked++;
     if (inPool.has(stem)) continue;
     const list: string[] = [];
     collectStrings((doc as { style?: unknown }).style, list);
     if (list.some((s) => styleSet.has(s))) {
-      matched++;
       out.push(`[[${stem}]]`);
     }
   }
-  /* eslint-disable no-console */
-  console.log(
-    `[RPG UI flavor] caster=${caster.source} styles=${[...styleSet]} library_checked=${checked} matched=${matched}`,
-  );
-  /* eslint-enable no-console */
   return out;
 }
 
@@ -653,27 +641,6 @@ function collectPending(
   extraStyles?: unknown[],
 ): SpellPending[] {
   const out: SpellPending[] = [];
-  // [RPG UI DEBUG] one-shot snapshot of what the picker sees; comment
-  // this block out once the pools resolve correctly.
-  /* eslint-disable no-console */
-  for (const c of casters) {
-    const dump = {
-      source: c.source,
-      pool: c.pool,
-      cantrip_pool: c.cantrip_pool,
-      ritual_pool: c.ritual_pool,
-      style: c.style,
-      style_len: Array.isArray(c.style) ? c.style.length : -1,
-      cantrips: c.cantrips,
-      rituals: c.rituals,
-      ritualsByLevel: c.ritualsByLevel,
-    };
-    console.log("[RPG UI spells] caster:", JSON.stringify(dump));
-  }
-  console.log("[RPG UI spells] tagIndex keys:", Object.keys(tagIndex ?? {}));
-  console.log("[RPG UI spells] folderIndex keys:", Object.keys(folderIndex ?? {}));
-  console.log("[RPG UI spells] spellLibrary size:", Object.keys(spellLibrary).length);
-  /* eslint-enable no-console */
   for (const caster of casters) {
     const state = castersState[caster.source] ?? {};
     // Merge character-level extraStyles into this caster's own
@@ -701,19 +668,6 @@ function collectPending(
       caster.cantrip_pool && caster.pool && mainPool.length > 0
         ? cantripRaw.filter((c) => mainPool.includes(c))
         : cantripRaw;
-    // [RPG UI DEBUG] pool expansion for this caster — remove once pools
-    // resolve correctly in production.
-    /* eslint-disable no-console */
-    console.log(`[RPG UI spells] ${caster.source} pool expansion:`, {
-      pool_ref: caster.pool,
-      cantrip_pool_ref: caster.cantrip_pool,
-      mainPool_size: mainPool.length,
-      mainPool_sample: mainPool.slice(0, 5),
-      cantripRaw_size: cantripRaw.length,
-      cantripRaw_sample: cantripRaw.slice(0, 5),
-      cantripPool_size: cantripPool.length,
-    });
-    /* eslint-enable no-console */
     if (cantripDeficit > 0) {
       const inPool = new Set(cantripPool.map(bareStem));
       // Flavor exceptions for cantrips: library spells outside the

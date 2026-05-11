@@ -5,38 +5,37 @@ cssclasses: ["note-item"]
 ```rpg item.container
 name: Kowyn's Bag
 base: "[[Sack]]"
+hide: ['base.desc']
 magic:
   - "[[Bag of Holding]]"
 image: "![[bag-of-holding.webp|384]]"
 sections:
   - name: For Jacqui
     items:
-      - "[[Crossbow, light]]"
+      - name: "[[Crossbow, light]]"
       - name: "[[Quiver]]"
         contents:
           - name: "[[Crossbow Bolts]]"
             qty: 20
-        for_sale: true
       - name: "[[Shield]]"
-        for_sale: true
       - name: "[[Backpack]]"
         notes: Jacqui's Quick Access
         contents:
           - name: "[[Bedroll]]"
-          - "[[Mess Kit]]"
-          - "[[Tinderbox]]"
+          - name: "[[Mess Kit]]"
+          - name: "[[Tinderbox]]"
           - name: "[[Torch]]"
             qty: 10
           - name: "[[Rations (1 day)]]"
             qty: 10
-          - "[[Rope (50 feet)]]"
-          - "[[Vestments ᴺ]]"
+          - name: "[[Rope (50 feet)]]"
+          - name: "[[Vestments ᴺ]]"
   - name: For Kowyn
     items:
       - name: "[[Backpack]]"
         notes: Kowyn's Quick Access
         contents:
-          - "[[Bedroll]]"
+          - name: "[[Bedroll]]"
           - "[[Mess Kit]]"
           - "[[Tinderbox]]"
           - name: "[[Torch]]"
