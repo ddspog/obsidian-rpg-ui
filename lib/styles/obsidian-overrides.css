@@ -294,6 +294,45 @@
   margin-block-end: 0;
 }
 
+/* Same `margin-block-start: -1 * var(--p-spacing)` pull-up kills the
+ * layout in live preview. Each `rpg <entity>.<block>` fence renders
+ * inside a `cm-preview-code-block` instead of an `el-…` div, so
+ * there's no `--p-spacing` margin above the section to cancel — the
+ * negative pull instead drags the section UP into the preceding
+ * heading or block, overlapping the SPELLCASTING bar with the
+ * "Spells" heading and the first feature bucket with the "Features"
+ * heading. Reset the pull-up in live preview so each section sits
+ * flush below its heading the same way reading view does. Reading
+ * view keeps the original docking behaviour because its `el-…`
+ * wrappers really do carry the margin. */
+.markdown-source-view.mod-cm6 section[aria-details="Character Stats"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Senses"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Skills"] {
+  margin-block-start: 0;
+}
+
+/* Features and Spells blocks are typically authored as standalone
+ * fences stacked under separate headings; add a small breathing room
+ * above each so consecutive `rpg character.features` /
+ * `rpg character.spells` fences don't crowd the previous block (or
+ * heading). The margin is harmless when the block is the first thing
+ * in the note — collapses against the leading whitespace of the
+ * markdown view. */
+.markdown-source-view.mod-cm6 section[aria-details="Character Features"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Spells"] {
+  margin-block-start: 0.5em;
+}
+
+/* Reading view wraps each fence in a `<div class="el-…">` that carries
+ * a `var(--p-spacing)` top margin. Subtract our target 0.5em from
+ * that margin (via collapse) so the visible spacing matches live
+ * preview — without this the wrapper's full p-spacing would dominate
+ * and reading view would space twice as wide. */
+.markdown-rendered section[aria-details="Character Features"],
+.markdown-rendered section[aria-details="Character Spells"] {
+  margin-block-start: calc(0.5em - var(--p-spacing, 1em));
+}
+
 /* Obsidian's reading-view bullet lists ship with a hefty inline-start
  * padding (`var(--list-indent, ~1.5em)` plus extra `<li>` padding) that
  * pushes feature-card bullet rows far past the description text. Match

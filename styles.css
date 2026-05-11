@@ -6774,6 +6774,19 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   margin-block-start: 0;
   margin-block-end: 0;
 }
+.markdown-source-view.mod-cm6 section[aria-details="Character Stats"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Senses"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Skills"] {
+  margin-block-start: 0;
+}
+.markdown-source-view.mod-cm6 section[aria-details="Character Features"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Spells"] {
+  margin-block-start: 0.5em;
+}
+.markdown-rendered section[aria-details="Character Features"],
+.markdown-rendered section[aria-details="Character Spells"] {
+  margin-block-start: calc(0.5em - var(--p-spacing, 1em));
+}
 .markdown-rendered .rpg-feature-bucket-entry-desc ul,
 .markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc ul,
 .markdown-rendered .rpg-feature-bucket-entry-desc ol,
