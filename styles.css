@@ -1375,6 +1375,15 @@
 .rpg-inventory-block__container-summary .rpg-inventory-block__item-stat {
   text-align: right;
 }
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) {
+  grid-template-columns: 1.5rem 2.5rem 1fr 6.5rem 2rem;
+}
+.rpg-inventory-block__item[data-nested=true]:has(> .rpg-inventory-block__item-stat:empty) {
+  grid-template-columns: 1.5rem 2rem 1fr 6.5rem 2rem;
+}
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) > .rpg-inventory-block__item-stat {
+  display: none;
+}
 .rpg-inventory-block__item-meta {
   color: var(--text-muted);
   font-size: 0.85rem;

@@ -222,6 +222,23 @@
   text-align: right;
 }
 
+/* When the stat cell is empty — non-weapon/non-armor rows without a
+ * subtitle (Holy Symbol, Watersink, generic gear) — drop the 8rem
+ * stat column from the grid so the name+notes cell can absorb that
+ * space. Long note text (e.g. `An amulet for [[Lusanda, the Muse]]`)
+ * fits on a single line instead of wrapping under the qty cell. The
+ * empty stat span is hidden via `display: none` so grid auto-flow
+ * doesn't slot it back into the weight or equip column. */
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) {
+  grid-template-columns: 1.5rem 2.5rem 1fr 6.5rem 2rem;
+}
+.rpg-inventory-block__item[data-nested="true"]:has(> .rpg-inventory-block__item-stat:empty) {
+  grid-template-columns: 1.5rem 2rem 1fr 6.5rem 2rem;
+}
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) > .rpg-inventory-block__item-stat {
+  display: none;
+}
+
 .rpg-inventory-block__item-meta {
   color: var(--text-muted);
   font-size: 0.85rem;
