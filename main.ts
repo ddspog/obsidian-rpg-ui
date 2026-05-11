@@ -438,35 +438,7 @@ export default class DndUIToolkitPlugin extends Plugin {
    * the new bundle, not the still-loading one.
    */
   async refreshSystemConsumers(systemFolderPath: string): Promise<void> {
-    const reg = SystemRegistry.getInstance();
-    // Wait for the (re)load to finish so callers see the new system on
-    // re-render. invalidateSystem already kicked off the load.
-    await reg.loadSystemAsync(systemFolderPath);
-    const mappings = reg.getFolderMappings();
-    const consumerFolders: string[] = [];
-    for (const [folder, sys] of mappings) {
-      if (sys === systemFolderPath) consumerFolders.push(folder);
-    }
-    if (consumerFolders.length === 0) return;
-    const inMappedFolder = (path: string): boolean =>
-      consumerFolders.some((f) => f === "" || path === f || path.startsWith(f + "/"));
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      const view = leaf.view as unknown as {
-        getViewType?: () => string;
-        file?: { path?: string };
-        previewMode?: { rerender?: (full?: boolean) => void };
-      };
-      if (typeof view.getViewType !== "function") return;
-      if (view.getViewType() !== "markdown") return;
-      const path = view.file?.path;
-      if (!path || !inMappedFolder(path)) return;
-      try {
-        view.previewMode?.rerender?.(true);
-      } catch {
-        // Some views don't expose previewMode (source-mode editors, …);
-        // they'll pick up the change on next render naturally.
-      }
-    });
+    return refreshSystemConsumers(this.app, systemFolderPath);
   }
 
   /**
@@ -555,21 +527,134 @@ export default class DndUIToolkitPlugin extends Plugin {
  * consumers like `rpg character.features` keep reading the stale
  * `blocks.inventory` snapshot captured at their own mount time.
  */
+/**
+ * Invalidate a system bundle and rerender every open markdown preview
+ * for files that map to that system. Mirrors the plugin-method form so
+ * helpers running outside the plugin instance (`patchForeignBlock` from
+ * an entity-block wrapper) can drive the same refresh path.
+ */
+async function refreshSystemConsumers(app: App, systemFolderPath: string): Promise<void> {
+  const reg = SystemRegistry.getInstance();
+  // Wait for the (re)load to finish so callers see the new system on
+  // re-render. invalidateSystem already kicked off the load.
+  await reg.loadSystemAsync(systemFolderPath);
+  const mappings = reg.getFolderMappings();
+  const consumerFolders: string[] = [];
+  for (const [folder, sys] of mappings) {
+    if (sys === systemFolderPath) consumerFolders.push(folder);
+  }
+  if (consumerFolders.length === 0) return;
+  const inMappedFolder = (path: string): boolean =>
+    consumerFolders.some((f) => f === "" || path === f || path.startsWith(f + "/"));
+  app.workspace.iterateAllLeaves((leaf) => {
+    const view = leaf.view as unknown as {
+      getViewType?: () => string;
+      file?: { path?: string };
+      previewMode?: {
+        rerender?: (full?: boolean) => void;
+        containerEl?: HTMLElement;
+      };
+      containerEl?: HTMLElement;
+    };
+    if (typeof view.getViewType !== "function") return;
+    if (view.getViewType() !== "markdown") return;
+    const path = view.file?.path;
+    if (!path || !inMappedFolder(path)) return;
+    rerenderWithScrollRestore(view);
+  });
+}
+
+/**
+ * Per-preview snapshots used to coalesce back-to-back `rerender(true)`
+ * calls. A single user gesture can fire two refreshes (the local
+ * `refreshFilePreview` followed by the cross-system
+ * `refreshSystemConsumers`); without this map the second call would
+ * re-snapshot a partially-restored scrollTop and lock the page near
+ * the top of the sheet. Entries expire when the window elapses so a
+ * future, unrelated gesture starts from a fresh capture.
+ */
+const scrollRestoreSnapshots: WeakMap<
+  HTMLElement,
+  { savedScrollTop: number; expiresAt: number }
+> = new WeakMap();
+
+/**
+ * Wrap a `previewMode.rerender(true)` call so the user's scroll
+ * position survives the destructive rerender. Snapshots `scrollTop`
+ * before tearing the DOM down (or reuses the snapshot from a
+ * recent sibling refresh — see `scrollRestoreSnapshots`), then
+ * re-applies it on every animation frame inside the configured
+ * window. `block-language-rpg` post-processors mount React
+ * asynchronously, growing `scrollHeight` after the initial paint,
+ * so a single one-shot restore lands too early and the browser
+ * caps `scrollTop` short. The polling loop keeps re-asserting the
+ * saved value until the configured window expires.
+ *
+ * Window length is read live from `settingsStore` so a settings save
+ * takes effect on the next refresh without needing this helper to be
+ * re-wired.
+ */
+function rerenderWithScrollRestore(view: {
+  previewMode?: { rerender?: (full?: boolean) => void; containerEl?: HTMLElement };
+  containerEl?: HTMLElement;
+}): void {
+  const previewEl =
+    view.previewMode?.containerEl?.querySelector?.(".markdown-preview-view") ??
+    view.containerEl?.querySelector?.(".markdown-preview-view");
+  const settings = settingsStore.getSettings();
+  const windowMs =
+    typeof settings?.scrollRestoreDelayMs === "number" && settings.scrollRestoreDelayMs >= 0
+      ? settings.scrollRestoreDelayMs
+      : 600;
+  const now = performance.now();
+  let savedScrollTop = 0;
+  if (previewEl instanceof HTMLElement) {
+    const existing = scrollRestoreSnapshots.get(previewEl);
+    if (existing && existing.expiresAt > now) {
+      // Back-to-back refresh — the first call's polling loop is still
+      // restoring scrollTop, so a fresh snapshot here would capture an
+      // intermediate value (often 0, if the previous rerender just
+      // fired and the next polling tick hasn't run yet). Reuse the
+      // original target instead.
+      savedScrollTop = existing.savedScrollTop;
+    } else {
+      savedScrollTop = previewEl.scrollTop;
+      scrollRestoreSnapshots.set(previewEl, {
+        savedScrollTop,
+        expiresAt: now + windowMs,
+      });
+    }
+  }
+  try {
+    view.previewMode?.rerender?.(true);
+  } catch {
+    return;
+  }
+  if (!(previewEl instanceof HTMLElement) || savedScrollTop <= 0) return;
+  const startedAt = performance.now();
+  const tick = (): void => {
+    if (previewEl.scrollTop !== savedScrollTop) {
+      previewEl.scrollTop = savedScrollTop;
+    }
+    if (performance.now() - startedAt < windowMs) {
+      requestAnimationFrame(tick);
+    }
+  };
+  requestAnimationFrame(tick);
+}
+
 function refreshFilePreview(app: App, sourcePath: string): void {
   app.workspace.iterateAllLeaves((leaf) => {
     const view = leaf.view as unknown as {
       getViewType?: () => string;
       file?: { path?: string };
-      previewMode?: { rerender?: (full?: boolean) => void };
+      previewMode?: { rerender?: (full?: boolean) => void; containerEl?: HTMLElement };
+      containerEl?: HTMLElement;
     };
     if (typeof view.getViewType !== "function") return;
     if (view.getViewType() !== "markdown") return;
     if (view.file?.path !== sourcePath) return;
-    try {
-      view.previewMode?.rerender?.(true);
-    } catch {
-      // No previewMode on this view — nothing to do.
-    }
+    rerenderWithScrollRestore(view);
   });
 }
 
@@ -717,13 +802,29 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
                 key,
                 newValue,
                 sectionInfo ?? undefined,
-              ).then(() => {
+              ).then(async () => {
                 // Kick a full preview re-render so sibling blocks in
                 // this note re-read the patched YAML. Without this only
                 // the calling block updates (via its own setSelf); e.g.
                 // the features/traits view keeps rendering a stale
                 // `blocks.inventory` snapshot until plugin reload.
                 refreshFilePreview(app, sourcePath);
+                // If the patched file belongs to a system bundle (it
+                // sits under a folder mapping — e.g. an `rpg item.container`
+                // file that other character sheets reference via
+                // `lookup.$containers`), also invalidate that system and
+                // refresh its consumers. Without this a toggle on
+                // Kowyn's Bag's own page would update the bag preview
+                // but leave every open carrier sheet showing the stale
+                // `for_sale` state until plugin reload. Mirrors
+                // `patchForeignBlock` so local + foreign UI patches share
+                // the same propagation contract.
+                const reg = SystemRegistry.getInstance();
+                const affectedSystem = reg.findSystemFolderForFile(sourcePath);
+                if (affectedSystem) {
+                  reg.invalidateSystem(affectedSystem);
+                  await refreshSystemConsumers(app, affectedSystem);
+                }
               }).catch((err) => console.error("RPG UI: yaml patch failed:", err));
               return { ...prev, [key]: newValue };
             });
@@ -734,6 +835,37 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
             const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
             setters[setterName] = makeSetter(key);
           }
+
+          // Cross-file fence write. Lets a block reach a fence in
+          // another vault file (e.g. a `rpg item.container` referenced
+          // from a character's inventory) without taking a hard
+          // dependency on Obsidian. Refreshes the foreign file's
+          // own preview AND invalidates the system bundle that owns
+          // the foreign file so consumer character sheets re-read the
+          // freshly-patched lookup data on their next render — without
+          // this the carrier's inventory would keep showing the stale
+          // `for_sale` state until the plugin reloaded.
+          const patchForeignBlock = async (
+            path: string,
+            entity: string,
+            block: string,
+            key: string,
+            value: unknown,
+          ): Promise<void> => {
+            try {
+              await patchYamlBlock(app, path, entity, block, key, value);
+              refreshFilePreview(app, path);
+              const reg = SystemRegistry.getInstance();
+              const foreignSystem = reg.findSystemFolderForFile(path);
+              if (foreignSystem) {
+                reg.invalidateSystem(foreignSystem);
+                await refreshSystemConsumers(app, foreignSystem);
+              }
+            } catch (err) {
+              console.error("RPG UI: foreign yaml patch failed:", err);
+            }
+          };
+          setters.patchForeignBlock = patchForeignBlock;
 
           // Wrap in a Proxy so any `set<Cap>` access lazily mints a setter
           // for the corresponding key — supports blocks that initialise

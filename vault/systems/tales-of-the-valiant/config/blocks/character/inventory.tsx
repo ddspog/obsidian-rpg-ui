@@ -46,14 +46,31 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
   const magicByName = (lookup?.$magic ?? {}) as Record<string, ItemMagicData>;
   const personalByName = (lookup?.$personal ?? {}) as Record<string, ItemPersonalData>;
   const containersByName = (lookup?.$containers ?? {}) as Record<string, ItemContainerData>;
+  const containerPaths = (lookup?.$containerPaths ?? {}) as Record<string, string>;
 
   // Expand any inventory row that links to an `rpg item.container`
   // stash into the container's own sections. The container file wins
   // over the character's local `contents:` — the carrier's sheet shows
   // the authoritative party/stash breakdown without duplication.
-  const expandedItems = items.map((entry) =>
-    expandContainerEntry(entry, { containersByName, itemsByName, magicByName }),
-  );
+  //
+  // Each expansion also yields a provenance map: every synthesised
+  // child gets the container stem + a locator describing where it
+  // lives inside the container's YAML. The toggle-for-sale handler
+  // uses this to write back to the right file (the carrier's own
+  // YAML for top-level rows; the container's YAML for nested rows).
+  const provenanceById = new Map<string, ContainerProvenance>();
+  const expandedItems = items.map((entry, idx) => {
+    const expansion = expandContainerEntry(entry, {
+      containersByName,
+      containerPaths,
+    });
+    if (expansion.provenances.length > 0) {
+      for (const p of expansion.provenances) {
+        provenanceById.set([String(idx), ...p.pathSegments].join("."), p.info);
+      }
+    }
+    return expansion.entry;
+  });
 
   const block: NewInventoryBlock = {
     items: expandedItems,
@@ -101,7 +118,18 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
     attunement: resolveAttunement(items, personalByName, blocks, lookup),
   });
 
-  const setItems = (self as unknown as { setItems?: (v: InventoryItemEntry[]) => void }).setItems;
+  const selfApi = self as unknown as {
+    setItems?: (v: InventoryItemEntry[]) => void;
+    patchForeignBlock?: (
+      path: string,
+      entity: string,
+      block: string,
+      key: string,
+      value: unknown,
+    ) => Promise<void>;
+  };
+  const setItems = selfApi.setItems;
+  const patchForeignBlock = selfApi.patchForeignBlock;
   const handleToggleEquip = setItems
     ? (target: ResolvedItem) => {
         setItems(toggleEquip(items, target, lookupFn));
@@ -109,6 +137,22 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
     : undefined;
   const handleToggleForSale = setItems
     ? (target: ResolvedItem) => {
+        const provenance = provenanceById.get(target.id);
+        if (provenance) {
+          // Container-sourced row — write to the container file's
+          // fence so the flag is shared across every carrier of the
+          // stash. Falls back to a local no-op when the patcher
+          // isn't wired up (e.g. Storybook), since editing the
+          // character's items would be lost on the next render
+          // anyway (expandContainerEntry overwrites contents).
+          if (!patchForeignBlock) return;
+          patchContainerForSale(
+            patchForeignBlock,
+            containersByName,
+            provenance,
+          );
+          return;
+        }
         setItems(toggleForSale(items, target));
       }
     : undefined;
@@ -122,54 +166,282 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
   );
 };
 
+// ─── Container expansion + provenance ────────────────────────────────────────
+
+/**
+ * Locator pinpointing where a synthesised inventory row lives inside
+ * its source container's YAML. `kind: "section"` references one of the
+ * named `sections[]` entries; `kind: "items"` references the trailing
+ * unnamed `items[]` list. Both flavours can target a top-level entry
+ * or a nested one via `subPath` (indices into `contents[]`).
+ */
+type ContainerLocator =
+  | { kind: "items"; index: number; subPath?: number[] }
+  | { kind: "section"; sectionIndex: number; itemIndex: number; subPath?: number[] };
+
+interface ContainerProvenance {
+  /** File stem (basename) used to look up the container body. */
+  stem: string;
+  /** Vault path passed to `patchForeignBlock` for the actual write. */
+  path: string;
+  locator: ContainerLocator;
+}
+
+interface ContainerExpansion {
+  entry: InventoryItemEntry;
+  provenances: Array<{ pathSegments: string[]; info: ContainerProvenance }>;
+}
+
 /**
  * When an inventory entry's wikilink targets an `rpg item.container`
  * file, replace its local `contents:` with entries synthesised from
- * the container's sections. Each named section becomes a nested
- * synthetic entry (label = section name, no wikilink → no weight
+ * the container's sections. Each named section becomes a synthetic
+ * wrapper entry (label = section name, no wikilink → no weight
  * lookup, nested `contents:` carries the section's items). Unnamed
- * sections spread their items directly under the container row so the
- * common case (one flat section) reads as a plain expandable list.
+ * sections — and the trailing `container.items` shorthand — spread
+ * their items directly under the container row so the common case
+ * reads as a plain expandable list.
  *
  * The character's own `contents:` on that row is ignored — container
  * file wins per the design contract.
+ *
+ * Returns the rewritten entry alongside per-row provenance entries
+ * keyed by their relative path within the container's contents
+ * (e.g. `["0", "2"]` = third item under the first synthetic wrapper).
+ * The caller prepends the parent's top-level index to obtain the
+ * final ResolvedItem id key.
  */
 function expandContainerEntry(
   entry: InventoryItemEntry,
   lookups: {
     containersByName: Record<string, ItemContainerData>;
-    itemsByName: Record<string, ItemElementData>;
-    magicByName: Record<string, ItemMagicData>;
+    containerPaths: Record<string, string>;
   },
-): InventoryItemEntry {
+): ContainerExpansion {
   const stem = wikiStem(entry.name);
   const container = lookups.containersByName[stem];
-  if (!container) return entry;
-  const resolution = resolveContainer(
-    container,
-    { elements: lookups.itemsByName, magic: lookups.magicByName },
-    stem,
-  );
-  if (!resolution) return entry;
+  if (!container) return { entry, provenances: [] };
+  const path = lookups.containerPaths[stem] ?? "";
   const contents: InventoryItemEntry[] = [];
-  for (const section of resolution.sections) {
-    const sectionItems = section.items ?? [];
-    if (sectionItems.length === 0) continue;
+  const provenances: ContainerExpansion["provenances"] = [];
+
+  const recordChildren = (
+    children: InventoryItemEntry[],
+    pathPrefix: string[],
+    locatorBase: ContainerLocator,
+  ): void => {
+    children.forEach((child, idx) => {
+      const childPath = [...pathPrefix, String(idx)];
+      provenances.push({
+        pathSegments: childPath,
+        info: {
+          stem,
+          path,
+          locator: appendSubPath(locatorBase, [idx]),
+        },
+      });
+      if (Array.isArray(child.contents)) {
+        recordChildren(child.contents, childPath, appendSubPath(locatorBase, [idx]));
+      }
+    });
+  };
+
+  // Named sections — each gets a synthetic wrapper row whose `contents`
+  // are the converted section items. The wrapper itself has NO
+  // provenance entry (it's not a real container item; the carrier's
+  // toggle handler hides its $ button via the `link === null` gate).
+  const sections = Array.isArray(container.sections) ? container.sections : [];
+  sections.forEach((section, sectionIndex) => {
+    const sectionItems = Array.isArray(section.items) ? section.items : [];
+    if (sectionItems.length === 0) return;
     if (section.name) {
-      contents.push({
-        name: section.name,
-        contents: sectionItems
-          .map(toInventoryItemEntry)
-          .filter((e): e is InventoryItemEntry => e !== null),
+      const childContents = sectionItems
+        .map(toInventoryItemEntry)
+        .filter((e): e is InventoryItemEntry => e !== null);
+      const wrapperIdx = contents.length;
+      contents.push({ name: section.name, contents: childContents });
+      recordChildren(childContents, [String(wrapperIdx)], {
+        kind: "section",
+        sectionIndex,
+        itemIndex: -1,
       });
     } else {
-      for (const item of sectionItems) {
+      sectionItems.forEach((item, itemIndex) => {
         const converted = toInventoryItemEntry(item);
-        if (converted) contents.push(converted);
-      }
+        if (!converted) return;
+        const idx = contents.length;
+        contents.push(converted);
+        provenances.push({
+          pathSegments: [String(idx)],
+          info: {
+            stem,
+            path,
+            locator: { kind: "section", sectionIndex, itemIndex },
+          },
+        });
+        if (Array.isArray(converted.contents)) {
+          recordChildren(converted.contents, [String(idx)], {
+            kind: "section",
+            sectionIndex,
+            itemIndex,
+          });
+        }
+      });
     }
+  });
+
+  // Trailing unnamed `container.items[]` shorthand — spread inline.
+  const trailing = Array.isArray(container.items) ? container.items : [];
+  trailing.forEach((item, index) => {
+    const converted = toInventoryItemEntry(item);
+    if (!converted) return;
+    const idx = contents.length;
+    contents.push(converted);
+    provenances.push({
+      pathSegments: [String(idx)],
+      info: { stem, path, locator: { kind: "items", index } },
+    });
+    if (Array.isArray(converted.contents)) {
+      recordChildren(converted.contents, [String(idx)], {
+        kind: "items",
+        index,
+      });
+    }
+  });
+
+  return { entry: { ...entry, contents }, provenances };
+}
+
+/**
+ * Append a `contents[]` index path onto a top-level locator. Used when
+ * walking nested children of a container item — the locator anchors at
+ * the container's section/items entry and grows a `subPath` describing
+ * how to reach the specific descendant.
+ */
+function appendSubPath(base: ContainerLocator, indices: number[]): ContainerLocator {
+  const subPath = [...(base.subPath ?? []), ...indices];
+  if (base.kind === "items") {
+    return { kind: "items", index: base.index, subPath };
   }
-  return { ...entry, contents };
+  // For wrapper-level locators we don't have an itemIndex yet — those
+  // locators only flow through the recordChildren branch where the
+  // first index in `indices` IS the itemIndex.
+  if (base.itemIndex < 0) {
+    const [first, ...rest] = indices;
+    return {
+      kind: "section",
+      sectionIndex: base.sectionIndex,
+      itemIndex: first,
+      subPath: [...(base.subPath ?? []), ...rest],
+    };
+  }
+  return {
+    kind: "section",
+    sectionIndex: base.sectionIndex,
+    itemIndex: base.itemIndex,
+    subPath,
+  };
+}
+
+/**
+ * Toggle `for_sale` on the container entry pointed at by `provenance`
+ * and write the updated array back to the container file's
+ * `rpg item.container` fence. We re-read the container body each call
+ * (instead of caching) so concurrent edits from other open sheets
+ * don't get clobbered.
+ */
+function patchContainerForSale(
+  patchForeignBlock: (
+    path: string,
+    entity: string,
+    block: string,
+    key: string,
+    value: unknown,
+  ) => Promise<void>,
+  containersByName: Record<string, ItemContainerData>,
+  provenance: ContainerProvenance,
+): void {
+  if (!provenance.path) return;
+  const container = containersByName[provenance.stem];
+  if (!container) return;
+
+  if (provenance.locator.kind === "items") {
+    const items = (Array.isArray(container.items) ? container.items : []) as unknown[];
+    const next = withToggledContainer(items, [
+      provenance.locator.index,
+      ...(provenance.locator.subPath ?? []),
+    ]);
+    if (!next) return;
+    void patchForeignBlock(provenance.path, "item", "container", "items", next);
+    return;
+  }
+
+  // Section-scoped write — we have to rewrite the whole `sections`
+  // array since the YAML key is the array, not an individual section.
+  // Capture the locator into a local const so its narrowed type
+  // (section variant, after the `kind === "items"` early return)
+  // survives the .map() closure below — TS drops property-access
+  // narrowing across closure boundaries.
+  const sectionLocator = provenance.locator;
+  const sections = Array.isArray(container.sections) ? container.sections : [];
+  if (sectionLocator.sectionIndex >= sections.length) return;
+  const targetSection = sections[sectionLocator.sectionIndex];
+  const sectionItems = (Array.isArray(targetSection?.items) ? targetSection.items : []) as unknown[];
+  const nextSectionItems = withToggledContainer(sectionItems, [
+    sectionLocator.itemIndex,
+    ...(sectionLocator.subPath ?? []),
+  ]);
+  if (!nextSectionItems) return;
+  const nextSections = sections.map((section, idx) =>
+    idx === sectionLocator.sectionIndex
+      ? { ...section, items: nextSectionItems }
+      : section,
+  );
+  void patchForeignBlock(provenance.path, "item", "container", "sections", nextSections);
+}
+
+/**
+ * Walk a container's `items[]` (or `section.items[]`) to the entry at
+ * `path`, flip its `for_sale` flag, and return a new array with ONLY
+ * the touched node cloned — every other entry is preserved by
+ * reference (and in its original shape, including bare-string YAML
+ * shorthand like `- "[[Foo]]"`). Returns null when the path is
+ * unreachable so the caller can no-op silently.
+ *
+ * The string-preservation matters: an earlier version spread
+ * `{ ...it }` over every entry to clone the array, which exploded
+ * string entries (`"[[Crossbow, light]]"`) into character-keyed
+ * objects (`{ "0": "[", "1": "[", "2": "C", ... }`) when written
+ * back through `stringifyYaml`. Touching only the target path keeps
+ * the rest of the array byte-stable.
+ */
+function withToggledContainer(
+  items: unknown[],
+  path: number[],
+): ItemContainerEntry[] | null {
+  const [head, ...rest] = path;
+  if (head == null || head < 0 || head >= items.length) return null;
+  const original = items[head];
+  let cloned: ItemContainerEntry;
+  if (typeof original === "string") {
+    cloned = { name: original };
+  } else if (original && typeof original === "object") {
+    cloned = { ...(original as ItemContainerEntry) };
+  } else {
+    return null;
+  }
+  if (rest.length === 0) {
+    if (cloned.for_sale) delete cloned.for_sale;
+    else cloned.for_sale = true;
+  } else {
+    if (!Array.isArray(cloned.contents)) return null;
+    const updated = withToggledContainer(cloned.contents as unknown[], rest);
+    if (!updated) return null;
+    cloned.contents = updated;
+  }
+  const next = items.slice() as ItemContainerEntry[];
+  next[head] = cloned;
+  return next;
 }
 
 /**
@@ -187,6 +459,11 @@ function toInventoryItemEntry(source: unknown): InventoryItemEntry | null {
   const out: InventoryItemEntry = { name: o.name };
   if (typeof o.qty === "number") out.qty = o.qty;
   if (typeof o.notes === "string") out.notes = o.notes;
+  // Carry the for_sale flag through synthesis — without this the
+  // character inventory's sellTotals row ignores items flagged on
+  // the container file (the carrier needs to see what's set aside
+  // even when the toggle was authored on the stash directly).
+  if (o.for_sale === true) out.for_sale = true;
   if (Array.isArray(o.contents)) {
     out.contents = o.contents
       .map(toInventoryItemEntry)

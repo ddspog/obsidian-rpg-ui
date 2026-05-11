@@ -39,7 +39,18 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
         : `${formatWeight(item.totalWeight)} lb.`
       : "";
 
-  const canSell = !!onToggleForSale;
+  // Synthetic section wrappers (named groups inside an external
+  // container — `Pouch`, `Trade Goods`) carry no wikilink and don't
+  // exist as a discrete YAML entry, so there's nowhere to write a
+  // for-sale flag. Real containers (rows that link to a vault note)
+  // are flaggable; the wrapper just owns the collapse affordance.
+  const canSell = !!onToggleForSale && item.link != null;
+  // Marking the bag itself for sale implies its contents go with it,
+  // so we drop the per-item $ buttons inside to avoid contradictory
+  // bookkeeping. The bag's own cost still feeds the To Sell totals;
+  // any items already individually flagged keep their flag (we just
+  // hide the toggle so it can't be edited from the carrier's sheet).
+  const childToggleForSale = item.forSale ? undefined : onToggleForSale;
 
   return (
     <details
@@ -114,7 +125,7 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
               key={child.id}
               item={child}
               nested
-              onToggleForSale={onToggleForSale}
+              onToggleForSale={childToggleForSale}
             />
           ))
         )}

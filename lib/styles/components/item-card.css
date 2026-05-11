@@ -120,21 +120,6 @@
   border-radius: 8px;
 }
 
-.rpg-item-container-card__magic-text {
-  margin: 0.5rem 0;
-  padding-inline-start: 0.75rem;
-  border-inline-start: 2px solid var(--rpg-features-header, light-dark(#d4a840, #b38a2c));
-  font-style: italic;
-  line-height: 1.5;
-}
-
-.rpg-item-container-card__magic-text > *:first-child {
-  margin-top: 0;
-}
-.rpg-item-container-card__magic-text > *:last-child {
-  margin-bottom: 0;
-}
-
 /* Weight-vs-capacity chip — turns red when contents overflow capacity. */
 .rpg-item-container-card__capacity {
   display: inline-flex;

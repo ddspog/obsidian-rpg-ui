@@ -82,6 +82,15 @@ export type CharacterLookup = {
    * so the stash is visible from the carrier's sheet.
    */
   $containers: Record<string, Record<string, unknown>>;
+  /**
+   * Vault paths for the container files in `$containers`, keyed by the
+   * same basename. The inventory block uses these to write back to the
+   * owning container's `rpg item.container` fence (via
+   * `self.patchForeignBlock`) when the carrier toggles `for_sale` on
+   * an item that lives inside an external stash. Missing entries fall
+   * back to local-only writes.
+   */
+  $containerPaths: Record<string, string>;
 }
 
 /** Return types of each named expression on the character entity */

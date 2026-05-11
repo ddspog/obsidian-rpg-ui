@@ -277,6 +277,12 @@ export interface ItemPersonalData {
   attuned?: boolean;
   rarity?: string;
   image?: string;
+  /** List of card sub-blocks to hide. Currently understood:
+   *  - `"base.desc"` — hide the base element's description body so only
+   *    the magic-template texts narrate the item. Designed as an array
+   *    so future keys (`"base.image"`, `"magic.text"`, …) can opt out
+   *    of individual sections without flag explosion. */
+  hide?: string[];
 }
 
 export function parseItemPersonal(yamlSource: string): ItemPersonalData | null {
@@ -331,6 +337,14 @@ export interface ItemContainerEntry {
   name: string;
   qty?: number;
   notes?: string;
+  /** Marks this item as set aside for sale. The carrier's inventory
+   *  aggregates these into its `To Sell` row even when the entry
+   *  lives inside a referenced container file (Kowyn's Bag, Guild
+   *  Chest); toggling the `$` button on a row inside an expanded
+   *  external container patches THIS field on the container file
+   *  itself so the flag is shared across every character carrying
+   *  that container. */
+  for_sale?: boolean;
   contents?: ItemContainerEntry[];
 }
 
@@ -365,6 +379,12 @@ export interface ItemContainerData {
    *  inventory uses so the world-stash can carry party loot or guild
    *  treasury totals on its own page. */
   currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  /** List of card sub-blocks to hide. Currently understood:
+   *  - `"base.desc"` — hide the base element's description body so only
+   *    the magic-template texts narrate the container. Designed as an
+   *    array so future keys (`"base.image"`, `"magic.text"`, …) can
+   *    opt out of individual sections without flag explosion. */
+  hide?: string[];
 }
 
 export function parseItemContainer(yamlSource: string): ItemContainerData | null {

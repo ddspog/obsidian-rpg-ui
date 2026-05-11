@@ -1,8 +1,10 @@
 import * as React from "react";
 import {
   resolveInventory,
+  type CurrencyPurse,
   type LookupFn,
   type NewInventoryBlock,
+  type ResolvedItem,
   type ResolvedSection,
   type SectionId,
   type YamlItemEntry,
@@ -12,6 +14,40 @@ import { Section } from "lib/components/inventory/Section";
 import type { ContainerResolution } from "lib/domains/items/container-overlay";
 import type { ItemContainerData, ItemElementData } from "lib/domains/items/schema";
 
+/**
+ * Provenance pointer the container card hands back when the reader
+ * toggles a row's `$` button. The wrapping entity-block uses it to
+ * write `for_sale` into the right slot of the container's own YAML —
+ * either inside one of the named `sections[]` or inside the trailing
+ * top-level `items[]`.
+ */
+export interface ContainerForSaleLocation {
+  /** Authored bucket: a named `sections[]` entry or the trailing
+   *  top-level `items[]` shorthand. */
+  source: "section" | "items";
+  /** Index into `data.sections[]` when `source === "section"`. Ignored
+   *  for `"items"`. */
+  sectionIndex: number;
+  /** Index path into the section's `items[]` (or the trailing `items[]`
+   *  for `source === "items"`), walking `contents[]` at each step to
+   *  reach a nested entry. */
+  path: number[];
+}
+
+interface AuthoredSectionRef {
+  source: "section" | "items";
+  /** Index into `data.sections[]` when `source === "section"`; -1 for
+   *  the trailing items shorthand. */
+  sectionIndex: number;
+  name?: string;
+  /** Raw YAML entries (mix of bare strings and objects). The card
+   *  feeds these straight through `coerceEntry` + `resolveInventory`,
+   *  so the resolved item ids' index paths line up with the indices
+   *  in this array — letting the toggle handler walk back to the
+   *  same authored slot for the writeback. */
+  items: unknown[];
+}
+
 interface ItemContainerCardProps {
   data: ItemContainerData;
   resolution: ContainerResolution | null;
@@ -20,6 +56,10 @@ interface ItemContainerCardProps {
    *  source the character inventory block reads. */
   lookup?: LookupFn;
   renderMarkdown?: (source: string) => React.ReactNode;
+  /** When provided, every leaf row renders the `$` toggle. The handler
+   *  receives a location pointer back into the authored YAML so the
+   *  caller can persist the new `for_sale` state on the right slot. */
+  onToggleForSale?: (location: ContainerForSaleLocation) => void;
 }
 
 /**
@@ -39,19 +79,44 @@ export function ItemContainerCard({
   resolution,
   lookup,
   renderMarkdown,
+  onToggleForSale,
 }: ItemContainerCardProps) {
   const element = resolution?.effectiveElement;
   const magicTexts = resolution?.magicTexts ?? [];
-  const sections = resolution?.sections ?? data.sections ?? [];
   const lookupFn: LookupFn = lookup ?? ((_target: string) => undefined);
+
+  // Walk the authored YAML directly (NOT `resolution.sections`) so the
+  // resolved item ids' index paths stay aligned with `data.sections[i].items`
+  // and `data.items[]`. The toggle-for-sale handler relies on those indices
+  // to write back to the right slot.
+  const authoredSections = React.useMemo<AuthoredSectionRef[]>(() => {
+    const out: AuthoredSectionRef[] = [];
+    (data.sections ?? []).forEach((section, sectionIndex) => {
+      out.push({
+        source: "section",
+        sectionIndex,
+        name: section.name,
+        items: (section.items ?? []) as unknown[],
+      });
+    });
+    if (Array.isArray(data.items) && data.items.length > 0) {
+      out.push({
+        source: "items",
+        sectionIndex: -1,
+        name: undefined,
+        items: data.items as unknown[],
+      });
+    }
+    return out;
+  }, [data.sections, data.items]);
 
   // Build a synthetic NewInventoryBlock per section to pipe through the
   // shared inventory resolver — that gives us per-row metadata (weight,
   // qty, container detection, ammo tracking) for free, with the same
   // visual rendering character sheets use.
   const resolvedSections: ResolvedSection[] = React.useMemo(() => {
-    return sections.map((section, idx) => {
-      const items: YamlItemEntry[] = (section.items ?? []).map(coerceEntry);
+    return authoredSections.map((authored, idx) => {
+      const items: YamlItemEntry[] = authored.items.map(coerceEntry);
       const block: NewInventoryBlock = { items };
       const inv = resolveInventory({
         block,
@@ -62,21 +127,43 @@ export function ItemContainerCard({
       // them all back into one list under the author-given section name.
       const allItems = inv.sections.flatMap((s) => s.items);
       const totalWeight = inv.totalWeight;
-      const id = (section.name ?? `Contents ${idx + 1}`) as SectionId;
+      const id = (authored.name ?? `Contents ${idx + 1}`) as SectionId;
       return {
         id,
         items: allItems,
         totalWeight,
       };
     });
-  }, [sections, lookupFn]);
+  }, [authoredSections, lookupFn]);
 
   const totalWeight = resolvedSections.reduce((acc, s) => acc + s.totalWeight, 0);
   const capacity = parseCapacity(element?.container?.weight_cap);
   const overCapacity = capacity != null && totalWeight > capacity;
 
   const currency = data.currency ?? {};
-  const hasCurrency = Object.values(currency).some((v) => typeof v === "number" && v > 0);
+  const hasCurrency = Object.values(currency).some(
+    (v) => typeof v === "number" && v > 0,
+  );
+  // Sum the cost of every `for_sale`-flagged row across every section so
+  // the "To Sell" line under the currency chips reflects the total a
+  // shopkeeper would pay if the player offloaded everything currently
+  // marked. Walks nested container contents the same way the character
+  // inventory resolver does.
+  const sellTotals = React.useMemo<CurrencyPurse>(() => {
+    const totals: CurrencyPurse = {};
+    const visit = (item: ResolvedItem): void => {
+      if (item.forSale) {
+        const parsed = parseCoin(item.meta.cost);
+        if (parsed) {
+          const amount = parsed.amount * item.qty;
+          totals[parsed.denomination] = (totals[parsed.denomination] ?? 0) + amount;
+        }
+      }
+      for (const child of item.contents) visit(child);
+    };
+    for (const section of resolvedSections) for (const item of section.items) visit(item);
+    return totals;
+  }, [resolvedSections]);
 
   // overCapacity is kept in scope for eslint/TS even though the card
   // surfaces the state through the CapacityBar colour zones; swap the
@@ -117,28 +204,43 @@ export function ItemContainerCard({
       )}
 
       {magicTexts.map((text, i) => (
-        <div key={i} className="rpg-item-container-card__magic-text">
+        <React.Fragment key={i}>
           {renderMarkdown ? renderMarkdown(text) : <p>{text}</p>}
-        </div>
+        </React.Fragment>
       ))}
 
-      {element?.desc && (
+      {!isHidden(data.hide, "base.desc") && element?.desc && (
         <div className="rpg-item-card__desc">
           {renderMarkdown ? renderMarkdown(element.desc) : <p>{element.desc}</p>}
         </div>
       )}
 
-      {hasCurrency && (
-        <CurrencyRow currency={currency} sellTotals={{}} />
-      )}
+      {hasCurrency || Object.keys(sellTotals).length > 0 ? (
+        <CurrencyRow currency={currency} sellTotals={sellTotals} />
+      ) : null}
 
       {capacity != null && (
         <CapacityBar total={totalWeight} capacity={capacity} />
       )}
 
-      {resolvedSections.map((section) => (
-        <Section key={section.id} section={section} hideWhenEmpty />
-      ))}
+      {resolvedSections.map((section, idx) => {
+        const authored = authoredSections[idx];
+        const sectionToggle = onToggleForSale && authored
+          ? (item: ResolvedItem) => onToggleForSale({
+              source: authored.source,
+              sectionIndex: authored.sectionIndex,
+              path: item.id.split(".").map((s) => Number(s)),
+            })
+          : undefined;
+        return (
+          <Section
+            key={section.id}
+            section={section}
+            hideWhenEmpty
+            onToggleForSale={sectionToggle}
+          />
+        );
+      })}
 
       {element?.image && (
         <figure className="rpg-item-card__figure">
@@ -243,6 +345,28 @@ function formatPounds(n: number): string {
   return n % 1 === 0 ? String(n) : n.toFixed(1);
 }
 
+/** Whether the author has opted out of rendering a particular sub-block
+ *  via `hide: [...]` on the YAML body. Currently understood keys are
+ *  documented on `ItemContainerData.hide`. */
+function isHidden(hide: string[] | undefined, key: string): boolean {
+  return Array.isArray(hide) && hide.includes(key);
+}
+
+/** Split a cost string like `"15 gp"` / `"5 sp"` / `"25cp"` into
+ *  `{ amount, denomination }`. Mirror of the inventory resolver's
+ *  internal helper so the card can sum sell totals without exposing
+ *  it as a public utility. */
+function parseCoin(
+  raw: string | undefined,
+): { amount: number; denomination: keyof CurrencyPurse } | null {
+  if (!raw) return null;
+  const m = raw.match(/(-?\d+(?:\.\d+)?)\s*(pp|gp|ep|sp|cp)/i);
+  if (!m) return null;
+  const amount = Number(m[1]);
+  if (!Number.isFinite(amount)) return null;
+  return { amount, denomination: m[2].toLowerCase() as keyof CurrencyPurse };
+}
+
 /** Coerce a container content entry (string shorthand or object form)
  *  into the YAML inventory entry shape. The container overlay's
  *  `normaliseEntries` already runs upstream when a `resolution` is
@@ -251,11 +375,18 @@ function formatPounds(n: number): string {
 function coerceEntry(raw: unknown): YamlItemEntry {
   if (typeof raw === "string") return { name: raw };
   if (raw && typeof raw === "object") {
-    const o = raw as { name?: unknown; qty?: unknown; notes?: unknown; contents?: unknown };
+    const o = raw as {
+      name?: unknown;
+      qty?: unknown;
+      notes?: unknown;
+      contents?: unknown;
+      for_sale?: unknown;
+    };
     const name = typeof o.name === "string" ? o.name : "";
     const out: YamlItemEntry = { name };
     if (typeof o.qty === "number") out.qty = o.qty;
     if (typeof o.notes === "string") out.notes = o.notes;
+    if (o.for_sale === true) out.for_sale = true;
     if (Array.isArray(o.contents)) out.contents = o.contents.map(coerceEntry);
     return out;
   }

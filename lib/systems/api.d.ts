@@ -170,6 +170,23 @@ export type Setters<T> = {
 };
 
 /**
+ * Cross-file fence patcher exposed on every block's `self`. Locates a
+ * `\`\`\`rpg <entity>.<block>\`\`\`` fence in the file at `path`,
+ * replaces (or appends) the top-level YAML key, and refreshes that
+ * file's preview so any open render picks up the change. Used when a
+ * block needs to mutate state owned by another file — for example,
+ * the character inventory toggling `for_sale` on an item that lives
+ * inside a referenced `rpg item.container` stash.
+ */
+export type ForeignBlockPatcher = (
+  path: string,
+  entity: string,
+  block: string,
+  key: string,
+  value: unknown,
+) => Promise<void>;
+
+/**
  * Full props object passed to a block component created with CreateComponent.
  *
  * @typeParam TProps - This block's own YAML-parsed props
@@ -185,7 +202,7 @@ export interface ComponentProps<
   TExpressions extends Record<string, unknown> = Record<string, unknown>
 > {
   /** Block's own YAML props, augmented with a `setFoo` setter for every `foo` key. */
-  self: TProps & Setters<TProps>;
+  self: TProps & Setters<TProps> & { patchForeignBlock: ForeignBlockPatcher };
   lookup: TLookup;
   frontmatter: TFrontmatter;
   blocks: TBlocks;
@@ -1133,6 +1150,9 @@ export interface ItemPersonalData {
   history?: string;
   discovered?: string[];
   image?: string;
+  /** Sub-blocks to hide from the rendered card. Currently understood:
+   *  `"base.desc"` skips the base element's description body. */
+  hide?: string[];
 }
 
 export declare function parseItemPersonal(yaml: string): ItemPersonalData | null;
@@ -1165,6 +1185,7 @@ export interface ItemContainerEntry {
   name: string;
   qty?: number;
   notes?: string;
+  for_sale?: boolean;
   contents?: ItemContainerEntry[];
 }
 
@@ -1182,6 +1203,9 @@ export interface ItemContainerData {
   sections?: ItemContainerSection[];
   items?: ItemContainerEntry[];
   currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  /** Sub-blocks to hide from the rendered card. Currently understood:
+   *  `"base.desc"` skips the base element's description body. */
+  hide?: string[];
 }
 
 export declare function parseItemContainer(yaml: string): ItemContainerData | null;
@@ -1294,11 +1318,18 @@ export declare const ItemPersonalCard: React.FC<{
   renderMarkdown?: (source: string) => React.ReactNode;
 }>;
 
+export interface ContainerForSaleLocation {
+  source: "section" | "items";
+  sectionIndex: number;
+  path: number[];
+}
+
 export declare const ItemContainerCard: React.FC<{
   data: ItemContainerData;
   resolution: ContainerResolution | null;
   lookup?: (target: string) => Record<string, unknown> | undefined;
   renderMarkdown?: (source: string) => React.ReactNode;
+  onToggleForSale?: (location: ContainerForSaleLocation) => void;
 }>;
 
 // ─── Tables ───────────────────────────────────────────────────────────────────

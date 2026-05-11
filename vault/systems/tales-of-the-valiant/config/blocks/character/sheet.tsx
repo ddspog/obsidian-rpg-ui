@@ -37,7 +37,7 @@ export const sheet: EntityBlock<SheetProps, CharacterEntity> = (ctx) => {
     proficiencies: ctx.self,
   };
 
-  const subCtx = { ...ctx, blocks: syntheticBlocks } as typeof ctx;
+  const subCtx = { ...ctx, blocks: syntheticBlocks } as unknown as typeof ctx;
 
   return (
     <div className="rpg-character-sheet">

@@ -197,6 +197,7 @@ function normaliseEntries(items: unknown): import("./schema").ItemContainerEntry
     const entry: import("./schema").ItemContainerEntry = { name: o.name };
     if (typeof o.qty === "number") entry.qty = o.qty;
     if (typeof o.notes === "string") entry.notes = o.notes;
+    if (o.for_sale === true) entry.for_sale = true;
     if (Array.isArray(o.contents)) entry.contents = normaliseEntries(o.contents);
     out.push(entry);
   }

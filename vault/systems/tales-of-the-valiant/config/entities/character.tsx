@@ -296,6 +296,12 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     const magicLibrary: Record<string, Record<string, unknown>> = {};
     const personalLibrary: Record<string, Record<string, unknown>> = {};
     const containerLibrary: Record<string, Record<string, unknown>> = {};
+    // Vault paths for container files, keyed by basename. The
+    // character inventory block uses these to write back to the
+    // owning container's `rpg item.container` fence when the user
+    // toggles `for_sale` on a row that lives inside an external
+    // stash (Kowyn's Bag, Guild Chest, party vault).
+    const containerPathLibrary: Record<string, string> = {};
     for (const d of refDocs) {
         const name = (d as any)?.$name;
         const $path = typeof (d as any)?.$path === "string" ? (d as any).$path : "";
@@ -320,7 +326,10 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         }
         if (!containerLibrary[name]) {
             const parsed = extractItemContainerBlocks(contents);
-            if (parsed.length > 0) containerLibrary[name] = parsed[0] as Record<string, unknown>;
+            if (parsed.length > 0) {
+                containerLibrary[name] = parsed[0] as Record<string, unknown>;
+                if ($path) containerPathLibrary[name] = $path;
+            }
         }
     }
 
@@ -570,7 +579,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     };
 
     return {
-    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary, $items: itemLibrary, $magic: magicLibrary, $personal: personalLibrary, $containers: containerLibrary },
+    lookup: { table: { xp }, $compendium: compendium, $defaultFeatures: defaultFeatures, $features, $spells: spellLibrary, $items: itemLibrary, $magic: magicLibrary, $personal: personalLibrary, $containers: containerLibrary, $containerPaths: containerPathLibrary },
     blocks: {
         header,
         health,

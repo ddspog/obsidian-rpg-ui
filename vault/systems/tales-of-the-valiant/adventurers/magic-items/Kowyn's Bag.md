@@ -14,16 +14,21 @@ sections:
       - "[[Crossbow, light]]"
       - name: "[[Quiver]]"
         contents:
-          - { name: "[[Crossbow Bolts]]", qty: 20 }
-      - "[[Shield]]"
+          - name: "[[Crossbow Bolts]]"
+            qty: 20
+        for_sale: true
+      - name: "[[Shield]]"
+        for_sale: true
       - name: "[[Backpack]]"
         notes: Jacqui's Quick Access
         contents:
-          - "[[Bedroll]]"
+          - name: "[[Bedroll]]"
           - "[[Mess Kit]]"
           - "[[Tinderbox]]"
-          - { name: "[[Torch]]", qty: 10 }
-          - { name: "[[Rations (1 day)]]", qty: 10 }
+          - name: "[[Torch]]"
+            qty: 10
+          - name: "[[Rations (1 day)]]"
+            qty: 10
           - "[[Rope (50 feet)]]"
           - "[[Vestments ᴺ]]"
   - name: For Kowyn
@@ -34,8 +39,10 @@ sections:
           - "[[Bedroll]]"
           - "[[Mess Kit]]"
           - "[[Tinderbox]]"
-          - { name: "[[Torch]]", qty: 10 }
-          - { name: "[[Rations (1 day)]]", qty: 10 }
+          - name: "[[Torch]]"
+            qty: 10
+          - name: "[[Rations (1 day)]]"
+            qty: 10
           - "[[Rope (50 feet)]]"
           - "[[Vestments ᴺ]]"
   - name: For Talon
@@ -46,8 +53,10 @@ sections:
           - "[[Bedroll]]"
           - "[[Mess Kit]]"
           - "[[Tinderbox]]"
-          - { name: "[[Torch]]", qty: 10 }
-          - { name: "[[Rations (1 day)]]", qty: 10 }
+          - name: "[[Torch]]"
+            qty: 10
+          - name: "[[Rations (1 day)]]"
+            qty: 10
           - "[[Rope (50 feet)]]"
   - name: For Lilith
     items:
@@ -56,17 +65,23 @@ sections:
         contents:
           - "[[Crowbar]]"
           - "[[Hammer]]"
-          - { name: "[[Piton]]", qty: 10 }
-          - { name: "[[Torch]]", qty: 10 }
+          - name: "[[Piton]]"
+            qty: 10
+          - name: "[[Torch]]"
+            qty: 10
           - "[[Tinderbox]]"
-          - { name: "[[Rations (1 day)]]", qty: 10 }
-          - { name: "[[Rope (50 feet)]]", qty: 2 }
+          - name: "[[Rations (1 day)]]"
+            qty: 10
+          - name: "[[Rope (50 feet)]]"
+            qty: 2
   - name: Party
     items:
-      - { name: "[[Sling]]", qty: 2 }
+      - name: "[[Sling]]"
+        qty: 2
       - name: "[[Pouch]]"
         contents:
-          - { name: "[[Sling bullets]]", qty: 15 }
+          - name: "[[Sling bullets]]"
+            qty: 15
       - "[[Light Hammer]]"
       - "[[Dagger]]"
       - "[[Leather]]"

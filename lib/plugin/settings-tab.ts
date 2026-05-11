@@ -47,6 +47,28 @@ export class DndSettingsTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName("Scroll restore window (ms)")
+      .setDesc(
+        "Total time the plugin keeps re-applying your scroll position " +
+          "after a button click that rewrites a YAML block. " +
+          "RPG fences mount their content asynchronously, so a single restore " +
+          "lands too early on long sheets and the page jumps near the top. " +
+          "Increase this value if you still see jumps; lower it if restores feel sluggish."
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder("600")
+          .setValue(String(this.plugin.settings.scrollRestoreDelayMs))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.scrollRestoreDelayMs = Number.isFinite(parsed) && parsed >= 0
+              ? parsed
+              : 600;
+            await this.plugin.saveSettings();
+          })
+      );
+
     containerEl.createEl("h3", { text: "Systems" });
     containerEl.createEl("p", {
       text: "Map content folders to TypeScript system definitions. Files in these folders will use the specified system rules.",

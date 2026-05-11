@@ -69,7 +69,7 @@ export function ItemPersonalCard({
         </div>
       ))}
 
-      {element?.desc && (
+      {!isHidden(data.hide, "base.desc") && element?.desc && (
         <div className="rpg-item-card__desc">
           {renderMarkdown ? renderMarkdown(element.desc) : <p>{element.desc}</p>}
         </div>
@@ -206,4 +206,11 @@ function renderWikilink(raw: string, key: number | string): React.ReactNode {
       {label}
     </a>
   );
+}
+
+/** Whether the author has opted out of rendering a particular sub-block
+ *  via `hide: [...]` on the YAML body. Currently understood keys are
+ *  documented on `ItemPersonalData.hide`. */
+function isHidden(hide: string[] | undefined, key: string): boolean {
+  return Array.isArray(hide) && hide.includes(key);
 }
