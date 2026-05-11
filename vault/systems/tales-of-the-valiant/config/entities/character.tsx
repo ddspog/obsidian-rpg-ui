@@ -29,6 +29,7 @@ import features from '../blocks/character/features';
 import spells from '../blocks/character/spells';
 import inventory from '../blocks/character/inventory';
 import sheet from '../blocks/character/sheet';
+import description from '../blocks/character/description';
 import type { HeaderProps } from "../blocks/character/header.types";
 import type { StatsProps } from "../blocks/character/stats.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
@@ -592,7 +593,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
         spells,
         inventory,
         sheet,
-        description: ({ self, blocks, lookup, system }) => null,
+        description,
     },
     features: defaultFeatures,
     expressions: {

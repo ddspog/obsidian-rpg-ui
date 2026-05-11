@@ -1,0 +1,856 @@
+/* ── Character Description (tabbed narrative block) ────────────────────────── */
+/*
+ * Visual family: cousin of senses/skills/attacks/proficiencies — same
+ * frosted-glass frame, same light-dark() palette, same .rpg-tag-heading
+ * cut-corner ribbon language. The distinctive touch is a gold hairline
+ * flourish in the top-left / bottom-right corners that marks this as the
+ * narrative section rather than a stats block.
+ */
+
+.rpg-description-block {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+
+/* Ornate corner flourishes — two thin gold L-brackets in opposite corners
+ * that hint at an illuminated-manuscript margin. Purely decorative; kept
+ * behind the content (z-index 0 below, tablist/panel lift above). */
+.rpg-description-block::before,
+.rpg-description-block::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 0;
+  border-color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  opacity: 0.7;
+}
+
+.rpg-description-block::before {
+  top: 6px;
+  left: 6px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.rpg-description-block::after {
+  right: 6px;
+  bottom: 6px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+/* ── Tab bar ────────────────────────────────────────────────────────────── */
+
+.rpg-description-tablist {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+}
+
+.rpg-description-tab-item {
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-description-tab {
+  --_cut: 10px;
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px calc(var(--_cut) + 10px) 6px 12px;
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  color: var(--rpg-description-tab, light-dark(#3a3020, #c0b8a4));
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--_cut)) 100%,
+    0 100%
+  );
+  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.rpg-description-tab:hover {
+  color: var(--rpg-description-tab-hover, light-dark(#1a1208, #ffffff));
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+}
+
+.rpg-description-tab:focus-visible {
+  outline: 2px solid var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  outline-offset: -2px;
+}
+
+.rpg-description-tab[data-active] {
+  color: var(--rpg-description-tab-active, light-dark(#1a1208, #ffffff));
+  background: var(--rpg-description-tab-active-bg, light-dark(rgba(212, 168, 64, 0.22), rgba(212, 168, 64, 0.28)));
+  box-shadow: inset 0 -2px 0 var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  transform: translateY(1px);
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+
+.rpg-description-panel {
+  position: relative;
+  z-index: 1;
+  padding: 16px;
+  min-height: 18rem;
+  max-height: 44rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.rpg-description-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rpg-description-panel::-webkit-scrollbar-thumb {
+  background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+}
+
+/* ── Empty panel placeholder ───────────────────────────────────────────── */
+
+.rpg-description-empty {
+  margin: 2rem auto;
+  text-align: center;
+  color: light-dark(#6a6a6a, #a0a0a0);
+  font-size: 0.9em;
+}
+
+/* ── Shared meta pills (Homeland, Position, …) ─────────────────────────── */
+
+.rpg-description-meta-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  margin-right: 8px;
+}
+
+.rpg-description-meta-value {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-description-meta-value > * {
+  display: inline;
+}
+
+/* ── Appearance tab ─────────────────────────────────────────────────────── */
+
+.rpg-description-appearance {
+  display: grid;
+  grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.rpg-description-appearance-art {
+  margin: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.22));
+  box-shadow:
+    inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.15)),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  min-height: 18rem;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+/* PortraitThumb renders `<figure aria-details="Portrait Thumb">` with the
+ * <img> appended inside. Override its defaults so the image fills the art
+ * block like a hero image instead of a small headshot. */
+.rpg-description-appearance-art > [aria-details="Portrait Thumb"] {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.rpg-description-appearance-art [aria-details="Portrait Thumb"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Empty-state treatment — when no `art:` is authored, PortraitThumb sets
+ * data-empty; show a subtle placeholder instead of a blank rectangle. */
+.rpg-description-appearance-art [aria-details="Portrait Thumb"][data-empty]::before {
+  content: "no art set";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.4));
+}
+
+.rpg-description-appearance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.rpg-description-appearance-body > section {
+  margin: 0;
+}
+
+.rpg-description-appearance-body > section > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  margin-bottom: 4px;
+}
+
+.rpg-description-appearance-body > section > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+
+.rpg-description-appearance-body > section p {
+  margin: 4px 0 0;
+  font-size: 0.92em;
+  line-height: 1.55;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+/* ── Side-props grid (AGE / HEIGHT / WEIGHT, EYES / SKIN / HAIR, …) ────── */
+
+.rpg-description-sideprops {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+.rpg-description-sideprops-row {
+  display: grid;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-description-sideprops-row + .rpg-description-sideprops-row {
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.15));
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.rpg-description-sideprops-row > dt {
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.2;
+}
+
+.rpg-description-sideprops-row > dd {
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: light-dark(#1a1208, #e3dcce);
+  line-height: 1.4;
+}
+
+/* ── Copy-prompt button ────────────────────────────────────────────────── */
+
+.rpg-description-appearance-actions {
+  margin: 4px 0 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rpg-description-copy-prompt {
+  all: unset;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.rpg-description-copy-prompt:hover {
+  background: light-dark(rgba(212, 168, 64, 0.18), rgba(212, 168, 64, 0.22));
+}
+
+.rpg-description-copy-prompt:focus-visible {
+  outline: 2px solid var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  outline-offset: 2px;
+}
+
+.rpg-description-copy-prompt::before {
+  content: "⎘ ";
+  margin-right: 2px;
+}
+
+/* ── Responsive: stack art above body on narrow containers ─────────────── */
+
+@container (max-width: 560px) {
+  .rpg-description-appearance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rpg-description-appearance-art {
+    min-height: 14rem;
+    max-height: 20rem;
+  }
+}
+
+/* ── Backstory tab ─────────────────────────────────────────────────────── */
+
+.rpg-description-backstory {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rpg-description-backstory-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 3px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+  margin: 0;
+}
+
+/* Scrollable narrative — cap height so long backstories don't push the
+ * highlights off-screen; panel itself is also scrollable, but this inner
+ * cap gives long reads a dedicated reading pane with a faint paper tint. */
+.rpg-description-story-scroll {
+  max-height: 26rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  padding: 12px 16px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(255, 251, 240, 0.6), rgba(0, 0, 0, 0.18));
+  /* Serif body for the narrative — leans into the "read this" framing. */
+  font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: light-dark(#2a1f10, #e3dcce);
+}
+
+.rpg-description-story-scroll > :first-child {
+  margin-top: 0;
+}
+
+.rpg-description-story-scroll > :last-child {
+  margin-bottom: 0;
+}
+
+.rpg-description-story-scroll p {
+  margin: 0 0 0.8em;
+}
+
+.rpg-description-story-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rpg-description-story-scroll::-webkit-scrollbar-thumb {
+  background: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.18));
+  border-radius: 3px;
+}
+
+/* Internal-link accent inside the narrative — keep the text body colour but
+ * lift decoration on hover so wikilinks are discoverable without screaming. */
+.rpg-description-story-scroll a.internal-link {
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+
+.rpg-description-story-scroll a.internal-link:hover {
+  border-bottom-style: solid;
+}
+
+/* ── Highlights (TLDR list) ────────────────────────────────────────────── */
+
+.rpg-description-highlights {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) 1fr;
+  gap: 2px 16px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+.rpg-description-highlight {
+  display: contents;
+}
+
+.rpg-description-highlight > dt {
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.45;
+  padding: 4px 0;
+  border-right: 1px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12));
+  padding-right: 12px;
+}
+
+.rpg-description-highlight > dd {
+  margin: 0;
+  padding: 4px 0;
+  font-size: 0.92em;
+  line-height: 1.45;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-description-highlight > dd > * {
+  display: inline;
+}
+
+.rpg-description-highlight + .rpg-description-highlight {
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+}
+
+/* Footnote variant — full-width muted italic row (used for the TLDR
+ * "subtitle" the user showed: _An character with good connections to
+ * nobility._). */
+.rpg-description-highlight-footnote {
+  display: contents;
+}
+
+.rpg-description-highlight-footnote > dd {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding: 6px 0 2px;
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+  text-align: center;
+  font-style: italic;
+  font-size: 0.88em;
+  color: light-dark(#6a5a3a, #b0a888);
+}
+
+/* ── Ribbon rows (shared — Allies / Enemies / Organizations) ──────────── */
+
+.rpg-description-ribbon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rpg-description-ribbon {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+/* Left-column "ribbon" containing (optional) portrait, name tag, and role.
+ * Stacks vertically. Name tag uses the same cut-corner .rpg-tag-heading
+ * shape so it reads as sheet language. */
+.rpg-description-ribbon-side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rpg-description-ribbon-portrait {
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.22));
+  box-shadow: inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.15));
+  display: flex;
+}
+
+.rpg-description-ribbon-portrait > [aria-details="Portrait Thumb"] {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.rpg-description-ribbon-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.rpg-description-ribbon-name {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.25;
+}
+
+.rpg-description-ribbon-name > span {
+  clip-path: none;
+  padding: 3px 10px;
+  background: light-dark(rgba(212, 168, 64, 0.22), rgba(212, 168, 64, 0.22));
+}
+
+/* Markdown may inject a wrapping <p> or <div> — flatten it so the name sits
+ * on one line inside the ribbon. */
+.rpg-description-ribbon-name > span > * {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-description-ribbon-name a.internal-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rpg-description-ribbon-role {
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(#6a5a3a, #b0a888);
+  text-align: center;
+}
+
+.rpg-description-ribbon-body {
+  min-width: 0;
+  font-size: 0.92em;
+  line-height: 1.5;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-description-ribbon-body > :first-child {
+  margin-top: 0;
+}
+
+.rpg-description-ribbon-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Large variant (organizations) — portrait gets more vertical room, the
+ * whole row grows so the organization's text has space to breathe. */
+.rpg-description-ribbon-large {
+  grid-template-columns: minmax(11rem, 16rem) 1fr;
+  padding: 12px;
+}
+
+.rpg-description-ribbon-large .rpg-description-ribbon-portrait {
+  min-height: 10rem;
+}
+
+.rpg-description-ribbon-large .rpg-description-ribbon-name {
+  font-size: 0.95em;
+}
+
+/* ── Allies & Enemies tab (two independent columns) ────────────────────── */
+
+.rpg-description-side-by-side {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.rpg-description-column {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-description-column > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.8em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-description-column > header > span {
+  clip-path: none;
+  padding: 3px 10px;
+}
+
+.rpg-description-column[data-kind="enemies"] > header {
+  --rpg-description-flourish: light-dark(#8a2a2a, #e06464);
+}
+
+.rpg-description-column-empty {
+  margin: 0;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.85em;
+  font-style: italic;
+  color: light-dark(#6a5a3a, #8a8070);
+  border: 1px dashed light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+}
+
+@container (max-width: 640px) {
+  .rpg-description-side-by-side {
+    flex-direction: column;
+  }
+
+  .rpg-description-ribbon {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rpg-description-ribbon-side {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rpg-description-ribbon-portrait {
+    width: 4rem;
+    height: 4rem;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Organizations tab ─────────────────────────────────────────────────── */
+
+.rpg-description-organizations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Wrap a ribbon row + position footer as one unit — the footer hangs off
+ * the bottom edge of the ribbon so both read as a single card. */
+.rpg-description-organization {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* The RibbonRow <li> inside — reset its list bullets since it's nested
+ * inside our flex column rather than a ribbon-list. */
+.rpg-description-organization > .rpg-description-ribbon {
+  list-style: none;
+  border-radius: 4px 4px 0 0;
+  border-bottom: none;
+}
+
+/* When no position footer follows, round all four corners. */
+.rpg-description-organization > .rpg-description-ribbon:last-child {
+  border-radius: 4px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+}
+
+.rpg-description-org-position {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.18));
+  border-radius: 0 0 4px 4px;
+  background: light-dark(rgba(212, 168, 64, 0.1), rgba(212, 168, 64, 0.12));
+  margin: 0;
+}
+
+.rpg-description-org-position .rpg-description-meta-value {
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.rpg-description-org-position .rpg-description-meta-value > p {
+  margin: 0;
+  display: inline;
+}
+
+/* ── Motivation tab (masonry of sticky-note cards) ─────────────────────── */
+
+.rpg-description-motivation {
+  column-count: 3;
+  column-gap: 16px;
+  padding: 8px 4px;
+}
+
+/* Single-card case: centre it and cap width so a lone motivation doesn't
+ * stretch full-bleed across the panel. */
+.rpg-description-motivation[data-count="1"] {
+  column-count: 1;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 16px 4px;
+}
+
+.rpg-description-motivation-card {
+  --_accent: var(--rpg-card-accent, light-dark(#f5e6a3, #c9a845));
+  break-inside: avoid;
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--_accent) 80%, white) 0%,
+      var(--_accent) 100%
+    );
+  color: #2a2010;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 6px 14px rgba(0, 0, 0, 0.18);
+  position: relative;
+  font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
+  font-size: 0.95em;
+  line-height: 1.55;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+/* Tiny per-card rotation + stacking variation so the board reads as a
+ * pin-board instead of a grid. Kept small (±1.2°) so nothing feels
+ * deliberately skewed — just "hand-placed". Uses :nth-child to avoid
+ * JS randomisation (which would rotate on every render). */
+.rpg-description-motivation-card:nth-child(3n+1) { transform: rotate(-1.1deg); }
+.rpg-description-motivation-card:nth-child(3n+2) { transform: rotate(0.6deg); }
+.rpg-description-motivation-card:nth-child(3n+3) { transform: rotate(-0.3deg) translateY(3px); }
+
+.rpg-description-motivation-card:hover {
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+  z-index: 1;
+}
+
+/* Single-card case: no rotation — centred quotes look better squared up. */
+.rpg-description-motivation[data-count="1"] .rpg-description-motivation-card {
+  transform: none;
+  text-align: center;
+}
+
+.rpg-description-motivation-card blockquote {
+  margin: 0;
+  padding: 0;
+  border: none;
+  quotes: "“" "”";
+}
+
+.rpg-description-motivation-card blockquote::before {
+  content: open-quote;
+  font-size: 1.8em;
+  font-weight: 700;
+  line-height: 0.2;
+  vertical-align: -0.35em;
+  margin-right: 0.1em;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.rpg-description-motivation-card blockquote::after {
+  content: close-quote;
+  font-size: 1.8em;
+  font-weight: 700;
+  line-height: 0;
+  vertical-align: -0.55em;
+  margin-left: 0.05em;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.rpg-description-motivation-card blockquote > :first-child {
+  margin-top: 0;
+  display: inline;
+}
+
+.rpg-description-motivation-card blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.rpg-description-motivation-card blockquote p {
+  margin: 0;
+  display: inline;
+}
+
+.rpg-description-motivation-card blockquote em,
+.rpg-description-motivation-card blockquote strong {
+  color: inherit;
+}
+
+.rpg-description-motivation-card a.internal-link {
+  color: #4a3010;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+@container (max-width: 720px) {
+  .rpg-description-motivation {
+    column-count: 2;
+  }
+}
+
+@container (max-width: 480px) {
+  .rpg-description-motivation {
+    column-count: 1;
+  }
+}

@@ -10,6 +10,7 @@ import type { FeaturesBlockData } from "../blocks/character/features.types";
 import type { SpellsProps } from "../blocks/character/spells.types";
 import type { InventoryProps } from "../blocks/character/inventory.types";
 import type { SheetProps } from "../blocks/character/sheet.types";
+import type { DescriptionBlockData } from "../blocks/character/description.types";
 
 /**
  * Types for the Character Entity, defining the shape of its blocks, lookup, and expressions.
@@ -125,9 +126,13 @@ export type CharacterBlocks = {
    * sheet layout.
    */
   sheet: SheetProps;
-  description: {
-    filter?: string;
-  };
+  /**
+   * Narrative tabbed block — Appearance, Backstory, Allies & Enemies,
+   * Organizations, Motivation. Unlike the sheet blocks above, this one
+   * carries prose and portraits rather than stats; nothing else on the
+   * character reads from it.
+   */
+  description: DescriptionBlockData;
 };
 
 export type CharacterEntity = EntityDescriptor<CharacterBlocks, CharacterLookup, CharacterExpressions>;

@@ -245,3 +245,57 @@ currency:
   sp: 15
   cp: 3
 ```
+
+# Description
+```rpg character.description
+appearance:
+  body: |
+    Weathered and broad-shouldered, Aldric bears the scars of a decade on
+    the front lines. Silver streaks run through his auburn hair, and his
+    steel-grey eyes carry the steady focus of a veteran soldier.
+  clothes: |
+    Aldric wears a well-maintained chain mail hauberk over a deep crimson
+    gambeson — the colour of the Ironveil family banner. A plain iron
+    sigil hangs at his throat.
+  side_props:
+    - age: 38
+      height: "6'1''"
+      weight: "215 lb."
+    - eyes: Steel-grey
+      skin: Weathered
+      hair: "Auburn, greying"
+  art: "[[aldric-portrait.webp]]"
+backstory:
+  homeland: "[[Stonehaven]]"
+  text: |
+    Aldric came up through the Stonehaven city watch before the Crimson
+    War called every able sword north. Three seasons at the front taught
+    him that valour alone wins nothing — only the steady work of holding
+    a line while your friends fall around you.
+
+    After the armistice he drifted south, picking up work as a caravan
+    guard and later a monster-hunter for hire. He tells people he's
+    looking for purpose. Those who know him suspect he's looking for a
+    reason not to go home.
+  highlights:
+    - key: "Veteran"
+      value: "Three campaigns at the northern front."
+    - key: "Unmarried"
+      value: "Left a betrothal behind when the war began."
+    - footnote: "_A tired sword looking for a cause worth dying for._"
+allies:
+  - name: "Sergeant Vell"
+    role: "Old comrade"
+    text: "Aldric's commanding officer during the war. Retired to a farm outside Stonehaven but still sends letters."
+enemies:
+  - name: "The Crimson Hand"
+    role: "Remnant cult"
+    text: "A splinter faction from the losing side of the war. They remember Aldric's name."
+organizations:
+  - name: "Stonehaven City Watch"
+    text: "The watch that trained him. He keeps his badge despite no longer serving."
+    position: "Honorary, inactive."
+motivation:
+  - text: "_I fight so the next generation doesn't have to._"
+  - text: "_Purpose is a luxury the dead don't need._"
+```

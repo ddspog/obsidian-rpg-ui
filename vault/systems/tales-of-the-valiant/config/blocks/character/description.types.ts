@@ -1,0 +1,90 @@
+/**
+ * Types for the Description block of the Character Entity.
+ *
+ * Authored as a single `rpg character.description` YAML fence. Each top-level
+ * key maps to a tab (appearance, backstory, allies + enemies, organizations,
+ * motivation). The UI surfaces whichever tabs have content — a missing key
+ * collapses its tab visually rather than erroring.
+ */
+
+/** Flat key/value row for an Appearance "side prop" group. YAML authors a
+ *  list of rows; each row renders as a horizontal fieldset labelled with the
+ *  keys (`AGE`, `HEIGHT`, `WEIGHT`) above the values. Numbers coerce to
+ *  strings on render. */
+export type SidePropRow = {
+  [label: string]: string | number;
+};
+
+export type AppearanceSection = {
+  /** Prose about the character's physical build / face / hair (markdown). */
+  body?: string;
+  /** Prose about outfit / signature garments (markdown). */
+  clothes?: string;
+  /** Grouped quick-facts shown as label/value grids. Author one object per
+   *  group to keep related facts together (e.g. `[ {age, height, weight},
+   *  {eyes, skin, hair} ]`). */
+  side_props?: SidePropRow[];
+  /** Wikilink to the main character art asset. Shared with nothing — this
+   *  is the big 40%-width image on the Appearance tab, distinct from the
+   *  small `health.portrait` headshot. */
+  art?: string | unknown;
+};
+
+/** One highlight row shown beneath the backstory. Two shapes are accepted:
+ *   - `{ key, value }`  → renders as a definition row (dt + dd).
+ *   - `{ footnote }`    → renders as a full-width muted italic line, meant
+ *                         for TLDR subtitles (`_An character with good
+ *                         connections to nobility._`). */
+export type BackstoryHighlight = {
+  key?: string;
+  value?: string;
+  footnote?: string;
+};
+
+export type BackstorySection = {
+  /** Pill displayed above the story. May be a wikilink. */
+  homeland?: string | unknown;
+  /** Scrollable narrative — multi-line markdown with wikilinks, emphasis,
+   *  embeds. The tab gives this a capped height so long backstories don't
+   *  push other tabs' content off-screen. */
+  text?: string;
+  /** TLDR bullets. Order preserved; mix `{key, value}` and `{footnote}`
+   *  freely — the renderer branches per-row. */
+  highlights?: BackstoryHighlight[];
+};
+
+/** Shared shape for ally / enemy / organization rows. Each renders as a
+ *  ribbon (name + role + portrait) beside body prose. */
+export type RibbonEntry = {
+  /** Display name. May be a plain string or a wikilink. */
+  name: string;
+  /** Small subtitle inside the ribbon ("Guardian", "Lover", "Rival", …). */
+  role?: string;
+  /** Wikilink to a portrait image. Absent → ribbon renders without art. */
+  portrait?: string | unknown;
+  /** Body prose attached to the entry (markdown). */
+  text?: string;
+};
+
+export type OrganizationEntry = RibbonEntry & {
+  /** Character's standing inside the organization ("Graduating, on final
+   *  quest", "Initiate", "Full Member", …). Rendered in a dedicated footer
+   *  below the ribbon row rather than inside it. */
+  position?: string;
+};
+
+export type MotivationCard = {
+  /** Card body (markdown). */
+  text: string;
+  /** Optional per-card accent. Any CSS colour string. */
+  color?: string;
+};
+
+export type DescriptionBlockData = {
+  appearance?: AppearanceSection;
+  backstory?: BackstorySection;
+  allies?: RibbonEntry[];
+  enemies?: RibbonEntry[];
+  organizations?: OrganizationEntry[];
+  motivation?: MotivationCard[];
+};
