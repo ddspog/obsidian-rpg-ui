@@ -25,6 +25,16 @@
   margin: 0;
 }
 
+/* Italicize the rendered value — the old convention was to author the
+ * attribution as `_From X by Y_` in the body; when we lift values into
+ * frontmatter the outer italics markers are stripped, and this rule
+ * brings the look back uniformly (including for pre-existing FM
+ * entries that never had markers). Nested bold / wikilinks keep their
+ * own styling. */
+.rpg-page-footer__value {
+  font-style: italic;
+}
+
 .rpg-page-footer__label {
   font-weight: 600;
 }

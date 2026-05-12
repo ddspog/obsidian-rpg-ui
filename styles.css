@@ -7506,6 +7506,9 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   display: inline;
   margin: 0;
 }
+.rpg-page-footer__value {
+  font-style: italic;
+}
 .rpg-page-footer__label {
   font-weight: 600;
 }
