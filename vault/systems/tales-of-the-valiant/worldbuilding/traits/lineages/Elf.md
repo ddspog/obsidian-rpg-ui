@@ -37,7 +37,6 @@ traits:
   Size: Medium
   Speed: "30 ft."
   Senses:
-    - "[[Darvision]] 60ft."
     - [[Low-Light Vision]]
 ```
 **Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.*
