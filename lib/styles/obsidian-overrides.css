@@ -58,6 +58,16 @@
   width: 160px;
 }
 
+/* Breathing room above the description code block when it sits right
+ * under a heading — `# Description` followed by the fence otherwise
+ * ends up flush with the heading's baseline. `:has()` keeps this
+ * scoped to description fences only; plain code blocks aren't
+ * affected. */
+.markdown-rendered :is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6) + .el-pre:has(.rpg-description-block),
+.markdown-source-view.mod-cm6 :is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6) + .el-pre:has(.rpg-description-block) {
+  margin-top: 1.25em;
+}
+
 /* Obsidian's `.markdown-rendered li` defaults zero out paddings on list
  * items, so the dashed divider between feature cards in a bucket sits
  * flush against both the previous content and the next title. Re-assert

@@ -168,28 +168,27 @@ backstory:
       value: "From birth, promised to become a cleric. _A character with good connections to nobility._"
 allies:
   - name: "Caleb Ilitul"
-    role: "Guardian"    
-    portrait: "[[caleb.webp]]"
+    role: "Guardian"
+    portrait: "🪽"
     text: |
        A dear uncle in his early fifties who provided Jacqui with invaluable life lessons. Caleb served as the primary tutor for all his siblings, imparting extensive knowledge about [[Borelhearth]], noble customs, and the workings of the family farm.
   - name: "Meriele Tiltathana"
+    portrait: "❤️"
     role: "Lover"
-    portrait: "[[meriele.webp]]"
     text: "A kind-hearted elf ranger who lovingly tends to a small farm near Wisdom's Path. Meriele’s steadfast nature and connection to the land make her a source of inspiration and grounding for Jacqui."
   - name: "Great House of Ilitul"
-    portrait: "[[meriele.webp]]"
+    portrait: "🛡️"
     text: "The Ilitul family amassed their wealth as goat herders before diversifying into mercenary ventures. Their grand villa in the Sea Ward, situated at the intersection of Ivory Street and the Streets of Whispers and Singing Dolphin, symbolizes their stature. Opposite their villa stands the Emveolstone family estate, while the nearby Shrines of Nature and the Melshimber villa surround their domain. Outside the city, they maintain extensive goat herds, cementing their reputation as industrious and resourceful landowners."
 enemies:
   - name: "Thorp Family"
+    portrait: "🤼"
     text: "During the early 1370s DR, a bitter feud erupted between the Ilitul and Thorp families when Guster Ilitul was infamously seen strangling Delbert Thorp during the second annual Black Bucket Hunt. This shocking event occurred while both parties were navigating the dangers of the [[Slitters]] caves. The incident was witnessed by many through a modified arcane eye spell, which projected the gruesome scene for all to see."
 organizations:
   - name: "[[Lurker's Hall]]"
-    portrait: "[[lurkers-hall.webp]]"
+    portrait: "👤"
     text: "The famous hunter academy on [[Rindelbran]]. They are specialized in tracking: treasures, targets, game, weak points, etc. Not just rangers are formed there, but rogues, druids, etc. There's connection to other factions, where some missions can come to the people graduated there. After graduation, a Lurker can become a mercenary, soldier, investigator, thief, etc."
     position: "Graduating, on final quest for obtaining his Licensee."
 motivation:
   - text: "Many adherents don’t stray far from the object of their devotion. Those who roam often do so for reasons specific to their order."
   - text: "_Adventuring frees me to practice more unorthodox methods of worship._"
-  - text: "_I fight so the next generation doesn't have to._"
-    color: "#d4a840"
 ```

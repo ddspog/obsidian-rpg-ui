@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Notice } from "obsidian";
+import { Notice, setIcon } from "obsidian";
 import { EntityBlock, Markdown, PortraitThumb } from "rpg-ui-toolkit";
 import type { CharacterEntity } from "../../entities/character.types";
 import type {
@@ -416,14 +416,82 @@ function BackstoryTab({
 
 // ─── Ribbon rows (shared by Allies/Enemies + Organizations) ──────────────────
 
+/** Portrait field polymorphism. A value can be:
+ *   - `"icon:sword"`         → rendered as an Obsidian Lucide icon.
+ *   - `"⚔"`, `"Jq"`, …       → any short string that isn't a wikilink is
+ *                              rendered as a text glyph (emoji, initials).
+ *   - `"[[image.webp]]"`     → resolved via PortraitThumb (image).
+ *   - `null` / `undefined`   → nothing is rendered, the grid area collapses.
+ *
+ * A wikilink is any value starting with `[[` (optionally prefixed by `!`
+ * for the embed syntax) or an object with `.link`/`.path`/`.file`/`.src`.
+ * Everything else takes the glyph path. */
+function looksLikeWikilink(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (Array.isArray(raw)) {
+    for (const v of raw) if (looksLikeWikilink(v)) return true;
+    return false;
+  }
+  if (typeof raw === "string") return /^!?\[\[/.test(raw.trim());
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    return obj.link != null || obj.path != null || obj.file != null || obj.src != null;
+  }
+  return false;
+}
+
+function IconGlyph({ name }: { name: string }) {
+  const ref = React.useRef<HTMLSpanElement | null>(null);
+  React.useEffect(() => {
+    if (!ref.current) return;
+    ref.current.empty();
+    try {
+      setIcon(ref.current, name);
+    } catch {
+      // setIcon throws for unknown names; fall back to the raw string so
+      // the author sees what they typed instead of a silent empty cell.
+      ref.current.textContent = name;
+    }
+  }, [name]);
+  return <span ref={ref} className="rpg-description-ribbon-glyph" aria-hidden="true" />;
+}
+
+function TextGlyph({ text }: { text: string }) {
+  return (
+    <span className="rpg-description-ribbon-glyph" aria-hidden="true">
+      {text}
+    </span>
+  );
+}
+
+function RibbonPortrait({ src, label }: { src: unknown; label: string }) {
+  if (src == null) return null;
+  if (typeof src === "string") {
+    const trimmed = src.trim();
+    if (trimmed.startsWith("icon:")) {
+      return <IconGlyph name={trimmed.slice(5).trim()} />;
+    }
+    if (!looksLikeWikilink(trimmed) && trimmed.length <= 4) {
+      // Short non-wikilink string — emoji or 1–4 char glyph.
+      return <TextGlyph text={trimmed} />;
+    }
+  }
+  return <PortraitThumb src={src} alt={label} />;
+}
+
 function RibbonRow({
   entry,
   variant,
   sourcePath,
+  footer,
 }: {
   entry: RibbonEntry;
   variant: "compact" | "large";
   sourcePath: string;
+  /** Optional extra content attached below the body. Organizations use
+   *  this for their "Position" row, which is an organization-specific
+   *  concept the base ribbon doesn't know about. */
+  footer?: React.ReactNode;
 }) {
   const portraitSrc = entry.portrait;
   const hasPortrait = portraitSrc != null && portraitSrc !== "";
@@ -436,7 +504,7 @@ function RibbonRow({
       >
         {hasPortrait && (
           <figure className="rpg-description-ribbon-portrait">
-            <PortraitThumb src={portraitSrc} alt={label} />
+            <RibbonPortrait src={portraitSrc} label={label} />
           </figure>
         )}
         <header className="rpg-tag-heading rpg-description-ribbon-name">
@@ -453,6 +521,7 @@ function RibbonRow({
           <Markdown source={entry.text} sourcePath={sourcePath} />
         </div>
       )}
+      {footer}
     </li>
   );
 }
@@ -514,19 +583,24 @@ function OrganizationsTab({
     return <EmptyPanel hint="No organizations linked yet." />;
   }
   return (
-    <ul className="rpg-description-organizations">
+    <ul className="rpg-description-ribbon-list rpg-description-organizations">
       {organizations.map((o, i) => (
-        <li key={i} className="rpg-description-organization">
-          <RibbonRow entry={o} variant="large" sourcePath={sourcePath} />
-          {o.position && (
-            <footer className="rpg-description-org-position">
-              <span className="rpg-description-meta-label">Position</span>
-              <span className="rpg-description-meta-value">
-                <Markdown source={o.position} sourcePath={sourcePath} />
-              </span>
-            </footer>
-          )}
-        </li>
+        <RibbonRow
+          key={i}
+          entry={o}
+          variant="compact"
+          sourcePath={sourcePath}
+          footer={
+            o.position ? (
+              <footer className="rpg-description-org-position">
+                <span className="rpg-description-meta-label">Position</span>
+                <span className="rpg-description-meta-value">
+                  <Markdown source={o.position} sourcePath={sourcePath} />
+                </span>
+              </footer>
+            ) : null
+          }
+        />
       ))}
     </ul>
   );
