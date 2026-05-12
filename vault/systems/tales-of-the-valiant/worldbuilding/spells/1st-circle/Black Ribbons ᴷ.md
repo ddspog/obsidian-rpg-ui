@@ -22,6 +22,16 @@ style:
 summary: Hall grips opponents with shadows.
 text: Centered on a point you can see within range, you pull pieces of the Plane of Shadow into your own reality, causing a 20-foot cube to fill with inky ribbons that turn the area into difficult terrain and wrap around nearby creatures. Any creature that ends its turn in the area becomes [[restrained]] by the ribbons until the end of its next turn, unless it makes a successful Dexterity saving throw. Once a creature succeeds on this saving throw, it can’t be restrained again by the ribbons, but it’s still affected by the difficult terrain.
 image: "![[black-ribbons.webp|384]]"
+roll:
+  form: save
+  circle: 1
+  range: 60 ft.
+  save:
+    ability: STR
+    on_success: "negates restrained"
+  effects:
+    - restrained
+  notes: 20-ft cube of ribbons; difficult terrain; restrained until next turn on fail
 ```
 
 

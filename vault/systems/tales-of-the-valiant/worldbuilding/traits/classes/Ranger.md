@@ -65,9 +65,9 @@ choose:
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
 - _(a)_ scale mail or _(b)_ [[Leather 1]] armor 
-- _(a)_ two [[012. Worldbuilding/Items/Weapons/Shortsword]] or _(b)_ two [[Simple]] weapons 
+- _(a)_ two [[Shortsword]] or _(b)_ two [[Simple]] weapons 
 - _(a)_ a dungeoneer's pack or _(b)_ an explorer's pack 
-- A [[012. Worldbuilding/Items/Weapons/Longbow]] and [[Quiver]] of 20 [[Arrows]] 
+- A [[Longbow]] and [[Quiver]] of 20 [[Arrows]] 
 ```rpg table.progression
 | RANGER PROGRESSION  ||| PRIMORDIAL SPELL SLOTS BY CIRCLE      ||||||
 | LEVEL | PB | FEATURES | SPELLS KNOWN | 1ST | 2ND | 3RD | 4TH | 5TH |
@@ -134,7 +134,22 @@ resource:
   text: |
     When you hit a creature with an attack roll, you can mystically mark it as your favored quarry. The creature remains marked for 1 minute, until you use this feature to mark a different creature, or until you become [[Incapacitated]].
 
-    While a creature is marked (including for the attack that triggered the mark), you deal an extra {{ leveled: { 1: 1d4, 6: 1d6, 13: 1d8, 17: 1d10 } }} damage to it (of the same damage type as the weapon) each time you successfully hit it with a weapon attack. 
+    While a creature is marked (including for the attack that triggered the mark), you deal an extra {{ leveled: { 1: 1d4, 6: 1d6, 13: 1d8, 17: 1d10 } }} damage to it (of the same damage type as the weapon) each time you successfully hit it with a weapon attack.
+roll:
+  form: rider
+  range: Any
+  damage:
+    roll: 1d4
+    type: origin
+  leveled:
+    at:
+      6: { damage: { roll: 1d6, type: origin } }
+      13: { damage: { roll: 1d8, type: origin } }
+      17: { damage: { roll: 1d10, type: origin } }
+  notes: apply when hitting marked creature with weapon
+  cost:
+    type: mystic-mark
+    amount: 1
 ```
 >[!rules] RANGER QUICK BUILD
 >To quickly create a ranger, follow these steps during character creation: 

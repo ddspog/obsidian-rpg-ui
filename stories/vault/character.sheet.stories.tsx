@@ -10,7 +10,14 @@ import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
-import { buildAttacksYaml, buildFeaturesYaml, buildProficienciesYaml, buildSkillsYaml, buildStatsYaml, type AbilityScores } from "../lib/character-yaml";
+import {
+  buildRollsYaml,
+  buildFeaturesYaml,
+  buildProficienciesYaml,
+  buildSkillsYaml,
+  buildStatsYaml,
+  type AbilityScores,
+} from "../lib/character-yaml";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
@@ -97,8 +104,8 @@ const meta: Meta<SheetArgs> = {
     dot_inset: { control: { type: "range", min: 0, max: 40, step: 2 }, name: "Dot Inset (px)" },
 
     // Senses / Skills controls
-    perception_prof:    { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Perception Prof." },
-    insight_prof:       { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Insight Prof." },
+    perception_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Perception Prof." },
+    insight_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Insight Prof." },
     investigation_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Investigation Prof." },
 
     // Health controls
@@ -127,7 +134,7 @@ type Story = StoryObj<SheetArgs>;
  * Preferred order for character sheet blocks. Blocks not in this list will
  * appear at the end in alphabetical order.
  */
-const PREFERRED_BLOCK_ORDER = ["header", "health", "stats", "senses", "skills", "attacks", "proficiencies", "features"];
+const PREFERRED_BLOCK_ORDER = ["header", "health", "stats", "senses", "skills", "rolls", "proficiencies", "features"];
 
 function getOrderedBlocks(system: RPGSystem): string[] {
   const entityDef = (system.entities as Record<string, any>)?.character;
@@ -218,8 +225,8 @@ conditions:
   blocksYaml.senses = `senses_list: []
 `;
 
-  // Attacks YAML
-  blocksYaml.attacks = buildAttacksYaml([
+  // Rolls YAML
+  blocksYaml.rolls = buildRollsYaml([
     { name: "Longsword", to_hit: 7, range: "5 ft.", damage: { roll: "1d8+4", type: "slashing" } },
     { name: "Javelin", to_hit: 7, range: "30/120 ft.", damage: { roll: "1d6+4", type: "piercing" } },
   ]);
@@ -266,15 +273,12 @@ function Sheet({
   // prop on the next render. Each block seeds itself from its initial YAML
   // on first mount, then bubbles state changes up via `onBlockSelfChange`.
   const [sharedBlocks, setSharedBlocks] = React.useState<Record<string, Record<string, unknown>>>({});
-  const handleBlockSelfChange = React.useCallback(
-    (name: string, next: Record<string, unknown>) => {
-      setSharedBlocks((prev) => {
-        if (prev[name] === next) return prev;
-        return { ...prev, [name]: next };
-      });
-    },
-    [],
-  );
+  const handleBlockSelfChange = React.useCallback((name: string, next: Record<string, unknown>) => {
+    setSharedBlocks((prev) => {
+      if (prev[name] === next) return prev;
+      return { ...prev, [name]: next };
+    });
+  }, []);
 
   return (
     <div
@@ -318,7 +322,14 @@ interface SheetBlockProps {
   onBlockSelfChange: (name: string, next: Record<string, unknown>) => void;
 }
 
-function SheetBlock({ blockName, args, system, blocksYaml, sharedBlocks, onBlockSelfChange }: SheetBlockProps): React.ReactNode {
+function SheetBlock({
+  blockName,
+  args,
+  system,
+  blocksYaml,
+  sharedBlocks,
+  onBlockSelfChange,
+}: SheetBlockProps): React.ReactNode {
   const yaml = blocksYaml[blockName] || "";
 
   if (!yaml) {
@@ -331,25 +342,25 @@ function SheetBlock({ blockName, args, system, blocksYaml, sharedBlocks, onBlock
     <>
       {heading && <h2 style={{ margin: "1em 0 0.25em" }}>{heading}</h2>}
       <RpgBlock
-      system={system}
-      entity="character"
-      block={blockName}
-      filename={args.filename}
-      yaml={yaml}
-      blocks={blocksYaml}
-      sharedBlocks={sharedBlocks}
-      onBlockSelfChange={onBlockSelfChange}
-      frontmatter={{
-        proficiency_bonus: args.proficiency_bonus,
-        level: args.level,
-        strength: args.strength,
-        dexterity: args.dexterity,
-        constitution: args.constitution,
-        intelligence: args.intelligence,
-        wisdom: args.wisdom,
-        charisma: args.charisma,
-      }}
-    />
+        system={system}
+        entity="character"
+        block={blockName}
+        filename={args.filename}
+        yaml={yaml}
+        blocks={blocksYaml}
+        sharedBlocks={sharedBlocks}
+        onBlockSelfChange={onBlockSelfChange}
+        frontmatter={{
+          proficiency_bonus: args.proficiency_bonus,
+          level: args.level,
+          strength: args.strength,
+          dexterity: args.dexterity,
+          constitution: args.constitution,
+          intelligence: args.intelligence,
+          wisdom: args.wisdom,
+          charisma: args.charisma,
+        }}
+      />
     </>
   );
 }

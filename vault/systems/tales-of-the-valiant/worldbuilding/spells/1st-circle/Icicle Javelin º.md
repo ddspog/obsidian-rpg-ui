@@ -25,13 +25,21 @@ text: |-
 
   **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
 image: "![[icicle-javelin.webp|384]]"
-attack:
+roll:
   form: spell
+  circle: 1
   range: 60 ft.
   damage:
     roll: 3d8
     type: cold
+  effects:
+    - pin
   notes: may pin target adjacent to large surface
+  upcast:
+    2: { damage: { roll: 4d8, type: cold } }
+    3: { damage: { roll: 5d8, type: cold } }
+    4: { damage: { roll: 6d8, type: cold } }
+    5: { damage: { roll: 7d8, type: cold } }
 ```
 
 

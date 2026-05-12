@@ -29,6 +29,19 @@ text: |-
 
   **_At Higher Circles._** When you cast this spell using a spell slot of 2nd circle or higher, roll an additional 2d8 for each slot above 1st.
 image: "![[sleep.webp|384]]"
+roll:
+  form: save
+  circle: 1
+  range: 90 ft.
+  damage:
+    roll: 5d8
+    type: sleep pool
+  notes: creatures fall unconscious in ascending HP order until pool exhausted
+  upcast:
+    2: { damage: { roll: 7d8, type: "sleep pool" } }
+    3: { damage: { roll: 9d8, type: "sleep pool" } }
+    4: { damage: { roll: 11d8, type: "sleep pool" } }
+    5: { damage: { roll: 13d8, type: "sleep pool" } }
 ```
 
 

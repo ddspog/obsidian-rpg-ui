@@ -162,8 +162,8 @@ Survival:
   bonus: 0
 ```
 ## Attacks
-```rpg character.attacks
-attacks:
+```rpg character.rolls
+rolls:
   - name: Longsword
     toHit: 6
     range: melee

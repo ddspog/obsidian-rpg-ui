@@ -9,8 +9,8 @@
  * entity lookups) and in Vitest fixtures.
  */
 
-import type { DamageSpec } from "../features/attack";
-import type { WeaponOverlay } from "./attack";
+import type { DamageSpec } from "../features/roll";
+import type { WeaponOverlay } from "./roll";
 import type { ItemElementData, ItemMagicData, ItemMagicVariant, ItemPersonalData } from "./schema";
 
 /** The resolved view a personal item produces for the rest of the
@@ -21,7 +21,7 @@ export interface PersonalResolution {
    *  resolver, attack derivation, card renderer) can treat it the
    *  same as a non-magic element. */
   effectiveElement: ItemElementData;
-  /** Weapon-specific overlay ready to hand to `deriveWeaponAttacks`.
+  /** Weapon-specific overlay ready to hand to `deriveWeaponRolls`.
    *  Sums `bonus` + `damage_bonus` across every applied magic
    *  template / variant; collects `extra_damage` dice into one list. */
   weaponOverlay: WeaponOverlay;
@@ -60,7 +60,7 @@ export interface PersonalResolverLookups {
 export function resolvePersonalItem(
   personal: ItemPersonalData,
   lookups: PersonalResolverLookups,
-  personalStem?: string,
+  personalStem?: string
 ): PersonalResolution | null {
   const baseKey = wikiStem(personal.base ?? "");
   const base = baseKey ? lookups.elements[baseKey] : undefined;
@@ -71,10 +71,10 @@ export function resolvePersonalItem(
   const magicFeatureSources: string[] = [];
   const magicTexts: string[] = [];
   // We stamp the summed attack bonus onto `effectiveElement.weapon.bonus`
-  // so the card reads the composed value and `deriveWeaponAttack`'s
+  // so the card reads the composed value and `deriveWeaponRoll`'s
   // existing `parseWeaponBonus(weapon.bonus)` path picks it up. We do
   // NOT populate `overlay.attackBonus` as well — doing both would
-  // double-count the magic inside `deriveWeaponAttack`.
+  // double-count the magic inside `deriveWeaponRoll`.
   let attackBonusSum = 0;
   const extraDamage: DamageSpec[] = [];
   // Merged damage_bonus stays as a number we stamp onto `effectiveElement`
@@ -97,9 +97,7 @@ export function resolvePersonalItem(
     if (!magic) continue;
     magicFeatureSources.push(stem);
 
-    const variantKey = personal.variants?.[stem]
-      ?? personal.variants?.[magic.name ?? ""]
-      ?? undefined;
+    const variantKey = personal.variants?.[stem] ?? personal.variants?.[magic.name ?? ""] ?? undefined;
     const variant = variantKey ? magic.variants?.[variantKey] : undefined;
 
     // Compose numeric effects — variant's values take precedence over
@@ -195,12 +193,12 @@ function parseBonus(raw: string): number {
 function composeWeaponBonus(
   existing: string | undefined,
   attackBonus: number,
-  damageBonus: number,
+  damageBonus: number
 ): string | undefined {
   const base = existing ? parseBonus(existing) : 0;
   // Damage line reflects the damage-side bonus, which is attack
   // bonus + any extra damage_bonus. The attack-roll side adds
-  // `attackBonus` separately inside `deriveWeaponAttack`.
+  // `attackBonus` separately inside `deriveWeaponRoll`.
   const total = base + attackBonus + damageBonus;
   if (total === 0) return existing;
   return total > 0 ? `+${total}` : String(total);
@@ -230,12 +228,7 @@ function normalizeTraitMapValue(val: unknown): string[] {
   if (typeof val === "number") return [String(val)];
   if (typeof val === "boolean") return val ? [""] : [];
   if (Array.isArray(val)) {
-    if (
-      val.length === 1 &&
-      Array.isArray(val[0]) &&
-      val[0].length === 1 &&
-      typeof val[0][0] === "string"
-    ) {
+    if (val.length === 1 && Array.isArray(val[0]) && val[0].length === 1 && typeof val[0][0] === "string") {
       return [`[[${val[0][0]}]]`];
     }
     return val.flatMap(normalizeTraitMapValue);

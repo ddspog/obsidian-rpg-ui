@@ -33,13 +33,36 @@ text: |-
 
   **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d10 for every two slot levels above 1st. When you cast this spell using a spell slot of 3rd level or higher, the d4s of the additional radiant damage become d6s.
 image: "![[lunarbolt-waxing.webp|384]]"
-attack:
+roll:
   form: spell
-  range: 120 ft.
+  circle: 1
+  range: ≤30 ft.
   damage:
     - { roll: 1d10, type: cold }
-    - { roll: 1d4, type: radiant }
-  notes: extra radiant scales with distance (up to 3d4 at 95–120 ft)
+  notes: radiant scales with distance; upcast increases cold dice (see spell text)
+  swapOn:
+    field: range
+    options:
+      - value: ≤30 ft.
+        damage:
+          - { roll: 1d10, type: cold }
+      - value: 35–60 ft.
+        damage:
+          - { roll: 1d10, type: cold }
+          - { roll: 1d4, type: radiant }
+      - value: 65–90 ft.
+        damage:
+          - { roll: 1d10, type: cold }
+          - { roll: 2d4, type: radiant }
+      - value: 95–120 ft.
+        damage:
+          - { roll: 1d10, type: cold }
+          - { roll: 3d4, type: radiant }
+  upcast:
+    2: { damage: [{ roll: 2d10, type: cold }, { roll: 3d4, type: radiant }] }
+    3: { damage: [{ roll: 2d10, type: cold }, { roll: 3d6, type: radiant }] }
+    4: { damage: [{ roll: 3d10, type: cold }, { roll: 3d6, type: radiant }] }
+    5: { damage: [{ roll: 3d10, type: cold }, { roll: 3d6, type: radiant }] }
 ```
 
 

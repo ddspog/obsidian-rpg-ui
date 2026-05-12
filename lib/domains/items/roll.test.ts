@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  deriveWeaponAttack,
-  deriveWeaponAttacks,
+  deriveWeaponRoll,
+  deriveWeaponRolls,
   deriveWeaponForm,
   parseWeaponBonus,
   parseWeaponDamage,
   signed,
-} from "./attack";
+} from "./roll";
 import type { ItemElementData } from "./schema";
 
 const LONGSWORD: ItemElementData = {
@@ -90,39 +90,39 @@ describe("signed", () => {
   });
 });
 
-describe("deriveWeaponAttack", () => {
+describe("deriveWeaponRoll", () => {
   const strFighter = { str: 3, dex: 1, con: 0, int: 0, wis: 0, cha: 0, pb: 2 };
   const dexFighter = { str: 1, dex: 4, con: 0, int: 0, wis: 0, cha: 0, pb: 3 };
 
   it("uses STR for melee weapons", () => {
-    const atk = deriveWeaponAttack(LONGSWORD, strFighter)!;
+    const atk = deriveWeaponRoll(LONGSWORD, strFighter)!;
     expect(atk.form).toBe("melee");
     expect(atk.to_hit).toBe("+5 (STR)"); // PB 2 + STR 3
     expect(atk.damage).toEqual({ roll: "1d8/1d10", type: "slashing", bonus: "+3" });
   });
 
   it("uses DEX for ranged weapons", () => {
-    const atk = deriveWeaponAttack(LONGBOW, dexFighter)!;
+    const atk = deriveWeaponRoll(LONGBOW, dexFighter)!;
     expect(atk.form).toBe("ranged");
     expect(atk.to_hit).toBe("+7 (DEX)"); // PB 3 + DEX 4
     expect(atk.damage).toEqual({ roll: "1d8", type: "piercing", bonus: "+4" });
   });
 
   it("picks max(STR, DEX) for Finesse weapons", () => {
-    const strWielder = deriveWeaponAttack(RAPIER, { str: 3, dex: 1, con: 0, int: 0, wis: 0, cha: 0, pb: 2 })!;
+    const strWielder = deriveWeaponRoll(RAPIER, { str: 3, dex: 1, con: 0, int: 0, wis: 0, cha: 0, pb: 2 })!;
     expect(strWielder.to_hit).toBe("+5 (STR)"); // STR 3 > DEX 1
-    const dexWielder = deriveWeaponAttack(RAPIER, { str: 1, dex: 4, con: 0, int: 0, wis: 0, cha: 0, pb: 3 })!;
+    const dexWielder = deriveWeaponRoll(RAPIER, { str: 1, dex: 4, con: 0, int: 0, wis: 0, cha: 0, pb: 3 })!;
     expect(dexWielder.to_hit).toBe("+7 (DEX)"); // DEX 4 > STR 1
   });
 
   it("adds the weapon's magic bonus to both to-hit and damage", () => {
-    const atk = deriveWeaponAttack(GLAIVE_PLUS_1, strFighter)!;
+    const atk = deriveWeaponRoll(GLAIVE_PLUS_1, strFighter)!;
     expect(atk.to_hit).toBe("+6 (STR)"); // PB 2 + STR 3 + weapon bonus 1
     expect(atk.damage).toEqual({ roll: "1d10", type: "slashing", bonus: "+4" }); // STR 3 + bonus 1
   });
 
   it("layers overlay bonuses on top", () => {
-    const atk = deriveWeaponAttack(LONGSWORD, strFighter, {
+    const atk = deriveWeaponRoll(LONGSWORD, strFighter, {
       attackBonus: 2,
       extraDamage: [{ roll: "1d6", type: "fire" }],
     })!;
@@ -136,12 +136,12 @@ describe("deriveWeaponAttack", () => {
   });
 
   it("returns null for non-weapon items", () => {
-    expect(deriveWeaponAttack({ type: "Tool" }, strFighter)).toBeNull();
-    expect(deriveWeaponAttack({ weapon: {} }, strFighter)).toBeNull();
+    expect(deriveWeaponRoll({ type: "Tool" }, strFighter)).toBeNull();
+    expect(deriveWeaponRoll({ weapon: {} }, strFighter)).toBeNull();
   });
 });
 
-describe("deriveWeaponAttacks", () => {
+describe("deriveWeaponRolls", () => {
   const strFighter = { str: 3, dex: 1, con: 0, int: 0, wis: 0, cha: 0, pb: 2 };
 
   it("infers a single one-handed attack for simple weapons", () => {
@@ -149,7 +149,7 @@ describe("deriveWeaponAttacks", () => {
       type: "[[Simple]] [[Melee]] Weapons",
       weapon: { damage: "1d6 bludgeoning" },
     };
-    const out = deriveWeaponAttacks(mace, strFighter, undefined, "Mace");
+    const out = deriveWeaponRolls(mace, strFighter, undefined, "Mace");
     expect(out).toHaveLength(1);
     expect(out[0].requires).toBe("one_hand");
     expect(out[0].damage).toEqual({ roll: "1d6", type: "bludgeoning", bonus: "+3" });
@@ -163,7 +163,7 @@ describe("deriveWeaponAttacks", () => {
         properties: ["[[Heavy]]", "[[Two-Handed]]"],
       },
     };
-    const out = deriveWeaponAttacks(greatsword, strFighter, undefined, "Greatsword");
+    const out = deriveWeaponRolls(greatsword, strFighter, undefined, "Greatsword");
     expect(out).toHaveLength(1);
     expect(out[0].requires).toBe("two_hands");
   });
@@ -176,7 +176,7 @@ describe("deriveWeaponAttacks", () => {
         properties: ["[[Versatile]]"],
       },
     };
-    const out = deriveWeaponAttacks(longsword, strFighter, undefined, "Longsword");
+    const out = deriveWeaponRolls(longsword, strFighter, undefined, "Longsword");
     expect(out).toHaveLength(2);
     expect(out[0].requires).toBe("one_hand");
     expect(out[0].damage).toEqual({ roll: "1d8", type: "slashing", bonus: "+3" });
@@ -193,7 +193,7 @@ describe("deriveWeaponAttacks", () => {
         properties: ["[[Thrown]]", "([[Range]] 30/120 ft.)"],
       },
     };
-    const out = deriveWeaponAttacks(javelin, strFighter, undefined, "Javelin");
+    const out = deriveWeaponRolls(javelin, strFighter, undefined, "Javelin");
     expect(out).toHaveLength(2);
     expect(out[0].form).toBe("melee");
     expect(out[0].damage).toEqual({ roll: "1d6", type: "piercing", bonus: "+3" });
@@ -204,11 +204,11 @@ describe("deriveWeaponAttacks", () => {
     expect(out[1].damage).toEqual({ roll: "1d6", type: "piercing", bonus: "+3" });
   });
 
-  it("honours an explicit `weapon.attacks:` list when authored", () => {
+  it("honours an explicit `weapon.rolls:` list when authored", () => {
     const magic: ItemElementData = {
       type: "[[Martial]] [[Melee]] Weapons",
       weapon: {
-        attacks: [
+        rolls: [
           {
             name: "Flame Tongue Strike",
             form: "melee",
@@ -221,7 +221,7 @@ describe("deriveWeaponAttacks", () => {
         ],
       },
     };
-    const out = deriveWeaponAttacks(magic, strFighter, undefined, "Flame Tongue");
+    const out = deriveWeaponRolls(magic, strFighter, undefined, "Flame Tongue");
     expect(out).toHaveLength(1);
     expect(out[0].name).toBe("Flame Tongue Strike");
     expect(Array.isArray(out[0].damage)).toBe(true);
@@ -236,7 +236,7 @@ describe("deriveWeaponAttacks", () => {
         properties: ["[[Heavy]]", "[[Reach]]", "[[Two-Handed]]"],
       },
     };
-    const out = deriveWeaponAttacks(glaivePlus1, strFighter, undefined, "Glaive +1");
+    const out = deriveWeaponRolls(glaivePlus1, strFighter, undefined, "Glaive +1");
     expect(out).toHaveLength(1);
     expect(out[0].requires).toBe("two_hands");
     expect(out[0].to_hit).toBe("+6 (STR)"); // PB 2 + STR 3 + bonus 1
@@ -244,6 +244,6 @@ describe("deriveWeaponAttacks", () => {
   });
 
   it("returns empty array for non-weapon items", () => {
-    expect(deriveWeaponAttacks({ type: "Tool" }, strFighter)).toEqual([]);
+    expect(deriveWeaponRolls({ type: "Tool" }, strFighter)).toEqual([]);
   });
 });

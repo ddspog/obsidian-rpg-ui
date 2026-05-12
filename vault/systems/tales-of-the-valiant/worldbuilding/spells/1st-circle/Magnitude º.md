@@ -28,6 +28,24 @@ text: |-
 
   **At Higher Levels**. When you cast this spell using a spell slot of 2nd level or higher, you can increase the diameter of the circle by up to 5 feet for each slot level above 1st.
 image: "![[magnitude.webp|384]]"
+roll:
+  form: save
+  circle: 1
+  range: Self (10-ft radius)
+  save:
+    ability: DEX
+    on_success: "half damage"
+  damage:
+    roll: 1d6
+    type: bludgeoning
+  effects:
+    - prone
+  notes: +1d6 per Small+ creature; prone if total ≥10, difficult terrain if ≥15
+  upcast:
+    2: { range: "Self (15-ft radius)" }
+    3: { range: "Self (20-ft radius)" }
+    4: { range: "Self (25-ft radius)" }
+    5: { range: "Self (30-ft radius)" }
 ```
 
 

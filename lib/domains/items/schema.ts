@@ -10,7 +10,7 @@
  */
 
 import { parse as parseYAML } from "yaml";
-import type { AttackAspect, DamageSpec } from "../features/attack";
+import type { RollAspect, DamageSpec } from "../features/roll";
 
 export interface ItemWeaponData {
   damage?: string;
@@ -21,7 +21,7 @@ export interface ItemWeaponData {
   /**
    * Explicit attack templates. When present, they replace the default
    * single-attack auto-derivation — one row per template in
-   * `rpg character.attacks`. Each template is a partial `AttackAspect`
+   * `rpg character.rolls`. Each template is a partial `RollAspect`
    * (form, damage roll + type, range, save, notes); the wielder-
    * dependent `to_hit` and `damage.bonus` fields are filled in at
    * render time from the character's stats + the weapon's `bonus` +
@@ -32,7 +32,7 @@ export interface ItemWeaponData {
    * a secondary attack (e.g. Flame Tongue's ignited strike with
    * extra fire damage).
    */
-  attacks?: AttackAspect[];
+  rolls?: RollAspect[];
 }
 
 export interface ItemArmorData {
@@ -417,9 +417,7 @@ export function extractItemContainerBlocks(contents: string): ItemContainerData[
  * shield, or container. Matches the section routing in the inventory
  * resolver so routing decisions and rendering hints stay in lockstep.
  */
-export function itemKindFromType(
-  type: string | undefined,
-): "weapon" | "armor" | "shield" | "container" | null {
+export function itemKindFromType(type: string | undefined): "weapon" | "armor" | "shield" | "container" | null {
   if (!type) return null;
   const t = type.toLowerCase();
   if (/weapons?\b/.test(t)) return "weapon";

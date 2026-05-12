@@ -24,8 +24,22 @@ text: |-
 
   **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the initial damage increases by 1d6 for each slot level above 1st.
 image: "![[toxic-plume.webp|384]]"
+roll:
+  form: save
+  circle: 1
+  range: Self (15-foot cone)
+  save:
+    ability: CON
+    on_success: "no damage"
+  damage:
+    roll: 2d6
+    type: poison
+  effects:
+    - poisoned
+  notes: poisoned (1m) on failed save
+  upcast:
+    2: { damage: { roll: 3d6, type: poison } }
+    3: { damage: { roll: 4d6, type: poison } }
+    4: { damage: { roll: 5d6, type: poison } }
+    5: { damage: { roll: 6d6, type: poison } }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games***

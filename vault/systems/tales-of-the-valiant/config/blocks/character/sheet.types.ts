@@ -3,7 +3,7 @@ import type { HealthProps } from "./health.types";
 import type { StatsProps } from "./stats.types";
 import type { SensesProps } from "./senses.types";
 import type { SkillsProps } from "./skills.types";
-import type { AttacksProps } from "./attacks.types";
+import type { RollsProps } from "./rolls.types";
 import type { ProficienciesProps } from "./proficiencies.types";
 
 /**
@@ -11,11 +11,10 @@ import type { ProficienciesProps } from "./proficiencies.types";
  * subset into a single `rpg character.sheet` fence and each sub-
  * renderer picks out only the fields it cares about.
  */
-export type SheetProps = Partial<HeaderProps>
-  & Partial<HealthProps>
-  & Partial<StatsProps>
-  & Partial<SensesProps>
-  & Partial<SkillsProps>
-  & Partial<AttacksProps>
-  & Partial<ProficienciesProps>
-  & { [key: string]: unknown };
+export type SheetProps = Partial<HeaderProps> &
+  Partial<HealthProps> &
+  Partial<StatsProps> &
+  Partial<SensesProps> &
+  Partial<SkillsProps> &
+  Partial<RollsProps> &
+  Partial<ProficienciesProps> & { [key: string]: unknown };

@@ -6,23 +6,23 @@ import { health as healthBlock } from "./health";
 import { stats as statsBlock } from "./stats";
 import { senses as sensesBlock } from "./senses";
 import { skills as skillsBlock } from "./skills";
-import attacksBlock from "./attacks";
+import rollsBlock from "./rolls";
 import { proficiencies as proficienciesBlock } from "./proficiencies";
 import type { SheetProps } from "./sheet.types";
 
 /**
  * `rpg character.sheet` — convenience composite block that renders the
  * top-of-sheet band (header → health → stats → senses → skills →
- * attacks → proficiencies) from a single fence body.
+ * rolls → proficiencies) from a single fence body.
  *
  * Authors can merge the YAML that would otherwise live in seven
  * separate blocks under one `character.sheet` fence and skip the empty
  * boilerplate. Each sub-renderer receives a synthetic `blocks` context
  * where the 7 sheet-resident keys point to this block's own `self`, so
- * cross-block reads (e.g. attacks → blocks.stats, health → blocks.header)
+ * cross-block reads (e.g. rolls → blocks.stats, health → blocks.header)
  * all land on the shared data. External blocks kept outside the sheet
  * (features, spells, inventory) flow through from the real dispatcher
- * context untouched, so attack derivation still sees the inventory's
+ * context untouched, so weapon derivation still sees the inventory's
  * equipped weapons.
  */
 export const sheet: EntityBlock<SheetProps, CharacterEntity> = (ctx) => {
@@ -33,7 +33,7 @@ export const sheet: EntityBlock<SheetProps, CharacterEntity> = (ctx) => {
     stats: ctx.self,
     senses: ctx.self,
     skills: ctx.self,
-    attacks: ctx.self,
+    rolls: ctx.self,
     proficiencies: ctx.self,
   };
 
@@ -46,7 +46,7 @@ export const sheet: EntityBlock<SheetProps, CharacterEntity> = (ctx) => {
       {statsBlock(subCtx as Parameters<typeof statsBlock>[0])}
       {sensesBlock(subCtx as Parameters<typeof sensesBlock>[0])}
       {skillsBlock(subCtx as Parameters<typeof skillsBlock>[0])}
-      {attacksBlock(subCtx as Parameters<typeof attacksBlock>[0])}
+      {rollsBlock(subCtx as Parameters<typeof rollsBlock>[0])}
       {proficienciesBlock(subCtx as Parameters<typeof proficienciesBlock>[0])}
     </div>
   );

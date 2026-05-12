@@ -25,8 +25,9 @@ text: |-
 
   This spell’s damage increases by _1d6_ when you reach 5th level (_2d6_), 11th level (_3d6_), and 17th level (_4d6_).
 image: "![[magnetobolt.webp|384]]"
-attack:
+roll:
   form: spell
+  circle: 0
   range: 90 ft.
   damage:
     roll: 1d6
@@ -34,7 +35,14 @@ attack:
   save:
     ability: STR
     on_success: "negates prone"
+  effects:
+    - prone
   notes: knocked prone on failed save
+  leveled:
+    at:
+      5:  { damage: { roll: 2d6, type: force } }
+      11: { damage: { roll: 3d6, type: force } }
+      17: { damage: { roll: 4d6, type: force } }
 ```
 
 

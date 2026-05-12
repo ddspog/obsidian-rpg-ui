@@ -4,7 +4,7 @@ import { HealthProps } from "../blocks/character/health.types";
 import { StatsProps } from "../blocks/character/stats.types";
 import { SensesProps } from "../blocks/character/senses.types";
 import { SkillsProps } from "../blocks/character/skills.types";
-import { AttacksProps } from "../blocks/character/attacks.types";
+import { RollsProps } from "../blocks/character/rolls.types";
 import { ProficienciesProps } from "../blocks/character/proficiencies.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
 import type { SpellsProps } from "../blocks/character/spells.types";
@@ -42,7 +42,7 @@ export type CharacterLookup = {
     header: unknown,
     choices?: Record<string, Record<string, string | string[]>>,
     additional?: CharacterDecl["additional"],
-    inventoryRaw?: unknown,
+    inventoryRaw?: unknown
   ) => ResolvedView;
   /**
    * Parsed `rpg spell` fence bodies from every spell doc under
@@ -92,7 +92,7 @@ export type CharacterLookup = {
    * back to local-only writes.
    */
   $containerPaths: Record<string, string>;
-}
+};
 
 /** Return types of each named expression on the character entity */
 export type CharacterExpressions = {
@@ -101,9 +101,18 @@ export type CharacterExpressions = {
   /** Proficiency Bonus based on Character Level. */
   ProficiencyBonus: () => number;
   /** Generic calculation for any attribute or skill modifier, given the attribute value, proficiency bonus, and any other bonuses or penalties. */
-  ModifierTotal: (params: { attribute: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', proficiency: number, bonus: number }) => number;
+  ModifierTotal: (params: {
+    attribute: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
+    proficiency: number;
+    bonus: number;
+  }) => number;
   /** Passive value, calculated as 10 + modifier + proficiency bonus (if proficient) */
-  Passive: (params: { attribute: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', proficiency: number, vantage: number, bonus: number }) => number;
+  Passive: (params: {
+    attribute: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
+    proficiency: number;
+    vantage: number;
+    bonus: number;
+  }) => number;
 };
 
 /** Props shapes for each block in the character entity */
@@ -111,17 +120,17 @@ export type CharacterBlocks = {
   /** The Header of a Character Sheet, with defining aspects of the character. */
   header: HeaderProps;
   health: HealthProps;
-  stats: StatsProps,
-  senses: SensesProps,
-  skills: SkillsProps,
-  attacks: AttacksProps,
+  stats: StatsProps;
+  senses: SensesProps;
+  skills: SkillsProps;
+  rolls: RollsProps;
   proficiencies: ProficienciesProps;
   features: FeaturesBlockData;
   spells: SpellsProps;
   inventory: InventoryProps;
   /**
    * Amalgamated top-of-sheet block — header + health + stats + senses +
-   * skills + attacks + proficiencies rendered from one merged YAML
+   * skills + rolls + proficiencies rendered from one merged YAML
    * body. Lets authors skip boilerplate empty fences for a default
    * sheet layout.
    */

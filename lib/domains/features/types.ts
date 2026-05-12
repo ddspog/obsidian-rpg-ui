@@ -112,9 +112,9 @@ export interface FeatureAspect {
   recharge?: string;
 }
 
-// Re-export the attack aspect types so downstream modules can import
-// `AttackAspect` from the same surface as the other feature types.
-export type { AttackAspect, DamageSpec, AttackSave } from "./attack";
+// Re-export the roll aspect types so downstream modules can import
+// `RollAspect` from the same surface as the other feature types.
+export type { RollAspect, DamageSpec, RollSave, RollEffect } from "./roll";
 
 export interface FeatureDetails {
   name: string;
@@ -190,13 +190,13 @@ export interface FeatureDetails {
   passive?: FeatureAspect;
   resource?: FeatureAspect;
   /**
-   * Attack aspect — describes a melee / ranged / spell / save attack
-   * this feature grants. Surfaced by `rpg character.attacks` as a row
-   * in the attacks table; NOT routed into the features accordion's
-   * aspect buckets (Action / Bonus / …) because attacks have their own
+   * Roll aspect — describes any dice-roll this feature grants (attack,
+   * save, rider, healing, or temp-HP). Surfaced by `rpg character.rolls`
+   * as a row in the rolls table; NOT routed into the features accordion's
+   * aspect buckets (Action / Bonus / …) because rolls have their own
    * renderer and picker.
    */
-  attack?: import("./attack").AttackAspect;
+  roll?: import("./roll").RollAspect;
   /**
    * Spellcasting configuration. Set on a feature to declare a caster
    * (on the Spellcasting feature itself) or to augment one (feature.level
@@ -462,9 +462,7 @@ export interface CharacterDecl {
 /** Reference to an extra compendium page. Bare wikilink string is
  *  shorthand; object form carries optional `source` (attributes the
  *  content into a specific ResolvedSource by name) and `level`. */
-export type ExtraRef =
-  | string
-  | { ref: string; source?: string; level?: number };
+export type ExtraRef = string | { ref: string; source?: string; level?: number };
 
 export interface CompendiumLib {
   classes: Record<string, SourceDoc>;

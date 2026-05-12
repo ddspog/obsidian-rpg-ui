@@ -190,5 +190,5 @@ organizations:
     position: "Graduating, on final quest for obtaining his Licensee."
 motivation:
   - text: "Many adherents don’t stray far from the object of their devotion. Those who roam often do so for reasons specific to their order."
-  - text: "_Adventuring frees me to practice more unorthodox methods of worship._"
+  - text: "Adventuring frees me to practice more unorthodox methods of worship."
 ```

@@ -210,6 +210,23 @@ bonus:
   recharge: on long rest
   text: |
     You have learned to harness the ambient energy of nature and can redirect that energy to encourage growth and healing. As a bonus action, choose one creature within 5 feet of you (this can be you). When you do so, roll a number of d4s equal to your PB (minimum of 2d4). That creature regains hit points equal to the total rolled. This feature has no effect on Constructs or Undead. 
+roll:
+  form: healing
+  range: 5 ft.
+  damage:
+    roll: 2d4
+    type: healing
+  notes: roll PB d4s (min 2d4); no effect on Constructs/Undead
+  cost:
+    type: pb-pool
+    amount: 1
+  leveled:
+    by: class
+    at:
+      5:  { damage: { roll: 3d4, type: healing } }
+      9:  { damage: { roll: 4d4, type: healing } }
+      13: { damage: { roll: 5d4, type: healing } }
+      17: { damage: { roll: 6d4, type: healing } }
 ```
 >[!rules] PLAYER'S ADVICE
 >Nature’s Gift is not a spell, which means a druid can use it even while transformed by their Wild Shape class feature.

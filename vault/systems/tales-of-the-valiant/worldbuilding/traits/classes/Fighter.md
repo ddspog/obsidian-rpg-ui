@@ -97,6 +97,18 @@ text: |
 reaction:
   text: |
     When you take damage that would reduce your hit points to less than half your hit point maximum (rounded down), you can use your reaction to spend hit dice, up to a number equal to your PB. Immediately roll those hit dice. You regain hit points equal to the sum of all dice rolled + your CON modifier. 
+roll:
+  form: healing
+  range: Self
+  damage:
+    roll: 1d10
+    type: healing
+    bonus: "+CON"
+  notes: reaction at <½HP; spend up to PB hit dice, roll each d10
+  cost:
+    type: hit-dice
+    amount: 1
+    max: PB
 ```
 ```rpg feature.details
 name: Martial Action

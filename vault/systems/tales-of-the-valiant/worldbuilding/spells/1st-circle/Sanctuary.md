@@ -24,6 +24,14 @@ text: |-
 
   If the warded creature makes an attack or casts a spell that affects an enemy creature, this spell ends.
 image: "![[sanctuary.webp|384]]"
+roll:
+  form: save
+  circle: 1
+  range: 30 ft.
+  save:
+    ability: WIS
+    on_success: "attack proceeds"
+  notes: ward target; attackers WIS save or lose attack/harmful effect
 ```
 
 

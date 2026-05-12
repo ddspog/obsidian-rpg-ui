@@ -1,5 +1,5 @@
 /**
- * Derive an `AttackAspect` from a weapon-kind `rpg item.element` body,
+ * Derive an `RollAspect` from a weapon-kind `rpg item.element` body,
  * optionally overlaid with `rpg item.magic` bonuses, and the wielder's
  * ability modifiers.
  *
@@ -16,7 +16,7 @@
  * renderer just displays them.
  */
 
-import type { AttackAspect, DamageSpec } from "../features/attack";
+import type { RollAspect, DamageSpec } from "../features/roll";
 import type { ItemElementData, ItemWeaponData } from "./schema";
 
 export interface WielderStats {
@@ -43,7 +43,7 @@ export interface WeaponOverlay {
    *  two-weapon fighting pair. 5e rule: attack roll still uses the
    *  ability mod, but damage does NOT — unless the mod is negative,
    *  in which case it still applies (penalties don't switch off).
-   *  Consumed by `deriveWeaponAttack` / `fillAttackTemplate`. */
+   *  Consumed by `deriveWeaponRoll` / `fillRollTemplate`. */
   offHand?: boolean;
 }
 
@@ -71,7 +71,10 @@ export function parseWeaponDamage(raw: string | undefined): DamageSpec | null {
   if (lastSpace < 0) return { roll: trimmed, type: "untyped" };
   return {
     roll: trimmed.slice(0, lastSpace).trim(),
-    type: trimmed.slice(lastSpace + 1).trim().toLowerCase(),
+    type: trimmed
+      .slice(lastSpace + 1)
+      .trim()
+      .toLowerCase(),
   };
 }
 
@@ -96,12 +99,10 @@ function hasProperty(weapon: ItemWeaponData | undefined, name: string): boolean 
 function pickAbilityMod(
   element: ItemElementData,
   weapon: ItemWeaponData | undefined,
-  stats: WielderStats,
+  stats: WielderStats
 ): { mod: number; ability: "STR" | "DEX" } {
   if (hasProperty(weapon, "finesse")) {
-    return stats.dex > stats.str
-      ? { mod: stats.dex, ability: "DEX" }
-      : { mod: stats.str, ability: "STR" };
+    return stats.dex > stats.str ? { mod: stats.dex, ability: "DEX" } : { mod: stats.str, ability: "STR" };
   }
   const baseForm = deriveWeaponForm(element.type);
   if (baseForm === "ranged") return { mod: stats.dex, ability: "DEX" };
@@ -129,15 +130,15 @@ export function parseWeaponBonus(raw: string | undefined): number {
  * Build the attack aspect for this weapon + wielder. When the element
  * has no weapon block or no damage, returns null. Used as the fallback
  * single-attack path when the weapon doesn't declare its own
- * `attacks:` list — authoring convenience for simple weapons that only
+ * `rolls:` list — authoring convenience for simple weapons that only
  * have one mode.
  */
-export function deriveWeaponAttack(
+export function deriveWeaponRoll(
   element: ItemElementData,
   stats: WielderStats,
   overlay?: WeaponOverlay,
-  displayName?: string,
-): AttackAspect | null {
+  displayName?: string
+): RollAspect | null {
   const weapon = element.weapon;
   if (!weapon || !weapon.damage) return null;
 
@@ -159,11 +160,8 @@ export function deriveWeaponAttack(
   }
 
   const toHit = signed(stats.pb + mod + weaponBonus);
-  const range = form === "ranged"
-    ? findRangeInProperties(weapon.properties)
-    : hasProperty(weapon, "reach")
-      ? "10 ft."
-      : "5 ft.";
+  const range =
+    form === "ranged" ? findRangeInProperties(weapon.properties) : hasProperty(weapon, "reach") ? "10 ft." : "5 ft.";
 
   return {
     name: displayName,
@@ -179,45 +177,43 @@ export function deriveWeaponAttack(
  * Build one or more attack aspects for this weapon + wielder.
  *
  * Resolution order:
- *   1. If `weapon.attacks:` is authored, each entry is a template
+ *   1. If `weapon.rolls:` is authored, each entry is a template
  *      (author's explicit override — used for magic weapons with
  *      special attack rules). The deriver fills in to-hit / bonus.
  *   2. Else, templates are INFERRED from `weapon.damage` and
  *      `weapon.properties` — Versatile fans out to 1h + 2h, Thrown
  *      fans out to melee + ranged, Two-Handed stays as a single
  *      two-hand attack. Each inferred template carries its own
- *      `requires` so the character.attacks block can filter by
+ *      `requires` so the character.rolls block can filter by
  *      current equipment.
  *
  * Returns an empty array for non-weapon items (or weapons with no
  * declared damage).
  */
-export function deriveWeaponAttacks(
+export function deriveWeaponRolls(
   element: ItemElementData,
   stats: WielderStats,
   overlay?: WeaponOverlay,
-  displayName?: string,
-): AttackAspect[] {
+  displayName?: string
+): RollAspect[] {
   const weapon = element.weapon;
   if (!weapon) return [];
 
-  // Explicit attacks list wins.
-  if (Array.isArray(weapon.attacks) && weapon.attacks.length > 0) {
-    return weapon.attacks.map((template, idx) =>
-      fillAttackTemplate(template, element, stats, overlay, displayName, idx),
+  // Explicit rolls list wins.
+  if (Array.isArray(weapon.rolls) && weapon.rolls.length > 0) {
+    return weapon.rolls.map((template, idx) =>
+      fillRollTemplate(template, element, stats, overlay, displayName, idx)
     );
   }
 
   // Inference from damage + properties.
   const inferred = inferWeaponTemplates(element);
   if (inferred.length > 0) {
-    return inferred.map((template, idx) =>
-      fillAttackTemplate(template, element, stats, overlay, displayName, idx),
-    );
+    return inferred.map((template, idx) => fillRollTemplate(template, element, stats, overlay, displayName, idx));
   }
 
   // Last resort: single attack from `weapon.damage`.
-  const single = deriveWeaponAttack(element, stats, overlay, displayName);
+  const single = deriveWeaponRoll(element, stats, overlay, displayName);
   return single ? [single] : [];
 }
 
@@ -229,7 +225,7 @@ export function deriveWeaponAttacks(
  *   - Thrown (with range in properties) → appends a ranged variant.
  *   - No relevant property           → [1h single attack].
  */
-function inferWeaponTemplates(element: ItemElementData): AttackAspect[] {
+function inferWeaponTemplates(element: ItemElementData): RollAspect[] {
   const weapon = element.weapon;
   if (!weapon || !weapon.damage) return [];
   const baseForm = deriveWeaponForm(element.type);
@@ -244,7 +240,7 @@ function inferWeaponTemplates(element: ItemElementData): AttackAspect[] {
   const rangedRange = findRangeInProperties(weapon.properties);
   const baseRange = baseForm === "ranged" ? rangedRange : meleeRange;
 
-  const out: AttackAspect[] = [];
+  const out: RollAspect[] = [];
 
   if (versatile) {
     const [oneHandRoll, twoHandRoll] = damage.roll.split("/");
@@ -317,17 +313,17 @@ function findRangeInProperties(properties: string[] | undefined): string | undef
 }
 
 /** Fill in the wielder-dependent parts of an authored attack template.
- *  Mirrors the math in `deriveWeaponAttack` but uses the template's
+ *  Mirrors the math in `deriveWeaponRoll` but uses the template's
  *  declared `form`, damage dice, range, save, and notes verbatim. */
-function fillAttackTemplate(
-  template: AttackAspect,
+function fillRollTemplate(
+  template: RollAspect,
   element: ItemElementData,
   stats: WielderStats,
   overlay: WeaponOverlay | undefined,
   displayName: string | undefined,
-  index: number,
-): AttackAspect {
-  const form: AttackAspect["form"] = template.form ?? "melee";
+  index: number
+): RollAspect {
+  const form: RollAspect["form"] = template.form ?? "melee";
   const weapon = element.weapon;
   const weaponBonus = parseWeaponBonus(weapon?.bonus) + (overlay?.attackBonus ?? 0);
 
@@ -360,9 +356,7 @@ function fillAttackTemplate(
     toHit = `${signed(stats.pb + mod + weaponBonus)} (${ability})`;
   }
 
-  const name =
-    template.name ??
-    (index === 0 ? displayName : displayName ? `${displayName} (${index + 1})` : undefined);
+  const name = template.name ?? (index === 0 ? displayName : displayName ? `${displayName} (${index + 1})` : undefined);
 
   return {
     ...template,
@@ -373,9 +367,9 @@ function fillAttackTemplate(
   };
 }
 
-/** Flatten an `AttackAspect.damage` field (scalar or array) into a
+/** Flatten an `RollAspect.damage` field (scalar or array) into a
  *  canonical array. Templates can author either shape. */
-function normaliseTemplateDamage(raw: AttackAspect["damage"]): DamageSpec[] {
+function normaliseTemplateDamage(raw: RollAspect["damage"]): DamageSpec[] {
   if (!raw) return [];
   return Array.isArray(raw) ? raw : [raw];
 }

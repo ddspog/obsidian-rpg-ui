@@ -63,35 +63,31 @@ export type BlockPropSchema =
       description?: string;
     };
 
-    /**
-     * Create an entity definition. Accepts either a plain `EntityConfig` or a
-     * factory function which receives `{ wiki }` and returns an `EntityConfig`
-     * (or a Promise thereof). Returned value is consumed by `CreateSystem` which
-     * will resolve any factories before building the system.
-     *
-     * @typeParam TBlocks - Shape of all block props in this entity (e.g. `{ header: HeaderProps; health: HealthProps }`)
-     * @typeParam TLookup - Lookup data type for this entity
-     * @typeParam TFrontmatter - Frontmatter type for this entity
-     */
-    export declare function CreateEntity<
-          TEntity extends EntityDescriptor<any, any, any, any> = EntityDescriptor
-        >(
-          cfg: TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>),
-        ):
-          | TEntity
-          | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>);
+/**
+ * Create an entity definition. Accepts either a plain `EntityConfig` or a
+ * factory function which receives `{ wiki }` and returns an `EntityConfig`
+ * (or a Promise thereof). Returned value is consumed by `CreateSystem` which
+ * will resolve any factories before building the system.
+ *
+ * @typeParam TBlocks - Shape of all block props in this entity (e.g. `{ header: HeaderProps; health: HealthProps }`)
+ * @typeParam TLookup - Lookup data type for this entity
+ * @typeParam TFrontmatter - Frontmatter type for this entity
+ */
+export declare function CreateEntity<TEntity extends EntityDescriptor<any, any, any, any> = EntityDescriptor>(
+  cfg: TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>)
+): TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>);
 
-    /**
-     * Bundled entity descriptor type to simplify CreateEntity generics.
-     *
-     * Order: TBlocks, TLookup, TExpressions, TFrontmatter (friendly for authors)
-     */
-    export type EntityDescriptor<
-      TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
-      TLookup = Record<string, unknown>,
-      TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
-      TFrontmatter = Record<string, unknown>
-    > = EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>;
+/**
+ * Bundled entity descriptor type to simplify CreateEntity generics.
+ *
+ * Order: TBlocks, TLookup, TExpressions, TFrontmatter (friendly for authors)
+ */
+export type EntityDescriptor<
+  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+  TLookup = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+  TFrontmatter = Record<string, unknown>,
+> = EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>;
 
 /**
  * Block definition — registers a React component for an `rpg entity.<blockName>`
@@ -146,7 +142,7 @@ export interface ExpressionProps<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, unknown> = Record<string, unknown>
+  TExpressions extends Record<string, unknown> = Record<string, unknown>,
 > {
   lookup: TLookup;
   frontmatter: TFrontmatter;
@@ -165,8 +161,7 @@ export interface ExpressionProps<
  * the dispatch overload returned by `useState`.
  */
 export type Setters<T> = {
-  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]:
-    (value: T[K] | ((prev: T[K]) => T[K])) => void;
+  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]: (value: T[K] | ((prev: T[K]) => T[K])) => void;
 };
 
 /**
@@ -183,7 +178,7 @@ export type ForeignBlockPatcher = (
   entity: string,
   block: string,
   key: string,
-  value: unknown,
+  value: unknown
 ) => Promise<void>;
 
 /**
@@ -199,7 +194,7 @@ export interface ComponentProps<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, unknown> = Record<string, unknown>
+  TExpressions extends Record<string, unknown> = Record<string, unknown>,
 > {
   /** Block's own YAML props, augmented with a `setFoo` setter for every `foo` key. */
   self: TProps & Setters<TProps> & { patchForeignBlock: ForeignBlockPatcher };
@@ -208,12 +203,13 @@ export interface ComponentProps<
   blocks: TBlocks;
   /** Entity expressions bound to context — call directly: `expressions.mod()` */
   expressions: TExpressions;
-  system: SystemContext;  /**
+  system: SystemContext /**
    * Trigger a named event scoped to this entity instance (file).
    * All blocks within the same note share the same event scope.
    * @param eventName - One of the event names declared in the system's `events` array.
-   */
-  trigger: (eventName: string) => void;}
+   */;
+  trigger: (eventName: string) => void;
+}
 
 /**
  * A typed block React component.
@@ -229,7 +225,7 @@ export type Component<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > = (props: ComponentProps<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>) => ReactNode;
 
 /**
@@ -261,7 +257,7 @@ export declare function CreateComponent<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 >(
   fn: Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>
 ): Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>;
@@ -271,8 +267,10 @@ export declare function CreateComponent<
  */
 type _EntityLookup<T> = T extends EntityDescriptor<any, infer L, any, any> ? L : Record<string, unknown>;
 type _EntityFrontmatter<T> = T extends EntityDescriptor<any, any, any, infer F> ? F : Record<string, unknown>;
-type _EntityBlocks<T> = T extends EntityDescriptor<infer B, any, any, any> ? B : Record<string, Record<string, unknown>>;
-type _EntityExpressions<T> = T extends EntityDescriptor<any, any, infer E, any> ? E : Record<string, (...args: any[]) => unknown>;
+type _EntityBlocks<T> =
+  T extends EntityDescriptor<infer B, any, any, any> ? B : Record<string, Record<string, unknown>>;
+type _EntityExpressions<T> =
+  T extends EntityDescriptor<any, any, infer E, any> ? E : Record<string, (...args: any[]) => unknown>;
 
 /** Map extracted expression signatures into callable functions preserving parameters */
 type _CallableExpressions<T> = {
@@ -288,10 +286,7 @@ type _CallableExpressions<T> = {
  * TEntity is an EntityDescriptor describing the parent entity; its generic
  * parameters are used to derive lookup/frontmatter/blocks/expressions types.
  */
-export type EntityBlock<
-  TBlock = Record<string, unknown>,
-  TEntity = EntityDescriptor
-> = (
+export type EntityBlock<TBlock = Record<string, unknown>, TEntity = EntityDescriptor> = (
   props: ComponentProps<
     TBlock,
     _EntityLookup<TEntity>,
@@ -312,7 +307,7 @@ export interface EntityConfig<
   TFrontmatter = Record<string, unknown>,
   TLookup = Record<string, unknown>,
   TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > {
   frontmatter?: TFrontmatter;
   features?: FeatureEntry[];
@@ -595,7 +590,6 @@ export type BannerHeaderProps = {
   distribution?: string;
 };
 
-
 // ─── Factory function ─────────────────────────────────────────────────────────
 
 /**
@@ -632,7 +626,7 @@ export type BannerHeaderProps = {
  * ```
  */
 export declare function CreateSystem(
-  configFn: (context: { wiki: Wiki }) => SystemConfig | Promise<SystemConfig>,
+  configFn: (context: { wiki: Wiki }) => SystemConfig | Promise<SystemConfig>
 ): Promise<{
   name: string;
   /** Attribute definitions — strings in the config are normalized to full objects at build time */
@@ -714,8 +708,8 @@ export interface FeatureDetails {
   active?: FeatureAspect;
   passive?: FeatureAspect;
   resource?: FeatureAspect;
-  /** Attack aspect — surfaced by `rpg character.attacks`. */
-  attack?: AttackAspect;
+  /** Roll aspect — surfaced by `rpg character.rolls`. */
+  roll?: RollAspect;
 }
 
 export interface FeatureChoiceOption {
@@ -763,9 +757,7 @@ export interface CharacterDecl {
   };
 }
 
-export type ExtraRef =
-  | string
-  | { ref: string; source?: string; level?: number };
+export type ExtraRef = string | { ref: string; source?: string; level?: number };
 
 export interface CompendiumLib {
   classes: Record<string, SourceDoc>;
@@ -893,7 +885,7 @@ export declare function buildCompendiumIndex(docs: IndexedDoc[]): CompendiumInde
 export declare function expandOptionRefs(
   options: string[],
   tagIndex: Record<string, string[]> | undefined,
-  folderIndex: Record<string, string[]> | undefined,
+  folderIndex: Record<string, string[]> | undefined
 ): string[];
 
 /**
@@ -925,9 +917,7 @@ export declare function extractSpellBlocks(contents: string): Array<{
  *   "Leveled"   → regular leveled spells
  * Returns null for empty / unrecognisable circles.
  */
-export declare function classifySpellCircle(
-  circle: string,
-): "Cantrip" | "Ritual" | "Leveled" | null;
+export declare function classifySpellCircle(circle: string): "Cantrip" | "Ritual" | "Leveled" | null;
 
 /**
  * Strip `[[…]]` wrapper and alias to get the bare wikilink target name,
@@ -938,20 +928,9 @@ export declare function stripWikilinkToName(raw: string): string;
 
 // ─── Inventory ───────────────────────────────────────────────────────────────
 
-export type InventorySectionId =
-  | "weapons"
-  | "armor"
-  | "tools"
-  | "visible"
-  | "main_containers"
-  | "other_containers";
+export type InventorySectionId = "weapons" | "armor" | "tools" | "visible" | "main_containers" | "other_containers";
 
-export type InventoryEquipSlot =
-  | "main_hand"
-  | "off_hand"
-  | "armor"
-  | "shield"
-  | "attuned";
+export type InventoryEquipSlot = "main_hand" | "off_hand" | "armor" | "shield" | "attuned";
 
 export interface InventoryYamlEntry {
   name: string;
@@ -1099,9 +1078,7 @@ export interface ItemElementData {
 export declare function parseItemElement(yaml: string): ItemElementData | null;
 export declare function extractItemElementBlocks(contents: string): ItemElementData[];
 export declare function parseItemWeight(raw: unknown): number;
-export declare function itemKindFromType(
-  type: string | undefined,
-): "weapon" | "armor" | "shield" | "container" | null;
+export declare function itemKindFromType(type: string | undefined): "weapon" | "armor" | "shield" | "container" | null;
 
 // ─── Magic templates ─────────────────────────────────────────────────────────
 
@@ -1176,7 +1153,7 @@ export declare function resolvePersonalItem(
     elements: Record<string, ItemElementData>;
     magic: Record<string, ItemMagicData>;
   },
-  personalStem?: string,
+  personalStem?: string
 ): PersonalResolution | null;
 
 // ─── Container items ─────────────────────────────────────────────────────────
@@ -1226,7 +1203,7 @@ export declare function resolveContainer(
     elements: Record<string, ItemElementData>;
     magic: Record<string, ItemMagicData>;
   },
-  containerStem?: string,
+  containerStem?: string
 ): ContainerResolution | null;
 
 // ─── Attack aspect ───────────────────────────────────────────────────────────
@@ -1237,25 +1214,86 @@ export interface DamageSpec {
   bonus?: string;
 }
 
-export interface AttackSave {
+export interface RollSave {
   ability: string;
   dc?: string;
   on_success?: string;
 }
 
-export interface AttackAspect {
+export type RollEffect = string | { icon: string; label?: string };
+
+/** Subset of RollAspect fields a variant can override. Excludes `form`
+ *  and the variant fields themselves. Shallow merge. */
+export type RollOverride = Partial<
+  Pick<RollAspect, "name" | "damage" | "to_hit" | "range" | "save" | "effects" | "notes">
+>;
+
+/** Automatic per-level scaling. `by` defaults to `"class"` for feature
+ *  rolls, `"character"` for spell rolls. Block picks the override with
+ *  the highest threshold key ≤ current level and merges it onto base. */
+export interface RollLeveled {
+  by?: "class" | "character";
+  at: Record<number, RollOverride>;
+}
+
+/** Upcast overrides by spell circle. Keys are circles the caster can
+ *  spend a slot for; values override the base roll. Interactive. */
+export type RollUpcast = Record<number, RollOverride>;
+
+/** One option in a swap selector. `value` is the text shown in the
+ *  target cell; the remaining fields override the base roll. */
+export interface RollSwapOption extends RollOverride {
+  value: string;
+}
+
+/** User-interactive cell-attached alternates. The specified cell
+ *  cycles through `options` on click. */
+export interface RollSwap {
+  field: "range" | "name";
+  options: RollSwapOption[];
+}
+
+/** Resource cost for a roll — hit dice, Channel Divinity uses, Wild
+ *  Shape uses, class-specific pools, etc. Rendered in the Cost
+ *  column with a glyph + tooltip; `max` > `amount` makes the cell a
+ *  click-to-cycle button so players can dial in the spend. `max` is
+ *  either a literal number or a formula string evaluated from the
+ *  character context (`"PB"`, `"level"`, `"class_level"`). */
+export interface RollCost {
+  type: string;
+  amount: number;
+  max?: number | string;
+}
+
+export interface RollAspect {
   name?: string;
-  form: "melee" | "ranged" | "spell" | "save";
+  form: "melee" | "ranged" | "spell" | "save" | "rider" | "healing" | "temp";
+  /** Spell circle (0 = cantrip). When set with `form: spell`, the form
+   *  icon renders as a circled numeral. With `upcast`, it becomes a
+   *  clickable cycle button. */
+  circle?: number;
   damage?: DamageSpec | DamageSpec[];
   to_hit?: string;
   range?: string;
-  save?: AttackSave;
+  save?: RollSave;
   /** Equipment requirement. `none` = always available (spells / mental);
    *  `one_hand` = weapon must be in a hand slot; `two_hands` = weapon in
    *  main_hand with off_hand empty; `free_hand` = at least one hand free
    *  (unarmed attacks). */
   requires?: "none" | "one_hand" | "two_hands" | "free_hand";
+  /** Explicit pill-list for the Effects cell. Each entry is a predefined
+   *  condition key (consumer-defined vocabulary) or a custom glyph
+   *  object. Nothing is inferred from `notes`. */
+  effects?: RollEffect[];
   notes?: string;
+  /** Auto level-scaling (cantrips, class-feature dice growth). */
+  leveled?: RollLeveled;
+  /** User-selectable upcast overrides. Interactive form icon. */
+  upcast?: RollUpcast;
+  /** User-selectable cell-attached alternates. */
+  swapOn?: RollSwap;
+  /** Resource cost — rendered in the Cost column. */
+  cost?: RollCost;
 }
 
 export interface WielderStats {
@@ -1278,25 +1316,25 @@ export declare function deriveWeaponForm(type: string | undefined): "melee" | "r
 export declare function parseWeaponDamage(raw: string | undefined): DamageSpec | null;
 export declare function parseWeaponBonus(raw: string | undefined): number;
 export declare function signed(n: number): string;
-export declare function deriveWeaponAttack(
+export declare function deriveWeaponRoll(
   element: ItemElementData,
   stats: WielderStats,
   overlay?: WeaponOverlay,
-  displayName?: string,
-): AttackAspect | null;
+  displayName?: string
+): RollAspect | null;
 
 /**
- * Plural variant of `deriveWeaponAttack`. Prefers the element's
- * `weapon.attacks:` explicit templates when present (one row per
+ * Plural variant of `deriveWeaponRoll`. Prefers the element's
+ * `weapon.rolls:` explicit templates when present (one row per
  * entry); falls back to a single-entry derivation from
  * `weapon.damage` when the list is absent.
  */
-export declare function deriveWeaponAttacks(
+export declare function deriveWeaponRolls(
   element: ItemElementData,
   stats: WielderStats,
   overlay?: WeaponOverlay,
-  displayName?: string,
-): AttackAspect[];
+  displayName?: string
+): RollAspect[];
 
 /** React card for a parsed `rpg item.element` body. No auto-title or
  *  source footer — the host note's own heading + markdown supply those. */
@@ -1341,9 +1379,7 @@ export interface TableCell {
 export interface TableRow {
   cells: TableCell[];
 }
-export type FooterSegment =
-  | { kind: "text"; text: string }
-  | { kind: "roll"; targets: string[]; by?: string };
+export type FooterSegment = { kind: "text"; text: string } | { kind: "roll"; targets: string[]; by?: string };
 export interface FooterCell {
   segments: FooterSegment[];
 }

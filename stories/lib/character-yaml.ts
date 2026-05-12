@@ -59,7 +59,7 @@ export function buildSkillsYaml(
   abilities: AbilityScores,
   proficiencyBonus: number,
   proficient: string[] = [],
-  expert: string[] = [],
+  expert: string[] = []
 ): string {
   return ALL_SKILLS.map((skill) => {
     const ability = SKILL_ABILITY[skill];
@@ -75,20 +75,20 @@ export function buildSkillsYaml(
  * Build a YAML string for the stats block from ability scores and optional
  * save proficiency multipliers (0 = none, 1 = proficient, 2 = expert).
  */
-/** Attack entry used to build attacks YAML */
-export interface AttackDef {
+/** Roll entry used to build rolls YAML */
+export interface RollDef {
   name: string;
   to_hit: number;
   range: string;
   damage: { roll: string; type: string };
 }
 
-/** Build a YAML string for the attacks block */
-export function buildAttacksYaml(attacks: AttackDef[]): string {
-  return `attacks:\n${attacks
+/** Build a YAML string for the rolls block */
+export function buildRollsYaml(rolls: RollDef[]): string {
+  return `rolls:\n${rolls
     .map(
       (a) =>
-        `  - name: ${a.name}\n    to_hit: ${a.to_hit}\n    range: "${a.range}"\n    damage:\n      roll: "${a.damage.roll}"\n      type: ${a.damage.type}`,
+        `  - name: ${a.name}\n    to_hit: ${a.to_hit}\n    range: "${a.range}"\n    damage:\n      roll: "${a.damage.roll}"\n      type: ${a.damage.type}`
     )
     .join("\n")}`;
 }
@@ -160,7 +160,7 @@ export function buildFeaturesYaml(categories: FeatureCategoryDef[]): string {
 
 export function buildStatsYaml(
   abilities: AbilityScores,
-  saves: Partial<Record<"str" | "dex" | "con" | "int" | "wis" | "cha", number>> = {},
+  saves: Partial<Record<"str" | "dex" | "con" | "int" | "wis" | "cha", number>> = {}
 ): string {
   const entries: [string, keyof AbilityScores, "str" | "dex" | "con" | "int" | "wis" | "cha"][] = [
     ["STR", "strength", "str"],
@@ -177,7 +177,7 @@ export function buildStatsYaml(
   save:
     proficiency: ${saves[saveKey] ?? 0}
     vantage: 0
-    bonus: 0`,
+    bonus: 0`
     )
     .join("\n");
 }
