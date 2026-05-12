@@ -15,6 +15,34 @@ export type SidePropRow = {
   [label: string]: string | number;
 };
 
+/** How the character art fills its reserved box.
+ *   - `cover`   (default): scale to fill, crop the overflow via `align`.
+ *   - `contain`: letterbox — whole image visible, no crop.
+ *   - `width`:   match the frame's width exactly, height proportional.
+ *                Vertical overflow is clipped and nudged by `align`.
+ *   - `height`:  match the frame's height exactly, width proportional.
+ *                Horizontal overflow is clipped and nudged by `align`.
+ */
+export type ArtFit = "cover" | "contain" | "width" | "height";
+
+/** Where the visible part of the image anchors when cropping happens.
+ *  Accepts single keywords (`top`, `bottom`, `left`, `right`, `center`),
+ *  two-axis pairs (`top left`, `bottom right`, `center center`), or any
+ *  raw CSS `object-position` value (`20% 40%`, `right 10%`). For
+ *  `fit: width` only the vertical component matters; for `fit: height`
+ *  only the horizontal. */
+export type ArtAlign = string;
+
+/** Object form of `appearance.art`. The scalar wikilink shorthand
+ *  (`art: "[[portrait.webp]]"`) is always valid too — the renderer
+ *  accepts either. */
+export type ArtObject = {
+  /** Wikilink / path to the image. Same shape PortraitThumb accepts. */
+  src: string | unknown;
+  fit?: ArtFit;
+  align?: ArtAlign;
+};
+
 export type AppearanceSection = {
   /** Prose about the character's physical build / face / hair (markdown). */
   body?: string;
@@ -24,10 +52,14 @@ export type AppearanceSection = {
    *  group to keep related facts together (e.g. `[ {age, height, weight},
    *  {eyes, skin, hair} ]`). */
   side_props?: SidePropRow[];
-  /** Wikilink to the main character art asset. Shared with nothing — this
-   *  is the big 40%-width image on the Appearance tab, distinct from the
-   *  small `health.portrait` headshot. */
-  art?: string | unknown;
+  /** Main art asset. Two shapes accepted:
+   *    art: "[[portrait.webp]]"                 # simple
+   *    art: { src: "[[portrait.webp]]",         # rich
+   *           fit: cover | contain | width | height,
+   *           align: top | center | ... | "20% 40%" }
+   *  Distinct from `health.portrait` — this is the big 40%-width hero
+   *  image on the Appearance tab. */
+  art?: string | ArtObject | unknown;
 };
 
 /** One highlight row shown beneath the backstory. Two shapes are accepted:

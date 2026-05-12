@@ -53,62 +53,131 @@
 }
 
 /* ── Tab bar ────────────────────────────────────────────────────────────── */
+/*
+ * Goal: five tabs on a single row that fill the block's top edge end-to-end
+ * and "glue" together as interlocking parallelograms (no visible gutter).
+ *
+ * Technique: each tab gets a parallelogram clip-path (same slope on left +
+ * right edges); items overlap by `--_cut` via negative margin so the right
+ * slope of one tab tessellates into the left slope of the next. First /
+ * last tabs get a flat outer edge so the bar sits flush to the frame.
+ *
+ * No background on the menu itself — the tabs cover 100% of the row, so
+ * there is nothing behind to show through.
+ */
 
 .rpg-description-tablist {
   position: relative;
   z-index: 1;
   list-style: none;
   margin: 0;
-  padding: 8px 12px 0;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  flex-wrap: nowrap;
+  gap: 0;
+  background: transparent;
 }
 
 .rpg-description-tab-item {
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
   padding: 0;
 }
 
+/* Subsequent tabs overlap the previous by one cut-width, which is exactly
+ * the offset needed for the parallelogram slopes to meet (see comment
+ * above). Active-tab z-index lift then ensures its shape paints atop the
+ * neighbour it slots into. */
+.rpg-description-tab-item + .rpg-description-tab-item {
+  margin-left: calc(-1 * var(--rpg-description-tab-cut, 12px));
+}
+
 .rpg-description-tab {
-  --_cut: 10px;
+  --_cut: var(--rpg-description-tab-cut, 12px);
   all: unset;
   cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: 6px calc(var(--_cut) + 10px) 6px 12px;
-  font-size: 0.78em;
+  justify-content: center;
+  padding: 7px calc(var(--_cut) + 8px);
+  font-size: 0.68em;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  color: var(--rpg-description-tab, light-dark(#3a3020, #c0b8a4));
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--rpg-description-tab, light-dark(#6a5a3a, #8c8272));
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  transition: color 120ms ease, background 120ms ease;
+  clip-path: polygon(
+    var(--_cut) 0,
+    100% 0,
+    calc(100% - var(--_cut)) 100%,
+    0 100%
+  );
+}
+
+/* Flat left edge on the first tab so it docks against the block frame. */
+.rpg-description-tab-item:first-child .rpg-description-tab {
   clip-path: polygon(
     0 0,
     100% 0,
     calc(100% - var(--_cut)) 100%,
     0 100%
   );
-  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+/* Flat right edge on the last tab for the same reason. */
+.rpg-description-tab-item:last-child .rpg-description-tab {
+  clip-path: polygon(
+    var(--_cut) 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* A single tab in isolation keeps both edges flat. */
+.rpg-description-tab-item:only-child .rpg-description-tab {
+  clip-path: none;
 }
 
 .rpg-description-tab:hover {
   color: var(--rpg-description-tab-hover, light-dark(#1a1208, #ffffff));
-  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+  background: light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.14));
 }
 
 .rpg-description-tab:focus-visible {
   outline: 2px solid var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
-  outline-offset: -2px;
+  outline-offset: -3px;
 }
 
 .rpg-description-tab[data-active] {
   color: var(--rpg-description-tab-active, light-dark(#1a1208, #ffffff));
-  background: var(--rpg-description-tab-active-bg, light-dark(rgba(212, 168, 64, 0.22), rgba(212, 168, 64, 0.28)));
-  box-shadow: inset 0 -2px 0 var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
-  transform: translateY(1px);
+  background: var(--rpg-description-tab-active-bg, light-dark(rgba(212, 168, 64, 0.3), rgba(212, 168, 64, 0.32)));
+  /* Sit above neighbours so the active parallelogram's slopes paint over
+   * the adjacent tabs' overlapping edges. */
+  position: relative;
+  z-index: 2;
+}
+
+/* A subtle bottom tint on the active tab to hint at connection to the
+ * panel below — the clip-path swallows a real bottom border, so we paint
+ * it as an inset shadow that the polygon honours. */
+.rpg-description-tab[data-active]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
 }
 
 /* ── Panel ──────────────────────────────────────────────────────────────── */
@@ -180,7 +249,14 @@
   box-shadow:
     inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.15)),
     0 2px 6px rgba(0, 0, 0, 0.2);
-  min-height: 18rem;
+  /* Fixed portrait aspect (9:16). The art column's width comes from the
+   * grid (40%); height is derived from the ratio so the frame never
+   * stretches to match the body column's content height. `align-self:
+   * start` keeps the figure anchored to the top of its grid cell when
+   * the body column is taller; the cell's extra height stays empty. */
+  aspect-ratio: 9 / 16;
+  align-self: start;
+  width: 100%;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
@@ -188,19 +264,49 @@
 
 /* PortraitThumb renders `<figure aria-details="Portrait Thumb">` with the
  * <img> appended inside. Override its defaults so the image fills the art
- * block like a hero image instead of a small headshot. */
+ * block like a hero image instead of a small headshot. The outer figure
+ * (`.rpg-description-appearance-art`) carries a `data-fit` attribute
+ * driven by the YAML — the three fill modes (cover, width, height) all
+ * share one object-fit:cover core so the frame is never left with empty
+ * space; only `contain` opts into letterboxing. --rpg-art-position is
+ * pre-computed in JS from (fit, align) so the CSS stays dumb.
+ *
+ * `width` / `height` carry !important because obsidian-overrides.css
+ * pins every `figure[aria-details="Portrait Thumb"]` to `width: 160px`
+ * inside `.markdown-rendered` — a sensible default for the small
+ * headshot used elsewhere on the sheet, but wrong for this hero slot.
+ * The overrides selector has higher specificity than any class-scoped
+ * rule could, so !important is the cleanest override path. */
 .rpg-description-appearance-art > [aria-details="Portrait Thumb"] {
   margin: 0;
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   display: flex;
+  overflow: hidden;
+  /* Cancel the global portrait-thumb hover-zoom (scale 1.5) — for a hero
+   * image sized to its reserved slot, zooming on hover is jarring and
+   * spills over surrounding layout. */
+  cursor: default;
+  transform: none !important;
+  transition: none;
 }
 
+.rpg-description-appearance-art > [aria-details="Portrait Thumb"]:hover {
+  transform: none !important;
+  z-index: auto;
+}
+
+/* All fill modes default to `cover` — guarantees no empty space inside
+ * the frame. `contain` is the only opt-in letterbox mode. */
 .rpg-description-appearance-art [aria-details="Portrait Thumb"] img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: var(--rpg-art-position, top center);
+}
+
+.rpg-description-appearance-art[data-fit="contain"] [aria-details="Portrait Thumb"] img {
+  object-fit: contain;
 }
 
 /* Empty-state treatment — when no `art:` is authored, PortraitThumb sets
@@ -257,68 +363,118 @@
 .rpg-description-sideprops {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 3px 8px;
   border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
   border-radius: 4px;
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
 }
 
+/* One <table> holds every side_props row as alternating label / value
+ * <tr>s. Because the table shares column tracks across groups, the
+ * HAIR column (widest value) sets the width of the AGE column above it
+ * — the two groups align as a single rectangular grid.
+ *
+ * Explicit `display: table*` values defeat the global
+ * `.markdown-rendered table { display: block }` reflow Obsidian ships
+ * for responsive mobile views — without these overrides every th / td
+ * collapses into its own line, turning the 3-column layout into a
+ * single vertical stack.
+ *
+ * `width: 100%` makes the table span the parent's content box. Zero
+ * margin keeps the table inside the parent's padding — the earlier
+ * `-8px` horizontal margin was pulling the table out beyond the
+ * `.rpg-description-sideprops` padding into its border. `border-spacing`
+ * is halved (8px → 4px horizontal) for a tighter gutter between cells. */
 .rpg-description-sideprops-row {
-  display: grid;
-  gap: 2px 10px;
+  display: table;
+  width: 100%;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 4px 1px;
   margin: 0;
-  padding: 0;
 }
 
-.rpg-description-sideprops-row + .rpg-description-sideprops-row {
-  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.15));
-  padding-top: 8px;
-  margin-top: 2px;
+/* Obsidian's `.markdown-rendered table` default ships a `1em 0` block
+ * margin so prose-embedded tables breathe. That gives the sideprops
+ * block a visible top + bottom gap even with `margin: 0` on the rule
+ * above, because `.markdown-rendered table` beats a single-class
+ * selector on specificity. Scope a match that ties Obsidian's
+ * specificity (class + element = 0,2,0,1) and halve the value — we
+ * want some breathing room, just less of it. */
+.markdown-rendered table.rpg-description-sideprops-row,
+.markdown-source-view.mod-cm6 table.rpg-description-sideprops-row {
+  margin-block: 0.5em;
 }
 
-.rpg-description-sideprops-row > dt {
-  font-size: 0.68em;
+.rpg-description-sideprops-row > tbody {
+  display: table-row-group;
+}
+
+.rpg-description-sideprops-row > tbody > tr {
+  display: table-row;
+}
+
+.rpg-description-sideprops-row th {
+  display: table-cell;
+  font-size: 0.6em;
   font-weight: 700;
+  text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
-  line-height: 1.2;
+  line-height: 1.15;
+  padding: 0;
+  white-space: nowrap;
+  border: none;
+  vertical-align: bottom;
 }
 
-.rpg-description-sideprops-row > dd {
-  margin: 0;
-  font-size: 0.95em;
+.rpg-description-sideprops-row td {
+  display: table-cell;
+  font-size: 0.82em;
   font-weight: 600;
+  text-align: center;
   color: light-dark(#1a1208, #e3dcce);
-  line-height: 1.4;
+  line-height: 1.3;
+  padding: 0;
+  white-space: nowrap;
+  border: none;
+  vertical-align: top;
 }
 
-/* ── Copy-prompt button ────────────────────────────────────────────────── */
+/* ── Copy-prompt icon button (attacks-tip style) ──────────────────────── */
+/*
+ * Matches `.rpg-attacks__icon` — small gold pill, cursor pointer, instant
+ * CSS tooltip via [data-tip]. No text label; the SVG glyph + the tooltip
+ * carry the meaning.
+ */
 
 .rpg-description-appearance-actions {
   margin: 4px 0 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .rpg-description-copy-prompt {
   all: unset;
+  position: relative;
   cursor: pointer;
-  padding: 6px 14px;
-  font-size: 0.78em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
-  border: 1px solid currentColor;
+  background: light-dark(rgba(106, 78, 42, 0.12), rgba(212, 168, 64, 0.18));
   border-radius: 3px;
-  background: transparent;
   transition: background 120ms ease, color 120ms ease;
 }
 
 .rpg-description-copy-prompt:hover {
-  background: light-dark(rgba(212, 168, 64, 0.18), rgba(212, 168, 64, 0.22));
+  background: light-dark(rgba(106, 78, 42, 0.22), rgba(212, 168, 64, 0.28));
+  color: light-dark(#4a3010, #ffd98a);
 }
 
 .rpg-description-copy-prompt:focus-visible {
@@ -326,9 +482,42 @@
   outline-offset: 2px;
 }
 
-.rpg-description-copy-prompt::before {
-  content: "⎘ ";
-  margin-right: 2px;
+.rpg-description-copy-prompt svg {
+  width: 0.95em;
+  height: 0.95em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Instant CSS tooltip, same shape as the attacks-row icons. */
+.rpg-description-copy-prompt[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  padding: 3px 7px;
+  background: light-dark(#1a1208, #f0e8d0);
+  color: light-dark(#f0e8d0, #1a1208);
+  border-radius: 3px;
+  font-size: 0.78em;
+  font-weight: 500;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  z-index: 20;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rpg-description-copy-prompt[data-tip]:hover::after,
+.rpg-description-copy-prompt[data-tip]:focus-visible::after {
+  opacity: 1;
 }
 
 /* ── Responsive: stack art above body on narrow containers ─────────────── */
@@ -337,9 +526,13 @@
   .rpg-description-appearance {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* On narrow containers the grid collapses to one column; a 9:16 image
+   * at full width would tower over the panel. Cap it and let it letterbox
+   * or crop per the user's `fit` instead. */
   .rpg-description-appearance-art {
-    min-height: 14rem;
+    aspect-ratio: auto;
     max-height: 20rem;
+    min-height: 14rem;
   }
 }
 
@@ -521,8 +714,8 @@
 
 .rpg-description-ribbon-portrait > [aria-details="Portrait Thumb"] {
   margin: 0;
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   display: flex;
 }
 

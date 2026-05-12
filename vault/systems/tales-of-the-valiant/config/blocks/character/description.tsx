@@ -4,6 +4,7 @@ import { EntityBlock, Markdown, PortraitThumb } from "rpg-ui-toolkit";
 import type { CharacterEntity } from "../../entities/character.types";
 import type {
   AppearanceSection,
+  ArtFit,
   BackstoryHighlight,
   BackstorySection,
   DescriptionBlockData,
@@ -78,6 +79,71 @@ function visibleLabel(raw: string): string {
 }
 
 // ─── Appearance ──────────────────────────────────────────────────────────────
+
+const VALID_FITS: ReadonlySet<ArtFit> = new Set(["cover", "contain", "width", "height"]);
+
+/** Normalise an art value (scalar wikilink OR rich `{ src, fit, align }`)
+ *  into the three pieces the renderer needs: the raw `src` that
+ *  PortraitThumb will resolve, the fit mode, and the alignment keyword /
+ *  raw CSS position string.
+ *
+ *  The rich form is object-with-src; any other object shape (plain
+ *  wikilink parsed into `{ link: "…" }`, YAML nested-flow-array, …)
+ *  falls through as the scalar-ish `src` and defaults kick in. */
+function resolveArt(raw: unknown): {
+  src: unknown;
+  fit: ArtFit;
+  align: string;
+} {
+  if (
+    raw != null &&
+    typeof raw === "object" &&
+    !Array.isArray(raw) &&
+    "src" in (raw as Record<string, unknown>) &&
+    !("link" in (raw as Record<string, unknown>)) &&
+    !("path" in (raw as Record<string, unknown>)) &&
+    !("file" in (raw as Record<string, unknown>))
+  ) {
+    const obj = raw as { src?: unknown; fit?: unknown; align?: unknown };
+    const rawFit = typeof obj.fit === "string" ? obj.fit.toLowerCase() : "cover";
+    const fit: ArtFit = VALID_FITS.has(rawFit as ArtFit) ? (rawFit as ArtFit) : "cover";
+    const align =
+      typeof obj.align === "string" && obj.align.trim()
+        ? obj.align.trim().toLowerCase()
+        : fit === "cover"
+          ? "top center"
+          : "center";
+    return { src: obj.src, fit, align };
+  }
+  // Scalar / legacy shape → cover + top-center (portrait-friendly default).
+  return { src: raw, fit: "cover", align: "top center" };
+}
+
+/** Compute the final `object-position` value for the art image. The image
+ *  always uses `object-fit: cover` (the "no empty space" invariant), but
+ *  the `fit` mode constrains which axis of `align` gets to speak:
+ *
+ *    fit: cover    → any CSS object-position value passes through
+ *                    (defaults to "top center" to favour face-level framing).
+ *    fit: contain  → same pass-through; the frame letterboxes around it.
+ *    fit: width    → width fills the frame, vertical axis crops. Only the
+ *                    vertical keyword (top / center / bottom) in `align`
+ *                    matters; horizontal locks to center.
+ *    fit: height   → mirror of `width` — horizontal keyword picks the
+ *                    visible slice, vertical locks to center. */
+function resolveObjectPosition(fit: ArtFit, align: string): string {
+  const s = align.toLowerCase().trim();
+  if (fit === "cover" || fit === "contain") {
+    return s || "center";
+  }
+  if (fit === "width") {
+    const y = /top/.test(s) ? "top" : /bottom/.test(s) ? "bottom" : "center";
+    return `center ${y}`;
+  }
+  // fit === "height"
+  const x = /left/.test(s) ? "left" : /right/.test(s) ? "right" : "center";
+  return `${x} center`;
+}
 
 /** Build a single-paragraph photo brief from the structured appearance data.
  *  Missing fields drop out so the prompt reads naturally even for sparse
@@ -157,26 +223,49 @@ function upperLabel(key: string): string {
 
 function SidePropsGrid({ rows }: { rows: SidePropRow[] }) {
   if (rows.length === 0) return null;
+  // One <table> with a single <tbody>; each side_props row becomes a
+  // pair of <tr> (labels, values). Widths sync across all groups because
+  // they share the same column grid — the HAIR column is wide enough
+  // for "Short, blonde-silver", and the AGE column above it grows to
+  // match. Shorter rows get padded with empty cells so the grid stays
+  // rectangular.
+  const filtered = rows
+    .map((row) =>
+      Object.entries(row).filter(([, v]) => v != null && v !== ""),
+    )
+    .filter((entries) => entries.length > 0);
+  if (filtered.length === 0) return null;
+  const maxCols = Math.max(...filtered.map((r) => r.length));
   return (
     <div className="rpg-description-sideprops">
-      {rows.map((row, i) => {
-        const entries = Object.entries(row).filter(([, v]) => v != null && v !== "");
-        if (entries.length === 0) return null;
-        return (
-          <dl
-            key={i}
-            className="rpg-description-sideprops-row"
-            style={{ gridTemplateColumns: `repeat(${entries.length}, minmax(0, 1fr))` }}
-          >
-            {entries.map(([k]) => (
-              <dt key={`k-${k}`}>{upperLabel(k)}</dt>
-            ))}
-            {entries.map(([k, v]) => (
-              <dd key={`v-${k}`}>{String(v)}</dd>
-            ))}
-          </dl>
-        );
-      })}
+      <table className="rpg-description-sideprops-row">
+        <tbody>
+          {filtered.flatMap((entries, i) => {
+            const pad = maxCols - entries.length;
+            const keyRow = (
+              <tr key={`k-${i}`} className="rpg-description-sideprops-keys">
+                {entries.map(([k]) => (
+                  <th key={k} scope="col">{upperLabel(k)}</th>
+                ))}
+                {Array.from({ length: pad }, (_, j) => (
+                  <th key={`pad-k-${j}`} aria-hidden="true" />
+                ))}
+              </tr>
+            );
+            const valueRow = (
+              <tr key={`v-${i}`} className="rpg-description-sideprops-values">
+                {entries.map(([k, v]) => (
+                  <td key={k}>{String(v)}</td>
+                ))}
+                {Array.from({ length: pad }, (_, j) => (
+                  <td key={`pad-v-${j}`} aria-hidden="true" />
+                ))}
+              </tr>
+            );
+            return [keyRow, valueRow];
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -198,10 +287,21 @@ function AppearanceTab({
 
   if (isEmpty) return <EmptyPanel hint="No appearance notes yet." />;
 
+  const { src: artSrc, fit: artFit, align: artAlign } = resolveArt(appearance?.art);
+  const artPosition = resolveObjectPosition(artFit, artAlign);
+  const artStyle = {
+    ["--rpg-art-position"]: artPosition,
+  } as React.CSSProperties;
+
   return (
     <div className="rpg-description-appearance">
-      <figure className="rpg-description-appearance-art" aria-label="Character art">
-        <PortraitThumb src={appearance?.art} alt="Character art" />
+      <figure
+        className="rpg-description-appearance-art"
+        data-fit={artFit}
+        style={artStyle}
+        aria-label="Character art"
+      >
+        <PortraitThumb src={artSrc} alt="Character art" />
       </figure>
       <div className="rpg-description-appearance-body">
         <SidePropsGrid rows={appearance?.side_props ?? []} />
@@ -222,10 +322,15 @@ function AppearanceTab({
             type="button"
             className="rpg-description-copy-prompt"
             onClick={() => copyPromptToClipboard(prompt)}
-            aria-label="Copy image generation prompt to clipboard"
-            title="Copy a photo-brief based on this appearance to your clipboard"
+            aria-label="Copy image prompt to clipboard"
+            data-tip="Copy image prompt"
           >
-            Copy image prompt
+            {/* Two overlapping rectangles — canonical "copy" glyph. Stroked
+             *  via currentColor so the pill's foreground drives the mark. */}
+            <svg viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+              <rect x="4.25" y="4.25" width="7" height="7" rx="1" />
+              <path d="M2.75 2.75 H9 V4.25 M2.75 2.75 V9 H4.25" />
+            </svg>
           </button>
         </footer>
       </div>
