@@ -68,10 +68,22 @@ section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attr
   text-align: center;
 }
 
-/* Skill name */
+/* Skill name — now rendered as an Obsidian wikilink (`[[SkillName]]`)
+ * via the Markdown component so Obsidian hooks up hover-preview,
+ * click-to-open, and the `is-unresolved` modifier. The renderer wraps
+ * its output in `<div><p>…</p></div>`, which would break the `<li>`'s
+ * flex row — flatten both levels to `display: inline` so only the
+ * anchor participates in the layout. Appearance (color, weight,
+ * decoration) stays owned by the Folder Link Styles plugin setting. */
 section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] {
   flex: 1;
-  font-weight: 600;
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] .rpg-inline-md,
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] .rpg-inline-md > p {
+  display: inline;
+  margin: 0;
+  padding: 0;
 }
 
 /* Modifier value */

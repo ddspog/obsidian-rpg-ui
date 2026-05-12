@@ -7,6 +7,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import { DndUIToolkitSettings } from "settings";
 import { THEMES } from "lib/themes";
 import { renderSystemMappings } from "lib/plugin/system-mappings-ui";
+import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 
 // Forward-declared plugin type to avoid circular imports
 interface PluginWithSettings {
@@ -62,9 +63,7 @@ export class DndSettingsTab extends PluginSettingTab {
           .setValue(String(this.plugin.settings.scrollRestoreDelayMs))
           .onChange(async (value) => {
             const parsed = parseInt(value, 10);
-            this.plugin.settings.scrollRestoreDelayMs = Number.isFinite(parsed) && parsed >= 0
-              ? parsed
-              : 600;
+            this.plugin.settings.scrollRestoreDelayMs = Number.isFinite(parsed) && parsed >= 0 ? parsed : 600;
             await this.plugin.saveSettings();
           })
       );
@@ -93,13 +92,50 @@ export class DndSettingsTab extends PluginSettingTab {
         })
       );
 
+    containerEl.createEl("h3", { text: "Folder link styles" });
+    containerEl.createEl("p", {
+      text: "Tag internal links (wikilinks) by the folder of their resolved target. Longest matching folder prefix wins.",
+      cls: "setting-item-description",
+    });
+
+    const folderLinkStylesContainer = containerEl.createDiv({
+      cls: "rpg-folder-link-styles",
+    });
+    renderFolderLinkStyles(folderLinkStylesContainer, {
+      app: this.app,
+      settings: this.plugin.settings,
+      onSave: () => this.plugin.saveSettings(),
+      onRefresh: () => this.display(),
+    });
+
+    new Setting(containerEl)
+      .setName("Add folder link style")
+      .setDesc("Add a new per-folder link styling entry")
+      .addButton((button) =>
+        button.setButtonText("Add").onClick(() => {
+          // Stable id per entry. Taken once at creation so later edits
+          // (adding / removing paths, changing the label) don't bump the
+          // generated CSS class name. Fallback to a timestamp makes
+          // collisions effectively impossible even across quick clicks.
+          const nextIndex = this.plugin.settings.folderLinkStyles.length + 1;
+          this.plugin.settings.folderLinkStyles.push({
+            id: `style-${nextIndex}-${Date.now().toString(36)}`,
+            folderPaths: [],
+            borderStyle: "none",
+          });
+          this.display();
+        })
+      );
+
     containerEl.createEl("h3", { text: "Styles" });
 
     new Setting(containerEl)
       .setName("Theme Preset")
       .setDesc("Choose a predefined color theme. Selecting a theme will update all color values.")
       .addDropdown((dropdown) => {
-        Object.entries(THEMES).forEach(([key, theme]) => { dropdown.addOption(key, theme.name); });
+        Object.entries(THEMES).forEach(([key, theme]) => {
+          dropdown.addOption(key, theme.name);
+        });
         dropdown.setValue(this.plugin.settings.selectedTheme).onChange(async (value) => {
           this.plugin.settings.selectedTheme = value;
           const theme = THEMES[value];

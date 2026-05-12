@@ -29,13 +29,7 @@
   cursor: help;
 }
 
-.rpg-ref--scalar a.internal-link {
-  color: inherit;
-  text-decoration: none;
-}
-.rpg-ref--scalar a.internal-link:hover {
-  text-decoration: underline;
-}
+/* Scalar-ref internal-link appearance owned by Folder Link Styles. */
 
 .rpg-ref--object {
   /* Compact JSON surfacing — a subtle surface tint lets the reader

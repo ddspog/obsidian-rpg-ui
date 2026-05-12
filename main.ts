@@ -1,11 +1,16 @@
-import { App, Plugin, MarkdownPostProcessorContext, MarkdownRenderer, MarkdownRenderChild, MarkdownSectionInformation, parseYaml, TFile } from "obsidian";
+import {
+  App,
+  Plugin,
+  MarkdownPostProcessorContext,
+  MarkdownRenderer,
+  MarkdownRenderChild,
+  MarkdownSectionInformation,
+  parseYaml,
+  TFile,
+} from "obsidian";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
-import {
-  COMPILATION_VIEW_TYPE,
-  compilationFactory,
-  compilationOptions,
-} from "lib/views/CompilationBasesView";
+import { COMPILATION_VIEW_TYPE, compilationFactory, compilationOptions } from "lib/views/CompilationBasesView";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
@@ -24,6 +29,9 @@ import { renderSpellBlock } from "lib/blocks/spell-card";
 import { FileRefCache } from "lib/domains/references";
 import { ReferenceRegistry } from "lib/plugin/reference-registry";
 import { buildReferenceProcessor } from "lib/plugin/reference-processor";
+import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
+import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
+import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -48,6 +56,10 @@ export default class DndUIToolkitPlugin extends Plugin {
    *  Instantiated on load so Obsidian event wiring can reach them. */
   private refCache: FileRefCache | null = null;
   private refRegistry: ReferenceRegistry | null = null;
+  private folderLinkStyleManager: FolderLinkStyleManager | null = null;
+  /** Bumped on every `saveSettings` so the CM6 extension knows when to
+   *  re-tag visible editor anchors without waiting for a docChanged. */
+  private folderLinkStylesVersion = 0;
 
   applyColorSettings(): void {
     const apply = (root: HTMLElement) => {
@@ -169,164 +181,170 @@ export default class DndUIToolkitPlugin extends Plugin {
       el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
     };
 
-    this.registerMarkdownCodeBlockProcessor("rpg", (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-      const meta = extractMeta(ctx, el, source);
-      if (!meta) {
-        console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
-        el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
-        return;
-      }
-      const view = viewRegistry.get(meta);
-      if (view) {
-        view.register(source, el, ctx);
-        return;
-      }
+    this.registerMarkdownCodeBlockProcessor(
+      "rpg",
+      (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+        const meta = extractMeta(ctx, el, source);
+        if (!meta) {
+          console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
+          el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
+          return;
+        }
+        const view = viewRegistry.get(meta);
+        if (view) {
+          view.register(source, el, ctx);
+          return;
+        }
 
-      // Handle entity blocks: meta of the form "entityType.blockName"
-      const dotIndex = meta.indexOf(".");
-      // `rpg table.<name>` is a standalone table block. The body is a
-      // markdown table (not YAML), so it's dispatched to a plain-DOM
-      // renderer rather than the entity-block YAML pipeline. The reading-view
-      // path may collapse the fence info to a bare `"table"` meta — recover
-      // the name from the file's raw text via `getSectionInfo` then.
-      if (meta === "table" || meta.startsWith("table.")) {
-        let blockName = meta.startsWith("table.") ? meta.slice("table.".length) : "";
-        if (!blockName) {
-          const sectionText = ctx.getSectionInfo(el)?.text ?? "";
-          for (const line of sectionText.split("\n")) {
-            const fenceMatch = line.match(/^```rpg\s+table\.([A-Za-z0-9_-]+)/);
-            if (fenceMatch) {
-              blockName = fenceMatch[1];
-              break;
+        // Handle entity blocks: meta of the form "entityType.blockName"
+        const dotIndex = meta.indexOf(".");
+        // `rpg table.<name>` is a standalone table block. The body is a
+        // markdown table (not YAML), so it's dispatched to a plain-DOM
+        // renderer rather than the entity-block YAML pipeline. The reading-view
+        // path may collapse the fence info to a bare `"table"` meta — recover
+        // the name from the file's raw text via `getSectionInfo` then.
+        if (meta === "table" || meta.startsWith("table.")) {
+          let blockName = meta.startsWith("table.") ? meta.slice("table.".length) : "";
+          if (!blockName) {
+            const sectionText = ctx.getSectionInfo(el)?.text ?? "";
+            for (const line of sectionText.split("\n")) {
+              const fenceMatch = line.match(/^```rpg\s+table\.([A-Za-z0-9_-]+)/);
+              if (fenceMatch) {
+                blockName = fenceMatch[1];
+                break;
+              }
             }
           }
+          if (!blockName) blockName = "unnamed";
+          try {
+            const def = parseTableBlock(blockName, source);
+            const disposers = renderTableBlock(el, def, { filePath: ctx.sourcePath });
+            if (disposers.length > 0) {
+              const child = new (class extends MarkdownRenderChild {
+                onunload(): void {
+                  for (const d of disposers) d();
+                }
+              })(el);
+              ctx.addChild(child);
+            }
+          } catch (err) {
+            console.error("rpg table.* render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg table</div>';
+          }
+          return;
         }
-        if (!blockName) blockName = "unnamed";
-        try {
-          const def = parseTableBlock(blockName, source);
-          const disposers = renderTableBlock(el, def, { filePath: ctx.sourcePath });
-          if (disposers.length > 0) {
-            const child = new (class extends MarkdownRenderChild {
-              onunload(): void {
-                for (const d of disposers) d();
-              }
-            })(el);
+
+        // `rpg spell` — standalone compendium card reading the host note's
+        // frontmatter. The fence body (YAML) is optional; when present it
+        // overrides matching fields for display-only tweaks.
+        if (meta === "spell") {
+          try {
+            const child = renderSpellBlock(this.app, el, source, ctx);
             ctx.addChild(child);
+          } catch (err) {
+            console.error("rpg spell render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg spell</div>';
           }
-        } catch (err) {
-          console.error("rpg table.* render failed", err);
-          el.innerHTML = '<div class="notice">Error rendering rpg table</div>';
-        }
-        return;
-      }
-
-      // `rpg spell` — standalone compendium card reading the host note's
-      // frontmatter. The fence body (YAML) is optional; when present it
-      // overrides matching fields for display-only tweaks.
-      if (meta === "spell") {
-        try {
-          const child = renderSpellBlock(this.app, el, source, ctx);
-          ctx.addChild(child);
-        } catch (err) {
-          console.error("rpg spell render failed", err);
-          el.innerHTML = '<div class="notice">Error rendering rpg spell</div>';
-        }
-        return;
-      }
-
-      if (dotIndex > 0) {
-        const entityType = meta.slice(0, dotIndex);
-        const blockName = meta.slice(dotIndex + 1);
-
-        const system = registry.getSystemForFile(ctx.sourcePath);
-        const blockDef = system.entities[entityType]?.blocks?.[blockName];
-        if (blockDef) {
-          const entityBus = getEntityBus(ctx.sourcePath);
-          const trigger = (eventName: string) => entityBus.trigger(eventName);
-          const systemCtx = {
-            skills: system.skills,
-            attributes: system.attributes,
-            conditions: system.conditions ?? [],
-            traits: system.traits,
-          };
-          const sectionInfo = ctx.getSectionInfo(el);
-          const child = new EntityBlockRenderChild(
-            el,
-            source,
-            blockDef as unknown as (props: Record<string, unknown>) => ReactNode,
-            trigger,
-            ctx.sourcePath,
-            this.app,
-            entityType,
-            blockName,
-            systemCtx,
-            sectionInfo,
-          );
-          ctx.addChild(child);
           return;
         }
 
-        // If the system mapping exists but the system hasn't loaded yet, trigger
-        // an async load and re-attempt registering the block when it completes.
-        const mapped = registry.findSystemFolderForFile(ctx.sourcePath);
-        if (mapped) {
-          // Show a placeholder while the bundle loads — flushing the
-          // "Unknown block" notice synchronously would race the async
-          // load and spam the console with false positives every time
-          // a character sheet opens before its system finishes loading.
-          el.innerHTML = '<div class="notice">Loading…</div>';
-          // kick off load (no await) and re-check once loaded
-          void registry.loadSystemAsync(mapped).then(() => {
-            try {
-              const reSystem = registry.getSystemForFile(ctx.sourcePath);
-              const reBlock = reSystem.entities[entityType]?.blocks?.[blockName];
-              if (reBlock) {
-                const entityBus = getEntityBus(ctx.sourcePath);
-                const trigger = (eventName: string) => entityBus.trigger(eventName);
-                const systemCtx = {
-                  skills: reSystem.skills,
-                  attributes: reSystem.attributes,
-                  conditions: reSystem.conditions ?? [],
-                  traits: reSystem.traits,
-                };
-                const sectionInfo = ctx.getSectionInfo(el);
-                el.innerHTML = "";
-                const child = new EntityBlockRenderChild(
-                  el,
-                  source,
-                  reBlock as unknown as (props: Record<string, unknown>) => ReactNode,
-                  trigger,
-                  ctx.sourcePath,
-                  this.app,
-                  entityType,
-                  blockName,
-                  systemCtx,
-                  sectionInfo,
-                );
-                ctx.addChild(child);
-                return;
+        if (dotIndex > 0) {
+          const entityType = meta.slice(0, dotIndex);
+          const blockName = meta.slice(dotIndex + 1);
+
+          const system = registry.getSystemForFile(ctx.sourcePath);
+          const blockDef = system.entities[entityType]?.blocks?.[blockName];
+          if (blockDef) {
+            const entityBus = getEntityBus(ctx.sourcePath);
+            const trigger = (eventName: string) => entityBus.trigger(eventName);
+            const systemCtx = {
+              skills: system.skills,
+              attributes: system.attributes,
+              conditions: system.conditions ?? [],
+              traits: system.traits,
+            };
+            const sectionInfo = ctx.getSectionInfo(el);
+            const child = new EntityBlockRenderChild(
+              el,
+              source,
+              blockDef as unknown as (props: Record<string, unknown>) => ReactNode,
+              trigger,
+              ctx.sourcePath,
+              this.app,
+              entityType,
+              blockName,
+              systemCtx,
+              sectionInfo
+            );
+            ctx.addChild(child);
+            return;
+          }
+
+          // If the system mapping exists but the system hasn't loaded yet, trigger
+          // an async load and re-attempt registering the block when it completes.
+          const mapped = registry.findSystemFolderForFile(ctx.sourcePath);
+          if (mapped) {
+            // Show a placeholder while the bundle loads — flushing the
+            // "Unknown block" notice synchronously would race the async
+            // load and spam the console with false positives every time
+            // a character sheet opens before its system finishes loading.
+            el.innerHTML = '<div class="notice">Loading…</div>';
+            // kick off load (no await) and re-check once loaded
+            void registry.loadSystemAsync(mapped).then(() => {
+              try {
+                const reSystem = registry.getSystemForFile(ctx.sourcePath);
+                const reBlock = reSystem.entities[entityType]?.blocks?.[blockName];
+                if (reBlock) {
+                  const entityBus = getEntityBus(ctx.sourcePath);
+                  const trigger = (eventName: string) => entityBus.trigger(eventName);
+                  const systemCtx = {
+                    skills: reSystem.skills,
+                    attributes: reSystem.attributes,
+                    conditions: reSystem.conditions ?? [],
+                    traits: reSystem.traits,
+                  };
+                  const sectionInfo = ctx.getSectionInfo(el);
+                  el.innerHTML = "";
+                  const child = new EntityBlockRenderChild(
+                    el,
+                    source,
+                    reBlock as unknown as (props: Record<string, unknown>) => ReactNode,
+                    trigger,
+                    ctx.sourcePath,
+                    this.app,
+                    entityType,
+                    blockName,
+                    systemCtx,
+                    sectionInfo
+                  );
+                  ctx.addChild(child);
+                  return;
+                }
+                // Bundle loaded but the block really isn't there — surface
+                // the unknown-block notice now (and only now) so the
+                // console message reflects a genuine missing handler.
+                warnUnknown(meta, el);
+              } catch (e) {
+                console.error(`DnD UI Toolkit: failed to render ${meta}:`, e);
+                el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
               }
-              // Bundle loaded but the block really isn't there — surface
-              // the unknown-block notice now (and only now) so the
-              // console message reflects a genuine missing handler.
-              warnUnknown(meta, el);
-            } catch (e) {
-              console.error(`DnD UI Toolkit: failed to render ${meta}:`, e);
-              el.innerHTML = `<div class="notice">Unknown rpg block type: ${meta}</div>`;
-            }
-          });
-          return;
+            });
+            return;
+          }
         }
-      }
 
-      warnUnknown(meta, el);
-    });
+        warnUnknown(meta, el);
+      }
+    );
 
     for (const [oldType, meta] of Object.entries(LEGACY_MAPPINGS)) {
-      this.registerMarkdownCodeBlockProcessor(oldType, (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-        const view = viewRegistry.get(meta);
-        if (view) view.register(source, el, ctx);
-      });
+      this.registerMarkdownCodeBlockProcessor(
+        oldType,
+        (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+          const view = viewRegistry.get(meta);
+          if (view) view.register(source, el, ctx);
+        }
+      );
     }
 
     // ── `@[[File]].path` inline references ────────────────────────────────
@@ -350,17 +368,46 @@ export default class DndUIToolkitPlugin extends Plugin {
         app: this.app,
         cache: this.refCache,
         registry: this.refRegistry,
-      }),
+      })
     );
     this.registerEvent(
       this.app.vault.on("modify", (f) => {
         if (f instanceof TFile) this.refCache?.invalidate(f.path);
-      }),
+      })
     );
     this.registerEvent(
       this.app.metadataCache.on("changed", (f) => {
         this.refCache?.invalidate(f.path);
-      }),
+      })
+    );
+
+    // ── Folder link styling ─────────────────────────────────────────────
+    // Stylesheet + reading-mode tagger + Live Preview tagger. The
+    // stylesheet lives on document.head (and on every popout window's
+    // head, mirroring applyColorSettings); the reading-mode processor
+    // runs on every rendered markdown fragment; the CM6 extension does
+    // the same for Live Preview. All three share the same class-naming
+    // contract (`rpg-folder-link--<id>`) so any one of them can be
+    // disabled in isolation without breaking the others.
+    this.folderLinkStyleManager = new FolderLinkStyleManager(this.app);
+    this.folderLinkStyleManager.apply(this.settings.folderLinkStyles);
+    this.registerEvent(
+      this.app.workspace.on("window-open", () => {
+        setTimeout(() => this.folderLinkStyleManager?.apply(this.settings.folderLinkStyles), 100);
+      })
+    );
+    this.registerMarkdownPostProcessor(
+      buildFolderLinkProcessor({
+        app: this.app,
+        getStyles: () => this.settings.folderLinkStyles,
+      })
+    );
+    this.registerEditorExtension(
+      buildFolderLinkEditorExtension({
+        app: this.app,
+        getStyles: () => this.settings.folderLinkStyles,
+        getStylesVersion: () => this.folderLinkStylesVersion,
+      })
     );
 
     this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
@@ -407,13 +454,7 @@ export default class DndUIToolkitPlugin extends Plugin {
 
             const sourceEl = document.createElement("div");
             sourceEl.className = "rpg-ui-source";
-            void MarkdownRenderer.render(
-              this.app,
-              source.replace(/^"+|"+$/g, ""),
-              sourceEl,
-              ctx.sourcePath,
-              this,
-            );
+            void MarkdownRenderer.render(this.app, source.replace(/^"+|"+$/g, ""), sourceEl, ctx.sourcePath, this);
             footer.appendChild(sourceEl);
           }
         }
@@ -436,9 +477,7 @@ export default class DndUIToolkitPlugin extends Plugin {
         const systemPaths = new Set<string>();
         for (const sys of reg.getFolderMappings().values()) systemPaths.add(sys);
         for (const sys of systemPaths) reg.invalidateSystem(sys);
-        await Promise.all(
-          [...systemPaths].map((sys) => this.refreshSystemConsumers(sys)),
-        );
+        await Promise.all([...systemPaths].map((sys) => this.refreshSystemConsumers(sys)));
       },
     });
   }
@@ -452,6 +491,8 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.refRegistry = null;
     this.refCache?.clear();
     this.refCache = null;
+    this.folderLinkStyleManager?.dispose();
+    this.folderLinkStyleManager = null;
   }
 
   /**
@@ -484,6 +525,7 @@ export default class DndUIToolkitPlugin extends Plugin {
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.settings.systemMappings = this.normalizeSystemMappings(this.settings.systemMappings);
+    this.settings.folderLinkStyles = this.normalizeFolderLinkStyles(this.settings.folderLinkStyles);
   }
 
   async saveSettings() {
@@ -516,6 +558,14 @@ export default class DndUIToolkitPlugin extends Plugin {
       sysRegistry.invalidateSystem(systemPath);
     }
 
+    // Folder link styles: regenerate the document-level stylesheet and
+    // bump the version so open Live Preview editors re-tag visible
+    // anchors on their next update cycle. Reading-mode previews pick
+    // the change up via the broad `refreshAllMarkdownPreviews` call
+    // below.
+    this.folderLinkStylesVersion += 1;
+    this.folderLinkStyleManager?.apply(this.settings.folderLinkStyles);
+
     // Rerender every open markdown preview so each entity block re-
     // mounts and re-reads the fresh settings (state file, system
     // mappings, colour scheme, …). Iterates broadly since mapping
@@ -527,7 +577,12 @@ export default class DndUIToolkitPlugin extends Plugin {
   private normalizeSystemMappings(rawMappings: unknown): DndUIToolkitSettings["systemMappings"] {
     if (!Array.isArray(rawMappings)) return [];
     return rawMappings.map((mapping) => {
-      const typed = mapping as { folderPath?: string; folderPaths?: string[]; systemFolderPath?: string; systemFilePath?: string };
+      const typed = mapping as {
+        folderPath?: string;
+        folderPaths?: string[];
+        systemFolderPath?: string;
+        systemFilePath?: string;
+      };
       const folderPaths = Array.isArray(typed.folderPaths)
         ? typed.folderPaths
         : typed.folderPath !== undefined
@@ -540,6 +595,41 @@ export default class DndUIToolkitPlugin extends Plugin {
         systemFolderPath,
       };
     });
+  }
+
+  /**
+   * Coerces persisted folder link styles back into the current shape.
+   * Handles the legacy `folderPath: string` form (single-path entries)
+   * by lifting it into `folderPaths: [folderPath]`, and fills in an
+   * `id` when one is missing so older vaults stay functional after the
+   * schema change. Entries that end up with no usable paths are kept
+   * (the user can edit them) — we only drop structurally broken
+   * items.
+   */
+  private normalizeFolderLinkStyles(raw: unknown): DndUIToolkitSettings["folderLinkStyles"] {
+    if (!Array.isArray(raw)) return [];
+    const out: DndUIToolkitSettings["folderLinkStyles"] = [];
+    for (let i = 0; i < raw.length; i++) {
+      const entry = raw[i];
+      if (!entry || typeof entry !== "object") continue;
+      const typed = entry as {
+        id?: string;
+        folderPath?: string;
+        folderPaths?: string[];
+        [k: string]: unknown;
+      };
+      const folderPaths: string[] = Array.isArray(typed.folderPaths)
+        ? typed.folderPaths.filter((p): p is string => typeof p === "string")
+        : typeof typed.folderPath === "string"
+          ? [typed.folderPath]
+          : [];
+      const id = typeof typed.id === "string" && typed.id.length > 0 ? typed.id : `style-${i + 1}`;
+      // Strip the legacy `folderPath` key so we don't persist both shapes.
+      const { folderPath: _legacy, ...rest } = typed;
+      void _legacy;
+      out.push({ ...rest, id, folderPaths } as DndUIToolkitSettings["folderLinkStyles"][number]);
+    }
+    return out;
   }
 }
 
@@ -597,10 +687,7 @@ async function refreshSystemConsumers(app: App, systemFolderPath: string): Promi
  * the top of the sheet. Entries expire when the window elapses so a
  * future, unrelated gesture starts from a fresh capture.
  */
-const scrollRestoreSnapshots: WeakMap<
-  HTMLElement,
-  { savedScrollTop: number; expiresAt: number }
-> = new WeakMap();
+const scrollRestoreSnapshots: WeakMap<HTMLElement, { savedScrollTop: number; expiresAt: number }> = new WeakMap();
 
 /**
  * Wrap a `previewMode.rerender(true)` call so the user's scroll
@@ -724,7 +811,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
   private reactRoot: ReactDOM.Root | null = null;
   private appliedCssClasses: string[] = [];
 
-    constructor(
+  constructor(
     el: HTMLElement,
     source: string,
     component: (props: Record<string, unknown>) => ReactNode,
@@ -734,7 +821,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
     entityTypeOrEmpty: string,
     blockNameOrEmpty: string,
     systemCtx: { skills: unknown[]; attributes: unknown[]; conditions: unknown[]; traits?: unknown[] },
-    sectionInfo: MarkdownSectionInformation | null,
+    sectionInfo: MarkdownSectionInformation | null
   ) {
     super(el);
     this.source = source;
@@ -818,38 +905,32 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
                 typeof valueOrUpdater === "function"
                   ? (valueOrUpdater as (p: unknown) => unknown)(prev[key])
                   : valueOrUpdater;
-              patchYamlBlock(
-                app,
-                sourcePath,
-                entityType,
-                blockName,
-                key,
-                newValue,
-                sectionInfo ?? undefined,
-              ).then(async () => {
-                // Kick a full preview re-render so sibling blocks in
-                // this note re-read the patched YAML. Without this only
-                // the calling block updates (via its own setSelf); e.g.
-                // the features/traits view keeps rendering a stale
-                // `blocks.inventory` snapshot until plugin reload.
-                refreshFilePreview(app, sourcePath);
-                // If the patched file belongs to a system bundle (it
-                // sits under a folder mapping — e.g. an `rpg item.container`
-                // file that other character sheets reference via
-                // `lookup.$containers`), also invalidate that system and
-                // refresh its consumers. Without this a toggle on
-                // Kowyn's Bag's own page would update the bag preview
-                // but leave every open carrier sheet showing the stale
-                // `for_sale` state until plugin reload. Mirrors
-                // `patchForeignBlock` so local + foreign UI patches share
-                // the same propagation contract.
-                const reg = SystemRegistry.getInstance();
-                const affectedSystem = reg.findSystemFolderForFile(sourcePath);
-                if (affectedSystem) {
-                  reg.invalidateSystem(affectedSystem);
-                  await refreshSystemConsumers(app, affectedSystem);
-                }
-              }).catch((err) => console.error("RPG UI: yaml patch failed:", err));
+              patchYamlBlock(app, sourcePath, entityType, blockName, key, newValue, sectionInfo ?? undefined)
+                .then(async () => {
+                  // Kick a full preview re-render so sibling blocks in
+                  // this note re-read the patched YAML. Without this only
+                  // the calling block updates (via its own setSelf); e.g.
+                  // the features/traits view keeps rendering a stale
+                  // `blocks.inventory` snapshot until plugin reload.
+                  refreshFilePreview(app, sourcePath);
+                  // If the patched file belongs to a system bundle (it
+                  // sits under a folder mapping — e.g. an `rpg item.container`
+                  // file that other character sheets reference via
+                  // `lookup.$containers`), also invalidate that system and
+                  // refresh its consumers. Without this a toggle on
+                  // Kowyn's Bag's own page would update the bag preview
+                  // but leave every open carrier sheet showing the stale
+                  // `for_sale` state until plugin reload. Mirrors
+                  // `patchForeignBlock` so local + foreign UI patches share
+                  // the same propagation contract.
+                  const reg = SystemRegistry.getInstance();
+                  const affectedSystem = reg.findSystemFolderForFile(sourcePath);
+                  if (affectedSystem) {
+                    reg.invalidateSystem(affectedSystem);
+                    await refreshSystemConsumers(app, affectedSystem);
+                  }
+                })
+                .catch((err) => console.error("RPG UI: yaml patch failed:", err));
               return { ...prev, [key]: newValue };
             });
           };
@@ -874,7 +955,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
             entity: string,
             block: string,
             key: string,
-            value: unknown,
+            value: unknown
           ): Promise<void> => {
             try {
               await patchYamlBlock(app, path, entity, block, key, value);
@@ -938,7 +1019,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
             }
           }
           // Composite-sheet aliasing: when an author bundles header /
-          // health / stats / senses / skills / attacks / proficiencies
+          // health / stats / senses / skills / rolls / proficiencies
           // into a single `rpg character.sheet` fence, the sub-block
           // entries above land as empty placeholders. Cross-block reads
           // (`blocks.header.classes`, `blocks.stats.STR`, expressions like
@@ -948,7 +1029,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           // path resolves to the real data.
           if (blockNames.includes("sheet") && authored.has("sheet")) {
             const sheetBody = blocksObj["sheet"];
-            for (const bn of ["header", "health", "stats", "senses", "skills", "attacks", "proficiencies"]) {
+            for (const bn of ["header", "health", "stats", "senses", "skills", "rolls", "proficiencies"]) {
               if (blockNames.includes(bn) && !authored.has(bn)) {
                 blocksObj[bn] = sheetBody;
               }

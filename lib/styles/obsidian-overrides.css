@@ -143,31 +143,19 @@
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 
-/* Source / enabler attribution label on a feature or spell entry. Obsidian's
- * default `a.internal-link` rule paints these with the theme's accent color
- * and underline — which makes the features and spells sources render very
- * differently even though the two classes already declare matching styles.
- * Pin both to the same muted-italic treatment inside the rendered markdown
- * column so the accent doesn't win on specificity. */
+/* Source / enabler attribution labels: anchors pointing at the
+ * compendium page that granted a feature / spell. Appearance (color,
+ * text-decoration, font-style, font-weight) is owned by the Folder
+ * Link Styles plugin setting; layout-adjacent properties (font-size,
+ * letter-spacing, text-transform) stay here so the attribution line
+ * keeps its visual rhythm relative to the surrounding row. */
 .markdown-rendered a.rpg-feature-bucket-source,
 .markdown-source-view.mod-cm6 a.rpg-feature-bucket-source,
 .markdown-rendered a.rpg-spell-entry-enabler,
 .markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler {
-  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
-  text-decoration: none;
-  font-style: italic;
   font-size: 0.85em;
-  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
-}
-
-.markdown-rendered a.rpg-feature-bucket-source:hover,
-.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source:hover,
-.markdown-rendered a.rpg-spell-entry-enabler:hover,
-.markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler:hover {
-  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
-  text-decoration: underline;
 }
 
 /* Obsidian's default `button` styling fills with `--interactive-normal`
@@ -246,12 +234,12 @@
 
 /* Attacks block — Obsidian's default `.markdown-rendered table` rules
  * ship a top + bottom margin so rendered tables breathe inside prose.
- * The attacks block owns its own framing (section borders + thead
+ * The rolls block owns its own framing (section borders + thead
  * band), so strip that table-level margin when the table is our
- * `.rpg-attacks__table` (scoped via `:has` on the section so we don't
+ * `.rpg-rolls__table` (scoped via `:has` on the section so we don't
  * touch any other user-authored table that happens to be nearby). */
-.markdown-rendered section[aria-details="Favorite Attacks"] table.rpg-attacks__table,
-.markdown-source-view.mod-cm6 section[aria-details="Favorite Attacks"] table.rpg-attacks__table {
+.markdown-rendered section[aria-details="Character Rolls"] table.rpg-rolls__table,
+.markdown-source-view.mod-cm6 section[aria-details="Character Rolls"] table.rpg-rolls__table {
   margin: 0;
 }
 
@@ -260,7 +248,7 @@
  * `el-*` wrapper in the multi-block layout. In the sheet layout there
  * is no wrapper between siblings, so the negative margin pulls each
  * section UP over the one above — overlapping rows and hiding the
- * last tbody row of the attacks section. Resetting the block margins
+ * last tbody row of the rolls section. Resetting the block margins
  * inside the sheet lets each section sit in natural document flow and
  * keeps each section's own borders visible. */
 .rpg-character-sheet > section {
@@ -270,7 +258,7 @@
 
 /* Restore skills' bottom border + proficiencies' top border in the
  * sheet layout. The multi-block case uses `:has(+)` / adjacent-sibling
- * rules in `attacks-row.css` to MERGE those borders away — but in the
+ * rules in `rolls-row.css` to MERGE those borders away — but in the
  * sheet layout all three sections are direct siblings of
  * `.rpg-character-sheet`, so those merge rules fire unintentionally
  * and strip the borders. Restore them scoped to the sheet's wrapper
@@ -279,13 +267,13 @@
  * then wins on source order. The previous form
  * (`.rpg-character-sheet > section[aria-details="..."]`) has
  * specificity (0,2,1) and silently loses to the merge. */
-.rpg-character-sheet > section[aria-details="Character Skills"]:has(+ section[aria-details="Favorite Attacks"]) {
+.rpg-character-sheet > section[aria-details="Character Skills"]:has(+ section[aria-details="Character Rolls"]) {
   border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-bottom-left-radius: 4px;
   border-bottom-right-radius: 4px;
 }
 
-.rpg-character-sheet > section[aria-details="Favorite Attacks"] + section[aria-details="Character Proficiencies"] {
+.rpg-character-sheet > section[aria-details="Character Rolls"] + section[aria-details="Character Proficiencies"] {
   border-top: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
@@ -295,7 +283,7 @@
  * against its preceding Obsidian `el-*` wrapper. In the sheet layout
  * there is no wrapper between siblings, so the negative margin pulls
  * each section UP over the one above — overlapping rows and hiding
- * the last tbody row of the attacks section. Resetting the block
+ * the last tbody row of the rolls section. Resetting the block
  * margins inside the sheet lets each section sit in natural
  * document flow. Class-scoped, so the multi-block layout keeps its
  * own docking behaviour. */

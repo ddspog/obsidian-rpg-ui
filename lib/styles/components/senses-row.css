@@ -157,19 +157,12 @@ section[aria-details="Character Senses"] > dl > dd > [aria-details="Sense Range"
   opacity: 0.7;
 }
 
-/* Sense entries may carry an Obsidian wikilink (e.g. `[[Darkvision]] 60`)
- * so the player can jump to the sense's rules page. Paint the anchor with
- * the same muted text the plain-span fallback uses, and lift the text-
- * decoration on hover only — otherwise Obsidian's global `a.internal-link`
- * rule renders the sense name in the theme's accent color. */
+/* Sense entries may carry an Obsidian wikilink (e.g. `[[Darkvision]] 60`) so
+ * the player can jump to the sense's rules page. Appearance (color / text-
+ * decoration) owned by the Folder Link Styles plugin setting; only layout-
+ * adjacent properties like `text-transform` belong here. */
 section[aria-details="Character Senses"] > dl > dd > a.internal-link {
-  color: inherit;
-  text-decoration: none;
   text-transform: inherit;
-}
-
-section[aria-details="Character Senses"] > dl > dd > a.internal-link:hover {
-  text-decoration: underline;
 }
 
 /* ── Responsive: stack senses below passives ────────────────────────────── */

@@ -64,7 +64,7 @@
 @import "./components/tag-heading.css";
 @import "./components/senses-row.css";
 @import "./components/skills-row.css";
-@import "./components/attacks-row.css";
+@import "./components/rolls-row.css";
 @import "./components/proficiencies-row.css";
 @import "./components/character-description.css";
 @import "./components/feature-card.css";
@@ -77,6 +77,7 @@
 @import "./components/dice-tray.css";
 @import "./components/dice-roll-modal.css";
 @import "./components/references.css";
+@import "./components/folder-link-styles.css";
 @import "./file-suggest.css";
 
 /* Obsidian-only layout overrides — keep last so it can override component

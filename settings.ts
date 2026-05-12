@@ -8,6 +8,27 @@ export interface SystemMapping {
   systemFolderPath: string;
 }
 
+/**
+ * Per-folder link style. A wikilink whose resolved target sits under
+ * any of `folderPaths` (recursive prefix match) gets tagged with the
+ * generated CSS class `rpg-folder-link--<id>` so the generated
+ * stylesheet can restyle it. `id` is assigned once at entry creation
+ * and stays stable so adding or removing paths doesn't invalidate the
+ * emitted class name (and any downstream caches keyed on it).
+ */
+export interface FolderLinkStyle {
+  id: string;
+  folderPaths: string[];
+  label?: string;
+  color?: string;
+  background?: string;
+  borderStyle?: "none" | "solid" | "dashed" | "dotted" | "underline";
+  borderColor?: string;
+  iconPrefix?: string;
+  bold?: boolean;
+  italic?: boolean;
+}
+
 export interface DndUIToolkitSettings {
   statePath: string;
   selectedTheme: string;
@@ -15,6 +36,13 @@ export interface DndUIToolkitSettings {
   // System mappings: folder path → system definition folder path
   // Empty folder path ("") represents the root/default for the entire vault
   systemMappings: SystemMapping[];
+
+  /** Per-folder wikilink styling. Resolved link targets whose path
+   *  starts with any entry in `folderPaths` get tagged with
+   *  `rpg-folder-link--<id>`; the generated stylesheet drives the
+   *  actual appearance. Longest prefix wins across ALL configured
+   *  paths (not per-entry) when multiple entries or paths match. */
+  folderLinkStyles: FolderLinkStyle[];
 
   /** Total time window (ms) the scroll-restore loop keeps re-applying
    *  the saved scroll position after a YAML-driven block rerender.
@@ -54,6 +82,7 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   statePath: ".dnd-ui-toolkit-state.json",
   selectedTheme: "default",
   systemMappings: [],
+  folderLinkStyles: [],
   scrollRestoreDelayMs: 600,
 
   ...THEMES.default.colors,

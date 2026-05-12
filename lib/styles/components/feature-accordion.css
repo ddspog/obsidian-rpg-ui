@@ -226,14 +226,9 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   transform: translateY(-1px);
 }
 
-.rpg-feature-bucket-trivials a.internal-link {
-  color: light-dark(#2ea043, #7ad188);
-  text-decoration: none;
-}
-
-.rpg-feature-bucket-trivials a.internal-link:hover {
-  text-decoration: underline;
-}
+/* Link styling (color / text-decoration) for folder-scoped links is owned by
+ * the Folder Link Styles plugin setting; the bucket-trivials anchor picks up
+ * whatever appearance the user configured for the target file's folder. */
 
 /* ── Bucket content ─────────────────────────────────────────────────────── */
 
@@ -387,20 +382,14 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   color: light-dark(rgba(26, 18, 8, 0.65), rgba(227, 220, 206, 0.65));
 }
 
-/* Source displays as an internal-link to the source compendium doc. */
+/* Source displays as an internal-link to the source compendium doc.
+ * Appearance (color, font-weight, font-style, text-decoration) owned
+ * by the Folder Link Styles plugin setting; only layout-adjacent
+ * properties live here. */
 .rpg-feature-bucket-entry-meta .rpg-feature-bucket-source {
   text-transform: none;
   letter-spacing: 0;
   font-size: 0.85em;
-  font-weight: 500;
-  font-style: italic;
-  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
-  text-decoration: none;
-}
-
-.rpg-feature-bucket-entry-meta .rpg-feature-bucket-source:hover {
-  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
-  text-decoration: underline;
 }
 
 /* Card image slot — hidden for now; the grid drops its column width
@@ -471,14 +460,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-feature-traits-source a.internal-link:not(.rpg-feature-traits-source-link) {
-  color: light-dark(#2ea043, #7ad188);
-  text-decoration: none;
-}
-
-.rpg-feature-traits-source a.internal-link:not(.rpg-feature-traits-source-link):hover {
-  text-decoration: underline;
-}
+/* Traits-source inner links: appearance owned by Folder Link Styles. */
 
 .rpg-feature-traits-leveled {
   margin: 4px 0 0;
@@ -645,16 +627,7 @@ h3.rpg-feature-decisions-group-label {
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 
-.rpg-feature-pending-group-label a.internal-link,
-.rpg-feature-decisions-group-label a.internal-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.rpg-feature-pending-group-label a.internal-link:hover,
-.rpg-feature-decisions-group-label a.internal-link:hover {
-  text-decoration: underline;
-}
+/* Group-label links: appearance owned by Folder Link Styles. */
 
 /* Indent each pending row inside its source group so the hierarchy reads
  * at a glance — the source header sits flush left, rows sit nested. Matches
@@ -749,29 +722,15 @@ h3.rpg-feature-decisions-group-label {
   white-space: nowrap;
 }
 
-.rpg-feature-decisions-source-link {
-  font-weight: 700;
-  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
-  text-decoration: none;
-}
-
-.rpg-feature-decisions-source-link:hover {
-  text-decoration: underline;
-}
+/* Decisions-source-link / decisions-line internal links:
+ * appearance owned by Folder Link Styles. */
 
 .rpg-feature-decisions-line strong {
   font-weight: 700;
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-feature-decisions-line a.internal-link:not(.rpg-feature-decisions-source-link) {
-  color: light-dark(#2ea043, #7ad188);
-  text-decoration: none;
-}
-
-.rpg-feature-decisions-line a.internal-link:not(.rpg-feature-decisions-source-link):hover {
-  text-decoration: underline;
-}
+/* Decision-line internal links: appearance owned by Folder Link Styles. */
 
 /* Spells-block decisions pick a two-tier layout: source on its own line
  * (like TraitsSourceLine's header paragraph), then one category line
@@ -802,14 +761,7 @@ h3.rpg-feature-decisions-group-label {
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-feature-decisions-category-line a.internal-link {
-  color: light-dark(#2ea043, #7ad188);
-  text-decoration: none;
-}
-
-.rpg-feature-decisions-category-line a.internal-link:hover {
-  text-decoration: underline;
-}
+/* Category-line internal links: appearance owned by Folder Link Styles. */
 
 /* Italic "1st Circle:" marker that prefixes each circle sub-section
  * inside a Known / Prepared / Rituals category line. */

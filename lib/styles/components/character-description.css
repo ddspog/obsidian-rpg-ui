@@ -1,6 +1,6 @@
 /* ── Character Description (tabbed narrative block) ────────────────────────── */
 /*
- * Visual family: cousin of senses/skills/attacks/proficiencies — same
+ * Visual family: cousin of senses/skills/rolls/proficiencies — same
  * frosted-glass frame, same light-dark() palette, same .rpg-tag-heading
  * cut-corner ribbon language. The distinctive touch is a gold hairline
  * flourish in the top-left / bottom-right corners that marks this as the
@@ -443,9 +443,9 @@
   vertical-align: top;
 }
 
-/* ── Copy-prompt icon button (attacks-tip style) ──────────────────────── */
+/* ── Copy-prompt icon button (rolls-tip style) ──────────────────────── */
 /*
- * Matches `.rpg-attacks__icon` — small gold pill, cursor pointer, instant
+ * Matches `.rpg-rolls__icon` — small gold pill, cursor pointer, instant
  * CSS tooltip via [data-tip]. No text label; the SVG glyph + the tooltip
  * carry the meaning.
  */
@@ -492,7 +492,7 @@
   stroke-linejoin: round;
 }
 
-/* Instant CSS tooltip, same shape as the attacks-row icons. */
+/* Instant CSS tooltip, same shape as the rolls-row icons. */
 .rpg-description-copy-prompt[data-tip]::after {
   content: attr(data-tip);
   position: absolute;
@@ -611,13 +611,7 @@
   margin: 0;
 }
 
-/* Keep wikilinks inside the ribbon on-brand with the ribbon's foreground
- * instead of Obsidian's default accent, which fights the gold fill. */
-.rpg-description-story-ribbon a.internal-link {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 1px solid currentColor;
-}
+/* Ribbon wikilink appearance owned by Folder Link Styles. */
 
 /* Scrollable narrative — cap height so long backstories don't push the
  * highlights off-screen; panel itself is also scrollable, but this inner
@@ -657,17 +651,7 @@
   border-radius: 3px;
 }
 
-/* Internal-link accent inside the narrative — keep the text body colour but
- * lift decoration on hover so wikilinks are discoverable without screaming. */
-.rpg-description-story-scroll a.internal-link {
-  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
-  text-decoration: none;
-  border-bottom: 1px dashed currentColor;
-}
-
-.rpg-description-story-scroll a.internal-link:hover {
-  border-bottom-style: solid;
-}
+/* Narrative internal-link appearance owned by Folder Link Styles. */
 
 /* ── Highlights (TLDR list) ────────────────────────────────────────────── */
 /* No frame, no background — the list is bare dt/dd pairs aligned as a
@@ -931,10 +915,7 @@
   padding: 0;
 }
 
-.rpg-description-ribbon-name a.internal-link {
-  color: inherit;
-  text-decoration: none;
-}
+/* Ribbon-name internal-link appearance owned by Folder Link Styles. */
 
 .rpg-description-ribbon-role {
   font-size: 0.72em;
@@ -1309,11 +1290,7 @@
   color: #2a1f10 !important;
 }
 
-.rpg-description-motivation-card a.internal-link {
-  color: #4a3010;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
+/* Motivation-card internal-link appearance owned by Folder Link Styles. */
 
 @container (max-width: 720px) {
   .rpg-description-motivation {

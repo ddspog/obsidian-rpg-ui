@@ -1,18 +1,31 @@
 import * as React from "react";
-import { EntityBlock } from "rpg-ui-toolkit";
+import { EntityBlock, Markdown } from "rpg-ui-toolkit";
 import { SkillsProps } from "./skills.types";
 import { CharacterEntity } from "../../entities/character.types";
 import { SkillDetails } from "../../entities/character.common";
 import type { FeaturesBlockData } from "./features.types";
 
-type Attr = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+type Attr = "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
 
 type SkillName =
-  | "Acrobatics" | "Animal Handling" | "Arcana" | "Athletics"
-  | "Deception" | "History" | "Insight" | "Intimidation"
-  | "Investigation" | "Medicine" | "Nature" | "Perception"
-  | "Performance" | "Persuasion" | "Religion" | "Sleight of Hand"
-  | "Stealth" | "Survival";
+  | "Acrobatics"
+  | "Animal Handling"
+  | "Arcana"
+  | "Athletics"
+  | "Deception"
+  | "History"
+  | "Insight"
+  | "Intimidation"
+  | "Investigation"
+  | "Medicine"
+  | "Nature"
+  | "Perception"
+  | "Performance"
+  | "Persuasion"
+  | "Religion"
+  | "Sleight of Hand"
+  | "Stealth"
+  | "Survival";
 
 const SKILLS: { name: SkillName; attr: Attr }[] = [
   { name: "Acrobatics", attr: "DEX" },
@@ -44,12 +57,7 @@ function formatMod(n: number) {
 /** Strip a trait-value prefix (`+`, `[[…]]`, alias pipe) down to a bare
  *  skill name we can match against the canonical list. */
 function bareLabel(raw: string): string {
-  return raw
-    .replace(/^\+/, "")
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .split("|")[0]
-    .trim();
+  return raw.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
 }
 
 function ProfDot({ level }: { level: number }) {
@@ -88,22 +96,13 @@ function ProfDot({ level }: { level: number }) {
  *  modifier cell on the skill / save / initiative row. */
 function VantageBadge({ kind }: { kind: "adv" | "dis" }) {
   return (
-    <span
-      className="rpg-vantage-badge"
-      data-vantage={kind}
-      aria-label={kind === "adv" ? "Advantage" : "Disadvantage"}
-    >
+    <span className="rpg-vantage-badge" data-vantage={kind} aria-label={kind === "adv" ? "Advantage" : "Disadvantage"}>
       <sup>{kind === "adv" ? "A" : "D"}</sup>
     </span>
   );
 }
 
-export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  expressions,
-}) => {
+export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const inventory = (blocks as any).inventory;
@@ -188,7 +187,9 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
 
   return (
     <section aria-details="Character Skills">
-      <header className="rpg-tag-heading"><span>Skills</span></header>
+      <header className="rpg-tag-heading">
+        <span>Skills</span>
+      </header>
       <menu>
         {SKILLS.map(({ name, attr }) => {
           const skill = resolveSkill(name);
@@ -202,7 +203,9 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({
             <li key={name} data-vantage={vantage > 0 ? "adv" : vantage < 0 ? "dis" : undefined}>
               <ProfDot level={skill.proficiency} />
               <abbr aria-details="Skill Attribute">{attr}</abbr>
-              <span aria-details="Skill Name">{name}</span>
+              <span aria-details="Skill Name">
+                <Markdown source={`[[${name}]]`} className="rpg-inline-md" />
+              </span>
               <data value={mod}>
                 {vantage > 0 && <VantageBadge kind="adv" />}
                 {vantage < 0 && <VantageBadge kind="dis" />}

@@ -274,14 +274,9 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 
 .rpg-spell-entry-name {
-  font-weight: 700;
   font-size: 1em;
-  text-decoration: none;
-  color: light-dark(#1a1208, #e3dcce);
-}
-
-.rpg-spell-entry-name:hover {
-  text-decoration: underline;
+  /* Appearance (color / font-weight / text-decoration) owned by the
+   * Folder Link Styles plugin setting. */
 }
 
 .rpg-spell-entry-casting,
@@ -310,26 +305,17 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 
 /* Enabler column — the feature / class / subclass / talent that let
- * the character pick or receive this spell. Styled to match
- * `.rpg-feature-bucket-source`: muted plain text with italic, no
- * underline, so it reads as a secondary attribution rather than a
- * prominent accented link. */
+ * the character pick or receive this spell. Appearance (color, font-
+ * weight, font-style, text-decoration) owned by the Folder Link Styles
+ * plugin setting. Layout-adjacent properties stay here so the column
+ * keeps its grid placement and relative size. */
 .rpg-spell-entry-enabler {
   grid-column: 2;
   grid-row: 1;
   text-transform: none;
   letter-spacing: 0;
   font-size: 0.85em;
-  font-weight: 500;
-  font-style: italic;
-  color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
-  text-decoration: none;
   white-space: nowrap;
-}
-
-.rpg-spell-entry-enabler:hover {
-  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
-  text-decoration: underline;
 }
 
 /* Subline — range · components · duration on row 2 spanning both cols. */

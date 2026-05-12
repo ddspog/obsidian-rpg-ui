@@ -33,16 +33,7 @@
   color: light-dark(#5a5040, #a09880);
 }
 
-.rpg-spell-card .rpg-spell-stripline a.internal-link {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
-}
-
-.rpg-spell-card .rpg-spell-stripline a.internal-link:hover {
-  text-decoration-style: solid;
-}
+/* Stripline internal-link appearance owned by Folder Link Styles. */
 
 /* ── Stats list (Casting Time, Range, Components, Duration, Style) ─── */
 

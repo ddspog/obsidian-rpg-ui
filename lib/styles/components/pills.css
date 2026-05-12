@@ -28,12 +28,7 @@ span[aria-details="Link Pill"] {
 
   a.internal-link {
     display: inline-block;
-    text-decoration-line: none;
-    color: inherit;
-
-    &:hover {
-      text-decoration-line: none;
-    }
+    /* Appearance (color / text-decoration) owned by Folder Link Styles. */
   }
 }
 
@@ -61,14 +56,4 @@ small[aria-details="Pill Comment"] {
   opacity: 0.7;
 }
 
-/* Inline wikilinks rendered inside a comment via Obsidian's MarkdownRenderer
- * inherit prose blockstyles; reset margins so they sit cleanly beside the
- * pill text. */
-small[aria-details="Pill Comment"] a.internal-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-small[aria-details="Pill Comment"] a.internal-link:hover {
-  text-decoration: underline;
-}
+/* Pill-comment internal-link appearance owned by Folder Link Styles. */
