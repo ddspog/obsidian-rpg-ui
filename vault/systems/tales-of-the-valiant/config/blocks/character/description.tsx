@@ -392,17 +392,21 @@ function BackstoryTab({
 
   return (
     <div className="rpg-description-backstory">
-      {homelandRaw && (
-        <header className="rpg-description-backstory-meta">
-          <span className="rpg-description-meta-label">Homeland</span>
-          <span className="rpg-description-meta-value">
-            <Markdown source={homelandRaw} sourcePath={sourcePath} />
-          </span>
-        </header>
-      )}
-      {backstory?.text && (
-        <article className="rpg-description-story-scroll" aria-label="Character backstory">
-          <Markdown source={backstory.text} sourcePath={sourcePath} />
+      {(homelandRaw || backstory?.text) && (
+        <article className="rpg-description-story" aria-label="Character backstory">
+          {homelandRaw && (
+            <header className="rpg-tag-heading rpg-description-story-ribbon">
+              <span>
+                <small>Homeland</small>
+                <Markdown source={homelandRaw} sourcePath={sourcePath} />
+              </span>
+            </header>
+          )}
+          {backstory?.text && (
+            <div className="rpg-description-story-scroll">
+              <Markdown source={backstory.text} sourcePath={sourcePath} />
+            </div>
+          )}
         </article>
       )}
       <HighlightsList highlights={backstory?.highlights ?? []} sourcePath={sourcePath} />

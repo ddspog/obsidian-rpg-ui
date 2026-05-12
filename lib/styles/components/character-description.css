@@ -544,29 +544,91 @@
   gap: 14px;
 }
 
-.rpg-description-backstory-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
-  border-radius: 3px;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+/* The narrative is framed as one article with the homeland as a ribbon
+ * nested at its top-left — `.rpg-tag-heading` gives it the same
+ * cut-corner silhouette the rest of the sheet uses, and absolute
+ * positioning tucks it into the story box's border so it visually
+ * "anchors" the text rather than floating separately. */
+.rpg-description-story {
+  position: relative;
   margin: 0;
+  padding: 0;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(255, 251, 240, 0.6), rgba(0, 0, 0, 0.18));
+  overflow: hidden;
+}
+
+.rpg-description-story-ribbon {
+  --rpg-tag-cut: 12px;
+  filter: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  /* The panel backdrop (light-dark cream/black with a blur) inherits the
+   * block's transparency stack, so any ribbon painted with an alpha
+   * colour would let the story prose bleed through behind the Homeland
+   * text. Use a fully opaque brand gold with a high-contrast text tone
+   * so the label is always legible regardless of what line of the story
+   * is sitting underneath. */
+  color: light-dark(#2a1f10, #2a1f10);
+}
+
+.rpg-description-story-ribbon > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 18px 5px 12px;
+  background: light-dark(#d4a840, #d4a840);
+  /* Cut the bottom-right corner so the ribbon tapers off the way the
+   * sheet's .rpg-tag-heading shape does — keeps the visual family. */
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--rpg-tag-cut)) 100%,
+    0 100%
+  );
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.rpg-description-story-ribbon small {
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+/* Markdown may wrap the homeland value in a <p>; flatten so the wikilink
+ * stays inline next to the small label. */
+.rpg-description-story-ribbon p {
+  display: inline;
+  margin: 0;
+}
+
+/* Keep wikilinks inside the ribbon on-brand with the ribbon's foreground
+ * instead of Obsidian's default accent, which fights the gold fill. */
+.rpg-description-story-ribbon a.internal-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
 }
 
 /* Scrollable narrative — cap height so long backstories don't push the
  * highlights off-screen; panel itself is also scrollable, but this inner
- * cap gives long reads a dedicated reading pane with a faint paper tint. */
+ * cap gives long reads a dedicated reading pane. The ribbon overlaps so
+ * we pad the top of the scroll region to clear it. */
 .rpg-description-story-scroll {
   max-height: 26rem;
   overflow-y: auto;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  padding: 12px 16px;
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
-  border-radius: 4px;
-  background: light-dark(rgba(255, 251, 240, 0.6), rgba(0, 0, 0, 0.18));
+  padding: 36px 16px 12px;
   /* Serif body for the narrative — leans into the "read this" framing. */
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
   font-size: 0.95em;
@@ -608,16 +670,26 @@
 }
 
 /* ── Highlights (TLDR list) ────────────────────────────────────────────── */
+/* No frame, no background — the list is bare dt/dd pairs aligned as a
+ * grid. dt hugs its content on the left, dd takes the rest. Both align
+ * to the top so a single-line label stays flush with the first line of
+ * its (possibly multi-line) value. Markdown wraps each dd value in a
+ * <p>; zero that <p>'s margin so the grid row's line-height is the
+ * only thing setting vertical rhythm. */
 
 .rpg-description-highlights {
   display: grid;
   grid-template-columns: minmax(9rem, max-content) 1fr;
-  gap: 2px 16px;
+  gap: 4px 16px;
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
-  border-radius: 4px;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+  /* Visually line up the dl's content with the story-box prose above:
+   * `.rpg-description-story` contributes 0 outer margin, and its inner
+   * scroll div contributes 16px horizontal padding — so matching that
+   * 16px here means a dt here starts at the same x-coordinate as the
+   * first letter of a line inside the story box. */
+  padding: 0 16px;
+  border: none;
+  background: none;
 }
 
 .rpg-description-highlight {
@@ -625,31 +697,29 @@
 }
 
 .rpg-description-highlight > dt {
+  align-self: start;
   font-size: 0.78em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
   line-height: 1.45;
-  padding: 4px 0;
-  border-right: 1px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12));
-  padding-right: 12px;
+  padding: 0;
+  border: none;
 }
 
 .rpg-description-highlight > dd {
+  align-self: start;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
   font-size: 0.92em;
   line-height: 1.45;
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-description-highlight > dd > * {
-  display: inline;
-}
-
-.rpg-description-highlight + .rpg-description-highlight {
-  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+.rpg-description-highlight > dd p,
+.rpg-description-highlight > dd > div > p {
+  margin: 0;
 }
 
 /* Footnote variant — full-width muted italic row (used for the TLDR
@@ -662,8 +732,7 @@
 .rpg-description-highlight-footnote > dd {
   grid-column: 1 / -1;
   margin: 2px 0 0;
-  padding: 6px 0 2px;
-  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+  padding: 4px 0 0;
   text-align: center;
   font-style: italic;
   font-size: 0.88em;
