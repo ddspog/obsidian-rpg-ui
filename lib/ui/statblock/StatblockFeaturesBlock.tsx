@@ -23,9 +23,7 @@ function ActionSection({ title, items }: { title: string; items: ActionItem[] })
         return (
           <div key={itemName} className="rpg-ui-statblock-features-block__action">
             <strong className="rpg-ui-statblock-features-block__action-name">{itemName}.</strong>
-            {description && (
-              <span className="rpg-ui-statblock-features-block__action-description"> {description}</span>
-            )}
+            {description && <span className="rpg-ui-statblock-features-block__action-description"> {description}</span>}
           </div>
         );
       })}

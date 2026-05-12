@@ -17,96 +17,112 @@ import { parse as parseYaml } from "yaml";
 
 // ── Raw file imports ──────────────────────────────────────────────────────────
 
-const rawSkills = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/skills/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawSkills = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/skills/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawConditions = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/conditions/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawConditions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/conditions/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawClasses = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/classes/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawClasses = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/classes/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawSubclasses = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/subclasses/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawSubclasses = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/subclasses/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawLineages = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/lineages/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawLineages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/lineages/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawHeritages = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/heritages/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawHeritages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/heritages/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawBackgrounds = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/backgrounds/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawBackgrounds = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/backgrounds/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 // Universal "default actions" bundled with every character — loaded from
 // folders of standalone vault pages so they can be surfaced as trivial
 // entries (compact link lists) in each aspect bucket of the Features panel.
-const rawActions = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/actions/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawActions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/actions/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawReactions = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/reactions/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawReactions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/reactions/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawBonusActions = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/bonus-actions/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawBonusActions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/bonus-actions/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 // Talents live in category subfolders (magic / martial / technical). Use a
 // recursive glob so every talent `.md` surfaces under a single import, then
 // the character entity's `@folder/path` indexer registers each file under
 // both its parent subfolder (e.g. `compendium/talents/magic`) and the
 // umbrella `compendium/talents` key.
-const rawTalents = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/talents/**/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawTalents = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/talents/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 // Worldbuilding items used for `@folder/path` expansion inside `choose.options`
 // arrays on the character sheet — e.g. an Adherent background asking the user
 // to pick any tool from the `tools` folder as their proficiency.
-const rawTools = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/worldbuilding/tools/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawTools = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/tools/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawMartial = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/worldbuilding/martial/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawMartial = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/martial/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawSimple = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/worldbuilding/simple/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawSimple = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/simple/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawCantrips = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/worldbuilding/cantrips/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawCantrips = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/cantrips/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const rawLanguages = import.meta.glob(
-  "../../vault/systems/tales-of-the-valiant/compendium/languages/*.md",
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const rawLanguages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/languages/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 // ── Frontmatter parser ────────────────────────────────────────────────────────
 
@@ -170,15 +186,13 @@ export interface ConditionDefinition {
   [key: string]: unknown;
 }
 
-export const conditions: ConditionDefinition[] = Object.entries(rawConditions).map(
-  ([path, raw]) => {
-    const { body } = splitFrontmatter(raw);
-    return {
-      $name: basename(path),
-      $contents: body || undefined,
-    };
-  },
-);
+export const conditions: ConditionDefinition[] = Object.entries(rawConditions).map(([path, raw]) => {
+  const { body } = splitFrontmatter(raw);
+  return {
+    $name: basename(path),
+    $contents: body || undefined,
+  };
+});
 
 // ── Compendium docs (classes / subclasses / lineages / heritages / backgrounds) ──
 //
@@ -230,47 +244,18 @@ function buildWorldbuilding(rawMap: Record<string, string>, prefix: string): Wor
       ? trimmed.slice("systems/tales-of-the-valiant/".length)
       : `${prefix}/${name}.md`;
     const tagsRaw = (fm.tags ?? fm.tag ?? []) as unknown;
-    const $tags = Array.isArray(tagsRaw)
-      ? tagsRaw.filter(Boolean).map((t) => String(t).trim())
-      : [];
+    const $tags = Array.isArray(tagsRaw) ? tagsRaw.filter(Boolean).map((t) => String(t).trim()) : [];
     return { $name: name, $contents: body, $path, $tags, ...fm };
   });
 }
 
-export const tools: WorldbuildingRaw[] = buildWorldbuilding(
-  rawTools,
-  "worldbuilding/tools",
-);
-export const martial: WorldbuildingRaw[] = buildWorldbuilding(
-  rawMartial,
-  "worldbuilding/martial",
-);
-export const simple: WorldbuildingRaw[] = buildWorldbuilding(
-  rawSimple,
-  "worldbuilding/simple",
-);
-export const cantrips: WorldbuildingRaw[] = buildWorldbuilding(
-  rawCantrips,
-  "worldbuilding/cantrips",
-);
-export const languages: WorldbuildingRaw[] = buildWorldbuilding(
-  rawLanguages,
-  "compendium/languages",
-);
+export const tools: WorldbuildingRaw[] = buildWorldbuilding(rawTools, "worldbuilding/tools");
+export const martial: WorldbuildingRaw[] = buildWorldbuilding(rawMartial, "worldbuilding/martial");
+export const simple: WorldbuildingRaw[] = buildWorldbuilding(rawSimple, "worldbuilding/simple");
+export const cantrips: WorldbuildingRaw[] = buildWorldbuilding(rawCantrips, "worldbuilding/cantrips");
+export const languages: WorldbuildingRaw[] = buildWorldbuilding(rawLanguages, "compendium/languages");
 
-export const actions: WorldbuildingRaw[] = buildWorldbuilding(
-  rawActions,
-  "compendium/actions",
-);
-export const reactions: WorldbuildingRaw[] = buildWorldbuilding(
-  rawReactions,
-  "compendium/reactions",
-);
-export const bonusActions: WorldbuildingRaw[] = buildWorldbuilding(
-  rawBonusActions,
-  "compendium/bonus-actions",
-);
-export const talents: WorldbuildingRaw[] = buildWorldbuilding(
-  rawTalents,
-  "compendium/talents",
-);
+export const actions: WorldbuildingRaw[] = buildWorldbuilding(rawActions, "compendium/actions");
+export const reactions: WorldbuildingRaw[] = buildWorldbuilding(rawReactions, "compendium/reactions");
+export const bonusActions: WorldbuildingRaw[] = buildWorldbuilding(rawBonusActions, "compendium/bonus-actions");
+export const talents: WorldbuildingRaw[] = buildWorldbuilding(rawTalents, "compendium/talents");

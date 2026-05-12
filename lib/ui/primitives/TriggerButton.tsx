@@ -16,11 +16,7 @@ export interface TriggerButtonProps {
  * <TriggerButton onClick={() => trigger('short-rest')} icon="🍴">Short Rest</TriggerButton>
  * ```
  */
-export function TriggerButton({
-  onClick,
-  children,
-  "aria-label": ariaLabel,
-}: TriggerButtonProps): React.ReactElement {
+export function TriggerButton({ onClick, children, "aria-label": ariaLabel }: TriggerButtonProps): React.ReactElement {
   return (
     <button
       type="button"

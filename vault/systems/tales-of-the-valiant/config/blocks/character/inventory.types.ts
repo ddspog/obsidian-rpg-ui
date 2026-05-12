@@ -6,20 +6,9 @@
  * authors can move between the two without rewriting.
  */
 
-export type InventorySectionId =
-  | "weapons"
-  | "armor"
-  | "tools"
-  | "visible"
-  | "main_containers"
-  | "other_containers";
+export type InventorySectionId = "weapons" | "armor" | "tools" | "visible" | "main_containers" | "other_containers";
 
-export type InventoryEquipSlot =
-  | "main_hand"
-  | "off_hand"
-  | "armor"
-  | "shield"
-  | "attuned";
+export type InventoryEquipSlot = "main_hand" | "off_hand" | "armor" | "shield" | "attuned";
 
 export interface InventoryCurrency {
   pp?: number;

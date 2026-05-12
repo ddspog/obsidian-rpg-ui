@@ -35,8 +35,7 @@ export interface ParsedRef {
 /** Global-flag regex matching every `@[[File]].path` occurrence in a
  *  text block. Designed to be reused across the post-processor's text
  *  walk — compile once, reset per use. */
-export const REFERENCE_PATTERN =
-  /@\[\[([^\]\n]+)\]\]((?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)/g;
+export const REFERENCE_PATTERN = /@\[\[([^\]\n]+)\]\]((?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)/g;
 
 /**
  * Parse a single `@[[File]].path` string into a `ParsedRef`. Returns
@@ -45,9 +44,7 @@ export const REFERENCE_PATTERN =
  * null path.
  */
 export function parseReference(source: string): ParsedRef | null {
-  const re = new RegExp(
-    `^${REFERENCE_PATTERN.source}$`,
-  );
+  const re = new RegExp(`^${REFERENCE_PATTERN.source}$`);
   const m = source.match(re);
   if (!m) return null;
   return {

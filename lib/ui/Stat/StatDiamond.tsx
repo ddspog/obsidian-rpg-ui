@@ -19,17 +19,17 @@ export function StatDiamond({ value, label, format = "value", size = "sm", vanta
   const absValue = Math.abs(value);
   const prefix = format === "bonus" ? (value >= 0 ? "+" : "\u2212") : null;
   const suffix = format === "unit" ? "ft." : null;
-  const displayText = format === "bonus"
-    ? (value >= 0 ? `+${value}` : String(value))
-    : format === "unit" ? `${value} ft.` : String(value);
+  const displayText =
+    format === "bonus"
+      ? value >= 0
+        ? `+${value}`
+        : String(value)
+      : format === "unit"
+        ? `${value} ft.`
+        : String(value);
 
   return (
-    <figure
-      aria-details="Stat Diamond"
-      data-size={size}
-      data-vantage={vantage}
-      aria-label={`${label}: ${displayText}`}
-    >
+    <figure aria-details="Stat Diamond" data-size={size} data-vantage={vantage} aria-label={`${label}: ${displayText}`}>
       <output aria-details="Stat Value">
         {prefix && <span aria-details="Stat Extra">{prefix}</span>}
         {format === "bonus" ? absValue : value}

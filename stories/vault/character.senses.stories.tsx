@@ -42,16 +42,16 @@ const meta: Meta<SensesArgs> = {
     }),
   ],
   argTypes: {
-    wisdom:             { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
-    intelligence:       { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
-    strength:           { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
-    dexterity:          { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
-    constitution:       { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Constitution" },
-    charisma:           { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
-    proficiency_bonus:  { control: { type: "number" }, name: "Proficiency Bonus" },
-    level:              { control: { type: "number" }, name: "Level" },
-    perception_prof:    { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Perception Prof." },
-    insight_prof:       { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Insight Prof." },
+    wisdom: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
+    intelligence: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
+    strength: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
+    dexterity: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
+    constitution: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Constitution" },
+    charisma: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
+    proficiency_bonus: { control: { type: "number" }, name: "Proficiency Bonus" },
+    level: { control: { type: "number" }, name: "Level" },
+    perception_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Perception Prof." },
+    insight_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Insight Prof." },
     investigation_prof: { control: { type: "range", min: 0, max: 2, step: 1 }, name: "Investigation Prof." },
   },
 };
@@ -141,15 +141,13 @@ export const Human: Story = {
 export const Elf: Story = {
   name: "Elf (darkvision 60 ft)",
   args: { ...baseArgs, wisdom: 14, perception_prof: 1 },
-  render: (args, { loaded }) =>
-    renderSenses(args, loaded.system, [{ type: "darkvision", range: 60 }]),
+  render: (args, { loaded }) => renderSenses(args, loaded.system, [{ type: "darkvision", range: 60 }]),
 };
 
 export const Drow: Story = {
   name: "Drow (superior darkvision 120 ft)",
   args: { ...baseArgs, wisdom: 12, charisma: 16, perception_prof: 1 },
-  render: (args, { loaded }) =>
-    renderSenses(args, loaded.system, [{ type: "darkvision", range: 120 }]),
+  render: (args, { loaded }) => renderSenses(args, loaded.system, [{ type: "darkvision", range: 120 }]),
 };
 
 export const BeastMaster: Story = {

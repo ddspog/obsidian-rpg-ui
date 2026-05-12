@@ -10,7 +10,7 @@ const progression = parseTableBlock(
 |---|---|---|
 | 1 | +2 | 3 |
 | 2 | +2 | 3 |
-| 3 | +2 | 4 |`,
+| 3 | +2 | 4 |`
 );
 (progression as TableDef).source = "Cleric";
 
@@ -21,7 +21,7 @@ const wildSurge = parseTableBlock(
 |---|---|
 | 1 | Fireball |
 | 2 | Polymorph |
-| 3 | Heal |`,
+| 3 | Heal |`
 );
 (wildSurge as TableDef).source = "Sorcerer";
 
@@ -92,9 +92,9 @@ describe("substituteExpressions: random", () => {
 
   it("different seeds produce (at least sometimes) different picks", () => {
     const seeds = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
-    const picks = new Set(seeds.map((s) =>
-      substituteExpressions(`{{ random "wild-surge" col="effect" seed="${s}" }}`, ctx),
-    ));
+    const picks = new Set(
+      seeds.map((s) => substituteExpressions(`{{ random "wild-surge" col="effect" seed="${s}" }}`, ctx))
+    );
     expect(picks.size).toBeGreaterThan(1);
   });
 });

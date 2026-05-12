@@ -28,7 +28,7 @@ export function DiceTray({ dice, onSpend }: DiceTrayProps) {
               <span aria-hidden="true">{type}</span>
             </button>
           );
-        }),
+        })
       )}
       {openDie && (
         <DiceRollModal

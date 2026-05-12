@@ -30,12 +30,7 @@ function bareLabel(raw: unknown): string {
   } else {
     s = String(raw ?? "");
   }
-  return s
-    .replace(/^\+/, "")
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .split("|")[0]
-    .trim();
+  return s.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
 }
 
 /** Pull a trait list, normalise each entry, and dedupe by display label
@@ -56,19 +51,22 @@ function readTrait(traits: Record<string, string[]> | undefined, key: string): s
   return out;
 }
 
-function buildCategories(data: {
-  armor: string[];
-  weapons: string[];
-  tools: string[];
-  languages: string[];
-  resistance: string[];
-  immunity: string[];
-  vulnerability: string[];
-}, inUse: {
-  armor: Set<string>;
-  weapons: Set<string>;
-  tools: Set<string>;
-}): Category[] {
+function buildCategories(
+  data: {
+    armor: string[];
+    weapons: string[];
+    tools: string[];
+    languages: string[];
+    resistance: string[];
+    immunity: string[];
+    vulnerability: string[];
+  },
+  inUse: {
+    armor: Set<string>;
+    weapons: Set<string>;
+    tools: Set<string>;
+  }
+): Category[] {
   const cats: Category[] = [];
   if (data.weapons.length) cats.push({ label: "Weapons", items: data.weapons, linkItems: true, inUse: inUse.weapons });
   if (data.armor.length) cats.push({ label: "Armor", items: data.armor, linkItems: true, inUse: inUse.armor });
@@ -97,7 +95,7 @@ function buildCategories(data: {
 function resolveInUseProficiencies(
   blocks: unknown,
   lookup: CharacterEntity["lookup"] | undefined,
-  profs: { armor: string[]; weapons: string[]; tools: string[] },
+  profs: { armor: string[]; weapons: string[]; tools: string[] }
 ): { armor: Set<string>; weapons: Set<string>; tools: Set<string> } {
   const out = {
     armor: new Set<string>(),
@@ -122,12 +120,8 @@ function resolveInUseProficiencies(
     const fm = lib[name];
     if (!fm) continue;
     const type = typeof fm.type === "string" ? fm.type.toLowerCase() : "";
-    const armorBlock = fm.armor && typeof fm.armor === "object"
-      ? (fm.armor as { category?: unknown })
-      : undefined;
-    const armorCat = typeof armorBlock?.category === "string"
-      ? armorBlock.category.toLowerCase()
-      : undefined;
+    const armorBlock = fm.armor && typeof fm.armor === "object" ? (fm.armor as { category?: unknown }) : undefined;
+    const armorCat = typeof armorBlock?.category === "string" ? armorBlock.category.toLowerCase() : undefined;
 
     if (o.slot === "main_hand" || o.slot === "off_hand") {
       equippedWeaponTypes.push(type);
@@ -183,11 +177,7 @@ function wikiStem(raw: string): string {
   return inner.split("|")[0].split("/").pop()!.trim();
 }
 
-export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-}) => {
+export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = ({ self, blocks, lookup }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const inventory = (blocks as any).inventory;
@@ -237,15 +227,20 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
     vulnerability: merge(self.vulnerability, auto.vulnerability, additional.vulnerability),
   };
 
-  const cats = buildCategories(data, resolveInUseProficiencies(blocks, lookup, {
-    armor: data.armor,
-    weapons: data.weapons,
-    tools: data.tools,
-  }));
+  const cats = buildCategories(
+    data,
+    resolveInUseProficiencies(blocks, lookup, {
+      armor: data.armor,
+      weapons: data.weapons,
+      tools: data.tools,
+    })
+  );
 
   return (
     <section aria-details="Character Proficiencies">
-      <header className="rpg-tag-heading"><span>Proficiencies</span></header>
+      <header className="rpg-tag-heading">
+        <span>Proficiencies</span>
+      </header>
       <dl>
         {cats.map(({ label, items, linkItems, inUse }) => (
           <div key={label}>
@@ -256,7 +251,9 @@ export const proficiencies: EntityBlock<ProficienciesProps, CharacterEntity> = (
                 <dd key={i} data-in-use={active ? "true" : undefined}>
                   {linkItems ? <Pill.Link link={item}>{item}</Pill.Link> : item}
                   {active && (
-                    <sup className="rpg-prof-in-use" aria-label="In use">•</sup>
+                    <sup className="rpg-prof-in-use" aria-label="In use">
+                      •
+                    </sup>
                   )}
                 </dd>
               );

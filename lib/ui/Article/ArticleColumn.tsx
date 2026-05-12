@@ -7,5 +7,9 @@ export interface ArticleColumnProps {
 }
 
 export function ArticleColumn({ label, children, style }: ArticleColumnProps) {
-  return <article aria-details={`${label} Column`} style={style}>{children}</article>;
+  return (
+    <article aria-details={`${label} Column`} style={style}>
+      {children}
+    </article>
+  );
 }

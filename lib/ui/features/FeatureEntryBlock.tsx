@@ -18,9 +18,7 @@ export function FeatureEntryBlock(props: Record<string, unknown>) {
         {name && <span className="rpg-ui-feature-entry-block__name">{name}</span>}
         {source && <span className="rpg-ui-feature-entry-block__source">{source}</span>}
       </div>
-      {description && (
-        <div className="rpg-ui-feature-entry-block__description">{description}</div>
-      )}
+      {description && <div className="rpg-ui-feature-entry-block__description">{description}</div>}
     </div>
   );
 }

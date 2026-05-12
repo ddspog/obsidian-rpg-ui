@@ -26,7 +26,14 @@
  * from the YAML; frontmatter is ignored for display.
  */
 
-import { App, Component, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, parseYaml } from "obsidian";
+import {
+  App,
+  Component,
+  MarkdownPostProcessorContext,
+  MarkdownRenderChild,
+  MarkdownRenderer,
+  parseYaml,
+} from "obsidian";
 
 /** Strip wikilink delimiters / md extension / pipe alias from a ref. */
 function bareStem(raw: unknown): string {
@@ -112,7 +119,7 @@ export function renderSpellBlock(
   app: App,
   el: HTMLElement,
   source: string,
-  ctx: MarkdownPostProcessorContext,
+  ctx: MarkdownPostProcessorContext
 ): MarkdownRenderChild {
   el.empty();
   const cleanupComponents: Component[] = [];
@@ -242,7 +249,9 @@ export function renderSpellBlock(
   return new (class extends MarkdownRenderChild {
     onunload(): void {
       for (const c of cleanupComponents) {
-        try { c.unload(); } catch {}
+        try {
+          c.unload();
+        } catch {}
       }
     }
   })(el);

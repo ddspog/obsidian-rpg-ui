@@ -19,19 +19,11 @@ export function SpellInfoBlock(props: Record<string, unknown>) {
     <div className="rpg-ui-block rpg-ui-spell-info-block">
       {name && <div className="rpg-ui-block__title">{name}</div>}
       <div className="rpg-ui-spell-info-block__meta">
-        {levelLabel && (
-          <span className="rpg-ui-spell-info-block__level">{levelLabel}</span>
-        )}
-        {school && (
-          <span className="rpg-ui-spell-info-block__school">{school}</span>
-        )}
-        {componentsStr && (
-          <span className="rpg-ui-spell-info-block__components">{componentsStr}</span>
-        )}
+        {levelLabel && <span className="rpg-ui-spell-info-block__level">{levelLabel}</span>}
+        {school && <span className="rpg-ui-spell-info-block__school">{school}</span>}
+        {componentsStr && <span className="rpg-ui-spell-info-block__components">{componentsStr}</span>}
       </div>
-      {description && (
-        <div className="rpg-ui-spell-info-block__description">{description}</div>
-      )}
+      {description && <div className="rpg-ui-spell-info-block__description">{description}</div>}
     </div>
   );
 }

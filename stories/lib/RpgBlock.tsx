@@ -70,9 +70,7 @@ export function RpgBlock({
   const resolvedPath = filePath ?? "stories/sample-character.md";
   const resolvedBasename =
     filename ??
-    (filePath
-      ? filePath.split("/").pop()?.replace(/\.md$/, "") ?? "Sample Character"
-      : "Sample Character");
+    (filePath ? (filePath.split("/").pop()?.replace(/\.md$/, "") ?? "Sample Character") : "Sample Character");
   const app = (globalThis as any).app;
   if (app?.workspace) {
     app.workspace.getActiveFile = () => ({ path: resolvedPath, basename: resolvedBasename });
@@ -84,7 +82,11 @@ export function RpgBlock({
   if (!Comp) {
     return (
       <div style={{ color: "red", padding: "1rem", fontFamily: "monospace" }}>
-        Block <strong>{entity}.{block}</strong> not found in system.
+        Block{" "}
+        <strong>
+          {entity}.{block}
+        </strong>{" "}
+        not found in system.
         <br />
         Available: {Object.keys(entityDef?.blocks ?? {}).join(", ") || "(none)"}
       </div>
@@ -159,7 +161,16 @@ interface WrapperProps {
   onBlockSelfChange?: (blockName: string, next: Record<string, unknown>) => void;
 }
 
-function EntityBlockWrapper({ Comp, block, initialSelf, lookupObj, blocksObj, frontmatter, system, onBlockSelfChange }: WrapperProps) {
+function EntityBlockWrapper({
+  Comp,
+  block,
+  initialSelf,
+  lookupObj,
+  blocksObj,
+  frontmatter,
+  system,
+  onBlockSelfChange,
+}: WrapperProps) {
   const [self, setSelf] = React.useState<Record<string, unknown>>(initialSelf);
 
   // Bubble state changes up so the parent sheet story (or any composite

@@ -34,8 +34,6 @@ export function buildHeaderYaml(h: HeaderFixture): string {
 }
 
 /** Build a YAML string for the `features` block (choices only). */
-export function buildFeaturesYaml(
-  choices: Record<string, Record<string, string | string[]>> = {},
-): string {
+export function buildFeaturesYaml(choices: Record<string, Record<string, string | string[]>> = {}): string {
   return stringifyYaml({ choices });
 }

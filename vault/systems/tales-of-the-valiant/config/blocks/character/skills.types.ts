@@ -19,14 +19,29 @@ import { SkillDetails } from "../../entities/character.common";
  * system can't express. Entries are skill names matching the table (e.g.
  * `"Animal Handling"`).
  */
-export type SkillsProps = Partial<Record<
-  | "Acrobatics" | "Animal Handling" | "Arcana" | "Athletics"
-  | "Deception" | "History" | "Insight" | "Intimidation"
-  | "Investigation" | "Medicine" | "Nature" | "Perception"
-  | "Performance" | "Persuasion" | "Religion" | "Sleight of Hand"
-  | "Stealth" | "Survival",
-  SkillDetails
->> & {
+export type SkillsProps = Partial<
+  Record<
+    | "Acrobatics"
+    | "Animal Handling"
+    | "Arcana"
+    | "Athletics"
+    | "Deception"
+    | "History"
+    | "Insight"
+    | "Intimidation"
+    | "Investigation"
+    | "Medicine"
+    | "Nature"
+    | "Perception"
+    | "Performance"
+    | "Persuasion"
+    | "Religion"
+    | "Sleight of Hand"
+    | "Stealth"
+    | "Survival",
+    SkillDetails
+  >
+> & {
   additional?: {
     /** Skills promoted to proficient (level 1) on top of traits. */
     profs?: string[];

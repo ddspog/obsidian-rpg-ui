@@ -6,11 +6,7 @@ export type LinePillsProps = {
 
 export const Pills: React.FC<LinePillsProps> = ({ children }) => {
   // Render a semantic menu element targeted by CSS via its aria-label
-  return (
-    <menu aria-details="Line of Pills">
-      {children}
-    </menu>
-  );
+  return <menu aria-details="Line of Pills">{children}</menu>;
 };
 
 export type LineBigElementsProps = {
@@ -19,11 +15,7 @@ export type LineBigElementsProps = {
 
 export const BigElements: React.FC<LineBigElementsProps> = ({ children }) => {
   // Semantic menu targeted by aria-label for styling large action items
-  return (
-    <menu aria-details="Line of Big Elements">
-      {children}
-    </menu>
-  );
+  return <menu aria-details="Line of Big Elements">{children}</menu>;
 };
 
 export type LineButtonsProps = {
@@ -32,11 +24,7 @@ export type LineButtonsProps = {
 
 export const Buttons: React.FC<LineButtonsProps> = ({ children }) => {
   // Group small inline buttons; styled via menu[aria-label="Line Buttons"]
-  return (
-    <menu aria-details="Line of Buttons">
-      {children}
-    </menu>
-  );
+  return <menu aria-details="Line of Buttons">{children}</menu>;
 };
 
 export type LineControlProps = {
@@ -45,7 +33,11 @@ export type LineControlProps = {
 };
 
 export const Control: React.FC<LineControlProps> = ({ children, style }) => {
-  return <menu aria-details="Line Control" style={style}>{children}</menu>;
+  return (
+    <menu aria-details="Line Control" style={style}>
+      {children}
+    </menu>
+  );
 };
 
 export type LineStatsProps = {
@@ -54,7 +46,11 @@ export type LineStatsProps = {
 };
 
 export const Stats: React.FC<LineStatsProps> = ({ children, style }) => {
-  return <menu aria-details="Line Stats" style={style}>{children}</menu>;
+  return (
+    <menu aria-details="Line Stats" style={style}>
+      {children}
+    </menu>
+  );
 };
 
 export const Line = {

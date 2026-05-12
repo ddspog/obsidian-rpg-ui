@@ -35,11 +35,7 @@ function statCell(item: ResolvedItem, sectionId: SectionId | undefined): React.R
       <>
         {`${item.ammoCarried}${capPart} `}
         {target ? (
-          <a
-            className="internal-link"
-            href={target}
-            data-href={target}
-          >
+          <a className="internal-link" href={target} data-href={target}>
             {label}
           </a>
         ) : (
@@ -126,11 +122,7 @@ export function ItemRow({ item, sectionId, nested = false, onToggleEquip, onTogg
       <span className="rpg-inventory-block__item-qty">{item.qty}x</span>
       <span className="rpg-inventory-block__item-name">
         {item.link ? (
-          <a
-            className="internal-link"
-            href={item.linkTarget ?? item.label}
-            data-href={item.linkTarget ?? item.label}
-          >
+          <a className="internal-link" href={item.linkTarget ?? item.label} data-href={item.linkTarget ?? item.label}>
             {item.label}
           </a>
         ) : (
@@ -182,34 +174,21 @@ function renderInlineWikilinks(text: string, keyPrefix: string): React.ReactNode
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > cursor) {
-      parts.push(
-        <React.Fragment key={`${keyPrefix}-t-${cursor}`}>
-          {text.slice(cursor, m.index)}
-        </React.Fragment>,
-      );
+      parts.push(<React.Fragment key={`${keyPrefix}-t-${cursor}`}>{text.slice(cursor, m.index)}</React.Fragment>);
     }
     const inner = m[1];
     const pipe = inner.indexOf("|");
     const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
     const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
     parts.push(
-      <a
-        key={`${keyPrefix}-l-${m.index}`}
-        className="internal-link"
-        href={target}
-        data-href={target}
-      >
+      <a key={`${keyPrefix}-l-${m.index}`} className="internal-link" href={target} data-href={target}>
         {label}
-      </a>,
+      </a>
     );
     cursor = m.index + m[0].length;
   }
   if (cursor < text.length) {
-    parts.push(
-      <React.Fragment key={`${keyPrefix}-t-${cursor}-tail`}>
-        {text.slice(cursor)}
-      </React.Fragment>,
-    );
+    parts.push(<React.Fragment key={`${keyPrefix}-t-${cursor}-tail`}>{text.slice(cursor)}</React.Fragment>);
   }
   return <>{parts}</>;
 }

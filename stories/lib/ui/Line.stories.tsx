@@ -26,8 +26,12 @@ export const ButtonsRow: Story = {
   render: () => (
     <div style={{ padding: "1rem" }}>
       <Line.Buttons>
-        <button type="button" style={{ color: "#e3dcce" }}>Short Rest</button>
-        <button type="button" style={{ color: "#e3dcce" }}>Long Rest</button>
+        <button type="button" style={{ color: "#e3dcce" }}>
+          Short Rest
+        </button>
+        <button type="button" style={{ color: "#e3dcce" }}>
+          Long Rest
+        </button>
       </Line.Buttons>
     </div>
   ),

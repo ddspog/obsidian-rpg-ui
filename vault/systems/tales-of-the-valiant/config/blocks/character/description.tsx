@@ -19,10 +19,7 @@ import type {
 /** Same shape as `usePersistentOpen` in features.tsx, but for a numeric tab
  *  index. Falls through silently when localStorage is unavailable (private
  *  browsing, Storybook harness variants, …) so the component still renders. */
-function usePersistentTab(
-  key: string,
-  defaultIndex: number,
-): [number, (next: number) => void] {
+function usePersistentTab(key: string, defaultIndex: number): [number, (next: number) => void] {
   const storageKey = `rpg-ui:tab:${key}`;
   const [index, setIndex] = React.useState<number>(() => {
     try {
@@ -44,16 +41,18 @@ function usePersistentTab(
         // ignore
       }
     },
-    [storageKey],
+    [storageKey]
   );
   return [index, update];
 }
 
 function useNoteKey(): string {
   return React.useMemo(() => {
-    const app = (globalThis as unknown as {
-      app?: { workspace?: { getActiveFile?: () => { path?: string } | null } };
-    }).app;
+    const app = (
+      globalThis as unknown as {
+        app?: { workspace?: { getActiveFile?: () => { path?: string } | null } };
+      }
+    ).app;
     return app?.workspace?.getActiveFile?.()?.path ?? "default";
   }, []);
 }
@@ -230,9 +229,7 @@ function SidePropsGrid({ rows }: { rows: SidePropRow[] }) {
   // match. Shorter rows get padded with empty cells so the grid stays
   // rectangular.
   const filtered = rows
-    .map((row) =>
-      Object.entries(row).filter(([, v]) => v != null && v !== ""),
-    )
+    .map((row) => Object.entries(row).filter(([, v]) => v != null && v !== ""))
     .filter((entries) => entries.length > 0);
   if (filtered.length === 0) return null;
   const maxCols = Math.max(...filtered.map((r) => r.length));
@@ -245,7 +242,9 @@ function SidePropsGrid({ rows }: { rows: SidePropRow[] }) {
             const keyRow = (
               <tr key={`k-${i}`} className="rpg-description-sideprops-keys">
                 {entries.map(([k]) => (
-                  <th key={k} scope="col">{upperLabel(k)}</th>
+                  <th key={k} scope="col">
+                    {upperLabel(k)}
+                  </th>
                 ))}
                 {Array.from({ length: pad }, (_, j) => (
                   <th key={`pad-k-${j}`} aria-hidden="true" />
@@ -270,20 +269,11 @@ function SidePropsGrid({ rows }: { rows: SidePropRow[] }) {
   );
 }
 
-function AppearanceTab({
-  appearance,
-  sourcePath,
-}: {
-  appearance?: AppearanceSection;
-  sourcePath: string;
-}) {
+function AppearanceTab({ appearance, sourcePath }: { appearance?: AppearanceSection; sourcePath: string }) {
   const prompt = React.useMemo(() => buildImagePrompt(appearance), [appearance]);
   const isEmpty =
     !appearance ||
-    (!appearance.body &&
-      !appearance.clothes &&
-      !appearance.art &&
-      (appearance.side_props ?? []).length === 0);
+    (!appearance.body && !appearance.clothes && !appearance.art && (appearance.side_props ?? []).length === 0);
 
   if (isEmpty) return <EmptyPanel hint="No appearance notes yet." />;
 
@@ -295,25 +285,24 @@ function AppearanceTab({
 
   return (
     <div className="rpg-description-appearance">
-      <figure
-        className="rpg-description-appearance-art"
-        data-fit={artFit}
-        style={artStyle}
-        aria-label="Character art"
-      >
+      <figure className="rpg-description-appearance-art" data-fit={artFit} style={artStyle} aria-label="Character art">
         <PortraitThumb src={artSrc} alt="Character art" />
       </figure>
       <div className="rpg-description-appearance-body">
         <SidePropsGrid rows={appearance?.side_props ?? []} />
         {appearance?.body && (
           <section aria-label="Body description">
-            <header className="rpg-tag-heading"><span>Body</span></header>
+            <header className="rpg-tag-heading">
+              <span>Body</span>
+            </header>
             <Markdown source={appearance.body} sourcePath={sourcePath} />
           </section>
         )}
         {appearance?.clothes && (
           <section aria-label="Clothes description">
-            <header className="rpg-tag-heading"><span>Attire</span></header>
+            <header className="rpg-tag-heading">
+              <span>Attire</span>
+            </header>
             <Markdown source={appearance.clothes} sourcePath={sourcePath} />
           </section>
         )}
@@ -340,23 +329,14 @@ function AppearanceTab({
 
 // ─── Backstory ───────────────────────────────────────────────────────────────
 
-function HighlightsList({
-  highlights,
-  sourcePath,
-}: {
-  highlights: BackstoryHighlight[];
-  sourcePath: string;
-}) {
+function HighlightsList({ highlights, sourcePath }: { highlights: BackstoryHighlight[]; sourcePath: string }) {
   if (highlights.length === 0) return null;
   return (
     <dl className="rpg-description-highlights" aria-label="Story highlights">
       {highlights.map((h, i) => {
         if (h.footnote) {
           return (
-            <div
-              key={i}
-              className="rpg-description-highlight rpg-description-highlight-footnote"
-            >
+            <div key={i} className="rpg-description-highlight rpg-description-highlight-footnote">
               <dd>
                 <Markdown source={h.footnote} sourcePath={sourcePath} />
               </dd>
@@ -376,16 +356,8 @@ function HighlightsList({
   );
 }
 
-function BackstoryTab({
-  backstory,
-  sourcePath,
-}: {
-  backstory?: BackstorySection;
-  sourcePath: string;
-}) {
-  const isEmpty =
-    !backstory ||
-    (!backstory.text && !backstory.homeland && (backstory.highlights ?? []).length === 0);
+function BackstoryTab({ backstory, sourcePath }: { backstory?: BackstorySection; sourcePath: string }) {
+  const isEmpty = !backstory || (!backstory.text && !backstory.homeland && (backstory.highlights ?? []).length === 0);
   if (isEmpty) return <EmptyPanel hint="No backstory written yet." />;
 
   const homelandRaw = flattenToString(backstory?.homeland);
@@ -498,10 +470,7 @@ function RibbonRow({
   const label = visibleLabel(entry.name);
   return (
     <li className={`rpg-description-ribbon rpg-description-ribbon-${variant}`}>
-      <aside
-        className="rpg-description-ribbon-side"
-        data-has-portrait={hasPortrait || undefined}
-      >
+      <aside className="rpg-description-ribbon-side" data-has-portrait={hasPortrait || undefined}>
         {hasPortrait && (
           <figure className="rpg-description-ribbon-portrait">
             <RibbonPortrait src={portraitSrc} label={label} />
@@ -512,9 +481,7 @@ function RibbonRow({
             <Markdown source={entry.name} sourcePath={sourcePath} />
           </span>
         </header>
-        {entry.role && (
-          <small className="rpg-description-ribbon-role">{entry.role}</small>
-        )}
+        {entry.role && <small className="rpg-description-ribbon-role">{entry.role}</small>}
       </aside>
       {entry.text && (
         <div className="rpg-description-ribbon-body">
@@ -543,7 +510,9 @@ function AlliesEnemiesTab({
   return (
     <div className="rpg-description-side-by-side">
       <article className="rpg-description-column" data-kind="allies">
-        <header className="rpg-tag-heading"><span>Allies</span></header>
+        <header className="rpg-tag-heading">
+          <span>Allies</span>
+        </header>
         {allies.length === 0 ? (
           <p className="rpg-description-column-empty">None recorded.</p>
         ) : (
@@ -555,7 +524,9 @@ function AlliesEnemiesTab({
         )}
       </article>
       <article className="rpg-description-column" data-kind="enemies">
-        <header className="rpg-tag-heading"><span>Enemies</span></header>
+        <header className="rpg-tag-heading">
+          <span>Enemies</span>
+        </header>
         {enemies.length === 0 ? (
           <p className="rpg-description-column-empty">None recorded.</p>
         ) : (
@@ -572,13 +543,7 @@ function AlliesEnemiesTab({
 
 // ─── Organizations ───────────────────────────────────────────────────────────
 
-function OrganizationsTab({
-  organizations,
-  sourcePath,
-}: {
-  organizations: OrganizationEntry[];
-  sourcePath: string;
-}) {
+function OrganizationsTab({ organizations, sourcePath }: { organizations: OrganizationEntry[]; sourcePath: string }) {
   if (organizations.length === 0) {
     return <EmptyPanel hint="No organizations linked yet." />;
   }
@@ -608,33 +573,18 @@ function OrganizationsTab({
 
 // ─── Motivation ──────────────────────────────────────────────────────────────
 
-function MotivationTab({
-  cards,
-  sourcePath,
-}: {
-  cards: MotivationCard[];
-  sourcePath: string;
-}) {
+function MotivationTab({ cards, sourcePath }: { cards: MotivationCard[]; sourcePath: string }) {
   if (cards.length === 0) {
     return <EmptyPanel hint="No motivations written yet." />;
   }
   return (
-    <div
-      className="rpg-description-motivation"
-      data-count={cards.length}
-      aria-label="Character motivations"
-    >
+    <div className="rpg-description-motivation" data-count={cards.length} aria-label="Character motivations">
       {cards.map((card, i) => {
         const style: React.CSSProperties | undefined = card.color
           ? ({ ["--rpg-card-accent"]: card.color } as React.CSSProperties)
           : undefined;
         return (
-          <figure
-            key={i}
-            className="rpg-description-motivation-card"
-            style={style}
-            data-index={i}
-          >
+          <figure key={i} className="rpg-description-motivation-card" style={style} data-index={i}>
             <blockquote>
               <Markdown source={card.text} sourcePath={sourcePath} />
             </blockquote>
@@ -665,16 +615,16 @@ interface TabDef {
 
 // ─── Main block ──────────────────────────────────────────────────────────────
 
-export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = ({
-  self,
-}) => {
+export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = ({ self }) => {
   // Obsidian exposes the active note via `globalThis.app`. Storybook doesn't,
   // so `sourcePath` degrades to "" — Markdown still renders, just without
   // resolving relative wikilinks against a specific vault file.
   const sourcePath = React.useMemo(() => {
-    const app = (globalThis as unknown as {
-      app?: { workspace?: { getActiveFile?: () => { path?: string } | null } };
-    }).app;
+    const app = (
+      globalThis as unknown as {
+        app?: { workspace?: { getActiveFile?: () => { path?: string } | null } };
+      }
+    ).app;
     return app?.workspace?.getActiveFile?.()?.path ?? "";
   }, []);
 
@@ -685,53 +635,35 @@ export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = (
       {
         id: "appearance",
         label: "Appearance",
-        render: () => (
-          <AppearanceTab appearance={self.appearance} sourcePath={sourcePath} />
-        ),
+        render: () => <AppearanceTab appearance={self.appearance} sourcePath={sourcePath} />,
       },
       {
         id: "backstory",
         label: "Backstory",
-        render: () => (
-          <BackstoryTab backstory={self.backstory} sourcePath={sourcePath} />
-        ),
+        render: () => <BackstoryTab backstory={self.backstory} sourcePath={sourcePath} />,
       },
       {
         id: "allies-enemies",
         label: "Allies & Enemies",
         render: () => (
-          <AlliesEnemiesTab
-            allies={self.allies ?? []}
-            enemies={self.enemies ?? []}
-            sourcePath={sourcePath}
-          />
+          <AlliesEnemiesTab allies={self.allies ?? []} enemies={self.enemies ?? []} sourcePath={sourcePath} />
         ),
       },
       {
         id: "organizations",
         label: "Organizations",
-        render: () => (
-          <OrganizationsTab
-            organizations={self.organizations ?? []}
-            sourcePath={sourcePath}
-          />
-        ),
+        render: () => <OrganizationsTab organizations={self.organizations ?? []} sourcePath={sourcePath} />,
       },
       {
         id: "motivation",
         label: "Motivation",
-        render: () => (
-          <MotivationTab cards={self.motivation ?? []} sourcePath={sourcePath} />
-        ),
+        render: () => <MotivationTab cards={self.motivation ?? []} sourcePath={sourcePath} />,
       },
     ],
-    [self, sourcePath],
+    [self, sourcePath]
   );
 
-  const [activeIndex, setActiveIndex] = usePersistentTab(
-    `${noteKey}:description`,
-    0,
-  );
+  const [activeIndex, setActiveIndex] = usePersistentTab(`${noteKey}:description`, 0);
   const clampedIndex = Math.max(0, Math.min(activeIndex, tabs.length - 1));
   const active = tabs[clampedIndex];
 
@@ -750,7 +682,7 @@ export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = (
       }
       setActiveIndex(next);
     },
-    [clampedIndex, setActiveIndex],
+    [clampedIndex, setActiveIndex]
   );
 
   React.useEffect(() => {
@@ -780,10 +712,7 @@ export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = (
   };
 
   return (
-    <section
-      aria-details="Character Description"
-      className="rpg-description-block"
-    >
+    <section aria-details="Character Description" className="rpg-description-block">
       <menu
         role="tablist"
         aria-label="Character description tabs"

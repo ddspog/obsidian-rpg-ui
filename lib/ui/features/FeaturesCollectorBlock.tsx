@@ -29,13 +29,9 @@ export function FeaturesCollectorBlock(props: Record<string, unknown>) {
             const description = feature.$contents ?? feature.description;
             return (
               <div key={featureName} className="rpg-ui-features-collector-block__item">
-                {feature.type && (
-                  <span className="rpg-ui-features-collector-block__type">{feature.type}</span>
-                )}
+                {feature.type && <span className="rpg-ui-features-collector-block__type">{feature.type}</span>}
                 <span className="rpg-ui-features-collector-block__name">{featureName}</span>
-                {description && (
-                  <div className="rpg-ui-features-collector-block__description">{description}</div>
-                )}
+                {description && <div className="rpg-ui-features-collector-block__description">{description}</div>}
               </div>
             );
           })}

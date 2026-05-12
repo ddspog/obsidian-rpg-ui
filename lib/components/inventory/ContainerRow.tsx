@@ -28,11 +28,14 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
   //       weight → `<total wt> lb. [/ <cap> lb.]`
   const hasCapacity = item.meta.containerCapacity != null;
   const weightFixed = item.meta.weightFixed === true;
-  const statReadout = weightFixed && hasCapacity
-    ? `(${formatWeight(item.contentsWeightRaw)} lb. / ${formatWeight(item.meta.containerCapacity!)} lb.)`
-    : "";
+  const statReadout =
+    weightFixed && hasCapacity
+      ? `(${formatWeight(item.contentsWeightRaw)} lb. / ${formatWeight(item.meta.containerCapacity!)} lb.)`
+      : "";
   const weightReadout = weightFixed
-    ? (item.totalWeight > 0 ? `${formatWeight(item.totalWeight)} lb.` : "")
+    ? item.totalWeight > 0
+      ? `${formatWeight(item.totalWeight)} lb.`
+      : ""
     : item.totalWeight > 0
       ? hasCapacity
         ? `${formatWeight(item.totalWeight)} lb. / ${formatWeight(item.meta.containerCapacity!)} lb.`
@@ -106,12 +109,8 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
          *  weight-fixed containers; empty for ordinary ones. The slot
          *  is reserved either way so the 6-col grid lands at the same
          *  right edge as item rows. */}
-        <span className="rpg-inventory-block__item-stat">
-          {statReadout}
-        </span>
-        <span className="rpg-inventory-block__container-weight">
-          {weightReadout}
-        </span>
+        <span className="rpg-inventory-block__item-stat">{statReadout}</span>
+        <span className="rpg-inventory-block__container-weight">{weightReadout}</span>
         {/* Column 6 placeholder (equip action on item rows) — reserved
          *  so the container's right edge aligns with item rows. */}
         <span className="rpg-inventory-block__item-action" aria-hidden="true" />
@@ -121,12 +120,7 @@ export function ContainerRow({ item, onToggleForSale }: ContainerRowProps) {
           <div className="rpg-inventory-block__container-empty">(empty)</div>
         ) : (
           item.contents.map((child) => (
-            <ItemRow
-              key={child.id}
-              item={child}
-              nested
-              onToggleForSale={childToggleForSale}
-            />
+            <ItemRow key={child.id} item={child} nested onToggleForSale={childToggleForSale} />
           ))
         )}
       </div>

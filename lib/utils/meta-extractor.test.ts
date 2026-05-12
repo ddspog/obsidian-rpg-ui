@@ -181,7 +181,7 @@ describe("meta-extractor", () => {
     it("detects feature.level from `level` + `traits` without name/parent/kind", () => {
       const ctx = createReadingViewContext();
       const el = createMockElement();
-      const source = "level: 3\ntraits:\n  Spellcasting: \"2º Ritual\"\n";
+      const source = 'level: 3\ntraits:\n  Spellcasting: "2º Ritual"\n';
       expect(extractMeta(ctx, el, source)).toBe("feature.level");
     });
 
@@ -189,13 +189,11 @@ describe("meta-extractor", () => {
       const ctx = createReadingViewContext();
       const el = createMockElement();
       // tag marker
-      expect(
-        extractMeta(ctx, el, "name: Hit Points\ntag: hp\nlevel: 1\n"),
-      ).toBe("feature.details");
+      expect(extractMeta(ctx, el, "name: Hit Points\ntag: hp\nlevel: 1\n")).toBe("feature.details");
       // subtitle marker
-      expect(
-        extractMeta(ctx, el, 'name: Heroic Boon\nsubtitle: "10th-Level Cleric Feature"\npick: 1\n'),
-      ).toBe("feature.details");
+      expect(extractMeta(ctx, el, 'name: Heroic Boon\nsubtitle: "10th-Level Cleric Feature"\npick: 1\n')).toBe(
+        "feature.details"
+      );
     });
 
     it("should return null when no source provided and getSectionInfo is null", () => {

@@ -30,10 +30,7 @@ export function CurrencyRow({ currency, sellTotals }: CurrencyRowProps) {
   const hasSell = !!sellTotals && DENOMINATIONS.some(({ key }) => (sellTotals[key] ?? 0) > 0);
   return (
     <section className="rpg-inventory-block__currency" aria-label="Currency">
-      <div
-        className="rpg-inventory-block__currency-grid"
-        data-has-sell={hasSell ? "true" : undefined}
-      >
+      <div className="rpg-inventory-block__currency-grid" data-has-sell={hasSell ? "true" : undefined}>
         <span aria-hidden="true" />
         {DENOMINATIONS.map(({ key, label }) => {
           const value = currency[key] ?? 0;

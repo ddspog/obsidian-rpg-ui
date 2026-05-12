@@ -71,7 +71,12 @@ type Story = StoryObj<StatsArgs>;
 
 function renderStats(args: StatsArgs, system: RPGSystem) {
   return (
-    <div style={{ ["--rpg-stats-dot-padding" as string]: `${args.dot_padding}px`, ["--rpg-stats-dot-inset" as string]: `${args.dot_inset}px` }}>
+    <div
+      style={{
+        ["--rpg-stats-dot-padding" as string]: `${args.dot_padding}px`,
+        ["--rpg-stats-dot-inset" as string]: `${args.dot_inset}px`,
+      }}
+    >
       <RpgBlock
         system={system}
         entity="character"
@@ -166,11 +171,7 @@ export const Default: Story = {
 export const Mobile: Story = {
   name: "Mobile (3 per row)",
   args: Default.args,
-  render: (args, { loaded }) => (
-    <div style={{ maxWidth: 400 }}>
-      {renderStats(args, loaded.system)}
-    </div>
-  ),
+  render: (args, { loaded }) => <div style={{ maxWidth: 400 }}>{renderStats(args, loaded.system)}</div>,
 };
 
 // ─── Desktop viewport ────────────────────────────────────────────────────────────
@@ -178,9 +179,5 @@ export const Mobile: Story = {
 export const Desktop: Story = {
   name: "Desktop (6 per row)",
   args: Default.args,
-  render: (args, { loaded }) => (
-    <div style={{ maxWidth: 900 }}>
-      {renderStats(args, loaded.system)}
-    </div>
-  ),
+  render: (args, { loaded }) => <div style={{ maxWidth: 900 }}>{renderStats(args, loaded.system)}</div>,
 };

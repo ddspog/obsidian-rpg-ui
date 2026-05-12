@@ -1,6 +1,6 @@
 /**
  * Inventory domain
- * 
+ *
  * Handles parsing and logic for the inventory block.
  * Phase 2: Basic structure with minimal functionality.
  */

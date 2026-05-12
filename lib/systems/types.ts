@@ -23,7 +23,7 @@ type BaseEntityConfig<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > = {
   features?: Feature[];
   xpTable?: number[];
@@ -51,8 +51,14 @@ type BaseEntityConfig<
   blocks?: { [K in keyof TBlocks]: Component<TBlocks[K], TLookup, TFrontmatter, TBlocks, TExpressions> };
 };
 
-export type EntityConfig<TFrontmatter = Record<string, unknown>, TLookup = Record<string, unknown>, TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>, TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>> =
-  TFrontmatter extends never ? BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions> : BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions> & { frontmatter?: TFrontmatter };
+export type EntityConfig<
+  TFrontmatter = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+> = TFrontmatter extends never
+  ? BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions>
+  : BaseEntityConfig<TLookup, TFrontmatter, TBlocks, TExpressions> & { frontmatter?: TFrontmatter };
 
 /**
  * Props schema entry for a block — shorthand type string or a full definition
@@ -97,7 +103,7 @@ export interface ExpressionProps<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > {
   lookup: TLookup;
   frontmatter: TFrontmatter;
@@ -116,8 +122,7 @@ export interface ExpressionProps<
  * the dispatch overload returned by `useState`.
  */
 export type Setters<T> = {
-  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]:
-    (value: T[K] | ((prev: T[K]) => T[K])) => void;
+  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]: (value: T[K] | ((prev: T[K]) => T[K])) => void;
 };
 
 /**
@@ -133,7 +138,7 @@ export interface ComponentProps<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > {
   /** Block's own YAML props, augmented with a `setFoo` setter for every `foo` key. */
   self: TProps & Setters<TProps>;
@@ -165,7 +170,7 @@ export type Component<
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
   TBlocks = Record<string, unknown>,
-  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
 > = (props: ComponentProps<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>) => ReactNode;
 
 /** Caster type definition — describes a spellcasting progression style */
@@ -206,7 +211,6 @@ export interface SystemConfig {
    */
   events?: string[];
 }
-
 
 /** Attribute definition */
 export interface AttributeDefinition {
@@ -435,5 +439,3 @@ export interface ConditionDefinition {
   /** Custom properties for tables/cards */
   [key: string]: unknown;
 }
-
-

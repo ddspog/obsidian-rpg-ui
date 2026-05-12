@@ -42,19 +42,19 @@ const meta: Meta<HealthArgs> = {
     }),
   ],
   argTypes: {
-    current_hp:      { control: { type: "number" }, name: "Current HP" },
-    max_hp:          { control: { type: "number" }, name: "Max HP" },
-    temp_hp:         { control: { type: "number" }, name: "Temp HP" },
-    natural_ac:      { control: { type: "number" }, name: "Natural AC" },
-    speed_walk:      { control: { type: "number" }, name: "Speed Walk (ft)" },
-    speed_fly:       { control: { type: "number" }, name: "Speed Fly (ft)" },
-    hit_dice_max:    { control: { type: "number" }, name: "Hit Dice (max)" },
-    hit_dice_current:{ control: { type: "number" }, name: "Hit Dice (current)" },
+    current_hp: { control: { type: "number" }, name: "Current HP" },
+    max_hp: { control: { type: "number" }, name: "Max HP" },
+    temp_hp: { control: { type: "number" }, name: "Temp HP" },
+    natural_ac: { control: { type: "number" }, name: "Natural AC" },
+    speed_walk: { control: { type: "number" }, name: "Speed Walk (ft)" },
+    speed_fly: { control: { type: "number" }, name: "Speed Fly (ft)" },
+    hit_dice_max: { control: { type: "number" }, name: "Hit Dice (max)" },
+    hit_dice_current: { control: { type: "number" }, name: "Hit Dice (current)" },
     death_successes: { control: { type: "range", min: 0, max: 3, step: 1 }, name: "Death Save Successes" },
-    death_failures:  { control: { type: "range", min: 0, max: 3, step: 1 }, name: "Death Save Failures" },
-    exhaustion:      { control: { type: "range", min: 0, max: 6, step: 1 }, name: "Exhaustion" },
-    proficiency_bonus:{ control: { type: "number" }, name: "Proficiency Bonus" },
-    level:           { control: { type: "number" }, name: "Level" },
+    death_failures: { control: { type: "range", min: 0, max: 3, step: 1 }, name: "Death Save Failures" },
+    exhaustion: { control: { type: "range", min: 0, max: 6, step: 1 }, name: "Exhaustion" },
+    proficiency_bonus: { control: { type: "number" }, name: "Proficiency Bonus" },
+    level: { control: { type: "number" }, name: "Level" },
   },
 };
 export default meta;
@@ -65,7 +65,7 @@ type Story = StoryObj<HealthArgs>;
 
 function renderHealth(args: HealthArgs, system: RPGSystem, conditions: string[] = []) {
   const conditionsYaml = conditions.length
-    ? conditions.map(c => `  - name: ${c}\n    file: ${c}`).join("\n")
+    ? conditions.map((c) => `  - name: ${c}\n    file: ${c}`).join("\n")
     : "  []";
 
   const speedEntries = [`  - type: Walk\n    value: ${args.speed_walk}`];
@@ -159,8 +159,7 @@ export const Bloodied: Story = {
     proficiency_bonus: 3,
     level: 5,
   },
-  render: (args, { loaded }) =>
-    renderHealth(args, loaded.system, ["Poisoned", "Frightened"]),
+  render: (args, { loaded }) => renderHealth(args, loaded.system, ["Poisoned", "Frightened"]),
 };
 
 // ─── Dying ────────────────────────────────────────────────────────────────────
@@ -182,8 +181,7 @@ export const Dying: Story = {
     proficiency_bonus: 3,
     level: 5,
   },
-  render: (args, { loaded }) =>
-    renderHealth(args, loaded.system, ["Unconscious"]),
+  render: (args, { loaded }) => renderHealth(args, loaded.system, ["Unconscious"]),
 };
 
 // ─── Multiclass ──────────────────────────────────────────────────────────
@@ -255,4 +253,3 @@ classes:
     />
   ),
 };
-

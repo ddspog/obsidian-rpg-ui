@@ -165,7 +165,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     const c = view.sources.find((s) => s.source === "Cleric")!;
     const featNames = c.features.map((f) => f.name);
@@ -182,17 +182,14 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     expect(view.traits["Hit Dice"]).toEqual(["+8 +CON mod"]);
     expect(view.traits["Channel Divinity"]).toEqual(["1/short rest"]);
     // Skill picks contribute their own trait values
     expect(view.traits["Skill Proficiency"]).toEqual(["+Medicine", "+Insight"]);
     // Picked rich option contributes its traits
-    expect(view.traits["Armor Proficiency"]).toEqual([
-      "Light Armor, Medium Armor, Shields",
-      "+Heavy Armor",
-    ]);
+    expect(view.traits["Armor Proficiency"]).toEqual(["Light Armor, Medium Armor, Shields", "+Heavy Armor"]);
   });
 
   it("applies a single picked option (Skill Proficiencies pick: 2)", () => {
@@ -201,7 +198,7 @@ describe("resolveFeatures", () => {
         classes: [{ name: "Cleric", level: 1 }],
         choices: { Cleric: { "Skill Proficiencies": ["Medicine", "Insight"] } },
       },
-      lib,
+      lib
     );
     const c = view.sources.find((s) => s.source === "Cleric")!;
     // Two skill traits aggregated globally
@@ -218,7 +215,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     expect(view.traits["Armor Proficiency"]).toContain("+Heavy Armor");
     const c = view.sources.find((s) => s.source === "Cleric")!;
@@ -231,7 +228,7 @@ describe("resolveFeatures", () => {
         classes: [{ name: "Cleric", level: 1 }],
         choices: { Cleric: { "Skill Proficiencies": ["Medicine"] } }, // only 1 of 2 picked
       },
-      lib,
+      lib
     );
     const c = view.sources.find((s) => s.source === "Cleric")!;
     const skills = c.pendingChoices.find((p) => p.feature.name === "Skill Proficiencies")!;
@@ -249,7 +246,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     const sources = view.sources.map((s) => s.source);
     expect(sources).toContain("Life Domain");
@@ -268,7 +265,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     const sources = view.sources.map((s) => s.source);
     expect(sources).not.toContain("Life Domain");
@@ -285,7 +282,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     expect(view.sources.find((s) => s.source === "Nonexistent")).toBeUndefined();
     // The class still resolves
@@ -303,7 +300,7 @@ describe("resolveFeatures", () => {
           Human: { "Skill Versatility": ["Stealth"] },
         },
       },
-      lib,
+      lib
     );
     const sources = view.sources.map((s) => s.source);
     expect(sources).toEqual(["Cleric", "Human", "Great House"]);
@@ -323,7 +320,7 @@ describe("resolveFeatures", () => {
           Cleric: { "Skill Proficiencies": ["Medicine", "Insight"], "Divine Order": "Protector" },
         },
       },
-      lib,
+      lib
     );
     const sources = view.sources.map((s) => s.source);
     expect(sources).toEqual(["Fighter", "Cleric"]);
@@ -341,7 +338,7 @@ describe("resolveFeatures", () => {
         lineage: "Human",
         // No choices at all → both Cleric and Human have unresolved picks
       },
-      lib,
+      lib
     );
     const featureNames = view.pendingChoices.map((p) => p.feature.name);
     expect(featureNames).toContain("Skill Proficiencies");
@@ -350,10 +347,7 @@ describe("resolveFeatures", () => {
   });
 
   it("skips classes/lineages that don't exist in the compendium", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Bard", level: 1 }], lineage: "Tiefling" },
-      lib,
-    );
+    const view = resolveFeatures({ classes: [{ name: "Bard", level: 1 }], lineage: "Tiefling" }, lib);
     expect(view.sources).toEqual([]);
   });
 });
@@ -380,11 +374,7 @@ describe("normalizeTraitValue", () => {
     //   - [[Medium Armor]]
     // parses as [[["Light Armor"]], [["Medium Armor"]]]
     const parsed = [[["Light Armor"]], [["Medium Armor"]], [["Shields"]]];
-    expect(normalizeTraitValue(parsed)).toEqual([
-      "[[Light Armor]]",
-      "[[Medium Armor]]",
-      "[[Shields]]",
-    ]);
+    expect(normalizeTraitValue(parsed)).toEqual(["[[Light Armor]]", "[[Medium Armor]]", "[[Shields]]"]);
   });
 
   it("returns empty array for null/undefined/objects", () => {
@@ -426,10 +416,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
   };
 
   it("aggregates fixed traits and surfaces the choose pick as pending when unset", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Proficiencies", level: 1 }] },
-      profLib,
-    );
+    const view = resolveFeatures({ classes: [{ name: "Proficiencies", level: 1 }] }, profLib);
     // Fixed Save P. trait still aggregates
     expect(view.traits["Save P."]).toEqual(["WIS", "CHA"]);
     // Skill P. has no values yet
@@ -438,12 +425,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
     const pending = view.pendingChoices.find((p) => p.feature.name === "Skills");
     expect(pending?.remaining).toBe(2);
     // The synthetic options carry the wikilink-wrapped option strings
-    expect(pending?.options.map((o) => o.name)).toEqual([
-      "[[History]]",
-      "[[Insight]]",
-      "[[Medicine]]",
-      "[[Religion]]",
-    ]);
+    expect(pending?.options.map((o) => o.name)).toEqual(["[[History]]", "[[Insight]]", "[[Medicine]]", "[[Religion]]"]);
   });
 
   it("collects picked choose values into the named trait category", () => {
@@ -452,7 +434,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
         classes: [{ name: "Proficiencies", level: 1 }],
         choices: { Proficiencies: { Skills: ["[[Medicine]]", "[[Insight]]"] } },
       },
-      profLib,
+      profLib
     );
     expect(view.traits["Skill P."]).toEqual(["[[Medicine]]", "[[Insight]]"]);
     // Picks fully satisfied → no pending
@@ -465,7 +447,7 @@ describe("resolveFeatures: inline `choose` spec", () => {
         classes: [{ name: "Proficiencies", level: 1 }],
         choices: { Proficiencies: { Skills: ["[[Medicine]]"] } },
       },
-      profLib,
+      profLib
     );
     const pending = view.pendingChoices.find((p) => p.feature.name === "Skills")!;
     expect(pending.remaining).toBe(1);
@@ -515,12 +497,8 @@ describe("resolveFeatures: array-form `choose` spec", () => {
 
   it("surfaces one pending choice per spec with distinct composite keys", () => {
     const view = resolveFeatures({ classes: [], background: "Adherent" }, lib);
-    const skill = view.pendingChoices.find(
-      (p) => p.feature.name === "Proficiencies:Skill P.",
-    );
-    const tool = view.pendingChoices.find(
-      (p) => p.feature.name === "Proficiencies:Tools",
-    );
+    const skill = view.pendingChoices.find((p) => p.feature.name === "Proficiencies:Skill P.");
+    const tool = view.pendingChoices.find((p) => p.feature.name === "Proficiencies:Tools");
     expect(skill?.remaining).toBe(2);
     expect(tool?.remaining).toBe(1);
     // Each synthetic feature carries its own single-spec choose so the UI
@@ -543,7 +521,7 @@ describe("resolveFeatures: array-form `choose` spec", () => {
           },
         },
       },
-      lib,
+      lib
     );
     expect(view.traits["Skill P."]).toEqual(["[[History]]", "[[Religion]]"]);
     expect(view.traits["Tools"]).toEqual(["[[Artist Tools]]", "[[Smith's Tools]]"]);
@@ -603,7 +581,7 @@ describe("resolveFeatures: `asi` choose type", () => {
         classes: [{ name: "Fighter", level: 4 }],
         choices: { Fighter: { Improvement: "Ability Score Boost" } },
       },
-      lib,
+      lib
     );
     const pending = view.pendingChoices.find((p) => p.feature.name === "Ability Score Boost");
     expect(pending?.remaining).toBe(1);
@@ -623,7 +601,7 @@ describe("resolveFeatures: `asi` choose type", () => {
           },
         },
       },
-      lib,
+      lib
     );
     // All picks consumed — no more pending.
     expect(view.pendingChoices.find((p) => p.feature.name === "Balanced Growth")).toBeUndefined();
@@ -642,7 +620,7 @@ describe("resolveFeatures: `asi` choose type", () => {
           },
         },
       },
-      lib,
+      lib
     );
     const pending = view.pendingChoices.find((p) => p.feature.name === "Balanced Growth")!;
     expect(pending.remaining).toBe(2);
@@ -737,10 +715,7 @@ describe("resolveFeatures: spellcasting pool auto-derivation", () => {
   };
 
   it("derives `[[Magic-Cantrip]]` and `[[Magic-Ritual]]` from pool when omitted", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Cleric", level: 5 }] },
-      lib,
-    );
+    const view = resolveFeatures({ classes: [{ name: "Cleric", level: 5 }] }, lib);
     expect(view.casters).toHaveLength(1);
     const caster = view.casters[0];
     expect(caster.pool).toBe("[[Divine]]");
@@ -749,10 +724,7 @@ describe("resolveFeatures: spellcasting pool auto-derivation", () => {
   });
 
   it("preserves explicit cantrip_pool / ritual_pool overrides", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "ClericOverrides", level: 5 }] },
-      lib,
-    );
+    const view = resolveFeatures({ classes: [{ name: "ClericOverrides", level: 5 }] }, lib);
     const caster = view.casters[0];
     expect(caster.cantrip_pool).toBe("@worldbuilding/spells/cantrips");
     expect(caster.ritual_pool).toBe("[[Custom-Ritual-Tag]]");
@@ -777,7 +749,7 @@ describe("resolveFeatures: spellcasting pool auto-derivation", () => {
     };
     const view = resolveFeatures(
       { classes: [{ name: "AliasedCleric", level: 5 }] },
-      { ...lib, classes: { ...lib.classes, AliasedCleric: aliased } },
+      { ...lib, classes: { ...lib.classes, AliasedCleric: aliased } }
     );
     const caster = view.casters[0];
     expect(caster.cantrip_pool).toBe("[[Divine-Cantrip]]");
@@ -871,7 +843,7 @@ describe("resolveFeatures: per-source caster aggregation", () => {
         classes: [{ name: "Cleric", level: 5 }],
         heritage: "Acolyte",
       },
-      lib,
+      lib
     );
     expect(view.casters).toHaveLength(2);
     const [cl, ac] = view.casters;
@@ -897,7 +869,7 @@ describe("resolveFeatures: per-source caster aggregation", () => {
           Acolyte: { "Acolyte Features:ability": "INT" },
         },
       } as any,
-      lib,
+      lib
     );
     const acolyteCaster = view.casters.find((c) => c.source === "Acolyte")!;
     expect(acolyteCaster.ability).toBe("INT");
@@ -909,12 +881,15 @@ describe("resolveFeatures: per-source caster aggregation", () => {
         classes: [{ name: "Cleric", level: 5 }],
         heritage: "Acolyte",
       },
-      lib,
+      lib
     );
     const pending = view.pendingChoices.find(
-      (p) => p.source === "Acolyte" && p.feature.choose &&
-        (Array.isArray(p.feature.choose) ? p.feature.choose : [p.feature.choose])
-          .some((c) => c?.type === "spellcasting"),
+      (p) =>
+        p.source === "Acolyte" &&
+        p.feature.choose &&
+        (Array.isArray(p.feature.choose) ? p.feature.choose : [p.feature.choose]).some(
+          (c) => c?.type === "spellcasting"
+        )
     );
     expect(pending).toBeDefined();
     expect(pending!.options.map((o) => o.name)).toEqual(["CHA", "INT", "WIS"]);
@@ -946,7 +921,7 @@ describe("resolveFeatures: per-source caster aggregation", () => {
         classes: [{ name: "Cleric", level: 5 }],
         background: "Adherent",
       },
-      libWithAdherent,
+      libWithAdherent
     );
     // Only one caster — the Adherent source augments the Cleric caster.
     expect(view.casters).toHaveLength(1);
@@ -986,36 +961,18 @@ describe("resolveFeatures: feature.level (per-level additions)", () => {
   };
 
   it("applies no additions below the threshold", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Spellcaster", level: 1 }] },
-      lib,
-    );
-    expect(view.traits["Spellcasting"]).toEqual([
-      "WIS Divine: 3 Cantrips, 1 Ritual",
-    ]);
+    const view = resolveFeatures({ classes: [{ name: "Spellcaster", level: 1 }] }, lib);
+    expect(view.traits["Spellcasting"]).toEqual(["WIS Divine: 3 Cantrips, 1 Ritual"]);
   });
 
   it("applies one addition at the matching level", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Spellcaster", level: 3 }] },
-      lib,
-    );
-    expect(view.traits["Spellcasting"]).toEqual([
-      "WIS Divine: 3 Cantrips, 1 Ritual",
-      "2º Ritual",
-    ]);
+    const view = resolveFeatures({ classes: [{ name: "Spellcaster", level: 3 }] }, lib);
+    expect(view.traits["Spellcasting"]).toEqual(["WIS Divine: 3 Cantrips, 1 Ritual", "2º Ritual"]);
   });
 
   it("applies every addition up to and including the character's level", () => {
-    const view = resolveFeatures(
-      { classes: [{ name: "Spellcaster", level: 5 }] },
-      lib,
-    );
-    expect(view.traits["Spellcasting"]).toEqual([
-      "WIS Divine: 3 Cantrips, 1 Ritual",
-      "2º Ritual",
-      "4th Cantrip",
-    ]);
+    const view = resolveFeatures({ classes: [{ name: "Spellcaster", level: 5 }] }, lib);
+    expect(view.traits["Spellcasting"]).toEqual(["WIS Divine: 3 Cantrips, 1 Ritual", "2º Ritual", "4th Cantrip"]);
   });
 });
 
@@ -1034,10 +991,7 @@ describe("resolveFeatures: tables", () => {
         name: "progression",
         columns: ["level", "pb"],
         columnLabels: ["LEVEL", "PB"],
-        rows: [
-          { cells: [{ value: "1" }, { value: "+2" }] },
-          { cells: [{ value: "2" }, { value: "+2" }] },
-        ],
+        rows: [{ cells: [{ value: "1" }, { value: "+2" }] }, { cells: [{ value: "2" }, { value: "+2" }] }],
         headerRows: [{ cells: [{ value: "LEVEL" }, { value: "PB" }] }],
         keyColumn: "level",
         classes: [],

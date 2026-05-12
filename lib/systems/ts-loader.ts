@@ -66,10 +66,7 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
  * @param systemFolderPath - Path to the folder containing `index.ts`
  * @returns The RPGSystem exported as `system` from the TypeScript file, or null on failure
  */
-export async function loadSystemFromTypeScript(
-  vault: Vault,
-  systemFolderPath: string,
-): Promise<RPGSystem | null> {
+export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: string): Promise<RPGSystem | null> {
   try {
     await initEsbuild();
     if (!esbuildModule) {
@@ -92,22 +89,22 @@ export async function loadSystemFromTypeScript(
             // Obsidian's Vault API can resolve files correctly.
             // Use POSIX normalization to keep paths consistent across platforms.
             // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-            const pathPosix = require('path').posix;
-            const normalized = pathPosix.normalize(args.path).replace(/^\.\//, '');
+            const pathPosix = require("path").posix;
+            const normalized = pathPosix.normalize(args.path).replace(/^\.\//, "");
             return { path: normalized, namespace: "vault" };
           }
           // Resolve relative paths robustly using posix normalization
           if (args.path.startsWith(".")) {
             // Use posix path operations to avoid Windows backslash issues
             // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-            const pathPosix = require('path').posix;
+            const pathPosix = require("path").posix;
             const importerDir = pathPosix.dirname(args.importer || "");
 
             // Preserve known extensions (.ts, .tsx, .js, .jsx) if present; otherwise
             // default to `.ts` so plain imports like `./foo` resolve to `./foo.ts`.
             const extMatch = args.path.match(/\.(tsx|ts|jsx|js)$/);
             const hasExt = !!extMatch;
-            const base = hasExt ? args.path.replace(/\.(tsx|ts|jsx|js)$/, '') : args.path;
+            const base = hasExt ? args.path.replace(/\.(tsx|ts|jsx|js)$/, "") : args.path;
             const joined = pathPosix.join(importerDir, base);
             const normalized = pathPosix.normalize(joined);
             // If the import included an extension, use it. Otherwise try a set of
@@ -117,13 +114,13 @@ export async function loadSystemFromTypeScript(
               return { path: finalPath, namespace: "vault" };
             }
 
-            const candidates = ['.ts', '.tsx', '.js', '.jsx'];
+            const candidates = [".ts", ".tsx", ".js", ".jsx"];
             for (const ext of candidates) {
               const candidate = `${normalized}${ext}`;
               try {
                 // vault is available in the outer scope; check for existence
                 const f = vault.getAbstractFileByPath(candidate);
-                if (f) return { path: candidate, namespace: 'vault' };
+                if (f) return { path: candidate, namespace: "vault" };
               } catch (e) {
                 // ignore and try next
               }
@@ -147,8 +144,8 @@ export async function loadSystemFromTypeScript(
             // prefix, try the suffix as a fallback.
             if (!file) {
               try {
-                const prefix = (systemFolderPath || '').replace(/\\/g, '/');
-                if (prefix && args.path.startsWith(prefix + '/')) {
+                const prefix = (systemFolderPath || "").replace(/\\/g, "/");
+                if (prefix && args.path.startsWith(prefix + "/")) {
                   const alt = args.path.slice(prefix.length + 1);
                   file = vault.getAbstractFileByPath(alt);
                 }
@@ -162,7 +159,13 @@ export async function loadSystemFromTypeScript(
             const contents = await vault.cachedRead(file as TFile);
             // Choose esbuild loader based on file extension so that TSX files
             // are parsed correctly.
-            const loader = args.path.endsWith('.tsx') ? 'tsx' : args.path.endsWith('.ts') ? 'ts' : args.path.endsWith('.jsx') ? 'jsx' : 'js';
+            const loader = args.path.endsWith(".tsx")
+              ? "tsx"
+              : args.path.endsWith(".ts")
+                ? "ts"
+                : args.path.endsWith(".jsx")
+                  ? "jsx"
+                  : "js";
             return { contents, loader };
           } catch (error) {
             return {
@@ -217,7 +220,7 @@ export async function loadSystemFromTypeScript(
 export async function evaluateSystemBundle(
   bundleText: string,
   systemFolderPath: string,
-  vault?: Vault,
+  vault?: Vault
 ): Promise<RPGSystem | null> {
   try {
     // Create a minimal global-like scope for the IIFE
@@ -302,8 +305,8 @@ export async function evaluateSystemBundle(
             parseItemContainer: itemsDomain.parseItemContainer,
             resolvePersonalItem: itemsDomain.resolvePersonalItem,
             resolveContainer: itemsDomain.resolveContainer,
-            deriveWeaponAttack: itemsDomain.deriveWeaponAttack,
-            deriveWeaponAttacks: itemsDomain.deriveWeaponAttacks,
+            deriveWeaponRoll: itemsDomain.deriveWeaponRoll,
+            deriveWeaponRolls: itemsDomain.deriveWeaponRolls,
             deriveWeaponForm: itemsDomain.deriveWeaponForm,
             parseWeaponDamage: itemsDomain.parseWeaponDamage,
             parseWeaponBonus: itemsDomain.parseWeaponBonus,
@@ -321,7 +324,16 @@ export async function evaluateSystemBundle(
           return (globalThis as any).React ?? require("react");
         }
         if (name === "react-dom" || name === "react-dom/client") {
-          return (globalThis as any).ReactDOM ?? (() => { try { return require("react-dom/client"); } catch { return require("react-dom"); } })();
+          return (
+            (globalThis as any).ReactDOM ??
+            (() => {
+              try {
+                return require("react-dom/client");
+              } catch {
+                return require("react-dom");
+              }
+            })()
+          );
         }
         // Fallback to normal require for other modules (may throw)
         // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
@@ -346,8 +358,28 @@ export async function evaluateSystemBundle(
 
     // eslint-disable-next-line no-new-func
     const factory = new Function("require", "React", "ReactDOM", wrappedBundle);
-    const reactRuntime = (globalThis as any).React ?? (() => { try { return require('react'); } catch { return undefined; } })();
-    const reactDomRuntime = (globalThis as any).ReactDOM ?? (() => { try { return require('react-dom/client'); } catch { try { return require('react-dom'); } catch { return undefined; } } })();
+    const reactRuntime =
+      (globalThis as any).React ??
+      (() => {
+        try {
+          return require("react");
+        } catch {
+          return undefined;
+        }
+      })();
+    const reactDomRuntime =
+      (globalThis as any).ReactDOM ??
+      (() => {
+        try {
+          return require("react-dom/client");
+        } catch {
+          try {
+            return require("react-dom");
+          } catch {
+            return undefined;
+          }
+        }
+      })();
     const mod = factory.call(scope, requireShim as any, reactRuntime, reactDomRuntime);
 
     // Clean up the wiki fixture after evaluation
@@ -375,7 +407,7 @@ export async function evaluateSystemBundle(
     if (!system || typeof system !== "object") {
       console.error(
         `System bundle for ${systemFolderPath} does not export a 'system' object. ` +
-          `Make sure your index.ts contains: export const system = CreateSystem({...})`,
+          `Make sure your index.ts contains: export const system = CreateSystem({...})`
       );
       return null;
     }

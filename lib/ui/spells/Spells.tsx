@@ -66,7 +66,9 @@ export function Spells({ spells, circles, slotsAvailable = [], slotsUsed = [] }:
               {circleSpells.map((spell) => (
                 <div key={spell.name} className="rpg-ui-spells__spell">
                   {spell.prepared !== undefined && (
-                    <span className={`rpg-ui-spells__prepared${spell.prepared ? " rpg-ui-spells__prepared--active" : ""}`} />
+                    <span
+                      className={`rpg-ui-spells__prepared${spell.prepared ? " rpg-ui-spells__prepared--active" : ""}`}
+                    />
                   )}
                   <span className="rpg-ui-spells__spell-name">{spell.name}</span>
                 </div>
@@ -88,7 +90,7 @@ export function Spells({ spells, circles, slotsAvailable = [], slotsUsed = [] }:
  */
 export function getSlotsForLevel(
   spellcastTable: SpellSlotDistribution[],
-  casterLevel: number,
+  casterLevel: number
 ): SpellSlotDistribution | undefined {
   return spellcastTable.find((row) => row.level === casterLevel);
 }

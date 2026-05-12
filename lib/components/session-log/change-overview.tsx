@@ -5,11 +5,7 @@
 
 import * as React from "react";
 import type { EntityDelta, ProgressChange, ThreadChange } from "lib/domains/lonelog/types";
-import {
-  calculateTotalHPChange,
-  getFinalStatus,
-  getActiveTags,
-} from "lib/domains/lonelog/deltas";
+import { calculateTotalHPChange, getFinalStatus, getActiveTags } from "lib/domains/lonelog/deltas";
 
 export interface ChangeOverviewProps {
   entityDeltas: EntityDelta[];
@@ -17,16 +13,8 @@ export interface ChangeOverviewProps {
   threadChanges: ThreadChange[];
 }
 
-export function ChangeOverview({
-  entityDeltas,
-  progressChanges,
-  threadChanges,
-}: ChangeOverviewProps) {
-  if (
-    entityDeltas.length === 0 &&
-    progressChanges.length === 0 &&
-    threadChanges.length === 0
-  ) {
+export function ChangeOverview({ entityDeltas, progressChanges, threadChanges }: ChangeOverviewProps) {
+  if (entityDeltas.length === 0 && progressChanges.length === 0 && threadChanges.length === 0) {
     return null;
   }
 
@@ -85,17 +73,9 @@ function EntityChangeSummary({ delta }: EntityChangeSummaryProps) {
       <span className="entity-name">
         {delta.entityType === "pc" ? "PC" : "NPC"}: {delta.entity}
       </span>
-      {totalHP !== 0 && (
-        <span className={`entity-hp ${hpClass}`}>HP {hpDisplay}</span>
-      )}
-      {finalStatus && (
-        <span className="entity-status">Status: {finalStatus}</span>
-      )}
-      {activeTags.size > 0 && (
-        <span className="entity-tags">
-          Tags: {Array.from(activeTags).join(", ")}
-        </span>
-      )}
+      {totalHP !== 0 && <span className={`entity-hp ${hpClass}`}>HP {hpDisplay}</span>}
+      {finalStatus && <span className="entity-status">Status: {finalStatus}</span>}
+      {activeTags.size > 0 && <span className="entity-tags">Tags: {Array.from(activeTags).join(", ")}</span>}
     </div>
   );
 }
@@ -106,13 +86,7 @@ interface ProgressChangeSummaryProps {
 
 function ProgressChangeSummary({ progress }: ProgressChangeSummaryProps) {
   const icon =
-    progress.kind === "clock"
-      ? "🕐"
-      : progress.kind === "track"
-        ? "📊"
-        : progress.kind === "timer"
-          ? "⏱"
-          : "📅";
+    progress.kind === "clock" ? "🕐" : progress.kind === "track" ? "📊" : progress.kind === "timer" ? "⏱" : "📅";
 
   return (
     <div className="progress-change-summary">

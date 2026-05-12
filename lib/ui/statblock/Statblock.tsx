@@ -59,9 +59,7 @@ export function Statblock({
       <div className="rpg-ui-statblock__header">
         <div className="rpg-ui-statblock__name">{name}</div>
         {(sizeType || alignment) && (
-          <div className="rpg-ui-statblock__meta">
-            {[sizeType, alignment].filter(Boolean).join(", ")}
-          </div>
+          <div className="rpg-ui-statblock__meta">{[sizeType, alignment].filter(Boolean).join(", ")}</div>
         )}
       </div>
 
@@ -101,7 +99,8 @@ export function Statblock({
                     {attr.alias ?? attr.$name.slice(0, 3).toUpperCase()}
                   </div>
                   <div className="rpg-ui-statblock__attribute-value">
-                    {score} ({sign}{modifier})
+                    {score} ({sign}
+                    {modifier})
                   </div>
                 </div>
               );

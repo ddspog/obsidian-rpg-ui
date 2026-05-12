@@ -7,5 +7,9 @@ export interface FigureColumnProps {
 }
 
 export function FigureColumn({ label, children, style }: FigureColumnProps) {
-  return <figure aria-details={`${label} Column`} style={style}>{children}</figure>;
+  return (
+    <figure aria-details={`${label} Column`} style={style}>
+      {children}
+    </figure>
+  );
 }

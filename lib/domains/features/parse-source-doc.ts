@@ -49,7 +49,7 @@ const META_KEYS: Record<SourceDocKind, string> = {
 function safeParse<T>(yaml: string, ctx: string): T | null {
   try {
     const parsed = parseYaml(yaml);
-    return (parsed && typeof parsed === "object" ? (parsed as T) : null);
+    return parsed && typeof parsed === "object" ? (parsed as T) : null;
   } catch (err) {
     console.warn(`[parseSourceDoc] failed to parse ${ctx}:`, err);
     return null;
@@ -143,9 +143,7 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
         const parsed = safeParse<FeatureLevelAddition>(block.yaml, ctx);
         if (!parsed || typeof parsed.level !== "number") break;
         if (!currentDetails) {
-          console.warn(
-            `[parseSourceDoc] feature.level in ${raw.$name} has no preceding feature.details — skipping`,
-          );
+          console.warn(`[parseSourceDoc] feature.level in ${raw.$name} has no preceding feature.details — skipping`);
           break;
         }
         if (!currentDetails.levels) currentDetails.levels = [];
@@ -159,13 +157,14 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
   // keep their bodies as pure markdown (so they render cleanly in Obsidian).
   // Existing rpg feature.* code blocks above remain supported; both sources
   // contribute to the same lists.
-  const fmFeatures = (raw[".features"] as
-    | {
-        details?: FeatureDetails[];
-        choices?: FeatureChoiceOption[];
-        unlocks?: UnlockBlock[];
-      }
-    | undefined) ?? {};
+  const fmFeatures =
+    (raw[".features"] as
+      | {
+          details?: FeatureDetails[];
+          choices?: FeatureChoiceOption[];
+          unlocks?: UnlockBlock[];
+        }
+      | undefined) ?? {};
   if (Array.isArray(fmFeatures.details)) {
     for (const f of fmFeatures.details) {
       if (!f) continue;
@@ -197,10 +196,7 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
 }
 
 /** Convenience: parse an array of docs (one folder's worth) into a name-keyed map. */
-export function parseSourceDocs(
-  raws: SourceDocInput[],
-  kind: SourceDocKind,
-): Record<string, SourceDoc> {
+export function parseSourceDocs(raws: SourceDocInput[], kind: SourceDocKind): Record<string, SourceDoc> {
   const out: Record<string, SourceDoc> = {};
   for (const raw of raws) {
     const doc = parseSourceDoc(raw, kind);

@@ -22,13 +22,8 @@ export function Section({ section, hideWhenEmpty = true, onToggleEquip, onToggle
   const label = SECTION_LABELS[section.id as keyof typeof SECTION_LABELS] ?? section.id;
 
   return (
-    <section
-      className="rpg-inventory-block__section"
-      data-section={section.id}
-    >
-      <h5 className="rpg-inventory-block__section-title">
-        {label}
-      </h5>
+    <section className="rpg-inventory-block__section" data-section={section.id}>
+      <h5 className="rpg-inventory-block__section-title">{label}</h5>
       <div className="rpg-inventory-block__section-body">
         {section.items.length === 0 ? (
           <div className="rpg-inventory-block__section-empty">—</div>

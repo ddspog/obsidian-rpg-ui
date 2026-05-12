@@ -33,7 +33,7 @@ export async function patchYamlBlock(
   block: string,
   key: string,
   value: unknown,
-  hint?: { lineStart: number; lineEnd: number },
+  hint?: { lineStart: number; lineEnd: number }
 ): Promise<void> {
   const file = app.vault.getAbstractFileByPath(sourcePath);
   if (!(file instanceof TFile)) return;
@@ -50,9 +50,7 @@ export async function patchYamlBlock(
     // entity.
     let chosen = fences[0];
     if (hint) {
-      const match = fences.find(
-        (f) => hint.lineStart >= f.openLine && hint.lineStart <= f.closeLine,
-      );
+      const match = fences.find((f) => hint.lineStart >= f.openLine && hint.lineStart <= f.closeLine);
       if (match) chosen = match;
     }
 
@@ -113,10 +111,7 @@ export async function patchYamlBlock(
 /** Find every fenced code block whose info string matches `infoTag`
  *  (e.g. `rpg character.features`). Returns each as `{ openLine, closeLine }`
  *  with 0-based line indices for the opening and closing fences. */
-function findFences(
-  lines: string[],
-  infoTag: string,
-): Array<{ openLine: number; closeLine: number }> {
+function findFences(lines: string[], infoTag: string): Array<{ openLine: number; closeLine: number }> {
   const out: Array<{ openLine: number; closeLine: number }> = [];
   // The info string follows the opening backticks. Allow any number of
   // backticks ≥ 3, plus optional trailing whitespace after the tag.

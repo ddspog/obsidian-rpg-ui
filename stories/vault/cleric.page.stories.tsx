@@ -45,28 +45,16 @@ function findClericSource(): string {
 export const ClericFullClassPage: Story = {
   name: "Class · Cleric (full book page)",
   render: (_args, { loaded }) => (
-    <ObsidianMarkdown
-      system={loaded.system as RPGSystem}
-      source={findClericSource()}
-      ariaLabel="Compendium Cleric"
-    />
+    <ObsidianMarkdown system={loaded.system as RPGSystem} source={findClericSource()} ariaLabel="Compendium Cleric" />
   ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
 
     // Title + h2 sections from the markdown body
-    await expect(
-      c.getByRole("heading", { name: "Cleric", level: 1 }),
-    ).toBeInTheDocument();
-    await expect(
-      c.getByRole("heading", { name: "Clerics as Adventurers", level: 2 }),
-    ).toBeInTheDocument();
-    await expect(
-      c.getByRole("heading", { name: "Class Features", level: 2 }),
-    ).toBeInTheDocument();
-    await expect(
-      c.getByRole("heading", { name: "Cleric Subclasses", level: 2 }),
-    ).toBeInTheDocument();
+    await expect(c.getByRole("heading", { name: "Cleric", level: 1 })).toBeInTheDocument();
+    await expect(c.getByRole("heading", { name: "Clerics as Adventurers", level: 2 })).toBeInTheDocument();
+    await expect(c.getByRole("heading", { name: "Class Features", level: 2 })).toBeInTheDocument();
+    await expect(c.getByRole("heading", { name: "Cleric Subclasses", level: 2 })).toBeInTheDocument();
 
     // Feature names rendered via feature.details (h4 inside the card)
     for (const h of [
@@ -83,18 +71,12 @@ export const ClericFullClassPage: Story = {
       "Heroic Boon",
       "Epic Boon",
     ]) {
-      await expect(
-        c.getByRole("heading", { name: h, level: 3 }),
-      ).toBeInTheDocument();
+      await expect(c.getByRole("heading", { name: h, level: 3 })).toBeInTheDocument();
     }
 
     // Subtitle overrides render verbatim
-    await expect(
-      c.getByText("10th-Level Cleric Feature"),
-    ).toBeInTheDocument();
-    await expect(
-      c.getByText("2nd, 6th, 13th, and 18th-Level Cleric Feature"),
-    ).toBeInTheDocument();
+    await expect(c.getByText("10th-Level Cleric Feature")).toBeInTheDocument();
+    await expect(c.getByText("2nd, 6th, 13th, and 18th-Level Cleric Feature")).toBeInTheDocument();
 
     // Choice options rendered via feature.choice (h5 inside each option card)
     for (const opt of [
@@ -107,9 +89,7 @@ export const ClericFullClassPage: Story = {
       "Gift of Wrath",
       "Divine Herald",
     ]) {
-      await expect(
-        c.getByRole("heading", { name: opt, level: 5 }),
-      ).toBeInTheDocument();
+      await expect(c.getByRole("heading", { name: opt, level: 5 })).toBeInTheDocument();
     }
 
     // tx tables render
@@ -121,8 +101,6 @@ export const ClericFullClassPage: Story = {
     await expect(c.getByText("Clerics and Gods")).toBeInTheDocument();
 
     // Subclass unlock badge
-    await expect(
-      c.getByText(/Unlocks subclass at Lv\. 3/),
-    ).toBeInTheDocument();
+    await expect(c.getByText(/Unlocks subclass at Lv\. 3/)).toBeInTheDocument();
   },
 };

@@ -29,11 +29,7 @@ export class SessionLogView extends BaseView {
     this.entityResolver = new EntityResolver(app);
   }
 
-  public render(
-    source: string,
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext,
-  ): void {
+  public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     const sessionLogMarkdown = new SessionLogMarkdown(
       el,
       source,
@@ -41,7 +37,7 @@ export class SessionLogView extends BaseView {
       this.entityResolver,
       ctx.sourcePath,
       ctx,
-      this,
+      this
     );
     ctx.addChild(sessionLogMarkdown);
   }
@@ -64,7 +60,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     entityResolver: EntityResolver,
     filePath: string,
     ctx: MarkdownPostProcessorContext,
-    baseView: BaseView,
+    baseView: BaseView
   ) {
     super(el);
     this.source = source;
@@ -89,9 +85,7 @@ class SessionLogMarkdown extends ReactMarkdown {
 
       // Resolve entity references if provided
       if (block.entities && block.entities.length > 0) {
-        this.entities = await this.entityResolver.resolveEntities(
-          block.entities,
-        );
+        this.entities = await this.entityResolver.resolveEntities(block.entities);
       }
 
       // Render the session log
@@ -112,11 +106,11 @@ class SessionLogMarkdown extends ReactMarkdown {
 
       // Read current file content
       const content = await this.baseView.app.vault.read(file);
-      
+
       // Find the rpg log code block
       const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;
       const match = content.match(codeBlockRegex);
-      
+
       if (!match) {
         console.error("Could not find rpg log code block in file");
         return;
@@ -124,19 +118,19 @@ class SessionLogMarkdown extends ReactMarkdown {
 
       // Extract parts: header (with YAML), body, closing backticks
       const [fullMatch, header, body, closing] = match;
-      
+
       // Append new text to the body
       const updatedBody = body + newText;
-      
+
       // Reconstruct the code block
       const updatedBlock = `${header}${updatedBody}${closing}`;
-      
+
       // Replace the old block with the updated one
       const updatedContent = content.replace(codeBlockRegex, updatedBlock);
-      
+
       // Write back to file
       await this.baseView.app.vault.modify(file as any, updatedContent);
-      
+
       console.log("Successfully appended text to log");
     } catch (error) {
       console.error("Error appending to log:", error);
@@ -145,8 +139,7 @@ class SessionLogMarkdown extends ReactMarkdown {
 
   private renderSessionLog() {
     if (!this.logData) {
-      this.containerEl.innerHTML =
-        '<div class="notice">No log data available</div>';
+      this.containerEl.innerHTML = '<div class="notice">No log data available</div>';
       return;
     }
 
@@ -158,9 +151,7 @@ class SessionLogMarkdown extends ReactMarkdown {
 
     root.render(
       <div className="session-log-container">
-        {this.entities.length > 0 && (
-          <HUD entities={this.entities} onAppendText={handleAppendText} />
-        )}
+        {this.entities.length > 0 && <HUD entities={this.entities} onAppendText={handleAppendText} />}
 
         <EventList entries={this.logData.entries} />
 
@@ -169,7 +160,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           progressChanges={this.logData.progressChanges}
           threadChanges={this.logData.threadChanges}
         />
-      </div>,
+      </div>
     );
   }
 }

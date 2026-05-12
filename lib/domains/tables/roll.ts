@@ -83,7 +83,7 @@ export function parseWeightCell(raw: string | undefined): RollRange | null | und
  */
 export function parseWeightColumn(
   rows: { cells: { value: string }[] }[],
-  weightColIdx: number,
+  weightColIdx: number
 ): { ranges: RollRange[]; max: number } | null {
   const ranges: RollRange[] = [];
   let max = 0;
@@ -128,7 +128,7 @@ export function rollOnce(
   table: TableDef,
   targets: string[],
   weightCol: string | undefined,
-  rand: () => number = Math.random,
+  rand: () => number = Math.random
 ): RollOutcome {
   const weightKey = weightCol ?? table.keyColumn ?? table.columns[0];
   const weightIdx = weightKey ? table.columns.indexOf(weightKey) : -1;
@@ -156,16 +156,12 @@ export function rollOnce(
   if (rowIdx == null) return { kind: "miss", rolled, max: weight.max };
 
   const row = table.rows[rowIdx];
-  const values = targetIndices.map((idx) => (idx >= 0 ? row.cells[idx]?.value ?? "" : ""));
+  const values = targetIndices.map((idx) => (idx >= 0 ? (row.cells[idx]?.value ?? "") : ""));
   return { kind: "hit", values, rolled };
 }
 
 /** Each target column contributes one uniformly-picked non-empty value. */
-function uniformPick(
-  table: TableDef,
-  targetIndices: number[],
-  rand: () => number,
-): RollOutcome {
+function uniformPick(table: TableDef, targetIndices: number[], rand: () => number): RollOutcome {
   const values = targetIndices.map((idx) => {
     if (idx < 0) return "";
     const pool: string[] = [];

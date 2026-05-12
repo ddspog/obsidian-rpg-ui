@@ -50,9 +50,7 @@ const container: EntityBlock<ItemContainerData, ItemEntity> = ({ self, lookup })
       const currentItems = (Array.isArray(target?.items) ? target.items : []) as unknown[];
       const nextItems = withToggled(currentItems, loc.path);
       if (!nextItems) return;
-      const nextSections = sections.map((s, i) =>
-        i === loc.sectionIndex ? { ...s, items: nextItems } : s,
-      );
+      const nextSections = sections.map((s, i) => (i === loc.sectionIndex ? { ...s, items: nextItems } : s));
       selfApi.setSections?.(nextSections);
       return;
     }
@@ -111,4 +109,3 @@ function withToggled(items: unknown[], path: number[]): ItemContainerEntry[] | n
   next[head] = cloned;
   return next;
 }
-

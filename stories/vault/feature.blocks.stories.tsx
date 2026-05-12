@@ -34,19 +34,8 @@ type Story = StoryObj;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function renderBlock(
-  system: RPGSystem,
-  block: "details" | "choice" | "unlock",
-  data: Record<string, unknown>,
-) {
-  return (
-    <RpgBlock
-      system={system}
-      entity="feature"
-      block={block}
-      yaml={stringifyYaml(data)}
-    />
-  );
+function renderBlock(system: RPGSystem, block: "details" | "choice" | "unlock", data: Record<string, unknown>) {
+  return <RpgBlock system={system} entity="feature" block={block} yaml={stringifyYaml(data)} />;
 }
 
 // ─── feature.details ──────────────────────────────────────────────────────────
@@ -97,9 +86,7 @@ export const DetailsChoiceSlot: Story = {
     }),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(
-      c.getByRole("heading", { name: "Manifestation of Faith" }),
-    ).toBeInTheDocument();
+    await expect(c.getByRole("heading", { name: "Manifestation of Faith" })).toBeInTheDocument();
     await expect(c.getByText("1st-Level Cleric Feature")).toBeInTheDocument();
   },
 };

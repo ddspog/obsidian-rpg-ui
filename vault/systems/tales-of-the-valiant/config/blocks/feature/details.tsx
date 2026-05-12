@@ -1,17 +1,19 @@
 import * as React from "react";
-import {
-  EntityBlock,
-  EvalContext,
-  FeatureDetails,
-  Markdown,
-  TableDef,
-} from "rpg-ui-toolkit";
+import { EntityBlock, EvalContext, FeatureDetails, Markdown, TableDef } from "rpg-ui-toolkit";
 
 /** Resolve `[[Target]]` against the vault — returns null if no file exists. */
 function resolveWikilink(link: string): string | null {
-  const target = link.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("#")[0].trim();
+  const target = link
+    .replace(/^\[\[|\]\]$/g, "")
+    .split("|")[0]
+    .split("#")[0]
+    .trim();
   if (!target) return null;
-  const app = (globalThis as unknown as { app?: { metadataCache?: { getFirstLinkpathDest?: (path: string, source: string) => unknown } } }).app;
+  const app = (
+    globalThis as unknown as {
+      app?: { metadataCache?: { getFirstLinkpathDest?: (path: string, source: string) => unknown } };
+    }
+  ).app;
   const dest = app?.metadataCache?.getFirstLinkpathDest?.(target, "");
   return dest ? link : null;
 }
@@ -43,18 +45,12 @@ function isNoTitleView(raw: unknown): boolean {
   return raw.toLowerCase().replace(/[\s\-_]+/g, "") === "notitle";
 }
 
-export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = ({
-  self,
-  lookup,
-}) => {
+export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = ({ self, lookup }) => {
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
   const hideTitle = isNoTitleView(self.view);
 
-  const context: EvalContext = React.useMemo(
-    () => ({ tables: lookup?.$tables ?? {}, vars: {} }),
-    [lookup?.$tables],
-  );
+  const context: EvalContext = React.useMemo(() => ({ tables: lookup?.$tables ?? {}, vars: {} }), [lookup?.$tables]);
 
   return (
     <article className="rpg-feature-card" aria-label={`Feature ${self.name}`}>
@@ -66,25 +62,21 @@ export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = (
           ) : (
             <>
               {self.level != null && <small aria-details="Feature Level">Lv. {self.level}</small>}
-              {self.uses != null && <small aria-details="Feature Uses">{self.uses} use{self.uses === 1 ? "" : "s"}</small>}
+              {self.uses != null && (
+                <small aria-details="Feature Uses">
+                  {self.uses} use{self.uses === 1 ? "" : "s"}
+                </small>
+              )}
             </>
           )}
-          {isResource && self.max != null && (
-            <small aria-details="Resource Max">Max: {formatMax(self.max)}</small>
-          )}
-          {isResource && self.recovery && (
-            <small aria-details="Resource Recovery">Recovery: {self.recovery}</small>
-          )}
+          {isResource && self.max != null && <small aria-details="Resource Max">Max: {formatMax(self.max)}</small>}
+          {isResource && self.recovery && <small aria-details="Resource Recovery">Recovery: {self.recovery}</small>}
         </p>
       </hgroup>
 
-      {self.text && (
-        <Markdown source={self.text} context={context} className="rpg-feature-text" />
-      )}
+      {self.text && <Markdown source={self.text} context={context} className="rpg-feature-text" />}
 
-      {resolvedLink && (
-        <Markdown source={resolvedLink} className="rpg-feature-link" />
-      )}
+      {resolvedLink && <Markdown source={resolvedLink} className="rpg-feature-link" />}
     </article>
   );
 };

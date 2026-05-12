@@ -14,9 +14,7 @@
  *
  * Returns `null` when the circle is empty or unrecognisable.
  */
-export function classifySpellCircle(
-  circle: string,
-): "Cantrip" | "Ritual" | "Leveled" | null {
+export function classifySpellCircle(circle: string): "Cantrip" | "Ritual" | "Leveled" | null {
   const trimmed = (circle ?? "").trim();
   if (!trimmed) return null;
   if (/ritual/i.test(trimmed)) return "Ritual";

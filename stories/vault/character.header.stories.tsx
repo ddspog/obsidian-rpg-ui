@@ -35,10 +35,10 @@ const meta: Meta<HeaderArgs> = {
     }),
   ],
   argTypes: {
-    filename: { control: "text",  name: "Character Name" },
-    banner:   { control: "color", name: "Banner Color" },
-    luck:     { control: { type: "range", min: 0, max: 5, step: 1 }, name: "Luck" },
-    xp:       { control: { type: "number" }, name: "XP" },
+    filename: { control: "text", name: "Character Name" },
+    banner: { control: "color", name: "Banner Color" },
+    luck: { control: { type: "range", min: 0, max: 5, step: 1 }, name: "Luck" },
+    xp: { control: { type: "number" }, name: "XP" },
   },
 };
 export default meta;
@@ -115,4 +115,3 @@ lineage:
     />
   ),
 };
-

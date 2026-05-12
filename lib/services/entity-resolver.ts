@@ -36,7 +36,10 @@ export class EntityResolver {
       if (file instanceof TFile) this.invalidateCache(file.path);
     });
     this.app.vault.on("rename", (file, oldPath) => {
-      if (file instanceof TFile) { this.invalidateCache(oldPath); this.invalidateCache(file.path); }
+      if (file instanceof TFile) {
+        this.invalidateCache(oldPath);
+        this.invalidateCache(file.path);
+      }
     });
     this.app.vault.on("delete", (file) => {
       if (file instanceof TFile) this.invalidateCache(file.path);
@@ -73,11 +76,23 @@ export class EntityResolver {
   private async loadEntityData(filePath: string): Promise<EntityData> {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (!file || !(file instanceof TFile)) {
-      return { name: this.getNameFromPath(filePath), filePath, frontmatter: { proficiency_bonus: 2 }, codeBlocks: new Map(), exists: false };
+      return {
+        name: this.getNameFromPath(filePath),
+        filePath,
+        frontmatter: { proficiency_bonus: 2 },
+        codeBlocks: new Map(),
+        exists: false,
+      };
     }
     const content = await this.app.vault.read(file);
     const cache = this.app.metadataCache.getFileCache(file);
-    return { name: file.basename, filePath, frontmatter: this.parseFrontmatter(cache), codeBlocks: this.extractCodeBlocks(content, filePath), exists: true };
+    return {
+      name: file.basename,
+      filePath,
+      frontmatter: this.parseFrontmatter(cache),
+      codeBlocks: this.extractCodeBlocks(content, filePath),
+      exists: true,
+    };
   }
 
   private parseFrontmatter(cache: CachedMetadata | null): Frontmatter {
@@ -87,7 +102,19 @@ export class EntityResolver {
 
   private extractCodeBlocks(content: string, filePath: string): Map<string, string[]> {
     const blocks = new Map<string, string[]>();
-    const legacyBlockTypes = ["attributes", "skills", "healthpoints", "stats", "badges", "consumable", "initiative", "spell", "events", "inventory", "features"];
+    const legacyBlockTypes = [
+      "attributes",
+      "skills",
+      "healthpoints",
+      "stats",
+      "badges",
+      "consumable",
+      "initiative",
+      "spell",
+      "events",
+      "inventory",
+      "features",
+    ];
     for (const blockType of legacyBlockTypes) {
       const extracted = extractCodeBlocks(content, blockType);
       if (extracted.length > 0) blocks.set(blockType, extracted);

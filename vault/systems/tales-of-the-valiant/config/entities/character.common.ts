@@ -2,16 +2,16 @@
  * Detailed types for the character entity blocks, defining the shape of the data for each block and its subcomponents.
  */
 export type PillDetails = {
-      /** File name for pulling data, and serving as link for the pill. */
-      file: string;
-      /** Label for showing on the pill, if you do not want solely the file name. */
-      text?: string;
-      /** Author note appended after the file/text label inside the pill —
-       *  use it to annotate why this lineage / background was picked, the
-       *  flavour name in your campaign, etc. Rendered as `Label · comment`
-       *  so it stays scannable next to the link. */
-      comment?: string;
-}
+  /** File name for pulling data, and serving as link for the pill. */
+  file: string;
+  /** Label for showing on the pill, if you do not want solely the file name. */
+  text?: string;
+  /** Author note appended after the file/text label inside the pill —
+   *  use it to annotate why this lineage / background was picked, the
+   *  flavour name in your campaign, etc. Rendered as `Label · comment`
+   *  so it stays scannable next to the link. */
+  comment?: string;
+};
 
 /**
  * Types for the Health block of the Character Entity, defining the shape of its data and subcomponents.
@@ -23,4 +23,4 @@ export type SkillDetails = {
   vantage: number;
   /** Current skill bonus */
   bonus: number;
-}
+};

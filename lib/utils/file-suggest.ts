@@ -47,10 +47,7 @@ export class FileSuggest {
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        this.selectedIndex = Math.min(
-          this.selectedIndex + 1,
-          this.suggestions.length - 1,
-        );
+        this.selectedIndex = Math.min(this.selectedIndex + 1, this.suggestions.length - 1);
         this.highlightSuggestion();
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -70,11 +67,11 @@ export class FileSuggest {
 
   private updateSuggestions() {
     const value = this.textComponent.inputEl.value;
-    
+
     // Get all markdown files in the vault
     const files: string[] = [];
     const allFiles = this.app.vault.getAllLoadedFiles();
-    
+
     for (const file of allFiles) {
       if (file instanceof TFile && file.extension === "md") {
         files.push(file.path);
@@ -82,9 +79,7 @@ export class FileSuggest {
     }
 
     // Filter files based on input
-    this.suggestions = files.filter((path) =>
-      path.toLowerCase().includes(value.toLowerCase()),
-    );
+    this.suggestions = files.filter((path) => path.toLowerCase().includes(value.toLowerCase()));
 
     // Sort: exact matches first, then by path length
     this.suggestions.sort((a, b) => {

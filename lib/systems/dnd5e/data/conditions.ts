@@ -22,8 +22,7 @@ const conditions: ConditionDefinition[] = [
   {
     $name: "Deafened",
     icon: "🔇",
-    $contents:
-      "A deafened creature can't hear and automatically fails any ability check that requires hearing.",
+    $contents: "A deafened creature can't hear and automatically fails any ability check that requires hearing.",
   },
   {
     $name: "Frightened",
@@ -63,8 +62,7 @@ const conditions: ConditionDefinition[] = [
   {
     $name: "Poisoned",
     icon: "🤢",
-    $contents:
-      "A poisoned creature has disadvantage on attack rolls and ability checks.",
+    $contents: "A poisoned creature has disadvantage on attack rolls and ability checks.",
   },
   {
     $name: "Prone",

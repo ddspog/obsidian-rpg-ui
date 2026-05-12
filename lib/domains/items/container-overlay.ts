@@ -13,12 +13,7 @@
  * same look-and-feel when a character sheet renders either.
  */
 
-import type {
-  ItemContainerData,
-  ItemContainerSection,
-  ItemElementData,
-  ItemMagicData,
-} from "./schema";
+import type { ItemContainerData, ItemContainerSection, ItemElementData, ItemMagicData } from "./schema";
 
 /** What the container pipeline produces for downstream consumers. */
 export interface ContainerResolution {
@@ -63,7 +58,7 @@ export interface ContainerResolverLookups {
 export function resolveContainer(
   container: ItemContainerData,
   lookups: ContainerResolverLookups,
-  containerStem?: string,
+  containerStem?: string
 ): ContainerResolution | null {
   const baseKey = wikiStem(container.base ?? "");
   const base = baseKey ? lookups.elements[baseKey] : undefined;
@@ -89,9 +84,7 @@ export function resolveContainer(
     if (!magic) continue;
     magicFeatureSources.push(stem);
 
-    const variantKey = container.variants?.[stem]
-      ?? container.variants?.[magic.name ?? ""]
-      ?? undefined;
+    const variantKey = container.variants?.[stem] ?? container.variants?.[magic.name ?? ""] ?? undefined;
     const variant = variantKey ? magic.variants?.[variantKey] : undefined;
 
     // Traits: variant overrides template; both merge into the trait map.
@@ -213,12 +206,7 @@ function normalizeTraitMapValue(val: unknown): string[] {
   if (typeof val === "number") return [String(val)];
   if (typeof val === "boolean") return val ? [""] : [];
   if (Array.isArray(val)) {
-    if (
-      val.length === 1 &&
-      Array.isArray(val[0]) &&
-      val[0].length === 1 &&
-      typeof val[0][0] === "string"
-    ) {
+    if (val.length === 1 && Array.isArray(val[0]) && val[0].length === 1 && typeof val[0][0] === "string") {
       return [`[[${val[0][0]}]]`];
     }
     return val.flatMap(normalizeTraitMapValue);

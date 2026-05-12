@@ -31,9 +31,7 @@ export interface TableRow {
  * `by` is the weight-column key override — when omitted the renderer falls
  * back to the table's `keyColumn`, then the first column.
  */
-export type FooterSegment =
-  | { kind: "text"; text: string }
-  | { kind: "roll"; targets: string[]; by?: string };
+export type FooterSegment = { kind: "text"; text: string } | { kind: "roll"; targets: string[]; by?: string };
 
 /**
  * One cell within a `|= … =|` footer row. Each cell is independently

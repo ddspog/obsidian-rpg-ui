@@ -33,12 +33,7 @@ export function InventoryBlock({ data, onToggleEquip, onToggleForSale }: Invento
         </div>
       )}
       {data.sections.map((section) => (
-        <Section
-          key={section.id}
-          section={section}
-          onToggleEquip={onToggleEquip}
-          onToggleForSale={onToggleForSale}
-        />
+        <Section key={section.id} section={section} onToggleEquip={onToggleEquip} onToggleForSale={onToggleForSale} />
       ))}
       <EncumbranceBar total={data.totalWeight} bands={data.bands} load={data.load} />
     </div>

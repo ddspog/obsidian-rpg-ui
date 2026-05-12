@@ -1,10 +1,5 @@
 import * as React from "react";
-import {
-  EntityBlock,
-  Markdown,
-  ResolvedCaster,
-  expandOptionRefs,
-} from "rpg-ui-toolkit";
+import { EntityBlock, Markdown, ResolvedCaster, expandOptionRefs } from "rpg-ui-toolkit";
 import type { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
 import type { CasterState, SpellsProps } from "./spells.types";
@@ -17,12 +12,7 @@ function bareStem(raw: unknown): string {
   let v: unknown = raw;
   while (Array.isArray(v)) v = v[0];
   if (typeof v !== "string") return "";
-  return v
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .replace(/\.md$/, "")
-    .split("|")[0]
-    .trim();
+  return v.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").split("|")[0].trim();
 }
 
 /** Format an array or scalar into a comma-joined label (magic_source,
@@ -47,19 +37,12 @@ function joinLabels(value: unknown): string {
 /** True when the character has any spell pick stored across any of
  *  their casters — keeps the Decisions-made drawer hidden until there's
  *  something to show. */
-function hasAnyPicks(
-  casters: ResolvedCaster[],
-  castersState: Record<string, CasterState>,
-): boolean {
+function hasAnyPicks(casters: ResolvedCaster[], castersState: Record<string, CasterState>): boolean {
   for (const caster of casters) {
     const state = castersState[caster.source];
     if (!state) continue;
     if ((state.cantrips ?? []).length > 0) return true;
-    const maps: Array<Partial<Record<number, string[]>> | undefined> = [
-      state.prepared,
-      state.known,
-      state.rituals,
-    ];
+    const maps: Array<Partial<Record<number, string[]>> | undefined> = [state.prepared, state.known, state.rituals];
     for (const m of maps) {
       if (!m) continue;
       for (const list of Object.values(m)) {
@@ -73,10 +56,7 @@ function hasAnyPicks(
 /** Evaluate a caster's `prepared_max` expression against the character
  *  vars. Supports simple arithmetic over identifiers like `WIS_MOD`,
  *  `LV`, `PB`. Returns 0 when the expression is malformed or missing. */
-function evalPreparedMax(
-  expr: string | undefined,
-  vars: Record<string, number>,
-): number {
+function evalPreparedMax(expr: string | undefined, vars: Record<string, number>): number {
   if (!expr || !expr.trim()) return 0;
   let rewritten = expr;
   // Longest identifiers first so `WIS_MOD` doesn't get partially
@@ -99,7 +79,8 @@ function evalPreparedMax(
 
 function useNoteKey(): string {
   return React.useMemo(() => {
-    const app = (globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } }).app;
+    const app = (globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } })
+      .app;
     return app?.workspace?.getActiveFile?.()?.path ?? "default";
   }, []);
 }
@@ -125,7 +106,7 @@ function usePersistentOpen(storageKey: string, defaultOpen: boolean) {
         // ignore
       }
     },
-    [storageKey],
+    [storageKey]
   );
   return [open, update] as const;
 }
@@ -239,36 +220,20 @@ function SpellEntry({
           ))}
         </span>
       )}
-      {doc?.text && (
-        <Markdown
-          source={doc.text}
-          className="rpg-spell-entry-text"
-        />
-      )}
+      {doc?.text && <Markdown source={doc.text} className="rpg-spell-entry-text" />}
     </li>
   );
 }
 
 // ─── Slot pips ───────────────────────────────────────────────────────────
 
-function SlotPips({
-  max,
-  spent,
-  onChange,
-}: {
-  max: number;
-  spent: number;
-  onChange?: (next: number) => void;
-}) {
+function SlotPips({ max, spent, onChange }: { max: number; spent: number; onChange?: (next: number) => void }) {
   if (max === 0) return null;
   const clamped = Math.max(0, Math.min(max, spent));
   const spend = () => onChange?.(Math.min(max, clamped + 1));
   const unspend = () => onChange?.(Math.max(0, clamped - 1));
   return (
-    <output
-      aria-label={`${max - clamped} of ${max} slots remaining`}
-      className="rpg-spell-slots"
-    >
+    <output aria-label={`${max - clamped} of ${max} slots remaining`} className="rpg-spell-slots">
       {Array.from({ length: max }, (_, i) => {
         const isSpent = i < clamped;
         return (
@@ -301,7 +266,7 @@ function bundleForCircle(
   caster: ResolvedCaster,
   state: CasterState,
   circle: number,
-  spells: Record<string, Record<string, unknown>>,
+  spells: Record<string, Record<string, unknown>>
 ): CircleEntries {
   const out: CircleEntries = { prepared: [], granted: [], ritual: [], known: [] };
   const push = (bucket: keyof CircleEntries, name: string) => {
@@ -379,16 +344,9 @@ function CircleDrawer({
   spells: Record<string, Record<string, unknown>>;
   noteKey: string;
 }) {
-  const [open, setOpen] = usePersistentOpen(
-    `${noteKey}:spells:${caster.source}:${circle}`,
-    circle === 0,
-  );
+  const [open, setOpen] = usePersistentOpen(`${noteKey}:spells:${caster.source}:${circle}`, circle === 0);
   const label = circle === 0 ? "Cantrips" : `${ordinal(circle)} Circle`;
-  const total =
-    entries.prepared.length
-    + entries.granted.length
-    + entries.ritual.length
-    + entries.known.length;
+  const total = entries.prepared.length + entries.granted.length + entries.ritual.length + entries.known.length;
   const ordered: Array<{ group: SpellGroup; name: string }> = [
     ...entries.prepared.map((n) => ({ group: "prepared" as const, name: n })),
     ...entries.granted.map((n) => ({ group: "granted" as const, name: n })),
@@ -404,13 +362,13 @@ function CircleDrawer({
     >
       <summary>
         <span className="rpg-spell-circle-label">{label}</span>
-        {circle !== 0 && slotsMax > 0 && (
-          <SlotPips max={slotsMax} spent={spent} onChange={onSpentChange} />
-        )}
+        {circle !== 0 && slotsMax > 0 && <SlotPips max={slotsMax} spent={spent} onChange={onSpentChange} />}
         <span className="rpg-spell-circle-count">{total}</span>
       </summary>
       {total === 0 ? (
-        <p aria-details="Empty Circle"><em>—</em></p>
+        <p aria-details="Empty Circle">
+          <em>—</em>
+        </p>
       ) : (
         <ul aria-label={`${label} Spells`} className="rpg-spell-entries">
           {ordered.map(({ group, name }) => {
@@ -472,11 +430,19 @@ function CasterSection({
         <span>
           Spellcasting · {caster.source}
           <small className="rpg-caster-meta">
-            {caster.ability
-              ? <>{" "}· {caster.ability} {signed(abilityMod)}{" "}· DC {saveDc}</>
-              : <>{" "}· <em>pick ability</em></>}
-            {" "}· {caster.type === "prepared" ? "prepared" : "known"}
-            {caster.tier !== "none" && <>{" "}· {caster.tier}-caster</>}
+            {caster.ability ? (
+              <>
+                {" "}
+                · {caster.ability} {signed(abilityMod)} · DC {saveDc}
+              </>
+            ) : (
+              <>
+                {" "}
+                · <em>pick ability</em>
+              </>
+            )}{" "}
+            · {caster.type === "prepared" ? "prepared" : "known"}
+            {caster.tier !== "none" && <> · {caster.tier}-caster</>}
           </small>
         </span>
       </header>
@@ -486,11 +452,13 @@ function CasterSection({
           // Always render the Cantrips drawer when the caster has any
           // cantrip budget — even empty, so the user sees the slot
           // count and can pick into it via the pending drawer.
-          if (caster.cantrips === 0
-            && cantripEntries.prepared.length === 0
-            && cantripEntries.granted.length === 0
-            && cantripEntries.ritual.length === 0
-            && cantripEntries.known.length === 0) {
+          if (
+            caster.cantrips === 0 &&
+            cantripEntries.prepared.length === 0 &&
+            cantripEntries.granted.length === 0 &&
+            cantripEntries.ritual.length === 0 &&
+            cantripEntries.known.length === 0
+          ) {
             return null;
           }
           return (
@@ -573,7 +541,7 @@ interface SpellPending {
 function collectFlavorOptions(
   caster: ResolvedCaster,
   inPool: Set<string>,
-  spellLibrary: Record<string, Record<string, unknown>>,
+  spellLibrary: Record<string, Record<string, unknown>>
 ): string[] {
   if (!caster.style || caster.style.length === 0) {
     return [];
@@ -638,7 +606,7 @@ function collectPending(
    *  `style:`) — merged additively into every caster's own declared
    *  style list so flavor picks apply even when the class config
    *  didn't declare the style itself. */
-  extraStyles?: unknown[],
+  extraStyles?: unknown[]
 ): SpellPending[] {
   const out: SpellPending[] = [];
   for (const caster of casters) {
@@ -672,13 +640,12 @@ function collectPending(
       const inPool = new Set(cantripPool.map(bareStem));
       // Flavor exceptions for cantrips: library spells outside the
       // cantrip pool whose style matches AND whose circle is "Cantrip".
-      const flavor = collectFlavorOptions(effectiveCaster, inPool, spellLibrary)
-        .filter((ref) => {
-          const stem = bareStem(ref);
-          const doc = spellLibrary[stem] as { circle?: unknown } | undefined;
-          const c = typeof doc?.circle === "string" ? circleNumber(doc.circle as string) : undefined;
-          return c === 0;
-        });
+      const flavor = collectFlavorOptions(effectiveCaster, inPool, spellLibrary).filter((ref) => {
+        const stem = bareStem(ref);
+        const doc = spellLibrary[stem] as { circle?: unknown } | undefined;
+        const c = typeof doc?.circle === "string" ? circleNumber(doc.circle as string) : undefined;
+        return c === 0;
+      });
       out.push({
         source: caster.source,
         category: "cantrips",
@@ -789,13 +756,12 @@ function collectPending(
         return /ritual/i.test(raw);
       });
       const inRitualPool = new Set(ritualPool.map(bareStem));
-      const flavorRitualRefs = collectFlavorOptions(effectiveCaster, inRitualPool, spellLibrary)
-        .filter((ref) => {
-          const stem = bareStem(ref);
-          const doc = spellLibrary[stem] as { circle?: unknown } | undefined;
-          const raw = typeof doc?.circle === "string" ? doc.circle : "";
-          return /ritual/i.test(raw);
-        });
+      const flavorRitualRefs = collectFlavorOptions(effectiveCaster, inRitualPool, spellLibrary).filter((ref) => {
+        const stem = bareStem(ref);
+        const doc = spellLibrary[stem] as { circle?: unknown } | undefined;
+        const raw = typeof doc?.circle === "string" ? doc.circle : "";
+        return /ritual/i.test(raw);
+      });
       // Fold `rituals_per_circle` (Ritualist talent, heritage grants, …)
       // into the per-level ritual budget. Each circle's first-unlock level
       // gets +N rituals — mirrors the rule "when a new circle unlocks,
@@ -813,7 +779,10 @@ function collectPending(
           let unlockLevel: number | undefined;
           for (let lv = 1; lv <= caster.level; lv++) {
             const slots = slotsForCaster(caster.tier, lv);
-            if ((slots[circle - 1] ?? 0) > 0) { unlockLevel = lv; break; }
+            if ((slots[circle - 1] ?? 0) > 0) {
+              unlockLevel = lv;
+              break;
+            }
           }
           if (unlockLevel == null) continue;
           effectiveByLevel[unlockLevel] = (effectiveByLevel[unlockLevel] ?? 0) + caster.rituals_per_circle;
@@ -886,10 +855,7 @@ function SpellPendingRow({
   const groups = pending.circles;
   const hasCircles = Array.isArray(groups) && groups.length > 0;
   const totalOptions = hasCircles
-    ? groups!.reduce(
-        (n, g) => n + g.options.length + (g.flavorOptions?.length ?? 0),
-        0,
-      )
+    ? groups!.reduce((n, g) => n + g.options.length + (g.flavorOptions?.length ?? 0), 0)
     : (pending.options?.length ?? 0) + (pending.flavorOptions?.length ?? 0);
   // Reusable button renderer — `flavor` flips the styling + exception
   // treatment (dashed border, transparent bg) via a data attribute the
@@ -914,10 +880,7 @@ function SpellPendingRow({
     );
   };
   return (
-    <aside
-      className="rpg-feature-pending"
-      aria-label={`Pending ${pending.label} for ${pending.source}`}
-    >
+    <aside className="rpg-feature-pending" aria-label={`Pending ${pending.label} for ${pending.source}`}>
       <p>
         pick {pending.remaining} more for <em>{pending.label}</em>
       </p>
@@ -934,9 +897,7 @@ function SpellPendingRow({
               <h4 className="rpg-spell-pending-circle-label">{ordinal(g.circle)} Circle</h4>
               <menu aria-label={`${ordinal(g.circle)} Circle Options`}>
                 {g.options.map((opt, i) => renderOption(opt, i, g.picked, false, g.circle))}
-                {(g.flavorOptions ?? []).map((opt, i) =>
-                  renderOption(opt, i, g.picked, true, g.circle),
-                )}
+                {(g.flavorOptions ?? []).map((opt, i) => renderOption(opt, i, g.picked, true, g.circle))}
               </menu>
             </div>
           ))}
@@ -944,9 +905,7 @@ function SpellPendingRow({
       ) : (
         <menu aria-label="Choice Options">
           {(pending.options ?? []).map((opt, i) => renderOption(opt, i, pending.picked, false))}
-          {(pending.flavorOptions ?? []).map((opt, i) =>
-            renderOption(opt, i, pending.picked, true),
-          )}
+          {(pending.flavorOptions ?? []).map((opt, i) => renderOption(opt, i, pending.picked, true))}
         </menu>
       )}
     </aside>
@@ -1015,9 +974,7 @@ function gatherSpellDecisions(
   casters: ResolvedCaster[],
   castersState: Record<string, CasterState>,
   onUndoCantrip: ((source: string, option: string) => void) | undefined,
-  onUndoCircleEntry:
-    | ((source: string, category: CircleCategory, circle: number, option: string) => void)
-    | undefined,
+  onUndoCircleEntry: ((source: string, category: CircleCategory, circle: number, option: string) => void) | undefined
 ): SpellDecisionGroup[] {
   const labelMap: Record<CircleCategory, SpellDecisionCategory["label"]> = {
     prepared: "Prepared",
@@ -1055,9 +1012,7 @@ function gatherSpellDecisions(
           circle,
           entries: picks.map((s) => ({
             spell: s,
-            onUndo: onUndoCircleEntry
-              ? () => onUndoCircleEntry(caster.source, cat, circle, s)
-              : undefined,
+            onUndo: onUndoCircleEntry ? () => onUndoCircleEntry(caster.source, cat, circle, s) : undefined,
           })),
         });
       }
@@ -1086,16 +1041,11 @@ function SpellsDecisionsLog({
   castersState: Record<string, CasterState>;
   noteKey: string;
   onUndoCantrip?: (source: string, option: string) => void;
-  onUndoCircleEntry?: (
-    source: string,
-    category: CircleCategory,
-    circle: number,
-    option: string,
-  ) => void;
+  onUndoCircleEntry?: (source: string, category: CircleCategory, circle: number, option: string) => void;
 }) {
   const groups = React.useMemo(
     () => gatherSpellDecisions(casters, castersState, onUndoCantrip, onUndoCircleEntry),
-    [casters, castersState, onUndoCantrip, onUndoCircleEntry],
+    [casters, castersState, onUndoCantrip, onUndoCircleEntry]
   );
   if (groups.length === 0) return null;
   const total = groups.reduce((n, g) => {
@@ -1147,11 +1097,7 @@ function SpellsDecisionsLog({
         {groups.map((g) => (
           <div key={g.source} className="rpg-feature-decisions-group">
             <p className="rpg-feature-decisions-source-line">
-              <a
-                className="internal-link rpg-feature-decisions-source-link"
-                href={g.source}
-                data-href={g.source}
-              >
+              <a className="internal-link rpg-feature-decisions-source-link" href={g.source} data-href={g.source}>
                 {g.source}
               </a>
             </p>
@@ -1164,9 +1110,7 @@ function SpellsDecisionsLog({
                   <React.Fragment key={circ.circle}>
                     {i > 0 && "; "}
                     <em className="rpg-feature-decisions-circle-tag">
-                      {cat.dimension === "level"
-                        ? `Lv. ${circ.circle}:`
-                        : `${ordinal(circ.circle)} Circle:`}
+                      {cat.dimension === "level" ? `Lv. ${circ.circle}:` : `${ordinal(circ.circle)} Circle:`}
                     </em>{" "}
                     {circ.entries.map((e, j) => renderEntry(e, j, j > 0))}
                   </React.Fragment>
@@ -1182,12 +1126,7 @@ function SpellsDecisionsLog({
 
 // ─── Block export ────────────────────────────────────────────────────────
 
-export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  expressions,
-}) => {
+export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const view = lookup.$features?.(header, features?.choices, features?.additional);
@@ -1196,7 +1135,9 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
   if (!view || view.casters.length === 0) {
     return (
       <section aria-details="Character Spells">
-        <p aria-details="No Casters"><em>No spellcasting class declared.</em></p>
+        <p aria-details="No Casters">
+          <em>No spellcasting class declared.</em>
+        </p>
       </section>
     );
   }
@@ -1204,9 +1145,11 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
   const stats = (blocks as any).stats as Record<string, unknown> | undefined;
   const spellLibrary = lookup.$spells ?? {};
 
-  const setCasters = (self as {
-    setCasters?: (u: (prev: SpellsProps["casters"]) => SpellsProps["casters"]) => void;
-  }).setCasters;
+  const setCasters = (
+    self as {
+      setCasters?: (u: (prev: SpellsProps["casters"]) => SpellsProps["casters"]) => void;
+    }
+  ).setCasters;
 
   const updateSpent = setCasters
     ? (source: string, circle: number, next: number) => {
@@ -1352,7 +1295,7 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
     // Character-level `style:` merges into every caster's own
     // declared style list — lets the sheet author attune a single
     // character without editing the class's shared config.
-    Array.isArray(self.style) ? self.style : self.style != null ? [self.style] : [],
+    Array.isArray(self.style) ? self.style : self.style != null ? [self.style] : []
   );
 
   return (
@@ -1370,11 +1313,7 @@ export const spells: EntityBlock<SpellsProps, CharacterEntity> = ({
             noteKey={noteKey}
             abilityMod={mod}
             proficiencyBonus={pb}
-            onSpentChange={
-              updateSpent
-                ? (circle, next) => updateSpent(caster.source, circle, next)
-                : undefined
-            }
+            onSpentChange={updateSpent ? (circle, next) => updateSpent(caster.source, circle, next) : undefined}
           />
         );
       })}

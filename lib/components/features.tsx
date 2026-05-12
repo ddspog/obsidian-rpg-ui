@@ -1,6 +1,6 @@
 /**
  * Features component
- * 
+ *
  * Displays class features, feats, and traits.
  * Phase 2: Read-only display with basic requirement checking.
  */
@@ -16,19 +16,9 @@ interface FeaturesProps {
   system: RPGSystem;
 }
 
-function FeatureItem({
-  feature,
-  isMet,
-  system,
-}: {
-  feature: Feature;
-  isMet: boolean;
-  system: RPGSystem;
-}) {
+function FeatureItem({ feature, isMet, system }: { feature: Feature; isMet: boolean; system: RPGSystem }) {
   // Find feature type definition from system
-  const featureType = feature.type
-    ? system.features.categories.find((ft) => ft.id === feature.type)
-    : undefined;
+  const featureType = feature.type ? system.features.categories.find((ft) => ft.id === feature.type) : undefined;
 
   return (
     <div className={`rpg-feature-item ${!isMet ? "rpg-feature-unmet" : ""}`}>
@@ -47,9 +37,7 @@ function FeatureItem({
           </span>
         )}
       </div>
-      {feature.description && (
-        <div className="rpg-feature-description">{feature.description}</div>
-      )}
+      {feature.description && <div className="rpg-feature-description">{feature.description}</div>}
       {!isMet && feature.requires && (
         <div className="rpg-feature-requirement">
           {feature.requires.level && `Requires level ${feature.requires.level}`}

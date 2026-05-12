@@ -1,6 +1,6 @@
 /**
  * Features view
- * 
+ *
  * Renders the features block.
  * Phase 2: Basic read-only rendering with requirement checking.
  */

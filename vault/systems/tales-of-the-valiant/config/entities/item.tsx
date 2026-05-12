@@ -36,22 +36,26 @@ import containerBlock from "../blocks/item/container";
  * Library indexing reads each item file's FIRST fence of each kind.
  */
 const item = CreateEntity<ItemEntity>(async ({ wiki }) => {
-  const compendium = ((await wiki.folder("worldbuilding/items")) as unknown as Array<{
-    $name?: string;
-    $contents?: string;
-  }>) ?? [];
-  const magicCompendium = ((await wiki.folder("worldbuilding/magic-items")) as unknown as Array<{
-    $name?: string;
-    $contents?: string;
-  }>) ?? [];
-  const containersCompendium = ((await wiki.folder("worldbuilding/containers")) as unknown as Array<{
-    $name?: string;
-    $contents?: string;
-  }>) ?? [];
-  const adventurers = ((await wiki.folder("adventurers")) as unknown as Array<{
-    $name?: string;
-    $contents?: string;
-  }>) ?? [];
+  const compendium =
+    ((await wiki.folder("worldbuilding/items")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
+  const magicCompendium =
+    ((await wiki.folder("worldbuilding/magic-items")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
+  const containersCompendium =
+    ((await wiki.folder("worldbuilding/containers")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
+  const adventurers =
+    ((await wiki.folder("adventurers")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
 
   const items: Record<string, ItemElementData> = {};
   const magic: Record<string, ItemMagicData> = {};

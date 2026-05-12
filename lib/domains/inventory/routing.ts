@@ -31,10 +31,7 @@ export const SECTION_LABELS: Record<SectionId, string> = {
   other_containers: "Other Containers",
 };
 
-export function classifyItem(
-  entry: YamlItemEntry,
-  meta: ItemMetadata,
-): SectionId {
+export function classifyItem(entry: YamlItemEntry, meta: ItemMetadata): SectionId {
   if (entry.container === "other") return "other_containers";
   if (entry.container === "main") return "main_containers";
   if (entry.contents && entry.contents.length > 0) return "main_containers";

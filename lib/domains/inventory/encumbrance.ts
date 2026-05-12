@@ -23,10 +23,7 @@ export interface EncumbranceBands {
 
 export type LoadState = "free" | "encumbered" | "heavy" | "over";
 
-export function computeBands(
-  strength: number,
-  overrides?: EncumbranceOverrides,
-): EncumbranceBands {
+export function computeBands(strength: number, overrides?: EncumbranceOverrides): EncumbranceBands {
   const str = Number.isFinite(strength) && strength > 0 ? strength : 0;
   return {
     encumbered: overrides?.encumbered ?? str * 5,

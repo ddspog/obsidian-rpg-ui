@@ -28,24 +28,16 @@ export function EntitySummary({ entity }: EntitySummaryProps) {
       <div className="entity-summary-body">
         {/* Frontmatter stats */}
         <div className="entity-stats">
-          {entity.frontmatter.level && (
-            <span className="stat-item">
-              Level: {entity.frontmatter.level}
-            </span>
-          )}
+          {entity.frontmatter.level && <span className="stat-item">Level: {entity.frontmatter.level}</span>}
           {entity.frontmatter.proficiency_bonus && (
-            <span className="stat-item">
-              Prof: +{entity.frontmatter.proficiency_bonus}
-            </span>
+            <span className="stat-item">Prof: +{entity.frontmatter.proficiency_bonus}</span>
           )}
         </div>
 
         {/* Code blocks available */}
         <div className="entity-blocks">
           {entity.codeBlocks.size > 0 && (
-            <p className="blocks-available">
-              Available blocks: {Array.from(entity.codeBlocks.keys()).join(", ")}
-            </p>
+            <p className="blocks-available">Available blocks: {Array.from(entity.codeBlocks.keys()).join(", ")}</p>
           )}
         </div>
       </div>

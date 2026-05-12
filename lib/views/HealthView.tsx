@@ -77,7 +77,9 @@ class HealthMarkdown extends ReactMarkdown {
       if (savedState) {
         healthState = HealthService.migrateHealthState(savedState, healthBlock);
         if (healthState !== savedState) {
-          await this.kv.set(stateKey, healthState).catch((e) => console.error("Error saving migrated health state:", e));
+          await this.kv
+            .set(stateKey, healthState)
+            .catch((e) => console.error("Error saving migrated health state:", e));
         }
       } else {
         await this.kv.set(stateKey, defaultState).catch((e) => console.error("Error saving initial health state:", e));

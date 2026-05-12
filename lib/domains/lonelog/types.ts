@@ -81,15 +81,7 @@ export interface NarrativeEntry {
 }
 
 // Persistent tag types
-export type PersistentTag =
-  | NPCTag
-  | LocationTag
-  | EventTag
-  | ClockTag
-  | TrackTag
-  | TimerTag
-  | ThreadTag
-  | PCTag;
+export type PersistentTag = NPCTag | LocationTag | EventTag | ClockTag | TrackTag | TimerTag | ThreadTag | PCTag;
 
 export interface NPCTag {
   kind: "npc";
@@ -150,12 +142,7 @@ export interface EntityDelta {
   changes: StateChange[];
 }
 
-export type StateChange =
-  | HPChange
-  | StatChange
-  | StatusChange
-  | TagAddition
-  | TagRemoval;
+export type StateChange = HPChange | StatChange | StatusChange | TagAddition | TagRemoval;
 
 export interface HPChange {
   type: "hp";

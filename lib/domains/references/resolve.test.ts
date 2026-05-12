@@ -80,10 +80,7 @@ describe("resolveReference — fence-body paths", () => {
       "```",
     ].join("\n");
     const view = buildView(doc);
-    const r = resolveReference(
-      parseReference("@[[W]].feature.details[Spellcasting].text")!,
-      view,
-    );
+    const r = resolveReference(parseReference("@[[W]].feature.details[Spellcasting].text")!, view);
     expect(r.value).toBe("Wizard slots");
   });
 

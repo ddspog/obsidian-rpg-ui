@@ -42,7 +42,13 @@ export function ProgressHealth({ value, max, secondary = 0 }: ProgressHealthProp
       <rect className="rpg-hp-track" x="0" y="0" width="100%" height="100%" />
       <rect className="rpg-hp-fill" x="0" y="0" width={primaryPct} height="100%" />
       {rawSecondaryPct > 0 && (
-        <rect className="rpg-hp-secondary" x={`calc(100% - ${secondaryPct})`} y="0" width={secondaryPct} height="100%" />
+        <rect
+          className="rpg-hp-secondary"
+          x={`calc(100% - ${secondaryPct})`}
+          y="0"
+          width={secondaryPct}
+          height="100%"
+        />
       )}
       <foreignObject x="0" y="0" width="100%" height="100%">
         <output aria-label="HP Summary">

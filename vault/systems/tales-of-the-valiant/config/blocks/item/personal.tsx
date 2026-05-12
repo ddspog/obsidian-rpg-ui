@@ -25,13 +25,7 @@ const personal: EntityBlock<ItemPersonalData, ItemEntity> = ({ self, lookup }) =
   const elements = (lookup?.$items ?? {}) as Record<string, ItemElementData>;
   const magicLib = (lookup?.$magic ?? {}) as Record<string, ItemMagicData>;
   const resolution = resolvePersonalItem(self, { elements, magic: magicLib });
-  return (
-    <ItemPersonalCard
-      data={self}
-      resolution={resolution}
-      renderMarkdown={(src) => <Markdown source={src} />}
-    />
-  );
+  return <ItemPersonalCard data={self} resolution={resolution} renderMarkdown={(src) => <Markdown source={src} />} />;
 };
 
 export default personal;

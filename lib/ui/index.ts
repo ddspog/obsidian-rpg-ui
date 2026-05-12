@@ -59,7 +59,7 @@ export type { LineControlProps } from "./Line/Line";
 export { Stats } from "./Line/Line";
 export type { LineStatsProps } from "./Line/Line";
 export { Lucide } from "./primitives/Lucide";
- 
+
 import { Stat as _Stat } from "./Stat/Stat";
 import { StatDiamond } from "./Stat/StatDiamond";
 export const Stat = Object.assign(_Stat, { Diamond: StatDiamond });

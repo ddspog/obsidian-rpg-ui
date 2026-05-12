@@ -38,27 +38,29 @@ export function DiceRollModal({ isOpen, dieType, onSpend, onClose }: DiceRollMod
   if (!isOpen) return null;
 
   return (
-    <dialog
-      aria-details="Dice Roll Modal"
-      open
-      aria-label={`Roll ${dieType}`}
-    >
+    <dialog aria-details="Dice Roll Modal" open aria-label={`Roll ${dieType}`}>
       <article>
         <header>
           <output aria-details="Die Type">{dieType}</output>
-          <button type="button" aria-label="Close" onClick={handleClose}>✕</button>
+          <button type="button" aria-label="Close" onClick={handleClose}>
+            ✕
+          </button>
         </header>
         <section aria-details="Roll Result">
-          {result !== null
-            ? <output aria-details="Roll Value">{result}</output>
-            : <span aria-details="Roll Prompt">Roll your {dieType}</span>}
+          {result !== null ? (
+            <output aria-details="Roll Value">{result}</output>
+          ) : (
+            <span aria-details="Roll Prompt">Roll your {dieType}</span>
+          )}
         </section>
         <footer>
           <button type="button" onClick={handleRoll}>
             {result !== null ? "Re-roll" : "Roll"}
           </button>
           {result !== null && (
-            <button type="button" onClick={handleUse}>Use Die</button>
+            <button type="button" onClick={handleUse}>
+              Use Die
+            </button>
           )}
         </footer>
       </article>

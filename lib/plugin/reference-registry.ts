@@ -68,9 +68,10 @@ export class ReferenceRegistry {
   private schedule(path: string): void {
     this.pendingPaths.add(path);
     if (this.rafId != null) return;
-    const schedule = typeof requestAnimationFrame === "function"
-      ? requestAnimationFrame
-      : (fn: () => void) => (setTimeout(fn, 16) as unknown as number);
+    const schedule =
+      typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame
+        : (fn: () => void) => setTimeout(fn, 16) as unknown as number;
     this.rafId = schedule(() => {
       this.rafId = null;
       const paths = Array.from(this.pendingPaths);

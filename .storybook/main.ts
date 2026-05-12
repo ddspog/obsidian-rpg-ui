@@ -14,7 +14,7 @@ const config: StorybookConfig = {
     "@storybook/addon-docs",
     "@storybook/addon-a11y",
     "@whitespace/storybook-addon-html",
-    "@storybook/addon-mcp"
+    "@storybook/addon-mcp",
   ],
   framework: {
     name: "@storybook/react-vite",

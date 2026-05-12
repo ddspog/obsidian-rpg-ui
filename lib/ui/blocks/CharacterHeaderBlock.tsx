@@ -24,9 +24,7 @@ export function CharacterHeaderBlock(props: Record<string, unknown>) {
         <div className="rpg-ui-block__detail">
           <span className="rpg-ui-block__detail-key">Class</span>
           <span className="rpg-ui-block__detail-value">{classLine}</span>
-          {totalLevel !== undefined && (
-            <span className="rpg-ui-block__detail-extra">(Level {totalLevel})</span>
-          )}
+          {totalLevel !== undefined && <span className="rpg-ui-block__detail-extra">(Level {totalLevel})</span>}
         </div>
       )}
       {race && (

@@ -48,18 +48,11 @@ export function TagPill({ tag, onClick }: TagPillProps) {
   };
 
   const getProgressBar = (): React.ReactNode => {
-    if (
-      tag.kind === "clock" ||
-      tag.kind === "event" ||
-      tag.kind === "track"
-    ) {
+    if (tag.kind === "clock" || tag.kind === "event" || tag.kind === "track") {
       const percentage = (tag.current / tag.max) * 100;
       return (
         <div className="tag-progress-bar">
-          <div
-            className="tag-progress-fill"
-            style={{ width: `${percentage}%` }}
-          />
+          <div className="tag-progress-fill" style={{ width: `${percentage}%` }} />
         </div>
       );
     }
@@ -85,11 +78,7 @@ export function TagPillList({ tags, onTagClick }: TagPillListProps) {
   return (
     <div className="lonelog-tag-pills">
       {tags.map((tag, index) => (
-        <TagPill
-          key={index}
-          tag={tag}
-          onClick={onTagClick ? () => onTagClick(tag) : undefined}
-        />
+        <TagPill key={index} tag={tag} onClick={onTagClick ? () => onTagClick(tag) : undefined} />
       ))}
     </div>
   );

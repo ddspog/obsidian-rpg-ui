@@ -1,10 +1,5 @@
 import * as React from "react";
-import {
-  EntityBlock,
-  ItemElementCard,
-  Markdown,
-  type ItemElementData,
-} from "rpg-ui-toolkit";
+import { EntityBlock, ItemElementCard, Markdown, type ItemElementData } from "rpg-ui-toolkit";
 import type { ItemEntity, ItemElementProps } from "../../entities/item.types";
 
 /**
@@ -20,12 +15,7 @@ import type { ItemEntity, ItemElementProps } from "../../entities/item.types";
  */
 const element: EntityBlock<ItemElementProps, ItemEntity> = ({ self }) => {
   const data: ItemElementData = self;
-  return (
-    <ItemElementCard
-      data={data}
-      renderMarkdown={(src) => <Markdown source={src} />}
-    />
-  );
+  return <ItemElementCard data={data} renderMarkdown={(src) => <Markdown source={src} />} />;
 };
 
 export default element;

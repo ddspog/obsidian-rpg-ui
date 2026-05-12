@@ -54,7 +54,7 @@ export function PendingChoiceRow({ pending, onToggle, onPick, buyBudget }: Pendi
   const levelTag = levelMatch ? ` (Lv. ${levelMatch[2]})` : "";
   const isAuto = baseName.startsWith("__auto_");
   const isComposite = category != null && baseName.endsWith(`:${category}`);
-  const cleanName = isAuto || isComposite ? category ?? baseName : baseName;
+  const cleanName = isAuto || isComposite ? (category ?? baseName) : baseName;
   const displayName = `${cleanName}${levelTag}`;
   const isAsi = choose?.type === "asi";
   // A feature may carry both `buy:` (for its feature.choice options) AND
@@ -63,10 +63,7 @@ export function PendingChoiceRow({ pending, onToggle, onPick, buyBudget }: Pendi
   // Buy-mode only applies to the emission WITHOUT a `choose:` on its
   // feature; the inline-choose pending still renders as a plain traits
   // picker even though the underlying `buy` budget is spread through.
-  const isBuy =
-    pending.feature.buy != null
-    && pending.feature.choose == null
-    && typeof buyBudget === "number";
+  const isBuy = pending.feature.buy != null && pending.feature.choose == null && typeof buyBudget === "number";
   const buySpent = isBuy
     ? pending.picked.reduce((sum, name) => {
         const opt = pending.options.find((o) => (o.name ?? "") === name);
@@ -82,24 +79,29 @@ export function PendingChoiceRow({ pending, onToggle, onPick, buyBudget }: Pendi
       <p>
         {isBuy ? (
           <>
-            spend up to <strong>{buyRemaining}</strong> more <small>({buySpent} / {buyBudget} spent)</small>
+            spend up to <strong>{buyRemaining}</strong> more{" "}
+            <small>
+              ({buySpent} / {buyBudget} spent)
+            </small>
           </>
         ) : (
           <>pick {pending.remaining} more</>
         )}
         {displayName && (
           <>
-            {" "}for <em>{displayName}</em>
+            {" "}
+            for <em>{displayName}</em>
           </>
         )}
       </p>
-      {pending.options.length > 0 && (
-        isAsi
-          ? <AsiOptions pending={pending} onPick={onPick} />
-          : isBuy
-            ? <BuyOptions pending={pending} onToggle={onToggle} remaining={buyRemaining} />
-            : <TraitsOptions pending={pending} onToggle={onToggle} />
-      )}
+      {pending.options.length > 0 &&
+        (isAsi ? (
+          <AsiOptions pending={pending} onPick={onPick} />
+        ) : isBuy ? (
+          <BuyOptions pending={pending} onToggle={onToggle} remaining={buyRemaining} />
+        ) : (
+          <TraitsOptions pending={pending} onToggle={onToggle} />
+        ))}
     </aside>
   );
 }
@@ -125,12 +127,7 @@ function BuyOptions({
         const disabled = !onToggle || (!alreadyPicked && cost > remaining);
         return (
           <li key={i}>
-            <button
-              type="button"
-              aria-pressed={alreadyPicked}
-              disabled={disabled}
-              onClick={() => onToggle?.(raw)}
-            >
+            <button type="button" aria-pressed={alreadyPicked} disabled={disabled} onClick={() => onToggle?.(raw)}>
               {label}
               <small className="rpg-feature-pending-buy-cost"> · {cost} pts</small>
             </button>
@@ -141,13 +138,7 @@ function BuyOptions({
   );
 }
 
-function TraitsOptions({
-  pending,
-  onToggle,
-}: {
-  pending: PendingChoice;
-  onToggle?: (option: string) => void;
-}) {
+function TraitsOptions({ pending, onToggle }: { pending: PendingChoice; onToggle?: (option: string) => void }) {
   return (
     <menu aria-label="Choice Options">
       {pending.options.map((o, i) => {
@@ -177,13 +168,7 @@ function TraitsOptions({
  *  `unique: false` opts into duplicate picks). Options that haven't been
  *  picked yet still render their `−` disabled so the control layout stays
  *  stable across states. */
-function AsiOptions({
-  pending,
-  onPick,
-}: {
-  pending: PendingChoice;
-  onPick?: (option: string, delta: 1 | -1) => void;
-}) {
+function AsiOptions({ pending, onPick }: { pending: PendingChoice; onPick?: (option: string, delta: 1 | -1) => void }) {
   const choose = pending.feature.choose;
   const spec = Array.isArray(choose) ? undefined : choose;
   const unique = spec?.unique !== false;

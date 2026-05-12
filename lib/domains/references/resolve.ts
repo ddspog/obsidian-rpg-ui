@@ -125,9 +125,7 @@ function resolveExplicit(fences: FenceMatch[], steps: RefStep[], key: string): R
  * same-named keys in different blocks never collide by accident.
  */
 function resolveShorthand(view: FileRefView, steps: RefStep[]): ResolveResult {
-  const probes: Array<{ label: string; data: unknown }> = [
-    { label: "metadata", data: view.frontmatter },
-  ];
+  const probes: Array<{ label: string; data: unknown }> = [{ label: "metadata", data: view.frontmatter }];
   for (const [key, fences] of Object.entries(view.fencesByKey)) {
     fences.forEach((f, i) => {
       if (f.body) probes.push({ label: fences.length > 1 ? `${key}[${i}]` : key, data: f.body });
@@ -161,7 +159,12 @@ function walkValue(initial: unknown, steps: RefStep[], baseTrace: string): Resol
   for (const step of steps) {
     trace = appendStep(trace, step);
     if (value == null) {
-      return { kind: "missing", value: undefined, trace, reason: `Cannot walk through ${value === null ? "null" : "undefined"}` };
+      return {
+        kind: "missing",
+        value: undefined,
+        trace,
+        reason: `Cannot walk through ${value === null ? "null" : "undefined"}`,
+      };
     }
     if (step.kind === "key") {
       if (typeof value !== "object" || Array.isArray(value)) {
@@ -175,7 +178,12 @@ function walkValue(initial: unknown, steps: RefStep[], baseTrace: string): Resol
       value = value[step.index];
     } else if (step.kind === "named") {
       if (!Array.isArray(value)) {
-        return { kind: "missing", value: undefined, trace, reason: `[${step.name}] requires an array of named entries` };
+        return {
+          kind: "missing",
+          value: undefined,
+          trace,
+          reason: `[${step.name}] requires an array of named entries`,
+        };
       }
       value = value.find((entry) => {
         if (!entry || typeof entry !== "object") return false;

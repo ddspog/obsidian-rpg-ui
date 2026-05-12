@@ -20,11 +20,7 @@ interface ItemPersonalCardProps {
  * sections (notes / history / campaign reveals) live as plain markdown
  * outside the fence — this card is strictly mechanical + descriptive.
  */
-export function ItemPersonalCard({
-  data,
-  resolution,
-  renderMarkdown,
-}: ItemPersonalCardProps) {
+export function ItemPersonalCard({ data, resolution, renderMarkdown }: ItemPersonalCardProps) {
   const element = resolution?.effectiveElement;
   const magicTexts = resolution?.magicTexts ?? [];
   const hasWeapon = element?.weapon != null;
@@ -49,9 +45,7 @@ export function ItemPersonalCard({
           {element.weight != null && (
             <div className="rpg-item-card__stripline-pair">
               <dt>Weight</dt>
-              <dd>
-                {typeof element.weight === "number" ? `${element.weight} lb.` : element.weight}
-              </dd>
+              <dd>{typeof element.weight === "number" ? `${element.weight} lb.` : element.weight}</dd>
             </div>
           )}
           {element.rarity && (
@@ -170,21 +164,13 @@ function renderMixed(value: string, keyBase: string | number): React.ReactNode {
   let match: RegExpExecArray | null;
   while ((match = re.exec(value)) !== null) {
     if (match.index > cursor) {
-      parts.push(
-        <React.Fragment key={`${keyBase}-t-${cursor}`}>
-          {value.slice(cursor, match.index)}
-        </React.Fragment>,
-      );
+      parts.push(<React.Fragment key={`${keyBase}-t-${cursor}`}>{value.slice(cursor, match.index)}</React.Fragment>);
     }
     parts.push(renderWikilink(match[0], `${keyBase}-l-${match.index}`));
     cursor = match.index + match[0].length;
   }
   if (cursor < value.length) {
-    parts.push(
-      <React.Fragment key={`${keyBase}-t-${cursor}-tail`}>
-        {value.slice(cursor)}
-      </React.Fragment>,
-    );
+    parts.push(<React.Fragment key={`${keyBase}-t-${cursor}-tail`}>{value.slice(cursor)}</React.Fragment>);
   }
   return <>{parts}</>;
 }
@@ -197,12 +183,7 @@ function renderWikilink(raw: string, key: number | string): React.ReactNode {
   const pipe = inner.indexOf("|");
   const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
   return (
-    <a
-      key={key}
-      className="internal-link"
-      href={target}
-      data-href={target}
-    >
+    <a key={key} className="internal-link" href={target} data-href={target}>
       {label}
     </a>
   );

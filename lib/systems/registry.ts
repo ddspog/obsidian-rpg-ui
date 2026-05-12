@@ -133,9 +133,13 @@ export class SystemRegistry {
     this.loadSystemAsync(systemFolderPath);
   }
 
-  public clearCache(): void { this.systemCache.clear(); }
+  public clearCache(): void {
+    this.systemCache.clear();
+  }
 
-  public getFolderMappings(): Map<string, string> { return new Map(this.folderMappings); }
+  public getFolderMappings(): Map<string, string> {
+    return new Map(this.folderMappings);
+  }
 
   public registerFolderMapping(folderPath: string, systemFolderPath: string): void {
     this.folderMappings.set(folderPath, systemFolderPath);

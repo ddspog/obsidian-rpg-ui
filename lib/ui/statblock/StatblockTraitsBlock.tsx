@@ -42,9 +42,7 @@ export function StatblockTraitsBlock(props: Record<string, unknown>) {
               return (
                 <div key={traitName} className="rpg-ui-statblock-traits-block__item">
                   <strong className="rpg-ui-statblock-traits-block__name">{traitName}.</strong>
-                  {description && (
-                    <span className="rpg-ui-statblock-traits-block__description"> {description}</span>
-                  )}
+                  {description && <span className="rpg-ui-statblock-traits-block__description"> {description}</span>}
                 </div>
               );
             })}

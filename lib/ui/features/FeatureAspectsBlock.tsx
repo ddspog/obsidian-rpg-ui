@@ -29,14 +29,10 @@ export function FeatureAspectsBlock(props: Record<string, unknown>) {
             return (
               <div key={aspectName} className="rpg-ui-feature-aspects-block__item">
                 <div className="rpg-ui-feature-aspects-block__header">
-                  {aspect.type && (
-                    <span className="rpg-ui-feature-aspects-block__type">{aspect.type}</span>
-                  )}
+                  {aspect.type && <span className="rpg-ui-feature-aspects-block__type">{aspect.type}</span>}
                   <span className="rpg-ui-feature-aspects-block__name">{aspectName}</span>
                 </div>
-                {description && (
-                  <div className="rpg-ui-feature-aspects-block__description">{description}</div>
-                )}
+                {description && <div className="rpg-ui-feature-aspects-block__description">{description}</div>}
               </div>
             );
           })}

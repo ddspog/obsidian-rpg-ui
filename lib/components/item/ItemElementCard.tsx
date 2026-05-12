@@ -26,12 +26,7 @@ function renderWikilink(raw: string, key: number | string): React.ReactNode {
   const target = match[1].split("|")[0];
   const label = cleanLabel(raw);
   return (
-    <a
-      key={key}
-      className="internal-link"
-      href={target}
-      data-href={target}
-    >
+    <a key={key} className="internal-link" href={target} data-href={target}>
       {label}
     </a>
   );
@@ -47,21 +42,13 @@ function renderMixed(value: string, keyBase: string | number): React.ReactNode {
   let match: RegExpExecArray | null;
   while ((match = re.exec(value)) !== null) {
     if (match.index > cursor) {
-      parts.push(
-        <React.Fragment key={`${keyBase}-t-${cursor}`}>
-          {value.slice(cursor, match.index)}
-        </React.Fragment>,
-      );
+      parts.push(<React.Fragment key={`${keyBase}-t-${cursor}`}>{value.slice(cursor, match.index)}</React.Fragment>);
     }
     parts.push(renderWikilink(match[0], `${keyBase}-l-${match.index}`));
     cursor = match.index + match[0].length;
   }
   if (cursor < value.length) {
-    parts.push(
-      <React.Fragment key={`${keyBase}-t-${cursor}-tail`}>
-        {value.slice(cursor)}
-      </React.Fragment>,
-    );
+    parts.push(<React.Fragment key={`${keyBase}-t-${cursor}-tail`}>{value.slice(cursor)}</React.Fragment>);
   }
   return <>{parts}</>;
 }
@@ -79,11 +66,7 @@ function InlineLinkList({ values }: { values: string[] }) {
   );
 }
 
-export function ItemElementCard({
-  data,
-  showDescription = true,
-  renderMarkdown,
-}: ItemElementCardProps) {
+export function ItemElementCard({ data, showDescription = true, renderMarkdown }: ItemElementCardProps) {
   const hasWeapon = data.weapon != null;
   const hasArmor = data.armor != null;
   // Container metadata (volume_cap / weight_cap) is authored on
@@ -125,9 +108,7 @@ export function ItemElementCard({
       </dl>
 
       {showDescription && data.desc && (
-        <div className="rpg-item-card__desc">
-          {renderMarkdown ? renderMarkdown(data.desc) : <p>{data.desc}</p>}
-        </div>
+        <div className="rpg-item-card__desc">{renderMarkdown ? renderMarkdown(data.desc) : <p>{data.desc}</p>}</div>
       )}
 
       {hasWeapon && (

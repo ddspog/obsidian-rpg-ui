@@ -14,7 +14,13 @@ export interface InspirationalLevelProps {
   className?: string;
 }
 
-export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInspiration, className }: InspirationalLevelProps) {
+export function InspirationalLevel({
+  level,
+  inspiration,
+  maxPoints,
+  onUpdateInspiration,
+  className,
+}: InspirationalLevelProps) {
   const count = Math.max(1, maxPoints || 5);
   const buttons: number[] = [];
   for (let i = 1; i <= count; i++) buttons.push(i);
@@ -29,14 +35,9 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
   const radiusPct = 100;
 
   return (
-    <figure
-      aria-details="Inspirational Level"
-    >
+    <figure aria-details="Inspirational Level">
       {/* Decorative medallion ring — fills the full figure area */}
-      <CircleBadge
-        ringColor="var(--rpg-badge-ring, #2d2a27)"
-        decorColor="var(--rpg-badge-decor, #e3dcce)"
-      />
+      <CircleBadge ringColor="var(--rpg-badge-ring, #2d2a27)" decorColor="var(--rpg-badge-decor, #e3dcce)" />
 
       {/* Central badge — shows current character level (semantic output) */}
       <output aria-details="Character Level">{level}</output>
@@ -45,14 +46,14 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
       <menu aria-details="Inspiration Points">
         {buttons.map((n) => {
           // Distribute buttons evenly, starting from the top (−90°)
-          const angleDeg = (n - 1) / count * 360 - 90;
+          const angleDeg = ((n - 1) / count) * 360 - 90;
           const angleRad = (angleDeg * Math.PI) / 180;
           // Convert to percentage offsets from the top-left of the container.
           // radiusPct is a percentage of the container's half-width (e.g. 72 means 72% of 36px).
           // To convert that to a percent offset of the full container (for CSS %), halve it.
           const offsetPercent = radiusPct / 2;
           const leftPct = 50 + offsetPercent * Math.cos(angleRad);
-          const topPct  = 50 + offsetPercent * Math.sin(angleRad);
+          const topPct = 50 + offsetPercent * Math.sin(angleRad);
 
           return (
             <button
@@ -64,18 +65,16 @@ export function InspirationalLevel({ level, inspiration, maxPoints, onUpdateInsp
               onClick={() => handleClick(n)}
             >
               <StarDot
-                fillColor={n <= inspiration
-                  ? "var(--rpg-star-active-fill, #7a5500)"
-                  : "var(--rpg-star-fill, #2d2a27)"}
-                decorColor={n <= inspiration
-                  ? "var(--rpg-star-active-decor, #FFD400)"
-                  : "var(--rpg-star-decor, #e3dcce)"}
-                accentColor={n <= inspiration
-                  ? "var(--rpg-star-active-accent, #4a3200)"
-                  : "var(--rpg-star-accent, #3c3833)"}
-                highlightColor={n <= inspiration
-                  ? "var(--rpg-star-active-highlight, #fffacc)"
-                  : "var(--rpg-star-highlight, #f0ece0)"}
+                fillColor={n <= inspiration ? "var(--rpg-star-active-fill, #7a5500)" : "var(--rpg-star-fill, #2d2a27)"}
+                decorColor={
+                  n <= inspiration ? "var(--rpg-star-active-decor, #FFD400)" : "var(--rpg-star-decor, #e3dcce)"
+                }
+                accentColor={
+                  n <= inspiration ? "var(--rpg-star-active-accent, #4a3200)" : "var(--rpg-star-accent, #3c3833)"
+                }
+                highlightColor={
+                  n <= inspiration ? "var(--rpg-star-active-highlight, #fffacc)" : "var(--rpg-star-highlight, #f0ece0)"
+                }
               />
             </button>
           );

@@ -47,7 +47,7 @@ function buildInventory(
   opts: {
     strength?: number;
     currency?: ResolvedInventory["currency"];
-  } = {},
+  } = {}
 ): ResolvedInventory {
   const sections: ResolvedInventory["sections"] = (
     ["weapons", "armor", "visible", "main_containers", "other_containers"] as SectionId[]
@@ -130,7 +130,7 @@ export const Basic: Story = {
             }),
           ],
         },
-        { currency: { gp: 10 }, strength: 10 },
+        { currency: { gp: 10 }, strength: 10 }
       )}
     />
   ),
@@ -184,7 +184,7 @@ export const WithContainers: Story = {
             }),
           ],
         },
-        { currency: { gp: 12, sp: 5 }, strength: 12 },
+        { currency: { gp: 12, sp: 5 }, strength: 12 }
       )}
     />
   ),
@@ -236,7 +236,7 @@ export const HeavyLoad: Story = {
             }),
           ],
         },
-        { strength: 8, currency: { gp: 3 } }, // carry 120 / heavy 80
+        { strength: 8, currency: { gp: 3 } } // carry 120 / heavy 80
       )}
     />
   ),

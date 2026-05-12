@@ -26,11 +26,7 @@ interface ItemMagicCardProps {
  * resolver picks them up only when a `rpg item.personal` referencing
  * this template is equipped.
  */
-export function ItemMagicCard({
-  data,
-  showDescription = true,
-  renderMarkdown,
-}: ItemMagicCardProps) {
+export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: ItemMagicCardProps) {
   const appliesTo = formatAppliesTo(data.applies_to);
   const hasVariants = data.variants && Object.keys(data.variants).length > 0;
 
@@ -103,7 +99,9 @@ export function ItemMagicCard({
                 <tr key={key}>
                   <td>{key}</td>
                   <td>{variant.rarity ?? "—"}</td>
-                  <td>{variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—")}</td>
+                  <td>
+                    {variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—")}
+                  </td>
                   <td>{variant.cost ?? "—"}</td>
                 </tr>
               ))}
@@ -134,11 +132,7 @@ function formatAppliesTo(raw: ItemMagicData["applies_to"]): string | null {
   if (!raw) return null;
   const parts: string[] = [];
   if (raw.kinds && raw.kinds.length > 0) {
-    parts.push(
-      raw.kinds
-        .map((k) => k.charAt(0).toUpperCase() + k.slice(1))
-        .join(" / "),
-    );
+    parts.push(raw.kinds.map((k) => k.charAt(0).toUpperCase() + k.slice(1)).join(" / "));
   }
   if (raw.families && raw.families.length > 0) {
     parts.push(`(${raw.families.map(cleanWikilink).join(", ")})`);

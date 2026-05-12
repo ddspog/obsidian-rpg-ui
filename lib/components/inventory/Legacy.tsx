@@ -1,6 +1,6 @@
 /**
  * Inventory component
- * 
+ *
  * Displays inventory items, currency, and encumbrance.
  * Phase 2: Read-only display of items and currency.
  */
@@ -75,12 +75,8 @@ export function Inventory({ data, totalWeight, capacity }: InventoryProps) {
                 <div key={itemIdx} className="rpg-inventory-item">
                   <div className="rpg-item-header">
                     <span className="rpg-item-name">{item.name}</span>
-                    {item.quantity && item.quantity > 1 && (
-                      <span className="rpg-item-quantity">×{item.quantity}</span>
-                    )}
-                    {item.weight && (
-                      <span className="rpg-item-weight">{item.weight * (item.quantity || 1)} lbs</span>
-                    )}
+                    {item.quantity && item.quantity > 1 && <span className="rpg-item-quantity">×{item.quantity}</span>}
+                    {item.weight && <span className="rpg-item-weight">{item.weight * (item.quantity || 1)} lbs</span>}
                   </div>
                   {item.description && <div className="rpg-item-description">{item.description}</div>}
                   {item.tags && item.tags.length > 0 && (

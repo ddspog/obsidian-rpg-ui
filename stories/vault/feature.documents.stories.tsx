@@ -12,14 +12,7 @@ import React from "react";
 import { expect, within } from "storybook/test";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
-import {
-  backgrounds,
-  classes,
-  heritages,
-  lineages,
-  subclasses,
-  type CompendiumRaw,
-} from "../lib/wiki-fixtures";
+import { backgrounds, classes, heritages, lineages, subclasses, type CompendiumRaw } from "../lib/wiki-fixtures";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
@@ -73,13 +66,7 @@ function renderDocument(system: RPGSystem, doc: CompendiumRaw) {
     <article aria-label={`Compendium ${doc.$name}`}>
       <h2>{doc.$name}</h2>
       {blocks.map((b, i) => (
-        <RpgBlock
-          key={`${b.kind}-${i}`}
-          system={system}
-          entity="feature"
-          block={b.kind}
-          yaml={b.yaml}
-        />
+        <RpgBlock key={`${b.kind}-${i}`} system={system} entity="feature" block={b.kind} yaml={b.yaml} />
       ))}
     </article>
   );
@@ -112,8 +99,7 @@ export const FighterDocument: Story = {
 
 export const LifeDomainDocument: Story = {
   name: "Subclass · Life Domain",
-  render: (_args, { loaded }) =>
-    renderDocument(loaded.system, findDoc(subclasses, "Life Domain")),
+  render: (_args, { loaded }) => renderDocument(loaded.system, findDoc(subclasses, "Life Domain")),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("heading", { name: "Life Domain" })).toBeInTheDocument();
@@ -142,8 +128,7 @@ export const HumanDocument: Story = {
 
 export const GreatHouseDocument: Story = {
   name: "Heritage · Great House",
-  render: (_args, { loaded }) =>
-    renderDocument(loaded.system, findDoc(heritages, "Great House")),
+  render: (_args, { loaded }) => renderDocument(loaded.system, findDoc(heritages, "Great House")),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("heading", { name: "Great House" })).toBeInTheDocument();
@@ -159,8 +144,7 @@ export const GreatHouseDocument: Story = {
 
 export const AdherentDocument: Story = {
   name: "Background · Adherent",
-  render: (_args, { loaded }) =>
-    renderDocument(loaded.system, findDoc(backgrounds, "Adherent")),
+  render: (_args, { loaded }) => renderDocument(loaded.system, findDoc(backgrounds, "Adherent")),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("heading", { name: "Adherent" })).toBeInTheDocument();

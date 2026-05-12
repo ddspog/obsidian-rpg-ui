@@ -62,7 +62,9 @@ function EventCard({ entry, onTagClick }: EventCardProps) {
 
     case "roll":
       return (
-        <div className={`lonelog-event-card event-roll ${entry.success !== undefined ? (entry.success ? "roll-success" : "roll-failure") : ""}`}>
+        <div
+          className={`lonelog-event-card event-roll ${entry.success !== undefined ? (entry.success ? "roll-success" : "roll-failure") : ""}`}
+        >
           <span className="event-symbol">🎲</span>
           <span className="roll-expression">{entry.roll}</span>
           {entry.result && (

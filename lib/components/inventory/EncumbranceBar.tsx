@@ -23,22 +23,17 @@ export function EncumbranceBar({ total, bands, load }: EncumbranceBarProps) {
       <div className="rpg-inventory-block__encumbrance-grid">
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Total Wht.</span>
-          <span className="rpg-inventory-block__encumbrance-value">
-            {formatWeight(total)} lb.
-          </span>
+          <span className="rpg-inventory-block__encumbrance-value">{formatWeight(total)} lb.</span>
         </div>
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Carry Capacity</span>
           <span className="rpg-inventory-block__encumbrance-value">
-            {formatWeight(bands.encumbered)} lb. - {formatWeight(bands.heavy)} lb. -{" "}
-            {formatWeight(bands.carry)} lb.
+            {formatWeight(bands.encumbered)} lb. - {formatWeight(bands.heavy)} lb. - {formatWeight(bands.carry)} lb.
           </span>
         </div>
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Max. Push Wgt.</span>
-          <span className="rpg-inventory-block__encumbrance-value">
-            {formatWeight(bands.push)} lb.
-          </span>
+          <span className="rpg-inventory-block__encumbrance-value">{formatWeight(bands.push)} lb.</span>
         </div>
       </div>
       <div
@@ -77,10 +72,7 @@ export function EncumbranceBar({ total, bands, load }: EncumbranceBarProps) {
             width: `${pct(bands.push) - pct(bands.carry)}%`,
           }}
         />
-        <div
-          className="rpg-inventory-block__encumbrance-marker"
-          style={{ left: `${pct(total)}%` }}
-        />
+        <div className="rpg-inventory-block__encumbrance-marker" style={{ left: `${pct(total)}%` }} />
       </div>
     </section>
   );

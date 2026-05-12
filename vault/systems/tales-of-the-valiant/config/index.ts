@@ -25,12 +25,9 @@
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
 import { CreateSystem, CreateEntity } from "rpg-ui-toolkit";
-import type {
-  ConditionDefinition,
-  SkillDefinition,
-} from "rpg-ui-toolkit";
-import attributes from './attributes';
-import spellcastTable from './spellslots';
+import type { ConditionDefinition, SkillDefinition } from "rpg-ui-toolkit";
+import attributes from "./attributes";
+import spellcastTable from "./spellslots";
 import character from "./entities/character";
 import item from "./entities/item";
 import featureDetails from "./blocks/feature/details";
@@ -41,8 +38,8 @@ import featureLevel from "./blocks/feature/level";
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
   attributes,
-  skills: await wiki.folder("glossary/skills") as unknown as SkillDefinition[],
-  conditions: await wiki.folder("glossary/conditions") as unknown as ConditionDefinition[],
+  skills: (await wiki.folder("glossary/skills")) as unknown as SkillDefinition[],
+  conditions: (await wiki.folder("glossary/conditions")) as unknown as ConditionDefinition[],
 
   // ── Entity Types ─────────────────────────────────────────────────────────────
   entities: {
@@ -56,9 +53,16 @@ export const system = CreateSystem(async ({ wiki }) => ({
       },
     })),
 
-    subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "parent_class", type: "string", default: "" }] })),
+    subclass: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      frontmatter: [{ name: "parent_class", type: "string", default: "" }],
+    })),
 
-    lineage: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [{ name: "size", type: "string", default: "medium" }, { name: "speed", type: "number", default: 30 }] })),
+    lineage: CreateEntity(({ wiki }: { wiki?: any }) => ({
+      frontmatter: [
+        { name: "size", type: "string", default: "medium" },
+        { name: "speed", type: "number", default: 30 },
+      ],
+    })),
 
     heritage: CreateEntity(({ wiki }: { wiki?: any }) => ({ frontmatter: [] })),
 

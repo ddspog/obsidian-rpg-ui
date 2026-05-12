@@ -38,8 +38,7 @@ const REF_CLASS = "rpg-ref";
 /** Matches an inline-code element whose entire text content is a
  *  single `@[[…]].path` reference. We use this to strip the code
  *  wrapper so the rendered value isn't typeset as monospaced text. */
-const WHOLE_REF_PATTERN =
-  /^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+\s*$/;
+const WHOLE_REF_PATTERN = /^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+\s*$/;
 
 /** Factory returning the post-processor callback. */
 export function buildReferenceProcessor(deps: ReferenceProcessorDeps) {
@@ -76,7 +75,7 @@ export function buildReferenceProcessor(deps: ReferenceProcessorDeps) {
 
     // Group matches by host text node so we can safely splice each in
     // a single reverse pass (later matches first — indices stay valid).
-    const byNode = new Map<Text, typeof found[number][]>();
+    const byNode = new Map<Text, (typeof found)[number][]>();
     for (const f of found) {
       const arr = byNode.get(f.node) ?? [];
       arr.push(f);
@@ -104,7 +103,7 @@ function replaceRange(
   ref: ParsedRef,
   deps: ReferenceProcessorDeps,
   ctx: MarkdownPostProcessorContext,
-  child: MarkdownRenderChild,
+  child: MarkdownRenderChild
 ): void {
   const after = node.splitText(end);
   const middle = node.splitText(start);
@@ -129,7 +128,7 @@ function replaceRange(
         reason: `Cannot resolve wikilink [[${ref.target}]]`,
       },
       span,
-      deps,
+      deps
     );
     return;
   }

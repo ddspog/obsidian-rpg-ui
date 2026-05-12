@@ -132,11 +132,7 @@ function parseBlocks(lines: string[]): Block[] {
       if (rest) {
         const paraLines: string[] = [rest];
         i++;
-        while (
-          i < end &&
-          lines[i].trim() !== "" &&
-          !isBlockStart(lines[i])
-        ) {
+        while (i < end && lines[i].trim() !== "" && !isBlockStart(lines[i])) {
           paraLines.push(lines[i]);
           i++;
         }
@@ -201,11 +197,7 @@ function renderInline(text: string, keyPrefix: string = "i"): React.ReactNode[] 
     let m = /^\*\*([^*]+)\*\*/.exec(rest);
     if (m) {
       flush();
-      nodes.push(
-        <strong key={`${keyPrefix}-${k++}`}>
-          {renderInline(m[1], `${keyPrefix}-${k}`)}
-        </strong>,
-      );
+      nodes.push(<strong key={`${keyPrefix}-${k++}`}>{renderInline(m[1], `${keyPrefix}-${k}`)}</strong>);
       i += m[0].length;
       continue;
     }
@@ -214,11 +206,7 @@ function renderInline(text: string, keyPrefix: string = "i"): React.ReactNode[] 
     m = /^__([^_]+)__/.exec(rest);
     if (m) {
       flush();
-      nodes.push(
-        <strong key={`${keyPrefix}-${k++}`}>
-          {renderInline(m[1], `${keyPrefix}-${k}`)}
-        </strong>,
-      );
+      nodes.push(<strong key={`${keyPrefix}-${k++}`}>{renderInline(m[1], `${keyPrefix}-${k}`)}</strong>);
       i += m[0].length;
       continue;
     }
@@ -230,12 +218,9 @@ function renderInline(text: string, keyPrefix: string = "i"): React.ReactNode[] 
       const target = m[1].trim();
       const display = (m[2] ?? m[1]).trim();
       nodes.push(
-        <a
-          key={`${keyPrefix}-${k++}`}
-          href={`#${target.replace(/\s+/g, "-")}`}
-        >
+        <a key={`${keyPrefix}-${k++}`} href={`#${target.replace(/\s+/g, "-")}`}>
           {display}
-        </a>,
+        </a>
       );
       i += m[0].length;
       continue;
@@ -245,11 +230,7 @@ function renderInline(text: string, keyPrefix: string = "i"): React.ReactNode[] 
     m = /^_([^_\n]+)_/.exec(rest);
     if (m) {
       flush();
-      nodes.push(
-        <em key={`${keyPrefix}-${k++}`}>
-          {renderInline(m[1], `${keyPrefix}-${k}`)}
-        </em>,
-      );
+      nodes.push(<em key={`${keyPrefix}-${k++}`}>{renderInline(m[1], `${keyPrefix}-${k}`)}</em>);
       i += m[0].length;
       continue;
     }
@@ -258,11 +239,7 @@ function renderInline(text: string, keyPrefix: string = "i"): React.ReactNode[] 
     m = /^\*([^*\n]+)\*/.exec(rest);
     if (m) {
       flush();
-      nodes.push(
-        <em key={`${keyPrefix}-${k++}`}>
-          {renderInline(m[1], `${keyPrefix}-${k}`)}
-        </em>,
-      );
+      nodes.push(<em key={`${keyPrefix}-${k++}`}>{renderInline(m[1], `${keyPrefix}-${k}`)}</em>);
       i += m[0].length;
       continue;
     }
@@ -298,9 +275,7 @@ function TxTable({ raw }: { raw: string }) {
   if (tableLines.length < 2) return null;
 
   const rows = tableLines.map(splitRow);
-  const sepIdx = rows.findIndex((r) =>
-    r.every((c) => /^:?-+:?$/.test(c)),
-  );
+  const sepIdx = rows.findIndex((r) => r.every((c) => /^:?-+:?$/.test(c)));
   const headerRows = sepIdx >= 0 ? rows.slice(0, sepIdx) : [];
   const bodyRows = sepIdx >= 0 ? rows.slice(sepIdx + 1) : rows;
 
@@ -329,7 +304,7 @@ function TxTable({ raw }: { raw: string }) {
                   </th>
                 ) : (
                   <td key={ci}>{renderInline(cell, `tx-${ri}-${ci}`)}</td>
-                ),
+                )
               )}
             </tr>
           ))}
@@ -351,13 +326,9 @@ function renderHeaderCells(row: string[], rowIndex: number): React.ReactNode[] {
     let span = 1;
     while (i + span < row.length && row[i + span] === "") span++;
     cells.push(
-      <th
-        key={`${rowIndex}-${k++}`}
-        scope="col"
-        colSpan={span > 1 ? span : undefined}
-      >
+      <th key={`${rowIndex}-${k++}`} scope="col" colSpan={span > 1 ? span : undefined}>
         {renderInline(row[i], `th-${rowIndex}-${k}`)}
-      </th>,
+      </th>
     );
     i += span;
   }
@@ -366,20 +337,9 @@ function renderHeaderCells(row: string[], rowIndex: number): React.ReactNode[] {
 
 // ─── Block renderer ───────────────────────────────────────────────────────────
 
-function Callout({
-  kind,
-  title,
-  children,
-}: {
-  kind: string;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Callout({ kind, title, children }: { kind: string; title: string; children: React.ReactNode }) {
   return (
-    <aside
-      className={`rpg-callout rpg-callout-${kind.toLowerCase()}`}
-      aria-label={title || kind}
-    >
+    <aside className={`rpg-callout rpg-callout-${kind.toLowerCase()}`} aria-label={title || kind}>
       <header>
         <strong>{title || kind}</strong>
       </header>
@@ -388,17 +348,14 @@ function Callout({
   );
 }
 
-function ImageEmbed({
-  target,
-  params,
-}: {
-  target: string;
-  params: string;
-}) {
+function ImageEmbed({ target, params }: { target: string; params: string }) {
   // Params can carry alignment (right/left), dimensions, visibility flags.
   // In the Storybook preview we don't have the original asset, so render a
   // semantic placeholder figure that respects the requested float when given.
-  const tokens = params.split("|").map((t) => t.trim()).filter(Boolean);
+  const tokens = params
+    .split("|")
+    .map((t) => t.trim())
+    .filter(Boolean);
   const align = tokens.find((t) => t === "left" || t === "right");
   const widthTok = tokens.find((t) => /^\d+$/.test(t));
   const style: React.CSSProperties = {};
@@ -406,11 +363,7 @@ function ImageEmbed({
   if (align === "right") style.float = "right";
   if (widthTok) style.width = `${widthTok}px`;
   return (
-    <figure
-      className="rpg-md-embed"
-      style={style}
-      aria-label={`Embed ${target}`}
-    >
+    <figure className="rpg-md-embed" style={style} aria-label={`Embed ${target}`}>
       <figcaption>
         <em>{target}</em>
       </figcaption>
@@ -418,11 +371,7 @@ function ImageEmbed({
   );
 }
 
-function renderBlock(
-  block: Block,
-  system: RPGSystem,
-  key: string,
-): React.ReactNode {
+function renderBlock(block: Block, system: RPGSystem, key: string): React.ReactNode {
   switch (block.type) {
     case "heading": {
       const Tag = `h${Math.min(block.level, 6)}` as keyof React.JSX.IntrinsicElements;
@@ -452,29 +401,13 @@ function renderBlock(
     case "callout":
       return (
         <Callout key={key} kind={block.kind} title={block.title}>
-          {block.children.map((b, i) =>
-            renderBlock(b, system, `${key}-${i}`),
-          )}
+          {block.children.map((b, i) => renderBlock(b, system, `${key}-${i}`))}
         </Callout>
       );
     case "image":
-      return (
-        <ImageEmbed
-          key={key}
-          target={block.target}
-          params={block.params}
-        />
-      );
+      return <ImageEmbed key={key} target={block.target} params={block.params} />;
     case "feature":
-      return (
-        <RpgBlock
-          key={key}
-          system={system}
-          entity="feature"
-          block={block.subtype}
-          yaml={block.yaml}
-        />
-      );
+      return <RpgBlock key={key} system={system} entity="feature" block={block.subtype} yaml={block.yaml} />;
     case "tx":
       return <TxTable key={key} raw={block.raw} />;
     case "code":
@@ -505,10 +438,7 @@ export function ObsidianMarkdown({
   ariaLabel = "Compendium page",
   className = "rpg-compendium-page",
 }: ObsidianMarkdownProps) {
-  const blocks = React.useMemo(
-    () => parseBlocks(source.split("\n")),
-    [source],
-  );
+  const blocks = React.useMemo(() => parseBlocks(source.split("\n")), [source]);
   return (
     <article aria-label={ariaLabel} className={className}>
       {blocks.map((b, i) => renderBlock(b, system, `b-${i}`))}

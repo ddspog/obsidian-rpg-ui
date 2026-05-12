@@ -72,7 +72,7 @@ describe("resolvePersonalItem", () => {
     const r = resolvePersonalItem(personal, LOOKUPS);
     expect(r).not.toBeNull();
     // Bonus is stamped onto the effective element's weapon.bonus so
-    // `deriveWeaponAttack`'s existing `parseWeaponBonus` path picks it
+    // `deriveWeaponRoll`'s existing `parseWeaponBonus` path picks it
     // up. Overlay is left empty to avoid double-counting.
     expect(r!.effectiveElement.weapon?.bonus).toBe("+1");
     expect(r!.weaponOverlay.attackBonus).toBeUndefined();
@@ -156,9 +156,7 @@ describe("resolvePersonalItem", () => {
       magic: ["[[Sentinel Shield]]"],
     };
     const r = resolvePersonalItem(personal, lookups);
-    expect(r!.magicTexts).toEqual([
-      "While holding this shield, you have advantage on initiative rolls.",
-    ]);
+    expect(r!.magicTexts).toEqual(["While holding this shield, you have advantage on initiative rolls."]);
   });
 
   it("lets the personal's rarity override any inherited variant rarity", () => {

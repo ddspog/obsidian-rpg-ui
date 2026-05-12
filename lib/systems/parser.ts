@@ -15,13 +15,7 @@ import { parse as parseYaml } from "yaml";
 import * as Handlebars from "handlebars";
 import { extractCodeBlocks, extractFirstCodeBlock } from "lib/utils/codeblock-extractor";
 import { CreateSystem } from "./create-system";
-import type {
-  AttributeDefinition,
-  SkillDefinition,
-  ConditionDefinition,
-  ExpressionDef,
-  RPGSystem,
-} from "./types";
+import type { AttributeDefinition, SkillDefinition, ConditionDefinition, ExpressionDef, RPGSystem } from "./types";
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 

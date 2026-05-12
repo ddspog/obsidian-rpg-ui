@@ -71,9 +71,7 @@ function asStringArray(raw: unknown): string[] | undefined {
  * `armor.*`, `container.*`, `image`). First-match-wins per field so
  * partially-migrated vaults keep rendering sensibly.
  */
-export function parseItemMetadata(
-  frontmatter: Record<string, unknown> | undefined | null,
-): ItemMetadata {
+export function parseItemMetadata(frontmatter: Record<string, unknown> | undefined | null): ItemMetadata {
   const fm = frontmatter ?? {};
   const weapon = (fm.weapon && typeof fm.weapon === "object" ? fm.weapon : {}) as Record<string, unknown>;
   const armor = (fm.armor && typeof fm.armor === "object" ? fm.armor : {}) as Record<string, unknown>;
@@ -157,9 +155,7 @@ export function itemTypeBucket(type: string | undefined): "weapon" | "armor" | "
  * armor so the equip toggle can route them to the correct slot
  * (`shield` vs. `armor`). Returns null for non-equippable items.
  */
-export function itemEquipKind(
-  type: string | undefined,
-): "weapon" | "armor" | "shield" | null {
+export function itemEquipKind(type: string | undefined): "weapon" | "armor" | "shield" | null {
   if (!type) return null;
   const t = type.toLowerCase();
   if (/\bshields?\b/.test(t)) return "shield";

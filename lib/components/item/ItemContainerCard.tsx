@@ -141,9 +141,7 @@ export function ItemContainerCard({
   const overCapacity = capacity != null && totalWeight > capacity;
 
   const currency = data.currency ?? {};
-  const hasCurrency = Object.values(currency).some(
-    (v) => typeof v === "number" && v > 0,
-  );
+  const hasCurrency = Object.values(currency).some((v) => typeof v === "number" && v > 0);
   // Sum the cost of every `for_sale`-flagged row across every section so
   // the "To Sell" line under the currency chips reflects the total a
   // shopkeeper would pay if the player offloaded everything currently
@@ -189,9 +187,7 @@ export function ItemContainerCard({
           {element.weight != null && (
             <div className="rpg-item-card__stripline-pair">
               <dt>Weight</dt>
-              <dd>
-                {typeof element.weight === "number" ? `${element.weight} lb.` : element.weight}
-              </dd>
+              <dd>{typeof element.weight === "number" ? `${element.weight} lb.` : element.weight}</dd>
             </div>
           )}
           {element.rarity && (
@@ -204,9 +200,7 @@ export function ItemContainerCard({
       )}
 
       {magicTexts.map((text, i) => (
-        <React.Fragment key={i}>
-          {renderMarkdown ? renderMarkdown(text) : <p>{text}</p>}
-        </React.Fragment>
+        <React.Fragment key={i}>{renderMarkdown ? renderMarkdown(text) : <p>{text}</p>}</React.Fragment>
       ))}
 
       {!isHidden(data.hide, "base.desc") && element?.desc && (
@@ -219,27 +213,20 @@ export function ItemContainerCard({
         <CurrencyRow currency={currency} sellTotals={sellTotals} />
       ) : null}
 
-      {capacity != null && (
-        <CapacityBar total={totalWeight} capacity={capacity} />
-      )}
+      {capacity != null && <CapacityBar total={totalWeight} capacity={capacity} />}
 
       {resolvedSections.map((section, idx) => {
         const authored = authoredSections[idx];
-        const sectionToggle = onToggleForSale && authored
-          ? (item: ResolvedItem) => onToggleForSale({
-              source: authored.source,
-              sectionIndex: authored.sectionIndex,
-              path: item.id.split(".").map((s) => Number(s)),
-            })
-          : undefined;
-        return (
-          <Section
-            key={section.id}
-            section={section}
-            hideWhenEmpty
-            onToggleForSale={sectionToggle}
-          />
-        );
+        const sectionToggle =
+          onToggleForSale && authored
+            ? (item: ResolvedItem) =>
+                onToggleForSale({
+                  source: authored.source,
+                  sectionIndex: authored.sectionIndex,
+                  path: item.id.split(".").map((s) => Number(s)),
+                })
+            : undefined;
+        return <Section key={section.id} section={section} hideWhenEmpty onToggleForSale={sectionToggle} />;
       })}
 
       {element?.image && (
@@ -270,35 +257,22 @@ function CapacityBar({ total, capacity }: { total: number; capacity: number }) {
   const percentOfCap = Math.round(ratio * 100);
   // Bar-space coordinates: 200 % of cap = 100 % of bar width.
   const markerPct = Math.min(100, (ratio / 2) * 100);
-  const level =
-    ratio >= 2 ? "critical" :
-    ratio >= 1 ? "over" :
-    ratio >= 0.5 ? "warn" :
-    "ok";
+  const level = ratio >= 2 ? "critical" : ratio >= 1 ? "over" : ratio >= 0.5 ? "warn" : "ok";
   return (
-    <section
-      className="rpg-inventory-block__encumbrance rpg-inventory-block__capacity"
-      data-level={level}
-    >
+    <section className="rpg-inventory-block__encumbrance rpg-inventory-block__capacity" data-level={level}>
       <h5 className="rpg-inventory-block__section-title">Capacity</h5>
       <div className="rpg-inventory-block__encumbrance-grid">
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Total Wht.</span>
-          <span className="rpg-inventory-block__encumbrance-value">
-            {formatPounds(total)} lb.
-          </span>
+          <span className="rpg-inventory-block__encumbrance-value">{formatPounds(total)} lb.</span>
         </div>
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Capacity</span>
-          <span className="rpg-inventory-block__encumbrance-value">
-            {formatPounds(capacity)} lb.
-          </span>
+          <span className="rpg-inventory-block__encumbrance-value">{formatPounds(capacity)} lb.</span>
         </div>
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Load</span>
-          <span className="rpg-inventory-block__encumbrance-value">
-            {percentOfCap}%
-          </span>
+          <span className="rpg-inventory-block__encumbrance-value">{percentOfCap}%</span>
         </div>
       </div>
       <div
@@ -308,34 +282,14 @@ function CapacityBar({ total, capacity }: { total: number; capacity: number }) {
         aria-valuemin={0}
         aria-valuemax={Math.round(capacity * 2)}
       >
-        <div
-          className="rpg-inventory-block__capacity-band"
-          data-band="ok"
-          style={{ left: 0, width: "25%" }}
-        />
-        <div
-          className="rpg-inventory-block__capacity-band"
-          data-band="warn"
-          style={{ left: "25%", width: "25%" }}
-        />
-        <div
-          className="rpg-inventory-block__capacity-band"
-          data-band="over"
-          style={{ left: "50%", width: "50%" }}
-        />
+        <div className="rpg-inventory-block__capacity-band" data-band="ok" style={{ left: 0, width: "25%" }} />
+        <div className="rpg-inventory-block__capacity-band" data-band="warn" style={{ left: "25%", width: "25%" }} />
+        <div className="rpg-inventory-block__capacity-band" data-band="over" style={{ left: "50%", width: "50%" }} />
         {/* Threshold tick marks at 50 % / 100 % / 200 % of cap. */}
         {[25, 50, 100].map((p) => (
-          <div
-            key={p}
-            className="rpg-inventory-block__capacity-tick"
-            style={{ left: `${p}%` }}
-            aria-hidden="true"
-          />
+          <div key={p} className="rpg-inventory-block__capacity-tick" style={{ left: `${p}%` }} aria-hidden="true" />
         ))}
-        <div
-          className="rpg-inventory-block__encumbrance-marker"
-          style={{ left: `${markerPct}%` }}
-        />
+        <div className="rpg-inventory-block__encumbrance-marker" style={{ left: `${markerPct}%` }} />
       </div>
     </section>
   );
@@ -356,9 +310,7 @@ function isHidden(hide: string[] | undefined, key: string): boolean {
  *  `{ amount, denomination }`. Mirror of the inventory resolver's
  *  internal helper so the card can sum sell totals without exposing
  *  it as a public utility. */
-function parseCoin(
-  raw: string | undefined,
-): { amount: number; denomination: keyof CurrencyPurse } | null {
+function parseCoin(raw: string | undefined): { amount: number; denomination: keyof CurrencyPurse } | null {
   if (!raw) return null;
   const m = raw.match(/(-?\d+(?:\.\d+)?)\s*(pp|gp|ep|sp|cp)/i);
   if (!m) return null;
@@ -417,21 +369,13 @@ function renderMixed(value: string, keyBase: string | number): React.ReactNode {
   let match: RegExpExecArray | null;
   while ((match = re.exec(value)) !== null) {
     if (match.index > cursor) {
-      parts.push(
-        <React.Fragment key={`${keyBase}-t-${cursor}`}>
-          {value.slice(cursor, match.index)}
-        </React.Fragment>,
-      );
+      parts.push(<React.Fragment key={`${keyBase}-t-${cursor}`}>{value.slice(cursor, match.index)}</React.Fragment>);
     }
     parts.push(renderWikilink(match[0], `${keyBase}-l-${match.index}`));
     cursor = match.index + match[0].length;
   }
   if (cursor < value.length) {
-    parts.push(
-      <React.Fragment key={`${keyBase}-t-${cursor}-tail`}>
-        {value.slice(cursor)}
-      </React.Fragment>,
-    );
+    parts.push(<React.Fragment key={`${keyBase}-t-${cursor}-tail`}>{value.slice(cursor)}</React.Fragment>);
   }
   return <>{parts}</>;
 }
@@ -444,12 +388,7 @@ function renderWikilink(raw: string, key: number | string): React.ReactNode {
   const pipe = inner.indexOf("|");
   const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
   return (
-    <a
-      key={key}
-      className="internal-link"
-      href={target}
-      data-href={target}
-    >
+    <a key={key} className="internal-link" href={target} data-href={target}>
       {label}
     </a>
   );

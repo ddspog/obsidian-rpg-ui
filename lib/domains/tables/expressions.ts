@@ -232,9 +232,7 @@ const HELPERS: Record<string, Helper> = {
     const stepFlag = stepExpr ? resolveValue(stepExpr, ctx).toLowerCase() : "";
     const isStep = stepFlag === "true" || stepFlag === "1" || stepFlag === "yes";
 
-    const record = isStep
-      ? rowByKeyStep(t, rowValue)
-      : rowByKey(t, rowValue);
+    const record = isStep ? rowByKeyStep(t, rowValue) : rowByKey(t, rowValue);
     if (!record) return undefined;
 
     const colExpr = call.kwargs.col;
@@ -260,9 +258,7 @@ const HELPERS: Record<string, Helper> = {
     if (!t || t.rows.length === 0) return undefined;
 
     const seedExpr = call.kwargs.seed;
-    const seed = seedExpr
-      ? resolveValue(seedExpr, ctx)
-      : `${tableName}:${ctx.defaultSeed ?? ""}`;
+    const seed = seedExpr ? resolveValue(seedExpr, ctx) : `${tableName}:${ctx.defaultSeed ?? ""}`;
     const row = pickWithSeed(t.rows, seed);
     if (!row) return undefined;
 
@@ -298,23 +294,20 @@ export function substituteExpressions(source: string, ctx: EvalContext): string 
   // generic `{{helper args}}` grammar below, so we handle it separately
   // before the main parser runs. The colon between `leveled` and the map
   // is optional so both `leveled: { … }` and `leveled { … }` parse.
-  const withLeveled = source.replace(
-    /\{\{\s*leveled\s*:?\s*\{([^{}]*)\}\s*\}\}/g,
-    (match, body) => {
-      const levelRaw = ctx.vars["CLASS_LEVEL"] ?? ctx.vars["LV"];
-      const level = typeof levelRaw === "number" ? levelRaw : Number(levelRaw);
-      if (!Number.isFinite(level)) return match;
-      let best: { key: number; value: string } | null = null;
-      for (const entry of String(body).split(",")) {
-        const m = entry.match(/^\s*(\d+)\s*:\s*(.+?)\s*$/);
-        if (!m) continue;
-        const key = parseInt(m[1], 10);
-        if (!Number.isFinite(key) || key > level) continue;
-        if (!best || key > best.key) best = { key, value: m[2] };
-      }
-      return best?.value ?? match;
-    },
-  );
+  const withLeveled = source.replace(/\{\{\s*leveled\s*:?\s*\{([^{}]*)\}\s*\}\}/g, (match, body) => {
+    const levelRaw = ctx.vars["CLASS_LEVEL"] ?? ctx.vars["LV"];
+    const level = typeof levelRaw === "number" ? levelRaw : Number(levelRaw);
+    if (!Number.isFinite(level)) return match;
+    let best: { key: number; value: string } | null = null;
+    for (const entry of String(body).split(",")) {
+      const m = entry.match(/^\s*(\d+)\s*:\s*(.+?)\s*$/);
+      if (!m) continue;
+      const key = parseInt(m[1], 10);
+      if (!Number.isFinite(key) || key > level) continue;
+      if (!best || key > best.key) best = { key, value: m[2] };
+    }
+    return best?.value ?? match;
+  });
   return withLeveled.replace(/\{\{([^{}]+)\}\}/g, (match, inner) => {
     try {
       const call = parseExpr(inner);

@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { FileRefCache, type VaultAdapter } from "./cache";
 
-function mockAdapter(files: Record<string, string>, fm: Record<string, Record<string, unknown>> = {}): VaultAdapter & { reads: string[] } {
+function mockAdapter(
+  files: Record<string, string>,
+  fm: Record<string, Record<string, unknown>> = {}
+): VaultAdapter & { reads: string[] } {
   const reads: string[] = [];
   return {
     reads,
@@ -15,11 +18,7 @@ function mockAdapter(files: Record<string, string>, fm: Record<string, Record<st
   };
 }
 
-const LONGSWORD_DOC = [
-  "```rpg item.element",
-  "cost: 15 gp",
-  "```",
-].join("\n");
+const LONGSWORD_DOC = ["```rpg item.element", "cost: 15 gp", "```"].join("\n");
 
 describe("FileRefCache", () => {
   it("reads a file once and reuses the cached view", async () => {
@@ -34,10 +33,7 @@ describe("FileRefCache", () => {
   it("coalesces concurrent reads onto one promise", async () => {
     const adapter = mockAdapter({ "Longsword.md": LONGSWORD_DOC });
     const cache = new FileRefCache(adapter);
-    const [a, b] = await Promise.all([
-      cache.get("Longsword.md"),
-      cache.get("Longsword.md"),
-    ]);
+    const [a, b] = await Promise.all([cache.get("Longsword.md"), cache.get("Longsword.md")]);
     expect(a).toBe(b);
     expect(adapter.reads).toEqual(["Longsword.md"]);
   });
@@ -74,17 +70,16 @@ describe("FileRefCache", () => {
     const adapter = mockAdapter({ "L.md": LONGSWORD_DOC });
     const cache = new FileRefCache(adapter);
     const good = vi.fn();
-    cache.onChange(() => { throw new Error("boom"); });
+    cache.onChange(() => {
+      throw new Error("boom");
+    });
     cache.onChange(good);
     cache.invalidate("L.md");
     expect(good).toHaveBeenCalled();
   });
 
   it("merges frontmatter into the view", async () => {
-    const adapter = mockAdapter(
-      { "Talon.md": "" },
-      { "Talon.md": { cssclasses: ["note-adventurer"] } },
-    );
+    const adapter = mockAdapter({ "Talon.md": "" }, { "Talon.md": { cssclasses: ["note-adventurer"] } });
     const cache = new FileRefCache(adapter);
     const view = await cache.get("Talon.md");
     expect(view?.frontmatter.cssclasses).toEqual(["note-adventurer"]);

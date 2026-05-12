@@ -5,28 +5,15 @@
  * metadata cache and tests / Storybook can back it with a static map.
  */
 
-import type {
-  CurrencyPurse,
-  EquipSlot,
-  NewInventoryBlock,
-  SectionId,
-  YamlItemEntry,
-} from "./schema";
+import type { CurrencyPurse, EquipSlot, NewInventoryBlock, SectionId, YamlItemEntry } from "./schema";
 import { wikilinkLabel, wikilinkTarget } from "./schema";
 import type { ItemMetadata } from "./item-frontmatter";
 import { itemEquipKind, parseItemMetadata } from "./item-frontmatter";
 import { classifyItem, isContainerEntry, SECTION_ORDER } from "./routing";
-import {
-  classifyLoad,
-  computeBands,
-  type EncumbranceBands,
-  type LoadState,
-} from "./encumbrance";
+import { classifyLoad, computeBands, type EncumbranceBands, type LoadState } from "./encumbrance";
 
 /** Look up a compendium item's frontmatter by wikilink target or bare name. */
-export type LookupFn = (
-  target: string,
-) => Record<string, unknown> | undefined;
+export type LookupFn = (target: string) => Record<string, unknown> | undefined;
 
 export interface ResolvedItem {
   id: string;
@@ -112,12 +99,7 @@ export interface ResolveInventoryArgs {
   attunement?: { active: number; cap: number };
 }
 
-export function resolveInventory({
-  block,
-  lookup,
-  strength,
-  attunement,
-}: ResolveInventoryArgs): ResolvedInventory {
+export function resolveInventory({ block, lookup, strength, attunement }: ResolveInventoryArgs): ResolvedInventory {
   // Resolve items and place each in its section. Containers keep their
   // contents nested; only the container's combined weight counts toward the
   // section / grand total.
@@ -138,9 +120,7 @@ export function resolveInventory({
     // arrows?" next to the Longbow row than hunting through Main
     // Containers. Non-ammo containers (or ammo containers with mixed
     // contents) keep their classifyItem verdict.
-    const section = resolved.isAmmoTracking
-      ? "weapons"
-      : classifyItem(entry, resolved.meta);
+    const section = resolved.isAmmoTracking ? "weapons" : classifyItem(entry, resolved.meta);
     sectionsMap[section].push(resolved);
     grandTotal += resolved.totalWeight;
   });
@@ -203,11 +183,7 @@ function parseCoin(raw: string | undefined): { amount: number; denomination: key
   return { amount, denomination: m[2].toLowerCase() as keyof CurrencyPurse };
 }
 
-function resolveEntry(
-  entry: YamlItemEntry,
-  path: string,
-  lookup: LookupFn,
-): ResolvedItem {
+function resolveEntry(entry: YamlItemEntry, path: string, lookup: LookupFn): ResolvedItem {
   const target = wikilinkTarget(entry.name);
   const link = target ? entry.name : null;
   const label = target ? wikilinkLabel(entry.name) : entry.name;
@@ -219,7 +195,7 @@ function resolveEntry(
   const qty = entry.qty && entry.qty > 0 ? entry.qty : 1;
 
   const contents: ResolvedItem[] = (entry.contents ?? []).map((child, i) =>
-    resolveEntry(child, `${path}.${i}`, lookup),
+    resolveEntry(child, `${path}.${i}`, lookup)
   );
 
   const selfWeight = meta.weight * qty;
@@ -239,17 +215,11 @@ function resolveEntry(
   // back to normal container rendering — the ammo declaration is
   // still authored, it just doesn't trigger the tracking mode this
   // render.
-  const ammoTargets = new Set(
-    (meta.forAmmo ?? []).map(wikiStem).filter(Boolean),
-  );
+  const ammoTargets = new Set((meta.forAmmo ?? []).map(wikiStem).filter(Boolean));
   const isAmmoTracking = Boolean(
-    ammoTargets.size > 0 &&
-      contents.length > 0 &&
-      contents.every((c) => ammoTargets.has(wikiStem(c.link ?? c.label))),
+    ammoTargets.size > 0 && contents.length > 0 && contents.every((c) => ammoTargets.has(wikiStem(c.link ?? c.label)))
   );
-  const ammoCarried = isAmmoTracking
-    ? contents.reduce((acc, c) => acc + c.qty, 0)
-    : 0;
+  const ammoCarried = isAmmoTracking ? contents.reduce((acc, c) => acc + c.qty, 0) : 0;
 
   const equipKind = itemEquipKind(meta.type);
   // Shields are equipped-by-ownership. A character carrying a shield is

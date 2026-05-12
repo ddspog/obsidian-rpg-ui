@@ -1,1 +1,1 @@
-export const system = { name: 'fixture-system' } as const;
+export const system = { name: "fixture-system" } as const;

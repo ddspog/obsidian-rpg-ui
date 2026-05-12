@@ -38,7 +38,7 @@ type Story = StoryObj;
 function renderFeatures(
   system: RPGSystem,
   header: HeaderFixture,
-  choices: Record<string, Record<string, string | string[]>> = {},
+  choices: Record<string, Record<string, string | string[]>> = {}
 ) {
   const headerYaml = buildHeaderYaml(header);
   const featuresYaml = buildFeaturesYaml(choices);
@@ -74,7 +74,7 @@ export const Lv1Cleric: Story = {
         Human: { "Skill Versatility": ["Stealth"] },
         "Great House": { Language: "Dwarvish" },
         Adherent: { "Background Skills": ["Investigation", "Religion"] },
-      },
+      }
     ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -109,7 +109,7 @@ export const LevelProgression: Story = {
         Human: { "Skill Versatility": ["Perception"] },
         "Great House": { Language: "Elvish" },
         Adherent: { "Background Skills": ["Religion", "Persuasion"] },
-      },
+      }
     ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -140,7 +140,7 @@ export const PendingChoices: Story = {
         Human: { "Skill Versatility": ["Stealth"] },
         "Great House": { Language: "Dwarvish" },
         Adherent: { "Background Skills": ["Investigation", "Religion"] },
-      },
+      }
     ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -181,7 +181,7 @@ export const MulticlassFighterCleric: Story = {
         Human: { "Skill Versatility": ["Acrobatics"] },
         "Great House": { Language: "Dwarvish" },
         Adherent: { "Background Skills": ["Investigation", "Religion"] },
-      },
+      }
     ),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);

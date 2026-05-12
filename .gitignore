@@ -37,3 +37,6 @@ docs/.vitepress/dist
 /api.d.ts
 /esbuild.wasm
 
+# Local debug scratch (screenshots, temp dumps)
+tmp/
+

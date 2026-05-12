@@ -11,22 +11,24 @@
  * works as an override for the rare case an author needs to set save
  * vantage/bonus by hand.
  */
-type AttributeBase = number | {
-  value: number;
-  save?: {
-    proficiency?: number;
-    vantage?: number;
-    bonus?: number;
-  };
-};
+type AttributeBase =
+  | number
+  | {
+      value: number;
+      save?: {
+        proficiency?: number;
+        vantage?: number;
+        bonus?: number;
+      };
+    };
 
 export type StatsProps = {
-    /** Each core attribute — number shorthand for the starting score, or
-     *  an object `{ value, save: {…} }` to author save overrides. */
-    STR?: AttributeBase;
-    DEX?: AttributeBase;
-    CON?: AttributeBase;
-    INT?: AttributeBase;
-    WIS?: AttributeBase;
-    CHA?: AttributeBase;
-}
+  /** Each core attribute — number shorthand for the starting score, or
+   *  an object `{ value, save: {…} }` to author save overrides. */
+  STR?: AttributeBase;
+  DEX?: AttributeBase;
+  CON?: AttributeBase;
+  INT?: AttributeBase;
+  WIS?: AttributeBase;
+  CHA?: AttributeBase;
+};

@@ -8,20 +8,9 @@
 
 import { parse } from "yaml";
 
-export type SectionId =
-  | "weapons"
-  | "armor"
-  | "tools"
-  | "visible"
-  | "main_containers"
-  | "other_containers";
+export type SectionId = "weapons" | "armor" | "tools" | "visible" | "main_containers" | "other_containers";
 
-export type EquipSlot =
-  | "main_hand"
-  | "off_hand"
-  | "armor"
-  | "shield"
-  | "attuned";
+export type EquipSlot = "main_hand" | "off_hand" | "armor" | "shield" | "attuned";
 
 export interface CurrencyPurse {
   pp?: number;
@@ -66,9 +55,7 @@ export interface NewInventoryBlock {
  * shape (with top-level `sections:` and no `items:`) so the caller can fall
  * back to the legacy renderer.
  */
-export function parseNewInventoryBlock(
-  yamlString: string,
-): NewInventoryBlock | null {
+export function parseNewInventoryBlock(yamlString: string): NewInventoryBlock | null {
   let parsed: unknown;
   try {
     parsed = parse(yamlString);
@@ -188,13 +175,7 @@ function isSectionId(v: unknown): v is SectionId {
 }
 
 function isEquipSlot(v: unknown): v is EquipSlot {
-  return (
-    v === "main_hand" ||
-    v === "off_hand" ||
-    v === "armor" ||
-    v === "shield" ||
-    v === "attuned"
-  );
+  return v === "main_hand" || v === "off_hand" || v === "armor" || v === "shield" || v === "attuned";
 }
 
 /** Strip `[[…]]` wrapper and prefer the alias after `|` when present. */

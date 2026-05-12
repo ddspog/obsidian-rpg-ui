@@ -12,18 +12,11 @@ describe("normalizeColumnKey", () => {
 
 describe("splitCells", () => {
   it("splits a plain row into cells", () => {
-    expect(splitCells("| a | b | c |")).toEqual([
-      { value: "a" },
-      { value: "b" },
-      { value: "c" },
-    ]);
+    expect(splitCells("| a | b | c |")).toEqual([{ value: "a" }, { value: "b" }, { value: "c" }]);
   });
 
   it("handles `||` as a colspan extension on the previous cell", () => {
-    expect(splitCells("| a || b |")).toEqual([
-      { value: "a", colspan: 2 },
-      { value: "b" },
-    ]);
+    expect(splitCells("| a || b |")).toEqual([{ value: "a", colspan: 2 }, { value: "b" }]);
   });
 
   it("supports multiple colspan extensions in a row", () => {
@@ -92,15 +85,7 @@ describe("parseTableBlock", () => {
     expect(t.headerRows).toHaveLength(2);
     expect(t.headerRows[0].cells[0]).toEqual({ value: "CLERIC", colspan: 4 });
     expect(t.columns).toEqual(["level", "pb", "features", "cantrips", "1st", "2nd", "3rd"]);
-    expect(t.rows[0].cells.map((c) => c.value)).toEqual([
-      "1",
-      "+2",
-      "Spellcasting",
-      "3",
-      "2",
-      "—",
-      "—",
-    ]);
+    expect(t.rows[0].cells.map((c) => c.value)).toEqual(["1", "+2", "Spellcasting", "3", "2", "—", "—"]);
   });
 
   it("ignores blank lines and stray non-pipe lines between rows", () => {
@@ -216,9 +201,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
     const t = parseTableBlock("npc", body);
     const segs = t.footerRows[0].cells[0].segments;
     expect(segs.every((s) => s.kind === "text")).toBe(true);
-    expect(segs.map((s) => (s as { text: string }).text).join("")).toBe(
-      " {{ unknown : foo }} ",
-    );
+    expect(segs.map((s) => (s as { text: string }).text).join("")).toBe(" {{ unknown : foo }} ");
   });
 
   it("does not treat ordinary `||` colspan rows as footer rows", () => {

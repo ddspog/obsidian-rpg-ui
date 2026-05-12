@@ -63,10 +63,7 @@ function detectMetaFromSource(source: string): string | null {
     return "feature.level";
   }
   const featureMarkers = ["subtitle", "tag", "pick", "uses", "link", "value", "values", "type"];
-  if (
-    topLevelKeys.has("name") &&
-    featureMarkers.some((k) => topLevelKeys.has(k))
-  ) {
+  if (topLevelKeys.has("name") && featureMarkers.some((k) => topLevelKeys.has(k))) {
     return "feature.details";
   }
 
@@ -89,9 +86,7 @@ function detectMetaFromSource(source: string): string | null {
   // dispatcher recover the name from `sectionInfo.text` when needed.
   const lines = source.split("\n");
   const hasPipeRow = lines.some((l) => /^\s*\|.*\|/.test(l.trim()));
-  const hasSeparator = lines.some((l) =>
-    /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()),
-  );
+  const hasSeparator = lines.some((l) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()));
   if (hasPipeRow && hasSeparator) return "table";
 
   // Final fallback: a block with `name:` and no other recognised marker is

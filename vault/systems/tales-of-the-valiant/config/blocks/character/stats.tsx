@@ -5,15 +5,21 @@ import { StatsProps } from "./stats.types";
 import type { FeaturesBlockData } from "./features.types";
 
 const ATTRS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const;
-type AttrCode = typeof ATTRS[number];
+type AttrCode = (typeof ATTRS)[number];
 
 const ATTR_ALIAS: Record<string, AttrCode> = {
-  STR: "STR", STRENGTH: "STR",
-  DEX: "DEX", DEXTERITY: "DEX",
-  CON: "CON", CONSTITUTION: "CON",
-  INT: "INT", INTELLIGENCE: "INT",
-  WIS: "WIS", WISDOM: "WIS",
-  CHA: "CHA", CHARISMA: "CHA",
+  STR: "STR",
+  STRENGTH: "STR",
+  DEX: "DEX",
+  DEXTERITY: "DEX",
+  CON: "CON",
+  CONSTITUTION: "CON",
+  INT: "INT",
+  INTELLIGENCE: "INT",
+  WIS: "WIS",
+  WISDOM: "WIS",
+  CHA: "CHA",
+  CHARISMA: "CHA",
 };
 
 /** Parse an Ability Scores trait value (`"+2 Wisdom"`, `"+1 Str"`, …) into
@@ -30,7 +36,12 @@ function parseAsi(raw: string): { attr: AttrCode; points: number } | null {
 
 function sumAsi(values: string[] | undefined): Record<AttrCode, number> {
   const totals: Record<AttrCode, number> = {
-    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
+    STR: 0,
+    DEX: 0,
+    CON: 0,
+    INT: 0,
+    WIS: 0,
+    CHA: 0,
   };
   for (const raw of values ?? []) {
     const parsed = parseAsi(raw);
@@ -53,7 +64,12 @@ function saveProfLevelsFromTraits(traits: Record<string, string[]>): Record<Attr
   // traits touch the same attribute so expertise from one source isn't
   // downgraded by a plain P. from another.
   const out: Record<AttrCode, number> = {
-    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
+    STR: 0,
+    DEX: 0,
+    CON: 0,
+    INT: 0,
+    WIS: 0,
+    CHA: 0,
   };
   const bump = (code: AttrCode, lvl: number) => {
     if (lvl > out[code]) out[code] = lvl;
@@ -76,7 +92,12 @@ function saveProfLevelsFromTraits(traits: Record<string, string[]>): Record<Attr
 function saveBonusFromTraits(traits: Record<string, string[]>): Record<AttrCode, number> {
   // `Save B.: "+2 WIS"` → +2 to the WIS save. Aggregates across entries.
   const out: Record<AttrCode, number> = {
-    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
+    STR: 0,
+    DEX: 0,
+    CON: 0,
+    INT: 0,
+    WIS: 0,
+    CHA: 0,
   };
   for (const raw of traits["Save B."] ?? []) {
     const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+([A-Za-z]+)\s*$/);
@@ -93,9 +114,7 @@ function saveBonusFromTraits(traits: Record<string, string[]>): Record<AttrCode,
  *  saves; `Save A.: true` → advantage on every save. Disadvantage
  *  follows the same shape on `Save D.`. When both are present for the
  *  same attribute they net to "none" (the rules cancel). */
-function saveVantageFromTraits(
-  traits: Record<string, string[]>,
-): Record<AttrCode, "adv" | "dis" | undefined> {
+function saveVantageFromTraits(traits: Record<string, string[]>): Record<AttrCode, "adv" | "dis" | undefined> {
   const adv = new Set<AttrCode>();
   const dis = new Set<AttrCode>();
   const apply = (set: Set<AttrCode>, raw: string) => {
@@ -110,8 +129,12 @@ function saveVantageFromTraits(
   for (const raw of traits["Save A."] ?? []) apply(adv, raw);
   for (const raw of traits["Save D."] ?? []) apply(dis, raw);
   const out: Record<AttrCode, "adv" | "dis" | undefined> = {
-    STR: undefined, DEX: undefined, CON: undefined,
-    INT: undefined, WIS: undefined, CHA: undefined,
+    STR: undefined,
+    DEX: undefined,
+    CON: undefined,
+    INT: undefined,
+    WIS: undefined,
+    CHA: undefined,
   };
   for (const code of ATTRS) {
     const a = adv.has(code);
@@ -151,12 +174,7 @@ function readAttr(raw: unknown): AttrEntry {
  * save dots filled. `Save B.` adds a flat per-attribute bonus. ASI picks
  * fold into the displayed score on top of the base.
  */
-export const stats: EntityBlock<StatsProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  expressions,
-}) => {
+export const stats: EntityBlock<StatsProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const inventory = (blocks as any).inventory;

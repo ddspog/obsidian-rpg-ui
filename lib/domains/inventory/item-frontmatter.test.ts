@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  itemTypeBucket,
-  parseItemMetadata,
-  parseWeight,
-} from "./item-frontmatter";
+import { itemTypeBucket, parseItemMetadata, parseWeight } from "./item-frontmatter";
 
 describe("parseWeight", () => {
   it("parses numbers directly", () => {

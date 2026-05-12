@@ -28,11 +28,11 @@ function formatMod(mod: number) {
 
 // Front hex — 76×86, bottom-left corner
 const FRONT_BORDER = "38,24 76,45.5 76,88.5 38,110 0,88.5 0,45.5";
-const FRONT_FILL   = "38,25.5 74.5,46.25 74.5,87.75 38,108.5 1.5,87.75 1.5,46.25";
+const FRONT_FILL = "38,25.5 74.5,46.25 74.5,87.75 38,108.5 1.5,87.75 1.5,46.25";
 
 // Back hex — 60×68, upper-right corner
 const BACK_BORDER = "80,0 110,17 110,51 80,68 50,51 50,17";
-const BACK_FILL   = "80,1.5 108.5,17.75 108.5,50.25 80,66.5 51.5,50.25 51.5,17.75";
+const BACK_FILL = "80,1.5 108.5,17.75 108.5,50.25 80,66.5 51.5,50.25 51.5,17.75";
 
 // Proficiency ring — 88% of back hex, centered at (80, 34)
 const PROF_RING_OUTER = "M80,4.08 L106.4,19.04 L106.4,48.96 L80,63.92 L53.6,48.96 L53.6,19.04Z";
@@ -53,16 +53,10 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage,
   const modText = formatMod(mod);
   const saveText = saveBonus !== undefined ? formatMod(saveBonus) : null;
 
-  const profAttr = proficiency > 0
-    ? proficiency >= 2 ? "double" : proficiency >= 1 ? "full" : "half"
-    : undefined;
+  const profAttr = proficiency > 0 ? (proficiency >= 2 ? "double" : proficiency >= 1 ? "full" : "half") : undefined;
 
   return (
-    <svg
-      aria-details="Stat Hex Pair"
-      aria-label={`${children}: ${value} (${modText})`}
-      viewBox="0 0 110 110"
-    >
+    <svg aria-details="Stat Hex Pair" aria-label={`${children}: ${value} (${modText})`} viewBox="0 0 110 110">
       <defs>
         <radialGradient id={`hex-glow-${id}`} cx="0.4" cy="0.3" r="0.6">
           <stop offset="0%" stopColor="white" stopOpacity="0.06" />
@@ -75,9 +69,7 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage,
         <polygon points={BACK_BORDER} className="rpg-hex-border" />
         <polygon points={BACK_FILL} className="rpg-hex-fill" />
         <polygon points={BACK_FILL} fill={`url(#hex-glow-${id})`} />
-        {profAttr === "full" && (
-          <path d={PROF_RING_FULL} className="rpg-hex-prof-ring" fillRule="evenodd" />
-        )}
+        {profAttr === "full" && <path d={PROF_RING_FULL} className="rpg-hex-prof-ring" fillRule="evenodd" />}
         {profAttr === "half" && (
           <>
             <path d={PROF_RING_FULL} className="rpg-hex-prof-ring" fillRule="evenodd" />
@@ -90,23 +82,16 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage,
             <path d={PROF_RING_DOUBLE_INNER} className="rpg-hex-prof-ring" fillRule="evenodd" />
           </>
         )}
-        <text x="80" y="27" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-label rpg-hex-label--back">SAVE</text>
-        <text x="80" y="43" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-value rpg-hex-value--back">{saveText ?? modText}</text>
+        <text x="80" y="27" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-label rpg-hex-label--back">
+          SAVE
+        </text>
+        <text x="80" y="43" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-value rpg-hex-value--back">
+          {saveText ?? modText}
+        </text>
         {saveVantage && (
           <g aria-details="Save Vantage" data-vantage={saveVantage}>
-            <circle
-              cx="105"
-              cy="8"
-              r="7"
-              className="rpg-hex-vantage-badge"
-            />
-            <text
-              x="105"
-              y="11"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="rpg-hex-vantage-label"
-            >
+            <circle cx="105" cy="8" r="7" className="rpg-hex-vantage-badge" />
+            <text x="105" y="11" textAnchor="middle" dominantBaseline="middle" className="rpg-hex-vantage-label">
               {saveVantage === "adv" ? "A" : "D"}
             </text>
           </g>
@@ -118,12 +103,18 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage,
         <polygon points={FRONT_BORDER} className="rpg-hex-border" />
         <polygon points={FRONT_FILL} className="rpg-hex-fill" />
         <polygon points={FRONT_FILL} fill={`url(#hex-glow-${id})`} />
-        <text x="38" y="58" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-label">{children}</text>
-        <text x="38" y="82" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-value">{modText}</text>
+        <text x="38" y="58" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-label">
+          {children}
+        </text>
+        <text x="38" y="82" textAnchor="middle" dominantBaseline="auto" className="rpg-hex-value">
+          {modText}
+        </text>
       </g>
 
       {/* Score — bottom-right */}
-      <text x="106" y="90" textAnchor="end" dominantBaseline="auto" className="rpg-hex-score">{value}</text>
+      <text x="106" y="90" textAnchor="end" dominantBaseline="auto" className="rpg-hex-score">
+        {value}
+      </text>
     </svg>
   );
 }

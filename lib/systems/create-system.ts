@@ -32,10 +32,10 @@ import type { ReactNode } from "react";
  */
 export function CreateSystem(config: SystemConfig): RPGSystem;
 export function CreateSystem(
-  configFn: (ctx: { wiki?: any }) => SystemConfig | Promise<SystemConfig>,
+  configFn: (ctx: { wiki?: any }) => SystemConfig | Promise<SystemConfig>
 ): Promise<RPGSystem>;
 export function CreateSystem(
-  configOrFn: SystemConfig | ((ctx: { wiki?: any }) => SystemConfig | Promise<SystemConfig>),
+  configOrFn: SystemConfig | ((ctx: { wiki?: any }) => SystemConfig | Promise<SystemConfig>)
 ): RPGSystem | Promise<RPGSystem> {
   // Helper that performs the synchronous build from a resolved SystemConfig
   const build = (config: SystemConfig): RPGSystem => {
@@ -116,7 +116,7 @@ export function CreateSystem(
  */
 async function resolveEntityFactories(config: SystemConfig, wiki?: any): Promise<SystemConfig> {
   const entities = config.entities ?? {};
-    const resolved: Record<string, EntityConfig<any, any>> = {};
+  const resolved: Record<string, EntityConfig<any, any>> = {};
   for (const [key, val] of Object.entries(entities)) {
     try {
       if (typeof val === "function") {
@@ -145,7 +145,7 @@ async function resolveEntityFactories(config: SystemConfig, wiki?: any): Promise
  * entity entries at build time.
  */
 export function CreateEntity<TEntity extends EntityConfig = EntityConfig>(
-  cfg: TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>),
+  cfg: TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>)
 ): TEntity | ((ctx: { wiki?: any }) => TEntity | Promise<TEntity>) {
   return cfg as any;
 }
@@ -160,10 +160,8 @@ export function CreateComponent<
   TProps = Record<string, unknown>,
   TLookup = Record<string, unknown>,
   TFrontmatter = Record<string, unknown>,
-  TBlocks = Record<string, unknown>
->(
-  fn: Component<TProps, TLookup, TFrontmatter, TBlocks>,
-): Component<TProps, TLookup, TFrontmatter, TBlocks> {
+  TBlocks = Record<string, unknown>,
+>(fn: Component<TProps, TLookup, TFrontmatter, TBlocks>): Component<TProps, TLookup, TFrontmatter, TBlocks> {
   return fn;
 }
 
@@ -176,14 +174,12 @@ export function CreateComponent<
  */
 function validateBlocks(
   entityName: string,
-  blocks: Record<string, Component> | undefined,
+  blocks: Record<string, Component> | undefined
 ): Record<string, Component> | undefined {
   if (!blocks) return undefined;
   for (const [blockName, block] of Object.entries(blocks)) {
     if (typeof block !== "function") {
-      throw new Error(
-        `CreateSystem: entity '${entityName}' block '${blockName}' must have a callable 'component'`,
-      );
+      throw new Error(`CreateSystem: entity '${entityName}' block '${blockName}' must have a callable 'component'`);
     }
   }
   return blocks;
@@ -198,18 +194,19 @@ function normalizeAttribute(attr: string | AttributeDefinition): AttributeDefini
 
 function buildEntity(
   entityName: string,
-  entityConfig: EntityConfig,
-  ): { entityDef: EntityTypeDef<any>; computedExpressions: Map<string, ExpressionDef> } {
-    const frontmatter: FrontmatterFieldDef[] = normalizeFrontmatter(entityConfig.frontmatter);
-    const features = entityConfig.features ?? [];
-    const blocks = validateBlocks(entityName, entityConfig.blocks as Record<string, Component> | undefined);
-    const xpTable = entityConfig.xpTable;
-    const lookup = (entityConfig as any).lookup;
+  entityConfig: EntityConfig
+): { entityDef: EntityTypeDef<any>; computedExpressions: Map<string, ExpressionDef> } {
+  const frontmatter: FrontmatterFieldDef[] = normalizeFrontmatter(entityConfig.frontmatter);
+  const features = entityConfig.features ?? [];
+  const blocks = validateBlocks(entityName, entityConfig.blocks as Record<string, Component> | undefined);
+  const xpTable = entityConfig.xpTable;
+  const lookup = (entityConfig as any).lookup;
 
-    const entityDef: EntityTypeDef<any> = { frontmatter, features, xpTable, lookup, blocks };
+  const entityDef: EntityTypeDef<any> = { frontmatter, features, xpTable, lookup, blocks };
 
   const computedExpressions = new Map<string, ExpressionDef>();
-  const expressionMap: Record<string, (args: any[], ctx: any) => unknown> = (entityConfig as any).expressions ?? entityConfig.computed ?? {};
+  const expressionMap: Record<string, (args: any[], ctx: any) => unknown> =
+    (entityConfig as any).expressions ?? entityConfig.computed ?? {};
   for (const [fnName, fn] of Object.entries(expressionMap)) {
     const exprId = fnName;
     const expr: ExpressionDef = {
@@ -227,7 +224,7 @@ function buildEntity(
 function normalizeField(
   field:
     | string
-    | { name: string; type?: "number" | "string" | "boolean"; default?: unknown; derived?: string; aliases?: string[] },
+    | { name: string; type?: "number" | "string" | "boolean"; default?: unknown; derived?: string; aliases?: string[] }
 ): FrontmatterFieldDef {
   if (typeof field === "string") {
     return { name: field, type: "string" };

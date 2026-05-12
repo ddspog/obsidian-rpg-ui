@@ -1,10 +1,5 @@
 import * as React from "react";
-import {
-  EntityBlock,
-  ItemMagicCard,
-  Markdown,
-  type ItemMagicData,
-} from "rpg-ui-toolkit";
+import { EntityBlock, ItemMagicCard, Markdown, type ItemMagicData } from "rpg-ui-toolkit";
 import type { ItemEntity } from "../../entities/item.types";
 
 /**
@@ -17,12 +12,7 @@ import type { ItemEntity } from "../../entities/item.types";
  * referencing this template is equipped.
  */
 const magic: EntityBlock<ItemMagicData, ItemEntity> = ({ self }) => {
-  return (
-    <ItemMagicCard
-      data={self}
-      renderMarkdown={(src) => <Markdown source={src} />}
-    />
-  );
+  return <ItemMagicCard data={self} renderMarkdown={(src) => <Markdown source={src} />} />;
 };
 
 export default magic;

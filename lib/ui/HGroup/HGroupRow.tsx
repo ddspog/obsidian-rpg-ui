@@ -7,5 +7,9 @@ export interface HGroupRowProps {
 }
 
 export function HGroupRow({ label, children, style }: HGroupRowProps) {
-  return <hgroup aria-details={`${label} Row`} style={style}>{children}</hgroup>;
+  return (
+    <hgroup aria-details={`${label} Row`} style={style}>
+      {children}
+    </hgroup>
+  );
 }

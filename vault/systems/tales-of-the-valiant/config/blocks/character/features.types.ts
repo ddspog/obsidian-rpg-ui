@@ -52,7 +52,4 @@ export type FeaturesBlockData = {
 };
 
 /** Shorthand `"[[Name]]"` or a fully-specified `{ ref, source?, level? }`. */
-export type ExtraRef =
-  | string
-  | { ref: string; source?: string; level?: number };
-
+export type ExtraRef = string | { ref: string; source?: string; level?: number };

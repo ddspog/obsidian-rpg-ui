@@ -34,7 +34,7 @@ type Story = StoryObj;
 function renderProficiencies(
   system: RPGSystem,
   abilities: AbilityScores,
-  profs: { armor?: string[]; weapons?: string[]; tools?: string[]; languages?: string[] },
+  profs: { armor?: string[]; weapons?: string[]; tools?: string[]; languages?: string[] }
 ) {
   return (
     <RpgBlock
@@ -69,7 +69,7 @@ export const Fighter: Story = {
         weapons: ["Simple Weapons", "Martial Weapons"],
         tools: ["Smith's Tools"],
         languages: ["Common", "Dwarvish"],
-      },
+      }
     ),
 };
 
@@ -84,7 +84,7 @@ export const Rogue: Story = {
         weapons: ["Simple Weapons", "Hand Crossbows", "Longswords", "Rapiers", "Shortswords"],
         tools: ["Thieves' Tools"],
         languages: ["Common", "Thieves' Cant"],
-      },
+      }
     ),
 };
 
@@ -99,6 +99,6 @@ export const Wizard: Story = {
         weapons: ["Daggers", "Darts", "Slings", "Quarterstaffs", "Light Crossbows"],
         tools: [],
         languages: ["Common", "Elvish", "Draconic"],
-      },
+      }
     ),
 };

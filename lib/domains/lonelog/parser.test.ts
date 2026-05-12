@@ -338,9 +338,7 @@ describe("Lonelog Parser", () => {
     });
 
     it("should extract multiple tags from a line", () => {
-      const tags = extractTags(
-        "=> Combat ends. [N:Goblin Boss|dead] [PC:Elara|HP-5] [Clock:Alarm 3/6]",
-      );
+      const tags = extractTags("=> Combat ends. [N:Goblin Boss|dead] [PC:Elara|HP-5] [Clock:Alarm 3/6]");
       expect(tags).toHaveLength(3);
       expect(tags[0]).toEqual({
         kind: "npc",
@@ -418,16 +416,13 @@ d: 1d8+4=9 slashing damage
       // Check for NPC death tag in consequence
       const consequenceWithDeath = result.find(
         (entry) =>
-          entry.type === "consequence" &&
-          entry.tags.some((tag) => tag.kind === "npc" && tag.name === "Goblin Lookout"),
+          entry.type === "consequence" && entry.tags.some((tag) => tag.kind === "npc" && tag.name === "Goblin Lookout")
       );
       expect(consequenceWithDeath).toBeDefined();
 
       // Check for PC healing tag
       const consequenceWithHeal = result.find(
-        (entry) =>
-          entry.type === "consequence" &&
-          entry.tags.some((tag) => tag.kind === "pc" && tag.name === "Elara"),
+        (entry) => entry.type === "consequence" && entry.tags.some((tag) => tag.kind === "pc" && tag.name === "Elara")
       );
       expect(consequenceWithHeal).toBeDefined();
     });

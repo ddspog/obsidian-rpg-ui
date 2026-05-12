@@ -16,12 +16,7 @@
 const store = new Map<string, string[]>();
 const listeners = new Map<string, Set<() => void>>();
 
-export function rollStoreKey(
-  filePath: string,
-  tableName: string,
-  rowIdx: number,
-  cellIdx: number,
-): string {
+export function rollStoreKey(filePath: string, tableName: string, rowIdx: number, cellIdx: number): string {
   return `${filePath}:${tableName}:${rowIdx}:${cellIdx}`;
 }
 

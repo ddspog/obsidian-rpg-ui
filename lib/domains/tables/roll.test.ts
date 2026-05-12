@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  formatRollOutcome,
-  matchRoll,
-  parseWeightCell,
-  parseWeightColumn,
-  rollOnce,
-} from "./roll";
+import { formatRollOutcome, matchRoll, parseWeightCell, parseWeightColumn, rollOnce } from "./roll";
 import type { TableDef } from "./types";
 
 describe("parseWeightCell", () => {
@@ -48,18 +42,12 @@ describe("parseWeightColumn", () => {
   });
 
   it("returns null when any weight cell is non-numeric", () => {
-    const mixed = [
-      { cells: [{ value: "1" }, { value: "a" }] },
-      { cells: [{ value: "rare" }, { value: "b" }] },
-    ];
+    const mixed = [{ cells: [{ value: "1" }, { value: "a" }] }, { cells: [{ value: "rare" }, { value: "b" }] }];
     expect(parseWeightColumn(mixed, 0)).toBeNull();
   });
 
   it("returns null when every cell is excluded", () => {
-    const excluded = [
-      { cells: [{ value: "0" }, { value: "a" }] },
-      { cells: [{ value: "-" }, { value: "b" }] },
-    ];
+    const excluded = [{ cells: [{ value: "0" }, { value: "a" }] }, { cells: [{ value: "-" }, { value: "b" }] }];
     expect(parseWeightColumn(excluded, 0)).toBeNull();
   });
 });
@@ -105,7 +93,7 @@ describe("rollOnce", () => {
       ["3", "Second", "Bob"],
       ["4-6", "Third", "Cleo"],
     ],
-    "dice",
+    "dice"
   );
 
   it("uses the key column as default weight and returns the matched row's target", () => {
@@ -135,7 +123,7 @@ describe("rollOnce", () => {
         ["3", "B"],
         ["6", "C"],
       ],
-      "dice",
+      "dice"
     );
     // rand such that floor(r*6)+1 = 4 → r must satisfy 3 <= r*6 < 4 → 0.5..0.667.
     const out = rollOnce(gapTable, ["name"], undefined, () => 0.5);
@@ -151,7 +139,7 @@ describe("rollOnce", () => {
         ["common", "cure wounds"],
         ["legendary", "wish"],
       ],
-      "rarity",
+      "rarity"
     );
     // rand=0 → first non-empty from "spell" column.
     const out = rollOnce(textTable, ["spell"], undefined, () => 0);
@@ -168,7 +156,7 @@ describe("rollOnce", () => {
         ["common", "1", "cure wounds"],
         ["legendary", "1", "wish"],
       ],
-      "rarity",
+      "rarity"
     );
     const out = rollOnce(tbl, ["spell"], "w", () => 0);
     expect(out).toEqual({ kind: "hit", values: ["bless"], rolled: 1 });

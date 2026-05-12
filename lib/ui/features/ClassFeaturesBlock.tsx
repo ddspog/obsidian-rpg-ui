@@ -31,9 +31,7 @@ export function ClassFeaturesBlock(props: Record<string, unknown>) {
               <div key={featureName} className="rpg-ui-class-features-block__item">
                 <div className="rpg-ui-class-features-block__level">Level {feature.level}</div>
                 <div className="rpg-ui-class-features-block__name">{featureName}</div>
-                {description && (
-                  <div className="rpg-ui-class-features-block__description">{description}</div>
-                )}
+                {description && <div className="rpg-ui-class-features-block__description">{description}</div>}
               </div>
             );
           })}

@@ -25,12 +25,7 @@
 
 import type { FooterCell, FooterRow, TableDef, TableRow } from "./types";
 import { formatRollOutcome, rollOnce } from "./roll";
-import {
-  getRollResult,
-  rollStoreKey,
-  setRollResult,
-  subscribeRollResult,
-} from "./roll-store";
+import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
 function appendRow(tr: HTMLTableRowElement, row: TableRow, cellTag: "td" | "th"): void {
   for (const cell of row.cells) {
@@ -57,10 +52,7 @@ function appendRow(tr: HTMLTableRowElement, row: TableRow, cellTag: "td" | "th")
 function renderCellValue(el: HTMLElement, raw: string): void {
   // Strip backtick-wrapped refs so `@[[File]].path` inside a cell reads
   // as a plain reference to the post-processor.
-  const cleaned = raw.replace(
-    /`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)\s*`/g,
-    "$1",
-  );
+  const cleaned = raw.replace(/`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)\s*`/g, "$1");
   const doc = el.ownerDocument;
   const re = /\[\[([^\]\n]+)\]\]/g;
   let cursor = 0;
@@ -137,12 +129,7 @@ function rollCell(def: TableDef, cell: FooterCell): string[] {
  * emitted empty so the cell visually reserves the space and reveals the
  * roll inline once clicked.
  */
-function renderCellContents(
-  doc: Document,
-  cell: FooterCell,
-  root: HTMLElement,
-  values: string[] | undefined,
-): void {
+function renderCellContents(doc: Document, cell: FooterCell, root: HTMLElement, values: string[] | undefined): void {
   root.innerHTML = "";
   let rollIdx = 0;
   for (const seg of cell.segments) {
@@ -174,7 +161,7 @@ function renderFooterRow(
   def: TableDef,
   row: FooterRow,
   rowIdx: number,
-  filePath: string,
+  filePath: string
 ): { element: HTMLElement; disposers: Array<() => void> } {
   const wrap = doc.createElement("div");
   wrap.classList.add("el-p", "rpg-table-footer-row");
@@ -243,7 +230,7 @@ export interface RenderTableOptions {
 export function renderTableBlock(
   container: HTMLElement,
   def: TableDef,
-  opts: RenderTableOptions = {},
+  opts: RenderTableOptions = {}
 ): Array<() => void> {
   container.empty?.();
   container.innerHTML = "";

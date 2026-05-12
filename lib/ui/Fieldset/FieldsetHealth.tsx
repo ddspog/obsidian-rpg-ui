@@ -7,5 +7,9 @@ export interface FieldsetHealthProps {
 }
 
 export function FieldsetHealth({ label, children, style }: FieldsetHealthProps) {
-  return <fieldset aria-details={`Health ${label}`} style={style}>{children}</fieldset>;
+  return (
+    <fieldset aria-details={`Health ${label}`} style={style}>
+      {children}
+    </fieldset>
+  );
 }

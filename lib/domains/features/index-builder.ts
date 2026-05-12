@@ -84,7 +84,7 @@ export function buildCompendiumIndex(docs: IndexedDoc[]): CompendiumIndex {
 export function expandOptionRefs(
   options: string[],
   tagIndex: Record<string, string[]> | undefined,
-  folderIndex: Record<string, string[]> | undefined,
+  folderIndex: Record<string, string[]> | undefined
 ): string[] {
   const out: string[] = [];
   const seen = new Set<string>();

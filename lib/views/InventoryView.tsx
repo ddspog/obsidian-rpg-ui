@@ -19,17 +19,8 @@ import * as Tmpl from "lib/html-templates";
 import { BaseView } from "./BaseView";
 import { ReactMarkdown } from "./ReactMarkdown";
 import { useFileContext } from "./filecontext";
-import {
-  createTemplateContext,
-  hasTemplateVariables,
-  processTemplate,
-} from "lib/utils/template";
-import {
-  parseNewInventoryBlock,
-  resolveInventory,
-  type LookupFn,
-  type NewInventoryBlock,
-} from "lib/domains/inventory";
+import { createTemplateContext, hasTemplateVariables, processTemplate } from "lib/utils/template";
+import { parseNewInventoryBlock, resolveInventory, type LookupFn, type NewInventoryBlock } from "lib/domains/inventory";
 import { legacy as LegacyInventoryDomain } from "lib/domains/inventory";
 import { InventoryBlock as InventoryBlockComponent } from "lib/components/inventory/InventoryBlock";
 import { Inventory as LegacyInventoryComponent } from "lib/components/inventory/Legacy";
@@ -37,11 +28,7 @@ import { Inventory as LegacyInventoryComponent } from "lib/components/inventory/
 export class InventoryView extends BaseView {
   public codeblock = "inventory";
 
-  public render(
-    source: string,
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext,
-  ): HTMLElement | string | void {
+  public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): HTMLElement | string | void {
     const newBlock = parseNewInventoryBlock(source);
     if (newBlock) {
       const child = new InventoryBlockMarkdown(el, newBlock, this.app, ctx);
@@ -51,11 +38,7 @@ export class InventoryView extends BaseView {
     return this.renderLegacy(source, el, ctx);
   }
 
-  private renderLegacy(
-    source: string,
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext,
-  ): string {
+  private renderLegacy(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
     const block = LegacyInventoryDomain.parseInventoryBlock(source);
     const totalWeight = LegacyInventoryDomain.calculateTotalWeight(block.sections || []);
 
@@ -82,7 +65,7 @@ export class InventoryView extends BaseView {
         data: block,
         totalWeight,
         capacity,
-      }),
+      })
     );
   }
 }
@@ -94,12 +77,7 @@ class InventoryBlockMarkdown extends ReactMarkdown {
   private app: App;
   private ctx: MarkdownPostProcessorContext;
 
-  constructor(
-    el: HTMLElement,
-    block: NewInventoryBlock,
-    app: App,
-    ctx: MarkdownPostProcessorContext,
-  ) {
+  constructor(el: HTMLElement, block: NewInventoryBlock, app: App, ctx: MarkdownPostProcessorContext) {
     super(el);
     this.block = block;
     this.app = app;
@@ -167,10 +145,7 @@ function buildLookup(app: App): LookupFn {
   };
 }
 
-function findFrontmatter(
-  app: App,
-  target: string,
-): Record<string, unknown> | undefined {
+function findFrontmatter(app: App, target: string): Record<string, unknown> | undefined {
   // Exact path attempts first.
   const exactAttempts = [target, `${target}.md`];
   for (const p of exactAttempts) {

@@ -7,12 +7,7 @@ import type { FeaturesBlockData } from "./features.types";
 
 /** Strip trait-value prefix (`+`, `[[…]]`, alias pipe) to the bare name. */
 function bareLabel(raw: string): string {
-  return raw
-    .replace(/^\+/, "")
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .split("|")[0]
-    .trim();
+  return raw.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
 }
 
 /** Count per-skill entries in a trait list, keeping only known skill names. */
@@ -59,9 +54,7 @@ function parseLeadingWikilink(text: string): { label: string; link: string; rest
 function normaliseSense(raw: SenseEntry | unknown): { type: string; range?: number; link?: string } | null {
   if (raw == null) return null;
   if (typeof raw === "string" || Array.isArray(raw)) {
-    const text = (typeof raw === "string" ? raw : stringifyMaybeArray(raw))
-      .replace(/^\+/, "")
-      .trim();
+    const text = (typeof raw === "string" ? raw : stringifyMaybeArray(raw)).replace(/^\+/, "").trim();
     if (!text) return null;
     const wl = parseLeadingWikilink(text);
     if (wl) {
@@ -94,12 +87,7 @@ function normaliseSense(raw: SenseEntry | unknown): { type: string; range?: numb
   return null;
 }
 
-export const senses: EntityBlock<SensesProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  expressions,
-}) => {
+export const senses: EntityBlock<SensesProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
   const inventory = (blocks as any).inventory;
@@ -184,38 +172,50 @@ export const senses: EntityBlock<SensesProps, CharacterEntity> = ({
 
   return (
     <section aria-details="Character Senses">
-      <header className="rpg-tag-heading"><span>Passive</span></header>
+      <header className="rpg-tag-heading">
+        <span>Passive</span>
+      </header>
       <output aria-label="Passive Insight">
-        <data>{expressions.Passive({
-          attribute: 'WIS',
-          proficiency: insight.proficiency,
-          vantage: insight.vantage,
-          bonus: insight.bonus,
-        })}</data>
+        <data>
+          {expressions.Passive({
+            attribute: "WIS",
+            proficiency: insight.proficiency,
+            vantage: insight.vantage,
+            bonus: insight.bonus,
+          })}
+        </data>
         <small>Insight</small>
       </output>
       <output aria-label="Passive Investigation">
-        <data>{expressions.Passive({
-          attribute: 'INT',
-          proficiency: investigation.proficiency,
-          vantage: investigation.vantage,
-          bonus: investigation.bonus,
-        })}</data>
+        <data>
+          {expressions.Passive({
+            attribute: "INT",
+            proficiency: investigation.proficiency,
+            vantage: investigation.vantage,
+            bonus: investigation.bonus,
+          })}
+        </data>
         <small>Investigation</small>
       </output>
       <output aria-label="Passive Perception">
-        <data>{expressions.Passive({
-          attribute: 'WIS',
-          proficiency: perception.proficiency,
-          vantage: perception.vantage,
-          bonus: perception.bonus,
-        })}</data>
+        <data>
+          {expressions.Passive({
+            attribute: "WIS",
+            proficiency: perception.proficiency,
+            vantage: perception.vantage,
+            bonus: perception.bonus,
+          })}
+        </data>
         <small>Perception</small>
       </output>
       <dl aria-label="Senses List">
-        <dt className="rpg-tag-heading"><span>Senses</span></dt>
+        <dt className="rpg-tag-heading">
+          <span>Senses</span>
+        </dt>
         {merged.length === 0 ? (
-          <dd aria-details="No Senses"><span>—</span></dd>
+          <dd aria-details="No Senses">
+            <span>—</span>
+          </dd>
         ) : (
           merged.map((sense, i) => (
             <dd key={i}>

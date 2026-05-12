@@ -43,10 +43,7 @@ describe("resolveInventory", () => {
         {
           name: "[[Backpack]]",
           container: "main",
-          contents: [
-            { name: "[[Rope]]" },
-            { name: "[[Rations]]", qty: 5 },
-          ],
+          contents: [{ name: "[[Rope]]" }, { name: "[[Rations]]", qty: 5 }],
         },
       ],
     };

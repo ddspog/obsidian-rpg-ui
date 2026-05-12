@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  extractItemMagicBlocks,
-  extractItemPersonalBlocks,
-  parseItemMagic,
-  parseItemPersonal,
-} from "./schema";
+import { extractItemMagicBlocks, extractItemPersonalBlocks, parseItemMagic, parseItemPersonal } from "./schema";
 
 describe("extractItemMagicBlocks", () => {
   it("extracts a simple magic template", () => {

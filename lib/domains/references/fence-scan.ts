@@ -46,9 +46,7 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
     out.push({
       entity: m[1],
       block: m[2],
-      body: body && typeof body === "object" && !Array.isArray(body)
-        ? (body as Record<string, unknown>)
-        : null,
+      body: body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null,
       name: nameField,
       start: m.index,
       end: m.index + m[0].length,
@@ -61,9 +59,7 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
  *  look up `item.element` without iterating the flat list each time.
  *  Insertion order is preserved within each bucket — `[0]` is always
  *  the first fence of that kind in the doc. */
-export function groupFences(
-  fences: FenceMatch[],
-): Record<string, FenceMatch[]> {
+export function groupFences(fences: FenceMatch[]): Record<string, FenceMatch[]> {
   const out: Record<string, FenceMatch[]> = {};
   for (const f of fences) {
     const key = `${f.entity}.${f.block}`;

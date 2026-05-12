@@ -47,8 +47,12 @@ export class Component {
   onunload() {}
   load() {}
   unload() {}
-  addChild(child) { return child; }
-  removeChild(child) { return child; }
+  addChild(child) {
+    return child;
+  }
+  removeChild(child) {
+    return child;
+  }
   register(_cb) {}
   registerEvent(_e) {}
   registerDomEvent(..._args) {}
@@ -70,8 +74,7 @@ export class TFile {
  *  wikilinks (`[[X]]` / `[[X|Y]]`), bold (`**x**`), italic (`*x*` / `_x_`),
  *  inline code (`` `x` ``), unordered lists (`- …`), and h1–h6 headings.
  *  Everything else comes through as plain text. */
-const escapeHtml = (s) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function renderInline(text) {
   // Wikilinks first — they're greedy brackets and shouldn't be turned into
@@ -79,8 +82,7 @@ function renderInline(text) {
   let out = escapeHtml(text);
   out = out.replace(
     /\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]/g,
-    (_, link, alias) =>
-      `<a class="internal-link" href="${link}">${alias || link}</a>`,
+    (_, link, alias) => `<a class="internal-link" href="${link}">${alias || link}</a>`
   );
   out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
   out = out.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
@@ -96,7 +98,10 @@ function renderMarkdownToHtml(md) {
   while (i < lines.length) {
     const line = lines[i];
     // Blank — skip, acts as paragraph separator.
-    if (!line.trim()) { i++; continue; }
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
 
     // Heading
     const h = line.match(/^(#{1,6})\s+(.*)$/);
@@ -119,12 +124,7 @@ function renderMarkdownToHtml(md) {
 
     // Paragraph — collect until a blank line or a block marker.
     const para = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() &&
-      !/^#{1,6}\s+/.test(lines[i]) &&
-      !/^\s*[-*]\s+/.test(lines[i])
-    ) {
+    while (i < lines.length && lines[i].trim() && !/^#{1,6}\s+/.test(lines[i]) && !/^\s*[-*]\s+/.test(lines[i])) {
       para.push(lines[i]);
       i++;
     }
@@ -141,4 +141,3 @@ export const MarkdownRenderer = {
     el.innerHTML = renderMarkdownToHtml(String(md ?? ""));
   },
 };
-

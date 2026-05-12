@@ -77,9 +77,7 @@ export class FolderSuggest {
       }
     }
 
-    this.suggestions = folders.filter((path) =>
-      path.toLowerCase().includes(value.toLowerCase())
-    );
+    this.suggestions = folders.filter((path) => path.toLowerCase().includes(value.toLowerCase()));
 
     this.suggestions.sort((a, b) => {
       const aLower = a.toLowerCase();

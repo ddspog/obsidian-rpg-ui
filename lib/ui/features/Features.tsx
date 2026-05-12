@@ -21,14 +21,10 @@ function FeatureItem({ feature }: { feature: Feature }) {
   return (
     <div className="rpg-ui-features__item">
       <div className="rpg-ui-features__item-header">
-        {feature.type && (
-          <span className="rpg-ui-features__item-type">{feature.type}</span>
-        )}
+        {feature.type && <span className="rpg-ui-features__item-type">{feature.type}</span>}
         <span className="rpg-ui-features__item-name">{feature.$name}</span>
       </div>
-      {feature.$contents && (
-        <div className="rpg-ui-features__item-description">{feature.$contents}</div>
-      )}
+      {feature.$contents && <div className="rpg-ui-features__item-description">{feature.$contents}</div>}
       {feature.aspects && feature.aspects.length > 0 && (
         <div className="rpg-ui-features__aspects">
           {feature.aspects.map((aspect) => (

@@ -10,8 +10,8 @@ export interface SectionRowProps {
 export function SectionRow({ label, distribution = "1 1", children }: SectionRowProps) {
   const weights = distribution
     .split(/\s+/)
-    .map(s => Number(s.trim()))
-    .filter(n => !Number.isNaN(n) && n > 0);
+    .map((s) => Number(s.trim()))
+    .filter((n) => !Number.isNaN(n) && n > 0);
 
   const childArray = React.Children.toArray(children);
 
@@ -24,12 +24,12 @@ export function SectionRow({ label, distribution = "1 1", children }: SectionRow
       return React.cloneElement(child as React.ReactElement<any>, { style: { ...existing, ...flexStyle }, key: idx });
     }
 
-    return <div key={idx} style={flexStyle}>{child}</div>;
+    return (
+      <div key={idx} style={flexStyle}>
+        {child}
+      </div>
+    );
   });
 
-  return (
-    <section aria-details={`${label} Row`}>
-      {elems}
-    </section>
-  );
+  return <section aria-details={`${label} Row`}>{elems}</section>;
 }

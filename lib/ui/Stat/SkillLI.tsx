@@ -8,7 +8,7 @@ export interface SkillLIProps {
 
 function displaySkillValue(v: unknown): string | null {
   if (v == null) return null;
-  if (typeof v === "number") return (v >= 0 ? `+${v}` : `${v}`);
+  if (typeof v === "number") return v >= 0 ? `+${v}` : `${v}`;
   if (typeof v === "string") return v;
   if (typeof v === "object") {
     // common shapes: { bonus: number } or { value: number }
@@ -23,7 +23,7 @@ function displaySkillValue(v: unknown): string | null {
 export function SkillLI({ value, children, className }: SkillLIProps) {
   const display = displaySkillValue(value);
   return (
-    <li className={["rpg-skill-li", className].filter(Boolean).join(" ")}> 
+    <li className={["rpg-skill-li", className].filter(Boolean).join(" ")}>
       <span className="rpg-skill-li__label">{children}</span>
       {display !== null && <span className="rpg-skill-li__value">{display}</span>}
     </li>

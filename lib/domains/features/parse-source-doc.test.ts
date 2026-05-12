@@ -55,10 +55,7 @@ level: 3
 
 describe("parseSourceDoc", () => {
   it("pulls FeatureDetails out of feature.details code blocks", () => {
-    const doc = parseSourceDoc(
-      { $name: "Cleric", $contents: CLERIC_BODY, ".CLASS": { hit_die: "d8" } },
-      "class",
-    );
+    const doc = parseSourceDoc({ $name: "Cleric", $contents: CLERIC_BODY, ".CLASS": { hit_die: "d8" } }, "class");
     expect(doc.name).toBe("Cleric");
     expect(doc.kind).toBe("class");
     expect(doc.details).toHaveLength(3);
@@ -86,10 +83,7 @@ describe("parseSourceDoc", () => {
   });
 
   it("captures the per-kind metadata block", () => {
-    const doc = parseSourceDoc(
-      { $name: "Human", $contents: "", ".LINEAGE": { size: "medium", speed: 30 } },
-      "lineage",
-    );
+    const doc = parseSourceDoc({ $name: "Human", $contents: "", ".LINEAGE": { size: "medium", speed: 30 } }, "lineage");
     expect(doc.kind).toBe("lineage");
     expect(doc.meta).toEqual({ size: "medium", speed: 30 });
   });
@@ -97,7 +91,7 @@ describe("parseSourceDoc", () => {
   it("propagates parent_class for subclasses", () => {
     const doc = parseSourceDoc(
       { $name: "Life Domain", $contents: "", ".SUBCLASS": { parent_class: "Cleric" } },
-      "subclass",
+      "subclass"
     );
     expect(doc.parent_class).toBe("Cleric");
   });
@@ -180,7 +174,7 @@ text: Second block keeps its authored name.
           unlocks: [{ kind: "subclass", level: 3 }],
         },
       },
-      "class",
+      "class"
     );
     expect(doc.details).toHaveLength(2);
     expect(doc.details[0]).toMatchObject({ name: "Hit Points", level: 1 });
@@ -198,12 +192,9 @@ text: Second block keeps its authored name.
           details: [{ name: "From Frontmatter" }],
         },
       },
-      "class",
+      "class"
     );
-    expect(doc.details.map((d) => d.name).sort()).toEqual([
-      "From Body",
-      "From Frontmatter",
-    ]);
+    expect(doc.details.map((d) => d.name).sort()).toEqual(["From Body", "From Frontmatter"]);
   });
 });
 
@@ -214,7 +205,7 @@ describe("parseSourceDocs", () => {
         { $name: "Cleric", $contents: CLERIC_BODY },
         { $name: "Fighter", $contents: "" },
       ],
-      "class",
+      "class"
     );
     expect(Object.keys(map).sort()).toEqual(["Cleric", "Fighter"]);
     expect(map.Cleric.details.length).toBeGreaterThan(0);

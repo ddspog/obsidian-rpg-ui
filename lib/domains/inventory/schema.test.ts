@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseNewInventoryBlock,
-  wikilinkLabel,
-  wikilinkTarget,
-} from "./schema";
+import { parseNewInventoryBlock, wikilinkLabel, wikilinkTarget } from "./schema";
 
 describe("parseNewInventoryBlock", () => {
   it("returns null for legacy shape (sections: without items:)", () => {
@@ -32,10 +28,7 @@ items:
 `;
     const block = parseNewInventoryBlock(yaml)!;
     expect(block.state_key).toBe("pc-bob");
-    expect(block.items).toEqual([
-      { name: "[[Longsword]]" },
-      { name: "[[Shield]]" },
-    ]);
+    expect(block.items).toEqual([{ name: "[[Longsword]]" }, { name: "[[Shield]]" }]);
   });
 
   it("accepts long-form entries with qty, slot, notes, contents", () => {
@@ -62,10 +55,7 @@ items:
       equipped: true,
     });
     expect(block.items[2].container).toBe("main");
-    expect(block.items[2].contents).toEqual([
-      { name: "[[Rope]]" },
-      { name: "[[Rations]]", qty: 5 },
-    ]);
+    expect(block.items[2].contents).toEqual([{ name: "[[Rope]]" }, { name: "[[Rations]]", qty: 5 }]);
   });
 
   it("accepts `quantity` as alias for `qty`", () => {

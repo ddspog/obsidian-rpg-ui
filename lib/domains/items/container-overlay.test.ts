@@ -1,13 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ItemContainerData, ItemElementData, ItemMagicData } from "./schema";
-import {
-  extractItemContainerBlocks,
-  parseItemContainer,
-} from "./schema";
-import {
-  resolveContainer,
-  type ContainerResolverLookups,
-} from "./container-overlay";
+import { extractItemContainerBlocks, parseItemContainer } from "./schema";
+import { resolveContainer, type ContainerResolverLookups } from "./container-overlay";
 
 const CHEST: ItemElementData = {
   type: "Adventuring Gear (Container)",
@@ -62,12 +56,12 @@ sections:
     const md = [
       "```rpg item.container",
       "name: A",
-      "base: \"[[Chest]]\"",
+      'base: "[[Chest]]"',
       "```",
       "",
       "```rpg item.container",
       "name: B",
-      "base: \"[[Sack]]\"",
+      'base: "[[Sack]]"',
       "```",
     ].join("\n");
     const blocks = extractItemContainerBlocks(md);

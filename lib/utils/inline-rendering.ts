@@ -43,7 +43,12 @@ export function buildInlineTable(data: DataRecord[], columns: Array<Record<strin
   return table;
 }
 
-export function buildInlineCards(data: DataRecord[], fields: string[], sourcePath: string, renderMarkdown: (text: string, el: HTMLElement, path: string) => void): HTMLElement {
+export function buildInlineCards(
+  data: DataRecord[],
+  fields: string[],
+  sourcePath: string,
+  renderMarkdown: (text: string, el: HTMLElement, path: string) => void
+): HTMLElement {
   const container = document.createElement("div");
   container.className = "rpg-inline-cards";
 

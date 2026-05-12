@@ -31,12 +31,7 @@ export interface MarkdownProps {
   context?: EvalContext;
 }
 
-export function Markdown({
-  source,
-  sourcePath = "",
-  className,
-  context,
-}: MarkdownProps) {
+export function Markdown({ source, sourcePath = "", className, context }: MarkdownProps) {
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -54,23 +49,16 @@ export function Markdown({
     // Use the modern API when available (newer Obsidian builds), otherwise
     // fall back to the deprecated renderMarkdown shim. Both accept the same
     // (source, container, sourcePath, component) tail.
-    const app = (globalThis as unknown as { app?: unknown }).app as
-      | { workspace?: unknown }
-      | undefined;
+    const app = (globalThis as unknown as { app?: unknown }).app as { workspace?: unknown } | undefined;
     const renderer = MarkdownRenderer as unknown as {
       render?: (
         app: unknown,
         markdown: string,
         el: HTMLElement,
         sourcePath: string,
-        component: Component,
+        component: Component
       ) => Promise<void>;
-      renderMarkdown?: (
-        markdown: string,
-        el: HTMLElement,
-        sourcePath: string,
-        component: Component,
-      ) => Promise<void>;
+      renderMarkdown?: (markdown: string, el: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
     };
 
     const promise =

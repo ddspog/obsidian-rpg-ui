@@ -181,14 +181,9 @@ describe("Entity Resolver", () => {
 
     beforeEach(() => {
       const codeBlocks = new Map<string, string[]>();
-      codeBlocks.set("attributes", [
-        "strength: 16\ndexterity: 14\nconstitution: 13",
-      ]);
+      codeBlocks.set("attributes", ["strength: 16\ndexterity: 14\nconstitution: 13"]);
       codeBlocks.set("skills", ["proficiencies:\n  - Stealth\n  - Perception"]);
-      codeBlocks.set("inventory", [
-        "items:\n  - Longsword\n  - Leather Armor",
-        "items:\n  - Potion of Healing",
-      ]);
+      codeBlocks.set("inventory", ["items:\n  - Longsword\n  - Leather Armor", "items:\n  - Potion of Healing"]);
 
       entityData = {
         name: "Elara",

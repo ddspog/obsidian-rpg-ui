@@ -19,9 +19,7 @@ export function StatblockHeaderBlock(props: Record<string, unknown>) {
     <div className="rpg-ui-block rpg-ui-statblock-header-block">
       {name && <div className="rpg-ui-block__title">{name}</div>}
       {(sizeType || alignment) && (
-        <div className="rpg-ui-statblock-header-block__meta">
-          {[sizeType, alignment].filter(Boolean).join(", ")}
-        </div>
+        <div className="rpg-ui-statblock-header-block__meta">{[sizeType, alignment].filter(Boolean).join(", ")}</div>
       )}
       <div className="rpg-ui-statblock-header-block__divider" />
       <div className="rpg-ui-statblock-header-block__basics">

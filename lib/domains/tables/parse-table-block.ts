@@ -66,9 +66,7 @@ function isSeparatorLine(line: string): boolean {
 }
 
 /** A footer line: `[CAPTION #css/tx/table #css/tx/wide]`. */
-function parseFooter(
-  line: string,
-): { caption: string; classes: string[] } | null {
+function parseFooter(line: string): { caption: string; classes: string[] } | null {
   const t = line.trim();
   if (!t.startsWith("[") || !t.endsWith("]")) return null;
   const inner = t.slice(1, -1).trim();

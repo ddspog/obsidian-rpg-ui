@@ -64,12 +64,7 @@ export function normalizeTraitValue(val: unknown): string[] {
     // Detect the [[X]] flow shape: a 1-element array containing a 1-element
     // array containing a string. Only matches the leaf, so a list-of-wikilinks
     // recurses element-by-element.
-    if (
-      val.length === 1 &&
-      Array.isArray(val[0]) &&
-      val[0].length === 1 &&
-      typeof val[0][0] === "string"
-    ) {
+    if (val.length === 1 && Array.isArray(val[0]) && val[0].length === 1 && typeof val[0][0] === "string") {
       return [`[[${val[0][0]}]]`];
     }
     return val.flatMap(normalizeTraitValue);
@@ -78,10 +73,7 @@ export function normalizeTraitValue(val: unknown): string[] {
 }
 
 /** Merge a feature/option's `traits` into the running aggregate map. */
-function collectTraits(
-  agg: Record<string, string[]>,
-  traits: TraitMap | undefined,
-): void {
+function collectTraits(agg: Record<string, string[]>, traits: TraitMap | undefined): void {
   if (!traits) return;
   for (const [key, value] of Object.entries(traits)) {
     const values = normalizeTraitValue(value as TraitValue);
@@ -113,7 +105,7 @@ function inlineChooseOptions(
   parent: FeatureDetails,
   choose: ChooseSpec,
   tagIndex?: Record<string, string[]>,
-  folderIndex?: Record<string, string[]>,
+  folderIndex?: Record<string, string[]>
 ): FeatureChoiceOption[] {
   const raw = normalizeTraitValue(choose.options as unknown);
   // Defaults for typed-but-optionless choose specs:
@@ -134,14 +126,7 @@ function inlineChooseOptions(
   }));
 }
 
-const DEFAULT_ASI_OPTIONS: string[] = [
-  "Strength",
-  "Dexterity",
-  "Constitution",
-  "Intelligence",
-  "Wisdom",
-  "Charisma",
-];
+const DEFAULT_ASI_OPTIONS: string[] = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
 
 /** Category a choose spec contributes to. `traits` requires an explicit
  *  `category`; `asi` falls back to "Ability Scores" and `talent` to
@@ -183,7 +168,7 @@ function resolveSource(
   level: number | undefined,
   picksForSource: Record<string, string | string[]> | undefined,
   traitsAgg: Record<string, string[]>,
-  opts: ResolveOpts = {},
+  opts: ResolveOpts = {}
 ): ResolvedSource {
   const features: FeatureDetails[] = [];
   const pendingChoices: PendingChoice[] = [];
@@ -241,17 +226,14 @@ function resolveSource(
     const talentDoc = talentLib[bareName];
     if (!talentDoc) return;
     const hostLevel = levelKeyFor(hostDetail.level);
-    const perHost: Record<string, string[]> =
-      hostDetail.level != null ? leveledTraits : baseTraits;
+    const perHost: Record<string, string[]> = hostDetail.level != null ? leveledTraits : baseTraits;
     for (const talentDetail of talentDoc.details) {
       const synthetic: FeatureDetails = {
         ...talentDetail,
         // Fall back to the talent file's basename when the feature.details
         // block was authored without a `name:` field (parser synthesises
         // `__auto_N` internal keys that shouldn't leak to the UI).
-        name: talentDetail.name && !talentDetail.name.startsWith("__auto_")
-          ? talentDetail.name
-          : bareName,
+        name: talentDetail.name && !talentDetail.name.startsWith("__auto_") ? talentDetail.name : bareName,
         // Inherit the host detail's level so the talent's traits and card
         // show up alongside the feature that unlocked it.
         level: hostDetail.level,
@@ -286,7 +268,8 @@ function resolveSource(
   for (const detail of doc.details) {
     if (Array.isArray(detail.level) && detail.pick != null) {
       const cap = opts.maxLevel ?? Infinity;
-      const levels = (detail.level.filter((n): n is number => typeof n === "number"))
+      const levels = detail.level
+        .filter((n): n is number => typeof n === "number")
         .filter((n) => n <= cap)
         .sort((a, b) => a - b);
       if (levels.length === 0) continue;
@@ -310,8 +293,7 @@ function resolveSource(
     // for the source (and stay there even at level 1 — authors use `level:`
     // to mark a feature as a named per-level ability). Unlevelled features
     // (the base class rules: hit points, armor, saves…) go in `baseTraits`.
-    const perSource: Record<string, string[]> =
-      detail.level != null ? leveledTraits : baseTraits;
+    const perSource: Record<string, string[]> = detail.level != null ? leveledTraits : baseTraits;
     const detailLevelKey = levelKeyFor(detail.level);
 
     // Contribute the feature's own traits to both the per-source bucket and
@@ -339,11 +321,7 @@ function resolveSource(
     // tracks its own picks under a distinct pick key so they don't overwrite
     // one another.
     const rawChoose = detail.choose;
-    const chooseSpecs: ChooseSpec[] = Array.isArray(rawChoose)
-      ? rawChoose
-      : rawChoose
-        ? [rawChoose]
-        : [];
+    const chooseSpecs: ChooseSpec[] = Array.isArray(rawChoose) ? rawChoose : rawChoose ? [rawChoose] : [];
     const multiChoose = chooseSpecs.length > 1;
     // When a detail has a `buy:` budget, the buy-mode picker stores its
     // picks under the bare `detail.name` key. If we also keyed the
@@ -432,9 +410,7 @@ function resolveSource(
       // and sub-pick keys carry the same suffix so per-level option picks
       // (e.g. ASI selections at Lv 4 vs Lv 8) stay independent.
       const at = detail.name.lastIndexOf("@");
-      const baseName = at >= 0 && /^\d+$/.test(detail.name.slice(at + 1))
-        ? detail.name.slice(0, at)
-        : detail.name;
+      const baseName = at >= 0 && /^\d+$/.test(detail.name.slice(at + 1)) ? detail.name.slice(0, at) : detail.name;
       const suffix = baseName !== detail.name ? detail.name.slice(at) : "";
       const allOptions = doc.options.filter((o) => o.parent === baseName);
       const picked = pickedNames(picksForSource?.[detail.name]);
@@ -466,11 +442,7 @@ function resolveSource(
         // spec gets its own pick slot so multi-spec arrays don't collapse
         // into a single hidden talent/asi pick.
         const optChoose = option.choose;
-        const optSpecs: ChooseSpec[] = Array.isArray(optChoose)
-          ? optChoose
-          : optChoose
-            ? [optChoose]
-            : [];
+        const optSpecs: ChooseSpec[] = Array.isArray(optChoose) ? optChoose : optChoose ? [optChoose] : [];
         const optMulti = optSpecs.length > 1;
         if (option.name) {
           for (const subSpec of optSpecs) {
@@ -566,11 +538,7 @@ function resolveSource(
         // proficiency from a list. Mirrors the pick-mode sub-choose
         // handling so buy options fire sub-picks the same way.
         const optChoose = option.choose;
-        const optSpecs: ChooseSpec[] = Array.isArray(optChoose)
-          ? optChoose
-          : optChoose
-            ? [optChoose]
-            : [];
+        const optSpecs: ChooseSpec[] = Array.isArray(optChoose) ? optChoose : optChoose ? [optChoose] : [];
         const optMulti = optSpecs.length > 1;
         if (option.name) {
           for (const subSpec of optSpecs) {
@@ -666,7 +634,7 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
         tagIndex,
         folderIndex,
         talents,
-      }),
+      })
     );
 
     if (entry.subclass) {
@@ -679,7 +647,7 @@ export function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): Resolv
             tagIndex,
             folderIndex,
             talents,
-          }),
+          })
         );
       }
     }
@@ -871,7 +839,7 @@ function foldFragment(
   caster: ResolvedCaster,
   frag: SpellcastingFragment,
   providerSource: string,
-  atLevel: number,
+  atLevel: number
 ): void {
   if (typeof frag.cantrips === "number") caster.cantrips += frag.cantrips;
   if (typeof frag.rituals === "number") {
@@ -879,8 +847,7 @@ function foldFragment(
     caster.ritualsByLevel[atLevel] = (caster.ritualsByLevel[atLevel] ?? 0) + frag.rituals;
   }
   if (typeof frag.known === "number") caster.known += frag.known;
-  if (typeof frag.rituals_per_circle === "number")
-    caster.rituals_per_circle += frag.rituals_per_circle;
+  if (typeof frag.rituals_per_circle === "number") caster.rituals_per_circle += frag.rituals_per_circle;
   // Augmentations on subclass / talent / heroic-boon fragments may want
   // to extend the caster's declared style list (e.g. a subclass attunes
   // the Cleric to a specific flavor). Merge additively, de-duped, and
@@ -918,7 +885,7 @@ function mergeGrantMap(
   target: Record<number, string[]>,
   source: Record<number, unknown[]> | undefined,
   providers: Record<string, string>,
-  providerSource: string,
+  providerSource: string
 ): void {
   if (!source) return;
   for (const [lvlStr, raws] of Object.entries(source)) {
@@ -938,12 +905,7 @@ function mergeGrantMap(
 }
 
 function grantStem(raw: string): string {
-  return raw
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .replace(/\.md$/, "")
-    .split("|")[0]
-    .trim();
+  return raw.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").split("|")[0].trim();
 }
 
 function stringifyRef(raw: unknown): string | undefined {
@@ -973,7 +935,7 @@ function applyFeatureUpdates(sources: ResolvedSource[]): void {
   // feature's top-level text). Mirror that here — synthesize the empty
   // aspect on first index hit so update patches can target it the same
   // way they target an explicit aspect.
-  type AspectRef = { feature: FeatureDetails; bucket: typeof ASPECT_KEYS[number] };
+  type AspectRef = { feature: FeatureDetails; bucket: (typeof ASPECT_KEYS)[number] };
   const byAspectName = new Map<string, AspectRef[]>();
   for (const src of sources) {
     for (const f of src.features) {
@@ -998,7 +960,7 @@ function applyFeatureUpdates(sources: ResolvedSource[]): void {
       const u = carrier.update;
       if (!u) continue;
       // First aspect key with a string value is the selector.
-      let selectorBucket: typeof ASPECT_KEYS[number] | undefined;
+      let selectorBucket: (typeof ASPECT_KEYS)[number] | undefined;
       let selectorName: string | undefined;
       for (const bucket of ASPECT_KEYS) {
         const v = u[bucket];
@@ -1051,7 +1013,7 @@ function applyAdditional(
   sources: ResolvedSource[],
   additional: CharacterDecl["additional"],
   talents: Record<string, SourceDoc> | undefined,
-  traitsAgg: Record<string, string[]>,
+  traitsAgg: Record<string, string[]>
 ): void {
   if (!additional || !talents) return;
   const lists: Array<ExtraRef[] | undefined> = [
@@ -1083,22 +1045,22 @@ function applyAdditional(
   for (const raw of allRefs) {
     const entry = typeof raw === "string" ? { ref: raw } : raw;
     if (!entry?.ref) continue;
-    const bareName = entry.ref.replace(/^\[\[|\]\]$/g, "").split("|")[0].trim();
+    const bareName = entry.ref
+      .replace(/^\[\[|\]\]$/g, "")
+      .split("|")[0]
+      .trim();
     if (!bareName) continue;
     const doc = talents[bareName];
     if (!doc) continue; // silently skip missing pages
 
     const hostName = entry.source ?? "Homebrew";
     const host = ensureSource(hostName, "background");
-    const perHost: Record<string, string[]> =
-      entry.level != null ? host.leveledTraits : host.baseTraits;
+    const perHost: Record<string, string[]> = entry.level != null ? host.leveledTraits : host.baseTraits;
 
     for (const talentDetail of doc.details) {
       const synthetic: FeatureDetails = {
         ...talentDetail,
-        name: talentDetail.name && !talentDetail.name.startsWith("__auto_")
-          ? talentDetail.name
-          : bareName,
+        name: talentDetail.name && !talentDetail.name.startsWith("__auto_") ? talentDetail.name : bareName,
         level: entry.level ?? talentDetail.level,
       };
       host.features.push(synthetic);
@@ -1154,7 +1116,7 @@ function appendIf(
   traitsAgg: Record<string, string[]>,
   tagIndex?: Record<string, string[]>,
   folderIndex?: Record<string, string[]>,
-  talents?: Record<string, SourceDoc>,
+  talents?: Record<string, SourceDoc>
 ) {
   if (!name) return;
   const doc = lib[name];

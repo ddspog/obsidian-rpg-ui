@@ -31,7 +31,8 @@ export function StatblockAttributesBlock(props: Record<string, unknown>) {
             <div key={attr} className="rpg-ui-statblock-attributes-block__col">
               <div className="rpg-ui-statblock-attributes-block__label">{alias}</div>
               <div className="rpg-ui-statblock-attributes-block__score">
-                {score} ({sign}{modifier})
+                {score} ({sign}
+                {modifier})
               </div>
             </div>
           );

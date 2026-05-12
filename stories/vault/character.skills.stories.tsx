@@ -39,14 +39,14 @@ const meta: Meta<SkillsArgs> = {
     }),
   ],
   argTypes: {
-    strength:         { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
-    dexterity:        { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
-    constitution:     { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Constitution" },
-    intelligence:     { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
-    wisdom:           { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
-    charisma:         { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
-    proficiency_bonus:{ control: { type: "number" }, name: "Proficiency Bonus" },
-    level:            { control: { type: "number" }, name: "Level" },
+    strength: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Strength" },
+    dexterity: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Dexterity" },
+    constitution: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Constitution" },
+    intelligence: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Intelligence" },
+    wisdom: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Wisdom" },
+    charisma: { control: { type: "range", min: 1, max: 20, step: 1 }, name: "Charisma" },
+    proficiency_bonus: { control: { type: "number" }, name: "Proficiency Bonus" },
+    level: { control: { type: "number" }, name: "Level" },
   },
 };
 export default meta;
@@ -55,12 +55,7 @@ type Story = StoryObj<SkillsArgs>;
 
 // ─── Shared render ────────────────────────────────────────────────────────────
 
-function renderSkills(
-  args: SkillsArgs,
-  system: RPGSystem,
-  proficient: string[] = [],
-  expert: string[] = [],
-) {
+function renderSkills(args: SkillsArgs, system: RPGSystem, proficient: string[] = [], expert: string[] = []) {
   const abilities: AbilityScores = {
     strength: args.strength,
     dexterity: args.dexterity,
@@ -131,7 +126,7 @@ export const Rogue: Story = {
       args,
       loaded.system,
       ["Deception", "Insight", "Perception", "Persuasion", "Sleight of Hand"],
-      ["Acrobatics", "Stealth"],
+      ["Acrobatics", "Stealth"]
     ),
 };
 
@@ -147,10 +142,5 @@ export const Wizard: Story = {
     charisma: 10,
   },
   render: (args, { loaded }) =>
-    renderSkills(
-      args,
-      loaded.system,
-      ["Arcana", "History", "Nature", "Religion"],
-      ["Investigation"],
-    ),
+    renderSkills(args, loaded.system, ["Arcana", "History", "Nature", "Religion"], ["Investigation"]),
 };

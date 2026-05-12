@@ -11,7 +11,8 @@ function parseBannerStyle(value?: string): React.CSSProperties | undefined {
   if (!value) return undefined;
   try {
     const banner = value.trim();
-    const looksLikeUrl = /^(data:|https?:|file:|vault:)?\/\//i.test(banner) || /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(banner);
+    const looksLikeUrl =
+      /^(data:|https?:|file:|vault:)?\/\//i.test(banner) || /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(banner);
     if (looksLikeUrl) return { backgroundImage: `url(${banner})` };
     return { backgroundColor: banner };
   } catch (e) {
@@ -27,8 +28,8 @@ export const BannerHeader: React.FC<BannerHeaderProps> = ({ label, background, d
   // Parse distribution string into numeric weights
   const weights = distribution
     .split(/\s+/)
-    .map(s => Number(s.trim()))
-    .filter(n => !Number.isNaN(n) && n > 0);
+    .map((s) => Number(s.trim()))
+    .filter((n) => !Number.isNaN(n) && n > 0);
 
   const childArray = React.Children.toArray(children);
 

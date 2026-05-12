@@ -180,9 +180,7 @@ describe("CreateSystem", () => {
       const system = await CreateSystem({
         name: "Test",
         attributes: ["str"],
-        traits: [
-          { $name: "Darkvision", $contents: "See in darkness", mechanical: true },
-        ],
+        traits: [{ $name: "Darkvision", $contents: "See in darkness", mechanical: true }],
       });
       expect(system.traits).toHaveLength(1);
       expect(system.traits![0].$name).toBe("Darkvision");
@@ -284,7 +282,7 @@ describe("CreateSystem", () => {
               },
             },
           },
-        }),
+        })
       ).toThrow("block 'header' must have a callable 'component'");
     });
   });

@@ -1,5 +1,18 @@
 import * as React from "react";
-import { EntityBlock, Section, Article, HGroup, Line, Badge, Stat, DeathSaveDots, Progress, DiceTray, PortraitThumb, ConditionPill } from "rpg-ui-toolkit";
+import {
+  EntityBlock,
+  Section,
+  Article,
+  HGroup,
+  Line,
+  Badge,
+  Stat,
+  DeathSaveDots,
+  Progress,
+  DiceTray,
+  PortraitThumb,
+  ConditionPill,
+} from "rpg-ui-toolkit";
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
@@ -93,8 +106,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   // initiative track per character.
   const initAdv = (traits["Initiative A."] ?? []).length > 0;
   const initDis = (traits["Initiative D."] ?? []).length > 0;
-  const initVantage: "adv" | "dis" | undefined =
-    initAdv && !initDis ? "adv" : initDis && !initAdv ? "dis" : undefined;
+  const initVantage: "adv" | "dis" | undefined = initAdv && !initDis ? "adv" : initDis && !initAdv ? "dis" : undefined;
 
   const handleSpendDie = (dieType: string) => {
     const current = hitDice[dieType]?.current ?? 0;
@@ -130,10 +142,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
             />
             <Badge.Shield value={equippedAc.armor} label="Armor" />
             {equippedAc.shieldBonus > 0 && (
-              <Badge.Shield
-                value={equippedAc.armor + equippedAc.shieldBonus}
-                label="Shield"
-              />
+              <Badge.Shield value={equippedAc.armor + equippedAc.shieldBonus} label="Shield" />
             )}
             <DeathSaveDots
               side="successes"
@@ -143,12 +152,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
             />
           </Line.Control>
           <Line.Stats>
-            <Stat.Diamond
-              label="Initiative"
-              value={initiativeTotal}
-              format="bonus"
-              vantage={initVantage}
-            />
+            <Stat.Diamond label="Initiative" value={initiativeTotal} format="bonus" vantage={initVantage} />
             {speeds.map((s, i) => (
               <Stat.Diamond key={i} label={s.type ?? "Walk"} value={s.value ?? 30} format="unit" size="lg" />
             ))}
@@ -204,7 +208,7 @@ export default health;
 function resolveEquippedAc(
   blocks: unknown,
   lookup: { $items?: Record<string, Record<string, unknown>> } | undefined,
-  naturalAc: number,
+  naturalAc: number
 ): { armor: number; shieldBonus: number } {
   const inv = (blocks as { inventory?: { items?: unknown[] } })?.inventory;
   const items = Array.isArray(inv?.items) ? inv.items : [];
@@ -222,14 +226,11 @@ function resolveEquippedAc(
     if (!name) continue;
     const fm = lib[name];
     if (!fm) continue;
-    const armorBlock = fm.armor && typeof fm.armor === "object"
-      ? (fm.armor as { ac?: unknown; category?: unknown })
-      : undefined;
+    const armorBlock =
+      fm.armor && typeof fm.armor === "object" ? (fm.armor as { ac?: unknown; category?: unknown }) : undefined;
     if (!armorBlock) continue;
     const formula = typeof armorBlock.ac === "string" ? armorBlock.ac : undefined;
-    const category = typeof armorBlock.category === "string"
-      ? armorBlock.category.toLowerCase()
-      : undefined;
+    const category = typeof armorBlock.category === "string" ? armorBlock.category.toLowerCase() : undefined;
 
     if (category === "shield") {
       // Shields are "equipped" by mere inventory presence — the player
@@ -269,11 +270,7 @@ function parseAcBonus(raw: string | undefined): number {
  *  and an optional inline cap (`(max N)`). Falls back to the 5e default
  *  per category when no explicit cap is declared — medium ≤ 2, heavy = 0,
  *  light uncapped. */
-function computeArmorValue(
-  formula: string | undefined,
-  category: string | undefined,
-  dexMod: number,
-): number | null {
+function computeArmorValue(formula: string | undefined, category: string | undefined, dexMod: number): number | null {
   if (!formula) return null;
   const baseMatch = formula.match(/-?\d+/);
   if (!baseMatch) return null;
@@ -282,13 +279,7 @@ function computeArmorValue(
   const wantsDex = /\bdex\b/i.test(formula);
   if (!wantsDex) return base;
   const explicitCap = formula.match(/max\s+(\d+)/i);
-  const cap = explicitCap
-    ? Number(explicitCap[1])
-    : category === "heavy"
-      ? 0
-      : category === "medium"
-        ? 2
-        : Infinity;
+  const cap = explicitCap ? Number(explicitCap[1]) : category === "heavy" ? 0 : category === "medium" ? 2 : Infinity;
   return base + Math.min(dexMod, cap);
 }
 
@@ -312,15 +303,8 @@ const SPEED_KEYS: Array<{ trait: string; type: string }> = [
   { trait: "Climb", type: "Climb" },
 ];
 
-function resolveSpeeds(
-  yamlSpeed: unknown,
-  traits: Record<string, string[]>,
-): Array<{ value: number; type: string }> {
-  const yamlList = Array.isArray(yamlSpeed)
-    ? yamlSpeed
-    : yamlSpeed
-      ? [yamlSpeed]
-      : [];
+function resolveSpeeds(yamlSpeed: unknown, traits: Record<string, string[]>): Array<{ value: number; type: string }> {
+  const yamlList = Array.isArray(yamlSpeed) ? yamlSpeed : yamlSpeed ? [yamlSpeed] : [];
   if (yamlList.length > 0) {
     return yamlList.map((entry) => ({
       value: (entry as { value?: number }).value ?? 30,
@@ -365,7 +349,7 @@ function resolveSpeeds(
  *  top of the class-derived pool. */
 function resolveHitDice(
   view: { sources?: Array<{ kind: string; level?: number; baseTraits?: Record<string, string[]> }> } | undefined,
-  yamlHitDice: Record<string, unknown>,
+  yamlHitDice: Record<string, unknown>
 ): Record<string, { current: number; max: number }> {
   const out: Record<string, { current: number; max: number }> = {};
   const byDie = new Map<string, number>();

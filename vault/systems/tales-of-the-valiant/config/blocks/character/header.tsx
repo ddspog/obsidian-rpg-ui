@@ -55,7 +55,9 @@ function CommentMarkdown({ source }: { source: string }) {
         el.textContent = source;
       });
     return () => {
-      try { comp.unload(); } catch {}
+      try {
+        comp.unload();
+      } catch {}
     };
   }, [source]);
   return <span ref={ref} />;
@@ -90,25 +92,22 @@ export const header: EntityBlock<HeaderProps, CharacterEntity> = ({ self, lookup
     <hgroup aria-details="Name & Summary">
       <Title />
       <Line.Pills>
-        {self.classes && self.classes.map((cls, i) => {
-          // Authors may write either `subclass:` (verbose, original) or
-          // `sub:` (terse, easier to swap while testing). `sub` wins when
-          // both are present.
-          const className = bareLink(cls.name);
-          const subclass = bareLink(cls.sub ?? cls.subclass);
-          return (
-            <React.Fragment key={`class-${i}`}>
-              <Pill.Link link={className}>
-                {className} {cls.level}
-              </Pill.Link>
-              {subclass && (
-                <Pill.Link link={subclass}>
-                  {subclass}
+        {self.classes &&
+          self.classes.map((cls, i) => {
+            // Authors may write either `subclass:` (verbose, original) or
+            // `sub:` (terse, easier to swap while testing). `sub` wins when
+            // both are present.
+            const className = bareLink(cls.name);
+            const subclass = bareLink(cls.sub ?? cls.subclass);
+            return (
+              <React.Fragment key={`class-${i}`}>
+                <Pill.Link link={className}>
+                  {className} {cls.level}
                 </Pill.Link>
-              )}
-            </React.Fragment>
-          );
-        })}
+                {subclass && <Pill.Link link={subclass}>{subclass}</Pill.Link>}
+              </React.Fragment>
+            );
+          })}
 
         {/* lineage / heritage / background are single objects in this system */}
         {self.lineage && <PillRef details={self.lineage} />}
@@ -119,16 +118,24 @@ export const header: EntityBlock<HeaderProps, CharacterEntity> = ({ self, lookup
     <fieldset aria-details="Leveling">
       <Line.BigElements>
         <Line.Buttons>
-          <Button.Trigger onClick={() => trigger('short-rest')} aria-label="Short Rest"><Lucide.UtensilsCrossed size={28} strokeWidth={1}/></Button.Trigger>
-          <Button.Trigger onClick={() => trigger('long-rest')} aria-label="Long Rest"><Lucide.FlameKindling size={28} strokeWidth={1}/></Button.Trigger>
+          <Button.Trigger onClick={() => trigger("short-rest")} aria-label="Short Rest">
+            <Lucide.UtensilsCrossed size={28} strokeWidth={1} />
+          </Button.Trigger>
+          <Button.Trigger onClick={() => trigger("long-rest")} aria-label="Long Rest">
+            <Lucide.FlameKindling size={28} strokeWidth={1} />
+          </Button.Trigger>
         </Line.Buttons>
         <Level.Inspirational
           level={expressions.CharacterLevel()}
           inspiration={self.luck}
           maxPoints={5}
-          onUpdateInspiration={(value: number) => self.setLuck(value)} />
+          onUpdateInspiration={(value: number) => self.setLuck(value)}
+        />
       </Line.BigElements>
-      <Progress.Bar value={self.xp} max={lookup.table.xp[expressions.CharacterLevel()] ?? lookup.table.xp[expressions.CharacterLevel() - 1]} />
+      <Progress.Bar
+        value={self.xp}
+        max={lookup.table.xp[expressions.CharacterLevel()] ?? lookup.table.xp[expressions.CharacterLevel() - 1]}
+      />
     </fieldset>
   </Header.Banner>
 );

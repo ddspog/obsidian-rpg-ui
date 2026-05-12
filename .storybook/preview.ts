@@ -1,16 +1,34 @@
 import type { Preview } from "@storybook/react";
 import { TFile } from "obsidian";
 import "../styles.css";
-import { skills, conditions, classes, subclasses, lineages, heritages, backgrounds, tools, martial, simple, cantrips, languages, actions, reactions, bonusActions, talents } from "../stories/lib/wiki-fixtures";
+import {
+  skills,
+  conditions,
+  classes,
+  subclasses,
+  lineages,
+  heritages,
+  backgrounds,
+  tools,
+  martial,
+  simple,
+  cantrips,
+  languages,
+  actions,
+  reactions,
+  bonusActions,
+  talents,
+} from "../stories/lib/wiki-fixtures";
 
 // Portrait assets bundled with Storybook. Copy your vault's character
 // portrait files into `stories/assets/portraits/` and they'll be served by
 // filename, so `portrait: [[foo.webp]]` in a story's YAML resolves to the
 // bundled image instead of the generic placehold.co fallback.
-const portraitUrls = import.meta.glob(
-  "../stories/assets/portraits/*.{webp,png,jpg,jpeg,gif}",
-  { eager: true, import: "default", query: "?url" },
-) as Record<string, string>;
+const portraitUrls = import.meta.glob("../stories/assets/portraits/*.{webp,png,jpg,jpeg,gif}", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>;
 const portraitByName: Record<string, string> = {};
 for (const [path, url] of Object.entries(portraitUrls)) {
   const name = path.split("/").pop();
@@ -76,13 +94,11 @@ document.head.appendChild(style);
 (globalThis as any).app = {
   workspace: {
     getActiveFile: () => ({ path: "stories/sample-character.md", basename: "Sample Character" }),
-    openLinkText: (link: string, _source: string) =>
-      console.log(`[Story] Navigate → ${link}`),
+    openLinkText: (link: string, _source: string) => console.log(`[Story] Navigate → ${link}`),
   },
   metadataCache: {
     // Return a real TFile stub so PortraitThumb passes the instanceof check.
-    getFirstLinkpathDest: (linkpath: string, _source: string) =>
-      linkpath ? new TFile(linkpath) : null,
+    getFirstLinkpathDest: (linkpath: string, _source: string) => (linkpath ? new TFile(linkpath) : null),
   },
   vault: {
     // Map the linkpath (stored as `file.path` by our TFile stub) to a
@@ -90,7 +106,7 @@ document.head.appendChild(style);
     // references still render something.
     getResourcePath: (file: unknown) => {
       const path = (file as any)?.path ?? (file as any)?.name ?? "";
-      const name = typeof path === "string" ? path.split("/").pop() ?? path : "";
+      const name = typeof path === "string" ? (path.split("/").pop() ?? path) : "";
       return (
         portraitByName[name] ??
         portraitByName[name.replace(/\.[^.]+$/, "")] ??
@@ -105,8 +121,8 @@ const preview: Preview = {
     backgrounds: {
       options: {
         dark: { name: "dark", value: "#1a1816" },
-        light: { name: "light", value: "#f5f0eb" }
-      }
+        light: { name: "light", value: "#f5f0eb" },
+      },
     },
     a11y: {
       // Run accessibility checks automatically on all stories
@@ -116,9 +132,9 @@ const preview: Preview = {
 
   initialGlobals: {
     backgrounds: {
-      value: "dark"
-    }
-  }
+      value: "dark",
+    },
+  },
 };
 
 export default preview;

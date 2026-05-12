@@ -33,10 +33,7 @@ import type { CasterState, SpellsProps } from "./spells.types";
  * the character file. `localStorage` is per-vault inside Obsidian's
  * Electron renderer; in Storybook it's per-browser.
  */
-function usePersistentOpen(
-  key: string,
-  defaultOpen: boolean,
-): [boolean, (next: boolean) => void] {
+function usePersistentOpen(key: string, defaultOpen: boolean): [boolean, (next: boolean) => void] {
   const storageKey = `rpg-ui:open:${key}`;
   const [open, setOpen] = React.useState<boolean>(() => {
     try {
@@ -56,7 +53,7 @@ function usePersistentOpen(
         // ignore (private browsing, quota, etc. — UI still functions)
       }
     },
-    [storageKey],
+    [storageKey]
   );
   return [open, update];
 }
@@ -66,7 +63,8 @@ function usePersistentOpen(
  *  active file is reachable (e.g. early renders). */
 function useNoteKey(): string {
   return React.useMemo(() => {
-    const app = (globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } }).app;
+    const app = (globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } })
+      .app;
     return app?.workspace?.getActiveFile?.()?.path ?? "default";
   }, []);
 }
@@ -126,7 +124,7 @@ function maxAtLevel(max: FeatureAspect["max"], characterLevel?: number): string 
 function resolveMaxCount(
   max: FeatureAspect["max"],
   characterLevel?: number,
-  vars?: Record<string, string | number>,
+  vars?: Record<string, string | number>
 ): number | null {
   if (max == null) return null;
   if (typeof max === "number") return max;
@@ -169,11 +167,7 @@ function UsageDots({
   if (count <= 0) return null;
   const clamped = Math.max(0, Math.min(spent, count));
   return (
-    <span
-      className="rpg-feature-bucket-dots"
-      role="group"
-      aria-label={`${count - clamped} of ${count} uses remaining`}
-    >
+    <span className="rpg-feature-bucket-dots" role="group" aria-label={`${count - clamped} of ${count} uses remaining`}>
       {Array.from({ length: count }, (_, i) => {
         const filled = i < clamped;
         return (
@@ -242,11 +236,7 @@ export interface TrivialEntry extends FeatureEntry {
 }
 
 /** Compute an aspect's stable identity within a (feature, bucket). */
-function computeAspectKey(
-  bucket: string,
-  aspect: FeatureAspect | null,
-  indexInBucket: number,
-): string {
+function computeAspectKey(bucket: string, aspect: FeatureAspect | null, indexInBucket: number): string {
   const name = aspect?.name;
   return `${bucket}:${name ?? indexInBucket}`;
 }
@@ -254,11 +244,7 @@ function computeAspectKey(
 /** True when `set` marks this specific aspect as trivial. Also honours
  *  the bare-bucket shorthand (`"passive"` matches every passive aspect
  *  on the feature) so legacy YAML keeps working. */
-function isAspectTrivialised(
-  set: Set<string>,
-  bucket: string,
-  aspectKey: string,
-): boolean {
+function isAspectTrivialised(set: Set<string>, bucket: string, aspectKey: string): boolean {
   return set.has(aspectKey) || set.has(bucket);
 }
 
@@ -276,7 +262,7 @@ function isAspectTrivialised(
  */
 function bucketize(
   sources: ResolvedSource[],
-  trivialized?: Record<string, Record<string, string[]>>,
+  trivialized?: Record<string, Record<string, string[]>>
 ): {
   byBucket: Record<string, BucketEntry[]>;
   grantedTrivials: Record<string, TrivialEntry[]>;
@@ -304,9 +290,7 @@ function bucketize(
   };
 
   for (const src of sources) {
-    const orderedFeatures = [...src.features].sort(
-      (a, b) => featureLevel(a.level) - featureLevel(b.level),
-    );
+    const orderedFeatures = [...src.features].sort((a, b) => featureLevel(a.level) - featureLevel(b.level));
     const sourceTrivials = trivialized?.[src.source] ?? {};
     for (const feature of orderedFeatures) {
       let placed = false;
@@ -420,12 +404,7 @@ function extractWikilinks(val: unknown): string[] {
   if (val == null) return [];
   if (typeof val === "string") return [val];
   if (Array.isArray(val)) {
-    if (
-      val.length === 1 &&
-      Array.isArray(val[0]) &&
-      val[0].length === 1 &&
-      typeof val[0][0] === "string"
-    ) {
+    if (val.length === 1 && Array.isArray(val[0]) && val[0].length === 1 && typeof val[0][0] === "string") {
       return [`[[${val[0][0]}]]`];
     }
     return val.flatMap(extractWikilinks);
@@ -437,12 +416,7 @@ function extractWikilinks(val: unknown): string[] {
 
 /** Strip `[[` / `]]` / `.md` / alias pipe → bare spell stem. */
 function spellStem(raw: string): string {
-  return raw
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .replace(/\.md$/, "")
-    .split("|")[0]
-    .trim();
+  return raw.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").split("|")[0].trim();
 }
 
 /**
@@ -452,10 +426,7 @@ function spellStem(raw: string): string {
  * nothing more. Unresolved identifiers collapse to 0 so a typo doesn't
  * silently produce a huge budget.
  */
-function evalBuyBudget(
-  expr: number | string | undefined,
-  vars: Record<string, number | string>,
-): number | undefined {
+function evalBuyBudget(expr: number | string | undefined, vars: Record<string, number | string>): number | undefined {
   if (expr == null) return undefined;
   if (typeof expr === "number") return Number.isFinite(expr) ? Math.max(0, Math.floor(expr)) : 0;
   if (typeof expr !== "string") return 0;
@@ -483,9 +454,7 @@ function evalBuyBudget(
  *  if the casting time is something else (1 minute, 10 minutes, …). Order of
  *  checks matters: "bonus action" contains the word "action", so the more
  *  specific patterns run first. */
-function matchCastingBucket(
-  casting: string | undefined,
-): "action" | "bonus" | "reaction" | undefined {
+function matchCastingBucket(casting: string | undefined): "action" | "bonus" | "reaction" | undefined {
   if (!casting || typeof casting !== "string") return undefined;
   const c = casting.toLowerCase();
   if (/bonus\s*action/.test(c)) return "bonus";
@@ -502,7 +471,7 @@ function matchCastingBucket(
 function collectSpellTrivials(
   casters: ResolvedCaster[] | undefined,
   castersState: Record<string, CasterState>,
-  spellLibrary: Record<string, Record<string, unknown>>,
+  spellLibrary: Record<string, Record<string, unknown>>
 ): Record<string, FeatureEntry[]> {
   const out: Record<string, FeatureEntry[]> = {};
   if (!casters || casters.length === 0) return out;
@@ -576,18 +545,12 @@ function EntryRow({
     <li className="rpg-feature-bucket-entry">
       <div className="rpg-feature-bucket-entry-title">
         <strong className="rpg-feature-bucket-entry-name">{displayName}</strong>
-        {maxCount != null && (
-          <UsageDots count={maxCount} spent={spent} onSpentChange={onSpentChange} />
-        )}
-        {aspect.recharge && (
-          <small aria-details="Recharge">↻ {aspect.recharge}</small>
-        )}
+        {maxCount != null && <UsageDots count={maxCount} spent={spent} onSpentChange={onSpentChange} />}
+        {aspect.recharge && <small aria-details="Recharge">↻ {aspect.recharge}</small>}
         {(isResource || aspect.resource != null) && aspect.recovery && (
           <small aria-details="Resource Recovery">recharge on {aspect.recovery}</small>
         )}
-        {!isResource && aspect.resource && (
-          <small aria-details="Uses Resource">uses {aspect.resource}</small>
-        )}
+        {!isResource && aspect.resource && <small aria-details="Uses Resource">uses {aspect.resource}</small>}
         {onCollapse && (
           <button
             type="button"
@@ -611,13 +574,7 @@ function EntryRow({
         </a>
       </div>
       <figure className="rpg-feature-bucket-entry-image" aria-hidden="true" />
-      {cardText && (
-        <Markdown
-          source={cardText}
-          context={context}
-          className="rpg-feature-bucket-entry-desc"
-        />
-      )}
+      {cardText && <Markdown source={cardText} context={context} className="rpg-feature-bucket-entry-desc" />}
     </li>
   );
 }
@@ -731,11 +688,7 @@ function TrivialsList({
  *  original wikilink shape so the renderer can resolve stems later. */
 function grantsAtLevel(caster: ResolvedCaster | undefined, level: number): string[] {
   if (!caster) return [];
-  const buckets = [
-    caster.granted.cantrips,
-    caster.granted.prepared,
-    caster.granted.rituals,
-  ];
+  const buckets = [caster.granted.cantrips, caster.granted.prepared, caster.granted.rituals];
   const out: string[] = [];
   for (const m of buckets) {
     const raws = (m ?? {})[level];
@@ -744,7 +697,6 @@ function grantsAtLevel(caster: ResolvedCaster | undefined, level: number): strin
   }
   return out;
 }
-
 
 function TraitValue({ value }: { value: string }) {
   const prefixed = value.startsWith("+") || value.startsWith("−") ? value : `+${value}`;
@@ -757,12 +709,7 @@ function TraitValue({ value }: { value: string }) {
           const href = match[1];
           const label = match[2] ?? match[1];
           return (
-            <a
-              key={i}
-              className="internal-link"
-              href={href}
-              data-href={href}
-            >
+            <a key={i} className="internal-link" href={href} data-href={href}>
               {label}
             </a>
           );
@@ -813,9 +760,7 @@ function TraitsInline({ traits }: { traits: Record<string, string[]> }) {
  *  `extra` at the end. Used to fold subclass baseTraits / level-row
  *  traits into the class's own map so the player sees one unified row
  *  per class level instead of a separate subclass line. */
-function mergeTraitMaps(
-  ...maps: Array<Record<string, string[]> | undefined>
-): Record<string, string[]> {
+function mergeTraitMaps(...maps: Array<Record<string, string[]> | undefined>): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const m of maps) {
     if (!m) continue;
@@ -867,11 +812,13 @@ function TraitsSourceLine({
   // the per-level `Granted (+…)` synthetic trait. Subclass grants merge
   // into the same caster via `grantedBy`, so we only need one lookup.
   const caster = casters?.find((c) => c.source === src.source);
-  const hasAnyGrants = !!caster && Object.values({
-    ...caster.granted.cantrips,
-    ...caster.granted.prepared,
-    ...caster.granted.rituals,
-  }).some((list) => (list?.length ?? 0) > 0);
+  const hasAnyGrants =
+    !!caster &&
+    Object.values({
+      ...caster.granted.cantrips,
+      ...caster.granted.prepared,
+      ...caster.granted.rituals,
+    }).some((list) => (list?.length ?? 0) > 0);
 
   if (!hasBase && !hasLeveled && !subHasBase && !subHasLeveled && !hasAnyGrants) return null;
 
@@ -924,16 +871,10 @@ function TraitsSourceLine({
     return (
       <div className="rpg-feature-traits-source">
         <p>
-          <a
-            className="internal-link rpg-feature-traits-source-link"
-            href={src.source}
-            data-href={src.source}
-          >
+          <a className="internal-link rpg-feature-traits-source-link" href={src.source} data-href={src.source}>
             {src.source}
           </a>
-          {src.level != null && (
-            <span className="rpg-feature-traits-source-level"> (Lv. {src.level})</span>
-          )}
+          {src.level != null && <span className="rpg-feature-traits-source-level"> (Lv. {src.level})</span>}
           {hasMergedBase && (
             <>
               {" — "}
@@ -946,10 +887,7 @@ function TraitsSourceLine({
             {levels.map((lvl) => {
               const row = mergeTraitMaps(classByLevel[lvl], subByLevel[lvl]);
               if (sub && lvl === subUnlockLevel) {
-                row["Subclass"] = [
-                  ...(row["Subclass"] ?? []),
-                  `[[${sub.source}]]`,
-                ];
+                row["Subclass"] = [...(row["Subclass"] ?? []), `[[${sub.source}]]`];
               }
               const grants = grantsAtLevel(caster, lvl).map(grantToWikilink);
               if (grants.length > 0) {
@@ -958,8 +896,7 @@ function TraitsSourceLine({
               if (Object.keys(row).length === 0) return null;
               return (
                 <li key={lvl}>
-                  <strong className="rpg-feature-traits-level-tag">Lv. {lvl}</strong>{" "}
-                  <TraitsInline traits={row} />
+                  <strong className="rpg-feature-traits-level-tag">Lv. {lvl}</strong> <TraitsInline traits={row} />
                 </li>
               );
             })}
@@ -972,11 +909,7 @@ function TraitsSourceLine({
   return (
     <div className="rpg-feature-traits-source">
       <p>
-        <a
-          className="internal-link rpg-feature-traits-source-link"
-          href={src.source}
-          data-href={src.source}
-        >
+        <a className="internal-link rpg-feature-traits-source-link" href={src.source} data-href={src.source}>
           {src.source}
         </a>
         {hasBase && (
@@ -995,13 +928,7 @@ function TraitsSourceLine({
   );
 }
 
-function TraitsBucket({
-  sources,
-  casters,
-}: {
-  sources: ResolvedSource[];
-  casters?: ResolvedCaster[];
-}) {
+function TraitsBucket({ sources, casters }: { sources: ResolvedSource[]; casters?: ResolvedCaster[] }) {
   // Subclass sources aren't standalone traits entries — the resolver emits
   // them right after their parent class (declaration order), and here we
   // fold each one onto the preceding class group so the character sheet
@@ -1047,12 +974,7 @@ function TraitsBucket({
       </summary>
       <div className="rpg-feature-traits-summary">
         {groups.map(({ src, sub }) => (
-          <TraitsSourceLine
-            key={`${src.source}:${src.kind}`}
-            src={src}
-            sub={sub}
-            casters={casters}
-          />
+          <TraitsSourceLine key={`${src.source}:${src.kind}`} src={src} sub={sub} casters={casters} />
         ))}
       </div>
     </details>
@@ -1095,7 +1017,7 @@ function prettifyLevelSuffix(name: string): string {
  *  Unknown sources (shouldn't normally happen) land at the end. */
 function groupPendingsBySource(
   pendings: PendingChoice[],
-  sources: ResolvedSource[],
+  sources: ResolvedSource[]
 ): Array<{ source: string; pendings: PendingChoice[] }> {
   const order = new Map<string, number>();
   sources.forEach((s, i) => order.set(s.source, i));
@@ -1126,10 +1048,7 @@ interface DecisionGroup {
  * order, with any unknown-key picks (sub-choices fired by a picked
  * feature.choice option) appended at the end.
  */
-function gatherDecisions(
-  sources: ResolvedSource[],
-  choices: FeaturesBlockData["choices"],
-): DecisionGroup[] {
+function gatherDecisions(sources: ResolvedSource[], choices: FeaturesBlockData["choices"]): DecisionGroup[] {
   if (!choices) return [];
   const groups: DecisionGroup[] = [];
 
@@ -1156,20 +1075,18 @@ function gatherDecisions(
       // specific trait category.
       const hasBuy = feature.buy != null;
       const singleChoose: ChooseSpec | undefined = Array.isArray(rawChoose)
-        ? (rawChoose.length === 1 ? rawChoose[0] : undefined)
+        ? rawChoose.length === 1
+          ? rawChoose[0]
+          : undefined
         : rawChoose;
       const isAsi = !hasBuy && singleChoose?.type === "asi";
       const category = prettifyLevelSuffix(
-        hasBuy
-          ? feature.name
-          : singleChoose?.category ?? (isAsi ? "Ability Scores" : feature.name),
+        hasBuy ? feature.name : (singleChoose?.category ?? (isAsi ? "Ability Scores" : feature.name))
       );
       // ASI picks: aggregate duplicate attribute picks into a single
       // `+{total} {attr}` entry so the log reads as "+2 Wisdom" rather than
       // "+1 Wisdom, +1 Wisdom" when the user stacked picks.
-      const decisionValues = isAsi
-        ? aggregateAsiPicks(values, singleChoose?.quantity ?? 1)
-        : values;
+      const decisionValues = isAsi ? aggregateAsiPicks(values, singleChoose?.quantity ?? 1) : values;
       decisions.push({
         category,
         values: decisionValues,
@@ -1233,11 +1150,7 @@ function DecisionsLog({
       <div className="rpg-feature-decisions-groups">
         {groups.map((g) => (
           <p key={g.source} className="rpg-feature-decisions-line">
-            <a
-              className="internal-link rpg-feature-decisions-source-link"
-              href={g.source}
-              data-href={g.source}
-            >
+            <a className="internal-link rpg-feature-decisions-source-link" href={g.source} data-href={g.source}>
               {g.source}
             </a>
             {" — "}
@@ -1307,7 +1220,7 @@ function FeaturesAccordion({
 }) {
   const { byBucket, grantedTrivials } = React.useMemo(
     () => bucketize(view.sources, trivialized),
-    [view.sources, trivialized],
+    [view.sources, trivialized]
   );
   // Merge entity-level defaults with any granted-trivial references (e.g.
   // Comrade's `bonus: [[Help]]`) so each bucket's trivial list is deduped
@@ -1352,12 +1265,7 @@ function FeaturesAccordion({
 
 // ─── Main block ──────────────────────────────────────────────────────────────
 
-export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  frontmatter,
-}) => {
+export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({ self, blocks, lookup, frontmatter }) => {
   const lib = lookup.$compendium;
   const header = (blocks.header ?? {}) as Partial<HeaderProps>;
   // Choices-to-make drawer remembers open/closed across reloads — defaults
@@ -1453,7 +1361,12 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
         CLASS_LEVEL: lv,
         CLASS: primaryClass?.name ?? "",
         PB: num("proficiency_bonus", 2),
-        STR: str, DEX: dex, CON: con, INT: intel, WIS: wis, CHA: cha,
+        STR: str,
+        DEX: dex,
+        CON: con,
+        INT: intel,
+        WIS: wis,
+        CHA: cha,
         STR_MOD: mod(str),
         DEX_MOD: mod(dex),
         CON_MOD: mod(con),
@@ -1464,9 +1377,17 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
     };
   }, [view.tables, characterLevel, primaryClass, frontmatter]);
 
-  const setChoices = (self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }).setChoices;
-  const setSpent = (self as { setSpent?: (u: (prev: FeaturesBlockData["spent"]) => FeaturesBlockData["spent"]) => void }).setSpent;
-  const setTrivialized = (self as { setTrivialized?: (u: (prev: FeaturesBlockData["trivialized"]) => FeaturesBlockData["trivialized"]) => void }).setTrivialized;
+  const setChoices = (
+    self as { setChoices?: (u: (prev: FeaturesBlockData["choices"]) => FeaturesBlockData["choices"]) => void }
+  ).setChoices;
+  const setSpent = (
+    self as { setSpent?: (u: (prev: FeaturesBlockData["spent"]) => FeaturesBlockData["spent"]) => void }
+  ).setSpent;
+  const setTrivialized = (
+    self as {
+      setTrivialized?: (u: (prev: FeaturesBlockData["trivialized"]) => FeaturesBlockData["trivialized"]) => void;
+    }
+  ).setTrivialized;
   const spentMap = self.spent ?? {};
   const handleSpentChange = setSpent
     ? (key: string, next: number) => {
@@ -1521,11 +1442,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
             const next: NonNullable<FeaturesBlockData["choices"]> = { ...(prev ?? {}) };
             const sourcePicks = { ...(next[source] ?? {}) };
             const current = sourcePicks[featureName];
-            const currentArr = Array.isArray(current)
-              ? [...current]
-              : current
-                ? [current]
-                : [];
+            const currentArr = Array.isArray(current) ? [...current] : current ? [current] : [];
             const idx = currentArr.indexOf(option);
             if (idx >= 0) currentArr.splice(idx, 1);
             else currentArr.push(option);
@@ -1547,11 +1464,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
             const next: NonNullable<FeaturesBlockData["choices"]> = { ...(prev ?? {}) };
             const sourcePicks = { ...(next[source] ?? {}) };
             const current = sourcePicks[featureName];
-            const currentArr = Array.isArray(current)
-              ? [...current]
-              : current
-                ? [current]
-                : [];
+            const currentArr = Array.isArray(current) ? [...current] : current ? [current] : [];
             if (delta > 0) {
               currentArr.push(option);
             } else {
@@ -1599,16 +1512,12 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
   const spellLibrary = (lookup.$spells ?? {}) as Record<string, Record<string, unknown>>;
   const trivialsByBucket = React.useMemo(() => {
     const out: Record<string, FeatureEntry[]> = {};
-    for (const entry of (lookup.$defaultFeatures ?? [])) {
+    for (const entry of lookup.$defaultFeatures ?? []) {
       const bucket = (entry.type ?? "").toLowerCase();
       if (!bucket) continue;
       (out[bucket] ??= []).push(entry);
     }
-    const spellTrivials = collectSpellTrivials(
-      view.casters,
-      spellsBlock?.casters ?? {},
-      spellLibrary,
-    );
+    const spellTrivials = collectSpellTrivials(view.casters, spellsBlock?.casters ?? {}, spellLibrary);
     for (const [bucket, entries] of Object.entries(spellTrivials)) {
       const list = (out[bucket] ??= []);
       const seen = new Set(list.map((e) => e.$name));
@@ -1631,7 +1540,12 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
       if (!raw || typeof raw !== "object") return;
       const o = raw as { name?: string; equipped?: boolean; slot?: string; contents?: unknown[] };
       if (typeof o.name === "string" && (o.equipped || typeof o.slot === "string")) {
-        const stem = o.name.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop()?.trim();
+        const stem = o.name
+          .replace(/^\[\[|\]\]$/g, "")
+          .split("|")[0]
+          .split("/")
+          .pop()
+          ?.trim();
         if (stem) equippedTargets.add(stem);
       }
       if (Array.isArray(o.contents)) for (const c of o.contents) collectEquipped(c);
@@ -1644,7 +1558,12 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
       const item = itemsLib[target];
       const opts = item?.weapon?.options ?? [];
       for (const raw of opts) {
-        const stem = String(raw).replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop()?.trim();
+        const stem = String(raw)
+          .replace(/^\[\[|\]\]$/g, "")
+          .split("|")[0]
+          .split("/")
+          .pop()
+          ?.trim();
         if (!stem || seenAction.has(stem)) continue;
         seenAction.add(stem);
         actionList.push({ $name: stem, type: "action" });
@@ -1656,7 +1575,9 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
   return (
     <section aria-details="Character Features" className="rpg-feature-source-groups">
       {view.sources.length === 0 ? (
-        <p aria-details="No Sources"><em>No class, lineage, or background declared.</em></p>
+        <p aria-details="No Sources">
+          <em>No class, lineage, or background declared.</em>
+        </p>
       ) : (
         <FeaturesAccordion
           view={view}
@@ -1671,11 +1592,7 @@ export const features: EntityBlock<FeaturesBlockData, CharacterEntity> = ({
         />
       )}
       {(view.pendingChoices.length > 0 || Object.keys(self.choices ?? {}).length > 0) && (
-        <section
-          ref={pendingRef}
-          aria-label="Pending Choices"
-          className="rpg-feature-pending-list"
-        >
+        <section ref={pendingRef} aria-label="Pending Choices" className="rpg-feature-pending-list">
           {(() => {
             // Buy-mode pendings are always emitted by the resolver (it
             // can't evaluate the budget expression) so the UI filters

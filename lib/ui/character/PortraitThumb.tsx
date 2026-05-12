@@ -69,7 +69,3 @@ export function PortraitThumb({ src, alt = "Character portrait", style }: Portra
 
   return <figure aria-details="Portrait Thumb" ref={containerRef} style={style} data-empty={!linkpath || undefined} />;
 }
-
-
-
-

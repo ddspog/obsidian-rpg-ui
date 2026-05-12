@@ -16,11 +16,7 @@ import {
 } from "rpg-ui-toolkit";
 import type { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
-import type {
-  InventoryEquipSlot,
-  InventoryItemEntry,
-  InventoryProps,
-} from "./inventory.types";
+import type { InventoryEquipSlot, InventoryItemEntry, InventoryProps } from "./inventory.types";
 
 /**
  * `rpg character.inventory` entity block.
@@ -33,12 +29,7 @@ import type {
  * ability-score-improvement picks via `expressions.ModifierTotal`), with
  * an inline `encumbrance.strength` override if the author specifies one.
  */
-export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
-  self,
-  blocks,
-  lookup,
-  expressions,
-}) => {
+export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const rawItems = Array.isArray(self.items) ? self.items : [];
   const items = normaliseItems(rawItems);
 
@@ -91,20 +82,12 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
     const stem = target.split("/").pop()!;
     const personal = personalByName[target] ?? personalByName[stem];
     if (personal) {
-      const resolution = resolvePersonalItem(
-        personal,
-        { elements: itemsByName, magic: magicByName },
-        stem,
-      );
+      const resolution = resolvePersonalItem(personal, { elements: itemsByName, magic: magicByName }, stem);
       if (resolution) return resolution.effectiveElement as unknown as Record<string, unknown>;
     }
     const container = containersByName[target] ?? containersByName[stem];
     if (container) {
-      const resolution = resolveContainer(
-        container,
-        { elements: itemsByName, magic: magicByName },
-        stem,
-      );
+      const resolution = resolveContainer(container, { elements: itemsByName, magic: magicByName }, stem);
       if (resolution) return resolution.effectiveElement as unknown as Record<string, unknown>;
     }
     if (itemsByName[target]) return itemsByName[target] as unknown as Record<string, unknown>;
@@ -120,13 +103,7 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
 
   const selfApi = self as unknown as {
     setItems?: (v: InventoryItemEntry[]) => void;
-    patchForeignBlock?: (
-      path: string,
-      entity: string,
-      block: string,
-      key: string,
-      value: unknown,
-    ) => Promise<void>;
+    patchForeignBlock?: (path: string, entity: string, block: string, key: string, value: unknown) => Promise<void>;
   };
   const setItems = selfApi.setItems;
   const patchForeignBlock = selfApi.patchForeignBlock;
@@ -146,11 +123,7 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
           // character's items would be lost on the next render
           // anyway (expandContainerEntry overwrites contents).
           if (!patchForeignBlock) return;
-          patchContainerForSale(
-            patchForeignBlock,
-            containersByName,
-            provenance,
-          );
+          patchContainerForSale(patchForeignBlock, containersByName, provenance);
           return;
         }
         setItems(toggleForSale(items, target));
@@ -158,11 +131,7 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({
     : undefined;
 
   return (
-    <InventoryBlockComponent
-      data={data}
-      onToggleEquip={handleToggleEquip}
-      onToggleForSale={handleToggleForSale}
-    />
+    <InventoryBlockComponent data={data} onToggleEquip={handleToggleEquip} onToggleForSale={handleToggleForSale} />
   );
 };
 
@@ -216,7 +185,7 @@ function expandContainerEntry(
   lookups: {
     containersByName: Record<string, ItemContainerData>;
     containerPaths: Record<string, string>;
-  },
+  }
 ): ContainerExpansion {
   const stem = wikiStem(entry.name);
   const container = lookups.containersByName[stem];
@@ -228,7 +197,7 @@ function expandContainerEntry(
   const recordChildren = (
     children: InventoryItemEntry[],
     pathPrefix: string[],
-    locatorBase: ContainerLocator,
+    locatorBase: ContainerLocator
   ): void => {
     children.forEach((child, idx) => {
       const childPath = [...pathPrefix, String(idx)];
@@ -255,9 +224,7 @@ function expandContainerEntry(
     const sectionItems = Array.isArray(section.items) ? section.items : [];
     if (sectionItems.length === 0) return;
     if (section.name) {
-      const childContents = sectionItems
-        .map(toInventoryItemEntry)
-        .filter((e): e is InventoryItemEntry => e !== null);
+      const childContents = sectionItems.map(toInventoryItemEntry).filter((e): e is InventoryItemEntry => e !== null);
       const wrapperIdx = contents.length;
       contents.push({ name: section.name, contents: childContents });
       recordChildren(childContents, [String(wrapperIdx)], {
@@ -351,15 +318,9 @@ function appendSubPath(base: ContainerLocator, indices: number[]): ContainerLoca
  * don't get clobbered.
  */
 function patchContainerForSale(
-  patchForeignBlock: (
-    path: string,
-    entity: string,
-    block: string,
-    key: string,
-    value: unknown,
-  ) => Promise<void>,
+  patchForeignBlock: (path: string, entity: string, block: string, key: string, value: unknown) => Promise<void>,
   containersByName: Record<string, ItemContainerData>,
-  provenance: ContainerProvenance,
+  provenance: ContainerProvenance
 ): void {
   if (!provenance.path) return;
   const container = containersByName[provenance.stem];
@@ -367,10 +328,7 @@ function patchContainerForSale(
 
   if (provenance.locator.kind === "items") {
     const items = (Array.isArray(container.items) ? container.items : []) as unknown[];
-    const next = withToggledContainer(items, [
-      provenance.locator.index,
-      ...(provenance.locator.subPath ?? []),
-    ]);
+    const next = withToggledContainer(items, [provenance.locator.index, ...(provenance.locator.subPath ?? [])]);
     if (!next) return;
     void patchForeignBlock(provenance.path, "item", "container", "items", next);
     return;
@@ -393,9 +351,7 @@ function patchContainerForSale(
   ]);
   if (!nextSectionItems) return;
   const nextSections = sections.map((section, idx) =>
-    idx === sectionLocator.sectionIndex
-      ? { ...section, items: nextSectionItems }
-      : section,
+    idx === sectionLocator.sectionIndex ? { ...section, items: nextSectionItems } : section
   );
   void patchForeignBlock(provenance.path, "item", "container", "sections", nextSections);
 }
@@ -415,10 +371,7 @@ function patchContainerForSale(
  * back through `stringifyYaml`. Touching only the target path keeps
  * the rest of the array byte-stable.
  */
-function withToggledContainer(
-  items: unknown[],
-  path: number[],
-): ItemContainerEntry[] | null {
+function withToggledContainer(items: unknown[], path: number[]): ItemContainerEntry[] | null {
   const [head, ...rest] = path;
   if (head == null || head < 0 || head >= items.length) return null;
   const original = items[head];
@@ -465,9 +418,7 @@ function toInventoryItemEntry(source: unknown): InventoryItemEntry | null {
   // even when the toggle was authored on the stash directly).
   if (o.for_sale === true) out.for_sale = true;
   if (Array.isArray(o.contents)) {
-    out.contents = o.contents
-      .map(toInventoryItemEntry)
-      .filter((e): e is InventoryItemEntry => e !== null);
+    out.contents = o.contents.map(toInventoryItemEntry).filter((e): e is InventoryItemEntry => e !== null);
   }
   return out;
 }
@@ -556,11 +507,7 @@ function normaliseCurrency(raw: unknown): NewInventoryBlock["currency"] {
  * Resolve the character's Strength score, folding in ASI picks the same
  * way the Stats block does. Falls back to the YAML override, then to 10.
  */
-function resolveStrength(
-  self: InventoryProps,
-  blocks: unknown,
-  _expressions: unknown,
-): number {
+function resolveStrength(self: InventoryProps, blocks: unknown, _expressions: unknown): number {
   const override = self.encumbrance?.strength;
   if (typeof override === "number") return override;
   // Stats block may carry STR as `STR: 14` or `STR: { value: 14, … }`.
@@ -587,11 +534,7 @@ export default inventory;
  * by wikilink stem + index. Nested container contents are ignored
  * because the equip UI only renders top-level rows today.
  */
-function toggleEquip(
-  items: InventoryItemEntry[],
-  target: ResolvedItem,
-  lookup: LookupFn,
-): InventoryItemEntry[] {
+function toggleEquip(items: InventoryItemEntry[], target: ResolvedItem, lookup: LookupFn): InventoryItemEntry[] {
   const targetIdx = parseInt(target.id, 10);
   if (Number.isNaN(targetIdx) || targetIdx < 0 || targetIdx >= items.length) {
     return items;
@@ -635,19 +578,13 @@ function clearSlot(items: InventoryItemEntry[], slot: InventoryEquipSlot): void 
  * child of the fourth). The walker clones every entry along the path so
  * we never mutate the author's original array — the `setSelf` proxy
  * depends on shallow-object identity to detect changes. */
-function toggleForSale(
-  items: InventoryItemEntry[],
-  target: ResolvedItem,
-): InventoryItemEntry[] {
+function toggleForSale(items: InventoryItemEntry[], target: ResolvedItem): InventoryItemEntry[] {
   const path = target.id.split(".").map((s) => parseInt(s, 10));
   if (path.some((n) => Number.isNaN(n) || n < 0)) return items;
   return withToggled(items, path);
 }
 
-function withToggled(
-  items: InventoryItemEntry[],
-  path: number[],
-): InventoryItemEntry[] {
+function withToggled(items: InventoryItemEntry[], path: number[]): InventoryItemEntry[] {
   const [head, ...rest] = path;
   if (head == null || head >= items.length) return items;
   const next = items.map((it) => ({ ...it }));
@@ -676,11 +613,7 @@ function weaponIsTwoHanded(item: ResolvedItem, lookup: LookupFn): boolean {
 }
 
 function isTwoHandedToken(raw: string): boolean {
-  const bare = raw
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .split("|")[0]
-    .toLowerCase();
+  const bare = raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].toLowerCase();
   return bare === "two-handed" || bare === "twohanded";
 }
 
@@ -704,7 +637,7 @@ function resolveAttunement(
   items: InventoryItemEntry[],
   personalByName: Record<string, { attuned?: boolean } | undefined>,
   blocks: unknown,
-  lookup: CharacterEntity["lookup"] | undefined,
+  lookup: CharacterEntity["lookup"] | undefined
 ): { active: number; cap: number } {
   let active = 0;
   for (const entry of items) {
