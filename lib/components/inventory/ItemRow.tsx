@@ -26,7 +26,7 @@ interface ItemRowProps {
  *  anchor without the caller doing extra work. */
 function statCell(item: ResolvedItem, sectionId: SectionId | undefined): React.ReactNode {
   if (item.isAmmoTracking) {
-    const cap = item.meta.ammoCap;
+    const cap = item.ammoCap;
     const ammoRaw = pickAmmoLabel(item);
     const target = ammoRaw ? wikiTarget(ammoRaw) : null;
     const label = ammoRaw ? wikiLabel(ammoRaw) : "";

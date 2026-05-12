@@ -28,6 +28,22 @@ const COMPENDIUM: Record<string, Record<string, unknown>> = {
   Rations: { type: "Adventuring Gear", weight: "2 lb." },
   Waterskin: { type: "Adventuring Gear", weight: "5 lb." },
   Dagger: { type: "Simple Melee Weapons", weight: "1 lb." },
+  Quiver: {
+    type: "Adventuring Gear (Container)",
+    weight: "1 lb.",
+    container: { ammo_cap: 20, for_ammo: ["[[Arrows]]", "[[Crossbow Bolts]]"] },
+  },
+  Pouch: {
+    type: "Adventuring Gear (Container)",
+    weight: "1 lb.",
+    container: {
+      for_ammo: ["[[Sling Bullets]]", "[[Blowgun Needles]]"],
+      ammo_cap: { "Sling Bullets": 20, "Blowgun Needles": 50 },
+    },
+  },
+  Arrows: { type: "Ammunition", weight: "0.05 lb." },
+  "Sling Bullets": { type: "Ammunition", weight: "0.075 lb." },
+  "Blowgun Needles": { type: "Ammunition", weight: "0.02 lb." },
 };
 
 const lookup: LookupFn = (target) => COMPENDIUM[target];
@@ -120,5 +136,47 @@ describe("resolveInventory", () => {
     // shield-kind entry as equipped so its AC and trait contributions
     // reach the character sheet without a manual toggle.
     expect(armor.items.find((i) => i.label === "Shield")!.equipped).toBe(true);
+  });
+
+  describe("ammo-tracking containers", () => {
+    it("fires ammo-tracking mode and exposes the numeric cap", () => {
+      const block: NewInventoryBlock = {
+        items: [{ name: "[[Quiver]]", contents: [{ name: "[[Arrows]]", qty: 15 }] }],
+      };
+      const result = resolveInventory({ block, lookup, strength: 10 });
+      const weapons = result.sections.find((s) => s.id === "weapons")!;
+      const quiver = weapons.items.find((i) => i.label === "Quiver")!;
+      expect(quiver.isAmmoTracking).toBe(true);
+      expect(quiver.ammoCarried).toBe(15);
+      expect(quiver.ammoCap).toBe(20);
+    });
+
+    it("picks the per-type cap based on loaded ammo", () => {
+      const sling: NewInventoryBlock = {
+        items: [{ name: "[[Pouch]]", contents: [{ name: "[[Sling Bullets]]", qty: 12 }] }],
+      };
+      const needles: NewInventoryBlock = {
+        items: [{ name: "[[Pouch]]", contents: [{ name: "[[Blowgun Needles]]", qty: 30 }] }],
+      };
+      const slingResult = resolveInventory({ block: sling, lookup, strength: 10 });
+      const needleResult = resolveInventory({ block: needles, lookup, strength: 10 });
+      const slingPouch = slingResult.sections.find((s) => s.id === "weapons")!.items[0];
+      const needlePouch = needleResult.sections.find((s) => s.id === "weapons")!.items[0];
+
+      expect(slingPouch.ammoCarried).toBe(12);
+      expect(slingPouch.ammoCap).toBe(20);
+      expect(needlePouch.ammoCarried).toBe(30);
+      expect(needlePouch.ammoCap).toBe(50);
+    });
+
+    it("leaves ammoCap undefined when not in ammo-tracking mode", () => {
+      const block: NewInventoryBlock = {
+        items: [{ name: "[[Pouch]]", contents: [{ name: "[[Rope]]" }] }],
+      };
+      const result = resolveInventory({ block, lookup, strength: 10 });
+      const pouch = result.sections.find((s) => s.id === "main_containers")!.items[0];
+      expect(pouch.isAmmoTracking).toBe(false);
+      expect(pouch.ammoCap).toBeUndefined();
+    });
   });
 });

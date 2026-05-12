@@ -30,8 +30,12 @@ export interface ItemMetadata {
    *  normalise into this array. Drives the ammo-tracking render mode
    *  in the inventory. */
   forAmmo?: string[];
-  /** Max count of `forAmmo` the container can hold. */
-  ammoCap?: number;
+  /** Max count of `forAmmo` the container can hold. A bare number
+   *  caps every declared type identically; a record caps each type
+   *  separately, keyed by the ammo's bare stem (lowercased, wikilink
+   *  wrappers stripped). The resolver picks the effective number
+   *  against the current contents. */
+  ammoCap?: number | Record<string, number>;
   /** When true, the container contributes only its own weight to the
    *  carrier — contents weight is ignored. Set by Bag-of-Holding-style
    *  magic overlays. */
@@ -92,12 +96,7 @@ export function parseItemMetadata(frontmatter: Record<string, unknown> | undefin
           ? fm.container_capacity
           : undefined,
     forAmmo: normaliseForAmmo(container.for_ammo),
-    ammoCap:
-      typeof container.ammo_cap === "number"
-        ? container.ammo_cap
-        : typeof container.ammo_cap === "string"
-          ? Number.parseInt(container.ammo_cap, 10) || undefined
-          : undefined,
+    ammoCap: normaliseAmmoCap(container.ammo_cap),
     weightFixed: container.weight_fixed === true ? true : undefined,
     image: asString(fm.image) ?? asString(fm.reference_img),
   };
@@ -135,6 +134,47 @@ function normaliseForAmmo(raw: unknown): string[] | undefined {
     }
   }
   return out.length > 0 ? out : undefined;
+}
+
+/**
+ * Normalise `container.ammo_cap` into either a single number (applies
+ * to every declared ammo type) or a record keyed by bare stem
+ * (lowercased, wikilink brackets stripped) for per-type caps. Accepts
+ * the same authoring latitudes as `forAmmo`: authors can key the map
+ * with `"Sling Bullets"`, `"[[Sling Bullets]]"`, or `"sling bullets"`
+ * and they all collapse onto the same internal form.
+ *
+ * Returns undefined on unusable input so the ammo-tracking render
+ * silently omits the `/ <cap>` portion instead of showing NaN.
+ */
+function normaliseAmmoCap(raw: unknown): number | Record<string, number> | undefined {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string") {
+    const n = Number.parseInt(raw, 10);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const out: Record<string, number> = {};
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      const n = typeof value === "number" ? value : typeof value === "string" ? Number.parseInt(value, 10) : NaN;
+      if (!Number.isFinite(n)) continue;
+      const stem = ammoKeyStem(key);
+      if (stem) out[stem] = n;
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+  return undefined;
+}
+
+/** Normalise an ammo-map key (authored name or wikilink) to the same
+ *  lowercase bare stem the resolver uses for content matching. Kept
+ *  private to this file so parse-time keys and resolver-time lookups
+ *  stay in lockstep. */
+function ammoKeyStem(raw: string): string {
+  if (!raw) return "";
+  const m = raw.match(/^\[\[(.+?)\]\]$/);
+  const inner = m ? m[1] : raw;
+  return inner.split("|")[0].split("/").pop()!.trim().toLowerCase();
 }
 
 /**

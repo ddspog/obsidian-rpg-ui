@@ -58,8 +58,14 @@ export interface ItemContainerData {
    *  entries whose name matches ONE of the declared types. */
   for_ammo?: string | string[];
   /** Max count of `for_ammo` the container can hold. Renders as
-   *  `<carried> / <cap>` in the inventory's stat column. */
-  ammo_cap?: number;
+   *  `<carried> / <cap>` in the inventory's stat column.
+   *
+   *  A bare number applies to every declared `for_ammo` type (Quiver:
+   *  20 arrows OR 20 bolts). A map picks a cap per ammo type, keyed by
+   *  the ammo's bare name (case-insensitive, wikilink wrappers
+   *  optional) — lets a Pouch hold 20 Sling Bullets OR 50 Blowgun
+   *  Needles from the same container entry. */
+  ammo_cap?: number | Record<string, number>;
   /** When true, the container contributes only its own weight to the
    *  carrier's encumbrance — contents weight is ignored. Set by
    *  Bag-of-Holding-style magic overlays to model extradimensional

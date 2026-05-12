@@ -54,6 +54,13 @@ export interface ResolvedItem {
   /** Sum of `qty` across all contents entries matching `forAmmo`. Only
    *  meaningful when `isAmmoTracking` is true. */
   ammoCarried: number;
+  /** Effective ammo capacity for the currently-held ammo. Resolved
+   *  from `meta.ammoCap`: bare number → passthrough, per-type record
+   *  → the entry matching the first content's stem. Undefined when
+   *  `isAmmoTracking` is false or the map has no matching entry, in
+   *  which case the stat cell shows just `<carried> <ammo>` without
+   *  the `/ <cap>` tail. */
+  ammoCap?: number;
   contents: ResolvedItem[];
 }
 
@@ -220,6 +227,11 @@ function resolveEntry(entry: YamlItemEntry, path: string, lookup: LookupFn): Res
     ammoTargets.size > 0 && contents.length > 0 && contents.every((c) => ammoTargets.has(wikiStem(c.link ?? c.label)))
   );
   const ammoCarried = isAmmoTracking ? contents.reduce((acc, c) => acc + c.qty, 0) : 0;
+  // Resolve the effective cap against what's actually loaded. A bare
+  // number carries through; a per-type record is keyed by the first
+  // content's stem — same choice `pickAmmoLabel` makes for the
+  // display label, so the number and label always agree in the UI.
+  const ammoCap = isAmmoTracking ? resolveAmmoCap(meta.ammoCap, contents[0]) : undefined;
 
   const equipKind = itemEquipKind(meta.type);
   // Shields are equipped-by-ownership. A character carrying a shield is
@@ -247,6 +259,7 @@ function resolveEntry(entry: YamlItemEntry, path: string, lookup: LookupFn): Res
     isContainer: isContainerEntry(entry) && !isAmmoTracking,
     isAmmoTracking,
     ammoCarried,
+    ammoCap,
     contents,
   };
 }
@@ -259,4 +272,18 @@ function wikiStem(raw: string): string {
   const m = raw.match(/^\[\[(.+?)\]\]$/);
   const inner = m ? m[1] : raw;
   return inner.split("|")[0].split("/").pop()!.trim().toLowerCase();
+}
+
+/** Pick the effective ammo capacity given what's loaded. Number caps
+ *  flow through; per-type caps look up by the first content's stem,
+ *  matching the label `pickAmmoLabel` will display in the stat cell
+ *  so the rendered `<carried> / <cap> <label>` always agrees. */
+function resolveAmmoCap(ammoCap: number | Record<string, number> | undefined, firstContent: ResolvedItem | undefined):
+  | number
+  | undefined {
+  if (ammoCap === undefined) return undefined;
+  if (typeof ammoCap === "number") return ammoCap;
+  if (!firstContent) return undefined;
+  const key = wikiStem(firstContent.link ?? firstContent.label);
+  return key ? ammoCap[key] : undefined;
 }

@@ -59,6 +59,47 @@ describe("parseItemMetadata", () => {
     expect(meta.cost).toBeUndefined();
     expect(meta.properties).toBeUndefined();
   });
+
+  describe("container.ammo_cap", () => {
+    it("passes numeric caps through", () => {
+      const meta = parseItemMetadata({ container: { ammo_cap: 20 } });
+      expect(meta.ammoCap).toBe(20);
+    });
+
+    it("parses numeric caps authored as strings", () => {
+      const meta = parseItemMetadata({ container: { ammo_cap: "20" } });
+      expect(meta.ammoCap).toBe(20);
+    });
+
+    it("normalises per-type caps into a lowercase-stem record", () => {
+      const meta = parseItemMetadata({
+        container: {
+          ammo_cap: {
+            "Sling Bullets": 20,
+            "[[Blowgun Needles]]": 50,
+          },
+        },
+      });
+      expect(meta.ammoCap).toEqual({
+        "sling bullets": 20,
+        "blowgun needles": 50,
+      });
+    });
+
+    it("drops unusable entries and returns undefined when none remain", () => {
+      const meta = parseItemMetadata({
+        container: {
+          ammo_cap: { "": 10, "Sling Bullets": "abc" },
+        },
+      });
+      expect(meta.ammoCap).toBeUndefined();
+    });
+
+    it("returns undefined for unusable scalar input", () => {
+      expect(parseItemMetadata({ container: { ammo_cap: "abc" } }).ammoCap).toBeUndefined();
+      expect(parseItemMetadata({ container: {} }).ammoCap).toBeUndefined();
+    });
+  });
 });
 
 describe("itemTypeBucket", () => {

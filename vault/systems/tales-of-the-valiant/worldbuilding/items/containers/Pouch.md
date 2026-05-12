@@ -14,8 +14,12 @@ desc: |-
 container:
   volume_cap: 1/5 cubic foot
   weight_cap: 6 lb.
-  for_ammo: "[[Sling Bullets]]"
-  ammo_cap: 10
+  for_ammo:
+    - "[[Sling Bullets]]"
+    - "[[Blowgun Needles]]"
+  ammo_cap:
+    Sling Bullets: 20
+    Blowgun Needles: 50
 shop:
   cheap: 3 sp
   expensive: 8 sp
