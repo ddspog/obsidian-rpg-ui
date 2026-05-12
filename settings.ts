@@ -29,6 +29,23 @@ export interface FolderLinkStyle {
   italic?: boolean;
 }
 
+/**
+ * One frontmatter field the plugin auto-renders at the bottom of
+ * every reading-view note. Intended for things like `source:` — a
+ * citation line the author wants to live *with* the note's data but
+ * still reads as a body-level footer. Hidden inside `.markdown-embed`
+ * by CSS so a `![[Foo]]` transclusion doesn't drag the footer into
+ * the host note.
+ */
+export interface PageFooterField {
+  /** Frontmatter key to look up (e.g. `"source"`). */
+  key: string;
+  /** Display label prefix. Defaults to a capitalized `key` when
+   *  absent (`source` → `Source:`). Set to an empty string to
+   *  suppress the label entirely. */
+  label?: string;
+}
+
 export interface DndUIToolkitSettings {
   statePath: string;
   selectedTheme: string;
@@ -43,6 +60,12 @@ export interface DndUIToolkitSettings {
    *  actual appearance. Longest prefix wins across ALL configured
    *  paths (not per-entry) when multiple entries or paths match. */
   folderLinkStyles: FolderLinkStyle[];
+
+  /** Frontmatter keys to auto-render at the bottom of every reading-
+   *  view note. Entries render in order. Hidden inside
+   *  `.markdown-embed` by CSS so transclusions don't drag the footer
+   *  into the host note. */
+  pageFooterFields: PageFooterField[];
 
   /** Total time window (ms) the scroll-restore loop keeps re-applying
    *  the saved scroll position after a YAML-driven block rerender.
@@ -83,6 +106,7 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   selectedTheme: "default",
   systemMappings: [],
   folderLinkStyles: [],
+  pageFooterFields: [],
   scrollRestoreDelayMs: 600,
 
   ...THEMES.default.colors,

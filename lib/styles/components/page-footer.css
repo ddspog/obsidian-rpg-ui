@@ -1,0 +1,37 @@
+/*
+ * Page footer injected by PageFooterManager. Displays configured
+ * frontmatter fields (e.g. `source:`) at the bottom of every reading-
+ * view note. Auto-hidden inside transclusions so `![[Foo]]` embeds
+ * don't drag the footer into the host note's body.
+ */
+
+.rpg-page-footer {
+  margin-top: 2em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--background-modifier-border, rgba(0, 0, 0, 0.1));
+  color: var(--text-muted, inherit);
+  font-size: 0.9em;
+}
+
+.rpg-page-footer__entry {
+  margin: 0.25em 0;
+}
+
+/* MarkdownRenderer wraps inline text in a `<p>` even when we asked for
+ * a single line of markdown. Flatten so the rendered value sits on the
+ * same baseline as the label strong. */
+.rpg-page-footer__value > p {
+  display: inline;
+  margin: 0;
+}
+
+.rpg-page-footer__label {
+  font-weight: 600;
+}
+
+/* Hide inside transclusions. `.markdown-embed` is the class Obsidian
+ * wraps every `![[…]]` embed in — the footer stays visible on the
+ * note's own page but never leaks into consumers. */
+.markdown-embed .rpg-page-footer {
+  display: none;
+}

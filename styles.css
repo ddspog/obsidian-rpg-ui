@@ -7491,6 +7491,28 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   cursor: not-allowed;
 }
 
+/* lib/styles/components/page-footer.css */
+.rpg-page-footer {
+  margin-top: 2em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--background-modifier-border, rgba(0, 0, 0, 0.1));
+  color: var(--text-muted, inherit);
+  font-size: 0.9em;
+}
+.rpg-page-footer__entry {
+  margin: 0.25em 0;
+}
+.rpg-page-footer__value > p {
+  display: inline;
+  margin: 0;
+}
+.rpg-page-footer__label {
+  font-weight: 600;
+}
+.markdown-embed .rpg-page-footer {
+  display: none;
+}
+
 /* lib/styles/file-suggest.css */
 .file-suggest-dropdown {
   background: var(--background-primary);

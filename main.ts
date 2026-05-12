@@ -32,6 +32,7 @@ import { buildReferenceProcessor } from "lib/plugin/reference-processor";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
+import { PageFooterManager } from "lib/plugin/page-footer";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -57,6 +58,7 @@ export default class DndUIToolkitPlugin extends Plugin {
   private refCache: FileRefCache | null = null;
   private refRegistry: ReferenceRegistry | null = null;
   private folderLinkStyleManager: FolderLinkStyleManager | null = null;
+  private pageFooterManager: PageFooterManager | null = null;
   /** Bumped on every `saveSettings` so the CM6 extension knows when to
    *  re-tag visible editor anchors without waiting for a docChanged. */
   private folderLinkStylesVersion = 0;
@@ -396,6 +398,14 @@ export default class DndUIToolkitPlugin extends Plugin {
         setTimeout(() => this.folderLinkStyleManager?.apply(this.settings.folderLinkStyles), 100);
       })
     );
+
+    // ── Page footer (frontmatter fields auto-rendered at note end) ───────
+    this.pageFooterManager = new PageFooterManager({
+      app: this.app,
+      settings: this.settings,
+      registerEvent: (ref) => this.registerEvent(ref as Parameters<typeof this.registerEvent>[0]),
+    });
+    this.pageFooterManager.start();
     this.registerMarkdownPostProcessor(
       buildFolderLinkProcessor({
         app: this.app,
@@ -493,6 +503,14 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.refCache = null;
     this.folderLinkStyleManager?.dispose();
     this.folderLinkStyleManager = null;
+    this.pageFooterManager?.dispose();
+    this.pageFooterManager = null;
+  }
+
+  /** Settings tab hook — re-render every open reading-view footer
+   *  after the author edits the field list so changes surface live. */
+  refreshPageFooter(): void {
+    this.pageFooterManager?.onSettingsChanged();
   }
 
   /**

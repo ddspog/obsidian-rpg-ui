@@ -15,6 +15,9 @@ interface PluginWithSettings {
   settings: DndUIToolkitSettings;
   saveSettings(): Promise<void>;
   applyColorSettings(): void;
+  /** Invoked after the author edits the footer-fields list so the
+   *  injector can re-render every open reading-view immediately. */
+  refreshPageFooter?(): void;
 }
 
 export class DndSettingsTab extends PluginSettingTab {
@@ -127,6 +130,30 @@ export class DndSettingsTab extends PluginSettingTab {
         })
       );
 
+    containerEl.createEl("h3", { text: "Page footer fields" });
+    containerEl.createEl("p", {
+      text:
+        "Frontmatter keys rendered at the end of every reading-view note, in order. " +
+        "Values are rendered as markdown (wikilinks, bold, italics all work). " +
+        "Auto-hidden inside transclusions — a `![[Foo]]` embed won't drag the footer into the host note.",
+      cls: "setting-item-description",
+    });
+
+    const footerContainer = containerEl.createDiv({ cls: "rpg-page-footer-fields" });
+    this.renderPageFooterFields(footerContainer);
+
+    new Setting(containerEl)
+      .setName("Add footer field")
+      .setDesc("Add a frontmatter key to render at the end of the page")
+      .addButton((button) =>
+        button.setButtonText("Add").onClick(async () => {
+          this.plugin.settings.pageFooterFields.push({ key: "" });
+          await this.plugin.saveSettings();
+          this.plugin.refreshPageFooter?.();
+          this.display();
+        })
+      );
+
     containerEl.createEl("h3", { text: "Styles" });
 
     new Setting(containerEl)
@@ -176,6 +203,63 @@ export class DndSettingsTab extends PluginSettingTab {
         this.plugin.applyColorSettings();
         this.display();
       });
+    });
+  }
+
+  /** One row per configured field. Each row exposes key + optional
+   *  label text inputs and a Remove button. Changes propagate to the
+   *  plugin immediately so live reading-view footers re-render as the
+   *  author types. */
+  private renderPageFooterFields(container: HTMLElement): void {
+    container.empty();
+    const fields = this.plugin.settings.pageFooterFields;
+    if (fields.length === 0) {
+      container.createEl("p", {
+        text: "No footer fields configured. Click 'Add footer field' to render a frontmatter key (e.g. `source`) at the end of every note.",
+        cls: "setting-item-description",
+      });
+      return;
+    }
+    fields.forEach((field, idx) => {
+      const setting = new Setting(container)
+        .setName(`Field ${idx + 1}`)
+        .setDesc("Frontmatter key, and an optional label prefix. Leave the label empty to use the capitalized key.");
+      setting.addText((text) =>
+        text
+          .setPlaceholder("source")
+          .setValue(field.key)
+          .onChange(async (value) => {
+            field.key = value.trim();
+            await this.plugin.saveSettings();
+            this.plugin.refreshPageFooter?.();
+          })
+      );
+      setting.addText((text) =>
+        text
+          .setPlaceholder("Source")
+          .setValue(field.label ?? "")
+          .onChange(async (value) => {
+            // Preserve the distinction between "unset" (auto-cap from
+            // key) and "explicitly empty string" (suppress the label)
+            // so authors who want a bare value can get it by entering
+            // a single space; trimming back to empty keeps the
+            // auto-cap behaviour.
+            field.label = value === "" ? undefined : value;
+            await this.plugin.saveSettings();
+            this.plugin.refreshPageFooter?.();
+          })
+      );
+      setting.addExtraButton((btn) =>
+        btn
+          .setIcon("trash")
+          .setTooltip("Remove this footer field")
+          .onClick(async () => {
+            this.plugin.settings.pageFooterFields.splice(idx, 1);
+            await this.plugin.saveSettings();
+            this.plugin.refreshPageFooter?.();
+            this.display();
+          })
+      );
     });
   }
 

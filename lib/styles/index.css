@@ -78,6 +78,7 @@
 @import "./components/dice-roll-modal.css";
 @import "./components/references.css";
 @import "./components/folder-link-styles.css";
+@import "./components/page-footer.css";
 @import "./file-suggest.css";
 
 /* Obsidian-only layout overrides — keep last so it can override component
