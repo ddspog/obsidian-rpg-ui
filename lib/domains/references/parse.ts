@@ -5,7 +5,8 @@
  * Syntax:
  *   @[[Longsword]].item.element.cost                — dot-key walk
  *   @[[Longsword]].item.element[0].weapon.damage    — explicit index
- *   @[[Cleric]].feature.details[Spellcasting].text  — named match
+ *   @[[Cleric]].feature.details[Spellcasting].text  — named match / object key
+ *   @[[Pouch]].container.ammo_cap['Sling Bullets']  — quoted object key
  *   @[[Talon]].metadata.cssclasses[0]               — frontmatter
  *
  * The shorthand `item.element` (no index) is treated as `item.element[0]`
@@ -81,7 +82,13 @@ export function matchAllReferences(text: string): Array<ParsedRef & { start: num
  * either `.` or `[`) into its constituent steps. The pattern loop
  * peels off one step at a time — `.key` becomes `{kind:"key"}`, `[N]`
  * becomes `{kind:"index"}` when the brackets wrap a pure integer,
- * otherwise the bracket content is treated as a named match.
+ * otherwise the bracket content is treated as a named step.
+ *
+ * Surrounding single or double quotes inside the brackets are
+ * stripped so `['Sling Bullets']`, `["Sling Bullets"]`, and
+ * `[Sling Bullets]` all produce the same `named` step — authors
+ * naturally reach for quotes when the key has spaces, and forcing
+ * them to drop the quotes would be a needless papercut.
  */
 function parseSteps(raw: string): RefStep[] {
   const steps: RefStep[] = [];
@@ -91,7 +98,9 @@ function parseSteps(raw: string): RefStep[] {
     if (m[1] !== undefined) {
       steps.push({ kind: "key", name: m[1] });
     } else if (m[2] !== undefined) {
-      const inner = m[2].trim();
+      let inner = m[2].trim();
+      const quoted = inner.match(/^(['"])(.*)\1$/);
+      if (quoted) inner = quoted[2];
       if (/^-?\d+$/.test(inner)) {
         steps.push({ kind: "index", index: Number(inner) });
       } else {

@@ -31,7 +31,7 @@ export interface MarkdownProps {
   context?: EvalContext;
 }
 
-export function Markdown({ source, sourcePath = "", className, context }: MarkdownProps) {
+export function Markdown({ source, sourcePath, className, context }: MarkdownProps) {
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -49,7 +49,16 @@ export function Markdown({ source, sourcePath = "", className, context }: Markdo
     // Use the modern API when available (newer Obsidian builds), otherwise
     // fall back to the deprecated renderMarkdown shim. Both accept the same
     // (source, container, sourcePath, component) tail.
-    const app = (globalThis as unknown as { app?: unknown }).app as { workspace?: unknown } | undefined;
+    const app = (globalThis as unknown as { app?: unknown }).app as
+      | { workspace?: { getActiveFile?: () => { path?: string } | null } }
+      | undefined;
+    // When the caller didn't provide an explicit sourcePath, fall back to
+    // the active file's path so Obsidian can resolve transclusions and
+    // relative wikilinks. Without this, embeds like `![[Ammunition|…]]`
+    // authored inside a card's `desc:` fail to render their contents —
+    // the outer note is known to Obsidian but the renderer has no
+    // context for the nested embed.
+    const effectiveSourcePath = sourcePath ?? app?.workspace?.getActiveFile?.()?.path ?? "";
     const renderer = MarkdownRenderer as unknown as {
       render?: (
         app: unknown,
@@ -63,8 +72,8 @@ export function Markdown({ source, sourcePath = "", className, context }: Markdo
 
     const promise =
       typeof renderer.render === "function" && app
-        ? renderer.render(app, rendered, container, sourcePath, component)
-        : renderer.renderMarkdown?.(rendered, container, sourcePath, component);
+        ? renderer.render(app, rendered, container, effectiveSourcePath, component)
+        : renderer.renderMarkdown?.(rendered, container, effectiveSourcePath, component);
 
     Promise.resolve(promise).catch((err) => {
       console.error("rpg-ui-toolkit Markdown: render failed", err);

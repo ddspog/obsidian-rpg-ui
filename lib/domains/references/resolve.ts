@@ -177,19 +177,32 @@ function walkValue(initial: unknown, steps: RefStep[], baseTrace: string): Resol
       }
       value = value[step.index];
     } else if (step.kind === "named") {
-      if (!Array.isArray(value)) {
+      if (Array.isArray(value)) {
+        value = value.find((entry) => {
+          if (!entry || typeof entry !== "object") return false;
+          const name = (entry as Record<string, unknown>).name;
+          return typeof name === "string" && name.toLowerCase() === step.name.toLowerCase();
+        });
+      } else if (value && typeof value === "object") {
+        // Plain-object bracket lookup. Exact key first, then a
+        // case-insensitive fallback so `ammo_cap[Sling Bullets]` and
+        // `ammo_cap[sling bullets]` both land on the same entry —
+        // matches the forgiveness already in the array-named branch.
+        const obj = value as Record<string, unknown>;
+        if (Object.prototype.hasOwnProperty.call(obj, step.name)) {
+          value = obj[step.name];
+        } else {
+          const hit = Object.keys(obj).find((k) => k.toLowerCase() === step.name.toLowerCase());
+          value = hit !== undefined ? obj[hit] : undefined;
+        }
+      } else {
         return {
           kind: "missing",
           value: undefined,
           trace,
-          reason: `[${step.name}] requires an array of named entries`,
+          reason: `[${step.name}] requires an array of named entries or a keyed object`,
         };
       }
-      value = value.find((entry) => {
-        if (!entry || typeof entry !== "object") return false;
-        const name = (entry as Record<string, unknown>).name;
-        return typeof name === "string" && name.toLowerCase() === step.name.toLowerCase();
-      });
     }
     if (value === undefined) {
       return { kind: "missing", value: undefined, trace, reason: "Path ends before the step" };

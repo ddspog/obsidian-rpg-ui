@@ -43,6 +43,20 @@ describe("parseReference", () => {
     ]);
   });
 
+  it("strips surrounding quotes from bracket keys", () => {
+    const single = parseReference("@[[Pouch]].container.ammo_cap['Sling Bullets']");
+    const double = parseReference(`@[[Pouch]].container.ammo_cap["Sling Bullets"]`);
+    const bare = parseReference("@[[Pouch]].container.ammo_cap[Sling Bullets]");
+    const expected = [
+      { kind: "key", name: "container" },
+      { kind: "key", name: "ammo_cap" },
+      { kind: "named", name: "Sling Bullets" },
+    ];
+    expect(single!.steps).toEqual(expected);
+    expect(double!.steps).toEqual(expected);
+    expect(bare!.steps).toEqual(expected);
+  });
+
   it("tolerates aliases and paths inside the wikilink", () => {
     const ref = parseReference("@[[folder/Longsword|Alias]].item.element.cost");
     expect(ref!.target).toBe("folder/Longsword|Alias");
