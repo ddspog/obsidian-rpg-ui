@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: Homebrew for needed organization.
 ---
 # Incense (one block) ᴺ
 ```rpg item.element
@@ -16,5 +17,3 @@ shop:
     - "[[013. Glossary/Product Availability/Urban]]"
     - "[[Premium]]"
 ```
-
-**Source**: _Homebrew for needed organization._

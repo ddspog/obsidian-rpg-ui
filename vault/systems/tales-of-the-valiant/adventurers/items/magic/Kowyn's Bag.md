@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Kowyn's Bag
 ```rpg item.container
@@ -93,5 +94,3 @@ sections:
 
 The [[012. Worldbuilding/Items/Wondrous Item/Bag of Holding]] possessed by Kowyn, responsible for holding the
 party's extra loot.
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

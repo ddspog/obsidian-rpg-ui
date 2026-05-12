@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 ---
 # Kobold
 ![[kobold.webp|right|384]] Kobolds are a cunning people with draconic features. Many kobolds believe ancient dragons made kobolds in their likeness, to serve their draconic masters. Cagey and strategic, these diminutive draconic humanoids instinctually seek safety in tunnels and similar enclosed spaces such as collapsed architecture or rubble.
@@ -73,4 +74,3 @@ traits:
   Natural Adaptation: Truescale
   Size: Medium
 ```
-**Source**: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.

@@ -169,5 +169,3 @@ _Antipathy/Sympathy_ (Enchantment) Attract or repel creatures. 
 _Control Weather_ (Transmutation) Change weather within 5 miles. 
 ###### 9TH CIRCLE #css/h/section 
 _Metamorphosis_ (Transmutation) Permanently alter ally’s form.  
-
-**Source**: *`= this.source`*

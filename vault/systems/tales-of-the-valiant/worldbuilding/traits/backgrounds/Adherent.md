@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 ---
 # Adherent
 Before you began adventuring, you committed yourself to a faith, belief, or cause. The exacting tasks required of this commitment—daily prayers, holy rites, or cryptic ceremonies—instilled in you a sense of duty and purpose. 
@@ -58,4 +59,3 @@ Many adherents don’t stray far from the object of their devotion. Those who ro
 | 8 | Staying on the move keeps me from being dragged back to the order from which I narrowly escaped. |
 |= {{ roll }} =|
 ```
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.*

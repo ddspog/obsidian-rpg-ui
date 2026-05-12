@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: Homebrew for needed organization
 ---
 # Purse ᴺ
 ```rpg item.element
@@ -15,5 +16,3 @@ container:
   volume_cap: 1/5 cubic foot
   weight_cap: 6 lb.
 ```
-
-**Source**: _Homebrew for needed organization_

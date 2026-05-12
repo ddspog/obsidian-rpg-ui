@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: Homebrew based on *Supplicant* from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**, and *Augmented* by **D&D** "Caliya's Chronicle of Runes" book by **Spectre Creations**.
 ---
 # Twisted Minion
 Characters of the Twisted Minion heritage were molded under the iron rule of a cruel overlord who fused arcane or alchemical methods into their subordinates. Through invasive experimentation and forced servitude, these unfortunate souls were forever altered in both body and mind.
@@ -110,4 +111,3 @@ traits:
 |Neck|Guardian Bubble|3|You can project and retract a magic bubble around you with eternal breathable air (no action required). You can use this to breath on void, water, and around toxic gas.|
 [AUGMENTED ENHANCEMENTS #css/tx/table]
 ```
-**Source**: Homebrew based on *Supplicant* from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**, and *Augmented* by **D&D** "Caliya's Chronicle of Runes" book by **Spectre Creations**.

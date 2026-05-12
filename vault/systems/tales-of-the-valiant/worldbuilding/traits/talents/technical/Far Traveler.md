@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Far Traveler
 ```rpg feature.details
@@ -18,4 +19,3 @@ passive:
     - You ignore the effects of having one level of [[Exhaustion]]. When you have two or more levels of exhaustion, you suffer the effects of exhaustion normally.
     - You have [[advantage]] when you make a WIS ([[Survival]]) check to determine if you become lost.
 ```
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

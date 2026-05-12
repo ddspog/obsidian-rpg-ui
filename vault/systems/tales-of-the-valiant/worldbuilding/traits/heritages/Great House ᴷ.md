@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Campaign Builder: Castles & Crowns" book by **Kobold Press**.
 ---
 # Great House
 Characters with the great house heritage have a real, if distant, claim to royal power—or at least to noble authority. The traditions and values of a great house heritage vary by house, for each house and family will cultivate the qualities they wish their scions to exemplify. 
@@ -38,4 +39,3 @@ choose:
     options:
       - "@worldbuilding/items/weapons/martial"
 ```
-**Source**: *From **Tales of the Valiant** "Campaign Builder: Castles & Crowns" book by **Kobold Press**.*

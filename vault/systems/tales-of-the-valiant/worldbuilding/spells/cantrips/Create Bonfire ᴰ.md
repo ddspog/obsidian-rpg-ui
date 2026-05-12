@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond***
 ---
 # Create Bonfire ᴰ
 
@@ -44,7 +45,3 @@ roll:
       11: { damage: { roll: 3d8, type: fire } }
       17: { damage: { roll: 4d8, type: fire } }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond***

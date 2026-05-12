@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***
 ---
 # Sanctuary
 
@@ -32,7 +33,3 @@ roll:
     on_success: "attack proceeds"
   notes: ward target; attackers WIS save or lose attack/harmful effect
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

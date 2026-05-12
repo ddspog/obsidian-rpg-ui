@@ -23,4 +23,3 @@ cssclasses:
 ## Contents
 `= join(this.contents, "")`
 `= this.reference_img`
-**Source**: *`= this.source`*

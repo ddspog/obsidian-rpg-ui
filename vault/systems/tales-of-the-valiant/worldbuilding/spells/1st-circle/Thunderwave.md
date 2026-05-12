@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***
 ---
 # Thunderwave
 
@@ -45,7 +46,3 @@ roll:
     4: { damage: { roll: 5d8, type: thunder } }
     5: { damage: { roll: 6d8, type: thunder } }
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

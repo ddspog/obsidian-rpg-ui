@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Transformation
 >[!rules] RULES OF TRANSFORMATION
@@ -24,5 +25,3 @@ cssclasses:
 >|Huge or Gargantuan|84 + your PB|
 >[HIT POINTS BY FORM SIZE #css/tx/table]
 >```
- 
- **Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

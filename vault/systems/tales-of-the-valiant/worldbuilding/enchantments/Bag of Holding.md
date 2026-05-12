@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Bag of Holding
 ```rpg item.magic
@@ -22,5 +23,3 @@ text: |-
 traits:
   Weight Reduction.: true
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***
 ---
 # Black Ribbons ᴷ
 
@@ -33,7 +34,3 @@ roll:
     - restrained
   notes: 20-ft cube of ribbons; difficult terrain; restrained until next turn on fail
 ```
-
-
-
-**Source**: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***

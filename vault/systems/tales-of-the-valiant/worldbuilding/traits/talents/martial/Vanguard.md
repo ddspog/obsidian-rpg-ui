@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Vanguard
 ```rpg feature.details
@@ -19,5 +20,3 @@ action:
   text: |
     When you take the [[Ready]] action to attack with a melee weapon, you gain a bonus to your attack and damage rolls equal to your PB when the trigger occurs. On a hit, the creature's speed is reduced to 0 feet until the end of its next turn.
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

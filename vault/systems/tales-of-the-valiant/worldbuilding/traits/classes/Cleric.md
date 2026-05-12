@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Cleric
 ![[cleric.webp|right|384]]Clerics are as diverse as the gods they serve, but all are united in their mission to act as their faith demands. A cleric's abilities reflect the strength of their faith. The more powerful a cleric becomes, the more their features resemble those of the god they worship.
@@ -437,5 +438,3 @@ _Subclass of Cleric. Channels radiant light to burn enemies and dazzle foes. (Su
 ### War Domain
 
 _Subclass of Cleric. Wields weapons and armor with divine focus. (Subclass details not yet documented in this compendium.)_
-
-**Source**: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.

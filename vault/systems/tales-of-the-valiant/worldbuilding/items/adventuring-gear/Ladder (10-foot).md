@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 ---
 # Ladder (10-foot)
 ```rpg item.element
@@ -14,5 +15,3 @@ shop:
   availability:
     - "[[013. Glossary/Product Availability/Urban]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**._

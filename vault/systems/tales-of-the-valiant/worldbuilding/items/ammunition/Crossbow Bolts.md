@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Crossbow Bolts
 ```rpg item.element
@@ -15,4 +16,3 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ```
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

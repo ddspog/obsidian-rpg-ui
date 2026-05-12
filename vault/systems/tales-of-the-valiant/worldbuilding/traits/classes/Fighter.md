@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Fighter
 ![[fighter.webp|right|384]] There are many ways to build a fighter, but at the end of the day, their talents shine brightest in the thick of a fight. Whether archer, knight, wrestler, or general, your class options are designed to make you the best at dishing out damage with your favorite weapons. 
@@ -312,4 +313,3 @@ As you develop mastery, you gain new abilities that support your preferred comba
 ![[Shadow Hand ᴴ|no-t clean hide-ll]]
 ### Weapon Master
 ![[Weapon Master|no-t clean hide-ll]]
-**Source**: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Comrade
 ```rpg feature.details
@@ -18,4 +19,3 @@ bonus: [[Help]]
 traits:
   Bonus Actions: [[Help]]
 ```
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

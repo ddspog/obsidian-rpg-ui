@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **D&D 5e** "Dungeon Master's Guide (2024)" book by **D&D Beyond**
 ---
 # Sword of Vengeance
 ```rpg item.element
@@ -22,5 +23,3 @@ weapon:
     - "[[Short Draw ᴷ]]"
   bonus: "+1"
 ```
-
-**Source**: _From **D&D 5e** "Dungeon Master's Guide (2024)" book by **D&D Beyond**_

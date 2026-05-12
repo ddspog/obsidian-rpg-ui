@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Shield
 ```rpg item.element
@@ -24,5 +25,3 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

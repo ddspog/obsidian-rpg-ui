@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Ritualist
 ```rpg feature.details
@@ -30,5 +31,3 @@ choose:
 spellcasting:
   rituals_per_circle: 1
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

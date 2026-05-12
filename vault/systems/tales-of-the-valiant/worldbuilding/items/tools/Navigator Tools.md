@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Navigator Tools
 ```rpg item.element
@@ -18,5 +19,3 @@ shop:
 ```
 
 ## Homebrew Notes
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

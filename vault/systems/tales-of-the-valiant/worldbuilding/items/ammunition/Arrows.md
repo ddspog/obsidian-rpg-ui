@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Arrows
 ```rpg item.element
@@ -17,5 +18,3 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

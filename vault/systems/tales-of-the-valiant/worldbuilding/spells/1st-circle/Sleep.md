@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***
 ---
 # Sleep
 
@@ -43,7 +44,3 @@ roll:
     4: { damage: { roll: 11d8, type: "sleep pool" } }
     5: { damage: { roll: 13d8, type: "sleep pool" } }
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

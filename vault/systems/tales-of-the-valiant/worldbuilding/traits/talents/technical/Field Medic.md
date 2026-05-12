@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Field Medic
 ```rpg feature.details
@@ -23,4 +24,3 @@ action:
     - When you do, the creature regains a number of hit points equal to your PB + their CON modifier.
     - A creature healed in this way can't receive the benefits of this feature again until it finishes a short or long rest.
 ```
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins" book by **Kobold Press**
 ---
 # Strong Stomach ᴷ
 ```rpg feature.details
@@ -17,4 +18,3 @@ traits:
   Immunity: [[Poisoned]]
   Resistance: Poison Damage
 ```
-**Source**: _From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins" book by **Kobold Press**_

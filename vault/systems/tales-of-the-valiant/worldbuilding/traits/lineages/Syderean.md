@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: Adjusted from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 ---
 # Syderean
 ![[syderean.webp|right|384]] Sydereans (sigh-DEER-ee-ans) are mystical beings sired by creatures or powers from a different plane of existence. Sometimes called starborn or plane-touched, their origins are as varied and mysterious as the cosmic forces that shaped them. 
@@ -77,4 +78,3 @@ passive:
 traits:
   Natural Adaptation: Fiendish, Winged
 ```
-**Source**: Adjusted from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.

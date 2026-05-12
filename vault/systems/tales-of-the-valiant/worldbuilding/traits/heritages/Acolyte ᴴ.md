@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: Homebrew inspired in **D&D 5e** High Elf and adapted to **Tales of the Valiant**.
 ---
 # Acolyte
 Acolyte[^1] heritage characters were raised traveling alongside field agents of an established faction, acting as assistants to these members.
@@ -44,5 +45,3 @@ choose:
       - WIS
 ```
 [^1]: Homebrew inspired in the D&D High Elf, but suited for the Campaign.
-
-**Source**: *Homebrew inspired in **D&D 5e** High Elf and adapted to **Tales of the Valiant**.*

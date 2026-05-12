@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games***
 ---
 # Updraft º
 
@@ -42,7 +43,3 @@ roll:
     4: { range: "Self (5-ft radius, 50-ft up)" }
     5: { range: "Self (5-ft radius, 60-ft up)" }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games***

@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Sentinel Shield
 ```rpg item.magic
@@ -18,5 +19,3 @@ traits:
   Initiative A.: true
   Skill A.: "[[Perception]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

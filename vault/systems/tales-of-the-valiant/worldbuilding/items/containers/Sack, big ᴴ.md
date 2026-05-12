@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: Homebrew adapting [[Sack]] from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Sack, big ᴴ
 ```rpg item.element
@@ -23,5 +24,3 @@ shop:
     - "[[013. Glossary/Product Availability/Urban]]"
     - "[[Premium]]"
 ```
-
-**Source**: _Homebrew adapting [[Sack]] from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***
 ---
 # Entangle
 
@@ -31,7 +32,3 @@ roll:
     - restrained
   notes: 20-ft square of grasping weeds; restrained on fail
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

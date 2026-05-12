@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***
 ---
 # Icicle Javelin º
 
@@ -41,7 +42,3 @@ roll:
     4: { damage: { roll: 6d8, type: cold } }
     5: { damage: { roll: 7d8, type: cold } }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***

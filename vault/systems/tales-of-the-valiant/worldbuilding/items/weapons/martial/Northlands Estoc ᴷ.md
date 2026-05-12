@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **D&D 5e** "Beyond Damage Dice 1" book by **Kobold Press**.
 ---
 # Northlands Estoc
 ```rpg item.element
@@ -25,5 +26,3 @@ shop:
   availability:
     - "[[Exotic]]"
 ```
-
-**Source**: _From **D&D 5e** "Beyond Damage Dice 1" book by **Kobold Press**._

@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Druid
 ![[druid.webp|right|384]] Druids are the guardians and warriors of the natural world. All druids feel a deep affinity for the environment, whether it manifests as a spiritual connection to the beasts of the land, the plants of the earth, or the elemental energies that keep all things in balance. 
@@ -428,7 +429,6 @@ While all druids revere nature, subclasses represent the specific ways druids be
 ### Shifter
 ![[Shifter|clean no-t hide-ll]]
 
-**Source**: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 
 [^1]: Homebrew rule inspired from **D&D** _Wintercoat's Guide to Wild Shapes_ book by **The Two Dicey Bards**.
 

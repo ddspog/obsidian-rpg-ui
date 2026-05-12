@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Xanathar's Guide to Everything" book by **D&D Beyond***
 ---
 # Zephir Strike ᴰ
 
@@ -31,7 +32,3 @@ roll:
     type: force
   notes: once before spell ends; grants advantage + 1d8 force on one weapon hit; +30 ft speed that turn
 ```
-
-
-
-**Source**: *From **D&D 5e** "Xanathar's Guide to Everything" book by **D&D Beyond***

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games***
 ---
 # Magnitude º
 
@@ -47,7 +48,3 @@ roll:
     4: { range: "Self (25-ft radius)" }
     5: { range: "Self (30-ft radius)" }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games***

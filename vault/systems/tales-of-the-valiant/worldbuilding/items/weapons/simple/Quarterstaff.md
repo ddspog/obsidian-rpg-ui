@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Quarterstaff
 ```rpg item.element
@@ -22,5 +23,3 @@ shop:
     - "[[Rural]]"
     - "[[013. Glossary/Product Availability/Urban]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

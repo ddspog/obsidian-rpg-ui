@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **D&D 5e** "D&D Shop Catalog" book by **/u/jrobharing**
 ---
 # Journal, soft bound º
 ```rpg item.element
@@ -18,5 +19,3 @@ shop:
     - "[[013. Glossary/Product Availability/Urban]]"
     - "[[Premium]]"
 ```
-
-**Source**: _From **D&D 5e** "D&D Shop Catalog" book by **/u/jrobharing**_

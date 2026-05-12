@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***
 ---
 # Cure Wounds
 ```rpg spell
@@ -39,7 +40,3 @@ roll:
     4: { damage: { roll: 4d8, type: healing } }
     5: { damage: { roll: 5d8, type: healing } }
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

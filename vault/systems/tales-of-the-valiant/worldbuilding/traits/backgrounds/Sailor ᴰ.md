@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: Homebrew from **D&D 5e** background and adapted to **Tales of the Valiant**
 ---
 # Sailor
 You spent years on a seagoing vessel—trading, patrolling, or plundering the waters near and far. In that time, you endured volatile storms, monstrous threats from the depths, and all manner of human treachery. Whether you served aboard a merchant craft, naval flagship, or pirate schooner, your life at sea shaped you into a hardy soul whose first love remains that distant line of the horizon. ^1
@@ -50,4 +51,3 @@ Though some sailors are happy to remain with their crews, you ultimately parted 
 | 8  | I promised my mates I’d return with power and riches to save our failing port.     |
 |= {{ roll }} =|
 ```
-**Source**: Homebrew from **D&D 5e** background and adapted to **Tales of the Valiant**

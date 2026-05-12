@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: *Homebrew from **D&D 5e** background and adapted to **Tales of the Valiant***
 ---
 # Celebrity Adventurer's Scion
 Your family name strikes fear and admiration in the hearts of the common folk—but that’s got nothing to do with you. Songs and stories celebrating the adventuring exploits of your famous parent are widely known. Kids across the land grew up wishing they were you. But being the child of a famous adventurer wasn’t all hugs and kisses.[^1]
@@ -64,5 +65,3 @@ Scions of celebrity adventurers must deal with fame that’s not theirs, wealth 
 |8|My family’s debts have become my burden, and adventuring is my way to repay them.|
 |= {{ roll }} =|
 ```
-
-**Source**: *Homebrew from **D&D 5e** background and adapted to **Tales of the Valiant***

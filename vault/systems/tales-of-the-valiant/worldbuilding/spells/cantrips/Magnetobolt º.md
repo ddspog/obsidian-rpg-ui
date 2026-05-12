@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press***
 ---
 # Magnetobolt º
 
@@ -44,7 +45,3 @@ roll:
       11: { damage: { roll: 3d6, type: force } }
       17: { damage: { roll: 4d6, type: force } }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press***

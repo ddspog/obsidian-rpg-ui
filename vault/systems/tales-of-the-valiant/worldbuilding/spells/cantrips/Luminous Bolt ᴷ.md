@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Deep Magic 1" book by **Kobold Press***
 ---
 # Luminous Bolt ᴷ
 
@@ -44,7 +45,3 @@ roll:
       11: { damage: { roll: 3d6, type: radiant } }
       17: { damage: { roll: 4d6, type: radiant } }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Deep Magic 1" book by **Kobold Press***

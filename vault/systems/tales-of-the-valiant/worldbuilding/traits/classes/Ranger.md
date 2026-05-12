@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Ranger
 ![[ranger.webp|right|384]]Rangers are unparalleled explorers with a mystical connection to the natural world. A combination of martial prowess, spellcasting, and supernatural awareness ensures rangers excel as scouts, trackers, and hunters. Few classes prove as deadly as a ranger once their quarry is within sight. 
@@ -411,4 +412,3 @@ As a ranger fosters their skills, they gain new abilities that reflect their dee
 ![[Hunter|no-t clean hide-ll]]
 ### Pack Master
 ![[Pack Master|no-t clean hide-ll]]
-**Source**: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.

@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Noxious Apothecary
 ```rpg feature.details
@@ -28,5 +29,3 @@ action:
     - The poison's save DC and damage both increase by an amount equal to your PB.
     - A creature that fails its save against your poison by 5 is [[poisoned]] until the end of its next turn.
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

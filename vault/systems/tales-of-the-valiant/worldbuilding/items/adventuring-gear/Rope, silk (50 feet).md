@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Rope, silk (50 feet)
 ```rpg item.element
@@ -14,5 +15,3 @@ shop:
   availability:
     - "[[Premium]]"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

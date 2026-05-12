@@ -246,5 +246,3 @@ _Clone_ (Necromancy) Backup body for a creature. 
 _Astral Projection_ (Necromancy) Group travel to Astral Plane. 
 _Foresight_ (Divination) Ally sees immediate future. 
 _Imprisonment_ (Abjuration) Create a unique prison. 
-
-**Source**: *`= this.source`*

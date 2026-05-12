@@ -169,5 +169,3 @@ _Control Weather_ (Transmutation) Change weather within 5 miles. 
 ###### 9TH CIRCLE #css/h/section 
 _Foresight_ (Divination) Ally sees immediate future. 
 _True Resurrection_ (Necromancy) Resurrect 200 years dead. 
-
-**Source**: *`= this.source`*

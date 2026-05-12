@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***
 ---
 # Lunarbolt Waxing ᴷ
 ```rpg spell
@@ -63,7 +64,3 @@ roll:
     4: { damage: [{ roll: 3d10, type: cold }, { roll: 3d6, type: radiant }] }
     5: { damage: [{ roll: 3d10, type: cold }, { roll: 3d6, type: radiant }] }
 ```
-
-
-
-**Source**: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***

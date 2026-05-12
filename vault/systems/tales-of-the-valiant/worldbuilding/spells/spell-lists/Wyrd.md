@@ -155,5 +155,3 @@ _Antipathy/Sympathy_ (Enchantment) Attract or repel creatures.
 ###### 9TH CIRCLE #css/h/section 
 _Astral Projection_ (Necromancy) Group travel to Astral Plane.
 _Imprisonment_ (Abjuration) Create a unique prison.  
-
-**Source**: *`= this.source`*

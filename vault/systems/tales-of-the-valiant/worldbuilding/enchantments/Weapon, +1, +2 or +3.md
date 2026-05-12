@@ -1,5 +1,6 @@
 ---
 cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Weapon, +1, +2 or +3
 ```rpg item.magic
@@ -23,5 +24,3 @@ variants:
     cost: 15,000 gp + base
     bonus: "+3"
 ```
-
-**Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_
