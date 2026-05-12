@@ -3,7 +3,6 @@ cssclasses:
   - note-spell
 ---
 # Cure Wounds
-
 ```rpg spell
 circle: 1st-Circle
 source:

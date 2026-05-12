@@ -3,7 +3,6 @@ cssclasses:
   - note-spell
 ---
 # Lunarbolt Waxing ᴷ
-
 ```rpg spell
 circle: 1st-Circle
 source:

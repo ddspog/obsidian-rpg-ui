@@ -1,1 +1,2 @@
+# Elemental
 ![[03. Understanding Terrain and Creature Types#Elementals|clean no-h2]]

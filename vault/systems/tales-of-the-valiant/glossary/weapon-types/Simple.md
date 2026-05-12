@@ -1,3 +1,4 @@
+# Simple
 ![[05. Equipment & Magic Items#Simple Weapons|clean no-h4]]
 ***
 ![[05. Equipment & Magic Items#^e9827c|clean]]

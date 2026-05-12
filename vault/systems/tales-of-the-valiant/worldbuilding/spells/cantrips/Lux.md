@@ -2,8 +2,7 @@
 cssclasses:
   - note-spell
 ---
-# Light
-
+# LUX
 ```rpg spell
 circle: Cantrip
 source:
@@ -24,7 +23,3 @@ text: |-
   If you target an object held or worn by a hostile creature, that creature must succeed on a DEX save to avoid the spell.
 image: "![[light.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

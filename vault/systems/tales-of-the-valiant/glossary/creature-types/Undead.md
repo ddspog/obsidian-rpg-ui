@@ -1,1 +1,2 @@
+# Undead
 ![[03. Understanding Terrain and Creature Types#Undead|clean no-h2]]

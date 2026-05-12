@@ -2,6 +2,7 @@
 cssclasses:
   - note-feature
 ---
+# Dehydration
 ![[06. Playing the Game#Water|no-h4 clean]]
  
 **Source**: _From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**_

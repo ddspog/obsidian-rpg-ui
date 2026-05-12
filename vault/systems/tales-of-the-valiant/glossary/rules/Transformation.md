@@ -2,6 +2,7 @@
 cssclasses:
   - note-feature
 ---
+# Transformation
 >[!rules] RULES OF TRANSFORMATION
 >You can stay in a beast form for a number of hours equal to your PB. You then revert to your normal form unless you expend another use of Wild Shape. You can also choose to revert to your normal form as a bonus action. You automatically revert if you become unconscious, drop to 0 HP while in beast form, or die. 
 >

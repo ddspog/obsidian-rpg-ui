@@ -1,1 +1,2 @@
+# Desert
 ![[03. Understanding Terrain and Creature Types#Desert|clean no-h2]]

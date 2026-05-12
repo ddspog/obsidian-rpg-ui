@@ -1,3 +1,4 @@
+# Ranged
 ![[05. Equipment & Magic Items#Ranged Weapons|clean no-h4]]
 ![[06. Playing the Game#^edda20|clean]]
 ![[06. Playing the Game#2. Determine Modifiers#Proficiency Bonus|no-h6 clean]]

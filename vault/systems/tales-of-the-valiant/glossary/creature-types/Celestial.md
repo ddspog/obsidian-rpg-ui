@@ -1,1 +1,2 @@
+# Celestial
 ![[03. Understanding Terrain and Creature Types#Celestials|clean no-h2]]

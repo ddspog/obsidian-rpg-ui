@@ -1,1 +1,2 @@
+# Arctic
 ![[03. Understanding Terrain and Creature Types#Arctic|clean no-h2]]

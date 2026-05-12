@@ -129,7 +129,7 @@ text: |
   #### Quick Strike 
   _Requires Wielding Two Light Weapons_ 
 
-  After you take the Attack action on your turn and attack with a [[013. Glossary/Weapon Property/Light|Light]] [[Melee]] weapon that you’re holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you’re holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don’t add your ability modifier to the damage of these additional attacks unless the modifier is negative.
+  After you take the Attack action on your turn and attack with a [[Light]] [[Melee]] weapon that you’re holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you’re holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don’t add your ability modifier to the damage of these additional attacks unless the modifier is negative.
   #### Wind Up
   _Requires Wielding a Heavy or Versatile Melee Weapon with Both Hands_ 
 

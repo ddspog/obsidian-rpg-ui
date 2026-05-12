@@ -1,1 +1,2 @@
+# Hills
 ![[03. Understanding Terrain and Creature Types#Hills|clean no-h2]]

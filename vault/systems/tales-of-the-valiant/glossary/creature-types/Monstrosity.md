@@ -1,1 +1,2 @@
+# Monstrosity
 ![[03. Understanding Terrain and Creature Types#Monstrosities|clean no-h2]]
