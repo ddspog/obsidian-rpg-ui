@@ -133,37 +133,83 @@ export function parseRuleSide(source: string): RuleSideBlock {
   };
 }
 
+/**
+ * Parse a `rpg rule.related` block. Body is YAML — accepts either:
+ *
+ *   1. A flat list of strings, each either:
+ *        - `"![[file]]"`               — pure embed
+ *        - `"Heading: ![[file]]"`      — embed with a preceding heading
+ *      (default heading level: 3)
+ *
+ *   2. An object form:
+ *        ```
+ *        level: 4
+ *        entries:
+ *          - "![[file]]"
+ *          - "Heading: ![[file]]"
+ *        ```
+ *
+ * Strict on the embed token: only `![[...]]` (with the leading `!`) is
+ * accepted. A bare `[[link]]` is rejected — embeds and links are
+ * different intentions.
+ */
 export function parseRuleRelated(source: string): RuleRelatedBlock {
-  const entries: RelatedEntry[] = [];
   let parsed: unknown;
   try {
     parsed = parseYAML(source);
   } catch {
     parsed = null;
   }
+
+  let level = 3;
+  let rawEntries: unknown[] = [];
+
   if (Array.isArray(parsed)) {
-    for (const raw of parsed) {
-      const entry = coerceRelatedEntry(raw);
-      if (entry) entries.push(entry);
+    rawEntries = parsed;
+  } else if (parsed && typeof parsed === "object") {
+    const rec = parsed as Record<string, unknown>;
+    if (typeof rec.level === "number" && rec.level >= 1 && rec.level <= 6) {
+      level = Math.floor(rec.level);
+    }
+    if (Array.isArray(rec.entries)) {
+      rawEntries = rec.entries;
     }
   }
-  return { kind: "related", entries };
+
+  const entries: RelatedEntry[] = [];
+  for (const raw of rawEntries) {
+    const entry = coerceRelatedEntry(raw);
+    if (entry) entries.push(entry);
+  }
+  return { kind: "related", level, entries };
 }
+
+const EMBED_RE = /!\[\[[^\[\]\n]+\]\]/;
 
 function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
   if (typeof raw === "string") {
-    const match = raw.match(/^([^:\[]+):\s*(\[\[.+\]\])\s*$/);
-    if (match) return { heading: match[1].trim(), link: match[2].trim() };
-    const linkOnly = raw.match(/\[\[.+\]\]/);
-    if (linkOnly) return { link: linkOnly[0] };
+    const trimmed = raw.trim();
+    // Heading-prefixed form: "Heading text: ![[file]]"
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx > 0) {
+      const head = trimmed.slice(0, colonIdx).trim();
+      const tail = trimmed.slice(colonIdx + 1).trim();
+      if (head && EMBED_RE.test(tail)) {
+        const m = tail.match(EMBED_RE);
+        if (m) return { heading: head, embed: m[0] };
+      }
+    }
+    // Pure embed form: "![[file]]"
+    const m = trimmed.match(EMBED_RE);
+    if (m && m[0] === trimmed) return { embed: m[0] };
     return null;
   }
   if (raw && typeof raw === "object") {
     const rec = raw as Record<string, unknown>;
-    for (const [key, value] of Object.entries(rec)) {
+    for (const [head, value] of Object.entries(rec)) {
       if (typeof value === "string") {
-        const linkOnly = value.match(/\[\[.+\]\]/);
-        if (linkOnly) return { heading: key, link: linkOnly[0] };
+        const m = value.trim().match(EMBED_RE);
+        if (m) return { heading: head, embed: m[0] };
       }
     }
   }

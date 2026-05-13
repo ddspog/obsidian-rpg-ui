@@ -28,8 +28,10 @@ import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import {
   parseRuleContent,
+  parseRuleRelated,
   parseRuleSide,
   RuleContentRenderChild,
+  RuleRelatedRenderChild,
   subtypeFromMeta,
 } from "lib/domains/rules";
 import { renderSpellBlock } from "lib/blocks/spell-card";
@@ -263,7 +265,18 @@ export default class DndUIToolkitPlugin extends Plugin {
             }
             return;
           }
-          // `related` / `compendium` — TODO in later phases.
+          if (ruleSubtype === "related") {
+            try {
+              const block = parseRuleRelated(source);
+              const child = new RuleRelatedRenderChild(el, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              console.error("rpg rule.related render failed", err);
+              el.innerHTML = '<div class="notice">Error rendering rpg rule.related</div>';
+            }
+            return;
+          }
+          // `compendium` — TODO in Phase 4.
           el.innerHTML = `<div class="notice">rpg rule.${ruleSubtype} not yet implemented</div>`;
           return;
         }

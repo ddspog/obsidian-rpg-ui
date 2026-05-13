@@ -176,23 +176,69 @@ source:
 });
 
 describe("parseRuleRelated", () => {
-  it("parses a flat list of wikilinks", () => {
+  it("parses a flat list of embed tokens", () => {
+    const src = `- "![[ammunition]]"
+- "![[bow]]"`;
+    const r = parseRuleRelated(src);
+    expect(r.entries).toEqual([{ embed: "![[ammunition]]" }, { embed: "![[bow]]" }]);
+    expect(r.level).toBe(3);
+  });
+
+  it("parses heading-prefixed string entries", () => {
+    const src = `- "See also: ![[shoving]]"`;
+    const r = parseRuleRelated(src);
+    expect(r.entries).toEqual([{ heading: "See also", embed: "![[shoving]]" }]);
+  });
+
+  it("parses object entries with `{heading: embed}`", () => {
+    const src = `- Prerequisite: "![[ammunition]]"`;
+    const r = parseRuleRelated(src);
+    expect(r.entries).toEqual([{ heading: "Prerequisite", embed: "![[ammunition]]" }]);
+  });
+
+  it("rejects bare wikilinks (without `!`)", () => {
     const src = `- "[[ammunition]]"
-- "[[bow]]"`;
+- "See also: [[shoving]]"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([{ link: "[[ammunition]]" }, { link: "[[bow]]" }]);
+    expect(r.entries).toEqual([]);
   });
 
-  it("parses string entries with a `Heading: [[link]]` shape", () => {
-    const src = `- "See also: [[shoving]]"`;
+  it("supports object form with explicit level + entries", () => {
+    const src = `level: 4
+entries:
+  - "![[ammunition]]"
+  - "See also: ![[shoving]]"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([{ heading: "See also", link: "[[shoving]]" }]);
+    expect(r.level).toBe(4);
+    expect(r.entries).toEqual([
+      { embed: "![[ammunition]]" },
+      { heading: "See also", embed: "![[shoving]]" },
+    ]);
   });
 
-  it("parses object entries with `{heading: link}`", () => {
-    const src = `- Prerequisite: "[[ammunition]]"`;
+  it("clamps level to the 1–6 range; out-of-range values fall back to default", () => {
+    expect(parseRuleRelated("level: 0\nentries: []").level).toBe(3);
+    expect(parseRuleRelated("level: 7\nentries: []").level).toBe(3);
+    expect(parseRuleRelated("level: 1\nentries: []").level).toBe(1);
+    expect(parseRuleRelated("level: 6\nentries: []").level).toBe(6);
+  });
+
+  it("supports embeds with aliases / pipe forms", () => {
+    const src = `- "![[ammunition|short]]"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([{ heading: "Prerequisite", link: "[[ammunition]]" }]);
+    expect(r.entries[0].embed).toBe("![[ammunition|short]]");
+  });
+
+  it("supports the documented mixed syntax (plain + quoted key + unquoted key)", () => {
+    const src = `- "![[ammunition|no-h1 no-title clean]]"
+- "See also": "![[shoving]]"
+- Prerequisite: "![[bow]]"`;
+    const r = parseRuleRelated(src);
+    expect(r.entries).toEqual([
+      { embed: "![[ammunition|no-h1 no-title clean]]" },
+      { heading: "See also", embed: "![[shoving]]" },
+      { heading: "Prerequisite", embed: "![[bow]]" },
+    ]);
   });
 
   it("returns an empty list when body is malformed", () => {

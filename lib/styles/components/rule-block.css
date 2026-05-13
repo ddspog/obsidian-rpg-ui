@@ -112,6 +112,32 @@
   height: 0.75rem;
 }
 
+/* ── rule.related: see-also section with embedded transclusions ──── */
+/*
+ * Rendered when reading a rule file directly. Each entry is either a
+ * raw `![[file]]` embed or a heading + embed pair. The block itself is
+ * just a layout wrapper; the heavy lifting is Obsidian's own embed
+ * rendering. Strip-on-import is deferred to Phase 3 (the call processor
+ * will pre-strip `rule.related` fences from imported file bodies).
+ */
+.rpg-rule-related {
+  display: block;
+  margin-block: var(--size-4-4, 1rem);
+}
+
+.rpg-rule-related__heading {
+  margin-block: var(--size-4-3, 0.75rem) var(--size-4-2, 0.5rem);
+  color: var(--text-normal);
+}
+
+.rpg-rule-related > :first-child {
+  margin-top: 0;
+}
+
+.rpg-rule-related > :last-child {
+  margin-bottom: 0;
+}
+
 /* ── rule.content `kind: commentary` ───────────────────────────────
  * Removed in favor of `rpg rule.side` with `kind: commentary` (a side
  * variant). See `.rpg-rule-side--commentary` below. The old class names

@@ -92,15 +92,17 @@ export interface RuleSideBlock {
 
 /** One entry in a `rpg rule.related` list. */
 export interface RelatedEntry {
-  /** Optional heading printed before the embedded link. */
+  /** Optional heading text printed before the embedded link. */
   heading?: string;
-  /** Raw wikilink text as authored (e.g. `"[[ammunition]]"`). */
-  link: string;
+  /** Raw Obsidian embed token (always with `!`), e.g. `"![[ammunition]]"`. */
+  embed: string;
 }
 
 /** Parsed `rpg rule.related` block. */
 export interface RuleRelatedBlock {
   kind: "related";
+  /** Heading level (1–6) used for `heading: ![[link]]` entries. Default 3. */
+  level: number;
   entries: RelatedEntry[];
 }
 
