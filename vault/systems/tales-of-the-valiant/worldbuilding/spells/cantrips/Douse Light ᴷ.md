@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Deep Magic 2" book by **Kobold Press**
 ---
 # Douse Light ᴷ
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -23,6 +23,3 @@ text: With a simple gesture, you can put out a single small source of light with
 image: "![[douse-light.webp|384]]"
 ```
 
-
-
-**Source**: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***

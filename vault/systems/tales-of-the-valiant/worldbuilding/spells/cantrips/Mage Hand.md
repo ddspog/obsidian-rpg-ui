@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Mage Hand
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -25,7 +25,3 @@ text: |-
   The hand can’t attack, activate magic items, or carry more than 10 pounds.
 image: "![[mage-hand.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

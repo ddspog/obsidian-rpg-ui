@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Conjure Arms º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -27,7 +27,3 @@ text: |-
   When you reach 5th level this spell's duration increases to 10 minutes. It increases to 1 hour at 11th level and it increases to 8 hours at 17th level.
 image: "![[conjure-arms.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***

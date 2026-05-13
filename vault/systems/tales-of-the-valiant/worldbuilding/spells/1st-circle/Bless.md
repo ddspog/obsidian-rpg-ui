@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Bless
-
 ```rpg spell
 circle: 1st-Circle
 source:
@@ -24,6 +24,3 @@ text: |-
 image: "![[bless.webp|384]]"
 ```
 
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

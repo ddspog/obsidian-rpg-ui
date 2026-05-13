@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Deep Magic 2" book by **Kobold Press**
 ---
 # Last Strike ᴷ
-
 ```rpg spell
 circle: 1st-Circle
 source:
@@ -22,7 +22,3 @@ summary: Near-death last action.
 text: You grant yourself a last burst of energy when deeply wounded. Before you fall unconscious, you gain one action. Any roll you make, such as for an ability check or attack roll, has advantage. You automatically fail your first death saving throw.
 image: "![[last-strike.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***

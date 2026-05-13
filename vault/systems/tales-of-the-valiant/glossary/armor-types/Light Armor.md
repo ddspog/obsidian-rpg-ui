@@ -1,3 +1,6 @@
+---
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+---
 # Light Armor
 ![[05. Equipment & Magic Items#^fa6a59|clean]]
 

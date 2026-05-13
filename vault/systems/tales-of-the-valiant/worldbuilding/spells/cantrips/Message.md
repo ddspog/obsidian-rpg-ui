@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Message
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -26,7 +26,3 @@ text: |-
   You can cast this spell through solid objects if you are familiar with the target and know it is beyond the barrier. Magical silence, 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood blocks the spell. The spell doesn’t have to follow a straight line and can travel freely around corners or through openings.
 image: "![[message.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

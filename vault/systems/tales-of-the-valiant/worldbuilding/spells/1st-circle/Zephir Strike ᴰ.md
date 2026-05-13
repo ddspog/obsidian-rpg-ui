@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Xanathar's Guide to Everything" book by **D&D Beyond***
+source: From **D&D 5e** "Xanathar's Guide to Everything" book by **D&D Beyond**
 ---
 # Zephir Strike ᴰ
 

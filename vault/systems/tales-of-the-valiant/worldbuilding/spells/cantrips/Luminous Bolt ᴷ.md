@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Deep Magic 1" book by **Kobold Press***
+source: From **D&D 5e** "Deep Magic 1" book by **Kobold Press**
 ---
 # Luminous Bolt ᴷ
 

@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Concealed Shot º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -26,7 +26,3 @@ text: |-
   This spell only conceals the first shot you make; any additional shots aren’t concealed.
 image: "![[concealed-shot.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***

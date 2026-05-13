@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press**
 ---
 # Howl º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -23,7 +23,3 @@ text: |-
   Creatures other than your recipient that hear the howl and that are under the effects of the comprehend languages spell or similar magic, or that can understand beasts, can understand the howl’s meaning. Otherwise, the howl is unintelligible to creatures that can hear it.
 image: "![[howl.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press***

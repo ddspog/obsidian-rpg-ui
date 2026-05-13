@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Thaumaturgy
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -34,7 +34,3 @@ text: |-
   If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time, and you can dismiss such an effect as an action.
 image: "![[thaumaturgy.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

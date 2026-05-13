@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Dispel Magic
-
 ```rpg spell
 circle: 3rd-Circle
 source:
@@ -23,7 +23,3 @@ text: |-
   **_At Higher Circles._** When you cast this spell using a spell slot of 4th circle or higher, you automatically end the effects of a spell on the target if the spell’s circle is equal to or less than the circle of the spell slot you used.
 image: "![[dispel-magic.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

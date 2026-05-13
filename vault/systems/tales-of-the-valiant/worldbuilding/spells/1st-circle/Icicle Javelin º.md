@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***
+source: From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Icicle Javelin º
 

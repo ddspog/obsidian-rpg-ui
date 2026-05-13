@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Detect Poison and Disease
-
 ```rpg spell
 circle: 1st-Circle Ritual
 source:
@@ -26,7 +26,3 @@ text: |-
   The spell can penetrate most barriers, but it is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.
 image: "![[detect-poison-and-disease.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

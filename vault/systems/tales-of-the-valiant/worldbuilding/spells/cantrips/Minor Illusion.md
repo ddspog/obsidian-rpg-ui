@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Minor Illusion
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -31,7 +31,3 @@ text: |-
   If a creature uses its action to examine the sound or image, the creature can determine that it is an illusion with a successful INT ([[Investigation]]) check against your spell save DC. If a creature discerns the illusion for what it is, the illusion becomes faint to the creature.
 image: "![[minor-illusion.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

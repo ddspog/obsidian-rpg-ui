@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond***
+source: From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond**
 ---
 # Create Bonfire ᴰ
 

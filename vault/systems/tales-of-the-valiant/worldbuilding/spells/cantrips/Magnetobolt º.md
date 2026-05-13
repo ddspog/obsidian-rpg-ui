@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press***
+source: From **D&D 5e** "Heliana's Guide to Monster Hunting" book by **Hitpoint Press**
 ---
 # Magnetobolt º
 

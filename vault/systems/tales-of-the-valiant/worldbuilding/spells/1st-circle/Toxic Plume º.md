@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Uvoir's Assemblage of Arcane Might" book by **Sunbear Games**
 ---
 # Toxic Plume º
 

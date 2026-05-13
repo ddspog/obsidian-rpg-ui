@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: Adapted from **D&D 5e** Homebrew
 ---
 # Arcane Mark ᴴ
-
 ```rpg spell
 circle: 1st-Circle
 source:
@@ -28,6 +28,3 @@ text: |-
 image: "![[arcane-mark.webp]]"
 ```
 
-
-
-**Source**: *Adapted from **D&D 5e** Homebrew*

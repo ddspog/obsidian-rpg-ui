@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Legendary Libation º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -26,7 +26,3 @@ text: |-
   A creature can’t benefit from more than one legendary libation in any given 24-hour period.
 image: "![[legendary-libation.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***

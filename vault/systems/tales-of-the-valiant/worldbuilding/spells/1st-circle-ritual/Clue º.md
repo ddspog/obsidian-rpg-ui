@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Clue º
-
 ```rpg spell
 circle: 1st-Circle Ritual
 source:
@@ -27,7 +27,3 @@ text: |-
   **_At Higher Circles._** As you unlock higher circles, this ritual grows in potency. Once you have access to 4th-circle spell slots, you can use this spell to access a period of time up to the last month to the present.
 image: "![[clue.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D** "Valda's Spire of Secrets" book by **Mage Hand Press***

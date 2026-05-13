@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Guidance
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -23,6 +23,3 @@ text: You touch one willing creature. Once before the spell ends, the target can
 image: "![[guidance.webp|384]]"
 ```
 
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

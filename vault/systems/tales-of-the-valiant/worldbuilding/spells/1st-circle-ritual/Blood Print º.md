@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Blood Print º
-
 ```rpg spell
 circle: 1st-Circle Ritual
 source:
@@ -27,7 +27,3 @@ text: |-
   **_At Higher Circles._** As you unlock higher circles, this ritual grows in potency. Once you have access to 4th-circle spell slots, you can reform each surface blood upon 30-feet around where you're touching it.
 image: "![[blood-print.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D** "Valda's Spire of Secrets" book by **Mage Hand Press***

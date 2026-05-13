@@ -1,3 +1,7 @@
+---
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+---
+
 # Shields
 ![[05. Equipment & Magic Items#^fa6a59|clean]]
 

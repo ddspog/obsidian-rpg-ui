@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
 ---
 # Identify
-
 ```rpg spell
 circle: 1st-Circle Ritual
 source:
@@ -23,7 +23,3 @@ text: |-
   If you instead touch a creature throughout the casting, you learn what spells, if any, are currently affecting it.
 image: "![[identify.webp|384]]"
 ```
-
-
-
-**Source**: *From **Tales of the Valiant** "Player's Guide" book by **Kobold Press***

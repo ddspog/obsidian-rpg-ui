@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Deep Magic 1" book by **Kobold Press**
 ---
 # Enumerate ᴷ
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -21,6 +21,3 @@ text: You are able to divine the exact amount of a number of like objects in a 1
 image: "![[enumerate.webp|384]]"
 ```
 
-
-
-**Source**: *From **D&D 5e** "Deep Magic 1" book by **Kobold Press***

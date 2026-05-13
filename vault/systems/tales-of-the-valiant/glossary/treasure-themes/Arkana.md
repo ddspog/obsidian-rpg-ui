@@ -1,3 +1,6 @@
+---
+source: **D&D** Dungeon Master's Guide" book by **D&D Beyond**.
+---
 # Arkana
 ![[07. Adventuring Options#^32f92c|clean no-ct]]
 ![[07. Adventuring Options#Treasure Themes|clean]]

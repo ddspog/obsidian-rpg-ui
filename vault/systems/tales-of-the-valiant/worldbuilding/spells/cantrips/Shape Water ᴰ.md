@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond**
 ---
 # Shape Water ᴰ
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -32,7 +32,3 @@ text: |-
   If you cast this spell multiple times, you can have no more than two of its non-instantaneous effects active at a time, and you can dismiss such an effect as an action.
 image: "![[shape-water.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Elemental Evil Player's Companion" book by **D&D Beyond***

@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Reworked Cantrips" book by **FJFSOM656 at [D&D Beyond]((https://www.dndbeyond.com/forums/dungeons-dragons-discussion/homebrew-house-rules/110268-cantrip-rework-encode-thoughts))**
 ---
 # Encode Thoughts º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -25,7 +25,3 @@ text: |-
   **At Higher Levels**: Starting at 5th level, the duration for this spell increases to 8 hours. At 11th level, the spell's duration increases to 24 hours. At 17th level, the spell's duration increases to Until Dispelled
 image: "![[encode-thoughts.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Reworked Cantrips" book by **FJFSOM656 at [D&D Beyond]((https://www.dndbeyond.com/forums/dungeons-dragons-discussion/homebrew-house-rules/110268-cantrip-rework-encode-thoughts))***

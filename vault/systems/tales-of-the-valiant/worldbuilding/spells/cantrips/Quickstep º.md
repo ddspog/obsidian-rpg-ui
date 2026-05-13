@@ -1,9 +1,9 @@
 ---
 cssclasses:
   - note-spell
+source: From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press**
 ---
 # Quickstep º
-
 ```rpg spell
 circle: Cantrip
 source:
@@ -20,7 +20,3 @@ summary: Boost your speed a bit.
 text: You call upon your inner reserves to give you a brief flash of speed. When you cast this spell, your walking speed increases by 10 feet until the start of your next turn.
 image: "![[quickstep.webp|384]]"
 ```
-
-
-
-**Source**: *From **D&D 5e** "Valda's Spire of Secrets" book by **Mage Hand Press***

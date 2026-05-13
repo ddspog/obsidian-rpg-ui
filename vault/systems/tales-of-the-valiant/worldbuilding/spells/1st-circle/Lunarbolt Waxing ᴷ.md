@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-spell
-source: *From **D&D 5e** "Deep Magic 2" book by **Kobold Press***
+source: From **D&D 5e** "Deep Magic 2" book by **Kobold Press**
 ---
 # Lunarbolt Waxing ᴷ
 ```rpg spell

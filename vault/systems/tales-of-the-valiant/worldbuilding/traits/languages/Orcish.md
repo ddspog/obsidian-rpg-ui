@@ -1,6 +1,7 @@
 ---
 cssclasses:
   - note-feature
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
 ---
 # Orcish
 ![[17. Orcish#^a34728|clean]]
