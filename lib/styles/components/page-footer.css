@@ -45,3 +45,20 @@
 .markdown-embed .rpg-page-footer {
   display: none;
 }
+
+/* Hide the Dataview plugin's inline-field rendering of `source` —
+ * our page footer handles this property with a proper label, styling,
+ * and auto-embed-hiding. Without this rule the Dataview inline-field
+ * shows a bare (label-less) duplicate above our footer. */
+.inline-field:has([data-dv-norm-key*="source"]) {
+  display: none;
+}
+
+/* Hide Obsidian's native Properties display of `source` — when the
+ * Properties core plugin renders frontmatter in-document, it would
+ * duplicate what our footer already shows. Target both the metadata
+ * container at the top and any inline property rendering. */
+.metadata-container .metadata-property[data-property-key="source"],
+.metadata-content .metadata-property[data-property-key="source"] {
+  display: none;
+}

@@ -25,6 +25,12 @@ import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild } from "lib/systems/ts-loader";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
+import {
+  parseRuleContent,
+  parseRuleSide,
+  RuleContentRenderChild,
+  subtypeFromMeta,
+} from "lib/domains/rules";
 import { renderSpellBlock } from "lib/blocks/spell-card";
 import { FileRefCache } from "lib/domains/references";
 import { ReferenceRegistry } from "lib/plugin/reference-registry";
@@ -236,6 +242,31 @@ export default class DndUIToolkitPlugin extends Plugin {
           return;
         }
 
+        // `rpg rule.*` — source-of-truth rule blocks. Phase 1 handles
+        // `content` and `side`; `related` and `compendium` land in later
+        // phases. Content bodies carry optional YAML frontmatter + markdown;
+        // side bodies are pure YAML (callout-style with title/icon/color).
+        // Both bypass the entity-block YAML pipeline and mount React
+        // directly (like `table.*` and `spell`).
+        const ruleSubtype = subtypeFromMeta(meta);
+        if (ruleSubtype) {
+          if (ruleSubtype === "content" || ruleSubtype === "side") {
+            try {
+              const block =
+                ruleSubtype === "content" ? parseRuleContent(source) : parseRuleSide(source);
+              const child = new RuleContentRenderChild(el, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              console.error(`rpg rule.${ruleSubtype} render failed`, err);
+              el.innerHTML = `<div class="notice">Error rendering rpg rule.${ruleSubtype}</div>`;
+            }
+            return;
+          }
+          // `related` / `compendium` — TODO in later phases.
+          el.innerHTML = `<div class="notice">rpg rule.${ruleSubtype} not yet implemented</div>`;
+          return;
+        }
+
         // `rpg spell` — standalone compendium card reading the host note's
         // frontmatter. The fence body (YAML) is optional; when present it
         // overrides matching fields for display-only tweaks.
@@ -426,47 +457,24 @@ export default class DndUIToolkitPlugin extends Plugin {
       if (!Array.isArray(fm?.cssclasses) || !fm.cssclasses.includes("rpg-ui")) return;
 
       const subtitle = fm.subtitle as string | undefined;
-      const source = fm.source as string | undefined;
-      if (!subtitle && !source) return;
+      if (!subtitle) return;
 
       setTimeout(() => {
         const previewView = el.closest(".markdown-preview-view");
         if (!previewView) return;
 
-        // Navigate up to the reading view container so we can find sibling
-        // elements like .mod-footer.mod-ui which sit outside .markdown-preview-view
-        const readingView = previewView.closest(".markdown-reading-view") ?? previewView.parentElement;
-
         // ── Subtitle: always re-create so it reflects the current file ──
-        if (subtitle) {
-          const inlineTitle = previewView.querySelector(".inline-title");
-          if (inlineTitle) {
-            // Remove any stale subtitle from a previously viewed file
-            const existing = previewView.querySelector(".rpg-ui-subtitle");
-            if (existing) {
-              if (existing.textContent === subtitle) return; // already correct
-              existing.remove();
-            }
-            const subtitleEl = document.createElement("div");
-            subtitleEl.className = "rpg-ui-subtitle";
-            subtitleEl.textContent = subtitle;
-            inlineTitle.after(subtitleEl);
+        const inlineTitle = previewView.querySelector(".inline-title");
+        if (inlineTitle) {
+          const existing = previewView.querySelector(".rpg-ui-subtitle");
+          if (existing) {
+            if (existing.textContent === subtitle) return;
+            existing.remove();
           }
-        }
-
-        // ── Source / footer: search from the reading-view root ──
-        if (source && readingView) {
-          const footer = readingView.querySelector(".mod-footer.mod-ui");
-          if (footer) {
-            // Remove stale source element from a previous file
-            const existing = footer.querySelector(".rpg-ui-source");
-            if (existing) existing.remove();
-
-            const sourceEl = document.createElement("div");
-            sourceEl.className = "rpg-ui-source";
-            void MarkdownRenderer.render(this.app, source.replace(/^"+|"+$/g, ""), sourceEl, ctx.sourcePath, this);
-            footer.appendChild(sourceEl);
-          }
+          const subtitleEl = document.createElement("div");
+          subtitleEl.className = "rpg-ui-subtitle";
+          subtitleEl.textContent = subtitle;
+          inlineTitle.after(subtitleEl);
         }
       }, 0);
     });

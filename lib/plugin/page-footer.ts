@@ -41,6 +41,10 @@ export class PageFooterManager {
   /** Components created alongside each injected footer so the
    *  MarkdownRenderer calls inside get their cleanup on removal. */
   private components = new WeakMap<HTMLElement, Component>();
+  /** Debounce timer so rapid workspace events (layout-change +
+   *  active-leaf-change firing in the same tick) collapse into one
+   *  injection pass, preventing duplicate footers. */
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(host: PageFooterHost) {
     this.host = host;
@@ -48,14 +52,15 @@ export class PageFooterManager {
 
   start(): void {
     const { app } = this.host;
-    this.host.registerEvent(app.workspace.on("active-leaf-change", () => this.refreshAll()));
-    this.host.registerEvent(app.workspace.on("layout-change", () => this.refreshAll()));
+    this.host.registerEvent(app.workspace.on("active-leaf-change", () => this.scheduleRefresh()));
+    this.host.registerEvent(app.workspace.on("layout-change", () => this.scheduleRefresh()));
+    this.host.registerEvent(app.workspace.on("file-open", () => this.scheduleRefresh()));
     this.host.registerEvent(
       app.metadataCache.on("changed", (f) => {
-        if (f instanceof TFile) this.refreshForPath(f.path);
+        if (f instanceof TFile) this.scheduleRefresh();
       })
     );
-    app.workspace.onLayoutReady(() => this.refreshAll());
+    app.workspace.onLayoutReady(() => this.scheduleRefresh());
   }
 
   /** Called by the settings tab after the author edits the field
@@ -74,31 +79,41 @@ export class PageFooterManager {
     }
   }
 
-  private refreshAll(): void {
-    for (const leaf of this.host.app.workspace.getLeavesOfType("markdown")) {
-      const view = leaf.view;
-      if (view instanceof MarkdownView) this.injectForView(view);
-    }
+  private scheduleRefresh(): void {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null;
+      const missed = this.refreshAll();
+      if (missed > 0) {
+        setTimeout(() => this.refreshAll(), 400);
+      }
+    }, 80);
   }
 
-  private refreshForPath(path: string): void {
+  private refreshAll(): number {
+    let missed = 0;
     for (const leaf of this.host.app.workspace.getLeavesOfType("markdown")) {
       const view = leaf.view;
-      if (view instanceof MarkdownView && view.file?.path === path) this.injectForView(view);
+      if (view instanceof MarkdownView) {
+        if (!this.injectForView(view)) missed++;
+      }
     }
+    return missed;
   }
 
-  private injectForView(view: MarkdownView): void {
+  private injectForView(view: MarkdownView): boolean {
     const file = view.file;
-    if (!file) return;
-    const section = getPreviewSection(view);
-    if (!section) return;
+    if (!file) return true;
+    // Inject inside `.mod-footer.mod-ui` — Obsidian's own footer
+    // container that survives reading-view scroll virtualization.
+    // Appending directly to `.markdown-preview-section` gets swept
+    // away when Obsidian recalculates visible sections on scroll.
+    const modFooter = getModFooter(view);
+    if (!modFooter) return false;
 
-    // Always tear down the previous footer (even if we end up
-    // re-rendering with the same fields). Cheaper than reconciling
-    // cell-by-cell and guarantees stale labels never linger after
-    // the author removes or renames a key.
-    this.clearFooterIn(section);
+    // Clear any prior footer from the entire view (covers stale
+    // footers from tab switches or replaced DOM).
+    this.clearFooterIn(view.containerEl);
 
     const fm = this.host.app.metadataCache.getCache(file.path)?.frontmatter ?? {};
     const entries: Array<{ label: string; value: string }> = [];
@@ -106,10 +121,10 @@ export class PageFooterManager {
       const raw = fm[field.key];
       const value = normaliseFooterValue(raw);
       if (!value) continue;
-      const label = field.label !== undefined ? field.label : capitalize(field.key);
+      const label = field.label || capitalize(field.key);
       entries.push({ label, value });
     }
-    if (entries.length === 0) return;
+    if (entries.length === 0) return true;
 
     const footer = document.createElement("div");
     footer.classList.add(FOOTER_CLASS);
@@ -120,12 +135,10 @@ export class PageFooterManager {
     for (const entry of entries) {
       const p = document.createElement("p");
       p.classList.add(`${FOOTER_CLASS}__entry`);
-      if (entry.label) {
-        const strong = document.createElement("strong");
-        strong.textContent = `${entry.label}: `;
-        strong.classList.add(`${FOOTER_CLASS}__label`);
-        p.appendChild(strong);
-      }
+      const strong = document.createElement("strong");
+      strong.textContent = `${entry.label}: `;
+      strong.classList.add(`${FOOTER_CLASS}__label`);
+      p.appendChild(strong);
       const valueEl = document.createElement("span");
       valueEl.classList.add(`${FOOTER_CLASS}__value`);
       p.appendChild(valueEl);
@@ -133,13 +146,13 @@ export class PageFooterManager {
       footer.appendChild(p);
     }
 
-    section.appendChild(footer);
+    modFooter.appendChild(footer);
     this.components.set(footer, component);
+    return true;
   }
 
   private clearFooter(view: MarkdownView): void {
-    const section = getPreviewSection(view);
-    if (section) this.clearFooterIn(section);
+    this.clearFooterIn(view.containerEl);
   }
 
   private clearFooterIn(section: HTMLElement): void {
@@ -155,9 +168,9 @@ export class PageFooterManager {
   }
 }
 
-function getPreviewSection(view: MarkdownView): HTMLElement | null {
+function getModFooter(view: MarkdownView): HTMLElement | null {
   const preview = (view as unknown as { previewMode?: { containerEl?: HTMLElement } }).previewMode?.containerEl;
-  return preview?.querySelector<HTMLElement>(".markdown-preview-section") ?? null;
+  return preview?.querySelector<HTMLElement>(".mod-footer.mod-ui") ?? null;
 }
 
 function normaliseFooterValue(raw: unknown): string {
