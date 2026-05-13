@@ -7526,24 +7526,126 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 /* lib/styles/components/rule-block.css */
 .rpg-rule-content {
   display: block;
-  margin-block: var(--size-4-3, 0.75rem);
+}
+.rpg-rule-content > :first-child {
+  margin-top: 0;
+}
+.rpg-rule-content > :last-child {
+  margin-bottom: 0;
+}
+.rpg-rule-content--special {
+  position: relative;
+  margin-block: var(--size-4-2, 0.5rem);
+}
+.rpg-rule-content--special::before,
+.rpg-rule-content--special::after {
+  content: "";
+  position: absolute;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-color: color-mix(in srgb, var(--text-muted, #888) 50%, transparent);
+  border-style: solid;
+  border-width: 0;
+}
+.rpg-rule-content--special::before {
+  top: calc(var(--size-4-4, 1rem) * -1);
+  left: calc(var(--size-4-4, 1rem) * -1);
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.rpg-rule-content--special::after {
+  bottom: calc(var(--size-4-4, 1rem) * -1);
+  right: calc(var(--size-4-4, 1rem) * -1);
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+.rpg-rule-content__markers {
+  position: absolute;
+  top: calc(var(--size-4-4, 1rem) * -1);
+  right: calc(var(--size-4-4, 1rem) * -1);
+  display: flex;
+  gap: var(--size-4-1, 0.25rem);
+  z-index: 1;
+  padding: 0;
+  pointer-events: auto;
+}
+.rpg-rule-content__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--text-muted, #888);
+  border-radius: var(--radius-s, 3px);
+  background: var(--background-primary);
+  color: var(--text-muted, #888);
+  cursor: help;
+  transition: color 0.15s, border-color 0.15s;
+}
+.rpg-rule-content__marker:hover {
+  color: var(--text-normal);
+  border-color: var(--text-normal);
+}
+.rpg-rule-content__marker svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+.markdown-preview-view,
+.markdown-reading-view,
+.markdown-source-view,
+.cm-editor {
+  container-type: inline-size !important;
 }
 .rpg-rule-side {
   --rpg-rule-side-color: var(--text-accent, #7c2d12);
+  --rpg-rule-side-ribbon-h: 1.4rem;
+  --rpg-rule-side-ribbon-w: 2rem;
+  --rpg-rule-side-ribbon-poke: 0.4rem;
+  --rpg-side-escape: calc( var(--rpg-file-margins-clean, 1rem) + max(0px, (100cqi - var(--file-line-width)) / 2) );
+  --rpg-side-padding-inline: calc(var(--rpg-file-margins-clean, 1rem) / 2);
+  position: relative;
   display: block;
-  margin-block: var(--size-4-3, 0.75rem);
-  padding: var(--size-4-3, 0.75rem);
-  border-left: 3px solid var(--rpg-rule-side-color);
-  background: color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
-  border-radius: 0 var(--radius-s, 4px) var(--radius-s, 4px) 0;
-  font-size: 0.95em;
+  box-sizing: border-box;
+  padding-top: var(--size-4-5, 1.25rem);
+  padding-bottom: 0;
+  padding-inline: var(--rpg-side-padding-inline, 1rem);
+  margin-block: calc(var(--rpg-rule-side-ribbon-poke) + var(--size-4-4, 1rem)) var(--size-4-4, 1rem);
+  background: var(--background-secondary, rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-m, 8px);
+  outline: 1px dashed color-mix(in srgb, var(--rpg-rule-side-color) 50%, transparent);
+  outline-offset: 2px;
+  color: var(--text-normal);
+}
+.rpg-rule-side--float::before,
+.rpg-rule-side--float::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--rpg-rule-side-ribbon-poke) * -1);
+  width: var(--rpg-rule-side-ribbon-w);
+  height: var(--rpg-rule-side-ribbon-h);
+  background: var(--rpg-rule-side-color);
+  z-index: 0;
+}
+.rpg-rule-side--float::before {
+  left: var(--rpg-side-padding-inline, 1rem);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.rpg-rule-side--float::after {
+  right: var(--rpg-side-padding-inline, 1rem);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.rpg-rule-side--dir-right::after,
+.rpg-rule-side--dir-left::before {
+  display: none;
 }
 .rpg-rule-side__header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--size-4-2, 0.5rem);
+  margin-bottom: var(--size-4-2, 0.5rem);
   color: var(--rpg-rule-side-color);
-  margin-bottom: var(--size-4-1, 0.25rem);
+  z-index: 1;
 }
 .rpg-rule-side__icon {
   display: inline-flex;
@@ -7558,17 +7660,39 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   height: 100%;
 }
 .rpg-rule-side__title {
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.95em;
 }
 .rpg-rule-side__body {
+  position: relative;
   color: var(--text-normal);
+  z-index: 1;
 }
-.rpg-rule-side__body > p:first-child {
+.rpg-rule-side__body > :first-child {
   margin-top: 0;
 }
-.rpg-rule-side__body > p:last-child {
+.rpg-rule-side__body > :last-child {
   margin-bottom: 0;
+}
+.rpg-rule-side--dir-right {
+  float: right;
+  clear: right;
+  width: calc(0.25 * var(--file-line-width) + var(--rpg-side-escape, 0px));
+  margin-inline-start: var(--size-4-4, 1rem);
+  margin-inline-end: calc(0px - var(--rpg-side-escape, 0px));
+  padding-inline-end: calc(var(--rpg-side-padding-inline, 1rem) * 2);
+  padding-inline-start: var(--rpg-side-padding-inline, 1rem);
+}
+.rpg-rule-side--dir-left {
+  float: left;
+  clear: left;
+  width: calc(0.25 * var(--file-line-width) + var(--rpg-side-escape, 0px));
+  margin-inline-end: var(--size-4-4, 1rem);
+  margin-inline-start: calc(0px - var(--rpg-side-escape, 0px));
+  padding-inline-start: calc(var(--rpg-side-padding-inline, 1rem) * 2);
+  padding-inline-end: var(--rpg-side-padding-inline, 1rem);
 }
 .rpg-rule-side--note {
   --rpg-rule-side-color: var(--color-blue, #3498db);
@@ -7597,23 +7721,103 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-side--quote {
   --rpg-rule-side-color: var(--color-gray, #95a5a6);
 }
-@media (min-width: 900px) {
-  .markdown-preview-view .rpg-rule-side,
-  .markdown-reading-view .rpg-rule-side {
-    float: right;
-    clear: right;
-    width: 35%;
-    max-width: 24rem;
-    margin-inline-start: var(--size-4-3, 0.75rem);
-  }
+.rpg-rule-side--rules {
+  --rpg-rule-side-color: #8b6f47;
 }
-.rpg-rule-homebrew {
-  --rpg-rule-homebrew-accent: var(--color-orange, #e67e22);
-  border-left: 3px solid var(--rpg-rule-homebrew-accent);
-  background: color-mix(in srgb, var(--rpg-rule-homebrew-accent) 6%, transparent);
+.rpg-rule-side--callout {
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: none;
+  margin-block: var(--size-4-3, 0.75rem);
+  margin-inline: 0;
+  padding-block: var(--size-4-4, 1rem);
+  padding-inline: var(--size-4-4, 1rem);
+  background:
+    radial-gradient(
+      circle 4px at 6px 6px,
+      var(--rpg-rule-side-color) 99%,
+      transparent 100%) no-repeat,
+    radial-gradient(
+      circle 4px at calc(100% - 6px) 6px,
+      var(--rpg-rule-side-color) 99%,
+      transparent 100%) no-repeat,
+    radial-gradient(
+      circle 4px at 6px calc(100% - 6px),
+      var(--rpg-rule-side-color) 99%,
+      transparent 100%) no-repeat,
+    radial-gradient(
+      circle 4px at calc(100% - 6px) calc(100% - 6px),
+      var(--rpg-rule-side-color) 99%,
+      transparent 100%) no-repeat,
+    color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
+  border-radius: 0;
+  border-block: 3px solid var(--rpg-rule-side-color);
+  border-inline: none;
+  outline: none;
 }
-.rpg-rule-content.rpg-rule-homebrew {
-  padding-inline-start: var(--size-4-3, 0.75rem);
+.rpg-rule-side--callout::before {
+  content: "";
+  position: absolute;
+  inset: 6px 14px;
+  border-block: 1px solid var(--rpg-rule-side-color);
+  border-inline: none;
+  pointer-events: none;
+  z-index: 0;
+}
+.rpg-rule-side--callout .rpg-rule-side__header,
+.rpg-rule-side--callout .rpg-rule-side__body {
+  position: relative;
+  z-index: 1;
+}
+.rpg-rule-side--callout .rpg-rule-side__header {
+  margin-bottom: var(--size-4-2, 0.5rem);
+}
+.rpg-rule-side--callout .rpg-rule-side__title {
+  font-size: 1.15em;
+}
+.rpg-rule-side--commentary {
+  display: block;
+  background: transparent;
+  border-radius: 0;
+  outline: none;
+  color: var(--text-muted, #888);
+  font-size: 0.95em;
+  font-style: italic;
+  opacity: 0.9;
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+}
+.rpg-rule-side--commentary.rpg-rule-side--dir-right {
+  float: right;
+  clear: right;
+  width: calc(var(--rpg-side-escape, 0px) - var(--size-4-4, 1rem) - 4px);
+  margin-inline-start: calc(var(--size-4-4, 1rem) + 4px);
+  margin-inline-end: calc(0px - var(--rpg-side-escape, 0px));
+  border-inline-start: 2px dashed var(--rpg-rule-side-color);
+  padding-inline-end: var(--rpg-file-margins-clean, 1rem);
+}
+.rpg-rule-side--commentary.rpg-rule-side--dir-left {
+  float: left;
+  clear: left;
+  width: calc(var(--rpg-side-escape, 0px) - var(--size-4-4, 1rem) - 4px);
+  margin-inline-end: calc(var(--size-4-4, 1rem) + 4px);
+  margin-inline-start: calc(0px - var(--rpg-side-escape, 0px));
+  border-inline-end: 2px dashed var(--rpg-rule-side-color);
+  padding-inline-start: var(--rpg-file-margins-clean, 1rem);
+}
+.rpg-rule-side--commentary .rpg-rule-side__header {
+  margin-bottom: var(--size-4-1, 0.25rem);
+}
+.rpg-rule-side--commentary .rpg-rule-side__title {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.95em;
+}
+.rpg-rule-side--commentary .rpg-rule-side__body strong,
+.rpg-rule-side--commentary .rpg-rule-side__body em {
+  font-style: normal;
 }
 
 /* lib/styles/file-suggest.css */

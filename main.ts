@@ -5,6 +5,7 @@ import {
   MarkdownRenderer,
   MarkdownRenderChild,
   MarkdownSectionInformation,
+  Notice,
   parseYaml,
   TFile,
 } from "obsidian";
@@ -496,6 +497,69 @@ export default class DndUIToolkitPlugin extends Plugin {
         for (const sys of reg.getFolderMappings().values()) systemPaths.add(sys);
         for (const sys of systemPaths) reg.invalidateSystem(sys);
         await Promise.all([...systemPaths].map((sys) => this.refreshSystemConsumers(sys)));
+      },
+    });
+
+    // Diagnostic: dump computed layout info for every `.rpg-rule-side` in
+    // the active view. Used to debug glue-to-edge math: prints the
+    // resolved values of `--rpg-pane-width`, `--file-line-width`,
+    // `--file-margins`, plus computed `width` and `margin-inline-end`
+    // for each aside. Output goes to the console so it can be copied
+    // verbatim. A short Notice confirms the dump landed.
+    this.addCommand({
+      id: "rpg-ui-debug-rule-side",
+      name: "Debug: dump rule.side layout info",
+      callback: () => {
+        const asides = Array.from(document.querySelectorAll(".rpg-rule-side")) as HTMLElement[];
+        if (asides.length === 0) {
+          new Notice("No .rpg-rule-side found in DOM.");
+          console.log("[rpg-ui debug] no .rpg-rule-side elements found");
+          return;
+        }
+        const rows = asides.map((aside, i) => {
+          const cs = getComputedStyle(aside);
+          const pane = aside.closest(
+            ".markdown-preview-view, .markdown-reading-view, .markdown-source-view, .cm-editor, .workspace-leaf-content"
+          ) as HTMLElement | null;
+          const rect = aside.getBoundingClientRect();
+          const paneRect = pane?.getBoundingClientRect();
+          const variant = aside.classList.contains("rpg-rule-side--commentary")
+            ? "commentary"
+            : aside.classList.contains("rpg-rule-side--callout")
+              ? "callout"
+              : "?";
+          return {
+            i,
+            file: this.app.workspace.getActiveFile()?.path ?? "?",
+            variant,
+            direction: aside.classList.contains("rpg-rule-side--dir-right")
+              ? "right"
+              : aside.classList.contains("rpg-rule-side--dir-left")
+                ? "left"
+                : "none",
+            paneClass: pane?.className.split(" ").slice(0, 3).join(" ") ?? "(no pane found)",
+            paneWidth: paneRect ? Math.round(paneRect.width * 100) / 100 : null,
+            paneX: paneRect ? Math.round(paneRect.x * 100) / 100 : null,
+            asideRpgPaneWidthInline: aside.style.getPropertyValue("--rpg-pane-width"),
+            asideRpgPaneWidthComputed: cs.getPropertyValue("--rpg-pane-width").trim(),
+            rpgSideEscape: cs.getPropertyValue("--rpg-side-escape").trim(),
+            rpgSidePaddingInline: cs.getPropertyValue("--rpg-side-padding-inline").trim(),
+            fileLineWidth: cs.getPropertyValue("--file-line-width").trim(),
+            fileMargins: cs.getPropertyValue("--file-margins").trim(),
+            computedWidth: cs.width,
+            computedMarginInlineEnd: cs.marginInlineEnd,
+            computedMarginInlineStart: cs.marginInlineStart,
+            computedPaddingInlineStart: cs.paddingInlineStart,
+            computedPaddingInlineEnd: cs.paddingInlineEnd,
+            asideX: Math.round(rect.x * 100) / 100,
+            asideRight: Math.round(rect.right * 100) / 100,
+            asideWidth: Math.round(rect.width * 100) / 100,
+          };
+        });
+        console.log("[rpg-ui debug] rule.side layout dump:");
+        console.table(rows);
+        for (const r of rows) console.log(JSON.stringify(r, null, 2));
+        new Notice(`Logged ${rows.length} rule.side block(s) to console.`);
       },
     });
   }

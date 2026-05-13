@@ -1,0 +1,527 @@
+/*
+ * rpg rule.content / rpg rule.side — styling.
+ *
+ * rule.content renders transparently: no wrapper frame, no margin, no
+ * homebrew indicator. The `<section>` wrapper exists only to give React a
+ * mount point — the body's markdown uses the page's own typography.
+ *
+ * rule.side is a floated margin callout in the Kobold Press "Player
+ * Advice" style: floats to the side named by `direction` (`left` /
+ * `right`), glued to the page edge (escaping both the
+ * `.markdown-preview-view` padding `--file-margins` AND the
+ * `.markdown-preview-sizer` auto-centering margin), with pentagon-shaped
+ * accent-colored banner flags poking out at the top corners and an
+ * uppercase colored title. Inner text is padded by `--file-margins` so
+ * it stays within what would have been the gutter, but can flow wider
+ * than the normal `--file-line-width` cap.
+ *
+ * Gluing to the page edge requires knowing the preview-view's actual
+ * width at render time. We establish a container-query scope on
+ * `.markdown-preview-view` (and the live-preview equivalents) and
+ * compute the escape distance via `100cqi`. The container scope is
+ * activated only when the preview contains a `.rpg-rule-side` — via
+ * `:has()` — so we don't impose containment on panes that don't need it.
+ */
+
+/* ── rule.content: layout-transparent, no homebrew visual ────────── */
+
+.rpg-rule-content {
+  display: block;
+}
+
+.rpg-rule-content > :first-child {
+  margin-top: 0;
+}
+
+.rpg-rule-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* NOTE: `.rpg-rule-content.rpg-rule-homebrew` deliberately has no styling.
+ * The class is still applied by React so future features (filters, badges
+ * in compendium settings) can target it without a rewrite. */
+
+/* ── rule.content "special" variant: has tags/source/revision/replaces ──
+ * Corner brackets (top-left + bottom-right) demarcate the block; tiny
+ * icon badges sit in the top-right, each with a hover tooltip describing
+ * the metadata attached.
+ */
+
+.rpg-rule-content--special {
+  position: relative;
+  margin-block: var(--size-4-2, 0.5rem);
+}
+
+.rpg-rule-content--special::before,
+.rpg-rule-content--special::after {
+  content: "";
+  position: absolute;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-color: color-mix(in srgb, var(--text-muted, #888) 50%, transparent);
+  border-style: solid;
+  border-width: 0;
+}
+
+.rpg-rule-content--special::before {
+  top: calc(var(--size-4-4, 1rem) * -1);
+  left: calc(var(--size-4-4, 1rem) * -1);
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.rpg-rule-content--special::after {
+  bottom: calc(var(--size-4-4, 1rem) * -1);
+  right: calc(var(--size-4-4, 1rem) * -1);
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+.rpg-rule-content__markers {
+  position: absolute;
+  top: calc(var(--size-4-4, 1rem) * -1);
+  right: calc(var(--size-4-4, 1rem) * -1);
+  display: flex;
+  gap: var(--size-4-1, 0.25rem);
+  z-index: 1;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.rpg-rule-content__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--text-muted, #888);
+  border-radius: var(--radius-s, 3px);
+  background: var(--background-primary);
+  color: var(--text-muted, #888);
+  cursor: help;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.rpg-rule-content__marker:hover {
+  color: var(--text-normal);
+  border-color: var(--text-normal);
+}
+
+.rpg-rule-content__marker svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* ── rule.content `kind: commentary` ───────────────────────────────
+ * Removed in favor of `rpg rule.side` with `kind: commentary` (a side
+ * variant). See `.rpg-rule-side--commentary` below. The old class names
+ * are no longer emitted by the React renderer.
+ */
+
+/* ── rule.side container scope ───────────────────────────────────── */
+
+/*
+ * Establish an inline-size container context on every pane wrapper so
+ * `100cqi` resolves to the LIVE pane width inside the aside's calc
+ * expressions. Without this, our escape math goes stale whenever the
+ * pane resizes after an aside has already mounted (split-pane changes,
+ * Obsidian's virtualized reading-view re-layouts, etc.). `!important`
+ * guards against an Obsidian or theme rule clearing it back to `normal`.
+ */
+.markdown-preview-view,
+.markdown-reading-view,
+.markdown-source-view,
+.cm-editor {
+  container-type: inline-size !important;
+}
+
+/* ── rule.side: floated banner callout ───────────────────────────── */
+
+.rpg-rule-side {
+  --rpg-rule-side-color: var(--text-accent, #7c2d12);
+  --rpg-rule-side-ribbon-h: 1.4rem;
+  --rpg-rule-side-ribbon-w: 2rem;
+  --rpg-rule-side-ribbon-poke: 0.4rem;
+
+  /*
+   * Live escape distance from the sizer edge to the pane OUTER edge.
+   *   100cqi resolves to the pane's CONTENT-box inline size (i.e.,
+   *   pane-width minus 2 × file-margins). So:
+   *     sizer-auto-margin = (100cqi - file-line-width) / 2  (when wide)
+   *     gap to pane-outer = file-margins
+   *   Total escape = file-margins + max(0, sizer-auto-margin).
+   *   - wide pane:   file-margins + (100cqi - file-line-width) / 2
+   *   - narrow pane: file-margins (sizer fills pane-content, no auto-margin)
+   * `--rpg-file-margins-clean` is published once by the React renderer
+   * (it parses Obsidian's 2-axis `--file-margins` shorthand into a
+   * single length). Container queries (`100cqi`) make this calc reactive
+   * — no more stale values when the pane resizes after mount.
+   */
+  --rpg-side-escape: calc(
+    var(--rpg-file-margins-clean, 1rem) +
+    max(0px, (100cqi - var(--file-line-width)) / 2)
+  );
+  /* Half of file-margins, used for the inner-side breathing room. */
+  --rpg-side-padding-inline: calc(var(--rpg-file-margins-clean, 1rem) / 2);
+
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+
+  /* Inner padding: top stays generous, bottom collapses to 0, sides use
+   * half of `--file-margins` (computed in JS as `--rpg-side-padding-inline`
+   * because `--file-margins` may be a 2-axis shorthand we can't divide in
+   * pure CSS). */
+  padding-top: var(--size-4-5, 1.25rem);
+  padding-bottom: 0;
+  padding-inline: var(--rpg-side-padding-inline, 1rem);
+
+  /* Reserve vertical room for the top ribbons. */
+  margin-block: calc(var(--rpg-rule-side-ribbon-poke) + var(--size-4-4, 1rem))
+    var(--size-4-4, 1rem);
+
+  background: var(--background-secondary, rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-m, 8px);
+  /* Base outline framing the aside in its own accent color. Always
+   * present (not a homebrew flag) — gives every side block the framed
+   * look the user picked from the Kobold Press "Player Advice" style. */
+  outline: 1px dashed color-mix(in srgb, var(--rpg-rule-side-color) 50%, transparent);
+  outline-offset: 2px;
+  color: var(--text-normal);
+}
+
+/*
+ * Pentagon banner flags at top corners — only on `--float` variant.
+ * The other variants (callout, commentary) have their own decoration.
+ */
+.rpg-rule-side--float::before,
+.rpg-rule-side--float::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--rpg-rule-side-ribbon-poke) * -1);
+  width: var(--rpg-rule-side-ribbon-w);
+  height: var(--rpg-rule-side-ribbon-h);
+  background: var(--rpg-rule-side-color);
+  z-index: 0;
+}
+
+.rpg-rule-side--float::before {
+  left: var(--rpg-side-padding-inline, 1rem);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.rpg-rule-side--float::after {
+  right: var(--rpg-side-padding-inline, 1rem);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/*
+ * Show only the pentagon on the side facing INTO the text — the one on
+ * the glued edge would just sit in the page gutter, where it reads as
+ * decoration disconnected from the aside body. Hide it.
+ *
+ *   dir-right (aside glued right) → keep ::before (top-left, inner-facing)
+ *   dir-left  (aside glued left)  → keep ::after  (top-right, inner-facing)
+ */
+.rpg-rule-side--dir-right::after,
+.rpg-rule-side--dir-left::before {
+  display: none;
+}
+
+.rpg-rule-side__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2, 0.5rem);
+  margin-bottom: var(--size-4-2, 0.5rem);
+  color: var(--rpg-rule-side-color);
+  z-index: 1;
+}
+
+.rpg-rule-side__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  line-height: 1;
+}
+
+.rpg-rule-side__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rpg-rule-side__title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.95em;
+}
+
+.rpg-rule-side__body {
+  position: relative;
+  color: var(--text-normal);
+  z-index: 1;
+}
+
+.rpg-rule-side__body > :first-child {
+  margin-top: 0;
+}
+
+.rpg-rule-side__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Directional floats: glue to page edge via container query ───── */
+
+/*
+ * Escape distance: the aside's outer edge should reach the preview-view's
+ * outer content boundary. Given:
+ *   - 100cqi    = preview-view inline size (content-box width)
+ *   - file-line-width = sizer's max-width
+ *   - file-margins    = preview-view's own padding
+ *
+ * The sizer's auto-centering left margin (relative to preview-view's
+ * padding-box) is max(0, (100cqi - file-line-width) / 2). Adding the
+ * preview-view padding (file-margins) gives the total distance from the
+ * sizer's inner edge to the preview-view's outer edge.
+ *
+ * `max(0px, …)` clamps the escape so narrow panes (where 100cqi is
+ * smaller than file-line-width) don't apply a positive escape that would
+ * shrink the aside.
+ */
+/* ── Directional floats: glue to page edge via JS-measured pane width ── */
+
+/*
+ * `--rpg-pane-width` is the preview-view's border-box width as measured
+ * by the React renderer. With that known, the escape distance collapses
+ * to a simple identity:
+ *
+ *   escape = max(0, (pane-width - file-line-width) / 2)
+ *
+ * Derivation: the sizer's auto-centering margin on one side is
+ *   (pane-content-width - file-line-width) / 2
+ * where pane-content-width = pane-width - 2 * file-margins. Adding the
+ * preview-view's own padding (file-margins) brings us to the pane's
+ * outer content boundary; the `file-margins` terms cancel out, leaving
+ * (pane-width - file-line-width) / 2. The `max(0px, …)` clamps the
+ * escape on narrow panes where file-line-width exceeds the pane width.
+ */
+.rpg-rule-side--dir-right {
+  float: right;
+  clear: right;
+  /*
+   * Width = 25% of the readable text column + the escape distance into
+   * the gutter. `--rpg-side-escape` is published by the React renderer
+   * — it accounts for both the sizer's auto-centering margin AND the
+   * preview-view's `--file-margins` padding (which Obsidian sometimes
+   * emits as a 2-axis shorthand like `32px 32px`, breaking pure-CSS
+   * `max()`/`calc()` expressions). At wide viewports the escape covers
+   * sizer-auto + padding; at narrow viewports it falls back to padding
+   * only — so the aside stays glued at every pane width.
+   */
+  width: calc(0.25 * var(--file-line-width) + var(--rpg-side-escape, 0px));
+  margin-inline-start: var(--size-4-4, 1rem);
+  margin-inline-end: calc(0px - var(--rpg-side-escape, 0px));
+  /* Asymmetric inline padding: the glued side gets full file-margins so
+   * text sits inside the pane content area (the aside itself extends
+   * past padding into the gutter). The inner side stays at half — just
+   * a visual breathing-room gap from the text column. */
+  padding-inline-end: calc(var(--rpg-side-padding-inline, 1rem) * 2);
+  padding-inline-start: var(--rpg-side-padding-inline, 1rem);
+}
+
+.rpg-rule-side--dir-left {
+  float: left;
+  clear: left;
+  width: calc(0.25 * var(--file-line-width) + var(--rpg-side-escape, 0px));
+  margin-inline-end: var(--size-4-4, 1rem);
+  margin-inline-start: calc(0px - var(--rpg-side-escape, 0px));
+  /* Mirrored asymmetric padding: glued left side = full file-margins;
+   * inner right side = half. */
+  padding-inline-start: calc(var(--rpg-side-padding-inline, 1rem) * 2);
+  padding-inline-end: var(--rpg-side-padding-inline, 1rem);
+}
+
+/* ── Preset accent colors (overridable via inline --rpg-rule-side-color) ── */
+
+.rpg-rule-side--note {
+  --rpg-rule-side-color: var(--color-blue, #3498db);
+}
+.rpg-rule-side--info {
+  --rpg-rule-side-color: var(--color-cyan, #17a2b8);
+}
+.rpg-rule-side--tip {
+  --rpg-rule-side-color: var(--color-yellow, #f1c40f);
+}
+.rpg-rule-side--success {
+  --rpg-rule-side-color: var(--color-green, #2ecc71);
+}
+.rpg-rule-side--question {
+  --rpg-rule-side-color: var(--color-purple, #9b59b6);
+}
+.rpg-rule-side--warning {
+  --rpg-rule-side-color: var(--color-orange, #e67e22);
+}
+.rpg-rule-side--danger {
+  --rpg-rule-side-color: var(--color-red, #e74c3c);
+}
+.rpg-rule-side--example {
+  --rpg-rule-side-color: var(--color-teal, #16a085);
+}
+.rpg-rule-side--quote {
+  --rpg-rule-side-color: var(--color-gray, #95a5a6);
+}
+.rpg-rule-side--rules {
+  --rpg-rule-side-color: #8b6f47;
+}
+
+/* ── Callout variant (in-flow, layered ornate "inscribed" look) ──── */
+/*
+ * `kind: callout` is an in-flow alternative to the floated banner.
+ * Lives within the readable column (no escape into the gutter), bounded
+ * by an OUTER thicker accent bar top + bottom, an INNER thinner accent
+ * bar parallel to each, and small filled circles at the four corners —
+ * a "stamped/inscribed certificate" look. Use when a `> [!type]` Obsidian
+ * callout would create awkward nested-quote markup but you don't want a
+ * margin float either.
+ *
+ * Construction:
+ *   - `border-block: 3px solid` → outer top + bottom bars
+ *   - `::before` with `inset: 6px 12px` and `border-block: 1px solid` →
+ *     inner top + bottom bars (4-12px inset from outer bars)
+ *   - 4 `radial-gradient` backgrounds positioned at corners → corner dots
+ *   - `background-color` last in the stack provides the tinted body
+ *
+ * No outline (we have explicit bars instead). No pentagon. Direction is
+ * meaningless and ignored.
+ */
+.rpg-rule-side--callout {
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: none;
+  margin-block: var(--size-4-3, 0.75rem);
+  margin-inline: 0;
+  padding-block: var(--size-4-4, 1rem);
+  padding-inline: var(--size-4-4, 1rem);
+  /* Layered backgrounds: 4 corner dots (radial gradients) over a tinted
+   * body color. The dots are positioned slightly inside the corners so
+   * full circles are visible (not clipped quarter-circles). */
+  background:
+    radial-gradient(circle 4px at 6px 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at 6px calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
+  border-radius: 0;
+  border-block: 3px solid var(--rpg-rule-side-color);
+  border-inline: none;
+  outline: none;
+}
+
+/* Inner thinner bars, inset slightly from the outer bars. */
+.rpg-rule-side--callout::before {
+  content: "";
+  position: absolute;
+  inset: 6px 14px;
+  border-block: 1px solid var(--rpg-rule-side-color);
+  border-inline: none;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-rule-side--callout .rpg-rule-side__header,
+.rpg-rule-side--callout .rpg-rule-side__body {
+  position: relative;
+  z-index: 1;
+}
+
+.rpg-rule-side--callout .rpg-rule-side__header {
+  margin-bottom: var(--size-4-2, 0.5rem);
+}
+
+/* Callout title is more prominent than the float-banner title — it's
+ * the only labeling element in this variant (no pentagon flag), so it
+ * deserves more visual weight. */
+.rpg-rule-side--callout .rpg-rule-side__title {
+  font-size: 1.15em;
+}
+
+/* ── Commentary variant ──────────────────────────────────────────── */
+/*
+ * `kind: commentary` is structural — it floats into the GUTTER ONLY,
+ * never penetrating the readable text column. Width = the JS-published
+ * `--rpg-side-escape` (gutter width on the glued side); the negative
+ * margin glues the outer edge to the pane border just like callouts.
+ *
+ * Visual: dashed accent left/right border (depending on direction),
+ * semi-transparent italic body text, no big banner, no pentagon.
+ *
+ * `type:` still picks the accent color (gray for `quote`,
+ * purple for `question`, sepia for `rules`, etc.). `direction:`
+ * controls which gutter the commentary sits in.
+ */
+.rpg-rule-side--commentary {
+  display: block;
+  background: transparent;
+  border-radius: 0;
+  outline: none;
+  color: var(--text-muted, #888);
+  font-size: 0.95em;
+  font-style: italic;
+  opacity: 0.9;
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  /* float / width / margins set per direction below */
+}
+
+/* Gutter-only float, right side. The inline-start margin lifts the
+ * commentary's inner edge off the text column; width is reduced by
+ * the same amount so the outer edge stays glued to the pane border. */
+.rpg-rule-side--commentary.rpg-rule-side--dir-right {
+  float: right;
+  clear: right;
+  width: calc(var(--rpg-side-escape, 0px) - var(--size-4-4, 1rem) - 4px);
+  margin-inline-start: calc(var(--size-4-4, 1rem) + 4px);
+  margin-inline-end: calc(0px - var(--rpg-side-escape, 0px));
+  border-inline-start: 2px dashed var(--rpg-rule-side-color);
+  /* Asymmetric padding: the glued (right) side gets full file-margins so
+   * text ends at pane-content-right; the inner (left) side keeps the
+   * smaller default padding from the base rule. */
+  padding-inline-end: var(--rpg-file-margins-clean, 1rem);
+}
+
+/* Gutter-only float, left side (mirrored). */
+.rpg-rule-side--commentary.rpg-rule-side--dir-left {
+  float: left;
+  clear: left;
+  width: calc(var(--rpg-side-escape, 0px) - var(--size-4-4, 1rem) - 4px);
+  margin-inline-end: calc(var(--size-4-4, 1rem) + 4px);
+  margin-inline-start: calc(0px - var(--rpg-side-escape, 0px));
+  border-inline-end: 2px dashed var(--rpg-rule-side-color);
+  /* Mirrored asymmetric padding. */
+  padding-inline-start: var(--rpg-file-margins-clean, 1rem);
+}
+
+.rpg-rule-side--commentary .rpg-rule-side__header {
+  margin-bottom: var(--size-4-1, 0.25rem);
+}
+
+.rpg-rule-side--commentary .rpg-rule-side__title {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.95em;
+}
+
+.rpg-rule-side--commentary .rpg-rule-side__body strong,
+.rpg-rule-side--commentary .rpg-rule-side__body em {
+  font-style: normal;
+}
+
+/* Homebrew classification deliberately doesn't apply to side blocks —
+ * the dashed accent outline is part of every side's base look. The
+ * `.rpg-rule-homebrew` class is no longer added by the React renderer
+ * for kind=side, so no overrides are needed here. */

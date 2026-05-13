@@ -8,7 +8,7 @@ type: Ammunition
 cost: 1 gp
 weight: 0.075 lb.
 image: "![[arrows.webp|384]]"
-desc: "![[Ammunition|clean no-t no-picture no-source]]"
+desc: "![[Ammunition|clean no-t no-h1 no-picture no-source]]"
 shop:
   cheap: 7 sp
   expensive: 2 gp
