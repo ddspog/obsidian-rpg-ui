@@ -479,6 +479,72 @@ export default class DndUIToolkitPlugin extends Plugin {
       );
     }
 
+    // ── Multi-backtick fence support (4+) ─────────────────────────────────
+    // Obsidian's registerMarkdownCodeBlockProcessor only routes 3-backtick
+    // fences. 4+ backtick fences render as <pre><code class="language-rpg ...">
+    // in the DOM. This post-processor catches those and processes them
+    // identically to the code block processor above.
+    this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+      const codeBlocks = el.querySelectorAll("pre > code[class*='language-rpg']");
+      for (const code of Array.from(codeBlocks)) {
+        const pre = code.parentElement;
+        if (!pre) continue;
+        // Already processed (our code block processor replaces content)
+        if (pre.querySelector("[data-rpg-rule], .rpg-table-wrapper, .notice")) continue;
+
+        // Extract meta from the class: "language-rpg rule.tab" → "rule.tab"
+        const classMatch = code.className.match(/language-rpg\s+(\S+)/);
+        if (!classMatch) continue;
+        const meta = classMatch[1];
+
+        const source = code.textContent ?? "";
+        const wrapper = pre.ownerDocument.createElement("div");
+        wrapper.classList.add("el-pre");
+        const container = pre.ownerDocument.createElement("div");
+        container.classList.add("block-language-rpg");
+        wrapper.appendChild(container);
+        pre.replaceWith(wrapper);
+
+        // Dispatch using the same logic as the code block processor.
+        const ruleSubtype = subtypeFromMeta(meta);
+        if (ruleSubtype) {
+          if (ruleSubtype === "content" || ruleSubtype === "side") {
+            try {
+              const block = ruleSubtype === "content" ? parseRuleContent(source) : parseRuleSide(source);
+              const child = new RuleContentRenderChild(container, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              container.innerHTML = `<div class="notice">Error rendering rpg rule.${ruleSubtype}</div>`;
+            }
+          } else if (ruleSubtype === "related") {
+            try {
+              const block = parseRuleRelated(source);
+              const child = new RuleRelatedRenderChild(container, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              container.innerHTML = '<div class="notice">Error rendering rpg rule.related</div>';
+            }
+          } else if (ruleSubtype === "notes") {
+            try {
+              const block = parseRuleNotes(source);
+              const child = new RuleNotesRenderChild(container, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              container.innerHTML = '<div class="notice">Error rendering rpg rule.notes</div>';
+            }
+          } else if (ruleSubtype === "tab") {
+            try {
+              const block = parseRuleTab(source);
+              const child = new RuleTabRenderChild(container, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              container.innerHTML = '<div class="notice">Error rendering rpg rule.tab</div>';
+            }
+          }
+        }
+      }
+    });
+
     // ── `@[[File]].path` inline references ────────────────────────────────
     // Backs a dataview-ish inline reference system; the cache reads
     // source files lazily through Obsidian's vault adapter while the

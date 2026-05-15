@@ -82,6 +82,9 @@ function detectMetaFromSource(source: string): string | null {
   const sourceLines = source.split("\n");
   const sepLineIdx = sourceLines.findIndex((l) => l.trim() === "---");
   if (sepLineIdx > 0 && sepLineIdx < sourceLines.length - 1) {
+    if (topLevelKeys.has("icon") || topLevelKeys.has("color")) {
+      return "rule.tab";
+    }
     return "rule.content";
   }
 

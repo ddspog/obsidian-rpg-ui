@@ -7982,6 +7982,16 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   position: relative;
   isolation: isolate;
 }
+.rpg-rule-tab-group__tabs-scroll {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rpg-rule-tab-group__tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
 .rpg-rule-tab-group__tabs::before {
   content: "";
   position: absolute;
@@ -8018,7 +8028,7 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   right: -1.5rem;
 }
 .rpg-rule-tab-group__tab {
-  flex: 1 1 0;
+  flex: 1 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8033,6 +8043,7 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   font-weight: 500;
   cursor: pointer;
   transition: color 0.15s, background-color 0.15s;
+  white-space: nowrap;
 }
 .rpg-rule-tab-group__tab + .rpg-rule-tab-group__tab {
   border-left: 1px solid var(--background-modifier-border, #444);

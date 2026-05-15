@@ -80,6 +80,19 @@
   isolation: isolate;
 }
 
+/* Inner scrollable container for tab buttons */
+.rpg-rule-tab-group__tabs-scroll {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rpg-rule-tab-group__tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Middle line — vertically centered, behind tabs */
 .rpg-rule-tab-group__tabs::before {
   content: "";
@@ -127,7 +140,7 @@
 /* ── Tab buttons ───────────────────────────────────────────────────── */
 
 .rpg-rule-tab-group__tab {
-  flex: 1 1 0;
+  flex: 1 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -142,6 +155,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: color 0.15s, background-color 0.15s;
+  white-space: nowrap;
 }
 
 .rpg-rule-tab-group__tab + .rpg-rule-tab-group__tab {

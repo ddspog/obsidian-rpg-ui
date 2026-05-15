@@ -16,7 +16,7 @@ function wrapBareCalls(source: string): string {
 const tabDataStore = new WeakMap<HTMLElement, RuleTabBlock>();
 const tabSourcePathStore = new WeakMap<HTMLElement, string>();
 
-const pendingMerges = new WeakSet<HTMLElement>();
+const pendingMerges = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 
 function TabGroupView({
   tabs,
@@ -31,6 +31,7 @@ function TabGroupView({
   const [isStuck, setIsStuck] = React.useState(false);
   const sentinelRef = React.useRef<HTMLDivElement>(null);
   const stickyRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
   const active = tabs[activeIdx];
 
   React.useEffect(() => {
@@ -64,6 +65,37 @@ function TabGroupView({
     return () => observer.disconnect();
   }, []);
 
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    function updateMask() {
+      if (!el) return;
+      const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+      if (!hasOverflow) {
+        el.style.maskImage = "none";
+        el.style.webkitMaskImage = "none";
+        return;
+      }
+      const atStart = el.scrollLeft < 2;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+      const left = atStart ? "black" : "transparent";
+      const right = atEnd ? "black" : "transparent";
+      const mask = `linear-gradient(to right, ${left} 0px, black 1.5rem, black calc(100% - 1.5rem), ${right} 100%)`;
+      el.style.maskImage = mask;
+      el.style.webkitMaskImage = mask;
+    }
+
+    updateMask();
+    el.addEventListener("scroll", updateMask, { passive: true });
+    const ro = new ResizeObserver(updateMask);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateMask);
+      ro.disconnect();
+    };
+  }, [tabs.length]);
+
   if (tabs.length === 0) {
     return <div className="notice">rpg rule.tab: no tabs found</div>;
   }
@@ -78,14 +110,16 @@ function TabGroupView({
         <menu role="tablist" className="rpg-rule-tab-group__tabs">
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--left" />
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--right" />
-          {tabs.map((tab, i) => (
-            <TabButton
-              key={i}
-              tab={tab}
-              active={i === activeIdx}
-              onClick={() => setActiveIdx(i)}
-            />
-          ))}
+          <div ref={scrollRef} className="rpg-rule-tab-group__tabs-scroll">
+            {tabs.map((tab, i) => (
+              <TabButton
+                key={i}
+                tab={tab}
+                active={i === activeIdx}
+                onClick={() => setActiveIdx(i)}
+              />
+            ))}
+          </div>
         </menu>
       </div>
       {active ? (
@@ -206,12 +240,13 @@ function areAdjacentBlocks(a: HTMLElement, b: HTMLElement): boolean {
 function scheduleMerge(tabEl: HTMLElement): void {
   const sizer = tabEl.closest(".markdown-preview-sizer") as HTMLElement | null;
   if (!sizer) return;
-  if (pendingMerges.has(sizer)) return;
-  pendingMerges.add(sizer);
-  setTimeout(() => {
+  const existing = pendingMerges.get(sizer);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
     pendingMerges.delete(sizer);
     runMerge(sizer);
-  }, 150);
+  }, 200);
+  pendingMerges.set(sizer, timer);
 }
 
 function runMerge(sizer: HTMLElement): void {
@@ -280,26 +315,27 @@ function findPrecedingHeadingText(leader: HTMLElement): string | undefined {
   const wrapper = getElPre(leader);
   if (!wrapper) return undefined;
 
+  // Walk backwards through siblings in this section
   let prev: Element | null = wrapper.previousElementSibling;
-  while (prev && !prev.textContent?.trim()) {
-    prev = prev.previousElementSibling;
-  }
-
-  if (prev) {
+  while (prev) {
     const h = prev.querySelector("h1, h2, h3, h4, h5, h6");
     if (h) return h.textContent?.trim() || undefined;
     if (/^H[1-6]$/.test(prev.tagName)) return prev.textContent?.trim() || undefined;
+    prev = prev.previousElementSibling;
   }
 
+  // Walk backwards through previous sections
   const section = wrapper.parentElement;
-  const prevSection = section?.previousElementSibling as HTMLElement | null;
-  if (prevSection) {
-    const last = prevSection.lastElementChild as HTMLElement | null;
-    if (last) {
-      const h = last.querySelector("h1, h2, h3, h4, h5, h6");
+  let prevSection = section?.previousElementSibling as HTMLElement | null;
+  while (prevSection) {
+    const children = Array.from(prevSection.children);
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i] as HTMLElement;
+      const h = child.querySelector("h1, h2, h3, h4, h5, h6");
       if (h) return h.textContent?.trim() || undefined;
-      if (/^H[1-6]$/.test(last.tagName)) return last.textContent?.trim() || undefined;
+      if (/^H[1-6]$/.test(child.tagName)) return child.textContent?.trim() || undefined;
     }
+    prevSection = prevSection.previousElementSibling as HTMLElement | null;
   }
 
   return undefined;
