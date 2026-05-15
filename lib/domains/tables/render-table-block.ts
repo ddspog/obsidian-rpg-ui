@@ -24,6 +24,8 @@
  */
 
 import type { FooterCell, FooterRow, TableDef, TableRow } from "./types";
+import type { PaginationConfig, PaginationState } from "./pagination";
+import { sliceRows, totalPages } from "./pagination";
 import { formatRollOutcome, rollOnce } from "./roll";
 import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
@@ -259,20 +261,33 @@ export function renderTableBlock(
   }
 
   const tbody = doc.createElement("tbody");
-  for (const row of def.rows) {
-    const tr = doc.createElement("tr");
-    if (isCategoryRow(row, def.columns.length)) {
-      tr.setAttribute("data-category", "true");
-      const cell = row.cells[0];
-      const td = doc.createElement("td");
-      td.colSpan = def.columns.length;
-      td.textContent = cleanCategoryLabel(cell.value);
-      tr.appendChild(td);
-    } else {
-      appendRow(tr, row, "td");
+  const allRows = def.rows;
+  const paginationConfig = def.pagination;
+
+  let state: PaginationState = { page: 0, visiblePages: 1 };
+
+  function renderRows(): void {
+    tbody.innerHTML = "";
+    const visibleRows = paginationConfig
+      ? sliceRows(allRows, paginationConfig, state)
+      : allRows;
+    for (const row of visibleRows) {
+      const tr = doc.createElement("tr");
+      if (isCategoryRow(row, def.columns.length)) {
+        tr.setAttribute("data-category", "true");
+        const cell = row.cells[0];
+        const td = doc.createElement("td");
+        td.colSpan = def.columns.length;
+        td.textContent = cleanCategoryLabel(cell.value);
+        tr.appendChild(td);
+      } else {
+        appendRow(tr, row, "td");
+      }
+      tbody.appendChild(tr);
     }
-    tbody.appendChild(tr);
   }
+
+  renderRows();
   table.appendChild(tbody);
 
   // Emit hidden anchors for each footer class so any CSS rule keyed on
@@ -289,11 +304,164 @@ export function renderTableBlock(
 
   const disposers: Array<() => void> = [];
   const filePath = opts.filePath ?? "";
-  def.footerRows.forEach((row, rowIdx) => {
-    const { element, disposers: cellDisposers } = renderFooterRow(doc, def, row, rowIdx, filePath);
-    container.appendChild(element);
-    disposers.push(...cellDisposers);
-  });
+  const colCount = def.columns.length || 1;
+
+  // Build a shared <tfoot> for roll footers + pagination
+  if (def.footerRows.length > 0 || paginationConfig) {
+    const tfoot = doc.createElement("tfoot");
+    tfoot.classList.add("rpg-table-tfoot");
+
+    // Match thead background as the tfoot border-bottom color
+    requestAnimationFrame(() => {
+      const theadTh = table.querySelector("thead th") as HTMLElement | null;
+      if (theadTh) {
+        const bg = getComputedStyle(theadTh).backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)") {
+          tfoot.style.borderBottom = `3px solid ${bg}`;
+        }
+      }
+    });
+
+    // Roll footer rows
+    def.footerRows.forEach((row, rowIdx) => {
+      const tr = doc.createElement("tr");
+      tr.classList.add("rpg-table-tfoot__roll-row");
+      const td = doc.createElement("td");
+      td.colSpan = colCount;
+
+      const flexWrap = doc.createElement("span");
+      flexWrap.classList.add("rpg-table-tfoot__roll-cell");
+
+      row.cells.forEach((cell, cellIdx) => {
+        const key = rollStoreKey(filePath, def.name, rowIdx, cellIdx);
+        const interactive = hasRollSegment(cell);
+        const span = doc.createElement("span");
+        span.classList.add("dice-roller", "rpg-table-roll-cell");
+        if (interactive) {
+          span.setAttribute("role", "button");
+          span.setAttribute("tabindex", "0");
+        } else {
+          span.classList.add("rpg-table-roll-cell-static");
+        }
+
+        const paint = () => {
+          renderCellContents(doc, cell, span, getRollResult(key));
+        };
+
+        if (interactive && getRollResult(key) === undefined) {
+          setRollResult(key, rollCell(def, cell));
+        }
+        paint();
+
+        if (interactive) {
+          const roll = () => {
+            const values = rollCell(def, cell);
+            setRollResult(key, values);
+          };
+          span.addEventListener("click", roll);
+          span.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              roll();
+            }
+          });
+          disposers.push(subscribeRollResult(key, paint));
+        }
+
+        flexWrap.appendChild(span);
+      });
+
+      td.appendChild(flexWrap);
+      tr.appendChild(td);
+      tfoot.appendChild(tr);
+    });
+
+    // Pagination row
+    if (paginationConfig) {
+      const tr = doc.createElement("tr");
+      tr.classList.add("rpg-table-tfoot__pagination-row");
+      const td = doc.createElement("td");
+      td.colSpan = colCount;
+
+      const cell = doc.createElement("span");
+      cell.classList.add("rpg-table-pagination__cell");
+      td.appendChild(cell);
+      tr.appendChild(td);
+      tfoot.appendChild(tr);
+
+      function makeBtn(cls: string, text: string): HTMLButtonElement {
+        const btn = doc.createElement("button");
+        btn.classList.add(cls);
+        btn.textContent = text;
+        btn.style.background = "none";
+        btn.style.backgroundColor = "transparent";
+        btn.style.border = "none";
+        btn.style.boxShadow = "none";
+        btn.style.outline = "none";
+        return btn;
+      }
+
+      function updateControls(): void {
+        cell.innerHTML = "";
+        const pages = totalPages(allRows.length, paginationConfig!.size);
+        const isShowMore = paginationConfig!.controls === "show-more";
+
+        if (!isShowMore) {
+          const prev = makeBtn("rpg-table-pagination__arrow", "‹");
+          prev.disabled = state.page === 0;
+          prev.addEventListener("click", () => {
+            if (state.page > 0) { state.page--; renderRows(); updateControls(); }
+          });
+          cell.appendChild(prev);
+        }
+
+        const middle = doc.createElement("span");
+        middle.classList.add("rpg-table-pagination__middle");
+
+        if (paginationConfig!.controls === "show-more") {
+          const allVisible = paginationConfig!.size * state.visiblePages >= allRows.length;
+          if (!allVisible) {
+            const remaining = allRows.length - paginationConfig!.size * state.visiblePages;
+            const btn = makeBtn("rpg-table-pagination__page", `Show More (+${remaining})`);
+            btn.addEventListener("click", () => {
+              state.visiblePages++; renderRows(); updateControls();
+            });
+            middle.appendChild(btn);
+          } else {
+            const btn = makeBtn("rpg-table-pagination__page", "Collapse");
+            btn.addEventListener("click", () => {
+              state.visiblePages = 1; renderRows(); updateControls();
+            });
+            middle.appendChild(btn);
+          }
+        } else {
+          for (let i = 0; i < pages; i++) {
+            const btn = makeBtn("rpg-table-pagination__page", String(i + 1));
+            if (i === state.page) btn.classList.add("rpg-table-pagination__page--active");
+            btn.addEventListener("click", () => {
+              state.page = i; renderRows(); updateControls();
+            });
+            middle.appendChild(btn);
+          }
+        }
+
+        cell.appendChild(middle);
+
+        if (!isShowMore) {
+          const next = makeBtn("rpg-table-pagination__arrow", "›");
+          next.disabled = state.page >= pages - 1;
+          next.addEventListener("click", () => {
+            if (state.page < pages - 1) { state.page++; renderRows(); updateControls(); }
+          });
+          cell.appendChild(next);
+        }
+      }
+
+      updateControls();
+    }
+
+    table.appendChild(tfoot);
+  }
 
   return disposers;
 }

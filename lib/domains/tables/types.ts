@@ -11,6 +11,8 @@
  * separator) are preserved as authored so multi-row headers round-trip.
  */
 
+import type { PaginationConfig } from "./pagination";
+
 /** One cell of a table row. `colspan` = 1 is the default and is omitted. */
 export interface TableCell {
   value: string;
@@ -84,4 +86,6 @@ export interface TableDef {
   classes: string[];
   /** Roll-footer rows parsed from `|= … =|` lines (may be empty). */
   footerRows: FooterRow[];
+  /** Pagination config from `@paginate <size> <controls>` directive. */
+  pagination?: PaginationConfig;
 }

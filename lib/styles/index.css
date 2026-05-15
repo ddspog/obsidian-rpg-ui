@@ -82,6 +82,7 @@
 @import "./components/rule-block.css";
 @import "./components/rule-call.css";
 @import "./components/rule-compendium.css";
+@import "./components/table-pagination.css";
 @import "./file-suggest.css";
 
 /* Obsidian-only layout overrides — keep last so it can override component

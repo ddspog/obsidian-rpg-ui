@@ -8072,6 +8072,103 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   margin-bottom: 0;
 }
 
+/* lib/styles/components/table-pagination.css */
+.rpg-table-tfoot {
+  border-bottom: 3px solid var(--table-header-background, var(--background-secondary-alt, #3a2a4a));
+}
+.rpg-table-tfoot tr td {
+  border: none;
+}
+.rpg-table-tfoot__roll-row td {
+  padding: 0;
+}
+.rpg-table-tfoot__roll-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: 100%;
+}
+.rpg-table-tfoot__roll-cell .rpg-table-roll-cell {
+  flex: 1 1 auto;
+  margin-right: 0;
+}
+.rpg-table-tfoot__pagination-row td {
+  padding: 0;
+  text-align: center;
+  line-height: 1;
+  position: relative;
+}
+.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::before {
+  content: "\25c6";
+  position: absolute;
+  top: -0.4em;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-faint, #999);
+  font-size: 0.5em;
+  line-height: 1;
+  z-index: 1;
+  background: var(--background-primary, #fff);
+  padding: 0 0.3em;
+}
+.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: var(--text-faint, #999);
+  opacity: 0.4;
+}
+.rpg-table-pagination__cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow {
+  font-size: 1.4em;
+  padding: 0 0.4em;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  color: inherit;
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:hover:not(:disabled) {
+  opacity: 1;
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:disabled {
+  opacity: 0.15;
+  cursor: default;
+}
+.rpg-table-pagination__middle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+  overflow: hidden;
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page {
+  font-family: inherit;
+  font-size: 0.9em;
+  padding: 0 0.25em;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s ease-out;
+  white-space: nowrap;
+  color: inherit;
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page:hover {
+  opacity: 0.8;
+  transform: scale(1.2);
+}
+.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page.rpg-table-pagination__page--active {
+  opacity: 1;
+  font-weight: 600;
+}
+
 /* lib/styles/file-suggest.css */
 .file-suggest-dropdown {
   background: var(--background-primary);

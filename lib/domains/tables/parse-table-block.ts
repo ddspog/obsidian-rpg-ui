@@ -17,6 +17,7 @@
  */
 
 import type { FooterCell, FooterRow, FooterSegment, TableCell, TableDef, TableRow } from "./types";
+import { parsePaginateDirective, type PaginationConfig } from "./pagination";
 
 /** Normalise a column label into a stable key: lowercase, non-alphanum → `_`. */
 export function normalizeColumnKey(label: string): string {
@@ -244,10 +245,19 @@ export function parseTableBlock(name: string, body: string): TableDef {
   const tableLines: string[] = [];
   const footerRollLines: string[] = [];
   let footer: { caption: string; classes: string[] } | null = null;
+  let pagination: PaginationConfig | undefined;
 
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line) continue;
+
+    if (!pagination && line.trim().startsWith("@paginate")) {
+      const p = parsePaginateDirective(line);
+      if (p) {
+        pagination = p;
+        continue;
+      }
+    }
 
     if (isFooterRollLine(line)) {
       footerRollLines.push(line);
@@ -312,5 +322,6 @@ export function parseTableBlock(name: string, body: string): TableDef {
     caption: footer?.caption,
     classes: footer?.classes ?? [],
     footerRows: footerRollLines.map(parseFooterRollLine),
+    pagination,
   };
 }
