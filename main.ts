@@ -31,9 +31,11 @@ import {
   parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
+  parseRuleTab,
   RuleContentRenderChild,
   RuleNotesRenderChild,
   RuleRelatedRenderChild,
+  RuleTabRenderChild,
   subtypeFromMeta,
 } from "lib/domains/rules";
 import { renderSpellBlock } from "lib/blocks/spell-card";
@@ -149,16 +151,31 @@ export default class DndUIToolkitPlugin extends Plugin {
           // Obsidian fully settle.
           setTimeout(() => {
             (this as any).app.commands.executeCommandById("dnd-ui-toolkit:rpg-ui-reload");
-            console.log("[rpg-ui] Auto-executed reload command.");
+            // Also refresh ALL open previews — the reload command only
+            // covers system-mapped folders, but notes outside those
+            // folders (e.g. examples, rule source files) may contain
+            // @[[file]].path references that failed their initial
+            // resolve because metadataCache wasn't ready at first render.
+            refreshAllMarkdownPreviews(this.app);
+            console.log("[rpg-ui] Auto-executed reload command + refreshed all previews.");
           }, 2000);
-          // Register value-resolver invalidation ONLY on vault:modify
-          // (actual file edits by the user). metadataCache:changed fires
-          // during cache rebuilds / auto-refresh re-rendering — those
-          // are read-only operations that don't change file content, but
-          // they trigger async events that wipe the freshly-warmed index.
+          // Register cache invalidation ONLY after warmup completes.
+          // vault:modify = actual file edits; metadataCache:changed =
+          // Obsidian re-indexing (fires during auto-refresh too, but
+          // refCache needs it for frontmatter-only edits that don't
+          // trigger vault:modify). valueResolver only listens to
+          // vault:modify to avoid the startup invalidation storm.
           this.registerEvent(
             this.app.vault.on("modify", (f) => {
-              if (f instanceof TFile) this.valueResolver?.invalidate(f.path);
+              if (f instanceof TFile) {
+                this.refCache?.invalidate(f.path);
+                this.valueResolver?.invalidate(f.path);
+              }
+            })
+          );
+          this.registerEvent(
+            this.app.metadataCache.on("changed", (f) => {
+              this.refCache?.invalidate(f.path);
             })
           );
         })
@@ -334,7 +351,17 @@ export default class DndUIToolkitPlugin extends Plugin {
             }
             return;
           }
-          // `compendium` — TODO in Phase 4.
+          if (ruleSubtype === "tab") {
+            try {
+              const block = parseRuleTab(source);
+              const child = new RuleTabRenderChild(el, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              console.error("rpg rule.tab render failed", err);
+              el.innerHTML = '<div class="notice">Error rendering rpg rule.tab</div>';
+            }
+            return;
+          }
           el.innerHTML = `<div class="notice">rpg rule.${ruleSubtype} not yet implemented</div>`;
           return;
         }
@@ -486,18 +513,9 @@ export default class DndUIToolkitPlugin extends Plugin {
         registry: this.refRegistry,
       })
     );
-    this.registerEvent(
-      this.app.vault.on("modify", (f) => {
-        if (f instanceof TFile) {
-          this.refCache?.invalidate(f.path);
-        }
-      })
-    );
-    this.registerEvent(
-      this.app.metadataCache.on("changed", (f) => {
-        this.refCache?.invalidate(f.path);
-      })
-    );
+    // NOTE: vault:modify and metadataCache:changed handlers for refCache +
+    // valueResolver are deferred to onLayoutReady (below) so the initial
+    // vault indexing storm doesn't invalidate caches during first render.
 
     // ── Rule-value resolver (Phase 3) ──────────────────────────────────
     // Walks every markdown file in the vault, indexes `rule.content`

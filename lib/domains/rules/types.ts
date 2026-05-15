@@ -6,14 +6,14 @@
  *   rpg rule.side         — callout-style margin <aside> with title + icon
  *   rpg rule.related      — see-also list, stripped when the file is imported
  *   rpg rule.notes        — author prose, stripped when the file is imported
- *   rpg rule.compendium   — tabbed chapter container
+ *   rpg rule.tab          — one tab; consecutive tabs merge into a tablist
  *
- * `content` body is optional YAML frontmatter + `---` + markdown.
+ * `content` / `tab` bodies are optional YAML frontmatter + `---` + markdown.
  * `notes` body is pure markdown (no YAML).
- * `side` / `related` / `compendium` bodies are pure YAML.
+ * `side` / `related` bodies are pure YAML.
  */
 
-export type RuleSubtype = "content" | "side" | "related" | "notes" | "compendium";
+export type RuleSubtype = "content" | "side" | "related" | "notes" | "tab";
 
 /**
  * Where a piece of rule content comes from. Blocks whose tuple differs from
@@ -121,22 +121,21 @@ export interface RuleNotesBlock {
   body: string;
 }
 
-/** One tab inside a compendium block. */
-export interface CompendiumTab {
+/** One tab in a consecutive group of `rpg rule.tab` blocks. */
+export interface RuleTabBlock {
+  kind: "tab";
+  /** Tab label (required). */
   name: string;
   /** Obsidian color name (e.g. "red") or hex string (e.g. "#c0392b"). */
   color?: string;
   /** Lucide icon name (e.g. "swords") or single emoji. */
   icon?: string;
-  /** Markdown-capable body. Supports bare `@[[file]].fn()` tokens. */
-  content: string;
+  /** Markdown body from after the `---` separator. */
+  body: string;
+  /** Optional YAML frontmatter from before the `---` separator. */
+  frontmatter: Record<string, unknown>;
+  source?: SourceTuple;
 }
 
-/** Parsed `rpg rule.compendium` block. */
-export interface RuleCompendiumBlock {
-  kind: "compendium";
-  tabs: CompendiumTab[];
-}
-
-export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleNotesBlock | RuleCompendiumBlock;
+export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleNotesBlock | RuleTabBlock;
 

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   coerceSource,
   parseRuleBlock,
-  parseRuleCompendium,
   parseRuleContent,
   parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
+  parseRuleTab,
   SIDE_PRESETS,
   subtypeFromMeta,
 } from "./parse-rule-block";
@@ -17,7 +17,7 @@ describe("subtypeFromMeta", () => {
     expect(subtypeFromMeta("rule.side")).toBe("side");
     expect(subtypeFromMeta("rule.related")).toBe("related");
     expect(subtypeFromMeta("rule.notes")).toBe("notes");
-    expect(subtypeFromMeta("rule.compendium")).toBe("compendium");
+    expect(subtypeFromMeta("rule.tab")).toBe("tab");
   });
   it("rejects non-rule meta", () => {
     expect(subtypeFromMeta("table.progression")).toBeNull();
@@ -261,34 +261,54 @@ entries:
   });
 });
 
-describe("parseRuleCompendium", () => {
-  it("parses a list of tabs with optional color + icon", () => {
-    const src = `tabs:
-  - name: Grappling
-    color: red
-    icon: swords
-    content: "@[[rules/grappling]].view()"
-  - name: Shoving
-    content: "Shoving lets you push a creature."`;
-    const c = parseRuleCompendium(src);
-    expect(c.tabs).toHaveLength(2);
-    expect(c.tabs[0]).toEqual({
-      name: "Grappling",
-      color: "red",
-      icon: "swords",
-      content: "@[[rules/grappling]].view()",
-    });
-    expect(c.tabs[1].color).toBeUndefined();
+describe("parseRuleTab", () => {
+  it("splits YAML head from markdown body, extracting name/icon/color", () => {
+    const src = `name: Grappling
+icon: swords
+color: "#8b6f47"
+---
+**Grapple.** Using the Attack action, you can make a special melee attack.`;
+    const t = parseRuleTab(src);
+    expect(t.kind).toBe("tab");
+    expect(t.name).toBe("Grappling");
+    expect(t.icon).toBe("swords");
+    expect(t.color).toBe("#8b6f47");
+    expect(t.body).toBe("**Grapple.** Using the Attack action, you can make a special melee attack.");
+    expect(t.frontmatter.name).toBe("Grappling");
   });
 
-  it("drops tabs missing a name", () => {
-    const src = `tabs:
-  - content: anonymous`;
-    expect(parseRuleCompendium(src).tabs).toEqual([]);
+  it("returns empty name when name is missing", () => {
+    const src = `icon: swords
+---
+Some body.`;
+    const t = parseRuleTab(src);
+    expect(t.name).toBe("");
   });
 
-  it("returns empty tabs when body is malformed", () => {
-    expect(parseRuleCompendium("::nope::").tabs).toEqual([]);
+  it("handles pure markdown body (no separator)", () => {
+    const t = parseRuleTab("Just markdown content.");
+    expect(t.name).toBe("");
+    expect(t.body).toBe("Just markdown content.");
+    expect(t.frontmatter).toEqual({});
+  });
+
+  it("captures a source tuple", () => {
+    const src = `name: Tab
+source:
+  system: dnd5e
+---
+body`;
+    const t = parseRuleTab(src);
+    expect(t.source).toEqual({ system: "dnd5e", book: undefined, company: undefined });
+  });
+
+  it("survives malformed YAML frontmatter", () => {
+    const src = `not: valid: yaml :: :
+---
+body`;
+    const t = parseRuleTab(src);
+    expect(t.name).toBe("");
+    expect(t.body).toBe("body");
   });
 });
 
@@ -298,7 +318,7 @@ describe("parseRuleBlock dispatch", () => {
     expect(parseRuleBlock("side", "title: t\ncontent: c").kind).toBe("side");
     expect(parseRuleBlock("related", "- \"[[a]]\"").kind).toBe("related");
     expect(parseRuleBlock("notes", "Some prose.").kind).toBe("notes");
-    expect(parseRuleBlock("compendium", "tabs: []").kind).toBe("compendium");
+    expect(parseRuleBlock("tab", "name: T\n---\nbody").kind).toBe("tab");
   });
 });
 

@@ -1,13 +1,12 @@
 export type {
-  CompendiumTab,
   RelatedEntry,
   RuleBlock,
-  RuleCompendiumBlock,
   RuleContentBlock,
   RuleNotesBlock,
   RuleRelatedBlock,
   RuleSideBlock,
   RuleSubtype,
+  RuleTabBlock,
   SideKind,
   SidePreset,
   SourceTuple,
@@ -15,11 +14,11 @@ export type {
 export {
   coerceSource,
   parseRuleBlock,
-  parseRuleCompendium,
   parseRuleContent,
   parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
+  parseRuleTab,
   SIDE_PRESETS,
   subtypeFromMeta,
 } from "./parse-rule-block";
@@ -27,3 +26,4 @@ export { isHomebrew, resolveSource } from "./source";
 export { RuleContentRenderChild } from "./render-rule-block";
 export { RuleRelatedRenderChild } from "./render-related";
 export { RuleNotesRenderChild } from "./render-notes";
+export { RuleTabRenderChild } from "./render-tab-group";

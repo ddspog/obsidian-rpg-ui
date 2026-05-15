@@ -10,14 +10,13 @@
 
 import { parse as parseYAML } from "yaml";
 import type {
-  CompendiumTab,
   RelatedEntry,
-  RuleCompendiumBlock,
   RuleContentBlock,
   RuleNotesBlock,
   RuleRelatedBlock,
   RuleSideBlock,
   RuleSubtype,
+  RuleTabBlock,
   SideKind,
   SidePreset,
   SourceTuple,
@@ -223,34 +222,30 @@ function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
   return null;
 }
 
-export function parseRuleCompendium(source: string): RuleCompendiumBlock {
-  let parsed: unknown;
-  try {
-    parsed = parseYAML(source);
-  } catch {
-    return { kind: "compendium", tabs: [] };
-  }
-  const tabs: CompendiumTab[] = [];
-  if (parsed && typeof parsed === "object" && Array.isArray((parsed as { tabs?: unknown }).tabs)) {
-    for (const raw of (parsed as { tabs: unknown[] }).tabs) {
-      const tab = coerceTab(raw);
-      if (tab) tabs.push(tab);
+/**
+ * Parse a `rpg rule.tab` block. Same shape as `rule.content` (YAML head +
+ * `---` + markdown body) but requires a `name:` field.
+ */
+export function parseRuleTab(source: string): RuleTabBlock {
+  const [fmText, bodyText] = splitOnSeparator(source);
+  let frontmatter: Record<string, unknown> = {};
+  if (fmText.trim()) {
+    try {
+      const parsed = parseYAML(fmText);
+      if (parsed && typeof parsed === "object") frontmatter = parsed as Record<string, unknown>;
+    } catch {
+      frontmatter = {};
     }
   }
-  return { kind: "compendium", tabs };
-}
-
-function coerceTab(raw: unknown): CompendiumTab | null {
-  if (!raw || typeof raw !== "object") return null;
-  const rec = raw as Record<string, unknown>;
-  const name = typeof rec.name === "string" ? rec.name : null;
-  if (!name) return null;
-  const content = typeof rec.content === "string" ? rec.content : "";
+  const name = typeof frontmatter.name === "string" ? frontmatter.name : "";
   return {
+    kind: "tab",
     name,
-    content,
-    color: typeof rec.color === "string" ? rec.color : undefined,
-    icon: typeof rec.icon === "string" ? rec.icon : undefined,
+    icon: typeof frontmatter.icon === "string" ? frontmatter.icon : undefined,
+    color: typeof frontmatter.color === "string" ? frontmatter.color : undefined,
+    body: bodyText.replace(/^\n+/, "").replace(/\n+$/, ""),
+    frontmatter,
+    source: coerceSource(frontmatter.source),
   };
 }
 
@@ -274,8 +269,8 @@ export function parseRuleBlock(subtype: RuleSubtype, source: string) {
       return parseRuleRelated(source);
     case "notes":
       return parseRuleNotes(source);
-    case "compendium":
-      return parseRuleCompendium(source);
+    case "tab":
+      return parseRuleTab(source);
   }
 }
 
@@ -288,7 +283,7 @@ export function subtypeFromMeta(meta: string): RuleSubtype | null {
     tail === "side" ||
     tail === "related" ||
     tail === "notes" ||
-    tail === "compendium"
+    tail === "tab"
   )
     return tail;
   return null;
