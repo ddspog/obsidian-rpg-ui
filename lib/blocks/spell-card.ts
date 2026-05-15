@@ -34,6 +34,7 @@ import {
   MarkdownRenderer,
   parseYaml,
 } from "obsidian";
+import { splitFenceBody } from "lib/utils/fence-split";
 
 /** Strip wikilink delimiters / md extension / pipe alias from a ref. */
 function bareStem(raw: unknown): string {
@@ -127,9 +128,13 @@ export function renderSpellBlock(
   let body: SpellBody = {};
   if (source && source.trim()) {
     try {
-      const parsed = parseYaml(source);
+      const { yaml, text } = splitFenceBody(source);
+      const parsed = parseYaml(yaml);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         body = parsed as SpellBody;
+        if (text !== undefined && !("text" in body)) {
+          (body as Record<string, unknown>).text = text;
+        }
       }
     } catch {
       // Malformed YAML — render an empty card with a notice.

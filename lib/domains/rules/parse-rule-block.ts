@@ -92,15 +92,17 @@ export function parseRuleContent(source: string): RuleContentBlock {
 }
 
 /**
- * Parse a `rpg rule.side` block. Body is pure YAML. `type` provides preset
- * defaults; explicit `title`/`icon`/`color` override the preset. Title is
- * required (either via preset or explicit) — a block with neither reports
- * an empty title and renders with just the icon.
+ * Parse a `rpg rule.side` block. Supports both:
+ *   - Pure YAML with `content:` field (backwards compatible)
+ *   - Fence mode: YAML head + `---` + markdown body (stored as `content`)
  */
 export function parseRuleSide(source: string): RuleSideBlock {
+  const [fmText, bodyText] = splitOnSeparator(source);
+  const hasFenceBody = fmText !== "" && bodyText !== source;
+
   let parsed: unknown;
   try {
-    parsed = parseYAML(source);
+    parsed = parseYAML(hasFenceBody ? fmText : source);
   } catch {
     parsed = null;
   }
@@ -117,7 +119,9 @@ export function parseRuleSide(source: string): RuleSideBlock {
   const title = typeof rec.title === "string" ? rec.title : defaults?.title ?? "";
   const icon = typeof rec.icon === "string" ? rec.icon : defaults?.icon;
   const color = typeof rec.color === "string" ? rec.color : defaults?.color;
-  const content = typeof rec.content === "string" ? rec.content : "";
+  const content = hasFenceBody
+    ? bodyText.replace(/^\n+/, "").replace(/\n+$/, "")
+    : typeof rec.content === "string" ? rec.content : typeof rec.text === "string" ? rec.text : "";
   const direction: "left" | "right" = rec.direction === "left" ? "left" : "right";
 
   return {

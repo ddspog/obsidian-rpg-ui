@@ -48,6 +48,7 @@ import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
 import { PageFooterManager } from "lib/plugin/page-footer";
+import { splitFenceBody } from "lib/utils/fence-split";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -1119,7 +1120,8 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
 
   async onload() {
     try {
-      const parsed = parseYaml(this.source);
+      const { yaml, text } = splitFenceBody(this.source);
+      const parsed = parseYaml(yaml);
       const fm = this.app.metadataCache.getCache(this.sourcePath)?.frontmatter ?? {};
       // Merge frontmatter into the block props so components can access global
       // file-level fields (e.g., xp) via `self.xp` while allowing the block
@@ -1129,6 +1131,9 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           ? (parsed as Record<string, unknown>)
           : {};
       const initialSelf: Record<string, unknown> = { ...(fm as Record<string, unknown>), ...blockParsed };
+      if (text !== undefined && !("text" in blockParsed)) {
+        initialSelf.text = text;
+      }
       const Comp = this.component as React.FC<Record<string, unknown>>;
       const app = this.app;
       const sourcePath = this.sourcePath;
