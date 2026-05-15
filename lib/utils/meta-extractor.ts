@@ -62,6 +62,29 @@ function detectMetaFromSource(source: string): string | null {
   ) {
     return "feature.level";
   }
+  // `rpg rule.side` fence body — pure YAML with keys like `direction`,
+  // `title`, `content`, `type`, `kind`, `color`, `icon`. The `direction`
+  // key is unique to rule.side; `title` + `content` (without `name`) is
+  // a strong secondary signal. Check BEFORE the `---` separator heuristic
+  // so embedded side blocks inside whole-file imports route correctly.
+  if (
+    topLevelKeys.has("direction") ||
+    (topLevelKeys.has("title") && topLevelKeys.has("content") && !topLevelKeys.has("name"))
+  ) {
+    return "rule.side";
+  }
+
+  // `rpg rule.content` fence body — YAML frontmatter + `---` + markdown.
+  // The standalone `---` line distinguishes it from feature.details and
+  // other YAML-only blocks. Check FIRST so blocks with both `name:` and
+  // `values:` (which would otherwise be claimed by feature.details below)
+  // route to the rule.content handler when embedded.
+  const sourceLines = source.split("\n");
+  const sepLineIdx = sourceLines.findIndex((l) => l.trim() === "---");
+  if (sepLineIdx > 0 && sepLineIdx < sourceLines.length - 1) {
+    return "rule.content";
+  }
+
   const featureMarkers = ["subtitle", "tag", "pick", "uses", "link", "value", "values", "type"];
   if (topLevelKeys.has("name") && featureMarkers.some((k) => topLevelKeys.has(k))) {
     return "feature.details";

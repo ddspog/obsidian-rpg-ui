@@ -23,7 +23,12 @@ import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
 import { resolveSource, isHomebrew } from "./source";
-import type { RuleContentBlock, RuleSideBlock } from "./types";
+import { SIDE_PRESETS } from "./parse-rule-block";
+import type { RuleContentBlock, RuleSideBlock, SidePreset } from "./types";
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 interface Marker {
   icon: string;
@@ -107,16 +112,80 @@ function RuleContentView({
   if (homebrew) cls.push("rpg-rule-homebrew");
   if (markers.length > 0) cls.push("rpg-rule-content--special");
 
+  // `view` property: controls own-page rendering format. Default "bare"
+  // (just the body markdown). When imported via @[[file]].fn(), the
+  // caller's view function takes over — this property is ignored.
+  const viewProp = typeof fm.view === "string" ? fm.view : "bare";
+  const blockName =
+    (typeof fm.name === "string" && fm.name) ||
+    (typeof fm.id === "string" && fm.id ? capitalize(fm.id) : undefined);
+
+  const body = <Markdown source={block.body} sourcePath={sourcePath} />;
+  const markersEl = markers.length > 0 ? (
+    <div className="rpg-rule-content__markers" aria-hidden={false}>
+      {markers.map((m, i) => (
+        <MarkerBadge key={`${m.icon}-${i}`} icon={m.icon} label={m.label} />
+      ))}
+    </div>
+  ) : null;
+
+  // Heading views: h1–h6
+  const headingMatch = viewProp.match(/^h([1-6])$/);
+  if (headingMatch && blockName) {
+    const Tag = `h${headingMatch[1]}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+    return (
+      <section className={cls.join(" ")} data-rpg-rule="content">
+        {markersEl}
+        <Tag>{blockName}</Tag>
+        {body}
+      </section>
+    );
+  }
+
+  if (viewProp === "p" && blockName) {
+    const firstNl = block.body.indexOf("\n");
+    const inlined = firstNl >= 0
+      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+      : `**${blockName}.** ${block.body}`;
+    return (
+      <section className={cls.join(" ")} data-rpg-rule="content">
+        {markersEl}
+        <Markdown source={inlined} sourcePath={sourcePath} />
+      </section>
+    );
+  }
+
+  if (viewProp === "inline" && blockName) {
+    const firstNl = block.body.indexOf("\n");
+    const inlined = firstNl >= 0
+      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+      : `**${blockName}.** ${block.body}`;
+    return (
+      <span className={[...cls, "rpg-rule-content--inline"].join(" ")} data-rpg-rule="content">
+        {markersEl}
+        <Markdown source={inlined} sourcePath={sourcePath} />
+      </span>
+    );
+  }
+
+  if (viewProp === "item" && blockName) {
+    const firstNl = block.body.indexOf("\n");
+    const inlined = firstNl >= 0
+      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+      : `**${blockName}.** ${block.body}`;
+    return (
+      <section className={cls.join(" ")} data-rpg-rule="content">
+        {markersEl}
+        <Markdown source={inlined} sourcePath={sourcePath} />
+      </section>
+    );
+  }
+
+  // Default: "bare" — just the body, no heading or name prefix.
   return (
     <section className={cls.join(" ")} data-rpg-rule="content">
-      {markers.length > 0 ? (
-        <div className="rpg-rule-content__markers" aria-hidden={false}>
-          {markers.map((m, i) => (
-            <MarkerBadge key={`${m.icon}-${i}`} icon={m.icon} label={m.label} />
-          ))}
-        </div>
-      ) : null}
-      <Markdown source={block.body} sourcePath={sourcePath} />
+      {markersEl}
+      {body}
     </section>
   );
 }
@@ -161,6 +230,18 @@ function RuleSideCommentary({
   const style: React.CSSProperties = {};
   if (block.color) (style as Record<string, string>)["--rpg-rule-side-color"] = block.color;
 
+  // Plain text for the collapsed tooltip (strip basic markdown formatting).
+  const plainText = block.content
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .trim();
+
+  // Icon name: use the preset's icon, or fallback to "message-square".
+  const iconName = block.icon ?? (block.preset ? SIDE_PRESETS[block.preset]?.icon : undefined) ?? "message-square";
+
   return (
     <aside
       ref={asideRef}
@@ -168,18 +249,25 @@ function RuleSideCommentary({
       data-rpg-rule="side"
       data-rpg-side-kind="commentary"
       style={style}
+      aria-label={plainText}
     >
+      {/* Full form: shown when width is sufficient */}
       {block.icon || block.title ? (
-        <header className="rpg-rule-side__header">
+        <header className="rpg-rule-side__header rpg-rule-side--commentary__full">
           {block.icon ? <IconSlot name={block.icon} /> : null}
           {block.title ? <strong className="rpg-rule-side__title">{block.title}</strong> : null}
         </header>
       ) : null}
       {block.content ? (
-        <div className="rpg-rule-side__body">
+        <div className="rpg-rule-side__body rpg-rule-side--commentary__full">
           <Markdown source={block.content} sourcePath={sourcePath} />
         </div>
       ) : null}
+
+      {/* Collapsed form: icon-only, shown when too narrow */}
+      <span className="rpg-rule-side--commentary__collapsed">
+        <IconSlot name={iconName} />
+      </span>
     </aside>
   );
 }
@@ -317,6 +405,57 @@ function RuleSideView({
     return <RuleSideCallout block={block} sourcePath={sourcePath} />;
   }
   return <RuleSideFloat block={block} sourcePath={sourcePath} />;
+}
+
+/**
+ * Public wrapper component — used by per-system view authors to render
+ * an arbitrary string as a rule.side block from inside a `RuleViewMap`
+ * entry. Construct a synthetic `RuleSideBlock` from props (applying
+ * preset defaults for missing title/icon/color) and delegate.
+ *
+ * Exposed through the `rpg-ui-toolkit` runtime so vault TypeScript can
+ * import it as a regular React component:
+ *
+ *   import { RuleSide } from "rpg-ui-toolkit";
+ *   <RuleSide variant="float" type="rules" title="Player Advice" content={ctx.content} />
+ */
+export interface RuleSideProps {
+  /** Structural variant. Default `float`. */
+  variant?: "float" | "callout" | "commentary";
+  /** Heading title (commentary may omit). */
+  title?: string;
+  /** Markdown body. */
+  content: string;
+  /** Preset (note/tip/warning/rules/etc.) — applies default color/icon/title
+   *  unless overridden by explicit props. */
+  type?: SidePreset;
+  /** Override accent color. */
+  color?: string;
+  /** Override icon (Lucide name or single emoji). */
+  icon?: string;
+  /** Float side — only meaningful for variant=float. Default right. */
+  direction?: "left" | "right";
+  /** Source path passed to the inner Markdown renderer for wikilink resolution. */
+  sourcePath?: string;
+}
+
+export function RuleSide(props: RuleSideProps) {
+  const variant = props.variant ?? "float";
+  const preset = props.type;
+  const defaults = preset ? SIDE_PRESETS[preset] : undefined;
+
+  const block: RuleSideBlock = {
+    kind: "side",
+    variant,
+    title: props.title ?? defaults?.title ?? "",
+    content: props.content,
+    preset,
+    icon: props.icon ?? defaults?.icon,
+    color: props.color ?? defaults?.color,
+    direction: props.direction ?? "right",
+  };
+
+  return <RuleSideView block={block} sourcePath={props.sourcePath ?? ""} />;
 }
 
 export class RuleContentRenderChild extends MarkdownRenderChild {

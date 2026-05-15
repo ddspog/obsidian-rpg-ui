@@ -1428,3 +1428,94 @@ export interface MarkdownProps {
   context?: EvalContext;
 }
 export declare const Markdown: FunctionComponent<MarkdownProps>;
+
+// ── Rule-value resolver ────────────────────────────────────────────
+// Source-of-truth for runtime config values declared in `rpg rule.content`
+// frontmatter `values:` maps. See lib/domains/rules/value-resolver-api.ts.
+
+export interface GetRuleValueOpts<T> {
+  /** Returned when the id isn't indexed (warmup not done, or no such block). */
+  fallback?: T;
+}
+
+/**
+ * Sync lookup of a value declared in a `rpg rule.content` block's
+ * frontmatter `values:` map. `path` supports dotted notation
+ * (`"reset.die"`).
+ */
+export declare function getRuleValue<T = unknown>(
+  id: string,
+  path: string,
+  opts?: GetRuleValueOpts<T>
+): T | undefined;
+
+export declare function getRuleValuesById(id: string): Record<string, unknown> | undefined;
+export declare function listRuleValues(): Map<string, Record<string, unknown>>;
+
+// ── Rule view registry ─────────────────────────────────────────────
+// Per-system view functions consumed by the rule-call processor. Export
+// from your system's `config/rule-views.tsx` and re-export from
+// `config/index.ts` so the ts-loader picks it up.
+
+export type RuleViewMode = "join" | "each" | "args";
+
+export interface RuleViewCtx {
+  /** Filename of the imported file (no extension). */
+  name: string;
+  /** Body markdown. For `join` mode, all matching block bodies concatenated;
+   *  for `each`/`args`, the single block's body. */
+  content: string;
+  /** YAML frontmatter of the (first / only) matching block. */
+  frontmatter: Record<string, unknown>;
+  /** Path of the imported file, for cross-references. */
+  file: string;
+}
+
+export interface RuleViewEntry {
+  mode: RuleViewMode;
+  /** Optional HTML tag to wrap all rendered items (e.g., `"ul"` for lists). */
+  wrapper?: string;
+  render(ctx: RuleViewCtx, args?: unknown[]): import("react").ReactNode;
+}
+
+export type RuleViewMap = Record<string, RuleViewEntry>;
+
+// ── Rule.side wrapper component ────────────────────────────────────
+// React component for rendering an arbitrary string as a rule.side
+// block from inside a view function. Composes the same float / callout /
+// commentary variants used by the `rpg rule.side` block processor.
+
+export type SideKind = "float" | "callout" | "commentary";
+export type SidePreset =
+  | "note"
+  | "info"
+  | "tip"
+  | "success"
+  | "question"
+  | "warning"
+  | "danger"
+  | "example"
+  | "quote"
+  | "rules";
+
+export interface RuleSideProps {
+  /** Structural variant. Default `float`. */
+  variant?: SideKind;
+  /** Heading title (commentary may omit). */
+  title?: string;
+  /** Markdown body. */
+  content: string;
+  /** Preset (note/tip/warning/rules/etc.) — applies default color/icon/title
+   *  unless overridden by explicit props. */
+  type?: SidePreset;
+  /** Override accent color. */
+  color?: string;
+  /** Override icon (Lucide name or single emoji). */
+  icon?: string;
+  /** Float side — only meaningful for variant=float. Default right. */
+  direction?: "left" | "right";
+  /** Source path passed to the inner Markdown renderer for wikilink resolution. */
+  sourcePath?: string;
+}
+
+export declare const RuleSide: FunctionComponent<RuleSideProps>;

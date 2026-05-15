@@ -35,6 +35,10 @@ import featureChoice from "./blocks/feature/choice";
 import featureUnlock from "./blocks/feature/unlock";
 import featureLevel from "./blocks/feature/level";
 
+// Per-system rule view registry — picked up by the rule-call processor
+// via the ts-loader's `__system_module.ruleViews` extraction.
+export { ruleViews } from "./rule-views";
+
 export const system = CreateSystem(async ({ wiki }) => ({
   name: "Tales of the Valiant",
   attributes,

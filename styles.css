@@ -7604,6 +7604,25 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-related > :last-child {
   margin-bottom: 0;
 }
+.rpg-rule-notes {
+  display: block;
+  margin-block: var(--size-4-3, 0.75rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-4, 1rem);
+  border-inline-start: 2px dashed var(--text-muted, #888);
+  color: var(--text-muted, #888);
+  opacity: 0.85;
+  font-size: 0.95em;
+}
+.rpg-rule-notes > :first-child {
+  margin-top: 0;
+}
+.rpg-rule-notes > :last-child {
+  margin-bottom: 0;
+}
+.rpg-rule-notes strong,
+.rpg-rule-notes em {
+  color: var(--text-normal);
+}
 .markdown-preview-view,
 .markdown-reading-view,
 .markdown-source-view,
@@ -7792,6 +7811,7 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   font-size: 1.15em;
 }
 .rpg-rule-side--commentary {
+  container-type: inline-size;
   display: block;
   background: transparent;
   border-radius: 0;
@@ -7801,6 +7821,28 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   font-style: italic;
   opacity: 0.9;
   padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+}
+.rpg-rule-side--commentary__full {
+  display: block;
+}
+.rpg-rule-side--commentary__collapsed {
+  display: none;
+  cursor: help;
+  color: var(--rpg-rule-side-color, var(--text-muted));
+}
+.rpg-rule-side--commentary__collapsed .rpg-rule-side__icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+@container (max-width: 120px) {
+  .rpg-rule-side--commentary__full {
+    display: none !important;
+  }
+  .rpg-rule-side--commentary__collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 .rpg-rule-side--commentary.rpg-rule-side--dir-right {
   float: right;
@@ -7832,6 +7874,52 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-side--commentary .rpg-rule-side__body strong,
 .rpg-rule-side--commentary .rpg-rule-side__body em {
   font-style: normal;
+}
+
+/* lib/styles/components/rule-call.css */
+.rpg-call--pending {
+  opacity: 0.55;
+  font-style: italic;
+}
+.rpg-call--error {
+  color: light-dark(#a53a2a, #f08b7e);
+  background: light-dark(rgba(165, 58, 42, 0.08), rgba(240, 139, 126, 0.14));
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  cursor: help;
+}
+.rpg-view--inline,
+.rpg-rule-content--inline {
+  display: inline;
+}
+.rpg-view--inline > :first-child,
+.rpg-rule-content--inline > :first-child {
+  display: inline;
+}
+.rpg-view--inline > :first-child > p:first-child,
+.rpg-rule-content--inline > :first-child > p:first-child {
+  display: inline;
+}
+.rpg-view--item > :first-child {
+  margin-top: 0;
+}
+.rpg-view--item > :last-child {
+  margin-bottom: 0;
+}
+.el-p:has(p > .rpg-call:only-child > ul > .rpg-view--item),
+.el-p:has(.rpg-call:only-child > ul > .rpg-view--item) {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+.el-p p:has(> .rpg-call:only-child > ul > .rpg-view--item) {
+  margin: 0 !important;
+}
+.rpg-call > ul:has(> .rpg-view--item) {
+  margin-block: 0;
+  padding-inline-start: var(--list-indent, 2em);
+  list-style: disc;
 }
 
 /* lib/styles/file-suggest.css */

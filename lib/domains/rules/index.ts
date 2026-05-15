@@ -4,6 +4,7 @@ export type {
   RuleBlock,
   RuleCompendiumBlock,
   RuleContentBlock,
+  RuleNotesBlock,
   RuleRelatedBlock,
   RuleSideBlock,
   RuleSubtype,
@@ -16,6 +17,7 @@ export {
   parseRuleBlock,
   parseRuleCompendium,
   parseRuleContent,
+  parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
   SIDE_PRESETS,
@@ -24,3 +26,4 @@ export {
 export { isHomebrew, resolveSource } from "./source";
 export { RuleContentRenderChild } from "./render-rule-block";
 export { RuleRelatedRenderChild } from "./render-related";
+export { RuleNotesRenderChild } from "./render-notes";

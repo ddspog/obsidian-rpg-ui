@@ -248,6 +248,12 @@ export interface RPGSystem {
   traits?: TraitDefinition[];
   /** Named events that blocks may trigger (scoped per entity file). */
   events: string[];
+  /**
+   * Per-system named view functions consumed by the rule-call processor
+   * (`@[[file]].fn(args)`). Optional — systems that don't import rule
+   * pages can omit this.
+   */
+  ruleViews?: import("./rule-views").RuleViewMap;
 }
 
 /** Entity type definition — defines frontmatter fields and default features for an entity type */

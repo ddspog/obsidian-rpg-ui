@@ -112,8 +112,7 @@
   height: 0.75rem;
 }
 
-/* ── rule.related: see-also section with embedded transclusions ──── */
-/*
+/* ── rule.related: see-also section with embedded transclusions ──── *//*
  * Rendered when reading a rule file directly. Each entry is either a
  * raw `![[file]]` embed or a heading + embed pair. The block itself is
  * just a layout wrapper; the heavy lifting is Obsidian's own embed
@@ -136,6 +135,38 @@
 
 .rpg-rule-related > :last-child {
   margin-bottom: 0;
+}
+
+/* ── rule.notes: author prose, stripped on import ────────────────── */
+/*
+ * `rpg rule.notes` blocks carry local-only prose (TODOs, designer
+ * commentary, citations, whatever). They render inline when the source
+ * file is read directly, but the rule-call-processor strips them before
+ * harvesting so imports stay clean. Visually distinguished from rule.content
+ * by reduced opacity + a dashed accent border so readers can see "this is
+ * meta-text, not the rule itself."
+ */
+.rpg-rule-notes {
+  display: block;
+  margin-block: var(--size-4-3, 0.75rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-4, 1rem);
+  border-inline-start: 2px dashed var(--text-muted, #888);
+  color: var(--text-muted, #888);
+  opacity: 0.85;
+  font-size: 0.95em;
+}
+
+.rpg-rule-notes > :first-child {
+  margin-top: 0;
+}
+
+.rpg-rule-notes > :last-child {
+  margin-bottom: 0;
+}
+
+.rpg-rule-notes strong,
+.rpg-rule-notes em {
+  color: var(--text-normal);
 }
 
 /* ── rule.content `kind: commentary` ───────────────────────────────
@@ -478,19 +509,16 @@
 
 /* ── Commentary variant ──────────────────────────────────────────── */
 /*
- * `kind: commentary` is structural — it floats into the GUTTER ONLY,
- * never penetrating the readable text column. Width = the JS-published
- * `--rpg-side-escape` (gutter width on the glued side); the negative
- * margin glues the outer edge to the pane border just like callouts.
+ * `kind: commentary` floats into the gutter. When the gutter is wide
+ * enough, full text renders. When too narrow (< 120px), it collapses to
+ * an icon with an `aria-label` tooltip (Obsidian shows these on hover).
  *
- * Visual: dashed accent left/right border (depending on direction),
- * semi-transparent italic body text, no big banner, no pentagon.
- *
- * `type:` still picks the accent color (gray for `quote`,
- * purple for `question`, sepia for `rules`, etc.). `direction:`
- * controls which gutter the commentary sits in.
+ * The commentary aside has its own `container-type: inline-size` so
+ * `@container` queries can check its own rendered width and toggle
+ * between full and collapsed forms.
  */
 .rpg-rule-side--commentary {
+  container-type: inline-size;
   display: block;
   background: transparent;
   border-radius: 0;
@@ -500,7 +528,35 @@
   font-style: italic;
   opacity: 0.9;
   padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
-  /* float / width / margins set per direction below */
+}
+
+/* Default: show full, hide collapsed */
+.rpg-rule-side--commentary__full {
+  display: block;
+}
+
+.rpg-rule-side--commentary__collapsed {
+  display: none;
+  cursor: help;
+  color: var(--rpg-rule-side-color, var(--text-muted));
+}
+
+.rpg-rule-side--commentary__collapsed .rpg-rule-side__icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* When the commentary's own width drops below 120px, collapse to icon */
+@container (max-width: 120px) {
+  .rpg-rule-side--commentary__full {
+    display: none !important;
+  }
+
+  .rpg-rule-side--commentary__collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* Gutter-only float, right side. The inline-start margin lifts the

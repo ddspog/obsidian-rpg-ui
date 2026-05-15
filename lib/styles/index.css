@@ -80,6 +80,7 @@
 @import "./components/folder-link-styles.css";
 @import "./components/page-footer.css";
 @import "./components/rule-block.css";
+@import "./components/rule-call.css";
 @import "./file-suggest.css";
 
 /* Obsidian-only layout overrides — keep last so it can override component

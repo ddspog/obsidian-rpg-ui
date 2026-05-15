@@ -60,12 +60,19 @@ export function parseReference(source: string): ParsedRef | null {
  * in document order. Yields `ParsedRef` entries with precise start /
  * end offsets so the post-processor can slice the host text node
  * surgically without a second regex pass.
+ *
+ * Call-form tokens (`@[[file]].fn(args)`) are claimed by the
+ * rule-call-processor instead, so we skip any match whose immediate
+ * following character is `(`.
  */
 export function matchAllReferences(text: string): Array<ParsedRef & { start: number; end: number }> {
   const out: Array<ParsedRef & { start: number; end: number }> = [];
   REFERENCE_PATTERN.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = REFERENCE_PATTERN.exec(text)) !== null) {
+    // Skip if this match is the prefix of a call expression
+    // (`@[[file]].fn(...)`). The call processor handles those.
+    if (text[m.index + m[0].length] === "(") continue;
     out.push({
       target: m[1].trim(),
       steps: parseSteps(m[2]),

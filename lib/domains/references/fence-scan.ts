@@ -38,15 +38,29 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
   const re = /```+\s*rpg\s+([A-Za-z_][\w-]*)\.([A-Za-z_][\w-]*)\s*\n([\s\S]*?)```+/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(contents)) !== null) {
-    const body = safeParseYaml(m[3]);
+    const entity = m[1];
+    const block = m[2];
+    const rawBody = m[3];
+
+    // rule.content uses a `---` separator (YAML head + markdown body).
+    // Parse only the YAML HEAD so fields like id, name, contest, values
+    // are accessible via the property-path reference system.
+    let body: Record<string, unknown> | null;
+    if (entity === "rule" && block === "content") {
+      body = parseRuleContentHead(rawBody);
+    } else {
+      const parsed = safeParseYaml(rawBody);
+      body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    }
+
     const nameField =
-      body && typeof body === "object" && typeof (body as Record<string, unknown>).name === "string"
-        ? ((body as Record<string, unknown>).name as string)
-        : undefined;
+      body && typeof body.name === "string" ? body.name : undefined;
     out.push({
-      entity: m[1],
-      block: m[2],
-      body: body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null,
+      entity,
+      block,
+      body,
       name: nameField,
       start: m.index,
       end: m.index + m[0].length,
@@ -72,6 +86,26 @@ function safeParseYaml(raw: string): unknown {
   if (!raw || !raw.trim()) return {};
   try {
     return parseYAML(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * For `rule.content` fences: split on the first standalone `---` line
+ * and parse only the YAML head. Returns the parsed frontmatter object
+ * (or null on failure).
+ */
+function parseRuleContentHead(raw: string): Record<string, unknown> | null {
+  const lines = raw.split("\n");
+  const sepIdx = lines.findIndex((l) => l.trim() === "---");
+  const head = sepIdx >= 0 ? lines.slice(0, sepIdx).join("\n") : raw;
+  if (!head.trim()) return null;
+  try {
+    const parsed = parseYAML(head);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }

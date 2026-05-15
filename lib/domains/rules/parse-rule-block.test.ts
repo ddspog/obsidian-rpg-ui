@@ -4,6 +4,7 @@ import {
   parseRuleBlock,
   parseRuleCompendium,
   parseRuleContent,
+  parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
   SIDE_PRESETS,
@@ -11,10 +12,11 @@ import {
 } from "./parse-rule-block";
 
 describe("subtypeFromMeta", () => {
-  it("recognizes each of the four subtypes", () => {
+  it("recognizes each of the subtypes", () => {
     expect(subtypeFromMeta("rule.content")).toBe("content");
     expect(subtypeFromMeta("rule.side")).toBe("side");
     expect(subtypeFromMeta("rule.related")).toBe("related");
+    expect(subtypeFromMeta("rule.notes")).toBe("notes");
     expect(subtypeFromMeta("rule.compendium")).toBe("compendium");
   });
   it("rejects non-rule meta", () => {
@@ -196,11 +198,24 @@ describe("parseRuleRelated", () => {
     expect(r.entries).toEqual([{ heading: "Prerequisite", embed: "![[ammunition]]" }]);
   });
 
-  it("rejects bare wikilinks (without `!`)", () => {
+  it("accepts bare wikilinks (without `!`) as markdown entries", () => {
     const src = `- "[[ammunition]]"
 - "See also: [[shoving]]"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([]);
+    expect(r.entries).toEqual([
+      { markdown: "[[ammunition]]" },
+      { heading: "See also", markdown: "[[shoving]]" },
+    ]);
+  });
+
+  it("accepts call-form entries as markdown", () => {
+    const src = `- "@[[Luck]].h2()"
+- Luck rules: "@[[Luck]].h3()"`;
+    const r = parseRuleRelated(src);
+    expect(r.entries).toEqual([
+      { markdown: "@[[Luck]].h2()" },
+      { heading: "Luck rules", markdown: "@[[Luck]].h3()" },
+    ]);
   });
 
   it("supports object form with explicit level + entries", () => {
@@ -282,7 +297,26 @@ describe("parseRuleBlock dispatch", () => {
     expect(parseRuleBlock("content", "x").kind).toBe("content");
     expect(parseRuleBlock("side", "title: t\ncontent: c").kind).toBe("side");
     expect(parseRuleBlock("related", "- \"[[a]]\"").kind).toBe("related");
+    expect(parseRuleBlock("notes", "Some prose.").kind).toBe("notes");
     expect(parseRuleBlock("compendium", "tabs: []").kind).toBe("compendium");
+  });
+});
+
+describe("parseRuleNotes", () => {
+  it("takes the body as-is (pure markdown, no YAML)", () => {
+    const src = "**TODO:** rewrite this section.\n\nSee [[session log]].";
+    const n = parseRuleNotes(src);
+    expect(n.kind).toBe("notes");
+    expect(n.body).toBe(src);
+  });
+
+  it("strips surrounding blank lines", () => {
+    const src = "\n\n\nSome prose.\n\n\n";
+    expect(parseRuleNotes(src).body).toBe("Some prose.");
+  });
+
+  it("accepts empty body", () => {
+    expect(parseRuleNotes("").body).toBe("");
   });
 });
 

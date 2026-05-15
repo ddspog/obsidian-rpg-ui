@@ -23,14 +23,16 @@ import { EntityResolver } from "lib/services/entity-resolver";
 import { settingsStore } from "lib/services/settings-store";
 import { getEntityBus } from "lib/services/entity-event-bus";
 import { patchYamlBlock } from "lib/utils/yaml-patcher";
-import { initEsbuild } from "lib/systems/ts-loader";
+import { initEsbuild, setBundleCacheContext } from "lib/systems/ts-loader";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import {
   parseRuleContent,
+  parseRuleNotes,
   parseRuleRelated,
   parseRuleSide,
   RuleContentRenderChild,
+  RuleNotesRenderChild,
   RuleRelatedRenderChild,
   subtypeFromMeta,
 } from "lib/domains/rules";
@@ -38,6 +40,8 @@ import { renderSpellBlock } from "lib/blocks/spell-card";
 import { FileRefCache } from "lib/domains/references";
 import { ReferenceRegistry } from "lib/plugin/reference-registry";
 import { buildReferenceProcessor } from "lib/plugin/reference-processor";
+import { buildRuleCallProcessor, setupGlobalTableMerger } from "lib/plugin/rule-call-processor";
+import { ValueResolver, setActiveValueResolver } from "lib/domains/rules/value-resolver-api";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
@@ -66,6 +70,7 @@ export default class DndUIToolkitPlugin extends Plugin {
    *  Instantiated on load so Obsidian event wiring can reach them. */
   private refCache: FileRefCache | null = null;
   private refRegistry: ReferenceRegistry | null = null;
+  private valueResolver: ValueResolver | null = null;
   private folderLinkStyleManager: FolderLinkStyleManager | null = null;
   private pageFooterManager: PageFooterManager | null = null;
   /** Bumped on every `saveSettings` so the CM6 extension knows when to
@@ -108,6 +113,10 @@ export default class DndUIToolkitPlugin extends Plugin {
       console.warn("RPG UI: Failed to initialize esbuild-wasm (TypeScript systems disabled):", err);
     });
 
+    // Bundle cache context — keyed by plugin version so an upgrade
+    // invalidates all cached bundles (no stale runtime API mismatches).
+    setBundleCacheContext({ pluginDir, pluginVersion: this.manifest.version });
+
     const registry = SystemRegistry.getInstance();
     registry.initialize(this.app.vault);
     const mappings = new Map<string, string>();
@@ -117,6 +126,44 @@ export default class DndUIToolkitPlugin extends Plugin {
       }
     }
     registry.setFolderMappings(mappings);
+
+    // After layout is ready (all views mounted), wait for system bundles
+    // to finish loading then auto-refresh so views render with the loaded
+    // system's ruleViews on first open — no manual "Reload systems" needed.
+    this.app.workspace.onLayoutReady(() => {
+      const systemPaths = new Set(registry.getFolderMappings().values());
+      Promise.all([
+        // Load system bundles
+        ...([...systemPaths].map((sys) => registry.loadSystemAsync(sys))),
+        // Warm up the value resolver (vault is now fully indexed)
+        this.valueResolver?.warmup().catch((err) =>
+          console.error("rpg-ui value-resolver warmup failed", err)
+        ),
+      ])
+        .then(() => {
+          console.log(
+            `[rpg-ui] Systems loaded + value resolver warmed (${this.valueResolver?.list().size ?? 0} rules indexed). Auto-refreshing views.`
+          );
+          // Execute the same "Reload systems" command that works when
+          // triggered manually — programmatically, after a delay to let
+          // Obsidian fully settle.
+          setTimeout(() => {
+            (this as any).app.commands.executeCommandById("dnd-ui-toolkit:rpg-ui-reload");
+            console.log("[rpg-ui] Auto-executed reload command.");
+          }, 2000);
+          // Register value-resolver invalidation ONLY on vault:modify
+          // (actual file edits by the user). metadataCache:changed fires
+          // during cache rebuilds / auto-refresh re-rendering — those
+          // are read-only operations that don't change file content, but
+          // they trigger async events that wipe the freshly-warmed index.
+          this.registerEvent(
+            this.app.vault.on("modify", (f) => {
+              if (f instanceof TFile) this.valueResolver?.invalidate(f.path);
+            })
+          );
+        })
+        .catch((err) => console.warn("rpg-ui auto-refresh after layout ready failed", err));
+    });
 
     this.registerEvent(
       this.app.metadataCache.on("changed", (file) => {
@@ -276,6 +323,17 @@ export default class DndUIToolkitPlugin extends Plugin {
             }
             return;
           }
+          if (ruleSubtype === "notes") {
+            try {
+              const block = parseRuleNotes(source);
+              const child = new RuleNotesRenderChild(el, this.app, block, ctx.sourcePath);
+              ctx.addChild(child);
+            } catch (err) {
+              console.error("rpg rule.notes render failed", err);
+              el.innerHTML = '<div class="notice">Error rendering rpg rule.notes</div>';
+            }
+            return;
+          }
           // `compendium` — TODO in Phase 4.
           el.innerHTML = `<div class="notice">rpg rule.${ruleSubtype} not yet implemented</div>`;
           return;
@@ -410,6 +468,17 @@ export default class DndUIToolkitPlugin extends Plugin {
       },
     });
     this.refRegistry = new ReferenceRegistry(this.refCache);
+    // Call processor (Phase 3) MUST register BEFORE the reference processor
+    // so it claims `@[[file]].fn(args)` tokens before the path-form processor
+    // sees them. The reference processor's matcher also skips call-form
+    // tokens, but registration order is the primary defense.
+    this.registerMarkdownPostProcessor(
+      buildRuleCallProcessor({
+        app: this.app,
+        cache: this.refCache,
+        registry: SystemRegistry.getInstance(),
+      })
+    );
     this.registerMarkdownPostProcessor(
       buildReferenceProcessor({
         app: this.app,
@@ -419,7 +488,9 @@ export default class DndUIToolkitPlugin extends Plugin {
     );
     this.registerEvent(
       this.app.vault.on("modify", (f) => {
-        if (f instanceof TFile) this.refCache?.invalidate(f.path);
+        if (f instanceof TFile) {
+          this.refCache?.invalidate(f.path);
+        }
       })
     );
     this.registerEvent(
@@ -427,6 +498,29 @@ export default class DndUIToolkitPlugin extends Plugin {
         this.refCache?.invalidate(f.path);
       })
     );
+
+    // ── Rule-value resolver (Phase 3) ──────────────────────────────────
+    // Walks every markdown file in the vault, indexes `rule.content`
+    // blocks by `id`, exposes `getRuleValue(id, path, opts)` to system
+    // configs. Warmup runs in the background so plugin onload stays
+    // fast; sync `getRuleValue()` returns `opts.fallback` until it lands.
+    this.valueResolver = new ValueResolver({
+      listMarkdownFiles: () => this.app.vault.getMarkdownFiles().map((f) => f.path),
+      read: async (path: string) => {
+        const f = this.app.vault.getAbstractFileByPath(path);
+        return f instanceof TFile ? this.app.vault.cachedRead(f) : null;
+      },
+    });
+    setActiveValueResolver(this.valueResolver);
+    // Warmup is deferred to onLayoutReady (above) — vault may not be
+    // fully indexed during onload, so getMarkdownFiles() could miss files.
+
+    // ── Global table-row merger ─────────────────────────────────────────
+    // Watches all preview sizers for `.rpg-view--table` elements. When one
+    // appears (React committed after an @[[file]].row() call), merges its
+    // rows into the preceding markdown table. Must be global because
+    // per-section post-processors can't reach sibling sections.
+    setupGlobalTableMerger();
 
     // ── Folder link styling ─────────────────────────────────────────────
     // Stylesheet + reading-mode tagger + Live Preview tagger. The

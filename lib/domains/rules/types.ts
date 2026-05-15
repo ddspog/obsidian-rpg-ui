@@ -5,13 +5,15 @@
  *   rpg rule.content      — main body, renders inline (default)
  *   rpg rule.side         — callout-style margin <aside> with title + icon
  *   rpg rule.related      — see-also list, stripped when the file is imported
+ *   rpg rule.notes        — author prose, stripped when the file is imported
  *   rpg rule.compendium   — tabbed chapter container
  *
  * `content` body is optional YAML frontmatter + `---` + markdown.
+ * `notes` body is pure markdown (no YAML).
  * `side` / `related` / `compendium` bodies are pure YAML.
  */
 
-export type RuleSubtype = "content" | "side" | "related" | "compendium";
+export type RuleSubtype = "content" | "side" | "related" | "notes" | "compendium";
 
 /**
  * Where a piece of rule content comes from. Blocks whose tuple differs from
@@ -92,10 +94,12 @@ export interface RuleSideBlock {
 
 /** One entry in a `rpg rule.related` list. */
 export interface RelatedEntry {
-  /** Optional heading text printed before the embedded link. */
+  /** Optional heading text printed before the embedded link or markdown. */
   heading?: string;
   /** Raw Obsidian embed token (always with `!`), e.g. `"![[ammunition]]"`. */
-  embed: string;
+  embed?: string;
+  /** Arbitrary markdown — may contain `@[[file]].fn()` call tokens. */
+  markdown?: string;
 }
 
 /** Parsed `rpg rule.related` block. */
@@ -104,6 +108,17 @@ export interface RuleRelatedBlock {
   /** Heading level (1–6) used for `heading: ![[link]]` entries. Default 3. */
   level: number;
   entries: RelatedEntry[];
+}
+
+/**
+ * Parsed `rpg rule.notes` block — author prose that renders when reading
+ * the source file directly but is stripped when the file is imported via
+ * `@[[file]].fn()`. Body is pure markdown (no YAML head).
+ */
+export interface RuleNotesBlock {
+  kind: "notes";
+  /** Raw markdown body. */
+  body: string;
 }
 
 /** One tab inside a compendium block. */
@@ -123,5 +138,5 @@ export interface RuleCompendiumBlock {
   tabs: CompendiumTab[];
 }
 
-export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleCompendiumBlock;
+export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleNotesBlock | RuleCompendiumBlock;
 

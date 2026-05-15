@@ -14,6 +14,7 @@ import type {
   RelatedEntry,
   RuleCompendiumBlock,
   RuleContentBlock,
+  RuleNotesBlock,
   RuleRelatedBlock,
   RuleSideBlock,
   RuleSubtype,
@@ -185,11 +186,13 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
 }
 
 const EMBED_RE = /!\[\[[^\[\]\n]+\]\]/;
+const CALL_RE = /@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\)/;
 
 function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
   if (typeof raw === "string") {
     const trimmed = raw.trim();
-    // Heading-prefixed form: "Heading text: ![[file]]"
+    if (!trimmed) return null;
+    // Heading-prefixed form: "Heading text: ![[file]]" or "Heading: @[[file]].fn()"
     const colonIdx = trimmed.indexOf(":");
     if (colonIdx > 0) {
       const head = trimmed.slice(0, colonIdx).trim();
@@ -198,18 +201,22 @@ function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
         const m = tail.match(EMBED_RE);
         if (m) return { heading: head, embed: m[0] };
       }
+      if (head && tail) return { heading: head, markdown: tail };
     }
     // Pure embed form: "![[file]]"
     const m = trimmed.match(EMBED_RE);
     if (m && m[0] === trimmed) return { embed: m[0] };
-    return null;
+    // Fallback: any non-empty string is treated as markdown (may contain
+    // call tokens, wikilinks, or plain prose).
+    return { markdown: trimmed };
   }
   if (raw && typeof raw === "object") {
     const rec = raw as Record<string, unknown>;
     for (const [head, value] of Object.entries(rec)) {
       if (typeof value === "string") {
-        const m = value.trim().match(EMBED_RE);
-        if (m) return { heading: head, embed: m[0] };
+        const em = value.trim().match(EMBED_RE);
+        if (em) return { heading: head, embed: em[0] };
+        if (value.trim()) return { heading: head, markdown: value.trim() };
       }
     }
   }
@@ -247,6 +254,15 @@ function coerceTab(raw: unknown): CompendiumTab | null {
   };
 }
 
+/**
+ * Parse a `rpg rule.notes` block. Body is pure markdown — no YAML head,
+ * no separator handling. Whitespace is trimmed on both ends so the
+ * renderer doesn't emit leading/trailing blank paragraphs.
+ */
+export function parseRuleNotes(source: string): RuleNotesBlock {
+  return { kind: "notes", body: source.replace(/^\n+/, "").replace(/\n+$/, "") };
+}
+
 /** Subtype-dispatch entrypoint: pick the parser matching the fence's suffix. */
 export function parseRuleBlock(subtype: RuleSubtype, source: string) {
   switch (subtype) {
@@ -256,6 +272,8 @@ export function parseRuleBlock(subtype: RuleSubtype, source: string) {
       return parseRuleSide(source);
     case "related":
       return parseRuleRelated(source);
+    case "notes":
+      return parseRuleNotes(source);
     case "compendium":
       return parseRuleCompendium(source);
   }
@@ -265,7 +283,14 @@ export function parseRuleBlock(subtype: RuleSubtype, source: string) {
 export function subtypeFromMeta(meta: string): RuleSubtype | null {
   if (!meta.startsWith("rule.")) return null;
   const tail = meta.slice("rule.".length);
-  if (tail === "content" || tail === "side" || tail === "related" || tail === "compendium") return tail;
+  if (
+    tail === "content" ||
+    tail === "side" ||
+    tail === "related" ||
+    tail === "notes" ||
+    tail === "compendium"
+  )
+    return tail;
   return null;
 }
 

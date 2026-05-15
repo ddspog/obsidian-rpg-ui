@@ -91,4 +91,10 @@ describe("matchAllReferences", () => {
   it("returns empty for plain prose", () => {
     expect(matchAllReferences("no references here")).toEqual([]);
   });
+
+  it("skips call-form tokens (`@[[file]].fn(...)`) — those belong to the call processor", () => {
+    const text = "Path @[[A]].path  Call @[[B]].view()  Path again @[[C]].x";
+    const matches = matchAllReferences(text);
+    expect(matches.map((m) => m.target)).toEqual(["A", "C"]);
+  });
 });

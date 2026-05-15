@@ -18,6 +18,19 @@ import type { RPGSystem } from "./types";
 import type * as EsbuildWasm from "esbuild-wasm";
 import { resolveWikiFile, resolveWikiFolder } from "../utils/wiki-file";
 import * as UIModule from "../ui";
+import {
+  getSystemSourceMaxMtime,
+  readBundleCache,
+  writeBundleCache,
+} from "./bundle-cache";
+
+/** Plugin metadata used by the bundle cache to invalidate on plugin upgrade. */
+let cacheContext: { pluginDir: string; pluginVersion: string } | null = null;
+
+/** Set by main.ts onload so the bundle cache can be addressed by plugin id. */
+export function setBundleCacheContext(ctx: { pluginDir: string; pluginVersion: string }): void {
+  cacheContext = ctx;
+}
 
 // Lazy esbuild-wasm initialisation — module-level promise so init runs once.
 let esbuildInitialized: Promise<void> | null = null;
@@ -68,6 +81,29 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
  */
 export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: string): Promise<RPGSystem | null> {
   try {
+    // Bundle cache fast-path: if we have a cached bundle whose meta matches
+    // the current source mtime + plugin version, eval it directly without
+    // touching esbuild-wasm. Saves ~0.5–2s on cold start after the first
+    // bundle. Misses fall through to the normal esbuild path below, which
+    // also writes the cache on success.
+    if (cacheContext) {
+      const sourceMaxMtime = await getSystemSourceMaxMtime(vault, systemFolderPath);
+      if (sourceMaxMtime > 0) {
+        const cached = await readBundleCache(
+          vault,
+          cacheContext.pluginDir,
+          systemFolderPath,
+          cacheContext.pluginVersion,
+          sourceMaxMtime
+        );
+        if (cached) {
+          const evaluated = await evaluateSystemBundle(cached, systemFolderPath, vault);
+          if (evaluated) return evaluated;
+          // Fall through: cache exists but eval failed — re-bundle to recover.
+        }
+      }
+    }
+
     await initEsbuild();
     if (!esbuildModule) {
       console.error("esbuild-wasm failed to initialize");
@@ -200,6 +236,21 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
       return null;
     }
 
+    // Write the freshly-bundled JS to the disk cache for next reload.
+    if (cacheContext) {
+      const sourceMaxMtime = await getSystemSourceMaxMtime(vault, systemFolderPath);
+      if (sourceMaxMtime > 0) {
+        void writeBundleCache(
+          vault,
+          cacheContext.pluginDir,
+          systemFolderPath,
+          cacheContext.pluginVersion,
+          sourceMaxMtime,
+          bundleText
+        );
+      }
+    }
+
     const evaluated = await evaluateSystemBundle(bundleText, systemFolderPath, vault);
     return evaluated;
   } catch (error) {
@@ -246,6 +297,10 @@ export async function evaluateSystemBundle(
           // via relative paths into the plugin's `lib/`.
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const core = require("./create-system");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const valueResolverApi = require("../domains/rules/value-resolver-api");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const ruleRender = require("../domains/rules/render-rule-block");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const parseSourceDocMod = require("../domains/features/parse-source-doc");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
@@ -315,6 +370,13 @@ export async function evaluateSystemBundle(
             ItemMagicCard: itemMagicCard.ItemMagicCard,
             ItemPersonalCard: itemPersonalCard.ItemPersonalCard,
             ItemContainerCard: itemContainerCard.ItemContainerCard,
+            // Rule-value resolver: source-of-truth for runtime config
+            // values, sourced from `rule.content` frontmatter `values:` maps.
+            getRuleValue: valueResolverApi.getRuleValue,
+            getRuleValuesById: valueResolverApi.getRuleValuesById,
+            listRuleValues: valueResolverApi.listRuleValues,
+            // Rule side wrapper component — view authors compose it freely.
+            RuleSide: ruleRender.RuleSide,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.
@@ -410,6 +472,17 @@ export async function evaluateSystemBundle(
           `Make sure your index.ts contains: export const system = CreateSystem({...})`
       );
       return null;
+    }
+
+    // Optional second export: per-system rule view registry.
+    // The user writes either:
+    //   export { ruleViews } from "./rule-views";
+    //   // or
+    //   export const ruleViews: RuleViewMap = { ... };
+    // and the call processor picks them up via system.ruleViews.
+    const ruleViews = (mod as Record<string, unknown>).ruleViews;
+    if (ruleViews && typeof ruleViews === "object") {
+      (system as RPGSystem).ruleViews = ruleViews as RPGSystem["ruleViews"];
     }
 
     return system as RPGSystem;
