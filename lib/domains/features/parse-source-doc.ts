@@ -73,9 +73,28 @@ function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
   const re = /```rpg feature\.(details|choice|unlock|level)\s*\n([\s\S]*?)```/g;
   const blocks: OrderedBlock[] = [];
   for (const m of cleaned.matchAll(re)) {
+    const raw = m[2].replace(/\n+$/, "");
+    // Support fence mode: if body contains a `---` separator, only
+    // parse the YAML head. Store the fence body as a `text` field so
+    // feature descriptions remain accessible to the compendium.
+    const sepIdx = raw.indexOf("\n---\n");
+    const sepEnd = raw.indexOf("\n---");
+    const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1);
+    let yaml: string;
+    let fenceText: string | undefined;
+    if (effectiveSep >= 0) {
+      yaml = raw.slice(0, effectiveSep);
+      fenceText = raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
+    } else {
+      yaml = raw;
+    }
+    // Append text field to YAML if the body had markdown after ---
+    const finalYaml = fenceText && !yaml.match(/^text\s*:/m)
+      ? yaml + "\ntext: |\n" + fenceText.split("\n").map(l => "  " + l).join("\n")
+      : yaml;
     blocks.push({
       kind: m[1] as FeatureBlockKind,
-      yaml: m[2].replace(/\n+$/, ""),
+      yaml: finalYaml,
     });
   }
   return blocks;

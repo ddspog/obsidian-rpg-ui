@@ -271,17 +271,19 @@ export function renderSpellBlock(
 export function extractSpellBlocks(contents: string): SpellBody[] {
   const out: SpellBody[] = [];
   if (!contents) return out;
-  // Match fenced `rpg spell` blocks. Tolerates 3+ backticks and optional
-  // trailing whitespace after the info tag, same tolerance as the
-  // plugin's other fence scanners.
   const re = /```+\s*rpg\s+spell\s*\n([\s\S]*?)```+/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(contents)) !== null) {
-    const yaml = m[1];
+    const raw = m[1];
+    const { yaml, text } = splitFenceBody(raw);
     try {
       const parsed = parseYaml(yaml);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        out.push(parsed as SpellBody);
+        const body = parsed as SpellBody;
+        if (text && !("text" in body)) {
+          (body as Record<string, unknown>).text = text;
+        }
+        out.push(body);
       }
     } catch {
       // Skip malformed fence; keep scanning.

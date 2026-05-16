@@ -42,12 +42,20 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
     const block = m[2];
     const rawBody = m[3];
 
-    // rule.content uses a `---` separator (YAML head + markdown body).
-    // Parse only the YAML HEAD so fields like id, name, contest, values
-    // are accessible via the property-path reference system.
+    // All blocks may use fence mode (YAML head + `---` + markdown body).
+    // Parse the YAML head for indexing. If a fence body exists after ---,
+    // store it as `body.text` so compendium consumers (spell descriptions,
+    // feature text) can still access it.
     let body: Record<string, unknown> | null;
-    if (entity === "rule" && block === "content") {
+    const sepIdx = rawBody.indexOf("\n---\n");
+    const sepIdx2 = rawBody.indexOf("\n---");
+    const effectiveSep = sepIdx >= 0 ? sepIdx : (sepIdx2 >= 0 && sepIdx2 + 4 >= rawBody.length ? sepIdx2 : -1);
+    if (effectiveSep >= 0) {
       body = parseRuleContentHead(rawBody);
+      if (body && !("text" in body)) {
+        const fenceBody = rawBody.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "");
+        if (fenceBody) body.text = fenceBody;
+      }
     } else {
       const parsed = safeParseYaml(rawBody);
       body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
