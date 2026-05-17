@@ -237,6 +237,8 @@ function areAdjacentBlocks(a: HTMLElement, b: HTMLElement): boolean {
   return isSiblingAdjacent(sectionA, sectionB);
 }
 
+const observedSizers = new WeakSet<HTMLElement>();
+
 function scheduleMerge(tabEl: HTMLElement): void {
   const sizer = tabEl.closest(".markdown-preview-sizer") as HTMLElement | null;
   if (!sizer) return;
@@ -247,6 +249,22 @@ function scheduleMerge(tabEl: HTMLElement): void {
     runMerge(sizer);
   }, 200);
   pendingMerges.set(sizer, timer);
+
+  if (!observedSizers.has(sizer)) {
+    observedSizers.add(sizer);
+    const observer = new MutationObserver(() => {
+      if (sizer.querySelector(`.${TAB_CLASS}`)) {
+        const ex = pendingMerges.get(sizer);
+        if (ex) clearTimeout(ex);
+        const t = setTimeout(() => {
+          pendingMerges.delete(sizer);
+          runMerge(sizer);
+        }, 300);
+        pendingMerges.set(sizer, t);
+      }
+    });
+    observer.observe(sizer, { childList: true, subtree: true });
+  }
 }
 
 function runMerge(sizer: HTMLElement): void {

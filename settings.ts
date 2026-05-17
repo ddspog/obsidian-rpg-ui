@@ -76,6 +76,14 @@ export interface DndUIToolkitSettings {
    *  toggles still jump near the top of long sheets. */
   scrollRestoreDelayMs: number;
 
+  /** Frontmatter field name for the page banner image. Any note with
+   *  this field gets a behind-title banner. Supports vault paths and
+   *  external URLs. */
+  bannerField: string;
+
+  /** Banner height in pixels (fixed across all notes). */
+  bannerHeight: number;
+
   // Color variables
   colorBgPrimary: string;
   colorBgSecondary: string;
@@ -108,6 +116,8 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   folderLinkStyles: [],
   pageFooterFields: [],
   scrollRestoreDelayMs: 600,
+  bannerField: "banner",
+  bannerHeight: 200,
 
   ...THEMES.default.colors,
 };

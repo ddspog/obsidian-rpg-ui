@@ -7523,6 +7523,72 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   display: none;
 }
 
+/* lib/styles/components/page-banner.css */
+.rpg-page-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--rpg-banner-height, 200px);
+  background-image: var(--rpg-banner-image);
+  background-size: cover;
+  background-position: center var(--rpg-banner-y, 50%);
+  background-repeat: no-repeat;
+  border-radius: var(--rpg-banner-radius, 0);
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.rpg-page-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent calc(40% - var(--rpg-banner-fade, 0) * 0.3%),
+      rgba(0, 0, 0, calc(0.5 + var(--rpg-banner-fade, 0) * 0.003)) calc(70% - var(--rpg-banner-fade, 0) * 0.2%),
+      var(--background-primary, #1e1e1e) 100%);
+}
+.rpg-page-banner__icon {
+  position: absolute;
+  bottom: 0.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3em;
+  z-index: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.has-rpg-banner {
+  position: relative;
+}
+.has-rpg-banner > .markdown-preview-sizer {
+  position: relative;
+  z-index: 1;
+  padding-top: var(--rpg-banner-content-start, var(--rpg-banner-height, 200px)) !important;
+}
+.has-rpg-banner .inline-title {
+  margin-top: -2.5em;
+  position: relative;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 0, 0, 0.4);
+}
+.has-rpg-banner .rpg-ui-subtitle {
+  position: relative;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+@container (max-width: 500px) {
+  .rpg-page-banner {
+    height: calc(var(--rpg-banner-height, 200px) * 0.6);
+  }
+  .has-rpg-banner > .markdown-preview-sizer {
+    padding-top: calc(var(--rpg-banner-content-start, var(--rpg-banner-height, 200px)) * 0.6) !important;
+  }
+}
+
 /* lib/styles/components/rule-block.css */
 .rpg-rule-content {
   display: block;
