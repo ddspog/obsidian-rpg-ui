@@ -697,6 +697,7 @@ export interface FeatureDetails {
   uses?: number;
   link?: string;
   view?: string;
+  heading?: number;
   pick?: number;
   buy?: number | string;
   max?: number | string | Record<number, number>;

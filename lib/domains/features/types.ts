@@ -156,6 +156,12 @@ export interface FeatureDetails {
    * already serves as the feature name. Ignored elsewhere.
    */
   view?: string;
+  /**
+   * Heading level (1–6) for the feature name in reading-mode cards.
+   * Defaults to 3 (`<h3>`). Set to match the surrounding document
+   * structure — e.g. `heading: 4` under an `### h3` section.
+   */
+  heading?: number;
   pick?: number;
   /**
    * Budget-based picking. Mutually exclusive with `pick` — when `buy` is

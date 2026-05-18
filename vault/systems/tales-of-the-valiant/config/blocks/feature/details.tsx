@@ -49,13 +49,14 @@ export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = (
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
   const hideTitle = isNoTitleView(self.view);
+  const HeadingTag = (`h${Math.max(1, Math.min(6, self.heading ?? 3))}`) as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
   const context: EvalContext = React.useMemo(() => ({ tables: lookup?.$tables ?? {}, vars: {} }), [lookup?.$tables]);
 
   return (
     <article className="rpg-feature-card" aria-label={`Feature ${self.name}`}>
       <hgroup>
-        {!hideTitle && <h3>{self.name}</h3>}
+        {!hideTitle && <HeadingTag>{self.name}</HeadingTag>}
         <p>
           {self.subtitle ? (
             <small aria-details="Feature Subtitle">{self.subtitle}</small>
