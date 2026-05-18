@@ -17,6 +17,8 @@ components:
   - S
 duration: Instantaneous
 summary: Cure disease or condition on ally.
-text: You touch a creature and can end one disease or one condition afflicting it. The condition can be [[blinded]], [[deafened]], [[paralyzed]], or [[poisoned]].
 image: "![[restoration.webp|384]]"
+
+---
+You touch a creature and can end one disease or one condition afflicting it. The condition can be [[blinded]], [[deafened]], [[paralyzed]], or [[poisoned]].
 ```

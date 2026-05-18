@@ -13,10 +13,6 @@ Still, twisted minions can learn solidarity in shared suffering. Within their hi
 ```rpg feature.details
 name: Twisted Minion Features
 view: No Title
-text: |
-  **_Languages._** You speak [[Common]] and one language typical of your overlord (such as [[Draconic]], Giant, or [[Undercommon]]).
-  ###### Augmented
-  You were altered by your overlord and grown used to these advantages, learning how to improve on them. You can select enhancements from the **Augmented Enhancements** table on the following pages. You have a total number of points you can spend on these enhancements equal to 5 + your proficiency bonus. Whenever you gain a level, you can choose one of your enhancements and replace it with another one.
 buy: 5 + PB
 passive:
   name: Augmented
@@ -29,6 +25,11 @@ choose:
     number: 1
     options:
       - "@worldbuilding/traits/languages"
+
+---
+**_Languages._** You speak [[Common]] and one language typical of your overlord (such as [[Draconic]], Giant, or [[Undercommon]]).
+###### Augmented
+You were altered by your overlord and grown used to these advantages, learning how to improve on them. You can select enhancements from the **Augmented Enhancements** table on the following pages. You have a total number of points you can spend on these enhancements equal to 5 + your proficiency bonus. Whenever you gain a level, you can choose one of your enhancements and replace it with another one.
 ```
 ```rpg feature.choice
 parent: Twisted Minion Features

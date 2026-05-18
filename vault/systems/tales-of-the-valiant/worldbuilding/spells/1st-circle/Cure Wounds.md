@@ -19,12 +19,6 @@ duration: Instantaneous
 style:
   - Dream
 summary: Average heal to ally.
-text: |-
-  A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. <br/> <br/>
-
-  This spell has no effect on Constructs or Undead. <br/> <br/>
-
-  **_At Higher Circles._** When you cast this spell using a spell slot of 2nd circle or higher, the healing increases by 1d8 for each slot above 1st.
 image: "![[cure-wounds.webp|384]]"
 roll:
   form: healing
@@ -39,4 +33,11 @@ roll:
     3: { damage: { roll: 3d8, type: healing } }
     4: { damage: { roll: 4d8, type: healing } }
     5: { damage: { roll: 5d8, type: healing } }
+
+---
+A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. <br/> <br/>
+
+This spell has no effect on Constructs or Undead. <br/> <br/>
+
+**_At Higher Circles._** When you cast this spell using a spell slot of 2nd circle or higher, the healing increases by 1d8 for each slot above 1st.
 ```

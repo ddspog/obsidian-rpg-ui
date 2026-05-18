@@ -20,14 +20,6 @@ duration: Instantaneous
 style:
   - Ritual
 summary: Whirlwind throwing people up.
-text: |-
-  A surge of air rises up in a 5-foot radius, 20-foot-high cylinder centered upon a point within range, All creatures within the spell’s area must make a Strength saving throw. On a failed save, a creature is swept up by the winds and carried up to the top of the cylinder.<br/><br/>
-
-  All creatures within 5 feet of the cylinder must succeed on a Strength saving throw or be moved into the nearest unoccupied space within the cylinder and carried to the top as air sweeps into the space.<br/><br/>
-
-  A creature brought to the top of the cylinder then fall as the wind fades, unless it has a flying speed or something holding it aloft.<br/><br/>
-
-  **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the height of the cylinder increases by 10 feet for each slot level above 1st.
 image: "![[updraft.webp|384]]"
 roll:
   form: save
@@ -42,4 +34,13 @@ roll:
     3: { range: "Self (5-ft radius, 40-ft up)" }
     4: { range: "Self (5-ft radius, 50-ft up)" }
     5: { range: "Self (5-ft radius, 60-ft up)" }
+
+---
+A surge of air rises up in a 5-foot radius, 20-foot-high cylinder centered upon a point within range, All creatures within the spell’s area must make a Strength saving throw. On a failed save, a creature is swept up by the winds and carried up to the top of the cylinder.<br/><br/>
+
+All creatures within 5 feet of the cylinder must succeed on a Strength saving throw or be moved into the nearest unoccupied space within the cylinder and carried to the top as air sweeps into the space.<br/><br/>
+
+A creature brought to the top of the cylinder then fall as the wind fades, unless it has a flying speed or something holding it aloft.<br/><br/>
+
+**_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the height of the cylinder increases by 10 feet for each slot level above 1st.
 ```

@@ -19,7 +19,9 @@ duration: Instantaneous
 style:
   - Shadow
 summary: Put out small light sources.
-text: With a simple gesture, you can put out a single small source of light within range. This spell extinguishes a [[torch]], a [[candle]], a lantern, or a light or dancing lights cantrip.
 image: "![[douse-light.webp|384]]"
+
+---
+With a simple gesture, you can put out a single small source of light within range. This spell extinguishes a [[torch]], a [[candle]], a lantern, or a light or dancing lights cantrip.
 ```
 

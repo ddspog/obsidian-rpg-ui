@@ -13,12 +13,6 @@ Work with the GM to determine the name for the great house, their heraldic symbo
 ```rpg feature.details
 name: Great House Features
 view: No Title
-text: |
-  **_Languages._** You know [[Common]] and one additional language. Typical great house heritage characters choose either [[Draconic]] or the primary language of an allied nation.
-  ###### Heraldic Studies.
-  You gain proficiency in the [[History]] skill. When you make a History check related to your nation of origin, your family, or nobility in general, double your PB for the roll. 
-  ###### Noble Pursuits
-  You gain proficiency in the [[Persuasion]] skill and with one type of [[Martial]] weapon of your choice. 
 passive:
   name: Heraldic Studies
   text: When you make a History check related to your nation of origin, your family, or nobility in general, double your PB for the roll.
@@ -38,4 +32,11 @@ choose:
     number: 1
     options:
       - "@worldbuilding/items/weapons/martial"
+
+---
+**_Languages._** You know [[Common]] and one additional language. Typical great house heritage characters choose either [[Draconic]] or the primary language of an allied nation.
+###### Heraldic Studies.
+You gain proficiency in the [[History]] skill. When you make a History check related to your nation of origin, your family, or nobility in general, double your PB for the roll. 
+###### Noble Pursuits
+You gain proficiency in the [[Persuasion]] skill and with one type of [[Martial]] weapon of your choice. 
 ```

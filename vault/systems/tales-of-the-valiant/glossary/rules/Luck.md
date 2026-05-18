@@ -14,8 +14,8 @@ When you create your character, start with 0 Luck. You gain Luck in the followin
 type: rules
 direction: right
 title: PLAYER ADVICE
-content: |
-  The cap on Luck is meant to incentivize players to spend Luck instead of hoarding it. Make sure to use it often so you don’t risk losing it. You have to regularly take risks to make your own luck!
+---
+The cap on Luck is meant to incentivize players to spend Luck instead of hoarding it. Make sure to use it often so you don’t risk losing it. You have to regularly take risks to make your own luck!
 ```
 ### Losing Luck
 You can have a maximum of 5 Luck at one time. If you already have 5 Luck and gain more, you must immediately roll a d4 and reset your Luck total to the number rolled.

@@ -21,10 +21,6 @@ duration: Instantaneous
 style:
   - Dragon
 summary: Hurl an ice lance that can pin target.
-text: |-
-  You fling a massive icicle toward a target of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 3d8 cold damage. If the target is also adjacent to a wall, or a similar large, immobile object, it may also be pinned to that surface on its next turn. At the beginning of its turn, the target can make a Strength saving throw. On a failed save, it has a speed of 0 until the start of its next turn.<br/><br/>
-
-  **_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
 image: "![[icicle-javelin.webp|384]]"
 roll:
   form: spell
@@ -41,4 +37,9 @@ roll:
     3: { damage: { roll: 5d8, type: cold } }
     4: { damage: { roll: 6d8, type: cold } }
     5: { damage: { roll: 7d8, type: cold } }
+
+---
+You fling a massive icicle toward a target of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 3d8 cold damage. If the target is also adjacent to a wall, or a similar large, immobile object, it may also be pinned to that surface on its next turn. At the beginning of its turn, the target can make a Strength saving throw. On a failed save, it has a speed of 0 until the start of its next turn.<br/><br/>
+
+**_At Higher Levels._** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
 ```

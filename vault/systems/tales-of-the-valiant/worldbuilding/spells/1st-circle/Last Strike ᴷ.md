@@ -19,6 +19,8 @@ duration: 1 round
 style:
   - Dream
 summary: Near-death last action.
-text: You grant yourself a last burst of energy when deeply wounded. Before you fall unconscious, you gain one action. Any roll you make, such as for an ability check or attack roll, has advantage. You automatically fail your first death saving throw.
 image: "![[last-strike.webp|384]]"
+
+---
+You grant yourself a last burst of energy when deeply wounded. Before you fall unconscious, you gain one action. Any roll you make, such as for an ability check or attack roll, has advantage. You automatically fail your first death saving throw.
 ```

@@ -17,6 +17,8 @@ duration: 1 round
 style:
   - Rune
 summary: Boost your speed a bit.
-text: You call upon your inner reserves to give you a brief flash of speed. When you cast this spell, your walking speed increases by 10 feet until the start of your next turn.
 image: "![[quickstep.webp|384]]"
+
+---
+You call upon your inner reserves to give you a brief flash of speed. When you cast this spell, your walking speed increases by 10 feet until the start of your next turn.
 ```

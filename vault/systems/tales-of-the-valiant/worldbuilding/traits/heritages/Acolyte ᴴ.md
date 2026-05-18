@@ -13,12 +13,6 @@ You also became adept at reading people—understanding their motivations, predi
 ```rpg feature.details
 name: Acolyte Features
 view: No Title
-text: |
-  **_Languages._** You know [[Common]] and two additional languages of your choice. Typical wandering agent heritage characters choose [[Elvish]] and [[Draconic]].
-  ###### Arcane Tricks
-  You are accustomed to adapting quickly. Choose a cantrip from the [[Arcane]] spell list. Your spellcasting ability for this cantrip is CHA, INT, or WIS (choose during character creation). Whenever you finish a long rest, you may replace one cantrip you know with a different cantrip from the Arcane spell list. This new cantrip lasts until you use this feature again.
-  ###### Observant Insight
-  You gain proficiency in the [[Insight]] skill if you do not already have it. Additionally, you have advantage on [[Insight]] checks when dealing with members of a faction you belong or its allies.
 passive:
   - name: Arcane Tricks
     text: You are accustomed to adapting quickly. Choose a cantrip from the [[Arcane]] spell list. Whenever you finish a long rest, you may replace one cantrip you know with a different cantrip from the Arcane spell list. This new cantrip lasts until you use this feature again.
@@ -43,5 +37,12 @@ choose:
       - CHA
       - INT
       - WIS
+
+---
+**_Languages._** You know [[Common]] and two additional languages of your choice. Typical wandering agent heritage characters choose [[Elvish]] and [[Draconic]].
+###### Arcane Tricks
+You are accustomed to adapting quickly. Choose a cantrip from the [[Arcane]] spell list. Your spellcasting ability for this cantrip is CHA, INT, or WIS (choose during character creation). Whenever you finish a long rest, you may replace one cantrip you know with a different cantrip from the Arcane spell list. This new cantrip lasts until you use this feature again.
+###### Observant Insight
+You gain proficiency in the [[Insight]] skill if you do not already have it. Additionally, you have advantage on [[Insight]] checks when dealing with members of a faction you belong or its allies.
 ```
 [^1]: Homebrew inspired in the D&D High Elf, but suited for the Campaign.

@@ -9,10 +9,6 @@ You spent years on a seagoing vessel—trading, patrolling, or plundering the wa
 
 Perhaps your captain was a parent figure or a tyrant; maybe you left on good terms, or you fled after your last job went sour. No matter your reasons for docking on land, your knowledge of tides, winds, and tall tales remains a guiding star. Even when you’ve traded your hammock for an inn bed, the unceasing call of the open waves still haunts your dreams.
 ```rpg feature.details
-text: |
-  **Skill Proficiencies:** [[Athletics]] and [[Perception]].
-
-  **Additional Proficiencies:** Gain proficiency with [[Navigator Tools]] and [[Vehicles (Water)]].
 traits:
   Skill P.:
     - [[Athletics]]
@@ -20,14 +16,17 @@ traits:
   Tools: 
     - [[Navigator Tools]]
     - [[Vehicles (Water)]]
+
+---
+**Skill Proficiencies:** [[Athletics]] and [[Perception]].
+
+**Additional Proficiencies:** Gain proficiency with [[Navigator Tools]] and [[Vehicles (Water)]].
 ```
 **Equipment:** A belaying pin or short wooden club, [[Rope (50 feet)]], a small keepsake or lucky charm, a set of [[Clothes, common]], and a [[Pouch]] containing 10 gp.
 
 [^1]: Homebrew from Baldur’s Gate: Descent into Avernus and adapted to Tales of the Valiant style.
 ```rpg feature.details
 name: Talent
-text: |
-  Years spent aboard a ship honed both your body and your instincts. Choose one of the following talents to represent your experience: [[Strong Stomach ᴷ]], [[Vanguard]], or [[Far Traveler]].
 choose:
   type: talent
   number: 1
@@ -35,6 +34,9 @@ choose:
     - [[Strong Stomach ᴷ]]
     - [[Vanguard]]
     - [[Far Traveler]]
+
+---
+Years spent aboard a ship honed both your body and your instincts. Choose one of the following talents to represent your experience: [[Strong Stomach ᴷ]], [[Vanguard]], or [[Far Traveler]].
 ```
 ### Adventuring Motivation
 Though some sailors are happy to remain with their crews, you ultimately parted ways for a life of land-based adventure. Consider what drove—or lured—you away from your vessel, and how the call of distant shores (or hidden gold) continues to guide your path.

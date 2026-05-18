@@ -13,10 +13,6 @@ In the end, all you have to show for your lineage is your name. Most of the fami
 ```rpg feature.details
 name: Celebrity Adventurer's Scion Features
 view: No Title
-text: |
-  **Skill Proficiencies:** Choose two from [[Perception]], [[Performance]], [[Deception]], or [[Persuasion]].
-
-  **Additional Proficiencies:** Gain proficiency with a [[Charlatan Tools]] and learn a language of your choice.
 traits:
   Tools: 
     - [[Charlatan Tools]]
@@ -34,14 +30,17 @@ choose:
     number: 1
     options:
       - "@worldbuilding/traits/languages"
+
+---
+**Skill Proficiencies:** Choose two from [[Perception]], [[Performance]], [[Deception]], or [[Persuasion]].
+
+**Additional Proficiencies:** Gain proficiency with a [[Charlatan Tools]] and learn a language of your choice.
 ```
 **Equipment:** A [[Charlatan Tools]], a set of fine clothes, and a belt [[Pouch]] containing 20 gp.
 
 [^1]: Homebrew from D&D Acquisitions Incorporated and adapted to Tales of the Valiant style.
 ```rpg feature.details
 name: Talent
-text: |
-  You have learned a unique skill through your upbringing and exposure to the adventuring life. Choose a talent from this list to represent your experience: [[Ritualist]], [[Return Fire]], or [[Noxious Apothecary]].
 choose:
   type: talent
   number: 1
@@ -49,6 +48,9 @@ choose:
     - [[Ritualist]]
     - [[Return Fire]]
     - [[Noxious Apothecary]]
+
+---
+You have learned a unique skill through your upbringing and exposure to the adventuring life. Choose a talent from this list to represent your experience: [[Ritualist]], [[Return Fire]], or [[Noxious Apothecary]].
 ```
 ### Adventuring Motivation
 Scions of celebrity adventurers must deal with fame that’s not theirs, wealth they didn’t earn, and expectations they can never hope to meet. These hardships can have adverse effects, but those who cope with them can arrive at a decent attitude and a grounded worldview. Those who fail become bitter—or worse. Consider why your character chose to leave the comforts and complications of their childhood for the adventuring life.

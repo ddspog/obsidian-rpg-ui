@@ -9,10 +9,6 @@ Before you began adventuring, you committed yourself to a faith, belief, or caus
 
 Perhaps you was a hopeful inductee into the war god’s clergy, a priest excommunicated from a fiend-worshiping sect, or a lifelong member of a secret society with global reach. In any case, you still carry the teachings and traditions of your devotion.
 ```rpg feature.details
-text: |
-  **Skill Proficiencies:** Choose two from [[History]], [[Investigation]], [[Religion]], or [[Persuasion]]. 
-
-  **Additional Proficiencies:** Gain proficiency with [[Artist Tools]] and an additional tool of your choice.
 traits:
   Tools: 
     - [[Artist Tools]]
@@ -30,12 +26,15 @@ choose:
     number: 1
     options:
       - "@worldbuilding/items/tools"
+
+---
+**Skill Proficiencies:** Choose two from [[History]], [[Investigation]], [[Religion]], or [[Persuasion]]. 
+
+**Additional Proficiencies:** Gain proficiency with [[Artist Tools]] and an additional tool of your choice.
 ```
 **Equipment:** A [[Prayer book ᴺ]] or [[Ceremonial Dagger ᴺ]], a [[Holy Symbol]], [[Incense (one block) ᴺ]], [[Vestments ᴺ]], [[Clothes, common]], and a [[Pouch]] containing 10 gp.
 ```rpg feature.details
 name: Talent
-text: |
-  You devoted yourself to an array of highly specific tasks and teachings known only to your order, each of which demanded mental and emotional precision. Choose a talent from this list to represent your experience: [[Field Medic]], [[Mental Fortitude]], or [[Ritualist]]. 
 choose:
   type: talent
   number: 1
@@ -43,6 +42,9 @@ choose:
     - [[Field Medic]]
     - [[Mental Fortitude]]
     - [[Ritualist]]
+
+---
+You devoted yourself to an array of highly specific tasks and teachings known only to your order, each of which demanded mental and emotional precision. Choose a talent from this list to represent your experience: [[Field Medic]], [[Mental Fortitude]], or [[Ritualist]]. 
 ```
 ### Adventuring Motivation
 Many adherents don’t stray far from the object of their devotion. Those who roam often do so for reasons specific to their order. When you begin your adventures, consider what tempted—or perhaps called—your character to step into the unknown.
