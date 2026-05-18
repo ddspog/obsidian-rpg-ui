@@ -35,12 +35,24 @@ export interface FenceMatch {
 export function extractAllRpgFences(contents: string): FenceMatch[] {
   if (!contents) return [];
   const out: FenceMatch[] = [];
-  const re = /```+\s*rpg\s+([A-Za-z_][\w-]*)\.([A-Za-z_][\w-]*)\s*\n([\s\S]*?)```+/g;
+  const openRe = /^(`{3,})\s*rpg\s+([A-Za-z_][\w-]*)\.([A-Za-z_][\w-]*)\s*$/gm;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(contents)) !== null) {
-    const entity = m[1];
-    const block = m[2];
-    const rawBody = m[3];
+  while ((m = openRe.exec(contents)) !== null) {
+    const backticks = m[1];
+    const minLen = backticks.length;
+    const entity = m[2];
+    const block = m[3];
+    const bodyStart = m.index + m[0].length + 1; // after the newline
+
+    // Find closing fence: a line starting with at least `minLen` backticks
+    // and nothing else (or only whitespace) on the line.
+    const closeRe = new RegExp(`^(\`{${minLen},})\\s*$`, "m");
+    const rest = contents.slice(bodyStart);
+    const closeMatch = closeRe.exec(rest);
+    if (!closeMatch) continue;
+
+    const rawBody = rest.slice(0, closeMatch.index);
+    const fenceEnd = bodyStart + closeMatch.index + closeMatch[0].length;
 
     // All blocks may use fence mode (YAML head + `---` + markdown body).
     // Parse the YAML head for indexing. If a fence body exists after ---,
@@ -71,7 +83,7 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
       body,
       name: nameField,
       start: m.index,
-      end: m.index + m[0].length,
+      end: fenceEnd,
     });
   }
   return out;

@@ -1,6 +1,31 @@
 import * as React from "react";
 import { EntityBlock, EvalContext, FeatureDetails, Markdown, TableDef } from "rpg-ui-toolkit";
 
+function HomebrewBadge({ source }: { source: string }) {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.innerHTML = "";
+    try {
+      const obsidian = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+      obsidian.setIcon?.(el, "pen-line");
+    } catch {
+      el.textContent = "✦";
+    }
+  }, []);
+  const label = `Homebrew — ${source}`;
+  return (
+    <span
+      ref={ref}
+      className="rpg-feature-card__homebrew-badge"
+      role="img"
+      aria-label={label}
+      title={label}
+    />
+  );
+}
+
 /** Resolve `[[Target]]` against the vault — returns null if no file exists. */
 function resolveWikilink(link: string): string | null {
   const target = link
@@ -45,16 +70,23 @@ function isNoTitleView(raw: unknown): boolean {
   return raw.toLowerCase().replace(/[\s\-_]+/g, "") === "notitle";
 }
 
-export const details: EntityBlock<FeatureDetails, { lookup: DetailsLookup }> = ({ self, lookup }) => {
+export const details: EntityBlock<FeatureDetails & { $homebrew?: boolean }, { lookup: DetailsLookup }> = ({ self, lookup }) => {
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
   const hideTitle = isNoTitleView(self.view);
   const HeadingTag = (`h${Math.max(1, Math.min(6, self.heading ?? 3))}`) as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  const isHomebrew = !!(self as any).$homebrew;
 
   const context: EvalContext = React.useMemo(() => ({ tables: lookup?.$tables ?? {}, vars: {} }), [lookup?.$tables]);
 
+  const cls = ["rpg-feature-card"];
+  if (isHomebrew) cls.push("rpg-feature-homebrew");
+
   return (
-    <article className="rpg-feature-card" aria-label={`Feature ${self.name}`}>
+    <article className={cls.join(" ")} aria-label={`Feature ${self.name}`}>
+      {isHomebrew && (
+        <HomebrewBadge source={self.source ?? ""} />
+      )}
       <hgroup>
         {!hideTitle && <HeadingTag>{self.name}</HeadingTag>}
         <p>

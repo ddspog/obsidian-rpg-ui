@@ -118,6 +118,7 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
           if (!childUnloaded) {
             mergeAdjacentItemLists(el);
             mergeTableRows(el);
+            removeBrBetweenSiblingCalls(el);
           }
         }, 100);
       }
@@ -323,8 +324,9 @@ function sliceFenceBody(text: string, start: number, end: number): string {
   const headEnd = text.indexOf("\n", start);
   if (headEnd < 0 || headEnd >= end) return "";
   const body = text.slice(headEnd + 1, end);
-  const closing = body.lastIndexOf("```");
-  return closing >= 0 ? body.slice(0, closing).replace(/\n$/, "") : body;
+  // Strip the closing fence line (a line of only backticks at the end)
+  const stripped = body.replace(/\n?`{3,}\s*$/, "");
+  return stripped.replace(/\n$/, "");
 }
 
 function renderByMode(
@@ -502,8 +504,39 @@ function mergeAdjacentItemLists(root: HTMLElement): void {
   }
 }
 
+/**
+ * Remove `<br>` elements and whitespace text nodes between adjacent
+ * `.rpg-call` spans that share the same parent. Obsidian inserts `<br>`
+ * when call tokens appear on consecutive lines in source markdown.
+ */
+function removeBrBetweenSiblingCalls(root: HTMLElement): void {
+  const allCalls = Array.from(root.querySelectorAll(`.${CALL_CLASS}`)) as HTMLElement[];
+  if (allCalls.length < 2) return;
+
+  for (let i = 0; i < allCalls.length - 1; i++) {
+    const a = allCalls[i];
+    const b = allCalls[i + 1];
+    if (a.parentElement !== b.parentElement) continue;
+
+    let node: Node | null = a.nextSibling;
+    while (node && node !== b) {
+      const next: Node | null = node.nextSibling;
+      if (
+        (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "BR") ||
+        (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim())
+      ) {
+        node.parentNode?.removeChild(node);
+      } else {
+        break;
+      }
+      node = next;
+    }
+  }
+}
+
 /** Check if two sibling elements are adjacent (only whitespace text nodes between). */
 function areAdjacent(a: Element, b: Element): boolean {
+
   let node: Node | null = a.nextSibling;
   while (node) {
     if (node === b) return true;

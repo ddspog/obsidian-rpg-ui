@@ -5953,6 +5953,51 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
 }
+.rpg-feature-homebrew {
+  position: relative;
+  margin-block: var(--size-4-2, 0.5rem);
+}
+.rpg-feature-homebrew::before,
+.rpg-feature-homebrew::after {
+  content: "";
+  position: absolute;
+  width: 0.75em;
+  height: 0.75em;
+  border-color: var(--text-accent, #7c2d12);
+  border-style: solid;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.rpg-feature-homebrew::before {
+  top: -0.15em;
+  left: -0.35em;
+  border-width: 1.5px 0 0 1.5px;
+}
+.rpg-feature-homebrew::after {
+  bottom: -0.15em;
+  right: -0.35em;
+  border-width: 0 1.5px 1.5px 0;
+}
+.rpg-feature-card__homebrew-badge {
+  position: absolute;
+  top: -0.15em;
+  right: -0.35em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.55;
+}
+.rpg-feature-card__homebrew-badge:hover {
+  opacity: 1;
+}
+.rpg-feature-card__homebrew-badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
 
 /* lib/styles/components/feature-accordion.css */
 section[aria-details="Character Features"] {
@@ -8141,6 +8186,108 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-tab-group__panel {
   display: block;
   padding-block: var(--size-4-3, 0.75rem);
+  position: relative;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px,
+      transparent 9px),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px,
+      transparent 12px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px,
+      transparent 16px),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px,
+      transparent 10px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px,
+      transparent 10px),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px,
+      transparent 16px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px,
+      transparent 12px),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px,
+      transparent 9px);
+  background-position:
+    calc(25% - 36px) 0,
+    calc(25% - 22px) 0,
+    calc(25% - 8px) 0,
+    calc(25% + 8px) 0,
+    calc(25% + 22px) 0,
+    calc(25% + 36px) 0,
+    calc(75% - 36px) 0,
+    calc(75% - 22px) 0,
+    calc(75% - 8px) 0,
+    calc(75% + 8px) 0,
+    calc(75% + 22px) 0,
+    calc(75% + 36px) 0;
+  background-size:
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%;
+  background-repeat: no-repeat;
+}
+.rpg-rule-tab-group__panel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -1rem;
+  right: -1rem;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
 }
 .rpg-rule-tab-group__panel > :first-child {
   margin-top: 0;

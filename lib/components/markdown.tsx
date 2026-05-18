@@ -10,8 +10,9 @@
  */
 
 import * as React from "react";
-import { Component, MarkdownRenderer } from "obsidian";
+import { App, Component, MarkdownRenderer } from "obsidian";
 import { substituteExpressions, type EvalContext } from "../domains/tables/expressions";
+import { processUnrenderedRpgFences } from "../plugin/process-rpg-fences";
 
 export interface MarkdownProps {
   /** Source markdown text. */
@@ -75,9 +76,15 @@ export function Markdown({ source, sourcePath, className, context }: MarkdownPro
         ? renderer.render(app, rendered, container, effectiveSourcePath, component)
         : renderer.renderMarkdown?.(rendered, container, effectiveSourcePath, component);
 
-    Promise.resolve(promise).catch((err) => {
-      console.error("rpg-ui-toolkit Markdown: render failed", err);
-    });
+    Promise.resolve(promise)
+      .then(() => {
+        if (app && container.isConnected) {
+          processUnrenderedRpgFences(container, app as App, effectiveSourcePath, component);
+        }
+      })
+      .catch((err) => {
+        console.error("rpg-ui-toolkit Markdown: render failed", err);
+      });
 
     return () => {
       component.unload();

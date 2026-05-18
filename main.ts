@@ -17,7 +17,7 @@ import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
-import { extractMeta } from "lib/utils/meta-extractor";
+import { extractMeta, detectMetaFromSource } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { EntityResolver } from "lib/services/entity-resolver";
 import { settingsStore } from "lib/services/settings-store";
@@ -496,9 +496,19 @@ export default class DndUIToolkitPlugin extends Plugin {
         if (pre.querySelector("[data-rpg-rule], .rpg-table-wrapper, .notice")) continue;
 
         // Extract meta from the class: "language-rpg rule.tab" → "rule.tab"
+        // Obsidian may add internal classes like "is-loaded" after the
+        // language class — skip those by validating the captured word looks
+        // like a rpg meta identifier (contains a dot or is a known keyword).
         const classMatch = code.className.match(/language-rpg\s+(\S+)/);
-        if (!classMatch) continue;
-        const meta = classMatch[1];
+        let meta: string | null = null;
+        if (classMatch && /^[a-z][\w]*\.[a-z][\w-]*$/i.test(classMatch[1])) {
+          meta = classMatch[1];
+        }
+        if (!meta) {
+          const source = code.textContent ?? "";
+          meta = detectMetaFromSource(source);
+        }
+        if (!meta) continue;
 
         const source = code.textContent ?? "";
         const wrapper = pre.ownerDocument.createElement("div");
@@ -1145,6 +1155,14 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       const initialSelf: Record<string, unknown> = { ...(fm as Record<string, unknown>), ...blockParsed };
       if (text !== undefined && !("text" in blockParsed)) {
         initialSelf.text = text;
+      }
+      // Mark blocks whose own `source` differs from the file's — signals
+      // homebrew content from a different book/system. The merge above
+      // lets blockParsed.source override fm.source, but the component
+      // can't distinguish "inherited from file" vs "block-specific" without
+      // this flag.
+      if ("source" in blockParsed && blockParsed.source !== fm.source) {
+        initialSelf.$homebrew = true;
       }
       const Comp = this.component as React.FC<Record<string, unknown>>;
       const app = this.app;

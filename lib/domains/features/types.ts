@@ -162,6 +162,12 @@ export interface FeatureDetails {
    * structure — e.g. `heading: 4` under an `### h3` section.
    */
   heading?: number;
+  /**
+   * Freetext source attribution. When present, the feature is flagged as
+   * homebrew and the string is shown in a tooltip badge (e.g.
+   * `source: From "Wintercoat's Guide" by Two Dicey Bards`).
+   */
+  source?: string;
   pick?: number;
   /**
    * Budget-based picking. Mutually exclusive with `pick` — when `buy` is

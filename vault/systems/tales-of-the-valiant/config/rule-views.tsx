@@ -22,12 +22,11 @@ import { Markdown, RuleSide } from "rpg-ui-toolkit";
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset } from "rpg-ui-toolkit";
 import * as React from "react";
 
-/** Heading text: prefer `name`, fall back to capitalized `id`, then filename. */
-function headingText(ctx: RuleViewCtx): string {
+/** Heading text: use explicit `name` from frontmatter, or undefined if absent. */
+function headingText(ctx: RuleViewCtx): string | undefined {
   const fm = ctx.frontmatter as Record<string, unknown>;
   if (typeof fm.name === "string" && fm.name) return fm.name;
-  if (typeof fm.id === "string" && fm.id) return fm.id.charAt(0).toUpperCase() + fm.id.slice(1);
-  return ctx.name;
+  return undefined;
 }
 
 /** Build an h{N}-prefixed view entry. Shared by `h1` … `h6` below. */
@@ -35,13 +34,15 @@ function headingView(level: 1 | 2 | 3 | 4 | 5 | 6): RuleViewEntry {
   const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   return {
     mode: "join",
-    render: (ctx) =>
-      React.createElement(
+    render: (ctx) => {
+      const title = headingText(ctx);
+      return React.createElement(
         "section",
         { className: `rpg-view rpg-view--h${level}` },
-        React.createElement(Tag, null, headingText(ctx)),
+        title ? React.createElement(Tag, null, title) : null,
         React.createElement(Markdown, { source: ctx.content, sourcePath: ctx.file })
-      ),
+      );
+    },
   };
 }
 
@@ -70,10 +71,15 @@ export const ruleViews: RuleViewMap = {
     mode: "join",
     render: (ctx) => {
       const name = headingText(ctx);
-      const firstNl = ctx.content.indexOf("\n");
-      const source = firstNl >= 0
-        ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-        : `**${name}.** ${ctx.content}`;
+      let source: string;
+      if (name) {
+        const firstNl = ctx.content.indexOf("\n");
+        source = firstNl >= 0
+          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
+          : `**${name}.** ${ctx.content}`;
+      } else {
+        source = ctx.content;
+      }
       return React.createElement(
         "div",
         { className: "rpg-view rpg-view--p" },
@@ -93,10 +99,15 @@ export const ruleViews: RuleViewMap = {
     mode: "join",
     render: (ctx) => {
       const name = headingText(ctx);
-      const firstNl = ctx.content.indexOf("\n");
-      const source = firstNl >= 0
-        ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-        : `**${name}.** ${ctx.content}`;
+      let source: string;
+      if (name) {
+        const firstNl = ctx.content.indexOf("\n");
+        source = firstNl >= 0
+          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
+          : `**${name}.** ${ctx.content}`;
+      } else {
+        source = ctx.content;
+      }
       return React.createElement(
         "span",
         { className: "rpg-view rpg-view--inline" },
@@ -120,11 +131,15 @@ export const ruleViews: RuleViewMap = {
     render: (ctx, args) => {
       const name = headingText(ctx);
       const level = typeof args?.[0] === "number" ? args[0] : 1;
-      const firstNl = ctx.content.indexOf("\n");
-      const source = firstNl >= 0
-        ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-        : `**${name}.** ${ctx.content}`;
-      // Level 1 = no extra indent (base). Level 2 = 3.5em, level 3 = 5em, etc.
+      let source: string;
+      if (name) {
+        const firstNl = ctx.content.indexOf("\n");
+        source = firstNl >= 0
+          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
+          : `**${name}.** ${ctx.content}`;
+      } else {
+        source = ctx.content;
+      }
       const style = level > 1 ? { marginInlineStart: `${3.5 + (level - 2) * 1.5}em` } : undefined;
       return React.createElement(
         "li",
@@ -224,8 +239,7 @@ export const ruleViews: RuleViewMap = {
     render: (ctx, args) => {
       const fields = (args ?? []).map((arg) => String(arg));
       const cells = fields.map((f) => {
-        // "name" field: use the same headingText fallback (name → id → filename)
-        if (f === "name") return headingText(ctx);
+        if (f === "name") return headingText(ctx) ?? "";
         const v = (ctx.frontmatter as Record<string, unknown>)[f];
         return v == null ? "" : String(v);
       });

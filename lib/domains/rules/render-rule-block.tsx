@@ -36,6 +36,7 @@ interface Marker {
 }
 
 function describeSource(raw: unknown): string {
+  if (typeof raw === "string") return raw;
   if (!raw || typeof raw !== "object") return String(raw);
   const r = raw as Record<string, unknown>;
   const parts: string[] = [];
@@ -48,7 +49,7 @@ function describeSource(raw: unknown): string {
 function collectMarkers(fm: Record<string, unknown>): Marker[] {
   const out: Marker[] = [];
   if (fm.source) {
-    out.push({ icon: "pen-line", label: `Custom source: ${describeSource(fm.source)}` });
+    out.push({ icon: "pen-line", label: `Homebrew — ${describeSource(fm.source)}` });
   }
   if (Array.isArray(fm.tags) && fm.tags.length > 0) {
     out.push({ icon: "tag", label: `Tags: ${fm.tags.join(", ")}` });

@@ -66,13 +66,21 @@ function TabGroupView({
     return () => clearTimeout(timer);
   }, [activeIdx, isHovering]);
 
+  const panelRef = React.useRef<HTMLElement>(null);
+
   function handleTabClick(idx: number) {
-    setActiveIdx(idx);
-    // Scroll page to the top of tab content
-    const sentinel = sentinelRef.current;
-    if (sentinel) {
-      sentinel.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Lock the panel's current height so Obsidian's virtualization doesn't
+    // detach the section when content shrinks during the switch.
+    const panel = panelRef.current;
+    if (panel) {
+      panel.style.minHeight = `${panel.offsetHeight}px`;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          panel.style.minHeight = "";
+        });
+      });
     }
+    setActiveIdx(idx);
   }
 
   React.useEffect(() => {
@@ -171,6 +179,7 @@ function TabGroupView({
       </div>
       {active ? (
         <article
+          ref={panelRef}
           key={activeIdx}
           role="tabpanel"
           className="rpg-rule-tab-group__panel"

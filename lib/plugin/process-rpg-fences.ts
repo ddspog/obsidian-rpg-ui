@@ -42,8 +42,13 @@ export function processUnrenderedRpgFences(
     const source = code.textContent ?? "";
 
     // Try to get meta from class (e.g. "language-rpg rule.side" → "rule.side")
+    // Obsidian adds internal classes like "is-loaded" — validate the captured
+    // word looks like a rpg meta identifier before accepting it.
     const classMatch = code.className.match(/language-rpg\s+(\S+)/);
-    let meta: string | null = classMatch ? classMatch[1] : null;
+    let meta: string | null = null;
+    if (classMatch && /^[a-z][\w]*\.[a-z][\w-]*$/i.test(classMatch[1])) {
+      meta = classMatch[1];
+    }
 
     // Fallback: detect meta from source content when class only has "language-rpg"
     if (!meta) {

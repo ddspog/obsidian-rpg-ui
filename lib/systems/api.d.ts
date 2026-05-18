@@ -698,6 +698,7 @@ export interface FeatureDetails {
   link?: string;
   view?: string;
   heading?: number;
+  source?: string;
   pick?: number;
   buy?: number | string;
   max?: number | string | Record<number, number>;

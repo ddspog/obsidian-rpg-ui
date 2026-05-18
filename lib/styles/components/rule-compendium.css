@@ -198,6 +198,73 @@
 .rpg-rule-tab-group__panel {
   display: block;
   padding-block: var(--size-4-3, 0.75rem);
+  position: relative;
+  background-image:
+    /* 25% cluster: 6 lines */
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px, transparent 9px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px, transparent 12px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px, transparent 16px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px, transparent 10px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    /* 75% cluster: 6 lines (mirrored) */
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px, transparent 10px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px, transparent 16px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px, transparent 12px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px, transparent 9px);
+  background-position:
+    calc(25% - 36px) 0, calc(25% - 22px) 0, calc(25% - 8px) 0,
+    calc(25% + 8px) 0, calc(25% + 22px) 0, calc(25% + 36px) 0,
+    calc(75% - 36px) 0, calc(75% - 22px) 0, calc(75% - 8px) 0,
+    calc(75% + 8px) 0, calc(75% + 22px) 0, calc(75% + 36px) 0;
+  background-size:
+    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%,
+    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%;
+  background-repeat: no-repeat;
+}
+
+.rpg-rule-tab-group__panel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -1rem;
+  right: -1rem;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
 }
 
 .rpg-rule-tab-group__panel > :first-child {

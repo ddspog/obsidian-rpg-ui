@@ -214,3 +214,59 @@
  * Obsidian's reading-view virtualization when the collapsed block lands in
  * the viewport — the section that follows fails to render until you scroll
  * past it. Removing the wrapper outright avoids the issue. */
+
+/* ─── Homebrew badge ──────────────────────────────────────────────────── */
+/* Mirrors the rule.content --special variant: corner brackets to demarcate
+ * the block, plus an icon badge in the top-right with a hover tooltip. */
+
+.rpg-feature-homebrew {
+  position: relative;
+  margin-block: var(--size-4-2, 0.5rem);
+}
+
+.rpg-feature-homebrew::before,
+.rpg-feature-homebrew::after {
+  content: "";
+  position: absolute;
+  width: 0.75em;
+  height: 0.75em;
+  border-color: var(--text-accent, #7c2d12);
+  border-style: solid;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.rpg-feature-homebrew::before {
+  top: -0.15em;
+  left: -0.35em;
+  border-width: 1.5px 0 0 1.5px;
+}
+
+.rpg-feature-homebrew::after {
+  bottom: -0.15em;
+  right: -0.35em;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.rpg-feature-card__homebrew-badge {
+  position: absolute;
+  top: -0.15em;
+  right: -0.35em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.55;
+}
+
+.rpg-feature-card__homebrew-badge:hover {
+  opacity: 1;
+}
+
+.rpg-feature-card__homebrew-badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
