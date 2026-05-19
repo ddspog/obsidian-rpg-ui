@@ -140,6 +140,19 @@ export function detectMetaFromSource(source: string): string | null {
   const hasSeparator = lines.some((l) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()));
   if (hasPipeRow && hasSeparator) return "table";
 
+  // `rpg rule.related` — YAML array of embeds/call tokens, or object
+  // with `entries:` + optional `level:`. Detected by array-item lines
+  // containing `![[` embeds or `@[[` call tokens.
+  if (topLevelKeys.has("entries")) return "rule.related";
+  const sourceLines2 = source.split("\n");
+  const hasArrayItems = sourceLines2.some((l) => /^\s*-\s/.test(l));
+  if (hasArrayItems) {
+    const hasEmbedOrCall = sourceLines2.some((l) =>
+      /!\[\[|@\[\[/.test(l)
+    );
+    if (hasEmbedOrCall) return "rule.related";
+  }
+
   // Final fallback: a block with `name:` and no other recognised marker is
   // overwhelmingly a feature.details in compendium docs. Route it that way
   // rather than misrouting to SystemView.

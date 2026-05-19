@@ -180,6 +180,17 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
     }
   }
 
+  // Fallback: when YAML fails (e.g. unquoted `[[` sequences), parse
+  // raw `- value` lines as string entries so authors don't need to
+  // quote wikilinks and call tokens.
+  if (rawEntries.length === 0) {
+    const RAW_ITEM = /^\s*-\s+(.*)/;
+    for (const line of source.split("\n")) {
+      const m = line.match(RAW_ITEM);
+      if (m && m[1].trim()) rawEntries.push(m[1].trim());
+    }
+  }
+
   const entries: RelatedEntry[] = [];
   for (const raw of rawEntries) {
     const entry = coerceRelatedEntry(raw);
@@ -196,8 +207,11 @@ function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
     const trimmed = raw.trim();
     if (!trimmed) return null;
     // Heading-prefixed form: "Heading text: ![[file]]" or "Heading: @[[file]].fn()"
+    // Only split on colons that appear BEFORE any `[[`, `@[[`, or backtick
+    // — colons inside wikilinks or call tokens are part of the path/name.
+    const firstBracket = trimmed.search(/\[\[|`/);
     const colonIdx = trimmed.indexOf(":");
-    if (colonIdx > 0) {
+    if (colonIdx > 0 && (firstBracket < 0 || colonIdx < firstBracket)) {
       const head = trimmed.slice(0, colonIdx).trim();
       const tail = trimmed.slice(colonIdx + 1).trim();
       if (head && EMBED_RE.test(tail)) {

@@ -36,6 +36,7 @@ import { matchAllCalls, type ParsedCall, CALL_PATTERN } from "lib/domains/refere
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
+import { Markdown } from "lib/components/markdown";
 import type { SystemRegistry } from "lib/systems/registry";
 import type { RuleViewCtx, RuleViewEntry, RuleViewMode } from "lib/systems/rule-views";
 
@@ -54,6 +55,7 @@ const CALL_CLASS = "rpg-call";
 const WHOLE_CALL_PATTERN = /^\s*@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\)\s*$/;
 
 export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
+  storeDeps(deps);
   return (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
     // ── Strategy 1: scan <code> elements directly ──────────────────
     // Authors wrap calls in backticks so Obsidian's parser leaves [[…]]
@@ -179,6 +181,33 @@ function resolveCall(
     .then(([raw, _]) => {
       if (isUnloaded()) return;
 
+      const cleaned = stripLocalFences(raw);
+
+      // ── Special case: `table` view extracts rpg table.* fences ──────
+      // `@[[file]].table(name)` renders a specific table block.
+      // `@[[file]].table()` renders all table blocks from the file.
+      if (call.fn === "table") {
+        const tables = extractTableBlocks(cleaned);
+        const tableName = typeof call.args[0] === "string" ? call.args[0] : null;
+        const matched = tableName
+          ? tables.filter((t) => t.name === tableName)
+          : tables;
+        if (matched.length === 0) {
+          renderError(span, `No table "${tableName ?? "*"}" found in [[${call.target}]]`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const source = matched.map((t) => t.fenceMarkdown).join("\n\n");
+        root.render(
+          React.createElement(Markdown, { source, sourcePath: targetPath })
+        );
+        return;
+      }
+
       const system = deps.registry.getSystemForFile(ctx.sourcePath);
       const view = system?.ruleViews?.[call.fn];
       if (!view) {
@@ -192,7 +221,6 @@ function resolveCall(
         return;
       }
 
-      const cleaned = stripLocalFences(raw);
       const fenced = extractContentBlocks(cleaned);
       const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
       const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
@@ -295,6 +323,25 @@ function extractContentBlocks(text: string): HarvestedBlock[] {
     const inner = sliceFenceBody(text, f.start, f.end);
     const parsed = parseRuleContent(inner);
     out.push({ body: parsed.body, frontmatter: parsed.frontmatter });
+  }
+  return out;
+}
+
+/**
+ * Extract `rpg table.<name>` fences from the source text. Returns each
+ * as a complete fenced code block string so it can be passed to
+ * `<Markdown>` and processed by the registered table code block processor.
+ */
+function extractTableBlocks(text: string): Array<{ name: string; fenceMarkdown: string }> {
+  const out: Array<{ name: string; fenceMarkdown: string }> = [];
+  const fences = extractAllRpgFences(text);
+  for (const f of fences) {
+    if (f.entity !== "table") continue;
+    const body = sliceFenceBody(text, f.start, f.end);
+    out.push({
+      name: f.block,
+      fenceMarkdown: "```rpg table." + f.block + "\n" + body + "\n```",
+    });
   }
   return out;
 }
@@ -668,4 +715,61 @@ export function setupGlobalTableMerger(): void {
     clearInterval(interval);
     observer.disconnect();
   };
+}
+
+/**
+ * Stored deps for `processCallsInContainer`. Set once when
+ * `buildRuleCallProcessor` is called from main.ts plugin init.
+ */
+let _storedDeps: RuleCallProcessorDeps | null = null;
+
+/** Called by `buildRuleCallProcessor` to stash deps for later use. */
+function storeDeps(deps: RuleCallProcessorDeps): void {
+  _storedDeps = deps;
+}
+
+/**
+ * Process `@[[file]].fn(args)` call tokens inside an already-rendered
+ * container (e.g., the `<Markdown>` component's output). Mirrors the
+ * code-element scan from the main post-processor so call tokens inside
+ * rule.related, tab bodies, and other React-rendered markdown resolve.
+ */
+export function processCallsInContainer(
+  container: HTMLElement,
+  sourcePath: string,
+  parent: { register: (cb: () => void) => void }
+): void {
+  if (!_storedDeps) return;
+  const deps = _storedDeps;
+
+  const codeHits: Array<{ code: HTMLElement; call: ParsedCall }> = [];
+  const codes = Array.from(container.querySelectorAll("code"));
+  for (const code of codes) {
+    if (code.parentElement?.tagName === "PRE") continue;
+    const text = code.textContent ?? "";
+    if (!WHOLE_CALL_PATTERN.test(text)) continue;
+    const parsed = matchAllCalls(text)[0];
+    if (!parsed) continue;
+    const targetPath = resolveLinkToPath(deps.app, parsed.target, sourcePath);
+    if (!targetPath) continue;
+    codeHits.push({ code, call: parsed });
+  }
+
+  if (codeHits.length === 0) return;
+
+  const child = new MarkdownRenderChild(container);
+  parent.register(() => child.unload());
+  child.load();
+  let childUnloaded = false;
+  child.register(() => { childUnloaded = true; });
+
+  for (const { code, call } of codeHits) {
+    const span = document.createElement("span");
+    span.classList.add(CALL_CLASS);
+    span.classList.add("rpg-call--pending");
+    span.setAttribute("data-call", call.source);
+    span.textContent = call.source;
+    code.parentNode?.replaceChild(span, code);
+    resolveCall(span, call, deps, { sourcePath, addChild: (c: MarkdownRenderChild) => child.addChild(c) } as any, child, () => childUnloaded);
+  }
 }
