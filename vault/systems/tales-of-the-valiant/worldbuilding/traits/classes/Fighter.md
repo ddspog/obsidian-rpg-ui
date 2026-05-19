@@ -119,6 +119,15 @@ roll:
 ---
 When you take damage that would reduce your hit points to less than half your hit point maximum (rounded down), you can use your reaction to spend hit dice, up to a number equal to your PB. Immediately roll those hit dice. You regain hit points equal to the sum of all dice rolled + your CON modifier.
 ```
+```rpg rule.side
+type: rules
+title: FIGHTER QUICK BUILD  
+---
+To quickly create a fighter, follow these steps during character creation: 
+- For ability scores, prioritize STR and then either INT (if you plan to take Spell Blade subclass) or DEX. 
+- For lineage and heritage, choose any combination you like. 
+- For background and talent, choose [[Soldier]] and either [[Combat Casting]] (if you plan to take Spell Blade subclass) or [[Combat Conditioning]].
+```
 ```rpg feature.details
 name: Martial Action
 subtitle: "1st-Level Fighter Feature"
@@ -167,15 +176,6 @@ _Requires Wielding a Heavy or Versatile Melee Weapon with Both Hands_
 
 As a bonus action, you ready a powerful attack against a nearby target. Select one target you can see within 10 feet of you. If you hit that target with a [[Melee]] weapon attack before the end of your turn, the first such attack deals extra damage equal to your PB (of the same damage type as the weapon).
 ```
-```rpg rule.side
-type: rules
-title: FIGHTER QUICK BUILD  
----
-To quickly create a fighter, follow these steps during character creation: 
-- For ability scores, prioritize STR and then either INT (if you plan to take Spell Blade subclass) or DEX. 
-- For lineage and heritage, choose any combination you like. 
-- For background and talent, choose Soldier and either Combat Casting (if you plan to take Spell Blade subclass) or Combat Conditioning.
-```
 ````
 ````rpg rule.tab
 name: Main Features
@@ -200,10 +200,13 @@ When the need is great, you push your body to its absolute limit. On your turn, 
 
 Once you use this feature, you must complete a short or long rest before you can use it again. Starting at 13th level, you can use it twice before a rest but only once on the same turn. At 18th level, you can use it three times before a rest but only once on the same turn
 ```
-### Fighter Subclass
-_3rd, 7th, 11th, and 15th-Level Fighter Feature_ 
-
+```rpg feature.details
+name: Fighter Subclass
+subtitle: "3rd, 7th, 11th, and 15th-Level Fighter Feature"
+level: 3
+---
 Choose a subclass that reflects your role in battle, either Spell Blade or Weapon Master (detailed at the end of this class). Your choice grants you features at 3rd, 7th, 11th, and 15th level.
+```
 ```rpg feature.details
 name: Improvement
 subtitle: "4th, 6th, 8th, 12th, 14th, 16th, and 19th-Level Fighter Feature"

@@ -144,7 +144,7 @@ You can also cast a type of long-form spell called a ritual. Rituals don't need 
 
 At 1st level, choose one ritual from the [[07. Spellcasting#Primordial Ritual List|Primordial Ritual List]]. You learn more rituals at higher levels, as shown in the Rituals Known column of the **Druid Progression** table, but only from a circle for which you have spell slots. Rituals you learn don't count against the number of spells you learn at each level.
 #### Spellcasting Focus 
-You can use a druidic focus (see **Adventuring Gear** in **Chapter 5**) as a spellcasting focus for your Primordial spells.
+You can use a [[druidic focus]] (see [[05. Equipment & Magic Items#Equipment|Adventuring Gear]]) as a spellcasting focus for your Primordial spells.
 ```
 ```rpg feature.level
 level: 3
@@ -214,7 +214,7 @@ traits:
   Languages: [[Druidic]]
 
 ---
-You know Druidic, the secret language of druids. You can speak the language and use a system of natural elements to leave hidden messages that only other druids will understand. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful WIS ([[Perception]]) check but can't decipher it without magic.
+You know [[Druidic]], the secret language of druids. You can speak the language and use a system of natural elements to leave hidden messages that only other druids will understand. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful WIS ([[Perception]]) check but can't decipher it without magic.
 ```
 ```rpg rule.side
 type: rules
@@ -328,26 +328,30 @@ source: From **D&D** _"Wintercoat's Guide to Wild Shape"_ from **Two Dicey Bards
 When you long rest, you can switch one of you Known Forms for another. Whenever you're choosing a new Known Form for you Beast Form feature, choose any beast with a CR at least one level lower than the maximum available to you and increase its CR to the highest available for you.
 
 For each level up in CR level, do the following:
-- Gain one trait from the list below. See [[02ª. Wintercoat's Guide to Wild Shapes#Amalgam Trait List|Amalgam Traits]] for more details.
-  - **Ability Score Improvement.** Increase your Dexterity, Constitution, and Strength scores.
-  - **Environmental Adaptation.** Gain a special movement or adaptation from a list, like flying speed and underwater breathing.
-  - **Growth.** Grow the beast by one size, increasing its hit points and damage potential.
-  - **Heightened Senses.** Gain one special sense from the list, like Tremorsense or Darkvision.
-  - **Precision.** Substitute the beast's proficiency bonus for your own, improving attacks, skill checks, and saving throws.
-  - **Skilled.** Gain proficiency in two skills of your choice from a list.
-  - **New Natural Weapon.** Gain a new natural weapon.
-  - **Beast Styles.** Choose between multiple attacks, one powerful attack or defense. At CR 1, gain the Multiattack or the *Hardhitter* feature. At higher CRs, you can choose an extra feature or improve an existing one.
-  - **Fighting Trait.** When you choose this, you gain or change a basic or advanced trait according to your CR. These can be a poisonous bite, a charge attack, or the flyby ability.
-- Gain an additional ability score improvement at CR 1/8, 1/4, 1 and 2.
-```
-### Druid Subclass
-_3rd, 7th, 11th, and 15th-Level Druid Feature_ 
 
+**ASI**: Gain an additional ability score improvement at CR 1/8, 1/4, 1 and 2.
+**Trait**: Gain one trait from the list below. See [[02ª. Wintercoat's Guide to Wild Shapes#Amalgam Trait List|Amalgam Traits]] for more details.
+- **Ability Score Improvement.** Increase your Dexterity, Constitution, and Strength scores.
+- **Environmental Adaptation.** Gain a special movement or adaptation from a list, like flying speed and underwater breathing.
+- **Growth.** Grow the beast by one size, increasing its hit points and damage potential.
+- **Heightened Senses.** Gain one special sense from the list, like [[Tremorsense]] or [[Darkvision]].
+- **Precision.** Substitute the beast's proficiency bonus for your own, improving attacks, skill checks, and saving throws.
+- **Skilled.** Gain proficiency in two skills of your choice from a list.
+- **New Natural Weapon.** Gain a new natural weapon.
+- **Beast Styles.** Choose between multiple attacks, one powerful attack or defense. At CR 1, gain the Multiattack or the *Hardhitter* feature. At higher CRs, you can choose an extra feature or improve an existing one.
+- **Fighting Trait.** When you choose this, you gain or change a basic or advanced trait according to your CR. These can be a poisonous bite, a charge attack, or the flyby ability.
+```
+```rpg feature.details
+name: Druid Subclass
+subtitle: "3rd, 7th, 11th, and 15th-Level Druid Feature"
+level: 3
+---
 Choose a subclass that reflects your values and magical practices, either Leaf or Shifter (detailed at the end of this class). Your choice grants you spells and other features at 3rd, 7th, 11th, and 15th level.
 #### Ring Spells 
-Each subclass has a list of ring spells that you can access as soon as you can cast spells of that circle (as shown on the **Druid Progression** table). Once you gain such a spell, you always have it prepared, and it doesn't count against the number of spells you can prepare. However, casting a ring spell still expends a Primordial spell slot as normal. 
+Each subclass has a list of ring spells that you can access as soon as you can cast spells of that circle (as shown on the **Druid Progression** table). Once you gain such a spell, you always have it prepared, and it doesn't count against the number of spells you can prepare. However, casting a ring spell still expends a [[Primordial]] spell slot as normal. 
 
 If one of these spells isn't on the [[Primordial]] spell list, it still counts as a Primordial spell for you.
+```
 ```rpg feature.details
 name: Improvement
 subtitle: "4th, 8th, 12th, 16th, and 19th-Level Druid Feature"
@@ -398,12 +402,15 @@ choose:
 ---
 - Increase one ability score by 1 and select a talent from the magic talents list (see [[04. Backgrounds and Talents#Talent|Magic Talent]]).
 ```
-### Improved Beast Form
-_5th, 9th, and 14th-Level Druid Feature_ 
-
+```rpg feature.details
+name: Improved Beast Form
+subtitle: "5th, 9th, and 14th-Level Druid Feature"
+level: 5
+---
 You can now use the Beast Form effect of your Wild Shape feature to assume more powerful beast forms. When you learn a new form, you can choose a Beast of CR 1/2 or less. 
 
-At 9th level, you can assume the form of any Beast of CR 1 or less. At 14th level, you can assume the form of any Beast of CR 2 or less.
+At 9th level, you can assume the form of any [[Beast]] of CR 1 or less. At 14th level, you can assume the form of any Beast of CR 2 or less.
+```
 ````
 ````rpg rule.tab
 name: High Level
@@ -446,7 +453,7 @@ type: passive
 Your attunement to the natural energies of the world infuses your body, sustaining you and protecting you from unnatural harm. You gain the following benefits: 
 - You can't be magically aged, and you suffer none of the frailty of old age. You can still die of old age though. 
 - You no longer need food or water to survive. 
-- Your ability scores and hit point maximum can't be lowered by any means short of a _wish_ spell.
+- Your ability scores and hit point maximum can't be lowered by any means short of a [[wish]] spell.
 ```
 ```rpg feature.details
 name: Epic Boon
@@ -460,10 +467,10 @@ parent: Epic Boon
 name: Archdruid
 passive:
   text: |
-    You can use the Beast Form effect of your Wild Shape feature an unlimited number of times. In addition, you can ignore the verbal and somatic components of Primordial spells, as well as any material components that lack a cost.
+    You can use the Beast Form effect of your Wild Shape feature an unlimited number of times. In addition, you can ignore the verbal and somatic components of [[Primordial]] spells, as well as any material components that lack a cost.
 
 ---
-- **Archdruid.** You can use the Beast Form effect of your Wild Shape feature an unlimited number of times. In addition, you can ignore the verbal and somatic components of Primordial spells, as well as any material components that lack a cost.
+- **Archdruid.** You can use the Beast Form effect of your Wild Shape feature an unlimited number of times. In addition, you can ignore the verbal and somatic components of [[Primordial]] spells, as well as any material components that lack a cost.
 ```
 ````
 ## Druid Subclasses

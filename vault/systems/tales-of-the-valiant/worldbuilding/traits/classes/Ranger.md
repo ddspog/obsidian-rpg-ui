@@ -85,22 +85,31 @@ You start with the following equipment, in addition to the equipment granted by 
 | 3rd | +2 | Ranger Subclass                  | 3                | 3       | —       | —       | —       | —       |
 | 4th                | +2                               | Improvement                      | 3                | 3       | —       | —       | —       | —       |
 | 5th                | +3                               | Multiattack (2/Attack Action)    | 4                | 4       | 2       | —       | —       | —       |
-| 6th                | +3                               | Empowered Mark, [[Mystic Mark]] (d6) | 4                | 4       | 2       | —       | —       | —       |
+| 6th                | +3                               | Empowered Mark, Mystic Mark (d6) | 4                | 4       | 2       | —       | —       | —       |
 | 7th                | +3                               | Subclass Feature                 | 5                | 4       | 3       | —       | —       | —       |
 | 8th                | +3                               | Improvement                      | 5                | 4       | 3       | —       | —       | —       |
 | 9th                | +4                               | Stalker's Step                   | 6                | 4       | 3       | 2       | —       | —       |
 | 10th               | +4                               | Heroic Boon                      | 6                | 4       | 3       | 2       | —       | —       |
 | 11th               | +4                               | Subclass Feature                 | 7                | 4       | 3       | 3       | —       | —       |
 | 12th               | +4                               | Improvement                      | 7                | 4       | 3       | 3       | —       | —       |
-| 13th               | +5                               | [[Mystic Mark]] (d8)                 | 8                | 4       | 3       | 3       | 1       | —       |
+| 13th               | +5                               | Mystic Mark (d8)                 | 8                | 4       | 3       | 3       | 1       | —       |
 | 14th               | +5                               | Keensense                        | 8                | 4       | 3       | 3       | 1       | —       |
 | 15th               | +5                               | Subclass Feature                 | 9                | 4       | 3       | 3       | 2       | —       |
 | 16th               | +5                               | Improvement                      | 9                | 4       | 3       | 3       | 2       | —       |
-| 17th               | +6                               | [[Mystic Mark]] (d10)                | 10               | 4       | 3       | 3       | 3       | 1       |
+| 17th               | +6                               | Mystic Mark (d10)                | 10               | 4       | 3       | 3       | 3       | 1       |
 | 18th               | +6                               | Strider                          | 10               | 4       | 3       | 3       | 3       | 1       |
 | 19th               | +6                               | Improvement                      | 11               | 4       | 3       | 3       | 3       | 2       |
 | 20th               | +6                               | Epic Boon                        | 11               | 4       | 3       | 3       | 3       | 2       |
 [#css/tx/table]
+```
+```rpg rule.side
+type: rules
+title: RANGER QUICK BUILD
+---
+To quickly create a ranger, follow these steps during character creation: 
+- For ability scores, prioritize DEX and then WIS. 
+- For lineage and heritage, choose any combination you like. 
+- For background and talent, choose [[Homesteader]] and [[Far Traveler]].
 ```
 ```rpg feature.details
 name: Explorer
@@ -161,15 +170,6 @@ You can use this feature a number of times equal to your PB. You regain all uses
 
 This extra damage increases as you gain ranger levels, becoming 1d6 at 6th level, 1d8 at 13th, and 1d10 at 17th.
 ```
-```rpg rule.side
-type: rules
-title: RANGER QUICK BUILD
----
-To quickly create a ranger, follow these steps during character creation: 
-- For ability scores, prioritize DEX and then WIS. 
-- For lineage and heritage, choose any combination you like. 
-- For background and talent, choose Homesteader and Far Traveler.
-```
 ````
 ````rpg rule.tab
 name: Main Features
@@ -216,11 +216,11 @@ traits:
   Spellcasting: "WIS [[Primordial]]: Known Half-Caster"
 
 ---
-At 2nd level, you enhance your martial prowess with the ability to cast Primordial spells. See **Chapter 7: Spellcasting** for general rules of spellcasting and the Primordial spell list. 
+At 2nd level, you enhance your martial prowess with the ability to cast [[Primordial]] spells. See [[07. Spellcasting|Chapter 7: Spellcasting]] for general rules of spellcasting and the Primordial spell list. 
 #### Casting Spells 
 You know a small number of spells and can cast any of them by using a Primordial spell slot of the spell's circle or higher. You don't need to prepare spells ahead of time. 
 
-The **Ranger Progression** table shows how many spells you know and how many Primordial spell slots you have at a given level. For example, at 5th level, you have four 1st-circle slots and two 2nd-circle slots. If you know the 1st-circle spell _animal friendship_ and have a 1st-circle and a 2nd-circle spell slot available, you can cast _animal friendship_ using either slot. If you use a 1st-circle slot, you have three 1st-circle slots remaining. 
+The **Ranger Progression** table shows how many spells you know and how many Primordial spell slots you have at a given level. For example, at 5th level, you have four 1st-circle slots and two 2nd-circle slots. If you know the 1st-circle spell [[animal friendship]] and have a 1st-circle and a 2nd-circle spell slot available, you can cast [[animal friendship]] using either slot. If you use a 1st-circle slot, you have three 1st-circle slots remaining. 
 
 You regain all used spell slots when you finish a long rest. 
 #### Spells Known of 1st Circle and Higher
@@ -234,7 +234,7 @@ Wisdom (WIS) is your spellcasting ability. Your WIS modifier determines the save
 - **Spell save DC** = 8 + your proficiency bonus (PB) + your WIS modifier 
 - **Spell attack modifier** = your proficiency bonus (PB) + your WIS modifier 
 #### Spellcasting Focus
-You can use a druidic focus (see **Adventuring Gear** in **Chapter 5**) as a spellcasting focus for your Primordial spells.
+You can use a [[druidic focus]] (see [[05. Equipment & Magic Items#Equipment|Adventuring Gear]]) as a spellcasting focus for your Primordial spells.
 ```
 ```rpg feature.level
 level: 3
@@ -281,14 +281,17 @@ level: 19
 spellcasting:
   known: 1
 ```
-### Ranger Subclass
-_3rd, 7th, 11th, and 15th-Level Ranger Feature_ 
-
+```rpg feature.details
+name: Ranger Subclass
+subtitle: "3rd, 7th, 11th, and 15th-Level Ranger Feature"
+level: 3
+---
 Choose a subclass that reflects your connection to the natural world, either [[Hunter]] or [[Pack Master]] (detailed at the end of this class). Your choice grants you spells and other features at 3rd, 7th, 11th, and 15th level. 
 #### Calling Spells
 Each ranger subclass has a list of calling spells that you can access as soon as you can cast spells of that circle (as shown in the **Ranger Progression** table). Once you gain such a spell, it is always on your list of known spells, and it doesn't count against the number of spells you know. However, casting a calling spell still expends a Primordial spell slot as normal. 
 
-If one of these spells isn't on the Primordial spell list, it still counts as a Primordial spell for you. You can't replace calling spells when you gain a level of ranger.
+If one of these spells isn't on the [[Primordial]] spell list, it still counts as a Primordial spell for you. You can't replace calling spells when you gain a level of ranger.
+```
 ```rpg feature.details
 name: Improvement
 subtitle: "4th, 8th, 12th, 16th, and 19th-Level Ranger Feature"
@@ -404,7 +407,7 @@ spellcasting:
   rituals: 2
 
 ---
-- **Path of the Sage.** You learn two cantrips of your choice from the Primordial spell list. You also learn two ritual spells of your choice from the Primordial spell list. Both ritual spells must be from circles you have spell slots for, as shown on the **Ranger Progression** table. Ritual spells learned this way don't count against your total number of spells known. WIS is your spellcasting ability for cantrips and ritual spells learned in this way. When you gain a level of ranger, you can replace one of these cantrips and one of these rituals with another cantrip or ritual spell from the Primordial spell list, as long as the replacement ritual spell is still of a circle you have spell slots for. 
+- **Path of the Sage.** You learn two cantrips of your choice from the [[Primordial]] spell list. You also learn two ritual spells of your choice from the Primordial spell list. Both ritual spells must be from circles you have spell slots for, as shown on the **Ranger Progression** table. Ritual spells learned this way don't count against your total number of spells known. WIS is your spellcasting ability for cantrips and ritual spells learned in this way. When you gain a level of ranger, you can replace one of these cantrips and one of these rituals with another cantrip or ritual spell from the Primordial spell list, as long as the replacement ritual spell is still of a circle you have spell slots for. 
 ```
 ```rpg feature.details
 name: Keensense
@@ -414,7 +417,7 @@ traits:
   Senses: "[[Keensense]] 10ft."
 
 ---
-You have keensense (see **Special Senses** in **Chapter 6**) to a range of 10 feet. Your keensense ceases to function while you are [[deafened]] or otherwise deprived of hearing. 
+You have [[keensense]] (see [[06. Playing the Game|Special Senses]]) to a range of 10 feet. Your keensense ceases to function while you are [[deafened]] or otherwise deprived of hearing. 
 ```
 ```rpg feature.details
 name: Strider

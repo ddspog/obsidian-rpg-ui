@@ -140,7 +140,7 @@ You can also cast a type of long-form spell called a ritual. Rituals don't need 
 At 1st level, choose one ritual from the [[07. Spellcasting#Divine Ritual List|Divine Ritual List]]. You learn more rituals at higher levels, as shown in the Rituals Known column of the **Cleric Progression** table, but only from a circle for which you have spell slots. Rituals you learn don't count against the number of spells you learn at each level.
 
 #### Spellcasting Focus
-You can use a holy symbol (see [[05. Equipment & Magic Items#Equipment|Adventuring Gear]]) as a spellcasting focus for your Divine spells.
+You can use a [[holy symbol]] (see [[05. Equipment & Magic Items#Equipment|Adventuring Gear]]) as a spellcasting focus for your Divine spells.
 ```
 ```rpg feature.level
 level: 3
@@ -297,14 +297,17 @@ One of the most important aspects of creating a cleric is choosing which god (or
 
 Most campaign settings include pantheons of gods tailored to that particular setting. Your GM’s homebrew setting might have unique deities for your cleric to worship, as well. See Appendix B: Gods & Pantheons for a list of deities unique to the Labyrinth setting.
 ```
-### Cleric Subclass
-_3rd, 7th, 11th, and 15th-Level Cleric Feature_
-
+```rpg feature.details
+name: Cleric Subclass
+subtitle: "3rd, 7th, 11th, and 15th-Level Cleric Feature"
+level: 3
+---
 Choose a subclass that reflects your relationship to your deity, Life, Light, or War (detailed at the end of this class). Your choice grants you spells and other features at 3rd, 7th, 11th, and 15th level.
 #### Domain Spells
 Each cleric subclass has a list of domain spells that you can access as soon as you can cast spells of that circle. Once you gain such a spell, you always have it prepared, and it doesn't count against the number of spells you can prepare. However, casting a domain spell still expends a Divine spell slot as normal.
 
 If one of these spells isn't on the [[Divine]] spell list, it still counts as a Divine spell for you.
+```
 ```rpg feature.details
 name: Improvement
 subtitle: "4th, 8th, 12th, 16th, and 19th-Level Cleric Feature"
