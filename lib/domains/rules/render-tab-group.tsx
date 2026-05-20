@@ -69,18 +69,65 @@ function TabGroupView({
   const panelRef = React.useRef<HTMLElement>(null);
 
   function handleTabClick(idx: number) {
+    const sentinel = sentinelRef.current;
+    const scrollContainer = sentinel?.closest(
+      ".markdown-preview-view"
+    ) as HTMLElement | null;
+
+    // Only scroll if the tab bar is stuck (user scrolled past the tabs)
+    const shouldScroll = isStuck && sentinel && scrollContainer;
+    let scrollOffset: number | null = null;
+    if (shouldScroll) {
+      const wrapper = sentinel.closest(".el-pre") as HTMLElement | null;
+      const scrollTarget = wrapper ?? sentinel;
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const targetRect = scrollTarget.getBoundingClientRect();
+      scrollOffset = targetRect.top - containerRect.top + scrollContainer.scrollTop;
+      // Overshoot upward to force Obsidian to de-virtualize the heading
+      scrollOffset = Math.max(0, scrollOffset - 300);
+    }
+
     // Lock the panel's current height so Obsidian's virtualization doesn't
     // detach the section when content shrinks during the switch.
     const panel = panelRef.current;
     if (panel) {
       panel.style.minHeight = `${panel.offsetHeight}px`;
+    }
+    setActiveIdx(idx);
+
+    if (scrollOffset !== null && scrollContainer) {
+      const sc = scrollContainer;
+      setTimeout(() => {
+        // Step 1: scroll up to de-virtualize the heading
+        sc.scrollTo({ top: scrollOffset!, behavior: "instant" });
+        // Step 2: after Obsidian renders the heading, scroll precisely to it
+        requestAnimationFrame(() => {
+          const wrapper = sentinel!.closest(".el-pre") as HTMLElement | null;
+          if (!wrapper) { if (panel) panel.style.minHeight = ""; return; }
+          let heading: HTMLElement | null = null;
+          let prev = wrapper.previousElementSibling as HTMLElement | null;
+          while (prev) {
+            const h = prev.querySelector("h1, h2, h3, h4, h5, h6") as HTMLElement | null;
+            if (h) { heading = h; break; }
+            if (/^H[1-6]$/.test(prev.tagName)) { heading = prev; break; }
+            prev = prev.previousElementSibling as HTMLElement | null;
+          }
+          if (heading) {
+            const containerRect = sc.getBoundingClientRect();
+            const headingRect = heading.getBoundingClientRect();
+            const precise = headingRect.top - containerRect.top + sc.scrollTop;
+            sc.scrollTo({ top: precise, behavior: "instant" });
+          }
+          if (panel) panel.style.minHeight = "";
+        });
+      }, 50);
+    } else if (panel) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           panel.style.minHeight = "";
         });
       });
     }
-    setActiveIdx(idx);
   }
 
   React.useEffect(() => {
@@ -293,9 +340,14 @@ function areAdjacentBlocks(a: HTMLElement, b: HTMLElement): boolean {
 const observedSizers = new WeakSet<HTMLElement>();
 const mergingNow = new WeakSet<HTMLElement>();
 
-function scheduleMerge(tabEl: HTMLElement): void {
+function scheduleMerge(tabEl: HTMLElement, retries = 3): void {
   const sizer = tabEl.closest(".markdown-preview-sizer") as HTMLElement | null;
-  if (!sizer) return;
+  if (!sizer) {
+    if (retries > 0) {
+      requestAnimationFrame(() => scheduleMerge(tabEl, retries - 1));
+    }
+    return;
+  }
   const existing = pendingMerges.get(sizer);
   if (existing) clearTimeout(existing);
   const timer = setTimeout(() => {
@@ -492,20 +544,18 @@ function absorbIntoGroup(groupEl: HTMLElement, newTabEls: HTMLElement[]): void {
   }
 }
 
-function findPrecedingHeadingText(leader: HTMLElement): string | undefined {
-  const wrapper = getElPre(leader);
-  if (!wrapper) return undefined;
+function findPrecedingHeadingEl(el: HTMLElement): HTMLElement | null {
+  const wrapper = el.closest(".el-pre") ?? el.closest("[class*='block-language-']") ?? el.closest(`.${GROUP_CLASS}`)?.closest(".el-pre");
+  if (!wrapper) return null;
 
-  // Walk backwards through siblings in this section
   let prev: Element | null = wrapper.previousElementSibling;
   while (prev) {
     const h = prev.querySelector("h1, h2, h3, h4, h5, h6");
-    if (h) return h.textContent?.trim() || undefined;
-    if (/^H[1-6]$/.test(prev.tagName)) return prev.textContent?.trim() || undefined;
+    if (h) return h as HTMLElement;
+    if (/^H[1-6]$/.test(prev.tagName)) return prev as HTMLElement;
     prev = prev.previousElementSibling;
   }
 
-  // Walk backwards through previous sections
   const section = wrapper.parentElement;
   let prevSection = section?.previousElementSibling as HTMLElement | null;
   while (prevSection) {
@@ -513,13 +563,20 @@ function findPrecedingHeadingText(leader: HTMLElement): string | undefined {
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i] as HTMLElement;
       const h = child.querySelector("h1, h2, h3, h4, h5, h6");
-      if (h) return h.textContent?.trim() || undefined;
-      if (/^H[1-6]$/.test(child.tagName)) return child.textContent?.trim() || undefined;
+      if (h) return h as HTMLElement;
+      if (/^H[1-6]$/.test(child.tagName)) return child as HTMLElement;
     }
     prevSection = prevSection.previousElementSibling as HTMLElement | null;
   }
 
-  return undefined;
+  return null;
+}
+
+function findPrecedingHeadingText(leader: HTMLElement): string | undefined {
+  const wrapper = getElPre(leader);
+  if (!wrapper) return undefined;
+  const el = findPrecedingHeadingEl(wrapper);
+  return el?.textContent?.trim() || undefined;
 }
 
 export class RuleTabRenderChild extends MarkdownRenderChild {
