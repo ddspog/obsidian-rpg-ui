@@ -1408,6 +1408,11 @@ export interface EvalContext {
 }
 
 export declare function parseTableBlock(name: string, body: string): TableDef;
+export declare const RpgTable: React.FC<{
+  def: TableDef;
+  filePath?: string;
+  sourcePath?: string;
+}>;
 export declare function substituteExpressions(source: string, ctx: EvalContext): string;
 
 export interface PendingChoiceRowProps {
@@ -1453,6 +1458,12 @@ export declare function getRuleValue<T = unknown>(
 
 export declare function getRuleValuesById(id: string): Record<string, unknown> | undefined;
 export declare function listRuleValues(): Map<string, Record<string, unknown>>;
+
+/**
+ * Resolve a vault image path (wikilink, relative, or absolute URL) to a
+ * browser-usable resource URL. Returns `null` if unresolvable.
+ */
+export declare function resolveVaultImage(raw: unknown, sourcePath: string): string | null;
 
 // ── Rule view registry ─────────────────────────────────────────────
 // Per-system view functions consumed by the rule-call processor. Export

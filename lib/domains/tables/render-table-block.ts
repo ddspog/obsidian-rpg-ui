@@ -26,7 +26,7 @@
 import type { FooterCell, FooterRow, TableDef, TableRow } from "./types";
 import type { PaginationConfig, PaginationState } from "./pagination";
 import { sliceRows, totalPages } from "./pagination";
-import { formatRollOutcome, rollOnce } from "./roll";
+import { formatRollOutcome, rollCell, rollOnce } from "./roll";
 import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
 function appendRow(tr: HTMLTableRowElement, row: TableRow, cellTag: "td" | "th"): void {
@@ -55,6 +55,26 @@ function renderCellValue(el: HTMLElement, raw: string): void {
   // Strip backtick-wrapped refs so `@[[File]].path` inside a cell reads
   // as a plain reference to the post-processor.
   const cleaned = raw.replace(/`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)\s*`/g, "$1");
+
+  // Backtick-wrapped call tokens (with parens) → <code> so the call
+  // processor can detect and resolve them after the table renders.
+  const CALL_CODE_RE = /`\s*(@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\))\s*`/g;
+  const callMatch = CALL_CODE_RE.exec(cleaned);
+  if (callMatch) {
+    const doc = el.ownerDocument;
+    if (callMatch.index > 0) {
+      el.appendChild(doc.createTextNode(cleaned.slice(0, callMatch.index)));
+    }
+    const code = doc.createElement("code");
+    code.textContent = callMatch[1];
+    el.appendChild(code);
+    const after = callMatch.index + callMatch[0].length;
+    if (after < cleaned.length) {
+      el.appendChild(doc.createTextNode(cleaned.slice(after)));
+    }
+    return;
+  }
+
   const doc = el.ownerDocument;
   const re = /\[\[([^\]\n]+)\]\]/g;
   let cursor = 0;
@@ -107,21 +127,6 @@ function isCategoryRow(row: TableRow, columnCount: number): boolean {
  *  the trailing hashtag so the label reads clean. */
 function cleanCategoryLabel(raw: string): string {
   return raw.replace(/\s*#css\/row\/[^\s|]+\s*$/, "").trim();
-}
-
-/**
- * Compute (or re-compute) the roll results for one footer cell and commit
- * them to the in-memory store. Each `kind: "roll"` segment contributes one
- * entry; text segments are not rolled.
- */
-function rollCell(def: TableDef, cell: FooterCell): string[] {
-  const values: string[] = [];
-  for (const seg of cell.segments) {
-    if (seg.kind !== "roll") continue;
-    const outcome = rollOnce(def, seg.targets, seg.by);
-    values.push(formatRollOutcome(outcome));
-  }
-  return values;
 }
 
 /**

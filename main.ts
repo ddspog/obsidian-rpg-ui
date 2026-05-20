@@ -44,6 +44,7 @@ import { ReferenceRegistry } from "lib/plugin/reference-registry";
 import { buildReferenceProcessor } from "lib/plugin/reference-processor";
 import { buildRuleCallProcessor, setupGlobalTableMerger } from "lib/plugin/rule-call-processor";
 import { ValueResolver, setActiveValueResolver } from "lib/domains/rules/value-resolver-api";
+import { setImageResolverApp } from "lib/domains/rules/image-resolver-api";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
@@ -147,21 +148,27 @@ export default class DndUIToolkitPlugin extends Plugin {
       ])
         .then(() => {
           console.log(
-            `[rpg-ui] Systems loaded + value resolver warmed (${this.valueResolver?.list().size ?? 0} rules indexed). Auto-refreshing views.`
+            `[rpg-ui] Systems loaded + value resolver warmed (${this.valueResolver?.list().size ?? 0} rules indexed).`
           );
-          // Execute the same "Reload systems" command that works when
-          // triggered manually — programmatically, after a delay to let
-          // Obsidian fully settle.
-          setTimeout(() => {
-            (this as any).app.commands.executeCommandById("dnd-ui-toolkit:rpg-ui-reload");
-            // Also refresh ALL open previews — the reload command only
-            // covers system-mapped folders, but notes outside those
-            // folders (e.g. examples, rule source files) may contain
-            // @[[file]].path references that failed their initial
-            // resolve because metadataCache wasn't ready at first render.
-            refreshAllMarkdownPreviews(this.app);
-            console.log("[rpg-ui] Auto-executed reload command + refreshed all previews.");
-          }, 2000);
+          // Refresh the currently active page (if any) now that systems are ready.
+          const activeFile = this.app.workspace.getActiveFile();
+          if (activeFile) {
+            refreshFilePreview(this.app, activeFile.path);
+          }
+          // Refresh pages on first focus after system load — handles
+          // cached views that rendered before the system was ready.
+          const refreshed = new Set<string>(activeFile ? [activeFile.path] : []);
+          this.registerEvent(
+            this.app.workspace.on("active-leaf-change", (leaf) => {
+              if (!leaf) return;
+              const view = leaf.view as any;
+              if (view?.getViewType?.() !== "markdown") return;
+              const path = view.file?.path;
+              if (!path || refreshed.has(path)) return;
+              refreshed.add(path);
+              refreshFilePreview(this.app, path);
+            })
+          );
           // Register cache invalidation ONLY after warmup completes.
           // vault:modify = actual file edits; metadataCache:changed =
           // Obsidian re-indexing (fires during auto-refresh too, but
@@ -609,6 +616,7 @@ export default class DndUIToolkitPlugin extends Plugin {
       },
     });
     setActiveValueResolver(this.valueResolver);
+    setImageResolverApp(this.app);
     // Warmup is deferred to onLayoutReady (above) — vault may not be
     // fully indexed during onload, so getMarkdownFiles() could miss files.
 

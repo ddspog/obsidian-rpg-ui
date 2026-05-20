@@ -107,6 +107,8 @@ export interface RuleRelatedBlock {
   kind: "related";
   /** Heading level (1–6) used for `heading: ![[link]]` entries. Default 3. */
   level: number;
+  /** When `"footer"`, a thematic break (`<hr>`) is rendered before entries. */
+  view?: "footer";
   entries: RelatedEntry[];
 }
 

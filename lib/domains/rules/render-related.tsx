@@ -59,6 +59,7 @@ function RuleRelatedView({
 
   return (
     <section className="rpg-rule-related" data-rpg-rule="related">
+      {block.view === "footer" ? <hr /> : null}
       {block.entries.map(renderEntry)}
     </section>
   );

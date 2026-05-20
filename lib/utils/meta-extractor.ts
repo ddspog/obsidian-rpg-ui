@@ -158,6 +158,11 @@ export function detectMetaFromSource(source: string): string | null {
   // rather than misrouting to SystemView.
   if (topLevelKeys.has("name")) return "feature.details";
 
+  // `rpg rule.notes` — pure markdown/text with no YAML structure.
+  // Only block type designed for arbitrary prose, so if nothing else
+  // matched and the source has content, treat it as notes.
+  if (source.trim().length > 0 && topLevelKeys.size === 0) return "rule.notes";
+
   return null;
 }
 

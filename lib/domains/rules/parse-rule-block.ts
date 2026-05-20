@@ -166,6 +166,7 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
   }
 
   let level = 3;
+  let view: "footer" | undefined;
   let rawEntries: unknown[] = [];
 
   if (Array.isArray(parsed)) {
@@ -174,6 +175,9 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
     const rec = parsed as Record<string, unknown>;
     if (typeof rec.level === "number" && rec.level >= 1 && rec.level <= 6) {
       level = Math.floor(rec.level);
+    }
+    if (rec.view === "footer") {
+      view = "footer";
     }
     if (Array.isArray(rec.entries)) {
       rawEntries = rec.entries;
@@ -185,7 +189,13 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
   // quote wikilinks and call tokens.
   if (rawEntries.length === 0) {
     const RAW_ITEM = /^\s*-\s+(.*)/;
+    const VIEW_LINE = /^\s*view\s*:\s*(\S+)/;
     for (const line of source.split("\n")) {
+      const vm = line.match(VIEW_LINE);
+      if (vm && vm[1] === "footer") {
+        view = "footer";
+        continue;
+      }
       const m = line.match(RAW_ITEM);
       if (m && m[1].trim()) rawEntries.push(m[1].trim());
     }
@@ -196,7 +206,7 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
     const entry = coerceRelatedEntry(raw);
     if (entry) entries.push(entry);
   }
-  return { kind: "related", level, entries };
+  return { kind: "related", level, view, entries };
 }
 
 const EMBED_RE = /!\[\[[^\[\]\n]+\]\]/;

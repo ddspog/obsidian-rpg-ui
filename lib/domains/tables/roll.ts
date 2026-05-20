@@ -185,3 +185,17 @@ export function formatRollOutcome(outcome: RollOutcome): string {
       return `Rolled ${outcome.rolled}, nothing found.`;
   }
 }
+
+/**
+ * Compute roll results for one footer cell. Each `kind: "roll"` segment
+ * contributes one entry; text segments are skipped.
+ */
+export function rollCell(def: TableDef, cell: { segments: Array<{ kind: string; targets?: string[]; by?: string }> }): string[] {
+  const values: string[] = [];
+  for (const seg of cell.segments) {
+    if (seg.kind !== "roll") continue;
+    const outcome = rollOnce(def, seg.targets ?? [], seg.by);
+    values.push(formatRollOutcome(outcome));
+  }
+  return values;
+}

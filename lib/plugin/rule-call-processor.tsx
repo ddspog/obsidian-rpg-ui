@@ -29,7 +29,7 @@
  * Render is sync — view functions return ReactNode, not Promise.
  */
 
-import { App, MarkdownPostProcessorContext, MarkdownRenderChild, TFile } from "obsidian";
+import { App, MarkdownPostProcessorContext, MarkdownRenderChild, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { matchAllCalls, type ParsedCall, CALL_PATTERN } from "lib/domains/references/parse-call";
@@ -72,10 +72,16 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
       if (!WHOLE_CALL_PATTERN.test(text)) continue;
       const parsed = matchAllCalls(text)[0];
       if (!parsed) continue;
-      // Verify target resolves to a real file — skip documentation
-      // placeholders like `@[[file]].fn()`.
-      const targetPath = resolveLinkToPath(deps.app, parsed.target, ctx.sourcePath);
-      if (!targetPath) continue;
+      // Verify target resolves to a real file or folder — skip
+      // documentation placeholders like `@[[file]].fn()`.
+      const isFolder = parsed.target.endsWith("/");
+      if (!isFolder) {
+        const targetPath = resolveLinkToPath(deps.app, parsed.target, ctx.sourcePath);
+        if (!targetPath) continue;
+      } else {
+        const folder = resolveFolderPath(deps.app, parsed.target);
+        if (!folder) continue;
+      }
       codeHits.push({ code, call: parsed });
     }
 
@@ -167,9 +173,53 @@ function resolveCall(
   isUnloaded: () => boolean,
   onResolved?: () => void
 ): void {
+  // ── Folder target: trailing `/` iterates every .md in the folder ───
+  if (call.target.endsWith("/")) {
+    resolveFolderCall(span, call, deps, ctx, child, isUnloaded, onResolved);
+    return;
+  }
+
   const targetPath = resolveLinkToPath(deps.app, call.target, ctx.sourcePath);
   if (!targetPath) {
     renderError(span, `Cannot resolve wikilink [[${call.target}]]`);
+    return;
+  }
+
+  // ── Special case: image file targets (banner view) ─────────────────
+  // When the target is a binary image file, skip reading it as text.
+  // Pass the resolved vault resource URL through ctx.file so the view
+  // can render it directly.
+  const IMAGE_EXTS = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
+  if (IMAGE_EXTS.test(targetPath)) {
+    const mappedSystemPath = deps.registry.findSystemFolderForFile(ctx.sourcePath);
+    void (mappedSystemPath ? deps.registry.loadSystemAsync(mappedSystemPath) : Promise.resolve(null))
+      .then(() => {
+        if (isUnloaded()) return;
+        const system = deps.registry.getSystemForFile(ctx.sourcePath);
+        const view = system?.ruleViews?.[call.fn];
+        if (!view) {
+          renderError(span, `View "${call.fn}" not registered`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.textContent = "";
+        const fileName = targetPath.split("/").pop()?.replace(/\.[^.]+$/, "") ?? targetPath;
+        const imgCtx: RuleViewCtx = {
+          name: fileName,
+          content: "",
+          frontmatter: {},
+          file: targetPath,
+        };
+        try {
+          const node = view.render(imgCtx, call.args);
+          root.render(<>{node}</>);
+        } catch (err) {
+          renderError(span, `View "${call.fn}" threw: ${(err as Error)?.message ?? err}`);
+        }
+      })
+      .finally(() => onResolved?.());
     return;
   }
 
@@ -231,8 +281,13 @@ function resolveCall(
       let matching: HarvestedBlock[] = fenced;
       let wholeFile = false;
       const firstArg = call.args[0];
-      if (typeof firstArg === "string") {
-        const filtered = fenced.filter((b) => b.frontmatter.id === firstArg);
+      if (typeof firstArg === "number" && Number.isInteger(firstArg) && firstArg >= 0 && firstArg < fenced.length) {
+        matching = [fenced[firstArg]];
+        viewArgs = call.args.slice(1);
+      } else if (typeof firstArg === "string") {
+        const filtered = fenced.filter(
+          (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
+        );
         if (filtered.length > 0) {
           matching = filtered;
           viewArgs = call.args.slice(1);
@@ -316,13 +371,19 @@ function extractContentBlocks(text: string): HarvestedBlock[] {
   const out: HarvestedBlock[] = [];
   const fences = extractAllRpgFences(text);
   for (const f of fences) {
-    if (f.entity !== "rule" || f.block !== "content") continue;
-    // Re-extract the raw fence body (fence-scan parses pure YAML, but
-    // rule.content uses YAML + `---` + markdown). Slice from the host
-    // text using the fence offsets.
-    const inner = sliceFenceBody(text, f.start, f.end);
-    const parsed = parseRuleContent(inner);
-    out.push({ body: parsed.body, frontmatter: parsed.frontmatter });
+    if (f.entity === "rule" && f.block === "content") {
+      const inner = sliceFenceBody(text, f.start, f.end);
+      const parsed = parseRuleContent(inner);
+      out.push({ body: parsed.body, frontmatter: parsed.frontmatter });
+    } else if (f.entity === "item" && f.block === "element") {
+      const bodyText = f.body?.text as string | undefined;
+      if (bodyText) {
+        const fm: Record<string, unknown> = { ...f.body };
+        delete fm.text;
+        if (f.name && !fm.id) fm.id = f.name;
+        out.push({ body: bodyText, frontmatter: fm });
+      }
+    }
   }
   return out;
 }
@@ -455,11 +516,235 @@ function resolveLinkToPath(app: App, link: string, sourcePath: string): string |
   return file instanceof TFile ? file.path : null;
 }
 
+function resolveFolderPath(app: App, link: string): TFolder | null {
+  const clean = link.replace(/\/+$/, "").split("|")[0].trim();
+  const exact = app.vault.getAbstractFileByPath(clean);
+  if (exact instanceof TFolder) return exact;
+  const suffix = "/" + clean;
+  for (const f of app.vault.getAllLoadedFiles()) {
+    if (f instanceof TFolder && (f.path === clean || f.path.endsWith(suffix))) {
+      return f;
+    }
+  }
+  return null;
+}
+
+function resolveFolderCall(
+  span: HTMLElement,
+  call: ParsedCall,
+  deps: RuleCallProcessorDeps,
+  ctx: MarkdownPostProcessorContext,
+  child: MarkdownRenderChild,
+  isUnloaded: () => boolean,
+  onResolved?: () => void
+): void {
+  const folder = resolveFolderPath(deps.app, call.target);
+  if (!folder) {
+    renderError(span, `Cannot resolve folder [[${call.target}]]`);
+    onResolved?.();
+    return;
+  }
+
+  const files = folder.children
+    .filter((f): f is TFile => f instanceof TFile && f.extension === "md")
+    .sort((a, b) => a.basename.localeCompare(b.basename));
+
+  if (files.length === 0) {
+    renderError(span, `No .md files in [[${call.target}]]`);
+    onResolved?.();
+    return;
+  }
+
+  const mappedSystemPath = deps.registry.findSystemFolderForFile(ctx.sourcePath);
+  void Promise.all([
+    Promise.all(files.map((f) => deps.app.vault.adapter.read(f.path).then((raw) => ({ file: f, raw })))),
+    mappedSystemPath ? deps.registry.loadSystemAsync(mappedSystemPath) : Promise.resolve(null),
+  ])
+    .then(([entries]) => {
+      if (isUnloaded()) return;
+
+      const system = deps.registry.getSystemForFile(ctx.sourcePath);
+      const view = system?.ruleViews?.[call.fn];
+      if (!view) {
+        renderError(span, `View "${call.fn}" not registered`);
+        return;
+      }
+
+      const nodes: React.ReactNode[] = [];
+      for (const { file: f, raw } of entries) {
+        const cleaned = stripLocalFences(raw);
+        const fenced = extractContentBlocks(cleaned);
+        if (fenced.length === 0) continue;
+
+        const fileName = f.basename;
+        const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+
+        let viewArgs = call.args;
+        let matching: HarvestedBlock[] = fenced;
+        const firstArg = call.args[0];
+        if (typeof firstArg === "number" && Number.isInteger(firstArg) && firstArg >= 0 && firstArg < fenced.length) {
+          matching = [fenced[firstArg]];
+          viewArgs = call.args.slice(1);
+        } else if (typeof firstArg === "string") {
+          const filtered = fenced.filter(
+            (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
+          );
+          if (filtered.length > 0) {
+            matching = filtered;
+            viewArgs = call.args.slice(1);
+          }
+        }
+
+        if (view.wrapper === "table") {
+          for (const b of matching) {
+            try {
+              const row = view.render(
+                { name: fileName, content: b.body, frontmatter: b.frontmatter, file: f.path },
+                viewArgs
+              );
+              nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
+            } catch (err) {
+              console.error(`rpg-call folder ${f.path} render threw`, err);
+            }
+          }
+        } else {
+          try {
+            const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
+            nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
+          } catch (err) {
+            console.error(`rpg-call folder ${f.path} render threw`, err);
+          }
+        }
+      }
+
+      span.classList.remove("rpg-call--pending");
+      span.removeAttribute("aria-label");
+      span.textContent = "";
+
+      if (view.wrapper === "table") {
+        const hostTd = span.closest("td");
+        const hostTr = hostTd?.closest("tr");
+        if (hostTr && hostTr.parentElement) {
+          const doc = span.ownerDocument;
+          const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
+          const fields = viewArgs2.map((a) => String(a));
+          for (const { file: f, raw } of entries) {
+            const cleaned = stripLocalFences(raw);
+            const fenced = extractContentBlocks(cleaned);
+            if (fenced.length === 0) continue;
+            const fileName = f.basename;
+            let matching: HarvestedBlock[] = fenced;
+            const firstArg = call.args[0];
+            if (typeof firstArg === "number" && firstArg >= 0 && firstArg < fenced.length) {
+              matching = [fenced[firstArg]];
+            } else if (typeof firstArg === "string") {
+              const filtered = fenced.filter(
+                (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
+              );
+              if (filtered.length > 0) matching = filtered;
+            }
+            for (const b of matching) {
+              const tr = doc.createElement("tr");
+              tr.className = "rpg-view rpg-view--row";
+              for (const field of fields) {
+                const td = doc.createElement("td");
+                if (field === "link") {
+                  const label = (b.frontmatter.name as string) || fileName;
+                  const a = doc.createElement("a");
+                  a.className = "internal-link";
+                  a.href = f.path;
+                  a.setAttribute("data-href", f.path);
+                  a.textContent = label;
+                  td.appendChild(a);
+                } else if (field === "name") {
+                  td.textContent = (b.frontmatter.name as string) || fileName;
+                } else {
+                  const v = resolveDotPath(b.frontmatter, field);
+                  const text = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
+                  renderCellInline(doc, td, text);
+                }
+                tr.appendChild(td);
+              }
+              hostTr.parentElement!.insertBefore(tr, hostTr);
+            }
+          }
+          hostTr.remove();
+          return;
+        }
+
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
+        const fields = viewArgs2.map((a) => String(a));
+        const thead = React.createElement(
+          "thead", null,
+          React.createElement("tr", null,
+            fields.map((a, i) =>
+              React.createElement("th", { key: i }, a.charAt(0).toUpperCase() + a.slice(1))
+            )
+          )
+        );
+        const tbody = React.createElement("tbody", null, ...nodes);
+        root.render(
+          React.createElement("table", { className: "rpg-view--table" }, thead, tbody)
+        );
+      } else {
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        root.render(<>{nodes}</>);
+      }
+    })
+    .catch((err) => {
+      renderError(span, `Folder call failed: ${(err as Error)?.message ?? err}`);
+    })
+    .finally(() => onResolved?.());
+}
+
 function renderError(span: HTMLElement, message: string): void {
   span.classList.remove("rpg-call--pending");
   span.classList.add("rpg-call--error");
   span.textContent = `[call error: ${message}]`;
   span.setAttribute("title", message);
+}
+
+function resolveDotPath(obj: Record<string, unknown>, path: string): unknown {
+  let cur: unknown = obj;
+  for (const key of path.split(".")) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[key];
+  }
+  return cur;
+}
+
+function renderCellInline(doc: Document, td: HTMLElement, text: string): void {
+  const re = /\[\[([^\]\n]+)\]\]/g;
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > 0 && text[m.index - 1] === "@") continue;
+    if (m.index > cursor) {
+      td.appendChild(doc.createTextNode(text.slice(cursor, m.index)));
+    }
+    const inner = m[1];
+    const pipe = inner.indexOf("|");
+    const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
+    const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
+    const a = doc.createElement("a");
+    a.className = "internal-link";
+    a.href = target;
+    a.setAttribute("data-href", target);
+    a.textContent = label;
+    td.appendChild(a);
+    cursor = m.index + m[0].length;
+  }
+  if (cursor < text.length) {
+    td.appendChild(doc.createTextNode(text.slice(cursor)));
+  }
+  if (td.childNodes.length === 0) {
+    td.textContent = text;
+  }
 }
 
 /**
@@ -750,8 +1035,14 @@ export function processCallsInContainer(
     if (!WHOLE_CALL_PATTERN.test(text)) continue;
     const parsed = matchAllCalls(text)[0];
     if (!parsed) continue;
-    const targetPath = resolveLinkToPath(deps.app, parsed.target, sourcePath);
-    if (!targetPath) continue;
+    const isFolder = parsed.target.endsWith("/");
+    if (!isFolder) {
+      const targetPath = resolveLinkToPath(deps.app, parsed.target, sourcePath);
+      if (!targetPath) continue;
+    } else {
+      const folder = resolveFolderPath(deps.app, parsed.target);
+      if (!folder) continue;
+    }
     codeHits.push({ code, call: parsed });
   }
 

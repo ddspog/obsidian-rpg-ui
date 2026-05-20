@@ -15,6 +15,7 @@ export { buildCompendiumIndex, expandOptionRefs } from "../domains/features/inde
 export { PendingChoiceRow } from "../components/pending-choice-row";
 export { Markdown } from "../components/markdown";
 export { parseTableBlock } from "../domains/tables/parse-table-block";
+export { RpgTable } from "../components/rpg-table";
 export { substituteExpressions } from "../domains/tables/expressions";
 export { extractSpellBlocks } from "../blocks/spell-card";
 export { classifySpellCircle, stripWikilinkToName } from "../domains/features/spellcasting";
@@ -44,3 +45,4 @@ export { ItemElementCard } from "../components/item/ItemElementCard";
 export { ItemMagicCard } from "../components/item/ItemMagicCard";
 export { ItemPersonalCard } from "../components/item/ItemPersonalCard";
 export { ItemContainerCard } from "../components/item/ItemContainerCard";
+export { resolveVaultImage } from "../domains/rules/image-resolver-api";

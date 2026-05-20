@@ -98,18 +98,35 @@ export interface ItemElementData {
 }
 
 /** Parse a single fence body into an `ItemElementData`. Returns null on
- *  malformed YAML — the caller decides whether to surface an error. */
+ *  malformed YAML — the caller decides whether to surface an error.
+ *  Supports fence mode: YAML head + `---` + markdown body (body becomes `desc`). */
 export function parseItemElement(yamlSource: string): ItemElementData | null {
   if (!yamlSource || !yamlSource.trim()) return {};
+  const [head, body] = splitItemSeparator(yamlSource);
+  const source = body !== null ? head : yamlSource;
   try {
-    const parsed = parseYAML(yamlSource);
+    const parsed = parseYAML(source);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed as ItemElementData;
+      const data = parsed as ItemElementData;
+      if (body !== null && body.trim()) {
+        data.desc = body.replace(/^\n+/, "").replace(/\n+$/, "");
+      }
+      return data;
     }
   } catch {
     return null;
   }
   return null;
+}
+
+function splitItemSeparator(raw: string): [string, string | null] {
+  const lines = raw.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === "---") {
+      return [lines.slice(0, i).join("\n"), lines.slice(i + 1).join("\n")];
+    }
+  }
+  return [raw, null];
 }
 
 /**

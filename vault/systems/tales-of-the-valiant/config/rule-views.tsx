@@ -17,7 +17,7 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide } from "rpg-ui-toolkit";
+import { Markdown, RuleSide, resolveVaultImage } from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset } from "rpg-ui-toolkit";
 import * as React from "react";
@@ -27,6 +27,42 @@ function headingText(ctx: RuleViewCtx): string | undefined {
   const fm = ctx.frontmatter as Record<string, unknown>;
   if (typeof fm.name === "string" && fm.name) return fm.name;
   return undefined;
+}
+
+function resolvePath(obj: Record<string, unknown>, path: string): unknown {
+  let cur: unknown = obj;
+  for (const key of path.split(".")) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[key];
+  }
+  return cur;
+}
+
+function renderWikilinks(text: string): React.ReactNode {
+  const re = /\[\[([^\]\n]+)\]\]/g;
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > cursor) {
+      parts.push(React.createElement(React.Fragment, { key: `t${cursor}` }, text.slice(cursor, m.index)));
+    }
+    const inner = m[1];
+    const pipe = inner.indexOf("|");
+    const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
+    const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
+    parts.push(React.createElement("a", {
+      key: `l${m.index}`,
+      className: "internal-link",
+      href: target,
+      "data-href": target,
+    }, label));
+    cursor = m.index + m[0].length;
+  }
+  if (cursor < text.length) {
+    parts.push(React.createElement(React.Fragment, { key: `t${cursor}` }, text.slice(cursor)));
+  }
+  return React.createElement(React.Fragment, null, ...parts);
 }
 
 /** Build an h{N}-prefixed view entry. Shared by `h1` … `h6` below. */
@@ -44,6 +80,19 @@ function headingView(level: 1 | 2 | 3 | 4 | 5 | 6): RuleViewEntry {
       );
     },
   };
+}
+
+type BannerHeight = "short" | "normal" | "tall" | "hero";
+type BannerPosition = "top" | "center" | "bottom";
+
+function parseBannerArgs(args?: unknown[]): { height: BannerHeight; position: BannerPosition } {
+  let height: BannerHeight = "normal";
+  let position: BannerPosition = "center";
+  for (const arg of args ?? []) {
+    if (arg === "short" || arg === "tall" || arg === "normal" || arg === "hero") height = arg;
+    else if (arg === "top" || arg === "center" || arg === "bottom") position = arg;
+  }
+  return { height, position };
 }
 
 export const ruleViews: RuleViewMap = {
@@ -75,8 +124,8 @@ export const ruleViews: RuleViewMap = {
       if (name) {
         const firstNl = ctx.content.indexOf("\n");
         source = firstNl >= 0
-          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-          : `**${name}.** ${ctx.content}`;
+          ? `***${name}.*** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
+          : `***${name}.*** ${ctx.content}`;
       } else {
         source = ctx.content;
       }
@@ -240,13 +289,64 @@ export const ruleViews: RuleViewMap = {
       const fields = (args ?? []).map((arg) => String(arg));
       const cells = fields.map((f) => {
         if (f === "name") return headingText(ctx) ?? "";
-        const v = (ctx.frontmatter as Record<string, unknown>)[f];
-        return v == null ? "" : String(v);
+        if (f === "link") {
+          const label = headingText(ctx) ?? ctx.name;
+          return React.createElement("a", {
+            className: "internal-link",
+            href: ctx.file,
+            "data-href": ctx.file,
+          }, label);
+        }
+        const v = resolvePath(ctx.frontmatter as Record<string, unknown>, f);
+        const text = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
+        if (/\[\[/.test(text)) {
+          return renderWikilinks(text);
+        }
+        return text;
       });
       return React.createElement(
         "tr",
         { className: "rpg-view rpg-view--row" },
         cells.map((cell, i) => React.createElement("td", { key: i }, cell))
+      );
+    },
+  },
+
+  /**
+   * Full-bleed banner image that breaks out of the content column.
+   * Pulls image from the target file's frontmatter (`image:` or `banner:`).
+   *
+   * Args: height preset (short|normal|tall), position (top|center|bottom).
+   *
+   *   `@[[dragon-lair]].banner()`            → normal height, center
+   *   `@[[dragon-lair]].banner(tall)`        → tall, center
+   *   `@[[dragon-lair]].banner(short, top)`  → short, top-aligned
+   */
+  banner: {
+    mode: "args",
+    render: (ctx, args) => {
+      const { height, position } = parseBannerArgs(args);
+      const fm = ctx.frontmatter as Record<string, unknown>;
+      const rawImage = fm.image ?? fm.banner ?? null;
+      // If target file itself is an image (no frontmatter image field), use it directly
+      const src = rawImage
+        ? resolveVaultImage(rawImage, ctx.file)
+        : resolveVaultImage(ctx.file, ctx.file);
+      if (!src) {
+        return React.createElement(
+          "div",
+          { className: "rpg-view rpg-view--banner rpg-view--banner--error" },
+          `[banner: could not resolve image for [[${ctx.name}]]]`
+        );
+      }
+      return React.createElement(
+        "figure",
+        { className: `rpg-view rpg-view--banner rpg-view--banner--${height}` },
+        React.createElement("img", {
+          src,
+          alt: ctx.name,
+          style: { objectPosition: position },
+        })
       );
     },
   },

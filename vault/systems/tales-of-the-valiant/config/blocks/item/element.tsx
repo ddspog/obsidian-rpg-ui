@@ -14,7 +14,10 @@ import type { ItemEntity, ItemElementProps } from "../../entities/item.types";
  * `lookup.$items[name].shop`.
  */
 const element: EntityBlock<ItemElementProps, ItemEntity> = ({ self }) => {
-  const data: ItemElementData = self;
+  const data: ItemElementData = { ...self };
+  if (!data.desc && typeof (self as Record<string, unknown>).text === "string") {
+    data.desc = (self as Record<string, unknown>).text as string;
+  }
   return <ItemElementCard data={data} renderMarkdown={(src) => <Markdown source={src} />} />;
 };
 
