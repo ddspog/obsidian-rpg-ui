@@ -7240,8 +7240,33 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   letter-spacing: 0.02em;
   padding: 4px 10px;
 }
+.rpg-table td[data-indent] {
+  padding-left: calc(10px + 1.2em * attr(data-indent type(<number>), 1));
+}
+@supports not (padding: attr(x type(<number>))) {
+  .rpg-table td[data-indent="1"] {
+    padding-left: calc(10px + 1.2em);
+  }
+  .rpg-table td[data-indent="2"] {
+    padding-left: calc(10px + 2.4em);
+  }
+  .rpg-table td[data-indent="3"] {
+    padding-left: calc(10px + 3.6em);
+  }
+}
+.rpg-table td[data-indent]::before {
+  content: "\2013";
+  margin-right: 0.4em;
+  opacity: 0.5;
+}
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,
 .rpg-table:has(a[href="#css/tx/s/wide"]) td {
+  white-space: nowrap;
+}
+.rpg-table-wrapper--wide {
+  overflow-x: auto;
+}
+.rpg-table-wrapper--wide .rpg-table {
   white-space: nowrap;
 }
 .rpg-table:has(a[href="#css/tx/s/no-top-header-border"]) thead tr:first-child {
@@ -7753,12 +7778,15 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   padding-top: var(--size-4-5, 1.25rem);
   padding-bottom: 0;
   padding-inline: var(--rpg-side-padding-inline, 1rem);
-  margin-block: calc(var(--rpg-rule-side-ribbon-poke) + var(--size-4-4, 1rem)) var(--size-4-4, 1rem);
+  margin-block: 0 var(--size-4-4, 1rem);
   background: var(--background-secondary, rgba(0, 0, 0, 0.04));
   border-radius: var(--radius-m, 8px);
   outline: 1px dashed color-mix(in srgb, var(--rpg-rule-side-color) 50%, transparent);
   outline-offset: 2px;
   color: var(--text-normal);
+}
+.rpg-rule-side--float {
+  font-size: var(--font-smaller);
 }
 .rpg-rule-side--float::before,
 .rpg-rule-side--float::after {
@@ -7988,6 +8016,10 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 }
 
 /* lib/styles/components/rule-call.css */
+.rpg-call {
+  font-family: var(--font-text);
+  font-size: var(--font-text-size);
+}
 .rpg-call--pending {
   opacity: 0.55;
   font-style: italic;
@@ -7998,6 +8030,7 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   padding: 0 4px;
   border-radius: 3px;
   font-size: 0.9em;
+  font-family: inherit;
   cursor: help;
 }
 .rpg-view--inline,
@@ -8031,6 +8064,39 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   margin-block: 0;
   padding-inline-start: var(--list-indent, 2em);
   list-style: disc;
+}
+.rpg-view--banner {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  margin-block: 1em;
+  padding: 0;
+  overflow: hidden;
+  border-block: 6px solid var(--rpg-banner-border, #1e3a5f);
+}
+.rpg-view--banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rpg-view--banner--short {
+  height: clamp(120px, 15vh, 180px);
+}
+.rpg-view--banner--normal {
+  height: clamp(180px, 25vh, 280px);
+}
+.rpg-view--banner--tall {
+  height: clamp(320px, 45vh, 500px);
+}
+.rpg-view--banner--hero {
+  height: clamp(500px, 70vh, 800px);
+}
+.rpg-view--banner--error {
+  height: auto;
+  padding: 0.5em 1em;
+  color: light-dark(#a53a2a, #f08b7e);
+  background: light-dark(rgba(165, 58, 42, 0.08), rgba(240, 139, 126, 0.14));
+  font-size: 0.9em;
 }
 
 /* lib/styles/components/rule-compendium.css */
@@ -8391,6 +8457,135 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-table-tfoot__pagination-row button.rpg-table-pagination__page.rpg-table-pagination__page--active {
   opacity: 1;
   font-weight: 600;
+}
+
+/* lib/styles/components/statblock.css */
+.rpg-statblock {
+  --statblock-title: var(--text-title, light-dark(#3a2a14, #e8d8b0));
+  --statblock-title-faint: color-mix(in srgb, var(--statblock-title) 50%, transparent);
+  --statblock-rule: var(--statblock-title);
+  font-family: var(--font-text);
+}
+.rpg-statblock-desc {
+  margin: 0 0 12px;
+}
+.rpg-statblock-desc:last-child {
+  margin: 12px 0 0;
+}
+.rpg-statblock-desc:last-child::before {
+  content: "\203b";
+  display: block;
+  text-align: center;
+  color: var(--statblock-title-faint);
+  margin-bottom: 8px;
+  letter-spacing: 0.3em;
+}
+.rpg-statblock-header {
+  background: var(--statblock-title);
+  padding: 4px 12px;
+  margin: 0;
+  border-radius: 0 10px 10px 0;
+}
+.rpg-statblock-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--background-primary, #fff);
+  letter-spacing: 0.01em;
+}
+p.rpg-statblock-subtitle {
+  margin: 4px 0;
+  font-size: 0.92em;
+}
+.rpg-statblock-stats {
+  margin: 0;
+  padding: 4px 0;
+}
+.rpg-statblock-stats > div:not(.rpg-statblock-stats-pair) {
+  display: flex;
+  gap: 4px;
+  padding: 1px 0;
+}
+.rpg-statblock-stats dt {
+  font-weight: 700;
+  color: var(--statblock-title);
+  white-space: nowrap;
+}
+.rpg-statblock-stats dt::after {
+  content: "";
+}
+.rpg-statblock-stats dd {
+  margin: 0;
+}
+.rpg-statblock-stats dd p {
+  margin: 0;
+  display: inline;
+}
+.rpg-statblock-stats-pair {
+  display: flex;
+  gap: 48px;
+}
+.rpg-statblock-stats-pair > div {
+  display: flex;
+  gap: 0;
+}
+.rpg-statblock-stats-pair dt {
+  font-weight: 700;
+  color: var(--statblock-title);
+  margin-right: 4px;
+}
+.rpg-statblock-stats-pair dd {
+  margin: 0;
+}
+.rpg-statblock-abilities {
+  width: 100%;
+  margin: 12px 0;
+  border-collapse: collapse;
+  text-align: center;
+  border-top: 2px solid var(--statblock-rule);
+  border-bottom: 2px solid var(--statblock-rule);
+}
+.rpg-statblock-abilities th {
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 4px 8px;
+  color: var(--statblock-title);
+  text-align: center;
+}
+.rpg-statblock-abilities td {
+  padding: 2px 8px 4px;
+  font-size: 0.95em;
+  text-align: center;
+}
+.cm-html-embed .rpg-statblock-abilities td,
+.markdown-rendered .rpg-statblock-abilities td,
+.cm-html-embed .rpg-statblock-abilities th,
+.markdown-rendered .rpg-statblock-abilities th {
+  border: none;
+}
+.rpg-statblock-traits {
+  margin: 10px 0;
+}
+.rpg-statblock-section {
+  margin: 12px 0 8px;
+}
+.rpg-statblock-section > h4 {
+  background: color-mix(in srgb, var(--statblock-title) 25%, transparent);
+  color: var(--statblock-title);
+  text-align: left;
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 4px 3px 0;
+  margin: 0 0 8px;
+  border-radius: 0 10px 10px 0;
+}
+.rpg-statblock-feature {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+.rpg-statblock-feature p {
+  margin: 0;
 }
 
 /* lib/styles/file-suggest.css */

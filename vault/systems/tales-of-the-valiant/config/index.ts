@@ -34,6 +34,7 @@ import featureDetails from "./blocks/feature/details";
 import featureChoice from "./blocks/feature/choice";
 import featureUnlock from "./blocks/feature/unlock";
 import featureLevel from "./blocks/feature/level";
+import stat from "./entities/stat";
 
 // Per-system rule view registry — picked up by the rule-call processor
 // via the ts-loader's `__system_module.ruleViews` extraction.
@@ -107,15 +108,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
       },
     })),
 
-    statblock: CreateEntity(({ wiki }: { wiki?: any }) => ({
-      frontmatter: [{ name: "cr", type: "number", default: 0 }],
-      blocks: {
-        header: () => null,
-        traits: () => null,
-        attributes: () => null,
-        features: () => null,
-      },
-    })),
+    stat,
   },
 
   // ── Features ──────────────────────────────────────────────────────────────────

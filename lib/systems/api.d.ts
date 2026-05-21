@@ -1532,3 +1532,59 @@ export interface RuleSideProps {
 }
 
 export declare const RuleSide: FunctionComponent<RuleSideProps>;
+
+// ── Statblock types ─────────────────────────────────────────────────────────
+
+export interface StatVehicleData {
+  name: string;
+  size: string;
+  type: string;
+  dimensions?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: StatFeatureRef[];
+  text?: string;
+  view?: string;
+  [key: string]: unknown;
+}
+
+export interface AbilityScores {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+}
+
+export interface StatFeatureRef {
+  ref: string;
+  [key: string]: unknown;
+}
+
+export interface ResolvedStatFeature {
+  name?: string;
+  type?: string;
+  text: string;
+}
+
+export interface StatblockVehicleProps {
+  name: string;
+  size: string;
+  type: string;
+  dimensions?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: ResolvedStatFeature[];
+  body?: string;
+  view?: string;
+  sourcePath?: string;
+}
+
+export declare const StatblockVehicle: FunctionComponent<StatblockVehicleProps>;
+
+export declare function resolveStatFeatures(
+  refs: StatFeatureRef[],
+  sourcePath: string,
+  selfProps: Record<string, unknown>
+): Promise<ResolvedStatFeature[]>;

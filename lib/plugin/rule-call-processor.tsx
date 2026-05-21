@@ -29,14 +29,19 @@
  * Render is sync — view functions return ReactNode, not Promise.
  */
 
-import { App, MarkdownPostProcessorContext, MarkdownRenderChild, TFile, TFolder } from "obsidian";
+import { App, MarkdownPostProcessorContext, MarkdownRenderChild, parseYaml, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { matchAllCalls, type ParsedCall, CALL_PATTERN } from "lib/domains/references/parse-call";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
+import { TabGroupView } from "lib/domains/rules/render-tab-group";
+import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
+import { StatblockVehicle } from "lib/components/statblock-vehicle";
+import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
+import type { ResolvedStatFeature } from "lib/domains/statblocks/types";
 import type { SystemRegistry } from "lib/systems/registry";
 import type { RuleViewCtx, RuleViewEntry, RuleViewMode } from "lib/systems/rule-views";
 
@@ -124,6 +129,7 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
         // than requestAnimationFrame which can fire before React's commit.
         setTimeout(() => {
           if (!childUnloaded) {
+            mergeAdjacentCallTabs(el);
             mergeAdjacentItemLists(el);
             mergeTableRows(el);
             removeBrBetweenSiblingCalls(el);
@@ -258,6 +264,40 @@ function resolveCall(
         return;
       }
 
+      // ── Special case: `stat` view extracts rpg stat.* fences ─────────
+      // `@[[file]].stat()` renders the stat block from the target file.
+      // `@[[file]].stat(desc-before)` overrides description placement.
+      if (call.fn === "stat") {
+        const statSystem = deps.registry.getSystemForFile(ctx.sourcePath);
+        const statView = statSystem?.ruleViews?.["stat"];
+        if (!statView) {
+          renderError(span, `View "stat" not registered`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const statCtx: RuleViewCtx = {
+          name: fileName,
+          content: cleaned,
+          frontmatter: fileFm,
+          file: targetPath,
+        };
+        try {
+          const node = statView.render(statCtx, call.args);
+          root.render(<>{node}</>);
+        } catch (err) {
+          renderError(span, `View "stat" threw: ${(err as Error)?.message ?? err}`);
+        }
+        return;
+      }
+
       const system = deps.registry.getSystemForFile(ctx.sourcePath);
       const view = system?.ruleViews?.[call.fn];
       if (!view) {
@@ -301,6 +341,27 @@ function resolveCall(
       // fallback render a standalone <table>. The post-render merge pass
       // (setTimeout(100) in onCallResolved) will move its rows into the
       // preceding markdown table if one exists.
+
+      if (view.wrapper === "tab-group") {
+        let body = stripFileFrontmatter(cleaned);
+        if (shouldStripFirstHeading(deps.app)) body = stripFirstHeading(body);
+        const tab: RuleTabBlock = {
+          kind: "tab",
+          name: (fileFm["tab-name"] as string) || fileName,
+          icon: fileFm["tab-icon"] as string | undefined,
+          color: fileFm["tab-color"] as string | undefined,
+          body,
+          frontmatter: fileFm,
+        };
+        span.classList.remove("rpg-call--pending");
+        span.classList.add("rpg-call--tab");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        span.setAttribute("data-rpg-call-tab-json", JSON.stringify(tab));
+        span.setAttribute("data-rpg-call-tab-source", ctx.sourcePath);
+        onResolved?.();
+        return;
+      }
 
       const root = ReactDOM.createRoot(span);
       child.register(() => {
@@ -376,9 +437,9 @@ function extractContentBlocks(text: string): HarvestedBlock[] {
       const parsed = parseRuleContent(inner);
       out.push({ body: parsed.body, frontmatter: parsed.frontmatter });
     } else if (f.entity === "item" && f.block === "element") {
-      const bodyText = f.body?.text as string | undefined;
-      if (bodyText) {
+      if (f.body) {
         const fm: Record<string, unknown> = { ...f.body };
+        const bodyText = (fm.text as string) ?? (fm.desc as string) ?? "";
         delete fm.text;
         if (f.name && !fm.id) fm.id = f.name;
         out.push({ body: bodyText, frontmatter: fm });
@@ -435,6 +496,82 @@ function sliceFenceBody(text: string, start: number, end: number): string {
   // Strip the closing fence line (a line of only backticks at the end)
   const stripped = body.replace(/\n?`{3,}\s*$/, "");
   return stripped.replace(/\n$/, "");
+}
+
+function normalizeStatValueInline(raw: unknown): string {
+  if (typeof raw === "string") return raw;
+  if (raw == null) return "";
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  if (Array.isArray(raw) && raw.length === 1 && Array.isArray(raw[0]) && raw[0].length === 1 && typeof raw[0][0] === "string") {
+    return `[[${raw[0][0]}]]`;
+  }
+  return String(raw);
+}
+
+function normalizeStatsInline(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    out[key] = normalizeStatValueInline(value);
+  }
+  return out;
+}
+
+function normalizeAbilitiesInline(raw: unknown) {
+  const defaults = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+  if (!raw || typeof raw !== "object") return defaults;
+  const obj = raw as Record<string, unknown>;
+  for (const key of Object.keys(defaults) as (keyof typeof defaults)[]) {
+    const v = obj[key];
+    if (typeof v === "number") defaults[key] = v;
+    else if (typeof v === "string") {
+      const n = parseInt(v, 10);
+      if (Number.isFinite(n)) defaults[key] = n;
+    }
+  }
+  return defaults;
+}
+
+function normalizeFeaturesInline(raw: unknown): Array<{ ref: string; [key: string]: unknown }> {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry: unknown) => {
+    if (typeof entry === "string") return { ref: entry };
+    if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>)) return entry as { ref: string; [key: string]: unknown };
+    if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
+    return null;
+  }).filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
+}
+
+function StatblockCallInline({ parsed, body, sourcePath }: {
+  parsed: Record<string, unknown>;
+  body?: string;
+  sourcePath: string;
+}) {
+  const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
+  const features = React.useMemo(() => normalizeFeaturesInline(parsed.features), [parsed.features]);
+  const name = typeof parsed.name === "string" ? parsed.name : "";
+
+  React.useEffect(() => {
+    if (features.length === 0) { setResolved([]); return; }
+    let cancelled = false;
+    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
+    resolveStatFeatures(features, sourcePath, selfProps).then((r) => {
+      if (!cancelled) setResolved(r as ResolvedStatFeature[]);
+    });
+    return () => { cancelled = true; };
+  }, [features, name, sourcePath]);
+
+  return React.createElement(StatblockVehicle, {
+    name,
+    size: typeof parsed.size === "string" ? parsed.size : "",
+    type: typeof parsed.type === "string" ? parsed.type : "",
+    dimensions: typeof parsed.dimensions === "string" ? parsed.dimensions : undefined,
+    stats: normalizeStatsInline(parsed.stats),
+    abilities: normalizeAbilitiesInline(parsed.abilities),
+    features: resolved,
+    body,
+    sourcePath,
+  });
 }
 
 function renderByMode(
@@ -570,11 +707,97 @@ function resolveFolderCall(
         return;
       }
 
+      if (view.wrapper === "tab-group") {
+        const tabs: RuleTabBlock[] = [];
+        for (const { file: f, raw } of entries) {
+          const cleaned = stripLocalFences(raw);
+          let body = stripFileFrontmatter(cleaned);
+          if (shouldStripFirstHeading(deps.app)) body = stripFirstHeading(body);
+          const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          tabs.push({
+            kind: "tab",
+            name: (fileFm["tab-name"] as string) || f.basename,
+            icon: fileFm["tab-icon"] as string | undefined,
+            color: fileFm["tab-color"] as string | undefined,
+            body,
+            frontmatter: fileFm,
+          });
+        }
+        tabs.sort((a, b) => {
+          const oa = typeof a.frontmatter["tab-order"] === "number" ? a.frontmatter["tab-order"] : Infinity;
+          const ob = typeof b.frontmatter["tab-order"] === "number" ? b.frontmatter["tab-order"] : Infinity;
+          return oa - ob;
+        });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        root.render(<TabGroupView tabs={tabs} sourcePath={ctx.sourcePath} />);
+        return;
+      }
+
       const nodes: React.ReactNode[] = [];
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
         const fenced = extractContentBlocks(cleaned);
-        if (fenced.length === 0) continue;
+
+        // When no rule.content blocks exist, try stat.* fences so
+        // `.row(link, cost, ...)` can read fields from statblock YAML.
+        if (fenced.length === 0) {
+          const statFenceRe = /```+\s*rpg\s+stat\.\w+\s*\n([\s\S]*?)```+/;
+          const statMatch = statFenceRe.exec(cleaned);
+          if (statMatch) {
+            const statRaw = statMatch[1];
+            const sepIdx = statRaw.indexOf("\n---\n");
+            const yamlPart = sepIdx >= 0 ? statRaw.slice(0, sepIdx) : statRaw;
+            let statFm: Record<string, unknown> = {};
+            try {
+              const parsed = parseYaml(yamlPart);
+              if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                statFm = parsed as Record<string, unknown>;
+              }
+            } catch { /* ignore */ }
+            const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+              | Record<string, unknown>
+              | undefined) ?? {};
+            const mergedFm = { ...fileFm, ...statFm };
+            const fileName = f.basename;
+            if (view.wrapper === "table") {
+              try {
+                const row = view.render(
+                  { name: fileName, content: "", frontmatter: mergedFm, file: f.path },
+                  call.args
+                );
+                nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
+              } catch (err) {
+                console.error(`rpg-call folder ${f.path} render threw`, err);
+              }
+            } else {
+              const bodyText = sepIdx >= 0 ? statRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : undefined;
+              try {
+                const headingLevel = call.fn.match(/^h(\d)$/)?.[1];
+                const HeadingTag = headingLevel ? `h${headingLevel}` as keyof JSX.IntrinsicElements : "h4";
+                const node = React.createElement(
+                  React.Fragment,
+                  null,
+                  React.createElement(HeadingTag, null, fileName),
+                  React.createElement(StatblockCallInline, {
+                    parsed: mergedFm,
+                    body: bodyText,
+                    sourcePath: f.path,
+                  })
+                );
+                nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
+              } catch (err) {
+                console.error(`rpg-call folder ${f.path} render threw`, err);
+              }
+            }
+          }
+          continue;
+        }
 
         const fileName = f.basename;
         const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
@@ -628,28 +851,56 @@ function resolveFolderCall(
         const hostTr = hostTd?.closest("tr");
         if (hostTr && hostTr.parentElement) {
           const doc = span.ownerDocument;
+          const hostIndent = hostTd?.getAttribute("data-indent");
           const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
           const fields = viewArgs2.map((a) => String(a));
           for (const { file: f, raw } of entries) {
             const cleaned = stripLocalFences(raw);
             const fenced = extractContentBlocks(cleaned);
-            if (fenced.length === 0) continue;
-            const fileName = f.basename;
-            let matching: HarvestedBlock[] = fenced;
-            const firstArg = call.args[0];
-            if (typeof firstArg === "number" && firstArg >= 0 && firstArg < fenced.length) {
-              matching = [fenced[firstArg]];
-            } else if (typeof firstArg === "string") {
-              const filtered = fenced.filter(
-                (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
-              );
-              if (filtered.length > 0) matching = filtered;
+            let matching: HarvestedBlock[];
+            if (fenced.length === 0) {
+              const statFenceRe = /```+\s*rpg\s+stat\.\w+\s*\n([\s\S]*?)```+/;
+              const statMatch = statFenceRe.exec(cleaned);
+              if (!statMatch) continue;
+              const statRaw = statMatch[1];
+              const sepIdx = statRaw.indexOf("\n---\n");
+              const yamlPart = sepIdx >= 0 ? statRaw.slice(0, sepIdx) : statRaw;
+              let statFm: Record<string, unknown> = {};
+              try {
+                const parsed = parseYaml(yamlPart);
+                if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                  statFm = parsed as Record<string, unknown>;
+                }
+              } catch { /* ignore */ }
+              const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+                | Record<string, unknown>
+                | undefined) ?? {};
+              matching = [{ body: "", frontmatter: { ...fileFm, ...statFm } }];
+            } else {
+              matching = fenced;
+              const firstArg = call.args[0];
+              if (typeof firstArg === "number" && firstArg >= 0 && firstArg < fenced.length) {
+                matching = [fenced[firstArg]];
+              } else if (typeof firstArg === "string") {
+                const filtered = fenced.filter(
+                  (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
+                );
+                if (filtered.length > 0) matching = filtered;
+              }
             }
+            const fileName = f.basename;
             for (const b of matching) {
               const tr = doc.createElement("tr");
               tr.className = "rpg-view rpg-view--row";
+              let isFirst = true;
               for (const field of fields) {
                 const td = doc.createElement("td");
+                if (isFirst && hostIndent) {
+                  td.setAttribute("data-indent", hostIndent);
+                  isFirst = false;
+                } else {
+                  isFirst = false;
+                }
                 if (field === "link") {
                   const label = (b.frontmatter.name as string) || fileName;
                   const a = doc.createElement("a");
@@ -866,6 +1117,79 @@ function removeBrBetweenSiblingCalls(root: HTMLElement): void {
   }
 }
 
+/**
+ * After all calls resolve, group adjacent `.rpg-call--tab` spans into
+ * a single TabGroupView. Each span stores its tab data as JSON in a
+ * data attribute; this pass collects groups, renders one tab view per
+ * group, and removes the extra spans.
+ */
+function mergeAdjacentCallTabs(root: HTMLElement): void {
+  const allTabs = Array.from(root.querySelectorAll(".rpg-call--tab")) as HTMLElement[];
+  if (allTabs.length === 0) return;
+
+  const groups: HTMLElement[][] = [];
+  let current: HTMLElement[] = [allTabs[0]];
+
+  for (let i = 1; i < allTabs.length; i++) {
+    if (isCallTabAdjacent(allTabs[i - 1], allTabs[i])) {
+      current.push(allTabs[i]);
+    } else {
+      groups.push(current);
+      current = [allTabs[i]];
+    }
+  }
+  groups.push(current);
+
+  for (const group of groups) {
+    const tabs: RuleTabBlock[] = [];
+    let sourcePath = "";
+    for (const el of group) {
+      const json = el.getAttribute("data-rpg-call-tab-json");
+      if (!json) continue;
+      try { tabs.push(JSON.parse(json) as RuleTabBlock); } catch { continue; }
+      if (!sourcePath) sourcePath = el.getAttribute("data-rpg-call-tab-source") ?? "";
+    }
+    if (tabs.length === 0) continue;
+    const leader = group[0];
+    leader.classList.remove("rpg-call--tab");
+    leader.removeAttribute("data-rpg-call-tab-json");
+    leader.removeAttribute("data-rpg-call-tab-source");
+    const tabRoot = ReactDOM.createRoot(leader);
+    tabRoot.render(<TabGroupView tabs={tabs} sourcePath={sourcePath} />);
+    for (let i = 1; i < group.length; i++) {
+      let prev: Node | null = group[i].previousSibling;
+      while (
+        prev &&
+        ((prev.nodeType === Node.ELEMENT_NODE && (prev as Element).tagName === "BR") ||
+          (prev.nodeType === Node.TEXT_NODE && !prev.textContent?.trim()))
+      ) {
+        const toRemove = prev;
+        prev = prev.previousSibling;
+        toRemove.parentNode?.removeChild(toRemove);
+      }
+      group[i].remove();
+    }
+  }
+}
+
+function isCallTabAdjacent(a: HTMLElement, b: HTMLElement): boolean {
+  if (a.parentElement !== b.parentElement) return false;
+  let node: Node | null = a.nextSibling;
+  while (node) {
+    if (node === b) return true;
+    if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "BR") {
+      node = node.nextSibling;
+      continue;
+    }
+    if (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()) {
+      node = node.nextSibling;
+      continue;
+    }
+    return false;
+  }
+  return false;
+}
+
 /** Check if two sibling elements are adjacent (only whitespace text nodes between). */
 function areAdjacent(a: Element, b: Element): boolean {
 
@@ -948,9 +1272,14 @@ export function setupGlobalTableMerger(): void {
           if (hostTd) {
             const hostTr = hostTd.closest("tr");
             if (hostTr) {
+              const hostIndent = hostTd.getAttribute("data-indent");
               const sourceBody = reactTable.querySelector("tbody") ?? reactTable;
               const rows = Array.from(sourceBody.querySelectorAll("tr"));
               for (const row of rows) {
+                if (hostIndent) {
+                  const firstTd = row.querySelector("td");
+                  if (firstTd) firstTd.setAttribute("data-indent", hostIndent);
+                }
                 hostTr.parentElement?.insertBefore(row, hostTr);
               }
               hostTr.remove();

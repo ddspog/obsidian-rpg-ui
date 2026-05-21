@@ -17,9 +17,9 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide, resolveVaultImage } from "rpg-ui-toolkit";
+import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures } from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
-import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset } from "rpg-ui-toolkit";
+import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
 
 /** Heading text: use explicit `name` from frontmatter, or undefined if absent. */
@@ -93,6 +93,84 @@ function parseBannerArgs(args?: unknown[]): { height: BannerHeight; position: Ba
     else if (arg === "top" || arg === "center" || arg === "bottom") position = arg;
   }
   return { height, position };
+}
+
+function normalizeStatValue(raw: unknown): string {
+  if (typeof raw === "string") return raw;
+  if (raw == null) return "";
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  if (Array.isArray(raw) && raw.length === 1 && Array.isArray(raw[0]) && raw[0].length === 1 && typeof raw[0][0] === "string") {
+    return `[[${raw[0][0]}]]`;
+  }
+  return String(raw);
+}
+
+function normalizeStats(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    out[key] = normalizeStatValue(value);
+  }
+  return out;
+}
+
+function normalizeAbilities(raw: unknown): { str: number; dex: number; con: number; int: number; wis: number; cha: number } {
+  const defaults = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+  if (!raw || typeof raw !== "object") return defaults;
+  const obj = raw as Record<string, unknown>;
+  for (const key of Object.keys(defaults) as (keyof typeof defaults)[]) {
+    const v = obj[key];
+    if (typeof v === "number") defaults[key] = v;
+    else if (typeof v === "string") {
+      const n = parseInt(v, 10);
+      if (Number.isFinite(n)) defaults[key] = n;
+    }
+  }
+  return defaults;
+}
+
+function normalizeFeatures(raw: unknown): Array<{ ref: string; [key: string]: unknown }> {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry: unknown) => {
+    if (typeof entry === "string") return { ref: entry };
+    if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>)) return entry as { ref: string; [key: string]: unknown };
+    if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
+    return null;
+  }).filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
+}
+
+function StatblockCall({ parsed, body, view, sourcePath }: {
+  parsed: Record<string, unknown>;
+  body?: string;
+  view?: string;
+  sourcePath: string;
+}) {
+  const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
+  const features = React.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
+  const name = typeof parsed.name === "string" ? parsed.name : "";
+
+  React.useEffect(() => {
+    if (features.length === 0) { setResolved([]); return; }
+    let cancelled = false;
+    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
+    resolveStatFeatures(features, sourcePath, selfProps).then((r: ResolvedStatFeature[]) => {
+      if (!cancelled) setResolved(r);
+    });
+    return () => { cancelled = true; };
+  }, [features, name, sourcePath]);
+
+  return React.createElement(StatblockVehicle, {
+    name,
+    size: typeof parsed.size === "string" ? parsed.size : "",
+    type: typeof parsed.type === "string" ? parsed.type : "",
+    dimensions: typeof parsed.dimensions === "string" ? parsed.dimensions : undefined,
+    stats: normalizeStats(parsed.stats),
+    abilities: normalizeAbilities(parsed.abilities),
+    features: resolved,
+    body,
+    view,
+    sourcePath,
+  });
 }
 
 export const ruleViews: RuleViewMap = {
@@ -313,6 +391,24 @@ export const ruleViews: RuleViewMap = {
   },
 
   /**
+   * Tab view — renders each file as a tab in a TabGroupView.
+   * Folder calls produce all tabs at once; single-file calls merge
+   * with adjacent `.tab()` calls.
+   *
+   * Frontmatter fields: `tab-name`, `tab-icon`, `tab-color`, `tab-order`.
+   *
+   *   `@[[class-features/]].tab()`  → folder: all files as tabs
+   *   `@[[Fighter]].tab()`          → single tab, merges with neighbors
+   */
+  tab: {
+    mode: "join",
+    wrapper: "tab-group",
+    render: (ctx) => {
+      return React.createElement(Markdown, { source: ctx.content, sourcePath: ctx.file });
+    },
+  },
+
+  /**
    * Full-bleed banner image that breaks out of the content column.
    * Pulls image from the target file's frontmatter (`image:` or `banner:`).
    *
@@ -348,6 +444,51 @@ export const ruleViews: RuleViewMap = {
           style: { objectPosition: position },
         })
       );
+    },
+  },
+
+  /**
+   * Statblock import: renders a `stat.vehicle` (or other stat.*) block
+   * from the target file inline.
+   *
+   *   `@[[Galley]].stat()`            → default view from the file
+   *   `@[[Galley]].stat(desc-before)` → description before statblock
+   *   `@[[Galley]].stat(desc-after)`  → description after statblock
+   */
+  stat: {
+    mode: "join",
+    render: (ctx, args) => {
+      const fenceRe = /```+\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)```+/;
+      const m = fenceRe.exec(ctx.content);
+      if (!m) return null;
+      const raw = m[2];
+      const sepIdx = raw.indexOf("\n---\n");
+      const sepEnd = raw.indexOf("\n---");
+      const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1);
+      let yamlText: string;
+      let bodyText: string | undefined;
+      if (effectiveSep >= 0) {
+        yamlText = raw.slice(0, effectiveSep);
+        bodyText = raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
+      } else {
+        yamlText = raw;
+      }
+      let parsed: Record<string, unknown> = {};
+      try {
+        const { parse } = require("yaml");
+        const result = parse(yamlText);
+        if (result && typeof result === "object" && !Array.isArray(result)) parsed = result;
+      } catch { /* ignore */ }
+
+      const viewOverride = typeof args?.[0] === "string" ? args[0] : undefined;
+      const view = viewOverride ?? (typeof parsed.view === "string" ? parsed.view : undefined);
+
+      return React.createElement(StatblockCall, {
+        parsed,
+        body: bodyText,
+        view,
+        sourcePath: ctx.file,
+      });
     },
   },
 };

@@ -300,6 +300,8 @@ export async function evaluateSystemBundle(
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const valueResolverApi = require("../domains/rules/value-resolver-api");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const imageResolverApi = require("../domains/rules/image-resolver-api");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const ruleRender = require("../domains/rules/render-rule-block");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const parseSourceDocMod = require("../domains/features/parse-source-doc");
@@ -333,6 +335,10 @@ export async function evaluateSystemBundle(
           const itemPersonalCard = require("../components/item/ItemPersonalCard");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const itemContainerCard = require("../components/item/ItemContainerCard");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const statblockComponent = require("../components/statblock-vehicle");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const statblockResolver = require("../domains/statblocks/resolve-features");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
@@ -375,8 +381,13 @@ export async function evaluateSystemBundle(
             getRuleValue: valueResolverApi.getRuleValue,
             getRuleValuesById: valueResolverApi.getRuleValuesById,
             listRuleValues: valueResolverApi.listRuleValues,
+            // Vault image resolver: turns frontmatter image paths into URLs.
+            resolveVaultImage: imageResolverApi.resolveVaultImage,
             // Rule side wrapper component — view authors compose it freely.
             RuleSide: ruleRender.RuleSide,
+            // Statblock components and helpers.
+            StatblockVehicle: statblockComponent.StatblockVehicle,
+            resolveStatFeatures: statblockResolver.resolveStatFeatures,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.
