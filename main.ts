@@ -38,6 +38,7 @@ import {
   RuleTabRenderChild,
   subtypeFromMeta,
 } from "lib/domains/rules";
+import { installUnfoldObserver } from "lib/domains/rules/render-tab-group";
 import { renderSpellBlock } from "lib/blocks/spell-card";
 import { FileRefCache } from "lib/domains/references";
 import { ReferenceRegistry } from "lib/plugin/reference-registry";
@@ -137,6 +138,7 @@ export default class DndUIToolkitPlugin extends Plugin {
     // to finish loading then auto-refresh so views render with the loaded
     // system's ruleViews on first open — no manual "Reload systems" needed.
     this.app.workspace.onLayoutReady(() => {
+      installUnfoldObserver();
       const systemPaths = new Set(registry.getFolderMappings().values());
       Promise.all([
         // Load system bundles
@@ -147,8 +149,8 @@ export default class DndUIToolkitPlugin extends Plugin {
         ),
       ])
         .then(() => {
-          console.log(
-            `[rpg-ui] Systems loaded + value resolver warmed (${this.valueResolver?.list().size ?? 0} rules indexed).`
+          console.debug(
+            `[rpg-ui] Systems loaded (${this.valueResolver?.list().size ?? 0} rules indexed).`
           );
           // Refresh the currently active page (if any) now that systems are ready.
           const activeFile = this.app.workspace.getActiveFile();

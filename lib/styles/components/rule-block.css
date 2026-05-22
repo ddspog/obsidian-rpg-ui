@@ -618,12 +618,16 @@
 
 .rpg-subtab-group {
   position: relative;
+  --subtab-offset: 20%;
+  --subtab-w1: 40%;
+  --subtab-w2: 18%;
+  --subtab-w3: 13.5%;
 }
 
 .rpg-subtab-group__nav {
   position: relative;
-  margin-left: -20%;
-  width: calc(80% + 20%);
+  margin-left: calc(-1 * var(--subtab-offset));
+  width: calc(80% + var(--subtab-offset));
   margin-top: 24px;
   margin-bottom: 24px;
 }
@@ -711,4 +715,86 @@
 
 .rpg-subtab-group__panel {
   min-height: 100px;
+}
+
+/* ─── Sub-tab responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 1400px) {
+  .rpg-subtab-group {
+    --subtab-offset: 10%;
+    --subtab-w1: 30%;
+    --subtab-w2: 8%;
+    --subtab-w3: 3.5%;
+  }
+
+  .rpg-subtab-group__nav {
+    width: calc(90% + var(--subtab-offset));
+  }
+}
+
+@media (max-width: 1200px) {
+  .rpg-subtab-group {
+    --subtab-offset: 0%;
+    --subtab-w1: 100%;
+    --subtab-w2: 100%;
+    --subtab-w3: 100%;
+  }
+
+  .rpg-subtab-group__nav {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    justify-content: center;
+    padding: 6px 20px;
+    border-left: 2px solid var(--text-title, currentColor);
+    border-right: 2px solid var(--text-title, currentColor);
+    border-top: none;
+    border-bottom: none;
+    box-shadow: none;
+    overflow: visible;
+    position: relative;
+  }
+
+  .rpg-subtab-group__nav::before,
+  .rpg-subtab-group__nav::after {
+    content: "";
+    position: absolute;
+    height: 100%;
+    width: 2px;
+    background: var(--text-title, currentColor);
+    pointer-events: none;
+    transform: none;
+  }
+
+  .rpg-subtab-group__nav::before {
+    left: -6px;
+    right: auto;
+    top: 0;
+  }
+
+  .rpg-subtab-group__nav::after {
+    right: -6px;
+    left: auto;
+    top: 0;
+  }
+
+  .rpg-subtab-group__btn {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    font-size: 0.8em !important;
+    opacity: 1 !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    transform: none !important;
+  }
+
+  .rpg-subtab-group__btn--active {
+    width: auto;
+    border-radius: 6px;
+  }
 }

@@ -275,6 +275,7 @@ function resolveCall(
           renderError(span, `View "stat" not registered`);
           return;
         }
+        const chainHeading = call.chain.find((s) => /^h\d$/.test(s.fn));
         const root = ReactDOM.createRoot(span);
         child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
         span.classList.remove("rpg-call--pending");
@@ -292,7 +293,12 @@ function resolveCall(
         };
         try {
           const node = statView.render(statCtx, call.args);
-          root.render(<>{node}</>);
+          if (chainHeading) {
+            const HeadingTag = chainHeading.fn as keyof React.JSX.IntrinsicElements;
+            root.render(<>{React.createElement(HeadingTag, null, fileName)}{node}</>);
+          } else {
+            root.render(<>{node}</>);
+          }
         } catch (err) {
           renderError(span, `View "stat" threw: ${(err as Error)?.message ?? err}`);
         }
@@ -377,7 +383,6 @@ function resolveCall(
 
       if (view.wrapper === "tab-group") {
         let body = stripFileFrontmatter(cleaned);
-        if (shouldStripFirstHeading(deps.app)) body = stripFirstHeading(body);
         const tab: RuleTabBlock = {
           kind: "tab",
           name: (fileFm["tab-name"] as string) || fileName,
@@ -575,10 +580,11 @@ function normalizeFeaturesInline(raw: unknown): Array<{ ref: string; [key: strin
   }).filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
 }
 
-function StatblockCallInline({ parsed, body, sourcePath }: {
+function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
   parsed: Record<string, unknown>;
   body?: string;
   sourcePath: string;
+  hideTitle?: boolean;
 }) {
   const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
   const features = React.useMemo(() => normalizeFeaturesInline(parsed.features), [parsed.features]);
@@ -603,6 +609,7 @@ function StatblockCallInline({ parsed, body, sourcePath }: {
     abilities: normalizeAbilitiesInline(parsed.abilities),
     features: resolved,
     body,
+    hideTitle,
     sourcePath,
   });
 }
@@ -624,6 +631,7 @@ function StatblockCallInline({ parsed, body, sourcePath }: {
 interface ChainResult {
   pass: boolean;
   blockSpec?: string;
+  headingLevel?: number;
 }
 
 function applyChain(
@@ -632,6 +640,7 @@ function applyChain(
 ): ChainResult {
   let pass = true;
   let blockSpec: string | undefined;
+  let headingLevel: number | undefined;
 
   for (const seg of chain) {
     if (seg.fn === "block") {
@@ -645,10 +654,13 @@ function applyChain(
         pass = false;
         break;
       }
+    } else {
+      const hMatch = seg.fn.match(/^h(\d)$/);
+      if (hMatch) headingLevel = parseInt(hMatch[1], 10);
     }
   }
 
-  return { pass, blockSpec };
+  return { pass, blockSpec, headingLevel };
 }
 
 /**
@@ -825,7 +837,6 @@ function resolveFolderCall(
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           let body = stripFileFrontmatter(cleaned);
-          if (shouldStripFirstHeading(deps.app)) body = stripFirstHeading(body);
           const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
@@ -857,14 +868,16 @@ function resolveFolderCall(
         const cleaned = stripLocalFences(raw);
 
         // Apply chain operations (filter, block)
+        let chainHeadingLevel: number | undefined;
         if (call.chain.length > 0) {
           const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
           const blockSpec = call.chain.find((s) => s.fn === "block");
           const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined);
-          const { pass } = applyChain(call.chain, fileData);
+          const { pass, headingLevel } = applyChain(call.chain, fileData);
           if (!pass) continue;
+          chainHeadingLevel = headingLevel;
         }
 
         const fenced = extractContentBlocks(cleaned);
@@ -902,17 +915,45 @@ function resolveFolderCall(
                 console.error(`rpg-call folder ${f.path} render threw`, err);
               }
             } else {
-              try {
-                const viewCtx: RuleViewCtx = {
-                  name: fileName,
-                  content: cleaned,
-                  frontmatter: mergedFm,
-                  file: f.path,
-                };
-                const node = view.render(viewCtx, call.args);
-                nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
-              } catch (err) {
-                console.error(`rpg-call folder ${f.path} render threw`, err);
+              const isStatFence = /```+\s*rpg\s+stat\.\w+/.test(cleaned);
+              const hLevel = chainHeadingLevel ?? (call.fn.match(/^h(\d)$/)?.[1] ? parseInt(call.fn.match(/^h(\d)$/)![1], 10) : undefined);
+              if (isStatFence) {
+                try {
+                  const headingEl = hLevel
+                    ? React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName)
+                    : null;
+                  const node = React.createElement(
+                    React.Fragment,
+                    null,
+                    headingEl,
+                    React.createElement(StatblockCallInline, {
+                      parsed: mergedFm,
+                      body: bodyText,
+                      sourcePath: f.path,
+                    })
+                  );
+                  nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
+                } catch (err) {
+                  console.error(`rpg-call folder ${f.path} render threw`, err);
+                }
+              } else {
+                try {
+                  const viewCtx: RuleViewCtx = {
+                    name: fileName,
+                    content: cleaned,
+                    frontmatter: mergedFm,
+                    file: f.path,
+                  };
+                  const terminalNode = view.render(viewCtx, call.args);
+                  if (hLevel && call.fn !== `h${hLevel}`) {
+                    const headingEl = React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName);
+                    nodes.push(React.createElement(React.Fragment, { key: f.path }, headingEl, terminalNode));
+                  } else {
+                    nodes.push(React.createElement(React.Fragment, { key: f.path }, terminalNode));
+                  }
+                } catch (err) {
+                  console.error(`rpg-call folder ${f.path} render threw`, err);
+                }
               }
             }
           }

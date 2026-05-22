@@ -17,6 +17,7 @@ export interface StatblockVehicleProps {
   features: ResolvedStatFeature[];
   body?: string;
   view?: string;
+  hideTitle?: boolean;
   sourcePath?: string;
 }
 
@@ -63,6 +64,7 @@ export function StatblockVehicle({
   features,
   body,
   view,
+  hideTitle,
   sourcePath,
 }: StatblockVehicleProps) {
   const { traits, sections } = React.useMemo(() => groupFeatures(features), [features]);
@@ -79,9 +81,11 @@ export function StatblockVehicle({
     <article className="rpg-statblock rpg-statblock-vehicle">
       {!descAfter && description}
 
-      <header className="rpg-statblock-header">
-        <h3>{name}</h3>
-      </header>
+      {!hideTitle && (
+        <header className="rpg-statblock-header">
+          <h3>{name}</h3>
+        </header>
+      )}
       <p className="rpg-statblock-subtitle">
         <em>{subtitle}</em>
       </p>

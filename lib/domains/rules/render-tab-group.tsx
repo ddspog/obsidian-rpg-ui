@@ -112,7 +112,7 @@ function SubTabGroupView({
           const radiusStyle: React.CSSProperties = isAbove
             ? { borderRadius: "0 24px 0 0" }
             : { borderRadius: "0 0 24px 0" };
-          const widthPercent = absDistance === 1 ? 40 : absDistance === 2 ? 18 : 13.5;
+          const widthVar = absDistance === 1 ? "var(--subtab-w1, 40%)" : absDistance === 2 ? "var(--subtab-w2, 18%)" : "var(--subtab-w3, 13.5%)";
           const padding = 12 * Math.pow(0.75, absDistance);
           return (
             <div
@@ -125,7 +125,7 @@ function SubTabGroupView({
                 height: `${lineHpx}rem`,
                 lineHeight: `${lineHpx}rem`,
                 fontSize: `${scale * 0.85}rem`,
-                width: `${widthPercent}%`,
+                width: widthVar,
                 padding: `0 ${padding}px`,
                 ...posStyle,
                 ...radiusStyle,
@@ -503,11 +503,9 @@ const mergingNow = new WeakSet<HTMLElement>();
 
 function scheduleMerge(tabEl: HTMLElement, retries = 8): void {
   if (!tabEl.isConnected) {
-    console.log("[subtab] not connected, retries left:", retries, tabEl.className);
     if (retries > 0) {
       setTimeout(() => scheduleMerge(tabEl, retries - 1), 150);
     } else {
-      console.warn("[subtab] gave up waiting for connection");
     }
     return;
   }
@@ -515,16 +513,11 @@ function scheduleMerge(tabEl: HTMLElement, retries = 8): void {
     tabEl.closest(".rpg-rule-tab-group__panel") ??
     tabEl.closest("[data-rpg-rule='tab']")) as HTMLElement | null;
   if (!sizer) {
-    console.log("[subtab] connected but no sizer found, retries left:", retries,
-      "parents:", tabEl.parentElement?.className, tabEl.parentElement?.parentElement?.className);
     if (retries > 0) {
       setTimeout(() => scheduleMerge(tabEl, retries - 1), 150);
-    } else {
-      console.warn("[subtab] gave up finding sizer");
     }
     return;
   }
-  console.log("[subtab] found sizer:", sizer.className, "tabs in sizer:", sizer.querySelectorAll(`.${TAB_CLASS}`).length);
   const existing = pendingMerges.get(sizer);
   if (existing) clearTimeout(existing);
   const timer = setTimeout(() => {
@@ -559,7 +552,6 @@ function runMerge(sizer: HTMLElement): void {
     const allTabs = Array.from(
       sizer.querySelectorAll(`.${TAB_CLASS}`)
     ) as HTMLElement[];
-    console.log("[subtab] runMerge: found", allTabs.length, "tabs in", sizer.className);
     if (allTabs.length === 0) return;
 
     const groups: HTMLElement[][] = [];
@@ -768,7 +760,6 @@ export class RuleTabRenderChild extends MarkdownRenderChild {
   }
 
   onload(): void {
-    console.log("[subtab] RuleTabRenderChild.onload:", this.block.name, "connected:", this.containerEl.isConnected);
     this.containerEl.classList.add(TAB_CLASS);
     this.containerEl.setAttribute("data-rpg-rule", "tab");
     this.containerEl.setAttribute("data-rpg-tab-json", JSON.stringify(this.block));
@@ -793,4 +784,42 @@ export class RuleTabRenderChild extends MarkdownRenderChild {
     tabDataStore.delete(this.containerEl);
     tabSourcePathStore.delete(this.containerEl);
   }
+}
+
+let globalUnfoldObserver: MutationObserver | null = null;
+
+export function installUnfoldObserver(): void {
+  if (globalUnfoldObserver) return;
+  globalUnfoldObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "attributes") {
+        const target = mutation.target as HTMLElement;
+        if (
+          (mutation.attributeName === "class" && !target.classList.contains("is-collapsed")) ||
+          (mutation.attributeName === "open" && (target as HTMLDetailsElement).open)
+        ) {
+          const tabs = target.querySelectorAll(`.${TAB_CLASS}`);
+          if (tabs.length > 0) {
+            for (const tab of Array.from(tabs) as HTMLElement[]) {
+              scheduleMerge(tab);
+            }
+          }
+        }
+      }
+      for (const added of Array.from(mutation.addedNodes)) {
+        if (!(added instanceof HTMLElement)) continue;
+        const tabs = added.querySelectorAll(`.${TAB_CLASS}`);
+        for (const tab of Array.from(tabs) as HTMLElement[]) {
+          scheduleMerge(tab);
+        }
+      }
+    }
+  });
+  const body = document.querySelector(".app-container") ?? document.body;
+  globalUnfoldObserver.observe(body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "open"],
+  });
 }
