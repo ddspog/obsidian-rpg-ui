@@ -40,8 +40,9 @@ describe("extractItemMagicBlocks", () => {
     const fences = extractItemMagicBlocks(doc);
     expect(fences).toHaveLength(1);
     expect(fences[0].variants).toBeDefined();
-    expect(fences[0].variants?.["+1"].bonus).toBe("+1");
-    expect(fences[0].variants?.["+2"].rarity).toBe("Rare");
+    const variants = fences[0].variants as Record<string, any>;
+    expect(variants["+1"].bonus).toBe("+1");
+    expect(variants["+2"].rarity).toBe("Rare");
   });
 
   it("returns an empty array for docs with no magic fence", () => {

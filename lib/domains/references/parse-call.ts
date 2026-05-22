@@ -1,9 +1,11 @@
 /**
- * Parse `@[[file]].fn(args)` call expressions.
+ * Parse `@[[file]].fn(args)` call expressions, with optional chaining.
  *
- * Distinct from the property-path form (`@[[file]].path.to.key`) handled
- * by `parse.ts`: a call REQUIRES parentheses. Without them, the path
- * parser claims the token. With them, this module claims it.
+ * Supports chained calls:
+ *   `@[[folder/]].filter(rarity == Rare).block(item.magic).magic()`
+ *
+ * The last segment is the terminal (render function). All preceding
+ * segments are chain operations (filter, block, etc.).
  *
  * Args grammar:
  *   - bare identifier:  `name`         → `"name"` (string)
@@ -19,33 +21,56 @@
  * Empty parens are valid: `@[[file]].view()` → `args: []`.
  */
 
+export interface ChainSegment {
+  fn: string;
+  args: unknown[];
+}
+
 export interface ParsedCall {
   /** Raw inner text of the wikilink (without `[[` `]]`). */
   target: string;
-  /** Function name (the identifier after the dot). */
+  /** Function name (the terminal — last in the chain). */
   fn: string;
-  /** Parsed positional args. */
+  /** Parsed positional args of the terminal function. */
   args: unknown[];
+  /** Chain operations preceding the terminal (filter, block, etc.). */
+  chain: ChainSegment[];
   /** Full matched source text — for round-tripping the DOM swap. */
   source: string;
 }
 
 /**
- * Global-flag regex matching every `@[[file]].fn(args)` occurrence.
- * `args` capture is the raw inner string of the parens (may be empty,
- * may contain commas/quotes — `parseArgs` tokenizes it).
+ * Global-flag regex matching `@[[file]].fn(args)` with optional chaining.
+ * Captures: [1] target, [2] full chain string (`.fn(args)` repeated).
  */
-export const CALL_PATTERN = /@\[\[([^\]\n]+)\]\]\.([A-Za-z_][\w-]*)\(([^)\n]*)\)/g;
+export const CALL_PATTERN = /@\[\[([^\]\n]+)\]\]((?:\.[A-Za-z_][\w-]*\([^)\n]*\))+)/g;
+
+/** Segment pattern: `.fn(args)` */
+const SEGMENT_RE = /\.([A-Za-z_][\w-]*)\(([^)\n]*)\)/g;
+
+function parseSegments(chainStr: string): ChainSegment[] {
+  const segments: ChainSegment[] = [];
+  SEGMENT_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SEGMENT_RE.exec(chainStr)) !== null) {
+    segments.push({ fn: m[1], args: parseArgs(m[2]) });
+  }
+  return segments;
+}
 
 /** Parse a single call expression. Returns null if the input doesn't match. */
 export function parseCall(source: string): ParsedCall | null {
   const re = new RegExp(`^${CALL_PATTERN.source}$`);
   const m = source.match(re);
   if (!m) return null;
+  const segments = parseSegments(m[2]);
+  if (segments.length === 0) return null;
+  const terminal = segments[segments.length - 1];
   return {
     target: m[1].trim(),
-    fn: m[2],
-    args: parseArgs(m[3]),
+    fn: terminal.fn,
+    args: terminal.args,
+    chain: segments.slice(0, -1),
     source,
   };
 }
@@ -60,10 +85,14 @@ export function matchAllCalls(text: string): Array<ParsedCall & { start: number;
   CALL_PATTERN.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = CALL_PATTERN.exec(text)) !== null) {
+    const segments = parseSegments(m[2]);
+    if (segments.length === 0) continue;
+    const terminal = segments[segments.length - 1];
     out.push({
       target: m[1].trim(),
-      fn: m[2],
-      args: parseArgs(m[3]),
+      fn: terminal.fn,
+      args: terminal.args,
+      chain: segments.slice(0, -1),
       source: m[0],
       start: m.index,
       end: m.index + m[0].length,

@@ -60,6 +60,7 @@ describe("parseCall", () => {
       target: "rules/luck",
       fn: "view",
       args: [],
+      chain: [],
       source: "@[[rules/luck]].view()",
     });
   });
@@ -69,6 +70,7 @@ describe("parseCall", () => {
       target: "rules/combat",
       fn: "view",
       args: ["grapple"],
+      chain: [],
       source: "@[[rules/combat]].view(grapple)",
     });
   });
@@ -78,6 +80,7 @@ describe("parseCall", () => {
       target: "rules/grappling",
       fn: "row",
       args: ["name", "1 action", 5],
+      chain: [],
       source: '@[[rules/grappling]].row(name, "1 action", 5)',
     });
   });

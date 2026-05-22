@@ -1,63 +1,31 @@
 import * as React from "react";
-import type { ItemMagicData } from "lib/domains/items/schema";
+import type { ItemMagicData, ItemMagicVariant, ItemMagicVariantsConfig } from "lib/domains/items/schema";
 
 interface ItemMagicCardProps {
   data: ItemMagicData;
-  /** Renders the compendium text + image. When the host note shows
-   *  the image / prose elsewhere, set this false to suppress the
-   *  redundant copy. */
   showDescription?: boolean;
-  /** Markdown renderer injected by the entity-block adapter — stays
-   *  framework-agnostic so the card works in Storybook with a plain
-   *  `<p>` fallback. */
   renderMarkdown?: (source: string) => React.ReactNode;
 }
 
-/**
- * `rpg item.magic` compendium card. Shows the template's rarity /
- * attunement / cost stripline, the prose body, the mechanical effect
- * summary (traits chips), the applies-to whitelist (for weapons /
- * armor variants), and — when authored — a variants table laying out
- * each tier's rarity / cost / bonus so readers can scan Potion of
- * Healing Common → Very Rare at a glance.
- *
- * Hidden `feature.details` fences living next to the magic fence in
- * the same file are NOT rendered here; the character feature
- * resolver picks them up only when a `rpg item.personal` referencing
- * this template is equipped.
- */
 export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: ItemMagicCardProps) {
-  const appliesTo = formatAppliesTo(data.applies_to);
-  const hasVariants = data.variants && Object.keys(data.variants).length > 0;
+  const { rows: variantRows, columns: variantColumns, title: variantTitle } = normalizeVariants(data.variants);
+  const hasVariants = variantRows.length > 0;
+  const subtitle = buildSubtitle(data);
 
   return (
     <article className="rpg-item-magic-card">
-      <dl className="rpg-item-card__stripline">
-        {appliesTo && (
-          <div className="rpg-item-card__stripline-pair">
-            <dt>Type</dt>
-            <dd>{appliesTo}</dd>
-          </div>
-        )}
-        {data.rarity && (
-          <div className="rpg-item-card__stripline-pair">
-            <dt>Rarity</dt>
-            <dd>{data.rarity}</dd>
-          </div>
-        )}
-        {data.attunement && (
-          <div className="rpg-item-card__stripline-pair">
-            <dt>Attunement</dt>
-            <dd>Required</dd>
-          </div>
-        )}
-        {data.cost && (
-          <div className="rpg-item-card__stripline-pair">
-            <dt>Cost</dt>
-            <dd>{data.cost}</dd>
-          </div>
-        )}
-      </dl>
+      {data.name && (
+        <header className="rpg-item-magic-card__header">
+          <h3>{data.name}</h3>
+        </header>
+      )}
+
+      {subtitle && (
+        <p className="rpg-item-magic-card__subtitle">
+          <span className="rpg-item-magic-card__subtitle-type">{subtitle.type}</span>
+          {data.cost && <span className="rpg-item-magic-card__subtitle-cost">{data.cost}</span>}
+        </p>
+      )}
 
       {showDescription && data.text && (
         <div className="rpg-item-magic-card__text">
@@ -78,31 +46,23 @@ export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: 
         </dl>
       )}
 
-      {/* Traits are mechanical hooks consumed by the character's
-       * feature-view aggregator — not display content. The magic
-       * card intentionally hides them so the compendium page stays
-       * prose-first. */}
-
       {hasVariants && (
         <div className="el-table rpg-table-wrapper">
           <table className="rpg-table rpg-item-magic-card__variants">
+            {variantTitle && <caption>{variantTitle}</caption>}
             <thead>
               <tr>
-                <th>Tier</th>
-                <th>Rarity</th>
-                <th>Bonus</th>
-                <th>Cost</th>
+                {variantColumns.map((col) => (
+                  <th key={col}>{formatColumnLabel(col)}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(data.variants!).map(([key, variant]) => (
-                <tr key={key}>
-                  <td>{key}</td>
-                  <td>{variant.rarity ?? "—"}</td>
-                  <td>
-                    {variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—")}
-                  </td>
-                  <td>{variant.cost ?? "—"}</td>
+              {variantRows.map((variant, i) => (
+                <tr key={i}>
+                  {variantColumns.map((col) => (
+                    <td key={col}>{getVariantCell(variant, col)}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -119,15 +79,79 @@ export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: 
   );
 }
 
-/** Render a signed integer with an explicit plus sign on non-negatives. */
 function signed(n: number): string {
   if (n > 0) return `+${n}`;
   if (n < 0) return String(n);
   return "+0";
 }
 
-/** Render the applies-to whitelist as a short sentence — kind tokens
- *  capitalized, families comma-joined when present. */
+function normalizeVariants(raw: ItemMagicData["variants"]): {
+  rows: ItemMagicVariant[];
+  columns: string[];
+  title?: string;
+} {
+  if (!raw) return { rows: [], columns: [] };
+  if (Array.isArray(raw)) {
+    const cols = inferColumns(raw);
+    return { rows: raw, columns: cols };
+  }
+  const obj = raw as Record<string, unknown>;
+  if (obj.rows && Array.isArray(obj.rows)) {
+    const rows = obj.rows as ItemMagicVariant[];
+    const cols = (Array.isArray(obj.columns) ? obj.columns.map(String) : null) ?? inferColumns(rows);
+    return { rows, columns: cols, title: typeof obj.title === "string" ? obj.title : undefined };
+  }
+  const rows = Object.values(raw as Record<string, ItemMagicVariant>);
+  return { rows, columns: inferColumns(rows) };
+}
+
+const DEFAULT_COLUMNS = ["rarity", "bonus", "price"];
+
+function inferColumns(rows: ItemMagicVariant[]): string[] {
+  if (rows.length === 0) return DEFAULT_COLUMNS;
+  const keys = new Set<string>();
+  for (const row of rows) {
+    for (const key of Object.keys(row)) keys.add(key);
+  }
+  return DEFAULT_COLUMNS.filter((c) => keys.has(c) || (c === "price" && keys.has("cost")));
+}
+
+function formatColumnLabel(col: string): string {
+  return col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, " ");
+}
+
+function getVariantCell(variant: ItemMagicVariant, col: string): string {
+  if (col === "price") return variant.price ?? variant.cost ?? "—";
+  if (col === "bonus") return variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—");
+  const val = (variant as Record<string, unknown>)[col];
+  return val != null ? String(val) : "—";
+}
+
+function buildSubtitle(data: ItemMagicData): { type: string } | null {
+  const parts: string[] = [];
+
+  const appliesTo = formatAppliesTo(data.applies_to);
+  if (appliesTo) {
+    parts.push(appliesTo);
+  } else {
+    parts.push("Wondrous Item");
+  }
+
+  if (data.rarity) {
+    parts.push(data.rarity);
+  }
+
+  if (data.attunement) {
+    if (typeof data.attunement === "string") {
+      parts.push(`(${data.attunement})`);
+    } else {
+      parts.push("(Requires Attunement)");
+    }
+  }
+
+  return parts.length > 0 ? { type: parts.join(", ") } : null;
+}
+
 function formatAppliesTo(raw: ItemMagicData["applies_to"]): string | null {
   if (!raw) return null;
   const parts: string[] = [];

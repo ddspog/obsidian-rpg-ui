@@ -32,8 +32,9 @@
 import { App, MarkdownPostProcessorContext, MarkdownRenderChild, parseYaml, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { matchAllCalls, type ParsedCall, CALL_PATTERN } from "lib/domains/references/parse-call";
+import { matchAllCalls, type ParsedCall, type ChainSegment, CALL_PATTERN } from "lib/domains/references/parse-call";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
+import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { TabGroupView } from "lib/domains/rules/render-tab-group";
@@ -57,7 +58,7 @@ const CALL_CLASS = "rpg-call";
 /** Matches an inline-code element whose entire text content is exactly
  *  one `@[[file]].fn(args)` token. Authors wrap calls in backticks so
  *  the markdown parser doesn't mangle the `[[…]]` as a wikilink. */
-const WHOLE_CALL_PATTERN = /^\s*@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\)\s*$/;
+const WHOLE_CALL_PATTERN = /^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\([^)\n]*\))+\s*$/;
 
 export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
   storeDeps(deps);
@@ -294,6 +295,38 @@ function resolveCall(
           root.render(<>{node}</>);
         } catch (err) {
           renderError(span, `View "stat" threw: ${(err as Error)?.message ?? err}`);
+        }
+        return;
+      }
+
+      // ── Special case: `magic` view extracts rpg item.magic fences ─────
+      if (call.fn === "magic") {
+        const magicSystem = deps.registry.getSystemForFile(ctx.sourcePath);
+        const magicView = magicSystem?.ruleViews?.["magic"];
+        if (!magicView) {
+          renderError(span, `View "magic" not registered`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const magicCtx: RuleViewCtx = {
+          name: fileName,
+          content: cleaned,
+          frontmatter: fileFm,
+          file: targetPath,
+        };
+        try {
+          const node = magicView.render(magicCtx, call.args);
+          root.render(<>{node}</>);
+        } catch (err) {
+          renderError(span, `View "magic" threw: ${(err as Error)?.message ?? err}`);
         }
         return;
       }
@@ -574,6 +607,86 @@ function StatblockCallInline({ parsed, body, sourcePath }: {
   });
 }
 
+/**
+ * Apply chain operations to determine if a file should be included
+ * and which fence block to use.
+ *
+ * `.block(specifier)` — selects which fence to read:
+ *   - `item.magic` / `stat.vehicle` — entity.block type
+ *   - `my-id` — matches fence by name/id
+ *   - `0`, `1` — numeric index
+ *
+ * `.filter(expression)` — evaluates against the selected block's YAML:
+ *   - `rarity == Rare`
+ *   - `name like /bow/`
+ *   - `N prefix name`
+ */
+interface ChainResult {
+  pass: boolean;
+  blockSpec?: string;
+}
+
+function applyChain(
+  chain: ChainSegment[],
+  fileData: Record<string, unknown>
+): ChainResult {
+  let pass = true;
+  let blockSpec: string | undefined;
+
+  for (const seg of chain) {
+    if (seg.fn === "block") {
+      blockSpec = typeof seg.args[0] === "string" ? seg.args[0]
+        : typeof seg.args[0] === "number" ? String(seg.args[0])
+        : undefined;
+    } else if (seg.fn === "filter") {
+      const exprStr = seg.args.map(String).join(", ");
+      const expr = parseFilterExpr(exprStr);
+      if (expr && !evaluateFilter(expr, fileData)) {
+        pass = false;
+        break;
+      }
+    }
+  }
+
+  return { pass, blockSpec };
+}
+
+/**
+ * Extract the YAML data from a file for chain filtering. Tries the
+ * specified block type first, falls back to file frontmatter + first
+ * stat/item fence found.
+ */
+function extractFileData(
+  cleaned: string,
+  fileFm: Record<string, unknown>,
+  blockSpec?: string
+): Record<string, unknown> {
+  const fences = extractAllRpgFences(cleaned);
+
+  if (blockSpec) {
+    // Numeric index
+    const idx = Number(blockSpec);
+    if (Number.isFinite(idx) && idx >= 0 && idx < fences.length) {
+      return { ...fileFm, ...(fences[idx].body ?? {}) };
+    }
+    // entity.block type match
+    if (blockSpec.includes(".")) {
+      const [entity, block] = blockSpec.split(".", 2);
+      const match = fences.find((f) => f.entity === entity && f.block === block);
+      if (match?.body) return { ...fileFm, ...match.body };
+    }
+    // id/name match
+    const byId = fences.find((f) => f.body?.id === blockSpec || f.body?.name === blockSpec);
+    if (byId?.body) return { ...fileFm, ...byId.body };
+  }
+
+  // Default: merge first fence body into frontmatter
+  if (fences.length > 0 && fences[0].body) {
+    return { ...fileFm, ...fences[0].body };
+  }
+  return fileFm;
+}
+
 function renderByMode(
   view: RuleViewEntry,
   blocks: HarvestedBlock[],
@@ -742,33 +855,46 @@ function resolveFolderCall(
       const nodes: React.ReactNode[] = [];
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
+
+        // Apply chain operations (filter, block)
+        if (call.chain.length > 0) {
+          const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          const blockSpec = call.chain.find((s) => s.fn === "block");
+          const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined);
+          const { pass } = applyChain(call.chain, fileData);
+          if (!pass) continue;
+        }
+
         const fenced = extractContentBlocks(cleaned);
 
-        // When no rule.content blocks exist, try stat.* fences so
-        // `.row(link, cost, ...)` can read fields from statblock YAML.
+        // When no rule.content blocks exist, try any rpg entity.block fence
+        // so views like .magic(), .stat(), .row() can read their YAML.
         if (fenced.length === 0) {
-          const statFenceRe = /```+\s*rpg\s+stat\.\w+\s*\n([\s\S]*?)```+/;
-          const statMatch = statFenceRe.exec(cleaned);
-          if (statMatch) {
-            const statRaw = statMatch[1];
-            const sepIdx = statRaw.indexOf("\n---\n");
-            const yamlPart = sepIdx >= 0 ? statRaw.slice(0, sepIdx) : statRaw;
-            let statFm: Record<string, unknown> = {};
+          const anyFenceRe = /```+\s*rpg\s+\w+\.\w+\s*\n([\s\S]*?)```+/;
+          const fenceMatch = anyFenceRe.exec(cleaned);
+          if (fenceMatch) {
+            const fenceRaw = fenceMatch[1];
+            const sepIdx = fenceRaw.indexOf("\n---\n");
+            const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
+            const bodyText = sepIdx >= 0 ? fenceRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : undefined;
+            let fenceFm: Record<string, unknown> = {};
             try {
               const parsed = parseYaml(yamlPart);
               if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-                statFm = parsed as Record<string, unknown>;
+                fenceFm = parsed as Record<string, unknown>;
               }
             } catch { /* ignore */ }
             const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
               | Record<string, unknown>
               | undefined) ?? {};
-            const mergedFm = { ...fileFm, ...statFm };
+            const mergedFm = { ...fileFm, ...fenceFm };
             const fileName = f.basename;
             if (view.wrapper === "table") {
               try {
                 const row = view.render(
-                  { name: fileName, content: "", frontmatter: mergedFm, file: f.path },
+                  { name: fileName, content: cleaned, frontmatter: mergedFm, file: f.path },
                   call.args
                 );
                 nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
@@ -776,20 +902,14 @@ function resolveFolderCall(
                 console.error(`rpg-call folder ${f.path} render threw`, err);
               }
             } else {
-              const bodyText = sepIdx >= 0 ? statRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : undefined;
               try {
-                const headingLevel = call.fn.match(/^h(\d)$/)?.[1];
-                const HeadingTag = headingLevel ? `h${headingLevel}` as keyof JSX.IntrinsicElements : "h4";
-                const node = React.createElement(
-                  React.Fragment,
-                  null,
-                  React.createElement(HeadingTag, null, fileName),
-                  React.createElement(StatblockCallInline, {
-                    parsed: mergedFm,
-                    body: bodyText,
-                    sourcePath: f.path,
-                  })
-                );
+                const viewCtx: RuleViewCtx = {
+                  name: fileName,
+                  content: cleaned,
+                  frontmatter: mergedFm,
+                  file: f.path,
+                };
+                const node = view.render(viewCtx, call.args);
                 nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
               } catch (err) {
                 console.error(`rpg-call folder ${f.path} render threw`, err);
@@ -856,26 +976,38 @@ function resolveFolderCall(
           const fields = viewArgs2.map((a) => String(a));
           for (const { file: f, raw } of entries) {
             const cleaned = stripLocalFences(raw);
+
+            // Apply chain filter
+            if (call.chain.length > 0) {
+              const fileFm2 = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+                | Record<string, unknown>
+                | undefined) ?? {};
+              const blockSpec2 = call.chain.find((s) => s.fn === "block");
+              const fileData2 = extractFileData(cleaned, fileFm2, blockSpec2 ? String(blockSpec2.args[0] ?? "") : undefined);
+              const { pass: pass2 } = applyChain(call.chain, fileData2);
+              if (!pass2) continue;
+            }
+
             const fenced = extractContentBlocks(cleaned);
             let matching: HarvestedBlock[];
             if (fenced.length === 0) {
-              const statFenceRe = /```+\s*rpg\s+stat\.\w+\s*\n([\s\S]*?)```+/;
-              const statMatch = statFenceRe.exec(cleaned);
-              if (!statMatch) continue;
-              const statRaw = statMatch[1];
-              const sepIdx = statRaw.indexOf("\n---\n");
-              const yamlPart = sepIdx >= 0 ? statRaw.slice(0, sepIdx) : statRaw;
-              let statFm: Record<string, unknown> = {};
+              const anyFenceRe = /```+\s*rpg\s+\w+\.\w+\s*\n([\s\S]*?)```+/;
+              const fenceMatch = anyFenceRe.exec(cleaned);
+              if (!fenceMatch) continue;
+              const fenceRaw = fenceMatch[1];
+              const sepIdx = fenceRaw.indexOf("\n---\n");
+              const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
+              let fenceFm: Record<string, unknown> = {};
               try {
                 const parsed = parseYaml(yamlPart);
                 if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-                  statFm = parsed as Record<string, unknown>;
+                  fenceFm = parsed as Record<string, unknown>;
                 }
               } catch { /* ignore */ }
               const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
                 | Record<string, unknown>
                 | undefined) ?? {};
-              matching = [{ body: "", frontmatter: { ...fileFm, ...statFm } }];
+              matching = [{ body: "", frontmatter: { ...fileFm, ...fenceFm } }];
             } else {
               matching = fenced;
               const firstArg = call.args[0];

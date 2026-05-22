@@ -98,7 +98,8 @@ export function resolvePersonalItem(
     magicFeatureSources.push(stem);
 
     const variantKey = personal.variants?.[stem] ?? personal.variants?.[magic.name ?? ""] ?? undefined;
-    const variant = variantKey ? magic.variants?.[variantKey] : undefined;
+    const variantsMap = magic.variants && !Array.isArray(magic.variants) && !("rows" in magic.variants) ? magic.variants as Record<string, any> : undefined;
+    const variant = variantKey && variantsMap ? variantsMap[variantKey] : undefined;
 
     // Compose numeric effects — variant's values take precedence over
     // the template-level defaults, matching the usual override shape.

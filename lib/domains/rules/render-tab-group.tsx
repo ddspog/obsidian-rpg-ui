@@ -2,6 +2,7 @@ import { App, MarkdownRenderChild, setIcon } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
+import { parseRuleTab } from "./parse-rule-block";
 import type { RuleTabBlock } from "./types";
 
 const TAB_CLASS = "rpg-rule-tab";
@@ -19,7 +20,134 @@ const groupTabsStore = new WeakMap<HTMLElement, { tabs: RuleTabBlock[]; sourcePa
 
 const pendingMerges = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 
-function TabGroupView({
+export function TabGroupView({
+  tabs,
+  sourcePath,
+  heading,
+}: {
+  tabs: RuleTabBlock[];
+  sourcePath: string;
+  heading?: string;
+}) {
+  const nestDetectRef = React.useRef<HTMLDivElement>(null);
+  const [isNested, setIsNested] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (nestDetectRef.current?.closest(".rpg-rule-tab-group__panel")) {
+      setIsNested(true);
+    } else {
+      setIsNested(false);
+    }
+  }, []);
+
+  if (isNested === null) {
+    return <div ref={nestDetectRef} className="rpg-rule-tab-group--detecting" />;
+  }
+
+  if (isNested) {
+    return <SubTabGroupView tabs={tabs} sourcePath={sourcePath} />;
+  }
+
+  return <HorizontalTabGroupView tabs={tabs} sourcePath={sourcePath} heading={heading} />;
+}
+
+function SubTabGroupView({
+  tabs,
+  sourcePath,
+}: {
+  tabs: RuleTabBlock[];
+  sourcePath: string;
+}) {
+  const storageKey = `rpg-subtab:${sourcePath}:${tabs.map(t => t.name).join("|")}`;
+  const [activeIdx, setActiveIdx] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) {
+        const idx = parseInt(saved, 10);
+        if (idx >= 0 && idx < tabs.length) return idx;
+      }
+    } catch { /* ignore */ }
+    return 0;
+  });
+
+  React.useEffect(() => {
+    try { localStorage.setItem(storageKey, String(activeIdx)); } catch { /* ignore */ }
+  }, [activeIdx, storageKey]);
+
+  const active = tabs[activeIdx];
+
+  if (tabs.length === 0) return null;
+
+  return (
+    <section className="rpg-subtab-group" data-rpg-rule="subtab">
+      <nav className="rpg-subtab-group__nav">
+        {tabs.map((tab, i) => {
+          const distance = i - activeIdx;
+          const absDistance = Math.abs(distance);
+          const isActive = i === activeIdx;
+          if (isActive) {
+            return (
+              <div
+                key={i}
+                role="button"
+                tabIndex={0}
+                className="rpg-subtab-group__btn rpg-subtab-group__btn--active"
+                onClick={() => setActiveIdx(i)}
+                onKeyDown={(e) => { if (e.key === "Enter") setActiveIdx(i); }}
+              >
+                {tab.name}
+              </div>
+            );
+          }
+          const scale = Math.pow(0.75, absDistance);
+          const lineHpx = 1.8 * scale;
+          let cumulativeOffset = 0;
+          for (let d = 1; d < absDistance; d++) {
+            cumulativeOffset += 1.8 * Math.pow(0.75, d);
+          }
+          const isAbove = distance < 0;
+          const posStyle: React.CSSProperties = isAbove
+            ? { bottom: `calc(100% + ${cumulativeOffset}rem)` }
+            : { top: `calc(100% + ${cumulativeOffset}rem)` };
+          const radiusStyle: React.CSSProperties = isAbove
+            ? { borderRadius: "0 24px 0 0" }
+            : { borderRadius: "0 0 24px 0" };
+          const widthPercent = absDistance === 1 ? 40 : absDistance === 2 ? 18 : 13.5;
+          const padding = 12 * Math.pow(0.75, absDistance);
+          return (
+            <div
+              key={i}
+              role="button"
+              tabIndex={0}
+              className="rpg-subtab-group__btn"
+              style={{
+                opacity: scale,
+                height: `${lineHpx}rem`,
+                lineHeight: `${lineHpx}rem`,
+                fontSize: `${scale * 0.85}rem`,
+                width: `${widthPercent}%`,
+                padding: `0 ${padding}px`,
+                ...posStyle,
+                ...radiusStyle,
+              }}
+              onClick={() => setActiveIdx(i)}
+              onKeyDown={(e) => { if (e.key === "Enter") setActiveIdx(i); }}
+            >
+              {tab.name}
+            </div>
+          );
+        })}
+      </nav>
+      {active && (
+        <article className="rpg-subtab-group__panel">
+          <Markdown source={wrapBareCalls(active.body)} sourcePath={sourcePath} />
+        </article>
+      )}
+    </section>
+  );
+}
+
+function HorizontalTabGroupView({
   tabs,
   sourcePath,
   heading,
@@ -231,11 +359,43 @@ function TabGroupView({
           role="tabpanel"
           className="rpg-rule-tab-group__panel"
         >
-          <Markdown source={wrapBareCalls(active.body)} sourcePath={sourcePath} />
+          <TabPanelContent body={active.body} sourcePath={sourcePath} />
         </article>
       ) : null}
     </section>
   );
+}
+
+function extractNestedTabs(body: string): { intro: string; tabs: RuleTabBlock[] } | null {
+  const fenceRe = /```rpg\s+rule\.tab\s*\n([\s\S]*?)```/g;
+  const tabs: RuleTabBlock[] = [];
+  let firstIdx = -1;
+
+  let m: RegExpExecArray | null;
+  while ((m = fenceRe.exec(body)) !== null) {
+    if (firstIdx < 0) firstIdx = m.index;
+    const tabSource = m[1];
+    tabs.push(parseRuleTab(tabSource));
+  }
+
+  if (tabs.length === 0) return null;
+  const intro = body.slice(0, firstIdx).replace(/\n+$/, "");
+  return { intro, tabs };
+}
+
+function TabPanelContent({ body, sourcePath }: { body: string; sourcePath: string }) {
+  const nested = React.useMemo(() => extractNestedTabs(body), [body]);
+
+  if (nested && nested.tabs.length > 0) {
+    return (
+      <>
+        {nested.intro && <Markdown source={wrapBareCalls(nested.intro)} sourcePath={sourcePath} />}
+        <SubTabGroupView tabs={nested.tabs} sourcePath={sourcePath} />
+      </>
+    );
+  }
+
+  return <Markdown source={wrapBareCalls(body)} sourcePath={sourcePath} />;
 }
 
 const TabButton = React.forwardRef<HTMLButtonElement, {
@@ -285,7 +445,8 @@ const TabButton = React.forwardRef<HTMLButtonElement, {
 
 function getElPre(tabEl: HTMLElement): HTMLElement | null {
   return (tabEl.closest(".el-pre") ??
-    tabEl.closest("[class*='block-language-']")) as HTMLElement | null;
+    tabEl.closest("[class*='block-language-']") ??
+    tabEl) as HTMLElement | null;
 }
 
 function isSiblingAdjacent(a: Element, b: Element): boolean {
@@ -340,14 +501,30 @@ function areAdjacentBlocks(a: HTMLElement, b: HTMLElement): boolean {
 const observedSizers = new WeakSet<HTMLElement>();
 const mergingNow = new WeakSet<HTMLElement>();
 
-function scheduleMerge(tabEl: HTMLElement, retries = 3): void {
-  const sizer = tabEl.closest(".markdown-preview-sizer") as HTMLElement | null;
-  if (!sizer) {
+function scheduleMerge(tabEl: HTMLElement, retries = 8): void {
+  if (!tabEl.isConnected) {
+    console.log("[subtab] not connected, retries left:", retries, tabEl.className);
     if (retries > 0) {
-      requestAnimationFrame(() => scheduleMerge(tabEl, retries - 1));
+      setTimeout(() => scheduleMerge(tabEl, retries - 1), 150);
+    } else {
+      console.warn("[subtab] gave up waiting for connection");
     }
     return;
   }
+  const sizer = (tabEl.closest(".markdown-preview-sizer") ??
+    tabEl.closest(".rpg-rule-tab-group__panel") ??
+    tabEl.closest("[data-rpg-rule='tab']")) as HTMLElement | null;
+  if (!sizer) {
+    console.log("[subtab] connected but no sizer found, retries left:", retries,
+      "parents:", tabEl.parentElement?.className, tabEl.parentElement?.parentElement?.className);
+    if (retries > 0) {
+      setTimeout(() => scheduleMerge(tabEl, retries - 1), 150);
+    } else {
+      console.warn("[subtab] gave up finding sizer");
+    }
+    return;
+  }
+  console.log("[subtab] found sizer:", sizer.className, "tabs in sizer:", sizer.querySelectorAll(`.${TAB_CLASS}`).length);
   const existing = pendingMerges.get(sizer);
   if (existing) clearTimeout(existing);
   const timer = setTimeout(() => {
@@ -382,6 +559,7 @@ function runMerge(sizer: HTMLElement): void {
     const allTabs = Array.from(
       sizer.querySelectorAll(`.${TAB_CLASS}`)
     ) as HTMLElement[];
+    console.log("[subtab] runMerge: found", allTabs.length, "tabs in", sizer.className);
     if (allTabs.length === 0) return;
 
     const groups: HTMLElement[][] = [];
@@ -590,6 +768,7 @@ export class RuleTabRenderChild extends MarkdownRenderChild {
   }
 
   onload(): void {
+    console.log("[subtab] RuleTabRenderChild.onload:", this.block.name, "connected:", this.containerEl.isConnected);
     this.containerEl.classList.add(TAB_CLASS);
     this.containerEl.setAttribute("data-rpg-rule", "tab");
     this.containerEl.setAttribute("data-rpg-tab-json", JSON.stringify(this.block));

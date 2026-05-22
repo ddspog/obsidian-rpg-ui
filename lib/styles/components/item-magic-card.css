@@ -5,6 +5,40 @@
   color: inherit;
 }
 
+.rpg-item-magic-card__header {
+  background: linear-gradient(to right, color-mix(in srgb, var(--text-title, currentColor) 15%, transparent), transparent);
+  border-top: 1px solid var(--text-title, currentColor);
+  border-bottom: 1px solid var(--text-title, currentColor);
+  padding: 4px 8px;
+  margin: 0;
+}
+
+.rpg-item-magic-card__header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--text-title, inherit);
+  letter-spacing: 0.01em;
+}
+
+p.rpg-item-magic-card__subtitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 4px 0 0;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.rpg-item-magic-card__subtitle-type {
+  color: inherit;
+}
+
+.rpg-item-magic-card__subtitle-cost {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .rpg-item-magic-card__text {
   margin: 0.5rem 0;
   line-height: 1.5;
@@ -49,10 +83,6 @@
 
 .rpg-item-magic-card__traits strong {
   font-weight: 700;
-}
-
-.rpg-item-magic-card__variants {
-  font-size: 0.9em;
 }
 
 /* ── Personal card ─────────────────────────────────────────────────────── */

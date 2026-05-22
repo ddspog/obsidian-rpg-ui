@@ -17,7 +17,7 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures } from "rpg-ui-toolkit";
+import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks } from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
@@ -488,6 +488,25 @@ export const ruleViews: RuleViewMap = {
         body: bodyText,
         view,
         sourcePath: ctx.file,
+      });
+    },
+  },
+
+  /**
+   * Magic item import: renders an `item.magic` block from the target file.
+   *
+   *   `@[[Sentinel Shield]].magic()`
+   */
+  magic: {
+    mode: "join",
+    render: (ctx) => {
+      const blocks = extractItemMagicBlocks(ctx.content);
+      if (blocks.length === 0) return null;
+      const data = blocks[0];
+      if (!data.name) data.name = ctx.name;
+      return React.createElement(ItemMagicCard, {
+        data,
+        renderMarkdown: (src: string) => React.createElement(Markdown, { source: src, sourcePath: ctx.file }),
       });
     },
   },

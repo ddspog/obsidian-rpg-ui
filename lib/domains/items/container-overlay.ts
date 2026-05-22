@@ -85,7 +85,8 @@ export function resolveContainer(
     magicFeatureSources.push(stem);
 
     const variantKey = container.variants?.[stem] ?? container.variants?.[magic.name ?? ""] ?? undefined;
-    const variant = variantKey ? magic.variants?.[variantKey] : undefined;
+    const variantsMap = magic.variants && !Array.isArray(magic.variants) && !("rows" in magic.variants) ? magic.variants as Record<string, any> : undefined;
+    const variant = variantKey && variantsMap ? variantsMap[variantKey] : undefined;
 
     // Traits: variant overrides template; both merge into the trait map.
     // Values flow through `normalizeTraitMapValue` so `Weight Reduction.: true`
