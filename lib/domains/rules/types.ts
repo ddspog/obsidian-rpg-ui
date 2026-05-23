@@ -64,8 +64,10 @@ export type SidePreset =
  *     Obsidian's `> [!type]` callouts when nested-quoting is awkward.
  *   - `commentary`: gutter-only floated aside, italic + semi-transparent;
  *     comments on the preceding block.
+ *   - `spread`: in-flow block that merges with consecutive spread siblings
+ *     into a responsive two-column grid — rulebook reference layout.
  */
-export type SideKind = "float" | "callout" | "commentary";
+export type SideKind = "float" | "callout" | "commentary" | "spread";
 
 /**
  * Parsed `rpg rule.side` block. Body is pure YAML; shape mirrors a callout:
@@ -84,6 +86,7 @@ export interface RuleSideBlock {
   kind: "side";
   variant: SideKind;
   title: string;
+  subtitle?: string;
   content: string;
   preset?: SidePreset;
   icon?: string;

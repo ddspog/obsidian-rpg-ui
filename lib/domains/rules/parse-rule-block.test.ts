@@ -169,11 +169,29 @@ source:
     expect(parseRuleSide("title: t\ncontent: c").variant).toBe("float");
     expect(parseRuleSide("kind: commentary\ncontent: c").variant).toBe("commentary");
     expect(parseRuleSide("kind: callout\ncontent: c").variant).toBe("callout");
+    expect(parseRuleSide("kind: spread\ncontent: c").variant).toBe("spread");
     expect(parseRuleSide("kind: float\ncontent: c").variant).toBe("float");
     // Unknown kind values fall back to float.
     expect(parseRuleSide("kind: bogus\ncontent: c").variant).toBe("float");
     // Commentary doesn't require a title — content can stand alone.
     expect(parseRuleSide("kind: commentary\ncontent: c").title).toBe("");
+  });
+
+  it("parses subtitle for spread variant", () => {
+    const src = `kind: spread
+title: STRENGTH (STR)
+subtitle: "Associated Skills: Athletics"
+content: Body text.`;
+    const b = parseRuleSide(src);
+    expect(b.variant).toBe("spread");
+    expect(b.title).toBe("STRENGTH (STR)");
+    expect(b.subtitle).toBe("Associated Skills: Athletics");
+    expect(b.content).toBe("Body text.");
+  });
+
+  it("subtitle is undefined when not provided", () => {
+    const b = parseRuleSide("kind: spread\ntitle: X\ncontent: y");
+    expect(b.subtitle).toBeUndefined();
   });
 });
 

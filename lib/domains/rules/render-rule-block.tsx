@@ -24,6 +24,7 @@ import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
 import { resolveSource, isHomebrew } from "./source";
 import { SIDE_PRESETS } from "./parse-rule-block";
+import { SPREAD_ITEM_CLASS } from "./render-spread-group";
 import type { RuleContentBlock, RuleSideBlock, SidePreset } from "./types";
 
 function capitalize(s: string): string {
@@ -392,6 +393,38 @@ function RuleSideCallout({
   );
 }
 
+function RuleSideSpread({
+  block,
+  sourcePath,
+}: {
+  block: RuleSideBlock;
+  sourcePath: string;
+}) {
+  const cls = ["rpg-rule-side", "rpg-rule-side--spread", SPREAD_ITEM_CLASS];
+  if (block.preset) cls.push(`rpg-rule-side--${block.preset}`);
+
+  const style: React.CSSProperties = {};
+  if (block.color) (style as Record<string, string>)["--rpg-rule-side-color"] = block.color;
+
+  return (
+    <article className={cls.join(" ")} data-rpg-rule="side" data-rpg-side-kind="spread" style={style}>
+      {block.title ? (
+        <header className="rpg-rule-side--spread__header">
+          <strong className="rpg-rule-side--spread__title">{block.title}</strong>
+        </header>
+      ) : null}
+      {block.subtitle ? (
+        <p className="rpg-rule-side--spread__subtitle">{block.subtitle}</p>
+      ) : null}
+      {block.content ? (
+        <div className="rpg-rule-side__body">
+          <Markdown source={block.content} sourcePath={sourcePath} />
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function RuleSideView({
   block,
   sourcePath,
@@ -404,6 +437,9 @@ function RuleSideView({
   }
   if (block.variant === "callout") {
     return <RuleSideCallout block={block} sourcePath={sourcePath} />;
+  }
+  if (block.variant === "spread") {
+    return <RuleSideSpread block={block} sourcePath={sourcePath} />;
   }
   return <RuleSideFloat block={block} sourcePath={sourcePath} />;
 }
@@ -422,9 +458,11 @@ function RuleSideView({
  */
 export interface RuleSideProps {
   /** Structural variant. Default `float`. */
-  variant?: "float" | "callout" | "commentary";
+  variant?: "float" | "callout" | "commentary" | "spread";
   /** Heading title (commentary may omit). */
   title?: string;
+  /** Subtitle line (only used by spread variant). */
+  subtitle?: string;
   /** Markdown body. */
   content: string;
   /** Preset (note/tip/warning/rules/etc.) — applies default color/icon/title
@@ -449,6 +487,7 @@ export function RuleSide(props: RuleSideProps) {
     kind: "side",
     variant,
     title: props.title ?? defaults?.title ?? "",
+    subtitle: props.subtitle,
     content: props.content,
     preset,
     icon: props.icon ?? defaults?.icon,
@@ -487,9 +526,48 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
 
     this.root = ReactDOM.createRoot(this.containerEl);
     if (this.block.kind === "side") {
-      // Side blocks never carry homebrew styling — the dashed accent
-      // outline is part of every side's base look, not a flag.
       this.root.render(<RuleSideView block={this.block} sourcePath={this.sourcePath} />);
+      if (this.block.variant === "spread") {
+        this.containerEl.classList.add(SPREAD_ITEM_CLASS);
+
+        // If inside a callout body, make the parent wrapper flex
+        const sideBody = this.containerEl.closest(".rpg-rule-side__body") as HTMLElement | null;
+        if (sideBody) {
+          const mdWrapper = this.containerEl.parentElement;
+          if (mdWrapper && mdWrapper !== sideBody) {
+            mdWrapper.style.setProperty("display", "flex", "important");
+            mdWrapper.style.setProperty("flex-wrap", "wrap");
+            mdWrapper.style.setProperty("gap", "1rem 1.5rem");
+          }
+          this.containerEl.style.setProperty("flex", "1 1 calc(50% - 0.75rem)");
+          this.containerEl.style.setProperty("min-width", "340px");
+        } else {
+          // Page-level: inline-block on .el-pre (only if direct parent)
+          const elPre = this.containerEl.parentElement?.classList.contains("el-pre")
+            ? this.containerEl.parentElement as HTMLElement
+            : null;
+          const target = elPre ?? this.containerEl;
+          target.style.setProperty("display", "inline-block", "important");
+          target.style.setProperty("vertical-align", "top");
+          target.style.setProperty("width", "calc(50% - 0.75rem)");
+          target.style.setProperty("min-width", "340px");
+          target.style.setProperty("margin-bottom", "1rem");
+          // Hide block-level siblings before this spread
+          let prev: Node | null = target.previousSibling;
+          while (prev) {
+            if (prev.nodeType === Node.TEXT_NODE && !prev.textContent?.trim()) {
+              prev = prev.previousSibling;
+              continue;
+            }
+            if (prev.nodeType === Node.ELEMENT_NODE) {
+              const prevEl = prev as HTMLElement;
+              if (prevEl.querySelector(`.${SPREAD_ITEM_CLASS}`)) break;
+              prevEl.style.setProperty("display", "none", "important");
+            }
+            prev = (prev as Node).previousSibling;
+          }
+        }
+      }
     } else {
       this.root.render(
         <RuleContentView block={this.block} sourcePath={this.sourcePath} homebrew={homebrew} />
@@ -508,3 +586,4 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
     }
   }
 }
+

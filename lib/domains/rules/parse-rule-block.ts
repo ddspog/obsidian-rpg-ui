@@ -115,8 +115,15 @@ export function parseRuleSide(source: string): RuleSideBlock {
   const defaults = preset ? SIDE_PRESETS[preset] : undefined;
 
   const variant: SideKind =
-    rec.kind === "commentary" ? "commentary" : rec.kind === "callout" ? "callout" : "float";
+    rec.kind === "commentary"
+      ? "commentary"
+      : rec.kind === "callout"
+        ? "callout"
+        : rec.kind === "spread"
+          ? "spread"
+          : "float";
   const title = typeof rec.title === "string" ? rec.title : defaults?.title ?? "";
+  const subtitle = typeof rec.subtitle === "string" ? rec.subtitle : undefined;
   const icon = typeof rec.icon === "string" ? rec.icon : defaults?.icon;
   const color = typeof rec.color === "string" ? rec.color : defaults?.color;
   const content = hasFenceBody
@@ -128,6 +135,7 @@ export function parseRuleSide(source: string): RuleSideBlock {
     kind: "side",
     variant,
     title,
+    subtitle,
     content,
     preset,
     icon,
