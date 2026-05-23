@@ -414,7 +414,9 @@ function RuleSideSpread({
         </header>
       ) : null}
       {block.subtitle ? (
-        <p className="rpg-rule-side--spread__subtitle">{block.subtitle}</p>
+        <div className="rpg-rule-side--spread__subtitle">
+          <Markdown source={block.subtitle} sourcePath={sourcePath} />
+        </div>
       ) : null}
       {block.content ? (
         <div className="rpg-rule-side__body">
@@ -552,20 +554,6 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
           target.style.setProperty("width", "calc(50% - 0.75rem)");
           target.style.setProperty("min-width", "340px");
           target.style.setProperty("margin-bottom", "1rem");
-          // Hide block-level siblings before this spread
-          let prev: Node | null = target.previousSibling;
-          while (prev) {
-            if (prev.nodeType === Node.TEXT_NODE && !prev.textContent?.trim()) {
-              prev = prev.previousSibling;
-              continue;
-            }
-            if (prev.nodeType === Node.ELEMENT_NODE) {
-              const prevEl = prev as HTMLElement;
-              if (prevEl.querySelector(`.${SPREAD_ITEM_CLASS}`)) break;
-              prevEl.style.setProperty("display", "none", "important");
-            }
-            prev = (prev as Node).previousSibling;
-          }
         }
       }
     } else {

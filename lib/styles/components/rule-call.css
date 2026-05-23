@@ -17,6 +17,10 @@
   font-size: var(--font-text-size);
 }
 
+.rpg-rule-side--float .rpg-call {
+  font-size: inherit;
+}
+
 .rpg-call--pending {
   opacity: 0.55;
   font-style: italic;
