@@ -4,10 +4,10 @@
  * root in lockstep.
  *
  * The plugin's source-of-truth content lives in:
- *   .obsidian/plugins/obsidian-rpg-ui/vault/systems/<system>/{config,compendium}/
+ *   .obsidian/plugins/obsidian-rpg-ui/vault/<system>/{config,compendium,...}/
  *
  * Obsidian, however, only sees files at the vault root:
- *   systems/<system>/{config,compendium}/
+ *   <system>/{config,compendium,...}/
  *
  * These two locations have historically drifted (e.g. a Cleric.md edit on one
  * side never reaches the other). This script reconciles them with a
@@ -33,9 +33,9 @@
  * The manifest lives at the plugin root and is gitignored — it's per-machine
  * state, not shared history.
  *
- * Scope: every `<system>/config/`, `<system>/worldbuilding/`,
- *        `<system>/glossary/`, and `<system>/adventurers/` directory found
- *        on either side. Files outside those prefixes are ignored.
+ * Scope: syncs specific subdirectories (config, worldbuilding, glossary,
+ *        adventurers, compendium, concepts) within each registered system.
+ *        Files outside those prefixes are ignored.
  *
  * Usage:
  *   npm run sync                # sync (apply changes, confirm deletions)
@@ -74,13 +74,17 @@ if (PUSH_ONLY && PULL_ONLY) {
   process.exit(1);
 }
 
-// Sync only these directories under each system folder. The legacy
-// `compendium/` tree is intentionally absent — its content moved to
-// `worldbuilding/traits/` and `glossary/` and the folder itself should
-// stay deleted on both sides. `adventurers/` holds sample character
-// files that consume the system, so they sync alongside the compendium
-// they reference.
-const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventurers"];
+const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventurers", "compendium", "concepts"];
+
+// Each entry maps a system name to its plugin-mirror and vault-root directories.
+// Systems at the vault root (no `systems/` prefix) list their paths directly.
+const SYSTEM_ENTRIES = [
+  {
+    name: "tales-of-the-valiant",
+    pluginDir: path.join(pluginRoot, "vault", "tales-of-the-valiant"),
+    vaultDir: path.join(vaultRoot, "tales-of-the-valiant"),
+  },
+];
 
 function fmtCount(n, label) {
   return `${n} ${label}${n === 1 ? "" : "s"}`;
@@ -324,27 +328,9 @@ async function main() {
   if (PULL_ONLY) console.log("(pull only — vault root → plugin)");
   if (NO_DELETES) console.log("(--no-deletes — one-sided files treated as new)");
 
-  const pluginSystems = path.join(pluginRoot, "vault", "systems");
-  const vaultSystems = path.join(vaultRoot, "systems");
-
-  if (!(await exists(pluginSystems))) {
-    console.error(`Plugin systems dir not found: ${pluginSystems}`);
-    process.exit(1);
-  }
-
   const manifest = await loadManifest();
   if (manifest == null) {
     console.log("(no manifest yet — first run will snapshot after completing)");
-  }
-
-  // Discover system folders on both sides.
-  const systemNames = new Set();
-  for (const dir of [pluginSystems, vaultSystems]) {
-    if (!(await exists(dir))) continue;
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const e of entries) {
-      if (e.isDirectory() && !e.name.startsWith(".")) systemNames.add(e.name);
-    }
   }
 
   let totalToVault = 0;
@@ -359,13 +345,18 @@ async function main() {
   // batch at the end of the sync pass.
   const pendingDeletions = [];
 
-  for (const sys of [...systemNames].sort()) {
+  for (const entry of SYSTEM_ENTRIES) {
+    if (!(await exists(entry.pluginDir))) {
+      console.warn(`Plugin dir not found for ${entry.name}: ${entry.pluginDir}`);
+      continue;
+    }
+
     for (const sub of SYNC_SUBDIRS) {
-      const pluginDir = path.join(pluginSystems, sys, sub);
-      const vaultDir = path.join(vaultSystems, sys, sub);
+      const pluginDir = path.join(entry.pluginDir, sub);
+      const vaultDir = path.join(entry.vaultDir, sub);
       if (!(await exists(pluginDir)) && !(await exists(vaultDir))) continue;
 
-      const subdirKey = `${sys}/${sub}`;
+      const subdirKey = `${entry.name}/${sub}`;
       const result = await reconcile(
         pluginDir,
         vaultDir,
@@ -378,7 +369,7 @@ async function main() {
       );
       const changes = result.toA + result.toB;
       if (changes > 0 || VERBOSE) {
-        console.log(`\n${sys}/${sub}`);
+        console.log(`\n${entry.name}/${sub}`);
         for (const a of result.actions) console.log(a);
       }
       totalToVault += result.toB;
@@ -422,8 +413,10 @@ async function main() {
         for (const d of pendingDeletions) {
           const [sys, sub, ...restParts] = d.key.split("/");
           const rel = restParts.join("/");
-          const pluginDir = path.join(pluginSystems, sys, sub);
-          const vaultDir = path.join(vaultSystems, sys, sub);
+          const entry = SYSTEM_ENTRIES.find((e) => e.name === sys);
+          if (!entry) continue;
+          const pluginDir = path.join(entry.pluginDir, sub);
+          const vaultDir = path.join(entry.vaultDir, sub);
           const dstDir = d.keepSide === "plugin" ? vaultDir : pluginDir;
           const dst = path.join(dstDir, rel);
           await copyFilePreservingMtime(d.keepPath, dst);

@@ -22,7 +22,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const ITEM_DIR = resolve(
   ROOT,
-  "vault/systems/tales-of-the-valiant/worldbuilding/items",
+  "vault/tales-of-the-valiant/worldbuilding/items",
 );
 const WRITE = process.argv.includes("--write");
 

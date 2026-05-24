@@ -13,7 +13,7 @@ import { buildProficienciesYaml, buildStatsYaml, type AbilityScores } from "../l
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
-import { system as systemPromise } from "../../vault/systems/tales-of-the-valiant/config/index";
+import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 

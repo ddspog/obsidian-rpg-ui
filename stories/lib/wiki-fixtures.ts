@@ -17,43 +17,43 @@ import { parse as parseYaml } from "yaml";
 
 // ── Raw file imports ──────────────────────────────────────────────────────────
 
-const rawSkills = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/skills/*.md", {
+const rawSkills = import.meta.glob("../../vault/tales-of-the-valiant/compendium/skills/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawConditions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/conditions/*.md", {
+const rawConditions = import.meta.glob("../../vault/tales-of-the-valiant/compendium/conditions/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawClasses = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/classes/*.md", {
+const rawClasses = import.meta.glob("../../vault/tales-of-the-valiant/compendium/classes/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawSubclasses = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/subclasses/*.md", {
+const rawSubclasses = import.meta.glob("../../vault/tales-of-the-valiant/compendium/subclasses/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawLineages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/lineages/*.md", {
+const rawLineages = import.meta.glob("../../vault/tales-of-the-valiant/compendium/lineages/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawHeritages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/heritages/*.md", {
+const rawHeritages = import.meta.glob("../../vault/tales-of-the-valiant/compendium/heritages/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawBackgrounds = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/backgrounds/*.md", {
+const rawBackgrounds = import.meta.glob("../../vault/tales-of-the-valiant/compendium/backgrounds/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -62,19 +62,19 @@ const rawBackgrounds = import.meta.glob("../../vault/systems/tales-of-the-valian
 // Universal "default actions" bundled with every character — loaded from
 // folders of standalone vault pages so they can be surfaced as trivial
 // entries (compact link lists) in each aspect bucket of the Features panel.
-const rawActions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/actions/*.md", {
+const rawActions = import.meta.glob("../../vault/tales-of-the-valiant/compendium/actions/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawReactions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/reactions/*.md", {
+const rawReactions = import.meta.glob("../../vault/tales-of-the-valiant/compendium/reactions/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawBonusActions = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/bonus-actions/*.md", {
+const rawBonusActions = import.meta.glob("../../vault/tales-of-the-valiant/compendium/bonus-actions/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -85,7 +85,7 @@ const rawBonusActions = import.meta.glob("../../vault/systems/tales-of-the-valia
 // the character entity's `@folder/path` indexer registers each file under
 // both its parent subfolder (e.g. `compendium/talents/magic`) and the
 // umbrella `compendium/talents` key.
-const rawTalents = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/talents/**/*.md", {
+const rawTalents = import.meta.glob("../../vault/tales-of-the-valiant/compendium/talents/**/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -94,31 +94,31 @@ const rawTalents = import.meta.glob("../../vault/systems/tales-of-the-valiant/co
 // Worldbuilding items used for `@folder/path` expansion inside `choose.options`
 // arrays on the character sheet — e.g. an Adherent background asking the user
 // to pick any tool from the `tools` folder as their proficiency.
-const rawTools = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/tools/*.md", {
+const rawTools = import.meta.glob("../../vault/tales-of-the-valiant/worldbuilding/tools/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawMartial = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/martial/*.md", {
+const rawMartial = import.meta.glob("../../vault/tales-of-the-valiant/worldbuilding/martial/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawSimple = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/simple/*.md", {
+const rawSimple = import.meta.glob("../../vault/tales-of-the-valiant/worldbuilding/simple/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawCantrips = import.meta.glob("../../vault/systems/tales-of-the-valiant/worldbuilding/cantrips/*.md", {
+const rawCantrips = import.meta.glob("../../vault/tales-of-the-valiant/worldbuilding/cantrips/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-const rawLanguages = import.meta.glob("../../vault/systems/tales-of-the-valiant/compendium/languages/*.md", {
+const rawLanguages = import.meta.glob("../../vault/tales-of-the-valiant/compendium/languages/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -158,11 +158,8 @@ export interface SkillDefinition {
 }
 
 function stripSystemPrefix(fullPath: string): string {
-  const idx = fullPath.indexOf("systems/");
-  const trimmed = idx >= 0 ? fullPath.slice(idx) : fullPath;
-  return trimmed.startsWith("systems/tales-of-the-valiant/")
-    ? trimmed.slice("systems/tales-of-the-valiant/".length)
-    : trimmed;
+  const idx = fullPath.indexOf("tales-of-the-valiant/");
+  return idx >= 0 ? fullPath.slice(idx + "tales-of-the-valiant/".length) : fullPath;
 }
 
 export const skills: SkillDefinition[] = Object.entries(rawSkills).map(([path, raw]) => {
@@ -235,13 +232,13 @@ function buildWorldbuilding(rawMap: Record<string, string>, prefix: string): Wor
   return Object.entries(rawMap).map(([path, raw]) => {
     const { fm, body } = splitFrontmatter(raw);
     const name = basename(path);
-    // The raw import path starts at `../../vault/systems/.../worldbuilding/...`.
-    // Strip everything up to the `systems/` segment so the remaining path
+    // The raw import path starts at `../../vault/tales-of-the-valiant/worldbuilding/...`.
+    // Strip everything up to the `tales-of-the-valiant/` segment so the remaining path
     // matches what `wiki.folder("worldbuilding/tools")` would return.
-    const idx = path.indexOf("systems/");
+    const idx = path.indexOf("tales-of-the-valiant/");
     const trimmed = idx >= 0 ? path.slice(idx) : path;
-    const $path = trimmed.startsWith("systems/tales-of-the-valiant/")
-      ? trimmed.slice("systems/tales-of-the-valiant/".length)
+    const $path = trimmed.startsWith("tales-of-the-valiant/")
+      ? trimmed.slice("tales-of-the-valiant/".length)
       : `${prefix}/${name}.md`;
     const tagsRaw = (fm.tags ?? fm.tag ?? []) as unknown;
     const $tags = Array.isArray(tagsRaw) ? tagsRaw.filter(Boolean).map((t) => String(t).trim()) : [];

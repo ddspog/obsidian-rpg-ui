@@ -9,7 +9,7 @@ auto-encumbrance from STR.
 ## Prerequisites
 - Plugin installed in Obsidian
 - This file open in Reading View
-- Compendium items under `systems/tales-of-the-valiant/worldbuilding/items/`
+- Compendium items under `tales-of-the-valiant/worldbuilding/items/`
   resolved via wikilinks — look for notes whose frontmatter has `weight`, `type`,
   `cost`, etc. (e.g. `Longsword.md`, `Quarterstaff.md`).
 

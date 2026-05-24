@@ -1,0 +1,22 @@
+---
+cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+---
+# Bedroll
+```rpg item.element
+name: Bedroll
+type: "[[Adventuring Gear]]"
+cost: 1 gp
+weight: 7 lb.
+image: "![[bedroll.webp|384]]"
+shop:
+  cheap: 7 sp
+  expensive: 2 gp
+  availability:
+    - "[[Limited]]"
+    - "[[Rural]]"
+    - "[[Urbane]]"
+    - "[[Premium]]"
+---
+A Bedroll sleeps one Small or Medium creature. While in a Bedroll, you automatically succeed on saving throws against [[06. Playing the Game#Extreme Cold css/h/feature|extreme cold]] (see also, the _[[07. Adventuring Options#EXTREME COLD css/h/feature|Game Master’s Guide]]_).
+```

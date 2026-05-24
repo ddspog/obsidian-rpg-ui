@@ -4,8 +4,8 @@
  * `worldbuilding/spells/` from the frontmatter + `tx`-blocks authoring
  * shape to a single `rpg spell` fence with the fields as YAML body.
  *
- * Runs against both the plugin's `vault/systems/.../worldbuilding/spells`
- * and the real vault root's `systems/.../worldbuilding/spells` so the
+ * Runs against both the plugin's `vault/tales-of-the-valiant/worldbuilding/spells`
+ * and the real vault root's `tales-of-the-valiant/worldbuilding/spells` so the
  * on-disk canonical copy and the plugin-bundled copy stay in sync.
  *
  * Idempotent: files already migrated (no `.spell:` frontmatter section
@@ -22,7 +22,7 @@ const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
 const vaultRoot = path.resolve(pluginRoot, "../../..");
 
-const SPELL_REL = "systems/tales-of-the-valiant/worldbuilding/spells";
+const SPELL_REL = "tales-of-the-valiant/worldbuilding/spells";
 const ROOTS = [
   path.join(pluginRoot, "vault", SPELL_REL),
   path.join(vaultRoot, SPELL_REL),

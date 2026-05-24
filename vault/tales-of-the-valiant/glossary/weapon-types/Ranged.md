@@ -1,0 +1,13 @@
+---
+source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+---
+# Ranged
+`@[[Weapons]].bare(ranged)`
+![[06. Playing the Game#^edda20|clean]]
+![[06. Playing the Game#2. Determine Modifiers#Proficiency Bonus|no-h6 clean]]
+```rpg rule.related
+view: footer
+entries:
+  - `@[[Weapons]].bare(types)`
+  - `@[[Weapons]].bare(summary)`
+```

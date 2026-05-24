@@ -43,7 +43,7 @@ const vaultShim = {
       systemFolderPath: string
     ) => Promise<any>;
 
-    const system = await loadSystemFromTypeScript(vaultShim as any, "systems/tales-of-the-valiant");
+    const system = await loadSystemFromTypeScript(vaultShim as any, "tales-of-the-valiant");
     if (!system) {
       console.error("No system returned");
       process.exitCode = 2;
