@@ -29,7 +29,7 @@
  * Render is sync — view functions return ReactNode, not Promise.
  */
 
-import { App, MarkdownPostProcessorContext, MarkdownRenderChild, parseYaml, TFile, TFolder } from "obsidian";
+import { App, Component, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, parseYaml, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { matchAllCalls, type ParsedCall, type ChainSegment, CALL_PATTERN } from "lib/domains/references/parse-call";
@@ -238,7 +238,10 @@ function resolveCall(
     .then(([raw, _]) => {
       if (isUnloaded()) return;
 
-      const cleaned = stripLocalFences(raw);
+      let cleaned = stripLocalFences(raw);
+      if (call.section) {
+        cleaned = sliceToSection(cleaned, call.section);
+      }
 
       // ── Special case: `table` view extracts rpg table.* fences ──────
       // `@[[file]].table(name)` renders a specific table block.
@@ -281,7 +284,9 @@ function resolveCall(
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
-        const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+        const fileName = call.section
+          ? call.section
+          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
         const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
           | Record<string, unknown>
           | undefined) ?? {};
@@ -318,11 +323,12 @@ function resolveCall(
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
-        const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+        const fileName = call.section
+          ? call.section
+          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
         const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
           | Record<string, unknown>
-          | undefined) ?? {};
-        const magicCtx: RuleViewCtx = {
+          | undefined) ?? {};        const magicCtx: RuleViewCtx = {
           name: fileName,
           content: cleaned,
           frontmatter: fileFm,
@@ -333,6 +339,32 @@ function resolveCall(
           root.render(<>{node}</>);
         } catch (err) {
           renderError(span, `View "magic" threw: ${(err as Error)?.message ?? err}`);
+        }
+        return;
+      }
+
+      // ── Terminal heading: `.h3()` renders section content with heading ──
+      const hTerminal = call.fn.match(/^h([1-6])$/);
+      if (hTerminal) {
+        const hLevel = parseInt(hTerminal[1], 10);
+        const sectionName = call.section
+          ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? call.target;
+        let body = stripFileFrontmatter(cleaned);
+        if (shouldStripFirstHeading(deps.app)) {
+          body = stripFirstHeading(body);
+        }
+        const source = "#".repeat(hLevel) + " " + sectionName + "\n" + body;
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const comp = new Component();
+        comp.load();
+        child.register(() => comp.unload());
+        const renderer = MarkdownRenderer as any;
+        if (typeof renderer.render === "function") {
+          renderer.render(deps.app, source, span, targetPath, comp);
+        } else if (typeof renderer.renderMarkdown === "function") {
+          renderer.renderMarkdown(source, span, targetPath, comp);
         }
         return;
       }
@@ -351,7 +383,9 @@ function resolveCall(
       }
 
       const fenced = extractContentBlocks(cleaned);
-      const fileName = targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+      const fileName = call.section
+        ? call.section
+        : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
       const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
         | Record<string, unknown>
         | undefined) ?? {};
@@ -474,6 +508,14 @@ function extractContentBlocks(text: string): HarvestedBlock[] {
       const inner = sliceFenceBody(text, f.start, f.end);
       const parsed = parseRuleContent(inner);
       out.push({ body: parsed.body, frontmatter: parsed.frontmatter });
+    } else if (f.entity === "rule" && f.block === "side") {
+      if (f.body) {
+        const fm: Record<string, unknown> = { ...f.body };
+        const bodyText = (fm.text as string) ?? "";
+        delete fm.text;
+        if (typeof fm.title === "string" && !fm.name) fm.name = fm.title;
+        out.push({ body: bodyText, frontmatter: fm });
+      }
     } else if (f.entity === "item" && f.block === "element") {
       if (f.body) {
         const fm: Record<string, unknown> = { ...f.body };
@@ -514,6 +556,57 @@ function extractTableBlocks(text: string): Array<{ name: string; fenceMarkdown: 
  */
 function stripLocalFences(text: string): string {
   return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
+}
+
+function findContentBlockById(text: string, id: string): string | null {
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const openMatch = lines[i].match(/^(`{3,})\s*rpg\s+rule\.content\s*$/);
+    if (!openMatch) continue;
+    const ticks = openMatch[1].length;
+    const bodyStart = i + 1;
+    let bodyEnd = lines.length;
+    for (let j = bodyStart; j < lines.length; j++) {
+      if (lines[j].match(new RegExp(`^\`{${ticks}}\\s*$`))) {
+        bodyEnd = j;
+        break;
+      }
+    }
+    const inner = lines.slice(bodyStart, bodyEnd).join("\n");
+    const parsed = parseRuleContent(inner);
+    if (parsed.frontmatter.id === id || parsed.frontmatter.name === id) {
+      return parsed.body;
+    }
+  }
+  return null;
+}
+
+/**
+ * Slice file text to just the content under a given heading (up to the
+ * next heading of same or higher level). Heading match is case-insensitive.
+ */
+function sliceToSection(text: string, section: string): string {
+  const lines = text.split("\n");
+  let startIdx = -1;
+  let startLevel = 0;
+  const sectionLower = section.toLowerCase();
+
+  for (let i = 0; i < lines.length; i++) {
+    const hMatch = lines[i].match(/^(#{1,6})\s+(.+)/);
+    if (!hMatch) continue;
+    if (startIdx < 0) {
+      if (hMatch[2].trim().toLowerCase() === sectionLower) {
+        startLevel = hMatch[1].length;
+        startIdx = i + 1;
+      }
+    } else {
+      if (hMatch[1].length <= startLevel) {
+        return lines.slice(startIdx, i).join("\n");
+      }
+    }
+  }
+  if (startIdx >= 0) return lines.slice(startIdx).join("\n");
+  return text;
 }
 
 /**
@@ -827,6 +920,60 @@ function resolveFolderCall(
 
       const system = deps.registry.getSystemForFile(ctx.sourcePath);
       const view = system?.ruleViews?.[call.fn];
+
+      // ── Terminal heading for folder: `.h4()` renders each file with heading ──
+      const folderHTerminal = call.fn.match(/^h([1-6])$/);
+      if (folderHTerminal) {
+        const hLevel = parseInt(folderHTerminal[1], 10);
+        const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("rpg-call-folder-headings");
+        span.appendChild(wrapper);
+        const comp = new Component();
+        comp.load();
+        child.register(() => comp.unload());
+        for (const { file: f, raw } of entries) {
+          const cleaned = stripLocalFences(raw);
+          if (call.chain.length > 0) {
+            const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+              | Record<string, unknown>
+              | undefined) ?? {};
+            const blockSpec = call.chain.find((s) => s.fn === "block");
+            const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined);
+            const { pass } = applyChain(call.chain, fileData);
+            if (!pass) continue;
+          }
+          let body: string;
+          if (blockId) {
+            const match = findContentBlockById(cleaned, blockId);
+            if (!match) continue;
+            body = match;
+          } else {
+            body = stripFileFrontmatter(cleaned);
+            if (shouldStripFirstHeading(deps.app)) {
+              body = stripFirstHeading(body);
+            }
+          }
+          const section = document.createElement("div");
+          section.classList.add("rpg-call-folder-section");
+          wrapper.appendChild(section);
+          const source = "#".repeat(hLevel) + " " + f.basename + "\n" + body;
+          const renderer = MarkdownRenderer as any;
+          if (typeof renderer.render === "function") {
+            renderer.render(deps.app, source, section, f.path, comp);
+          } else if (typeof renderer.renderMarkdown === "function") {
+            renderer.renderMarkdown(source, section, f.path, comp);
+          }
+        }
+        if (wrapper.children.length === 0) {
+          renderError(span, `No files rendered from [[${call.target}]] with .${call.fn}()`);
+        }
+        return;
+      }
+
       if (!view) {
         renderError(span, `View "${call.fn}" not registered`);
         return;

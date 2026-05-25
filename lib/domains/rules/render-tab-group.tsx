@@ -1,7 +1,10 @@
-import { App, MarkdownRenderChild, setIcon } from "obsidian";
+import { App, MarkdownRenderChild, setIcon, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
+import { matchAllCalls, type ChainSegment } from "lib/domains/references/parse-call";
+import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
+import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { parseRuleTab } from "./parse-rule-block";
 import type { RuleTabBlock } from "./types";
 
@@ -140,11 +143,16 @@ function SubTabGroupView({
       </nav>
       {active && (
         <article className="rpg-subtab-group__panel">
-          <Markdown source={wrapBareCalls(active.body)} sourcePath={sourcePath} />
+          <SubTabPanelContent body={active.body} sourcePath={sourcePath} />
         </article>
       )}
     </section>
   );
+}
+
+function SubTabPanelContent({ body, sourcePath }: { body: string; sourcePath: string }) {
+  const expandedBody = useExpandedCalls(body, sourcePath);
+  return <Markdown source={wrapBareCalls(expandedBody)} sourcePath={sourcePath} />;
 }
 
 function HorizontalTabGroupView({
@@ -367,15 +375,37 @@ function HorizontalTabGroupView({
 }
 
 function extractNestedTabs(body: string): { intro: string; tabs: RuleTabBlock[] } | null {
-  const fenceRe = /```rpg\s+rule\.tab\s*\n([\s\S]*?)```/g;
   const tabs: RuleTabBlock[] = [];
   let firstIdx = -1;
+  const openRe = /^(`{3,})rpg\s+rule\.tab\s*$/gm;
 
   let m: RegExpExecArray | null;
-  while ((m = fenceRe.exec(body)) !== null) {
+  while ((m = openRe.exec(body)) !== null) {
     if (firstIdx < 0) firstIdx = m.index;
-    const tabSource = m[1];
-    tabs.push(parseRuleTab(tabSource));
+    const fenceTicks = m[1].length;
+    const bodyStart = m.index + m[0].length + 1;
+    const lines = body.slice(bodyStart).split("\n");
+    let depth = 1;
+    let consumed = 0;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const tickMatch = trimmed.match(/^(`{3,})/);
+      if (tickMatch) {
+        const ticks = tickMatch[1].length;
+        const isCloser = trimmed === tickMatch[1];
+        if (isCloser) {
+          depth--;
+        } else {
+          depth++;
+        }
+      }
+      consumed += line.length + 1;
+      if (depth === 0) {
+        const tabSource = body.slice(bodyStart, bodyStart + consumed - line.length - 1);
+        tabs.push(parseRuleTab(tabSource));
+        break;
+      }
+    }
   }
 
   if (tabs.length === 0) return null;
@@ -385,6 +415,7 @@ function extractNestedTabs(body: string): { intro: string; tabs: RuleTabBlock[] 
 
 function TabPanelContent({ body, sourcePath }: { body: string; sourcePath: string }) {
   const nested = React.useMemo(() => extractNestedTabs(body), [body]);
+  const expandedBody = useExpandedCalls(body, sourcePath);
 
   if (nested && nested.tabs.length > 0) {
     return (
@@ -395,7 +426,185 @@ function TabPanelContent({ body, sourcePath }: { body: string; sourcePath: strin
     );
   }
 
-  return <Markdown source={wrapBareCalls(body)} sourcePath={sourcePath} />;
+  return <Markdown source={wrapBareCalls(expandedBody)} sourcePath={sourcePath} />;
+}
+
+/**
+ * Expand `@[[file#section]].h{n}()` and `@[[folder/]].h{n}()` calls
+ * inline into markdown text. This avoids the race condition where
+ * processCallsInContainer's async resolution completes after the
+ * Markdown component re-renders and disconnects the span.
+ */
+function useExpandedCalls(body: string, sourcePath: string): string {
+  const [expanded, setExpanded] = React.useState(body);
+
+  React.useEffect(() => {
+    const app = (globalThis as unknown as { app?: App }).app;
+    if (!app) { setExpanded(body); return; }
+
+    let cancelled = false;
+    expandHeadingCalls(body, sourcePath, app).then((result) => {
+      if (!cancelled) setExpanded(result);
+    });
+    return () => { cancelled = true; };
+  }, [body, sourcePath]);
+
+  return expanded;
+}
+
+async function expandHeadingCalls(body: string, sourcePath: string, app: App): Promise<string> {
+  const calls = matchAllCalls(body);
+  const headingCalls = calls.filter((c) => /^h[1-6]$/.test(c.fn));
+  if (headingCalls.length === 0) return body;
+
+  let result = body;
+  for (let i = headingCalls.length - 1; i >= 0; i--) {
+    const call = headingCalls[i];
+    const hLevel = parseInt(call.fn[1], 10);
+    const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
+    let replacement = "";
+
+    if (call.target.endsWith("/")) {
+      replacement = await expandFolderHeading(call.target, call.section, hLevel, blockId, call.chain, app);
+    } else {
+      replacement = await expandFileHeading(call.target, call.section, hLevel, sourcePath, app);
+    }
+
+    let start = call.start;
+    let end = call.end;
+    if (start > 0 && result[start - 1] === "`" && end < result.length && result[end] === "`") {
+      start--;
+      end++;
+    }
+    result = result.slice(0, start) + replacement + result.slice(end);
+  }
+  return result;
+}
+
+async function expandFolderHeading(target: string, section: string | undefined, hLevel: number, blockId: string | undefined, chain: ChainSegment[], app: App): Promise<string> {
+  const clean = target.replace(/\/+$/, "");
+  let folder: TFolder | null = null;
+  const exact = app.vault.getAbstractFileByPath(clean);
+  if (exact instanceof TFolder) {
+    folder = exact;
+  } else {
+    const suffix = "/" + clean;
+    for (const f of app.vault.getAllLoadedFiles()) {
+      if (f instanceof TFolder && (f.path === clean || f.path.endsWith(suffix))) {
+        folder = f;
+        break;
+      }
+    }
+  }
+  if (!folder) return "";
+
+  const files = folder.children
+    .filter((f): f is TFile => f instanceof TFile && f.extension === "md")
+    .sort((a, b) => a.basename.localeCompare(b.basename));
+
+  const parts: string[] = [];
+  for (const f of files) {
+    const raw = await app.vault.cachedRead(f);
+    let body = stripFm(raw);
+
+    if (chain.length > 0) {
+      const fileFm = (app.metadataCache.getCache(f.path)?.frontmatter as
+        | Record<string, unknown>
+        | undefined) ?? {};
+      if (!applyChainFilter(chain, fileFm, f.basename)) continue;
+    }
+
+    if (blockId) {
+      const block = findContentBlock(body, blockId);
+      if (!block) continue;
+      body = block;
+    } else {
+      body = body.replace(/^#\s+[^\n]*\n?/, "");
+    }
+
+    parts.push("#".repeat(hLevel) + " " + f.basename + "\n" + body);
+  }
+  return parts.join("\n\n");
+}
+
+function applyChainFilter(chain: ChainSegment[], fileFm: Record<string, unknown>, basename: string): boolean {
+  const data: Record<string, unknown> = { name: basename, ...fileFm };
+  for (const seg of chain) {
+    if (seg.fn === "filter") {
+      const exprStr = seg.args.map(String).join(", ");
+      const expr = parseFilterExpr(exprStr);
+      if (expr && !evaluateFilter(expr, data)) return false;
+    }
+  }
+  return true;
+}
+
+async function expandFileHeading(target: string, section: string | undefined, hLevel: number, sourcePath: string, app: App): Promise<string> {
+  const file = app.metadataCache.getFirstLinkpathDest(target, sourcePath);
+  if (!(file instanceof TFile)) return "";
+
+  const raw = await app.vault.cachedRead(file);
+  let body = stripFm(raw);
+  if (section) {
+    body = sliceSectionText(body, section);
+  } else {
+    body = body.replace(/^#\s+[^\n]*\n?/, "");
+  }
+  const name = section ?? file.basename;
+  return "#".repeat(hLevel) + " " + name + "\n" + body;
+}
+
+function stripFm(text: string): string {
+  const m = text.match(/^---\n[\s\S]*?\n---\n?/);
+  return m ? text.slice(m[0].length) : text;
+}
+
+function sliceSectionText(text: string, section: string): string {
+  const lines = text.split("\n");
+  let startIdx = -1;
+  let startLevel = 0;
+  const sectionLower = section.toLowerCase();
+
+  for (let i = 0; i < lines.length; i++) {
+    const hMatch = lines[i].match(/^(#{1,6})\s+(.+)/);
+    if (!hMatch) continue;
+    if (startIdx < 0) {
+      if (hMatch[2].trim().toLowerCase() === sectionLower) {
+        startLevel = hMatch[1].length;
+        startIdx = i + 1;
+      }
+    } else {
+      if (hMatch[1].length <= startLevel) {
+        return lines.slice(startIdx, i).join("\n");
+      }
+    }
+  }
+  if (startIdx >= 0) return lines.slice(startIdx).join("\n");
+  return text;
+}
+
+/** Find a `rpg rule.content` block whose frontmatter id or name matches. */
+function findContentBlock(text: string, id: string): string | null {
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const openMatch = lines[i].match(/^(`{3,})\s*rpg\s+rule\.content\s*$/);
+    if (!openMatch) continue;
+    const ticks = openMatch[1].length;
+    const bodyStart = i + 1;
+    let bodyEnd = lines.length;
+    for (let j = bodyStart; j < lines.length; j++) {
+      if (lines[j].match(new RegExp(`^\`{${ticks}}\\s*$`))) {
+        bodyEnd = j;
+        break;
+      }
+    }
+    const inner = lines.slice(bodyStart, bodyEnd).join("\n");
+    const parsed = parseRuleContent(inner);
+    if (parsed.frontmatter.id === id || parsed.frontmatter.name === id) {
+      return parsed.body;
+    }
+  }
+  return null;
 }
 
 const TabButton = React.forwardRef<HTMLButtonElement, {
