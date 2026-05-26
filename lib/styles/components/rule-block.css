@@ -961,10 +961,16 @@
   content: "";
   position: absolute;
   inset: -4px -8px;
-  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 50%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 40%, transparent);
   transform: translate(-5px, -5px);
   pointer-events: none;
   z-index: 0;
+  -webkit-mask-image:
+    radial-gradient(ellipse 35% 35% at 0% 0%, black 0%, transparent 70%),
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
+  mask-image:
+    radial-gradient(ellipse 35% 35% at 0% 0%, black 0%, transparent 70%),
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
 }
 
 .rpg-call-highlight > *:not(.rpg-call-highlight__badge) {
@@ -994,4 +1000,110 @@
 .rpg-call-highlight__badge svg {
   width: 0.85em;
   height: 0.85em;
+}
+
+/* ── Box-specific highlight: callout ─────────────────────────────────
+ * Stripes fill the callout's own background; no external offset frame.
+ * The callout's existing border acts as the frame. */
+
+.rpg-call-highlight:has(.rpg-rule-side--callout) {
+  padding: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--callout) > *,
+.rpg-call-highlight:has(.rpg-rule-side--callout) .rpg-call-highlight__inner {
+  display: contents;
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--callout)::before,
+.rpg-call-highlight:has(.rpg-rule-side--callout)::after {
+  display: none;
+}
+
+.rpg-call-highlight .rpg-rule-side--callout {
+  margin-block: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 15%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 15%, transparent) 5px
+    ),
+    radial-gradient(circle 4px at 6px 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at 6px calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--callout) .rpg-call-highlight__badge {
+  top: 0.4em;
+  right: 0.4em;
+}
+
+.rpg-call-highlight .rpg-rule-side--callout .rpg-call-highlight__badge {
+  display: flex;
+}
+
+/* ── Box-specific highlight: float ───────────────────────────────────
+ * Stripes fill the float flag body; no external wrapper. */
+
+.rpg-call-highlight:has(.rpg-rule-side--float) {
+  padding: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--float)::before,
+.rpg-call-highlight:has(.rpg-rule-side--float)::after {
+  display: none;
+}
+
+.rpg-call-highlight .rpg-rule-side--float {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 5px
+  );
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--float) .rpg-call-highlight__badge {
+  top: 0.2em;
+  right: 0.2em;
+}
+
+/* ── Box-specific highlight: commentary ──────────────────────────────
+ * Commentary floats into the gutter — external wrapper collapses.
+ * Apply stripes directly; its existing dashed border is the frame. */
+
+.rpg-call-highlight:has(.rpg-rule-side--commentary) {
+  padding: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--commentary)::before,
+.rpg-call-highlight:has(.rpg-rule-side--commentary)::after {
+  display: none;
+}
+
+.rpg-call-highlight .rpg-rule-side--commentary {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 15%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 15%, transparent) 5px
+  );
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--commentary) .rpg-call-highlight__badge {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
 }

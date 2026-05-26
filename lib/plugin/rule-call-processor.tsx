@@ -103,6 +103,12 @@ function HighlightBadge({ source }: { source: string }) {
     } catch {
       el.textContent = "✦";
     }
+    // For box views (callout/float): move badge inside the aside so
+    // it positions relative to the box and gets tooltip support.
+    const aside = el.parentElement?.querySelector(".rpg-rule-side");
+    if (aside) {
+      aside.appendChild(el);
+    }
   }, []);
   return React.createElement("span", {
     ref,
@@ -521,8 +527,22 @@ function resolveCall(
           view, matching, viewArgs, fileName, targetPath,
           wholeFileBody, fileFm
         );
-        root.render(<>{node}</>);
-        applyHighlight(span, extractHighlight(call.chain), String(fileFm.source ?? ""));
+        const sourceStr = String(fileFm.source ?? "");
+        if (highlight.active) {
+          root.render(
+            <div className="rpg-call-highlight__inner">
+              {node}
+              <HighlightBadge source={sourceStr} />
+            </div>
+          );
+          span.classList.add("rpg-call-highlight");
+          span.removeAttribute("aria-label");
+          if (highlight.color) {
+            span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
+          }
+        } else {
+          root.render(<>{node}</>);
+        }
       } catch (err) {
         console.error(`rpg-call ${call.source} render threw`, err);
         renderError(span, `View "${call.fn}" threw: ${(err as Error)?.message ?? err}`);

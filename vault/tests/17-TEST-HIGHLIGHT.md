@@ -55,26 +55,26 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 ## B1. Normal imports (no highlight)
 
 ### .callout() — no highlight
-`@[[Checks]].callout()`
+`@[[Darkvision]].callout()`
 
 ### .float() — no highlight
-`@[[Acrobatics]].float()`
+`@[[Short Draw ᴷ]].float()`
 
 ### .commentary() — no highlight
-`@[[Athletics]].commentary()`
+`@[[Far Sight ᴺ]].commentary()`
 
 ---
 
 ## B2. Explicit .highlight() on boxes
 
 ### .highlight().callout()
-`@[[Acolyte ᴴ]].highlight().callout()`
+`@[[Far Sight ᴺ]].highlight().callout()`
 
 ### .highlight().float()
 `@[[Short Draw ᴷ]].highlight().float()`
 
 ### .highlight().commentary()
-`@[[Far Sight ᴺ]].highlight().commentary()`
+`@[[Blunted Bash ᴷ]].highlight().commentary()`
 
 ---
 
