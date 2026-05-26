@@ -8461,6 +8461,56 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   top: 0.2em;
   right: 0.2em;
 }
+tr.rpg-row-highlight {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 5px,
+      color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 5px,
+      color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 6px);
+}
+tr.rpg-row-highlight td:last-child {
+  position: relative;
+}
+tr.rpg-row-highlight td:last-child .rpg-call-highlight__badge {
+  position: absolute;
+  top: 50%;
+  right: 0.3em;
+  transform: translateY(-50%);
+}
+.rpg-call-highlight:has(.rpg-view--item) {
+  padding: 0;
+  margin-block: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+.rpg-call-highlight:has(.rpg-view--item)::before,
+.rpg-call-highlight:has(.rpg-view--item)::after {
+  display: none;
+}
+.rpg-call-highlight:has(.rpg-view--item) > *,
+.rpg-call-highlight:has(.rpg-view--item) .rpg-call-highlight__inner {
+  display: contents;
+}
+.rpg-call-highlight:has(.rpg-view--item) .rpg-call-highlight__inner .rpg-call-highlight__badge {
+  display: none;
+}
+li.rpg-item-highlight {
+  position: relative;
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 5px,
+      color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 5px,
+      color-mix(in srgb, var(--text-faint, #999) 12%, transparent) 6px);
+}
+li.rpg-item-highlight .rpg-call-highlight__badge {
+  position: absolute;
+  top: 0.2em;
+  right: -0.5em;
+}
 
 /* lib/styles/components/rule-call.css */
 .rpg-call {

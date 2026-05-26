@@ -192,6 +192,7 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
         // than requestAnimationFrame which can fire before React's commit.
         setTimeout(() => {
           if (!childUnloaded) {
+            markHighlightedItems(el);
             mergeAdjacentCallTabs(el);
             mergeAdjacentItemLists(el);
             mergeTableRows(el);
@@ -539,6 +540,10 @@ function resolveCall(
           span.removeAttribute("aria-label");
           if (highlight.color) {
             span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
+          }
+          // Mark table rows for post-merge highlight styling
+          if (view.wrapper === "table" || view.wrapper === "ul") {
+            span.setAttribute("data-rpg-highlight-source", sourceStr);
           }
         } else {
           root.render(<>{node}</>);
@@ -1261,12 +1266,18 @@ function resolveFolderCall(
           }
         } else {
           try {
-            const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
             const entrySource = fileFm.source ? String(fileFm.source) : "";
-            if (folderHighlight.active) {
-              console.log("[highlight] caller:", JSON.stringify(folderCallerSource), "entry:", JSON.stringify(entrySource), "file:", f.path);
-            }
-            if (folderHighlight.active && entrySource !== folderCallerSource) {
+            const shouldHighlight = folderHighlight.active && entrySource !== folderCallerSource;
+            const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
+
+            if (shouldHighlight && view.wrapper === "ul") {
+              // For items: wrap in a span with data attr; post-render pass marks the <li>
+              nodes.push(React.createElement("span", {
+                key: f.path,
+                "data-rpg-item-source": entrySource,
+                style: { display: "contents" } as React.CSSProperties,
+              }, node));
+            } else if (shouldHighlight) {
               nodes.push(React.createElement("div", {
                 key: f.path,
                 className: "rpg-call-highlight",
@@ -1293,6 +1304,11 @@ function resolveFolderCall(
           const hostIndent = hostTd?.getAttribute("data-indent");
           const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
           const fields = viewArgs2.map((a) => String(a));
+          const tableHighlight = extractHighlight(call.chain);
+          const tableCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          const tableCallerSource = tableCallerFm.source ? String(tableCallerFm.source) : "";
           for (const { file: f, raw } of entries) {
             const cleaned = stripLocalFences(raw);
 
@@ -1370,6 +1386,29 @@ function resolveFolderCall(
                 tr.appendChild(td);
               }
               hostTr.parentElement!.insertBefore(tr, hostTr);
+              // Apply highlight if source differs
+              if (tableHighlight.active) {
+                const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+                  | Record<string, unknown>
+                  | undefined) ?? {};
+                const entrySource = entryFm.source ? String(entryFm.source) : "";
+                if (entrySource !== tableCallerSource) {
+                  tr.classList.add("rpg-row-highlight");
+                  const lastTd = tr.querySelector("td:last-child");
+                  if (lastTd) {
+                    const badge = doc.createElement("span");
+                    badge.className = "rpg-call-highlight__badge";
+                    badge.setAttribute("aria-label", entrySource || "Homebrew");
+                    try {
+                      const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                      setIcon?.(badge, "pen-line");
+                    } catch {
+                      badge.textContent = "✦";
+                    }
+                    lastTd.appendChild(badge);
+                  }
+                }
+              }
             }
           }
           hostTr.remove();
@@ -1397,6 +1436,30 @@ function resolveFolderCall(
         const root = ReactDOM.createRoot(span);
         child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
         root.render(<>{nodes}</>);
+        // Post-render: mark folder item <li> elements that have different source
+        if (highlight2.active && view.wrapper === "ul") {
+          setTimeout(() => {
+            span.querySelectorAll("[data-rpg-item-source]").forEach((wrapper) => {
+              const source = wrapper.getAttribute("data-rpg-item-source") || "";
+              const li = wrapper.querySelector("li.rpg-view--item");
+              if (li) {
+                li.classList.add("rpg-item-highlight");
+                if (!li.querySelector(".rpg-call-highlight__badge")) {
+                  const badge = document.createElement("span");
+                  badge.className = "rpg-call-highlight__badge";
+                  badge.setAttribute("aria-label", source || "Homebrew");
+                  try {
+                    const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                    setIcon?.(badge, "pen-line");
+                  } catch {
+                    badge.textContent = "✦";
+                  }
+                  li.appendChild(badge);
+                }
+              }
+            });
+          }, 50);
+        }
       }
     })
     .catch((err) => {
@@ -1486,6 +1549,35 @@ function unwrapCallCodeSpans(root: HTMLElement, deps: RuleCallProcessorDeps, sou
     code.parentNode?.replaceChild(replacement, code);
   }
   void CALL_PATTERN;
+}
+
+/**
+ * Before item lists merge, mark <li> elements inside highlighted call
+ * spans with a class + badge so they retain styling after the merge
+ * moves them into a shared <ul>.
+ */
+function markHighlightedItems(root: HTMLElement): void {
+  const spans = root.querySelectorAll(`.${CALL_CLASS}[data-rpg-highlight-source]`);
+  for (const span of Array.from(spans)) {
+    const items = span.querySelectorAll("li.rpg-view--item");
+    if (items.length === 0) continue;
+    const source = span.getAttribute("data-rpg-highlight-source") || "";
+    for (const li of Array.from(items)) {
+      li.classList.add("rpg-item-highlight");
+      if (!li.querySelector(".rpg-call-highlight__badge")) {
+        const badge = document.createElement("span");
+        badge.className = "rpg-call-highlight__badge";
+        badge.setAttribute("aria-label", source || "Homebrew");
+        try {
+          const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+          setIcon?.(badge, "pen-line");
+        } catch {
+          badge.textContent = "✦";
+        }
+        li.appendChild(badge);
+      }
+    }
+  }
 }
 
 /**
@@ -1690,9 +1782,82 @@ function findPrecedingTable(span: HTMLElement): HTMLTableElement | null {
  * the setTimeout(100) callback alongside item merging).
  */
 function mergeTableRows(root: HTMLElement): void {
-  // This per-section version is a no-op — table merging is handled by
-  // the global MutationObserver (setupGlobalTableMerger) which has
-  // access to the full page DOM and fires the instant React commits.
+  const reactTables = root.querySelectorAll("table.rpg-view--table");
+  for (const reactTable of Array.from(reactTables)) {
+    const callSpan = reactTable.closest(`.${CALL_CLASS}`) as HTMLElement | null;
+    if (!callSpan || !callSpan.isConnected) continue;
+
+    const highlightSource = callSpan.getAttribute("data-rpg-highlight-source");
+
+    const hostTd = callSpan.closest("td");
+    if (hostTd) {
+      const hostTr = hostTd.closest("tr");
+      if (hostTr && hostTr.parentElement) {
+        const hostIndent = hostTd.getAttribute("data-indent");
+        const sourceBody = reactTable.querySelector("tbody") ?? reactTable;
+        const rows = Array.from(sourceBody.querySelectorAll("tr"));
+        for (const row of rows) {
+          if (hostIndent) {
+            const firstTd = row.querySelector("td");
+            if (firstTd) firstTd.setAttribute("data-indent", hostIndent);
+          }
+          if (highlightSource !== null) {
+            row.classList.add("rpg-row-highlight");
+            const lastTd = row.querySelector("td:last-child");
+            if (lastTd && !lastTd.querySelector(".rpg-call-highlight__badge")) {
+              const badge = document.createElement("span");
+              badge.className = "rpg-call-highlight__badge";
+              badge.setAttribute("aria-label", highlightSource || "Homebrew");
+              try {
+                const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                setIcon?.(badge, "pen-line");
+              } catch {
+                badge.textContent = "✦";
+              }
+              lastTd.appendChild(badge);
+            }
+          }
+          hostTr.parentElement.insertBefore(row, hostTr);
+        }
+        hostTr.remove();
+        continue;
+      }
+    }
+
+    const precedingTable = findPrecedingTable(callSpan);
+    if (!precedingTable) continue;
+    let targetBody = precedingTable.querySelector("tbody");
+    if (!targetBody) {
+      targetBody = document.createElement("tbody");
+      precedingTable.appendChild(targetBody);
+    }
+    const sourceBody = reactTable.querySelector("tbody") ?? reactTable;
+    const rows = Array.from(sourceBody.querySelectorAll("tr"));
+    for (const row of rows) {
+      if (highlightSource !== null) {
+        row.classList.add("rpg-row-highlight");
+        const lastTd = row.querySelector("td:last-child");
+        if (lastTd && !lastTd.querySelector(".rpg-call-highlight__badge")) {
+          const badge = document.createElement("span");
+          badge.className = "rpg-call-highlight__badge";
+          badge.setAttribute("aria-label", highlightSource || "Homebrew");
+          try {
+            const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+            setIcon?.(badge, "pen-line");
+          } catch {
+            badge.textContent = "✦";
+          }
+          lastTd.appendChild(badge);
+        }
+      }
+      targetBody.appendChild(row);
+    }
+    const parent = callSpan.parentElement;
+    callSpan.remove();
+    if (parent && !parent.textContent?.trim() && parent.tagName !== "DIV") {
+      parent.remove();
+    }
+  }
 }
 
 /**
@@ -1718,6 +1883,8 @@ export function setupGlobalTableMerger(): void {
           const callSpan = reactTable.closest(`.${CALL_CLASS}`) as HTMLElement | null;
           if (!callSpan || !callSpan.isConnected) continue;
 
+          const highlightSource = callSpan.getAttribute("data-rpg-highlight-source");
+
           // Case 1: call is INSIDE a table cell (inline row syntax).
           // Replace the host <tr> with the rendered rows.
           const hostTd = callSpan.closest("td");
@@ -1731,6 +1898,22 @@ export function setupGlobalTableMerger(): void {
                 if (hostIndent) {
                   const firstTd = row.querySelector("td");
                   if (firstTd) firstTd.setAttribute("data-indent", hostIndent);
+                }
+                if (highlightSource !== null) {
+                  row.classList.add("rpg-row-highlight");
+                  const lastTd = row.querySelector("td:last-child");
+                  if (lastTd && !lastTd.querySelector(".rpg-call-highlight__badge")) {
+                    const badge = document.createElement("span");
+                    badge.className = "rpg-call-highlight__badge";
+                    badge.setAttribute("aria-label", highlightSource || "Homebrew");
+                    try {
+                      const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                      setIcon?.(badge, "pen-line");
+                    } catch {
+                      badge.textContent = "✦";
+                    }
+                    lastTd.appendChild(badge);
+                  }
                 }
                 hostTr.parentElement?.insertBefore(row, hostTr);
               }
@@ -1751,7 +1934,25 @@ export function setupGlobalTableMerger(): void {
           }
           const sourceBody = reactTable.querySelector("tbody") ?? reactTable;
           const rows = Array.from(sourceBody.querySelectorAll("tr"));
-          for (const row of rows) targetBody.appendChild(row);
+          for (const row of rows) {
+            if (highlightSource !== null) {
+              row.classList.add("rpg-row-highlight");
+              const lastTd = row.querySelector("td:last-child");
+              if (lastTd && !lastTd.querySelector(".rpg-call-highlight__badge")) {
+                const badge = document.createElement("span");
+                badge.className = "rpg-call-highlight__badge";
+                badge.setAttribute("aria-label", highlightSource || "Homebrew");
+                try {
+                  const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                  setIcon?.(badge, "pen-line");
+                } catch {
+                  badge.textContent = "✦";
+                }
+                lastTd.appendChild(badge);
+              }
+            }
+            targetBody.appendChild(row);
+          }
           // Remove the call span
           const parent = callSpan.parentElement;
           callSpan.remove();

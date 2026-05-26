@@ -80,16 +80,35 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 
 # Section C: Row View (table)
 
-## C1. Normal mixed table (no highlights)
+## C1. Normal table (no highlights)
+````rpg table.weapons-c1
+| Link | Cost | Weight |
+|---|---|---|
+| `@[[Longsword]].row(link, cost, weight)` |
+| `@[[Scimitar]].row(link, cost, weight)` |
+| `@[[Maul]].row(link, cost, weight)` |
+| `@[[Northlands Estoc ᴷ]].row(link, cost, weight)` |
+[MARTIAL WEAPONS]
+````
 
-`@[[Acrobatics]].row(name, attribute)`
-`@[[Athletics]].row(name, attribute)`
+## C2. Mixed table — some rows highlighted
+````rpg table.weapons-c2
+| Link | Cost | Weight |
+|---|---|---|
+| `@[[Longsword]].row(link, cost, weight)` |
+| `@[[Northlands Estoc ᴷ]].highlight().row(link, cost, weight)` |
+| `@[[Scimitar]].row(link, cost, weight)` |
+| `@[[Maul]].row(link, cost, weight)` |
+[MIXED WEAPONS]
+````
 
-## C2. Highlighted rows in a mixed table
-
-`@[[Acrobatics]].row(name, attribute)`
-`@[[Short Draw ᴷ]].highlight().row(name)`
-`@[[Blunted Bash ᴷ]].highlight().row(name)`
+## C3. Folder table — highlight detects homebrew per row
+````rpg table.weapons-c3
+| Link | Cost | Weight |
+|---|---|---|
+| > `@[[items/weapons/martial-melee/]].highlight().row(link, cost, weight)` |
+[MARTIAL MELEE — FOLDER IMPORT]
+````
 
 ---
 
@@ -97,14 +116,20 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 
 ## D1. Normal items (no highlight)
 
-`@[[Acrobatics]].item()`
-`@[[Athletics]].item()`
+`@[[Darkvision]].item()`
+`@[[Short Draw ᴷ]].item()`
+`@[[Far Sight ᴺ]].item()`
 
 ## D2. Mixed list with selective highlight
 
-`@[[Acrobatics]].item()`
+`@[[Darkvision]].item()`
 `@[[Short Draw ᴷ]].highlight().item()`
+`@[[Far Sight ᴺ]].highlight().item()`
 `@[[Blunted Bash ᴷ]].highlight().item()`
+
+## D3. Folder list — highlight detects homebrew per item
+
+`@[[concepts/weapon-property/]].highlight().item()`
 
 ---
 
