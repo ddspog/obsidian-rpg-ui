@@ -1610,10 +1610,13 @@ function mergeAdjacentItemLists(root: HTMLElement): void {
       const donor = group[i];
       // Move all <li> from donor into target.
       while (donor.firstChild) target.appendChild(donor.firstChild);
-      // Remove the now-empty wrapper span (and any preceding <br>).
-      const wrapper = donor.closest(`.${CALL_CLASS}`);
-      if (wrapper) {
-        let prev: Node | null = wrapper.previousSibling;
+      // Remove the now-empty <ul> and its wrapper span (if it's a
+      // DIFFERENT span from the target's — folder calls put multiple
+      // <ul>s inside one span, so we must not remove it).
+      const donorWrapper = donor.closest(`.${CALL_CLASS}`);
+      const targetWrapper = target.closest(`.${CALL_CLASS}`);
+      if (donorWrapper && donorWrapper !== targetWrapper) {
+        let prev: Node | null = donorWrapper.previousSibling;
         while (
           prev &&
           ((prev.nodeType === Node.ELEMENT_NODE && (prev as Element).tagName === "BR") ||
@@ -1623,7 +1626,7 @@ function mergeAdjacentItemLists(root: HTMLElement): void {
           prev = prev.previousSibling;
           toRemove.parentNode?.removeChild(toRemove);
         }
-        wrapper.remove();
+        donorWrapper.remove();
       } else {
         donor.remove();
       }

@@ -127,9 +127,11 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 `@[[Far Sight ᴺ]].highlight().item()`
 `@[[Blunted Bash ᴷ]].highlight().item()`
 
+---
+
 ## D3. Folder list — highlight detects homebrew per item
 
-`@[[concepts/weapon-property/]].highlight().item()`
+`@[[concepts/weapon-options/]].highlight().item()`
 
 ---
 

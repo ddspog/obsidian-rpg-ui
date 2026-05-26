@@ -8480,20 +8480,13 @@ tr.rpg-row-highlight td:last-child .rpg-call-highlight__badge {
   transform: translateY(-50%);
 }
 .rpg-call-highlight:has(.rpg-view--item) {
+  display: block;
   padding: 0;
-  margin-block: 0;
-  margin-inline: 0;
+  margin: 0;
   isolation: auto;
 }
 .rpg-call-highlight:has(.rpg-view--item)::before,
 .rpg-call-highlight:has(.rpg-view--item)::after {
-  display: none;
-}
-.rpg-call-highlight:has(.rpg-view--item) > *,
-.rpg-call-highlight:has(.rpg-view--item) .rpg-call-highlight__inner {
-  display: contents;
-}
-.rpg-call-highlight:has(.rpg-view--item) .rpg-call-highlight__inner .rpg-call-highlight__badge {
   display: none;
 }
 li.rpg-item-highlight {
