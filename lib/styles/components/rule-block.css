@@ -927,3 +927,71 @@
     border-radius: 6px;
   }
 }
+
+/* ── .highlight() chain modifier ─────────────────────────────────────
+ * Layered manga-panel effect: striped background shifts top-left, a
+ * thin border frame shifts bottom-right, text sits in the middle.
+ * Pen-line badge in the top-right corner of the frame. */
+
+.rpg-call-highlight {
+  position: relative;
+  display: block;
+  margin-block: var(--size-4-4, 1rem);
+  padding: 0.4em 0;
+  isolation: isolate;
+}
+
+.rpg-call-highlight::before {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px
+  );
+  transform: translate(5px, 5px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-call-highlight::after {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 50%, transparent);
+  transform: translate(-5px, -5px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-call-highlight > *:not(.rpg-call-highlight__badge) {
+  position: relative;
+  z-index: 1;
+}
+
+.rpg-call-highlight__badge {
+  position: absolute;
+  top: -10px;
+  right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+  z-index: 2;
+}
+
+.rpg-call-highlight__badge:hover {
+  opacity: 1;
+}
+
+.rpg-call-highlight__badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}

@@ -505,7 +505,7 @@ async function expandFolderHeading(target: string, section: string | undefined, 
   const parts: string[] = [];
   for (const f of files) {
     const raw = await app.vault.cachedRead(f);
-    let body = stripFm(raw);
+    let body = stripLocalFences(stripFm(raw));
 
     if (chain.length > 0) {
       const fileFm = (app.metadataCache.getCache(f.path)?.frontmatter as
@@ -544,7 +544,7 @@ async function expandFileHeading(target: string, section: string | undefined, hL
   if (!(file instanceof TFile)) return "";
 
   const raw = await app.vault.cachedRead(file);
-  let body = stripFm(raw);
+  let body = stripLocalFences(stripFm(raw));
   if (section) {
     body = sliceSectionText(body, section);
   } else {
@@ -557,6 +557,10 @@ async function expandFileHeading(target: string, section: string | undefined, hL
 function stripFm(text: string): string {
   const m = text.match(/^---\n[\s\S]*?\n---\n?/);
   return m ? text.slice(m[0].length) : text;
+}
+
+function stripLocalFences(text: string): string {
+  return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
 }
 
 function sliceSectionText(text: string, section: string): string {

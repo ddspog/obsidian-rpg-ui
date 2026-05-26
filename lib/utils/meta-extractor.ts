@@ -113,6 +113,20 @@ export function detectMetaFromSource(source: string): string | null {
     return "rule.side";
   }
 
+  // `rpg rule.related` — YAML array of embeds/call tokens, or object
+  // with `entries:` + optional `level:`/`view:`. Distinguished from `rpg show`
+  // (which also uses `entries:`) by the presence of `view:` co-key or array
+  // items containing `![[` embeds / `@[[` call tokens.
+  if (topLevelKeys.has("entries") && topLevelKeys.has("view")) return "rule.related";
+  const sourceLines2 = source.split("\n");
+  const hasArrayItems = sourceLines2.some((l) => /^\s*-\s/.test(l));
+  if (hasArrayItems) {
+    const hasEmbedOrCall = sourceLines2.some((l) =>
+      /!\[\[|@\[\[/.test(l)
+    );
+    if (hasEmbedOrCall) return "rule.related";
+  }
+
   const featureMarkers = ["subtitle", "tag", "pick", "uses", "link", "value", "values", "type"];
   if (topLevelKeys.has("name") && featureMarkers.some((k) => topLevelKeys.has(k))) {
     return "feature.details";
@@ -139,19 +153,6 @@ export function detectMetaFromSource(source: string): string | null {
   const hasPipeRow = lines.some((l) => /^\s*\|.*\|/.test(l.trim()));
   const hasSeparator = lines.some((l) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()));
   if (hasPipeRow && hasSeparator) return "table";
-
-  // `rpg rule.related` — YAML array of embeds/call tokens, or object
-  // with `entries:` + optional `level:`. Detected by array-item lines
-  // containing `![[` embeds or `@[[` call tokens.
-  if (topLevelKeys.has("entries")) return "rule.related";
-  const sourceLines2 = source.split("\n");
-  const hasArrayItems = sourceLines2.some((l) => /^\s*-\s/.test(l));
-  if (hasArrayItems) {
-    const hasEmbedOrCall = sourceLines2.some((l) =>
-      /!\[\[|@\[\[/.test(l)
-    );
-    if (hasEmbedOrCall) return "rule.related";
-  }
 
   // Final fallback: a block with `name:` and no other recognised marker is
   // overwhelmingly a feature.details in compendium docs. Route it that way

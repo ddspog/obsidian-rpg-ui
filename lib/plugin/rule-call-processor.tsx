@@ -55,6 +55,62 @@ export interface RuleCallProcessorDeps {
 const SKIP_TAGS = new Set(["A", "PRE"]);
 const CALL_CLASS = "rpg-call";
 
+/** Extract the `.highlight()` chain segment (if present) and return its args. */
+function extractHighlight(chain: ChainSegment[]): { active: boolean; label?: string; color?: string } {
+  const seg = chain.find((s) => s.fn === "highlight");
+  if (!seg) return { active: false };
+  const label = typeof seg.args[0] === "string" ? seg.args[0] : undefined;
+  const color = typeof seg.args[1] === "string" ? seg.args[1] : undefined;
+  return { active: true, label, color };
+}
+
+/** Apply highlight decoration (corners + badge) to a call span. */
+function applyHighlight(
+  span: HTMLElement,
+  highlight: { active: boolean; label?: string; color?: string },
+  source: string
+): void {
+  if (!highlight.active) return;
+  span.classList.add("rpg-call-highlight");
+  span.removeAttribute("aria-label");
+  if (highlight.color) {
+    span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
+  }
+  const tooltip = source || (highlight.label ?? "Homebrew");
+  const badge = span.createEl("span", {
+    cls: "rpg-call-highlight__badge",
+    attr: {
+      "aria-label": tooltip,
+    },
+  });
+  try {
+    const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+    setIcon?.(badge, "pen-line");
+  } catch {
+    badge.textContent = "✦";
+  }
+}
+
+/** React component for the highlight badge icon. */
+function HighlightBadge({ source }: { source: string }) {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+      setIcon?.(el, "pen-line");
+    } catch {
+      el.textContent = "✦";
+    }
+  }, []);
+  return React.createElement("span", {
+    ref,
+    className: "rpg-call-highlight__badge",
+    "aria-label": source || "Homebrew",
+  });
+}
+
 /** Matches an inline-code element whose entire text content is exactly
  *  one `@[[file]].fn(args)` token. Authors wrap calls in backticks so
  *  the markdown parser doesn't mangle the `[[…]]` as a wikilink. */
@@ -366,6 +422,10 @@ function resolveCall(
         } else if (typeof renderer.renderMarkdown === "function") {
           renderer.renderMarkdown(source, span, targetPath, comp);
         }
+        const hlFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        applyHighlight(span, extractHighlight(call.chain), String(hlFm.source ?? ""));
         return;
       }
 
@@ -435,18 +495,21 @@ function resolveCall(
         return;
       }
 
-      const root = ReactDOM.createRoot(span);
+      const highlight = extractHighlight(call.chain);
+      const reactTarget = highlight.active ? span.createEl("div") : span;
+      const root = ReactDOM.createRoot(reactTarget);
       child.register(() => {
         try { root.unmount(); } catch { /* ignore */ }
       });
       span.classList.remove("rpg-call--pending");
       span.removeAttribute("aria-label");
       span.textContent = "";
+      if (highlight.active) span.appendChild(reactTarget);
 
       try {
         let wholeFileBody: string | null = null;
         if (wholeFile) {
-          wholeFileBody = stripFileFrontmatter(cleaned);
+          wholeFileBody = inlineContentFences(stripFileFrontmatter(cleaned));
           // When Obsidian's "Show inline title" is OFF, the source file's
           // first H1 is redundant (the view function adds its own heading).
           // Strip it so the import doesn't double the title.
@@ -459,6 +522,7 @@ function resolveCall(
           wholeFileBody, fileFm
         );
         root.render(<>{node}</>);
+        applyHighlight(span, extractHighlight(call.chain), String(fileFm.source ?? ""));
       } catch (err) {
         console.error(`rpg-call ${call.source} render threw`, err);
         renderError(span, `View "${call.fn}" threw: ${(err as Error)?.message ?? err}`);
@@ -556,6 +620,22 @@ function extractTableBlocks(text: string): Array<{ name: string; fenceMarkdown: 
  */
 function stripLocalFences(text: string): string {
   return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
+}
+
+/**
+ * Replace all `rpg ...` fences with their markdown body (text after
+ * the `---` separator). Used for whole-file imports so the view renders
+ * prose inline without re-triggering the code block processor (which would
+ * add standalone homebrew/special decorations).
+ */
+function inlineContentFences(text: string): string {
+  return text.replace(/```rpg\s+[^\n]+\n([\s\S]*?)```\s*\n?/g, (_match, inner: string) => {
+    const sep = inner.indexOf("\n---\n");
+    if (sep >= 0) return inner.slice(sep + 5);
+    const sepEnd = inner.indexOf("\n---");
+    if (sepEnd >= 0 && sepEnd + 4 >= inner.length) return "";
+    return inner;
+  });
 }
 
 function findContentBlockById(text: string, id: string): string | null {
@@ -935,6 +1015,11 @@ function resolveFolderCall(
         const comp = new Component();
         comp.load();
         child.register(() => comp.unload());
+        const highlight = extractHighlight(call.chain);
+        const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const callerSource = callerFm.source ? String(callerFm.source) : "";
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           if (call.chain.length > 0) {
@@ -966,6 +1051,15 @@ function resolveFolderCall(
             renderer.render(deps.app, source, section, f.path, comp);
           } else if (typeof renderer.renderMarkdown === "function") {
             renderer.renderMarkdown(source, section, f.path, comp);
+          }
+          if (highlight.active) {
+            const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+              | Record<string, unknown>
+              | undefined) ?? {};
+            const entrySource = entryFm.source ? String(entryFm.source) : "";
+            if (entrySource !== callerSource) {
+              applyHighlight(section, highlight, entrySource);
+            }
           }
         }
         if (wrapper.children.length === 0) {
@@ -1011,6 +1105,11 @@ function resolveFolderCall(
       }
 
       const nodes: React.ReactNode[] = [];
+      const folderHighlight = extractHighlight(call.chain);
+      const folderCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+        | Record<string, unknown>
+        | undefined) ?? {};
+      const folderCallerSource = folderCallerFm.source ? String(folderCallerFm.source) : "";
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
 
@@ -1143,7 +1242,19 @@ function resolveFolderCall(
         } else {
           try {
             const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
-            nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
+            const entrySource = fileFm.source ? String(fileFm.source) : "";
+            if (folderHighlight.active) {
+              console.log("[highlight] caller:", JSON.stringify(folderCallerSource), "entry:", JSON.stringify(entrySource), "file:", f.path);
+            }
+            if (folderHighlight.active && entrySource !== folderCallerSource) {
+              nodes.push(React.createElement("div", {
+                key: f.path,
+                className: "rpg-call-highlight",
+                style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
+              }, React.createElement(HighlightBadge, { source: entrySource }), node));
+            } else {
+              nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
+            }
           } catch (err) {
             console.error(`rpg-call folder ${f.path} render threw`, err);
           }
@@ -1262,6 +1373,7 @@ function resolveFolderCall(
           React.createElement("table", { className: "rpg-view--table" }, thead, tbody)
         );
       } else {
+        const highlight2 = extractHighlight(call.chain);
         const root = ReactDOM.createRoot(span);
         child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
         root.render(<>{nodes}</>);

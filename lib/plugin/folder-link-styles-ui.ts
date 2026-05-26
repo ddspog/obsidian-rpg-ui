@@ -38,6 +38,17 @@ function normalize(input: string | null | undefined): string {
     .replace(/^\/+|\/+$/g, "");
 }
 
+function groupPresetOptions(select: HTMLSelectElement): void {
+  const colorGroup = select.createEl("optgroup", { attr: { label: "Colors" } });
+  const textGroup = select.createEl("optgroup", { attr: { label: "Text" } });
+  for (const preset of OBSIDIAN_COLOR_PRESETS) {
+    const opt = select.querySelector<HTMLOptionElement>(`option[value="${preset.id}"]`);
+    if (!opt) continue;
+    if (preset.group === "text") textGroup.appendChild(opt);
+    else colorGroup.appendChild(opt);
+  }
+}
+
 function applySwatch(swatchLink: HTMLAnchorElement, style: FolderLinkStyle): void {
   // Render the generated CSS against a scoped selector so the preview
   // doesn't fight with the live document-wide stylesheet — we set the
@@ -245,6 +256,7 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
           await ctx.onSave();
           refreshSwatch();
         });
+        groupPresetOptions(drop.selectEl);
         return drop;
       });
       const selects = colorsSetting.controlEl.querySelectorAll<HTMLSelectElement>("select");
@@ -357,6 +369,7 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
         await ctx.onSave();
         refreshSwatch();
       });
+      groupPresetOptions(drop.selectEl);
       return drop;
     });
     const borderSelects = borderSetting.controlEl.querySelectorAll<HTMLSelectElement>("select");

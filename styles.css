@@ -8044,6 +8044,94 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-side--commentary .rpg-rule-side__body em {
   font-style: normal;
 }
+.rpg-rule-side--spread {
+  --p-spacing: 0.25em;
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: none;
+  margin-block: 0;
+  margin-inline: 0;
+  padding-block: 0;
+  padding-inline: 0;
+  background: transparent;
+  border-radius: 0;
+  outline: none;
+  font-size: var(--font-text-size, 1rem);
+}
+.rpg-rule-side--spread__header {
+  margin-bottom: var(--size-4-1, 0.25rem);
+}
+.rpg-rule-side--spread__title {
+  display: inline-block;
+  width: 100%;
+  background: var(--text-title);
+  color: var(--text-on-accent, #fff);
+  font-weight: 700;
+  font-size: 0.9em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1em 0.5em 0em;
+  line-height: 1.4;
+}
+.rpg-rule-side--spread__subtitle {
+  font-style: italic;
+  margin-block: 2px;
+  color: var(--text-title);
+  font-size: 0.95em;
+}
+.rpg-rule-side--spread__subtitle p {
+  margin: 0;
+  display: inline;
+}
+.rpg-rule-side--spread .rpg-rule-side__body {
+  color: var(--text-normal);
+  font-size: 0.92em;
+}
+.rpg-rule-side--spread .rpg-rule-side__body > :first-child {
+  margin-top: 0;
+}
+.rpg-rule-side--spread .rpg-rule-side__body > :last-child {
+  margin-bottom: 0;
+}
+.rpg-rule-side-spread-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+.rpg-rule-side-spread-group > .el-pre,
+.rpg-rule-side-spread-group > [class*=block-language-] {
+  flex: 1 1 calc(50% - 0.75rem);
+  min-width: 340px;
+  margin: 0;
+}
+.rpg-rule-side-spread-group > [class^=el-h] {
+  display: none;
+}
+.rpg-rule-side__body:has(.rpg-rule-side-spread-item) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+.rpg-rule-side__body:has(.rpg-rule-side-spread-item) .rpg-rule-side--spread {
+  flex: 1 1 calc(50% - 0.75rem);
+  min-width: 340px;
+  display: block;
+  width: auto;
+  margin-right: 0;
+}
+.rpg-rule-side__body:has(.rpg-rule-side-spread-item) [class^=el-h] {
+  display: none;
+}
+.rpg-rule-side.rpg-rule-side--callout:has(.rpg-rule-side--spread) {
+  width: calc(100% + 6rem);
+  margin-inline: -3rem;
+}
+.rpg-rule-tab-group__panel .rpg-rule-side--callout {
+  width: calc(100% + 6rem);
+  margin-inline: -3rem;
+}
 .rpg-subtab-group {
   position: relative;
   --subtab-offset: 20%;
@@ -8207,11 +8295,70 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
     border-radius: 6px;
   }
 }
+.rpg-call-highlight {
+  position: relative;
+  display: block;
+  margin-block: var(--size-4-4, 1rem);
+  padding: 0.4em 0;
+  isolation: isolate;
+}
+.rpg-call-highlight::before {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px);
+  transform: translate(5px, 5px);
+  pointer-events: none;
+  z-index: 0;
+}
+.rpg-call-highlight::after {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 50%, transparent);
+  transform: translate(-5px, -5px);
+  pointer-events: none;
+  z-index: 0;
+}
+.rpg-call-highlight > *:not(.rpg-call-highlight__badge) {
+  position: relative;
+  z-index: 1;
+}
+.rpg-call-highlight__badge {
+  position: absolute;
+  top: -10px;
+  right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+  z-index: 2;
+}
+.rpg-call-highlight__badge:hover {
+  opacity: 1;
+}
+.rpg-call-highlight__badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
 
 /* lib/styles/components/rule-call.css */
 .rpg-call {
   font-family: var(--font-text);
   font-size: var(--font-text-size);
+}
+.rpg-rule-side--float .rpg-call {
+  font-size: inherit;
 }
 .rpg-call--pending {
   opacity: 0.55;
