@@ -530,20 +530,39 @@ function resolveCall(
         );
         const sourceStr = String(fileFm.source ?? "");
         if (highlight.active) {
-          root.render(
-            <div className="rpg-call-highlight__inner">
-              {node}
-              <HighlightBadge source={sourceStr} />
-            </div>
-          );
-          span.classList.add("rpg-call-highlight");
-          span.removeAttribute("aria-label");
-          if (highlight.color) {
-            span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
-          }
-          // Mark table rows for post-merge highlight styling
-          if (view.wrapper === "table" || view.wrapper === "ul") {
+          // Compare sources: only apply highlight if file source differs from caller
+          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          const callerSource = callerFm.source ? String(callerFm.source) : "";
+          const isHomebrew = sourceStr !== callerSource;
+
+          if (!isHomebrew) {
+            // Sources match — render without highlight
+            root.render(<>{node}</>);
+          } else if (view.wrapper === "ul") {
+            // Items: render plain, markHighlightedItems adds per-li styling
+            root.render(<>{node}</>);
+            span.classList.add("rpg-call-highlight");
             span.setAttribute("data-rpg-highlight-source", sourceStr);
+          } else if (view.wrapper === "table") {
+            root.render(<>{node}</>);
+            span.classList.add("rpg-call-highlight");
+            span.setAttribute("data-rpg-highlight-source", sourceStr);
+          } else {
+            root.render(
+              <div className="rpg-call-highlight__inner">
+                {node}
+                <HighlightBadge source={sourceStr} />
+              </div>
+            );
+            span.classList.add("rpg-call-highlight");
+          }
+          if (isHomebrew) {
+            span.removeAttribute("aria-label");
+            if (highlight.color) {
+              span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
+            }
           }
         } else {
           root.render(<>{node}</>);

@@ -122,7 +122,7 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 
 ## D2. Mixed list with selective highlight
 
-`@[[Darkvision]].item()`
+`@[[Darkvision]].highlight().item()`
 `@[[Short Draw ᴷ]].highlight().item()`
 `@[[Far Sight ᴺ]].highlight().item()`
 `@[[Blunted Bash ᴷ]].highlight().item()`
