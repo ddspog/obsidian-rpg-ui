@@ -89,6 +89,24 @@ describe("parseCall", () => {
     expect(parseCall("@[[ rules/luck ]].view()")?.target).toBe("rules/luck");
   });
 
+  it("extracts #section from the target", () => {
+    const result = parseCall("@[[rules/combat#Grappling]].view()");
+    expect(result?.target).toBe("rules/combat");
+    expect(result?.section).toBe("Grappling");
+    expect(result?.fn).toBe("view");
+  });
+
+  it("handles section with spaces", () => {
+    const result = parseCall("@[[06. Playing the Game#Ability Checks]].view()");
+    expect(result?.target).toBe("06. Playing the Game");
+    expect(result?.section).toBe("Ability Checks");
+  });
+
+  it("leaves section undefined when no # present", () => {
+    const result = parseCall("@[[rules/luck]].view()");
+    expect(result?.section).toBeUndefined();
+  });
+
   it("returns null for property-path form (no parens)", () => {
     expect(parseCall("@[[rules/luck]].max")).toBeNull();
     expect(parseCall("@[[character]].stats.dex")).toBeNull();
@@ -105,6 +123,61 @@ describe("parseCall", () => {
   it("supports function names with hyphens and underscores", () => {
     expect(parseCall("@[[file]].my_view()")?.fn).toBe("my_view");
     expect(parseCall("@[[file]].with-dash()")?.fn).toBe("with-dash");
+  });
+
+  it("parses a folder target (trailing slash) with .magic() terminal", () => {
+    expect(parseCall("@[[items/weapons/]].magic()")).toEqual({
+      target: "items/weapons/",
+      fn: "magic",
+      args: [],
+      chain: [],
+      source: "@[[items/weapons/]].magic()",
+    });
+  });
+
+  it("parses chained calls with .highlight() and terminal", () => {
+    expect(parseCall("@[[rules/combat]].highlight().view()")).toEqual({
+      target: "rules/combat",
+      fn: "view",
+      args: [],
+      chain: [{ fn: "highlight", args: [] }],
+      source: "@[[rules/combat]].highlight().view()",
+    });
+  });
+
+  it("parses .highlight() with label and color args", () => {
+    expect(parseCall("@[[rules/luck]].highlight(Homebrew, red).view()")).toEqual({
+      target: "rules/luck",
+      fn: "view",
+      args: [],
+      chain: [{ fn: "highlight", args: ["Homebrew", "red"] }],
+      source: "@[[rules/luck]].highlight(Homebrew, red).view()",
+    });
+  });
+
+  it("parses a full folder chain: filter + block + magic terminal", () => {
+    const result = parseCall("@[[items/]].filter(rarity == Rare).block(item.magic).magic()");
+    expect(result).toEqual({
+      target: "items/",
+      fn: "magic",
+      args: [],
+      chain: [
+        { fn: "filter", args: ["rarity == Rare"] },
+        { fn: "block", args: ["item.magic"] },
+      ],
+      source: "@[[items/]].filter(rarity == Rare).block(item.magic).magic()",
+    });
+  });
+
+  it("parses chained .highlight() on a folder .row() call", () => {
+    const result = parseCall("@[[weapons/]].highlight().row(link, damage, weight)");
+    expect(result).toEqual({
+      target: "weapons/",
+      fn: "row",
+      args: ["link", "damage", "weight"],
+      chain: [{ fn: "highlight", args: [] }],
+      source: "@[[weapons/]].highlight().row(link, damage, weight)",
+    });
   });
 });
 
@@ -139,5 +212,35 @@ describe("matchAllCalls", () => {
     // the second occurrence — matchAllCalls handles this, but the
     // exported pattern must have the `g` flag.
     expect(CALL_PATTERN.flags).toContain("g");
+  });
+
+  it("extracts section from # in targets", () => {
+    const text = "See @[[rules/combat#Grappling]].view() for details.";
+    const calls = matchAllCalls(text);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].target).toBe("rules/combat");
+    expect(calls[0].section).toBe("Grappling");
+  });
+
+  it("parses folder .magic() call with highlight chain", () => {
+    const text = "Render: @[[items/]].highlight().magic()";
+    const calls = matchAllCalls(text);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].target).toBe("items/");
+    expect(calls[0].fn).toBe("magic");
+    expect(calls[0].chain).toEqual([{ fn: "highlight", args: [] }]);
+    expect(text.slice(calls[0].start, calls[0].end)).toBe("@[[items/]].highlight().magic()");
+  });
+
+  it("parses multiple chained folder calls in one text block", () => {
+    const text = "@[[weapons/]].filter(rarity == Rare).row(link, damage) and @[[armor/]].highlight().magic()";
+    const calls = matchAllCalls(text);
+    expect(calls).toHaveLength(2);
+    expect(calls[0].target).toBe("weapons/");
+    expect(calls[0].fn).toBe("row");
+    expect(calls[0].chain).toEqual([{ fn: "filter", args: ["rarity == Rare"] }]);
+    expect(calls[1].target).toBe("armor/");
+    expect(calls[1].fn).toBe("magic");
+    expect(calls[1].chain).toEqual([{ fn: "highlight", args: [] }]);
   });
 });

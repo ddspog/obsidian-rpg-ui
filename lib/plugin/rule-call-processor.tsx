@@ -55,6 +55,11 @@ export interface RuleCallProcessorDeps {
 const SKIP_TAGS = new Set(["A", "PRE"]);
 const CALL_CLASS = "rpg-call";
 
+/** Normalize a source string for comparison (strip YAML escape artifacts). */
+function normalizeSource(s: string): string {
+  return s.replace(/\\"/g, '"').replace(/\\'/g, "'");
+}
+
 /** Extract the `.highlight()` chain segment (if present) and return its args. */
 function extractHighlight(chain: ChainSegment[]): { active: boolean; label?: string; color?: string } {
   const seg = chain.find((s) => s.fn === "highlight");
@@ -391,7 +396,8 @@ function resolveCall(
           : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
         const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
           | Record<string, unknown>
-          | undefined) ?? {};        const magicCtx: RuleViewCtx = {
+          | undefined) ?? {};
+        const magicCtx: RuleViewCtx = {
           name: fileName,
           content: cleaned,
           frontmatter: fileFm,
@@ -399,7 +405,30 @@ function resolveCall(
         };
         try {
           const node = magicView.render(magicCtx, call.args);
-          root.render(<>{node}</>);
+          const magicHighlight = extractHighlight(call.chain);
+          if (magicHighlight.active) {
+            const sourceStr = normalizeSource(String(fileFm.source ?? ""));
+            const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+              | Record<string, unknown>
+              | undefined) ?? {};
+            const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
+            if (sourceStr !== callerSource) {
+              root.render(
+                <div className="rpg-call-highlight__inner">
+                  {node}
+                  <HighlightBadge source={sourceStr} />
+                </div>
+              );
+              span.classList.add("rpg-call-highlight");
+              if (magicHighlight.color) {
+                span.style.setProperty("--text-accent", `var(--color-${magicHighlight.color})`);
+              }
+            } else {
+              root.render(<>{node}</>);
+            }
+          } else {
+            root.render(<>{node}</>);
+          }
         } catch (err) {
           renderError(span, `View "magic" threw: ${(err as Error)?.message ?? err}`);
         }
@@ -487,11 +516,11 @@ function resolveCall(
         const highlight = extractHighlight(call.chain);
         let homebrew = false;
         if (highlight.active) {
-          const sourceStr = String(fileFm.source ?? "");
+          const sourceStr = normalizeSource(String(fileFm.source ?? ""));
           const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
-          const callerSource = callerFm.source ? String(callerFm.source) : "";
+          const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
           homebrew = sourceStr !== callerSource;
         }
         const tab: RuleTabBlock = {
@@ -540,13 +569,13 @@ function resolveCall(
           view, matching, viewArgs, fileName, targetPath,
           wholeFileBody, fileFm
         );
-        const sourceStr = String(fileFm.source ?? "");
+        const sourceStr = normalizeSource(String(fileFm.source ?? ""));
         if (highlight.active) {
           // Compare sources: only apply highlight if file source differs from caller
           const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
-          const callerSource = callerFm.source ? String(callerFm.source) : "";
+          const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
           const isHomebrew = sourceStr !== callerSource;
 
           if (!isHomebrew) {
@@ -1075,7 +1104,7 @@ function resolveFolderCall(
         const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
           | Record<string, unknown>
           | undefined) ?? {};
-        const callerSource = callerFm.source ? String(callerFm.source) : "";
+        const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           if (call.chain.length > 0) {
@@ -1112,7 +1141,7 @@ function resolveFolderCall(
             const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
               | Record<string, unknown>
               | undefined) ?? {};
-            const entrySource = entryFm.source ? String(entryFm.source) : "";
+            const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
             if (entrySource !== callerSource) {
               applyHighlight(section, highlight, entrySource);
             }
@@ -1165,7 +1194,7 @@ function resolveFolderCall(
       const folderCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
         | Record<string, unknown>
         | undefined) ?? {};
-      const folderCallerSource = folderCallerFm.source ? String(folderCallerFm.source) : "";
+      const folderCallerSource = normalizeSource(folderCallerFm.source ? String(folderCallerFm.source) : "");
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
 
@@ -1247,9 +1276,25 @@ function resolveFolderCall(
                     file: f.path,
                   };
                   const terminalNode = view.render(viewCtx, call.args);
+                  const entrySource = normalizeSource(mergedFm.source ? String(mergedFm.source) : "");
+                  const shouldHighlight = folderHighlight.active && entrySource !== folderCallerSource;
                   if (hLevel && call.fn !== `h${hLevel}`) {
                     const headingEl = React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName);
-                    nodes.push(React.createElement(React.Fragment, { key: f.path }, headingEl, terminalNode));
+                    if (shouldHighlight) {
+                      nodes.push(React.createElement("div", {
+                        key: f.path,
+                        className: "rpg-call-highlight",
+                        style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
+                      }, React.createElement(HighlightBadge, { source: entrySource }), headingEl, terminalNode));
+                    } else {
+                      nodes.push(React.createElement(React.Fragment, { key: f.path }, headingEl, terminalNode));
+                    }
+                  } else if (shouldHighlight) {
+                    nodes.push(React.createElement("div", {
+                      key: f.path,
+                      className: "rpg-call-highlight",
+                      style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
+                    }, React.createElement(HighlightBadge, { source: entrySource }), terminalNode));
                   } else {
                     nodes.push(React.createElement(React.Fragment, { key: f.path }, terminalNode));
                   }
@@ -1297,7 +1342,7 @@ function resolveFolderCall(
           }
         } else {
           try {
-            const entrySource = fileFm.source ? String(fileFm.source) : "";
+            const entrySource = normalizeSource(fileFm.source ? String(fileFm.source) : "");
             const shouldHighlight = folderHighlight.active && entrySource !== folderCallerSource;
             const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
 
@@ -1337,7 +1382,7 @@ function resolveFolderCall(
           const tableCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
-          const tableCallerSource = tableCallerFm.source ? String(tableCallerFm.source) : "";
+          const tableCallerSource = normalizeSource(tableCallerFm.source ? String(tableCallerFm.source) : "");
           for (const { file: f, raw } of entries) {
             const cleaned = stripLocalFences(raw);
 
@@ -1420,7 +1465,7 @@ function resolveFolderCall(
                 const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
                   | Record<string, unknown>
                   | undefined) ?? {};
-                const entrySource = entryFm.source ? String(entryFm.source) : "";
+                const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
                 if (entrySource !== tableCallerSource) {
                   tr.classList.add("rpg-row-highlight");
                   const lastTd = tr.querySelector("td:last-child");
@@ -1479,7 +1524,7 @@ function resolveFolderCall(
                 if (liIdx >= allLis.length) break;
                 const efFm = (deps.app.metadataCache.getCache(ef.path)?.frontmatter as
                   | Record<string, unknown> | undefined) ?? {};
-                const efSource = efFm.source ? String(efFm.source) : "";
+                const efSource = normalizeSource(efFm.source ? String(efFm.source) : "");
                 const isHl = folderHighlight.active && efSource !== folderCallerSource;
                 if (isHl && allLis[liIdx]) {
                   const li = allLis[liIdx];

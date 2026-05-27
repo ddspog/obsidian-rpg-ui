@@ -159,6 +159,15 @@ The spell `@[[Create Bonfire ᴰ]].highlight().inline()` creates fire on the gro
 ## F2. Highlighted magic item
 `@[[Sentinel Shield ᴰ]].highlight().magic()`
 
+## F3. Folder .magic() — no highlight
+`@[[enchantments/]].magic()`
+
+## F4. Folder .magic() — with highlight (detects homebrew per item)
+`@[[enchantments/]].highlight().magic()`
+
+## F5. Folder .magic() — filtered + highlighted
+`@[[enchantments/]].filter(rarity == Uncommon).highlight().magic()`
+
 ---
 
 # Section G: Folder Imports (Mixed Sources)
