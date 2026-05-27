@@ -503,7 +503,8 @@ function resolveCall(
       }
 
       const highlight = extractHighlight(call.chain);
-      const reactTarget = highlight.active ? span.createEl("div") : span;
+      const needsWrapper = highlight.active && view.wrapper !== "ul" && view.wrapper !== "table";
+      const reactTarget = needsWrapper ? span.createEl("div") : span;
       const root = ReactDOM.createRoot(reactTarget);
       child.register(() => {
         try { root.unmount(); } catch { /* ignore */ }
@@ -1290,12 +1291,10 @@ function resolveFolderCall(
             const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
 
             if (shouldHighlight && view.wrapper === "ul") {
-              // For items: wrap in a span with data attr; post-render pass marks the <li>
-              nodes.push(React.createElement("span", {
-                key: f.path,
-                "data-rpg-item-source": entrySource,
-                style: { display: "contents" } as React.CSSProperties,
-              }, node));
+              // Track which files need highlighting for post-render marking
+              if (!(span as any).__rpgHighlightFiles) (span as any).__rpgHighlightFiles = [];
+              (span as any).__rpgHighlightFiles.push(entrySource);
+              nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
             } else if (shouldHighlight) {
               nodes.push(React.createElement("div", {
                 key: f.path,
@@ -1457,27 +1456,40 @@ function resolveFolderCall(
         root.render(<>{nodes}</>);
         // Post-render: mark folder item <li> elements that have different source
         if (highlight2.active && view.wrapper === "ul") {
-          setTimeout(() => {
-            span.querySelectorAll("[data-rpg-item-source]").forEach((wrapper) => {
-              const source = wrapper.getAttribute("data-rpg-item-source") || "";
-              const li = wrapper.querySelector("li.rpg-view--item");
-              if (li) {
-                li.classList.add("rpg-item-highlight");
-                if (!li.querySelector(".rpg-call-highlight__badge")) {
-                  const badge = document.createElement("span");
-                  badge.className = "rpg-call-highlight__badge";
-                  badge.setAttribute("aria-label", source || "Homebrew");
-                  try {
-                    const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
-                    setIcon?.(badge, "pen-line");
-                  } catch {
-                    badge.textContent = "✦";
+          const highlightFiles: string[] = (span as any).__rpgHighlightFiles || [];
+          if (highlightFiles.length > 0) {
+            setTimeout(() => {
+              const allLis = span.querySelectorAll("li.rpg-view--item");
+              // Items are in order — highlighted files were tracked sequentially
+              // Mark items by counting: each highlighted file produced one <li>
+              let hlIdx = 0;
+              let liIdx = 0;
+              for (const { file: ef } of entries) {
+                if (liIdx >= allLis.length) break;
+                const efFm = (deps.app.metadataCache.getCache(ef.path)?.frontmatter as
+                  | Record<string, unknown> | undefined) ?? {};
+                const efSource = efFm.source ? String(efFm.source) : "";
+                const isHl = folderHighlight.active && efSource !== folderCallerSource;
+                if (isHl && allLis[liIdx]) {
+                  const li = allLis[liIdx];
+                  li.classList.add("rpg-item-highlight");
+                  if (!li.querySelector(".rpg-call-highlight__badge")) {
+                    const badge = document.createElement("span");
+                    badge.className = "rpg-call-highlight__badge";
+                    badge.setAttribute("aria-label", efSource || "Homebrew");
+                    try {
+                      const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+                      setIcon?.(badge, "pen-line");
+                    } catch {
+                      badge.textContent = "✦";
+                    }
+                    li.appendChild(badge);
                   }
-                  li.appendChild(badge);
                 }
+                liIdx++;
               }
-            });
-          }, 50);
+            }, 80);
+          }
         }
       }
     })
