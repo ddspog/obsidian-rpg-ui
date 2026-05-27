@@ -484,6 +484,16 @@ function resolveCall(
 
       if (view.wrapper === "tab-group") {
         let body = stripFileFrontmatter(cleaned);
+        const highlight = extractHighlight(call.chain);
+        let homebrew = false;
+        if (highlight.active) {
+          const sourceStr = String(fileFm.source ?? "");
+          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          const callerSource = callerFm.source ? String(callerFm.source) : "";
+          homebrew = sourceStr !== callerSource;
+        }
         const tab: RuleTabBlock = {
           kind: "tab",
           name: (fileFm["tab-name"] as string) || fileName,
@@ -491,6 +501,7 @@ function resolveCall(
           color: fileFm["tab-color"] as string | undefined,
           body,
           frontmatter: fileFm,
+          ...(homebrew && { homebrew: true }),
         };
         span.classList.remove("rpg-call--pending");
         span.classList.add("rpg-call--tab");

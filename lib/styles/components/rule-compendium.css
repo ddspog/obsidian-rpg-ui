@@ -274,3 +274,81 @@
 .rpg-rule-tab-group__panel > :last-child {
   margin-bottom: 0;
 }
+
+/* ── Tab highlight: homebrew tab button ──────────────────────────────
+ * Diagonal stripes on the tab button signal homebrew content. */
+
+.rpg-rule-tab-group__tab--homebrew {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px
+  );
+}
+
+/* ── Tab highlight: homebrew panel ───────────────────────────────────
+ * Subtle stripe overlay on the panel content + pen badge. */
+
+.rpg-rule-tab-group__panel--homebrew::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 6px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-rule-tab-group__highlight-badge {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+  z-index: 2;
+}
+
+.rpg-rule-tab-group__highlight-badge:hover {
+  opacity: 1;
+}
+
+.rpg-rule-tab-group__highlight-badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+/* ── Subtab highlight: homebrew ──────────────────────────────────────── */
+
+.rpg-subtab-group__btn--homebrew {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px
+  );
+}
+
+.rpg-subtab-group__panel--homebrew {
+  position: relative;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 6px
+  );
+}

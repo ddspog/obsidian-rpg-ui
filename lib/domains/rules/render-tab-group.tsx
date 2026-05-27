@@ -17,6 +17,24 @@ function wrapBareCalls(source: string): string {
   return source.replace(BARE_CALL_RE, "`$1`");
 }
 
+function TabHighlightBadge() {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      setIcon(el, "pen-line");
+    } catch {
+      el.textContent = "✦";
+    }
+  }, []);
+  return React.createElement("span", {
+    ref,
+    className: "rpg-rule-tab-group__highlight-badge",
+    "aria-label": "Homebrew",
+  });
+}
+
 const tabDataStore = new WeakMap<HTMLElement, RuleTabBlock>();
 const tabSourcePathStore = new WeakMap<HTMLElement, string>();
 const groupTabsStore = new WeakMap<HTMLElement, { tabs: RuleTabBlock[]; sourcePath: string }>();
@@ -94,7 +112,7 @@ function SubTabGroupView({
                 key={i}
                 role="button"
                 tabIndex={0}
-                className="rpg-subtab-group__btn rpg-subtab-group__btn--active"
+                className={`rpg-subtab-group__btn rpg-subtab-group__btn--active ${tab.homebrew ? "rpg-subtab-group__btn--homebrew" : ""}`}
                 onClick={() => setActiveIdx(i)}
                 onKeyDown={(e) => { if (e.key === "Enter") setActiveIdx(i); }}
               >
@@ -122,7 +140,7 @@ function SubTabGroupView({
               key={i}
               role="button"
               tabIndex={0}
-              className="rpg-subtab-group__btn"
+              className={`rpg-subtab-group__btn ${tab.homebrew ? "rpg-subtab-group__btn--homebrew" : ""}`}
               style={{
                 opacity: scale,
                 height: `${lineHpx}rem`,
@@ -142,7 +160,8 @@ function SubTabGroupView({
         })}
       </nav>
       {active && (
-        <article className="rpg-subtab-group__panel">
+        <article className={`rpg-subtab-group__panel ${active.homebrew ? "rpg-subtab-group__panel--homebrew" : ""}`}>
+          {active.homebrew ? <TabHighlightBadge /> : null}
           <SubTabPanelContent body={active.body} sourcePath={sourcePath} />
         </article>
       )}
@@ -365,8 +384,9 @@ function HorizontalTabGroupView({
           ref={panelRef}
           key={activeIdx}
           role="tabpanel"
-          className="rpg-rule-tab-group__panel"
+          className={`rpg-rule-tab-group__panel ${active.homebrew ? "rpg-rule-tab-group__panel--homebrew" : ""}`}
         >
+          {active.homebrew ? <TabHighlightBadge /> : null}
           <TabPanelContent body={active.body} sourcePath={sourcePath} />
         </article>
       ) : null}
@@ -644,7 +664,7 @@ const TabButton = React.forwardRef<HTMLButtonElement, {
       ref={ref}
       role="tab"
       aria-selected={active}
-      className={`rpg-rule-tab-group__tab ${active ? "rpg-rule-tab-group__tab--active" : ""}`}
+      className={`rpg-rule-tab-group__tab ${active ? "rpg-rule-tab-group__tab--active" : ""} ${tab.homebrew ? "rpg-rule-tab-group__tab--homebrew" : ""}`}
       onClick={onClick}
       style={style}
     >

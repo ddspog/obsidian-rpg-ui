@@ -140,6 +140,8 @@ export interface RuleTabBlock {
   /** Optional YAML frontmatter from before the `---` separator. */
   frontmatter: Record<string, unknown>;
   source?: SourceTuple;
+  /** True when .highlight() detected this tab's source differs from the caller. */
+  homebrew?: boolean;
 }
 
 export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleNotesBlock | RuleTabBlock;

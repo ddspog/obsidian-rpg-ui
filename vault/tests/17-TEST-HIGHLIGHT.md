@@ -1,6 +1,6 @@
 ---
 cssclasses: ["note-feature", "rpg-ui"]
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
 ---
 # Test 17: Highlight (Explicit Chain Function)
 
