@@ -20,55 +20,57 @@ export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: 
         </header>
       )}
 
-      {subtitle && (
-        <p className="rpg-item-magic-card__subtitle">
-          <span className="rpg-item-magic-card__subtitle-type">{subtitle.type}</span>
-          {data.cost && <span className="rpg-item-magic-card__subtitle-cost">{data.cost}</span>}
-        </p>
-      )}
+      <div className="rpg-item-magic-card__body">
+        {subtitle && (
+          <p className="rpg-item-magic-card__subtitle">
+            <span className="rpg-item-magic-card__subtitle-type">{subtitle.type}</span>
+            {data.cost && <span className="rpg-item-magic-card__subtitle-cost">{data.cost}</span>}
+          </p>
+        )}
 
-      {showDescription && data.text && (
-        <div className="rpg-item-magic-card__text">
-          {renderMarkdown ? renderMarkdown(data.text) : <p>{data.text}</p>}
-        </div>
-      )}
+        {showDescription && data.text && (
+          <div className="rpg-item-magic-card__text">
+            {renderMarkdown ? renderMarkdown(data.text) : <p>{data.text}</p>}
+          </div>
+        )}
 
-      {data.bonus && !hasVariants && (
-        <dl className="rpg-item-magic-card__effects">
-          <dt>Bonus</dt>
-          <dd>{data.bonus}</dd>
-          {typeof data.damage_bonus === "number" && data.damage_bonus !== 0 && (
-            <>
-              <dt>Extra Damage</dt>
-              <dd>{signed(data.damage_bonus)}</dd>
-            </>
-          )}
-        </dl>
-      )}
+        {data.bonus && !hasVariants && (
+          <dl className="rpg-item-magic-card__effects">
+            <dt>Bonus</dt>
+            <dd>{data.bonus}</dd>
+            {typeof data.damage_bonus === "number" && data.damage_bonus !== 0 && (
+              <>
+                <dt>Extra Damage</dt>
+                <dd>{signed(data.damage_bonus)}</dd>
+              </>
+            )}
+          </dl>
+        )}
 
-      {hasVariants && (
-        <div className="el-table rpg-table-wrapper">
-          <table className="rpg-table rpg-item-magic-card__variants">
-            {variantTitle && <caption>{variantTitle}</caption>}
-            <thead>
-              <tr>
-                {variantColumns.map((col) => (
-                  <th key={col}>{formatColumnLabel(col)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {variantRows.map((variant, i) => (
-                <tr key={i}>
+        {hasVariants && (
+          <div className="el-table rpg-table-wrapper">
+            <table className="rpg-table rpg-item-magic-card__variants">
+              {variantTitle && <caption>{variantTitle}</caption>}
+              <thead>
+                <tr>
                   {variantColumns.map((col) => (
-                    <td key={col}>{getVariantCell(variant, col)}</td>
+                    <th key={col}>{formatColumnLabel(col)}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {variantRows.map((variant, i) => (
+                  <tr key={i}>
+                    {variantColumns.map((col) => (
+                      <td key={col}>{getVariantCell(variant, col)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {showDescription && data.image && (
         <figure className="rpg-item-card__figure">

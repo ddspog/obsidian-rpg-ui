@@ -96,6 +96,22 @@ function applyHighlight(
   }
 }
 
+/** Inject a highlight badge into a magic card's header after React renders. */
+function injectMagicHighlightBadge(container: HTMLElement, source: string): void {
+  const header = container.querySelector(".rpg-item-magic-card__header");
+  if (!header || header.querySelector(".rpg-call-highlight__badge")) return;
+  const badge = document.createElement("span");
+  badge.className = "rpg-call-highlight__badge";
+  badge.setAttribute("aria-label", source || "Homebrew");
+  try {
+    const { setIcon } = require("obsidian") as { setIcon?: (el: HTMLElement, icon: string) => void };
+    setIcon?.(badge, "pen-line");
+  } catch {
+    badge.textContent = "✦";
+  }
+  header.appendChild(badge);
+}
+
 /** React component for the highlight badge icon. */
 function HighlightBadge({ source }: { source: string }) {
   const ref = React.useRef<HTMLSpanElement>(null);
@@ -413,22 +429,15 @@ function resolveCall(
               | undefined) ?? {};
             const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
             if (sourceStr !== callerSource) {
-              root.render(
-                <div className="rpg-call-highlight__inner">
-                  {node}
-                  <HighlightBadge source={sourceStr} />
-                </div>
-              );
-              span.classList.add("rpg-call-highlight");
+              span.classList.add("rpg-call--magic-highlight");
               if (magicHighlight.color) {
                 span.style.setProperty("--text-accent", `var(--color-${magicHighlight.color})`);
               }
-            } else {
-              root.render(<>{node}</>);
+              span.setAttribute("data-rpg-highlight-source", sourceStr);
+              setTimeout(() => injectMagicHighlightBadge(span, sourceStr), 50);
             }
-          } else {
-            root.render(<>{node}</>);
           }
+          root.render(<>{node}</>);
         } catch (err) {
           renderError(span, `View "magic" threw: ${(err as Error)?.message ?? err}`);
         }
@@ -1289,6 +1298,13 @@ function resolveFolderCall(
                     } else {
                       nodes.push(React.createElement(React.Fragment, { key: f.path }, headingEl, terminalNode));
                     }
+                  } else if (shouldHighlight && call.fn === "magic") {
+                    nodes.push(React.createElement("div", {
+                      key: f.path,
+                      className: "rpg-call--magic-highlight",
+                      style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
+                      "data-rpg-highlight-source": entrySource,
+                    } as React.HTMLAttributes<HTMLDivElement>, terminalNode));
                   } else if (shouldHighlight) {
                     nodes.push(React.createElement("div", {
                       key: f.path,
@@ -1510,6 +1526,16 @@ function resolveFolderCall(
         const root = ReactDOM.createRoot(span);
         child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
         root.render(<>{nodes}</>);
+        // Post-render: inject badges into magic card headers for highlighted items
+        if (highlight2.active && call.fn === "magic") {
+          setTimeout(() => {
+            const cards = span.querySelectorAll(".rpg-call--magic-highlight");
+            for (const card of Array.from(cards)) {
+              const source = card.getAttribute("data-rpg-highlight-source") || "";
+              injectMagicHighlightBadge(card as HTMLElement, source);
+            }
+          }, 80);
+        }
         // Post-render: mark folder item <li> elements that have different source
         if (highlight2.active && view.wrapper === "ul") {
           const highlightFiles: string[] = (span as any).__rpgHighlightFiles || [];
