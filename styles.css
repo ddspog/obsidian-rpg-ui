@@ -8518,6 +8518,19 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   top: 0.2em;
   right: -0.5em;
 }
+.markdown-rendered .rpg-call-highlight p:first-child,
+.markdown-rendered .rpg-call-highlight h1:first-child,
+.markdown-rendered .rpg-call-highlight h2:first-child,
+.markdown-rendered .rpg-call-highlight h3:first-child,
+.markdown-rendered .rpg-call-highlight h4:first-child,
+.markdown-rendered .rpg-call-highlight h5:first-child,
+.markdown-rendered .rpg-call-highlight h6:first-child {
+  margin-block-start: 0;
+}
+.markdown-rendered .rpg-call-highlight p:last-child,
+.markdown-rendered .rpg-call-highlight ul:last-child {
+  margin-block-end: 0;
+}
 
 /* lib/styles/components/rule-call.css */
 .rpg-call {
