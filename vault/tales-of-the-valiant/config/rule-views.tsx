@@ -283,6 +283,7 @@ export const ruleViews: RuleViewMap = {
    */
   bare: {
     mode: "join",
+    raw: true,
     render: (ctx) => React.createElement(Markdown, { source: ctx.content, sourcePath: ctx.file }),
   },
 

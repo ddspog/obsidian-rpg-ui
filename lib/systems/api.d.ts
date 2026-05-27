@@ -1488,6 +1488,8 @@ export interface RuleViewEntry {
   mode: RuleViewMode;
   /** Optional HTML tag to wrap all rendered items (e.g., `"ul"` for lists). */
   wrapper?: string;
+  /** When true, whole-file imports pass the raw file body without inlining rpg fences. */
+  raw?: boolean;
   render(ctx: RuleViewCtx, args?: unknown[]): import("react").ReactNode;
 }
 
@@ -1588,3 +1590,13 @@ export declare function resolveStatFeatures(
   sourcePath: string,
   selfProps: Record<string, unknown>
 ): Promise<ResolvedStatFeature[]>;
+
+// ─── Fence utilities ────────────────────────────────────────────────────────
+
+/**
+ * Strip all `rpg <entity>.<block>` fences from a markdown body.
+ * Fences with a `---` separator have their body text preserved inline;
+ * fences without a separator are removed entirely.
+ * Handles nested fences by matching backtick counts.
+ */
+export declare function stripRpgFences(source: string): string;

@@ -2,9 +2,11 @@
 .metadata: 
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Campaign Builder: Castles & Crowns" book by **Kobold Press**.
+source: 'From **Tales of the Valiant** "Campaign Builder: Castles & Crowns" book by **Kobold Press**.'
+tab-icon: shield
+tab-color: var(--color-red)
 ---
-# Great House
+### Great House
 Characters with the great house heritage have a real, if distant, claim to royal power—or at least to noble authority. The traditions and values of a great house heritage vary by house, for each house and family will cultivate the qualities they wish their scions to exemplify. 
 
 While great houses as organizations might have claims to authority and power in a realm, not all of their members can share in that wealth of station. A great house is made up of not only the house’s main family, which often includes long ancestral lines of marriage and lineage both within the house and without it, but also retainers, servants, serfs, and any number of cousins and extended family. 

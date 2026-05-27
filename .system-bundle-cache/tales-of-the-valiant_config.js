@@ -5714,6 +5714,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
      */
     bare: {
       mode: "join",
+      raw: true,
       render: (ctx) => React22.createElement(import_rpg_ui_toolkit21.Markdown, { source: ctx.content, sourcePath: ctx.file })
     },
     /**

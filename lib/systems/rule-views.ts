@@ -57,6 +57,10 @@ export interface RuleViewEntry {
    *  views). When set, the call processor wraps the output array in this
    *  element so multiple items share one parent container. */
   wrapper?: string;
+  /** When true, whole-file imports pass the raw file body (frontmatter and
+   *  first heading stripped) without inlining rpg fences. Fences are left
+   *  intact so Obsidian's code block processors render them normally. */
+  raw?: boolean;
   /** Called once (mode=join) or per-block (mode=each/args). */
   render(ctx: RuleViewCtx, args?: unknown[]): ReactNode;
 }

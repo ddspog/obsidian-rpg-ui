@@ -566,10 +566,11 @@ function resolveCall(
       try {
         let wholeFileBody: string | null = null;
         if (wholeFile) {
-          wholeFileBody = inlineContentFences(stripFileFrontmatter(cleaned));
-          // When Obsidian's "Show inline title" is OFF, the source file's
-          // first H1 is redundant (the view function adds its own heading).
-          // Strip it so the import doesn't double the title.
+          if (view.raw) {
+            wholeFileBody = stripFileFrontmatter(cleaned);
+          } else {
+            wholeFileBody = inlineContentFences(stripFileFrontmatter(cleaned));
+          }
           if (shouldStripFirstHeading(deps.app)) {
             wholeFileBody = stripFirstHeading(wholeFileBody);
           }
@@ -723,13 +724,45 @@ function stripLocalFences(text: string): string {
  * add standalone homebrew/special decorations).
  */
 function inlineContentFences(text: string): string {
-  return text.replace(/```rpg\s+[^\n]+\n([\s\S]*?)```\s*\n?/g, (_match, inner: string) => {
+  const FENCE_OPEN = /^(`{3,})rpg\s+([^\n]+)$/gm;
+  let result = "";
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+  while ((m = FENCE_OPEN.exec(text)) !== null) {
+    const ticks = m[1].length;
+    const fenceType = m[2].trim();
+    const headEnd = m.index + m[0].length + 1; // +1 for newline
+    const closeRe = new RegExp(`^\\x60{${ticks}}\\s*$`, "m");
+    const tail = text.slice(headEnd);
+    const closeMatch = closeRe.exec(tail);
+    if (!closeMatch) continue;
+    const inner = tail.slice(0, closeMatch.index);
+    const fenceEnd = headEnd + closeMatch.index + closeMatch[0].length;
+    const trailingNewline = text[fenceEnd] === "\n" ? 1 : 0;
+    // Preserve fences that need Obsidian's code block processor to render.
+    if (fenceType.startsWith("table")) {
+      result += text.slice(cursor, fenceEnd + trailingNewline);
+      cursor = fenceEnd + trailingNewline;
+      FENCE_OPEN.lastIndex = cursor;
+      continue;
+    }
+    result += text.slice(cursor, m.index);
     const sep = inner.indexOf("\n---\n");
-    if (sep >= 0) return inner.slice(sep + 5);
-    const sepEnd = inner.indexOf("\n---");
-    if (sepEnd >= 0 && sepEnd + 4 >= inner.length) return "";
-    return inner;
-  });
+    if (sep >= 0) {
+      result += inlineContentFences(inner.slice(sep + 5));
+    } else {
+      const sepEnd = inner.indexOf("\n---");
+      if (sepEnd >= 0 && sepEnd + 4 >= inner.length) {
+        // body is empty after separator
+      } else {
+        result += inlineContentFences(inner);
+      }
+    }
+    cursor = fenceEnd + trailingNewline;
+    FENCE_OPEN.lastIndex = cursor;
+  }
+  result += text.slice(cursor);
+  return result;
 }
 
 function findContentBlockById(text: string, id: string): string | null {
@@ -1169,12 +1202,22 @@ function resolveFolderCall(
 
       if (view.wrapper === "tab-group") {
         const tabs: RuleTabBlock[] = [];
+        const highlight = extractHighlight(call.chain);
+        const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           let body = stripFileFrontmatter(cleaned);
           const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
+          let homebrew = false;
+          if (highlight.active) {
+            const entrySource = normalizeSource(String(fileFm.source ?? ""));
+            homebrew = entrySource !== callerSource;
+          }
           tabs.push({
             kind: "tab",
             name: (fileFm["tab-name"] as string) || f.basename,
@@ -1182,6 +1225,7 @@ function resolveFolderCall(
             color: fileFm["tab-color"] as string | undefined,
             body,
             frontmatter: fileFm,
+            ...(homebrew && { homebrew: true }),
           });
         }
         tabs.sort((a, b) => {
