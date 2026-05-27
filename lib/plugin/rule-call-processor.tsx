@@ -512,7 +512,7 @@ function resolveCall(
       span.classList.remove("rpg-call--pending");
       span.removeAttribute("aria-label");
       span.textContent = "";
-      if (highlight.active) span.appendChild(reactTarget);
+      if (needsWrapper) span.appendChild(reactTarget);
 
       try {
         let wholeFileBody: string | null = null;
