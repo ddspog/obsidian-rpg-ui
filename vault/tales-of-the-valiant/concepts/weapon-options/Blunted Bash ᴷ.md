@@ -12,5 +12,5 @@ Instead of dealing piercing damage, you can choose to deal bludgeoning damage by
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

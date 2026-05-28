@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Ammunition
 `````rpg rule.content
@@ -16,7 +16,7 @@ The **Ammunition table** lists the different types and the amount you get when y
 ```rpg table.ammunition
 | TYPE | AMOUNT | STORAGE | COST | WEIGHT |
 | --- | --- | --- | --- | --- |
-| `@[[items/adventuring-gear/ammunition/]].row(link, storage.amount, storage.container, storage.cost, storage.weight)` |
+| `@[[items/adventuring-gear/ammunition/]].highlight().row(link, storage.amount, storage.container, storage.cost, storage.weight)` |
 [Ammunition] 
 ```
 ````

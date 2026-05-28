@@ -2,9 +2,11 @@
 .metadata: 
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: user
+tab-color: var(--color-blue)
 ---
-# Human
+### Human
 ![[human.webp|right|384]] Humans are the youngest people of the world, and their tenacity and flexibility has allowed them to quickly spread. Humans are diverse in appearance and culture, so it’s not surprising that their creation myths are similarly plentiful. 
 
 Despite, or perhaps as a consequence of their tangled history, humans leave their stamp wherever they go. A natural drive fills their lives with dreams of long-lasting achievements. More than just a few reach those dreams. 

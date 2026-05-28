@@ -44,6 +44,7 @@ import { FileRefCache } from "lib/domains/references";
 import { ReferenceRegistry } from "lib/plugin/reference-registry";
 import { buildReferenceProcessor } from "lib/plugin/reference-processor";
 import { buildRuleCallProcessor, setupGlobalTableMerger } from "lib/plugin/rule-call-processor";
+import { setProcessFencesRegistry } from "lib/plugin/process-rpg-fences";
 import { ValueResolver, setActiveValueResolver } from "lib/domains/rules/value-resolver-api";
 import { setImageResolverApp } from "lib/domains/rules/image-resolver-api";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
@@ -126,6 +127,7 @@ export default class DndUIToolkitPlugin extends Plugin {
 
     const registry = SystemRegistry.getInstance();
     registry.initialize(this.app.vault);
+    setProcessFencesRegistry(registry);
     const mappings = new Map<string, string>();
     for (const mapping of this.settings.systemMappings) {
       for (const folderPath of mapping.folderPaths) {

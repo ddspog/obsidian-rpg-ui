@@ -4,7 +4,7 @@ cssclasses:
   - note-feature
   - rpg-ui
 .CONDITION:
-source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Blinded
 - ![[blinded.webp|right|108]]A blinded creature can’t see and automatically fails any ability check that requires sight. 

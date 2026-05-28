@@ -3,8 +3,10 @@
 cssclasses:
   - note-feature
 source: Adjusted from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+tab-icon: drama
+tab-color: var(--color-red)
 ---
-# Syderean
+### Syderean
 ![[syderean.webp|right|384]] Sydereans (sigh-DEER-ee-ans) are mystical beings sired by creatures or powers from a different plane of existence. Sometimes called starborn or plane-touched, their origins are as varied and mysterious as the cosmic forces that shaped them. 
 
 Though sydereans may be conceived by the physical union of a mortal with an outsider—such as a celestial or fiend—such pairings are rare and steeped in portents or conspiracy. More often, sydereans are born to an unsuspecting mortal family perhaps as the result of magical upheaval, an ancient dormant trait within the family’s bloodline, or a reincarnated soul returned by some unknown design. There are even instances of fully grown humanoids suddenly transformed into a syderean in a flash of light or a burst of smoke. 

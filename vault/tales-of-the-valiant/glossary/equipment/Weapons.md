@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: swords
 tab-color: var(--color-red)
 tab-order: 2
@@ -16,13 +16,13 @@ The Weapons table lists the cost, damage dice and type, weight, weapon options, 
 | WEAPON | COST | DAMAGE | WEIGHT | WEAPON OPTION | PROPERTIES |
 | --- | --- | --- | --- | --- | --- |
 | Simple Melee Weapons ||||||
-| `@[[items/weapons/simple-melee/]].row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
+| `@[[items/weapons/simple-melee/]].highlight().row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
 | Simple Ranged Weapons ||||||
-| `@[[items/weapons/simple-ranged/]].row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
+| `@[[items/weapons/simple-ranged/]].highlight().row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
 | Martial Melee Weapons ||||||
-| `@[[items/weapons/martial-melee/]].row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
+| `@[[items/weapons/martial-melee/]].highlight().row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
 | Martial Ranged Weapons ||||||
-| `@[[items/weapons/martial-ranged/]].row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
+| `@[[items/weapons/martial-ranged/]].highlight().row(link, cost, weapon.damage, weight, weapon.options, weapon.properties)` |
 [Weapons]
 ```
 ````
@@ -96,7 +96,7 @@ Unless specified otherwise, a weapon attack used to perform a weapon option has 
 At the GM's discretion, some weapon options might not work against certain creatures. For example, the trip weapon option might not work against a creature without discernable legs, such as an ooze, or that is anchored or attached to the ground in some way, such as a tree with animated limbs.
 ```
 #### Weapon Options Descriptions
-`@[[concepts/weapon-options/]].h6(0)`
+`@[[concepts/weapon-options/]].highlight().h6(0)`
 ````
 ````rpg rule.tab
 name: Materials & Properties
@@ -120,6 +120,6 @@ Weapons made from special materials typically cost (and can be sold for) more th
 id: properties
 ---
 Many weapons have special properties that affect their use, as shown in the Properties column of the **Weapons** table.
-`@[[concepts/weapon-property/]].p(0)`
+`@[[concepts/weapon-property/]].highlight().p(0)`
 ```
 ````

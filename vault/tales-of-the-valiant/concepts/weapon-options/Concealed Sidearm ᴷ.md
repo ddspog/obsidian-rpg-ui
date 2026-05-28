@@ -12,5 +12,5 @@ Instead of making a Dexterity ([[Stealth]]) check to hide yourself, you may make
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

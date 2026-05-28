@@ -1,11 +1,13 @@
 ---
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+cssclasses:
+  - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Martial
-`@[[Weapons]].bare(martial)`
+`@[[Weapons]].highlight().bare(martial)`
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].bare(types)`
-  - `@[[Weapons]].bare(summary)`
+  - `@[[Weapons]].highlight().bare(types)`
+  - `@[[Weapons]].highlight().bare(summary)`
 ```

@@ -1,12 +1,12 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Draconic
 ![[06. Draconic#^6161ef|clean]]
 ***
 ```rpg rule.related
-- @[[Languages]].p(summary)
-- @[[Languages]].table(esoteric-languages)
+- @[[Languages]].highlight().p(summary)
+- @[[Languages]].highlight().table(esoteric-languages)
 ```

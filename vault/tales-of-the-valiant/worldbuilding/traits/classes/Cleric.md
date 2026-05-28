@@ -475,7 +475,7 @@ icon: plus
 color: var(--color-green)
 ---
 ### Life Domain
-`@[[Life Domain]].bare()`
+`@[[Life Domain]].highlight().bare()`
 ```
 ```rpg rule.tab
 name: Light

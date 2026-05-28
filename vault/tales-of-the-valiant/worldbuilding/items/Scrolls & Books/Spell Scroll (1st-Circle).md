@@ -7,7 +7,7 @@ rarity: common
 reference_desc:
   - "![[05ª. Magic Items Effects#Spell Scroll css/h/item|clean no-h2 no-pt]]"
   - "![[07. Adventuring Options#Scroll Making|clean]]"
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 .shop:
 cheap: 38 gp
 expensive: 75 gp

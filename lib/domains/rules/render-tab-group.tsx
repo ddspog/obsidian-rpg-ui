@@ -474,7 +474,7 @@ function useExpandedCalls(body: string, sourcePath: string): string {
 
 async function expandHeadingCalls(body: string, sourcePath: string, app: App): Promise<string> {
   const calls = matchAllCalls(body);
-  const headingCalls = calls.filter((c) => /^h[1-6]$/.test(c.fn));
+  const headingCalls = calls.filter((c) => /^h[1-6]$/.test(c.fn) && !c.chain.some((s) => s.fn === "highlight"));
   if (headingCalls.length === 0) return body;
 
   let result = body;

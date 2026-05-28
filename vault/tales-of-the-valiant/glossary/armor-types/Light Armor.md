@@ -1,13 +1,13 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Light Armor
-`@[[Armor]].p(light)`
-`@[[Armor]].callout(types)`
+`@[[Armor]].highlight().p(light)`
+`@[[Armor]].highlight().callout(types)`
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Armor]].p(summary)`
+  - `@[[Armor]].highlight().p(summary)`
 ```

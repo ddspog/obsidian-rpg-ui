@@ -12,5 +12,5 @@ Make an attack roll with this weapon. On a hit, the target has disadvantage on i
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

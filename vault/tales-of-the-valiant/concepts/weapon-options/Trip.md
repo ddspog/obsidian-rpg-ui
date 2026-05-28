@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Trip
 ```rpg rule.content
@@ -12,5 +12,5 @@ Make an attack roll with this weapon against a Large or smaller creature. On a h
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

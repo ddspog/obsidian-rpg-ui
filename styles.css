@@ -1906,6 +1906,61 @@ p.rpg-item-magic-card__subtitle {
 .rpg-item-magic-card__traits strong {
   font-weight: 700;
 }
+.rpg-call--magic-highlight .rpg-item-magic-card {
+  position: relative;
+}
+.rpg-call--magic-highlight .rpg-item-magic-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px -2px;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 40%, transparent);
+  pointer-events: none;
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse 35% 35% at 100% 100%,
+      black 0%,
+      transparent 70%);
+  mask-image:
+    radial-gradient(
+      ellipse 35% 35% at 100% 100%,
+      black 0%,
+      transparent 70%);
+}
+.rpg-call--magic-highlight .rpg-item-magic-card__header {
+  position: relative;
+}
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+}
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge:hover {
+  opacity: 1;
+}
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+.rpg-call--magic-highlight .rpg-item-magic-card__body {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-accent, #7c2d12) 6%, transparent) 4px,
+      color-mix(in srgb, var(--text-accent, #7c2d12) 6%, transparent) 5px);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
 .rpg-item-personal-card {
   padding: 0.75rem 1rem;
   background: var(--background-primary);

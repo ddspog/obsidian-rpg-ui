@@ -1,7 +1,16 @@
 ---
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+cssclasses:
+  - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Darkvision
-![[06. Playing the Game#Darkvision|clean no-h4]]
-***
-![[06. Playing the Game#Vision and Obscured Areas|clean no-h3]]
+```rpg rule.content
+id: summary
+---
+A creature with [[darkvision]] can see in darkness. Within darkvision range, the creature can see in dim light as if it were bright light and can see in darkness as if it were dim light. A creature can’t discern color in darkness, only shades of gray.
+```
+```rpg rule.related
+view: footer
+entries:
+- `@[[Senses#Vision and Obscured Areas]].highlight().bare(LIGHT)`
+```

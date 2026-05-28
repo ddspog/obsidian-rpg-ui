@@ -12,5 +12,5 @@ You carefully align your crossbow’s sights over your target. As an action in a
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

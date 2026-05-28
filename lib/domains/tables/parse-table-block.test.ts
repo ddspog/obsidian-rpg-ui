@@ -25,6 +25,28 @@ describe("splitCells", () => {
       { value: "SPELLS", colspan: 3 },
     ]);
   });
+
+  it("preserves `|` inside [[wikilink|alias]] without splitting", () => {
+    expect(splitCells("| [[Cure Wounds|Cure]] | 1st |")).toEqual([
+      { value: "[[Cure Wounds|Cure]]" },
+      { value: "1st" },
+    ]);
+  });
+
+  it("handles multiple wikilinks with pipes in the same row", () => {
+    expect(splitCells("| [[A|B]] | [[C|D]] | plain |")).toEqual([
+      { value: "[[A|B]]" },
+      { value: "[[C|D]]" },
+      { value: "plain" },
+    ]);
+  });
+
+  it("still supports colspan with wikilink pipes", () => {
+    expect(splitCells("| [[X|Y]] || z |")).toEqual([
+      { value: "[[X|Y]]", colspan: 2 },
+      { value: "z" },
+    ]);
+  });
 });
 
 describe("parseTableBlock", () => {
@@ -211,5 +233,50 @@ describe("parseTableBlock: |= … =| footer rows", () => {
     const t = parseTableBlock("npc", body);
     expect(t.footerRows).toEqual([]);
     expect(t.rows).toHaveLength(1);
+  });
+});
+
+describe("parseTableBlock: indented cells", () => {
+  it("strips a leading `> ` and sets indent=1 on the cell", () => {
+    const body = `| NAME | COST |
+|---|---|
+| Longsword | 15 gp |
+| > Versatile | — |`;
+    const t = parseTableBlock("weapons", body);
+    expect(t.rows[0].cells[0].indent).toBeUndefined();
+    expect(t.rows[1].cells[0].indent).toBe(1);
+    expect(t.rows[1].cells[0].value).toBe("Versatile");
+  });
+
+  it("supports multiple indent levels with `>>` and `>>>`", () => {
+    const body = `| A | B |
+|---|---|
+| Parent | x |
+| > Child | y |
+| >> Grandchild | z |`;
+    const t = parseTableBlock("nested", body);
+    expect(t.rows[1].cells[0].indent).toBe(1);
+    expect(t.rows[2].cells[0].indent).toBe(2);
+    expect(t.rows[2].cells[0].value).toBe("Grandchild");
+  });
+
+  it("works on any cell, not just the first", () => {
+    const body = `| COST | NAME | NOTE |
+|---|---|---|
+| 15 gp | Longsword | — |
+| — | > Versatile | two-handed |`;
+    const t = parseTableBlock("weapons", body);
+    expect(t.rows[1].cells[0].indent).toBeUndefined();
+    expect(t.rows[1].cells[1].indent).toBe(1);
+    expect(t.rows[1].cells[1].value).toBe("Versatile");
+  });
+
+  it("does not confuse a `>` without trailing space as indent", () => {
+    const body = `| A | B |
+|---|---|
+| >5 gp | note |`;
+    const t = parseTableBlock("edge", body);
+    expect(t.rows[0].cells[0].indent).toBeUndefined();
+    expect(t.rows[0].cells[0].value).toBe(">5 gp");
   });
 });

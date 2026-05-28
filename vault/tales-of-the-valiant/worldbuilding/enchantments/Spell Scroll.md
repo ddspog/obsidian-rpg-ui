@@ -1,9 +1,9 @@
 ---
 cssclasses: ["note-item"]
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg item.magic
-name: Potion of Giant Strength
+name: Spell Scroll
 rarity: Rarity Varies
 attunement: false
 cost: Price Varies

@@ -312,7 +312,7 @@ As an action, you can magically assume the form of a Beast. When you first gain 
 As you advance in druid levels, you can choose more beast forms as shown in the Beast Forms Known column of the **Druid Progression** table. 
 
 When you gain a level of druid, you can replace one known form with a different form of your choosing. Any new form you choose must abide by the form restrictions. [^1]
-`@[[Transformation]].callout(Rules of Transformation)`
+`@[[Transformation]].highlight().callout(Rules of Transformation)`
 #### Wild Shape: Draw Power
 As a bonus action, you can reshape the natural energies around you to draw them within yourself and recharge your spellcasting ability. When you do so, choose a single expended Primordial spell slot to recover. The recovered spell slot must be of a circle equal to or less than your proficiency bonus (PB). For example, a 5th-level druid with a PB of +3 could recover an expended 1st, 2nd, or 3rd-circle Primordial spell slot with this feature. 
 

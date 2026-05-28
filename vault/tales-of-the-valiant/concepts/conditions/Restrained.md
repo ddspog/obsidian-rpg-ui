@@ -4,7 +4,7 @@ cssclasses:
   - note-feature
   - rpg-ui
 .CONDITION:
-source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Restrained
 - ![[restrained.webp|right|108]]A restrained creature’s speed becomes 0, and it can’t benefit from any bonus to its speed. 

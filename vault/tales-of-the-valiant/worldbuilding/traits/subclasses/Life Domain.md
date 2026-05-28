@@ -4,7 +4,7 @@ parent_class: Cleric
 .metadata: 
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Life Domain
 Gods of the Life domain celebrate natural cycles of life and death, exemplifying health and vitality. Devotees of this domain are encouraged to heal the wounded, care for the sick, and oppose the perversion of undeath.

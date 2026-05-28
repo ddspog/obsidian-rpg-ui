@@ -4,7 +4,7 @@ cssclasses:
   - note-feature
   - rpg-ui
 .CONDITION:
-source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # prone
 - A prone creature's only movement options are to crawl or to stand up. Standing up costs an amount of movement equal to half the creature's speed and ends the condition. 

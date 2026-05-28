@@ -33,6 +33,7 @@ function appendRow(tr: HTMLTableRowElement, row: TableRow, cellTag: "td" | "th")
   for (const cell of row.cells) {
     const el = tr.ownerDocument.createElement(cellTag);
     if (cell.colspan && cell.colspan > 1) el.colSpan = cell.colspan;
+    if (cell.indent) el.setAttribute("data-indent", String(cell.indent));
     renderCellValue(el, cell.value);
     tr.appendChild(el);
   }
@@ -58,7 +59,7 @@ function renderCellValue(el: HTMLElement, raw: string): void {
 
   // Backtick-wrapped call tokens (with parens) → <code> so the call
   // processor can detect and resolve them after the table renders.
-  const CALL_CODE_RE = /`\s*(@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\))\s*`/g;
+  const CALL_CODE_RE = /`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\([^)\n]*\))+)\s*`/g;
   const callMatch = CALL_CODE_RE.exec(cleaned);
   if (callMatch) {
     const doc = el.ownerDocument;
@@ -245,6 +246,7 @@ export function renderTableBlock(
   const doc = container.ownerDocument;
   const wrapper = doc.createElement("div");
   wrapper.classList.add("el-table", "rpg-table-wrapper");
+  if (def.wide) wrapper.classList.add("rpg-table-wrapper--wide");
 
   const table = doc.createElement("table");
   table.classList.add("rpg-table");

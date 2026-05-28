@@ -12,5 +12,5 @@ As an action, you may pinpoint a weak point of an opponent’s armor and make a 
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

@@ -8,7 +8,7 @@ reference_desc:
   - "![[07. Adventuring Options#^67d03f|clean]]"
   - "![[07. Adventuring Options#^23ed40|clean]]"
 reference_img: "![[agate.webp|384]]"
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 .shop:
 availability:
   - "[[Limited]]"

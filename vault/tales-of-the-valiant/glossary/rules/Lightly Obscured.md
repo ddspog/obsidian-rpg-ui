@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Lightly Obscured
-![[06. Playing the Game#Lightly Obscured|no-h4 clean]]
+In a [[Lightly Obscured]] area, such as dim light, patchy fog, or moderate foliage, creatures have disadvantage on WIS ([[Perception]]) checks that rely on sight.

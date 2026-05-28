@@ -12,5 +12,5 @@ When you successfully grapple a creature or escape a grapple, you may make a sin
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

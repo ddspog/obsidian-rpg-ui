@@ -1,3 +1,7 @@
+---
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+---
+
 *Complete transcription of the "**Tales of the Valiant** Player's Guide" book by **Kobold Press**.*
 
 Conditions alter a creature’s capabilities in a variety of ways and can arise as a result of a spell, class feature, monster attack, or other effect. Most conditions, such as blinded, are impairments, but a few, such as invisible, can be advantageous. 

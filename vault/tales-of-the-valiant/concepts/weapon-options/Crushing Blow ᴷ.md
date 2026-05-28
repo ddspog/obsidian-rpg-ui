@@ -12,5 +12,5 @@ As an action, you can make a single attack roll with your maul against an armore
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

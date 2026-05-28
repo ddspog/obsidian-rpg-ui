@@ -2,9 +2,11 @@
 .metadata: 
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: building
+tab-color: var(--color-blue)
 ---
-# Cosmopolitan
+### Cosmopolitan
 Cosmopolitan characters are citizens of the world whose values, interests, and ideas are influenced by exposure to many different peoples and cultures. Creatures of this heritage hail from major cities populated by people from many different parts of the world. Alternatively, it could mean you spent your formative years moving from place to place, immersing yourself in the customs and traditions of each community you lived with. 
 ```rpg feature.details
 name: Cosmopolitan Features

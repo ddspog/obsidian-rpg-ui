@@ -1,6 +1,6 @@
 ---
 cssclasses: ["note-item"]
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg item.magic
 name: Ammunition, +1, +2 or +3

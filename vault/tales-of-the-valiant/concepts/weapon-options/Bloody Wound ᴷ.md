@@ -12,5 +12,5 @@ When you hit a living creature with a scimitar, you can choose to make a superfi
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

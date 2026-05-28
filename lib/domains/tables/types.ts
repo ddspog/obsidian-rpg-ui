@@ -17,6 +17,8 @@ import type { PaginationConfig } from "./pagination";
 export interface TableCell {
   value: string;
   colspan?: number;
+  /** Nesting depth signalled by leading `> ` in the cell (1 per `>`). */
+  indent?: number;
 }
 
 /** One row of the table body. */
@@ -88,4 +90,6 @@ export interface TableDef {
   footerRows: FooterRow[];
   /** Pagination config from `@paginate <size> <controls>` directive. */
   pagination?: PaginationConfig;
+  /** When true, the table wrapper scrolls horizontally (`@wide` directive). */
+  wide?: boolean;
 }

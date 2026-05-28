@@ -2,6 +2,7 @@
 .metadata: 
 cssclasses:
   - embed-note-statblock
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 *Complete transcription of the "**Tales of the Valiant** Player's Guide" book by **Kobold Press**.*
 

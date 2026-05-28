@@ -12,5 +12,5 @@ Make a single attack roll with your mace or morningstar against a [[humanoid]] t
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

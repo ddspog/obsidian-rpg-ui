@@ -1,6 +1,6 @@
 ---
 cssclasses: ["note-item"]
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Bedroll
 ```rpg item.element

@@ -24,7 +24,7 @@ import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
 import { resolveSource, isHomebrew } from "./source";
 import { SIDE_PRESETS } from "./parse-rule-block";
-import { SPREAD_ITEM_CLASS } from "./render-spread-group";
+import { SPREAD_ITEM_CLASS, scheduleSpreadMerge } from "./render-spread-group";
 import type { RuleContentBlock, RuleSideBlock, SidePreset } from "./types";
 
 function capitalize(s: string): string {
@@ -147,8 +147,8 @@ function RuleContentView({
   if (viewProp === "p" && blockName) {
     const firstNl = block.body.indexOf("\n");
     const inlined = firstNl >= 0
-      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
-      : `**${blockName}.** ${block.body}`;
+      ? `_**${blockName}.**_ ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+      : `_**${blockName}.**_ ${block.body}`;
     return (
       <section className={cls.join(" ")} data-rpg-rule="content">
         {markersEl}
@@ -544,16 +544,7 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
           this.containerEl.style.setProperty("flex", "1 1 calc(50% - 0.75rem)");
           this.containerEl.style.setProperty("min-width", "340px");
         } else {
-          // Page-level: inline-block on .el-pre (only if direct parent)
-          const elPre = this.containerEl.parentElement?.classList.contains("el-pre")
-            ? this.containerEl.parentElement as HTMLElement
-            : null;
-          const target = elPre ?? this.containerEl;
-          target.style.setProperty("display", "inline-block", "important");
-          target.style.setProperty("vertical-align", "top");
-          target.style.setProperty("width", "calc(50% - 0.75rem)");
-          target.style.setProperty("min-width", "340px");
-          target.style.setProperty("margin-bottom", "1rem");
+          scheduleSpreadMerge(this.containerEl);
         }
       }
     } else {

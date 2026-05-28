@@ -12,5 +12,5 @@ As an attack, make an attack roll with your warhammer against a creature wieldin
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

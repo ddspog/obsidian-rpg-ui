@@ -1,4 +1,6 @@
 ---
+cssclasses:
+  - note-feature
 source: From **D&D 5e** "D&D Shop Catalog" book by **/u/jrobharing**
 ---
 # Exotic

@@ -1,5 +1,5 @@
 ---
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**.
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg stat.vehicle
 name: War Wagon

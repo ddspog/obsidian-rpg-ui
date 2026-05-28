@@ -451,9 +451,7 @@ function resolveCall(
         const sectionName = call.section
           ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? call.target;
         let body = stripFileFrontmatter(cleaned);
-        if (shouldStripFirstHeading(deps.app)) {
-          body = stripFirstHeading(body);
-        }
+        body = stripFirstHeading(body);
         const source = "#".repeat(hLevel) + " " + sectionName + "\n" + body;
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
@@ -552,16 +550,13 @@ function resolveCall(
       }
 
       const highlight = extractHighlight(call.chain);
-      const needsWrapper = highlight.active && view.wrapper !== "ul" && view.wrapper !== "table";
-      const reactTarget = needsWrapper ? span.createEl("div") : span;
-      const root = ReactDOM.createRoot(reactTarget);
+      const root = ReactDOM.createRoot(span);
       child.register(() => {
         try { root.unmount(); } catch { /* ignore */ }
       });
       span.classList.remove("rpg-call--pending");
       span.removeAttribute("aria-label");
       span.textContent = "";
-      if (needsWrapper) span.appendChild(reactTarget);
 
       try {
         let wholeFileBody: string | null = null;
@@ -1164,10 +1159,7 @@ function resolveFolderCall(
             if (!match) continue;
             body = match;
           } else {
-            body = stripFileFrontmatter(cleaned);
-            if (shouldStripFirstHeading(deps.app)) {
-              body = stripFirstHeading(body);
-            }
+            body = stripFirstHeading(stripFileFrontmatter(cleaned));
           }
           const section = document.createElement("div");
           section.classList.add("rpg-call-folder-section");
@@ -1684,9 +1676,9 @@ function shouldStripFirstHeading(app: App): boolean {
   }
 }
 
-/** Remove the first `# Heading` line from a markdown body. */
+/** Remove the first heading (any level) from a markdown body. */
 function stripFirstHeading(body: string): string {
-  return body.replace(/^#\s+[^\n]*\n?/, "");
+  return body.replace(/^\s*#{1,6}\s+[^\n]*\n?/, "");
 }
 
 function unwrapCallCodeSpans(root: HTMLElement, deps: RuleCallProcessorDeps, sourcePath: string): void {

@@ -1,10 +1,10 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Luck
-Every PC has a special resource called **Luck**. You use Luck to influence the result of any check.
+Every PC has a special resource called [[Luck]]. You use Luck to influence the result of any check.
 ### Gaining Luck
 When you create your character, start with 0 Luck. You gain Luck in the following ways: 
 - Once per turn, when you fail to hit with an attack roll or fail a save, gain 1 Luck. 

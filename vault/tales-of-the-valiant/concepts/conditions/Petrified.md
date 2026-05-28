@@ -4,7 +4,7 @@ cssclasses:
   - note-feature
   - rpg-ui
 .CONDITION:
-source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Petrified
 - ![[petrified.webp|right|108]]A petrified creature is transformed, along with any nonmagical objects it is wearing or carrying, into a solid inanimate substance (usually stone). Its weight increases by a factor of ten, and it ceases aging. 

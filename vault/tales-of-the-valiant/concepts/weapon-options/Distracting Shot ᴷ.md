@@ -12,5 +12,5 @@ As an action, make a single attack with your bow. You intentionally miss your ta
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

@@ -339,6 +339,8 @@ export async function evaluateSystemBundle(
           const statblockComponent = require("../components/statblock-vehicle");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const statblockResolver = require("../domains/statblocks/resolve-features");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const fenceSplit = require("../utils/fence-split");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
             parseSourceDocs: parseSourceDocMod.parseSourceDocs,
@@ -388,6 +390,8 @@ export async function evaluateSystemBundle(
             // Statblock components and helpers.
             StatblockVehicle: statblockComponent.StatblockVehicle,
             resolveStatFeatures: statblockResolver.resolveStatFeatures,
+            // Fence utilities.
+            stripRpgFences: fenceSplit.stripRpgFences,
           });
         }
         // Provide React and ReactDOM from the plugin runtime if available.

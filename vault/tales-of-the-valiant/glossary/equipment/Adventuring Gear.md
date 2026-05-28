@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: backpack
 tab-color: var(--color-orange)
 tab-order: 3
@@ -10,28 +10,28 @@ tab-order: 3
 ````rpg rule.content
 id: summary
 ---
-`@[[adventuring-gear.webp]].banner(hero)`
+`@[[adventuring-gear.webp]].highlight().banner(hero)`
 Useful equipment that isn’t armor or weapons is called Adventuring Gear. The **Adventuring Gear** table lists the price and weight of items commonly available for purchase. Items that have special rules or require further explanation are listed in the **Special Gear** section.
 
 ```rpg table.adventuring-gear
 | GEAR                                        | COST     | WEIGHT  |
 | ------------------------------------------- | -------- | ------- |
 | Alchemical Concoctions                      |||
-| > `@[[items/adventuring-gear/alchemical-concoctions/]].row(link, cost, weight)` |
+| > `@[[items/adventuring-gear/alchemical-concoctions/]].highlight().row(link, cost, weight)` |
 | Ammunition                                  |||
-| > `@[[items/adventuring-gear/ammunition/]].row(link, cost, weight)`  |
+| > `@[[items/adventuring-gear/ammunition/]].highlight().row(link, cost, weight)`  |
 | Clothes                                     |||
-| > `@[[items/adventuring-gear/clothes/]].row(link, cost, weight)`     |
+| > `@[[items/adventuring-gear/clothes/]].highlight().row(link, cost, weight)`     |
 | Consumables                                 |||
-| > `@[[items/adventuring-gear/consumables/]].row(link, cost, weight)` |
+| > `@[[items/adventuring-gear/consumables/]].highlight().row(link, cost, weight)` |
 | Containers                                  |||
-| > `@[[items/adventuring-gear/containers/]].row(link, cost, weight)`  |
+| > `@[[items/adventuring-gear/containers/]].highlight().row(link, cost, weight)`  |
 | General                                     |||
-| > `@[[items/adventuring-gear/general/]].row(link, cost, weight)`     |
+| > `@[[items/adventuring-gear/general/]].highlight().row(link, cost, weight)`     |
 | Herbal Concoctions                          |||
-| > `@[[items/adventuring-gear/herbal-concoctions/]].row(link, cost, weight)`     |
+| > `@[[items/adventuring-gear/herbal-concoctions/]].highlight().row(link, cost, weight)`     |
 | Spellcasting Foci                           |||
-| > `@[[items/adventuring-gear/spellcasting-foci/]].row(link, cost, weight)`     |
+| > `@[[items/adventuring-gear/spellcasting-foci/]].highlight().row(link, cost, weight)`     |
 [Adventuring Gear]
 ```
 ```rpg rule.side
@@ -61,8 +61,8 @@ The starting equipment you get from your class includes a collection of useful a
 id: special
 ---
 This section describes items that have special rules or require further explanation.
-`@[[items/adventuring-gear/alchemical-concoctions/]].p(0)`
-`@[[items/adventuring-gear/clothes/]].p(0)`
+`@[[items/adventuring-gear/alchemical-concoctions/]].highlight().p(0)`
+`@[[items/adventuring-gear/clothes/]].highlight().p(0)`
 ````rpg rule.side
 title: CONTAINER CAPACITY
 type: rules
@@ -72,20 +72,20 @@ Capacities for the various containers included on the **Adventuring Gear** table
 ```rpg table.container-capacity
  | CONTAINER | VOLUME CAPACITY | WEIGHT CAPACITY |
  | --- | --- | --- |
- | `@[[items/adventuring-gear/containers/]].row(link, container.volume_cap, container.weight_cap)` |
+ | `@[[items/adventuring-gear/containers/]].highlight().row(link, container.volume_cap, container.weight_cap)` |
  [CONTAINER CAPACITY]
  ```
 ````
-`@[[items/adventuring-gear/consumables/]].p(0)`
-`@[[items/adventuring-gear/general/]].p(0)`
-`@[[items/adventuring-gear/herbal-concoctions/]].p(0)`
+`@[[items/adventuring-gear/consumables/]].highlight().p(0)`
+`@[[items/adventuring-gear/general/]].highlight().p(0)`
+`@[[items/adventuring-gear/herbal-concoctions/]].highlight().p(0)`
 ```rpg rule.side
 title: USING POISON
 type: rules
 kind: callout
 ---
-`@[[Poison]].p(summary)`
-`@[[Poison]].p(types)`
+`@[[Poison]].highlight().p(summary)`
+`@[[Poison]].highlight().p(types)`
 ```
-`@[[items/adventuring-gear/spellcasting-foci/]].p(0)`
+`@[[items/adventuring-gear/spellcasting-foci/]].highlight().p(0)`
 `````

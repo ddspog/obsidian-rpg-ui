@@ -4,7 +4,7 @@ cssclasses:
   - note-feature
   - rpg-ui
 .CONDITION:
-source: From **Tales of the Valiant** \"Player's Guide\" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Stunned
 - A stunned creature is incapacitated (see the incapacitated condition), can’t move, and can speak only falteringly. 

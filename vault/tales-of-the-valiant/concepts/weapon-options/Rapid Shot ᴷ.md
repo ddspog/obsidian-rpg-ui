@@ -12,5 +12,5 @@ You rapidly reload your hand crossbow, throwing off your aim but allowing you to
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

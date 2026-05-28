@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Currency
 Coins are minted in precious metals valuable almost everywhere. The four most common coins are the copper piece (cp), the silver piece (sp), the gold piece (gp), and the platinum piece (pp). Gold is the common coin for adventurers, but most people use silver and copper for day‑to-day transactions. An average coin weighs less than half an ounce. A pouch of 50 coins weighs 1 pound.

@@ -25,10 +25,44 @@
   padding: 4px 10px;
 }
 
+/* Indented cell — signals a child/sub-item via leading `> ` in the source.
+ * Any cell can carry indentation independently. */
+.rpg-table td[data-indent] {
+  padding-left: calc(10px + 1.2em * attr(data-indent type(<number>), 1));
+}
+
+@supports not (padding: attr(x type(<number>))) {
+  .rpg-table td[data-indent="1"] {
+    padding-left: calc(10px + 1.2em);
+  }
+  .rpg-table td[data-indent="2"] {
+    padding-left: calc(10px + 2.4em);
+  }
+  .rpg-table td[data-indent="3"] {
+    padding-left: calc(10px + 3.6em);
+  }
+}
+
+.rpg-table td[data-indent]::before {
+  content: "–";
+  margin-right: 0.4em;
+  opacity: 0.5;
+}
+
 /* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression
  * tables where row content may be long but should stay on one line. */
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,
 .rpg-table:has(a[href="#css/tx/s/wide"]) td {
+  white-space: nowrap;
+}
+
+/* @wide directive — makes the table wrapper scroll horizontally so wide
+ * tables don't compress columns or wrap text. */
+.rpg-table-wrapper--wide {
+  overflow-x: auto;
+}
+
+.rpg-table-wrapper--wide .rpg-table {
   white-space: nowrap;
 }
 

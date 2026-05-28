@@ -3,8 +3,10 @@
 cssclasses:
   - note-feature
 source: Homebrew based on *Supplicant* from **Tales of the Valiant** "Player's Guide" book by **Kobold Press**, and *Augmented* by **D&D** "Caliya's Chronicle of Runes" book by **Spectre Creations**.
+tab-icon: bone
+tab-color: var(--color-green)
 ---
-# Twisted Minion
+### Twisted Minion
 Characters of the Twisted Minion heritage were molded under the iron rule of a cruel overlord who fused arcane or alchemical methods into their subordinates. Through invasive experimentation and forced servitude, these unfortunate souls were forever altered in both body and mind.
 
 Though some twisted minions share similarities with typical supplicant communities—collecting resources, fortifying lairs, and living under the thumb of a tyrant—their existence diverges due to the meddling and tampering they endured. Their overlord’s experiments might have granted them bizarre abilities or left them physically changed, reviled by other civilizations. Escaping such torment is no easy feat, but those who manage to slip away must contend with the aftermath of unnatural magic and scars that refuse to fade.

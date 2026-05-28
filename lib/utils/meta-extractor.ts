@@ -54,17 +54,23 @@ export function detectMetaFromSource(source: string): string | null {
   const sepLineIdx = sourceLines.findIndex((l) => l.trim() === "---");
   if (sepLineIdx > 0 && sepLineIdx < sourceLines.length - 1) {
     const headerKeys = new Set<string>();
+    const headerValues = new Map<string, string>();
     for (let i = 0; i < sepLineIdx; i++) {
-      const m = sourceLines[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:/);
-      if (m) headerKeys.add(m[1]);
+      const m = sourceLines[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(.*)/);
+      if (m) {
+        headerKeys.add(m[1]);
+        headerValues.set(m[1], m[2].trim());
+      }
     }
     // rule.side fence-mode: `kind:` (float/callout/commentary), `type:`
     // (preset name), or `title:` without `name:` (side uses title, not name).
     // `type` alone is ambiguous — feature.details also uses `type: passive`;
-    // require absence of `name` to avoid stealing feature blocks.
+    // require absence of `name` AND that the type value isn't a known
+    // feature type to avoid stealing feature blocks.
+    const FEATURE_TYPE_VALUES = new Set(["passive", "action", "reaction", "bonus", "active"]);
     if (
       headerKeys.has("kind") ||
-      (headerKeys.has("type") && !headerKeys.has("name")) ||
+      (headerKeys.has("type") && !headerKeys.has("name") && !FEATURE_TYPE_VALUES.has(headerValues.get("type") ?? "")) ||
       (headerKeys.has("title") && !headerKeys.has("name"))
     ) {
       return "rule.side";
@@ -87,6 +93,9 @@ export function detectMetaFromSource(source: string): string | null {
       if (featureHeaderMarkers.some((k) => headerKeys.has(k))) {
         return "feature.details";
       }
+    }
+    if (FEATURE_TYPE_VALUES.has(headerValues.get("type") ?? "")) {
+      return "feature.details";
     }
     return "rule.content";
   }

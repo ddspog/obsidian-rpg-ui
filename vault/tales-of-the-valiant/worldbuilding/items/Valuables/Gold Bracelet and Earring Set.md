@@ -9,7 +9,7 @@ reference_desc:
 - "![[07. Adventuring Options#^eb638e|clean]]"
 - "![[07. Adventuring Options#^945c11|clean]]"
 reference_img: "![[gold-bracelet-earring-set.webp|384]]"
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 .metadata: 
 cssclasses:
   - note-item

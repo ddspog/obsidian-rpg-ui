@@ -12,5 +12,5 @@ As an action, make a single attack roll with your warhammer against a living cre
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

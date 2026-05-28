@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: wrench
 tab-color: var(--color-cyan)
 tab-order: 4
@@ -43,10 +43,10 @@ The tools available to PCs are described in this section. Entries generally incl
 |TOOL|COST|WEIGHT|
 |---|---|---|
 | General Use |||
-| `@[[items/tools/]].row(link, cost, weight)` |
+| `@[[items/tools/]].highlight().row(link, cost, weight)` |
 |Gaming set|||
 |Musical instruments|||
 [TOOLS]
 ```
-`@[[items/tools/]].h4(0)`
+`@[[items/tools/]].highlight().h4(0)`
 ````

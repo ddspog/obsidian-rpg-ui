@@ -12,5 +12,5 @@ You can use your quarterstaff to help you leap long distances. You can use an ac
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

@@ -12,5 +12,5 @@ As an action, make a single stylish bow attack with disadvantage. If the lower r
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

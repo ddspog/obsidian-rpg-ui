@@ -1,13 +1,15 @@
 ---
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+cssclasses:
+  - note-feature
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Ranged
-`@[[Weapons]].bare(ranged)`
+`@[[Weapons]].highlight().bare(ranged)`
 ![[06. Playing the Game#^edda20|clean]]
 ![[06. Playing the Game#2. Determine Modifiers#Proficiency Bonus|no-h6 clean]]
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].bare(types)`
-  - `@[[Weapons]].bare(summary)`
+  - `@[[Weapons]].highlight().bare(types)`
+  - `@[[Weapons]].highlight().bare(summary)`
 ```

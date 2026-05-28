@@ -130,8 +130,6 @@ class SessionLogMarkdown extends ReactMarkdown {
 
       // Write back to file
       await this.baseView.app.vault.modify(file as any, updatedContent);
-
-      console.log("Successfully appended text to log");
     } catch (error) {
       console.error("Error appending to log:", error);
     }

@@ -12,5 +12,5 @@ As an attack, you may throw your javelin at a creature at the very limit of your
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```

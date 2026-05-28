@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Poison
 ```rpg rule.content
@@ -14,7 +14,7 @@ Given their insidious and deadly nature, poisons are illegal to create and sell 
 id: types
 ---
 There are four types of poisons that can be crafted or purchased.
-`@[[glossary/poison-types/]].p(0)`
+`@[[glossary/poison-types/]].highlight().p(0)`
 ```
 ![[07. Adventuring Options#Acquiring Poison|clean]]
 ![[07. Adventuring Options#Poison Descriptions|clean]]

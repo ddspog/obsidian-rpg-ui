@@ -42,8 +42,28 @@ export function splitCells(line: string): TableCell[] {
   if (trimmed.startsWith("|")) trimmed = trimmed.slice(1);
   if (trimmed.endsWith("|")) trimmed = trimmed.slice(0, -1);
 
-  // Split on `|` but keep empty segments so we can detect adjacent pipes.
-  const segments = trimmed.split("|").map((s) => s.trim());
+  // Split on `|` that is NOT inside `[[…]]` wikilinks, keeping empty
+  // segments so we can detect the `||` colspan convention.
+  const segments: string[] = [];
+  let current = "";
+  let bracketDepth = 0;
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmed[i] === "[" && trimmed[i + 1] === "[") {
+      bracketDepth++;
+      current += "[[";
+      i++;
+    } else if (trimmed[i] === "]" && trimmed[i + 1] === "]" && bracketDepth > 0) {
+      bracketDepth--;
+      current += "]]";
+      i++;
+    } else if (trimmed[i] === "|" && bracketDepth === 0) {
+      segments.push(current.trim());
+      current = "";
+    } else {
+      current += trimmed[i];
+    }
+  }
+  segments.push(current.trim());
 
   const out: TableCell[] = [];
   for (const seg of segments) {
@@ -246,6 +266,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
   const footerRollLines: string[] = [];
   let footer: { caption: string; classes: string[] } | null = null;
   let pagination: PaginationConfig | undefined;
+  let wide = false;
 
   for (const raw of lines) {
     const line = raw.trimEnd();
@@ -257,6 +278,11 @@ export function parseTableBlock(name: string, body: string): TableDef {
         pagination = p;
         continue;
       }
+    }
+
+    if (line.trim() === "@wide") {
+      wide = true;
+      continue;
     }
 
     if (isFooterRollLine(line)) {
@@ -282,7 +308,17 @@ export function parseTableBlock(name: string, body: string): TableDef {
   const bodyLines = sepIdx >= 0 ? tableLines.slice(sepIdx + 1) : tableLines;
 
   const headerRows: TableRow[] = headerLines.map((l) => ({ cells: splitCells(l) }));
-  const rows: TableRow[] = bodyLines.map((l) => ({ cells: splitCells(l) }));
+  const rows: TableRow[] = bodyLines.map((l) => {
+    const row: TableRow = { cells: splitCells(l) };
+    for (const cell of row.cells) {
+      const m = cell.value.match(/^(>+)\s/);
+      if (m) {
+        cell.indent = m[1].length;
+        cell.value = cell.value.slice(m[0].length);
+      }
+    }
+    return row;
+  });
 
   // ── Derive columns from the LAST header row (most specific names). The
   //    same row carries the `*` key sigil — we strip it here and remember
@@ -323,5 +359,6 @@ export function parseTableBlock(name: string, body: string): TableDef {
     classes: footer?.classes ?? [],
     footerRows: footerRollLines.map(parseFooterRollLine),
     pagination,
+    wide: wide || undefined,
   };
 }

@@ -29,6 +29,8 @@ export interface ChainSegment {
 export interface ParsedCall {
   /** Raw inner text of the wikilink (without `[[` `]]`). */
   target: string;
+  /** Section fragment from `#heading` in the wikilink, if present. */
+  section?: string;
   /** Function name (the terminal — last in the chain). */
   fn: string;
   /** Parsed positional args of the terminal function. */
@@ -58,6 +60,13 @@ function parseSegments(chainStr: string): ChainSegment[] {
   return segments;
 }
 
+/** Split a wikilink target into file path and optional `#section`. */
+function splitSection(raw: string): { path: string; section?: string } {
+  const idx = raw.indexOf("#");
+  if (idx < 0) return { path: raw };
+  return { path: raw.slice(0, idx), section: raw.slice(idx + 1) };
+}
+
 /** Parse a single call expression. Returns null if the input doesn't match. */
 export function parseCall(source: string): ParsedCall | null {
   const re = new RegExp(`^${CALL_PATTERN.source}$`);
@@ -66,8 +75,10 @@ export function parseCall(source: string): ParsedCall | null {
   const segments = parseSegments(m[2]);
   if (segments.length === 0) return null;
   const terminal = segments[segments.length - 1];
+  const { path, section } = splitSection(m[1].trim());
   return {
-    target: m[1].trim(),
+    target: path,
+    section,
     fn: terminal.fn,
     args: terminal.args,
     chain: segments.slice(0, -1),
@@ -88,8 +99,10 @@ export function matchAllCalls(text: string): Array<ParsedCall & { start: number;
     const segments = parseSegments(m[2]);
     if (segments.length === 0) continue;
     const terminal = segments[segments.length - 1];
+    const { path, section } = splitSection(m[1].trim());
     out.push({
-      target: m[1].trim(),
+      target: path,
+      section,
       fn: terminal.fn,
       args: terminal.args,
       chain: segments.slice(0, -1),

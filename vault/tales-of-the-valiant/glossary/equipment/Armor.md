@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: shield
 tab-color: var(--color-blue)
 tab-order: 1
@@ -15,13 +15,13 @@ This section lists the types of armor available to PCs and covers special rules 
 | ARMOR | COST | ARMOR CLASS (AC) | WEIGHT | PROPERTIES |
 | --- | --- | --- | --- | --- |
 | Light Armor ||||||
-| `@[[items/armor/light/]].row(link, cost, armor.ac, weight, armor.properties)` |
+| `@[[items/armor/light/]].highlight().row(link, cost, armor.ac, weight, armor.properties)` |
 | Medium Armor ||||||
-| `@[[items/armor/medium/]].row(link, cost, armor.ac, weight, armor.properties)` |
+| `@[[items/armor/medium/]].highlight().row(link, cost, armor.ac, weight, armor.properties)` |
 | Heavy Armor ||||||
-| `@[[items/armor/heavy/]].row(link, cost, armor.ac, weight, armor.properties)` |
+| `@[[items/armor/heavy/]].highlight().row(link, cost, armor.ac, weight, armor.properties)` |
 | Shield ||||||
-| `@[[items/armor/shields/]].row(link, cost, armor.ac, weight, armor.properties)` |
+| `@[[items/armor/shields/]].highlight().row(link, cost, armor.ac, weight, armor.properties)` |
 [ARMOR]
 ```
 
@@ -57,14 +57,14 @@ Your character can wear any kind of armor, regardless of proficiency. However, i
 id: light
 ---
 Light armor provides minimal protection while still allowing its wearer to move with relative ease.
-`@[[items/armor/light/]].p(0)`
+`@[[items/armor/light/]].highlight().p(0)`
 ```
 #### Medium Armor
 ```rpg rule.content
 id: medium
 ---
 Medium armor provides more protection than light armor, but it uses bulkier materials that interfere with range of motion.
-`@[[items/armor/medium/]].p(0)`
+`@[[items/armor/medium/]].highlight().p(0)`
 ```
 
 ![[ring-mail.webp|left|158]]![[chain-mail.webp|left|138]]![[splint.webp|left|158]]![[plate.webp|left|162]]
@@ -84,14 +84,14 @@ To keep things simple, assume that PCs can wear any nonmagical armor or wield an
 id: heavy
 ---
 Heavy armor provides the most protection of any armor type, but wearing it demands great physical prowess.
-`@[[items/armor/heavy/]].p(0)`
+`@[[items/armor/heavy/]].highlight().p(0)`
 ```
 #### Shields
 ```rpg rule.content
 id: shields
 ---
 A shield is handheld armor that is wielded instead of worn. This means their AC bonus can be lost if the shield is destroyed or becomes disarmed. Wielding a shield requires the use of one hand, which means a PC can’t use two-handed weapons while holding a shield. You can only benefit from one shield AC bonus at a time, even if you wield multiple shields.
-`@[[items/armor/shields/]].p(0)`
+`@[[items/armor/shields/]].highlight().p(0)`
 ```
 ````
 `````rpg rule.tab
@@ -147,6 +147,6 @@ Armor made from special materials typically costs (and can be sold for) more tha
 id: properties
 ---
 Many sets of armor have properties that affect their use, as shown in the Properties column of the **Armor** table.
-`@[[concepts/armor-property/]].p(0)`
+`@[[concepts/armor-property/]].highlight().p(0)`
 ```
 ````

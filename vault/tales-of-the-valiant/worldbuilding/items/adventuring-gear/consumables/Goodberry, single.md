@@ -6,7 +6,7 @@ weight: 0.5 lb.
 reference_desc: 
 - "![[Goodberry#^f36455|clean]]"
 reference_img: "![[goodberry.webp|384]]"
-source: From **Tales of the Valiant** "Player's Guide" book by **Kobold Press**
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 .metadata: 
 cssclasses:
   - note-item

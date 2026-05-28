@@ -14,8 +14,5 @@ As an action, make a single attack with your crossbow against an unattended obje
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].p(options)`
+  - `@[[Weapons]].highlight().p(options)`
 ```
-![[05. Equipment & Magic Items#Shrapnel Shot|no-h6 clean]]
-***
-![[05. Equipment & Magic Items#^weapon-options-rules|clean]]

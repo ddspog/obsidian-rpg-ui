@@ -3,8 +3,10 @@
 cssclasses:
   - note-feature
 source: Homebrew inspired in **D&D 5e** High Elf and adapted to **Tales of the Valiant**.
+tab-icon: venetian-mask
+tab-color: var(--color-purple)
 ---
-# Acolyte
+### Acolyte
 Acolyte heritage characters were raised traveling alongside field agents of an established faction, acting as assistants to these members.
 
 These agents could be part of a noble court, a shadowy organization, or emissaries of a powerful entity, and your formative years were spent constantly assisting them in missions. You learned much from observing and helping these agents, gaining a unique perspective on different cultures, strategies, and tools of the trade.
