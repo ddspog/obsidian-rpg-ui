@@ -15,5 +15,5 @@ shop:
   availability:
     - "[[Premium]]"
 ---
-While lit, a bullseye lantern casts [[Bright Light]] in a 60-foot [[Cone]] and [[Dim Light]] for an additional 60 feet. Once lit, it burns for 6 hours on a [[Oil (flask)|flask (1 pint) of oil]].
+While lit, a bullseye lantern casts bright light in a 60-foot [[cone]] and dim light for an additional 60 feet. Once lit, it burns for 6 hours on a [[Oil (flask)|flask (1 pint) of oil]].
 ```

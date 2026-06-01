@@ -122,6 +122,25 @@ export function detectMetaFromSource(source: string): string | null {
     return "rule.side";
   }
 
+  // `rpg list.<name>` — pure-YAML newspaper-flow lists. MUST be detected
+  // BEFORE the rule.related array heuristic below: a list's `entries:` items
+  // commonly carry `@[[...]]` call tokens, which would otherwise be misread as
+  // rule.related. (This is the bug where a list block rendered as prose +
+  // `View "block" not registered` on app load/reload — when getSectionInfo is
+  // unavailable during a programmatic rerender, extractMeta falls back to this
+  // source-based detection.) The fence's `<name>` suffix isn't in the body, so
+  // return bare `"list"`; the dispatcher recovers the id from the YAML `name:`
+  // via parseListBlock. List-specific markers: top-level `columns:`/`paginate:`
+  // or an entry object's `call:`/`format:`/`text:` key (indented under
+  // `entries:`) — none of which appear in rule.related or show bodies.
+  if (topLevelKeys.has("entries")) {
+    const hasListMarker =
+      topLevelKeys.has("columns") ||
+      topLevelKeys.has("paginate") ||
+      /^[ \t]+(?:call|format|text)[ \t]*:/m.test(source);
+    if (hasListMarker) return "list";
+  }
+
   // `rpg rule.related` — YAML array of embeds/call tokens, or object
   // with `entries:` + optional `level:`/`view:`. Distinguished from `rpg show`
   // (which also uses `entries:`) by the presence of `view:` co-key or array

@@ -17,16 +17,38 @@
  */
 
 import { coerceSource } from "./parse-rule-block";
+import { homebrewBySetting } from "lib/domains/lists/official-sources";
 import type { SourceTuple } from "./types";
 
-/** Resolve a block's source, falling back to file frontmatter. */
+export type ResolvedSource = SourceTuple | string;
+
+/** Flatten a resolved source to comparable free text (for the setting-driven
+ *  `officialSources` match, which works on the `source:` string form). */
+function sourceText(s: ResolvedSource | undefined): string | undefined {
+  if (s === undefined) return undefined;
+  if (typeof s === "string") return s;
+  const joined = [s.system, s.book, s.company].filter(Boolean).join(" ");
+  return joined || undefined;
+}
+
+/** Resolve a block's source, falling back to file frontmatter.
+ *  Returns a SourceTuple when the value is a structured object, or a raw
+ *  string when the frontmatter carries a free-text source attribution. */
 export function resolveSource(
   blockFrontmatter: Record<string, unknown>,
   fileFrontmatter: Record<string, unknown> | null | undefined
-): SourceTuple | undefined {
-  const fromBlock = coerceSource(blockFrontmatter.source);
+): ResolvedSource | undefined {
+  const blockRaw = blockFrontmatter.source;
+  const fromBlock = coerceSource(blockRaw);
   if (fromBlock) return fromBlock;
-  if (fileFrontmatter) return coerceSource(fileFrontmatter.source);
+  if (typeof blockRaw === "string" && blockRaw) return blockRaw;
+
+  if (fileFrontmatter) {
+    const fileRaw = fileFrontmatter.source;
+    const fromFile = coerceSource(fileRaw);
+    if (fromFile) return fromFile;
+    if (typeof fileRaw === "string" && fileRaw) return fileRaw;
+  }
   return undefined;
 }
 
@@ -37,13 +59,43 @@ export function resolveSource(
  * self-referential: a block without a source is flagged; a block with one is not.
  */
 export function isHomebrew(
-  blockSource: SourceTuple | undefined,
-  contextSource: SourceTuple | undefined
+  blockSource: ResolvedSource | undefined,
+  contextSource: ResolvedSource | undefined
 ): boolean {
   if (!blockSource) return true;
   if (!contextSource) return false;
+
+  // Both strings: direct comparison
+  if (typeof blockSource === "string" && typeof contextSource === "string") {
+    return blockSource !== contextSource;
+  }
+  // Mixed string vs tuple: always different
+  if (typeof blockSource === "string" || typeof contextSource === "string") {
+    return true;
+  }
+  // Both tuples: structured comparison
   if (blockSource.system !== contextSource.system) return true;
   if (contextSource.company && blockSource.company !== contextSource.company) return true;
   if (contextSource.book && blockSource.book !== contextSource.book) return true;
   return false;
+}
+
+/**
+ * Setting-aware homebrew verdict. When the file's system declares official
+ * sources (`officialSources` in settings), homebrew is decided purely by
+ * whether `blockSource` matches one of those patterns — the same global signal
+ * list blocks use. Otherwise it falls back to the context-relative
+ * {@link isHomebrew} (block-vs-importing-compendium comparison), so systems
+ * without official sources keep their existing behavior.
+ *
+ * `filePath` is the note the content lives in (its mapping supplies patterns).
+ */
+export function isHomebrewForFile(
+  blockSource: ResolvedSource | undefined,
+  contextSource: ResolvedSource | undefined,
+  filePath: string
+): boolean {
+  const bySetting = homebrewBySetting(sourceText(blockSource), filePath);
+  if (bySetting !== null) return bySetting;
+  return isHomebrew(blockSource, contextSource);
 }

@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-For 1 hour, a candle sheds [[Bright Light]] in a 5-foot radius and [[Dim Light]] for an additional 5 feet.
+For 1 hour, a candle sheds bright light in a 5-foot radius and dim light for an additional 5 feet.
 ```

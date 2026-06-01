@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-While wrapped in a blanket, you have Advantage on saving throws against [[06. Playing the Game#Extreme Cold css/h/feature|extreme cold]] (see also, the _[[07. Adventuring Options#EXTREME COLD css/h/feature|Game Master’s Guide]]_).
+While wrapped in a blanket, you have [[advantage]] on saving throws against [[extreme cold]].
 ```

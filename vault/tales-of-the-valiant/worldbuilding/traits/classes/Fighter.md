@@ -59,18 +59,18 @@ choose:
     - [[Survival]]
 
 ---
-**Armor:** All armor and [[Shields]]
-**Weapons:** [[Simple]] weapons, [[Martial]] weapons
+**Armor:** [[armor|All armor]] and [[shields]]
+**Weapons:** [[Simple|Simple weapons]], [[Martial|martial weapons]]
 **Tools:** None
 **Saves:** STR, CON
 **Skills:** Choose two from [[Acrobatics]], [[Animal Handling]], [[Athletics]], [[History]], [[Insight]], [[Intimidation]], [[Perception]], and [[Survival]]
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
-- _(a)_ [[Chain Mail]] or _(b)_ [[Leather]] armor, [[Longbow]], and 20 [[Arrows]]
-- _(a)_ a [[Martial]] weapon and a [[Shield]] or _(b)_ two [[Martial]] weapons 
-- _(a)_ a [[Crossbow, light]] and 20 [[Crossbow Bolts]] or _(b)_ two handaxes 
-- *(a)* a dungeoneer's pack or *(b)* an explorer's pack
+- _(a)_ [[chain mail]] or _(b)_ [[Leather|leather armor]], [[longbow]], and [[Arrows|20 arrows]]
+- _(a)_ [[Martial|a martial weapon]] and [[Shield|a shield]] or _(b)_ [[Martial|two martial weapons]]
+- _(a)_ [[Crossbow, light|a light crossbow]] and [[Crossbow Bolts|20 bolts]] or _(b)_ two handaxes 
+- *(a)* [[Dungeoneer's Pack|a dungeoneer's pack]] or *(b)* [[Explorer's Pack|an explorer's pack]]
 ```rpg table.progression
 | LEVEL | PB | FEATURES |
 | --------- | --- | --- |

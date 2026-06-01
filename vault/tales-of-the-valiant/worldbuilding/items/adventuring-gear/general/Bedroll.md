@@ -18,5 +18,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-A Bedroll sleeps one Small or Medium creature. While in a Bedroll, you automatically succeed on saving throws against [[06. Playing the Game#Extreme Cold css/h/feature|extreme cold]] (see also, the _[[07. Adventuring Options#EXTREME COLD css/h/feature|Game Master’s Guide]]_).
+A Bedroll sleeps one Small or Medium creature. While in a Bedroll, you automatically succeed on saving throws against [[extreme cold]].
 ```

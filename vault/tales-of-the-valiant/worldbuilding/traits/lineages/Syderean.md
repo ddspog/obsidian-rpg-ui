@@ -49,13 +49,13 @@ pick: 1
 parent: Syderean Lineage Traits
 name: Blessed Guise
 bonus:
-  text: Once per long rest, you can use a bonus action to assume an otherworldly guise for 1 minute. When you do so, you sprout spectral wings and gain a flying speed equal to your walking speed for the duration of your transformation. While transformed, once on each of your turns when you deal damage with an attack or spell, you can choose to convert the damage type (or types) to radiant damage.
+  text: Once per long rest, you can use a bonus action to assume an otherworldly guise for 1 minute. When you do so, you sprout spectral wings and gain a [[flying]] speed equal to your walking speed for the duration of your transformation. While transformed, once on each of your turns when you deal damage with an attack or spell, you can choose to convert the damage type (or types) to radiant damage.
 traits:
   Natural Adaptation: Celestial, Blessed Guise
 
 ---
 **_Celestial._** You possess notable physical characteristics that mark your connection to realms of good or order. You might have luminous eyes, metallic-hued skin, or possess the ability to stay perfectly still for hours. You also gain the following:
-- **Blessed Guise.** Once per long rest, you can use a bonus action to assume an otherworldly guise for 1 minute. When you do so, you sprout spectral wings and gain a flying speed equal to your walking speed for the duration of your transformation. While transformed, once on each of your turns when you deal damage with an attack or spell, you can choose to convert the damage type (or types) to radiant damage. 
+- **Blessed Guise.** Once per long rest, you can use a bonus action to assume an otherworldly guise for 1 minute. When you do so, you sprout spectral wings and gain a [[flying]] speed equal to your walking speed for the duration of your transformation. While transformed, once on each of your turns when you deal damage with an attack or spell, you can choose to convert the damage type (or types) to radiant damage. 
 ```
 ```rpg feature.choice
 parent: Syderean Lineage Traits
@@ -77,10 +77,10 @@ bonus:
   max: 1
   recovery: long rest
 passive:
-  text: Bat-like wings jut from your shoulder blades, which are *hard to hide* in public. You have a flying speed of 30 feet while you aren’t wearing [[Heavy Armor]]. The wings give you advantage to [[Stealth]] checks for hiding in [[Dim Light]] or [[Darkness]]. 
+  text: Bat-like wings jut from your shoulder blades, which are *hard to hide* in public. You have a [[flying]] speed of 30 feet while you aren’t wearing [[Heavy Armor]]. The wings give you advantage to [[Stealth]] checks for hiding in dim light or darkness. 
 traits:
   Natural Adaptation: Fiendish, Winged
 
 ---
-- **Winged.** Bat-like wings jut from your shoulder blades, which are *hard to hide* in public. You have a flying speed of 30 feet while you aren’t wearing [[Heavy Armor]]. The wings give you advantage to [[Stealth]] checks for hiding in [[Dim Light]] or [[Darkness]]. Also, once per long rest, you can use a bonus action to reclaim strength in your wings enabling you to fly (and hover) even with heavy armor for 1 minute.
+- **Winged.** Bat-like wings jut from your shoulder blades, which are *hard to hide* in public. You have a [[flying]] speed of 30 feet while you aren’t wearing [[Heavy Armor]]. The wings give you advantage to [[Stealth]] checks for hiding in dim light or darkness. Also, once per long rest, you can use a bonus action to reclaim strength in your wings enabling you to fly (and hover) even with heavy armor for 1 minute.
 ```

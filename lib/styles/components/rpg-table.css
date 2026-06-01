@@ -49,6 +49,21 @@
   opacity: 0.5;
 }
 
+/* Vertical cell merge (`^` marker) — the anchor cell carries `rowspan` and a
+ * `data-valign` set from the marker glyph (`^^` top, `^v` bottom, `^`/`^-`
+ * centre). Position its content within the rows it spans. */
+.rpg-table td[data-valign="top"] {
+  vertical-align: top;
+}
+
+.rpg-table td[data-valign="middle"] {
+  vertical-align: middle;
+}
+
+.rpg-table td[data-valign="bottom"] {
+  vertical-align: bottom;
+}
+
 /* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression
  * tables where row content may be long but should stay on one line. */
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,

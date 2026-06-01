@@ -20,9 +20,9 @@ traits:
 ---
 **Skill Proficiencies:** [[Athletics]] and [[Perception]].
 
-**Additional Proficiencies:** Gain proficiency with [[Navigator Tools]] and [[Vehicles (Water)]].
+**Additional Proficiencies:** Gain proficiency with [[navigator tools]] and [[vehicles (Water)]].
 ```
-**Equipment:** A belaying pin or short wooden club, [[Rope (50 feet)]], a small keepsake or lucky charm, a set of [[Clothes, common]], and a [[Pouch]] containing 10 gp.
+**Equipment:** A belaying pin or short wooden club, [[Rope (50 feet)|50 feet of rope]], a small keepsake or lucky charm, [[Clothes, common|a set of common clothes]], and [[Pouch|a pouch]] containing 10 gp.
 
 [^1]: Homebrew from Baldur’s Gate: Descent into Avernus and adapted to Tales of the Valiant style.
 ```rpg feature.details

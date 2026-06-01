@@ -12,5 +12,5 @@ Make an attack roll with this weapon. On a hit, the target must succeed on a STR
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].highlight().p(options)`
+  - `@[[Weapons]].highlight().bare(options)`
 ```

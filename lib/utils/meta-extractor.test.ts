@@ -115,6 +115,42 @@ describe("meta-extractor", () => {
       expect(meta).toBe("show");
     });
 
+    it("detects 'list' from a paginated list body with call/format entries", () => {
+      // Regression: a `rpg list.*` body has top-level `entries:` whose items
+      // carry `@[[...]]` call tokens. When getSectionInfo is unavailable (e.g.
+      // a programmatic previewMode.rerender on app load/reload), this source
+      // fallback must route it to the list handler — NOT misread it as
+      // rule.related, which rendered the entries as prose and leaked the
+      // `.block()` call to the rule-call processor ("View block not registered").
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        "name: Cantrips\n" +
+        "paginate: auto\n" +
+        "entries:\n" +
+        '  - "_Acid Splash_ (Conjuration) Acid bursts over foes."\n' +
+        '  - call: "@[[spells/cantrips/]].filter(source like /Arcane/).highlight().block(0)"\n' +
+        '    format: "*[[${name}]]* (${school}) ${summary}"\n';
+
+      expect(extractMeta(ctx, el, source)).toBe("list");
+    });
+
+    it("detects 'list' from a body with a top-level columns marker", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = "name: 1st Circle\ncolumns: 2\nentries:\n  - text: Burning Hands\n";
+
+      expect(extractMeta(ctx, el, source)).toBe("list");
+    });
+
+    it("still detects rule.related for a bare embed/call array (no list markers)", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = 'entries:\n  - "@[[Some Rule]].danger()"\n  - "![[Another]]"\nview: card\n';
+
+      expect(extractMeta(ctx, el, source)).toBe("rule.related");
+    });
+
     it("should detect 'system.skills' from skills key", () => {
       const ctx = createReadingViewContext();
       const el = createMockElement();

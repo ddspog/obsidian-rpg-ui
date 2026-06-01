@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-A censer, typically found in a priest's pack.
+A censer, typically found in a [[priest's pack]].
 ```

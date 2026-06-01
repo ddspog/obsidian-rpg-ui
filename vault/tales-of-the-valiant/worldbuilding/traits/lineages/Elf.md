@@ -37,7 +37,7 @@ Your elf character has the following hereditary traits. 
 **_Speed._** Your base walking speed is 30 feet. 
 
 ###### Heightened Senses
-You have advantage on [[Perception]] checks that rely on sight or hearing. You can see through [[Lightly Obscured]] areas normally and areas of [[Dim Light]] as if it were [[Bright Light]]. 
+You have advantage on [[Perception]] checks that rely on sight or hearing. You can see through [[lightly obscured]] areas normally and areas of dim light as if it were bright light. 
 ###### Magic Ancestry
 You have advantage on saves against being [[Charmed]], and magic can’t put you to sleep. 
 ###### Trance

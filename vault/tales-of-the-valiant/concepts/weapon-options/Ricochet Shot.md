@@ -12,5 +12,5 @@ Make an attack roll with this weapon against a target you can see that has half 
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].highlight().p(options)`
+  - `@[[Weapons]].highlight().bare(options)`
 ```

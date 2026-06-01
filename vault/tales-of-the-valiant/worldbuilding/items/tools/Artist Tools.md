@@ -21,7 +21,7 @@ Artist tools are used to create illustrated art objects and ornamental documents
 
 **_Components._** This tool kit includes brushes, spades, stirrers, inks, paints, a square and triangle, a canvas stretcher and an easel, and rolls of vellum, parchment, and canvas. 
 
-**_Craft Items._** Artist tools can be used to make art objects (also ink, druidic focus and [[Holy Symbol]]) with the crafting downtime activity (see **[[06. Playing the Game#Downtime Activities|Downtime Activities]]**) and [[07. Adventuring Options#Scroll Making|scribe]] *Spell Scrolls*.
+**_Craft Items._** Artist tools can be used to make art objects (also ink, [[druidic focus]] and [[holy symbol]]) with the crafting downtime activity (see **[[06. Playing the Game#Downtime Activities|Downtime Activities]]**) and [[07. Adventuring Options#Scroll Making|scribe]] [[Spell Scroll|spell scrolls]].
 
 ```rpg table.artist-tools-example-tasks
 |TASK|DC|

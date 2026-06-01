@@ -1,0 +1,334 @@
+/* ─── List block (rpg list.* — newspaper-flow reference lists) ──────────── */
+/*
+ * A book-style multi-column list: shaded uppercase heading bars (mirroring
+ * the feature.danger title treatment) followed by entry lines that flow and
+ * wrap across responsive columns, like the Tales of the Valiant spell lists.
+ *
+ * Consecutive `rpg list.*` blocks merge into one `.rpg-list__columns`
+ * container (Phase B) so their headings + lines pour continuously across the
+ * columns. Tune the bar tint via `--rpg-list-bar-bg`.
+ */
+
+.rpg-list {
+  --rpg-list-bar-bg: color-mix(in srgb, var(--text-title) 12%, transparent);
+  /* Vertical space reserved (outside the column box) for Obsidian's chrome
+   * (title/tab/status bars), the pill bar + pagination, and a margin of the
+   * note's own text above/below so the block doesn't fill the whole viewport.
+   * Tune to taste. */
+  --rpg-list-reserve: 18rem;
+  /* Minimum balanced column height before the layout drops a column
+   * (3→2→1), so short lists don't leave empty columns. */
+  --rpg-list-min-col-height: 14rem;
+
+  /* Column geometry + the width cap. The list invades the margins only as
+   * far as it takes to fit the chosen column count (`--rpg-list-max-cols`,
+   * set by the view from the measured content) — never the whole pane.
+   * `100cqi` (live pane content width, via the `container-type: inline-size`
+   * rule-block.css sets) clamps it on narrow panes so it never overflows. */
+  --rpg-list-col: 17rem;
+  --rpg-list-col-gap: var(--size-4-8, 2rem);
+  --rpg-list-max-cols: 3;
+  --rpg-list-cap: calc(
+    var(--rpg-list-max-cols) * var(--rpg-list-col) +
+    (var(--rpg-list-max-cols) - 1) * var(--rpg-list-col-gap)
+  );
+  --rpg-list-width: min(100cqi, var(--rpg-list-cap));
+
+  width: var(--rpg-list-width);
+  /* Center the widened box over the readable column. (100% − width)/2 is
+   * negative when the cap is wider than the text column, so the box bleeds
+   * symmetrically into both margins; positive (insets) if it's narrower. */
+  margin-inline: calc((100% - var(--rpg-list-width)) / 2);
+  box-sizing: border-box;
+
+  display: block;
+  margin-block: var(--size-4-5, 1.25rem) var(--size-4-3, 0.75rem);
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+
+/* Let the widened list escape Obsidian's fence wrappers instead of being
+ * clipped to the readable column. */
+.rpg-list-group,
+.el-pre:has(> .rpg-list-group),
+.el-pre:has(.rpg-list),
+[class*="block-language-"]:has(.rpg-list) {
+  overflow: visible;
+}
+
+
+/* ── Flowing multi-column container ── */
+.rpg-list__columns {
+  /* Hard-cap the column count (set by the view from the measured content +
+   * pane width). `column-count` — NOT `column-width` — so `balance` can't
+   * spill content into a phantom extra column to the right; any overflow stays
+   * vertical. The box width (on `.rpg-list`) tracks this count, so columns land
+   * at ~17rem each and content spreads evenly. */
+  column-count: var(--rpg-list-max-cols, 3);
+  column-fill: balance;
+  column-gap: var(--size-4-8, 2rem);
+  /* Subtle rule between columns, like a printed page. */
+  column-rule: 1px solid var(--background-modifier-border);
+  /* Keep one "page" of list within the viewport; overflow scrolls within the
+   * box (pagination keeps a page short enough to avoid it).
+   * `--rpg-list-reserve` leaves room for the heading/pills/pagination. */
+  max-height: calc(100vh - var(--rpg-list-reserve, 12rem));
+  overflow: hidden auto;
+}
+
+/* Hidden single-column box used to measure each row's height. Mirrors the
+ * display typography so measured heights match the real layout. */
+.rpg-list-measure {
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+
+/* A section is heading + its entries. It must NOT avoid breaking — long
+ * lists are meant to flow across the column boundary (per the reference). */
+.rpg-list__section {
+  margin: 0;
+}
+
+/* ── Shaded heading bar (shared treatment with .rpg-danger-card hgroup) ── */
+.rpg-list__heading {
+  display: block;
+  /* A bit of breathing room before the bar; tight gap to the entries after. */
+  margin: var(--size-4-4, 1rem) 0 var(--size-2-1, 0.15rem);
+  /* Keep the bar glued to the entries that follow; never orphan it at a
+   * column foot. */
+  break-after: avoid-column;
+  break-inside: avoid;
+}
+
+/* The first bar in the flow needs no space above it — what's above (the text,
+ * pills, or top of the box) already separates it. The top margin only exists
+ * to space later lists apart. Applies per page (the first section rendered)
+ * and in the measuring box. */
+.rpg-list__columns > .rpg-list__section:first-child > .rpg-list__heading,
+.rpg-list-measure > .rpg-list__section:first-child > .rpg-list__heading {
+  margin-top: 0;
+}
+
+.rpg-list__heading :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  padding: var(--size-2-2, 0.25rem) var(--size-4-2, 0.5rem);
+  background: var(--rpg-list-bar-bg);
+  color: var(--text-title);
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: var(--font-ui-medium, 1rem);
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-s, 4px);
+}
+
+.rpg-list__heading p {
+  margin: var(--size-2-2, 0.25rem) 0 0;
+}
+
+.rpg-list__heading small {
+  font-size: var(--font-ui-small);
+  font-style: italic;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+/* ── Entry lines: hanging indent so wrapped lines tuck under the first ── */
+.rpg-list__entries {
+  margin: 0 0 var(--size-4-4, 1rem);
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-list__entry {
+  margin: 0 0 var(--size-2-2, 0.25rem);
+  padding-left: 1.1em;
+  text-indent: -1.1em;
+  /* Smaller, denser text so lines stay readable once split into columns. */
+  font-size: var(--font-ui-small, 0.8125rem);
+  line-height: 1.3;
+  color: var(--text-normal);
+  /* Don't split a single line across columns mid-entry. */
+  break-inside: avoid;
+}
+
+/* <Markdown> wraps output in a <div><p>…</p></div>. Force it inline so the
+ * line reads as one run (italic name, school, summary) with the hanging
+ * indent applied to the <li>, not dropped onto its own block line. */
+.rpg-list__entry > div,
+.rpg-list__entry > div > :first-child {
+  display: inline;
+  margin: 0;
+}
+
+/* A rare multi-paragraph entry: later blocks resume normal flow. */
+.rpg-list__entry > div > * + * {
+  display: block;
+  text-indent: 0;
+  margin-top: var(--size-2-2, 0.25rem);
+}
+
+/* ── Highlighted entries (e.g. homebrew, via `.highlight()`) ── */
+/* The same faint diagonal "manga-panel" hatch the plugin uses elsewhere
+ * (`.rpg-call-highlight`, the `.p()` import highlight): a 135° repeating
+ * stripe in `--text-faint` over a transparent base — visible because it's
+ * dashed, but neutral and unintrusive (no color, no border). A
+ * `.highlight(_, color)` arg can still tint the hatch via `--rpg-list-hl`. */
+.rpg-list__entry--hl {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--rpg-list-hl, var(--text-faint, #999)) 22%, transparent) 4px,
+    color-mix(in srgb, var(--rpg-list-hl, var(--text-faint, #999)) 22%, transparent) 5px
+  );
+  border-radius: var(--radius-s, 4px);
+  padding-block: 0.1em;
+  padding-right: 0.35em;
+}
+
+.rpg-list__empty {
+  margin: 0 0 var(--size-4-4, 1rem);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Reserve a little space while entries resolve so layout doesn't jump. */
+.rpg-list--loading {
+  min-height: 2rem;
+}
+
+/* ── Pill bar — a framed carousel: the active pill centers, scroll/click to
+ * reach distant lists. Double rules top & bottom frame the strip. ── */
+.rpg-list__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  /* `safe center` centers the pills when they fit, but falls back to the
+   * start (so the carousel stays scrollable) when they overflow. */
+  justify-content: safe center;
+  gap: var(--size-2-3, 0.375rem);
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  padding: var(--size-4-2, 0.5rem) 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  border-top: 3px double color-mix(in srgb, var(--text-title) 22%, transparent);
+  border-bottom: 3px double color-mix(in srgb, var(--text-title) 22%, transparent);
+  /* Hidden scrollbar: the carousel is driven by centering the active pill
+   * (click an edge pill to walk toward distant lists) + trackpad scroll. */
+  scrollbar-width: none;
+}
+
+.rpg-list__chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* `button.` prefix raises specificity to (0,1,1) to beat Obsidian's
+ * `button:not(.clickable-icon)` (background + input-shadow); plugin CSS loads
+ * after app.css so the tie resolves in our favor. */
+button.rpg-list__chip {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  padding: 0.18rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+button.rpg-list__chip:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+button.rpg-list__chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent, var(--color-accent));
+}
+
+/* Active = a mini heading bar: the same warm tint, a touch stronger so it
+ * reads clearly at pill size. No weight change (avoids width reflow). */
+button.rpg-list__chip--active,
+button.rpg-list__chip--active:hover {
+  background: color-mix(in srgb, var(--text-title) 24%, var(--background-secondary));
+  color: var(--text-title);
+  border-color: color-mix(in srgb, var(--text-title) 45%, transparent);
+}
+
+/* ── Pagination controls — same ghost-border / warm-hover vocabulary ── */
+.rpg-list__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-4-2, 0.5rem);
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.rpg-list__page-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+button.rpg-list__page-arrow:hover:not(:disabled) {
+  color: var(--text-title);
+}
+
+button.rpg-list__page-arrow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent, var(--color-accent));
+}
+
+button.rpg-list__page-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Position cue: current page emphasized in the warm title color, total muted. */
+.rpg-list__page-indicator {
+  min-width: 3.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-list__page-indicator strong {
+  color: var(--text-title);
+  font-weight: 700;
+}
+
+/* Continuation bars (a list spilling onto the next page) read slightly muted. */
+.rpg-list__heading--cont :is(h1, h2, h3, h4, h5, h6) {
+  opacity: 0.75;
+}
+

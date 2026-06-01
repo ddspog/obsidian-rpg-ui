@@ -64,18 +64,18 @@ choose:
       - [[Survival]]
 
 ---
-**Armor:** [[Light Armor]], [[Medium Armor]], and [[Shields]]
-**Weapons:** [[Simple]] weapons, [[Martial]] weapons
-**Tools:** Your choice of [[Herbalist Tools]], [[Navigator Tools]], or Trapper Tools
+**Armor:** [[Light armor]], [[medium armor]], and [[shields]]
+**Weapons:** [[Simple|Simple weapons]], [[Martial|martial weapons]]
+**Tools:** Your choice of [[herbalist tools]], [[navigator tools]], or trapper tools
 **Saves:** STR, DEX
 **Skills:** Choose three from [[Animal Handling]], [[Athletics]], [[Insight]], [[Investigation]], [[Nature]], [[Perception]], [[Stealth]], and [[Survival]]
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
-- _(a)_ scale mail or _(b)_ [[Leather]] armor 
-- _(a)_ two [[Shortsword]] or _(b)_ two [[Simple]] weapons 
-- _(a)_ a dungeoneer's pack or _(b)_ an explorer's pack 
-- A [[Longbow]] and [[Quiver]] of 20 [[Arrows]] 
+- _(a)_ scale mail or _(b)_ [[leather|leather armor]]
+- _(a)_ [[Shortsword|two shortsword]] or _(b)_ [[Simple|two simple weapons]] 
+- _(a)_ [[dungeoneer's pack|a dungeoneer's pack]] or _(b)_ [[explorer's pack|an explorer's pack]] 
+- [[longbow|A longbow]] and [[quiver]] of [[Arrows|20 arrows]] 
 ```rpg table.progression
 | RANGER PROGRESSION  ||| PRIMORDIAL SPELL SLOTS BY CIRCLE      ||||||
 | LEVEL | PB | FEATURES | SPELLS KNOWN | 1ST | 2ND | 3RD | 4TH | 5TH |
@@ -371,12 +371,12 @@ subtitle: 9th-Level Ranger Feature
 level: 9
 bonus:
   text: |
-    While you are in [[Dim Light]], darkness, or are [[Lightly Obscured]] or heavily obscured by foliage, mist, or some other natural phenomenon, you can use a bonus action to magically become [[invisible]], along with any equipment you are wearing or carrying, until the start of your next turn. This invisibility ends early if you attack or cast a spell.
+    While you are in dim light, darkness, or are [[lightly obscured]] or heavily obscured by foliage, mist, or some other natural phenomenon, you can use a bonus action to magically become [[invisible]], along with any equipment you are wearing or carrying, until the start of your next turn. This invisibility ends early if you attack or cast a spell.
     max: PB
     recharge: on long rest
 
 ---
-While you are in [[Dim Light]], darkness, or are [[Lightly Obscured]] or heavily obscured by foliage, mist, or some other natural phenomenon, you can use a bonus action to magically become [[invisible]], along with any equipment you are wearing or carrying, until the start of your next turn. This invisibility ends early if you attack or cast a spell. 
+While you are in dim light, darkness, or are [[lightly obscured]] or heavily obscured by foliage, mist, or some other natural phenomenon, you can use a bonus action to magically become [[invisible]], along with any equipment you are wearing or carrying, until the start of your next turn. This invisibility ends early if you attack or cast a spell. 
 
 You can use this feature a number of times equal to your PB and regain all uses when you complete a long rest.
 ```

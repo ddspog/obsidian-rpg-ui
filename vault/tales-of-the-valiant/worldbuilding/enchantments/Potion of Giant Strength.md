@@ -19,7 +19,7 @@ variants:
     - { type_of_giant: "Cloud Giant", strength: 27, rarity: "Very Rare", cost: "1,500 gp" }
     - { type_of_giant: "Storm Giant", strength: 29, rarity: Legendary, cost: "10,500 gp" }
 ---
-When you drink this potion, your STR score changes for 1 hour. The type of Giant determines the score, as shown on the **Potion of Giant Strength Type** table. The potion has no effect if your STR score equals or exceeds that score. 
+When you drink this potion, your STR score changes for 1 hour. The type of [[Giant]] determines the score, as shown on the **Potion of Giant Strength Type** table. The potion has no effect if your STR score equals or exceeds that score. 
 
 This potion’s transparent liquid has floating in it a sliver of fingernail from a giant of the appropriate type. The [[potion of frost giant strength]] and the [[potion of stone giant strength]] have the same effect.
 ```

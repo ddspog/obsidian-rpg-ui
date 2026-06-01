@@ -21,9 +21,10 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-A small box for alms, typically found in a priest's pack.
-
-![[05. Equipment & Magic Items#^f84166|no-ct clean]]
-
-![[05. Equipment & Magic Items#^5f36d4|clean]]
+A small box for alms, typically found in a [[priest's pack]].
+```
+```rpg rule.related
+view: footer
+entries:
+  - `@[[Container Capacity]].bare()`
 ```

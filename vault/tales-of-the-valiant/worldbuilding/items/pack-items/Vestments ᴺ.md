@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-Religious clothing, typically found in a priest's pack.
+Religious clothing, typically found in a [[priest's pack]].
 ```

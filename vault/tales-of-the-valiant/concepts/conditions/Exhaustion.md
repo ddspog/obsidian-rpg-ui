@@ -2,7 +2,6 @@
 .metadata:
 cssclasses:
   - note-feature
-  - rpg-ui
 .CONDITION:
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
@@ -11,7 +10,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 
 If an already exhausted creature suffers another effect that causes exhaustion, its current level of exhaustion increases by the amount specified in the effect’s description. 
 
-A creature suffers the effect of its current level of exhaustion as well as all lower levels. For example, a creature suffering two levels of exhaustion has its speed halved and has disadvantage on ability checks. 
+A creature suffers the effect of its current level of exhaustion as well as all lower levels. For example, a creature suffering two levels of exhaustion has its speed halved and has [[disadvantage]] on ability checks. 
 
 An effect that removes exhaustion reduces its level as specified in the effect’s description. All exhaustion effects end if a creature’s exhaustion level is reduced below one. 
 
@@ -20,9 +19,9 @@ Finishing a long rest reduces a creature’s exhaustion level by one, provided t
 ```tx
 |LEVEL|EFFECT|
 |---|---|
-|1|Disadvantage on ability checks|
+|1|[[Disadvantage]] on ability checks|
 |2|Speed halved|
-|3|Disadvantage on attack rolls and saves|
+|3|[[Disadvantage]] on attack rolls and saves|
 |4|Hit point maximum halved|
 |5|Speed reduced to 0|
 |6|Death|

@@ -22,7 +22,7 @@ export {
   SIDE_PRESETS,
   subtypeFromMeta,
 } from "./parse-rule-block";
-export { isHomebrew, resolveSource } from "./source";
+export { isHomebrew, isHomebrewForFile, resolveSource } from "./source";
 export { RuleContentRenderChild } from "./render-rule-block";
 export { RuleRelatedRenderChild } from "./render-related";
 export { RuleNotesRenderChild } from "./render-notes";

@@ -34,6 +34,7 @@ import featureDetails from "./blocks/feature/details";
 import featureChoice from "./blocks/feature/choice";
 import featureUnlock from "./blocks/feature/unlock";
 import featureLevel from "./blocks/feature/level";
+import featureDanger from "./blocks/feature/danger";
 import stat from "./entities/stat";
 
 // Per-system rule view registry — picked up by the rule-call processor
@@ -105,6 +106,7 @@ export const system = CreateSystem(async ({ wiki }) => ({
         choice: featureChoice,
         unlock: featureUnlock,
         level: featureLevel,
+        danger: featureDanger,
       },
     })),
 

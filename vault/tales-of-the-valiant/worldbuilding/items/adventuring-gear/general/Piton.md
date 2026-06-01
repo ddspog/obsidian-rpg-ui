@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-When a wall doesn’t offer handholds and footholds, you can make your own. A piton is a steel spike with an eye through which you can loop a rope.
+When a wall doesn’t offer handholds and footholds, you can make your own. A piton is a steel spike with an eye through which you can loop [[Rope (50 feet)|a rope]].
 ```

@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-A block of incense, typically found in a priest's pack.
+A block of incense, typically found in a [[priest's pack]].
 ```

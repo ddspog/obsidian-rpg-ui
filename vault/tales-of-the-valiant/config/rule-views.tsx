@@ -21,12 +21,13 @@ import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFea
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
+import { DangerCard } from "./blocks/feature/danger";
 
-/** Heading text: use explicit `name` from frontmatter, or undefined if absent. */
-function headingText(ctx: RuleViewCtx): string | undefined {
+/** Heading text: frontmatter `name`, falling back to filename. */
+function headingText(ctx: RuleViewCtx): string {
   const fm = ctx.frontmatter as Record<string, unknown>;
   if (typeof fm.name === "string" && fm.name) return fm.name;
-  return undefined;
+  return ctx.name;
 }
 
 function resolvePath(obj: Record<string, unknown>, path: string): unknown {
@@ -173,6 +174,47 @@ function StatblockCall({ parsed, body, view, sourcePath }: {
   });
 }
 
+/**
+ * Pull the first `rpg feature.danger` fence out of a file body and parse it
+ * into DangerCard props. `.danger()` runs as a `raw` view so the fence
+ * survives intact in `ctx.content` (it isn't inlined to its body); this
+ * mirrors the inline fence parse the `stat` view does.
+ */
+function extractDangerBlock(content: string): Record<string, unknown> | null {
+  const fenceRe = /```+\s*rpg\s+feature\.danger\s*\n([\s\S]*?)```+/;
+  const m = fenceRe.exec(content);
+  if (!m) return null;
+  const raw = m[1];
+  const sepIdx = raw.indexOf("\n---\n");
+  const sepEnd = raw.indexOf("\n---");
+  const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
+  const headText = effectiveSep >= 0 ? raw.slice(0, effectiveSep) : raw;
+  const bodyText =
+    effectiveSep >= 0 ? raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") : "";
+
+  // Parse the flat `key: value` head ourselves rather than via a YAML lib:
+  // the system bundle's `require` shim returns {} for "yaml", so `parse`
+  // would be undefined and every field silently dropped (only the body
+  // survives). The danger head is single-line scalars (name, type, trigger,
+  // effects, resolution); splitting on the first colon also tolerates ": "
+  // appearing inside a value.
+  const parsed: Record<string, unknown> = {};
+  for (const line of headText.split("\n")) {
+    const lm = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
+    if (!lm) continue;
+    let val = lm[2].trim();
+    if (
+      val.length >= 2 &&
+      ((val[0] === '"' && val.endsWith('"')) || (val[0] === "'" && val.endsWith("'")))
+    ) {
+      val = val.slice(1, -1);
+    }
+    parsed[lm[1]] = val;
+  }
+  if (bodyText) parsed.text = bodyText;
+  return parsed;
+}
+
 export const ruleViews: RuleViewMap = {
   /**
    * Heading-prefixed views. Pick the level that nests correctly under
@@ -193,19 +235,22 @@ export const ruleViews: RuleViewMap = {
    * Rest of body flows below. Block-level container.
    *
    *   `@[[rules/combat]].p(grapple)`
+   *   `@[[rules/combat]].p(grapple, name: "${name} (${cost})")`
    */
   p: {
     mode: "join",
     render: (ctx) => {
-      const name = headingText(ctx);
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
+        ?? headingText(ctx);
       let source: string;
       if (name) {
-        const firstNl = ctx.content.indexOf("\n");
+        const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
+        const firstNl = content.indexOf("\n");
         source = firstNl >= 0
-          ? `***${name}.*** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-          : `***${name}.*** ${ctx.content}`;
+          ? `***${name}.*** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
+          : `***${name}.*** ${content}`;
       } else {
-        source = ctx.content;
+        source = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       }
       return React.createElement(
         "div",
@@ -221,19 +266,22 @@ export const ruleViews: RuleViewMap = {
    * / tables breaks out naturally.
    *
    *   `@[[rules/combat]].inline(grapple)`
+   *   `@[[rules/combat]].inline(grapple, name: "${name} (${cost})")`
    */
   inline: {
     mode: "join",
     render: (ctx) => {
-      const name = headingText(ctx);
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
+        ?? headingText(ctx);
       let source: string;
       if (name) {
-        const firstNl = ctx.content.indexOf("\n");
+        const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
+        const firstNl = content.indexOf("\n");
         source = firstNl >= 0
-          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-          : `**${name}.** ${ctx.content}`;
+          ? `**${name}.** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
+          : `**${name}.** ${content}`;
       } else {
-        source = ctx.content;
+        source = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       }
       return React.createElement(
         "span",
@@ -312,20 +360,29 @@ export const ruleViews: RuleViewMap = {
   },
 
   /**
-   * Callout side block — in-flow ornate certificate. Extra arg: type.
+   * Callout side block — in-flow ornate certificate.
    *
-   *   `@[[rules/combat]].callout(grapple)`          — default type: rules
-   *   `@[[rules/combat]].callout(grapple, warning)` — type=warning
+   *   `@[[rules/combat]].callout(grapple)`              — default type: rules
+   *   `@[[rules/combat]].callout(grapple, warning)`     — type=warning
+   *   `@[[file]].callout(type: rules)`                  — whole file, named type
+   *   `@[[file]].callout(type: rules, name: "Custom")`  — with name override
    */
   callout: {
     mode: "args",
     render: (ctx, args) => {
-      const preset = (typeof args?.[0] === "string" ? args[0] : "rules") as SidePreset;
+      const preset = (
+        (typeof ctx.params?.type === "string" ? ctx.params.type : undefined)
+        ?? (typeof args?.[0] === "string" ? args[0] : undefined)
+        ?? "rules"
+      ) as SidePreset;
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
+        ?? headingText(ctx);
+      const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       return React.createElement(RuleSide, {
         variant: "callout",
         type: preset,
-        title: headingText(ctx),
-        content: ctx.content,
+        title: name,
+        content,
         sourcePath: ctx.file,
       });
     },
@@ -508,6 +565,35 @@ export const ruleViews: RuleViewMap = {
       return React.createElement(ItemMagicCard, {
         data,
         renderMarkdown: (src: string) => React.createElement(Markdown, { source: src, sourcePath: ctx.file }),
+      });
+    },
+  },
+
+  /**
+   * Hazard import: renders the `feature.danger` block from the target file as
+   * a book-style danger card (title, category subtitle, description, then
+   * run-in Trigger / Effects / Resolution). Works on a single file or every
+   * file in a folder, exactly like `.magic()` / `.stat()` — the call
+   * processor hands the raw file body (fence intact) in `ctx.content`.
+   *
+   *   `@[[Extreme Cold]].danger()`   — one hazard
+   *   `@[[hazards/]].danger()`       — every hazard in the folder
+   */
+  danger: {
+    mode: "join",
+    render: (ctx) => {
+      const block = extractDangerBlock(ctx.content);
+      if (!block) return null;
+      const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+      return React.createElement(DangerCard, {
+        name: str(block.name) ?? ctx.name,
+        type: str(block.type),
+        trigger: str(block.trigger),
+        effects: str(block.effects),
+        resolution: str(block.resolution),
+        text: str(block.text),
+        heading: typeof block.heading === "number" ? block.heading : undefined,
+        sourcePath: ctx.file,
       });
     },
   },

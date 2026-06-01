@@ -145,6 +145,17 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
 - Blending into a crowd to get the sense of key topics of conversation
 ````
 `````
+### When Attacking
+```rpg rule.content
+id: weapon-attack
+---
+The ability modifier for a melee weapon attack is STR, and the ability modifier for a ranged weapon attack is DEX. Weapons with the [[Finesse]] or [[Thrown]] property break this rule; see [[Weapons|Weapon Properties]] for more on that.
+```
+```rpg rule.content
+id: spell-attack
+---
+Some spells also require an attack roll. The ability modifier used for a spell attack depends on the spellcasting ability of the spellcaster. For more on this, see the [[07. Spellcasting|Spell Attack Rolls]] section.
+```
 ## Ability Checks
 ````rpg rule.content
 id: ability-checks

@@ -12,5 +12,5 @@ You can see through [[Lightly Obscured]] areas normally and areas of dim light a
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Senses#Vision and Obscured Areas]].highlight().bare(LIGHT)`
+  - `@[[Senses#Vision and Obscured Areas]].bare(LIGHT)`
 ```

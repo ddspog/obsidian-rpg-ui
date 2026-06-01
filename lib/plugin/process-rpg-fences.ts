@@ -27,6 +27,8 @@ import { RuleNotesRenderChild } from "lib/domains/rules/render-notes";
 import { RuleTabRenderChild } from "lib/domains/rules/render-tab-group";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
+import { parseListBlock } from "lib/domains/lists/parse-list-block";
+import { ListRenderChild } from "lib/domains/lists/render-list-group";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { detectMetaFromSource } from "lib/utils/meta-extractor";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -87,6 +89,19 @@ export function processUnrenderedRpgFences(
           })(el);
           parent.addChild(child);
         }
+      } catch (err) {
+        el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
+      }
+      continue;
+    }
+
+    // List blocks (rpg list.<name>) — newspaper-flow reference lists.
+    if (meta === "list" || meta.startsWith("list.")) {
+      const listName = meta.startsWith("list.") ? meta.slice("list.".length) : "";
+      try {
+        const block = parseListBlock(listName, source);
+        const child = new ListRenderChild(el, app, block, sourcePath);
+        parent.addChild(child);
       } catch (err) {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }

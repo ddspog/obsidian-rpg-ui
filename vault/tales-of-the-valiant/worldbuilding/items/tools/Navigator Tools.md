@@ -23,7 +23,7 @@ Navigator tools are used to read and draw maps, find your path or prevent you fr
 
 **_Components._** This tool kit includes quills, ink, and parchment along with two compasses, calipers, and a ruler as well as a sextant or telescope. 
 
-**_Draw Map._** Navigator tools can be used to create accurate maps while traveling, which grant advantage on checks made to prevent becoming lost. 
+**_Draw Map._** Navigator tools can be used to create accurate maps while traveling, which grant [[advantage]] on checks made to prevent becoming lost. 
 
 ```rpg table.navigation-tools-example-tasks
 |TASK|DC|

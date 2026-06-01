@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-Barding is armor designed to protect a mount’s head, neck, chest, and body. Any type of armor shown on the **Armor** table in this chapter can be purchased as barding. The cost of barding is four times the equivalent armor made for Humanoids and weighs twice as much. 
+Barding is armor designed to protect a mount’s head, neck, chest, and body. Any type of armor shown on the [[Armor]] table in this chapter can be purchased as barding. The cost of barding is four times the equivalent armor made for [[Humanoid|humanoids]] and weighs twice as much. 
 ```

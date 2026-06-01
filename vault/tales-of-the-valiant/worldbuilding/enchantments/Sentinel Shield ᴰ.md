@@ -15,5 +15,5 @@ traits:
   Initiative A.: true
   Skill A.: "[[Perception]]"
 ---
-While holding this Shield, you have Advantage on Initiative rolls and Wisdom ([[Perception]]) checks. The Shield is emblazoned with a symbol of an eye.
+While holding this Shield, you have [[advantage]] on [[Initiative]] rolls and Wisdom ([[Perception]]) checks. The Shield is emblazoned with a symbol of an eye.
 ```

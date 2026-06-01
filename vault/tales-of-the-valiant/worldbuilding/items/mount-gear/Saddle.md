@@ -18,5 +18,5 @@ shop:
     - "[[Premium]]"
     - "[[Rural]]"
 ---
-A saddle braces the rider, helping you keep your seat in battle. It gives you advantage on any ability check or save you make to remain mounted. At the GM’s discretion, a saddle crafted for an unusually sized or shaped mount might double or triple the cost.
+A saddle braces the rider, helping you keep your seat in battle. It gives you [[advantage]] on any ability check or save you make to remain mounted. At the GM’s discretion, a saddle crafted for an unusually sized or shaped mount might double or triple the cost.
 ```

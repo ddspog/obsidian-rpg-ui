@@ -108,7 +108,7 @@ traits:
 ```rpg table.augmented-enhancement
 |LOCAL|ENHANCEMENTS|COST|DESCRIPTION|
 |---|---|---|---|
-|Back|Falling wings|2|When you fall or are falling at the start of your turn, you can use your reaction to stop your fall, sprouting spectral and magic wings and hovering in place for 1 minute or until you become incapacitated or die. While hovering in this way, you can use your movement to move through the air horizontally or descend. Once you use this trait, you can’t use it again until you finish a short or long rest.|
+|Back|Falling wings|2|When you fall or are falling at the start of your turn, you can use your reaction to stop your fall, sprouting spectral and magic wings and hovering in place for 1 minute or until you become [[incapacitated]] or die. While hovering in this way, you can use your movement to move through the air horizontally or descend. Once you use this trait, you can’t use it again until you finish a short or long rest.|
 |Brain|Knowledge Implant|2|You have proficiency in one of the following skills of your choice: [[Arcana]], [[History]], [[Investigation]], [[Nature]], or [[Religion]]. Alternatively, you can speak, read, and write two additional languages of your choice.|
 |Eyes|Advanced Metrics Scanner|2|You have a bionic eye that outputs information about your surroundings. Choose one of the following benefits when you select this trait: you have proficiency in either the [[Insight]] or [[Perception]] skill (your choice), or you can add half your proficiency bonus to your initiative rolls.|
 |Neck|Guardian Bubble|3|You can project and retract a magic bubble around you with eternal breathable air (no action required). You can use this to breath on void, water, and around toxic gas.|

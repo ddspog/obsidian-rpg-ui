@@ -39,7 +39,7 @@ var __system_module = (() => {
     ruleViews: () => ruleViews,
     system: () => system
   });
-  var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
+  var import_rpg_ui_toolkit23 = __require("rpg-ui-toolkit");
 
   // vault:tales-of-the-valiant/config/attributes.ts
   var attributes = [
@@ -5416,16 +5416,57 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   };
   var level_default = level;
 
-  // vault:tales-of-the-valiant/config/entities/stat.tsx
-  var import_rpg_ui_toolkit20 = __require("rpg-ui-toolkit");
-
-  // vault:tales-of-the-valiant/config/blocks/stat/vehicle.tsx
+  // vault:tales-of-the-valiant/config/blocks/feature/danger.tsx
   var React21 = __toESM(__require("react"));
   var import_rpg_ui_toolkit19 = __require("rpg-ui-toolkit");
+  function Mechanic({
+    label,
+    value,
+    sourcePath
+  }) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    return /* @__PURE__ */ React21.createElement("div", { className: "rpg-danger-card__mechanic" }, /* @__PURE__ */ React21.createElement("dt", null, label), /* @__PURE__ */ React21.createElement("dd", null, /* @__PURE__ */ React21.createElement(import_rpg_ui_toolkit19.Markdown, { source: value.trim(), sourcePath })));
+  }
+  function DangerCard({
+    name,
+    type,
+    trigger,
+    effects,
+    resolution,
+    text,
+    heading,
+    sourcePath
+  }) {
+    const HeadingTag = `h${Math.max(1, Math.min(6, heading != null ? heading : 3))}`;
+    const hasMechanics = [trigger, effects, resolution].some(
+      (v) => typeof v === "string" && v.trim()
+    );
+    return /* @__PURE__ */ React21.createElement("article", { className: "rpg-danger-card", "aria-label": `Danger ${name != null ? name : ""}`.trim() }, /* @__PURE__ */ React21.createElement("hgroup", null, /* @__PURE__ */ React21.createElement(HeadingTag, null, name), type && /* @__PURE__ */ React21.createElement("p", null, /* @__PURE__ */ React21.createElement("small", { "aria-details": "Danger Type" }, type))), text && /* @__PURE__ */ React21.createElement(import_rpg_ui_toolkit19.Markdown, { source: text, sourcePath, className: "rpg-danger-card__desc" }), hasMechanics && /* @__PURE__ */ React21.createElement("dl", { className: "rpg-danger-card__mechanics" }, /* @__PURE__ */ React21.createElement(Mechanic, { label: "Trigger", value: trigger, sourcePath }), /* @__PURE__ */ React21.createElement(Mechanic, { label: "Effects", value: effects, sourcePath }), /* @__PURE__ */ React21.createElement(Mechanic, { label: "Resolution", value: resolution, sourcePath })));
+  }
+  var danger = ({ self }) => /* @__PURE__ */ React21.createElement(
+    DangerCard,
+    {
+      name: self.name,
+      type: self.type,
+      trigger: self.trigger,
+      effects: self.effects,
+      resolution: self.resolution,
+      text: self.text,
+      heading: self.heading
+    }
+  );
+  var danger_default = danger;
+
+  // vault:tales-of-the-valiant/config/entities/stat.tsx
+  var import_rpg_ui_toolkit21 = __require("rpg-ui-toolkit");
+
+  // vault:tales-of-the-valiant/config/blocks/stat/vehicle.tsx
+  var React22 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit20 = __require("rpg-ui-toolkit");
   var vehicle = ({ self }) => {
     var _a, _b;
-    const [resolved, setResolved] = React21.useState([]);
-    React21.useEffect(() => {
+    const [resolved, setResolved] = React22.useState([]);
+    React22.useEffect(() => {
       var _a2, _b2, _c, _d;
       if (!self.features || self.features.length === 0) {
         setResolved([]);
@@ -5440,7 +5481,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         type: self.type,
         dimensions: self.dimensions
       };
-      (0, import_rpg_ui_toolkit19.resolveStatFeatures)(self.features, sourcePath, selfProps).then(
+      (0, import_rpg_ui_toolkit20.resolveStatFeatures)(self.features, sourcePath, selfProps).then(
         (results) => {
           if (!cancelled) setResolved(results);
         }
@@ -5449,8 +5490,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         cancelled = true;
       };
     }, [self.features, self.name]);
-    return /* @__PURE__ */ React21.createElement(
-      import_rpg_ui_toolkit19.StatblockVehicle,
+    return /* @__PURE__ */ React22.createElement(
+      import_rpg_ui_toolkit20.StatblockVehicle,
       {
         name: self.name,
         size: self.size,
@@ -5467,7 +5508,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var vehicle_default = vehicle;
 
   // vault:tales-of-the-valiant/config/entities/stat.tsx
-  var stat = (0, import_rpg_ui_toolkit20.CreateEntity)(() => ({
+  var stat = (0, import_rpg_ui_toolkit21.CreateEntity)(() => ({
     blocks: {
       vehicle: vehicle_default
     }
@@ -5475,12 +5516,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var stat_default = stat;
 
   // vault:tales-of-the-valiant/config/rule-views.tsx
-  var import_rpg_ui_toolkit21 = __require("rpg-ui-toolkit");
-  var React22 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
+  var React23 = __toESM(__require("react"));
   function headingText(ctx) {
     const fm = ctx.frontmatter;
     if (typeof fm.name === "string" && fm.name) return fm.name;
-    return void 0;
+    return ctx.name;
   }
   function resolvePath(obj, path) {
     let cur = obj;
@@ -5497,13 +5538,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     let m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > cursor) {
-        parts.push(React22.createElement(React22.Fragment, { key: `t${cursor}` }, text.slice(cursor, m.index)));
+        parts.push(React23.createElement(React23.Fragment, { key: `t${cursor}` }, text.slice(cursor, m.index)));
       }
       const inner = m[1];
       const pipe = inner.indexOf("|");
       const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
       const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop().trim();
-      parts.push(React22.createElement("a", {
+      parts.push(React23.createElement("a", {
         key: `l${m.index}`,
         className: "internal-link",
         href: target,
@@ -5512,9 +5553,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       cursor = m.index + m[0].length;
     }
     if (cursor < text.length) {
-      parts.push(React22.createElement(React22.Fragment, { key: `t${cursor}` }, text.slice(cursor)));
+      parts.push(React23.createElement(React23.Fragment, { key: `t${cursor}` }, text.slice(cursor)));
     }
-    return React22.createElement(React22.Fragment, null, ...parts);
+    return React23.createElement(React23.Fragment, null, ...parts);
   }
   function headingView(level2) {
     const Tag = `h${level2}`;
@@ -5522,11 +5563,11 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       mode: "join",
       render: (ctx) => {
         const title = headingText(ctx);
-        return React22.createElement(
+        return React23.createElement(
           "section",
           { className: `rpg-view rpg-view--h${level2}` },
-          title ? React22.createElement(Tag, null, title) : null,
-          React22.createElement(import_rpg_ui_toolkit21.Markdown, { source: ctx.content, sourcePath: ctx.file })
+          title ? React23.createElement(Tag, null, title) : null,
+          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file })
         );
       }
     };
@@ -5581,24 +5622,24 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     }).filter((x) => x !== null);
   }
   function StatblockCall({ parsed, body, view, sourcePath }) {
-    const [resolved, setResolved] = React22.useState([]);
-    const features2 = React22.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
+    const [resolved, setResolved] = React23.useState([]);
+    const features2 = React23.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
     const name = typeof parsed.name === "string" ? parsed.name : "";
-    React22.useEffect(() => {
+    React23.useEffect(() => {
       if (features2.length === 0) {
         setResolved([]);
         return;
       }
       let cancelled = false;
       const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
-      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(features2, sourcePath, selfProps).then((r) => {
+      (0, import_rpg_ui_toolkit22.resolveStatFeatures)(features2, sourcePath, selfProps).then((r) => {
         if (!cancelled) setResolved(r);
       });
       return () => {
         cancelled = true;
       };
     }, [features2, name, sourcePath]);
-    return React22.createElement(import_rpg_ui_toolkit21.StatblockVehicle, {
+    return React23.createElement(import_rpg_ui_toolkit22.StatblockVehicle, {
       name,
       size: typeof parsed.size === "string" ? parsed.size : "",
       type: typeof parsed.type === "string" ? parsed.type : "",
@@ -5610,6 +5651,29 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       view,
       sourcePath
     });
+  }
+  function extractDangerBlock(content) {
+    const fenceRe = /```+\s*rpg\s+feature\.danger\s*\n([\s\S]*?)```+/;
+    const m = fenceRe.exec(content);
+    if (!m) return null;
+    const raw = m[1];
+    const sepIdx = raw.indexOf("\n---\n");
+    const sepEnd = raw.indexOf("\n---");
+    const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
+    const headText = effectiveSep >= 0 ? raw.slice(0, effectiveSep) : raw;
+    const bodyText = effectiveSep >= 0 ? raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") : "";
+    const parsed = {};
+    for (const line of headText.split("\n")) {
+      const lm = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
+      if (!lm) continue;
+      let val = lm[2].trim();
+      if (val.length >= 2 && (val[0] === '"' && val.endsWith('"') || val[0] === "'" && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      parsed[lm[1]] = val;
+    }
+    if (bodyText) parsed.text = bodyText;
+    return parsed;
   }
   var ruleViews = {
     /**
@@ -5630,23 +5694,26 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
      * Rest of body flows below. Block-level container.
      *
      *   `@[[rules/combat]].p(grapple)`
+     *   `@[[rules/combat]].p(grapple, name: "${name} (${cost})")`
      */
     p: {
       mode: "join",
       render: (ctx) => {
-        const name = headingText(ctx);
+        var _a, _b, _c, _d;
+        const name = (_b = typeof ((_a = ctx.params) == null ? void 0 : _a.name) === "string" ? ctx.params.name : void 0) != null ? _b : headingText(ctx);
         let source;
         if (name) {
-          const firstNl = ctx.content.indexOf("\n");
-          source = firstNl >= 0 ? `***${name}.*** ${ctx.content.slice(0, firstNl)}
-${ctx.content.slice(firstNl)}` : `***${name}.*** ${ctx.content}`;
+          const content = typeof ((_c = ctx.params) == null ? void 0 : _c.content) === "string" ? ctx.params.content : ctx.content;
+          const firstNl = content.indexOf("\n");
+          source = firstNl >= 0 ? `***${name}.*** ${content.slice(0, firstNl)}
+${content.slice(firstNl)}` : `***${name}.*** ${content}`;
         } else {
-          source = ctx.content;
+          source = typeof ((_d = ctx.params) == null ? void 0 : _d.content) === "string" ? ctx.params.content : ctx.content;
         }
-        return React22.createElement(
+        return React23.createElement(
           "div",
           { className: "rpg-view rpg-view--p" },
-          React22.createElement(import_rpg_ui_toolkit21.Markdown, { source, sourcePath: ctx.file })
+          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5656,23 +5723,26 @@ ${ctx.content.slice(firstNl)}` : `***${name}.*** ${ctx.content}`;
      * / tables breaks out naturally.
      *
      *   `@[[rules/combat]].inline(grapple)`
+     *   `@[[rules/combat]].inline(grapple, name: "${name} (${cost})")`
      */
     inline: {
       mode: "join",
       render: (ctx) => {
-        const name = headingText(ctx);
+        var _a, _b, _c, _d;
+        const name = (_b = typeof ((_a = ctx.params) == null ? void 0 : _a.name) === "string" ? ctx.params.name : void 0) != null ? _b : headingText(ctx);
         let source;
         if (name) {
-          const firstNl = ctx.content.indexOf("\n");
-          source = firstNl >= 0 ? `**${name}.** ${ctx.content.slice(0, firstNl)}
-${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
+          const content = typeof ((_c = ctx.params) == null ? void 0 : _c.content) === "string" ? ctx.params.content : ctx.content;
+          const firstNl = content.indexOf("\n");
+          source = firstNl >= 0 ? `**${name}.** ${content.slice(0, firstNl)}
+${content.slice(firstNl)}` : `**${name}.** ${content}`;
         } else {
-          source = ctx.content;
+          source = typeof ((_d = ctx.params) == null ? void 0 : _d.content) === "string" ? ctx.params.content : ctx.content;
         }
-        return React22.createElement(
+        return React23.createElement(
           "span",
           { className: "rpg-view rpg-view--inline" },
-          React22.createElement(import_rpg_ui_toolkit21.Markdown, { source, sourcePath: ctx.file })
+          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5700,10 +5770,10 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           source = ctx.content;
         }
         const style = level2 > 1 ? { marginInlineStart: `${3.5 + (level2 - 2) * 1.5}em` } : void 0;
-        return React22.createElement(
+        return React23.createElement(
           "li",
           { className: "rpg-view rpg-view--item", style },
-          React22.createElement(import_rpg_ui_toolkit21.Markdown, { source, sourcePath: ctx.file })
+          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5715,7 +5785,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     bare: {
       mode: "join",
       raw: true,
-      render: (ctx) => React22.createElement(import_rpg_ui_toolkit21.Markdown, { source: ctx.content, sourcePath: ctx.file })
+      render: (ctx) => React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file })
     },
     /**
      * Float side block — banner-style margin aside glued to the page edge.
@@ -5730,7 +5800,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       render: (ctx, args) => {
         const direction = (args == null ? void 0 : args[0]) === "left" ? "left" : "right";
         const preset = typeof (args == null ? void 0 : args[1]) === "string" ? args[1] : "rules";
-        return React22.createElement(import_rpg_ui_toolkit21.RuleSide, {
+        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
           variant: "float",
           type: preset,
           direction,
@@ -5741,20 +5811,25 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       }
     },
     /**
-     * Callout side block — in-flow ornate certificate. Extra arg: type.
+     * Callout side block — in-flow ornate certificate.
      *
-     *   `@[[rules/combat]].callout(grapple)`          — default type: rules
-     *   `@[[rules/combat]].callout(grapple, warning)` — type=warning
+     *   `@[[rules/combat]].callout(grapple)`              — default type: rules
+     *   `@[[rules/combat]].callout(grapple, warning)`     — type=warning
+     *   `@[[file]].callout(type: rules)`                  — whole file, named type
+     *   `@[[file]].callout(type: rules, name: "Custom")`  — with name override
      */
     callout: {
       mode: "args",
       render: (ctx, args) => {
-        const preset = typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : "rules";
-        return React22.createElement(import_rpg_ui_toolkit21.RuleSide, {
+        var _a, _b, _c, _d, _e, _f;
+        const preset = (_c = (_b = typeof ((_a = ctx.params) == null ? void 0 : _a.type) === "string" ? ctx.params.type : void 0) != null ? _b : typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : void 0) != null ? _c : "rules";
+        const name = (_e = typeof ((_d = ctx.params) == null ? void 0 : _d.name) === "string" ? ctx.params.name : void 0) != null ? _e : headingText(ctx);
+        const content = typeof ((_f = ctx.params) == null ? void 0 : _f.content) === "string" ? ctx.params.content : ctx.content;
+        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
           variant: "callout",
           type: preset,
-          title: headingText(ctx),
-          content: ctx.content,
+          title: name,
+          content,
           sourcePath: ctx.file
         });
       }
@@ -5772,7 +5847,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       render: (ctx, args) => {
         const direction = (args == null ? void 0 : args[0]) === "left" ? "left" : "right";
         const preset = typeof (args == null ? void 0 : args[1]) === "string" ? args[1] : void 0;
-        return React22.createElement(import_rpg_ui_toolkit21.RuleSide, {
+        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
           variant: "commentary",
           type: preset,
           direction,
@@ -5798,7 +5873,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           if (f === "name") return (_a = headingText(ctx)) != null ? _a : "";
           if (f === "link") {
             const label = (_b = headingText(ctx)) != null ? _b : ctx.name;
-            return React22.createElement("a", {
+            return React23.createElement("a", {
               className: "internal-link",
               href: ctx.file,
               "data-href": ctx.file
@@ -5811,10 +5886,10 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           }
           return text;
         });
-        return React22.createElement(
+        return React23.createElement(
           "tr",
           { className: "rpg-view rpg-view--row" },
-          cells.map((cell, i) => React22.createElement("td", { key: i }, cell))
+          cells.map((cell, i) => React23.createElement("td", { key: i }, cell))
         );
       }
     },
@@ -5832,7 +5907,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       mode: "join",
       wrapper: "tab-group",
       render: (ctx) => {
-        return React22.createElement(import_rpg_ui_toolkit21.Markdown, { source: ctx.content, sourcePath: ctx.file });
+        return React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file });
       }
     },
     /**
@@ -5852,18 +5927,18 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         const { height, position } = parseBannerArgs(args);
         const fm = ctx.frontmatter;
         const rawImage = (_b = (_a = fm.image) != null ? _a : fm.banner) != null ? _b : null;
-        const src = rawImage ? (0, import_rpg_ui_toolkit21.resolveVaultImage)(rawImage, ctx.file) : (0, import_rpg_ui_toolkit21.resolveVaultImage)(ctx.file, ctx.file);
+        const src = rawImage ? (0, import_rpg_ui_toolkit22.resolveVaultImage)(rawImage, ctx.file) : (0, import_rpg_ui_toolkit22.resolveVaultImage)(ctx.file, ctx.file);
         if (!src) {
-          return React22.createElement(
+          return React23.createElement(
             "div",
             { className: "rpg-view rpg-view--banner rpg-view--banner--error" },
             `[banner: could not resolve image for [[${ctx.name}]]]`
           );
         }
-        return React22.createElement(
+        return React23.createElement(
           "figure",
           { className: `rpg-view rpg-view--banner rpg-view--banner--${height}` },
-          React22.createElement("img", {
+          React23.createElement("img", {
             src,
             alt: ctx.name,
             style: { objectPosition: position }
@@ -5906,7 +5981,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         }
         const viewOverride = typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : void 0;
         const view = viewOverride != null ? viewOverride : typeof parsed.view === "string" ? parsed.view : void 0;
-        return React22.createElement(StatblockCall, {
+        return React23.createElement(StatblockCall, {
           parsed,
           body: bodyText,
           view,
@@ -5922,20 +5997,49 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     magic: {
       mode: "join",
       render: (ctx) => {
-        const blocks = (0, import_rpg_ui_toolkit21.extractItemMagicBlocks)(ctx.content);
+        const blocks = (0, import_rpg_ui_toolkit22.extractItemMagicBlocks)(ctx.content);
         if (blocks.length === 0) return null;
         const data = blocks[0];
         if (!data.name) data.name = ctx.name;
-        return React22.createElement(import_rpg_ui_toolkit21.ItemMagicCard, {
+        return React23.createElement(import_rpg_ui_toolkit22.ItemMagicCard, {
           data,
-          renderMarkdown: (src) => React22.createElement(import_rpg_ui_toolkit21.Markdown, { source: src, sourcePath: ctx.file })
+          renderMarkdown: (src) => React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: src, sourcePath: ctx.file })
+        });
+      }
+    },
+    /**
+     * Hazard import: renders the `feature.danger` block from the target file as
+     * a book-style danger card (title, category subtitle, description, then
+     * run-in Trigger / Effects / Resolution). Works on a single file or every
+     * file in a folder, exactly like `.magic()` / `.stat()` — the call
+     * processor hands the raw file body (fence intact) in `ctx.content`.
+     *
+     *   `@[[Extreme Cold]].danger()`   — one hazard
+     *   `@[[hazards/]].danger()`       — every hazard in the folder
+     */
+    danger: {
+      mode: "join",
+      render: (ctx) => {
+        var _a;
+        const block = extractDangerBlock(ctx.content);
+        if (!block) return null;
+        const str = (v) => typeof v === "string" ? v : void 0;
+        return React23.createElement(DangerCard, {
+          name: (_a = str(block.name)) != null ? _a : ctx.name,
+          type: str(block.type),
+          trigger: str(block.trigger),
+          effects: str(block.effects),
+          resolution: str(block.resolution),
+          text: str(block.text),
+          heading: typeof block.heading === "number" ? block.heading : void 0,
+          sourcePath: ctx.file
         });
       }
     }
   };
 
   // vault:tales-of-the-valiant/config/index.ts
-  var system = (0, import_rpg_ui_toolkit22.CreateSystem)(async ({ wiki }) => ({
+  var system = (0, import_rpg_ui_toolkit23.CreateSystem)(async ({ wiki }) => ({
     name: "Tales of the Valiant",
     attributes: attributes_default,
     skills: await wiki.folder("glossary/skills"),
@@ -5944,24 +6048,24 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     entities: {
       character: character_default,
       item: item_default,
-      class: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({
+      class: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [{ name: "hit_die", type: "string", default: "d8" }],
         blocks: {
           features: () => null
         }
       })),
-      subclass: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({
+      subclass: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [{ name: "parent_class", type: "string", default: "" }]
       })),
-      lineage: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({
+      lineage: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [
           { name: "size", type: "string", default: "medium" },
           { name: "speed", type: "number", default: 30 }
         ]
       })),
-      heritage: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
-      background: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
-      monster: (0, import_rpg_ui_toolkit22.CreateEntity)(async ({ wiki: wiki2 }) => {
+      heritage: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
+      background: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
+      monster: (0, import_rpg_ui_toolkit23.CreateEntity)(async ({ wiki: wiki2 }) => {
         var _a, _b;
         const external = await wiki2.file("worldbuilding/bestiary/extra").catch(() => null);
         return {
@@ -5976,7 +6080,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           ]
         };
       }),
-      spell: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({
+      spell: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [
           { name: "level", type: "number", default: 0 },
           { name: "school", type: "string", default: "" }
@@ -5986,12 +6090,13 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           effects: () => null
         }
       })),
-      feature: (0, import_rpg_ui_toolkit22.CreateEntity)(({ wiki: wiki2 }) => ({
+      feature: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
         blocks: {
           details: details_default,
           choice: choice_default,
           unlock: unlock_default,
-          level: level_default
+          level: level_default,
+          danger: danger_default
         }
       })),
       stat: stat_default

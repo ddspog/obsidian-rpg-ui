@@ -1482,6 +1482,9 @@ export interface RuleViewCtx {
   frontmatter: Record<string, unknown>;
   /** Path of the imported file, for cross-references. */
   file: string;
+  /** Named parameters from the call site, template-interpolated against
+   *  frontmatter. Undefined keys mean "use default". */
+  params?: Record<string, unknown>;
 }
 
 export interface RuleViewEntry {

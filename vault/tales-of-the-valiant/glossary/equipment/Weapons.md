@@ -68,15 +68,7 @@ Martial weapons, including swords, axes, and polearms, require training to use e
 ![[martial-ranged-weapons.webp|left|312]]![[martial-melee-weapons.webp|left|256]]
 ```
 ### Improvised Weapons
-```rpg rule.content
-id: improvised
----
-When your favorite weapon is across the room, you can attack with whatever's handy. An [[Improvised Weapon]] includes any object you can wield in one or two hands, such as broken glass, a table leg, a frying pan, a wagon wheel, or a dead goblin.
-
-When in doubt about how much damage an object should deal, find a weapon on the **Weapons** table most like the object and use its damage die. For example, a table leg is a lot like a club. At the GM's discretion, a character proficient with a weapon can use a similar object as if it were that weapon and add their PB as normal.
-
-If a character uses a ranged weapon to make a melee attack or throws a melee weapon that doesn't have the [[Thrown]] property, those are improvised weapons, and typically deal 1d4 damage of an appropriate damage type. An improvised thrown weapon typically has range of 20 feet and a long range of 60 feet.
-```
+`@[[Improvised Weapon]].highlight().bare()`
 ````
 ````rpg rule.tab
 name: Options
@@ -84,19 +76,9 @@ icon: hand
 color: var(--color-yellow)
 ---
 ### Weapon Options
-```rpg rule.content
-id: options
----
-A character can use a [[Weapon Option]] only if the character is wielding and is proficient with an appropriate weapon.
-
-**_Weapon Option Saves._** If an option requires a creature to make an ability check or save, the DC equals 8 + the attacker's PB + the attacker's STR or DEX modifier (attacker's choice).
-
-Unless specified otherwise, a weapon attack used to perform a weapon option has only the option's listed effect and doesn't deal normal weapon damage. Weapon options can be used only when a wielder takes the [[Attack]] action on their turn, unless a feature like the fighter's Martial Action allows a weapon option attack to be performed as a bonus action. Characters with the Multiattack feature can perform a weapon option in place of one of the attacks granted by Multiattack.
-
-At the GM's discretion, some weapon options might not work against certain creatures. For example, the trip weapon option might not work against a creature without discernable legs, such as an ooze, or that is anchored or attached to the ground in some way, such as a tree with animated limbs.
-```
+`@[[Weapon Option]].highlight().bare(summary)`
 #### Weapon Options Descriptions
-`@[[concepts/weapon-options/]].highlight().h6(0)`
+`@[[Weapon Option]].highlight().bare(options)`
 ````
 ````rpg rule.tab
 name: Materials & Properties

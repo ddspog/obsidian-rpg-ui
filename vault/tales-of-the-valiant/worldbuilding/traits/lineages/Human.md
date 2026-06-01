@@ -40,5 +40,5 @@ Your human character has the following hereditary traits. 
 
 **_Speed._** Your base walking speed is 30 feet.
 ###### Ambitious
-You gain proficiency in one skill of your choice, and you gain one talent of your choice. This talent can be from any of the talent lists, but you must meet the talent’s prerequisites if any are required (see **Talents** in **Chapter 4**).
+You gain proficiency in one skill of your choice, and you gain one talent of your choice. This talent can be from any of the talent lists, but you must meet the talent’s prerequisites if any are required (see [[04. Backgrounds and Talents#Talents|Talents]]).
 ```

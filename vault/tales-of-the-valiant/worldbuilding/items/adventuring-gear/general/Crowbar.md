@@ -18,5 +18,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-Using a crowbar grants advantage to STR checks where the crowbar’s leverage can be applied. 
+Using a crowbar grants [[advantage]] to STR checks where the crowbar’s leverage can be applied. 
 ```

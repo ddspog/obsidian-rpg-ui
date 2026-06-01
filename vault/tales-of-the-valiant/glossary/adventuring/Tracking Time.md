@@ -17,7 +17,7 @@ type: rules
 
 For ease of play, keeping days in your setting similar to the real world avoids a lot of issues. Extending or minimizing the hours in a day can interfere with character abilities that key to specific numbers of hours (like rests or some magic item abilities). The more similar your days, weeks, months, seasons, and year cycles are to the real world, the more easily players can remember and engage with passage of time.
 ```
-During the majority of gameplay, time passes much as it does in our world. Actions and events are measured in [[Tracking Time|Minutes]], [[Tracking Time|Hours]], [[Tracking Time|Days]], and years. Gameplay during encounters is often measured more closely in rounds and turns (see **Encounter Gameplay** in this chapter). 
+During the majority of gameplay, time passes much as it does in our world. Actions and events are measured in [[Tracking Time|Minutes]], [[Tracking Time|Hours]], [[Tracking Time|Days]], and years. Gameplay during encounters is often measured more closely in rounds and turns (see [[06. Playing the Game#Encounter Gameplay|Encounter Gameplay]]). 
 
 When passage of time matters, the GM determines how long a task takes. A GM should always feel free to shift between scales to match what’s happening in the game and to keep the story moving. 
 ````
@@ -31,7 +31,7 @@ In tense environments like a dungeon full of patrolling monsters, a GM is likely
 name: Hours
 view: p
 ---
-In less time-sensitive situations like touring a city or exploring a large forest, a scale of hours is more appropriate. Hours also factor into how often PCs need to rest and how much time passes during a short rest versus a long rest. Hours also factor into how much a PC can accomplish by engaging with downtime activities (see **Downtime Activities** in this chapter). 
+In less time-sensitive situations like touring a city or exploring a large forest, a scale of hours is more appropriate. Hours also factor into how often PCs need to rest and how much time passes during a short rest versus a long rest. Hours also factor into how much a PC can accomplish by engaging with downtime activities (see [[06. Playing the Game#Downtime Activities|Downtime Activities]]). 
 ```
 ```rpg rule.content
 name: Days

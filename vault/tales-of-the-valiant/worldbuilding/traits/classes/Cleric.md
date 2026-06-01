@@ -56,19 +56,19 @@ choose:
     - [[Religion]]
 
 ---
-**Armor:** [[Light Armor]], [[Medium Armor]], and [[Shields]]
-**Weapons:** [[Simple]] weapons
+**Armor:** [[Light armor]], [[medium Armor]], and [[shields]]
+**Weapons:** [[Simple|Simple weapons]] 
 **Tools:** None
 **Saves:** WIS, CHA
 **Skills:** Choose two from [[History]], [[Insight]], [[Medicine]], [[Persuasion]], and [[Religion]]
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background:
-- (_a_) a [[Mace]] or (_b_) a [[Warhammer]] (if proficient)
-- (_a_) scale mail, (_b_) [[Leather]] armor, or (_c_) [[Chain Mail]] (if proficient)
-- (_a_) [[Crossbow, light]] and 20 [[Crossbow Bolts]] or (_b_) any [[Simple]] weapon
-- (_a_) a priest's pack or (_b_) an explorer's pack
-- A [[Shield]] and a [[Holy Symbol]]
+- (_a_) [[mace|a mace]] or (_b_) [[Warhammer|a warhammer]] (if proficient)
+- (_a_) scale mail, (_b_) [[Leather|leather armor]], or (_c_) [[chain mail]] (if proficient)
+- (_a_) [[Crossbow, light|light crossbow]] and [[Crossbow Bolts|20 bolts]] or (_b_) [[Simple|any simple weapon]]
+- (_a_) [[priest's pack|a priest's pack]] or (_b_) [[explorer's pack|an explorer's pack]]
+- [[Shield|A shield]] and [[Holy Symbol|a holy symbol]]
 ```rpg table.progression
 | CLERIC PROGRESSION  ||||| DIVINE SPELL SLOTS BY CIRCLE      |||||||||
 |LEVEL|PB|FEATURES|CANTRIPS KNOWN|RITUALS KNOWN|1ST|2ND|3RD|4TH|5TH|6TH|7TH|8TH|9TH|
@@ -269,7 +269,7 @@ action:
   text: |
     As an action, you present your [[Holy Symbol]] and speak a prayer to censure unholy creatures.
 
-    - Each Fiend and Undead of your choice within 30 feet of you and that can see or hear you must make a WIS save.
+    - Each [[Fiend]] and [[Undead]] of your choice within 30 feet of you and that can see or hear you must make a WIS save.
     - If the creature fails its save, it is turned for 1 minute or until it takes any damage.
     - A turned creature must try to move as far away from you as it can, though it can’t first get closer to you to do it. On its turn, it can use only the [[Dash]] action or otherwise try to escape from an effect that prevents it from moving. If there’s nowhere to move, it can use the [[Dodge]] action. It can’t take any reactions.
 traits:
@@ -284,9 +284,9 @@ Beginning at 2nd level, you can use this feature once per short or long rest, th
 
 #### Channel Divinity: Turn the Profane
 
-As an action, you present your holy symbol and speak a prayer to censure unholy creatures. Each Fiend and Undead of your choice within 30 feet of you that can see or hear you must make a WIS save. On a failed save, it is turned for 1 minute or until it takes any damage.
+As an action, you present your holy symbol and speak a prayer to censure unholy creatures. Each [[Fiend]] and [[Undead]] of your choice within 30 feet of you that can see or hear you must make a WIS save. On a failed save, it is turned for 1 minute or until it takes any damage.
 
-A turned creature must try to move as far away from you as it can, though it can't first get closer to you. On its turn, it can use only the Dash action or otherwise try to escape from an effect that prevents it from moving. If there's nowhere to move, it can use the Dodge action. It can't take any reactions.
+A turned creature must try to move as far away from you as it can, though it can't first get closer to you. On its turn, it can use only the [[Dash]] action or otherwise try to escape from an effect that prevents it from moving. If there's nowhere to move, it can use the [[Dodge]] action. It can't take any reactions.
 ```
 ```rpg rule.side
 direction: left
@@ -363,10 +363,10 @@ name: Destroy the Profane
 subtitle: "5th, 8th, 11th, 14th, and 17th-Level Cleric Feature"
 level: 5
 passive:
-  text: When a Fiend or Undead fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating (CR) is {{ table "destroy-the-profane" row=CLASS_LEVEL col="cr" step=true }}
+  text: When a [[Fiend]] or [[Undead]] fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating (CR) is {{ table "destroy-the-profane" row=CLASS_LEVEL col="cr" step=true }}
 
 ---
-When a Fiend or Undead fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating is at or below the threshold shown in the **Destroy the Profane** table below.
+When a [[Fiend]] or [[Undead]] fails its save against your Turn the Profane feature, it is instantly destroyed if its challenge rating is at or below the threshold shown in the **Destroy the Profane** table below.
 ```
 ```rpg table.destroy-the-profane
 |CLERIC LEVEL|CR|
@@ -425,7 +425,7 @@ traits:
     - [[Poisoned]]
 
 ---
-- **_Gift of Consecration._** You are now immune to disease, poison damage, and the poisoned condition. If you die, your body is instantly preserved as per the [[gentle repose]] spell for up to a year and a day.
+- **_Gift of Consecration._** You are now immune to disease, poison damage, and the [[poisoned]] condition. If you die, your body is instantly preserved as per the [[gentle repose]] spell for up to a year and a day.
 ```
 ```rpg feature.choice
 parent: Heroic Boon

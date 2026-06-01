@@ -1,10 +1,11 @@
 ---
-.metadata:
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: contact
+tab-color: var(--color-blue)
 ---
-# Carousing
+### Carousing
 You can spend downtime blowing off steam and making new friends. Enterprising characters can use carousing to make connections, gain favors, and forge friendships with people outside their adventuring party. 
 
 **_Time._** To carouse, a PC must spend at least one week of downtime attending social events and gatherings in a city or other densely populated area. 
@@ -29,19 +30,25 @@ Select one of the following options or ask your GM to select based on the kind o
 [CAROUSING RESOLUTION]
 ```
 #### Using Contacts and Favors
-Making a **contact** via carousing represents time spent building a bond with a specific NPC. When a new contact is gained, the GM and PC can work together to decide if they made a contact of a suitable NPC previously encountered in the game, a new distinct NPC that needs a name and personality, or if an NPC's function is needed more than a person, such as "city guard" or "spice merchant." 
+Making a [[Carousing#Using Contacts and Favors|contact]] via carousing represents time spent building a bond with a specific NPC. When a new contact is gained, the GM and PC can work together to decide if they made a contact of a suitable NPC previously encountered in the game, a new distinct NPC that needs a name and personality, or if an NPC's function is needed more than a person, such as "city guard" or "spice merchant." 
 
 Contacts can be called on to help PCs by performing favors for them. A new contact automatically owes the PC one favor. After a PC has made at least one contact by carousing, future carousing successes can be used to gain new contacts or accrue favors with existing contacts. 
 
-In general, **favors** can be called in to accomplish tasks that don't put contacts at risk of harm or betray their nature. For example, a favor likely can't be called in to make a contact fight for you, but a favor could be called in to have a contact find a talented mercenary willing to work for you at a discounted rate. 
+In general, [[Carousing#Using Contacts and Favors|favors]] can be called in to accomplish tasks that don't put contacts at risk of harm or betray their nature. For example, a favor likely can't be called in to make a contact fight for you, but a favor could be called in to have a contact find a talented mercenary willing to work for you at a discounted rate. 
 
 The type of favors a contact can perform depend on which economic class they belong to. Suggestions of favors appropriate for each category are given in the **Favors by Status** table, but the GM has final say on what a particular contact can accomplish.
 
 ```rpg table.favors-by-status
 |STATUS|SUGGESTED FAVORS|
 |---|---|
-|Lower Class|Track the comings and goings of an employer or other specific person for up to a week. <br><br>Ensure a particular door or window is left unlocked. <br><br>Discretely deliver a message or package.|
-|Middle Class|Find a supplier selling materials or equipment at a discounted rate. <br><br>Provide your party with free food and accommodations for up to a week. <br><br>Agree to become your regular instructor (see the **Training** activity in this section).|
-|Upper Class|Get an invitation for you to an exclusive party or event. <br><br>Connect you with someone willing to buy or sell rare goods or magic items. <br><br>Lend you a substantial amount of money (to be paid back at a later date).|
+|Lower Class|Track the comings and goings of an employer or other specific person for up to a week.|
+|^^|Ensure a particular door or window is left unlocked.|
+|^|Discretely deliver a message or package.|
+|Middle Class|Find a supplier selling materials or equipment at a discounted rate.|
+|^^|Provide your party with free food and accommodations for up to a week.|
+|^^|Agree to become your regular instructor (see the [[Training]] activity).|
+|Upper Class|Get an invitation for you to an exclusive party or event.|
+|^^|Connect you with someone willing to buy or sell rare goods or magic items.|
+|^^|Lend you a substantial amount of money (to be paid back at a later date).|
 [FAVORS BY STATUS]
 ```

@@ -13,4 +13,8 @@ You move at half speed in difficult terrain. Moving 1 foot in difficult terrain 
 
 Difficult terrain is often a natural part of the landscape, but some class features or spells, such as [[entangle]], can create it for a short time. The space of another creature, whether hostile or not, also counts as difficult terrain.
 ```
-![[06. Playing the Game#Encounter Gameplay#Difficult Terrain|no-h4 clean]]
+```rpg rule.content
+id: combat
+---
+Areas of difficult terrain hamper movement (see [[Difficult Terrain]]). In addition, during combat encounters, any space occupied by another creature (hostile or not), also counts as difficult terrain. 
+```

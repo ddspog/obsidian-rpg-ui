@@ -13,12 +13,29 @@
 
 import type { PaginationConfig } from "./pagination";
 
+/** Vertical alignment of a row-spanning (merged) cell's content. */
+export type VAlign = "top" | "middle" | "bottom";
+
 /** One cell of a table row. `colspan` = 1 is the default and is omitted. */
 export interface TableCell {
   value: string;
   colspan?: number;
   /** Nesting depth signalled by leading `> ` in the cell (1 per `>`). */
   indent?: number;
+  /**
+   * True when the cell is a `^` vertical-merge marker — it carries no content
+   * of its own and joins the cell directly above it (same grid column),
+   * extending that anchor's rowspan. Set during body-row parsing. A marker
+   * always occupies exactly one column: any `||` colspan is stripped, so
+   * `colspan` is never set alongside `mergeUp`.
+   */
+  mergeUp?: boolean;
+  /**
+   * Explicit vertical alignment requested by a merge glyph (`^^` → top,
+   * `^v` → bottom, `^-` → middle). Absent for a bare `^`, which inherits the
+   * span's default (centred). Only meaningful when `mergeUp` is true.
+   */
+  mergeAlign?: VAlign;
 }
 
 /** One row of the table body. */

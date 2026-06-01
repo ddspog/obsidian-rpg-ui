@@ -1,8 +1,10 @@
 import * as React from "react";
-import { useState, useRef, useEffect, useCallback } from "react";
-import type { TableDef, TableRow, TableCell, FooterRow, FooterCell } from "lib/domains/tables/types";
+import { useState, useRef, useEffect } from "react";
+import type { TableDef, TableRow, FooterRow, FooterCell } from "lib/domains/tables/types";
 import type { PaginationConfig, PaginationState } from "lib/domains/tables/pagination";
-import { sliceRows, totalPages } from "lib/domains/tables/pagination";
+import { totalPages } from "lib/domains/tables/pagination";
+import type { RenderCell, RowRange } from "lib/domains/tables/row-merge";
+import { resolveRenderRows } from "lib/domains/tables/row-merge";
 import { rollStoreKey } from "lib/domains/tables/roll-store";
 import { useRollResult } from "lib/domains/tables/use-roll-result";
 
@@ -13,17 +15,6 @@ export interface RpgTableProps {
 }
 
 const WIKILINK_RE = /\[\[([^\]\n]+)\]\]/g;
-
-function isCategoryRow(row: TableRow, columnCount: number): boolean {
-  if (row.cells.length !== 1) return false;
-  const cell = row.cells[0];
-  const span = cell.colspan ?? 1;
-  return span >= columnCount && cell.value.trim().length > 0;
-}
-
-function cleanCategoryLabel(raw: string): string {
-  return raw.replace(/\s*#css\/row\/[^\s|]+\s*$/, "").trim();
-}
 
 function cleanCellValue(raw: string): string {
   return raw.replace(/`\s*(@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*|\[[^\]\n]+\])+)\s*`/g, "$1");
@@ -72,22 +63,32 @@ function HeaderRow({ row }: { row: TableRow }) {
   );
 }
 
-function CategoryRow({ row, columnCount }: { row: TableRow; columnCount: number }) {
+function CategoryRow({ label, columnCount }: { label: string; columnCount: number }) {
   return (
     <tr data-category="true">
-      <td colSpan={columnCount}>{cleanCategoryLabel(row.cells[0].value)}</td>
+      <td colSpan={columnCount}>{label}</td>
     </tr>
   );
 }
 
-function BodyRow({ row }: { row: TableRow }) {
+function BodyRow({ cells }: { cells: RenderCell[] }) {
   return (
     <tr>
-      {row.cells.map((cell, i) => (
-        <td key={i} colSpan={cell.colspan && cell.colspan > 1 ? cell.colspan : undefined}>
-          <CellContent value={cell.value} />
-        </td>
-      ))}
+      {cells.map((cell, i) => {
+        const spanning = cell.rowspan != null && cell.rowspan > 1;
+        return (
+          <td
+            key={i}
+            colSpan={cell.colspan && cell.colspan > 1 ? cell.colspan : undefined}
+            rowSpan={spanning ? cell.rowspan : undefined}
+            data-valign={spanning ? cell.valign : undefined}
+            data-indent={cell.indent ? String(cell.indent) : undefined}
+            data-merge-carried={cell.carried ? "true" : undefined}
+          >
+            <CellContent value={cell.value} />
+          </td>
+        );
+      })}
     </tr>
   );
 }
@@ -261,12 +262,21 @@ export function RpgTable({ def, filePath = "", sourcePath }: RpgTableProps) {
     }
   }, []);
 
-  const visibleRows = def.pagination
-    ? sliceRows(def.rows, def.pagination, paginationState)
-    : def.rows;
-
   const columnCount = def.columns.length || 1;
   const hasFooter = def.footerRows.length > 0 || def.pagination != null;
+
+  // Visible window of body rows, mirroring `sliceRows`. Spans are resolved
+  // over this window so a `^` orphaned at a page top re-anchors via carry-down.
+  const range: RowRange = (() => {
+    const cfg = def.pagination;
+    if (!cfg) return { start: 0, end: def.rows.length };
+    if (cfg.controls === "show-more") {
+      return { start: 0, end: Math.min(def.rows.length, cfg.size * paginationState.visiblePages) };
+    }
+    const start = cfg.size * paginationState.page;
+    return { start, end: Math.min(def.rows.length, start + cfg.size) };
+  })();
+  const renderRows = resolveRenderRows(def.rows, def.columns.length, range);
 
   return (
     <div className="el-table rpg-table-wrapper">
@@ -278,11 +288,11 @@ export function RpgTable({ def, filePath = "", sourcePath }: RpgTableProps) {
           ))}
         </thead>
         <tbody>
-          {visibleRows.map((row, i) =>
-            isCategoryRow(row, columnCount) ? (
-              <CategoryRow key={i} row={row} columnCount={columnCount} />
+          {renderRows.map((row, i) =>
+            row.category ? (
+              <CategoryRow key={i} label={row.categoryLabel ?? ""} columnCount={columnCount} />
             ) : (
-              <BodyRow key={i} row={row} />
+              <BodyRow key={i} cells={row.cells} />
             )
           )}
         </tbody>

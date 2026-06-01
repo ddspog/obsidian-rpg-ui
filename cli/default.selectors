@@ -1,0 +1,58 @@
+# Default CSS selectors for rpg-ui plugin components
+# Used by: rpg-dev css-report (fallback when no companion .selectors file exists)
+---
+description: Core rpg-ui component selectors
+strip:
+  - -webkit-*
+  - -moz-*
+  - animation-*
+  - transition-*
+  - font-family
+  - line-height
+---
+
+# Stats display
+.rpg-stats-display
+.rpg-stats-display .stats-grid
+.stat-diamond
+.stat-diamond .stat-value
+.stat-diamond .stat-label
+
+# Skills
+.skills-grid
+.skill-card
+.skill-card .skill-value
+
+# Spell cards
+.spell-card
+.spell-card .spell-header
+.spell-components .component-badge
+
+# Health / Combat
+.health-card
+.health-display
+.initiative-layout
+
+# Feature cards
+.feature-card
+.feature-card .feature-header
+
+# Interactive elements
+.rpg-trigger-button
+.rpg-checkbox
+.rpg-progress-bar
+
+# Typography
+.rpg-badge
+.rpg-pill
+
+# Table blocks
+.rpg-table-block
+.rpg-table-block table
+.rpg-table-block th
+.rpg-table-block td
+
+# Rule blocks
+.rpg-rule-block
+.rpg-rule-block .rule-header
+.rpg-rule-block .rule-content

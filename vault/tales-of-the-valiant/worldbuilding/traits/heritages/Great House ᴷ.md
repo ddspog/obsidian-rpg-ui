@@ -40,5 +40,5 @@ choose:
 ###### Heraldic Studies.
 You gain proficiency in the [[History]] skill. When you make a History check related to your nation of origin, your family, or nobility in general, double your PB for the roll. 
 ###### Noble Pursuits
-You gain proficiency in the [[Persuasion]] skill and with one type of [[Martial]] weapon of your choice. 
+You gain proficiency in the [[Persuasion]] skill and with one type of [[Martial|martial weapon]] of your choice. 
 ```

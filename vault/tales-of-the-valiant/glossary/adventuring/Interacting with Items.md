@@ -6,8 +6,7 @@ tab-color: var(--color-orange)
 tab-order: 4
 ---
 ## Interacting with Items
-![[interacting-with-items.webp|banner+tall]]
-
+`@[[interacting-with-items.webp]].banner(hero)`
 A character’s interaction with items in an environment is often simple to resolve in the game. The player tells the GM that their character is doing something, such as moving a lever, and the GM describes what happens. 
 
 For example, a character pulls a lever. The GM might say that this opens a chute causing a room to flood with water. Or it might open a secret door in a nearby wall.

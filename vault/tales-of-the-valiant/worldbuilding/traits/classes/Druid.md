@@ -59,17 +59,17 @@ choose:
     - [[Survival]]
 
 ---
-**Armor:** [[Light Armor]], [[Medium Armor]], and [[Shields]]
-**Weapons:** [[Simple]] weapons
-**Tools:** [[Herbalist Tools]]
+**Armor:** [[Light armor]], [[medium armor]], and [[shields]]
+**Weapons:** [[Simple|Simple weapons]]
+**Tools:** [[Herbalist tools]]
 **Saves:** INT, WIS
 **Skills:** Choose two from [[Animal Handling]], [[Arcana]], [[Insight]], [[Medicine]], [[Nature]], [[Perception]], [[Religion]], and [[Survival]]
 ```
 ### Starting Equipment
 You start with the following equipment, in addition to the equipment granted by your background: 
-- (_a_) a [[Shield]] or (_b_) any [[Simple]] weapon
-- (_a_) a [[Sickle]] or (_b_) any [[Simple]] [[Melee]] weapon
-- [[Leather]] armor, an explorer's pack, and a [[Druidic Focus]]
+- (_a_) [[Shield|a shield]] or (_b_) [[Simple|any simple weapon]]
+- (_a_) [[scimitar|a scimitar]] or (_b_) [[Simple|any simple melee weapon]]
+- [[Leather|Leather armor]], [[explorer's pack|an explorer's pack]], and [[Druidic Focus|a druidic focus]]
 ```rpg table.progression
 | DRUID PROGRESSION  |||||| PRIMORDIAL SPELL SLOTS BY CIRCLE      |||||||||
 |LEVEL|PB|BEAST FORMS KNOWN|FEATURES|CANTRIPS KNOWN|RITUALS KNOWN|1ST|2ND|3RD|4TH|5TH|6TH|7TH|8TH|9TH|
@@ -250,7 +250,7 @@ roll:
       17: { damage: { roll: 6d4, type: healing } }
 
 ---
-You have learned to harness the ambient energy of nature and can redirect that energy to encourage growth and healing. As a bonus action, choose one creature within 5 feet of you (this can be you). When you do so, roll a number of d4s equal to your PB (minimum of 2d4). That creature regains hit points equal to the total rolled. This feature has no effect on Constructs or Undead. 
+You have learned to harness the ambient energy of nature and can redirect that energy to encourage growth and healing. As a bonus action, choose one creature within 5 feet of you (this can be you). When you do so, roll a number of d4s equal to your PB (minimum of 2d4). That creature regains hit points equal to the total rolled. This feature has no effect on [[Construct|Constructs]] or [[Undead]]. 
 
 You can use this feature a number of times per day equal to your PB. You recover expended uses when you complete a long rest.
 ```
@@ -278,7 +278,7 @@ action:
   name: Beast Form
   resource: Wild Shape
   text: |
-    As an action, you can magically assume the form of a Beast (see [[Transformation]] rules). When you first gain this feature, choose two Beasts of challenge rating (CR) {{ leveled { 2: 1/4, 9: 1, 14: 2 } }} or less as your known forms. To select a known form, you must have seen or interacted with a Beast in your past. The Beast you choose can't have any legendary actions or lair actions.
+    As an action, you can magically assume the form of a [[Beast]] (see [[Transformation]] rules). When you first gain this feature, choose two Beasts of challenge rating (CR) {{ leveled { 2: 1/4, 9: 1, 14: 2 } }} or less as your known forms. To select a known form, you must have seen or interacted with a Beast in your past. The Beast you choose can't have any legendary actions or lair actions.
 
     When you gain a level of druid, you can replace one known form with a different form of your choosing. Any new form you choose must abide by the form restrictions. [^1]
 choose:
@@ -296,7 +296,7 @@ bonus:
   name: Draw Power
   resource: Wild Shape
   text: |
-    As a bonus action, you can reshape the natural energies around you to draw them within yourself and recharge your spellcasting ability. When you do so, choose a single expended Primordial spell slot to recover. The recovered spell slot must be of a circle equal to or less than your proficiency bonus (PB). For example, a 5th-level druid with a PB of +3 could recover an expended 1st, 2nd, or 3rd-circle Primordial spell slot with this feature. 
+    As a bonus action, you can reshape the natural energies around you to draw them within yourself and recharge your spellcasting ability. When you do so, choose a single expended [[Primordial]] spell slot to recover. The recovered spell slot must be of a circle equal to or less than your proficiency bonus (PB). For example, a 5th-level druid with a PB of +3 could recover an expended 1st, 2nd, or 3rd-circle Primordial spell slot with this feature. 
 
     You can't use Draw Power while transformed by the Beast Form effect of your Wild Shape feature, even if you have multiple uses of Wild Shape available to expend.
 
@@ -307,14 +307,14 @@ When you use your Wild Shape feature, simply choose which specific effect you wa
 
 Beginning at 2nd level, you can use your Wild Shape feature once until you finish a short or long rest, then twice between rests at 6th level, three times at 13th level, and four times at 18th level. When you finish a short or long rest, you regain all expended uses.
 #### Wild Shape: Beast Form
-As an action, you can magically assume the form of a Beast. When you first gain this feature, choose two Beasts of challenge rating (CR) 1/4 or less as your known forms. To select a known form, you must have seen or interacted with a Beast in your past. For example, a druid that hails from a desert environment is unlikely to be familiar enough with a sea-dwelling creature like a dolphin to select it as a known form. The Beast you choose can't have any legendary actions or lair actions. See **Appendix C: Creature Statistics** for a selection of suitable Beasts to choose from. 
+As an action, you can magically assume the form of a [[Beast]]. When you first gain this feature, choose two Beasts of challenge rating (CR) 1/4 or less as your known forms. To select a known form, you must have seen or interacted with a Beast in your past. For example, a druid that hails from a desert environment is unlikely to be familiar enough with a sea-dwelling creature like a dolphin to select it as a known form. The Beast you choose can't have any legendary actions or lair actions. See **Appendix C: Creature Statistics** for a selection of suitable Beasts to choose from. 
 
 As you advance in druid levels, you can choose more beast forms as shown in the Beast Forms Known column of the **Druid Progression** table. 
 
 When you gain a level of druid, you can replace one known form with a different form of your choosing. Any new form you choose must abide by the form restrictions. [^1]
 `@[[Transformation]].highlight().callout(Rules of Transformation)`
 #### Wild Shape: Draw Power
-As a bonus action, you can reshape the natural energies around you to draw them within yourself and recharge your spellcasting ability. When you do so, choose a single expended Primordial spell slot to recover. The recovered spell slot must be of a circle equal to or less than your proficiency bonus (PB). For example, a 5th-level druid with a PB of +3 could recover an expended 1st, 2nd, or 3rd-circle Primordial spell slot with this feature. 
+As a bonus action, you can reshape the natural energies around you to draw them within yourself and recharge your spellcasting ability. When you do so, choose a single expended [[Primordial]] spell slot to recover. The recovered spell slot must be of a circle equal to or less than your proficiency bonus (PB). For example, a 5th-level druid with a PB of +3 could recover an expended 1st, 2nd, or 3rd-circle Primordial spell slot with this feature. 
 
 You can't use Draw Power while transformed by the Beast Form effect of your Wild Shape feature, even if you have multiple uses of Wild Shape available to expend.
 ```
@@ -491,8 +491,3 @@ color: var(--color-orange)
 ### Shifter
 _Subclass of Druid. Focuses on enhancing Wild Shape transformations. (Subclass details not yet documented in this compendium.)_
 ```
-
-
-[^1]: Homebrew rule inspired from **D&D** _Wintercoat's Guide to Wild Shapes_ book by **The Two Dicey Bards**.
-
-[^2]: From **D&D** _"Wintercoat's Guide to Wild Shape"_ from **Two Dicey Bards**.

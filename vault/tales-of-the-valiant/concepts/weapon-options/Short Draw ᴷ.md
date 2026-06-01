@@ -12,5 +12,5 @@ As an attack, you may draw a sheathed one-handed sword and make an attack roll t
 ```rpg rule.related
 view: footer
 entries:
-  - `@[[Weapons]].highlight().p(options)`
+  - `@[[Weapons]].bare(options)`
 ```

@@ -17,5 +17,5 @@ shop:
     - "[[Urbane]]"
     - "[[Premium]]"
 ---
-A small knife, typically found in a scholar's pack.
+A small knife, typically found in a [[scholar's pack]].
 ```

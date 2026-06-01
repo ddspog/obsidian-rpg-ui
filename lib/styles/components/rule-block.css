@@ -37,9 +37,111 @@
   margin-bottom: 0;
 }
 
-/* NOTE: `.rpg-rule-content.rpg-rule-homebrew` deliberately has no styling.
- * The class is still applied by React so future features (filters, badges
- * in compendium settings) can target it without a rewrite. */
+/* ── rule.content homebrew: manga-panel highlight ─────────────────────
+ * Same visual as `.rpg-call-highlight` on `.highlight().bare()` imports:
+ * diagonal stripes shifted down-right, thin accent frame shifted up-left,
+ * existing marker badges act as the pen-line indicator. */
+
+.rpg-rule-content.rpg-rule-homebrew {
+  position: relative;
+  margin-block: var(--size-4-4, 1rem);
+  padding: 0.4em 0;
+  isolation: isolate;
+}
+
+.rpg-rule-content.rpg-rule-homebrew::before {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  width: auto;
+  height: auto;
+  border-width: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px
+  );
+  transform: translate(5px, 5px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-rule-content.rpg-rule-homebrew::after {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  width: auto;
+  height: auto;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 40%, transparent);
+  transform: translate(-5px, -5px);
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image:
+    radial-gradient(ellipse 35% 35% at 0% 0%, black 0%, transparent 70%),
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
+  mask-image:
+    radial-gradient(ellipse 35% 35% at 0% 0%, black 0%, transparent 70%),
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
+}
+
+.rpg-rule-content.rpg-rule-homebrew > *:not(.rpg-rule-content__markers) {
+  position: relative;
+  z-index: 1;
+}
+
+.rpg-rule-content.rpg-rule-homebrew > .rpg-rule-content__markers {
+  position: absolute;
+  top: -10px;
+  right: -2px;
+  z-index: 2;
+}
+
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker {
+  border: none;
+  background: none;
+  color: var(--text-accent, #7c2d12);
+  opacity: 0.6;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker:hover {
+  opacity: 1;
+  color: var(--text-accent, #7c2d12);
+}
+
+/* ── Generic homebrew marker (feature.details / entity blocks) ─────────
+ * Setting-driven: applied to any rpg block container whose source isn't an
+ * official source (see homebrewBySetting). Same faint, neutral diagonal hatch
+ * the lists & call highlights use — framed just behind the block so it reads
+ * as texture, not color, with no border. */
+.rpg-homebrew {
+  position: relative;
+  isolation: isolate;
+}
+
+.rpg-homebrew::before {
+  content: "";
+  position: absolute;
+  inset: -4px -6px;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px
+  );
+  border-radius: var(--radius-s, 4px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker svg {
+  width: 0.85em;
+  height: 0.85em;
+}
 
 /* ── rule.content "special" variant: has tags/source/revision/replaces ──
  * Corner brackets (top-left + bottom-right) demarcate the block; tiny
@@ -135,6 +237,20 @@
 
 .rpg-rule-related > :last-child {
   margin-bottom: 0;
+}
+
+/* Footer variant: decorated separator matching the vehicle statblock —
+ * a centered `※` glyph in place of the default horizontal rule. */
+.rpg-rule-related__sep {
+  margin: var(--size-4-4, 1rem) 0;
+}
+
+.rpg-rule-related__sep::before {
+  content: "※";
+  display: block;
+  text-align: center;
+  color: color-mix(in srgb, var(--text-accent, #7c2d12) 50%, transparent);
+  letter-spacing: 0.3em;
 }
 
 /* ── rule.notes: author prose, stripped on import ────────────────── */

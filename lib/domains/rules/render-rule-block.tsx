@@ -22,7 +22,7 @@ import { App, MarkdownRenderChild, setIcon } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
-import { resolveSource, isHomebrew } from "./source";
+import { resolveSource, isHomebrewForFile } from "./source";
 import { SIDE_PRESETS } from "./parse-rule-block";
 import { SPREAD_ITEM_CLASS, scheduleSpreadMerge } from "./render-spread-group";
 import type { RuleContentBlock, RuleSideBlock, SidePreset } from "./types";
@@ -522,9 +522,10 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
         : resolveSource({ source: this.block.source }, fm);
     // Context here is the file's own source tuple: when the block carries
     // the same source as its host file it's canonical. When it differs (or
-    // is missing entirely) it's flagged homebrew.
+    // is missing entirely) it's flagged homebrew. When the system declares
+    // official sources, that setting decides instead (see isHomebrewForFile).
     const contextSource = fm ? resolveSource({}, fm) : undefined;
-    const homebrew = isHomebrew(resolved, contextSource);
+    const homebrew = isHomebrewForFile(resolved, contextSource, this.sourcePath);
 
     this.root = ReactDOM.createRoot(this.containerEl);
     if (this.block.kind === "side") {

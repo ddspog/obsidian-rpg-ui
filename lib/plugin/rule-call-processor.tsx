@@ -32,11 +32,14 @@
 import { App, Component, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, parseYaml, TFile, TFolder } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { matchAllCalls, type ParsedCall, type ChainSegment, CALL_PATTERN } from "lib/domains/references/parse-call";
+import { matchAllCalls, type ParsedCall, type ChainSegment, CALL_PATTERN, ARGS_INNER } from "lib/domains/references/parse-call";
+import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
+import { homebrewBySetting } from "lib/domains/lists/official-sources";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
+import { selectFenceBodyByIndex, sliceFenceInner } from "lib/domains/rules/select-fence";
 import { TabGroupView } from "lib/domains/rules/render-tab-group";
 import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
@@ -58,6 +61,19 @@ const CALL_CLASS = "rpg-call";
 /** Normalize a source string for comparison (strip YAML escape artifacts). */
 function normalizeSource(s: string): string {
   return s.replace(/\\"/g, '"').replace(/\\'/g, "'");
+}
+
+/**
+ * Is an imported file's content homebrew? When the imported file's system
+ * declares official sources, that setting decides (a source matching none of
+ * the official patterns is homebrew) — the same global signal list & rule
+ * blocks use. Otherwise it falls back to the legacy comparison against the
+ * importing note's source (same book/source = canonical).
+ */
+function isImportHomebrew(fileSource: unknown, filePath: string, callerSource: string): boolean {
+  const bySetting = homebrewBySetting(fileSource, filePath);
+  if (bySetting !== null) return bySetting;
+  return normalizeSource(String(fileSource ?? "")) !== callerSource;
 }
 
 /** Extract the `.highlight()` chain segment (if present) and return its args. */
@@ -141,7 +157,9 @@ function HighlightBadge({ source }: { source: string }) {
 /** Matches an inline-code element whose entire text content is exactly
  *  one `@[[file]].fn(args)` token. Authors wrap calls in backticks so
  *  the markdown parser doesn't mangle the `[[…]]` as a wikilink. */
-const WHOLE_CALL_PATTERN = /^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\([^)\n]*\))+\s*$/;
+const WHOLE_CALL_PATTERN = new RegExp(
+  String.raw`^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\(${ARGS_INNER}\))+\s*$`,
+);
 
 export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
   storeDeps(deps);
@@ -428,7 +446,7 @@ function resolveCall(
               | Record<string, unknown>
               | undefined) ?? {};
             const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
-            if (sourceStr !== callerSource) {
+            if (isImportHomebrew(fileFm.source, targetPath, callerSource)) {
               span.classList.add("rpg-call--magic-highlight");
               if (magicHighlight.color) {
                 span.style.setProperty("--text-accent", `var(--color-${magicHighlight.color})`);
@@ -444,14 +462,81 @@ function resolveCall(
         return;
       }
 
+      // ── Special case: `danger` view extracts rpg feature.danger fences ──
+      // Mirrors the magic/stat special cases: the view needs the raw file
+      // body (fences intact) so it can pull the YAML head + description out of
+      // the `rpg feature.danger` block, so we hand it `cleaned` directly.
+      if (call.fn === "danger") {
+        const dangerSystem = deps.registry.getSystemForFile(ctx.sourcePath);
+        const dangerView = dangerSystem?.ruleViews?.["danger"];
+        if (!dangerView) {
+          renderError(span, `View "danger" not registered`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const fileName = call.section
+          ? call.section
+          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const dangerCtx: RuleViewCtx = {
+          name: fileName,
+          content: cleaned,
+          frontmatter: fileFm,
+          file: targetPath,
+        };
+        try {
+          const node = dangerView.render(dangerCtx, call.args);
+          const highlight = extractHighlight(call.chain);
+          const sourceStr = normalizeSource(String(fileFm.source ?? ""));
+          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+            | Record<string, unknown>
+            | undefined) ?? {};
+          const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
+          if (highlight.active && isImportHomebrew(fileFm.source, targetPath, callerSource)) {
+            if (highlight.color) {
+              span.style.setProperty("--text-accent", `var(--color-${highlight.color})`);
+            }
+            span.classList.add("rpg-call-highlight");
+            root.render(
+              <div className="rpg-call-highlight__inner">
+                {node}
+                <HighlightBadge source={sourceStr} />
+              </div>
+            );
+          } else {
+            root.render(<>{node}</>);
+          }
+        } catch (err) {
+          renderError(span, `View "danger" threw: ${(err as Error)?.message ?? err}`);
+        }
+        return;
+      }
+
       // ── Terminal heading: `.h3()` renders section content with heading ──
       const hTerminal = call.fn.match(/^h([1-6])$/);
       if (hTerminal) {
         const hLevel = parseInt(hTerminal[1], 10);
         const sectionName = call.section
           ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? call.target;
-        let body = stripFileFrontmatter(cleaned);
-        body = stripFirstHeading(body);
+        // Optional block selector: `.h4(id)` picks a rule.content block by
+        // id/name, `.h4(0)` picks the Nth rpg fence; no arg renders the
+        // whole file body. Unmatched selectors fall back to the whole body.
+        const hArg = call.args[0];
+        let body: string | null = null;
+        if (typeof hArg === "string") {
+          body = findContentBlockById(cleaned, hArg);
+        } else if (typeof hArg === "number" && Number.isInteger(hArg) && hArg >= 0) {
+          body = selectFenceBodyByIndex(cleaned, hArg);
+        }
+        if (body === null) {
+          body = stripFirstHeading(inlineContentFences(stripFileFrontmatter(cleaned)));
+        }
         const source = "#".repeat(hLevel) + " " + sectionName + "\n" + body;
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
@@ -468,7 +553,16 @@ function resolveCall(
         const hlFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
           | Record<string, unknown>
           | undefined) ?? {};
-        applyHighlight(span, extractHighlight(call.chain), String(hlFm.source ?? ""));
+        // Only highlight when the imported file's source differs from the
+        // caller's (homebrew). Same-source content renders unadorned.
+        const hlSource = normalizeSource(String(hlFm.source ?? ""));
+        const hlCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
+          | Record<string, unknown>
+          | undefined) ?? {};
+        const hlCallerSource = normalizeSource(hlCallerFm.source ? String(hlCallerFm.source) : "");
+        if (hlSource !== hlCallerSource) {
+          applyHighlight(span, extractHighlight(call.chain), hlSource);
+        }
         return;
       }
 
@@ -523,12 +617,11 @@ function resolveCall(
         const highlight = extractHighlight(call.chain);
         let homebrew = false;
         if (highlight.active) {
-          const sourceStr = normalizeSource(String(fileFm.source ?? ""));
           const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
           const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
-          homebrew = sourceStr !== callerSource;
+          homebrew = isImportHomebrew(fileFm.source, targetPath, callerSource);
         }
         const tab: RuleTabBlock = {
           kind: "tab",
@@ -566,13 +659,11 @@ function resolveCall(
           } else {
             wholeFileBody = inlineContentFences(stripFileFrontmatter(cleaned));
           }
-          if (shouldStripFirstHeading(deps.app)) {
-            wholeFileBody = stripFirstHeading(wholeFileBody);
-          }
+          wholeFileBody = stripFirstHeading(wholeFileBody);
         }
         const node = renderByMode(
           view, matching, viewArgs, fileName, targetPath,
-          wholeFileBody, fileFm
+          wholeFileBody, fileFm, call.params
         );
         const sourceStr = normalizeSource(String(fileFm.source ?? ""));
         if (highlight.active) {
@@ -581,7 +672,7 @@ function resolveCall(
             | Record<string, unknown>
             | undefined) ?? {};
           const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
-          const isHomebrew = sourceStr !== callerSource;
+          const isHomebrew = isImportHomebrew(fileFm.source, targetPath, callerSource);
 
           if (!isHomebrew) {
             // Sources match — render without highlight
@@ -823,12 +914,7 @@ function stripFileFrontmatter(text: string): string {
 
 /** Pluck the inner body of a fence given its [start, end) offsets. */
 function sliceFenceBody(text: string, start: number, end: number): string {
-  const headEnd = text.indexOf("\n", start);
-  if (headEnd < 0 || headEnd >= end) return "";
-  const body = text.slice(headEnd + 1, end);
-  // Strip the closing fence line (a line of only backticks at the end)
-  const stripped = body.replace(/\n?`{3,}\s*$/, "");
-  return stripped.replace(/\n$/, "");
+  return sliceFenceInner(text, start, end);
 }
 
 function normalizeStatValueInline(raw: unknown): string {
@@ -1006,49 +1092,69 @@ function renderByMode(
    *  the headings + prose alongside fenced blocks. */
   wholeFileBody: string | null,
   /** File's frontmatter, used for join mode in whole-file form. */
-  fileFrontmatter: Record<string, unknown>
+  fileFrontmatter: Record<string, unknown>,
+  /** Named parameters from the call site (raw — interpolated per-block). */
+  callParams: Record<string, unknown> = {}
 ): React.ReactNode {
+  const hasParams = Object.keys(callParams).length > 0;
+
+  function resolveParams(fm: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!hasParams) return undefined;
+    return interpolateParams(callParams, fm);
+  }
+
   const mode: RuleViewMode = view.mode;
   if (mode === "join") {
     if (wholeFileBody !== null) {
+      const blockFm = blocks[0]?.frontmatter ?? {};
+      const mergedFm = { ...fileFrontmatter, ...blockFm };
       const ctx: RuleViewCtx = {
         name: fileName,
         content: wholeFileBody,
         frontmatter: fileFrontmatter,
         file: filePath,
+        params: resolveParams(mergedFm),
       };
       return view.render(ctx);
     }
+    const fm = blocks[0]?.frontmatter ?? {};
     const ctx: RuleViewCtx = {
       name: fileName,
       content: blocks.map((b) => b.body).join("\n\n"),
-      frontmatter: blocks[0]?.frontmatter ?? {},
+      frontmatter: fm,
       file: filePath,
+      params: resolveParams(fm),
     };
     return view.render(ctx);
   }
   if (mode === "each") {
+    if (wholeFileBody !== null) {
+      const mergedFm = { ...fileFrontmatter, ...(blocks[0]?.frontmatter ?? {}) };
+      return view.render({ name: fileName, content: wholeFileBody, frontmatter: mergedFm, file: filePath, params: resolveParams(mergedFm) });
+    }
     const items = blocks.map((b, i) =>
       React.createElement(
         React.Fragment,
         { key: i },
-        view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath })
+        view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath, params: resolveParams(b.frontmatter) })
       )
     );
     if (view.wrapper) return React.createElement(view.wrapper, null, ...items);
     return items;
   }
   // mode: "args"
+  if (wholeFileBody !== null) {
+    const mergedFm = { ...fileFrontmatter, ...(blocks[0]?.frontmatter ?? {}) };
+    return view.render({ name: fileName, content: wholeFileBody, frontmatter: mergedFm, file: filePath, params: resolveParams(mergedFm) }, args);
+  }
   const items = blocks.map((b, i) =>
     React.createElement(
       React.Fragment,
       { key: i },
-      view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath }, args)
+      view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath, params: resolveParams(b.frontmatter) }, args)
     )
   );
   if (view.wrapper === "table") {
-    // Special case for tables: build a proper <table> with <thead> (using
-    // arg names as column headers, capitalized) and <tbody> (rendered rows).
     const thead = React.createElement(
       "thead",
       null,
@@ -1127,7 +1233,15 @@ function resolveFolderCall(
       const folderHTerminal = call.fn.match(/^h([1-6])$/);
       if (folderHTerminal) {
         const hLevel = parseInt(folderHTerminal[1], 10);
+        // `.h4(id)` selects a `rule.content` block by id/name; `.h4(0)`
+        // selects the Nth rpg fence in document order (any entity — so the
+        // first block is a `feature.details` intro, an `item.element`, etc.);
+        // `.h4()` renders the whole file body.
         const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
+        const blockIndex =
+          typeof call.args[0] === "number" && Number.isInteger(call.args[0]) && call.args[0] >= 0
+            ? call.args[0]
+            : undefined;
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
@@ -1158,8 +1272,12 @@ function resolveFolderCall(
             const match = findContentBlockById(cleaned, blockId);
             if (!match) continue;
             body = match;
+          } else if (blockIndex !== undefined) {
+            const match = selectFenceBodyByIndex(cleaned, blockIndex);
+            if (match === null) continue;
+            body = match;
           } else {
-            body = stripFirstHeading(stripFileFrontmatter(cleaned));
+            body = stripFirstHeading(inlineContentFences(stripFileFrontmatter(cleaned)));
           }
           const section = document.createElement("div");
           section.classList.add("rpg-call-folder-section");
@@ -1176,7 +1294,7 @@ function resolveFolderCall(
               | Record<string, unknown>
               | undefined) ?? {};
             const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
-            if (entrySource !== callerSource) {
+            if (isImportHomebrew(entryFm.source, f.path, callerSource)) {
               applyHighlight(section, highlight, entrySource);
             }
           }
@@ -1207,8 +1325,7 @@ function resolveFolderCall(
             | undefined) ?? {};
           let homebrew = false;
           if (highlight.active) {
-            const entrySource = normalizeSource(String(fileFm.source ?? ""));
-            homebrew = entrySource !== callerSource;
+            homebrew = isImportHomebrew(fileFm.source, f.path, callerSource);
           }
           tabs.push({
             kind: "tab",
@@ -1283,7 +1400,7 @@ function resolveFolderCall(
             if (view.wrapper === "table") {
               try {
                 const row = view.render(
-                  { name: fileName, content: cleaned, frontmatter: mergedFm, file: f.path },
+                  { name: fileName, content: bodyText ?? cleaned, frontmatter: mergedFm, file: f.path },
                   call.args
                 );
                 nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
@@ -1314,15 +1431,22 @@ function resolveFolderCall(
                 }
               } else {
                 try {
+                  const hasParams = Object.keys(call.params).length > 0;
+                  // `magic` / `danger` re-extract their fence from content,
+                  // so they need the full file body — not just the post-`---`
+                  // prose that `bodyText` carries.
+                  const viewContent = call.fn === "magic" || call.fn === "danger" ? cleaned : (bodyText ?? cleaned);
                   const viewCtx: RuleViewCtx = {
                     name: fileName,
-                    content: cleaned,
+                    content: viewContent,
                     frontmatter: mergedFm,
                     file: f.path,
+                    params: hasParams ? interpolateParams(call.params, mergedFm) : undefined,
                   };
                   const terminalNode = view.render(viewCtx, call.args);
                   const entrySource = normalizeSource(mergedFm.source ? String(mergedFm.source) : "");
-                  const shouldHighlight = folderHighlight.active && entrySource !== folderCallerSource;
+                  const shouldHighlight =
+                    folderHighlight.active && isImportHomebrew(mergedFm.source, f.path, folderCallerSource);
                   if (hLevel && call.fn !== `h${hLevel}`) {
                     const headingEl = React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName);
                     if (shouldHighlight) {
@@ -1381,10 +1505,11 @@ function resolveFolderCall(
         }
 
         if (view.wrapper === "table") {
+          const hasParams = Object.keys(call.params).length > 0;
           for (const b of matching) {
             try {
               const row = view.render(
-                { name: fileName, content: b.body, frontmatter: b.frontmatter, file: f.path },
+                { name: fileName, content: b.body, frontmatter: b.frontmatter, file: f.path, params: hasParams ? interpolateParams(call.params, b.frontmatter) : undefined },
                 viewArgs
               );
               nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
@@ -1395,8 +1520,9 @@ function resolveFolderCall(
         } else {
           try {
             const entrySource = normalizeSource(fileFm.source ? String(fileFm.source) : "");
-            const shouldHighlight = folderHighlight.active && entrySource !== folderCallerSource;
-            const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm);
+            const shouldHighlight =
+              folderHighlight.active && isImportHomebrew(fileFm.source, f.path, folderCallerSource);
+            const node = renderByMode(view, matching, viewArgs, fileName, f.path, null, fileFm, call.params);
 
             if (shouldHighlight && view.wrapper === "ul") {
               // Track which files need highlighting for post-render marking
@@ -1518,7 +1644,7 @@ function resolveFolderCall(
                   | Record<string, unknown>
                   | undefined) ?? {};
                 const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
-                if (entrySource !== tableCallerSource) {
+                if (isImportHomebrew(entryFm.source, f.path, tableCallerSource)) {
                   tr.classList.add("rpg-row-highlight");
                   const lastTd = tr.querySelector("td:last-child");
                   if (lastTd) {
@@ -1587,7 +1713,7 @@ function resolveFolderCall(
                 const efFm = (deps.app.metadataCache.getCache(ef.path)?.frontmatter as
                   | Record<string, unknown> | undefined) ?? {};
                 const efSource = normalizeSource(efFm.source ? String(efFm.source) : "");
-                const isHl = folderHighlight.active && efSource !== folderCallerSource;
+                const isHl = folderHighlight.active && isImportHomebrew(efFm.source, ef.path, folderCallerSource);
                 if (isHl && allLis[liIdx]) {
                   const li = allLis[liIdx];
                   li.classList.add("rpg-item-highlight");
@@ -1659,20 +1785,6 @@ function renderCellInline(doc: Document, td: HTMLElement, text: string): void {
   }
   if (td.childNodes.length === 0) {
     td.textContent = text;
-  }
-}
-
-/**
- * Returns true when Obsidian's "Show inline title" setting is OFF — the
- * user has opted out of displaying the filename-derived H1 at the top of
- * every note. When importing a whole file via a view function, we mirror
- * that preference by stripping the first H1 from the body.
- */
-function shouldStripFirstHeading(app: App): boolean {
-  try {
-    return (app.vault as any).getConfig?.("showInlineTitle") === false;
-  } catch {
-    return false;
   }
 }
 

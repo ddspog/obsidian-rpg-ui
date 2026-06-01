@@ -30,5 +30,5 @@ If the spell is on your source’s spell list but of a higher circle than you ca
 
 The circle of the spell on the scroll determines the spell’s save DC and attack bonus, as well as the scroll’s rarity, as shown in the **Spell Scroll Rarity** table. 
 
-An Arcane circle spell on a [[spell scroll]] can be copied just as spells in spellbooks can be copied. When a spell is copied from a [[spell scroll]], the copier must succeed on an INT (Arcana) check with a DC equal to 10 + the spell’s circle. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the [[spell scroll]] is destroyed.
+An Arcane circle spell on a [[spell scroll]] can be copied just as spells in spellbooks can be copied. When a spell is copied from a [[spell scroll]], the copier must succeed on an INT ([[Arcana]]) check with a DC equal to 10 + the spell’s circle. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the [[spell scroll]] is destroyed.
 ```

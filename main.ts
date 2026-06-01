@@ -26,6 +26,9 @@ import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild, setBundleCacheContext } from "lib/systems/ts-loader";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
+import { parseListBlock } from "lib/domains/lists/parse-list-block";
+import { ListRenderChild, installListUnfoldObserver } from "lib/domains/lists/render-list-group";
+import { setOfficialSourcesResolver, homebrewBySetting } from "lib/domains/lists/official-sources";
 import {
   parseRuleContent,
   parseRuleNotes,
@@ -136,11 +139,28 @@ export default class DndUIToolkitPlugin extends Plugin {
     }
     registry.setFolderMappings(mappings);
 
+    // Per-system official sources → homebrew classification for list blocks.
+    // Reads this.settings live, so settings-tab edits take effect without
+    // re-registering. Longest matching folder prefix wins.
+    setOfficialSourcesResolver((notePath: string) => {
+      let best: { len: number; sources: string[] } | null = null;
+      for (const mapping of this.settings.systemMappings) {
+        const sources = mapping.officialSources;
+        if (!sources || sources.length === 0) continue;
+        for (const fp of mapping.folderPaths) {
+          const matches = fp === "" || notePath === fp || notePath.startsWith(fp.replace(/\/+$/, "") + "/");
+          if (matches && (!best || fp.length > best.len)) best = { len: fp.length, sources };
+        }
+      }
+      return best?.sources ?? [];
+    });
+
     // After layout is ready (all views mounted), wait for system bundles
     // to finish loading then auto-refresh so views render with the loaded
     // system's ruleViews on first open — no manual "Reload systems" needed.
     this.app.workspace.onLayoutReady(() => {
       installUnfoldObserver();
+      installListUnfoldObserver();
       const systemPaths = new Set(registry.getFolderMappings().values());
       Promise.all([
         // Load system bundles
@@ -319,6 +339,33 @@ export default class DndUIToolkitPlugin extends Plugin {
           } catch (err) {
             console.error("rpg table.* render failed", err);
             el.innerHTML = '<div class="notice">Error rendering rpg table</div>';
+          }
+          return;
+        }
+
+        // `rpg list.<name>` — a newspaper-flow reference list. The body is
+        // pure YAML (a heading `name` + reference-call `entries`). Like
+        // `table.*`, the reading-view path may collapse the fence info to a
+        // bare `"list"` meta — recover the name from the raw section text.
+        if (meta === "list" || meta.startsWith("list.")) {
+          let listName = meta.startsWith("list.") ? meta.slice("list.".length) : "";
+          if (!listName) {
+            const sectionText = ctx.getSectionInfo(el)?.text ?? "";
+            for (const line of sectionText.split("\n")) {
+              const fenceMatch = line.match(/^```rpg\s+list\.([A-Za-z0-9_-]+)/);
+              if (fenceMatch) {
+                listName = fenceMatch[1];
+                break;
+              }
+            }
+          }
+          try {
+            const block = parseListBlock(listName, source);
+            const child = new ListRenderChild(el, this.app, block, ctx.sourcePath);
+            ctx.addChild(child);
+          } catch (err) {
+            console.error("rpg list.* render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg list</div>';
           }
           return;
         }
@@ -893,7 +940,10 @@ export default class DndUIToolkitPlugin extends Plugin {
   private normalizeSystemMappings(rawMappings: unknown): DndUIToolkitSettings["systemMappings"] {
     if (!Array.isArray(rawMappings)) return [];
     return rawMappings.map((mapping) => {
-      const typed = mapping as {
+      if (!mapping || typeof mapping !== "object") {
+        return { folderPaths: [], systemFolderPath: "" };
+      }
+      const typed = mapping as Record<string, unknown> & {
         folderPath?: string;
         folderPaths?: string[];
         systemFolderPath?: string;
@@ -906,10 +956,18 @@ export default class DndUIToolkitPlugin extends Plugin {
           : [];
       // Migrate: if only the old systemFilePath key exists, use it as systemFolderPath
       const systemFolderPath = typed.systemFolderPath ?? typed.systemFilePath ?? "";
+      // Preserve any other persisted fields (e.g. `officialSources`) across
+      // normalization — stripping the legacy single-path keys so we don't
+      // round-trip both shapes. (Previously this rebuilt a bare object and
+      // silently dropped `officialSources`, disabling homebrew highlighting.)
+      const { folderPath: _legacyFolder, systemFilePath: _legacySys, ...rest } = typed;
+      void _legacyFolder;
+      void _legacySys;
       return {
+        ...rest,
         folderPaths: folderPaths.filter((p) => p !== undefined) as string[],
         systemFolderPath,
-      };
+      } as DndUIToolkitSettings["systemMappings"][number];
     });
   }
 
@@ -1173,8 +1231,21 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       // lets blockParsed.source override fm.source, but the component
       // can't distinguish "inherited from file" vs "block-specific" without
       // this flag.
-      if ("source" in blockParsed && blockParsed.source !== fm.source) {
+      // Homebrew flag. When the file's system declares official sources, that
+      // setting decides (a note whose `source:` matches none of the official
+      // patterns is homebrew) — the same global signal list blocks use.
+      // Otherwise fall back to the block-vs-file source diff. The `rpg-homebrew`
+      // class drives the diagonal hatch so feature/entity blocks (e.g. talents)
+      // flag homebrew consistently with rule blocks.
+      const effectiveSource = "source" in blockParsed ? blockParsed.source : fm.source;
+      const hbBySetting = homebrewBySetting(effectiveSource, this.sourcePath);
+      const isHomebrewBlock =
+        hbBySetting !== null
+          ? hbBySetting
+          : "source" in blockParsed && blockParsed.source !== fm.source;
+      if (isHomebrewBlock) {
         initialSelf.$homebrew = true;
+        this.containerEl.classList.add("rpg-homebrew");
       }
       const Comp = this.component as React.FC<Record<string, unknown>>;
       const app = this.app;

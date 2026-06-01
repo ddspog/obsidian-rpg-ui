@@ -35,6 +35,12 @@ If your PB doesn’t apply to a roll, doubling doesn’t change that. For instan
 
 In general, don’t double your PB for attack rolls or saves. If some feature or effect allows you to do so, the above rules still apply.
 ```
+### When Attacking
+```rpg rule.content
+id: attack
+---
+Add your proficiency bonus (PB) to your attack roll when you attack using a weapon with which you have proficiency and any time you attack with a spell. 
+```
 # On Character
 ```rpg rule.content
 id: on-character

@@ -6084,6 +6084,82 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   height: 0.85em;
 }
 
+/* lib/styles/components/danger-card.css */
+.rpg-danger-card {
+  --rpg-danger-bar-bg: color-mix(in srgb, var(--text-title) 15%, transparent);
+  display: block;
+  margin-block: var(--size-4-5, 1.25rem) var(--size-4-3, 0.75rem);
+  font-family: var(--font-text);
+  line-height: 1.6;
+}
+.rpg-danger-card hgroup {
+  display: block;
+  margin-bottom: var(--size-4-2, 0.5rem);
+}
+.rpg-danger-card hgroup :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  padding: var(--size-2-2, 0.25rem) var(--size-4-2, 0.5rem);
+  background: var(--rpg-danger-bar-bg);
+  color: var(--text-title);
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: var(--font-ui-medium, 1rem);
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-s, 4px);
+}
+.rpg-danger-card hgroup p {
+  margin: var(--size-2-2, 0.25rem) 0 0;
+}
+.rpg-danger-card hgroup small {
+  font-size: var(--font-ui-small);
+  font-style: italic;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+.rpg-danger-card__desc {
+  margin: 0 0 var(--size-4-2, 0.5rem);
+  color: var(--text-normal);
+}
+.rpg-danger-card__desc > :first-child {
+  margin-top: 0;
+}
+.rpg-danger-card__desc > :last-child {
+  margin-bottom: 0;
+}
+.rpg-danger-card__mechanics {
+  margin: 0;
+}
+.rpg-danger-card__mechanic {
+  margin-block: var(--size-2-3, 0.375rem);
+  text-indent: var(--size-4-4, 1rem);
+  color: var(--text-normal);
+}
+.rpg-danger-card__mechanic dt {
+  display: inline;
+  font-weight: 700;
+}
+.rpg-danger-card__mechanic dt::after {
+  content: ":";
+}
+.rpg-danger-card__mechanic dd {
+  display: inline;
+  margin: 0 0 0 0.35em;
+}
+.rpg-danger-card__mechanic dd > div {
+  display: inline;
+}
+.rpg-danger-card__mechanic dd > div > :first-child {
+  display: inline;
+  margin: 0;
+}
+.rpg-danger-card__mechanic dd > div > * + * {
+  display: block;
+  text-indent: 0;
+  margin-top: var(--size-2-2, 0.25rem);
+}
+
 /* lib/styles/components/feature-accordion.css */
 section[aria-details="Character Features"] {
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
@@ -7344,6 +7420,15 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   margin-right: 0.4em;
   opacity: 0.5;
 }
+.rpg-table td[data-valign=top] {
+  vertical-align: top;
+}
+.rpg-table td[data-valign=middle] {
+  vertical-align: middle;
+}
+.rpg-table td[data-valign=bottom] {
+  vertical-align: bottom;
+}
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,
 .rpg-table:has(a[href="#css/tx/s/wide"]) td {
   white-space: nowrap;
@@ -7754,6 +7839,104 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-content > :last-child {
   margin-bottom: 0;
 }
+.rpg-rule-content.rpg-rule-homebrew {
+  position: relative;
+  margin-block: var(--size-4-4, 1rem);
+  padding: 0.4em 0;
+  isolation: isolate;
+}
+.rpg-rule-content.rpg-rule-homebrew::before {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  width: auto;
+  height: auto;
+  border-width: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px);
+  transform: translate(5px, 5px);
+  pointer-events: none;
+  z-index: 0;
+}
+.rpg-rule-content.rpg-rule-homebrew::after {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  width: auto;
+  height: auto;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 40%, transparent);
+  transform: translate(-5px, -5px);
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse 35% 35% at 0% 0%,
+      black 0%,
+      transparent 70%),
+    radial-gradient(
+      ellipse 35% 35% at 100% 100%,
+      black 0%,
+      transparent 70%);
+  mask-image:
+    radial-gradient(
+      ellipse 35% 35% at 0% 0%,
+      black 0%,
+      transparent 70%),
+    radial-gradient(
+      ellipse 35% 35% at 100% 100%,
+      black 0%,
+      transparent 70%);
+}
+.rpg-rule-content.rpg-rule-homebrew > *:not(.rpg-rule-content__markers) {
+  position: relative;
+  z-index: 1;
+}
+.rpg-rule-content.rpg-rule-homebrew > .rpg-rule-content__markers {
+  position: absolute;
+  top: -10px;
+  right: -2px;
+  z-index: 2;
+}
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker {
+  border: none;
+  background: none;
+  color: var(--text-accent, #7c2d12);
+  opacity: 0.6;
+  width: 1.2em;
+  height: 1.2em;
+}
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker:hover {
+  opacity: 1;
+  color: var(--text-accent, #7c2d12);
+}
+.rpg-homebrew {
+  position: relative;
+  isolation: isolate;
+}
+.rpg-homebrew::before {
+  content: "";
+  position: absolute;
+  inset: -4px -6px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 22%, transparent) 5px);
+  border-radius: var(--radius-s, 4px);
+  pointer-events: none;
+  z-index: -1;
+}
+.rpg-rule-content.rpg-rule-homebrew .rpg-rule-content__marker svg {
+  width: 0.85em;
+  height: 0.85em;
+}
 .rpg-rule-content--special {
   position: relative;
   margin-block: var(--size-4-2, 0.5rem);
@@ -7824,6 +8007,16 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 }
 .rpg-rule-related > :last-child {
   margin-bottom: 0;
+}
+.rpg-rule-related__sep {
+  margin: var(--size-4-4, 1rem) 0;
+}
+.rpg-rule-related__sep::before {
+  content: "\203b";
+  display: block;
+  text-align: center;
+  color: color-mix(in srgb, var(--text-accent, #7c2d12) 50%, transparent);
+  letter-spacing: 0.3em;
 }
 .rpg-rule-notes {
   display: block;
@@ -9095,6 +9288,225 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
 .rpg-table-tfoot__pagination-row button.rpg-table-pagination__page.rpg-table-pagination__page--active {
   opacity: 1;
   font-weight: 600;
+}
+
+/* lib/styles/components/rpg-list.css */
+.rpg-list {
+  --rpg-list-bar-bg: color-mix(in srgb, var(--text-title) 12%, transparent);
+  --rpg-list-reserve: 18rem;
+  --rpg-list-min-col-height: 14rem;
+  --rpg-list-col: 17rem;
+  --rpg-list-col-gap: var(--size-4-8, 2rem);
+  --rpg-list-max-cols: 3;
+  --rpg-list-cap: calc( var(--rpg-list-max-cols) * var(--rpg-list-col) + (var(--rpg-list-max-cols) - 1) * var(--rpg-list-col-gap) );
+  --rpg-list-width: min(100cqi, var(--rpg-list-cap));
+  width: var(--rpg-list-width);
+  margin-inline: calc((100% - var(--rpg-list-width)) / 2);
+  box-sizing: border-box;
+  display: block;
+  margin-block: var(--size-4-5, 1.25rem) var(--size-4-3, 0.75rem);
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+.rpg-list-group,
+.el-pre:has(> .rpg-list-group),
+.el-pre:has(.rpg-list),
+[class*=block-language-]:has(.rpg-list) {
+  overflow: visible;
+}
+.rpg-list__columns {
+  column-count: var(--rpg-list-max-cols, 3);
+  column-fill: balance;
+  column-gap: var(--size-4-8, 2rem);
+  column-rule: 1px solid var(--background-modifier-border);
+  max-height: calc(100vh - var(--rpg-list-reserve, 12rem));
+  overflow: hidden auto;
+}
+.rpg-list-measure {
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+.rpg-list__section {
+  margin: 0;
+}
+.rpg-list__heading {
+  display: block;
+  margin: var(--size-4-4, 1rem) 0 var(--size-2-1, 0.15rem);
+  break-after: avoid-column;
+  break-inside: avoid;
+}
+.rpg-list__columns > .rpg-list__section:first-child > .rpg-list__heading,
+.rpg-list-measure > .rpg-list__section:first-child > .rpg-list__heading {
+  margin-top: 0;
+}
+.rpg-list__heading :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  padding: var(--size-2-2, 0.25rem) var(--size-4-2, 0.5rem);
+  background: var(--rpg-list-bar-bg);
+  color: var(--text-title);
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: var(--font-ui-medium, 1rem);
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-s, 4px);
+}
+.rpg-list__heading p {
+  margin: var(--size-2-2, 0.25rem) 0 0;
+}
+.rpg-list__heading small {
+  font-size: var(--font-ui-small);
+  font-style: italic;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+.rpg-list__entries {
+  margin: 0 0 var(--size-4-4, 1rem);
+  padding: 0;
+  list-style: none;
+}
+.rpg-list__entry {
+  margin: 0 0 var(--size-2-2, 0.25rem);
+  padding-left: 1.1em;
+  text-indent: -1.1em;
+  font-size: var(--font-ui-small, 0.8125rem);
+  line-height: 1.3;
+  color: var(--text-normal);
+  break-inside: avoid;
+}
+.rpg-list__entry > div,
+.rpg-list__entry > div > :first-child {
+  display: inline;
+  margin: 0;
+}
+.rpg-list__entry > div > * + * {
+  display: block;
+  text-indent: 0;
+  margin-top: var(--size-2-2, 0.25rem);
+}
+.rpg-list__entry--hl {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--rpg-list-hl, var(--text-faint, #999)) 22%, transparent) 4px,
+      color-mix(in srgb, var(--rpg-list-hl, var(--text-faint, #999)) 22%, transparent) 5px);
+  border-radius: var(--radius-s, 4px);
+  padding-block: 0.1em;
+  padding-right: 0.35em;
+}
+.rpg-list__empty {
+  margin: 0 0 var(--size-4-4, 1rem);
+  color: var(--text-muted);
+  font-style: italic;
+}
+.rpg-list--loading {
+  min-height: 2rem;
+}
+.rpg-list__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  gap: var(--size-2-3, 0.375rem);
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  padding: var(--size-4-2, 0.5rem) 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  border-top: 3px double color-mix(in srgb, var(--text-title) 22%, transparent);
+  border-bottom: 3px double color-mix(in srgb, var(--text-title) 22%, transparent);
+  scrollbar-width: none;
+}
+.rpg-list__chips::-webkit-scrollbar {
+  display: none;
+}
+button.rpg-list__chip {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  padding: 0.18rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+button.rpg-list__chip:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+button.rpg-list__chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent, var(--color-accent));
+}
+button.rpg-list__chip--active,
+button.rpg-list__chip--active:hover {
+  background: color-mix(in srgb, var(--text-title) 24%, var(--background-secondary));
+  color: var(--text-title);
+  border-color: color-mix(in srgb, var(--text-title) 45%, transparent);
+}
+.rpg-list__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-4-2, 0.5rem);
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+button.rpg-list__page-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+button.rpg-list__page-arrow:hover:not(:disabled) {
+  color: var(--text-title);
+}
+button.rpg-list__page-arrow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent, var(--color-accent));
+}
+button.rpg-list__page-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.rpg-list__page-indicator {
+  min-width: 3.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.rpg-list__page-indicator strong {
+  color: var(--text-title);
+  font-weight: 700;
+}
+.rpg-list__heading--cont :is(h1, h2, h3, h4, h5, h6) {
+  opacity: 0.75;
 }
 
 /* lib/styles/components/statblock.css */

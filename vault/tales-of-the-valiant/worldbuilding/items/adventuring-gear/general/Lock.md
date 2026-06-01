@@ -15,5 +15,5 @@ shop:
   availability:
     - "[[Premium]]"
 ---
-A key is provided with the lock. Without the key, a creature proficient with thieves’ tools (see **[[#Tools]]**) can pick this lock with a successful DC 15 DEX (Thieves’ Tools) check. Your GM can decide that better locks are available for higher prices.
+A key is provided with the lock. Without the key, a creature proficient with thieves’ tools (see [[Tools]]) can pick this lock with a successful DC 15 DEX (Thieves’ Tools) check. Your GM can decide that better locks are available for higher prices.
 ```

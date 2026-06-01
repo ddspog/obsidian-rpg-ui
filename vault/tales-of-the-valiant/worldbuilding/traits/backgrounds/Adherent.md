@@ -30,9 +30,9 @@ choose:
 ---
 **Skill Proficiencies:** Choose two from [[History]], [[Investigation]], [[Religion]], or [[Persuasion]]. 
 
-**Additional Proficiencies:** Gain proficiency with [[Artist Tools]] and an additional tool of your choice.
+**Additional Proficiencies:** Gain proficiency with [[artist tools]] and an additional tool of your choice.
 ```
-**Equipment:** A [[Prayer book ᴺ]] or [[Ceremonial Dagger ᴺ]], a [[Holy Symbol]], [[Incense (one block) ᴺ]], [[Vestments ᴺ]], [[Clothes, common]], and a [[Pouch]] containing 10 gp.
+**Equipment:** [[Prayer book ᴺ|A prayer book]] or [[Ceremonial Dagger ᴺ|ceremonial dagger]], [[Holy Symbol|a holy symbol]], [[Incense (one block) ᴺ|a block of fragrant incense]], [[Vestments ᴺ|vestments]], [[Clothes, common|a set of common clothes]], and [[Pouch|a pouch]] containing 10 gp.
 ```rpg feature.details
 name: Talent
 choose:

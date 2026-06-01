@@ -1,5 +1,4 @@
 ---
-cssclasses: ["note-item"]
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg item.magic

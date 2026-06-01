@@ -2,12 +2,14 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: sword
+tab-color: var(--color-red)
 ---
-# Training
+### Training
 
 You can spend downtime training to learn a new language, gain proficiency with a skill, weapon, tool, or armor, or gain a new talent (provided you meet the prerequisites). Your GM might offer options for training different things as well. 
 
-To begin training, you need a skilled and willing instructor who speaks your language and can teach you. The GM determines how long it takes to find an instructor and determines whether any ability checks are required to convince the instructor to teach you. Note that the **Carousing** downtime activity is an excellent way to find a teacher. 
+To begin training, you need a skilled and willing instructor who speaks your language and can teach you. The GM determines how long it takes to find an instructor and determines whether any ability checks are required to convince the instructor to teach you. Note that the [[Carousing]] downtime activity is an excellent way to find a teacher. 
 
 **_Time._** Training typically requires at least 50 weeks before mastering a new proficiency or talent, but the GM can increase or decrease this number as makes sense for the pace and story of a campaign. Successful resolution checks can dramatically shorten this time.
 

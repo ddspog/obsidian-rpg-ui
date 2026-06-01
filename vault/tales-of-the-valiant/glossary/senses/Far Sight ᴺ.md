@@ -12,5 +12,5 @@ A creature with far sight can see in magical darkness. Within far sight range, t
 ```rpg rule.related
 view: footer
 entries:
-- `@[[Senses#Vision and Obscured Areas]].highlight().bare(LIGHT)`
+- `@[[Senses#Vision and Obscured Areas]].bare(LIGHT)`
 ```

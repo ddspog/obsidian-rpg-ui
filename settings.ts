@@ -6,6 +6,11 @@ import { THEMES } from "lib/themes";
 export interface SystemMapping {
   folderPaths: string[];
   systemFolderPath: string;
+  /** Official source strings for this system. A note/spell whose `source:`
+   *  frontmatter contains one of these (case-insensitive substring) is
+   *  "official"; anything else (or missing) is treated as homebrew. Empty =
+   *  feature off (nothing flagged homebrew). */
+  officialSources?: string[];
 }
 
 /**

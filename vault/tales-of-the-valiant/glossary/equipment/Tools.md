@@ -16,7 +16,7 @@ Sometimes a tool is a single item, like a musical instrument. Other times a tool
 
 Your background, class, heritage, lineage, or talent features can give you proficiency with certain tools. Just like skills, you don’t need to be proficient in a tool to use it, but proficiency with a tool allows you to add your PB to ability checks you make using that tool. 
 
-Also, like skills, tools aren’t tied to specific ability scores. The ability score assigned to each ability check using a tool depends on what you are trying to accomplish. For example, when using construction tools, the GM might ask you to make a STR (Construction Tools) check to hammer nails into a hard surface, but ask for a DEX (Construction Tools) check to use the same tools to carve a wooden sculpture.
+Also, like skills, tools aren’t tied to specific ability scores. The ability score assigned to each ability check using a tool depends on what you are trying to accomplish. For example, when using construction tools, the GM might ask you to make a STR ([[Constructor Tools]]) check to hammer nails into a hard surface, but ask for a DEX ([[Constructor Tools]]) check to use the same tools to carve a wooden sculpture.
 
 ![[tools.webp|384]]
 ```

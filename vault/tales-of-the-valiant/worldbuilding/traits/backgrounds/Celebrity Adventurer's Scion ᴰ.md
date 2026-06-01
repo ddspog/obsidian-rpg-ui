@@ -34,9 +34,9 @@ choose:
 ---
 **Skill Proficiencies:** Choose two from [[Perception]], [[Performance]], [[Deception]], or [[Persuasion]].
 
-**Additional Proficiencies:** Gain proficiency with a [[Charlatan Tools]] and learn a language of your choice.
+**Additional Proficiencies:** Gain proficiency with a [[Charlatan Tools|a charlatan tools]] and learn a [[languages|a language]] of your choice.
 ```
-**Equipment:** A [[Charlatan Tools]], a set of fine clothes, and a belt [[Pouch]] containing 20 gp.
+**Equipment:** A [[Charlatan Tools|A charlatan tools]], [[Clothes, fine|a set of fine clothes]], and [[Pouch|a belt pouch]] containing 20 gp.
 ```rpg feature.details
 name: Talent
 choose:

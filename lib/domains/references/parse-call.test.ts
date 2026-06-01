@@ -2,46 +2,46 @@ import { describe, expect, it } from "vitest";
 import { CALL_PATTERN, matchAllCalls, parseArgs, parseCall } from "./parse-call";
 
 describe("parseArgs", () => {
-  it("returns empty array for empty input", () => {
-    expect(parseArgs("")).toEqual([]);
-    expect(parseArgs("   ")).toEqual([]);
+  it("returns empty arrays for empty input", () => {
+    expect(parseArgs("")).toEqual({ positional: [], named: {} });
+    expect(parseArgs("   ")).toEqual({ positional: [], named: {} });
   });
 
-  it("parses bare identifiers as strings", () => {
-    expect(parseArgs("name")).toEqual(["name"]);
-    expect(parseArgs("name, action, content")).toEqual(["name", "action", "content"]);
+  it("parses bare identifiers as positional strings", () => {
+    expect(parseArgs("name").positional).toEqual(["name"]);
+    expect(parseArgs("name, action, content").positional).toEqual(["name", "action", "content"]);
   });
 
   it("parses double-quoted strings", () => {
-    expect(parseArgs('"hello"')).toEqual(["hello"]);
-    expect(parseArgs('"hello world"')).toEqual(["hello world"]);
+    expect(parseArgs('"hello"').positional).toEqual(["hello"]);
+    expect(parseArgs('"hello world"').positional).toEqual(["hello world"]);
   });
 
   it("parses single-quoted strings", () => {
-    expect(parseArgs("'hello'")).toEqual(["hello"]);
+    expect(parseArgs("'hello'").positional).toEqual(["hello"]);
   });
 
   it("preserves commas inside quoted strings", () => {
-    expect(parseArgs('"a, b", c')).toEqual(["a, b", "c"]);
+    expect(parseArgs('"a, b", c').positional).toEqual(["a, b", "c"]);
   });
 
   it("parses integers and floats as numbers", () => {
-    expect(parseArgs("42")).toEqual([42]);
-    expect(parseArgs("3.14")).toEqual([3.14]);
-    expect(parseArgs("-5")).toEqual([-5]);
-    expect(parseArgs("-0.5")).toEqual([-0.5]);
+    expect(parseArgs("42").positional).toEqual([42]);
+    expect(parseArgs("3.14").positional).toEqual([3.14]);
+    expect(parseArgs("-5").positional).toEqual([-5]);
+    expect(parseArgs("-0.5").positional).toEqual([-0.5]);
   });
 
   it("parses booleans and null", () => {
-    expect(parseArgs("true, false, null")).toEqual([true, false, null]);
+    expect(parseArgs("true, false, null").positional).toEqual([true, false, null]);
   });
 
   it("tolerates whitespace around commas", () => {
-    expect(parseArgs("a , b ,  c")).toEqual(["a", "b", "c"]);
+    expect(parseArgs("a , b ,  c").positional).toEqual(["a", "b", "c"]);
   });
 
   it("handles mixed types", () => {
-    expect(parseArgs('grapple, "size 1", 5, true')).toEqual([
+    expect(parseArgs('grapple, "size 1", 5, true').positional).toEqual([
       "grapple",
       "size 1",
       5,
@@ -50,7 +50,51 @@ describe("parseArgs", () => {
   });
 
   it("treats unterminated quotes by taking the rest of the input", () => {
-    expect(parseArgs('"unterminated')).toEqual(["unterminated"]);
+    expect(parseArgs('"unterminated').positional).toEqual(["unterminated"]);
+  });
+
+  it("parses named parameters with quoted values", () => {
+    const result = parseArgs('grapple, name: "${name} (${cost})"');
+    expect(result.positional).toEqual(["grapple"]);
+    expect(result.named).toEqual({ name: "${name} (${cost})" });
+  });
+
+  it("parses named parameters with bare values", () => {
+    const result = parseArgs("grapple, level: 3");
+    expect(result.positional).toEqual(["grapple"]);
+    expect(result.named).toEqual({ level: 3 });
+  });
+
+  it("parses named parameter with no value (use default)", () => {
+    const result = parseArgs("grapple, content:");
+    expect(result.positional).toEqual(["grapple"]);
+    expect(result.named).toEqual({ content: undefined });
+  });
+
+  it("parses multiple named parameters", () => {
+    const result = parseArgs('grapple, name: "${name} (${cost})", content: "${content}"');
+    expect(result.positional).toEqual(["grapple"]);
+    expect(result.named).toEqual({
+      name: "${name} (${cost})",
+      content: "${content}",
+    });
+  });
+
+  it("handles named param with empty value followed by another named param", () => {
+    const result = parseArgs("content:, name: Custom");
+    expect(result.positional).toEqual([]);
+    expect(result.named).toEqual({ content: undefined, name: "Custom" });
+  });
+
+  it("does not confuse comparison operators with named params", () => {
+    const result = parseArgs("rarity == Rare");
+    expect(result.positional).toEqual(["rarity == Rare"]);
+    expect(result.named).toEqual({});
+  });
+
+  it("handles parens inside quoted strings (template expressions)", () => {
+    const result = parseArgs('name: "${name} (${cost})"');
+    expect(result.named).toEqual({ name: "${name} (${cost})" });
   });
 });
 
@@ -60,6 +104,7 @@ describe("parseCall", () => {
       target: "rules/luck",
       fn: "view",
       args: [],
+      params: {},
       chain: [],
       source: "@[[rules/luck]].view()",
     });
@@ -70,6 +115,7 @@ describe("parseCall", () => {
       target: "rules/combat",
       fn: "view",
       args: ["grapple"],
+      params: {},
       chain: [],
       source: "@[[rules/combat]].view(grapple)",
     });
@@ -80,6 +126,7 @@ describe("parseCall", () => {
       target: "rules/grappling",
       fn: "row",
       args: ["name", "1 action", 5],
+      params: {},
       chain: [],
       source: '@[[rules/grappling]].row(name, "1 action", 5)',
     });
@@ -130,6 +177,7 @@ describe("parseCall", () => {
       target: "items/weapons/",
       fn: "magic",
       args: [],
+      params: {},
       chain: [],
       source: "@[[items/weapons/]].magic()",
     });
@@ -140,7 +188,8 @@ describe("parseCall", () => {
       target: "rules/combat",
       fn: "view",
       args: [],
-      chain: [{ fn: "highlight", args: [] }],
+      params: {},
+      chain: [{ fn: "highlight", args: [], params: {} }],
       source: "@[[rules/combat]].highlight().view()",
     });
   });
@@ -150,7 +199,8 @@ describe("parseCall", () => {
       target: "rules/luck",
       fn: "view",
       args: [],
-      chain: [{ fn: "highlight", args: ["Homebrew", "red"] }],
+      params: {},
+      chain: [{ fn: "highlight", args: ["Homebrew", "red"], params: {} }],
       source: "@[[rules/luck]].highlight(Homebrew, red).view()",
     });
   });
@@ -161,9 +211,10 @@ describe("parseCall", () => {
       target: "items/",
       fn: "magic",
       args: [],
+      params: {},
       chain: [
-        { fn: "filter", args: ["rarity == Rare"] },
-        { fn: "block", args: ["item.magic"] },
+        { fn: "filter", args: ["rarity == Rare"], params: {} },
+        { fn: "block", args: ["item.magic"], params: {} },
       ],
       source: "@[[items/]].filter(rarity == Rare).block(item.magic).magic()",
     });
@@ -175,8 +226,45 @@ describe("parseCall", () => {
       target: "weapons/",
       fn: "row",
       args: ["link", "damage", "weight"],
-      chain: [{ fn: "highlight", args: [] }],
+      params: {},
+      chain: [{ fn: "highlight", args: [], params: {} }],
       source: "@[[weapons/]].highlight().row(link, damage, weight)",
+    });
+  });
+
+  it("parses named parameters in the terminal call", () => {
+    const result = parseCall('@[[rules/combat]].p(grapple, name: "${name} (${cost})")');
+    expect(result).toEqual({
+      target: "rules/combat",
+      fn: "p",
+      args: ["grapple"],
+      params: { name: "${name} (${cost})" },
+      chain: [],
+      source: '@[[rules/combat]].p(grapple, name: "${name} (${cost})")',
+    });
+  });
+
+  it("parses named param with no value", () => {
+    const result = parseCall("@[[rules/combat]].p(grapple, content:)");
+    expect(result).toEqual({
+      target: "rules/combat",
+      fn: "p",
+      args: ["grapple"],
+      params: { content: undefined },
+      chain: [],
+      source: "@[[rules/combat]].p(grapple, content:)",
+    });
+  });
+
+  it("handles parens inside quoted template strings", () => {
+    const result = parseCall('@[[spells/fireball]].p(name: "${name} (${level})")');
+    expect(result).toEqual({
+      target: "spells/fireball",
+      fn: "p",
+      args: [],
+      params: { name: "${name} (${level})" },
+      chain: [],
+      source: '@[[spells/fireball]].p(name: "${name} (${level})")',
     });
   });
 });
@@ -208,9 +296,6 @@ describe("matchAllCalls", () => {
   });
 
   it("CALL_PATTERN is a global-flag regex (caller-resettable)", () => {
-    // Sanity: matching twice without resetting lastIndex would skip
-    // the second occurrence — matchAllCalls handles this, but the
-    // exported pattern must have the `g` flag.
     expect(CALL_PATTERN.flags).toContain("g");
   });
 
@@ -228,7 +313,7 @@ describe("matchAllCalls", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].target).toBe("items/");
     expect(calls[0].fn).toBe("magic");
-    expect(calls[0].chain).toEqual([{ fn: "highlight", args: [] }]);
+    expect(calls[0].chain).toEqual([{ fn: "highlight", args: [], params: {} }]);
     expect(text.slice(calls[0].start, calls[0].end)).toBe("@[[items/]].highlight().magic()");
   });
 
@@ -238,9 +323,17 @@ describe("matchAllCalls", () => {
     expect(calls).toHaveLength(2);
     expect(calls[0].target).toBe("weapons/");
     expect(calls[0].fn).toBe("row");
-    expect(calls[0].chain).toEqual([{ fn: "filter", args: ["rarity == Rare"] }]);
+    expect(calls[0].chain).toEqual([{ fn: "filter", args: ["rarity == Rare"], params: {} }]);
     expect(calls[1].target).toBe("armor/");
     expect(calls[1].fn).toBe("magic");
-    expect(calls[1].chain).toEqual([{ fn: "highlight", args: [] }]);
+    expect(calls[1].chain).toEqual([{ fn: "highlight", args: [], params: {} }]);
+  });
+
+  it("matches calls with template params containing parens", () => {
+    const text = '@[[spells/fireball]].p(name: "${name} (${level})")';
+    const calls = matchAllCalls(text);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].params).toEqual({ name: "${name} (${level})" });
+    expect(text.slice(calls[0].start, calls[0].end)).toBe(text);
   });
 });

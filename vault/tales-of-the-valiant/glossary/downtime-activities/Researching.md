@@ -2,8 +2,10 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: book
+tab-color: var(--color-yellow)
 ---
-# Researching
+### Researching
 
 You can spend downtime accruing information about the creatures, myths, and mysteries of your campaign setting. This activity typically requires access to some repository of knowledge such as a noble's private library, a public space like a college or university, witness or expert accounts, gossip gathered over drinks, or even a field study where your chosen topic occurs naturally. 
 
@@ -13,7 +15,7 @@ To begin, discuss with your GM what you are looking for. Your GM then determines
 
 **_Cost._** Each week of downtime you spend researching, you must spend at least 50 gp to cover expenses, or more if the GM rules the information you seek is difficult to find. This cost represents materials purchased, palms greased to gain access, donations required to access public records, and similar expenses. 
 
-**_Resolution._** At the end of each week spent researching, a PC makes an INT ([[013. Glossary/Skills/Arcana]]), INT ([[History]]), INT ([[Nature]]), INT ([[Religion]]) check (or a similarly relevant ability check) to determine whether they learned any clues about the topic of their research, as shown on the **Researching Resolution** table. 
+**_Resolution._** At the end of each week spent researching, a PC makes an INT ([[Arcana]]), INT ([[History]]), INT ([[Nature]]), INT ([[Religion]]) check (or a similarly relevant ability check) to determine whether they learned any clues about the topic of their research, as shown on the **Researching Resolution** table. 
 
 ```rpg table.researching-resolution
 |CHECK RESULT|RESOLUTION|
@@ -35,8 +37,14 @@ A clue is a concise, specific, and true fact about a creature, place, historical
 ```rpg table.sample-clues
 |RESEARCH TOPIC|SUGGESTED CLUES|
 |---|---|
-|Creatures|A list of immunities, vulnerabilities, and resistances or similar mechanical information. <br><br>Details of where a particular creature might lair or signs to detect its presence in a region. <br><br>Lore about a particular creature's history or origin.|
-|Items|The last known location of a particular magic item. <br><br>The name or history of an item's creator. <br><br>Properties of a magic item or signs of its use.|
-|Places|Directions to a particular location. <br><br>Hazards (magical or mundane) in an area. <br><br>Information on the customs of people in an area.|
+|Creatures|A list of immunities, vulnerabilities, and resistances or similar mechanical information.|
+|^^|Details of where a particular creature might lair or signs to detect its presence in a region.|
+|^^|Lore about a particular creature's history or origin.|
+|Items|The last known location of a particular magic item.|
+|^^|The name or history of an item's creator.|
+|^^|Properties of a magic item or signs of its use.|
+|Places|Directions to a particular location.|
+|^^|Hazards (magical or mundane) in an area.|
+|^^|Information on the customs of people in an area.|
 [SAMPLE CLUES]
 ```

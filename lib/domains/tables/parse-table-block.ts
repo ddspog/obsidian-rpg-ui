@@ -18,6 +18,7 @@
 
 import type { FooterCell, FooterRow, FooterSegment, TableCell, TableDef, TableRow } from "./types";
 import { parsePaginateDirective, type PaginationConfig } from "./pagination";
+import { parseMergeMarker } from "./row-merge";
 
 /** Normalise a column label into a stable key: lowercase, non-alphanum → `_`. */
 export function normalizeColumnKey(label: string): string {
@@ -311,6 +312,19 @@ export function parseTableBlock(name: string, body: string): TableDef {
   const rows: TableRow[] = bodyLines.map((l) => {
     const row: TableRow = { cells: splitCells(l) };
     for (const cell of row.cells) {
+      // `^` (and its aligned variants) marks a vertical merge: the cell
+      // carries no content and joins the cell above. Detected before the
+      // `> ` indent rule since a marker is content-free. A marker occupies
+      // exactly one column, so any `||` colspan it picked up is dropped — the
+      // anchor's own colspan governs the merged region's width.
+      const marker = parseMergeMarker(cell.value);
+      if (marker) {
+        cell.mergeUp = true;
+        if (marker.align) cell.mergeAlign = marker.align;
+        cell.value = "";
+        delete cell.colspan;
+        continue;
+      }
       const m = cell.value.match(/^(>+)\s/);
       if (m) {
         cell.indent = m[1].length;

@@ -12,7 +12,7 @@ image: "![[shield.webp|384]]"
 armor:
   ac: "+2"
   category: Shield
-  properties: []
+  properties: ["*"]
 shop:
   cheap: 7 gp
   expensive: 15 gp

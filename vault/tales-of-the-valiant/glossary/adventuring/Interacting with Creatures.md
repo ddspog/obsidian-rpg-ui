@@ -9,8 +9,7 @@ tab-order: 3
 ````rpg rule.content
 id: summary
 ---
-![[social-interaction.webp|banner+tall]]
-
+`@[[social-interaction.webp]].banner(hero)`
 ```rpg rule.side
 title: PLAYER ADVICE
 type: rules

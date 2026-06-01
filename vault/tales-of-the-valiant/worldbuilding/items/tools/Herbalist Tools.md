@@ -21,7 +21,7 @@ Herbalist tools are used to store and brew plants and other organic materials in
 
 **_Components._** This tool kit includes glass vials, a mortar and pestle, pouches for ingredient storage, clippers, a pair of leather gloves, and a small pot for brewing. 
 
-**_Craft Items._** Herbalist tools can be used to make items like those listed in the Herbal Concoctions section of the **Adventuring Gear** table (see **[[#Special Gear]]** in this chapter), with the crafting downtime activity (see **[[06. Playing the Game#Downtime Activities|Downtime Activities]]** in **Chapter 6**). 
+**_Craft Items._** Herbalist tools can be used to make items like those listed in the Herbal Concoctions section of the **Adventuring Gear** table (see [[Adventuring Gear#Special Gear|Special Gear]]), with the crafting downtime activity (see **[[06. Playing the Game#Downtime Activities|Downtime Activities]]** in **Chapter 6**). 
 
 ```rpg table.herbalist-tools-example-tasks
 |TASK|DC|

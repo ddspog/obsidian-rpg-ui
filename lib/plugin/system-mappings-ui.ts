@@ -203,6 +203,56 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
 
     renderFolderList();
 
+    // 2b) Official sources row: strings marking content "official"; a note
+    // whose `source:` frontmatter contains none of these is homebrew.
+    const sourceSetting = new Setting(mappingContainer)
+      .setName("Official sources")
+      .setDesc(
+        "Patterns for the `source:` field that count as official; anything else is homebrew. " +
+          "Use % as the wildcard (any text); everything else, incl. *, is literal."
+      );
+    sourceSetting.addText((text) => {
+      text.setPlaceholder("Add source (Enter to add)").setValue("");
+      text.inputEl.style.width = "220px";
+      text.inputEl.addEventListener("keydown", async (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const existing = mapping.officialSources ?? [];
+          const entries = text.inputEl.value
+            .split(/[;\n]+/)
+            .map((e) => e.trim())
+            .filter((e) => e.length > 0)
+            .filter((e) => !existing.includes(e));
+          if (entries.length === 0) {
+            text.setValue("");
+            return;
+          }
+          mapping.officialSources = [...existing, ...entries];
+          text.setValue("");
+          await saveAndSync(ctx);
+          renderSourceList();
+        }
+      });
+      return text;
+    });
+
+    const sourceChips = sourceSetting.controlEl.createDiv({ cls: "rpg-folder-list" });
+    const renderSourceList = () => {
+      sourceChips.empty();
+      (mapping.officialSources ?? []).forEach((s) => {
+        const chip = sourceChips.createDiv({ cls: "rpg-folder-chip" });
+        chip.createSpan({ text: s, cls: "rpg-folder-chip-label" });
+        const removeButton = chip.createEl("button", { text: "x", cls: "rpg-folder-chip-remove" });
+        removeButton.addEventListener("click", async () => {
+          mapping.officialSources = (mapping.officialSources ?? []).filter((entry) => entry !== s);
+          await saveAndSync(ctx);
+          renderSourceList();
+        });
+      });
+    };
+
+    renderSourceList();
+
     // 3) Output row: processed JSON + Inspect + Copy
     const systemName = mapping.systemFolderPath
       ? mapping.systemFolderPath.split("/").pop() || mapping.systemFolderPath

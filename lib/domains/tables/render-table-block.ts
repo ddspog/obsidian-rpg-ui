@@ -25,7 +25,9 @@
 
 import type { FooterCell, FooterRow, TableDef, TableRow } from "./types";
 import type { PaginationConfig, PaginationState } from "./pagination";
-import { sliceRows, totalPages } from "./pagination";
+import { totalPages } from "./pagination";
+import type { RowRange } from "./row-merge";
+import { resolveRenderRows } from "./row-merge";
 import { formatRollOutcome, rollCell, rollOnce } from "./roll";
 import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
@@ -105,29 +107,6 @@ function renderCellValue(el: HTMLElement, raw: string): void {
   if (el.childNodes.length === 0) {
     el.textContent = cleaned;
   }
-}
-
-/**
- * Detect a category-divider row — a single-cell row whose colspan
- * fills every column of the table. Authors write these the tx way
- * (`| Light Armor ||||||`) to split a long table into visually-grouped
- * sections; we tag them with `data-category="true"` so the stylesheet
- * can paint the band background without anyone needing to author a
- * `#css/row/category` class annotation.
- */
-function isCategoryRow(row: TableRow, columnCount: number): boolean {
-  if (row.cells.length !== 1) return false;
-  const cell = row.cells[0];
-  const span = cell.colspan ?? 1;
-  return span >= columnCount && cell.value.trim().length > 0;
-}
-
-/** Strip the legacy `#css/row/...` annotation suffix that tx tables
- *  used to hint at row styling. Authors coming from tx can leave these
- *  in-place — the parser keeps the raw value, and the renderer drops
- *  the trailing hashtag so the label reads clean. */
-function cleanCategoryLabel(raw: string): string {
-  return raw.replace(/\s*#css\/row\/[^\s|]+\s*$/, "").trim();
 }
 
 /**
@@ -273,22 +252,41 @@ export function renderTableBlock(
 
   let state: PaginationState = { page: 0, visiblePages: 1 };
 
+  // Visible window of body rows, mirroring `sliceRows` semantics. Spans are
+  // resolved over this window so a `^` orphaned at a page top re-anchors.
+  function computeRange(): RowRange {
+    if (!paginationConfig) return { start: 0, end: allRows.length };
+    if (paginationConfig.controls === "show-more") {
+      return { start: 0, end: Math.min(allRows.length, paginationConfig.size * state.visiblePages) };
+    }
+    const start = paginationConfig.size * state.page;
+    return { start, end: Math.min(allRows.length, start + paginationConfig.size) };
+  }
+
   function renderRows(): void {
     tbody.innerHTML = "";
-    const visibleRows = paginationConfig
-      ? sliceRows(allRows, paginationConfig, state)
-      : allRows;
-    for (const row of visibleRows) {
+    const rendered = resolveRenderRows(allRows, def.columns.length, computeRange());
+    for (const rr of rendered) {
       const tr = doc.createElement("tr");
-      if (isCategoryRow(row, def.columns.length)) {
+      if (rr.category) {
         tr.setAttribute("data-category", "true");
-        const cell = row.cells[0];
         const td = doc.createElement("td");
-        td.colSpan = def.columns.length;
-        td.textContent = cleanCategoryLabel(cell.value);
+        td.colSpan = def.columns.length || 1;
+        td.textContent = rr.categoryLabel ?? "";
         tr.appendChild(td);
       } else {
-        appendRow(tr, row, "td");
+        for (const cell of rr.cells) {
+          const td = doc.createElement("td");
+          if (cell.colspan && cell.colspan > 1) td.colSpan = cell.colspan;
+          if (cell.rowspan && cell.rowspan > 1) {
+            td.rowSpan = cell.rowspan;
+            if (cell.valign) td.setAttribute("data-valign", cell.valign);
+          }
+          if (cell.indent) td.setAttribute("data-indent", String(cell.indent));
+          if (cell.carried) td.setAttribute("data-merge-carried", "true");
+          renderCellValue(td, cell.value);
+          tr.appendChild(td);
+        }
       }
       tbody.appendChild(tr);
     }

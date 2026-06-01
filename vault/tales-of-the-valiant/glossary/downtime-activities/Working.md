@@ -2,8 +2,10 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+tab-icon: coins
+tab-color: var(--color-green)
 ---
-# Working
+### Working
 
 You can spend downtime earning income by engaging in a profession or by taking odd jobs as work becomes available. To select this activity, you must have access to customers or clients willing and able to pay for the services you offer. 
 
