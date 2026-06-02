@@ -39,7 +39,7 @@ var __system_module = (() => {
     ruleViews: () => ruleViews,
     system: () => system
   });
-  var import_rpg_ui_toolkit23 = __require("rpg-ui-toolkit");
+  var import_rpg_ui_toolkit25 = __require("rpg-ui-toolkit");
 
   // vault:tales-of-the-valiant/config/attributes.ts
   var attributes = [
@@ -3110,7 +3110,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   };
   function SpellEntry({
     spellName,
-    group,
+    group: group2,
     doc,
     enablerSource
   }) {
@@ -3121,7 +3121,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     if (doc == null ? void 0 : doc.range) subParts.push({ key: "range", label: "Range", value: doc.range });
     if (componentsLabel) subParts.push({ key: "components", label: "Components", value: componentsLabel });
     if (doc == null ? void 0 : doc.duration) subParts.push({ key: "duration", label: "Duration", value: doc.duration });
-    return /* @__PURE__ */ React9.createElement("li", { className: "rpg-spell-entry", "data-group": group }, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-header" }, /* @__PURE__ */ React9.createElement("a", { className: "internal-link rpg-spell-entry-name", href: stem, "data-href": stem }, stem), (doc == null ? void 0 : doc.casting) && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-casting", "aria-details": "Casting Time" }, doc.casting, " to cast")), styleLabel && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-style", "aria-details": "Style" }, styleLabel)), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-group", "aria-details": "Spell Group" }, /* @__PURE__ */ React9.createElement("em", null, GROUP_LABEL[group]))), /* @__PURE__ */ React9.createElement(
+    return /* @__PURE__ */ React9.createElement("li", { className: "rpg-spell-entry", "data-group": group2 }, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-header" }, /* @__PURE__ */ React9.createElement("a", { className: "internal-link rpg-spell-entry-name", href: stem, "data-href": stem }, stem), (doc == null ? void 0 : doc.casting) && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-casting", "aria-details": "Casting Time" }, doc.casting, " to cast")), styleLabel && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-style", "aria-details": "Style" }, styleLabel)), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-group", "aria-details": "Spell Group" }, /* @__PURE__ */ React9.createElement("em", null, GROUP_LABEL[group2]))), /* @__PURE__ */ React9.createElement(
       "a",
       {
         className: "internal-link rpg-spell-entry-enabler",
@@ -3227,16 +3227,16 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         onToggle: (e) => setOpen(e.currentTarget.open)
       },
       /* @__PURE__ */ React9.createElement("summary", null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-circle-label" }, label), circle !== 0 && slotsMax > 0 && /* @__PURE__ */ React9.createElement(SlotPips, { max: slotsMax, spent, onChange: onSpentChange }), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-circle-count" }, total)),
-      total === 0 ? /* @__PURE__ */ React9.createElement("p", { "aria-details": "Empty Circle" }, /* @__PURE__ */ React9.createElement("em", null, "\u2014")) : /* @__PURE__ */ React9.createElement("ul", { "aria-label": `${label} Spells`, className: "rpg-spell-entries" }, ordered.map(({ group, name }) => {
+      total === 0 ? /* @__PURE__ */ React9.createElement("p", { "aria-details": "Empty Circle" }, /* @__PURE__ */ React9.createElement("em", null, "\u2014")) : /* @__PURE__ */ React9.createElement("ul", { "aria-label": `${label} Spells`, className: "rpg-spell-entries" }, ordered.map(({ group: group2, name }) => {
         var _a;
         const stem = bareStem(name);
         const enabler = (_a = caster.grantedBy[stem]) != null ? _a : caster.source;
         return /* @__PURE__ */ React9.createElement(
           SpellEntry,
           {
-            key: `${group}:${name}`,
+            key: `${group2}:${name}`,
             spellName: name,
-            group,
+            group: group2,
             doc: spells2[stem],
             enablerSource: enabler
           }
@@ -5326,6 +5326,128 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   // vault:tales-of-the-valiant/config/blocks/feature/details.tsx
   var React17 = __toESM(__require("react"));
   var import_rpg_ui_toolkit17 = __require("rpg-ui-toolkit");
+  function resolvePath(obj, path) {
+    let cur = obj;
+    for (const key of path.split(".")) {
+      if (cur == null || typeof cur !== "object") return void 0;
+      cur = cur[key];
+    }
+    return cur;
+  }
+  function toNumber(val) {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const n = Number(val);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+  function findChar(expr, ch) {
+    let inQ = null;
+    for (let i = 0; i < expr.length; i++) {
+      const c = expr[i];
+      if (inQ) {
+        if (c === inQ) inQ = null;
+      } else {
+        if (c === '"' || c === "'") inQ = c;
+        else if (c === ch) return i;
+      }
+    }
+    return -1;
+  }
+  function evalExpr(expr, ctx) {
+    const ternIdx = findChar(expr, "?");
+    if (ternIdx >= 0) {
+      const cond = expr.slice(0, ternIdx).trim();
+      const rest = expr.slice(ternIdx + 1);
+      const colonIdx = findChar(rest, ":");
+      const truePart = colonIdx >= 0 ? rest.slice(0, colonIdx).trim() : rest.trim();
+      const falsePart = colonIdx >= 0 ? rest.slice(colonIdx + 1).trim() : "";
+      const condVal = evalExpr(cond, ctx);
+      return condVal ? evalExpr(truePart, ctx) : falsePart ? evalExpr(falsePart, ctx) : "";
+    }
+    if (expr.startsWith('"') && expr.endsWith('"') || expr.startsWith("'") && expr.endsWith("'")) {
+      return expr.slice(1, -1);
+    }
+    const cmpMatch = expr.match(/^(.+?)\s*(>=|<=|!=|==|>|<)\s*(.+)$/);
+    if (cmpMatch) {
+      const l = toNumber(evalExpr(cmpMatch[1].trim(), ctx));
+      const r = toNumber(evalExpr(cmpMatch[3].trim(), ctx));
+      if (l === null || r === null) return false;
+      switch (cmpMatch[2]) {
+        case ">":
+          return l > r;
+        case "<":
+          return l < r;
+        case ">=":
+          return l >= r;
+        case "<=":
+          return l <= r;
+        case "==":
+          return l === r;
+        case "!=":
+          return l !== r;
+      }
+    }
+    const arithMatch = expr.match(/^(.+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
+    if (arithMatch) {
+      const l = toNumber(evalExpr(arithMatch[1].trim(), ctx));
+      const r = toNumber(evalExpr(arithMatch[3].trim(), ctx));
+      if (l === null || r === null) return null;
+      switch (arithMatch[2]) {
+        case "+":
+          return l + r;
+        case "-":
+          return l - r;
+        case "*":
+          return l * r;
+        case "/":
+          return r !== 0 ? Math.floor(l / r) : 0;
+      }
+    }
+    const t = expr.trim();
+    if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
+    if (t === "true") return true;
+    if (t === "false") return false;
+    const fnMatch = t.match(/^(.+)\.(\w+)\(\)$/);
+    if (fnMatch) {
+      const obj = resolvePath(ctx, fnMatch[1]);
+      return callBuiltin(obj, fnMatch[2]);
+    }
+    return resolvePath(ctx, t);
+  }
+  function callBuiltin(value, fn) {
+    let raw;
+    if (typeof value === "string") raw = value;
+    else if (value && typeof value === "object" && typeof value.name === "string") raw = value.name;
+    else raw = "";
+    const name = raw.toLowerCase();
+    const commaIdx = name.indexOf(", ");
+    switch (fn) {
+      case "first_name":
+        return commaIdx >= 0 ? name.slice(commaIdx + 2) : name;
+      case "last_name":
+        return commaIdx >= 0 ? name.slice(0, commaIdx) : name;
+      case "name":
+        return commaIdx >= 0 ? `${name.slice(commaIdx + 2)} ${name.slice(0, commaIdx)}` : name;
+      default:
+        return void 0;
+    }
+  }
+  function substituteExample(text, params, exSelf) {
+    const lowerSelf = { ...exSelf, name: typeof exSelf.name === "string" ? exSelf.name.toLowerCase() : exSelf.name };
+    const ctx = { self: lowerSelf, ...params };
+    let result = text;
+    let prev = "";
+    while (prev !== result) {
+      prev = result;
+      result = result.replace(/\{\{\s*((?:[^{}]|\{(?!\{)|\}(?!\}))*?)\s*\}\}/g, (_, expr) => {
+        const val = evalExpr(expr.trim(), ctx);
+        return val != null ? String(val) : "";
+      });
+    }
+    return result;
+  }
   function HomebrewBadge({ source }) {
     const ref = React17.useRef(null);
     React17.useEffect(() => {
@@ -5371,19 +5493,40 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     return raw.toLowerCase().replace(/[\s\-_]+/g, "") === "notitle";
   }
   var details = ({ self, lookup }) => {
-    var _a, _b;
+    var _a;
     const resolvedLink = self.link ? resolveWikilink(self.link) : null;
     const isResource = self.type === "resource";
     const hideTitle = isNoTitleView(self.view);
-    const HeadingTag = `h${Math.max(1, Math.min(6, (_a = self.heading) != null ? _a : 3))}`;
+    const isParagraphMode = self.heading === "p";
+    const HeadingTag = isParagraphMode ? null : `h${Math.max(1, Math.min(6, typeof self.heading === "number" ? self.heading : 3))}`;
     const isHomebrew = !!self.$homebrew;
     const context = React17.useMemo(() => {
       var _a2;
       return { tables: (_a2 = lookup == null ? void 0 : lookup.$tables) != null ? _a2 : {}, vars: {} };
     }, [lookup == null ? void 0 : lookup.$tables]);
+    const displayText = React17.useMemo(() => {
+      var _a2, _b, _c;
+      if (!self.text) return void 0;
+      if (!self.example) return self.text;
+      const exSelf = (_a2 = self.example.self) != null ? _a2 : {};
+      const exTierKey = self.example.tier != null ? String(self.example.tier) : void 0;
+      const tiers = self.tiers;
+      let tierParams = {};
+      if (tiers && Object.keys(tiers).length > 0) {
+        tierParams = (_c = (_b = exTierKey != null ? tiers[exTierKey] : void 0) != null ? _b : tiers[Object.keys(tiers)[0]]) != null ? _c : {};
+      }
+      return substituteExample(self.text, tierParams, exSelf);
+    }, [self.text, self.example, self.tiers]);
     const cls = ["rpg-feature-card"];
     if (isHomebrew) cls.push("rpg-feature-homebrew");
-    return /* @__PURE__ */ React17.createElement("article", { className: cls.join(" "), "aria-label": `Feature ${self.name}` }, isHomebrew && /* @__PURE__ */ React17.createElement(HomebrewBadge, { source: (_b = self.source) != null ? _b : "" }), /* @__PURE__ */ React17.createElement("hgroup", null, !hideTitle && /* @__PURE__ */ React17.createElement(HeadingTag, null, self.name), /* @__PURE__ */ React17.createElement("p", null, self.subtitle ? /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Subtitle" }, self.subtitle) : /* @__PURE__ */ React17.createElement(React17.Fragment, null, self.level != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Level" }, "Lv. ", self.level), self.uses != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Uses" }, self.uses, " use", self.uses === 1 ? "" : "s")), isResource && self.max != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Resource Max" }, "Max: ", formatMax(self.max)), isResource && self.recovery && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Resource Recovery" }, "Recovery: ", self.recovery))), self.text && /* @__PURE__ */ React17.createElement(import_rpg_ui_toolkit17.Markdown, { source: self.text, context, className: "rpg-feature-text" }), resolvedLink && /* @__PURE__ */ React17.createElement(import_rpg_ui_toolkit17.Markdown, { source: resolvedLink, className: "rpg-feature-link" }));
+    return /* @__PURE__ */ React17.createElement("article", { className: cls.join(" "), "aria-label": `Feature ${self.name}` }, isHomebrew && /* @__PURE__ */ React17.createElement(HomebrewBadge, { source: (_a = self.source) != null ? _a : "" }), isParagraphMode ? /* @__PURE__ */ React17.createElement(React17.Fragment, null, displayText && /* @__PURE__ */ React17.createElement(
+      import_rpg_ui_toolkit17.Markdown,
+      {
+        source: self.name ? `***${self.name}.*** ${displayText}` : displayText,
+        context,
+        className: "rpg-feature-text"
+      }
+    )) : /* @__PURE__ */ React17.createElement(React17.Fragment, null, /* @__PURE__ */ React17.createElement("hgroup", null, !hideTitle && HeadingTag && /* @__PURE__ */ React17.createElement(HeadingTag, null, self.name), /* @__PURE__ */ React17.createElement("p", null, self.subtitle ? /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Subtitle" }, self.subtitle) : /* @__PURE__ */ React17.createElement(React17.Fragment, null, self.level != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Level" }, "Lv. ", self.level), self.uses != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Feature Uses" }, self.uses, " use", self.uses === 1 ? "" : "s")), isResource && self.max != null && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Resource Max" }, "Max: ", formatMax(self.max)), isResource && self.recovery && /* @__PURE__ */ React17.createElement("small", { "aria-details": "Resource Recovery" }, "Recovery: ", self.recovery))), displayText && /* @__PURE__ */ React17.createElement(import_rpg_ui_toolkit17.Markdown, { source: displayText, context, className: "rpg-feature-text" })), resolvedLink && /* @__PURE__ */ React17.createElement(import_rpg_ui_toolkit17.Markdown, { source: resolvedLink, className: "rpg-feature-link" }));
   };
   var details_default = details;
 
@@ -5458,7 +5601,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var danger_default = danger;
 
   // vault:tales-of-the-valiant/config/entities/stat.tsx
-  var import_rpg_ui_toolkit21 = __require("rpg-ui-toolkit");
+  var import_rpg_ui_toolkit23 = __require("rpg-ui-toolkit");
 
   // vault:tales-of-the-valiant/config/blocks/stat/vehicle.tsx
   var React22 = __toESM(__require("react"));
@@ -5479,7 +5622,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         name: self.name ? String(self.name).toLowerCase() : "",
         size: self.size,
         type: self.type,
-        dimensions: self.dimensions
+        dimensions: self.dimensions,
+        stats: self.stats,
+        abilities: self.abilities
       };
       (0, import_rpg_ui_toolkit20.resolveStatFeatures)(self.features, sourcePath, selfProps).then(
         (results) => {
@@ -5501,29 +5646,114 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         abilities: (_b = self.abilities) != null ? _b : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
         features: resolved,
         body: self.text,
+        image: typeof self.image === "string" ? self.image : void 0,
         view: self.view
       }
     );
   };
   var vehicle_default = vehicle;
 
+  // vault:tales-of-the-valiant/config/blocks/stat/monster.tsx
+  var React23 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit21 = __require("rpg-ui-toolkit");
+  var monster = ({ self }) => {
+    var _a, _b;
+    const data = React23.useMemo(
+      () => (0, import_rpg_ui_toolkit21.mapMonster)(self),
+      [self]
+    );
+    const [resolved, setResolved] = React23.useState([]);
+    const app = globalThis.app;
+    const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
+    const name = data.name || (activeFile == null ? void 0 : activeFile.basename) || "";
+    React23.useEffect(() => {
+      var _a2;
+      if (!data.features || data.features.length === 0) {
+        setResolved([]);
+        return;
+      }
+      let cancelled = false;
+      const sourcePath = (_a2 = activeFile == null ? void 0 : activeFile.path) != null ? _a2 : "";
+      const selfProps = {
+        name: name.toLowerCase(),
+        type: data.type,
+        cr: data.cr,
+        abilities: data.abilities,
+        stats: data.stats
+      };
+      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(data.features, sourcePath, selfProps).then(
+        (results) => {
+          if (!cancelled) setResolved(results);
+        }
+      );
+      return () => {
+        cancelled = true;
+      };
+    }, [data, name, activeFile == null ? void 0 : activeFile.path]);
+    return /* @__PURE__ */ React23.createElement(
+      import_rpg_ui_toolkit21.StatblockMonster,
+      {
+        name,
+        type: data.type,
+        cr: data.cr,
+        habitat: data.habitat,
+        treasure: data.treasure,
+        group: data.group,
+        image: typeof data.image === "string" ? data.image : void 0,
+        stats: data.stats,
+        abilities: data.abilities,
+        features: resolved,
+        body: data.text
+      }
+    );
+  };
+  var monster_default = monster;
+
+  // vault:tales-of-the-valiant/config/blocks/stat/group.tsx
+  var React24 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
+  var group = ({ self }) => {
+    var _a, _b;
+    const data = React24.useMemo(
+      () => (0, import_rpg_ui_toolkit22.mapGroup)(self),
+      [self]
+    );
+    const app = globalThis.app;
+    const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
+    const name = data.name || (activeFile == null ? void 0 : activeFile.basename) || "";
+    return /* @__PURE__ */ React24.createElement(
+      import_rpg_ui_toolkit22.StatblockGroup,
+      {
+        name,
+        subtitle: data.subtitle,
+        habitat: data.habitat,
+        treasure: data.treasure,
+        body: data.text,
+        sourcePath: activeFile == null ? void 0 : activeFile.path
+      }
+    );
+  };
+  var group_default = group;
+
   // vault:tales-of-the-valiant/config/entities/stat.tsx
-  var stat = (0, import_rpg_ui_toolkit21.CreateEntity)(() => ({
+  var stat = (0, import_rpg_ui_toolkit23.CreateEntity)(() => ({
     blocks: {
-      vehicle: vehicle_default
+      vehicle: vehicle_default,
+      monster: monster_default,
+      group: group_default
     }
   }));
   var stat_default = stat;
 
   // vault:tales-of-the-valiant/config/rule-views.tsx
-  var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
-  var React23 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit24 = __require("rpg-ui-toolkit");
+  var React25 = __toESM(__require("react"));
   function headingText(ctx) {
     const fm = ctx.frontmatter;
     if (typeof fm.name === "string" && fm.name) return fm.name;
     return ctx.name;
   }
-  function resolvePath(obj, path) {
+  function resolvePath2(obj, path) {
     let cur = obj;
     for (const key of path.split(".")) {
       if (cur == null || typeof cur !== "object") return void 0;
@@ -5538,13 +5768,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     let m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > cursor) {
-        parts.push(React23.createElement(React23.Fragment, { key: `t${cursor}` }, text.slice(cursor, m.index)));
+        parts.push(React25.createElement(React25.Fragment, { key: `t${cursor}` }, text.slice(cursor, m.index)));
       }
       const inner = m[1];
       const pipe = inner.indexOf("|");
       const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
       const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop().trim();
-      parts.push(React23.createElement("a", {
+      parts.push(React25.createElement("a", {
         key: `l${m.index}`,
         className: "internal-link",
         href: target,
@@ -5553,9 +5783,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       cursor = m.index + m[0].length;
     }
     if (cursor < text.length) {
-      parts.push(React23.createElement(React23.Fragment, { key: `t${cursor}` }, text.slice(cursor)));
+      parts.push(React25.createElement(React25.Fragment, { key: `t${cursor}` }, text.slice(cursor)));
     }
-    return React23.createElement(React23.Fragment, null, ...parts);
+    return React25.createElement(React25.Fragment, null, ...parts);
   }
   function headingView(level2) {
     const Tag = `h${level2}`;
@@ -5563,11 +5793,11 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       mode: "join",
       render: (ctx) => {
         const title = headingText(ctx);
-        return React23.createElement(
+        return React25.createElement(
           "section",
           { className: `rpg-view rpg-view--h${level2}` },
-          title ? React23.createElement(Tag, null, title) : null,
-          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file })
+          title ? React25.createElement(Tag, null, title) : null,
+          React25.createElement(import_rpg_ui_toolkit24.Markdown, { source: ctx.content, sourcePath: ctx.file })
         );
       }
     };
@@ -5622,24 +5852,24 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     }).filter((x) => x !== null);
   }
   function StatblockCall({ parsed, body, view, sourcePath }) {
-    const [resolved, setResolved] = React23.useState([]);
-    const features2 = React23.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
+    const [resolved, setResolved] = React25.useState([]);
+    const features2 = React25.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
     const name = typeof parsed.name === "string" ? parsed.name : "";
-    React23.useEffect(() => {
+    React25.useEffect(() => {
       if (features2.length === 0) {
         setResolved([]);
         return;
       }
       let cancelled = false;
-      const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
-      (0, import_rpg_ui_toolkit22.resolveStatFeatures)(features2, sourcePath, selfProps).then((r) => {
+      const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: parsed.stats, abilities: parsed.abilities };
+      (0, import_rpg_ui_toolkit24.resolveStatFeatures)(features2, sourcePath, selfProps).then((r) => {
         if (!cancelled) setResolved(r);
       });
       return () => {
         cancelled = true;
       };
     }, [features2, name, sourcePath]);
-    return React23.createElement(import_rpg_ui_toolkit22.StatblockVehicle, {
+    return React25.createElement(import_rpg_ui_toolkit24.StatblockVehicle, {
       name,
       size: typeof parsed.size === "string" ? parsed.size : "",
       type: typeof parsed.type === "string" ? parsed.type : "",
@@ -5649,6 +5879,57 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       features: resolved,
       body,
       view,
+      sourcePath
+    });
+  }
+  function StatMonsterCall({ self, sourcePath, name }) {
+    const data = React25.useMemo(() => (0, import_rpg_ui_toolkit24.mapMonster)(self), [self]);
+    const [resolved, setResolved] = React25.useState([]);
+    React25.useEffect(() => {
+      if (!data.features || data.features.length === 0) {
+        setResolved([]);
+        return;
+      }
+      let cancelled = false;
+      const selfProps = {
+        name: name.toLowerCase(),
+        type: data.type,
+        cr: data.cr,
+        abilities: data.abilities,
+        stats: data.stats
+      };
+      (0, import_rpg_ui_toolkit24.resolveStatFeatures)(data.features, sourcePath, selfProps).then(
+        (results) => {
+          if (!cancelled) setResolved(results);
+        }
+      );
+      return () => {
+        cancelled = true;
+      };
+    }, [data, name, sourcePath]);
+    return React25.createElement(import_rpg_ui_toolkit24.StatblockMonster, {
+      name: data.name || name,
+      type: data.type,
+      cr: data.cr,
+      habitat: data.habitat,
+      treasure: data.treasure,
+      group: data.group,
+      image: typeof data.image === "string" ? data.image : void 0,
+      stats: data.stats,
+      abilities: data.abilities,
+      features: resolved,
+      body: data.text,
+      sourcePath
+    });
+  }
+  function StatGroupCall({ self, body, sourcePath, name }) {
+    const data = React25.useMemo(() => (0, import_rpg_ui_toolkit24.mapGroup)(self), [self]);
+    return React25.createElement(import_rpg_ui_toolkit24.StatblockGroup, {
+      name: data.name || name,
+      subtitle: data.subtitle,
+      habitat: data.habitat,
+      treasure: data.treasure,
+      body: body != null ? body : data.text,
       sourcePath
     });
   }
@@ -5710,10 +5991,10 @@ ${content.slice(firstNl)}` : `***${name}.*** ${content}`;
         } else {
           source = typeof ((_d = ctx.params) == null ? void 0 : _d.content) === "string" ? ctx.params.content : ctx.content;
         }
-        return React23.createElement(
+        return React25.createElement(
           "div",
           { className: "rpg-view rpg-view--p" },
-          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
+          React25.createElement(import_rpg_ui_toolkit24.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5739,10 +6020,10 @@ ${content.slice(firstNl)}` : `**${name}.** ${content}`;
         } else {
           source = typeof ((_d = ctx.params) == null ? void 0 : _d.content) === "string" ? ctx.params.content : ctx.content;
         }
-        return React23.createElement(
+        return React25.createElement(
           "span",
           { className: "rpg-view rpg-view--inline" },
-          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
+          React25.createElement(import_rpg_ui_toolkit24.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5770,10 +6051,10 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           source = ctx.content;
         }
         const style = level2 > 1 ? { marginInlineStart: `${3.5 + (level2 - 2) * 1.5}em` } : void 0;
-        return React23.createElement(
+        return React25.createElement(
           "li",
           { className: "rpg-view rpg-view--item", style },
-          React23.createElement(import_rpg_ui_toolkit22.Markdown, { source, sourcePath: ctx.file })
+          React25.createElement(import_rpg_ui_toolkit24.Markdown, { source, sourcePath: ctx.file })
         );
       }
     },
@@ -5785,7 +6066,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     bare: {
       mode: "join",
       raw: true,
-      render: (ctx) => React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file })
+      render: (ctx) => React25.createElement(import_rpg_ui_toolkit24.Markdown, { source: ctx.content, sourcePath: ctx.file })
     },
     /**
      * Float side block — banner-style margin aside glued to the page edge.
@@ -5800,7 +6081,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       render: (ctx, args) => {
         const direction = (args == null ? void 0 : args[0]) === "left" ? "left" : "right";
         const preset = typeof (args == null ? void 0 : args[1]) === "string" ? args[1] : "rules";
-        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
+        return React25.createElement(import_rpg_ui_toolkit24.RuleSide, {
           variant: "float",
           type: preset,
           direction,
@@ -5825,7 +6106,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         const preset = (_c = (_b = typeof ((_a = ctx.params) == null ? void 0 : _a.type) === "string" ? ctx.params.type : void 0) != null ? _b : typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : void 0) != null ? _c : "rules";
         const name = (_e = typeof ((_d = ctx.params) == null ? void 0 : _d.name) === "string" ? ctx.params.name : void 0) != null ? _e : headingText(ctx);
         const content = typeof ((_f = ctx.params) == null ? void 0 : _f.content) === "string" ? ctx.params.content : ctx.content;
-        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
+        return React25.createElement(import_rpg_ui_toolkit24.RuleSide, {
           variant: "callout",
           type: preset,
           title: name,
@@ -5847,7 +6128,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       render: (ctx, args) => {
         const direction = (args == null ? void 0 : args[0]) === "left" ? "left" : "right";
         const preset = typeof (args == null ? void 0 : args[1]) === "string" ? args[1] : void 0;
-        return React23.createElement(import_rpg_ui_toolkit22.RuleSide, {
+        return React25.createElement(import_rpg_ui_toolkit24.RuleSide, {
           variant: "commentary",
           type: preset,
           direction,
@@ -5873,23 +6154,23 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           if (f === "name") return (_a = headingText(ctx)) != null ? _a : "";
           if (f === "link") {
             const label = (_b = headingText(ctx)) != null ? _b : ctx.name;
-            return React23.createElement("a", {
+            return React25.createElement("a", {
               className: "internal-link",
               href: ctx.file,
               "data-href": ctx.file
             }, label);
           }
-          const v = resolvePath(ctx.frontmatter, f);
+          const v = resolvePath2(ctx.frontmatter, f);
           const text = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
           if (/\[\[/.test(text)) {
             return renderWikilinks(text);
           }
           return text;
         });
-        return React23.createElement(
+        return React25.createElement(
           "tr",
           { className: "rpg-view rpg-view--row" },
-          cells.map((cell, i) => React23.createElement("td", { key: i }, cell))
+          cells.map((cell, i) => React25.createElement("td", { key: i }, cell))
         );
       }
     },
@@ -5907,7 +6188,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       mode: "join",
       wrapper: "tab-group",
       render: (ctx) => {
-        return React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: ctx.content, sourcePath: ctx.file });
+        return React25.createElement(import_rpg_ui_toolkit24.Markdown, { source: ctx.content, sourcePath: ctx.file });
       }
     },
     /**
@@ -5927,18 +6208,18 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         const { height, position } = parseBannerArgs(args);
         const fm = ctx.frontmatter;
         const rawImage = (_b = (_a = fm.image) != null ? _a : fm.banner) != null ? _b : null;
-        const src = rawImage ? (0, import_rpg_ui_toolkit22.resolveVaultImage)(rawImage, ctx.file) : (0, import_rpg_ui_toolkit22.resolveVaultImage)(ctx.file, ctx.file);
+        const src = rawImage ? (0, import_rpg_ui_toolkit24.resolveVaultImage)(rawImage, ctx.file) : (0, import_rpg_ui_toolkit24.resolveVaultImage)(ctx.file, ctx.file);
         if (!src) {
-          return React23.createElement(
+          return React25.createElement(
             "div",
             { className: "rpg-view rpg-view--banner rpg-view--banner--error" },
             `[banner: could not resolve image for [[${ctx.name}]]]`
           );
         }
-        return React23.createElement(
+        return React25.createElement(
           "figure",
           { className: `rpg-view rpg-view--banner rpg-view--banner--${height}` },
-          React23.createElement("img", {
+          React25.createElement("img", {
             src,
             alt: ctx.name,
             style: { objectPosition: position }
@@ -5959,6 +6240,52 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
       render: (ctx, args) => {
         const fenceRe = /```+\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)```+/;
         const m = fenceRe.exec(ctx.content);
+        if ((m == null ? void 0 : m[1]) === "monster") {
+          let fenceFm = {};
+          const raw2 = m[2];
+          const sepIdx2 = raw2.indexOf("\n---\n");
+          const head = sepIdx2 >= 0 ? raw2.slice(0, sepIdx2) : raw2;
+          if (head.trim()) {
+            try {
+              const { parse } = __require("yaml");
+              const parsedHead = parse(head);
+              if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
+                fenceFm = parsedHead;
+              }
+            } catch (e) {
+            }
+          }
+          const self = { ...ctx.frontmatter, ...fenceFm };
+          return React25.createElement(StatMonsterCall, {
+            self,
+            sourcePath: ctx.file,
+            name: ctx.name
+          });
+        }
+        if ((m == null ? void 0 : m[1]) === "group") {
+          let fenceFm = {};
+          const raw2 = m[2];
+          const sepIdx2 = raw2.indexOf("\n---\n");
+          const head = sepIdx2 >= 0 ? raw2.slice(0, sepIdx2) : raw2;
+          const groupBody = sepIdx2 >= 0 ? raw2.slice(sepIdx2 + 5).trim() || void 0 : void 0;
+          if (head.trim()) {
+            try {
+              const { parse } = __require("yaml");
+              const parsedHead = parse(head);
+              if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
+                fenceFm = parsedHead;
+              }
+            } catch (e) {
+            }
+          }
+          const self = { ...ctx.frontmatter, ...fenceFm };
+          return React25.createElement(StatGroupCall, {
+            self,
+            body: groupBody,
+            sourcePath: ctx.file,
+            name: ctx.name
+          });
+        }
         if (!m) return null;
         const raw = m[2];
         const sepIdx = raw.indexOf("\n---\n");
@@ -5981,11 +6308,36 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         }
         const viewOverride = typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : void 0;
         const view = viewOverride != null ? viewOverride : typeof parsed.view === "string" ? parsed.view : void 0;
-        return React23.createElement(StatblockCall, {
+        return React25.createElement(StatblockCall, {
           parsed,
           body: bodyText,
           view,
           sourcePath: ctx.file
+        });
+      }
+    },
+    /**
+     * Spell import: renders a `rpg spell` block from the target file as a
+     * compendium card. Works on a single file or every file in a folder,
+     * exactly like `.magic()` / `.stat()` — the call processor hands the
+     * raw file body (fence intact) in `ctx.content`.
+     *
+     *   `@[[Mage Hand]].spell()`                          — one spell
+     *   `@[[spells/cantrips/]].spell()`                   — every cantrip
+     *   `@[[spells/cantrips/]].filter(A prefix name).spell()` — A-spells only
+     */
+    spell: {
+      mode: "join",
+      raw: true,
+      render: (ctx) => {
+        const blocks = (0, import_rpg_ui_toolkit24.extractSpellBlocks)(ctx.content);
+        if (blocks.length === 0) return null;
+        const data = blocks[0];
+        const title = typeof data.name === "string" && data.name ? data.name : ctx.name;
+        return React25.createElement(import_rpg_ui_toolkit24.SpellCard, {
+          body: data,
+          sourcePath: ctx.file,
+          title
         });
       }
     },
@@ -5997,13 +6349,13 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     magic: {
       mode: "join",
       render: (ctx) => {
-        const blocks = (0, import_rpg_ui_toolkit22.extractItemMagicBlocks)(ctx.content);
+        const blocks = (0, import_rpg_ui_toolkit24.extractItemMagicBlocks)(ctx.content);
         if (blocks.length === 0) return null;
         const data = blocks[0];
         if (!data.name) data.name = ctx.name;
-        return React23.createElement(import_rpg_ui_toolkit22.ItemMagicCard, {
+        return React25.createElement(import_rpg_ui_toolkit24.ItemMagicCard, {
           data,
-          renderMarkdown: (src) => React23.createElement(import_rpg_ui_toolkit22.Markdown, { source: src, sourcePath: ctx.file })
+          renderMarkdown: (src) => React25.createElement(import_rpg_ui_toolkit24.Markdown, { source: src, sourcePath: ctx.file })
         });
       }
     },
@@ -6024,7 +6376,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         const block = extractDangerBlock(ctx.content);
         if (!block) return null;
         const str = (v) => typeof v === "string" ? v : void 0;
-        return React23.createElement(DangerCard, {
+        return React25.createElement(DangerCard, {
           name: (_a = str(block.name)) != null ? _a : ctx.name,
           type: str(block.type),
           trigger: str(block.trigger),
@@ -6039,7 +6391,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
   };
 
   // vault:tales-of-the-valiant/config/index.ts
-  var system = (0, import_rpg_ui_toolkit23.CreateSystem)(async ({ wiki }) => ({
+  var system = (0, import_rpg_ui_toolkit25.CreateSystem)(async ({ wiki }) => ({
     name: "Tales of the Valiant",
     attributes: attributes_default,
     skills: await wiki.folder("glossary/skills"),
@@ -6048,24 +6400,24 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     entities: {
       character: character_default,
       item: item_default,
-      class: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
+      class: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [{ name: "hit_die", type: "string", default: "d8" }],
         blocks: {
           features: () => null
         }
       })),
-      subclass: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
+      subclass: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [{ name: "parent_class", type: "string", default: "" }]
       })),
-      lineage: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
+      lineage: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [
           { name: "size", type: "string", default: "medium" },
           { name: "speed", type: "number", default: 30 }
         ]
       })),
-      heritage: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
-      background: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
-      monster: (0, import_rpg_ui_toolkit23.CreateEntity)(async ({ wiki: wiki2 }) => {
+      heritage: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
+      background: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({ frontmatter: [] })),
+      monster: (0, import_rpg_ui_toolkit25.CreateEntity)(async ({ wiki: wiki2 }) => {
         var _a, _b;
         const external = await wiki2.file("worldbuilding/bestiary/extra").catch(() => null);
         return {
@@ -6080,7 +6432,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           ]
         };
       }),
-      spell: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
+      spell: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({
         frontmatter: [
           { name: "level", type: "number", default: 0 },
           { name: "school", type: "string", default: "" }
@@ -6090,7 +6442,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           effects: () => null
         }
       })),
-      feature: (0, import_rpg_ui_toolkit23.CreateEntity)(({ wiki: wiki2 }) => ({
+      feature: (0, import_rpg_ui_toolkit25.CreateEntity)(({ wiki: wiki2 }) => ({
         blocks: {
           details: details_default,
           choice: choice_default,

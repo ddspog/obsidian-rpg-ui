@@ -95,8 +95,16 @@ export function computeLayout(rows: Row[], consumed: number[], opts: LayoutOpts)
   const cols = Math.min(maxCols, Math.max(1, Math.floor(total / minH)));
 
   const H = opts.maxHeight;
-  if (opts.paginate && H > 0 && total > maxCols * H) {
-    const cap = maxCols * H;
+  // Leave headroom below the real viewport-height cap. CSS `column-fill:
+  // balance` fills each of `maxCols` columns to ~total/maxCols; packing a page
+  // to the *exact* maxCols*H means each balanced column lands right at
+  // `max-height`, so any measurement slack pushes the page's LAST row past the
+  // clip (overflow) and it silently vanishes. Packing to ~88% keeps a margin
+  // so the boundary row stays visible. `HEADROOM` is the usable fraction.
+  const HEADROOM = 0.88;
+  const usable = maxCols * H * HEADROOM;
+  if (opts.paginate && H > 0 && total > usable) {
+    const cap = usable;
     const pages: Row[][] = [];
     let page: Row[] = [];
     let h = 0;

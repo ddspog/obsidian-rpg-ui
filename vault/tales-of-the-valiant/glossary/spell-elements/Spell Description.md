@@ -5,6 +5,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: file-text
 tab-color: var(--color-purple)
 tab-order: 5
+tab-name: Description
 ---
 ## Description
 ```rpg rule.content
@@ -24,7 +25,7 @@ Unless a spell has a perceptible effect, a creature might not know it was target
 ```rpg rule.content
 id: clear-path
 ---
-To target something, you must have a clear path to it, so it can’t be behind total cover (see [[Cover]] in **Chapter 6**). 
+To target something, you must have a clear path to it, so it can’t be behind total cover (see [[Cover]]). 
 
 If you place an area of effect at a point that you can’t see and an obstruction, such as a wall, is between you and the point, the point of origin appears on the side of that obstruction nearest to you. 
 ```

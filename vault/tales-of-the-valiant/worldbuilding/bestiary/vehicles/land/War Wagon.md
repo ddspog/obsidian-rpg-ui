@@ -28,13 +28,10 @@ abilities:
 features:
   - ref: "@[[Vehicle Traits]]#Armored Vehicle"
   - ref: "@[[Vehicle Traits]]#Rolling Death"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#action-intro"
-    tier: 3
+    tier: 2
   - ref: "@[[Vehicle Traits]]#Ram"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#Volley"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#Power Surge"
 ---
 Designed to transport armored combatants across battlefields, this heavy wooden wagon is reinforced with metal bands and can be adorned with spikes or armored plating. This version of the war wagon is powered by an arcane engine, but less expensive war wagons drawn by beasts (not powered by magic) are more common in low-fantasy settings.

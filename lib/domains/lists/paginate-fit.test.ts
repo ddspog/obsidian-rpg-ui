@@ -82,12 +82,13 @@ describe("computeLayout", () => {
     expect(layout.cols).toBe(3);
   });
 
-  it("paginates into maxCols×maxHeight chunks when content overflows", () => {
-    // 60 rows × 100 = 6000; cap = 3*700 = 2100 → 21 rows/page → 3 pages.
+  it("paginates into headroom-capped chunks when content overflows", () => {
+    // 60 rows × 100 = 6000; usable cap = 3*700*0.88 = 1848 → 18 rows/page
+    // → 4 pages (the 0.88 headroom keeps the boundary row off the clip line).
     const rows = Array.from({ length: 60 }, (_, i) => entry(i));
     const layout = computeLayout(rows, rows.map(() => 100), opts({ paginate: true }));
     expect(layout.cols).toBe(3);
-    expect(layout.pages.length).toBe(3);
+    expect(layout.pages.length).toBe(4);
     expect(layout.pages.flat().length).toBe(60); // no rows dropped
   });
 });

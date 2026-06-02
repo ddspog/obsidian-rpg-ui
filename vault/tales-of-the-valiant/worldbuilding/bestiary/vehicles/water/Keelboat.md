@@ -28,9 +28,7 @@ abilities:
 features:
   - ref: "@[[Vehicle Traits]]#Sails"
   - ref: "@[[Vehicle Traits]]#action-intro"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#Fire Ballista"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#Row"
 ---
 Keelboats are small sailing vessels that operate with minimal crew. Keelboats are good for day trips or transporting small amounts of cargo or passengers. The keelboat stat block included here is outfitted with a ballista, but less expensive keelboats without weaponry are commonly available for purchase.

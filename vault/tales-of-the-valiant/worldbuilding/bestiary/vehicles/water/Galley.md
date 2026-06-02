@@ -30,9 +30,7 @@ features:
   - ref: "@[[Vehicle Traits]]#action-intro"
     tier: 2
   - ref: "@[[Vehicle Traits]]#Fire Ballista"
-    tier: 2
   - ref: "@[[Vehicle Traits]]#Fire Mangonels"
-    tier: 1
   - ref: "@[[Vehicle Traits]]#Row"
 ---
 Galleys are massive vessels ideal for transporting cargo and used by merchants to carry trade goods. These weighty vessels are equipped with sails, but frequently rely on dozens of crew members rowing below decks for propulsion. Since galleys carry stores of cargo, they're almost always equipped with weaponry and defended by squadrons of hired swords.

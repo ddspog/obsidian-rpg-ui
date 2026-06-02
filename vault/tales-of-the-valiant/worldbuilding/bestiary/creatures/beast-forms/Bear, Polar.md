@@ -9,12 +9,11 @@ type: "Large [[Beast]]"
 cr: "2"
 habitat:
   - "[[Arctic]]"
-  - "[[Forest]]"
 treasure: None
 stats:
   ac: "12 (natural armor)"
   hp: "60"
-  speed: "40 ft., swim 30 ft."
+  speed: "40 ft., [[swimming|swim]] 30 ft."
   pas_perception: 13
   pas_stealth: 10
   resistant: cold

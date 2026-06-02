@@ -1,10 +1,11 @@
 ---
 cssclasses:
   - note-statblock
-source: From **Tales of the Valiant** "Monster Vault" book by **Kobold Press**
+source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 ---
 ```rpg stat.monster
 name: "Owl, Giant"
+image: "![[giant-owl.webp|384]]"
 type: "Large [[Beast]]"
 cr: "1/4"
 habitat:
@@ -15,10 +16,10 @@ treasure: None
 stats:
   ac: "12"
   hp: "15"
-  speed: "5 ft., fly 60 ft."
+  speed: "5 ft., [[flying|fly]] 60 ft."
   pas_perception: 15
   pas_stealth: 14
-  senses: "[[Darkvision]] 120 ft."
+  senses: "[[darkvision]] 120 ft."
   languages: "Giant Owl, understands [[Common]], [[Elvish]] and Sylvan but can't speak them"
 abilities:
   str: 1
@@ -28,8 +29,8 @@ abilities:
   wis: 1
   cha: 0
 features:
-  - "[[Flyby (Owl)]]"
-  - "[[Heightened Hearing and Sight (Owl, Giant)]]"
-  - "[[Quiet Wings (Owl, Giant)]]"
-  - "[[Talons (Owl, Giant)]]"
+  - ref: "@[[Beast Forms Traits]]#Flyby"
+  - ref: "@[[Beast Forms Traits]]#Heightened Hearing and Sight"
+  - ref: "@[[Beast Forms Traits]]#Quiet Wings"
+  - ref: "@[[Beast Forms Traits]]#Talons"
 ```

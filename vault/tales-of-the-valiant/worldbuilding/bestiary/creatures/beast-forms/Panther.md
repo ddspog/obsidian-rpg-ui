@@ -1,10 +1,11 @@
 ---
 cssclasses:
   - note-statblock
-source: From **Tales of the Valiant** "Monster Vault" book by **Kobold Press**
+source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 ---
 ```rpg stat.monster
 name: "Panther"
+image: "![[panther.webp|384]]"
 type: "Medium [[Beast]]"
 cr: "1/4"
 habitat:
@@ -15,10 +16,10 @@ treasure: None
 stats:
   ac: "12"
   hp: "15"
-  speed: "50 ft., climb 40 ft."
+  speed: "50 ft., [[climbing|climb]] 40 ft."
   pas_perception: 14
   pas_stealth: 16
-  senses: "[[Darkvision]] 60 ft."
+  senses: "[[darkvision]] 60 ft."
 abilities:
   str: 2
   dex: 2
@@ -27,9 +28,9 @@ abilities:
   wis: 2
   cha: -2
 features:
-  - "[[Heightened Smell (Panther)]]"
-  - "[[Pounce (Panther)]]"
-  - "[[Bite (Panther)]]"
-  - "[[Claw (Panther)]]"
-  - "[[Stealthy Hunter (Panther)]]"
+  - ref: "@[[Beast Forms Traits]]#Heightened Smell"
+  - ref: "@[[Beast Forms Traits]]#Pounce"
+  - ref: "@[[Beast Forms Traits]]#Bite"
+  - ref: "@[[Beast Forms Traits]]#Claws"
+  - ref: "@[[Beast Forms Traits]]#Stealthy Hunter"
 ```

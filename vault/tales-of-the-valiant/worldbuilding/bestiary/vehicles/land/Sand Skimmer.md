@@ -28,7 +28,6 @@ abilities:
 features:
   - ref: "@[[Vehicle Traits]]#Maneuverable"
   - ref: "@[[Vehicle Traits]]#Drift"
-    tier: 1
 ---
 This wooden land vehicle slides atop a loose or slick surface, propelled by a single sail. The skimmer can't move through uneven or rocky terrain, but it can move across icy surfaces, sand, or similar terrain. A skimmer weighs 50 pounds and has a folding mast, allowing it to be transported in a cart or dragged. Depending on wind conditions, sand skimmers can reach speeds up to 8 miles per hour.
 ```

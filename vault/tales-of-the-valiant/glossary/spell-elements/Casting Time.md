@@ -5,18 +5,19 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: timer
 tab-color: var(--color-yellow)
 tab-order: 1
+tab-name: Time
 ---
 ## Casting Time
 ```rpg rule.content
 id: summary
 ---
-Most spells require a single [[Action|action]] to cast, but some can be accomplished in a shorter or longer span. 
+Most spells require a single [[action]] to cast, but some can be accomplished in a shorter or longer span. 
 ```
 ### Bonus Action
 ```rpg rule.content
 id: bonus-action
 ---
-A spell cast with a [[Bonus Action|bonus action]] is fast. You must use a bonus action on your turn to cast the spell, provided you haven’t already taken a bonus action this turn. If you use your bonus action to cast a spell from the 1st circle or higher on your turn, you can’t also use your action to cast a spell from the 1st circle or higher during the same turn. 
+A spell cast with a [[bonus action]] is fast. You must use a bonus action on your turn to cast the spell, provided you haven’t already taken a bonus action this turn. If you use your bonus action to cast a spell from the 1st circle or higher on your turn, you can’t also use your [[action]] to cast a spell from the 1st circle or higher during the same turn. 
 ```
 ### Reaction
 ```rpg rule.content

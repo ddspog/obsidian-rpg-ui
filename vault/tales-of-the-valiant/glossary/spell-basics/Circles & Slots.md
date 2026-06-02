@@ -5,8 +5,9 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: circle
 tab-color: var(--color-blue)
 tab-order: 2
+tab-name: Circles & Slots
 ---
-## Circles & Slots
+## Spell Circles
 ```rpg rule.content
 id: summary
 ---
@@ -17,7 +18,7 @@ Like the rings within a tree trunk, circles of magic encircle one another. A nov
 Each class provides a table of what spellcaster level you must achieve before you gain access to new spell circles. Typically, a spellcaster must be at least 17th level before they can cast spells from the 9th—and final—circle.  
 ```
 ![[spell-circles.webp|512]]
-### Spell Slots
+## Spell Slots
 ```rpg rule.content
 id: spell-slots
 ---
@@ -25,11 +26,11 @@ Spell slots are a measure of the reserves that a caster has to hold spell energy
 
 A caster who has used all their spell slots is spent physically and mentally. They’re out of reserves for further spellcasting. To replenish spell slots, you must complete a short or long rest. Each class specifies which type of rest is required and how many slots you regain when you complete one. This rest represents the time needed to recover from the toll spellcasting takes on the body and mind. 
 ```
-#### Casting at Higher Circles
+### Casting at Higher Circles
 ```rpg rule.content
 id: higher-circles
 ---
 Some spell descriptions end with an At Higher Circles section. Casting a spell at a higher circle uses a higher spell slot and increases the spell’s power. 
 
-When you cast a spell at a higher circle, the spell assumes all aspects of the higher circle for that casting. For instance, if a wizard casts _magic missile_ using a 2nd-circle spell slot, that _magic missile_ is considered a 2nd-circle spell. Effectively, the spell expands to fill the slot into which it is put. 
+When you cast a spell at a higher circle, the spell assumes all aspects of the higher circle for that casting. For instance, if a wizard casts [[magic missile]] using a 2nd-circle spell slot, that [[magic missile]] is considered a 2nd-circle spell. Effectively, the spell expands to fill the slot into which it is put. 
 ```

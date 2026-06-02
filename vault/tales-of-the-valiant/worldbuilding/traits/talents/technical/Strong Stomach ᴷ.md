@@ -1,7 +1,7 @@
 ---
 cssclasses:
   - note-feature
-source: 'From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins" book by **Kobold Press**.'
+source: 'From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins" by **Kobold Press**.'
 ---
 # Strong Stomach ᴷ
 ```rpg feature.details

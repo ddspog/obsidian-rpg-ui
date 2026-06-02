@@ -16,5 +16,3 @@ id: types
 There are four types of poisons that can be crafted or purchased.
 `@[[glossary/poison-types/]].highlight().p(0)`
 ```
-![[07. Adventuring Options#Acquiring Poison|clean]]
-![[07. Adventuring Options#Poison Descriptions|clean]]

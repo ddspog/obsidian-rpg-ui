@@ -14,7 +14,7 @@ treasure: None
 stats:
   ac: "11 (natural armor)"
   hp: "44"
-  speed: "40 ft., climb 30 ft."
+  speed: "40 ft., [[climbing|climb]] 30 ft."
   pas_perception: 13
   pas_stealth: 10
 abilities:
