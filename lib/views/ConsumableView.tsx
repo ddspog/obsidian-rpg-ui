@@ -68,7 +68,10 @@ class ConsumableMarkdown extends MarkdownRenderChild {
         try {
           const savedState = await this.kv.get<ConsumableState>(stateKey);
           consumableState = savedState || defaultState;
-          if (!savedState) await this.kv.set(stateKey, defaultState).catch((e) => console.error(`Error saving initial consumable state for ${stateKey}:`, e));
+          if (!savedState)
+            await this.kv
+              .set(stateKey, defaultState)
+              .catch((e) => console.error(`Error saving initial consumable state for ${stateKey}:`, e));
         } catch (error) {
           console.error(`Error loading consumable state for ${stateKey}:`, error);
         }
@@ -106,7 +109,9 @@ class ConsumableMarkdown extends MarkdownRenderChild {
   private async handleStateChange(consumableBlock: ParsedConsumableBlock, newState: ConsumableState) {
     const stateKey = consumableBlock.state_key;
     if (!stateKey) return;
-    await this.kv.set(stateKey, newState).catch((e) => console.error(`Error saving consumable state for ${stateKey}:`, e));
+    await this.kv
+      .set(stateKey, newState)
+      .catch((e) => console.error(`Error saving consumable state for ${stateKey}:`, e));
   }
 
   private async handleResetEvent(consumableBlock: ParsedConsumableBlock, amount?: number) {
@@ -126,11 +131,19 @@ class ConsumableMarkdown extends MarkdownRenderChild {
 
   onunload() {
     this.reactRoots.forEach((root) => {
-      try { root.unmount(); } catch (e) { console.error("Error unmounting React component:", e); }
+      try {
+        root.unmount();
+      } catch (e) {
+        console.error("Error unmounting React component:", e);
+      }
     });
     this.reactRoots.clear();
     this.eventUnsubscribers.forEach((unsub) => {
-      try { unsub(); } catch (e) { console.error("Error unsubscribing from event:", e); }
+      try {
+        unsub();
+      } catch (e) {
+        console.error("Error unsubscribing from event:", e);
+      }
     });
     this.eventUnsubscribers.length = 0;
   }

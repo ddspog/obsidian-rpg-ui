@@ -1,6 +1,6 @@
 /**
  * Features domain
- * 
+ *
  * Handles parsing and logic for the features block.
  * Phase 2: Basic structure with minimal functionality.
  */
@@ -123,15 +123,15 @@ export function getAvailableFeatures(
   }
 ): Feature[] {
   const available: Feature[] = [];
-  
+
   // Build available feature names iteratively
   const availableNames: string[] = [];
-  
+
   for (const category of categories) {
     if (!areRequirementsMet(category.requires, { ...context, availableFeatures: availableNames })) {
       continue;
     }
-    
+
     if (category.features) {
       for (const feature of category.features) {
         if (areRequirementsMet(feature.requires, { ...context, availableFeatures: availableNames })) {
@@ -141,6 +141,6 @@ export function getAvailableFeatures(
       }
     }
   }
-  
+
   return available;
 }

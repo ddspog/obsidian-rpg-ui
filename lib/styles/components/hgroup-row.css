@@ -1,0 +1,51 @@
+/* ── HGroup Row ───────────────────────────────────────────────────────────── */
+
+hgroup[aria-details*=" Row"] {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* ── Health Management: dl/dt/dd layout ───────────────────────────────────── */
+
+p[aria-details="Health Management Row"] {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+
+p[aria-details="Health Management Row"] dl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+p[aria-details="Health Management Row"] dt {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  color: var(--color-yellow, #FFD400) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em !important;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0;
+}
+
+p[aria-details="Health Management Row"] dt + dt {
+  margin-top: 6px;
+}
+
+p[aria-details="Health Management Row"] dd {
+  margin: 0;
+  padding: 0;
+}
+
+p[aria-details="Health Management Row"] dl:last-child {
+  padding-left: 8px;
+  border-left: 2px solid var(--rpg-diamond-border, #5a5450);
+}

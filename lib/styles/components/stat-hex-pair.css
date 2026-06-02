@@ -1,0 +1,125 @@
+/* ── Stat Hex Pair (SVG dual overlapping pointy-top hexagons) ─────────────── */
+
+svg[aria-details="Stat Hex Pair"] {
+  width: 110px;
+  height: 110px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+/* ── Hex shape fills ─────────────────────────────────────────────────────── */
+
+.rpg-hex-border {
+  fill: var(--rpg-hex-border, #6a6258);
+}
+
+.rpg-hex-fill {
+  fill: var(--rpg-hex-bg, #4a4440);
+}
+
+/* ── Proficiency rings ───────────────────────────────────────────────────── */
+
+.rpg-hex-prof-ring {
+  fill: var(--rpg-hex-prof-ring, #d4a840);
+}
+
+/* Half proficiency — dashed overlay on the ring midline */
+.rpg-hex-prof-dash {
+  fill: none;
+  stroke: var(--rpg-hex-bg, #4a4440);
+  stroke-width: 1.5;
+  stroke-dasharray: 7.35 7.35;
+}
+
+/* ── Text labels ─────────────────────────────────────────────────────────── */
+
+.rpg-hex-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  fill: var(--rpg-hex-label, #b0a890);
+}
+
+.rpg-hex-value {
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--rpg-hex-value, #e3dcce);
+}
+
+.rpg-hex-value--back {
+  font-size: 14px;
+}
+
+.rpg-hex-label--back {
+  font-size: 9px;
+}
+
+/* ── Save vantage badge (green A / red D sitting on the back hex) ──────── */
+
+.rpg-hex-vantage-badge {
+  fill: light-dark(#2d6a2e, #3d9140);
+  stroke: var(--rpg-hex-border, #6a6258);
+  stroke-width: 0.8;
+}
+
+[data-vantage="dis"] .rpg-hex-vantage-badge {
+  fill: light-dark(#a02020, #c94040);
+}
+
+.rpg-hex-vantage-label {
+  font-size: 9px;
+  font-weight: 700;
+  fill: #fff;
+}
+
+.rpg-hex-score {
+  font-size: 20px;
+  font-weight: 700;
+  fill: var(--rpg-hex-score, #e3dcce);
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 3;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
+}
+
+/* ── Stats grid container ────────────────────────────────────────────────── */
+
+section[aria-details="Character Stats"] {
+  container-type: inline-size;
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  justify-items: center;
+  row-gap: 8px;
+  padding: var(--spacing-3, 12px);
+  position: relative;
+}
+
+/* Narrow container: 3 stats per row via child span */
+@container (max-width: 680px) {
+  svg[aria-details="Stat Hex Pair"] {
+    grid-column: span 2;
+  }
+}
+
+/* Dotted background via pseudo-element */
+section[aria-details="Character Stats"]::before {
+  content: "";
+  position: absolute;
+  inset: 24px;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.25) 1px,
+    transparent 1px
+  );
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
+/* Hex pairs overflow above the dotted background padding */
+section[aria-details="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
+  margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
+  position: relative;
+  z-index: 1;
+}

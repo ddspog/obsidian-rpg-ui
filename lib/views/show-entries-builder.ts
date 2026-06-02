@@ -58,8 +58,7 @@ export function buildEntries(
     }
 
     const hasBodyContent =
-      (hasDescription && entry["description"]) ||
-      customProps.some((p) => entry[p] !== undefined && entry[p] !== null);
+      (hasDescription && entry["description"]) || customProps.some((p) => entry[p] !== undefined && entry[p] !== null);
 
     if (hasBodyContent) {
       const descDiv = document.createElement("div");

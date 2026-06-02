@@ -1,0 +1,228 @@
+/* ── rpg item.magic / item.personal card styles ────────────────────────── */
+
+.rpg-item-magic-card {
+  font-family: inherit;
+  color: inherit;
+}
+
+.rpg-item-magic-card__header {
+  background: linear-gradient(to right, color-mix(in srgb, var(--text-title, currentColor) 15%, transparent), transparent);
+  border-top: 1px solid var(--text-title, currentColor);
+  border-bottom: 1px solid var(--text-title, currentColor);
+  padding: 4px 8px;
+  margin: 0;
+}
+
+.rpg-item-magic-card__header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--text-title, inherit);
+  letter-spacing: 0.01em;
+}
+
+p.rpg-item-magic-card__subtitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 4px 0 0;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.rpg-item-magic-card__subtitle-type {
+  color: inherit;
+}
+
+.rpg-item-magic-card__subtitle-cost {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rpg-item-magic-card__text {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.rpg-item-magic-card__effects {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.9em;
+}
+
+.rpg-item-magic-card__effects dt {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+.rpg-item-magic-card__effects dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-item-magic-card__traits {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+}
+
+.rpg-item-magic-card__traits li {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: light-dark(rgba(106, 78, 42, 0.12), rgba(212, 168, 64, 0.18));
+  color: light-dark(#6a4e2a, #d4a840);
+  font-size: 0.85em;
+}
+
+.rpg-item-magic-card__traits strong {
+  font-weight: 700;
+}
+
+/* ── Magic card highlight (homebrew) ──────────────────────────────────── */
+
+.rpg-call--magic-highlight .rpg-item-magic-card {
+  position: relative;
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px -2px;
+  border: 1.5px solid color-mix(in srgb, var(--text-accent, #7c2d12) 40%, transparent);
+  pointer-events: none;
+  -webkit-mask-image:
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
+  mask-image:
+    radial-gradient(ellipse 35% 35% at 100% 100%, black 0%, transparent 70%);
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card__header {
+  position: relative;
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge:hover {
+  opacity: 1;
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card__header .rpg-call-highlight__badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+.rpg-call--magic-highlight .rpg-item-magic-card__body {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-accent, #7c2d12) 6%, transparent) 4px,
+    color-mix(in srgb, var(--text-accent, #7c2d12) 6%, transparent) 5px
+  );
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
+/* ── Personal card ─────────────────────────────────────────────────────── */
+
+.rpg-item-personal-card {
+  padding: 0.75rem 1rem;
+  background: var(--background-primary);
+  border-radius: 8px;
+}
+
+.rpg-item-personal-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.rpg-item-personal-card__title {
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.rpg-item-personal-card__pills {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.rpg-item-personal-card__base-pill,
+.rpg-item-personal-card__attuned-pill {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.rpg-item-personal-card__base-pill {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.12));
+  color: var(--text-muted);
+}
+
+.rpg-item-personal-card__attuned-pill {
+  background: light-dark(rgba(106, 78, 42, 0.85), rgba(212, 168, 64, 0.85));
+  color: light-dark(#fdf6e3, #1a1208);
+}
+
+.rpg-item-personal-card__magic {
+  margin-top: 0.75rem;
+}
+
+.rpg-item-personal-card__magic h4,
+.rpg-item-personal-card__notes h4,
+.rpg-item-personal-card__history h4,
+.rpg-item-personal-card__discovered h4 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+.rpg-item-personal-card__magic ul,
+.rpg-item-personal-card__discovered ul {
+  list-style: disc inside;
+  padding-left: 0.5rem;
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.rpg-item-personal-card__variant {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.rpg-item-personal-card__notes,
+.rpg-item-personal-card__history {
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}

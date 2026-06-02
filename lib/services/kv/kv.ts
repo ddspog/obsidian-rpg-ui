@@ -12,6 +12,19 @@ export class KeyValueStore {
   }
 
   /**
+   * Swap the underlying data store (e.g. after the user changes the
+   * state-file path in plugin settings). Clears the in-memory cache so
+   * the next read hydrates from the new backing file. Existing
+   * references to this `KeyValueStore` stay valid — every legacy view
+   * that wired itself at plugin load continues working against the new
+   * path without a reload.
+   */
+  setStore(store: DataStore): void {
+    this.store = store;
+    this.cache = null;
+  }
+
+  /**
    * Initialize the cache from the data store
    */
   private async ensureCache(): Promise<Record<string, any>> {

@@ -36,7 +36,7 @@ const SOURCE_KEY_TO_META: Array<{ keys: string[]; meta: string }> = [
  * top-level keys. This is the reliable fallback used in reading view where
  * getSectionInfo returns null and the element contains no code HTML.
  */
-function detectMetaFromSource(source: string): string | null {
+export function detectMetaFromSource(source: string): string | null {
   // Parse only the top-level keys by scanning for "key:" at the start of lines
   // (no YAML library needed — avoids circular dependency and is fast)
   const topLevelKeys = new Set<string>();
@@ -45,11 +45,153 @@ function detectMetaFromSource(source: string): string | null {
     if (m) topLevelKeys.add(m[1]);
   }
 
+  // ── Fence-mode blocks (YAML header + `---` + markdown/nested fences) ──
+  // Must run FIRST: the body after `---` can contain nested rpg fences
+  // whose YAML keys (parent, type, direction, …) would mislead the
+  // `topLevelKeys` checks below. Only `headerKeys` (above the separator)
+  // are safe for classification.
+  const sourceLines = source.split("\n");
+  const sepLineIdx = sourceLines.findIndex((l) => l.trim() === "---");
+  if (sepLineIdx > 0 && sepLineIdx < sourceLines.length - 1) {
+    const headerKeys = new Set<string>();
+    const headerValues = new Map<string, string>();
+    for (let i = 0; i < sepLineIdx; i++) {
+      const m = sourceLines[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(.*)/);
+      if (m) {
+        headerKeys.add(m[1]);
+        headerValues.set(m[1], m[2].trim());
+      }
+    }
+    // rule.side fence-mode: `kind:` (float/callout/commentary), `type:`
+    // (preset name), or `title:` without `name:` (side uses title, not name).
+    // `type` alone is ambiguous — feature.details also uses `type: passive`;
+    // require absence of `name` AND that the type value isn't a known
+    // feature type to avoid stealing feature blocks.
+    const FEATURE_TYPE_VALUES = new Set(["passive", "action", "reaction", "bonus", "active"]);
+    if (
+      headerKeys.has("kind") ||
+      (headerKeys.has("type") && !headerKeys.has("name") && !FEATURE_TYPE_VALUES.has(headerValues.get("type") ?? "")) ||
+      (headerKeys.has("title") && !headerKeys.has("name"))
+    ) {
+      return "rule.side";
+    }
+    if (headerKeys.has("icon") || headerKeys.has("color")) {
+      return "rule.tab";
+    }
+    // feature.choice in fence-mode
+    if (headerKeys.has("parent")) return "feature.choice";
+    // feature.details in fence-mode (YAML + --- + markdown body).
+    // Distinguishes from rule.content by having `name:` plus structural
+    // keys unique to the feature schema (rule.content uses `id:`, not `name:`).
+    if (headerKeys.has("name")) {
+      const featureHeaderMarkers = [
+        "subtitle", "traits", "level", "pick", "resource",
+        "action", "reaction", "passive", "bonus", "active",
+        "spellcasting", "choose", "roll", "tag", "uses",
+        "link", "value", "values", "update", "type",
+      ];
+      if (featureHeaderMarkers.some((k) => headerKeys.has(k))) {
+        return "feature.details";
+      }
+    }
+    if (FEATURE_TYPE_VALUES.has(headerValues.get("type") ?? "")) {
+      return "feature.details";
+    }
+    return "rule.content";
+  }
+
+  // ── Pure-YAML blocks (no `---` separator) ─────────────────────────────
+  // `topLevelKeys` is safe here since there's no markdown body that could
+  // contain nested fence YAML.
+  if (topLevelKeys.has("parent")) return "feature.choice";
+  if (topLevelKeys.has("kind") && topLevelKeys.has("level")) return "feature.unlock";
+  // feature.level is data-only: just `level` (+ maybe `traits`) with no name,
+  // parent, or kind markers.
+  if (
+    topLevelKeys.has("level") &&
+    !topLevelKeys.has("name") &&
+    !topLevelKeys.has("parent") &&
+    !topLevelKeys.has("kind")
+  ) {
+    return "feature.level";
+  }
+  if (
+    topLevelKeys.has("direction") ||
+    (topLevelKeys.has("title") && topLevelKeys.has("content") && !topLevelKeys.has("name"))
+  ) {
+    return "rule.side";
+  }
+
+  // `rpg list.<name>` — pure-YAML newspaper-flow lists. MUST be detected
+  // BEFORE the rule.related array heuristic below: a list's `entries:` items
+  // commonly carry `@[[...]]` call tokens, which would otherwise be misread as
+  // rule.related. (This is the bug where a list block rendered as prose +
+  // `View "block" not registered` on app load/reload — when getSectionInfo is
+  // unavailable during a programmatic rerender, extractMeta falls back to this
+  // source-based detection.) The fence's `<name>` suffix isn't in the body, so
+  // return bare `"list"`; the dispatcher recovers the id from the YAML `name:`
+  // via parseListBlock. List-specific markers: top-level `columns:`/`paginate:`
+  // or an entry object's `call:`/`format:`/`text:` key (indented under
+  // `entries:`) — none of which appear in rule.related or show bodies.
+  if (topLevelKeys.has("entries")) {
+    const hasListMarker =
+      topLevelKeys.has("columns") ||
+      topLevelKeys.has("paginate") ||
+      /^[ \t]+(?:call|format|text)[ \t]*:/m.test(source);
+    if (hasListMarker) return "list";
+  }
+
+  // `rpg rule.related` — YAML array of embeds/call tokens, or object
+  // with `entries:` + optional `level:`/`view:`. Distinguished from `rpg show`
+  // (which also uses `entries:`) by the presence of `view:` co-key or array
+  // items containing `![[` embeds / `@[[` call tokens.
+  if (topLevelKeys.has("entries") && topLevelKeys.has("view")) return "rule.related";
+  const sourceLines2 = source.split("\n");
+  const hasArrayItems = sourceLines2.some((l) => /^\s*-\s/.test(l));
+  if (hasArrayItems) {
+    const hasEmbedOrCall = sourceLines2.some((l) =>
+      /!\[\[|@\[\[/.test(l)
+    );
+    if (hasEmbedOrCall) return "rule.related";
+  }
+
+  const featureMarkers = ["subtitle", "tag", "pick", "uses", "link", "value", "values", "type"];
+  if (topLevelKeys.has("name") && featureMarkers.some((k) => topLevelKeys.has(k))) {
+    return "feature.details";
+  }
+
+  // Skip the generic `name → system` fallback for bare-`name` blocks: that
+  // mapping was too permissive and would steal `rpg feature.details` blocks
+  // whose YAML happens to be just `name: …`. We retain the more specific
+  // entries (attributes, skills, etc.) but prefer feature.details when only
+  // `name` is present, since system-definition fences in practice carry
+  // additional system-specific keys (attributes, expressions, …).
   for (const { keys, meta } of SOURCE_KEY_TO_META) {
+    if (meta === "system") continue;
     if (keys.some((k) => topLevelKeys.has(k))) {
       return meta;
     }
   }
+
+  // `rpg table.<name>` body — a markdown table, sometimes preceded by a
+  // `key:` option line. The fence's `<name>` suffix can't be recovered from
+  // the body alone, so we return the bare meta `"table"` and let the
+  // dispatcher recover the name from `sectionInfo.text` when needed.
+  const lines = source.split("\n");
+  const hasPipeRow = lines.some((l) => /^\s*\|.*\|/.test(l.trim()));
+  const hasSeparator = lines.some((l) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l.trim()));
+  if (hasPipeRow && hasSeparator) return "table";
+
+  // Final fallback: a block with `name:` and no other recognised marker is
+  // overwhelmingly a feature.details in compendium docs. Route it that way
+  // rather than misrouting to SystemView.
+  if (topLevelKeys.has("name")) return "feature.details";
+
+  // `rpg rule.notes` — pure markdown/text with no YAML structure.
+  // Only block type designed for arbitrary prose, so if nothing else
+  // matched and the source has content, treat it as notes.
+  if (source.trim().length > 0 && topLevelKeys.size === 0) return "rule.notes";
+
   return null;
 }
 

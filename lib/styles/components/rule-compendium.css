@@ -1,0 +1,354 @@
+/* ── rpg rule.tab: ruled-bar tabbed container ───────────────────────── */
+/*
+ * Ornamental tab strip with three layers:
+ *   1. Top bar: 3px thick, wider than the box (::after on __tabs)
+ *   2. Middle line: 1px, extends into margins (::before on __tabs)
+ *   3. Box: double-line frame (outline + border on __tabs)
+ *
+ * Layout when stuck: heading → top bar + diamonds → tablist box.
+ * Diamonds are real DOM inside __tabs, positioned on the top bar.
+ */
+
+.rpg-rule-tab-group {
+  display: block;
+  margin-block: var(--size-4-4, 1rem);
+  margin-top: 0;
+}
+
+/* ── Sticky bar ────────────────────────────────────────────────────── */
+
+.rpg-rule-tab-group__sentinel {
+  height: 0;
+  overflow: hidden;
+}
+
+.rpg-rule-tab-group__sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--background-primary, #1e1e1e);
+  padding-top: 12px;
+  transition: padding-top 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rpg-rule-tab-group__sticky-bar--stuck {
+  padding-top: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.rpg-rule-tab-group__sticky-bar--stuck::before {
+  content: "";
+  position: absolute;
+  top: -100px;
+  left: -50vw;
+  right: -50vw;
+  height: calc(100% + 100px);
+  background: var(--background-primary, #1e1e1e);
+  z-index: -1;
+}
+
+.rpg-rule-tab-group__stuck-heading {
+  font-size: 1.1em;
+  font-weight: 700;
+  padding: var(--size-4-1, 0.25rem) 0;
+  color: var(--text-normal);
+  animation: rpg-tab-heading-slide 0.2s ease;
+}
+
+@keyframes rpg-tab-heading-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Tab strip (the box) ───────────────────────────────────────────── */
+
+.rpg-rule-tab-group__tabs {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 2px solid var(--background-modifier-border, #444);
+  outline: 1px solid var(--background-modifier-border, #444);
+  outline-offset: 2px;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Inner scrollable container for tab buttons */
+.rpg-rule-tab-group__tabs-scroll {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rpg-rule-tab-group__tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Middle line — vertically centered, behind tabs */
+.rpg-rule-tab-group__tabs::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -1rem;
+  right: -1rem;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
+  z-index: -1;
+}
+
+/* Top bar — between heading and box, wider than the box */
+.rpg-rule-tab-group__tabs::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: -1.25rem;
+  right: -1.25rem;
+  height: 3px;
+  background: var(--background-modifier-border, #444);
+}
+
+/* ── Diamonds (centered on the top bar) ────────────────────────────── */
+
+.rpg-rule-tab-group__diamond {
+  position: absolute;
+  top: -11px;
+  width: 8px;
+  height: 8px;
+  background: var(--text-muted, #888);
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rpg-rule-tab-group__diamond--left {
+  left: -1.5rem;
+}
+
+.rpg-rule-tab-group__diamond--right {
+  right: -1.5rem;
+}
+
+/* ── Tab buttons ───────────────────────────────────────────────────── */
+
+.rpg-rule-tab-group__tab {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-4-1, 0.25rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted, #888);
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+  white-space: nowrap;
+}
+
+.rpg-rule-tab-group__tab + .rpg-rule-tab-group__tab {
+  border-left: 1px solid var(--background-modifier-border, #444);
+}
+
+.rpg-rule-tab-group__tab:hover:not(.rpg-rule-tab-group__tab--active) {
+  color: var(--rpg-tab-color, var(--text-normal));
+}
+
+.rpg-rule-tab-group__tab--active {
+  color: var(--rpg-tab-color, var(--text-accent));
+  font-weight: 600;
+  background: var(--background-secondary-alt, rgba(255, 255, 255, 0.06));
+  border-top: 3px solid var(--rpg-tab-color, var(--text-accent));
+  padding-top: calc(var(--size-4-2, 0.5rem) - 3px);
+}
+
+/* ── Tab icon + label ──────────────────────────────────────────────── */
+
+.rpg-rule-tab-group__tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+}
+
+.rpg-rule-tab-group__tab-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rpg-rule-tab-group__tab-label {
+  white-space: nowrap;
+}
+
+/* ── Panel ─────────────────────────────────────────────────────────── */
+
+.rpg-rule-tab-group__panel {
+  display: block;
+  padding-block: var(--size-4-3, 0.75rem);
+  position: relative;
+  background-image:
+    /* 25% cluster: 6 lines */
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px, transparent 9px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px, transparent 12px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px, transparent 16px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px, transparent 10px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    /* 75% cluster: 6 lines (mirrored) */
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
+      transparent 4px, transparent 10px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
+      transparent 7px, transparent 16px),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
+      transparent 5px, transparent 12px),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
+      color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
+      transparent 3px, transparent 9px);
+  background-position:
+    calc(25% - 36px) 0, calc(25% - 22px) 0, calc(25% - 8px) 0,
+    calc(25% + 8px) 0, calc(25% + 22px) 0, calc(25% + 36px) 0,
+    calc(75% - 36px) 0, calc(75% - 22px) 0, calc(75% - 8px) 0,
+    calc(75% + 8px) 0, calc(75% + 22px) 0, calc(75% + 36px) 0;
+  background-size:
+    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%,
+    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%;
+  background-repeat: no-repeat;
+}
+
+.rpg-rule-tab-group__panel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -1rem;
+  right: -1rem;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
+}
+
+.rpg-rule-tab-group__panel > :first-child {
+  margin-top: 0;
+}
+
+.rpg-rule-tab-group__panel > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Tab highlight: homebrew tab button ──────────────────────────────
+ * Diagonal stripes on the tab button signal homebrew content. */
+
+.rpg-rule-tab-group__tab--homebrew {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px
+  );
+}
+
+/* ── Tab highlight: homebrew panel ───────────────────────────────────
+ * Subtle stripe overlay on the panel content + pen badge. */
+
+.rpg-rule-tab-group__panel--homebrew::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 6px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rpg-rule-tab-group__highlight-badge {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--text-accent, #7c2d12);
+  cursor: help;
+  opacity: 0.6;
+  z-index: 2;
+}
+
+.rpg-rule-tab-group__highlight-badge:hover {
+  opacity: 1;
+}
+
+.rpg-rule-tab-group__highlight-badge svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+/* ── Subtab highlight: homebrew ──────────────────────────────────────── */
+
+.rpg-subtab-group__btn--homebrew {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+    color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px
+  );
+}
+
+.rpg-subtab-group__panel--homebrew {
+  position: relative;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 5px,
+    color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 6px
+  );
+}

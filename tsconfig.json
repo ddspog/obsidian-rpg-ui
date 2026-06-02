@@ -13,10 +13,10 @@
     "strictNullChecks": true,
     "lib": ["DOM", "ES5", "ES6", "ES7"],
     "jsx": "react-jsx",
-     "paths": {
-       "rpg-ui-toolkit": ["./lib/systems/api.d.ts"]
-     }
+    "paths": {
+      "rpg-ui-toolkit": ["./lib/systems/api.d.ts"]
+    }
   },
-  "include": ["**/*.ts", "lib/views/ReactMarkdown.tsx"],
-  "exclude": ["node_modules", "dist", "inspiration"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "inspiration", "stories"]
 }

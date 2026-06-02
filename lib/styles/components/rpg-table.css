@@ -1,0 +1,177 @@
+/* ─── rpg table styling bridge ─────────────────────────────────────────────
+ *
+ * Base table styling is inherited from the active theme via the `.el-table`
+ * wrapper `renderTableBlock` emits — themes that ship `.el-table > table`
+ * rules (Ribbons, the default Obsidian theme, etc.) apply their full table
+ * look with no additional CSS here.
+ *
+ * The rules below handle the few tx-style variant selectors that are scoped
+ * to `.block-language-tx` in typical themes, so our `.rpg-table` output
+ * mirrors them. Each variant keys off a hidden `<a href="#<class>">` child
+ * emitted by the renderer from the block's footer line (`[#css/tx/...]`).
+ */
+
+/* Category-divider row — a full-width label splitting a long table into
+ * visually-grouped sections (Light Armor / Medium Armor / …). The
+ * parser tags these rows with `data-category="true"` whenever the
+ * authored single-cell colspan fills every column; no `#css/row/...`
+ * annotation needed. */
+.rpg-table tr[data-category="true"] > td {
+  background: light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14));
+  color: light-dark(#3a2a14, #f0e8d0);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+}
+
+/* Indented cell — signals a child/sub-item via leading `> ` in the source.
+ * Any cell can carry indentation independently. */
+.rpg-table td[data-indent] {
+  padding-left: calc(10px + 1.2em * attr(data-indent type(<number>), 1));
+}
+
+@supports not (padding: attr(x type(<number>))) {
+  .rpg-table td[data-indent="1"] {
+    padding-left: calc(10px + 1.2em);
+  }
+  .rpg-table td[data-indent="2"] {
+    padding-left: calc(10px + 2.4em);
+  }
+  .rpg-table td[data-indent="3"] {
+    padding-left: calc(10px + 3.6em);
+  }
+}
+
+.rpg-table td[data-indent]::before {
+  content: "–";
+  margin-right: 0.4em;
+  opacity: 0.5;
+}
+
+/* Vertical cell merge (`^` marker) — the anchor cell carries `rowspan` and a
+ * `data-valign` set from the marker glyph (`^^` top, `^v` bottom, `^`/`^-`
+ * centre). Position its content within the rows it spans. */
+.rpg-table td[data-valign="top"] {
+  vertical-align: top;
+}
+
+.rpg-table td[data-valign="middle"] {
+  vertical-align: middle;
+}
+
+.rpg-table td[data-valign="bottom"] {
+  vertical-align: bottom;
+}
+
+/* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression
+ * tables where row content may be long but should stay on one line. */
+.rpg-table:has(a[href="#css/tx/s/wide"]) th,
+.rpg-table:has(a[href="#css/tx/s/wide"]) td {
+  white-space: nowrap;
+}
+
+/* @wide directive — makes the table wrapper scroll horizontally so wide
+ * tables don't compress columns or wrap text. */
+.rpg-table-wrapper--wide {
+  overflow-x: auto;
+}
+
+.rpg-table-wrapper--wide .rpg-table {
+  white-space: nowrap;
+}
+
+/* Variant: `#css/tx/s/no-top-header-border` */
+.rpg-table:has(a[href="#css/tx/s/no-top-header-border"]) thead tr:first-child {
+  border-top: none;
+}
+
+/* The hidden anchor markers themselves — keep them non-interactive so a stray
+ * click can't navigate to a broken `#css/...` fragment. */
+.rpg-table a[href^="#css/"] {
+  display: none;
+}
+
+/* ─── Roll-footer rows (|= {{ roll : … }} =|) ──────────────────────────────
+ *
+ * The renderer emits each `|= … =|` row as a `.el-p` sibling immediately
+ * after the `.el-table`, matching the DOM shape the Ribbons theme's
+ * dice-roller rules already target. That shape gets the theme's gold bottom
+ * border, condensed result font, and `text-title` tint for free.
+ *
+ * The extras here layer on the interactive bits the theme doesn't ship:
+ * a subtle pointer affordance, a dice-6 icon revealed on hover as a
+ * `mask-image` background (tinted via the theme's `--text-title` token so
+ * it stays consistent across themes), and a faint separator between cells
+ * on multi-cell footer rows.
+ */
+.rpg-table-footer-row > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+}
+
+.rpg-table-roll-cell {
+  position: relative;
+  flex: 1 1 auto;
+  padding: var(--size-2-2, 6px) var(--size-4-3, 12px);
+  /* Reserve space equal to one line of body text so the row never collapses
+   * to the 2px gold border when the roll result is empty (pre-click or
+   * unresolvable). Keeps scroll layout stable across rolls. */
+  min-height: calc(1em * var(--line-height-normal, 1.5));
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 120ms ease-out;
+}
+
+/* Non-interactive cells (no {{ roll }} inside): render as plain text. */
+.rpg-table-roll-cell-static {
+  cursor: default;
+}
+
+/* Thin vertical divider between cells — only shows between siblings. */
+.rpg-table-roll-cell + .rpg-table-roll-cell {
+  border-left: 1px solid var(--text-title, var(--text-muted));
+}
+
+/* Hover / focus affordance: reveal a dice-6 icon on the right side of the
+ * cell, tinted with text-title so it blends with the theme's accent. */
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: var(--size-4-3, 12px);
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  opacity: 0;
+  background-color: var(--text-title, var(--text-muted));
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1'/><circle cx='15.5' cy='8.5' r='1'/><circle cx='8.5' cy='15.5' r='1'/><circle cx='15.5' cy='15.5' r='1'/><circle cx='12' cy='12' r='1'/></svg>");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1'/><circle cx='15.5' cy='8.5' r='1'/><circle cx='8.5' cy='15.5' r='1'/><circle cx='15.5' cy='15.5' r='1'/><circle cx='12' cy='12' r='1'/></svg>");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  transition: opacity 120ms ease-out;
+  pointer-events: none;
+}
+
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):hover,
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):focus-visible {
+  background-color: color-mix(in srgb, var(--text-title, var(--text-muted)) 8%, transparent);
+  outline: none;
+}
+
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):hover::after,
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):focus-visible::after {
+  opacity: 0.4;
+}
+
+/* Click feedback: quick flash so the re-roll is acknowledged. */
+.rpg-table-roll-cell:not(.rpg-table-roll-cell-static):active {
+  background-color: color-mix(in srgb, var(--text-title, var(--text-muted)) 16%, transparent);
+}

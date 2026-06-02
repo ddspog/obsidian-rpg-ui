@@ -1,0 +1,48 @@
+/* Trigger Button — circular badge used in headers (styled to match banner image)
+   Design: black inner circle with an inner black stroke and an outer yellow ring
+           to match the progress bar treatment. */
+button[aria-details="Trigger Button"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--color-yellow, #e0ac00);
+  box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s;
+  flex-shrink: 0;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.18);
+  }
+
+  &:active {
+    transform: translateY(0);
+    opacity: 0.96;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.22);
+  }
+
+  svg {
+    color: var(--color-yellow, #e0ac00);
+  }
+}
+
+/* Dark mode tweak: keep yellow ring but slightly dimmer background */
+.theme-dark button[aria-details="Trigger Button"] {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: var(--color-yellow, #e0ac00);
+  box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
+}

@@ -25,7 +25,7 @@ export function buildDND5ESystem(): RPGSystem {
     attributes: attributes.default,
     entities: {
       character: {
-        fields: [
+        frontmatter: [
           { name: "proficiency_bonus", type: "number", default: 2 },
           { name: "level", type: "number", default: 1 },
         ],
@@ -65,14 +65,14 @@ export function buildDND5ESystem(): RPGSystem {
             $contents: "Make a melee attack against a creature that leaves your reach.",
           },
         ],
-        computed: {
+        expressions: {
           /** floor((score - 10) / 2) */
-          modifier: (ctx: Record<string, unknown>) => {
+          modifier: (_args: any, ctx: any) => {
             const score = Number(ctx.score) || 0;
             return Math.floor((score - 10) / 2);
           },
           /** modifier + proficiency_bonus (if proficient) */
-          saving_throw: (ctx: Record<string, unknown>) => {
+          saving_throw: (_args: any, ctx: any) => {
             const score = Number(ctx.score) || 0;
             const proficiencyBonus = Number(ctx.proficiency_bonus) || 0;
             const isProficient = Boolean(ctx.is_proficient);
@@ -80,7 +80,7 @@ export function buildDND5ESystem(): RPGSystem {
             return mod + (isProficient ? proficiencyBonus : 0);
           },
           /** modifier + proficiency_bonus * proficiency_level */
-          skill_modifier: (ctx: Record<string, unknown>) => {
+          skill_modifier: (_args: any, ctx: any) => {
             const score = Number(ctx.score) || 0;
             const proficiencyBonus = Number(ctx.proficiency_bonus) || 0;
             const proficiencyLevel = Number(ctx.proficiency_level) || 0;
@@ -90,19 +90,19 @@ export function buildDND5ESystem(): RPGSystem {
         },
       },
       class: {
-        fields: [{ name: "hit_die", type: "string", default: "d8" }],
+        frontmatter: [{ name: "hit_die", type: "string", default: "d8" }],
       },
       subclass: {
-        fields: [{ name: "parent_class", type: "string", default: "" }],
+        frontmatter: [{ name: "parent_class", type: "string", default: "" }],
       },
       race: {
-        fields: [
+        frontmatter: [
           { name: "size", type: "string", default: "medium" },
           { name: "speed", type: "number", default: 30 },
         ],
       },
       monster: {
-        fields: [{ name: "cr", type: "number", default: 0 }],
+        frontmatter: [{ name: "cr", type: "number", default: 0 }],
         features: [
           {
             $name: "Opportunity Attack",

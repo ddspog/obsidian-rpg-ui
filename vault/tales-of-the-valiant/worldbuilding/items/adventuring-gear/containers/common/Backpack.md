@@ -1,0 +1,30 @@
+---
+cssclasses: ["note-item"]
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+---
+# Backpack
+```rpg item.element
+name: Backpack
+type: "[[Adventuring Gear]] (Container)"
+cost: 2 gp
+weight: 5 lb.
+image: "![[backpack.webp|384]]"
+container:
+  volume_cap: 1 cubic foot
+  weight_cap: 30 lb.
+shop:
+  cheap: 1 gp
+  expensive: 3 gp
+  availability:
+    - "[[Limited]]"
+    - "[[Rural]]"
+    - "[[Urbane]]"
+    - "[[Premium]]"
+---
+A Backpack holds up to 30 pounds within 1 cubic foot. It can also serve as a saddlebag.
+```
+```rpg rule.related
+view: footer
+entries:
+  - `@[[Container Capacity]].bare()`
+```

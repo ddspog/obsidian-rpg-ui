@@ -6,9 +6,9 @@
 import type { FeatureTypeDefinition } from "../../types";
 
 export default [
-	{ id: "action", label: "Action", icon: "⚔️" },
-	{ id: "bonus_action", label: "Bonus Action", icon: "⚡" },
-	{ id: "reaction", label: "Reaction", icon: "🛡️" },
-	{ id: "passive", label: "Passive", icon: "👁️" },
-	{ id: "active", label: "Active", icon: "✨" },
+  { id: "action", label: "Action", icon: "⚔️" },
+  { id: "bonus_action", label: "Bonus Action", icon: "⚡" },
+  { id: "reaction", label: "Reaction", icon: "🛡️" },
+  { id: "passive", label: "Passive", icon: "👁️" },
+  { id: "active", label: "Active", icon: "✨" },
 ] as FeatureTypeDefinition[];

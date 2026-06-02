@@ -46,9 +46,7 @@ const PAGE_SIZE = 20;
 function toTitleCase(str: string): string {
   // Strip common prefixes like "Note.", "File.", etc.
   const cleaned = str.replace(/^\w+\./, "");
-  return cleaned
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return cleaned.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getPropertyDisplayValue(value: any): string {
@@ -82,7 +80,9 @@ function getBasesViewBase(): any {
     load() {}
     unload() {}
     focus() {}
-    getEphemeralState() { return {}; }
+    getEphemeralState() {
+      return {};
+    }
     setEphemeralState(_s: any) {}
     onResize() {}
   };
@@ -155,19 +155,15 @@ function buildCompilationViewClass(): any {
 
       const data = (this as any).data as BasesData | null;
       if (!data || !data.data || data.data.length === 0) {
-        this.containerEl.createDiv("rpg-compilation-empty").textContent =
-          "No entries to display";
+        this.containerEl.createDiv("rpg-compilation-empty").textContent = "No entries to display";
         return;
       }
 
       // Filter to markdown files only
-      this.entries = [...data.data].filter(
-        (entry) => entry.file && entry.file.extension === "md",
-      );
+      this.entries = [...data.data].filter((entry) => entry.file && entry.file.extension === "md");
 
       if (this.entries.length === 0) {
-        this.containerEl.createDiv("rpg-compilation-empty").textContent =
-          "No markdown entries found";
+        this.containerEl.createDiv("rpg-compilation-empty").textContent = "No markdown entries found";
         return;
       }
 
@@ -192,7 +188,7 @@ function buildCompilationViewClass(): any {
       const showFileName = (config?.get("showFileName") as boolean | undefined) ?? true;
       // Bases dropdown stores the 0-based index of the selected option.
       // Options: ['h1','h2','h3','h4','h5','h6'] → index 0 = h1, index 1 = h2, …
-      const HEADING_OPTIONS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+      const HEADING_OPTIONS = ["h1", "h2", "h3", "h4", "h5", "h6"];
       const rawLevel = config?.get("headingLevel");
       const headingLevel = (() => {
         const s = String(rawLevel ?? "");
@@ -238,7 +234,7 @@ function buildCompilationViewClass(): any {
         showContent: boolean;
         propertyNames: string[];
         footerProp: string;
-      },
+      }
     ): void {
       const entryEl = this.containerEl.createDiv("rpg-compilation-entry");
 
@@ -338,19 +334,12 @@ function buildCompilationViewClass(): any {
             container.createDiv("rpg-compilation-empty-content").textContent = "(no content after frontmatter)";
             return;
           }
-          void MarkdownRenderer.render(
-            app,
-            body,
-            container,
-            file.path,
-            this.renderComponent ?? new Component(),
-          );
+          void MarkdownRenderer.render(app, body, container, file.path, this.renderComponent ?? new Component());
         },
         (err) => {
           container.empty();
-          container.createDiv("rpg-compilation-error").textContent =
-            `Failed to load: ${err}`;
-        },
+          container.createDiv("rpg-compilation-error").textContent = `Failed to load: ${err}`;
+        }
       );
     }
 
@@ -370,7 +359,7 @@ function buildCompilationViewClass(): any {
             }
           }
         },
-        { root: this.scrollEl, rootMargin: "200px" },
+        { root: this.scrollEl, rootMargin: "200px" }
       );
 
       this.observer.observe(this.sentinelEl);
@@ -400,9 +389,7 @@ export function compilationOptions(): any[] {
       type: "dropdown",
       displayName: "Heading for File name",
       default: "h3",
-      options: [
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-      ],
+      options: ["h1", "h2", "h3", "h4", "h5", "h6"],
     },
     {
       key: "subtitleProperty",

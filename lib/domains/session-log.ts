@@ -59,12 +59,18 @@ export function parseSessionLogBlock(source: string): SessionLogBlock {
     if (trimmed.startsWith("state_key:")) {
       block.state_key = trimmed.replace("state_key:", "").trim();
     } else if (trimmed.startsWith("scene:")) {
-      block.scene = trimmed.replace("scene:", "").trim().replace(/^["']|["']$/g, "");
+      block.scene = trimmed
+        .replace("scene:", "")
+        .trim()
+        .replace(/^["']|["']$/g, "");
     } else if (trimmed.startsWith("entities:")) {
       block.entities = [];
     } else if (trimmed.startsWith("- file:")) {
       if (!block.entities) block.entities = [];
-      const filePath = trimmed.replace("- file:", "").trim().replace(/^["']|["']$/g, "");
+      const filePath = trimmed
+        .replace("- file:", "")
+        .trim()
+        .replace(/^["']|["']$/g, "");
       block.entities.push({ file: filePath });
     }
   }

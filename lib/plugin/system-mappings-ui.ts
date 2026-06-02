@@ -19,7 +19,10 @@ export interface SystemMappingsContext {
 // Normalize folder input into a consistent relative path or empty string for root
 function normalizeFolderPath(input: string | null | undefined): string | null {
   if (!input) return null;
-  const v = input.replace(/\\/g, "/").trim().replace(/^\/+|\/+$/g, "");
+  const v = input
+    .replace(/\\/g, "/")
+    .trim()
+    .replace(/^\/+|\/+$/g, "");
   return v;
 }
 
@@ -49,7 +52,7 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
   for (let i = 0; i < ctx.settings.systemMappings.length; i++) {
     const mapping = ctx.settings.systemMappings[i];
     // mapping container groups the three setting rows visually
-    const mappingContainer = containerEl.createDiv({ cls: 'rpg-mapping-block' });
+    const mappingContainer = containerEl.createDiv({ cls: "rpg-mapping-block" });
 
     // 1) Header row: Mapping name + System folder + Delete + Process
     const headerSetting = new Setting(mappingContainer).setName(`Mapping ${i + 1}`);
@@ -74,45 +77,64 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
     });
 
     headerSetting.addButton((btn) => {
-      btn.setIcon("trash").setTooltip("Remove mapping").onClick(async () => {
-        ctx.settings.systemMappings.splice(i, 1);
-        await saveAndSync(ctx);
-        folderSuggests.forEach((fs) => fs.destroy());
-        ctx.onRefresh();
-      });
+      btn
+        .setIcon("trash")
+        .setTooltip("Remove mapping")
+        .onClick(async () => {
+          ctx.settings.systemMappings.splice(i, 1);
+          await saveAndSync(ctx);
+          folderSuggests.forEach((fs) => fs.destroy());
+          ctx.onRefresh();
+        });
       return btn;
     });
 
     headerSetting.addButton((btn) => {
       btn.setButtonText("Process").onClick(async () => {
         // process mapping on click: load the RPG system definition for the mapped system folder
-        const systemFolder = mapping.systemFolderPath;
-        if (!systemFolder) {
-          new Notice('No system folder set for this mapping');
+        const rawFolder = mapping.systemFolderPath;
+        if (!rawFolder) {
+          new Notice("No system folder set for this mapping");
           return;
         }
 
-        const system = await loadSystemFromTypeScript(ctx.app.vault, systemFolder);
+        // Try a set of candidate folder paths to be forgiving when users point
+        // to the system root rather than the config subfolder.
+        const candidates = [rawFolder, `${rawFolder}/config`].map(normalizeFolderPath).filter((c): c is string => !!c);
+        let system = null as any;
+        let lastErr: any = null;
+        for (const cand of candidates) {
+          try {
+            system = await loadSystemFromTypeScript(ctx.app.vault, cand);
+            if (system) {
+              mapping.systemFolderPath = cand;
+              break;
+            }
+          } catch (e) {
+            lastErr = e;
+          }
+        }
         if (!system) {
-          new Notice(`Failed to load system from ${systemFolder}`);
+          console.error("Failed to load system for mapping", rawFolder, lastErr);
+          new Notice(`Failed to load system from ${rawFolder} (tried candidates: ${candidates.join(", ")})`);
           return;
         }
 
         // Build a concise summary of the RPGSystem (user-visible)
         const summary: Record<string, unknown> = {
           name: system.name,
-          attributes: system.attributes.map((a) => ({ name: a.$name, alias: a.alias, subtitle: a.subtitle })),
+          attributes: system.attributes.map((a: any) => ({ name: a.$name, alias: a.alias, subtitle: a.subtitle })),
           entities: Object.keys(system.entities || {}).map((k) => k),
-          skills: (system.skills || []).map((s) => ({ name: s.$name, attribute: s.attribute })),
-          featureCategories: (system.features?.categories || []).map((c) => ({ id: c.id, label: c.label })),
-          conditions: (system.conditions || []).map((c) => ({ name: c.$name, icon: c.icon })),
+          skills: (system.skills || []).map((s: any) => ({ name: s.$name, attribute: s.attribute })),
+          featureCategories: (system.features?.categories || []).map((c: any) => ({ id: c.id, label: c.label })),
+          conditions: (system.conditions || []).map((c: any) => ({ name: c.$name, icon: c.icon })),
           expressions: Array.from(system.expressions?.keys() || []),
         };
 
         const entry = detailsNodes[i];
         if (entry) {
           entry.json = JSON.stringify(summary, null, 2);
-          const summaryEl = entry.container.querySelector('.rpg-processed-summary');
+          const summaryEl = entry.container.querySelector(".rpg-processed-summary");
           if (summaryEl) (summaryEl as HTMLElement).textContent = `Loaded system: ${system.name}`;
         }
       });
@@ -136,7 +158,10 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
             .map(normalizeFolderPath)
             .filter((e): e is string => e !== null)
             .filter((e) => !mapping.folderPaths.includes(e));
-          if (entries.length === 0) { text.setValue(""); return; }
+          if (entries.length === 0) {
+            text.setValue("");
+            return;
+          }
           mapping.folderPaths = [...mapping.folderPaths, ...entries];
           text.setValue("");
           await saveAndSync(ctx);
@@ -146,7 +171,10 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
 
       new FolderSuggest(ctx.app, text, async (selection) => {
         const normalized = normalizeFolderPath(selection);
-        if (normalized === null || mapping.folderPaths.includes(normalized)) { text.setValue(""); return; }
+        if (normalized === null || mapping.folderPaths.includes(normalized)) {
+          text.setValue("");
+          return;
+        }
         mapping.folderPaths = [...mapping.folderPaths, normalized];
         text.setValue("");
         await saveAndSync(ctx);
@@ -156,16 +184,16 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
       return text;
     });
 
-    const chipsContainer = folderSetting.controlEl.createDiv({ cls: 'rpg-folder-list' });
+    const chipsContainer = folderSetting.controlEl.createDiv({ cls: "rpg-folder-list" });
 
     const renderFolderList = () => {
       chipsContainer.empty();
       mapping.folderPaths.forEach((path) => {
-        const chip = chipsContainer.createDiv({ cls: 'rpg-folder-chip' });
-        const label = path === '' ? '(root)' : path;
-        chip.createSpan({ text: label, cls: 'rpg-folder-chip-label' });
-        const removeButton = chip.createEl('button', { text: 'x', cls: 'rpg-folder-chip-remove' });
-        removeButton.addEventListener('click', async () => {
+        const chip = chipsContainer.createDiv({ cls: "rpg-folder-chip" });
+        const label = path === "" ? "(root)" : path;
+        chip.createSpan({ text: label, cls: "rpg-folder-chip-label" });
+        const removeButton = chip.createEl("button", { text: "x", cls: "rpg-folder-chip-remove" });
+        removeButton.addEventListener("click", async () => {
           mapping.folderPaths = mapping.folderPaths.filter((entry) => entry !== path);
           await saveAndSync(ctx);
           renderFolderList();
@@ -175,49 +203,106 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
 
     renderFolderList();
 
+    // 2b) Official sources row: strings marking content "official"; a note
+    // whose `source:` frontmatter contains none of these is homebrew.
+    const sourceSetting = new Setting(mappingContainer)
+      .setName("Official sources")
+      .setDesc(
+        "Patterns for the `source:` field that count as official; anything else is homebrew. " +
+          "Use % as the wildcard (any text); everything else, incl. *, is literal."
+      );
+    sourceSetting.addText((text) => {
+      text.setPlaceholder("Add source (Enter to add)").setValue("");
+      text.inputEl.style.width = "220px";
+      text.inputEl.addEventListener("keydown", async (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const existing = mapping.officialSources ?? [];
+          const entries = text.inputEl.value
+            .split(/[;\n]+/)
+            .map((e) => e.trim())
+            .filter((e) => e.length > 0)
+            .filter((e) => !existing.includes(e));
+          if (entries.length === 0) {
+            text.setValue("");
+            return;
+          }
+          mapping.officialSources = [...existing, ...entries];
+          text.setValue("");
+          await saveAndSync(ctx);
+          renderSourceList();
+        }
+      });
+      return text;
+    });
+
+    const sourceChips = sourceSetting.controlEl.createDiv({ cls: "rpg-folder-list" });
+    const renderSourceList = () => {
+      sourceChips.empty();
+      (mapping.officialSources ?? []).forEach((s) => {
+        const chip = sourceChips.createDiv({ cls: "rpg-folder-chip" });
+        chip.createSpan({ text: s, cls: "rpg-folder-chip-label" });
+        const removeButton = chip.createEl("button", { text: "x", cls: "rpg-folder-chip-remove" });
+        removeButton.addEventListener("click", async () => {
+          mapping.officialSources = (mapping.officialSources ?? []).filter((entry) => entry !== s);
+          await saveAndSync(ctx);
+          renderSourceList();
+        });
+      });
+    };
+
+    renderSourceList();
+
     // 3) Output row: processed JSON + Inspect + Copy
-    const systemName = mapping.systemFolderPath ? mapping.systemFolderPath.split('/').pop() || mapping.systemFolderPath : 'System';
-    const outputSetting = new Setting(mappingContainer).setName(systemName).setDesc('Processed JSON');
-    const detailsDiv = outputSetting.controlEl.createDiv({ cls: 'rpg-mapping-details' });
-    const controls = detailsDiv.createDiv({ cls: 'rpg-mapping-details-controls' });
-    const inspectBtn = controls.createEl('button', { text: 'Inspect' });
-    inspectBtn.addEventListener('click', () => {
+    const systemName = mapping.systemFolderPath
+      ? mapping.systemFolderPath.split("/").pop() || mapping.systemFolderPath
+      : "System";
+    const outputSetting = new Setting(mappingContainer).setName(systemName).setDesc("Processed JSON");
+    const detailsDiv = outputSetting.controlEl.createDiv({ cls: "rpg-mapping-details" });
+    const controls = detailsDiv.createDiv({ cls: "rpg-mapping-details-controls" });
+    const inspectBtn = controls.createEl("button", { text: "Inspect" });
+    inspectBtn.addEventListener("click", () => {
       const entry = detailsNodes[i];
-      const json = entry?.json || '';
-      if (!json) { new Notice('No processed JSON for this mapping yet'); return; }
+      const json = entry?.json || "";
+      if (!json) {
+        new Notice("No processed JSON for this mapping yet");
+        return;
+      }
       new JSONInspectModal(ctx.app, systemName, json).open();
     });
 
-    const copyBtn = controls.createEl('button', { text: 'Copy' });
-    copyBtn.addEventListener('click', async () => {
+    const copyBtn = controls.createEl("button", { text: "Copy" });
+    copyBtn.addEventListener("click", async () => {
       const entry = detailsNodes[i];
-      const json = entry?.json || '';
-      if (!json) { new Notice('No processed JSON for this mapping yet'); return; }
+      const json = entry?.json || "";
+      if (!json) {
+        new Notice("No processed JSON for this mapping yet");
+        return;
+      }
       try {
         if (navigator && (navigator as any).clipboard && (navigator as any).clipboard.writeText) {
           await (navigator as any).clipboard.writeText(json);
         } else {
-          const ta = document.createElement('textarea');
+          const ta = document.createElement("textarea");
           ta.value = json;
           document.body.appendChild(ta);
           ta.select();
-          document.execCommand('copy');
+          document.execCommand("copy");
           document.body.removeChild(ta);
         }
-        new Notice('Processed JSON copied to clipboard');
+        new Notice("Processed JSON copied to clipboard");
       } catch (err) {
-        console.error('Failed to copy JSON', err);
-        new Notice('Failed to copy JSON to clipboard');
+        console.error("Failed to copy JSON", err);
+        new Notice("Failed to copy JSON to clipboard");
       }
     });
 
     // small summary element (shows processed file count)
-    const summaryEl = detailsDiv.createEl('div', { cls: 'rpg-processed-summary' });
-    summaryEl.textContent = '';
+    const summaryEl = detailsDiv.createEl("div", { cls: "rpg-processed-summary" });
+    summaryEl.textContent = "";
 
-    detailsNodes[i] = { container: detailsDiv, json: '' };
+    detailsNodes[i] = { container: detailsDiv, json: "" };
   }
-
 }
 
 class JSONInspectModal extends Modal {
@@ -230,15 +315,15 @@ class JSONInspectModal extends Modal {
   }
   onOpen() {
     const { contentEl } = this;
-    contentEl.createEl('h3', { text: this.titleText });
-    const wrapper = contentEl.createDiv({ cls: 'rpg-json-modal' });
-    const pre = wrapper.createEl('pre');
+    contentEl.createEl("h3", { text: this.titleText });
+    const wrapper = contentEl.createDiv({ cls: "rpg-json-modal" });
+    const pre = wrapper.createEl("pre");
     pre.textContent = this.jsonText;
-    pre.style.whiteSpace = 'pre';
-    pre.style.overflow = 'auto';
-    pre.style.maxHeight = '70vh';
-    pre.style.fontFamily = 'monospace';
-    pre.style.padding = '8px';
+    pre.style.whiteSpace = "pre";
+    pre.style.overflow = "auto";
+    pre.style.maxHeight = "70vh";
+    pre.style.fontFamily = "monospace";
+    pre.style.padding = "8px";
   }
   onClose() {
     this.contentEl.empty();

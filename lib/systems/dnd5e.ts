@@ -13,4 +13,3 @@ import { buildDND5ESystem } from "./dnd5e/loader";
  * Built-in D&D 5e system
  */
 export const DND5E_SYSTEM = buildDND5ESystem();
-

@@ -1,0 +1,387 @@
+/* ── Spells block — per-caster sub-blocks, feature-accordion shape ───── */
+/*
+ * Visual twin of `.rpg-feature-accordion`: transparent outer section
+ * with top/bottom hairline rule, then one `.rpg-caster` article per
+ * caster framed by thick inset "rollers" at top/bottom that simulate
+ * the ends of a scroll. Circle drawers sit inside with a 16px
+ * horizontal gutter (the parchment margin); scroll-edge gradient bars
+ * bridge the first/last drawer back to the roller edges. Multiclass
+ * stacks several scrolls vertically.
+ */
+
+section[aria-details="Character Spells"] {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  background: transparent;
+}
+
+/* No pending compartment → keep the matching bottom hairline cap. Present
+ * → the compartment below supplies its own bottom border. */
+section[aria-details="Character Spells"]:not(:has(.rpg-feature-pending-list)) {
+  border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+}
+
+/* The pending compartment inside a Spells section glues to the last
+ * caster's bottom roller — close the flex gap just for this element so
+ * multi-caster stacks still keep their 14px separation above. */
+section[aria-details="Character Spells"] > .rpg-feature-pending-list {
+  margin-top: -14px;
+}
+
+.rpg-caster {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  /* Ridge rollers at top + bottom match the features-accordion scroll,
+   * giving each caster its own raised scroll look above the compartment
+   * that follows. */
+  border-top: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
+  border-bottom: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
+  box-shadow:
+    inset 0 1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35)),
+    inset 0 -1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35));
+}
+
+.rpg-caster > header {
+  filter: none;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-senses-header, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.3;
+  margin: 0 16px;
+  padding: 6px 12px;
+  text-align: center;
+  position: relative;
+}
+
+.rpg-caster > header > span {
+  display: inline;
+  padding: 0;
+  background: transparent;
+}
+
+/* Scroll-edge bars anchor on the header (the first row inside the scroll),
+ * fading toward the accordion centre so the open parchment sides of the
+ * circle drawers feel like a natural continuation of the roller above. */
+.rpg-caster > header::before,
+.rpg-caster > header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)),
+    transparent
+  );
+}
+
+.rpg-caster > header::before { left: -6px; }
+.rpg-caster > header::after { right: -6px; }
+
+.rpg-caster-meta {
+  font-size: 0.85em;
+  font-weight: 500;
+  opacity: 0.75;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.rpg-caster-body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Circle drawer (bucket equivalent from features) ──────────────────── */
+
+.rpg-spell-circle {
+  background: transparent;
+  border: none;
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  margin: 0 16px;
+  position: relative;
+}
+
+.rpg-spell-circle:first-of-type {
+  border-top: none;
+}
+
+/* Scroll-edge bars on the LAST circle drawer only: the top bars live
+ * on the caster header (see `.rpg-caster > header::before/::after`),
+ * since the header is the first element inside the scroll. */
+.rpg-spell-circle:last-of-type::before,
+.rpg-spell-circle:last-of-type::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  pointer-events: none;
+}
+
+.rpg-spell-circle:last-of-type::before { left: -6px; }
+.rpg-spell-circle:last-of-type::after { right: -6px; }
+
+.rpg-spell-circle:last-of-type::before,
+.rpg-spell-circle:last-of-type::after {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22))
+  );
+}
+
+.rpg-spell-circle > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.rpg-spell-circle > summary:hover {
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+.rpg-spell-circle > summary::-webkit-details-marker,
+.rpg-spell-circle > summary::marker {
+  display: none;
+}
+
+/* Caret styled to match the feature-bucket caret: gold, thin, and
+ * rotating on open. Matches colour + ease so the two drawer families
+ * read as a single interaction pattern across the sheet. */
+.rpg-spell-circle > summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.75em;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  transition: transform 120ms ease;
+}
+
+.rpg-spell-circle[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.rpg-spell-circle-label {
+  flex: 1;
+  font-weight: 700;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-spell-circle-count {
+  font-size: 0.8em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+  text-align: center;
+  min-width: 1.4em;
+}
+
+/* ── Slot pips ────────────────────────────────────────────────────────── */
+
+.rpg-spell-slots {
+  display: inline-flex;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-spell-slot {
+  appearance: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 1px;
+  margin: 0;
+  font: inherit;
+  font-size: 1em;
+  line-height: 1;
+  cursor: pointer;
+  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+}
+
+.rpg-spell-slot[data-spent="true"] {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-spell-slot:hover {
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+/* ── Spell entries inside a circle ────────────────────────────────────── */
+
+.rpg-spell-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Spell entry (three-row layout, mirrors features bucket entry) ────── */
+/*
+ *   row 1 | [name][casting to cast][style]·[group]        [enabler]
+ *   row 2 | [range · components · duration]
+ *   row 3 | [full markdown text spans both columns]
+ *
+ * Two-column grid with the name/meta header + subline + text on the
+ * left, enabler pinned right on row 1, subline and text span both
+ * columns on rows 2/3.
+ */
+
+.rpg-spell-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: baseline;
+  /* Match the feature-bucket-entry's breathing room around the dashed
+   * divider so spell lists read with the same cadence as features. */
+  padding: 24px 0 16px;
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+  color: light-dark(#2a2018, #c9c2b4);
+  font-size: 0.9em;
+}
+
+.rpg-spell-entry:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+/* Header line — name + casting phrase + style + · group, all inline. */
+.rpg-spell-entry-header {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline;
+  align-items: baseline;
+}
+
+.rpg-spell-entry-name {
+  font-size: 1em;
+  /* Appearance (color / font-weight / text-decoration) owned by the
+   * Folder Link Styles plugin setting. */
+}
+
+.rpg-spell-entry-casting,
+.rpg-spell-entry-style,
+.rpg-spell-entry-group {
+  font-size: 0.82em;
+  color: light-dark(#5a5040, #a09880);
+  font-style: italic;
+}
+
+.rpg-spell-entry-sep {
+  opacity: 0.5;
+}
+
+.rpg-spell-entry[data-group="prepared"] .rpg-spell-entry-group em,
+.rpg-spell-entry[data-group="granted"] .rpg-spell-entry-group em {
+  font-style: italic;
+  color: light-dark(#2ea043, #7ad188);
+  font-weight: 700;
+}
+
+.rpg-spell-entry[data-group="ritual"] .rpg-spell-entry-group em {
+  font-style: italic;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  font-weight: 700;
+}
+
+/* Enabler column — the feature / class / subclass / talent that let
+ * the character pick or receive this spell. Appearance (color, font-
+ * weight, font-style, text-decoration) owned by the Folder Link Styles
+ * plugin setting. Layout-adjacent properties stay here so the column
+ * keeps its grid placement and relative size. */
+.rpg-spell-entry-enabler {
+  grid-column: 2;
+  grid-row: 1;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* Subline — range · components · duration on row 2 spanning both cols. */
+.rpg-spell-entry-subline {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-size: 0.82em;
+  color: light-dark(#5a5040, #a09880);
+}
+
+.rpg-spell-entry-subline small {
+  font-size: inherit;
+}
+
+/* Third row: full spell markdown text, spanning both columns so the
+ * prose flows under the header + subline. */
+.rpg-spell-entry-text {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 4px 0 0;
+  line-height: 1.5;
+  color: light-dark(#2a2018, #c9c2b4);
+}
+
+.rpg-spell-entry-text > p:first-child { margin-top: 0; }
+.rpg-spell-entry-text > p:last-child { margin-bottom: 0; }
+
+/* ── Pending picker empty-state ───────────────────────────────────────── */
+
+.rpg-spell-pending-empty {
+  margin: 4px 0 0;
+  padding: 4px 0;
+  font-size: 0.82em;
+  opacity: 0.65;
+}
+
+/* ── Circle-grouped option picker (prepared spells) ───────────────────── */
+/*
+ * The prepared pending row collapses every circle into one "pick N
+ * more" label; this section lays out the per-circle sub-groups so the
+ * user sees spells separated by circle without the remaining-budget
+ * label repeating.
+ */
+.rpg-spell-pending-circles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.rpg-spell-pending-circle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rpg-spell-pending-circle-label {
+  margin: 0;
+  padding: 0;
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}

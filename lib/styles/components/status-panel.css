@@ -1,0 +1,75 @@
+/* ── Status Panel ─────────────────────────────────────────────────────────── */
+
+[aria-details*=" Status"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-left: 8px;
+  border-left: 2px solid var(--rpg-diamond-border, #5a5450);
+}
+
+/* Section labels */
+[aria-details*=" Status"] h6 {
+  margin: 0;
+  padding: 0;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rpg-status-label-color, #a08060);
+  line-height: 1.2;
+}
+
+/* Gap between exhaustion block and conditions block */
+[aria-details*=" Status"] h6 + h6 {
+  margin-top: 6px;
+}
+
+dd[aria-label="Conditions List"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 20px;
+}
+
+[aria-details="No Conditions"] {
+  font-size: 0.75em;
+  color: var(--rpg-no-conditions-color, rgba(255,255,255,0.25));
+  line-height: 20px;
+}
+
+/* ── Condition Pill ───────────────────────────────────────────────────────── */
+
+button[aria-details="Condition Pill"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--rpg-condition-pill-border, rgba(176, 154, 208, 0.5));
+  background: var(--rpg-condition-pill-bg, rgba(176, 154, 208, 0.12));
+  color: var(--rpg-condition-pill-color, #b09ad0);
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  min-width: max-content;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+button[aria-details="Condition Pill"][data-linked="true"]:hover {
+  background: var(--rpg-condition-pill-hover-bg, rgba(176, 154, 208, 0.25));
+  border-color: var(--rpg-condition-pill-color, #b09ad0);
+}
+
+button[aria-details="Condition Pill"][data-linked="false"] {
+  cursor: default;
+}
+
+button[aria-details="Condition Pill"] svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}

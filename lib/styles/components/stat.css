@@ -1,0 +1,38 @@
+.rpg-stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: 84px;
+  margin: 0 6px;
+  gap: 6px;
+}
+.rpg-stat__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.rpg-stat__modifier {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+.rpg-stat__value {
+  margin-top: 4px;
+  background: var(--text-on-accent);
+  color: var(--text-primary);
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+}
+.rpg-stat__save {
+  position: relative;
+  top: -36px;
+  right: -28px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.7rem;
+  padding: 3px 6px;
+  border-radius: 999px;
+}

@@ -1,3 +1,5 @@
+import type { ReactNode, ComponentType, FunctionComponent } from "react";
+
 /**
  * RPG UI Toolkit – Public API type declarations
  *
@@ -61,15 +63,31 @@ export type BlockPropSchema =
       description?: string;
     };
 
-    /**
-     * Create an entity definition. Accepts either a plain `EntityConfig` or a
-     * factory function which receives `{ wiki }` and returns an `EntityConfig`
-     * (or a Promise thereof). Returned value is consumed by `CreateSystem` which
-     * will resolve any factories before building the system.
-     */
-    export declare function CreateEntity(
-      cfg: EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>),
-    ): EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>);
+/**
+ * Create an entity definition. Accepts either a plain `EntityConfig` or a
+ * factory function which receives `{ wiki }` and returns an `EntityConfig`
+ * (or a Promise thereof). Returned value is consumed by `CreateSystem` which
+ * will resolve any factories before building the system.
+ *
+ * @typeParam TBlocks - Shape of all block props in this entity (e.g. `{ header: HeaderProps; health: HealthProps }`)
+ * @typeParam TLookup - Lookup data type for this entity
+ * @typeParam TFrontmatter - Frontmatter type for this entity
+ */
+export declare function CreateEntity<TEntity extends EntityDescriptor<any, any, any, any> = EntityDescriptor>(
+  cfg: TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>)
+): TEntity | ((ctx: { wiki: Wiki }) => TEntity | Promise<TEntity>);
+
+/**
+ * Bundled entity descriptor type to simplify CreateEntity generics.
+ *
+ * Order: TBlocks, TLookup, TExpressions, TFrontmatter (friendly for authors)
+ */
+export type EntityDescriptor<
+  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+  TLookup = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+  TFrontmatter = Record<string, unknown>,
+> = EntityConfig<TFrontmatter, TLookup, TBlocks, TExpressions>;
 
 /**
  * Block definition — registers a React component for an `rpg entity.<blockName>`
@@ -94,6 +112,7 @@ export type BlockPropSchema =
  * }
  * ```
  */
+/** @deprecated Use Component (returned by CreateComponent) instead */
 export interface BlockDefinition {
   /**
    * Props schema — describes the YAML fields the block expects.
@@ -101,37 +120,219 @@ export interface BlockDefinition {
    */
   props?: Record<string, BlockPropSchema>;
   /** React component that receives the parsed YAML fields as props */
-  component: (props: Record<string, unknown>) => unknown;
+  component: (props: Record<string, unknown>) => ReactNode;
 }
 
-/** Entity configuration for use in SystemConfig */
-export interface EntityConfig {
-  fields?: Array<
-    | string
-    | {
-        name: string;
-        type?: "number" | "string" | "boolean";
-        default?: unknown;
-        derived?: string;
-        aliases?: string[];
-      }
-  >;
+/** System context passed to every block component */
+export interface SystemContext {
+  skills: SkillDefinition[];
+  attributes: AttributeDefinition[];
+  conditions?: ConditionDefinition[];
+  traits?: TraitDefinition[];
+}
+
+/**
+ * Context passed to expression functions — entity + system without the `self` block props.
+ *
+ * @typeParam TLookup - Entity lookup type
+ * @typeParam TFrontmatter - Entity frontmatter type
+ * @typeParam TBlocks - All blocks' prop shapes
+ */
+export interface ExpressionProps<
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, unknown> = Record<string, unknown>,
+> {
+  lookup: TLookup;
+  frontmatter: TFrontmatter;
+  blocks: TBlocks;
+  /** Sibling expressions bound to entity context — call directly: `expressions.mod()` */
+  expressions: TExpressions;
+  system: SystemContext;
+}
+
+/**
+ * Derives a setter function for every key in T, following React useState convention.
+ *
+ * `{ xp: number; label: string }` → `{ setXp: (v: number | ((p: number) => number)) => void; setLabel: ... }`
+ *
+ * The setter accepts either a plain value or an updater function, identical to
+ * the dispatch overload returned by `useState`.
+ */
+export type Setters<T> = {
+  [K in keyof T as K extends string ? `set${Capitalize<K>}` : never]: (value: T[K] | ((prev: T[K]) => T[K])) => void;
+};
+
+/**
+ * Cross-file fence patcher exposed on every block's `self`. Locates a
+ * `\`\`\`rpg <entity>.<block>\`\`\`` fence in the file at `path`,
+ * replaces (or appends) the top-level YAML key, and refreshes that
+ * file's preview so any open render picks up the change. Used when a
+ * block needs to mutate state owned by another file — for example,
+ * the character inventory toggling `for_sale` on an item that lives
+ * inside a referenced `rpg item.container` stash.
+ */
+export type ForeignBlockPatcher = (
+  path: string,
+  entity: string,
+  block: string,
+  key: string,
+  value: unknown
+) => Promise<void>;
+
+/**
+ * Full props object passed to a block component created with CreateComponent.
+ *
+ * @typeParam TProps - This block's own YAML-parsed props
+ * @typeParam TLookup - Entity lookup type (from CreateEntity)
+ * @typeParam TFrontmatter - Entity frontmatter type (from CreateEntity)
+ * @typeParam TBlocks - All blocks' prop shapes (from CreateEntity)
+ */
+export interface ComponentProps<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, unknown> = Record<string, unknown>,
+> {
+  /** Block's own YAML props, augmented with a `setFoo` setter for every `foo` key. */
+  self: TProps & Setters<TProps> & { patchForeignBlock: ForeignBlockPatcher };
+  lookup: TLookup;
+  frontmatter: TFrontmatter;
+  blocks: TBlocks;
+  /** Entity expressions bound to context — call directly: `expressions.mod()` */
+  expressions: TExpressions;
+  system: SystemContext /**
+   * Trigger a named event scoped to this entity instance (file).
+   * All blocks within the same note share the same event scope.
+   * @param eventName - One of the event names declared in the system's `events` array.
+   */;
+  trigger: (eventName: string) => void;
+}
+
+/**
+ * A typed block React component.
+ * Registered directly as a value in the entity `blocks` map.
+ *
+ * @typeParam TProps - This block's own YAML-parsed props
+ * @typeParam TLookup - Entity lookup type
+ * @typeParam TFrontmatter - Entity frontmatter type
+ * @typeParam TBlocks - All blocks' prop shapes
+ */
+export type Component<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+> = (props: ComponentProps<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>) => ReactNode;
+
+/**
+ * Create a typed block component.
+ *
+ * Pass a React component function; the resulting descriptor is registered
+ * as a value in the entity `blocks` map.
+ *
+ * @typeParam TProps - This block's own YAML-parsed props
+ * @typeParam TLookup - Entity lookup type (from CreateEntity)
+ * @typeParam TFrontmatter - Entity frontmatter type (from CreateEntity)
+ * @typeParam TBlocks - All blocks' prop shapes map (from CreateEntity)
+ *
+ * @example
+ * ```ts
+ * const header = CreateComponent<HeaderProps, CharacterLookup, CharacterFrontmatter, CharacterBlocks>(
+ *   ({ self, entity, system }) => (
+ *     <div>
+ *       <h1>{self.name}</h1>
+ *       <p>Level: {self.classes[0]?.level}</p>
+ *       <p>HP: {blocks.health.hp.current}</p>
+ *     </div>
+ *   )
+ * );
+ * ```
+ */
+export declare function CreateComponent<
+  TProps = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TFrontmatter = Record<string, unknown>,
+  TBlocks = Record<string, unknown>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+>(
+  fn: Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>
+): Component<TProps, TLookup, TFrontmatter, TBlocks, TExpressions>;
+
+/**
+ * Helper type extractors for EntityDescriptor generics
+ */
+type _EntityLookup<T> = T extends EntityDescriptor<any, infer L, any, any> ? L : Record<string, unknown>;
+type _EntityFrontmatter<T> = T extends EntityDescriptor<any, any, any, infer F> ? F : Record<string, unknown>;
+type _EntityBlocks<T> =
+  T extends EntityDescriptor<infer B, any, any, any> ? B : Record<string, Record<string, unknown>>;
+type _EntityExpressions<T> =
+  T extends EntityDescriptor<any, any, infer E, any> ? E : Record<string, (...args: any[]) => unknown>;
+
+/** Map extracted expression signatures into callable functions preserving parameters */
+type _CallableExpressions<T> = {
+  [K in keyof _EntityExpressions<T>]: _EntityExpressions<T>[K] extends (...args: infer A) => infer R
+    ? (...args: A) => R
+    : (...args: any[]) => unknown;
+};
+
+/**
+ * Typed function signature for an entity block.
+ *
+ * TBlock is the shape of this block's own YAML-parsed props.
+ * TEntity is an EntityDescriptor describing the parent entity; its generic
+ * parameters are used to derive lookup/frontmatter/blocks/expressions types.
+ */
+export type EntityBlock<TBlock = Record<string, unknown>, TEntity = EntityDescriptor> = (
+  props: ComponentProps<
+    TBlock,
+    _EntityLookup<TEntity>,
+    _EntityFrontmatter<TEntity>,
+    _EntityBlocks<TEntity>,
+    _CallableExpressions<TEntity>
+  >
+) => ReactNode;
+
+/**
+ * Entity configuration for use in CreateEntity / SystemConfig.
+ *
+ * @typeParam TFrontmatter - Frontmatter data shape for this entity
+ * @typeParam TLookup - Lookup values shape for this entity
+ * @typeParam TBlocks - Record mapping each block name to its own YAML-parsed props shape
+ */
+export interface EntityConfig<
+  TFrontmatter = Record<string, unknown>,
+  TLookup = Record<string, unknown>,
+  TBlocks extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+  TExpressions extends Record<string, (...args: any[]) => unknown> = Record<string, (...args: any[]) => unknown>,
+> {
+  frontmatter?: TFrontmatter;
   features?: FeatureEntry[];
-  /**
-   * Experience point thresholds per level (index 0 = XP needed to reach level 1, etc.).
-   * Used to calculate the current level from total XP and to track level-up progress.
-   */
   xpTable?: number[];
+  lookup?: Readonly<TLookup>;
+  lookups?: Record<string, unknown>;
   /**
-   * Computed expressions — functions that calculate values from entity
-   * frontmatter data (e.g., ability modifiers, saving throws).
+   * Named expressions — receive `(args, props)` at definition; exposed as
+   * call-ready functions in block/expression props.
+   *
+   * @example
+   * ```ts
+   * expressions: {
+   *   calc_y: ([a, b], { frontmatter }) => a + b + (frontmatter as any).total,
+   * }
+   * // called inside a block:
+   * expressions.calc_y(2, 4)
+   * ```
    */
-  computed?: Record<string, (context: Record<string, unknown>) => unknown>;
-  /**
-   * Block component definitions.
-   * Each key becomes the `rpg entity.<key>` code block handler.
-   */
-  blocks?: Record<string, BlockDefinition>;
+  expressions?: {
+    [K in keyof TExpressions]: TExpressions[K] extends (...args: infer A) => infer R
+      ? (args: A, props: ExpressionProps<TLookup, TFrontmatter, TBlocks, TExpressions>) => R
+      : never;
+  };
+  blocks?: { [K in keyof TBlocks]: Component<TBlocks[K], TLookup, TFrontmatter, TBlocks, TExpressions> };
 }
 
 /** Simple feature entry used in entity default features */
@@ -249,12 +450,17 @@ export interface CasterTypeDefinition {
 export interface SystemConfig {
   name: string;
   attributes: Array<string | AttributeDefinition>;
-  entities?: Record<string, EntityConfig | ((ctx: { wiki: Wiki }) => EntityConfig | Promise<EntityConfig>)>;
+  entities?: Record<string, any>;
   skills?: SkillDefinition[];
   features?: Partial<FeatureSystemConfig>;
   spellcasting?: Partial<SpellcastingSystemConfig>;
   conditions?: ConditionDefinition[];
   traits?: TraitDefinition[];
+  /**
+   * Named events that can be triggered from entity block components via `trigger(eventName)`.
+   * Scoped per entity instance — triggering in one note file does not affect other notes.
+   */
+  events?: string[];
 }
 
 /** Result of fetching a file from the vault — includes frontmatter and contents */
@@ -316,7 +522,73 @@ export {
   StatblockTraitsBlock,
   StatblockAttributesBlock,
   StatblockFeaturesBlock,
+  Title,
+  Pill,
+  Progress,
+  TriggerButton,
+  Button,
+  Level,
+  Header,
+  Line,
+  Pills,
+  BigElements,
+  Buttons,
 } from "../ui";
+export type { ProgressBarProps } from "../ui";
+export type { TriggerButtonProps } from "../ui";
+export type { InspirationalLevelProps } from "../ui";
+export { Stat } from "../ui";
+export type { StatProps, StatDiamondProps } from "../ui";
+export { StatUL, SkillLI } from "../ui";
+export type { StatULProps, SkillLIProps } from "../ui";
+export type { LineType, LinePillsProps } from "../ui";
+export type { LineBigElementsProps } from "../ui";
+export type { LineButtonsProps } from "../ui";
+export { Section } from "../ui";
+export type { SectionType } from "../ui";
+export { Badge } from "../ui";
+export type { BadgeType, BadgeShieldProps } from "../ui";
+export { DeathSaveDots } from "../ui";
+export type { DeathSaveDotsProps } from "../ui";
+export { DiceTray } from "../ui";
+export type { DiceTrayProps } from "../ui";
+export { DiceRollModal } from "../ui";
+export type { DiceRollModalProps } from "../ui";
+export { PortraitThumb } from "../ui";
+export type { PortraitThumbProps } from "../ui";
+export { ExhaustionBar } from "../ui";
+export type { ExhaustionBarProps } from "../ui";
+export { ProgressNumbered } from "../ui";
+export type { ProgressNumberedProps } from "../ui";
+export { ConditionPill } from "../ui";
+export type { ConditionPillProps } from "../ui";
+export { StatusPanel } from "../ui";
+export type { StatusPanelProps } from "../ui";
+export { Panel } from "../ui";
+export type { PanelType } from "../ui";
+export { Article } from "../ui";
+export type { ArticleType, ArticleColumnProps } from "../ui";
+export { HGroup } from "../ui";
+export type { HGroupType, HGroupRowProps } from "../ui";
+export { Figure } from "../ui";
+export type { FigureType, FigureColumnProps } from "../ui";
+export { Fieldset } from "../ui";
+export type { FieldsetType, FieldsetHealthProps } from "../ui";
+export type { LineControlProps, LineStatsProps } from "../ui";
+
+/** Runtime Lucide icon collection exported by the UI toolkit. */
+export type LucideModule = typeof import("lucide-react");
+export const Lucide: LucideModule;
+
+/**
+ * Convert a banner frontmatter value into a style object usable in React.
+ * Accepts a string (URL or CSS color) or other values; returns an object
+ * with either `backgroundImage` or `backgroundColor`, or `undefined`.
+ */
+export type BannerHeaderProps = {
+  background?: string;
+  distribution?: string;
+};
 
 // ─── Factory function ─────────────────────────────────────────────────────────
 
@@ -354,7 +626,7 @@ export {
  * ```
  */
 export declare function CreateSystem(
-  configFn: (context: { wiki: Wiki }) => SystemConfig | Promise<SystemConfig>,
+  configFn: (context: { wiki: Wiki }) => SystemConfig | Promise<SystemConfig>
 ): Promise<{
   name: string;
   /** Attribute definitions — strings in the config are normalized to full objects at build time */
@@ -369,14 +641,1042 @@ export declare function CreateSystem(
       /** Compiled expression map for this entity */
       expressions?: Map<string, unknown>;
       /** Block component definitions for `rpg entity.<blockName>` code blocks */
-      blocks?: Record<string, BlockDefinition>;
+      blocks?: Record<string, Component>;
       /** XP thresholds per level for this entity */
       xpTable?: number[];
     }
   >;
+
   skills: SkillDefinition[];
   features: FeatureSystemConfig;
   spellcasting: SpellcastingSystemConfig;
   conditions: ConditionDefinition[];
   traits?: TraitDefinition[];
 }>;
+
+// ─── Features API (re-exported from lib/domains/features) ─────────────────
+// Available at runtime via the `rpg-ui-toolkit` shim; declared here so
+// system-config TypeScript files can import them without crossing the vault
+// boundary into the plugin's `lib/`.
+
+export type TraitValue = string | string[];
+export type TraitMap = Record<string, TraitValue>;
+
+export interface ChooseSpec {
+  type: "traits" | "asi" | "talent" | "spellcasting";
+  category?: string;
+  number: number;
+  quantity?: number;
+  unique?: boolean;
+  options?: string[];
+}
+
+export interface FeatureLevelAddition {
+  level: number;
+  traits?: TraitMap;
+}
+
+export interface FeatureAspect {
+  name?: string;
+  text?: string;
+  resource?: string;
+  max?: number | string | Record<number, number>;
+  recovery?: string;
+  recharge?: string;
+}
+
+export interface FeatureDetails {
+  name: string;
+  subtitle?: string;
+  text?: string;
+  traits?: TraitMap;
+  choose?: ChooseSpec | ChooseSpec[];
+  levels?: FeatureLevelAddition[];
+  type?: string;
+  level?: number;
+  uses?: number;
+  link?: string;
+  view?: string;
+  heading?: number | "p";
+  source?: string;
+  pick?: number;
+  buy?: number | string;
+  max?: number | string | Record<number, number>;
+  recovery?: string;
+  uses_resource?: string;
+  action?: FeatureAspect;
+  bonus?: FeatureAspect;
+  reaction?: FeatureAspect;
+  active?: FeatureAspect;
+  passive?: FeatureAspect;
+  resource?: FeatureAspect;
+  /** Roll aspect — surfaced by `rpg character.rolls`. */
+  roll?: RollAspect;
+}
+
+export interface FeatureChoiceOption {
+  parent: string;
+  name?: string;
+  text?: string;
+  traits?: TraitMap;
+  type?: string;
+  link?: string;
+  cost?: number;
+  features?: FeatureDetails[];
+  uses_resource?: string;
+  choose?: ChooseSpec;
+}
+
+export interface UnlockBlock {
+  kind: "subclass";
+  level: number;
+}
+
+export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent" | "item";
+
+export interface SourceDoc {
+  name: string;
+  kind: SourceDocKind;
+  meta: Record<string, unknown>;
+  details: FeatureDetails[];
+  options: FeatureChoiceOption[];
+  unlocks: UnlockBlock[];
+  tables: TableDef[];
+  parent_class?: string;
+}
+
+export interface CharacterDecl {
+  classes: Array<{ name: string; level: number; subclass?: string }>;
+  lineage?: string;
+  heritage?: string;
+  background?: string;
+  choices?: Record<string, Record<string, string | string[]>>;
+  additional?: {
+    talents?: ExtraRef[];
+    features?: ExtraRef[];
+    boons?: ExtraRef[];
+    curses?: ExtraRef[];
+  };
+}
+
+export type ExtraRef = string | { ref: string; source?: string; level?: number };
+
+export interface CompendiumLib {
+  classes: Record<string, SourceDoc>;
+  subclasses: Record<string, SourceDoc>;
+  lineages: Record<string, SourceDoc>;
+  heritages: Record<string, SourceDoc>;
+  backgrounds: Record<string, SourceDoc>;
+  talents?: Record<string, SourceDoc>;
+  tagIndex?: Record<string, string[]>;
+  folderIndex?: Record<string, string[]>;
+}
+
+export interface PendingChoice {
+  source: string;
+  feature: FeatureDetails;
+  options: FeatureChoiceOption[];
+  picked: string[];
+  remaining: number;
+}
+
+export interface ResolvedSource {
+  source: string;
+  kind: SourceDocKind;
+  level?: number;
+  features: FeatureDetails[];
+  pendingChoices: PendingChoice[];
+  baseTraits: Record<string, string[]>;
+  leveledTraits: Record<string, string[]>;
+  traitsByLevel: Record<number, Record<string, string[]>>;
+  /** User's pick for a `choose: { type: spellcasting, category: ability }`
+   *  spec declared on this source. Empty string = declared but pending. */
+  spellcastingAbilityPick?: string;
+}
+
+export interface ResolvedView {
+  sources: ResolvedSource[];
+  traits: Record<string, string[]>;
+  pendingChoices: PendingChoice[];
+  tables: Record<string, TableDef>;
+  casters: ResolvedCaster[];
+}
+
+export interface SpellcastingFragment {
+  ability?: string;
+  type?: "prepared" | "known";
+  tier?: "full" | "half" | "third" | "none";
+  pool?: string;
+  cantrip_pool?: string;
+  ritual_pool?: string;
+  style?: string[];
+  prepared_max?: string;
+  cantrips?: number;
+  rituals?: number;
+  known?: number;
+  rituals_per_circle?: number;
+  granted?: {
+    prepared?: Record<number, unknown[]>;
+    cantrips?: Record<number, unknown[]>;
+    rituals?: Record<number, unknown[]>;
+  };
+}
+
+export interface ResolvedCaster {
+  source: string;
+  level: number;
+  ability: string;
+  type: "prepared" | "known";
+  tier: "full" | "half" | "third" | "none";
+  pool?: string;
+  cantrip_pool?: string;
+  ritual_pool?: string;
+  style: string[];
+  prepared_max?: string;
+  cantrips: number;
+  rituals: number;
+  ritualsByLevel: Record<number, number>;
+  known: number;
+  rituals_per_circle: number;
+  granted: {
+    prepared: Record<number, string[]>;
+    cantrips: Record<number, string[]>;
+    rituals: Record<number, string[]>;
+  };
+  grantedBy: Record<string, string>;
+}
+
+export interface SourceDocInput {
+  $name: string;
+  $contents?: string;
+  [key: string]: unknown;
+}
+
+export declare function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): SourceDoc;
+export declare function parseSourceDocs(raws: SourceDocInput[], kind: SourceDocKind): Record<string, SourceDoc>;
+export declare function resolveFeatures(decl: CharacterDecl, lib: CompendiumLib): ResolvedView;
+
+/**
+ * Input shape for `buildCompendiumIndex` — one entry per compendium doc
+ * reachable via `#Tag` or `@folder/path` references in `choose.options`.
+ */
+export interface IndexedDoc {
+  $name: string;
+  folder: string;
+  tags?: string[];
+}
+
+export interface CompendiumIndex {
+  tagIndex: Record<string, string[]>;
+  folderIndex: Record<string, string[]>;
+}
+
+/**
+ * Build `tagIndex` and `folderIndex` used by the resolver to expand
+ * `#Tag` and `@folder/path` references inside inline `choose.options`.
+ * The result maps onto `CompendiumLib.tagIndex` / `folderIndex`.
+ */
+export declare function buildCompendiumIndex(docs: IndexedDoc[]): CompendiumIndex;
+
+/**
+ * Expand `#Tag` and `@folder/path` refs in a raw option list against the
+ * given indexes. Literal strings pass through untouched; references are
+ * replaced by the concrete `"[[Item]]"` wikilinks they point at, deduped
+ * in authored order.
+ */
+export declare function expandOptionRefs(
+  options: string[],
+  tagIndex: Record<string, string[]> | undefined,
+  folderIndex: Record<string, string[]> | undefined
+): string[];
+
+/**
+ * Body payload of a `rpg spell` fence — the shape `extractSpellBlocks`
+ * returns and `SpellCard` renders.
+ */
+export interface SpellBody {
+  circle?: string;
+  source?: unknown;
+  school?: string;
+  casting?: string;
+  range?: string;
+  components?: unknown;
+  duration?: string;
+  style?: unknown;
+  summary?: string;
+  text?: string;
+  image?: string;
+  name?: string;
+}
+
+/**
+ * Parse every `rpg spell` fence body in a markdown doc. Returns the
+ * flat YAML bodies (shallow-typed) so consumers can pull `magic_source`
+ * / `circle` / other fields without re-rendering. Used by system
+ * entities to build the spell tag index.
+ */
+export declare function extractSpellBlocks(contents: string): SpellBody[];
+
+/**
+ * Classify a spell's `circle` string into one of three broad bands used
+ * for composite-tag emission and pool auto-derivation:
+ *   "Cantrip"   → cantrips
+ *   "Ritual"    → leveled rituals (circle contains "ritual")
+ *   "Leveled"   → regular leveled spells
+ * Returns null for empty / unrecognisable circles.
+ */
+export declare function classifySpellCircle(circle: string): "Cantrip" | "Ritual" | "Leveled" | null;
+
+/**
+ * Strip `[[…]]` wrapper and alias to get the bare wikilink target name,
+ * matching how Obsidian resolves wikilinks. Passes through non-wikilink
+ * input unchanged.
+ */
+export declare function stripWikilinkToName(raw: string): string;
+
+// ─── Inventory ───────────────────────────────────────────────────────────────
+
+export type InventorySectionId = "weapons" | "armor" | "tools" | "visible" | "main_containers" | "other_containers";
+
+export type InventoryEquipSlot = "main_hand" | "off_hand" | "armor" | "shield" | "attuned";
+
+export interface InventoryYamlEntry {
+  name: string;
+  qty?: number;
+  section?: InventorySectionId;
+  container?: "main" | "other";
+  slot?: InventoryEquipSlot;
+  equipped?: boolean;
+  for_sale?: boolean;
+  notes?: string;
+  contents?: InventoryYamlEntry[];
+}
+
+export interface NewInventoryBlock {
+  state_key?: string;
+  items: InventoryYamlEntry[];
+  currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  encumbrance?: {
+    strength?: number | string;
+    encumbered?: number;
+    heavy?: number;
+    carry?: number;
+    push?: number;
+  };
+}
+
+export type LookupFn = (target: string) => Record<string, unknown> | undefined;
+
+/** Fully-materialised inventory ready to pass into the React block. */
+export interface ResolvedInventory {
+  stateKey?: string;
+  sections: Array<{
+    id: InventorySectionId;
+    items: ResolvedItem[];
+    totalWeight: number;
+  }>;
+  currency: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  totalWeight: number;
+  bands: { encumbered: number; heavy: number; carry: number; push: number };
+  load: "free" | "encumbered" | "heavy" | "over";
+  strength: number;
+  sellTotals: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  attunement: { active: number; cap: number };
+}
+
+/** A resolved inventory entry — composed from the YAML row + the looked-up
+ *  item metadata. Drives the inventory rendering pass and the equip-toggle
+ *  callback. */
+export interface ResolvedItem {
+  id: string;
+  label: string;
+  link: string | null;
+  linkTarget: string | null;
+  meta: {
+    type?: string;
+    weight: number;
+    cost?: string;
+    damage?: string;
+    properties?: string[];
+    acFormula?: string;
+    subtitle?: string;
+    containerCapacity?: number;
+    forAmmo?: string[];
+    ammoCap?: number;
+    weightFixed?: boolean;
+    image?: string;
+  };
+  qty: number;
+  totalWeight: number;
+  contentsWeightRaw: number;
+  equipped: boolean;
+  slot?: InventoryEquipSlot;
+  equipKind: "weapon" | "armor" | "shield" | null;
+  forSale: boolean;
+  notes?: string;
+  isContainer: boolean;
+  isAmmoTracking: boolean;
+  ammoCarried: number;
+  contents: ResolvedItem[];
+}
+
+/**
+ * Resolve a parsed inventory block into a render-ready model. Items are
+ * looked up via the injected `LookupFn` (typically backed by a character
+ * entity's `lookup.$items` table).
+ */
+export declare function resolveInventory(args: {
+  block: NewInventoryBlock;
+  lookup: LookupFn;
+  strength: number;
+  attunement?: { active: number; cap: number };
+}): ResolvedInventory;
+
+/** React component that renders a resolved inventory. */
+export declare const InventoryBlock: React.FC<{
+  data: ResolvedInventory;
+  onToggleEquip?: (item: ResolvedItem) => void;
+  onToggleForSale?: (item: ResolvedItem) => void;
+}>;
+
+// ─── Items ───────────────────────────────────────────────────────────────────
+
+export interface ItemWeaponData {
+  damage?: string;
+  properties?: string[];
+  options?: string[];
+  bonus?: string;
+}
+
+export interface ItemArmorData {
+  ac?: string;
+  category?: "Light" | "Medium" | "Heavy" | "Shield";
+  properties?: string[];
+}
+
+export interface ItemContainerData {
+  volume_cap?: string;
+  weight_cap?: string;
+  for_ammo?: string | string[];
+  ammo_cap?: number;
+}
+
+export interface ItemShopData {
+  cheap?: string;
+  expensive?: string;
+  availability?: string[];
+}
+
+/** Fully parsed `rpg item.element` fence body. */
+export interface ItemElementData {
+  type?: string;
+  cost?: string;
+  weight?: string | number;
+  rarity?: string;
+  source?: string;
+  image?: string;
+  desc?: string;
+  weapon?: ItemWeaponData;
+  armor?: ItemArmorData;
+  container?: ItemContainerData;
+  shop?: ItemShopData;
+  name?: string;
+}
+
+export declare function parseItemElement(yaml: string): ItemElementData | null;
+export declare function extractItemElementBlocks(contents: string): ItemElementData[];
+export declare function parseItemWeight(raw: unknown): number;
+export declare function itemKindFromType(type: string | undefined): "weapon" | "armor" | "shield" | "container" | null;
+
+// ─── Magic templates ─────────────────────────────────────────────────────────
+
+export interface ItemMagicAppliesTo {
+  kinds?: Array<"shield" | "armor" | "weapon" | "ammunition" | "wondrous" | "potion" | "staff">;
+  families?: string[];
+}
+
+export interface ItemMagicVariant {
+  rarity?: string;
+  cost?: string;
+  bonus?: string;
+  damage_bonus?: number;
+  extra_damage?: DamageSpec[];
+  text?: string;
+  traits?: Record<string, string[]>;
+}
+
+export interface ItemMagicData {
+  name?: string;
+  rarity?: string;
+  attunement?: boolean;
+  cost?: string;
+  image?: string;
+  text?: string;
+  applies_to?: ItemMagicAppliesTo;
+  traits?: Record<string, string[]>;
+  bonus?: string;
+  damage_bonus?: number;
+  extra_damage?: DamageSpec[];
+  variants?: Record<string, ItemMagicVariant>;
+}
+
+export declare function parseItemMagic(yaml: string): ItemMagicData | null;
+export declare function extractItemMagicBlocks(contents: string): ItemMagicData[];
+
+// ─── Personal items ──────────────────────────────────────────────────────────
+
+export interface ItemPersonalData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  attuned?: boolean;
+  notes?: string;
+  history?: string;
+  discovered?: string[];
+  image?: string;
+  /** Sub-blocks to hide from the rendered card. Currently understood:
+   *  `"base.desc"` skips the base element's description body. */
+  hide?: string[];
+}
+
+export declare function parseItemPersonal(yaml: string): ItemPersonalData | null;
+export declare function extractItemPersonalBlocks(contents: string): ItemPersonalData[];
+
+export interface PersonalResolution {
+  effectiveElement: ItemElementData;
+  weaponOverlay: WeaponOverlay;
+  traits: Record<string, string[]>;
+  magicFeatureSources: string[];
+  attuned: boolean;
+  notes?: string;
+  history?: string;
+  discovered?: string[];
+  displayName: string;
+}
+
+export declare function resolvePersonalItem(
+  personal: ItemPersonalData,
+  lookups: {
+    elements: Record<string, ItemElementData>;
+    magic: Record<string, ItemMagicData>;
+  },
+  personalStem?: string
+): PersonalResolution | null;
+
+// ─── Container items ─────────────────────────────────────────────────────────
+
+export interface ItemContainerEntry {
+  name: string;
+  qty?: number;
+  notes?: string;
+  for_sale?: boolean;
+  contents?: ItemContainerEntry[];
+}
+
+export interface ItemContainerSection {
+  name?: string;
+  items?: ItemContainerEntry[];
+}
+
+export interface ItemContainerData {
+  name?: string;
+  base?: string;
+  magic?: string[];
+  variants?: Record<string, string>;
+  image?: string;
+  sections?: ItemContainerSection[];
+  items?: ItemContainerEntry[];
+  currency?: { pp?: number; gp?: number; ep?: number; sp?: number; cp?: number };
+  /** Sub-blocks to hide from the rendered card. Currently understood:
+   *  `"base.desc"` skips the base element's description body. */
+  hide?: string[];
+}
+
+export declare function parseItemContainer(yaml: string): ItemContainerData | null;
+export declare function extractItemContainerBlocks(contents: string): ItemContainerData[];
+
+export interface ContainerResolution {
+  effectiveElement: ItemElementData;
+  sections: ItemContainerSection[];
+  traits: Record<string, string[]>;
+  magicFeatureSources: string[];
+  magicTexts: string[];
+  displayName: string;
+}
+
+export declare function resolveContainer(
+  container: ItemContainerData,
+  lookups: {
+    elements: Record<string, ItemElementData>;
+    magic: Record<string, ItemMagicData>;
+  },
+  containerStem?: string
+): ContainerResolution | null;
+
+// ─── Attack aspect ───────────────────────────────────────────────────────────
+
+export interface DamageSpec {
+  roll: string;
+  type: string;
+  bonus?: string;
+}
+
+export interface RollSave {
+  ability: string;
+  dc?: string;
+  on_success?: string;
+}
+
+export type RollEffect = string | { icon: string; label?: string };
+
+/** Subset of RollAspect fields a variant can override. Excludes `form`
+ *  and the variant fields themselves. Shallow merge. */
+export type RollOverride = Partial<
+  Pick<RollAspect, "name" | "damage" | "to_hit" | "range" | "save" | "effects" | "notes">
+>;
+
+/** Automatic per-level scaling. `by` defaults to `"class"` for feature
+ *  rolls, `"character"` for spell rolls. Block picks the override with
+ *  the highest threshold key ≤ current level and merges it onto base. */
+export interface RollLeveled {
+  by?: "class" | "character";
+  at: Record<number, RollOverride>;
+}
+
+/** Upcast overrides by spell circle. Keys are circles the caster can
+ *  spend a slot for; values override the base roll. Interactive. */
+export type RollUpcast = Record<number, RollOverride>;
+
+/** One option in a swap selector. `value` is the text shown in the
+ *  target cell; the remaining fields override the base roll. */
+export interface RollSwapOption extends RollOverride {
+  value: string;
+}
+
+/** User-interactive cell-attached alternates. The specified cell
+ *  cycles through `options` on click. */
+export interface RollSwap {
+  field: "range" | "name";
+  options: RollSwapOption[];
+}
+
+/** Resource cost for a roll — hit dice, Channel Divinity uses, Wild
+ *  Shape uses, class-specific pools, etc. Rendered in the Cost
+ *  column with a glyph + tooltip; `max` > `amount` makes the cell a
+ *  click-to-cycle button so players can dial in the spend. `max` is
+ *  either a literal number or a formula string evaluated from the
+ *  character context (`"PB"`, `"level"`, `"class_level"`). */
+export interface RollCost {
+  type: string;
+  amount: number;
+  max?: number | string;
+}
+
+export interface RollAspect {
+  name?: string;
+  form: "melee" | "ranged" | "spell" | "save" | "rider" | "healing" | "temp";
+  /** Spell circle (0 = cantrip). When set with `form: spell`, the form
+   *  icon renders as a circled numeral. With `upcast`, it becomes a
+   *  clickable cycle button. */
+  circle?: number;
+  damage?: DamageSpec | DamageSpec[];
+  to_hit?: string;
+  range?: string;
+  save?: RollSave;
+  /** Equipment requirement. `none` = always available (spells / mental);
+   *  `one_hand` = weapon must be in a hand slot; `two_hands` = weapon in
+   *  main_hand with off_hand empty; `free_hand` = at least one hand free
+   *  (unarmed attacks). */
+  requires?: "none" | "one_hand" | "two_hands" | "free_hand";
+  /** Explicit pill-list for the Effects cell. Each entry is a predefined
+   *  condition key (consumer-defined vocabulary) or a custom glyph
+   *  object. Nothing is inferred from `notes`. */
+  effects?: RollEffect[];
+  notes?: string;
+  /** Auto level-scaling (cantrips, class-feature dice growth). */
+  leveled?: RollLeveled;
+  /** User-selectable upcast overrides. Interactive form icon. */
+  upcast?: RollUpcast;
+  /** User-selectable cell-attached alternates. */
+  swapOn?: RollSwap;
+  /** Resource cost — rendered in the Cost column. */
+  cost?: RollCost;
+}
+
+export interface WielderStats {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+  pb: number;
+}
+
+export interface WeaponOverlay {
+  attackBonus?: number;
+  extraDamage?: DamageSpec[];
+  offHand?: boolean;
+}
+
+export declare function deriveWeaponForm(type: string | undefined): "melee" | "ranged";
+export declare function parseWeaponDamage(raw: string | undefined): DamageSpec | null;
+export declare function parseWeaponBonus(raw: string | undefined): number;
+export declare function signed(n: number): string;
+export declare function deriveWeaponRoll(
+  element: ItemElementData,
+  stats: WielderStats,
+  overlay?: WeaponOverlay,
+  displayName?: string
+): RollAspect | null;
+
+/**
+ * Plural variant of `deriveWeaponRoll`. Prefers the element's
+ * `weapon.rolls:` explicit templates when present (one row per
+ * entry); falls back to a single-entry derivation from
+ * `weapon.damage` when the list is absent.
+ */
+export declare function deriveWeaponRolls(
+  element: ItemElementData,
+  stats: WielderStats,
+  overlay?: WeaponOverlay,
+  displayName?: string
+): RollAspect[];
+
+/** React card for a parsed `rpg item.element` body. No auto-title or
+ *  source footer — the host note's own heading + markdown supply those. */
+export declare const ItemElementCard: React.FC<{
+  data: ItemElementData;
+  showDescription?: boolean;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+export declare const ItemMagicCard: React.FC<{
+  data: ItemMagicData;
+  showDescription?: boolean;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+/**
+ * Spell compendium card. Renders a `rpg spell` fence body (parse with
+ * `extractSpellBlocks`). Pass `title` to show the spell name as a header
+ * (omit it when the host note's H1 already serves as the heading).
+ */
+export declare const SpellCard: React.FC<{
+  body: SpellBody;
+  sourcePath: string;
+  title?: string;
+}>;
+
+export declare const ItemPersonalCard: React.FC<{
+  data: ItemPersonalData;
+  resolution: PersonalResolution | null;
+  renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+export interface ContainerForSaleLocation {
+  source: "section" | "items";
+  sectionIndex: number;
+  path: number[];
+}
+
+export declare const ItemContainerCard: React.FC<{
+  data: ItemContainerData;
+  resolution: ContainerResolution | null;
+  lookup?: (target: string) => Record<string, unknown> | undefined;
+  renderMarkdown?: (source: string) => React.ReactNode;
+  onToggleForSale?: (location: ContainerForSaleLocation) => void;
+}>;
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+export interface TableCell {
+  value: string;
+  colspan?: number;
+}
+export interface TableRow {
+  cells: TableCell[];
+}
+export type FooterSegment = { kind: "text"; text: string } | { kind: "roll"; targets: string[]; by?: string };
+export interface FooterCell {
+  segments: FooterSegment[];
+}
+export interface FooterRow {
+  cells: FooterCell[];
+}
+export interface TableDef {
+  name: string;
+  source?: string;
+  columns: string[];
+  columnLabels: string[];
+  rows: TableRow[];
+  headerRows: TableRow[];
+  keyColumn?: string;
+  caption?: string;
+  classes: string[];
+  footerRows: FooterRow[];
+}
+
+export interface EvalContext {
+  tables: Record<string, TableDef>;
+  vars: Record<string, string | number>;
+  defaultSeed?: string;
+}
+
+export declare function parseTableBlock(name: string, body: string): TableDef;
+export declare const RpgTable: React.FC<{
+  def: TableDef;
+  filePath?: string;
+  sourcePath?: string;
+}>;
+export declare function substituteExpressions(source: string, ctx: EvalContext): string;
+
+export interface PendingChoiceRowProps {
+  pending: PendingChoice;
+  onToggle?: (option: string) => void;
+  onPick?: (option: string, delta: 1 | -1) => void;
+  buyBudget?: number;
+}
+export declare const PendingChoiceRow: FunctionComponent<PendingChoiceRowProps>;
+
+export interface MarkdownProps {
+  source: string;
+  sourcePath?: string;
+  className?: string;
+  /**
+   * Optional expression-substitution context. When supplied, the component
+   * runs `substituteExpressions(source, context)` before handing the text to
+   * Obsidian's MarkdownRenderer.
+   */
+  context?: EvalContext;
+}
+export declare const Markdown: FunctionComponent<MarkdownProps>;
+
+// ── Rule-value resolver ────────────────────────────────────────────
+// Source-of-truth for runtime config values declared in `rpg rule.content`
+// frontmatter `values:` maps. See lib/domains/rules/value-resolver-api.ts.
+
+export interface GetRuleValueOpts<T> {
+  /** Returned when the id isn't indexed (warmup not done, or no such block). */
+  fallback?: T;
+}
+
+/**
+ * Sync lookup of a value declared in a `rpg rule.content` block's
+ * frontmatter `values:` map. `path` supports dotted notation
+ * (`"reset.die"`).
+ */
+export declare function getRuleValue<T = unknown>(
+  id: string,
+  path: string,
+  opts?: GetRuleValueOpts<T>
+): T | undefined;
+
+export declare function getRuleValuesById(id: string): Record<string, unknown> | undefined;
+export declare function listRuleValues(): Map<string, Record<string, unknown>>;
+
+/**
+ * Resolve a vault image path (wikilink, relative, or absolute URL) to a
+ * browser-usable resource URL. Returns `null` if unresolvable.
+ */
+export declare function resolveVaultImage(raw: unknown, sourcePath: string): string | null;
+
+// ── Rule view registry ─────────────────────────────────────────────
+// Per-system view functions consumed by the rule-call processor. Export
+// from your system's `config/rule-views.tsx` and re-export from
+// `config/index.ts` so the ts-loader picks it up.
+
+export type RuleViewMode = "join" | "each" | "args";
+
+export interface RuleViewCtx {
+  /** Filename of the imported file (no extension). */
+  name: string;
+  /** Body markdown. For `join` mode, all matching block bodies concatenated;
+   *  for `each`/`args`, the single block's body. */
+  content: string;
+  /** YAML frontmatter of the (first / only) matching block. */
+  frontmatter: Record<string, unknown>;
+  /** Path of the imported file, for cross-references. */
+  file: string;
+  /** Named parameters from the call site, template-interpolated against
+   *  frontmatter. Undefined keys mean "use default". */
+  params?: Record<string, unknown>;
+}
+
+export interface RuleViewEntry {
+  mode: RuleViewMode;
+  /** Optional HTML tag to wrap all rendered items (e.g., `"ul"` for lists). */
+  wrapper?: string;
+  /** When true, whole-file imports pass the raw file body without inlining rpg fences. */
+  raw?: boolean;
+  render(ctx: RuleViewCtx, args?: unknown[]): import("react").ReactNode;
+}
+
+export type RuleViewMap = Record<string, RuleViewEntry>;
+
+// ── Rule.side wrapper component ────────────────────────────────────
+// React component for rendering an arbitrary string as a rule.side
+// block from inside a view function. Composes the same float / callout /
+// commentary variants used by the `rpg rule.side` block processor.
+
+export type SideKind = "float" | "callout" | "commentary";
+export type SidePreset =
+  | "note"
+  | "info"
+  | "tip"
+  | "success"
+  | "question"
+  | "warning"
+  | "danger"
+  | "example"
+  | "quote"
+  | "rules";
+
+export interface RuleSideProps {
+  /** Structural variant. Default `float`. */
+  variant?: SideKind;
+  /** Heading title (commentary may omit). */
+  title?: string;
+  /** Markdown body. */
+  content: string;
+  /** Preset (note/tip/warning/rules/etc.) — applies default color/icon/title
+   *  unless overridden by explicit props. */
+  type?: SidePreset;
+  /** Override accent color. */
+  color?: string;
+  /** Override icon (Lucide name or single emoji). */
+  icon?: string;
+  /** Float side — only meaningful for variant=float. Default right. */
+  direction?: "left" | "right";
+  /** Source path passed to the inner Markdown renderer for wikilink resolution. */
+  sourcePath?: string;
+}
+
+export declare const RuleSide: FunctionComponent<RuleSideProps>;
+
+// ── Statblock types ─────────────────────────────────────────────────────────
+
+export interface StatVehicleData {
+  name: string;
+  size: string;
+  type: string;
+  dimensions?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: StatFeatureRef[];
+  text?: string;
+  view?: string;
+  [key: string]: unknown;
+}
+
+export interface AbilityScores {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+}
+
+export interface StatFeatureRef {
+  ref: string;
+  [key: string]: unknown;
+}
+
+export interface ResolvedStatFeature {
+  name?: string;
+  type?: string;
+  text: string;
+}
+
+export interface StatblockVehicleProps {
+  name: string;
+  size: string;
+  type: string;
+  dimensions?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: ResolvedStatFeature[];
+  body?: string;
+  image?: string;
+  view?: string;
+  sourcePath?: string;
+}
+
+export declare const StatblockVehicle: FunctionComponent<StatblockVehicleProps>;
+
+export interface StatMonsterData {
+  name: string;
+  type: string;
+  cr?: string;
+  habitat?: string;
+  treasure?: string;
+  group?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: StatFeatureRef[];
+  text?: string;
+  [key: string]: unknown;
+}
+
+export interface StatblockMonsterProps {
+  name: string;
+  type: string;
+  cr?: string;
+  habitat?: string;
+  treasure?: string;
+  group?: string;
+  image?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: ResolvedStatFeature[];
+  body?: string;
+  hideTitle?: boolean;
+  sourcePath?: string;
+}
+
+export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;
+
+/** Map a creature note's frontmatter/fence into structured monster data. */
+export declare function mapMonster(self: Record<string, unknown>): StatMonsterData;
+
+export interface StatGroupData {
+  name: string;
+  subtitle?: string;
+  habitat?: string;
+  treasure?: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+export interface StatblockGroupProps {
+  name: string;
+  subtitle?: string;
+  habitat?: string;
+  treasure?: string;
+  body?: string;
+  hideTitle?: boolean;
+  sourcePath?: string;
+}
+
+export declare const StatblockGroup: FunctionComponent<StatblockGroupProps>;
+
+/** Map a `rpg stat.group` fence body into structured group data. */
+export declare function mapGroup(self: Record<string, unknown>): StatGroupData;
+
+export declare function resolveStatFeatures(
+  refs: StatFeatureRef[],
+  sourcePath: string,
+  selfProps: Record<string, unknown>
+): Promise<ResolvedStatFeature[]>;
+
+// ─── Fence utilities ────────────────────────────────────────────────────────
+
+/**
+ * Strip all `rpg <entity>.<block>` fences from a markdown body.
+ * Fences with a `---` separator have their body text preserved inline;
+ * fences without a separator are removed entirely.
+ * Handles nested fences by matching backtick counts.
+ */
+export declare function stripRpgFences(source: string): string;

@@ -1,0 +1,59 @@
+/* Title anchor styles moved to lib/styles/components/title-anchor.css */
+
+span[aria-details="Link Pill"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--color-yellow, #e0ac00);
+  font-size: 0.75rem;
+  font-family: var(--inline-title-font, "SF Compact Display", "SF Pro Display", system-ui, sans-serif);
+  
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  margin-right: 0;
+
+  &:hover {
+    color: var(--link-color-hover, hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--accent-l, 66%)));
+  }
+
+  &:focus {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+  }
+
+  a.internal-link {
+    display: inline-block;
+    /* Appearance (color / text-decoration) owned by Folder Link Styles. */
+  }
+}
+
+/* Header reference grouping (pill + author comment). Keeps the labelled
+ * pill and its trailing note as a single flex unit so `flex-wrap` on the
+ * pills line moves the whole pair to a new row instead of breaking the
+ * comment away from its pill. */
+span[aria-details="Pill Reference"] {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  /* Prevent the pair from being torn apart at the gap. */
+  white-space: normal;
+}
+
+/* Author note shown next to a header pill (lineage / heritage / background
+ * have an optional `comment:` field). Sits as a sibling of the pill so the
+ * link text stays clean while letting the note contextualize the pick. */
+small[aria-details="Pill Comment"] {
+  font-size: 0.7rem;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+/* Pill-comment internal-link appearance owned by Folder Link Styles. */

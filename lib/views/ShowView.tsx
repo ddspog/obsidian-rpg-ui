@@ -51,11 +51,7 @@ export class ShowView extends BaseView {
     }
   }
 
-  private renderCards(
-    config: ShowBlockConfig["cards"],
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): void {
+  private renderCards(config: ShowBlockConfig["cards"], el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     if (!config || !config.data || !config.properties) {
       el.innerHTML = "<div class=\"notice\">Invalid cards configuration. Need 'data' and 'properties'</div>";
       return;
@@ -63,21 +59,22 @@ export class ShowView extends BaseView {
     el.innerHTML = '<div class="notice">Loading...</div>';
     resolveData(this.app, config.data, ctx)
       .then((data) => {
-        if (!data) { el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`; return; }
+        if (!data) {
+          el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`;
+          return;
+        }
         const component = new Component();
         const cardsEl = buildInlineCards(data, config.properties, ctx.sourcePath, (text, element, path) => {
           MarkdownRenderer.renderMarkdown(text, element, path, component);
         });
         el.replaceChildren(cardsEl);
       })
-      .catch((err) => { el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`; });
+      .catch((err) => {
+        el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`;
+      });
   }
 
-  private renderTable(
-    config: ShowBlockConfig["table"],
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): void {
+  private renderTable(config: ShowBlockConfig["table"], el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     if (!config || !config.data || !config.columns) {
       el.innerHTML = "<div class=\"notice\">Invalid table configuration. Need 'data' and 'columns'</div>";
       return;
@@ -85,17 +82,18 @@ export class ShowView extends BaseView {
     el.innerHTML = '<div class="notice">Loading...</div>';
     resolveData(this.app, config.data, ctx)
       .then((data) => {
-        if (!data) { el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`; return; }
+        if (!data) {
+          el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`;
+          return;
+        }
         el.replaceChildren(buildInlineTable(data, config.columns));
       })
-      .catch((err) => { el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`; });
+      .catch((err) => {
+        el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`;
+      });
   }
 
-  private renderEntries(
-    config: ShowBlockConfig["entries"],
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): void {
+  private renderEntries(config: ShowBlockConfig["entries"], el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
     if (!config || !config.data || !Array.isArray(config.properties)) {
       el.innerHTML = "<div class=\"notice\">Invalid entries configuration. Need 'data' and 'properties' array</div>";
       return;
@@ -103,13 +101,18 @@ export class ShowView extends BaseView {
     el.innerHTML = '<div class="notice">Loading...</div>';
     resolveSystemData(this.app, config.data, ctx)
       .then((data) => {
-        if (!data) { el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`; return; }
+        if (!data) {
+          el.innerHTML = `<div class="notice">Data '${config.data}' not found</div>`;
+          return;
+        }
         const component = new Component();
         const renderMd = (text: string, element: HTMLElement) => {
           MarkdownRenderer.renderMarkdown(text, element, ctx.sourcePath, component);
         };
         el.replaceChildren(buildEntries(data, config, renderMd));
       })
-      .catch((err) => { el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`; });
+      .catch((err) => {
+        el.innerHTML = `<div class="notice">Error loading data: ${err}</div>`;
+      });
   }
 }

@@ -38,9 +38,7 @@ export function SceneHeader({ scene }: SceneHeaderProps) {
   return (
     <div className={`lonelog-scene-header scene-${variant}`}>
       <div className="scene-number">{scene.number}</div>
-      {scene.context && (
-        <div className="scene-context">{scene.context}</div>
-      )}
+      {scene.context && <div className="scene-context">{scene.context}</div>}
     </div>
   );
 }

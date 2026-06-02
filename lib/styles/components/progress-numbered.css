@@ -1,0 +1,29 @@
+/* ── Progress Numbered ────────────────────────────────────────────────────── */
+
+svg[aria-details="Progress Numbered"] {
+  display: block;
+  width: 100%;
+  height: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+svg[aria-details="Progress Numbered"] .rpg-numbered-track {
+  fill: var(--rpg-progress-numbered-track, rgba(255, 255, 255, 0.07));
+}
+
+svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
+  fill: url(#rpg-numbered-fill-grad);
+  transition: width 0.2s ease;
+}
+
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
+  font-size: 0.8em;
+  font-weight: 700;
+  fill: var(--rpg-progress-numbered-tick-inactive, rgba(255, 255, 255, 0.45));
+}
+
+svg[aria-details="Progress Numbered"] .rpg-numbered-tick[data-active="true"] {
+  fill: var(--rpg-progress-numbered-tick-active, rgba(255, 255, 255, 0.95));
+}

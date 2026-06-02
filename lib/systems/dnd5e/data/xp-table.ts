@@ -8,17 +8,17 @@
  */
 
 const xpTable: number[] = [
-  0,      // Level 1
-  300,    // Level 2
-  900,    // Level 3
-  2700,   // Level 4
-  6500,   // Level 5
-  14000,  // Level 6
-  23000,  // Level 7
-  34000,  // Level 8
-  48000,  // Level 9
-  64000,  // Level 10
-  85000,  // Level 11
+  0, // Level 1
+  300, // Level 2
+  900, // Level 3
+  2700, // Level 4
+  6500, // Level 5
+  14000, // Level 6
+  23000, // Level 7
+  34000, // Level 8
+  48000, // Level 9
+  64000, // Level 10
+  85000, // Level 11
   100000, // Level 12
   120000, // Level 13
   140000, // Level 14

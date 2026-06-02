@@ -52,9 +52,7 @@ function parseLine(line: string): LonelogEntry | null {
     // Extract optional roll: (d6=3)
     const rollMatch = text.match(/\(([^)]+)\)$/);
     const roll = rollMatch ? rollMatch[1] : undefined;
-    const answerText = rollMatch
-      ? text.slice(0, -rollMatch[0].length).trim()
-      : text;
+    const answerText = rollMatch ? text.slice(0, -rollMatch[0].length).trim() : text;
     return { type: "oracle_answer", text: answerText, roll };
   }
 
@@ -71,10 +69,7 @@ function parseLine(line: string): LonelogEntry | null {
     const resultLower = result.toLowerCase();
     if (resultLower.includes("success") || resultLower.includes("hit")) {
       success = true;
-    } else if (
-      resultLower.includes("fail") ||
-      resultLower.includes("miss")
-    ) {
+    } else if (resultLower.includes("fail") || resultLower.includes("miss")) {
       success = false;
     }
 

@@ -1,0 +1,44 @@
+/* ── Portrait Thumb ───────────────────────────────────────────────────────── */
+
+figure[aria-details="Portrait Thumb"] {
+  position: relative;
+  width: 60px;
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: 0;
+  z-index: 0;
+  overflow: visible;
+  cursor: zoom-in;
+  transform-origin: top left;
+  transition: transform 0.25s ease, z-index 0s 0.25s;
+}
+
+figure[aria-details="Portrait Thumb"]:hover {
+  transform: scale(1.5);
+  z-index: 20;
+  transition: transform 0.25s ease, z-index 0s;
+}
+
+figure[aria-details="Portrait Thumb"] img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 4px;
+}
+
+figure[aria-details="Portrait Thumb"]::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+figure[aria-details="Portrait Thumb"][data-empty] {
+  align-self: auto;
+  aspect-ratio: 3 / 4;
+}

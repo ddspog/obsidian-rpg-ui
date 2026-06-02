@@ -53,9 +53,7 @@ function normaliseTag(raw: unknown): string {
  * single values — matching the behaviour of dataview's `extractTags`.
  */
 function extractTags(frontmatter: Record<string, unknown>): string[] {
-  const keys = Object.keys(frontmatter).filter(
-    (k) => k.toLowerCase() === "tags" || k.toLowerCase() === "tag",
-  );
+  const keys = Object.keys(frontmatter).filter((k) => k.toLowerCase() === "tags" || k.toLowerCase() === "tag");
 
   const result: string[] = [];
   for (const key of keys) {
@@ -70,7 +68,7 @@ function extractTags(frontmatter: Record<string, unknown>): string[] {
         ...String(value)
           .split(/[,\s]+/)
           .filter(Boolean)
-          .map(normaliseTag),
+          .map(normaliseTag)
       );
     }
   }
@@ -84,9 +82,7 @@ function extractTags(frontmatter: Record<string, unknown>): string[] {
  * Handles `alias` / `aliases` keys — matching dataview's `extractAliases`.
  */
 function extractAliases(frontmatter: Record<string, unknown>): string[] {
-  const keys = Object.keys(frontmatter).filter(
-    (k) => k.toLowerCase() === "alias" || k.toLowerCase() === "aliases",
-  );
+  const keys = Object.keys(frontmatter).filter((k) => k.toLowerCase() === "alias" || k.toLowerCase() === "aliases");
 
   const result: string[] = [];
   for (const key of keys) {
@@ -100,7 +96,7 @@ function extractAliases(frontmatter: Record<string, unknown>): string[] {
         ...String(value)
           .split(/,/)
           .map((s) => s.trim())
-          .filter(Boolean),
+          .filter(Boolean)
       );
     }
   }
@@ -148,10 +144,7 @@ function extractAliases(frontmatter: Record<string, unknown>): string[] {
  * @param name  - Wikilink-style reference, e.g. `"Poisoned"`, `"conditions/Poisoned"`.
  * @returns A resolved {@link WikiFileDescriptor}, or a minimal empty descriptor if not found.
  */
-export async function resolveWikiFile(
-  vault: Vault | undefined,
-  name: string,
-): Promise<WikiFileDescriptor> {
+export async function resolveWikiFile(vault: Vault | undefined, name: string): Promise<WikiFileDescriptor> {
   if (vault) {
     // 1. Exact path — handles fully-qualified paths like "systems/dnd5e/Poisoned"
     const exactAttempts = [`${name}.md`, name];
@@ -172,9 +165,7 @@ export async function resolveWikiFile(
     const stem = name.split("/").pop()!.replace(/\.md$/i, "");
     const allFiles = ((vault as any).getFiles?.() as any[]) ?? [];
     const match = allFiles
-      .filter(
-        (f: any) => ((f as any).basename ?? (f as any).name?.replace(/\.[^.]+$/, "")) === stem,
-      )
+      .filter((f: any) => ((f as any).basename ?? (f as any).name?.replace(/\.[^.]+$/, "")) === stem)
       .sort((a: any, b: any) => a.path.length - b.path.length)[0];
 
     if (match) {
@@ -206,10 +197,7 @@ export async function resolveWikiFile(
  * @param folderPath - Partial or full folder path, e.g. `"skills"`, `"compendium/skills"`.
  * @returns Array of {@link WikiFileDescriptor} for each `.md` file in the folder.
  */
-export async function resolveWikiFolder(
-  vault: Vault | undefined,
-  folderPath: string,
-): Promise<WikiFileDescriptor[]> {
+export async function resolveWikiFolder(vault: Vault | undefined, folderPath: string): Promise<WikiFileDescriptor[]> {
   const name = folderPath.replace(/^\/+/, "").replace(/\/+$/, "");
 
   if (!vault || !(vault as any).getFiles) {
@@ -217,41 +205,52 @@ export async function resolveWikiFolder(
   }
 
   const allFiles: any[] = ((vault as any).getFiles() as any[]).filter(
-    (f: any) => typeof f.path === "string" && f.path.endsWith(".md"),
+    (f: any) => typeof f.path === "string" && f.path.endsWith(".md")
   );
 
   // 1. Exact prefix match
-  let matched = allFiles.filter(
-    (f: any) => f.path === name || f.path.startsWith(name + "/"),
-  );
+  let matched = allFiles.filter((f: any) => f.path === name || f.path.startsWith(name + "/"));
 
-  // 2. Folder suffix search — find the shortest folder whose path ends with /name
+  // 2. Folder suffix search — find a folder whose path equals or ends with `/name`
+  //    anywhere in the vault, then return every file beneath it (including
+  //    deep subfolders, e.g. `compendium/talents` → `compendium/talents/magic/Foo.md`).
+  //
+  //    When the full name fails, progressively strip leading segments
+  //    ("worldbuilding/cantrips" → "cantrips") so a ref like
+  //    `@worldbuilding/cantrips` still resolves when the vault has
+  //    reorganised the files to `worldbuilding/spells/cantrips/*`. The
+  //    shortest-path rule picks the most general match, consistent with
+  //    how wikilinks resolve basenames.
   if (matched.length === 0) {
-    // Build the set of unique folder paths that end with the given suffix
-    matched = allFiles.filter((f: any) => {
-      const dir = f.path.substring(0, f.path.lastIndexOf("/"));
-      // Check if `dir` ends with /name or equals name
-      return dir === name || dir.endsWith("/" + name);
-    });
-
-    // If still nothing, try matching any path segment sequence as a suffix
-    // e.g. "compendium/skills" matches "systems/tales-of-the-valiant/compendium/skills/Foo.md"
-    if (matched.length === 0) {
-      matched = allFiles.filter((f: any) => {
-        const dir = f.path.substring(0, f.path.lastIndexOf("/"));
-        return dir.endsWith("/" + name) || dir === name;
-      });
+    // Walk every file's directory chain so we discover ancestor folders, not
+    // just the immediate parent of each file. Without this, calling
+    // `wiki.folder("compendium/talents")` against a tree where every talent
+    // lives in a `magic/`, `martial/`, or `technical/` subfolder returned
+    // nothing because no file's *immediate* parent matched.
+    const allDirs = new Set<string>();
+    for (const f of allFiles) {
+      let dir = f.path.substring(0, f.path.lastIndexOf("/"));
+      while (dir) {
+        allDirs.add(dir);
+        const slash = dir.lastIndexOf("/");
+        if (slash < 0) break;
+        dir = dir.substring(0, slash);
+      }
     }
-
-    // Pick the shortest matching folder (most specific, shallowest depth)
-    if (matched.length > 0) {
-      const dirs = [...new Set(matched.map((f: any) =>
-        f.path.substring(0, f.path.lastIndexOf("/")),
-      ))];
-      const shortest = dirs.sort((a, b) => a.length - b.length)[0];
-      matched = allFiles.filter((f: any) =>
-        f.path.startsWith(shortest + "/") || f.path === shortest,
-      );
+    // Try full name first, then progressively strip leading segments.
+    const attempts: string[] = [name];
+    let remainder = name;
+    while (remainder.includes("/")) {
+      remainder = remainder.slice(remainder.indexOf("/") + 1);
+      attempts.push(remainder);
+    }
+    for (const attempt of attempts) {
+      const candidates = [...allDirs].filter((d) => d === attempt || d.endsWith("/" + attempt));
+      if (candidates.length > 0) {
+        const shortest = candidates.sort((a, b) => a.length - b.length)[0];
+        matched = allFiles.filter((f: any) => f.path.startsWith(shortest + "/") || f.path === shortest);
+        if (matched.length > 0) break;
+      }
     }
   }
 
@@ -270,7 +269,11 @@ export async function resolveWikiFolder(
 export function parseWikiFile(raw: string, $path: string): WikiFileDescriptor {
   // Derive the bare filename (no directory, no extension) from the path,
   // matching the way Obsidian resolves [[wikilinks]].
-  const $name = $path.split("/").pop()?.replace(/\.[^.]+$/, "") ?? $path;
+  const $name =
+    $path
+      .split("/")
+      .pop()
+      ?.replace(/\.[^.]+$/, "") ?? $path;
   try {
     const info = getFrontMatterInfo(raw);
 
@@ -294,7 +297,7 @@ export function parseWikiFile(raw: string, $path: string): WikiFileDescriptor {
         if (Array.isArray(v) && v.length === 0) return false;
         if (typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0) return false;
         return true;
-      }),
+      })
     );
 
     return {
@@ -307,7 +310,11 @@ export function parseWikiFile(raw: string, $path: string): WikiFileDescriptor {
     };
   } catch {
     // If something goes catastrophically wrong, return a minimal descriptor
-    const $name = $path.split("/").pop()?.replace(/\.[^.]+$/, "") ?? $path;
+    const $name =
+      $path
+        .split("/")
+        .pop()
+        ?.replace(/\.[^.]+$/, "") ?? $path;
     return { $path, $name, $contents: raw, $tags: [], $aliases: [] };
   }
 }

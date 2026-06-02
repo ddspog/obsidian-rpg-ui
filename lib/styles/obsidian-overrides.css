@@ -1,0 +1,351 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Obsidian-only overrides
+   These rules tighten the layout when the sheet is rendered inside
+   Obsidian (reading mode, live preview). All selectors are scoped to
+   `.markdown-rendered` / `.markdown-source-view` so Storybook's standalone
+   stories stay unaffected.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Constrain the health management panel — full-width is overkill in
+ * Obsidian's reading column. ~720px keeps it dense without touching
+ * the inner row layouts. */
+.markdown-rendered section[aria-label="Health Management"],
+.markdown-source-view.mod-cm6 section[aria-label="Health Management"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* The banner header sits atop the health panel and shares its width — keep
+ * it in sync so the two blocks visually stack. */
+.markdown-rendered header[aria-details*=" Banner"],
+.markdown-source-view.mod-cm6 header[aria-details*=" Banner"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* And the attribute stats block (STR/DEX/CON/...) lives right below — keep
+ * the visual column consistent. */
+.markdown-rendered section[aria-label="Character Stats"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Stats"] {
+  max-width: 720px;
+  margin-inline: auto;
+  /* Cancel the negative top margin that pulls the hex pairs UP into the
+   * health panel above. The save badges were leaking over the panel's
+   * bottom edge in Obsidian's tighter layout. */
+  margin-block-start: 0;
+}
+
+/* Skills & senses follow the same column width. */
+.markdown-rendered section[aria-label="Character Skills"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Skills"],
+.markdown-rendered section[aria-label="Character Senses"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Senses"],
+.markdown-rendered section[aria-label="Character Proficiencies"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Proficiencies"],
+.markdown-rendered section[aria-label="Character Features"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Features"],
+.markdown-rendered section[aria-label="Character Spells"],
+.markdown-source-view.mod-cm6 section[aria-label="Character Spells"] {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* Make the portrait bigger — 60px reads as a thumbnail when the panel is
+ * already capped at 720px. ~160px gives the face room without crowding
+ * the AC + Speed + HP column to its right. */
+.markdown-rendered figure[aria-details="Portrait Thumb"],
+.markdown-source-view.mod-cm6 figure[aria-details="Portrait Thumb"] {
+  width: 160px;
+}
+
+/* Breathing room above the description code block when it sits right
+ * under a heading — `# Description` followed by the fence otherwise
+ * ends up flush with the heading's baseline. `:has()` keeps this
+ * scoped to description fences only; plain code blocks aren't
+ * affected. */
+.markdown-rendered :is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6) + .el-pre:has(.rpg-description-block),
+.markdown-source-view.mod-cm6 :is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6) + .el-pre:has(.rpg-description-block) {
+  margin-top: 1.25em;
+}
+
+/* Obsidian's `.markdown-rendered li` defaults zero out paddings on list
+ * items, so the dashed divider between feature cards in a bucket sits
+ * flush against both the previous content and the next title. Re-assert
+ * the spacing with a higher-specificity selector scoped to the rendered
+ * markdown context. Spells block uses the same pattern (`.rpg-spell-entry`
+ * is also an `<li>` inside `.rpg-spell-entries`) — mirror the override
+ * there so the divider gets the same breathing room. */
+.markdown-rendered .rpg-feature-bucket-entry,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry,
+.markdown-rendered .rpg-spell-entry,
+.markdown-source-view.mod-cm6 .rpg-spell-entry {
+  padding: 24px 0 16px;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry:first-child,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry:first-child,
+.markdown-rendered .rpg-spell-entry:first-child,
+.markdown-source-view.mod-cm6 .rpg-spell-entry:first-child {
+  padding-top: 4px;
+}
+
+/* Spells-entry markdown descriptions live in `.rpg-spell-entry-text`,
+ * so mirror the feature-card list overrides so a <ul>/<ol> inside a
+ * spell's prose keeps its bullets / numbers without the default reading-
+ * view inset. */
+.markdown-rendered .rpg-spell-entry-text ul,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text ul,
+.markdown-rendered .rpg-spell-entry-text ol,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text ol {
+  padding-inline-start: 1.25em;
+  margin: 0.25em 0;
+}
+
+.markdown-rendered .rpg-spell-entry-text li,
+.markdown-source-view.mod-cm6 .rpg-spell-entry-text li {
+  padding-inline-start: 0;
+  margin: 0;
+}
+
+/* Obsidian's reading-view gives every <p> a hefty top/bottom margin
+ * (~1em each) which visually blows out the decisions paragraphs,
+ * making the Decisions-made drawer three times taller than needed.
+ * Keep the in-drawer paragraphs tight so several source lines stack
+ * cleanly. */
+.markdown-rendered .rpg-feature-decisions-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-line,
+.markdown-rendered .rpg-feature-decisions-source-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-source-line,
+.markdown-rendered .rpg-feature-decisions-category-line,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-category-line {
+  margin: 2px 0;
+}
+
+/* Obsidian's default `.markdown-preview-view h3 { font-size: 1.375em }` (or
+ * a theme equivalent) beats our `.rpg-feature-*-group-label { font-size:
+ * 0.8em }` rule on specificity ties, and renders differently across
+ * blocks because the parent font-size differs between features and
+ * spells containers. Pin the source-group heading to a root-relative
+ * size + explicit resets so it reads identically everywhere. */
+.markdown-rendered h3.rpg-feature-pending-group-label,
+.markdown-source-view.mod-cm6 h3.rpg-feature-pending-group-label,
+.markdown-rendered h3.rpg-feature-decisions-group-label,
+.markdown-source-view.mod-cm6 h3.rpg-feature-decisions-group-label {
+  margin: 6px 0 2px;
+  padding-left: 2px;
+  font-family: var(--font-interface, inherit);
+  font-size: 0.9rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* Source / enabler attribution labels: anchors pointing at the
+ * compendium page that granted a feature / spell. Appearance (color,
+ * text-decoration, font-style, font-weight) is owned by the Folder
+ * Link Styles plugin setting; layout-adjacent properties (font-size,
+ * letter-spacing, text-transform) stay here so the attribution line
+ * keeps its visual rhythm relative to the surrounding row. */
+.markdown-rendered a.rpg-feature-bucket-source,
+.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source,
+.markdown-rendered a.rpg-spell-entry-enabler,
+.markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler {
+  font-size: 0.85em;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Obsidian's default `button` styling fills with `--interactive-normal`
+ * and adds a frame, which clobbers the inline-glyph look the undo
+ * control gets in Storybook. Restore the transparent baseline + reset
+ * padding/margin so only the superscript ↺ glyph shows. */
+.markdown-rendered .rpg-feature-decisions-undo,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-undo {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
+}
+
+.markdown-rendered .rpg-feature-decisions-undo:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-decisions-undo:hover {
+  background: transparent;
+}
+
+/* Same reset for the trivialise / restore buttons that sit inside feature
+ * cards and trivial link lists — Obsidian's default `button` styling adds
+ * fill + shadow + padding that crowd these inline-glyph controls. */
+.markdown-rendered .rpg-feature-bucket-entry-collapse,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-collapse,
+.markdown-rendered .rpg-feature-bucket-trivial-restore,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-trivial-restore {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry-collapse:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-collapse:hover,
+.markdown-rendered .rpg-feature-bucket-trivial-restore:hover,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-trivial-restore:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Same reset for the inventory equip / unequip toggle — the circle glyph
+ * carries the on/off state, so we don't want Obsidian's default fill or
+ * frame bleeding through. */
+.markdown-rendered .rpg-inventory-block__equip-btn,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__equip-btn,
+.markdown-rendered .rpg-inventory-block__sell-btn,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.markdown-rendered .rpg-inventory-block__equip-btn:hover,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__equip-btn:hover,
+.markdown-rendered .rpg-inventory-block__sell-btn:hover,
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Sell-toggle "on" state needs the filled background to win over the
+ * global reset above — the `data-for-sale` attribute bumps specificity
+ * without `!important`. */
+.markdown-rendered .rpg-inventory-block__sell-btn[data-for-sale="true"],
+.markdown-source-view.mod-cm6 .rpg-inventory-block__sell-btn[data-for-sale="true"] {
+  background: light-dark(rgba(106, 78, 42, 0.85), rgba(212, 168, 64, 0.85));
+}
+
+/* Attacks block — Obsidian's default `.markdown-rendered table` rules
+ * ship a top + bottom margin so rendered tables breathe inside prose.
+ * The rolls block owns its own framing (section borders + thead
+ * band), so strip that table-level margin when the table is our
+ * `.rpg-rolls__table` (scoped via `:has` on the section so we don't
+ * touch any other user-authored table that happens to be nearby). */
+.markdown-rendered section[aria-details="Character Rolls"] table.rpg-rolls__table,
+.markdown-source-view.mod-cm6 section[aria-details="Character Rolls"] table.rpg-rolls__table {
+  margin: 0;
+}
+
+/* Sheet-composite margin reset — each sub-block carries a negative
+ * `margin-block-start` trick to dock against its preceding Obsidian
+ * `el-*` wrapper in the multi-block layout. In the sheet layout there
+ * is no wrapper between siblings, so the negative margin pulls each
+ * section UP over the one above — overlapping rows and hiding the
+ * last tbody row of the rolls section. Resetting the block margins
+ * inside the sheet lets each section sit in natural document flow and
+ * keeps each section's own borders visible. */
+.rpg-character-sheet > section {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+}
+
+/* Restore skills' bottom border + proficiencies' top border in the
+ * sheet layout. The multi-block case uses `:has(+)` / adjacent-sibling
+ * rules in `rolls-row.css` to MERGE those borders away — but in the
+ * sheet layout all three sections are direct siblings of
+ * `.rpg-character-sheet`, so those merge rules fire unintentionally
+ * and strip the borders. Restore them scoped to the sheet's wrapper
+ * class, with the SAME `:has()` / structural predicate the merge rule
+ * uses so the override matches the merge's specificity (0,2,2) and
+ * then wins on source order. The previous form
+ * (`.rpg-character-sheet > section[aria-details="..."]`) has
+ * specificity (0,2,1) and silently loses to the merge. */
+.rpg-character-sheet > section[aria-details="Character Skills"]:has(+ section[aria-details="Character Rolls"]) {
+  border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.rpg-character-sheet > section[aria-details="Character Rolls"] + section[aria-details="Character Proficiencies"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+/* Kill the negative block-margin trick each sub-block carries to dock
+ * against its preceding Obsidian `el-*` wrapper. In the sheet layout
+ * there is no wrapper between siblings, so the negative margin pulls
+ * each section UP over the one above — overlapping rows and hiding
+ * the last tbody row of the rolls section. Resetting the block
+ * margins inside the sheet lets each section sit in natural
+ * document flow. Class-scoped, so the multi-block layout keeps its
+ * own docking behaviour. */
+.rpg-character-sheet > section {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+/* Same `margin-block-start: -1 * var(--p-spacing)` pull-up kills the
+ * layout in live preview. Each `rpg <entity>.<block>` fence renders
+ * inside a `cm-preview-code-block` instead of an `el-…` div, so
+ * there's no `--p-spacing` margin above the section to cancel — the
+ * negative pull instead drags the section UP into the preceding
+ * heading or block, overlapping the SPELLCASTING bar with the
+ * "Spells" heading and the first feature bucket with the "Features"
+ * heading. Reset the pull-up in live preview so each section sits
+ * flush below its heading the same way reading view does. Reading
+ * view keeps the original docking behaviour because its `el-…`
+ * wrappers really do carry the margin. */
+.markdown-source-view.mod-cm6 section[aria-details="Character Stats"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Senses"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Skills"] {
+  margin-block-start: 0;
+}
+
+/* Features and Spells blocks are typically authored as standalone
+ * fences stacked under separate headings; add a small breathing room
+ * above each so consecutive `rpg character.features` /
+ * `rpg character.spells` fences don't crowd the previous block (or
+ * heading). The margin is harmless when the block is the first thing
+ * in the note — collapses against the leading whitespace of the
+ * markdown view. */
+.markdown-source-view.mod-cm6 section[aria-details="Character Features"],
+.markdown-source-view.mod-cm6 section[aria-details="Character Spells"] {
+  margin-block-start: 0.5em;
+}
+
+/* Reading view wraps each fence in a `<div class="el-…">` that carries
+ * a `var(--p-spacing)` top margin. Subtract our target 0.5em from
+ * that margin (via collapse) so the visible spacing matches live
+ * preview — without this the wrapper's full p-spacing would dominate
+ * and reading view would space twice as wide. */
+.markdown-rendered section[aria-details="Character Features"],
+.markdown-rendered section[aria-details="Character Spells"] {
+  margin-block-start: calc(0.5em - var(--p-spacing, 1em));
+}
+
+/* Obsidian's reading-view bullet lists ship with a hefty inline-start
+ * padding (`var(--list-indent, ~1.5em)` plus extra `<li>` padding) that
+ * pushes feature-card bullet rows far past the description text. Match
+ * the Storybook layout: a slim 1.25em gutter, bullet sitting just
+ * inside that, no extra `<li>` padding. */
+.markdown-rendered .rpg-feature-bucket-entry-desc ul,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc ul,
+.markdown-rendered .rpg-feature-bucket-entry-desc ol,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc ol {
+  padding-inline-start: 1.25em;
+  margin: 0.25em 0;
+}
+
+.markdown-rendered .rpg-feature-bucket-entry-desc li,
+.markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc li {
+  padding-inline-start: 0;
+  margin: 0;
+}

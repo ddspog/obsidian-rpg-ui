@@ -1,0 +1,100 @@
+/* ── Dice Roll Modal ──────────────────────────────────────────────────────── */
+
+dialog[aria-details="Dice Roll Modal"] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  z-index: 1000;
+}
+
+dialog[aria-details="Dice Roll Modal"]::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+dialog[aria-details="Dice Roll Modal"] > article {
+  background-color: var(--rpg-modal-bg, #1e1c18);
+  border: 1px solid var(--rpg-modal-border, #5a5450);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+dialog[aria-details="Dice Roll Modal"] > article > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+dialog[aria-details="Dice Roll Modal"] output[aria-details="Die Type"] {
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--rpg-dice-label-color, #c8a84b);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+dialog[aria-details="Dice Roll Modal"] > article > header > button {
+  background: none;
+  border: none;
+  color: var(--rpg-modal-close-color, #a09880);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 2px 6px;
+}
+
+section[aria-details="Roll Result"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+}
+
+output[aria-details="Roll Value"] {
+  font-size: 3em;
+  font-weight: 800;
+  color: var(--rpg-modal-result-color, #e3dcce);
+  line-height: 1;
+}
+
+span[aria-details="Roll Prompt"] {
+  color: var(--rpg-modal-prompt-color, #7a7060);
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+dialog[aria-details="Dice Roll Modal"] > article > footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+dialog[aria-details="Dice Roll Modal"] > article > footer > button {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--rpg-die-border, #5a5450);
+  background-color: var(--rpg-die-bg, #2a2724);
+  color: var(--rpg-die-text, #e3dcce);
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
+  background-color: var(--rpg-dice-label-color, #c8a84b);
+  border-color: var(--rpg-dice-label-color, #c8a84b);
+  color: #1a1816;
+}

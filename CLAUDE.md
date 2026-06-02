@@ -39,6 +39,12 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **CSS:** Prefix all styles with plugin namespace; place component styles in lib/styles/components/
 - **File Structure:** Keep code aligned with domain separation (domains, components, views)
 
+## UI Components (Storybook)
+
+- **Story files** live in `stories/` and follow Storybook 9 conventions (import from `@storybook/react-vite`, test utils from `storybook/test`)
+- **Run Storybook** with `npm run storybook` (uses portless for a stable URL)
+- When working on components, read their source files in `lib/components/` and existing stories in `stories/` directly — do not rely on a Storybook MCP
+
 ## Architecture
 
 - **Plugin Structure:** Obsidian plugin with React components for D&D UI elements
@@ -81,3 +87,23 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **Plugin Development:** Set PLUGIN_DIR environment variable to auto-copy built files to Obsidian plugin directory
 - **Documentation:** VitePress documentation in `/docs` with examples and component references
 - **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
+
+## rpg-dev CLI (DevTools Automation)
+
+A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.
+
+- `node cli/rpg-dev.mjs compile-html -i <path>` — Extract rendered HTML fragments from Obsidian reading mode
+- `node cli/rpg-dev.mjs capture-logs -i <path>` — Capture console output after page render
+- `node cli/rpg-dev.mjs css-report -i <path>` — Generate computed CSS snapshots per `.selectors` companion file
+- `node cli/rpg-dev.mjs dom-snapshot -i <path>` — Capture structural DOM tree as YAML
+- `node cli/rpg-dev.mjs perf-timing -i <path>` — Measure post-processor render timing
+- `node cli/rpg-dev.mjs state-inspect -i <path>` — Dump KV store + frontmatter state
+
+**When to use:** After CSS/component changes to verify rendering, when debugging layout or style issues, when investigating why a block doesn't render, or to create regression baselines. Use the `/rpg-dev` command for detailed guidance.
+
+**Key facts:**
+- Input paths are relative to plugin root (e.g., `vault/tests/03-TEST-SKILLS.md`)
+- Output goes to `tmp/rpg-dev/` (gitignored)
+- All commands auto-unfold collapsed sections before capture
+- Obsidian virtualizes DOM sections — extracted HTML is viewport-limited
+- `.selectors` companion files live next to `.md` files for `css-report`

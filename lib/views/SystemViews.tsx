@@ -101,7 +101,7 @@ export class SystemAttributesView extends BaseView {
           </div>
           ${a.subtitle ? `<div class="attribute-subtitle">${a.subtitle}</div>` : ""}
           ${a.$contents ? `<div class="attribute-description">${a.$contents}</div>` : ""}
-        </div>`,
+        </div>`
         )
         .join("");
       el.innerHTML = `<div class="attributes-display-container"><div class="attributes-grid">${cards}</div></div>`;
@@ -124,12 +124,12 @@ export class SystemSkillsView extends BaseView {
         return;
       }
       const skillCards = skills
-        .map(
-          (s) => card(
+        .map((s) =>
+          card(
             "system-skill-card",
             `<span class="system-skill-name">${s.$name}</span>
-             <span class="system-skill-attribute">${String(s.attribute).substring(0, 3).toUpperCase()}</span>`,
-          ),
+             <span class="system-skill-attribute">${String(s.attribute).substring(0, 3).toUpperCase()}</span>`
+          )
         )
         .join("");
       el.innerHTML = `<div class="system-skills-display">
@@ -164,7 +164,7 @@ export class SystemExpressionsView extends BaseView {
           <div class="system-expression-id">${e.id}</div>
           ${e.params.length > 0 ? `<div class="system-expression-params"><em>${e.params.join(", ")}</em></div>` : ""}
           <code class="system-expression-formula">${e.formula}</code>
-        </div>`,
+        </div>`
         )
         .join("");
       el.innerHTML = `<div class="system-expressions-display">
@@ -201,7 +201,7 @@ export class SystemConditionsView extends BaseView {
             <span class="system-condition-name">${c.$name}</span>
           </div>
           ${c.$contents ? `<div class="system-condition-description">${c.$contents}</div>` : ""}
-        </div>`,
+        </div>`
         )
         .join("");
       el.innerHTML = `<div class="system-conditions-display">

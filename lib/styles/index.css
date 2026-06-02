@@ -16,6 +16,9 @@
 @import "./components/spell-components.css";
 @import "./components/event-buttons.css";
 @import "./components/inventory.css";
+@import "./components/inventory-block.css";
+@import "./components/item-card.css";
+@import "./components/item-magic-card.css";
 @import "./components/features.css";
 /* Session Log Components - Split from monolithic file */
 @import "./components/session-log-scene.css";
@@ -25,6 +28,18 @@
 @import "./components/session-log-overview.css";
 /* System Definition Components - Split from monolithic file */
 @import "./components/system-info.css";
+@import "./components/banner-header.css";
+@import "./components/pills.css";
+@import "./components/title.css";
+@import "./components/progress-bar.css";
+@import "./components/progress-health.css";
+@import "./components/trigger-button.css";
+@import "./components/inspirational-level.css";
+@import "./components/line.css";
+@import "./components/hide-classes.css";
+@import "./components/stat.css";
+@import "./components/stat-ul.css";
+@import "./components/skill-li.css";
 @import "./components/system-attributes-definition.css";
 @import "./components/skills-display.css";
 @import "./components/expressions-display.css";
@@ -34,4 +49,47 @@
 @import "./components/attributes-display.css";
 @import "./components/inline-display.css";
 @import "./components/compilation.css";
+@import "./components/section-row.css";
+@import "./components/portrait-thumb.css";
+@import "./components/badge-shield.css";
+@import "./components/article-column.css";
+@import "./components/hgroup-row.css";
+@import "./components/figure-column.css";
+@import "./components/line-control-stats.css";
+@import "./components/fieldset-health.css";
+@import "./components/progress-numbered.css";
+@import "./components/status-panel.css";
+@import "./components/stat-diamond.css";
+@import "./components/stat-hex-pair.css";
+@import "./components/tag-heading.css";
+@import "./components/senses-row.css";
+@import "./components/skills-row.css";
+@import "./components/rolls-row.css";
+@import "./components/proficiencies-row.css";
+@import "./components/character-description.css";
+@import "./components/feature-card.css";
+@import "./components/danger-card.css";
+@import "./components/feature-accordion.css";
+@import "./components/features-source-groups.css";
+@import "./components/spells.css";
+@import "./components/spell-card.css";
+@import "./components/rpg-table.css";
+@import "./components/death-save-dots.css";
+@import "./components/dice-tray.css";
+@import "./components/dice-roll-modal.css";
+@import "./components/references.css";
+@import "./components/folder-link-styles.css";
+@import "./components/page-footer.css";
+@import "./components/page-banner.css";
+@import "./components/rule-block.css";
+@import "./components/rule-call.css";
+@import "./components/rule-compendium.css";
+@import "./components/table-pagination.css";
+@import "./components/rpg-list.css";
+@import "./components/statblock.css";
 @import "./file-suggest.css";
+
+/* Obsidian-only layout overrides — keep last so it can override component
+ * defaults without affecting Storybook (the selectors are scoped to
+ * .markdown-rendered / .markdown-source-view). */
+@import "./obsidian-overrides.css";

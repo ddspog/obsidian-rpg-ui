@@ -18,16 +18,25 @@ main.js
 # obsidian
 data.json
 
+# sync-vault snapshot (per-machine state, never committed)
+.sync-manifest.json
+
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 .env
 .task/checksum
 styles.css
-.claude
+.claude/*
+!.claude/commands/
+.playwright-cli
+debug-storybook.log
 docs/.vitepress/cache/deps
 docs/.vitepress/dist
 
 # Build artifacts (copied from lib by esbuild.config.mjs on production build)
 /api.d.ts
 /esbuild.wasm
+
+# Local debug scratch (screenshots, temp dumps)
+tmp/
 

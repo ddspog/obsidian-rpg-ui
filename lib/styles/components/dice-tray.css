@@ -1,0 +1,71 @@
+/* ── Dice Tray ────────────────────────────────────────────────────────────── */
+
+dd[aria-label="Dice Tray"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Base die button ─────────────────────────────────────────────────────── */
+
+dd[aria-label="Dice Tray"] > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.25));
+  color: var(--rpg-die-health-text, #f0d8d0);
+  font-size: 0.7em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s;
+  filter: drop-shadow(0 0 1.5px rgba(90, 32, 32, 0.9));
+  /* Default: square (d6) */
+  clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
+}
+
+dd[aria-label="Dice Tray"] > button:hover:not([aria-disabled="true"]) {
+  background-color: var(--rpg-die-health-hover, rgba(150, 48, 48, 0.4));
+}
+
+dd[aria-label="Dice Tray"] > button[aria-disabled="true"] {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── Die shapes by type ──────────────────────────────────────────────────── */
+
+/* d4 — triangle */
+dd[aria-label="Dice Tray"] > button[data-die="d4"] {
+  clip-path: polygon(50% 2%, 98% 98%, 2% 98%);
+  padding-top: 10px;
+}
+
+/* d6 — square */
+dd[aria-label="Dice Tray"] > button[data-die="d6"] {
+  clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);
+}
+
+/* d8 — diamond */
+dd[aria-label="Dice Tray"] > button[data-die="d8"] {
+  clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
+}
+
+/* d10 — kite */
+dd[aria-label="Dice Tray"] > button[data-die="d10"] {
+  clip-path: polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
+}
+
+/* d12 — pentagon */
+dd[aria-label="Dice Tray"] > button[data-die="d12"] {
+  clip-path: polygon(50% 2%, 98% 38%, 80% 98%, 20% 98%, 2% 38%);
+}
+
+/* d20 — wide triangle */
+dd[aria-label="Dice Tray"] > button[data-die="d20"] {
+  clip-path: polygon(50% 2%, 100% 98%, 0% 98%);
+  padding-top: 8px;
+}

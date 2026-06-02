@@ -4,13 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import { parseLonelog } from "./parser";
-import {
-  extractDeltas,
-  accumulateDeltas,
-  calculateTotalHPChange,
-  getFinalStatus,
-  getActiveTags,
-} from "./deltas";
+import { extractDeltas, accumulateDeltas, calculateTotalHPChange, getFinalStatus, getActiveTags } from "./deltas";
 
 describe("Delta Tracker", () => {
   describe("extractDeltas", () => {
@@ -356,9 +350,7 @@ d: 1d8+4=9 slashing damage
       expect(tags.has("wounded")).toBe(false); // Added then removed
 
       // Check progress changes
-      const clockChange = progressChanges.find(
-        (p) => p.name === "Reinforcements",
-      );
+      const clockChange = progressChanges.find((p) => p.name === "Reinforcements");
       expect(clockChange).toBeDefined();
       expect(clockChange?.current).toBe(1);
       expect(clockChange?.max).toBe(4);

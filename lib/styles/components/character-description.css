@@ -1,0 +1,1305 @@
+/* ── Character Description (tabbed narrative block) ────────────────────────── */
+/*
+ * Visual family: cousin of senses/skills/rolls/proficiencies — same
+ * frosted-glass frame, same light-dark() palette, same .rpg-tag-heading
+ * cut-corner ribbon language. The distinctive touch is a gold hairline
+ * flourish in the top-left / bottom-right corners that marks this as the
+ * narrative section rather than a stats block.
+ */
+
+.rpg-description-block {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+
+/* Ornate corner flourishes — two thin gold L-brackets in opposite corners
+ * that hint at an illuminated-manuscript margin. Purely decorative; kept
+ * behind the content (z-index 0 below, tablist/panel lift above). */
+.rpg-description-block::before,
+.rpg-description-block::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 0;
+  border-color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  opacity: 0.7;
+}
+
+.rpg-description-block::before {
+  top: 6px;
+  left: 6px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.rpg-description-block::after {
+  right: 6px;
+  bottom: 6px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+/* ── Tab bar ────────────────────────────────────────────────────────────── */
+/*
+ * Goal: five tabs on a single row that fill the block's top edge end-to-end
+ * and "glue" together as interlocking parallelograms (no visible gutter).
+ *
+ * Technique: each tab gets a parallelogram clip-path (same slope on left +
+ * right edges); items overlap by `--_cut` via negative margin so the right
+ * slope of one tab tessellates into the left slope of the next. First /
+ * last tabs get a flat outer edge so the bar sits flush to the frame.
+ *
+ * No background on the menu itself — the tabs cover 100% of the row, so
+ * there is nothing behind to show through.
+ */
+
+.rpg-description-tablist {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  background: transparent;
+}
+
+.rpg-description-tab-item {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Subsequent tabs overlap the previous by one cut-width, which is exactly
+ * the offset needed for the parallelogram slopes to meet (see comment
+ * above). Active-tab z-index lift then ensures its shape paints atop the
+ * neighbour it slots into. */
+.rpg-description-tab-item + .rpg-description-tab-item {
+  margin-left: calc(-1 * var(--rpg-description-tab-cut, 12px));
+}
+
+.rpg-description-tab {
+  --_cut: var(--rpg-description-tab-cut, 12px);
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px calc(var(--_cut) + 8px);
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--rpg-description-tab, light-dark(#6a5a3a, #8c8272));
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  transition: color 120ms ease, background 120ms ease;
+  clip-path: polygon(
+    var(--_cut) 0,
+    100% 0,
+    calc(100% - var(--_cut)) 100%,
+    0 100%
+  );
+}
+
+/* Flat left edge on the first tab so it docks against the block frame. */
+.rpg-description-tab-item:first-child .rpg-description-tab {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--_cut)) 100%,
+    0 100%
+  );
+}
+
+/* Flat right edge on the last tab for the same reason. */
+.rpg-description-tab-item:last-child .rpg-description-tab {
+  clip-path: polygon(
+    var(--_cut) 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* A single tab in isolation keeps both edges flat. */
+.rpg-description-tab-item:only-child .rpg-description-tab {
+  clip-path: none;
+}
+
+.rpg-description-tab:hover {
+  color: var(--rpg-description-tab-hover, light-dark(#1a1208, #ffffff));
+  background: light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.14));
+}
+
+.rpg-description-tab:focus-visible {
+  outline: 2px solid var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  outline-offset: -3px;
+}
+
+.rpg-description-tab[data-active] {
+  color: var(--rpg-description-tab-active, light-dark(#1a1208, #ffffff));
+  background: var(--rpg-description-tab-active-bg, light-dark(rgba(212, 168, 64, 0.3), rgba(212, 168, 64, 0.32)));
+  /* Sit above neighbours so the active parallelogram's slopes paint over
+   * the adjacent tabs' overlapping edges. */
+  position: relative;
+  z-index: 2;
+}
+
+/* A subtle bottom tint on the active tab to hint at connection to the
+ * panel below — the clip-path swallows a real bottom border, so we paint
+ * it as an inset shadow that the polygon honours. */
+.rpg-description-tab[data-active]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+
+.rpg-description-panel {
+  position: relative;
+  z-index: 1;
+  padding: 16px;
+  min-height: 18rem;
+  max-height: 44rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.rpg-description-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rpg-description-panel::-webkit-scrollbar-thumb {
+  background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+}
+
+/* ── Empty panel placeholder ───────────────────────────────────────────── */
+
+.rpg-description-empty {
+  margin: 2rem auto;
+  text-align: center;
+  color: light-dark(#6a6a6a, #a0a0a0);
+  font-size: 0.9em;
+}
+
+/* ── Shared meta pills (Homeland, Position, …) ─────────────────────────── */
+
+.rpg-description-meta-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  margin-right: 8px;
+}
+
+.rpg-description-meta-value {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-description-meta-value > * {
+  display: inline;
+}
+
+/* ── Appearance tab ─────────────────────────────────────────────────────── */
+
+.rpg-description-appearance {
+  display: grid;
+  grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.rpg-description-appearance-art {
+  margin: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.22));
+  box-shadow:
+    inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.15)),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  /* Fixed portrait aspect (9:16). The art column's width comes from the
+   * grid (40%); height is derived from the ratio so the frame never
+   * stretches to match the body column's content height. `align-self:
+   * start` keeps the figure anchored to the top of its grid cell when
+   * the body column is taller; the cell's extra height stays empty. */
+  aspect-ratio: 9 / 16;
+  align-self: start;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+/* PortraitThumb renders `<figure aria-details="Portrait Thumb">` with the
+ * <img> appended inside. Override its defaults so the image fills the art
+ * block like a hero image instead of a small headshot. The outer figure
+ * (`.rpg-description-appearance-art`) carries a `data-fit` attribute
+ * driven by the YAML — the three fill modes (cover, width, height) all
+ * share one object-fit:cover core so the frame is never left with empty
+ * space; only `contain` opts into letterboxing. --rpg-art-position is
+ * pre-computed in JS from (fit, align) so the CSS stays dumb.
+ *
+ * `width` / `height` carry !important because obsidian-overrides.css
+ * pins every `figure[aria-details="Portrait Thumb"]` to `width: 160px`
+ * inside `.markdown-rendered` — a sensible default for the small
+ * headshot used elsewhere on the sheet, but wrong for this hero slot.
+ * The overrides selector has higher specificity than any class-scoped
+ * rule could, so !important is the cleanest override path. */
+.rpg-description-appearance-art > [aria-details="Portrait Thumb"] {
+  margin: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+  overflow: hidden;
+  /* Cancel the global portrait-thumb hover-zoom (scale 1.5) — for a hero
+   * image sized to its reserved slot, zooming on hover is jarring and
+   * spills over surrounding layout. */
+  cursor: default;
+  transform: none !important;
+  transition: none;
+}
+
+.rpg-description-appearance-art > [aria-details="Portrait Thumb"]:hover {
+  transform: none !important;
+  z-index: auto;
+}
+
+/* All fill modes default to `cover` — guarantees no empty space inside
+ * the frame. `contain` is the only opt-in letterbox mode. */
+.rpg-description-appearance-art [aria-details="Portrait Thumb"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--rpg-art-position, top center);
+}
+
+.rpg-description-appearance-art[data-fit="contain"] [aria-details="Portrait Thumb"] img {
+  object-fit: contain;
+}
+
+/* Empty-state treatment — when no `art:` is authored, PortraitThumb sets
+ * data-empty; show a subtle placeholder instead of a blank rectangle. */
+.rpg-description-appearance-art [aria-details="Portrait Thumb"][data-empty]::before {
+  content: "no art set";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.4));
+}
+
+.rpg-description-appearance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.rpg-description-appearance-body > section {
+  margin: 0;
+}
+
+.rpg-description-appearance-body > section > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  margin-bottom: 4px;
+}
+
+.rpg-description-appearance-body > section > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+
+.rpg-description-appearance-body > section p {
+  margin: 4px 0 0;
+  font-size: 0.92em;
+  line-height: 1.55;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+/* ── Side-props grid (AGE / HEIGHT / WEIGHT, EYES / SKIN / HAIR, …) ────── */
+
+.rpg-description-sideprops {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+/* One <table> holds every side_props row as alternating label / value
+ * <tr>s. Because the table shares column tracks across groups, the
+ * HAIR column (widest value) sets the width of the AGE column above it
+ * — the two groups align as a single rectangular grid.
+ *
+ * Explicit `display: table*` values defeat the global
+ * `.markdown-rendered table { display: block }` reflow Obsidian ships
+ * for responsive mobile views — without these overrides every th / td
+ * collapses into its own line, turning the 3-column layout into a
+ * single vertical stack.
+ *
+ * `width: 100%` makes the table span the parent's content box. Zero
+ * margin keeps the table inside the parent's padding — the earlier
+ * `-8px` horizontal margin was pulling the table out beyond the
+ * `.rpg-description-sideprops` padding into its border. `border-spacing`
+ * is halved (8px → 4px horizontal) for a tighter gutter between cells. */
+.rpg-description-sideprops-row {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 4px 1px;
+  margin: 0;
+}
+
+/* Obsidian's `.markdown-rendered table` default ships a `1em 0` block
+ * margin so prose-embedded tables breathe. That gives the sideprops
+ * block a visible top + bottom gap even with `margin: 0` on the rule
+ * above, because `.markdown-rendered table` beats a single-class
+ * selector on specificity. Scope a match that ties Obsidian's
+ * specificity (class + element = 0,2,0,1) and halve the value — we
+ * want some breathing room, just less of it. */
+.markdown-rendered table.rpg-description-sideprops-row,
+.markdown-source-view.mod-cm6 table.rpg-description-sideprops-row {
+  margin-block: 0.5em;
+}
+
+.rpg-description-sideprops-row > tbody {
+  display: table-row-group;
+}
+
+.rpg-description-sideprops-row > tbody > tr {
+  display: table-row;
+}
+
+.rpg-description-sideprops-row th {
+  display: table-cell;
+  font-size: 0.6em;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.15;
+  padding: 4px 0 2px;
+  white-space: nowrap;
+  border: none;
+  vertical-align: bottom;
+}
+
+.rpg-description-sideprops-row td {
+  display: table-cell;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-align: center;
+  color: light-dark(#1a1208, #e3dcce);
+  line-height: 1.3;
+  padding: 2px 0 4px;
+  white-space: nowrap;
+  border: none;
+  vertical-align: top;
+}
+
+/* ── Copy-prompt icon button (rolls-tip style) ──────────────────────── */
+/*
+ * Matches `.rpg-rolls__icon` — small gold pill, cursor pointer, instant
+ * CSS tooltip via [data-tip]. No text label; the SVG glyph + the tooltip
+ * carry the meaning.
+ */
+
+.rpg-description-appearance-actions {
+  margin: 4px 0 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.rpg-description-copy-prompt {
+  all: unset;
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  background: light-dark(rgba(106, 78, 42, 0.12), rgba(212, 168, 64, 0.18));
+  border-radius: 3px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.rpg-description-copy-prompt:hover {
+  background: light-dark(rgba(106, 78, 42, 0.22), rgba(212, 168, 64, 0.28));
+  color: light-dark(#4a3010, #ffd98a);
+}
+
+.rpg-description-copy-prompt:focus-visible {
+  outline: 2px solid var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  outline-offset: 2px;
+}
+
+.rpg-description-copy-prompt svg {
+  width: 0.95em;
+  height: 0.95em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Instant CSS tooltip, same shape as the rolls-row icons. */
+.rpg-description-copy-prompt[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  padding: 3px 7px;
+  background: light-dark(#1a1208, #f0e8d0);
+  color: light-dark(#f0e8d0, #1a1208);
+  border-radius: 3px;
+  font-size: 0.78em;
+  font-weight: 500;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  z-index: 20;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rpg-description-copy-prompt[data-tip]:hover::after,
+.rpg-description-copy-prompt[data-tip]:focus-visible::after {
+  opacity: 1;
+}
+
+/* ── Responsive: stack art above body on narrow containers ─────────────── */
+
+@container (max-width: 560px) {
+  .rpg-description-appearance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* On narrow containers the grid collapses to one column; a 9:16 image
+   * at full width would tower over the panel. Cap it and let it letterbox
+   * or crop per the user's `fit` instead. */
+  .rpg-description-appearance-art {
+    aspect-ratio: auto;
+    max-height: 20rem;
+    min-height: 14rem;
+  }
+}
+
+/* ── Backstory tab ─────────────────────────────────────────────────────── */
+
+.rpg-description-backstory {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* The narrative is framed as one article with the homeland as a ribbon
+ * nested at its top-left — `.rpg-tag-heading` gives it the same
+ * cut-corner silhouette the rest of the sheet uses, and absolute
+ * positioning tucks it into the story box's border so it visually
+ * "anchors" the text rather than floating separately. */
+.rpg-description-story {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(255, 251, 240, 0.6), rgba(0, 0, 0, 0.18));
+  overflow: hidden;
+}
+
+.rpg-description-story-ribbon {
+  --rpg-tag-cut: 12px;
+  filter: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  /* The panel backdrop (light-dark cream/black with a blur) inherits the
+   * block's transparency stack, so any ribbon painted with an alpha
+   * colour would let the story prose bleed through behind the Homeland
+   * text. Use a fully opaque brand gold with a high-contrast text tone
+   * so the label is always legible regardless of what line of the story
+   * is sitting underneath. */
+  color: light-dark(#2a1f10, #2a1f10);
+}
+
+.rpg-description-story-ribbon > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 18px 5px 12px;
+  background: light-dark(#d4a840, #d4a840);
+  /* Cut the bottom-right corner so the ribbon tapers off the way the
+   * sheet's .rpg-tag-heading shape does — keeps the visual family. */
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--rpg-tag-cut)) 100%,
+    0 100%
+  );
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.rpg-description-story-ribbon small {
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+/* Markdown may wrap the homeland value in a <p>; flatten so the wikilink
+ * stays inline next to the small label. */
+.rpg-description-story-ribbon p {
+  display: inline;
+  margin: 0;
+}
+
+/* Ribbon wikilink appearance owned by Folder Link Styles. */
+
+/* Scrollable narrative — cap height so long backstories don't push the
+ * highlights off-screen; panel itself is also scrollable, but this inner
+ * cap gives long reads a dedicated reading pane. The ribbon overlaps so
+ * we pad the top of the scroll region to clear it. */
+.rpg-description-story-scroll {
+  max-height: 26rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  padding: 36px 16px 12px;
+  /* Serif body for the narrative — leans into the "read this" framing. */
+  font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: light-dark(#2a1f10, #e3dcce);
+}
+
+.rpg-description-story-scroll > :first-child {
+  margin-top: 0;
+}
+
+.rpg-description-story-scroll > :last-child {
+  margin-bottom: 0;
+}
+
+.rpg-description-story-scroll p {
+  margin: 0 0 0.8em;
+}
+
+.rpg-description-story-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rpg-description-story-scroll::-webkit-scrollbar-thumb {
+  background: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.18));
+  border-radius: 3px;
+}
+
+/* Narrative internal-link appearance owned by Folder Link Styles. */
+
+/* ── Highlights (TLDR list) ────────────────────────────────────────────── */
+/* No frame, no background — the list is bare dt/dd pairs aligned as a
+ * grid. dt hugs its content on the left, dd takes the rest. Both align
+ * to the top so a single-line label stays flush with the first line of
+ * its (possibly multi-line) value. Markdown wraps each dd value in a
+ * <p>; zero that <p>'s margin so the grid row's line-height is the
+ * only thing setting vertical rhythm. */
+
+.rpg-description-highlights {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) 1fr;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.rpg-description-highlight {
+  display: contents;
+}
+
+.rpg-description-highlight > dt {
+  align-self: start;
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.45;
+  padding: 0;
+  border: none;
+}
+
+.rpg-description-highlight > dd {
+  align-self: start;
+  margin: 0;
+  padding: 0;
+  font-size: 0.92em;
+  line-height: 1.45;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-description-highlight > dd p,
+.rpg-description-highlight > dd > div > p {
+  margin: 0;
+}
+
+/* Footnote variant — full-width muted italic row (used for the TLDR
+ * "subtitle" the user showed: _An character with good connections to
+ * nobility._). */
+.rpg-description-highlight-footnote {
+  display: contents;
+}
+
+.rpg-description-highlight-footnote > dd {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding: 4px 0 0;
+  text-align: center;
+  font-style: italic;
+  font-size: 0.88em;
+  color: light-dark(#6a5a3a, #b0a888);
+}
+
+/* ── Ribbon rows (shared — Allies / Enemies / Organizations) ──────────── */
+
+.rpg-description-ribbon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Explicit reset on the <li> entries — Obsidian's `.markdown-rendered ul
+ * li` default adds a left inset that a `list-style: none` on the <ul>
+ * doesn't negate, so without this override the ribbon cards would
+ * start ~1.2em in from their parent column. */
+.rpg-description-ribbon-list > li,
+.rpg-description-organizations > li {
+  padding-left: 0;
+  margin-left: 0;
+  text-indent: 0;
+}
+
+.rpg-description-ribbon {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
+}
+
+/* Compact variant (Allies / Enemies) — the ribbon-side is a small card
+ * floated against the body prose, which flows around it like a byline
+ * in a magazine article. No outer frame on the <li>, only the inner
+ * card. `::after` clearfix so the next ribbon row starts on a fresh
+ * line instead of wrapping around the previous one's tail. */
+.rpg-description-ribbon-compact {
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.rpg-description-ribbon-compact::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* Left-column "ribbon" containing (optional) portrait, name tag, and role.
+ * Stacks vertically. Name tag uses the same cut-corner .rpg-tag-heading
+ * shape so it reads as sheet language. */
+.rpg-description-ribbon-side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rpg-description-ribbon-compact .rpg-description-ribbon-side {
+  /* Single-row horizontal ribbon — portrait glued to the left, then two
+   * interlocking parallelograms (name + optional role). Floated so the
+   * entry's body text wraps around the whole ribbon.
+   *
+   * Height is tuned so the ribbon matches one body-text line (body is
+   * 0.92em with line-height 1.5 ≈ 1.4rem), so only the first line of
+   * prose wraps alongside it and every subsequent line reclaims the
+   * full width beneath — no wasted vertical strip under the ribbon. */
+  float: left;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  max-width: 100%;
+  margin: 0 10px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.rpg-description-ribbon-portrait {
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.22));
+  box-shadow: inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.15));
+  display: flex;
+}
+
+/* Compact portrait is a small icon square glued against the ribbon's
+ * left edge. `border-radius` only on the left so it butts cleanly
+ * against the name parallelogram without a rounded seam. */
+.rpg-description-ribbon-compact .rpg-description-ribbon-portrait {
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  aspect-ratio: auto;
+  border-radius: 3px 0 0 3px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Glyph content — emoji, initials, or an `icon:` name rendered via
+ * Obsidian's setIcon. Centers whatever the browser gives us in the
+ * small square frame. */
+.rpg-description-ribbon-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+}
+
+.rpg-description-ribbon-glyph .svg-icon,
+.rpg-description-ribbon-glyph svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.rpg-description-ribbon-portrait > [aria-details="Portrait Thumb"] {
+  margin: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+}
+
+.rpg-description-ribbon-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.rpg-description-ribbon-name {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  line-height: 1.25;
+}
+
+.rpg-description-ribbon-compact .rpg-description-ribbon-name {
+  /* First parallelogram — left edge stays flat so it butts against the
+   * portrait square; right edge cuts so the role parallelogram can
+   * interlock into it. */
+  --_cut: 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 calc(var(--_cut) + 8px) 0 10px;
+  font-size: 0.78em;
+  letter-spacing: 0.05em;
+  line-height: 2.2rem;
+  height: 2.2rem;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  background: light-dark(rgba(212, 168, 64, 0.3), rgba(212, 168, 64, 0.3));
+  text-align: left;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--_cut)) 100%,
+    0 100%
+  );
+}
+
+/* The .rpg-tag-heading parent still draws its own background via the
+ * inner <span>; for the compact card kill that span fill so the name
+ * reads as plain text inside the ribbon, not a pill within a pill. */
+.rpg-description-ribbon-compact .rpg-description-ribbon-name > span {
+  padding: 0;
+  background: none;
+}
+
+.rpg-description-ribbon-name > span {
+  clip-path: none;
+  padding: 3px 10px;
+  background: light-dark(rgba(212, 168, 64, 0.22), rgba(212, 168, 64, 0.22));
+}
+
+/* Markdown may inject a wrapping <p> or <div> — flatten it so the name sits
+ * on one line inside the ribbon. */
+.rpg-description-ribbon-name > span > * {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ribbon-name internal-link appearance owned by Folder Link Styles. */
+
+.rpg-description-ribbon-role {
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: light-dark(#6a5a3a, #b0a888);
+  text-align: center;
+}
+
+.rpg-description-ribbon-compact .rpg-description-ribbon-role {
+  /* Second parallelogram — left edge cuts to interlock with the name
+   * parallelogram's right-edge slope; right edge stays flat so the
+   * ribbon terminates cleanly. Negative margin pulls it back by one
+   * cut so the two slopes meet along the same diagonal. */
+  --_cut: 12px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: calc(-1 * var(--_cut));
+  padding: 0 10px 0 calc(var(--_cut) + 4px);
+  font-size: 0.7em;
+  letter-spacing: 0.05em;
+  line-height: 2.2rem;
+  height: 2.2rem;
+  color: light-dark(#4a3a1a, #d8d0b8);
+  background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+  text-align: left;
+  text-transform: uppercase;
+  clip-path: polygon(
+    var(--_cut) 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+.rpg-description-ribbon-body {
+  min-width: 0;
+  font-size: 0.92em;
+  line-height: 1.5;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+/* In the compact float layout, the body is the block element and text
+ * naturally wraps around the floated card. Trim first/last child margin
+ * so prose sits flush with the top of the floated ribbon. */
+.rpg-description-ribbon-compact .rpg-description-ribbon-body {
+  display: block;
+}
+
+.rpg-description-ribbon-compact .rpg-description-ribbon-body p:first-child {
+  margin-top: 0;
+}
+
+.rpg-description-ribbon-body > :first-child {
+  margin-top: 0;
+}
+
+.rpg-description-ribbon-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Large variant (organizations) — portrait gets more vertical room, the
+ * whole row grows so the organization's text has space to breathe. */
+.rpg-description-ribbon-large {
+  grid-template-columns: minmax(11rem, 16rem) 1fr;
+  padding: 12px;
+}
+
+.rpg-description-ribbon-large .rpg-description-ribbon-portrait {
+  min-height: 10rem;
+}
+
+.rpg-description-ribbon-large .rpg-description-ribbon-name {
+  font-size: 0.95em;
+}
+
+/* ── Allies & Enemies tab (stacked — allies on top, enemies below) ────── */
+/*
+ * Sections stack vertically. Neither side is pinned to a fixed share of
+ * the panel; `flex: 0 0 auto` lets each column grow to whatever its
+ * ribbon rows demand, and the two sections sit flush with a small gap.
+ */
+
+.rpg-description-side-by-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.rpg-description-column {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fancy section header — label sits centered between two fade lines.
+ * Overrides the shared `.rpg-tag-heading` cut-corner shape because the
+ * horizontal rule treatment signals "section divider" more clearly
+ * than another tag pill would. */
+.rpg-description-column > header {
+  --rpg-tag-cut: 0;
+  filter: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 0.88em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
+  padding: 0;
+  margin: 0;
+}
+
+.rpg-description-column > header > span {
+  flex: 0 0 auto;
+  clip-path: none;
+  padding: 0 2px;
+  background: none;
+}
+
+/* Flanking lines fade from the label outward — currentColor on a
+ * gradient gives us the section's accent colour (gold for allies, red
+ * for enemies via data-kind) without a second custom property. */
+.rpg-description-column > header::before,
+.rpg-description-column > header::after {
+  content: "";
+  flex: 1 1 0;
+  min-width: 2rem;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    currentColor 45%,
+    currentColor 55%,
+    transparent 100%
+  );
+  opacity: 0.55;
+}
+
+/* Small diamond accents hugging the label — pure CSS, drawn as tiny
+ * rotated squares via the span's own ::before / ::after. */
+.rpg-description-column > header > span::before,
+.rpg-description-column > header > span::after {
+  content: "";
+  display: inline-block;
+  width: 0.35em;
+  height: 0.35em;
+  margin: 0 0.5em;
+  background: currentColor;
+  transform: rotate(45deg);
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+.rpg-description-column > header > span::before {
+  margin-left: 0;
+}
+
+.rpg-description-column > header > span::after {
+  margin-right: 0;
+}
+
+.rpg-description-column[data-kind="enemies"] > header {
+  --rpg-description-flourish: light-dark(#8a2a2a, #e06464);
+}
+
+.rpg-description-column-empty {
+  margin: 0;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.85em;
+  font-style: italic;
+  color: light-dark(#6a5a3a, #8a8070);
+  border: 1px dashed light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+}
+
+/* Ribbon rows compress on narrow containers — shared across stacked
+ * tabs, not specific to side-by-side anymore. */
+@container (max-width: 640px) {
+  .rpg-description-ribbon {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rpg-description-ribbon-side {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rpg-description-ribbon-portrait {
+    width: 4rem;
+    height: 4rem;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Organizations tab ─────────────────────────────────────────────────── */
+/*
+ * Same compact ribbon as allies/enemies — an organization entry is a
+ * block of prose with the ribbon floated to its top-left. The only
+ * addition is the "Position" row glued to the bottom of each entry,
+ * declaring the character's standing in the org. `clear: both` on
+ * that footer forces it below the floated ribbon + wrapping body so
+ * it never intrudes on the prose's wrap region.
+ */
+
+.rpg-description-organizations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rpg-description-org-position {
+  clear: both;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 6px 12px;
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.18));
+  font-size: 0.85em;
+}
+
+.rpg-description-org-position .rpg-description-meta-value {
+  font-style: italic;
+}
+
+.rpg-description-org-position .rpg-description-meta-value > p {
+  margin: 0;
+  display: inline;
+}
+
+/* ── Motivation tab (masonry of sticky-note cards) ─────────────────────── */
+
+.rpg-description-motivation {
+  column-count: 3;
+  column-gap: 16px;
+  padding: 8px 4px;
+}
+
+/* Single-card case: centre it and cap width so a lone motivation doesn't
+ * stretch full-bleed across the panel. */
+.rpg-description-motivation[data-count="1"] {
+  column-count: 1;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 16px 4px;
+}
+
+.rpg-description-motivation-card {
+  --_accent: var(--rpg-card-accent, light-dark(#f5e6a3, #c9a845));
+  break-inside: avoid;
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--_accent) 80%, white) 0%,
+      var(--_accent) 100%
+    );
+  color: #2a2010;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 6px 14px rgba(0, 0, 0, 0.18);
+  position: relative;
+  font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
+  font-size: 0.95em;
+  line-height: 1.55;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+/* Tiny per-card rotation + stacking variation so the board reads as a
+ * pin-board instead of a grid. Kept small (±1.2°) so nothing feels
+ * deliberately skewed — just "hand-placed". Uses :nth-child to avoid
+ * JS randomisation (which would rotate on every render). */
+.rpg-description-motivation-card:nth-child(3n+1) { transform: rotate(-1.1deg); }
+.rpg-description-motivation-card:nth-child(3n+2) { transform: rotate(0.6deg); }
+.rpg-description-motivation-card:nth-child(3n+3) { transform: rotate(-0.3deg) translateY(3px); }
+
+.rpg-description-motivation-card:hover {
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+  z-index: 1;
+}
+
+/* Single-card case: no rotation — centred quotes look better squared up. */
+.rpg-description-motivation[data-count="1"] .rpg-description-motivation-card {
+  transform: none;
+  text-align: center;
+}
+
+.rpg-description-motivation-card blockquote {
+  margin: 0;
+  padding: 0;
+  /* Obsidian's default `.markdown-rendered blockquote` paints a dark
+   * panel background + left-border, which reads as a grey pill inside
+   * the yellow sticky note. Zero both so the quote sits directly on the
+   * card's yellow fill. */
+  background: none;
+  background-color: transparent;
+  border: none;
+  border-left: none;
+  color: #2a1f10;
+  quotes: "“" "”";
+}
+
+.rpg-description-motivation-card blockquote p {
+  /* Obsidian's `.markdown-rendered p` sets color: var(--text-normal),
+   * which is light grey in dark themes — invisible on yellow. Force a
+   * dark brown that reads on both the default accent and any custom
+   * `color:` override the author sets. Our selector outweighs Obsidian's
+   * by one class, so no `!important` needed. */
+  margin: 0;
+  display: inline;
+  background: none;
+  color: #2a1f10;
+}
+
+/* The inline open/close-quote pseudos duplicate the larger ornamental
+ * quote mark Obsidian's theme already paints at the top-left of the
+ * card. Suppress them so only the outer decorative glyph remains. */
+.rpg-description-motivation-card blockquote::before,
+.rpg-description-motivation-card blockquote::after {
+  content: none;
+}
+
+.rpg-description-motivation-card blockquote > :first-child {
+  margin-top: 0;
+  display: inline;
+}
+
+.rpg-description-motivation-card blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Obsidian's default `.markdown-rendered blockquote` paints a dark
+ * panel bg + left-border, and the <div> it injects between <blockquote>
+ * and <p> also carries a theme background. Kill the whole stack with
+ * `!important` targeting each level — descendant selectors wouldn't
+ * beat the theme's specificity on some themes (variable-driven
+ * backgrounds routinely apply higher up the cascade). */
+.rpg-description-motivation-card blockquote,
+.rpg-description-motivation-card blockquote > *,
+.rpg-description-motivation-card blockquote > * > *,
+.rpg-description-motivation-card blockquote p {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-left: none !important;
+}
+
+.rpg-description-motivation-card blockquote,
+.rpg-description-motivation-card blockquote p,
+.rpg-description-motivation-card blockquote em,
+.rpg-description-motivation-card blockquote strong {
+  color: #2a1f10 !important;
+}
+
+/* Motivation-card internal-link appearance owned by Folder Link Styles. */
+
+@container (max-width: 720px) {
+  .rpg-description-motivation {
+    column-count: 2;
+  }
+}
+
+@container (max-width: 480px) {
+  .rpg-description-motivation {
+    column-count: 1;
+  }
+}

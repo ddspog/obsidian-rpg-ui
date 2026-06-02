@@ -1,0 +1,111 @@
+/* ─── Danger card (feature.danger — environmental hazard / trap / disease) ── */
+/*
+ * Book-style hazard block, mirroring the Tales of the Valiant sidebars:
+ * a shaded title bar, an italic category subtitle, the flavour description,
+ * then run-in Trigger / Effects / Resolution lines (bold label, value flowing
+ * on the same line, continuation lines hanging back to the left margin).
+ *
+ * Shared by the `rpg feature.danger` block and the `@[[file]].danger()`
+ * import view. Tune the bar tint via `--rpg-danger-bar-bg`.
+ */
+
+.rpg-danger-card {
+  --rpg-danger-bar-bg: color-mix(in srgb, var(--text-title) 15%, transparent);
+
+  display: block;
+  margin-block: var(--size-4-5, 1.25rem) var(--size-4-3, 0.75rem);
+  font-family: var(--font-text);
+  line-height: 1.6;
+}
+
+/* ── Heading group: shaded title bar + italic subtitle ── */
+.rpg-danger-card hgroup {
+  display: block;
+  margin-bottom: var(--size-4-2, 0.5rem);
+}
+
+.rpg-danger-card hgroup :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  padding: var(--size-2-2, 0.25rem) var(--size-4-2, 0.5rem);
+  background: var(--rpg-danger-bar-bg);
+  color: var(--text-title);
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: var(--font-ui-medium, 1rem);
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-s, 4px);
+}
+
+.rpg-danger-card hgroup p {
+  margin: var(--size-2-2, 0.25rem) 0 0;
+}
+
+.rpg-danger-card hgroup small {
+  font-size: var(--font-ui-small);
+  font-style: italic;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+/* ── Flavour description ── */
+.rpg-danger-card__desc {
+  margin: 0 0 var(--size-4-2, 0.5rem);
+  color: var(--text-normal);
+}
+
+.rpg-danger-card__desc > :first-child {
+  margin-top: 0;
+}
+
+.rpg-danger-card__desc > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Run-in mechanics: Trigger / Effects / Resolution ── */
+.rpg-danger-card__mechanics {
+  margin: 0;
+}
+
+/* Each mechanic reads as a paragraph: indented bold label, run-in value,
+ * continuation lines hanging back to the left margin (book convention). */
+.rpg-danger-card__mechanic {
+  margin-block: var(--size-2-3, 0.375rem);
+  text-indent: var(--size-4-4, 1rem);
+  color: var(--text-normal);
+}
+
+.rpg-danger-card__mechanic dt {
+  display: inline;
+  font-weight: 700;
+}
+
+.rpg-danger-card__mechanic dt::after {
+  content: ":";
+}
+
+.rpg-danger-card__mechanic dd {
+  display: inline;
+  margin: 0 0 0 0.35em;
+}
+
+/* <Markdown> renders into a wrapping <div> that holds <p> blocks. Make that
+ * wrapper and its first paragraph inline so the value flows run-in after the
+ * label instead of dropping onto its own line. */
+.rpg-danger-card__mechanic dd > div {
+  display: inline;
+}
+
+.rpg-danger-card__mechanic dd > div > :first-child {
+  display: inline;
+  margin: 0;
+}
+
+/* A rare multi-paragraph / list value: blocks after the first resume normal
+ * flow on their own lines. */
+.rpg-danger-card__mechanic dd > div > * + * {
+  display: block;
+  text-indent: 0;
+  margin-top: var(--size-2-2, 0.25rem);
+}

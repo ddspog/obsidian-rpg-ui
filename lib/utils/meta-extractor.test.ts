@@ -115,6 +115,42 @@ describe("meta-extractor", () => {
       expect(meta).toBe("show");
     });
 
+    it("detects 'list' from a paginated list body with call/format entries", () => {
+      // Regression: a `rpg list.*` body has top-level `entries:` whose items
+      // carry `@[[...]]` call tokens. When getSectionInfo is unavailable (e.g.
+      // a programmatic previewMode.rerender on app load/reload), this source
+      // fallback must route it to the list handler — NOT misread it as
+      // rule.related, which rendered the entries as prose and leaked the
+      // `.block()` call to the rule-call processor ("View block not registered").
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        "name: Cantrips\n" +
+        "paginate: auto\n" +
+        "entries:\n" +
+        '  - "_Acid Splash_ (Conjuration) Acid bursts over foes."\n' +
+        '  - call: "@[[spells/cantrips/]].filter(source like /Arcane/).highlight().block(0)"\n' +
+        '    format: "*[[${name}]]* (${school}) ${summary}"\n';
+
+      expect(extractMeta(ctx, el, source)).toBe("list");
+    });
+
+    it("detects 'list' from a body with a top-level columns marker", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = "name: 1st Circle\ncolumns: 2\nentries:\n  - text: Burning Hands\n";
+
+      expect(extractMeta(ctx, el, source)).toBe("list");
+    });
+
+    it("still detects rule.related for a bare embed/call array (no list markers)", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = 'entries:\n  - "@[[Some Rule]].danger()"\n  - "![[Another]]"\nview: card\n';
+
+      expect(extractMeta(ctx, el, source)).toBe("rule.related");
+    });
+
     it("should detect 'system.skills' from skills key", () => {
       const ctx = createReadingViewContext();
       const el = createMockElement();
@@ -142,13 +178,17 @@ describe("meta-extractor", () => {
       expect(meta).toBe("healthpoints");
     });
 
-    it("should detect 'system' from name key", () => {
+    it("routes bare-`name` blocks to feature.details (compendium docs dominate)", () => {
+      // Previously, any block with `name:` defaulted to "system". That heuristic
+      // wrongly captured `rpg feature.details` blocks whose YAML happened to be
+      // just `name: …` and routed them to SystemView. Compendium feature docs
+      // are the dominant use case, so bare-name blocks now route to feature.details.
       const ctx = createReadingViewContext();
       const el = createMockElement();
       const source = "name: D&D 5e\ndescription: Core ruleset\n";
 
       const meta = extractMeta(ctx, el, source);
-      expect(meta).toBe("system");
+      expect(meta).toBe("feature.details");
     });
 
     it("should return null when source has no matching keys", () => {
@@ -158,6 +198,38 @@ describe("meta-extractor", () => {
 
       const meta = extractMeta(ctx, el, source);
       expect(meta).toBeNull();
+    });
+
+    it("detects feature.choice from `parent` key", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = "parent: Manifestation of Faith\nname: Manifest Might\n";
+      expect(extractMeta(ctx, el, source)).toBe("feature.choice");
+    });
+
+    it("detects feature.unlock from `kind` + `level` keys", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = "kind: subclass\nlevel: 3\n";
+      expect(extractMeta(ctx, el, source)).toBe("feature.unlock");
+    });
+
+    it("detects feature.level from `level` + `traits` without name/parent/kind", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = 'level: 3\ntraits:\n  Spellcasting: "2º Ritual"\n';
+      expect(extractMeta(ctx, el, source)).toBe("feature.level");
+    });
+
+    it("detects feature.details from `name` + feature marker (subtitle/tag/pick/etc.)", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      // tag marker
+      expect(extractMeta(ctx, el, "name: Hit Points\ntag: hp\nlevel: 1\n")).toBe("feature.details");
+      // subtitle marker
+      expect(extractMeta(ctx, el, 'name: Heroic Boon\nsubtitle: "10th-Level Cleric Feature"\npick: 1\n')).toBe(
+        "feature.details"
+      );
     });
 
     it("should return null when no source provided and getSectionInfo is null", () => {

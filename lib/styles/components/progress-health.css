@@ -1,0 +1,47 @@
+/* ── Progress Health ──────────────────────────────────────────────────────── */
+
+svg[aria-details="Progress Health"] {
+  display: block;
+  width: 100%;
+  height: 32px;
+  border: 1px solid #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+svg[aria-details="Progress Health"] .rpg-hp-track {
+  fill: var(--rpg-hp-bar-bg, rgba(255, 255, 255, 0.08));
+}
+
+svg[aria-details="Progress Health"] .rpg-hp-fill {
+  fill: var(--rpg-hp-bar-color, #4a8c3f);
+  transition: width 0.3s ease;
+}
+
+svg[aria-details="Progress Health"] .rpg-hp-secondary {
+  fill: var(--rpg-temp-hp-color, #3a7abd);
+  transition: width 0.3s ease, x 0.3s ease;
+}
+
+/* Text overlay via foreignObject */
+svg[aria-details="Progress Health"] output {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--rpg-hp-bar-text, #ffffff);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+svg[aria-details="Progress Health"] [aria-details="Secondary Value"] {
+  color: var(--rpg-hp-bar-text, #ffffff);
+  font-size: 0.85em;
+  margin-left: auto;
+}

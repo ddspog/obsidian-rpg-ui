@@ -1,0 +1,102 @@
+/* ── Stat Shield (upward-pointing pentagon) ──────────────────────────────── */
+
+figure[aria-details="Stat Shield"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin: 0;
+  --shield-w: 76px;
+  --shield-h: 84px;
+  --shield-clip: polygon(50% 0%, 100% 16%, 100% 100%, 0% 100%, 0% 16%);
+  width: var(--shield-w);
+  height: var(--shield-h);
+}
+
+/* Border layer */
+figure[aria-details="Stat Shield"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--rpg-shield-border, #8a7e70);
+  clip-path: var(--shield-clip);
+}
+
+/* Fill layer */
+figure[aria-details="Stat Shield"]::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  background: var(--rpg-shield-bg, #ddd5c8);
+  clip-path: var(--shield-clip);
+}
+
+/* ── Label ────────────────────────────────────────────────────────────────── */
+
+figure[aria-details="Stat Shield"] figcaption {
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  font-size: 0.55em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpg-shield-label, #5a5450);
+  line-height: 1;
+}
+
+/* ── Modifier ─────────────────────────────────────────────────────────────── */
+
+figure[aria-details="Stat Shield"] output[aria-details="Modifier"] {
+  position: relative;
+  z-index: 1;
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--rpg-shield-modifier, #2a2520);
+  line-height: 1.3;
+}
+
+/* ── Score box (dark rectangle at the bottom of the shield) ───────────────── */
+
+figure[aria-details="Stat Shield"] output[aria-details="Score"] {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  background: var(--rpg-shield-score-bg, #2a2724);
+  color: var(--rpg-shield-score-text, #e3dcce);
+  font-size: 0.8em;
+  font-weight: 700;
+  padding: 2px 0;
+  text-align: center;
+  min-width: 36px;
+  border-radius: 3px;
+  margin-bottom: 4px;
+}
+
+/* ── Save modifier (below the shield) ─────────────────────────────────────── */
+
+figure[aria-details="Stat Shield"] small[aria-details="Save"] {
+  position: absolute;
+  bottom: -14px;
+  z-index: 1;
+  font-size: 0.5em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--rpg-shield-save-dim, rgba(160, 152, 128, 0.5));
+  line-height: 1;
+  white-space: nowrap;
+}
+
+figure[aria-details="Stat Shield"] small[data-proficient] {
+  color: var(--rpg-shield-save-prof, #d4a840);
+  font-weight: 700;
+}
+
+/* ── Stats row container ──────────────────────────────────────────────────── */
+
+article[aria-label="Character Stats"] {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 0 18px;
+}

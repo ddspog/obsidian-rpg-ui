@@ -1,0 +1,96 @@
+/* ── Page banner: behind-title image ────────────────────────────────── */
+/* Full-bleed image behind the top of the page. Only the inline-title
+ * overlaps the banner; body content starts below it entirely.
+ *
+ * CSS custom properties (set inline by the manager):
+ *   --rpg-banner-image          url("...")
+ *   --rpg-banner-height         200px (default)
+ *   --rpg-banner-y              50% (vertical crop position)
+ *   --rpg-banner-fade           0 (gradient intensity, -100 to 100)
+ *   --rpg-banner-radius         0px (border radius)
+ *   --rpg-banner-content-start  auto (explicit content start px)
+ */
+
+.rpg-page-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--rpg-banner-height, 200px);
+  background-image: var(--rpg-banner-image);
+  background-size: cover;
+  background-position: center var(--rpg-banner-y, 50%);
+  background-repeat: no-repeat;
+  border-radius: var(--rpg-banner-radius, 0);
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Gradient scrim — intensity controlled by --rpg-banner-fade.
+ * Default (0): moderate gradient. Negative = weaker. Positive = stronger. */
+.rpg-page-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(40% - var(--rpg-banner-fade, 0) * 0.3%),
+    rgba(0, 0, 0, calc(0.5 + var(--rpg-banner-fade, 0) * 0.003)) calc(70% - var(--rpg-banner-fade, 0) * 0.2%),
+    var(--background-primary, #1e1e1e) 100%
+  );
+}
+
+/* Icon/emoji overlay centered on the banner */
+.rpg-page-banner__icon {
+  position: absolute;
+  bottom: 0.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3em;
+  z-index: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────── */
+
+.has-rpg-banner {
+  position: relative;
+}
+
+/* Push content below the banner. content-start overrides if set. */
+.has-rpg-banner > .markdown-preview-sizer {
+  position: relative;
+  z-index: 1;
+  padding-top: var(--rpg-banner-content-start, var(--rpg-banner-height, 200px)) !important;
+}
+
+/* Title pulls up into the gradient zone */
+.has-rpg-banner .inline-title {
+  margin-top: -2.5em;
+  position: relative;
+  color: #fff;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.has-rpg-banner .rpg-ui-subtitle {
+  position: relative;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+
+@container (max-width: 500px) {
+  .rpg-page-banner {
+    height: calc(var(--rpg-banner-height, 200px) * 0.6);
+  }
+
+  .has-rpg-banner > .markdown-preview-sizer {
+    padding-top: calc(var(--rpg-banner-content-start, var(--rpg-banner-height, 200px)) * 0.6) !important;
+  }
+}

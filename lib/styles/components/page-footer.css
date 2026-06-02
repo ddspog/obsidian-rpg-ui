@@ -1,0 +1,64 @@
+/*
+ * Page footer injected by PageFooterManager. Displays configured
+ * frontmatter fields (e.g. `source:`) at the bottom of every reading-
+ * view note. Auto-hidden inside transclusions so `![[Foo]]` embeds
+ * don't drag the footer into the host note's body.
+ */
+
+.rpg-page-footer {
+  margin-top: 2em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--background-modifier-border, rgba(0, 0, 0, 0.1));
+  color: var(--text-muted, inherit);
+  font-size: 0.9em;
+}
+
+.rpg-page-footer__entry {
+  margin: 0.25em 0;
+}
+
+/* MarkdownRenderer wraps inline text in a `<p>` even when we asked for
+ * a single line of markdown. Flatten so the rendered value sits on the
+ * same baseline as the label strong. */
+.rpg-page-footer__value > p {
+  display: inline;
+  margin: 0;
+}
+
+/* Italicize the rendered value — the old convention was to author the
+ * attribution as `_From X by Y_` in the body; when we lift values into
+ * frontmatter the outer italics markers are stripped, and this rule
+ * brings the look back uniformly (including for pre-existing FM
+ * entries that never had markers). Nested bold / wikilinks keep their
+ * own styling. */
+.rpg-page-footer__value {
+  font-style: italic;
+}
+
+.rpg-page-footer__label {
+  font-weight: 600;
+}
+
+/* Hide inside transclusions. `.markdown-embed` is the class Obsidian
+ * wraps every `![[…]]` embed in — the footer stays visible on the
+ * note's own page but never leaks into consumers. */
+.markdown-embed .rpg-page-footer {
+  display: none;
+}
+
+/* Hide the Dataview plugin's inline-field rendering of `source` —
+ * our page footer handles this property with a proper label, styling,
+ * and auto-embed-hiding. Without this rule the Dataview inline-field
+ * shows a bare (label-less) duplicate above our footer. */
+.inline-field:has([data-dv-norm-key*="source"]) {
+  display: none;
+}
+
+/* Hide Obsidian's native Properties display of `source` — when the
+ * Properties core plugin renders frontmatter in-document, it would
+ * duplicate what our footer already shows. Target both the metadata
+ * container at the top and any inline property rendering. */
+.metadata-container .metadata-property[data-property-key="source"],
+.metadata-content .metadata-property[data-property-key="source"] {
+  display: none;
+}

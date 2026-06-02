@@ -1,0 +1,132 @@
+/* ── `@[[file]].fn(args)` inline call placeholders ────────────────── */
+/*
+ * The rule-call-processor swaps each `@[[file]].fn(args)` token for an
+ * inline span that gets a React tree mounted into it. State classes
+ * (`--pending`, `--error`) only show before / on failure; on success
+ * the span is just a containment shell for whatever the view rendered.
+ *
+ * Block-level views render block-level children inside this inline
+ * span — that's intentional. CSS Display: contents would let block
+ * children participate in the parent flow, but it has accessibility
+ * caveats; we leave the span as a plain inline and rely on the view
+ * authoring guideline (block views should self-style).
+ */
+
+.rpg-call {
+  font-family: var(--font-text);
+  font-size: var(--font-text-size);
+}
+
+.rpg-rule-side--float .rpg-call {
+  font-size: inherit;
+}
+
+.rpg-call--pending {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.rpg-call--error {
+  color: light-dark(#a53a2a, #f08b7e);
+  background: light-dark(rgba(165, 58, 42, 0.08), rgba(240, 139, 126, 0.14));
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: inherit;
+  cursor: help;
+}
+
+/* ── Inline view: collapse first <p> so content flows with parent ─── */
+/*
+ * The `inline()` view / `view: inline` property wraps output in a
+ * `<span class="rpg-view--inline">`. Inside, Obsidian's MarkdownRenderer
+ * emits `<p>` elements. Collapsing the first `<p>` to `display: inline`
+ * merges name + body into the parent paragraph. Subsequent block-level
+ * children (tables, lists, headings) break out naturally.
+ */
+.rpg-view--inline,
+.rpg-rule-content--inline {
+  display: inline;
+}
+
+.rpg-view--inline > :first-child,
+.rpg-rule-content--inline > :first-child {
+  display: inline;
+}
+
+.rpg-view--inline > :first-child > p:first-child,
+.rpg-rule-content--inline > :first-child > p:first-child {
+  display: inline;
+}
+
+/* ── Item view: <li> inside a <ul> wrapper ──────────────────────────── */
+.rpg-view--item > :first-child {
+  margin-top: 0;
+}
+
+.rpg-view--item > :last-child {
+  margin-bottom: 0;
+}
+
+/* Consecutive item() calls land in separate Obsidian sections (each gets
+ * its own `.el-p > p > .rpg-call > ul`). Collapse ALL spacing on every
+ * wrapper layer so they read as one tight list visually — even though
+ * they're technically separate `<ul>` elements (Obsidian's per-section
+ * post-processing makes structural merge impossible). */
+.el-p:has(p > .rpg-call:only-child > ul > .rpg-view--item),
+.el-p:has(.rpg-call:only-child > ul > .rpg-view--item) {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+.el-p p:has(> .rpg-call:only-child > ul > .rpg-view--item) {
+  margin: 0 !important;
+}
+
+.rpg-call > ul:has(> .rpg-view--item) {
+  margin-block: 0;
+  padding-inline-start: var(--list-indent, 2em);
+  list-style: disc;
+}
+
+/* ── Banner view: full-bleed image ─────────────────────────────────── */
+.rpg-view--banner {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  margin-block: 1em;
+  padding: 0;
+  overflow: hidden;
+  border-block: 6px solid var(--rpg-banner-border, #1e3a5f);
+}
+
+.rpg-view--banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-view--banner--short {
+  height: clamp(120px, 15vh, 180px);
+}
+
+.rpg-view--banner--normal {
+  height: clamp(180px, 25vh, 280px);
+}
+
+.rpg-view--banner--tall {
+  height: clamp(320px, 45vh, 500px);
+}
+
+.rpg-view--banner--hero {
+  height: clamp(500px, 70vh, 800px);
+}
+
+.rpg-view--banner--error {
+  height: auto;
+  padding: 0.5em 1em;
+  color: light-dark(#a53a2a, #f08b7e);
+  background: light-dark(rgba(165, 58, 42, 0.08), rgba(240, 139, 126, 0.14));
+  font-size: 0.9em;
+}

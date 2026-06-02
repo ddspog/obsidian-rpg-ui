@@ -48,9 +48,7 @@ export function HUD({ entities, onAppendText }: HUDProps) {
             ))}
           </select>
         )}
-        {entities.length === 1 && (
-          <div className="entity-single-name">{selectedEntity.name}</div>
-        )}
+        {entities.length === 1 && <div className="entity-single-name">{selectedEntity.name}</div>}
       </div>
 
       {/* Entity Summary Panel */}
@@ -61,9 +59,7 @@ export function HUD({ entities, onAppendText }: HUDProps) {
         <div className="hud-quick-actions">
           <button
             className="quick-action-btn action-btn"
-            onClick={() =>
-              handleAppendAction("@", `${selectedEntity.name} takes action`)
-            }
+            onClick={() => handleAppendAction("@", `${selectedEntity.name} takes action`)}
             title="Add Action"
           >
             @ Action
@@ -79,9 +75,7 @@ export function HUD({ entities, onAppendText }: HUDProps) {
 
           <button
             className="quick-action-btn roll-btn"
-            onClick={() =>
-              handleAppendAction("d:", "d20+0=10 vs DC 10 -> Success")
-            }
+            onClick={() => handleAppendAction("d:", "d20+0=10 vs DC 10 -> Success")}
             title="Add Roll"
           >
             🎲 Roll

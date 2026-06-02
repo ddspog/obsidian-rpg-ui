@@ -1,0 +1,19 @@
+/* Helpers to hide page/title/properties based on frontmatter cssclasses
+   Usage: add `cssclasses: hide-title hide-properties` to the note frontmatter
+   Obsidian will apply those classes to the note container; these selectors
+   target common preview/reading view structures and the in-plugin header UI.
+*/
+
+/* Hide the page's inline title */
+.is-live-preview.hide-title .inline-title,
+.markdown-reading-view.hide-title .inline-title,
+.markdown-preview-view.hide-title .inline-title {
+  display: none !important;
+}
+
+/* Hide the page's inline title */
+.is-live-preview.hide-properties .metadata-container,
+.markdown-reading-view.hide-properties .metadata-container,
+.markdown-preview-view.hide-properties .metadata-container {
+  display: none !important;
+}

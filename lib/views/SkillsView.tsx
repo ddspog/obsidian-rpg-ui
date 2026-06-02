@@ -12,7 +12,7 @@ export class SkillsView extends BaseView {
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
     const system = this.getSystem(ctx);
-    
+
     let abilityBlock: AbilityBlock;
 
     try {

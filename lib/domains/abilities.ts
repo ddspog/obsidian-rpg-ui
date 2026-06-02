@@ -49,7 +49,7 @@ export function calculateModifier(score: number, system?: RPGSystem): number {
       return Number(modifierExpr.evaluate({ score }));
     }
   }
-  
+
   // Fallback to D&D 5e formula
   return Math.floor((score - 10) / 2);
 }

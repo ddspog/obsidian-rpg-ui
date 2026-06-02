@@ -1,0 +1,41 @@
+/* ── Badge Shield ─────────────────────────────────────────────────────────── */
+
+figure[aria-details="Badge Shield"] {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0;
+  width: 56px;
+}
+
+figure[aria-details="Badge Shield"] svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 56px;
+}
+
+figure[aria-details="Badge Shield"] output[aria-details="Armor Class"] {
+  position: relative;
+  z-index: 1;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--rpg-badge-text, #e3dcce);
+  line-height: 56px;
+  text-align: center;
+  height: 56px;
+}
+
+figure[aria-details="Badge Shield"] figcaption {
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rpg-diamond-label, #a09880);
+  line-height: 1;
+  margin-top: 2px;
+  text-align: center;
+}

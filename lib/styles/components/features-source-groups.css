@@ -1,0 +1,206 @@
+/* ─── Source-grouped feature rendering ─────────────────────────────────── */
+.rpg-feature-source-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.rpg-feature-source-groups h3 {
+  margin: 0 0 var(--size-4-2, 0.5rem);
+  font-size: var(--font-ui-large);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rpg-feature-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3, 0.5rem);
+  padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
+  background: var(--background-secondary);
+  border-radius: var(--radius-m, 6px);
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.rpg-feature-source-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-4-2, 0.5rem);
+}
+
+.rpg-feature-source-header h4 {
+  margin: 0;
+  font-size: var(--font-ui-medium);
+}
+
+.rpg-feature-source-header p {
+  margin: 0;
+}
+
+.rpg-feature-source-header small {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* per-kind accent stripe — let users tell class/lineage/background apart */
+.rpg-feature-source:has(.rpg-feature-source-class) { border-left-color: var(--interactive-accent); }
+.rpg-feature-source:has(.rpg-feature-source-subclass) { border-left-color: var(--color-purple, #8957e5); }
+.rpg-feature-source:has(.rpg-feature-source-lineage) { border-left-color: var(--color-green, #2ea043); }
+.rpg-feature-source:has(.rpg-feature-source-heritage) { border-left-color: var(--color-orange, #d29922); }
+.rpg-feature-source:has(.rpg-feature-source-background) { border-left-color: var(--color-cyan, #1f6feb); }
+
+/* Inline tagged grants list: "Skill P. (+Medicine, +Insight)" */
+.rpg-feature-source dl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-4-2, 0.5rem);
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-feature-source dl dt {
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rpg-feature-source dl dt::after {
+  content: " (";
+  color: var(--text-faint);
+}
+
+.rpg-feature-source dl dd {
+  margin: 0;
+  color: var(--text-normal);
+}
+
+.rpg-feature-source dl dd:not(:last-of-type)::after {
+  content: ", ";
+  color: var(--text-faint);
+}
+
+.rpg-feature-source dl dt + dd ~ dt::before {
+  content: ") ";
+  color: var(--text-faint);
+}
+
+.rpg-feature-source dl dd:last-of-type::after {
+  content: ")";
+  color: var(--text-faint);
+}
+
+/* Free-form features list */
+.rpg-feature-source ul {
+  margin: 0;
+  padding-left: var(--size-4-4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2, 0.25rem);
+}
+
+.rpg-feature-entry small {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: var(--font-ui-smaller);
+}
+
+/* ─── Aggregated traits / resources sections ──────────────────────────── */
+.rpg-feature-traits,
+.rpg-feature-resources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2, 0.25rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  background: var(--background-modifier-hover);
+  border-radius: var(--radius-s, 4px);
+}
+
+.rpg-feature-traits h4,
+.rpg-feature-resources h4 {
+  margin: 0;
+  font-size: var(--font-ui-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.rpg-feature-traits dl,
+.rpg-feature-resources dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--size-4-3, 0.75rem);
+  row-gap: var(--size-2-2, 0.25rem);
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-feature-traits dt,
+.rpg-feature-resources dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rpg-feature-traits dd,
+.rpg-feature-resources dd {
+  margin: 0;
+  color: var(--text-normal);
+}
+
+.rpg-feature-resources dd small {
+  color: var(--text-muted);
+  font-size: 0.95em;
+}
+
+/* ─── Pending choices section ─────────────────────────────────────────── */
+.rpg-feature-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2, 0.5rem);
+  padding-top: var(--size-4-3, 0.75rem);
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+.rpg-feature-pending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3, 0.5rem);
+  padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
+  background: var(--background-modifier-hover);
+  border-radius: var(--radius-s, 4px);
+  border-left: 3px solid var(--color-yellow, #e0ac00);
+}
+
+.rpg-feature-pending p {
+  margin: 0;
+}
+
+.rpg-feature-pending menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-3, 0.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-feature-pending menu button {
+  padding: var(--size-2-2, 0.25rem) var(--size-4-2, 0.5rem);
+  font-size: var(--font-ui-smaller);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  cursor: pointer;
+}
+
+.rpg-feature-pending menu button[aria-pressed="true"] {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: default;
+}

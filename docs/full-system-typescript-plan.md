@@ -19,14 +19,14 @@ The plugin already supports:
 ### Entity Types
 Support as first-class entities:
 - **character** — multi-class header, features, spells, resources, XP/spell progression
-- **class** — markdown page with `class.features` block listing features by level
-- **spell** — markdown page with `spell.info`, `spell.effects` blocks
-- **feature** — markdown page with `feature.*` or `feature` blocks, Handlebars templates
+- **class** — markdown page authored as a feature-provider; class-level surfaces are rendered by the general `character.features` collector rather than a dedicated `class.features` block
+- **spell** — markdown page describing a spell; rendered inside the character's `spells` collector, no per-spell info/effects split
+- **feature** — markdown page authored with feature blocks (`feature.details`, `feature.choice`, `feature.unlock`, `feature.level`); aspects are inlined on the feature rather than carried by a standalone block
 - **statblock** — four blocks: header, traits, attributes, features
 
 ### System Features
 - **Blocks as typed React components**: Defined as `blocks: Record<string, React.FC<Props>>` with YAML → props mapping
-- **Aspects** (renamed from sub-features): `{type: 'action'|'bonus'|'passive', ...}` in `feature.aspects` block
+- **Aspects** (renamed from sub-features): `{type: 'action'|'bonus'|'passive', ...}` authored inline on a feature
 - **Traits**: Proficiencies, languages, expertise produced by features (entity-dependent, not system defaults)
 - **Choices**: Stored in entity block YAML (features, spells)
 - **Resources**: Modeled via entity blocks (health, slots, etc.) with no special distinction
@@ -76,30 +76,18 @@ Support as first-class entities:
 
 ### Phase 2: UI Components & Export
 
-**Goal**: Create placeholder UI components and export them for system definitions.
+**Goal**: Ship the entity block components the system definitions will wire up in Phase 4 and export them from the toolkit.
 
 **Tasks**:
 
-1. **Create `lib/ui/` directory** with entity block components:
-   - Character: `CharacterHeaderBlock.tsx`, `HealthBlock.tsx`, `FeaturesCollectorBlock.tsx`, `SpellsCollectorBlock.tsx`
-   - Class: `ClassFeaturesBlock.tsx`
-   - Spell: `SpellInfoBlock.tsx`, `SpellEffectsBlock.tsx`
-   - Feature: `FeatureEntryBlock.tsx`, `FeatureAspectsBlock.tsx`
-   - Statblock: `StatblockHeaderBlock.tsx`, `StatblockTraitsBlock.tsx`, `StatblockAttributesBlock.tsx`, `StatblockFeaturesBlock.tsx`
-   - Each: placeholder displaying YAML props in formatted divs
+1. **Entity block components** (under `lib/ui/`):
+   - Character surface: header, health, features collector, spells collector, and any additional character-scoped blocks the character sheet needs.
+   - Statblock surface: header, traits, attributes, features.
+   - Each block authored as a typed React component with YAML → props mapping.
 
-2. **Create `lib/ui/index.ts`** barrel export for all components
+2. **Toolkit exports** — expose the entity block components (alongside `CreateSystem` / `CreateEntity`) from [lib/systems/api.d.ts](lib/systems/api.d.ts#L1-L330) so system definitions can import them by name.
 
-3. **Export UI components in [lib/systems/api.d.ts](lib/systems/api.d.ts#L1-L330)**  
-   ```ts
-   // ─── UI Components ────────────────────────────────────────────────────
-   export { 
-     CharacterHeaderBlock, HealthBlock, FeaturesCollectorBlock, SpellsCollectorBlock,
-     ClassFeaturesBlock, SpellInfoBlock, SpellEffectsBlock,
-     FeatureEntryBlock, FeatureAspectsBlock,
-     StatblockHeaderBlock, StatblockTraitsBlock, StatblockAttributesBlock, StatblockFeaturesBlock
-   } from "../ui";
-   ```
+> Earlier drafts scoped separate `class.features`, `spell.info` / `spell.effects`, and `feature.*` block components; those were dropped in Phase 4 in favor of the general `character.features` collector, the `spells` collector, and inlined feature aspects. See Phase 4 for the final surface.
 
 **Verification**:
 - Import components in test file: `import { CharacterHeaderBlock } from "rpg-ui-toolkit"`
@@ -145,76 +133,34 @@ Support as first-class entities:
 
 ### Phase 4: Example System Definition
 
-**Goal**: Update Tales of the Valiant system with new entity types and blocks.
+**Goal**: Wire the entity block components into the Tales of the Valiant system definition and add sample vault pages that exercise them.
+
+**Scope decisions** (narrowed from earlier drafts):
+- **No `class.features` block** — class-scoped features surface through the general `character.features` collector.
+- **No `spell.info` / `spell.effects` split** — spells are authored as plain pages and rendered inside the character's `spells` collector.
+- **No `feature.feature` / `feature.aspects` blocks** — the `feature.*` surface is built from `details` / `choice` / `unlock` / `level`, with aspects inlined on the feature itself.
+- **`statblock.*` blocks still in scope** — `header`, `traits`, `attributes`, `features` are wired in this phase.
 
 **Tasks**:
 
-1. **Update [vault/systems/tales-of-the-valiant/index.ts](vault/systems/tales-of-the-valiant/index.ts#L1-L199)**  
-   ```ts
-   import { 
-     CreateSystem, CreateEntity,
-     CharacterHeaderBlock, HealthBlock, FeaturesCollectorBlock, SpellsCollectorBlock,
-     ClassFeaturesBlock, SpellInfoBlock, SpellEffectsBlock,
-     FeatureEntryBlock, FeatureAspectsBlock,
-     StatblockHeaderBlock, StatblockTraitsBlock, StatblockAttributesBlock, StatblockFeaturesBlock
-   } from "rpg-ui-toolkit";
+1. **Wire character blocks into the system definition**
+   - `character` entity registers the full block surface (header, health, features, spells, and any other character blocks the system author wants to expose).
+   - `casterTypes` (full / half / third) live at system level.
+   - `xpTable` / `spellcastTable` live on the character entity.
 
-   export const system = CreateSystem(async ({ wiki }) => ({
-     name: "Tales of the Valiant",
-     casterTypes: {
-       full: { name: "Full Caster", levelConversion: (l) => l },
-       half: { name: "Half Caster", levelConversion: (l) => Math.floor(l / 2) },
-     },
-     entities: {
-       character: CreateEntity(() => ({
-         xpTable: [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, ...],
-         spellcastTable: [[2], [3], [4, 2], [4, 3], [4, 3, 2], ...],
-         blocks: {
-           header: { component: CharacterHeaderBlock },
-           health: { component: HealthBlock },
-           features: { component: FeaturesCollectorBlock },
-           spells: { component: SpellsCollectorBlock },
-         }
-       })),
-       class: CreateEntity(() => ({
-         blocks: { features: { component: ClassFeaturesBlock } }
-       })),
-       spell: CreateEntity(() => ({
-         blocks: {
-           info: { component: SpellInfoBlock },
-           effects: { component: SpellEffectsBlock }
-         }
-       })),
-       feature: CreateEntity(() => ({
-         blocks: {
-           feature: { component: FeatureEntryBlock },
-           aspects: { component: FeatureAspectsBlock }
-         }
-       })),
-       statblock: CreateEntity(() => ({
-         blocks: {
-           header: { component: StatblockHeaderBlock },
-           traits: { component: StatblockTraitsBlock },
-           attributes: { component: StatblockAttributesBlock },
-           features: { component: StatblockFeaturesBlock }
-         }
-       }))
-     }
-   }));
-   ```
+2. **Wire statblock blocks**
+   - `statblock` entity registers `{ header, traits, attributes, features }`.
 
-2. **Create sample markdown pages** in vault:
-   - Character with `rpg character.header` block (multi-class YAML)
-   - Class with `rpg class.features` block
-   - Spell with `rpg spell.info` block
-   - Feature with `rpg feature.aspects` block
-   - Statblock with four blocks
+3. **Create sample markdown pages** in vault:
+   - Character page exercising the character blocks (multi-class YAML, XP, spells).
+   - Statblock page exercising all four `statblock.*` blocks.
+   - Supporting class / spell / feature pages as plain authored content (no dedicated code blocks required).
 
 **Verification**:
-- Open each sample page in Obsidian
-- Verify blocks render without errors
-- Check character header shows total level from multi-class
-- Verify XP milestone display uses `xpTable`
+- Open each sample page in Obsidian; blocks render without errors.
+- Character header shows total level from multi-class.
+- XP milestone display uses `xpTable`.
+- All four statblock blocks render from a single sample page.
 
 ---
 

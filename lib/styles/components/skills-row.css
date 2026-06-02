@@ -1,0 +1,175 @@
+/* ── Skills Row (frosted glass two-column skills list) ────────────────────── */
+
+section[aria-details="Character Skills"] {
+  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  border: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
+}
+
+/* ── Skills list ────────────────────────────────────────────────────────── */
+
+section[aria-details="Character Skills"] > header {
+  --rpg-tag-cut: 8px;
+  filter: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpg-skills-header, light-dark(#6a4e2a, #d4a840));
+}
+
+section[aria-details="Character Skills"] > header > span {
+  clip-path: none;
+  padding: 2px 8px;
+}
+
+section[aria-details="Character Skills"] > menu {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  column-count: 2;
+  column-gap: 24px;
+}
+
+/* ── Skill row ──────────────────────────────────────────────────────────── */
+
+section[aria-details="Character Skills"] > menu > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 20px;
+  break-inside: avoid;
+  font-size: 1.3em;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+/* Proficiency dot */
+section[aria-details="Character Skills"] > menu > li > svg {
+  flex-shrink: 0;
+  color: light-dark(#5a5040, #a09880);
+}
+
+/* Skill attribute abbreviation */
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+  flex-shrink: 0;
+  font-size: 0.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: none;
+  opacity: 0.5;
+  min-width: 2.5em;
+  text-align: center;
+}
+
+/* Skill name — now rendered as an Obsidian wikilink (`[[SkillName]]`)
+ * via the Markdown component so Obsidian hooks up hover-preview,
+ * click-to-open, and the `is-unresolved` modifier. The renderer wraps
+ * its output in `<div><p>…</p></div>`, which would break the `<li>`'s
+ * flex row — flatten both levels to `display: inline` so only the
+ * anchor participates in the layout. Appearance (color, weight,
+ * decoration) stays owned by the Folder Link Styles plugin setting. */
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] {
+  flex: 1;
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] .rpg-inline-md,
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name"] .rpg-inline-md > p {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+/* Modifier value */
+section[aria-details="Character Skills"] > menu > li > data {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  justify-content: flex-end;
+}
+
+/* ── Vantage (advantage / disadvantage) ─────────────────────────────────── */
+
+section[aria-details="Character Skills"] > menu > li[data-vantage="adv"] > data {
+  color: light-dark(#2d6a2e, #5cb85c);
+}
+
+section[aria-details="Character Skills"] > menu > li[data-vantage="dis"] > data {
+  color: light-dark(#a02020, #d9534f);
+}
+
+section[aria-details="Character Skills"] > menu > li > data > [aria-details="Vantage"] {
+  font-size: 0.6em;
+  line-height: 1;
+}
+
+/* ── Shared A/D vantage badge (skills + initiative diamond) ─────────────── */
+
+.rpg-vantage-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: 50%;
+  margin-inline-end: 0.25em;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: light-dark(#2d6a2e, #3d9140);
+}
+
+.rpg-vantage-badge[data-vantage="dis"] {
+  background: light-dark(#a02020, #c94040);
+}
+
+.rpg-vantage-badge sup {
+  font-size: 0.65em;
+  line-height: 1;
+  top: 0;
+}
+
+/* ── Merge senses + skills into one box when adjacent ───────────────────── */
+
+/* Direct siblings (Storybook) */
+section[aria-details="Character Senses"]:has(+ section[aria-details="Character Skills"]) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+section[aria-details="Character Senses"] + section[aria-details="Character Skills"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-block-start: -2px;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Through wrapper divs (Obsidian renders each block in a div) */
+div:has(> section[aria-details="Character Senses"]):has(+ div > section[aria-details="Character Skills"]) > section[aria-details="Character Senses"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+div:has(> section[aria-details="Character Senses"]) + div > section[aria-details="Character Skills"] {
+  border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-block-start: -2px;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15);
+}

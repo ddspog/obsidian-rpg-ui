@@ -36,7 +36,13 @@ export function extractTags(text: string): PersistentTag[] {
           tags.push({ kind: "clock", name: m[1].trim(), current: parseInt(m[2], 10), max: parseInt(m[3], 10) });
         } else {
           const alt = name.match(/^(\d+)\/(\d+)$/);
-          if (alt) tags.push({ kind: "clock", name: tagData || "Clock", current: parseInt(alt[1], 10), max: parseInt(alt[2], 10) });
+          if (alt)
+            tags.push({
+              kind: "clock",
+              name: tagData || "Clock",
+              current: parseInt(alt[1], 10),
+              max: parseInt(alt[2], 10),
+            });
         }
         break;
       }
