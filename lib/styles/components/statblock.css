@@ -51,6 +51,51 @@ p.rpg-statblock-subtitle {
   font-size: 0.92em;
 }
 
+/* ─── Monster: CR in the title bar (right) ────────────────────────────── */
+
+.rpg-statblock-monster .rpg-statblock-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpg-statblock-monster .rpg-statblock-header .rpg-statblock-cr {
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--background-primary, #fff);
+  white-space: nowrap;
+}
+
+/* ─── Habitat / Treasure line (stat.group + ungrouped stat.monster) ────── */
+/* Habitat left, Treasure right, filling the row between them. */
+
+.rpg-statblock-habitat-treasure {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  padding-inline: var(--size-4-2, 0.5rem);
+  font-size: 0.9em;
+  color: light-dark(#5a5040, #a09880);
+}
+
+.rpg-statblock-habitat-treasure strong {
+  font-weight: 700;
+  color: var(--statblock-title);
+}
+
+/* On a monster card the line is a footer — separated from the statblock
+   body (and any description) by a rule. The group's line stays at the top
+   under the subtitle, so it gets no separator. */
+.rpg-statblock-monster .rpg-statblock-habitat-treasure {
+  margin-top: var(--size-4-4, 1rem);
+  padding-top: var(--size-4-2, 0.5rem);
+  border-top: 1px solid var(--statblock-rule);
+}
+
 /* ─── Stats (definition list) ────────────────────────────────────────────── */
 
 .rpg-statblock-stats {
@@ -168,4 +213,21 @@ p.rpg-statblock-subtitle {
 
 .rpg-statblock-feature p {
   margin: 0;
+}
+
+/* ─── Image figure ───────────────────────────────────────────────────────── */
+
+.rpg-statblock-figure {
+  margin: var(--size-4-3, 0.75rem) 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: center;
+}
+
+.rpg-statblock-figure img {
+  max-width: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }

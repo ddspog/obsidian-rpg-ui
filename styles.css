@@ -9560,6 +9560,38 @@ p.rpg-statblock-subtitle {
   margin: 4px 0;
   font-size: 0.92em;
 }
+.rpg-statblock-monster .rpg-statblock-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rpg-statblock-monster .rpg-statblock-header .rpg-statblock-cr {
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--background-primary, #fff);
+  white-space: nowrap;
+}
+.rpg-statblock-habitat-treasure {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: var(--size-4-3, 0.75rem) 0 0;
+  padding-inline: var(--size-4-2, 0.5rem);
+  font-size: 0.9em;
+  color: light-dark(#5a5040, #a09880);
+}
+.rpg-statblock-habitat-treasure strong {
+  font-weight: 700;
+  color: var(--statblock-title);
+}
+.rpg-statblock-monster .rpg-statblock-habitat-treasure {
+  margin-top: var(--size-4-4, 1rem);
+  padding-top: var(--size-4-2, 0.5rem);
+  border-top: 1px solid var(--statblock-rule);
+}
 .rpg-statblock-stats {
   margin: 0;
   padding: 4px 0;
@@ -9649,6 +9681,19 @@ p.rpg-statblock-subtitle {
 }
 .rpg-statblock-feature p {
   margin: 0;
+}
+.rpg-statblock-figure {
+  margin: var(--size-4-3, 0.75rem) 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: center;
+}
+.rpg-statblock-figure img {
+  max-width: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* lib/styles/file-suggest.css */

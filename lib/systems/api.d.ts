@@ -697,7 +697,7 @@ export interface FeatureDetails {
   uses?: number;
   link?: string;
   view?: string;
-  heading?: number;
+  heading?: number | "p";
   source?: string;
   pick?: number;
   buy?: number | string;
@@ -1599,11 +1599,71 @@ export interface StatblockVehicleProps {
   abilities: AbilityScores;
   features: ResolvedStatFeature[];
   body?: string;
+  image?: string;
   view?: string;
   sourcePath?: string;
 }
 
 export declare const StatblockVehicle: FunctionComponent<StatblockVehicleProps>;
+
+export interface StatMonsterData {
+  name: string;
+  type: string;
+  cr?: string;
+  habitat?: string;
+  treasure?: string;
+  group?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: StatFeatureRef[];
+  text?: string;
+  [key: string]: unknown;
+}
+
+export interface StatblockMonsterProps {
+  name: string;
+  type: string;
+  cr?: string;
+  habitat?: string;
+  treasure?: string;
+  group?: string;
+  image?: string;
+  stats: Record<string, string>;
+  abilities: AbilityScores;
+  features: ResolvedStatFeature[];
+  body?: string;
+  hideTitle?: boolean;
+  sourcePath?: string;
+}
+
+export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;
+
+/** Map a creature note's frontmatter/fence into structured monster data. */
+export declare function mapMonster(self: Record<string, unknown>): StatMonsterData;
+
+export interface StatGroupData {
+  name: string;
+  subtitle?: string;
+  habitat?: string;
+  treasure?: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+export interface StatblockGroupProps {
+  name: string;
+  subtitle?: string;
+  habitat?: string;
+  treasure?: string;
+  body?: string;
+  hideTitle?: boolean;
+  sourcePath?: string;
+}
+
+export declare const StatblockGroup: FunctionComponent<StatblockGroupProps>;
+
+/** Map a `rpg stat.group` fence body into structured group data. */
+export declare function mapGroup(self: Record<string, unknown>): StatGroupData;
 
 export declare function resolveStatFeatures(
   refs: StatFeatureRef[],

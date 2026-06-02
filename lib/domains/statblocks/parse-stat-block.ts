@@ -85,6 +85,7 @@ export function parseStatVehicleBlock(source: string): StatVehicleData {
     abilities: normalizeAbilities(parsed.abilities),
     features: normalizeFeatures(parsed.features),
     text: bodyText.trim() || undefined,
+    image: typeof parsed.image === "string" ? parsed.image : undefined,
     view: typeof parsed.view === "string" ? parsed.view : undefined,
   };
 }

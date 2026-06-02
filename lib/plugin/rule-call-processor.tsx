@@ -45,6 +45,9 @@ import { TabGroupView } from "lib/domains/rules/render-tab-group";
 import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
 import { StatblockVehicle } from "lib/components/statblock-vehicle";
+import { StatblockMonster } from "lib/components/statblock-monster";
+import { StatblockGroup } from "lib/components/statblock-group";
+import { mapMonster, mapGroup } from "lib/domains/statblocks/monster-fields";
 import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature } from "lib/domains/statblocks/types";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -975,7 +978,7 @@ function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
   React.useEffect(() => {
     if (features.length === 0) { setResolved([]); return; }
     let cancelled = false;
-    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
+    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: normalizeStatsInline(parsed.stats), abilities: normalizeAbilitiesInline(parsed.abilities) };
     resolveStatFeatures(features, sourcePath, selfProps).then((r) => {
       if (!cancelled) setResolved(r as ResolvedStatFeature[]);
     });
@@ -992,6 +995,62 @@ function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
     features: resolved,
     body,
     hideTitle,
+    sourcePath,
+  });
+}
+
+/** Inline renderer for `@[[creatures/]].stat()` over `rpg stat.monster`
+ *  notes — maps the (flat) frontmatter via `mapMonster` and resolves
+ *  feature refs the same way the vehicle inline path does. */
+function StatblockMonsterCallInline({ self, sourcePath, name }: {
+  self: Record<string, unknown>;
+  sourcePath: string;
+  name: string;
+}) {
+  const data = React.useMemo(() => mapMonster(self), [self]);
+  const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
+  const displayName = data.name || name;
+
+  React.useEffect(() => {
+    if (data.features.length === 0) { setResolved([]); return; }
+    let cancelled = false;
+    const selfProps = { name: displayName.toLowerCase(), type: data.type, cr: data.cr, abilities: data.abilities, stats: data.stats };
+    resolveStatFeatures(data.features, sourcePath, selfProps).then((r) => {
+      if (!cancelled) setResolved(r as ResolvedStatFeature[]);
+    });
+    return () => { cancelled = true; };
+  }, [data, displayName, sourcePath]);
+
+  return React.createElement(StatblockMonster, {
+    name: displayName,
+    type: data.type,
+    cr: data.cr,
+    habitat: data.habitat,
+    treasure: data.treasure,
+    group: data.group,
+    image: data.image,
+    stats: data.stats,
+    abilities: data.abilities,
+    features: resolved,
+    body: data.text,
+    sourcePath,
+  });
+}
+
+/** Inline renderer for a `rpg stat.group` note pulled in by `.stat()`. */
+function StatblockGroupCallInline({ self, body, sourcePath, name }: {
+  self: Record<string, unknown>;
+  body?: string;
+  sourcePath: string;
+  name: string;
+}) {
+  const data = React.useMemo(() => mapGroup(self), [self]);
+  return React.createElement(StatblockGroup, {
+    name: data.name || name,
+    subtitle: data.subtitle,
+    habitat: data.habitat,
+    treasure: data.treasure,
+    body: body ?? data.text,
     sourcePath,
   });
 }
@@ -1209,6 +1268,22 @@ function resolveFolderPath(app: App, link: string): TFolder | null {
   return null;
 }
 
+/** Collect every `.md` file under a folder, recursing into subfolders. */
+function collectMarkdownFiles(folder: TFolder): TFile[] {
+  const out: TFile[] = [];
+  const walk = (dir: TFolder) => {
+    for (const child of dir.children) {
+      if (child instanceof TFile) {
+        if (child.extension === "md") out.push(child);
+      } else if (child instanceof TFolder) {
+        walk(child);
+      }
+    }
+  };
+  walk(folder);
+  return out;
+}
+
 function resolveFolderCall(
   span: HTMLElement,
   call: ParsedCall,
@@ -1225,9 +1300,13 @@ function resolveFolderCall(
     return;
   }
 
-  const files = folder.children
-    .filter((f): f is TFile => f instanceof TFile && f.extension === "md")
-    .sort((a, b) => a.basename.localeCompare(b.basename));
+  // Gather `.md` files recursively so a parent folder import (e.g.
+  // `@[[bestiary/creatures/]]`) sweeps every subfolder (beast-forms, …).
+  // All existing folder-call targets are leaf folders, so this is a no-op
+  // for them and only broadens parents-with-subfolders.
+  const files = collectMarkdownFiles(folder).sort((a, b) =>
+    a.basename.localeCompare(b.basename)
+  );
 
   if (files.length === 0) {
     renderError(span, `No .md files in [[${call.target}]]`);
@@ -1425,22 +1504,39 @@ function resolveFolderCall(
                 console.error(`rpg-call folder ${f.path} render threw`, err);
               }
             } else {
-              const isStatFence = /```+\s*rpg\s+stat\.\w+/.test(cleaned);
+              const statMatch = /```+\s*rpg\s+stat\.(\w+)/.exec(cleaned);
+              const isStatFence = !!statMatch;
+              const isMonsterStat = statMatch?.[1] === "monster";
+              const isGroupStat = statMatch?.[1] === "group";
               const hLevel = chainHeadingLevel ?? (call.fn.match(/^h(\d)$/)?.[1] ? parseInt(call.fn.match(/^h(\d)$/)![1], 10) : undefined);
               if (isStatFence) {
                 try {
                   const headingEl = hLevel
                     ? React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName)
                     : null;
+                  const statNode = isGroupStat
+                    ? React.createElement(StatblockGroupCallInline, {
+                        self: mergedFm,
+                        body: bodyText,
+                        sourcePath: f.path,
+                        name: fileName,
+                      })
+                    : isMonsterStat
+                    ? React.createElement(StatblockMonsterCallInline, {
+                        self: mergedFm,
+                        sourcePath: f.path,
+                        name: fileName,
+                      })
+                    : React.createElement(StatblockCallInline, {
+                        parsed: mergedFm,
+                        body: bodyText,
+                        sourcePath: f.path,
+                      });
                   const node = React.createElement(
                     React.Fragment,
                     null,
                     headingEl,
-                    React.createElement(StatblockCallInline, {
-                      parsed: mergedFm,
-                      body: bodyText,
-                      sourcePath: f.path,
-                    })
+                    statNode
                   );
                   nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
                 } catch (err) {

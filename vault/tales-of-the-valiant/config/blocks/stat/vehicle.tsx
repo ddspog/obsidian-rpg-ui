@@ -24,6 +24,8 @@ const vehicle: EntityBlock<StatVehicleData, StatEntity> = ({ self }) => {
       size: self.size,
       type: self.type,
       dimensions: self.dimensions,
+      stats: self.stats,
+      abilities: self.abilities,
     };
 
     resolveStatFeatures(self.features, sourcePath, selfProps).then(
@@ -47,6 +49,7 @@ const vehicle: EntityBlock<StatVehicleData, StatEntity> = ({ self }) => {
       abilities={self.abilities ?? { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }}
       features={resolved}
       body={self.text}
+      image={typeof self.image === "string" ? self.image : undefined}
       view={self.view}
     />
   );

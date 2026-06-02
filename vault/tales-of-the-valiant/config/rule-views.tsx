@@ -17,7 +17,7 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks, SpellCard, extractSpellBlocks } from "rpg-ui-toolkit";
+import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, StatblockMonster, StatblockGroup, mapMonster, mapGroup, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks, SpellCard, extractSpellBlocks } from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
@@ -153,7 +153,7 @@ function StatblockCall({ parsed, body, view, sourcePath }: {
   React.useEffect(() => {
     if (features.length === 0) { setResolved([]); return; }
     let cancelled = false;
-    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions };
+    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: parsed.stats, abilities: parsed.abilities };
     resolveStatFeatures(features, sourcePath, selfProps).then((r: ResolvedStatFeature[]) => {
       if (!cancelled) setResolved(r);
     });
@@ -170,6 +170,78 @@ function StatblockCall({ parsed, body, view, sourcePath }: {
     features: resolved,
     body,
     view,
+    sourcePath,
+  });
+}
+
+/**
+ * Monster statblock import. Creature notes keep their data as flat
+ * frontmatter, so `self` (frontmatter merged with any fence YAML) is mapped
+ * into the structured card shape via `mapMonster`. Features resolve the same
+ * way as vehicles — unresolved refs render as name-only placeholders.
+ */
+function StatMonsterCall({ self, sourcePath, name }: {
+  self: Record<string, unknown>;
+  sourcePath: string;
+  name: string;
+}) {
+  const data = React.useMemo(() => mapMonster(self), [self]);
+  const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
+
+  React.useEffect(() => {
+    if (!data.features || data.features.length === 0) {
+      setResolved([]);
+      return;
+    }
+    let cancelled = false;
+    const selfProps: Record<string, unknown> = {
+      name: name.toLowerCase(),
+      type: data.type,
+      cr: data.cr,
+      abilities: data.abilities,
+      stats: data.stats,
+    };
+    resolveStatFeatures(data.features, sourcePath, selfProps).then(
+      (results: ResolvedStatFeature[]) => {
+        if (!cancelled) setResolved(results);
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [data, name, sourcePath]);
+
+  return React.createElement(StatblockMonster, {
+    name: data.name || name,
+    type: data.type,
+    cr: data.cr,
+    habitat: data.habitat,
+    treasure: data.treasure,
+    group: data.group,
+    image: typeof data.image === "string" ? data.image : undefined,
+    stats: data.stats,
+    abilities: data.abilities,
+    features: resolved,
+    body: data.text,
+    sourcePath,
+  });
+}
+
+/** Monster-group import (`@[[creatures/]].stat()` over a `rpg stat.group`
+ *  note): renders the shared header / habitat-treasure / contents. */
+function StatGroupCall({ self, body, sourcePath, name }: {
+  self: Record<string, unknown>;
+  body?: string;
+  sourcePath: string;
+  name: string;
+}) {
+  const data = React.useMemo(() => mapGroup(self), [self]);
+  return React.createElement(StatblockGroup, {
+    name: data.name || name,
+    subtitle: data.subtitle,
+    habitat: data.habitat,
+    treasure: data.treasure,
+    body: body ?? data.text,
     sourcePath,
   });
 }
@@ -518,6 +590,56 @@ export const ruleViews: RuleViewMap = {
     render: (ctx, args) => {
       const fenceRe = /```+\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)```+/;
       const m = fenceRe.exec(ctx.content);
+
+      // Monster: data lives in the creature note's (flat) frontmatter; merge
+      // any fence-body YAML on top, then map to the structured card shape.
+      if (m?.[1] === "monster") {
+        let fenceFm: Record<string, unknown> = {};
+        const raw = m[2];
+        const sepIdx = raw.indexOf("\n---\n");
+        const head = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
+        if (head.trim()) {
+          try {
+            const { parse } = require("yaml");
+            const parsedHead = parse(head);
+            if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
+              fenceFm = parsedHead as Record<string, unknown>;
+            }
+          } catch { /* ignore */ }
+        }
+        const self = { ...(ctx.frontmatter as Record<string, unknown>), ...fenceFm };
+        return React.createElement(StatMonsterCall, {
+          self,
+          sourcePath: ctx.file,
+          name: ctx.name,
+        });
+      }
+
+      // Monster group: header + habitat/treasure + contents prose (after `---`).
+      if (m?.[1] === "group") {
+        let fenceFm: Record<string, unknown> = {};
+        const raw = m[2];
+        const sepIdx = raw.indexOf("\n---\n");
+        const head = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
+        const groupBody = sepIdx >= 0 ? raw.slice(sepIdx + 5).trim() || undefined : undefined;
+        if (head.trim()) {
+          try {
+            const { parse } = require("yaml");
+            const parsedHead = parse(head);
+            if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
+              fenceFm = parsedHead as Record<string, unknown>;
+            }
+          } catch { /* ignore */ }
+        }
+        const self = { ...(ctx.frontmatter as Record<string, unknown>), ...fenceFm };
+        return React.createElement(StatGroupCall, {
+          self,
+          body: groupBody,
+          sourcePath: ctx.file,
+          name: ctx.name,
+        });
+      }
+
       if (!m) return null;
       const raw = m[2];
       const sepIdx = raw.indexOf("\n---\n");

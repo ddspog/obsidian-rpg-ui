@@ -338,6 +338,12 @@ export async function evaluateSystemBundle(
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const statblockComponent = require("../components/statblock-vehicle");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const statblockMonsterComponent = require("../components/statblock-monster");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const statblockGroupComponent = require("../components/statblock-group");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+          const monsterFields = require("../domains/statblocks/monster-fields");
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const statblockResolver = require("../domains/statblocks/resolve-features");
           // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
           const fenceSplit = require("../utils/fence-split");
@@ -390,6 +396,10 @@ export async function evaluateSystemBundle(
             RuleSide: ruleRender.RuleSide,
             // Statblock components and helpers.
             StatblockVehicle: statblockComponent.StatblockVehicle,
+            StatblockMonster: statblockMonsterComponent.StatblockMonster,
+            StatblockGroup: statblockGroupComponent.StatblockGroup,
+            mapMonster: monsterFields.mapMonster,
+            mapGroup: monsterFields.mapGroup,
             resolveStatFeatures: statblockResolver.resolveStatFeatures,
             // Fence utilities.
             stripRpgFences: fenceSplit.stripRpgFences,
