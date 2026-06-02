@@ -352,6 +352,7 @@ export async function evaluateSystemBundle(
             parseTableBlock: tableParser.parseTableBlock,
             substituteExpressions: tableExpr.substituteExpressions,
             extractSpellBlocks: spellCard.extractSpellBlocks,
+            SpellCard: spellCard.SpellCard,
             classifySpellCircle: spellcasting.classifySpellCircle,
             stripWikilinkToName: spellcasting.stripWikilinkToName,
             resolveInventory: inventoryDomain.resolveInventory,

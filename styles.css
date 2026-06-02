@@ -7318,6 +7318,19 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   margin-block: var(--size-4-3, 0.75rem) var(--size-4-2, 0.5rem);
   font-family: var(--font-text);
 }
+.rpg-spell-card .rpg-spell-card__header {
+  margin: 0 0 var(--size-4-2, 0.5rem);
+}
+.rpg-spell-card .rpg-spell-card__header h3 {
+  text-transform: uppercase;
+  background-color: var(--text-title);
+  color: var(--background-primary);
+  padding-left: var(--size-4-2);
+  padding-bottom: var(--size-2-1);
+  font-size: 1.6em;
+  font-family: "My Table font", "SF Compact Rounded";
+  font-weight: normal;
+}
 .rpg-spell-card .rpg-spell-body {
   padding: 0;
 }

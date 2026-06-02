@@ -891,12 +891,10 @@ export declare function expandOptionRefs(
 ): string[];
 
 /**
- * Parse every `rpg spell` fence body in a markdown doc. Returns the
- * flat YAML bodies (shallow-typed) so consumers can pull `magic_source`
- * / `circle` / other fields without re-rendering. Used by system
- * entities to build the spell tag index.
+ * Body payload of a `rpg spell` fence — the shape `extractSpellBlocks`
+ * returns and `SpellCard` renders.
  */
-export declare function extractSpellBlocks(contents: string): Array<{
+export interface SpellBody {
   circle?: string;
   source?: unknown;
   school?: string;
@@ -909,7 +907,15 @@ export declare function extractSpellBlocks(contents: string): Array<{
   text?: string;
   image?: string;
   name?: string;
-}>;
+}
+
+/**
+ * Parse every `rpg spell` fence body in a markdown doc. Returns the
+ * flat YAML bodies (shallow-typed) so consumers can pull `magic_source`
+ * / `circle` / other fields without re-rendering. Used by system
+ * entities to build the spell tag index.
+ */
+export declare function extractSpellBlocks(contents: string): SpellBody[];
 
 /**
  * Classify a spell's `circle` string into one of three broad bands used
@@ -1350,6 +1356,17 @@ export declare const ItemMagicCard: React.FC<{
   data: ItemMagicData;
   showDescription?: boolean;
   renderMarkdown?: (source: string) => React.ReactNode;
+}>;
+
+/**
+ * Spell compendium card. Renders a `rpg spell` fence body (parse with
+ * `extractSpellBlocks`). Pass `title` to show the spell name as a header
+ * (omit it when the host note's H1 already serves as the heading).
+ */
+export declare const SpellCard: React.FC<{
+  body: SpellBody;
+  sourcePath: string;
+  title?: string;
 }>;
 
 export declare const ItemPersonalCard: React.FC<{

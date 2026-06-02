@@ -17,7 +17,7 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks } from "rpg-ui-toolkit";
+import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks, SpellCard, extractSpellBlocks } from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
@@ -546,6 +546,32 @@ export const ruleViews: RuleViewMap = {
         body: bodyText,
         view,
         sourcePath: ctx.file,
+      });
+    },
+  },
+
+  /**
+   * Spell import: renders a `rpg spell` block from the target file as a
+   * compendium card. Works on a single file or every file in a folder,
+   * exactly like `.magic()` / `.stat()` — the call processor hands the
+   * raw file body (fence intact) in `ctx.content`.
+   *
+   *   `@[[Mage Hand]].spell()`                          — one spell
+   *   `@[[spells/cantrips/]].spell()`                   — every cantrip
+   *   `@[[spells/cantrips/]].filter(A prefix name).spell()` — A-spells only
+   */
+  spell: {
+    mode: "join",
+    raw: true,
+    render: (ctx) => {
+      const blocks = extractSpellBlocks(ctx.content);
+      if (blocks.length === 0) return null;
+      const data = blocks[0];
+      const title = typeof data.name === "string" && data.name ? data.name : ctx.name;
+      return React.createElement(SpellCard, {
+        body: data,
+        sourcePath: ctx.file,
+        title,
       });
     },
   },

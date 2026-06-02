@@ -37,6 +37,7 @@ import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
 import { homebrewBySetting } from "lib/domains/lists/official-sources";
+import { findAllFences } from "lib/domains/lists/resolve-entries";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { selectFenceBodyByIndex, sliceFenceInner } from "lib/domains/rules/select-fence";
@@ -1052,32 +1053,48 @@ function applyChain(
 function extractFileData(
   cleaned: string,
   fileFm: Record<string, unknown>,
-  blockSpec?: string
+  blockSpec?: string,
+  basename?: string
 ): Record<string, unknown> {
+  // Inject the file basename as `name`/`basename` defaults so filters can
+  // match on the filename (e.g. `filter(A prefix name)` for compendium
+  // files whose spell/feature name IS the filename). Real `name` fields in
+  // frontmatter or the fence head still win (spread last). Mirrors the
+  // `rpg list.*` resolver's `buildRecord`.
+  const inject = (data: Record<string, unknown>): Record<string, unknown> =>
+    basename ? { name: basename, basename, ...data } : data;
+
   const fences = extractAllRpgFences(cleaned);
 
   if (blockSpec) {
     // Numeric index
     const idx = Number(blockSpec);
     if (Number.isFinite(idx) && idx >= 0 && idx < fences.length) {
-      return { ...fileFm, ...(fences[idx].body ?? {}) };
+      return inject({ ...fileFm, ...(fences[idx].body ?? {}) });
     }
     // entity.block type match
     if (blockSpec.includes(".")) {
       const [entity, block] = blockSpec.split(".", 2);
       const match = fences.find((f) => f.entity === entity && f.block === block);
-      if (match?.body) return { ...fileFm, ...match.body };
+      if (match?.body) return inject({ ...fileFm, ...match.body });
     }
     // id/name match
     const byId = fences.find((f) => f.body?.id === blockSpec || f.body?.name === blockSpec);
-    if (byId?.body) return { ...fileFm, ...byId.body };
+    if (byId?.body) return inject({ ...fileFm, ...byId.body });
   }
 
   // Default: merge first fence body into frontmatter
   if (fences.length > 0 && fences[0].body) {
-    return { ...fileFm, ...fences[0].body };
+    return inject({ ...fileFm, ...fences[0].body });
   }
-  return fileFm;
+  // Dotless `rpg <entity>` fences (e.g. `rpg spell`) aren't caught by the
+  // dotted scanner above — fall back to the dotless-tolerant scan so filters
+  // can read their head fields (school, circle, …).
+  const dotless = findAllFences(cleaned);
+  if (dotless.length > 0 && dotless[0].head) {
+    return inject({ ...fileFm, ...dotless[0].head });
+  }
+  return inject(fileFm);
 }
 
 function renderByMode(
@@ -1263,7 +1280,7 @@ function resolveFolderCall(
               | Record<string, unknown>
               | undefined) ?? {};
             const blockSpec = call.chain.find((s) => s.fn === "block");
-            const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined);
+            const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined, f.basename);
             const { pass } = applyChain(call.chain, fileData);
             if (!pass) continue;
           }
@@ -1367,7 +1384,7 @@ function resolveFolderCall(
             | Record<string, unknown>
             | undefined) ?? {};
           const blockSpec = call.chain.find((s) => s.fn === "block");
-          const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined);
+          const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined, f.basename);
           const { pass, headingLevel } = applyChain(call.chain, fileData);
           if (!pass) continue;
           chainHeadingLevel = headingLevel;
@@ -1378,7 +1395,7 @@ function resolveFolderCall(
         // When no rule.content blocks exist, try any rpg entity.block fence
         // so views like .magic(), .stat(), .row() can read their YAML.
         if (fenced.length === 0) {
-          const anyFenceRe = /```+\s*rpg\s+\w+\.\w+\s*\n([\s\S]*?)```+/;
+          const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
           const fenceMatch = anyFenceRe.exec(cleaned);
           if (fenceMatch) {
             const fenceRaw = fenceMatch[1];
@@ -1432,10 +1449,10 @@ function resolveFolderCall(
               } else {
                 try {
                   const hasParams = Object.keys(call.params).length > 0;
-                  // `magic` / `danger` re-extract their fence from content,
-                  // so they need the full file body — not just the post-`---`
-                  // prose that `bodyText` carries.
-                  const viewContent = call.fn === "magic" || call.fn === "danger" ? cleaned : (bodyText ?? cleaned);
+                  // `magic` / `danger` / `spell` re-extract their fence from
+                  // content, so they need the full file body — not just the
+                  // post-`---` prose that `bodyText` carries.
+                  const viewContent = call.fn === "magic" || call.fn === "danger" || call.fn === "spell" ? cleaned : (bodyText ?? cleaned);
                   const viewCtx: RuleViewCtx = {
                     name: fileName,
                     content: viewContent,
@@ -1570,7 +1587,7 @@ function resolveFolderCall(
                 | Record<string, unknown>
                 | undefined) ?? {};
               const blockSpec2 = call.chain.find((s) => s.fn === "block");
-              const fileData2 = extractFileData(cleaned, fileFm2, blockSpec2 ? String(blockSpec2.args[0] ?? "") : undefined);
+              const fileData2 = extractFileData(cleaned, fileFm2, blockSpec2 ? String(blockSpec2.args[0] ?? "") : undefined, f.basename);
               const { pass: pass2 } = applyChain(call.chain, fileData2);
               if (!pass2) continue;
             }
@@ -1578,7 +1595,7 @@ function resolveFolderCall(
             const fenced = extractContentBlocks(cleaned);
             let matching: HarvestedBlock[];
             if (fenced.length === 0) {
-              const anyFenceRe = /```+\s*rpg\s+\w+\.\w+\s*\n([\s\S]*?)```+/;
+              const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
               const fenceMatch = anyFenceRe.exec(cleaned);
               if (!fenceMatch) continue;
               const fenceRaw = fenceMatch[1];
