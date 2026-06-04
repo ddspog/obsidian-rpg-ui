@@ -4,8 +4,8 @@ import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
 import { matchAllCalls, type ChainSegment } from "lib/domains/references/parse-call";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
-import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
-import { parseRuleTab } from "./parse-rule-block";
+import { findRuleContentBlock } from "lib/domains/rules/resolve-tab";
+import { extractNestedTabs } from "./extract-nested-tabs";
 import type { RuleTabBlock } from "./types";
 
 const TAB_CLASS = "rpg-rule-tab";
@@ -394,45 +394,6 @@ function HorizontalTabGroupView({
   );
 }
 
-function extractNestedTabs(body: string): { intro: string; tabs: RuleTabBlock[] } | null {
-  const tabs: RuleTabBlock[] = [];
-  let firstIdx = -1;
-  const openRe = /^(`{3,})rpg\s+rule\.tab\s*$/gm;
-
-  let m: RegExpExecArray | null;
-  while ((m = openRe.exec(body)) !== null) {
-    if (firstIdx < 0) firstIdx = m.index;
-    const fenceTicks = m[1].length;
-    const bodyStart = m.index + m[0].length + 1;
-    const lines = body.slice(bodyStart).split("\n");
-    let depth = 1;
-    let consumed = 0;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      const tickMatch = trimmed.match(/^(`{3,})/);
-      if (tickMatch) {
-        const ticks = tickMatch[1].length;
-        const isCloser = trimmed === tickMatch[1];
-        if (isCloser) {
-          depth--;
-        } else {
-          depth++;
-        }
-      }
-      consumed += line.length + 1;
-      if (depth === 0) {
-        const tabSource = body.slice(bodyStart, bodyStart + consumed - line.length - 1);
-        tabs.push(parseRuleTab(tabSource));
-        break;
-      }
-    }
-  }
-
-  if (tabs.length === 0) return null;
-  const intro = body.slice(0, firstIdx).replace(/\n+$/, "");
-  return { intro, tabs };
-}
-
 function TabPanelContent({ body, sourcePath }: { body: string; sourcePath: string }) {
   const nested = React.useMemo(() => extractNestedTabs(body), [body]);
   const expandedBody = useExpandedCalls(body, sourcePath);
@@ -609,26 +570,7 @@ function sliceSectionText(text: string, section: string): string {
 
 /** Find a `rpg rule.content` block whose frontmatter id or name matches. */
 function findContentBlock(text: string, id: string): string | null {
-  const lines = text.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const openMatch = lines[i].match(/^(`{3,})\s*rpg\s+rule\.content\s*$/);
-    if (!openMatch) continue;
-    const ticks = openMatch[1].length;
-    const bodyStart = i + 1;
-    let bodyEnd = lines.length;
-    for (let j = bodyStart; j < lines.length; j++) {
-      if (lines[j].match(new RegExp(`^\`{${ticks}}\\s*$`))) {
-        bodyEnd = j;
-        break;
-      }
-    }
-    const inner = lines.slice(bodyStart, bodyEnd).join("\n");
-    const parsed = parseRuleContent(inner);
-    if (parsed.frontmatter.id === id || parsed.frontmatter.name === id) {
-      return parsed.body;
-    }
-  }
-  return null;
+  return findRuleContentBlock(text, id)?.body ?? null;
 }
 
 const TabButton = React.forwardRef<HTMLButtonElement, {

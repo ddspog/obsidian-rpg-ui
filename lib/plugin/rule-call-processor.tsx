@@ -42,12 +42,13 @@ import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { selectFenceBodyByIndex, sliceFenceInner } from "lib/domains/rules/select-fence";
 import { TabGroupView } from "lib/domains/rules/render-tab-group";
+import { findRuleContentBlock, resolveTabBlockFields } from "lib/domains/rules/resolve-tab";
 import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
 import { StatblockVehicle } from "lib/components/statblock-vehicle";
 import { StatblockMonster } from "lib/components/statblock-monster";
-import { StatblockGroup } from "lib/components/statblock-group";
-import { mapMonster, mapGroup } from "lib/domains/statblocks/monster-fields";
+import { StatblockCategory } from "lib/components/statblock-group";
+import { mapMonster, mapCategory } from "lib/domains/statblocks/monster-fields";
 import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature } from "lib/domains/statblocks/types";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -617,7 +618,14 @@ function resolveCall(
       // preceding markdown table if one exists.
 
       if (view.wrapper === "tab-group") {
-        let body = stripFileFrontmatter(cleaned);
+        // `.tab(id)` targets a single `rule.content` block (rendering only its
+        // body, with label/icon/color pulled from the block's frontmatter);
+        // `.tab()` renders the whole file.
+        const blockId = typeof firstArg === "string" ? firstArg : undefined;
+        const resolved = blockId
+          ? resolveTabBlockFields(cleaned, fileFm, fileName, blockId)
+          : null;
+        const body = resolved ? resolved.body : stripFileFrontmatter(cleaned);
         const highlight = extractHighlight(call.chain);
         let homebrew = false;
         if (highlight.active) {
@@ -629,9 +637,9 @@ function resolveCall(
         }
         const tab: RuleTabBlock = {
           kind: "tab",
-          name: (fileFm["tab-name"] as string) || fileName,
-          icon: fileFm["tab-icon"] as string | undefined,
-          color: fileFm["tab-color"] as string | undefined,
+          name: resolved ? resolved.name : (fileFm["tab-name"] as string) || fileName,
+          icon: resolved ? resolved.icon : (fileFm["tab-icon"] as string | undefined),
+          color: resolved ? resolved.color : (fileFm["tab-color"] as string | undefined),
           body,
           frontmatter: fileFm,
           ...(homebrew && { homebrew: true }),
@@ -856,26 +864,7 @@ function inlineContentFences(text: string): string {
 }
 
 function findContentBlockById(text: string, id: string): string | null {
-  const lines = text.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const openMatch = lines[i].match(/^(`{3,})\s*rpg\s+rule\.content\s*$/);
-    if (!openMatch) continue;
-    const ticks = openMatch[1].length;
-    const bodyStart = i + 1;
-    let bodyEnd = lines.length;
-    for (let j = bodyStart; j < lines.length; j++) {
-      if (lines[j].match(new RegExp(`^\`{${ticks}}\\s*$`))) {
-        bodyEnd = j;
-        break;
-      }
-    }
-    const inner = lines.slice(bodyStart, bodyEnd).join("\n");
-    const parsed = parseRuleContent(inner);
-    if (parsed.frontmatter.id === id || parsed.frontmatter.name === id) {
-      return parsed.body;
-    }
-  }
-  return null;
+  return findRuleContentBlock(text, id)?.body ?? null;
 }
 
 /**
@@ -1027,7 +1016,7 @@ function StatblockMonsterCallInline({ self, sourcePath, name }: {
     cr: data.cr,
     habitat: data.habitat,
     treasure: data.treasure,
-    group: data.group,
+    category: data.category,
     image: data.image,
     stats: data.stats,
     abilities: data.abilities,
@@ -1037,15 +1026,15 @@ function StatblockMonsterCallInline({ self, sourcePath, name }: {
   });
 }
 
-/** Inline renderer for a `rpg stat.group` note pulled in by `.stat()`. */
-function StatblockGroupCallInline({ self, body, sourcePath, name }: {
+/** Inline renderer for a `rpg stat.category` note pulled in by `.stat()`. */
+function StatblockCategoryCallInline({ self, body, sourcePath, name }: {
   self: Record<string, unknown>;
   body?: string;
   sourcePath: string;
   name: string;
 }) {
-  const data = React.useMemo(() => mapGroup(self), [self]);
-  return React.createElement(StatblockGroup, {
+  const data = React.useMemo(() => mapCategory(self), [self]);
+  return React.createElement(StatblockCategory, {
     name: data.name || name,
     subtitle: data.subtitle,
     habitat: data.habitat,
@@ -1407,37 +1396,51 @@ function resolveFolderCall(
       }
 
       if (view.wrapper === "tab-group") {
-        const tabs: RuleTabBlock[] = [];
+        // `.tab(id)` makes each file's tab render only its matching
+        // `rule.content` block (label/icon/color/order from the block's
+        // frontmatter, falling back to the file's `tab-*` keys); files lacking
+        // the block fall back to their whole body. `.tab()` renders each whole
+        // file as before.
+        const built: { tab: RuleTabBlock; order: number }[] = [];
         const highlight = extractHighlight(call.chain);
         const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
           | Record<string, unknown>
           | undefined) ?? {};
         const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
+        const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
-          let body = stripFileFrontmatter(cleaned);
           const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
             | Record<string, unknown>
             | undefined) ?? {};
+          const resolved = blockId
+            ? resolveTabBlockFields(cleaned, fileFm, f.basename, blockId)
+            : null;
+          const body = resolved ? resolved.body : stripFileFrontmatter(cleaned);
+          const order = resolved
+            ? resolved.order
+            : typeof fileFm["tab-order"] === "number"
+              ? (fileFm["tab-order"] as number)
+              : Infinity;
           let homebrew = false;
           if (highlight.active) {
             homebrew = isImportHomebrew(fileFm.source, f.path, callerSource);
           }
-          tabs.push({
-            kind: "tab",
-            name: (fileFm["tab-name"] as string) || f.basename,
-            icon: fileFm["tab-icon"] as string | undefined,
-            color: fileFm["tab-color"] as string | undefined,
-            body,
-            frontmatter: fileFm,
-            ...(homebrew && { homebrew: true }),
+          built.push({
+            order,
+            tab: {
+              kind: "tab",
+              name: resolved ? resolved.name : (fileFm["tab-name"] as string) || f.basename,
+              icon: resolved ? resolved.icon : (fileFm["tab-icon"] as string | undefined),
+              color: resolved ? resolved.color : (fileFm["tab-color"] as string | undefined),
+              body,
+              frontmatter: fileFm,
+              ...(homebrew && { homebrew: true }),
+            },
           });
         }
-        tabs.sort((a, b) => {
-          const oa = typeof a.frontmatter["tab-order"] === "number" ? a.frontmatter["tab-order"] : Infinity;
-          const ob = typeof b.frontmatter["tab-order"] === "number" ? b.frontmatter["tab-order"] : Infinity;
-          return oa - ob;
-        });
+        built.sort((a, b) => a.order - b.order);
+        const tabs = built.map((b) => b.tab);
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
@@ -1507,7 +1510,7 @@ function resolveFolderCall(
               const statMatch = /```+\s*rpg\s+stat\.(\w+)/.exec(cleaned);
               const isStatFence = !!statMatch;
               const isMonsterStat = statMatch?.[1] === "monster";
-              const isGroupStat = statMatch?.[1] === "group";
+              const isGroupStat = statMatch?.[1] === "category" || statMatch?.[1] === "group";
               const hLevel = chainHeadingLevel ?? (call.fn.match(/^h(\d)$/)?.[1] ? parseInt(call.fn.match(/^h(\d)$/)![1], 10) : undefined);
               if (isStatFence) {
                 try {
@@ -1515,7 +1518,7 @@ function resolveFolderCall(
                     ? React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName)
                     : null;
                   const statNode = isGroupStat
-                    ? React.createElement(StatblockGroupCallInline, {
+                    ? React.createElement(StatblockCategoryCallInline, {
                         self: mergedFm,
                         body: bodyText,
                         sourcePath: f.path,
