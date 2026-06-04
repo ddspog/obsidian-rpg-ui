@@ -36,6 +36,10 @@ export default withMermaid(
 					],
 				},
 				{
+					text: "Rule Blocks",
+					items: [{ text: "Rule: Related", link: "/components/rule-related" }],
+				},
+				{
 					text: "Character Sheet",
 					items: [
 						{ text: "Frontmatter", link: "/character-sheet/frontmatter" },

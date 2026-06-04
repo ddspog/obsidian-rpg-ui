@@ -25,6 +25,8 @@ import { Markdown } from "lib/components/markdown";
 import { resolveSource, isHomebrewForFile } from "./source";
 import { SIDE_PRESETS } from "./parse-rule-block";
 import { SPREAD_ITEM_CLASS, scheduleSpreadMerge } from "./render-spread-group";
+import { extractNestedTabs } from "./extract-nested-tabs";
+import { TabGroupView } from "./render-tab-group";
 import type { RuleContentBlock, RuleSideBlock, SidePreset } from "./types";
 
 function capitalize(s: string): string {
@@ -99,6 +101,28 @@ function MarkerBadge({ icon, label }: Marker) {
   );
 }
 
+/**
+ * Render a `rule.content` body. When the body contains a run of
+ * `rpg rule.tab` fences, render them as a single grouped `TabGroupView`
+ * (parsed directly from the body string) instead of leaning on the
+ * post-hoc DOM-merge pass — that merge keys off the document's top-level
+ * section/`.el-pre` adjacency and doesn't reliably group tabs nested inside
+ * a content body's markdown render. Bodies without tab fences render
+ * unchanged via the plain Markdown path.
+ */
+function RuleContentBody({ source, sourcePath }: { source: string; sourcePath: string }) {
+  const nested = React.useMemo(() => extractNestedTabs(source), [source]);
+  if (nested && nested.tabs.length > 0) {
+    return (
+      <>
+        {nested.intro ? <Markdown source={nested.intro} sourcePath={sourcePath} /> : null}
+        <TabGroupView tabs={nested.tabs} sourcePath={sourcePath} />
+      </>
+    );
+  }
+  return <Markdown source={source} sourcePath={sourcePath} />;
+}
+
 function RuleContentView({
   block,
   sourcePath,
@@ -122,7 +146,7 @@ function RuleContentView({
     (typeof fm.name === "string" && fm.name) ||
     (typeof fm.id === "string" && fm.id ? capitalize(fm.id) : undefined);
 
-  const body = <Markdown source={block.body} sourcePath={sourcePath} />;
+  const body = <RuleContentBody source={block.body} sourcePath={sourcePath} />;
   const markersEl = markers.length > 0 ? (
     <div className="rpg-rule-content__markers" aria-hidden={false}>
       {markers.map((m, i) => (
