@@ -21,9 +21,9 @@ export interface StatMonsterData {
   habitat?: string;
   /** Treasure line, e.g. `None` / `Individual`. */
   treasure?: string;
-  /** Link to a `stat.group` note (e.g. `[[Bears]]`). When set, the monster
-   *  inherits habitat/treasure from the group and renders neither. */
-  group?: string;
+  /** Link to a `stat.category` note (e.g. `[[Bears]]`). When set, the monster
+   *  inherits habitat/treasure from the category and renders neither. */
+  category?: string;
   /** Display-ordered stat rows (Armor Class, Hit Points, Speed, …). */
   stats: Record<string, string>;
   /** Ability modifiers (str/dex/… as signed numbers). */
@@ -34,16 +34,19 @@ export interface StatMonsterData {
   image?: string;
 }
 
-/** A monster group — shared habitat/treasure + flavor for several monsters. */
-export interface StatGroupData {
+/** A monster category — shared habitat/treasure + flavor for several monsters. */
+export interface StatCategoryData {
   name: string;
   subtitle?: string;
   habitat?: string;
   treasure?: string;
-  /** Descriptive prose (the group's contents), rendered below the
+  /** Descriptive prose (the category's contents), rendered below the
    *  habitat/treasure line. */
   text?: string;
 }
+
+/** @deprecated Use StatCategoryData */
+export type StatGroupData = StatCategoryData;
 
 export interface AbilityScores {
   str: number;

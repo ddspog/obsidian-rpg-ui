@@ -461,6 +461,52 @@ export const ruleViews: RuleViewMap = {
   },
 
   /**
+   * Spread side block — in-flow "newspaper" panel with a solid banner
+   * heading. Renders exactly like `callout` but with `kind: spread`.
+   *
+   * Two-column grid: a folder import (`@[[folder/]].spread()`) lays all its
+   * items into columns, and consecutive `.spread()` calls written on
+   * adjacent source lines (same paragraph) merge into columns — the same
+   * convention `.tab()` uses. Calls separated by blank lines or headings
+   * stay single-column; use the folder form for those layouts. A lone
+   * spread also stays single-column.
+   *
+   * Accepts the same params as `callout` (`type`, `name`, `content`), plus
+   * an optional `subtitle` (named param, falling back to the target's
+   * `subtitle` frontmatter).
+   *
+   *   `@[[abilities/]].spread()`                          — folder → columns
+   *   `@[[Strength]].spread()` `@[[Dexterity]].spread()`  — same line → columns
+   *   `@[[rules/combat]].spread(grapple)`                 — single block by id
+   *   `@[[rules/combat]].spread(grapple, warning)`        — type=warning
+   *   `@[[file]].spread(type: rules)`                     — whole file, named type
+   *   `@[[file]].spread(name: "STR", subtitle: "Skills: Athletics")`
+   */
+  spread: {
+    mode: "args",
+    render: (ctx, args) => {
+      const preset = (
+        (typeof ctx.params?.type === "string" ? ctx.params.type : undefined)
+        ?? (typeof args?.[0] === "string" ? args[0] : undefined)
+      ) as SidePreset | undefined;
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
+        ?? headingText(ctx);
+      const fm = ctx.frontmatter as Record<string, unknown>;
+      const subtitle = (typeof ctx.params?.subtitle === "string" ? ctx.params.subtitle : undefined)
+        ?? (typeof fm?.subtitle === "string" ? (fm.subtitle as string) : undefined);
+      const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
+      return React.createElement(RuleSide, {
+        variant: "spread",
+        type: preset,
+        title: name,
+        subtitle,
+        content,
+        sourcePath: ctx.file,
+      });
+    },
+  },
+
+  /**
    * Commentary side block — gutter-only italic aside.
    * Extra args: direction (left|right), type (preset name).
    *

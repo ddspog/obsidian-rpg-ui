@@ -824,8 +824,56 @@
   margin: 0;
 }
 
+/*
+ * Call-path spreads: `@[[file]].spread()` mounts each spread item inside an
+ * inline `.rpg-call` span (not an `.el-pre` block wrapper), so the merge pass
+ * (mergeAdjacentCallSpreads) groups the spans directly. A folder import
+ * (`@[[folder/]].spread()`) instead promotes a single span to the group,
+ * with the spread items (or their highlight wrappers) as direct children.
+ * The `.rpg-rule-side-spread-group` flex rule above also flattens the inline
+ * `.rpg-call` display for that promoted span. Give all of these the same
+ * two-column flex sizing as fence-based items.
+ */
+.rpg-rule-side-spread-group > .rpg-call,
+.rpg-rule-side-spread-group > .rpg-rule-side--spread,
+.rpg-rule-side-spread-group > .rpg-call-highlight {
+  flex: 1 1 calc(50% - 0.75rem);
+  min-width: 340px;
+  margin: 0;
+  display: block;
+}
+
 .rpg-rule-side-spread-group > [class^="el-h"] {
   display: none;
+}
+
+/*
+ * Folder / single-span call spreads. A `@[[folder/]].spread()` import mounts
+ * every spread item into ONE `.rpg-call` span, so the span itself becomes the
+ * flex grid — pure CSS via `:has()`, immune to Obsidian re-virtualizing a
+ * scrolled section (the one-shot JS merge above is best-effort only). Mirrors
+ * the proven callout-body trigger `.rpg-rule-side__body:has(.rpg-rule-side-spread-item)`.
+ *
+ * `> *` flexes whatever each item's direct child is — a bare `--spread`
+ * article, or a `.rpg-call-highlight` wrapper when `.highlight()` flags it
+ * homebrew — so it doesn't depend on the exact nesting. A lone spread (one
+ * child) grows to full width; two or more flow into columns.
+ *
+ * A `.callout()` import whose body embeds nested spreads also matches, but its
+ * single direct child (the `--callout` aside) just grows to full width —
+ * visually unchanged.
+ */
+.rpg-call:has(.rpg-rule-side-spread-item) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-start;
+}
+
+.rpg-call:has(.rpg-rule-side-spread-item) > * {
+  flex: 1 1 calc(50% - 0.75rem);
+  min-width: 300px;
+  margin: 0;
 }
 
 /* Inside a callout/side body: use flex-wrap for better flow control */

@@ -22,9 +22,9 @@ export interface StatblockMonsterProps {
   treasure?: string;
   /** Markdown image ref (`![[creature.webp|384]]`). */
   image?: string;
-  /** When set (a `stat.group` link), habitat/treasure come from the group
+  /** When set (a `stat.category` link), habitat/treasure come from the category
    *  and are not rendered on the monster card. */
-  group?: string;
+  category?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
   features: ResolvedStatFeature[];
@@ -55,7 +55,7 @@ export function StatblockMonster({
   habitat,
   treasure,
   image,
-  group,
+  category,
   stats,
   abilities,
   features,
@@ -107,9 +107,9 @@ export function StatblockMonster({
         </figure>
       ) : null}
 
-      {/* Habitat / treasure footer — only when the monster isn't grouped
-          (a grouped monster inherits these from its `stat.group`). */}
-      {group ? null : <HabitatTreasureLine habitat={habitat} treasure={treasure} />}
+      {/* Habitat / treasure footer — only when the monster has no category
+          (a categorized monster inherits these from its `stat.category`). */}
+      {category ? null : <HabitatTreasureLine habitat={habitat} treasure={treasure} />}
     </article>
   );
 }
