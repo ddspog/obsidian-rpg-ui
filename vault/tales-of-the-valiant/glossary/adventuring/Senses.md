@@ -1,8 +1,11 @@
 ---
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
-tab-icon: eye
-tab-color: var(--color-cyan)
-tab-order: 5
+---
+````rpg rule.content
+id: adventuring
+icon: eye
+color: var(--color-cyan)
+order: 5
 ---
 ## Senses
 ![[vision-and-light.webp|right|256]]Fundamental adventuring tasks—noticing danger, finding hidden objects, hitting an enemy, and targeting a spell— rely heavily on a character’s ability to perceive the world around them. 
@@ -34,4 +37,24 @@ The presence or absence of light in an environment is the common factor in deter
 ```
 ### Special Senses
 In addition to basic vision, creatures can have one or more of the following additional senses. 
-`@[[glossary/senses/]].highlight().h4()`
+`@[[glossary/senses/]].highlight().h4(summary)`
+````
+## On Statblocks
+````rpg rule.content
+id: statblock
+---
+```rpg rule.side
+title: Player Advice
+type: rules
+---
+A PC with the [[invisible]] condition has advantage on DEX ([[Stealth]]) checks made to [[hiding|hide]] from or sneak past a creature that relies on sight-based senses. Keep in mind that invisibility doesn’t completely mask a creature’s presence— invisibility doesn’t suppress the sound of footsteps or the smell of nervous sweat. The [[invisible]] condition grants no benefits when sneaking past a creature while within range of its non‑sight‑based senses like [[keensense]] or [[tremorsense]] (assuming the creature has such a sense).
+```
+Creatures primarily perceive the world by sight. This is called vision. Creatures usually have secondary senses of hearing, smell, and touch that also allow them to interact with the environment, but vision is considered the “standard” primary sense. 
+
+If a creature has no unusual sensory capacity, the Senses section is marked with “—” and denotes a creature can see as an average human. 
+
+If a creature has one of the following specialized senses that allows it to perceive in some way other than “standard” vision, it is noted in the [[Senses]] line, followed by a radius in feet that defines the sense’s maximum range. 
+
+**_Senses and Targeting._** When a creature targets another with an attack, effect, or other feature, the creature must be able to see or sense the target with at least one of its listed senses, and the target can't be behind total cover (see [[06. Playing the Game|Chapter 6]] of the _Player's Guide_), unless that attack, effect, or feature states otherwise. 
+`@[[glossary/senses/]].highlight().h3(statblock)`
+````

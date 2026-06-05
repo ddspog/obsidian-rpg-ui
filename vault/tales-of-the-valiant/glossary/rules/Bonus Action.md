@@ -2,8 +2,14 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+aliases:
+  - bonus action
+  - Bonus Action
 ---
 # Bonus Actions
+````rpg rule.content
+id: summary
+---
 ```rpg rule.side
 title: PLAYER ADVICE
 type: rules
@@ -17,3 +23,10 @@ By default, most creatures don’t have any bonus actions to take. You can only 
 You can only ever take one bonus action on your turn, so you must choose which bonus action to use when more than one is available.  
 
 You choose when to take a bonus action during your turn, unless the bonus action’s timing is specified. Anything that deprives you of your ability to take an action, such as the [[incapacitated]] condition (see [[Appendix A, Conditions]]), also prevents you from taking a bonus action.
+````
+# On Statblock
+```rpg rule.content
+id: statblock
+---
+If a creature can do something special with its [[Bonus Action#On Statblock|bonus action]], that information is contained here. If a creature has no special bonus action, this section is absent.
+```

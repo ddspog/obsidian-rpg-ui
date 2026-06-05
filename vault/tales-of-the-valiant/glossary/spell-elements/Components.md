@@ -2,9 +2,12 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
-tab-icon: hand
-tab-color: var(--color-green)
-tab-order: 3
+---
+````rpg rule.content
+id: spellcasting
+icon: hand
+color: var(--color-green)
+order: 3
 ---
 ## Components
 ```rpg rule.content
@@ -33,4 +36,11 @@ Casting some spells requires specific objects detailed in parentheses in the com
 If a spell states that a material component is consumed by the spell, the caster must provide this component for each casting of the spell. 
 
 A spellcaster must have a hand free to access a spell’s material components—or to hold a spellcasting focus— but it can be the same hand that they use to perform somatic components.
+```
+````
+## On Creatures
+```rpg rule.content
+id: creature
+---
+The Spellcasting action always notes if the creature doesn’t need to use a particular type of spell component, such as material components. If no exception is listed in the creature’s Spellcasting action, the creature must provide all necessary components to cast the spell. For the purposes of casting a spell, a creature needs free use of at least one limb to produce gestures for somatic components rather than specifically free use of one hand. 
 ```

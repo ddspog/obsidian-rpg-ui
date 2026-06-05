@@ -7,6 +7,7 @@ source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 name: "Bear, Brown"
 type: "Large [[Beast]]"
 cr: "1"
+pronunciation: BAIR, brown
 habitat:
   - "[[Arctic]]"
   - "[[Forest]]"

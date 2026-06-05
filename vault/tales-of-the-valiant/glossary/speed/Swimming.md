@@ -14,3 +14,16 @@ id: special
 ---
 While [[Swimming]], you move at half speed—each foot of movement costs 1 extra foot. At the GM’s discretion, gaining distance in rough water might also require a successful STR ([[Athletics]]) check. Failing such a check might cause a creature to start drowning (see [[Other forms of Harm#Suffocating|Suffocating]]). Certain weapons are also more difficult to use while swimming (see **Underwater Combat** under **Special Combat Rules** in this chapter).
 ```
+# For Statblocks
+````rpg rule.content
+id: statblock
+---
+```rpg rule.side
+title: Player Advice
+type: rules
+---
+Unlike most creatures, creatures with a [[swimming]] speed don’t have [[Advantage|disadvantage]] on melee weapon attacks while underwater. For more information about underwater combat, see [[Combat Encounters|Combat]].
+```
+A creature with a [[swimming]] speed can move easily through liquid and doesn’t need to spend extra movement to swim.
+
+````

@@ -5,6 +5,9 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: swords
 tab-color: var(--color-red)
 tab-order: 2
+aliases:
+  - weapon
+  - Weapon
 ---
 ## Weapons
 ````rpg rule.content

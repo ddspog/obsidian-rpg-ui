@@ -1,6 +1,9 @@
 ---
-cssclasses: ["note-item"]
+cssclasses:
+  - note-item
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+aliases:
+  - oil
 ---
 # Oil (flask)
 ```rpg item.element

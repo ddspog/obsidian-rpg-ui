@@ -2,6 +2,11 @@
 cssclasses:
   - note-statblock
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+aliases:
+  - polar bear
+  - Polar Bear
+  - polar bears
+  - Polar Bears
 ---
 ```rpg stat.monster
 name: "Bear, Polar"

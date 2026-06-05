@@ -35,15 +35,7 @@ color: var(--color-blue)
 ---
 ![[padded.webp|left|108]] ![[leather.webp|left|108]] ![[studded-leather.webp|left|96]] ![[hide.webp|left|98]] ![[brigandine.webp|left|98]] ![[scale-mail.webp|left|88]]
 ### Calculating Armor Class
-```rpg rule.content
-id: ac
----
-Wearing armor increases your armor class (AC), which in turn increases your chance of avoiding enemy attacks. An enemy’s attack roll total must meet or beat your AC to deal damage. So, the higher your AC, the greater your chance of avoiding damage! 
-
-A typical PC who isn’t wearing armor has an AC of 10 + their DEX modifier.
-
-When you wear armor, use the AC equation listed with the type of armor you are wearing instead of the typical 10 + DEX modifier equation. See the **Armor** table for an armor type’s AC equation as well as specific bonuses or limitations it imposes when calculating AC.
-```
+`@[[Armor Class]].highlight().bare(summary)`
 ### Armor Types & Proficiencies
 ```rpg rule.content
 id: types

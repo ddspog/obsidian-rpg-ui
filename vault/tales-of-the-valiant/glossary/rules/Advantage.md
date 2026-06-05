@@ -2,9 +2,14 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+aliases:
+  - Disadvantage
+  - disadvantage
+  - advantage
+  - Advantage and Disadvantage
 ---
-# Advantage
-Sometimes special circumstances allow you to roll a check with [[Advantage]] or force you to roll a check with [[Disadvantage]]. 
+# Advantage & Disadvantage
+Sometimes special circumstances allow you to roll a check with [[Advantage]] or force you to roll a check with [[Advantage|Disadvantage]]. 
 - Rolling with advantage means that you roll two d20s, then use the higher of the two numbers to calculate your check result. 
 - Rolling with disadvantage means you roll two d20s, then use the lower of the two numbers to calculate your check result. 
 

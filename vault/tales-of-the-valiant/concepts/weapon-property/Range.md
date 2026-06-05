@@ -16,7 +16,7 @@ You can make ranged attacks only against targets within a specified range. If a 
 ###### Long Range 
 Some ranged attacks, such as those made with a [[longbow]] or a shortbow, have two ranges. The smaller number is the normal range, and the larger number is the long range.  
 
-Your attack roll has [[disadvantage]] when your target is in long range, and you can’t attack a target beyond long range. 
+Your attack roll has [[Advantage|disadvantage]] when your target is in long range, and you can’t attack a target beyond long range. 
 ###### Close Range 
-Making a ranged attack is more difficult when a foe is next to you. When you make a ranged attack with a weapon, a spell, or some other means, you have [[disadvantage]] on the attack roll if you are within 5 feet of a hostile creature who can see you and who isn’t [[incapacitated]]. 
+Making a ranged attack is more difficult when a foe is next to you. When you make a ranged attack with a weapon, a spell, or some other means, you have [[Advantage|disadvantage]] on the attack roll if you are within 5 feet of a hostile creature who can see you and who isn’t [[incapacitated]]. 
 ```
