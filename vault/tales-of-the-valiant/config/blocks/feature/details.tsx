@@ -200,14 +200,25 @@ export const details: EntityBlock<FeatureDetails & { $homebrew?: boolean; exampl
     if (!self.text) return undefined;
     if (!self.example) return self.text;
     const exSelf = self.example.self ?? {};
-    const exTierKey = self.example.tier != null ? String(self.example.tier) : undefined;
     const tiers = (self as any).tiers as Record<string, Record<string, unknown>> | undefined;
     let tierParams: Record<string, unknown> = {};
     if (tiers && Object.keys(tiers).length > 0) {
-      tierParams = (exTierKey != null ? tiers[exTierKey] : undefined) ?? tiers[Object.keys(tiers)[0]] ?? {};
+      // Tier selection mirrors the statblock-import resolver: an explicit
+      // `example.tier` wins; otherwise the feature's `auto` path read from the
+      // example's `self` picks it; falling back to the first declared tier.
+      // (The first-key fallback is order-dependent — JS lists integer-like
+      // keys ascending before string keys, so `auto` is needed for negative
+      // tiers like `"-2"` to win over `2`.)
+      let tierKey = self.example.tier != null ? String(self.example.tier) : undefined;
+      const auto = (self as any).auto;
+      if (tierKey == null && typeof auto === "string") {
+        const autoVal = resolvePath(exSelf, auto);
+        if (autoVal != null) tierKey = String(autoVal);
+      }
+      tierParams = (tierKey != null ? tiers[tierKey] : undefined) ?? tiers[Object.keys(tiers)[0]] ?? {};
     }
     return substituteExample(self.text, tierParams, exSelf);
-  }, [self.text, self.example, (self as any).tiers]);
+  }, [self.text, self.example, (self as any).tiers, (self as any).auto]);
 
   const cls = ["rpg-feature-card"];
   if (isHomebrew) cls.push("rpg-feature-homebrew");
