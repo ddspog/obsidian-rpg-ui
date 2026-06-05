@@ -521,12 +521,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const armorBlock = fm.armor && typeof fm.armor === "object" ? fm.armor : void 0;
       if (!armorBlock) continue;
       const formula = typeof armorBlock.ac === "string" ? armorBlock.ac : void 0;
-      const category = typeof armorBlock.category === "string" ? armorBlock.category.toLowerCase() : void 0;
-      if (category === "shield") {
+      const category2 = typeof armorBlock.category === "string" ? armorBlock.category.toLowerCase() : void 0;
+      if (category2 === "shield") {
         const bonus = parseAcBonus(formula);
         if (bonus > shieldBonus) shieldBonus = bonus;
       } else if (o.slot === "armor") {
-        armor = (_b = computeArmorValue(formula, category, dexMod)) != null ? _b : armor;
+        armor = (_b = computeArmorValue(formula, category2, dexMod)) != null ? _b : armor;
       }
     }
     return { armor, shieldBonus };
@@ -549,7 +549,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const n = Number(m[0]);
     return Number.isFinite(n) ? n : 0;
   }
-  function computeArmorValue(formula, category, dexMod) {
+  function computeArmorValue(formula, category2, dexMod) {
     if (!formula) return null;
     const baseMatch = formula.match(/-?\d+/);
     if (!baseMatch) return null;
@@ -558,7 +558,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const wantsDex = /\bdex\b/i.test(formula);
     if (!wantsDex) return base;
     const explicitCap = formula.match(/max\s+(\d+)/i);
-    const cap = explicitCap ? Number(explicitCap[1]) : category === "heavy" ? 0 : category === "medium" ? 2 : Infinity;
+    const cap = explicitCap ? Number(explicitCap[1]) : category2 === "heavy" ? 0 : category2 === "medium" ? 2 : Infinity;
     return base + Math.min(dexMod, cap);
   }
   function wikiStem(raw) {
@@ -2619,12 +2619,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         const hasBuy = feature.buy != null;
         const singleChoose = Array.isArray(rawChoose) ? rawChoose.length === 1 ? rawChoose[0] : void 0 : rawChoose;
         const isAsi = !hasBuy && (singleChoose == null ? void 0 : singleChoose.type) === "asi";
-        const category = prettifyLevelSuffix(
+        const category2 = prettifyLevelSuffix(
           hasBuy ? feature.name : (_a = singleChoose == null ? void 0 : singleChoose.category) != null ? _a : isAsi ? "Ability Scores" : feature.name
         );
         const decisionValues = isAsi ? aggregateAsiPicks(values, (_b = singleChoose == null ? void 0 : singleChoose.quantity) != null ? _b : 1) : values;
         decisions.push({
-          category,
+          category: category2,
           values: decisionValues,
           source: src.source,
           resetKey: feature.name
@@ -3110,7 +3110,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   };
   function SpellEntry({
     spellName,
-    group: group2,
+    group,
     doc,
     enablerSource
   }) {
@@ -3121,7 +3121,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     if (doc == null ? void 0 : doc.range) subParts.push({ key: "range", label: "Range", value: doc.range });
     if (componentsLabel) subParts.push({ key: "components", label: "Components", value: componentsLabel });
     if (doc == null ? void 0 : doc.duration) subParts.push({ key: "duration", label: "Duration", value: doc.duration });
-    return /* @__PURE__ */ React9.createElement("li", { className: "rpg-spell-entry", "data-group": group2 }, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-header" }, /* @__PURE__ */ React9.createElement("a", { className: "internal-link rpg-spell-entry-name", href: stem, "data-href": stem }, stem), (doc == null ? void 0 : doc.casting) && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-casting", "aria-details": "Casting Time" }, doc.casting, " to cast")), styleLabel && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-style", "aria-details": "Style" }, styleLabel)), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-group", "aria-details": "Spell Group" }, /* @__PURE__ */ React9.createElement("em", null, GROUP_LABEL[group2]))), /* @__PURE__ */ React9.createElement(
+    return /* @__PURE__ */ React9.createElement("li", { className: "rpg-spell-entry", "data-group": group }, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-header" }, /* @__PURE__ */ React9.createElement("a", { className: "internal-link rpg-spell-entry-name", href: stem, "data-href": stem }, stem), (doc == null ? void 0 : doc.casting) && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-casting", "aria-details": "Casting Time" }, doc.casting, " to cast")), styleLabel && /* @__PURE__ */ React9.createElement(React9.Fragment, null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-style", "aria-details": "Style" }, styleLabel)), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-entry-sep" }, " \xB7 "), /* @__PURE__ */ React9.createElement("small", { className: "rpg-spell-entry-group", "aria-details": "Spell Group" }, /* @__PURE__ */ React9.createElement("em", null, GROUP_LABEL[group]))), /* @__PURE__ */ React9.createElement(
       "a",
       {
         className: "internal-link rpg-spell-entry-enabler",
@@ -3227,16 +3227,16 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         onToggle: (e) => setOpen(e.currentTarget.open)
       },
       /* @__PURE__ */ React9.createElement("summary", null, /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-circle-label" }, label), circle !== 0 && slotsMax > 0 && /* @__PURE__ */ React9.createElement(SlotPips, { max: slotsMax, spent, onChange: onSpentChange }), /* @__PURE__ */ React9.createElement("span", { className: "rpg-spell-circle-count" }, total)),
-      total === 0 ? /* @__PURE__ */ React9.createElement("p", { "aria-details": "Empty Circle" }, /* @__PURE__ */ React9.createElement("em", null, "\u2014")) : /* @__PURE__ */ React9.createElement("ul", { "aria-label": `${label} Spells`, className: "rpg-spell-entries" }, ordered.map(({ group: group2, name }) => {
+      total === 0 ? /* @__PURE__ */ React9.createElement("p", { "aria-details": "Empty Circle" }, /* @__PURE__ */ React9.createElement("em", null, "\u2014")) : /* @__PURE__ */ React9.createElement("ul", { "aria-label": `${label} Spells`, className: "rpg-spell-entries" }, ordered.map(({ group, name }) => {
         var _a;
         const stem = bareStem(name);
         const enabler = (_a = caster.grantedBy[stem]) != null ? _a : caster.source;
         return /* @__PURE__ */ React9.createElement(
           SpellEntry,
           {
-            key: `${group2}:${name}`,
+            key: `${group}:${name}`,
             spellName: name,
-            group: group2,
+            group,
             doc: spells2[stem],
             enablerSource: enabler
           }
@@ -3728,12 +3728,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         return nextMap;
       });
     } : void 0;
-    const removeFromCircleList = setCasters ? (source, category, circle, option) => {
+    const removeFromCircleList = setCasters ? (source, category2, circle, option) => {
       setCasters((prev) => {
         var _a2, _b2, _c2;
         const nextMap = { ...prev != null ? prev : {} };
         const casterPrev = { ...(_a2 = nextMap[source]) != null ? _a2 : {} };
-        const bucketMap = { ...(_b2 = casterPrev[category]) != null ? _b2 : {} };
+        const bucketMap = { ...(_b2 = casterPrev[category2]) != null ? _b2 : {} };
         const list = [...(_c2 = bucketMap[circle]) != null ? _c2 : []];
         const bare = bareStem(option);
         const idx = list.findIndex((s) => bareStem(s) === bare);
@@ -3741,8 +3741,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         list.splice(idx, 1);
         if (list.length === 0) delete bucketMap[circle];
         else bucketMap[circle] = list;
-        if (Object.keys(bucketMap).length === 0) delete casterPrev[category];
-        else casterPrev[category] = bucketMap;
+        if (Object.keys(bucketMap).length === 0) delete casterPrev[category2];
+        else casterPrev[category2] = bucketMap;
         nextMap[source] = casterPrev;
         return nextMap;
       });
@@ -5709,20 +5709,20 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   };
   var monster_default = monster;
 
-  // vault:tales-of-the-valiant/config/blocks/stat/group.tsx
+  // vault:tales-of-the-valiant/config/blocks/stat/category.tsx
   var React24 = __toESM(__require("react"));
   var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
-  var group = ({ self }) => {
+  var category = ({ self }) => {
     var _a, _b;
     const data = React24.useMemo(
-      () => (0, import_rpg_ui_toolkit22.mapGroup)(self),
+      () => (0, import_rpg_ui_toolkit22.mapCategory)(self),
       [self]
     );
     const app = globalThis.app;
     const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
     const name = data.name || (activeFile == null ? void 0 : activeFile.basename) || "";
     return /* @__PURE__ */ React24.createElement(
-      import_rpg_ui_toolkit22.StatblockGroup,
+      import_rpg_ui_toolkit22.StatblockCategory,
       {
         name,
         subtitle: data.subtitle,
@@ -5733,14 +5733,15 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       }
     );
   };
-  var group_default = group;
+  var category_default = category;
 
   // vault:tales-of-the-valiant/config/entities/stat.tsx
   var stat = (0, import_rpg_ui_toolkit23.CreateEntity)(() => ({
     blocks: {
       vehicle: vehicle_default,
       monster: monster_default,
-      group: group_default
+      category: category_default,
+      group: category_default
     }
   }));
   var stat_default = stat;
@@ -6110,6 +6111,47 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           variant: "callout",
           type: preset,
           title: name,
+          content,
+          sourcePath: ctx.file
+        });
+      }
+    },
+    /**
+     * Spread side block — in-flow "newspaper" panel with a solid banner
+     * heading. Renders exactly like `callout` but with `kind: spread`.
+     *
+     * Two-column grid: a folder import (`@[[folder/]].spread()`) lays all its
+     * items into columns, and consecutive `.spread()` calls written on
+     * adjacent source lines (same paragraph) merge into columns — the same
+     * convention `.tab()` uses. Calls separated by blank lines or headings
+     * stay single-column; use the folder form for those layouts. A lone
+     * spread also stays single-column.
+     *
+     * Accepts the same params as `callout` (`type`, `name`, `content`), plus
+     * an optional `subtitle` (named param, falling back to the target's
+     * `subtitle` frontmatter).
+     *
+     *   `@[[abilities/]].spread()`                          — folder → columns
+     *   `@[[Strength]].spread()` `@[[Dexterity]].spread()`  — same line → columns
+     *   `@[[rules/combat]].spread(grapple)`                 — single block by id
+     *   `@[[rules/combat]].spread(grapple, warning)`        — type=warning
+     *   `@[[file]].spread(type: rules)`                     — whole file, named type
+     *   `@[[file]].spread(name: "STR", subtitle: "Skills: Athletics")`
+     */
+    spread: {
+      mode: "args",
+      render: (ctx, args) => {
+        var _a, _b, _c, _d, _e, _f, _g;
+        const preset = (_b = typeof ((_a = ctx.params) == null ? void 0 : _a.type) === "string" ? ctx.params.type : void 0) != null ? _b : typeof (args == null ? void 0 : args[0]) === "string" ? args[0] : void 0;
+        const name = (_d = typeof ((_c = ctx.params) == null ? void 0 : _c.name) === "string" ? ctx.params.name : void 0) != null ? _d : headingText(ctx);
+        const fm = ctx.frontmatter;
+        const subtitle = (_f = typeof ((_e = ctx.params) == null ? void 0 : _e.subtitle) === "string" ? ctx.params.subtitle : void 0) != null ? _f : typeof (fm == null ? void 0 : fm.subtitle) === "string" ? fm.subtitle : void 0;
+        const content = typeof ((_g = ctx.params) == null ? void 0 : _g.content) === "string" ? ctx.params.content : ctx.content;
+        return React25.createElement(import_rpg_ui_toolkit24.RuleSide, {
+          variant: "spread",
+          type: preset,
+          title: name,
+          subtitle,
           content,
           sourcePath: ctx.file
         });

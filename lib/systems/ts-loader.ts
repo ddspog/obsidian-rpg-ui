@@ -397,8 +397,10 @@ export async function evaluateSystemBundle(
             // Statblock components and helpers.
             StatblockVehicle: statblockComponent.StatblockVehicle,
             StatblockMonster: statblockMonsterComponent.StatblockMonster,
+            StatblockCategory: statblockGroupComponent.StatblockCategory,
             StatblockGroup: statblockGroupComponent.StatblockGroup,
             mapMonster: monsterFields.mapMonster,
+            mapCategory: monsterFields.mapCategory,
             mapGroup: monsterFields.mapGroup,
             resolveStatFeatures: statblockResolver.resolveStatFeatures,
             // Fence utilities.

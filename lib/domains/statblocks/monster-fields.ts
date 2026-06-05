@@ -7,7 +7,7 @@
  * legacy (flat frontmatter) way still resolves.
  */
 
-import type { AbilityScores, StatFeatureRef, StatGroupData, StatMonsterData } from "./types";
+import type { AbilityScores, StatFeatureRef, StatCategoryData, StatMonsterData } from "./types";
 
 /** YAML parses bare `[[Name]]` as `[["Name"]]`; collapse it back to text. */
 function stringifyValue(value: unknown): string {
@@ -108,7 +108,7 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
 
   const habitat = stringifyValue(self.habitat);
   const treasure = stringifyValue(self.treasure);
-  const group = stringifyValue(self.group);
+  const category = stringifyValue(self.category) || stringifyValue(self.group);
 
   return {
     name: typeof self.name === "string" ? self.name : "",
@@ -116,7 +116,7 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
     cr: crDisplay(self.cr),
     habitat: isBlank(habitat) ? undefined : habitat,
     treasure: isBlank(treasure) ? undefined : treasure,
-    group: isBlank(group) ? undefined : group,
+    category: isBlank(category) ? undefined : category,
     stats,
     abilities: normalizeAbilities(abilSrc),
     features: normalizeFeatures(self.features),
@@ -125,8 +125,8 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
   };
 }
 
-/** Map a `rpg stat.group` fence body into structured {@link StatGroupData}. */
-export function mapGroup(self: Record<string, unknown>): StatGroupData {
+/** Map a `rpg stat.category` fence body into structured {@link StatCategoryData}. */
+export function mapCategory(self: Record<string, unknown>): StatCategoryData {
   const subtitle = stringifyValue(self.subtitle);
   const habitat = stringifyValue(self.habitat);
   const treasure = stringifyValue(self.treasure);
@@ -138,3 +138,6 @@ export function mapGroup(self: Record<string, unknown>): StatGroupData {
     text: typeof self.text === "string" && self.text.trim() ? self.text : undefined,
   };
 }
+
+/** @deprecated Use mapCategory */
+export const mapGroup = mapCategory;

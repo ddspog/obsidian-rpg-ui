@@ -1,13 +1,14 @@
 import { CreateEntity } from "rpg-ui-toolkit";
 import vehicle from "../blocks/stat/vehicle";
 import monster from "../blocks/stat/monster";
-import group from "../blocks/stat/group";
+import category from "../blocks/stat/category";
 
 const stat = CreateEntity(() => ({
   blocks: {
     vehicle,
     monster,
-    group,
+    category,
+    group: category,
   },
 }));
 

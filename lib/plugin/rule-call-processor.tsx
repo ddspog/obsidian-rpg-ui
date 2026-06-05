@@ -238,6 +238,7 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
           if (!childUnloaded) {
             markHighlightedItems(el);
             mergeAdjacentCallTabs(el);
+            mergeAdjacentCallSpreads(el);
             mergeAdjacentItemLists(el);
             mergeTableRows(el);
             removeBrBetweenSiblingCalls(el);
@@ -591,6 +592,37 @@ function resolveCall(
       const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
         | Record<string, unknown>
         | undefined) ?? {};
+
+      // Fallback: files whose data lives in an `rpg <entity>.<block>` fence
+      // (e.g. creature notes with `stat.monster`) have no `rule.content`
+      // blocks, so frontmatter-reading views like `.row()` / `.p()` would
+      // render nothing. Mirror the folder-call behavior: synthesize one block
+      // from the first rpg fence's YAML (merged over frontmatter) plus any
+      // post-`---` body text. Special-cased views (stat/magic/spell/danger)
+      // return earlier and never reach here.
+      if (fenced.length === 0) {
+        const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
+        const fenceMatch = anyFenceRe.exec(cleaned);
+        if (fenceMatch) {
+          const fenceRaw = fenceMatch[1];
+          const sepIdx = fenceRaw.indexOf("\n---\n");
+          const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
+          const bodyText =
+            sepIdx >= 0 ? fenceRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : "";
+          let fenceFm: Record<string, unknown> = {};
+          try {
+            const parsed = parseYaml(yamlPart);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+              fenceFm = parsed as Record<string, unknown>;
+            }
+          } catch {
+            /* ignore */
+          }
+          if (Object.keys(fenceFm).length > 0 || bodyText) {
+            fenced.push({ body: bodyText, frontmatter: { ...fileFm, ...fenceFm } });
+          }
+        }
+      }
 
       let viewArgs = call.args;
       let matching: HarvestedBlock[] = fenced;
@@ -2112,6 +2144,116 @@ function isCallTabAdjacent(a: HTMLElement, b: HTMLElement): boolean {
     return false;
   }
   return false;
+}
+
+/**
+ * Count the spread items a `.rpg-call` span renders at its own top level —
+ * i.e. spread blocks NOT nested inside another rule.side box. A `.callout()`
+ * import whose content embeds `kind: spread` fences legitimately contains
+ * spread items (see `.rpg-rule-side--callout:has(.rpg-rule-side--spread)` in
+ * rule-block.css); those belong to the callout's own layout and must not be
+ * pulled into a spread group. Search is bounded to within `span`.
+ */
+function topLevelSpreadCount(span: HTMLElement): number {
+  const items = Array.from(span.querySelectorAll(".rpg-rule-side--spread")) as HTMLElement[];
+  let count = 0;
+  for (const item of items) {
+    let nested = false;
+    let p: HTMLElement | null = item.parentElement;
+    while (p && p !== span) {
+      if (
+        p.classList.contains("rpg-rule-side--callout") ||
+        p.classList.contains("rpg-rule-side--float") ||
+        p.classList.contains("rpg-rule-side--commentary")
+      ) {
+        nested = true;
+        break;
+      }
+      p = p.parentElement;
+    }
+    if (!nested) count++;
+  }
+  return count;
+}
+
+/**
+ * After all calls resolve, lay spread side blocks (`kind: spread`) out in
+ * the same two-column grid the `rpg rule.side` fence processor applies
+ * (see render-spread-group.tsx). Two shapes are handled:
+ *
+ *   - Folder import (`@[[folder/]].spread()`): one `.rpg-call` span holds
+ *     several spread items — the span itself becomes the flex group.
+ *   - Consecutive single calls (`@[[a]].spread()` `@[[b]].spread()`): each
+ *     span holds one item — adjacent spans are wrapped in a flex group,
+ *     matching how `.tab()` merges. A lone spread stays single-column.
+ *
+ * Adjacency follows the `.tab()` rule: same parent, skipping the `<br>` /
+ * whitespace Obsidian inserts between calls on consecutive source lines.
+ * Calls separated by a blank line or a heading land in different parent
+ * blocks and are intentionally NOT merged here (cross-block DOM moves are
+ * fragile under Obsidian's virtualization) — the folder form handles those
+ * bulk layouts instead.
+ */
+function mergeAdjacentCallSpreads(root: HTMLElement): void {
+  const SPREAD_GROUP_CLASS = "rpg-rule-side-spread-group";
+  const spreadCalls = (Array.from(root.querySelectorAll(`.${CALL_CLASS}`)) as HTMLElement[])
+    .map((span) => ({ span, count: topLevelSpreadCount(span) }))
+    .filter((c) => c.count > 0);
+  if (spreadCalls.length === 0) return;
+
+  // Folder imports mount every spread item into one span — promote that span
+  // to the flex group directly so its items flow into columns.
+  for (const { span, count } of spreadCalls) {
+    if (span.classList.contains(SPREAD_GROUP_CLASS)) continue;
+    if (count >= 2) span.classList.add(SPREAD_GROUP_CLASS);
+  }
+
+  // Single-item spans (one spread each) merge with adjacent siblings.
+  const singles = spreadCalls
+    .filter(({ span }) => !span.classList.contains(SPREAD_GROUP_CLASS))
+    .map(({ span }) => span);
+  if (singles.length < 2) return;
+
+  const groups: HTMLElement[][] = [];
+  let current: HTMLElement[] = [singles[0]];
+  for (let i = 1; i < singles.length; i++) {
+    if (isCallTabAdjacent(singles[i - 1], singles[i])) {
+      current.push(singles[i]);
+    } else {
+      groups.push(current);
+      current = [singles[i]];
+    }
+  }
+  groups.push(current);
+
+  for (const group of groups) {
+    if (group.length < 2) continue;
+    const parent = group[0].parentElement;
+    if (!parent || parent.classList.contains(SPREAD_GROUP_CLASS)) continue;
+
+    const container = document.createElement("div");
+    container.className = SPREAD_GROUP_CLASS;
+    parent.insertBefore(container, group[0]);
+
+    for (let i = 0; i < group.length; i++) {
+      // Drop the <br> / whitespace nodes between this span and the previous
+      // one (they'd otherwise be swept into the flex container as stray items).
+      if (i > 0) {
+        let node: Node | null = group[i - 1].nextSibling;
+        while (node && node !== group[i]) {
+          const next: Node | null = node.nextSibling;
+          if (
+            (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "BR") ||
+            (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim())
+          ) {
+            node.parentNode?.removeChild(node);
+          }
+          node = next;
+        }
+      }
+      container.appendChild(group[i]);
+    }
+  }
 }
 
 /** Check if two sibling elements are adjacent (only whitespace text nodes between). */

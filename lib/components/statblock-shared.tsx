@@ -83,7 +83,7 @@ export function InlineWikilinks({ text }: { text: string }): React.ReactElement 
 
 /**
  * The justified `Habitat: a, b   ⟷   Treasure: x, y` line shared by
- * `stat.group` and ungrouped `stat.monster`. Wikilinks render inline.
+ * `stat.category` and uncategorized `stat.monster`. Wikilinks render inline.
  */
 export function HabitatTreasureLine({
   habitat,

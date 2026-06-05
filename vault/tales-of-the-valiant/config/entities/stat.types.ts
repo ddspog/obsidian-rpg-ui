@@ -3,6 +3,7 @@ import type {
   EntityDescriptor,
   ResolvedStatFeature,
   StatFeatureRef,
+  StatCategoryData,
   StatGroupData,
   StatMonsterData,
   StatVehicleData,
@@ -13,11 +14,11 @@ export type StatLookup = Record<string, never>;
 export type StatBlocks = {
   vehicle: StatVehicleData;
   monster: StatMonsterData;
-  group: StatGroupData;
+  category: StatCategoryData;
 };
 
 export type StatExpressions = Record<string, never>;
 
 export type StatEntity = EntityDescriptor<StatBlocks, StatLookup, StatExpressions>;
 
-export type { AbilityScores, ResolvedStatFeature, StatFeatureRef, StatGroupData, StatMonsterData, StatVehicleData };
+export type { AbilityScores, ResolvedStatFeature, StatFeatureRef, StatCategoryData, StatGroupData, StatMonsterData, StatVehicleData };

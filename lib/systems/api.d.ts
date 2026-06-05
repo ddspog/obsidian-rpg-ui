@@ -1518,9 +1518,9 @@ export type RuleViewMap = Record<string, RuleViewEntry>;
 // ── Rule.side wrapper component ────────────────────────────────────
 // React component for rendering an arbitrary string as a rule.side
 // block from inside a view function. Composes the same float / callout /
-// commentary variants used by the `rpg rule.side` block processor.
+// commentary / spread variants used by the `rpg rule.side` block processor.
 
-export type SideKind = "float" | "callout" | "commentary";
+export type SideKind = "float" | "callout" | "commentary" | "spread";
 export type SidePreset =
   | "note"
   | "info"
@@ -1538,6 +1538,8 @@ export interface RuleSideProps {
   variant?: SideKind;
   /** Heading title (commentary may omit). */
   title?: string;
+  /** Subtitle line — only used by the `spread` variant. */
+  subtitle?: string;
   /** Markdown body. */
   content: string;
   /** Preset (note/tip/warning/rules/etc.) — applies default color/icon/title
@@ -1641,7 +1643,7 @@ export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;
 /** Map a creature note's frontmatter/fence into structured monster data. */
 export declare function mapMonster(self: Record<string, unknown>): StatMonsterData;
 
-export interface StatGroupData {
+export interface StatCategoryData {
   name: string;
   subtitle?: string;
   habitat?: string;
@@ -1650,7 +1652,10 @@ export interface StatGroupData {
   [key: string]: unknown;
 }
 
-export interface StatblockGroupProps {
+/** @deprecated Use StatCategoryData */
+export type StatGroupData = StatCategoryData;
+
+export interface StatblockCategoryProps {
   name: string;
   subtitle?: string;
   habitat?: string;
@@ -1660,10 +1665,17 @@ export interface StatblockGroupProps {
   sourcePath?: string;
 }
 
-export declare const StatblockGroup: FunctionComponent<StatblockGroupProps>;
+/** @deprecated Use StatblockCategoryProps */
+export type StatblockGroupProps = StatblockCategoryProps;
 
-/** Map a `rpg stat.group` fence body into structured group data. */
-export declare function mapGroup(self: Record<string, unknown>): StatGroupData;
+export declare const StatblockCategory: FunctionComponent<StatblockCategoryProps>;
+/** @deprecated Use StatblockCategory */
+export declare const StatblockGroup: FunctionComponent<StatblockCategoryProps>;
+
+/** Map a `rpg stat.category` fence body into structured category data. */
+export declare function mapCategory(self: Record<string, unknown>): StatCategoryData;
+/** @deprecated Use mapCategory */
+export declare function mapGroup(self: Record<string, unknown>): StatCategoryData;
 
 export declare function resolveStatFeatures(
   refs: StatFeatureRef[],

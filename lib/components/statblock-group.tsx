@@ -2,24 +2,22 @@ import * as React from "react";
 import { Markdown } from "./markdown";
 import { HabitatTreasureLine, InlineWikilinks } from "./statblock-shared";
 
-export interface StatblockGroupProps {
+export interface StatblockCategoryProps {
   name: string;
-  /** Optional subtitle (e.g. a shared type line); wikilinks render inline. */
   subtitle?: string;
   habitat?: string;
   treasure?: string;
-  /** Descriptive prose (the group's contents). */
   body?: string;
   hideTitle?: boolean;
   sourcePath?: string;
 }
 
 /**
- * A monster group header — shared habitat/treasure + flavor for a set of
- * `stat.monster` blocks that link to it via `group:`. Renders the title bar,
+ * A monster category header — shared habitat/treasure + flavor for a set of
+ * `stat.monster` blocks that link to it via `category:`. Renders the title bar,
  * subtitle, the justified Habitat/Treasure line, then the contents prose.
  */
-export function StatblockGroup({
+export function StatblockCategory({
   name,
   subtitle,
   habitat,
@@ -27,9 +25,9 @@ export function StatblockGroup({
   body,
   hideTitle,
   sourcePath,
-}: StatblockGroupProps) {
+}: StatblockCategoryProps) {
   return (
-    <article className="rpg-statblock rpg-statblock-group">
+    <article className="rpg-statblock rpg-statblock-category">
       {!hideTitle && (
         <header className="rpg-statblock-header">
           <h3>{name}</h3>
@@ -55,4 +53,9 @@ export function StatblockGroup({
   );
 }
 
-export default StatblockGroup;
+/** @deprecated Use StatblockCategory */
+export const StatblockGroup = StatblockCategory;
+/** @deprecated Use StatblockCategoryProps */
+export type StatblockGroupProps = StatblockCategoryProps;
+
+export default StatblockCategory;
