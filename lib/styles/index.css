@@ -26,6 +26,9 @@
 @import "./components/session-log-tags.css";
 @import "./components/session-log-hud.css";
 @import "./components/session-log-overview.css";
+@import "./components/session-log-cards.css";
+@import "./components/session-log-popover.css";
+@import "./components/session-log-drawer.css";
 /* System Definition Components - Split from monolithic file */
 @import "./components/system-info.css";
 @import "./components/banner-header.css";

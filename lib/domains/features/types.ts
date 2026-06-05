@@ -110,6 +110,8 @@ export interface FeatureAspect {
   recovery?: string;
   /** Inline cooldown within a single turn ("once per turn", "once per round"). */
   recharge?: string;
+  /** Lonelog template appended to session log when this aspect is used. */
+  log?: string;
 }
 
 // Re-export the roll aspect types so downstream modules can import

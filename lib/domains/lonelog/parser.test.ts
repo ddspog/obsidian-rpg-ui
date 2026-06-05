@@ -102,22 +102,26 @@ describe("Lonelog Parser", () => {
     it("should parse rolls (d:)", () => {
       const result = parseLonelog("d: d20+5=17 vs DC 15 -> Success");
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         type: "roll",
         roll: "d20+5=17 vs DC 15",
         result: "Success",
         success: true,
+        total: 17,
+        vsTarget: "DC 15",
       });
     });
 
     it("should parse failed rolls", () => {
       const result = parseLonelog("d: d20+2=8 vs DC 15 -> Fail");
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         type: "roll",
         roll: "d20+2=8 vs DC 15",
         result: "Fail",
         success: false,
+        total: 8,
+        vsTarget: "DC 15",
       });
     });
 
@@ -139,6 +143,7 @@ describe("Lonelog Parser", () => {
       expect(result[0]).toEqual({
         type: "dialogue",
         speaker: "Guard",
+        speakerType: "npc",
         text: "Halt! Who goes there?",
       });
     });
@@ -149,6 +154,7 @@ describe("Lonelog Parser", () => {
       expect(result[0]).toEqual({
         type: "dialogue",
         speaker: "PC",
+        speakerType: "pc",
         text: "I mean no harm",
       });
     });
@@ -183,7 +189,7 @@ describe("Lonelog Parser", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         type: "meta_note",
-        text: "This was a close call",
+        text: "note: This was a close call",
       });
     });
   });
@@ -425,6 +431,270 @@ d: 1d8+4=9 slashing damage
         (entry) => entry.type === "consequence" && entry.tags.some((tag) => tag.kind === "pc" && tag.name === "Elara")
       );
       expect(consequenceWithHeal).toBeDefined();
+    });
+  });
+
+  describe("Partylog extensions", () => {
+    it("should parse attributed actions @(Name)", () => {
+      const result = parseLonelog("@(Kael) Pick the lock on the cellar door");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "action",
+        actor: "Kael",
+        text: "Pick the lock on the cellar door",
+      });
+    });
+
+    it("should parse collaborative actions @(A > B)", () => {
+      const result = parseLonelog("@(Mira > Kael) Mira assists Kael in climbing");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "action",
+        actor: "Mira",
+        assist: "Kael",
+        text: "Mira assists Kael in climbing",
+      });
+    });
+
+    it("should parse group actions @(A+B)", () => {
+      const result = parseLonelog("@(Kael+Mira) Force open the heavy door");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "action",
+        actor: "Kael+Mira",
+        text: "Force open the heavy door",
+      });
+    });
+
+    it("should parse world events !", () => {
+      const result = parseLonelog("! The ceiling begins to crack");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "world_event",
+        text: "The ceiling begins to crack",
+        tags: [],
+      });
+    });
+
+    it("should extract tags from world events", () => {
+      const result = parseLonelog("! Orcs arrive [F:Orc×3|HP 11 each]");
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("world_event");
+      if (result[0].type === "world_event") {
+        expect(result[0].tags).toHaveLength(1);
+        expect(result[0].tags[0]).toEqual({ kind: "foe", name: "Orc×3", tags: ["HP 11 each"] });
+      }
+    });
+
+    it("should parse attributed rolls d(Name):", () => {
+      const result = parseLonelog("d(Kael): Stealth d20+7=21 -> Success");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        type: "roll",
+        actor: "Kael",
+        roll: "Stealth d20+7=21",
+        result: "Success",
+        success: true,
+        label: "Stealth",
+        total: 21,
+      });
+    });
+
+    it("should parse Partylog dialogue PC(Name):", () => {
+      const result = parseLonelog('PC(Kael): "I don\'t trust him."');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "dialogue",
+        speaker: "Kael",
+        speakerType: "pc",
+        text: "I don't trust him.",
+      });
+    });
+
+    it("should parse NPC dialogue N(Name):", () => {
+      const result = parseLonelog('N(Baron): "You\'ll do as I say."');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "dialogue",
+        speaker: "Baron",
+        speakerType: "npc",
+        text: "You'll do as I say.",
+      });
+    });
+
+    it("should parse combat markers", () => {
+      const result = parseLonelog("[COMBAT]\nR1\n@(Mira) Attack\n[/COMBAT]");
+      expect(result[0]).toEqual({ type: "combat_marker", state: "open" });
+      expect(result[1]).toEqual({ type: "round_marker", round: 1 });
+      expect(result[2].type).toBe("action");
+      expect(result[3]).toEqual({ type: "combat_marker", state: "close" });
+    });
+
+    it("should parse round markers", () => {
+      const result = parseLonelog("R1\nR2\nR10");
+      expect(result).toEqual([
+        { type: "round_marker", round: 1 },
+        { type: "round_marker", round: 2 },
+        { type: "round_marker", round: 10 },
+      ]);
+    });
+
+    it("should parse oracle with attribution ?(Name)", () => {
+      const result = parseLonelog("?(Sable) Is the ruin inhabited?");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "oracle_question",
+        actor: "Sable",
+        text: "Is the ruin inhabited?",
+      });
+    });
+
+    it("should parse foe tags [F:Enemy|stats]", () => {
+      const tags = extractTags("[F:Bandit Leader|HP 27|Close]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "foe",
+        name: "Bandit Leader",
+        tags: ["HP 27", "Close"],
+      });
+    });
+
+    it("should parse meta note variants (rule:, post:, hook:)", () => {
+      const r1 = parseLonelog("(rule: Flanking gives +2)");
+      expect(r1[0]).toEqual({ type: "meta_note", text: "rule: Flanking gives +2" });
+
+      const r2 = parseLonelog("(hook: scout the temple before the shipment)");
+      expect(r2[0]).toEqual({ type: "meta_note", text: "hook: scout the temple before the shipment" });
+    });
+
+    it("should handle bare @ as legacy unattributed action", () => {
+      const result = parseLonelog("@ Elara sneaks forward");
+      expect(result[0]).toEqual({ type: "action", text: "Elara sneaks forward" });
+    });
+
+    it("should parse [RESOURCES] block markers", () => {
+      const result = parseLonelog("[RESOURCES]\n[Inv:Torch|3]\n[/RESOURCES]");
+      expect(result[0]).toEqual({ type: "resource_marker", state: "open" });
+      expect(result[1].type).toBe("consequence");
+      expect(result[2]).toEqual({ type: "resource_marker", state: "close" });
+    });
+
+    it("should parse standalone [Inv:] lines as consequences with tags", () => {
+      const result = parseLonelog("[Inv:Torch-1]");
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("consequence");
+      if (result[0].type === "consequence") {
+        expect(result[0].tags).toHaveLength(1);
+        expect(result[0].tags[0]).toEqual({
+          kind: "inventory",
+          name: "Torch",
+          ref: false,
+          delta: -1,
+          props: [],
+        });
+      }
+    });
+
+    it("should parse [Inv:] with quantity and props", () => {
+      const tags = extractTags("[Inv:Healing Potion|2|magical|restores d8 HP]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "inventory",
+        name: "Healing Potion",
+        ref: false,
+        quantity: 2,
+        props: ["magical", "restores d8 HP"],
+      });
+    });
+
+    it("should parse [Inv:] transitions", () => {
+      const tags = extractTags("[Inv:Torch|3→2]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "inventory",
+        name: "Torch",
+        ref: false,
+        transition: { from: 3, to: 2 },
+        props: [],
+      });
+    });
+
+    it("should parse [Inv:] depleted state", () => {
+      const tags = extractTags("[Inv:Oil Flask|depleted]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "inventory",
+        name: "Oil Flask",
+        ref: false,
+        depleted: true,
+        props: [],
+      });
+    });
+
+    it("should parse [Inv:] reference", () => {
+      const tags = extractTags("[#Inv:Bone Amulet]");
+      expect(tags).toHaveLength(1);
+      if (tags[0].kind === "inventory") {
+        expect(tags[0].ref).toBe(true);
+        expect(tags[0].name).toBe("Bone Amulet");
+      }
+    });
+
+    it("should parse [Wealth:] absolute amounts", () => {
+      const tags = extractTags("[Wealth:Gold 45|Silver 12]");
+      expect(tags).toHaveLength(2);
+      expect(tags[0]).toEqual({ kind: "wealth", currency: "Gold", amount: 45 });
+      expect(tags[1]).toEqual({ kind: "wealth", currency: "Silver", amount: 12 });
+    });
+
+    it("should parse [Wealth:] deltas", () => {
+      const tags = extractTags("[Wealth:Gold+15]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({ kind: "wealth", currency: "Gold", delta: 15 });
+
+      const tags2 = extractTags("[Wealth:Gold-8]");
+      expect(tags2[0]).toEqual({ kind: "wealth", currency: "Gold", delta: -8 });
+    });
+
+    it("should parse [R:] room tags with status", () => {
+      const tags = extractTags("[R:3|cleared]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({ kind: "room", id: "3", ref: false, status: "cleared" });
+    });
+
+    it("should parse [R:] room tags with status and description", () => {
+      const tags = extractTags("[R:4|active|storage room, dusty shelves]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({ kind: "room", id: "4", ref: false, status: "active", description: "storage room, dusty shelves" });
+    });
+
+    it("should parse [R:] room tags with exits", () => {
+      const tags = extractTags("[R:1|cleared|guard room|exits N:R2, E:R3]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "room",
+        id: "1",
+        ref: false,
+        status: "cleared",
+        description: "guard room",
+        exits: ["N:R2", "E:R3"],
+      });
+    });
+
+    it("should parse [#R:] room reference tags", () => {
+      const tags = extractTags("[#R:3]");
+      expect(tags).toHaveLength(1);
+      if (tags[0].kind === "room") {
+        expect(tags[0].ref).toBe(true);
+        expect(tags[0].id).toBe("3");
+      }
+    });
+
+    it("should parse [DUNGEON STATUS] block markers", () => {
+      const result = parseLonelog("[DUNGEON STATUS]\n[R:1|cleared]\n[/DUNGEON STATUS]");
+      expect(result[0]).toEqual({ type: "dungeon_status_marker", state: "open" });
+      expect(result[1].type).toBe("consequence");
+      expect(result[2]).toEqual({ type: "dungeon_status_marker", state: "close" });
     });
   });
 });

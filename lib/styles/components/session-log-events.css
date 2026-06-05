@@ -1,105 +1,295 @@
-/* Session Log - Event List Module
- * Handles event card display with type-specific styling (action, oracle, roll, dialogue, etc)
+/* Session Log - Prose Events Module
+ * Narrative-style log with expandable rolls
  */
 
-.lonelog-event-list {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
+.lonelog-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.6;
 }
 
-.lonelog-event-card {
-	display: flex;
-	align-items: flex-start;
-	gap: 0.75rem;
-	padding: 0.75rem;
-	border-radius: 4px;
-	background: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
+.lonelog-prose-line {
+  margin: 0;
 }
 
-.event-symbol {
-	font-weight: bold;
-	min-width: 1.5em;
-	color: var(--text-muted);
-	flex-shrink: 0;
+/* ── Action groups ── */
+
+.lonelog-prose-action {
+  margin: 0.25rem 0;
 }
 
-.event-text {
-	flex: 1;
+.prose-action-text {
+  margin: 0;
+  display: inline;
 }
 
-/* Event Type Specific Styles */
-.event-action {
-	border-left: 3px solid var(--color-primary, #646cff);
+.prose-action-marker {
+  font-weight: 700;
+  color: var(--interactive-accent);
+  margin-right: 0.25em;
+  user-select: none;
 }
 
-.event-oracle-question {
-	font-style: italic;
-	background: var(--background-secondary);
+.prose-detail-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0;
+  margin-left: 0.35em;
+  border: none;
+  background: none;
+  cursor: pointer;
+  vertical-align: baseline;
 }
 
-.event-oracle-answer {
-	padding-left: 2rem;
-	border-left: 3px solid var(--color-accent, #ffa500);
+.prose-roll-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  padding: 0.05em 0.4em;
+  border-radius: 3px;
+  font-size: 0.8em;
+  font-family: var(--font-monospace);
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
 }
 
-.event-roll {
-	background: var(--background-secondary);
-	font-family: monospace;
+.prose-detail-toggle:hover .prose-roll-chip {
+  border-color: var(--background-modifier-border);
 }
 
-.roll-success {
-	border-left: 3px solid var(--color-success, #10b981);
+.prose-roll-chip.chip-success {
+  background: light-dark(rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.15));
+  color: light-dark(#047857, #6ee7b7);
 }
 
-.roll-failure {
-	border-left: 3px solid var(--color-danger, #ef4444);
+.prose-roll-chip.chip-failure {
+  background: light-dark(rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15));
+  color: light-dark(#b91c1c, #fca5a5);
 }
 
-.roll-expression {
-	font-weight: 600;
+.chip-result {
+  font-weight: 600;
 }
 
-.roll-arrow {
-	margin: 0 0.5em;
-	color: var(--text-muted);
+/* Expanded detail block */
+.prose-detail-block {
+  margin: 0.25rem 0 0.25rem 1.2em;
+  padding: 0.35rem 0.5rem;
+  border-left: 2px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
-.roll-result {
-	font-weight: bold;
+/* ── Rolls ── */
+
+.prose-roll-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.85em;
 }
 
-.event-consequence {
-	padding-left: 2rem;
-	background: var(--background-secondary);
+.prose-roll-inline code {
+  font-size: inherit;
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
 }
 
-.consequence-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	flex: 1;
+.prose-roll-inline.roll-success {
+  color: light-dark(#047857, #6ee7b7);
 }
 
-.event-dialogue {
-	font-style: italic;
-	padding-left: 1.5rem;
+.prose-roll-inline.roll-failure {
+  color: light-dark(#b91c1c, #fca5a5);
 }
 
-.dialogue-speaker {
-	font-weight: 600;
-	margin-right: 0.5em;
+.roll-label {
+  font-weight: 500;
+  font-style: italic;
 }
 
-.event-meta-note {
-	color: var(--text-muted);
-	font-size: 0.9em;
-	font-style: italic;
+.roll-total {
+  font-weight: 700;
+  font-family: var(--font-monospace);
 }
 
-.event-narrative {
-	border: none;
-	background: transparent;
-	padding: 0.5rem 0.75rem;
+.roll-vs {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* ── Consequences ── */
+
+.prose-consequence-text {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--text-muted);
+}
+
+/* ── Oracle ── */
+
+.lonelog-prose-oracle {
+  margin: 0.25rem 0;
+  padding-left: 0.5em;
+  border-left: 2px solid light-dark(rgba(255, 165, 0, 0.4), rgba(255, 165, 0, 0.3));
+}
+
+.prose-oracle-question {
+  margin: 0;
+  font-style: italic;
+}
+
+.prose-oracle-marker {
+  font-weight: 700;
+  color: light-dark(#d97706, #fbbf24);
+  margin-right: 0.25em;
+}
+
+.prose-oracle-answer {
+  margin: 0;
+}
+
+.prose-oracle-arrow {
+  color: var(--text-muted);
+  margin-right: 0.25em;
+}
+
+.prose-oracle-roll {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin-left: 0.3em;
+}
+
+/* ── Other line types ── */
+
+.prose-dialogue {
+  margin: 0.15rem 0;
+}
+
+.prose-speaker {
+  font-weight: 600;
+}
+
+.prose-speaker-npc {
+  color: light-dark(#7c3aed, #a78bfa);
+}
+
+.prose-narrative {
+  color: var(--text-muted);
+  margin: 0.15rem 0;
+}
+
+.prose-meta {
+  font-size: 0.85em;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.prose-consequence {
+  padding-left: 1.2em;
+  color: var(--text-muted);
+}
+
+/* ── Actor attribution ── */
+
+.prose-actor-name {
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.prose-assist-name {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.roll-actor {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: var(--text-accent);
+}
+
+.chip-actor {
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+/* ── World events ── */
+
+.lonelog-prose-world-event {
+  margin: 0.25rem 0;
+}
+
+.prose-world-event-text {
+  margin: 0;
+  display: inline;
+}
+
+.prose-world-event-marker {
+  font-weight: 700;
+  color: light-dark(#dc2626, #f87171);
+  margin-right: 0.25em;
+  user-select: none;
+}
+
+/* ── Combat markers ── */
+
+.lonelog-combat-marker {
+  height: 2px;
+  margin: 0.5rem 0;
+  border-radius: 1px;
+}
+
+.lonelog-combat-marker.combat-start {
+  background: linear-gradient(to right, light-dark(#dc2626, #f87171), transparent);
+}
+
+.lonelog-combat-marker.combat-end {
+  background: linear-gradient(to right, transparent, light-dark(#dc2626, #f87171));
+}
+
+.lonelog-round-marker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin: 0.35rem 0 0.1rem;
+}
+
+/* ── Resource markers ── */
+
+.lonelog-resource-marker {
+  height: 1px;
+  margin: 0.5rem 0;
+  border-radius: 1px;
+}
+
+.lonelog-resource-marker.resource-start {
+  background: linear-gradient(to right, light-dark(#7c3aed, #a78bfa), transparent);
+}
+
+.lonelog-resource-marker.resource-end {
+  background: linear-gradient(to right, transparent, light-dark(#7c3aed, #a78bfa));
+}
+
+/* ── Dungeon status markers ── */
+
+.lonelog-dungeon-marker {
+  height: 1px;
+  margin: 0.5rem 0;
+  border-radius: 1px;
+}
+
+.lonelog-dungeon-marker.dungeon-start {
+  background: linear-gradient(to right, light-dark(#4b5563, #9ca3af), transparent);
+}
+
+.lonelog-dungeon-marker.dungeon-end {
+  background: linear-gradient(to right, transparent, light-dark(#4b5563, #9ca3af));
 }

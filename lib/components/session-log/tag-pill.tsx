@@ -31,16 +31,43 @@ export function TagPill({ tag, onClick }: TagPillProps) {
       case "pc":
         return `${tag.name}${tag.changes.length > 0 ? `: ${tag.changes.join(", ")}` : ""}`;
 
+      case "foe":
+        return `${tag.name}${tag.tags.length > 0 ? ` (${tag.tags.join(", ")})` : ""}`;
+
       case "clock":
       case "event":
       case "track":
         return `${tag.name} ${tag.current}/${tag.max}`;
 
       case "timer":
-        return `⏱ ${tag.name}: ${tag.value}`;
+        return `${tag.name}: ${tag.value}`;
 
       case "thread":
-        return `🧵 ${tag.name}: ${tag.state}`;
+        return `${tag.name}: ${tag.state}`;
+
+      case "inventory": {
+        if (tag.ref) return `#${tag.name}`;
+        if (tag.delta != null) return `${tag.name} ${tag.delta > 0 ? "+" : ""}${tag.delta}`;
+        if (tag.transition) return `${tag.name} ${tag.transition.from}→${tag.transition.to}`;
+        if (tag.depleted) return `${tag.name} (depleted)`;
+        const qty = tag.quantity != null ? `×${tag.quantity}` : "";
+        const props = tag.props.length > 0 ? ` (${tag.props.join(", ")})` : "";
+        return `${tag.name}${qty}${props}`;
+      }
+
+      case "wealth": {
+        if (tag.delta != null) return `${tag.currency} ${tag.delta > 0 ? "+" : ""}${tag.delta}`;
+        if (tag.transition) return `${tag.currency} ${tag.transition.from}→${tag.transition.to}`;
+        if (tag.amount != null) return `${tag.currency}: ${tag.amount}`;
+        return tag.currency;
+      }
+
+      case "room": {
+        if (tag.ref) return `#R${tag.id}`;
+        const status = tag.status ? ` ${tag.status}` : "";
+        const desc = tag.description ? ` — ${tag.description}` : "";
+        return `R${tag.id}${status}${desc}`;
+      }
 
       default:
         return "";

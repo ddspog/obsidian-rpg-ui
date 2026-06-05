@@ -1,6 +1,6 @@
 /**
  * Session Log View
- * Renders Lonelog session logs with interactive HUD and delta tracking
+ * Renders Lonelog session logs with interactive action cards and delta tracking
  */
 
 import { BaseView } from "./BaseView";
@@ -14,8 +14,15 @@ import type { SessionLogData } from "lib/domains/session-log";
 import { EntityResolver } from "lib/services/entity-resolver";
 import type { EntityData } from "lib/services/entity-resolver";
 import { EventList } from "lib/components/session-log/event-list";
-import { HUD } from "lib/components/session-log/hud";
 import { ChangeOverview } from "lib/components/session-log/change-overview";
+import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
+import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
+import { extractCardsFromEntity, getEntitySpentState } from "lib/services/session-feature-loader";
+import { buildGMStacks } from "lib/domains/session-log/gm-cards";
+import { buildCardStacks } from "lib/domains/session-log/extract-cards";
+import type { CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
+import { initSessionConsumables, spendUse } from "lib/domains/session-log/consumable-state";
+import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
 
 export class SessionLogView extends BaseView {
   public codeblock = "log";
@@ -77,18 +84,13 @@ class SessionLogMarkdown extends ReactMarkdown {
 
   private async processAndRender() {
     try {
-      // Parse the session log block
       const block = parseSessionLogBlock(this.source);
-
-      // Process Lonelog to extract entries and deltas
       this.logData = processSessionLog(block);
 
-      // Resolve entity references if provided
       if (block.entities && block.entities.length > 0) {
         this.entities = await this.entityResolver.resolveEntities(block.entities);
       }
 
-      // Render the session log
       this.renderSessionLog();
     } catch (error) {
       console.error("Error processing session log:", error);
@@ -104,10 +106,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
 
-      // Read current file content
       const content = await this.baseView.app.vault.read(file);
-
-      // Find the rpg log code block
       const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;
       const match = content.match(codeBlockRegex);
 
@@ -116,23 +115,40 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
 
-      // Extract parts: header (with YAML), body, closing backticks
-      const [fullMatch, header, body, closing] = match;
-
-      // Append new text to the body
+      const [, header, body, closing] = match;
       const updatedBody = body + newText;
-
-      // Reconstruct the code block
       const updatedBlock = `${header}${updatedBody}${closing}`;
-
-      // Replace the old block with the updated one
       const updatedContent = content.replace(codeBlockRegex, updatedBlock);
 
-      // Write back to file
       await this.baseView.app.vault.modify(file as any, updatedContent);
     } catch (error) {
       console.error("Error appending to log:", error);
     }
+  }
+
+  private buildActionCards(): {
+    pcStacks: Map<string, CardStack[]>;
+    gmStacks: CardStack[];
+    allCards: SessionFeatureCard[];
+    sheetSpent: Record<string, number>;
+  } {
+    const pcStacks = new Map<string, CardStack[]>();
+    let allCards: SessionFeatureCard[] = [];
+    let sheetSpent: Record<string, number> = {};
+
+    for (const entity of this.entities) {
+      const cards = extractCardsFromEntity(entity);
+      if (cards.length > 0) {
+        const stacks = buildCardStacks(cards, entity.name);
+        pcStacks.set(entity.name, stacks);
+        allCards = allCards.concat(cards);
+        const entitySpent = getEntitySpentState(entity);
+        sheetSpent = { ...sheetSpent, ...entitySpent };
+      }
+    }
+
+    const gmStacks = buildGMStacks();
+    return { pcStacks, gmStacks, allCards, sheetSpent };
   }
 
   private renderSessionLog() {
@@ -142,23 +158,83 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
 
     const root = ReactDOM.createRoot(this.containerEl);
+    const { pcStacks, gmStacks, allCards, sheetSpent } = this.buildActionCards();
+    const entityNames = this.entities.map((e) => e.name);
+    const initialConsumableState = initSessionConsumables(allCards, sheetSpent);
 
     const handleAppendText = async (text: string) => {
       await this.appendToLogBody(text);
     };
 
     root.render(
-      <div className="session-log-container">
-        {this.entities.length > 0 && <HUD entities={this.entities} onAppendText={handleAppendText} />}
-
-        <EventList entries={this.logData.entries} />
-
-        <ChangeOverview
-          entityDeltas={this.logData.entityDeltas}
-          progressChanges={this.logData.progressChanges}
-          threadChanges={this.logData.threadChanges}
-        />
-      </div>
+      <SessionLogRoot
+        logData={this.logData}
+        pcStacks={pcStacks}
+        gmStacks={gmStacks}
+        entityNames={entityNames}
+        initialConsumableState={initialConsumableState}
+        onAppendText={handleAppendText}
+      />
     );
   }
+}
+
+interface SessionLogRootProps {
+  logData: SessionLogData;
+  pcStacks: Map<string, CardStack[]>;
+  gmStacks: CardStack[];
+  entityNames: string[];
+  initialConsumableState: SessionConsumableState;
+  onAppendText: (text: string) => void;
+}
+
+function SessionLogRoot({
+  logData,
+  pcStacks,
+  gmStacks,
+  entityNames,
+  initialConsumableState,
+  onAppendText,
+}: SessionLogRootProps) {
+  const [consumableState, setConsumableState] = React.useState(initialConsumableState);
+
+  const handleSpend = (cardId: string) => {
+    setConsumableState((s) => spendUse(s, cardId));
+  };
+
+  const hasActions = pcStacks.size > 0 || gmStacks.length > 0;
+
+  return (
+    <div className="session-log-container">
+      <EventList entries={logData.entries} />
+
+      {hasActions ? (
+        <BottomDrawer
+          actionsPanel={
+            <SessionActionsPanel
+              pcStacks={pcStacks}
+              gmStacks={gmStacks}
+              consumableState={consumableState}
+              entities={entityNames}
+              onAppendText={onAppendText}
+              onSpend={handleSpend}
+            />
+          }
+          changesPanel={
+            <ChangeOverview
+              entityDeltas={logData.entityDeltas}
+              progressChanges={logData.progressChanges}
+              threadChanges={logData.threadChanges}
+            />
+          }
+        />
+      ) : (
+        <ChangeOverview
+          entityDeltas={logData.entityDeltas}
+          progressChanges={logData.progressChanges}
+          threadChanges={logData.threadChanges}
+        />
+      )}
+    </div>
+  );
 }

@@ -1,0 +1,96 @@
+/* Session Log - Bottom Drawer Module
+ * Margin-invading drawer with icon toggle, inline actor chips + card stacks
+ */
+
+.lonelog-bottom-drawer {
+  position: relative;
+  margin-top: 1rem;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--background-modifier-border);
+  background: light-dark(rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.02));
+}
+
+/* Icon toggle — top right corner */
+.drawer-toggle-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+  z-index: 1;
+}
+
+.drawer-toggle-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ── Actions Panel — actors on left, stacks flowing right ── */
+
+.lonelog-actions-panel {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  min-height: 8rem;
+}
+
+.actions-actor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  padding-top: 0.25rem;
+}
+
+.actor-chip {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.actor-chip:hover {
+  background: var(--background-modifier-hover);
+}
+
+.actor-chip.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.actions-stacks-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  flex: 1;
+  padding-bottom: 0.5rem;
+}
+
+.actions-empty {
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  font-style: italic;
+  margin: 0;
+  align-self: center;
+}

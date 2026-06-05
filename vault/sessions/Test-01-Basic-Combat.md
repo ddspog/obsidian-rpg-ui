@@ -6,10 +6,10 @@ This test demonstrates basic combat with actions, rolls, and consequences.
 state_key: test-basic-combat
 scene: "Goblin Ambush"
 entities:
-  - file: "sessions/Characters/Elara.md"
+  - file: "tales-of-the-valiant/adventurers/Kowyn.md"
     type: character
-  - file: "sessions/NPCs/Goblin.md"
-    type: monster
+  - file: "tales-of-the-valiant/adventurers/Lilith.md"
+    type: character
 ---
 S1 *Dark forest clearing at dusk. Goblins lurk in the shadows.*
 

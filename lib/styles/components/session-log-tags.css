@@ -60,6 +60,28 @@
 	border-color: var(--color-primary);
 }
 
+.tag-foe {
+	background: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.15));
+	border-color: light-dark(#dc2626, #f87171);
+	font-weight: 600;
+}
+
+.tag-inventory {
+	background: light-dark(rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.12));
+	border-color: light-dark(#7c3aed, #a78bfa);
+}
+
+.tag-wealth {
+	background: light-dark(rgba(212, 168, 64, 0.12), rgba(212, 168, 64, 0.15));
+	border-color: light-dark(#b8860b, #d4a840);
+}
+
+.tag-room {
+	background: light-dark(rgba(75, 85, 99, 0.12), rgba(156, 163, 175, 0.12));
+	border-color: light-dark(#4b5563, #9ca3af);
+	font-variant-numeric: tabular-nums;
+}
+
 /* Tag Progress Indicator */
 .tag-progress-bar {
 	height: 4px;

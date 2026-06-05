@@ -1,0 +1,129 @@
+/* Session Log - Card Stack Module
+ * TCG-proportioned cards (≈ 2.5:3.5) with fan-out hover
+ */
+
+.lonelog-card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.card-stack-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.card-stack-fan {
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  width: 5.4rem;
+  min-height: 8rem;
+  padding-top: 0.5rem;
+}
+
+.card-stack-slot {
+  position: absolute;
+  bottom: 0;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+  transform:
+    translateY(calc(var(--card-index) * -8px))
+    rotate(calc((var(--card-index) - (var(--card-count) - 1) / 2) * 2.5deg));
+  z-index: var(--card-index);
+}
+
+.card-stack-fan:hover .card-stack-slot {
+  transform:
+    translateY(calc(var(--card-index) * -60px))
+    rotate(0deg);
+  z-index: calc(var(--card-count) - var(--card-index));
+}
+
+/* ── TCG Card Face ── */
+
+.lonelog-action-card {
+  display: flex;
+  flex-direction: column;
+  width: 5rem;
+  height: 7rem;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid light-dark(rgba(106, 78, 42, 0.35), rgba(212, 168, 64, 0.3));
+  border-radius: 5px;
+  background: var(--background-primary);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+  text-align: center;
+}
+
+.lonelog-action-card:hover:not(.is-depleted) {
+  border-color: var(--interactive-accent);
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  transform: translateY(-2px);
+}
+
+.lonelog-action-card:active:not(.is-depleted) {
+  transform: translateY(0);
+}
+
+.lonelog-action-card.is-depleted {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(0.6);
+}
+
+/* Art area — top portion of the card */
+.action-card-art {
+  flex: 1;
+  background:
+    linear-gradient(
+      135deg,
+      light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.06)) 0%,
+      light-dark(rgba(106, 78, 42, 0.02), rgba(212, 168, 64, 0.02)) 50%,
+      light-dark(rgba(106, 78, 42, 0.06), rgba(212, 168, 64, 0.04)) 100%
+    );
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
+}
+
+/* Footer — name + resource at bottom */
+.action-card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding: 0.2rem 0.25rem;
+  min-height: 2rem;
+  background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.04));
+}
+
+.action-card-name {
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.action-card-uses {
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
