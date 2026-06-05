@@ -238,6 +238,7 @@ function StatGroupCall({ self, body, sourcePath, name }: {
   const data = React.useMemo(() => mapGroup(self), [self]);
   return React.createElement(StatblockGroup, {
     name: data.name || name,
+    level: data.level,
     subtitle: data.subtitle,
     habitat: data.habitat,
     treasure: data.treasure,
@@ -634,20 +635,24 @@ export const ruleViews: RuleViewMap = {
   stat: {
     mode: "join",
     render: (ctx, args) => {
-      const fenceRe = /```+\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)```+/;
+      // Match the fence by its backtick count (`\1`) so a nested fence inside
+      // the body — e.g. a `rpg table` embedded in a stat.category — doesn't end
+      // the match early and truncate the body.
+      const fenceRe = /(`{3,})\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)\n\1/;
       const m = fenceRe.exec(ctx.content);
+      // m[1] = fence backticks · m[2] = stat subtype · m[3] = fence body
 
       // Monster: data lives in the creature note's (flat) frontmatter; merge
       // any fence-body YAML on top, then map to the structured card shape.
-      if (m?.[1] === "monster") {
+      if (m?.[2] === "monster") {
         let fenceFm: Record<string, unknown> = {};
-        const raw = m[2];
+        const raw = m[3];
         const sepIdx = raw.indexOf("\n---\n");
         const head = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
         if (head.trim()) {
           try {
-            const { parse } = require("yaml");
-            const parsedHead = parse(head);
+            const { parseYaml } = require("obsidian");
+            const parsedHead = parseYaml(head);
             if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
               fenceFm = parsedHead as Record<string, unknown>;
             }
@@ -661,17 +666,18 @@ export const ruleViews: RuleViewMap = {
         });
       }
 
-      // Monster group: header + habitat/treasure + contents prose (after `---`).
-      if (m?.[1] === "group") {
+      // Monster group / category: header + habitat/treasure + contents prose
+      // (after `---`). `category` is the renamed `group` (kept for back-compat).
+      if (m?.[2] === "group" || m?.[2] === "category") {
         let fenceFm: Record<string, unknown> = {};
-        const raw = m[2];
+        const raw = m[3];
         const sepIdx = raw.indexOf("\n---\n");
         const head = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
         const groupBody = sepIdx >= 0 ? raw.slice(sepIdx + 5).trim() || undefined : undefined;
         if (head.trim()) {
           try {
-            const { parse } = require("yaml");
-            const parsedHead = parse(head);
+            const { parseYaml } = require("obsidian");
+            const parsedHead = parseYaml(head);
             if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
               fenceFm = parsedHead as Record<string, unknown>;
             }
@@ -687,7 +693,7 @@ export const ruleViews: RuleViewMap = {
       }
 
       if (!m) return null;
-      const raw = m[2];
+      const raw = m[3];
       const sepIdx = raw.indexOf("\n---\n");
       const sepEnd = raw.indexOf("\n---");
       const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1);
@@ -701,8 +707,8 @@ export const ruleViews: RuleViewMap = {
       }
       let parsed: Record<string, unknown> = {};
       try {
-        const { parse } = require("yaml");
-        const result = parse(yamlText);
+        const { parseYaml } = require("obsidian");
+        const result = parseYaml(yamlText);
         if (result && typeof result === "object" && !Array.isArray(result)) parsed = result;
       } catch { /* ignore */ }
 
