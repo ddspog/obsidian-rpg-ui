@@ -1,11 +1,12 @@
 /**
- * Lonelog Parser Types
- * Based on Lonelog v1.0.0 notation (CC BY-SA 4.0, by Roberto Bisceglie)
+ * Lonelog/Partylog Parser Types
+ * Based on Lonelog v1.0.0 and Partylog v1.0.0 (CC BY-SA 4.0, by Roberto Bisceglie)
  */
 
 export type LonelogEntry =
   | SceneEntry
   | ActionEntry
+  | WorldEventEntry
   | RollEntry
   | OracleQuestionEntry
   | OracleAnswerEntry
@@ -14,35 +15,54 @@ export type LonelogEntry =
   | TableRollEntry
   | GeneratorEntry
   | MetaNoteEntry
-  | NarrativeEntry;
+  | NarrativeEntry
+  | CombatMarkerEntry
+  | RoundMarkerEntry
+  | ResourceMarkerEntry
+  | DungeonStatusMarkerEntry;
 
 export interface SceneEntry {
   type: "scene";
-  number: string; // "S1", "S1a", "T1-S1", "S1.1", etc.
-  context: string; // Scene location/description
+  number: string;
+  context: string;
 }
 
 export interface ActionEntry {
   type: "action";
   text: string;
+  actor?: string;
+  assist?: string;
+}
+
+export interface WorldEventEntry {
+  type: "world_event";
+  text: string;
+  tags: PersistentTag[];
 }
 
 export interface RollEntry {
   type: "roll";
-  roll: string; // The roll expression (e.g., "d20+5=17")
-  result: string; // The outcome (e.g., "vs DC 15 -> Success")
-  success?: boolean; // Parsed success/failure if present
+  roll: string;
+  result: string;
+  success?: boolean;
+  actor?: string;
+  label?: string;
+  total?: number;
+  breakdown?: string;
+  vsTarget?: string;
+  isCardDraw?: boolean;
 }
 
 export interface OracleQuestionEntry {
   type: "oracle_question";
   text: string;
+  actor?: string;
 }
 
 export interface OracleAnswerEntry {
   type: "oracle_answer";
-  text: string; // The oracle answer (e.g., "Yes, but...")
-  roll?: string; // Optional dice roll (e.g., "d6=3")
+  text: string;
+  roll?: string;
 }
 
 export interface ConsequenceEntry {
@@ -53,21 +73,22 @@ export interface ConsequenceEntry {
 
 export interface DialogueEntry {
   type: "dialogue";
-  speaker: string; // Character name or "PC"
+  speaker: string;
+  speakerType: "pc" | "npc";
   text: string;
 }
 
 export interface TableRollEntry {
   type: "table_roll";
-  source: string; // Table name
-  roll: string; // Dice expression
-  result: string; // The rolled result
+  source: string;
+  roll: string;
+  result: string;
 }
 
 export interface GeneratorEntry {
   type: "generator";
-  source: string; // Generator name
-  result: string; // Generated result
+  source: string;
+  result: string;
 }
 
 export interface MetaNoteEntry {
@@ -80,14 +101,34 @@ export interface NarrativeEntry {
   text: string;
 }
 
+export interface CombatMarkerEntry {
+  type: "combat_marker";
+  state: "open" | "close";
+}
+
+export interface RoundMarkerEntry {
+  type: "round_marker";
+  round: number;
+}
+
+export interface ResourceMarkerEntry {
+  type: "resource_marker";
+  state: "open" | "close";
+}
+
+export interface DungeonStatusMarkerEntry {
+  type: "dungeon_status_marker";
+  state: "open" | "close";
+}
+
 // Persistent tag types
-export type PersistentTag = NPCTag | LocationTag | EventTag | ClockTag | TrackTag | TimerTag | ThreadTag | PCTag;
+export type PersistentTag = NPCTag | LocationTag | EventTag | ClockTag | TrackTag | TimerTag | ThreadTag | PCTag | FoeTag | InventoryTag | WealthTag | RoomTag;
 
 export interface NPCTag {
   kind: "npc";
   name: string;
   tags: string[];
-  ref: boolean; // Whether this is a reference tag ([#N:Name])
+  ref: boolean;
 }
 
 export interface LocationTag {
@@ -126,19 +167,53 @@ export interface TimerTag {
 export interface ThreadTag {
   kind: "thread";
   name: string;
-  state: string; // "Open", "Closed", etc.
+  state: string;
 }
 
 export interface PCTag {
   kind: "pc";
   name: string;
-  changes: string[]; // e.g., ["HP-2", "Stress+1"]
+  changes: string[];
+}
+
+export interface FoeTag {
+  kind: "foe";
+  name: string;
+  tags: string[];
+}
+
+export interface InventoryTag {
+  kind: "inventory";
+  name: string;
+  ref: boolean;
+  quantity?: number;
+  delta?: number;
+  transition?: { from: number; to: number };
+  depleted?: boolean;
+  props: string[];
+}
+
+export interface WealthTag {
+  kind: "wealth";
+  currency: string;
+  amount?: number;
+  delta?: number;
+  transition?: { from: number; to: number };
+}
+
+export interface RoomTag {
+  kind: "room";
+  id: string;
+  ref: boolean;
+  status?: string;
+  description?: string;
+  exits?: string[];
 }
 
 // Entity state mutations extracted from tags
 export interface EntityDelta {
-  entity: string; // Entity name
-  entityType: "pc" | "npc"; // PC or NPC
+  entity: string;
+  entityType: "pc" | "npc";
   changes: StateChange[];
 }
 
@@ -146,12 +221,12 @@ export type StateChange = HPChange | StatChange | StatusChange | TagAddition | T
 
 export interface HPChange {
   type: "hp";
-  delta: number; // Positive = heal, negative = damage
+  delta: number;
 }
 
 export interface StatChange {
   type: "stat";
-  stat: string; // Stat name (e.g., "Stress", "Luck")
+  stat: string;
   delta: number;
 }
 
@@ -176,7 +251,7 @@ export interface ProgressChange {
   name: string;
   kind: "event" | "clock" | "track" | "timer";
   current: number;
-  max?: number; // Not present for timers
+  max?: number;
 }
 
 // Thread state change

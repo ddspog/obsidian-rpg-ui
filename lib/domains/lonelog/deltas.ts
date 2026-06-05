@@ -45,6 +45,8 @@ export function extractDeltas(entries: LonelogEntry[]): {
   for (const entry of entries) {
     if (entry.type === "consequence") {
       processConsequenceTags(entry.tags, registry, entityDeltas, progressChanges, threadChanges);
+    } else if (entry.type === "world_event") {
+      processConsequenceTags(entry.tags, registry, entityDeltas, progressChanges, threadChanges);
     }
   }
 

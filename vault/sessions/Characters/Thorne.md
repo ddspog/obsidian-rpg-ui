@@ -8,124 +8,89 @@ class: Cleric
 
 A stalwart cleric of the forge domain, equally comfortable in battle and at the anvil.
 
-## Ability Scores
-
-```rpg attributes
-strength: 14
-dexterity: 10
-constitution: 16
-intelligence: 10
-wisdom: 16
-charisma: 12
+```rpg character.header
+classes:
+  - name: "Cleric"
+    level: 5
+    subclass: "Forge Domain"
+lineage: "Dwarf"
+background: "Acolyte"
 ```
 
-## Skills
-
-```rpg skills
-proficiencies:
-  - Religion
-  - Medicine
-  - Insight
-  - Persuasion
-```
-
-## Hit Points
-
-```rpg healthpoints
+```rpg character.health
 state_key: thorne-hp
 label: "Hit Points"
-health: 42
+max: 42
 hitdice:
   - dice: "d8"
     value: 5
 ```
 
-## Equipment
-
-```rpg inventory
-state_key: thorne-inventory
-sections:
-  - name: "Weapons"
-    items:
-      - name: "Warhammer"
-        quantity: 1
-        equipped: true
-      - name: "Light Crossbow"
-        quantity: 1
-  
-  - name: "Armor"
-    items:
-      - name: "Chain Mail"
-        quantity: 1
-        equipped: true
-      - name: "Shield"
-        quantity: 1
-        equipped: true
-  
-  - name: "Holy Items"
-    items:
-      - name: "Holy Symbol"
-        quantity: 1
-        equipped: true
-      - name: "Prayer Book"
-        quantity: 1
-```
-
-## Spellcasting
-
-```rpg spell
-state_key: thorne-spells
-slots:
-  - level: 1
-    total: 4
-    used: 0
-  - level: 2
-    total: 3
-    used: 0
-  - level: 3
-    total: 2
-    used: 0
-```
-
-## Class Features
-
-```rpg features
-state_key: thorne-features
-class: "Cleric"
-categories:
-  - name: "Class Features"
-    icon: "✨"
+```rpg character.features
+sources:
+  - source: "Cleric"
+    level: 5
     features:
+      - name: "Sacred Flame"
+        action:
+          text: "Cantrip. Dex save or 2d8 radiant. Range 60 ft."
+          log: "@({{actor}}) casts Sacred Flame on {{target}}\nd: Save DC 14 vs Dex -> {{result}}"
+
+      - name: "Warhammer Attack"
+        action:
+          text: "Melee attack. +5 to hit, 1d8+2 bludgeoning."
+          log: "@({{actor}}) swings Warhammer at {{target}}\nd: Attack d20+5={{roll}} vs AC -> {{result}}"
+
+      - name: "Guiding Bolt"
+        action:
+          text: "Spell (1st). 4d6 radiant, next attack has advantage."
+          max: 4
+          recovery: "long rest"
+          log: "@({{actor}}) casts Guiding Bolt on {{target}}\nd: Spell Attack d20+6={{roll}} -> {{result}}"
+
+      - name: "Healing Word"
+        bonus:
+          text: "Spell (1st). Heal 1d4+3 HP at range 60 ft."
+          max: 4
+          recovery: "long rest"
+          log: "@({{actor}}) casts Healing Word on {{target}}\nd: Heal 1d4+3={{roll}}\n=> [PC:{{target}}|HP+{{roll}}]"
+
+      - name: "Spiritual Weapon"
+        bonus:
+          text: "Spell (2nd). Summon spectral weapon, attack as bonus action."
+          max: 3
+          recovery: "long rest"
+          log: "@({{actor}}) commands Spiritual Weapon to strike {{target}}\nd: Attack d20+6={{roll}} vs AC -> {{result}}"
+
+      - name: "Shield of Faith"
+        bonus:
+          text: "Spell (1st). Grant +2 AC to a creature for 10 minutes."
+          max: 4
+          recovery: "long rest"
+          log: "@({{actor}}) casts Shield of Faith on {{target}}\n=> [PC:{{target}}|AC+2]"
+
       - name: "Channel Divinity"
-        level: 2
-        type: action
-        description: "Turn Undead or use domain power."
-        reset_on: short-rest
-        uses: 1
-        state_key: channel-divinity
-      
+        action:
+          text: "Turn Undead or use Artisan's Blessing."
+          max: 1
+          recovery: "short rest"
+          log: "@({{actor}}) channels divinity against {{target}}\n=> [N:{{target}}|turned]"
+
       - name: "Destroy Undead"
-        level: 5
-        type: passive
-        description: "Channel Divinity destroys undead of CR 1/2 or lower."
-  
-  - name: "Forge Domain"
-    icon: "🔨"
+        passive:
+          text: "Channel Divinity destroys undead of CR 1/2 or lower."
+
+  - source: "Forge Domain"
+    level: 5
     features:
       - name: "Blessing of the Forge"
-        level: 1
-        type: action
-        description: "Grant +1 AC or attack/damage to weapon or armor."
-      
-      - name: "Artisan's Blessing"
-        level: 2
-        type: action
-        description: "Create simple metal items with Channel Divinity."
+        active:
+          text: "Grant +1 AC to armor or +1 attack/damage to weapon until next long rest."
+          max: 1
+          recovery: "long rest"
+          log: "@({{actor}}) bestows Blessing of the Forge on {{target}}'s equipment"
 ```
 
-## Background
-
-**Background:** Acolyte
-**Alignment:** Lawful Good
-
+```rpg character.description
 Thorne comes from a long line of forge clerics, dedicated to both the craft of smithing and the protection of the innocent.
+```
