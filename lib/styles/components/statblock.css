@@ -5,6 +5,10 @@
   --statblock-title-faint: color-mix(in srgb, var(--statblock-title) 50%, transparent);
   --statblock-rule: var(--statblock-title);
 
+  /* Establish a container so the Habitat/Treasure line can react to the pane's
+     content width (works inside split panes, unlike @media on the viewport). */
+  container-type: inline-size;
+
   font-family: var(--font-text);
 }
 
@@ -68,23 +72,49 @@ p.rpg-statblock-subtitle {
 }
 
 /* ─── Habitat / Treasure line (stat.group + ungrouped stat.monster) ────── */
-/* Habitat left, Treasure right, filling the row between them. */
+/* Two content-sized columns on one row: Habitat (left, flexible — wraps its
+   list internally) and Treasure (right, hugs its content). Stays a single row
+   regardless of habitat length; only the narrow-pane query below stacks it. */
 
 .rpg-statblock-habitat-treasure {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin: var(--size-4-3, 0.75rem) 0 0;
   padding-inline: var(--size-4-2, 0.5rem);
   font-size: 0.9em;
   color: light-dark(#5a5040, #a09880);
 }
 
+/* Habitat owns the leftover width and wraps its list internally instead of
+   pushing Treasure onto a second row. `min-width: 0` lets it shrink past its
+   content's intrinsic width so the text can reflow. */
+.rpg-statblock-ht-habitat {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Treasure is sized to its content and pinned right; it never shrinks. */
+.rpg-statblock-ht-treasure {
+  flex: 0 0 auto;
+}
+
 .rpg-statblock-habitat-treasure strong {
   font-weight: 700;
   color: var(--statblock-title);
+}
+
+/* Narrow pane (content width below the page-area, e.g. a squeezed split or
+   mobile): drop the two columns onto two rows so neither gets crushed. Bump
+   the breakpoint up toward the readable width if you want stacking sooner. */
+@container (max-width: 28rem) {
+  .rpg-statblock-habitat-treasure {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 
 /* On a monster card the line is a footer — separated from the statblock
