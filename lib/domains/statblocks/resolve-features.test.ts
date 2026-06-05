@@ -163,3 +163,74 @@ the {{self.name}} acts.`);
     expect(out[0].text).toContain("the keelboat acts.");
   });
 });
+
+describe("resolveStatFeatures — string concatenation with `+`", () => {
+  const files: Record<string, string> = {};
+
+  beforeEach(() => {
+    (globalThis as unknown as { app: unknown }).app = {
+      metadataCache: {
+        getFirstLinkpathDest: (stem: string) => (files[stem] ? { path: `${stem}.md` } : null),
+      },
+      vault: {
+        cachedRead: async (f: { path: string }) => files[f.path.replace(/\.md$/, "")] ?? "",
+      },
+    };
+  });
+
+  afterEach(() => {
+    delete (globalThis as unknown as { app?: unknown }).app;
+    for (const k of Object.keys(files)) delete files[k];
+  });
+
+  // The spellcasting "At will:" pattern: a ternary whose truthy branch
+  // concatenates a multi-line string literal with a tier value.
+  it("concatenates a multi-line string literal with a tier value", async () => {
+    files["Spell"] = featureDoc(`name: Spellcasting
+type: action
+tiers:
+  druid: { attr: "WIS", dc: 13, at_will: "druidcraft, speak with animals" }
+---
+The {{self.name}} casts spells, using {{attr}} (DC {{dc}}).{{ at_will ? '
+At will: ' + at_will }}`);
+    const out = await resolveStatFeatures([{ ref: "[[Spell]]", tier: "druid" }], "src.md", {
+      name: "druid",
+    });
+    expect(out[0].text).toContain("using WIS (DC 13)");
+    expect(out[0].text).toContain("At will: druidcraft, speak with animals");
+  });
+
+  it("omits the concatenated clause when the operand is falsy", async () => {
+    files["Spell"] = featureDoc(`name: Spellcasting
+type: action
+tiers:
+  druid: { at_will: "x" }
+---
+Casts.{{ 3_day ? '
+3/day each: ' + 3_day }}`);
+    const out = await resolveStatFeatures([{ ref: "[[Spell]]", tier: "druid" }], "src.md", {});
+    expect(out[0].text).toBe("Casts.");
+  });
+
+  it("concatenates a string literal with a numeric value", async () => {
+    files["Save"] = featureDoc(`name: Save
+type: action
+tiers:
+  1: { dc: 13 }
+---
+{{ 'spell save DC ' + dc }}`);
+    const out = await resolveStatFeatures([{ ref: "[[Save]]", tier: 1 }], "src.md", {});
+    expect(out[0].text).toContain("spell save DC 13");
+  });
+
+  it("still performs numeric addition when both operands are numbers", async () => {
+    files["Atk"] = featureDoc(`name: Strike
+type: action
+tiers:
+  1: { bonus: 5 }
+---
++{{ bonus + 2 }} to hit`);
+    const out = await resolveStatFeatures([{ ref: "[[Atk]]", tier: 1 }], "src.md", {});
+    expect(out[0].text).toContain("+7 to hit");
+  });
+});

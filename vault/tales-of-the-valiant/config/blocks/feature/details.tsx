@@ -53,10 +53,16 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
       case "==": return l === r; case "!=": return l !== r;
     }
   }
-  const arithMatch = expr.match(/^(.+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
+  const arithMatch = expr.match(/^([\s\S]+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
   if (arithMatch) {
-    const l = toNumber(evalExpr(arithMatch[1].trim(), ctx));
-    const r = toNumber(evalExpr(arithMatch[3].trim(), ctx));
+    const lRaw = evalExpr(arithMatch[1].trim(), ctx);
+    const rRaw = evalExpr(arithMatch[3].trim(), ctx);
+    const l = toNumber(lRaw);
+    const r = toNumber(rRaw);
+    // `+` doubles as string concatenation when an operand isn't numeric.
+    if (arithMatch[2] === "+" && (l === null || r === null)) {
+      return (lRaw == null ? "" : String(lRaw)) + (rRaw == null ? "" : String(rRaw));
+    }
     if (l === null || r === null) return null;
     switch (arithMatch[2]) {
       case "+": return l + r; case "-": return l - r;

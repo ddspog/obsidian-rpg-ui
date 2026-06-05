@@ -208,11 +208,20 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     }
   }
 
-  // Arithmetic: + - * / (left-to-right, no precedence beyond * / before + -)
-  const arithMatch = expr.match(/^(.+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
+  // Arithmetic: + - * / (left-to-right, no precedence beyond * / before + -).
+  // `[\s\S]` (not `.`) lets the left operand span newlines so a multi-line
+  // string literal in a branch (e.g. `'\nAt will: ' + at_will`) still parses.
+  const arithMatch = expr.match(/^([\s\S]+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
   if (arithMatch) {
-    const left = toNumber(evalExpr(arithMatch[1].trim(), ctx));
-    const right = toNumber(evalExpr(arithMatch[3].trim(), ctx));
+    const leftRaw = evalExpr(arithMatch[1].trim(), ctx);
+    const rightRaw = evalExpr(arithMatch[3].trim(), ctx);
+    const left = toNumber(leftRaw);
+    const right = toNumber(rightRaw);
+    // `+` doubles as string concatenation: when either operand isn't numeric,
+    // join their string forms (null/undefined → "") instead of bailing out.
+    if (arithMatch[2] === "+" && (left === null || right === null)) {
+      return (leftRaw == null ? "" : String(leftRaw)) + (rightRaw == null ? "" : String(rightRaw));
+    }
     if (left === null || right === null) return null;
     switch (arithMatch[2]) {
       case "+": return left + right;
