@@ -41,6 +41,27 @@ id: attack
 ---
 Add your proficiency bonus (PB) to your attack roll when you attack using a weapon with which you have proficiency and any time you attack with a spell. 
 ```
+### On Monsters
+````rpg rule.content
+id: monster
+---
+Like PCs, creatures have a [[Proficiencies#Proficiency Bonus (PB)|proficiency bonus]] (PB) based on their CR, as detailed in the Proficiency Bonus by Challenging Rating table. The PB is used to calculate many of the statistics within a creature's stat block, as described later in this chapter, but the PB doesn’t actually appear in the stat block. 
+
+All statistics derived from a creature’s PB have the PB already included in the stat block. **You don’t need to add the PB to any number in a creature’s stat block.** You might need a creature’s PB for other things, however, such as the optional [[Monster Harvesting|Harvesting]] or when a creature casts a spell that requires an attack roll. 
+```rpg table.proficiency-bonus-by-challenge-rating
+|CR|PB|
+|---|---|
+|0–4|+2|
+|5–8|+3|
+|9–12|+4|
+|13–16|+5|
+|17–20|+6|
+|21–24|+7|
+|25–28|+8|
+|29+|+9|
+[PROFICIENCY BONUS BY CHALLENGE RATING]
+```
+````
 # On Character
 ```rpg rule.content
 id: on-character

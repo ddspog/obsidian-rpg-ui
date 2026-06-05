@@ -6,6 +6,8 @@ tab-icon: swords
 tab-color: var(--color-red)
 tab-order: 4
 tab-name: Combat
+aliases:
+  - Making an Attack
 ---
 ## Combat Encounters
 `@[[combat.webp]].banner(tall)`
@@ -76,11 +78,11 @@ On your turn in combat, you can **move** a distance up to your speed and take on
 
 The **Movement in Combat** section in this chapter gives more detailed rules for your move. 
 
-The most common actions you can take are described in the **Actions in Combat** section in this chapter. Many class features and other abilities provide additional options for your action. 
+The most common actions you can take are described in the [[Action|Actions in Combat]] section in this chapter. Many class features and other abilities provide additional options for your action. 
 
-You don’t have to move, take an action, or do anything at all on your turn. If you can’t decide what to do on your turn, consider taking the [[Dodge]] or [[Ready]] action (see **Actions in Combat** in this chapter). 
+You don’t have to move, take an action, or do anything at all on your turn. If you can’t decide what to do on your turn, consider taking the [[Dodge]] or [[Ready]] action (see [[Action|Actions in Combat]] in this chapter). 
 ###### Bonus Actions
-`@[[Bonus Action]].highlight().bare()`
+`@[[Bonus Action]].highlight().bare(summary)`
 ###### Reactions 
 `@[[Reaction]].highlight().bare()`
 ###### Other Activity on Your Turn 
@@ -98,36 +100,7 @@ icon: zap
 color: var(--color-yellow)
 ---
 ### Movement in Combat
-`@[[movement-and-position.webp]].banner(hero)`
-In combat, characters and monsters are in constant motion, often using movement and position to gain the upper hand. 
-
-On your turn, you can move a distance up to your speed. You can use as much or as little of your speed as you like on your turn. 
-
-Your movement can include [[jumping]], [[climbing]], and [[swimming]]. These different modes of movement can be combined with walking, or they can be your entire move. However you move, deduct the distance of each part of your move from your speed until it is used up or until you are done moving.  
-#### Breaking up your Move
-You can break up your movement on your turn, using some speed before and then the remainder after your action. For example, if you have a speed of 30 feet, you can move 10 feet, take your action, and then move 20 feet. 
-#### Moving between Attacks
-If your action includes more than one weapon attack, you can break up your movement by moving between attacks. For example, a fighter who can make two attacks with the Multiattack feature and has a speed of 30 feet could move 10 feet, make an attack, move 20 feet, and then attack a different target. 
-#### Using different Speeds
-If you have more than one speed, such as a [[walking|walking speed]] and a [[flying|flying speed]], you can switch between them during your move. Whenever you switch, subtract the distance you’ve already moved from the new speed. The result determines how much farther you can move. If the result is 0 or less, you can’t use the new speed during the current move. 
-
-For example, if you have a speed of 30 and a flying speed of 60 because a wizard cast the [[fly]] spell on you, you could fly 20 feet, then walk 10 feet. If you wanted to walk any farther, you’d be done for your move, but you could still leap into the air to fly 30 feet more. 
-#### Difficult Terrain
-`@[[Difficult Terrain]].highlight().bare(combat)`
-#### Falling prone and Standing up
-Combatants often get knocked down or throw themselves down. This condition is called [[prone]], described in [[Appendix A, Conditions]]. 
-
-You can choose to **fall prone on your turn freely,** without using any speed. **Standing up** from prone costs half your speed for the turn. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can’t stand up if you don’t have enough movement left or if your speed is 0. 
-
-To move while [[prone]], you must [[crawling|crawl]] (see [[Movement|Special Movement Rules]]) or use magic such as teleportation. 
-#### Moving around other creatures
-You can move through a nonhostile creature’s space. You can only move through a hostile creature’s space if the creature is at least two sizes larger or smaller than you. Another creature’s space is [[difficult terrain]] for you. 
-
-Regardless of attitude, you can’t willingly end your move in another creature’s space. 
-
-If you leave a hostile creature’s reach during your move, you provoke an [[opportunity attack]].
-#### Opportunity Attacks
-`@[[Opportunity Attack]].highlight().bare()`
+`@[[Movement]].highlight().bare(combat)`
 ````
 ````rpg rule.tab
 name: Actions
@@ -135,20 +108,7 @@ icon: hand
 color: var(--color-green)
 ---
 ### Actions in Combat
-```rpg rule.side
-title: ATTACKS STEP-BY-STEP
-type: rules
----
-Whether you’re striking with a melee weapon, firing a weapon at range, or making an attack roll as part of a spell, an attack has a simple structure.
-1. **Declare attack type and target.** Declare what kind of attack you are making: melee or ranged. Then choose a suitable target within reach of your melee attack or within range of your ranged attack. 
-2. **Determine modifiers.** The GM determines whether the target has cover and whether you have advantage or disadvantage on an attack against your chosen target. In addition, spells, special abilities, and other effects can apply penalties or bonuses to your attack roll.
-3. **Make an attack roll.** You make your attack roll to determine whether you successfully hit your target, factoring in any modifiers determined in step 2. Note that some spells or special attacks skip this step and have a target make a save instead of requiring you to make an attack roll. In these instances, skip to step 4.
-4. **Resolve the attack.** If your attack roll failed to hit the target, the attack is over and you resolve the rest of your turn (or make your next attack if you have a class feature like Multiattack). If your attack roll was a success, you hit! Roll the damage listed in the attack unless the particular attack has rules that specify otherwise. Some attacks cause special effects in addition to or instead of damage.
-```
-When you take your action on your turn, you can take one of the actions presented here or an action gained from your class or some other feature. Monsters have distinct actions listed in their stat blocks. 
-
-When you describe an action not detailed elsewhere in the rules, the GM tells you whether that action is possible and what kind of roll you need to make, if any, to determine success. 
-`@[[concepts/actions/]].highlight().h4(0)`
+`@[[Action]].highlight().bare(summary)`
 ````
 ````rpg rule.tab
 name: Attacking

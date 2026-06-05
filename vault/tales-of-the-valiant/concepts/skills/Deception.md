@@ -8,5 +8,9 @@ attribute: charisma
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Deception
+```rpg rule.content
+id: summary
+---
 _Associated Ability: Charisma (CHA)_
 Your CHA ([[Deception]]) check determines whether you can convincingly hide the truth, verbally or through actions. Deception ranges from misleading through ambiguity to telling outright lies. Typical situations include trying to fast-talk a guard, con a merchant, cheat at gambling, or wear a convincing disguise. 
+```

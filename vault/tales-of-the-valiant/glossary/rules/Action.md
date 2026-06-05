@@ -2,8 +2,15 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+aliases:
+  - Actions in Combat
+  - Actions
+  - actions
 ---
 # Action
+````rpg rule.content
+id: summary
+---
 ```rpg rule.side
 title: ATTACKS STEP-BY-STEP
 type: rules
@@ -18,3 +25,30 @@ When you take your action on your turn, you can take one of the actions presente
 
 When you describe an action not detailed elsewhere in the rules, the GM tells you whether that action is possible and what kind of roll you need to make, if any, to determine success. 
 `@[[concepts/actions/]].highlight().h4(0)`
+````
+# On Statblock
+````rpg rule.content
+id: statblock
+---
+When a creature takes its action, it can choose from the options in the [[Action#On Statblock|Actions]] section of its stat block or use one of the actions available to all creatures, such as the [[Dash]] or [[Hide]] action, as described in [[Combat Encounters|Combat]]. 
+### Melee and Ranged Attacks
+The most common actions that a creature takes in combat are melee and ranged attacks. These can be spell attacks or weapon attacks, where the [[Weapons|"weapon"]] might be a manufactured item or a natural weapon, such as a claw or tail spike. 
+
+**_Creature vs. Target._** The target of a melee or ranged attack is usually either one creature or one target. The difference is that a “target” can be a creature, object, or structure. This designator on an attack reflects the creature’s natural inclination, but it doesn’t mean a tyrannosaurus rex can’t or won’t bite at a door to get to a creature it can smell on the other side. This designator helps reflect that a creature like a tyrannosaurus rex isn’t likely to strategically attack pillars of a building to make the building collapse on its prey or to otherwise attack an object or structure in a way that isn’t directly related to reaching its prey. 
+
+**_Hit._** Any damage dealt and other effects that occur when an attack hits a target are described after the “Hit:” notation. 
+
+**_Ammunition._** A creature carries enough ammunition to make its ranged attacks. A creature generally has 2d4 pieces of ammunition for a thrown weapon attack, and 2d10 pieces of ammunition for a projectile weapon, such as a bow or crossbow. 
+
+**_Spell Attacks and Antimagic._** A creature in an [[antimagic field]] or in any location where magic doesn’t function can’t cast spells or make spell attacks. Similarly, targets in an [[antimagic field]] are [[Affinity#On Statblocks|immune]] to the damage and effects of spell attacks and spells from outside of the field. 
+### Multiattack
+A creature that can make multiple attacks on its turn has the Multiattack action. A creature can’t use Multiattack when making an opportunity attack, which must be a single melee attack. 
+### Spellcasting
+A creature with the Spellcasting action can cast spells through innate magical talent. Unless noted otherwise, a spell of 1st circle or higher is always cast at its lowest possible circle and can’t be cast at a higher circle. If a creature has a cantrip where its spellcaster level matters and no level is given, use the creature’s challenge rating. 
+
+A creature doesn’t adhere to the tenets, restrictions, or requirements of specific spellcasting classes, sources of magic, or similar spellcasting structures found among player characters, as a creature’s spellcasting is unique to the creature. A creature’s spells can’t be swapped out with other spells. 
+#### Spell Save DCs and Spells with Attacks
+`@[[Spell Description]].highlight().bare(creature)` 
+#### Spell Components
+`@[[Components]].highlight().bare(creature)`
+````

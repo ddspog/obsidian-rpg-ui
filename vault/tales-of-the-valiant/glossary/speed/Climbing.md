@@ -14,3 +14,9 @@ id: special
 ---
 While [[Climbing]], you move at half speed—each foot of movement costs 1 extra foot. If you climb in [[difficult terrain]], each foot of movement costs 2 extra feet. At the GM’s option, climbing a slippery vertical surface or one with few handholds might require one or more successful STR ([[Athletics]]) checks. Failing such a check might cause a creature to fall (see [[Falling]]). 
 ```
+# For Statblocks
+```rpg rule.content
+id: statblock
+---
+A creature with a [[climbing]] speed can move on vertical surfaces with no check required. The creature doesn’t need to spend extra movement to climb. 
+```

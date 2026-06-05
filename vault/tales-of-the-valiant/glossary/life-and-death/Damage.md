@@ -45,14 +45,4 @@ The damage types are provided here, with examples to help a GM assign a damage t
 **_Thunder._** A concussive burst of sound, such as the effect of the [[thunderwave]] spell, deals thunder damage. 
 ```
 ### Damage Resistance and Vulnerability
-```rpg rule.content
-id: resistance
----
-Some creatures and objects are exceedingly difficult or easy to hurt with certain damage types. 
-
-If a creature or an object has [[damage#damage resistance and vulnerability|resistance]] to a damage type, damage of that type is halved against it. If a creature or an object has [[Damage#Damage Resistance and Vulnerability|vulnerability]] to a damage type, damage of that type is doubled against it. 
-
-Resistance and then vulnerability are applied after all other modifiers to damage. For example, a creature has resistance to bludgeoning damage and is hit by an attack that deals 25 bludgeoning damage. The creature is also within a magical aura that reduces all damage by 5. The 25 damage is first reduced by 5 and then halved, so the creature takes 10 damage. 
-
-Multiple instances of resistance or vulnerability that affect the same damage type count as only one instance. For example, if a creature has resistance to fire damage as well as resistance to nonmagical damage, the damage of a nonmagical fire is reduced by half against the creature, not reduced by three-quarters. 
-```
+`@[[Affinity]].highlight().bare(summary)`

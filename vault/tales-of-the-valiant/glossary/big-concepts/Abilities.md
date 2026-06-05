@@ -41,6 +41,16 @@ Once you assign scores, use the following charts to figure out your [[Abilities#
 [ABILITY MODIFIERS]
 ```
 ````
+## On Statblocks
+```rpg rule.content
+id: statblock
+---
+Every creature has six [[Abilities#On Statblocks|ability modifiers]]: Strength (STR), Dexterity (DEX), Constitution (CON), Intelligence (INT), Wisdom (WIS), and Charisma (CHA). These modifiers are used to determine pre-calculated elements of a stat block, such as attack and damage. More importantly, the GM uses them whenever a creature must make: 
+- A save. The GM rolls a d20 and adds the relevant ability modifier. 
+- An ability check. The GM rolls a d20 and adds whichever ability modifier is most relevant. 
+
+If a creature is particularly good at checks and saves involving a certain ability, the creature’s proficiency bonus (PB) has already been added into the ability modifiers presented in the stat block. **You don’t need to add PB to any number in a stat block**—it is already included. 
+```
 ### Rolling with Mods
 `````rpg rule.content
 id: rolling-mods
@@ -196,7 +206,7 @@ So, for example, if a 1st-level character has a WIS +2 ability modifier and is p
 ```rpg rule.content
 id: working-together
 ---
-Sometimes two or more creatures work together. In this case, the creature with the highest ability modifier is designated the lead for the effort. That creature can make an ability check with advantage, reflecting the help others give. In combat, a creature can only provide this kind of assistance by taking the [[Help]] action (see **Actions in Combat** in this chapter). 
+Sometimes two or more creatures work together. In this case, the creature with the highest ability modifier is designated the lead for the effort. That creature can make an ability check with advantage, reflecting the help others give. In combat, a creature can only provide this kind of assistance by taking the [[Help]] action (see [[Action|Actions in Combat]] in this chapter). 
 
 A creature can only provide help if they have capacity to do the task. For example, trying to open a lock requires proficiency with thieves’ tools, so a creature who lacks that proficiency can’t provide help with a lock-picking job. Moreover, a creature can provide help only when their assistance would be productive. Threading a needle doesn’t get any easier with another pair of hands.
 ```

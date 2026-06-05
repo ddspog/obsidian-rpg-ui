@@ -2,10 +2,13 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
-tab-icon: file-text
-tab-color: var(--color-purple)
-tab-order: 5
-tab-name: Description
+---
+````rpg rule.content
+id: spellcasting
+icon: file-text
+color: var(--color-purple)
+order: 5
+name: Description
 ---
 ## Description
 ```rpg rule.content
@@ -50,4 +53,11 @@ id: spell-attack-rolls
 Some spells require the caster to make an attack roll to determine whether the spell effect hits the intended target. Your attack bonus for a spell attack equals your spellcasting ability modifier + your PB. Your spellcasting class typically dictates which spellcasting ability modifier you use. 
 
 Most spells that require attack rolls involve ranged attacks. Remember that you have disadvantage on a ranged attack roll if you are within 5 feet of a hostile creature that can see you and isn’t incapacitated.
+```
+````
+## On Creatures
+```rpg rule.content
+id: creature 
+---
+The Spellcasting action always lists the creature’s spellcasting ability and the spell save DC for its spells. When a spell listed in this action requires an attack roll, use the creature’s spellcasting ability modifier + the creature’s PB to determine the creature’s total attack bonus. The creature’s PB can be found in the table on page 18. 
 ```

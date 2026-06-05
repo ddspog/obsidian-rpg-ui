@@ -2,9 +2,12 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
-tab-icon: heart
-tab-color: var(--color-red)
-tab-order: 1
+---
+````rpg rule.content
+id: main-content
+icon: heart
+color: var(--color-red)
+order: 1
 ---
 ## Hit Points
 ```rpg rule.content
@@ -31,4 +34,11 @@ Healing can’t restore temporary hit points, and you can’t stack temporary hi
 If you have 0 HP, receiving temporary hit points doesn’t restore you to consciousness or stabilize you. If they absorb all the damage from a hit, you don’t have to fail a death save. 
 
 Unless a feature that grants you temporary hit points has a listed duration, they last until depleted or you finish a long rest. 
+```
+````
+## On Creatures
+```rpg rule.content
+id: creatures
+---
+[[Hit points]] (HP) represent the health and vitality of the creature. The higher the number, the harder it is to kill or knock out the creature. Unlike PCs, creatures typically die or are destroyed when reduced to 0 HP. 
 ```

@@ -16,7 +16,7 @@ traits:
 ---
 You gain a +1 bonus to attack rolls and damage rolls made with this magic weapon.
 
-_**Curse.**_ This weapon is cursed and possessed by a vengeful spirit. Becoming attuned to it extends the curse to you. As long as you remain cursed, you are unwilling to part with the weapon, keeping it on your person at all times. While attuned to this weapon, you have [[disadvantage]] on attack rolls made with weapons other than this one.
+_**Curse.**_ This weapon is cursed and possessed by a vengeful spirit. Becoming attuned to it extends the curse to you. As long as you remain cursed, you are unwilling to part with the weapon, keeping it on your person at all times. While attuned to this weapon, you have [[Advantage|disadvantage]] on attack rolls made with weapons other than this one.
 
 In addition, while the weapon is on your person, you must succeed on a DC 15 Wisdom saving throw whenever you take damage from another creature in combat. On a failed save, you must attack the creature that damaged you until you drop to 0 Hit Points or it does or until you can’t reach the creature to make a melee attack against it.
 

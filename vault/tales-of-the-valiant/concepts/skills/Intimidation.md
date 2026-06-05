@@ -7,6 +7,9 @@ attribute: charisma
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 # Intimidation
+````rpg rule.content
+id: summary
+---
 _Associated Ability: Charisma (CHA)_
 An attempt to influence someone through threats, hostility, and physical violence requires a CHA ([[Intimidation]]) check. Examples include prying information out of a prisoner, convincing street thugs to back down, or using a broken bottle to suggest that a sneering vizier reconsider.
 ```rpg rule.side
@@ -20,3 +23,4 @@ However, some situations might call for a different approach, and the GM might a
 
 For example, if you have to swim to an island, the GM might call for a CON ([[Athletics]]) check to see if you have the stamina to make it there. If your character is proficient in [[Athletics]], you would add your PB to the CON check instead of the normal STR ([[Athletics]]) check. Similarly, if your barbarian smashes a table to intimidate an enemy, your GM might ask for a STR ([[Intimidation]]) check, even though [[Intimidation]] is normally associated with CHA.
 ```
+````

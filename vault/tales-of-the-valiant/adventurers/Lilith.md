@@ -1,7 +1,5 @@
 ---
-cssclasses:
-  - hide-title
-  - hide-properties
+source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg character.header
 classes:

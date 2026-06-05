@@ -2,6 +2,11 @@
 cssclasses:
   - note-statblock
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+aliases:
+  - giant crab
+  - Giant Crab
+  - giant crabs
+  - Giant Crabs
 ---
 ```rpg stat.monster
 name: "Crab, Giant"

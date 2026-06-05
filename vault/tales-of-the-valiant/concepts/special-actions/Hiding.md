@@ -7,7 +7,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ```rpg rule.content
 id: summary
 ---
-Hiding is a unique way that a PC can use the [[Stealth]] skill. It’s tied to taking the [[Hide]] action in combat encounters (see [[Combat Encounters|Actions in Combat]]). Any character can attempt to hide, even if they don’t have proficiency in the [[Stealth]] skill. 
+Hiding is a unique way that a PC can use the [[Stealth]] skill. It’s tied to taking the [[Hide]] action in combat encounters (see [[Action|Actions in Combat]]). Any character can attempt to hide, even if they don’t have proficiency in the [[Stealth]] skill. 
 
 The GM decides when circumstances are appropriate for hiding. When you attempt to hide, make a DEX ([[Stealth]]) check. Until you are discovered or stop hiding, that check result is contested by the Perception score of a creature that might discover you. 
 
@@ -25,7 +25,7 @@ id: unseen
 ---
 Combatants can try to escape notice by [[hiding]], casting the [[invisibility]] spell, or lurking in darkness. 
 
-When you attack a target you can’t see, you have [[disadvantage]] on the attack roll. This is true whether you’re guessing at the target’s location or targeting a creature you can hear but not see. If the target isn’t in the location you targeted, you automatically miss, though the GM might just say that you missed, not whether you guessed the target’s location correctly. 
+When you attack a target you can’t see, you have [[Advantage|disadvantage]] on the attack roll. This is true whether you’re guessing at the target’s location or targeting a creature you can hear but not see. If the target isn’t in the location you targeted, you automatically miss, though the GM might just say that you missed, not whether you guessed the target’s location correctly. 
 
 When a creature can’t see you, you have [[advantage]] on attack rolls against it. If you are hidden—both unseen and unheard—when you make an attack, you give away your location when the attack hits or misses. 
 ```
