@@ -4,10 +4,19 @@ cssclasses:
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 aliases:
   - Angel
+  - angel
+  - Angels
+  - angels
   - Demon
+  - demon
+  - Demons
+  - demons
   - Devil
   - Outsiders
   - outsiders
+  - devil
+  - Devils
+  - devils
 ---
 # Outsider
 ```rpg rule.content

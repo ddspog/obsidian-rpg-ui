@@ -16,10 +16,10 @@ tab-color: var(--color-purple)
 |Aboleth|10|Chuul, derro, sea hag, and coastal or water-dwelling [[Humanoid|Humanoids]]|ABB-oh-lehth|
 |Chuul|4|Aboleth and coastal or water-dwelling [[Beast|Beasts]]|chool|
 |Cloaker|8|Derro, drow, duergar, grick, vampire|KLOHK-ir|
-|Gibbering Mouther|2|\*|GIBB-ir-eeng MOWTH- ir|
-|Insatiable Brood|3|\*|ihn-SAY-shuh-buhl brood|
-|Lantern Hagfish|1/8|\*|LAN-turn HAG-fihsh|
-|Mordovermis|3|\*|morr-DOH-vir-mihs|
+|Gibbering Mouther|2|*|GIBB-ir-eeng MOWTH- ir|
+|Insatiable Brood|3|*|ihn-SAY-shuh-buhl brood|
+|Lantern Hagfish|1/8|*|LAN-turn HAG-fihsh|
+|Mordovermis|3|*|morr-DOH-vir-mihs|
 |Otyugh|5|Derro, drow, duergar|OH-tee-uhg (sometimes AW-tee-uhg)|
 |Star Crow|1/4|Cultists, derro|star croh|
 |Voidling|11|Cultists|VOYD-leeng|

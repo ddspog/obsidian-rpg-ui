@@ -2,6 +2,9 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+aliases:
+  - animals
+  - Animals
 ---
 # Animal
 ```rpg rule.content
