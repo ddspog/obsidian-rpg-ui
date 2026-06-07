@@ -1496,6 +1496,11 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           expressions: expressionsProxy,
           system: systemCtx,
           trigger,
+          // The file this fence lives in. Blocks that render a title or
+          // resolve links (stat.category / stat.monster) must key off this,
+          // not the active note — in a `.bare()` import the active note is the
+          // host, so `getActiveFile()` would yield the wrong file.
+          sourcePath,
         };
         return React.createElement(Comp, props);
       };
