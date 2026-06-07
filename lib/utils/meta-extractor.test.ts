@@ -240,4 +240,85 @@ describe("meta-extractor", () => {
       expect(meta).toBeNull();
     });
   });
+
+  describe("stat.* fences (nested-render fallback, getSectionInfo null)", () => {
+    // Regression: `.bare()` and other nested renders pass a `rpg stat.*` fence
+    // through MarkdownRenderer with no section info, so the info string
+    // ("rpg stat.category") is gone. Without key-set detection the fence-mode
+    // head (level/subtitle/habitat/treasure, no name) defaulted to rule.content
+    // — rendering a category's body but dropping its title/subtitle/habitat.
+    it("detects 'stat.category' from a fence-mode head (no name, habitat/treasure/subtitle)", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        "level: 2\n" +
+        "subtitle: Steward and Sage of Nature\n" +
+        'habitat: Any\n' +
+        'treasure: "[[Individual]], [[Relics]]"\n' +
+        "---\n" +
+        "![[druids-category.webp]]\n" +
+        "Body prose about druids.\n";
+      expect(extractMeta(ctx, el, source)).toBe("stat.category");
+    });
+
+    it("detects 'stat.category' even when the head declares an explicit name", () => {
+      // Regression: a category with `name:` + `subtitle:` + `level:` matched
+      // feature.details (those are feature markers) and lost its category chrome
+      // (Habitat/Treasure line). habitat/treasure are stat-only fields, so they
+      // classify a category regardless of `name`.
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        "name: Druids\n" +
+        "level: 2\n" +
+        "subtitle: Steward and Sage of Nature\n" +
+        'habitat: Any\n' +
+        'treasure: "[[Individual]], [[Relics]]"\n' +
+        "---\n" +
+        "Body prose about druids.\n";
+      expect(extractMeta(ctx, el, source)).toBe("stat.category");
+    });
+
+    it("detects 'stat.monster' from a fence-mode head with stats:/abilities:", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        'name: "Eagle"\n' +
+        'type: "Small [[Beast]]"\n' +
+        'cr: "0"\n' +
+        "stats:\n  ac: \"11\"\n  hp: \"8\"\n" +
+        "abilities:\n  str: -2\n  dex: 1\n" +
+        "---\n" +
+        "**Keen Sight.** The eagle has advantage on sight-based Perception.\n";
+      expect(extractMeta(ctx, el, source)).toBe("stat.monster");
+    });
+
+    it("detects 'stat.monster' from a pure-YAML head (cr, no traits body)", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = 'name: "Goblin"\ntype: "Small Humanoid"\ncr: "1/4"\nhabitat: "[[Forest]]"\n';
+      expect(extractMeta(ctx, el, source)).toBe("stat.monster");
+    });
+
+    it("a categorized monster (name + cr + habitat/treasure) stays 'stat.monster', not a category", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source =
+        'name: "Druid"\n' +
+        'cr: "2"\n' +
+        'category: "[[Druids]]"\n' +
+        'habitat: Any\n' +
+        'treasure: "[[Relics]]"\n' +
+        "---\n" +
+        "**Spellcasting.** The druid casts…\n";
+      expect(extractMeta(ctx, el, source)).toBe("stat.monster");
+    });
+
+    it("does not steal feature.details: name + subtitle (no stat keys) stays feature.details", () => {
+      const ctx = createReadingViewContext();
+      const el = createMockElement();
+      const source = 'name: Heroic Boon\nsubtitle: "10th-Level Cleric Feature"\npick: 1\n';
+      expect(extractMeta(ctx, el, source)).toBe("feature.details");
+    });
+  });
 });
