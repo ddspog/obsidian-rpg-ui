@@ -26,6 +26,31 @@ function coerceColumns(raw: unknown): ListColumns {
   return "auto";
 }
 
+/** Coerce one YAML array element into a cell string: strings trim; numbers /
+ *  booleans stringify (so `[Ankheg, 2]` keeps the `2`); YAML's unquoted `[[X]]`
+ *  → `[["X"]]` quirk collapses back to the wikilink. Anything else → "". */
+function cellFromYaml(x: unknown): string {
+  if (typeof x === "string") return x.trim();
+  if (typeof x === "number" || typeof x === "boolean") return String(x);
+  if (Array.isArray(x) && x.length === 1 && typeof x[0] === "string") return `[[${x[0]}]]`;
+  return "";
+}
+
+/** Resolve the heading `name`. An array (`name: [A, B]`) becomes a two-label
+ *  bar: `titleCells` holds the cells (left → right) and `name` the joined form
+ *  for pills / keys / fallback. YAML's unquoted `[[X]]` → `[["X"]]` quirk is
+ *  collapsed back, matching the entry-pair parsing. */
+function coerceName(raw: unknown, blockName: string): { name: string; titleCells?: string[] } {
+  if (Array.isArray(raw)) {
+    const cells = raw.map(cellFromYaml).filter(Boolean);
+    if (cells.length >= 2) return { name: cells.join(" "), titleCells: cells };
+    if (cells.length === 1) return { name: cells[0] };
+    return { name: titleFromSlug(blockName) };
+  }
+  if (typeof raw === "string" && raw.trim()) return { name: raw.trim() };
+  return { name: titleFromSlug(blockName) };
+}
+
 function coerceEntries(raw: unknown): ListEntry[] {
   if (!Array.isArray(raw)) return [];
   const out: ListEntry[] = [];
@@ -34,6 +59,14 @@ function coerceEntries(raw: unknown): ListEntry[] {
     if (typeof item === "string") {
       const text = item.trim();
       if (text) out.push({ text });
+      continue;
+    }
+    // Array → an explicit multi-cell row (`- [A, B]`). Each element is a
+    // literal item. YAML parses an unquoted `[[X]]` as `[["X"]]`, so collapse
+    // a 1-element string array back to the `[[X]]` wikilink form.
+    if (Array.isArray(item)) {
+      const items = item.map(cellFromYaml).filter(Boolean);
+      if (items.length > 0) out.push({ items });
       continue;
     }
     if (!item || typeof item !== "object") continue;
@@ -45,6 +78,22 @@ function coerceEntries(raw: unknown): ListEntry[] {
     }
     const call = typeof obj.call === "string" ? obj.call.trim() : "";
     if (!call) continue;
+    // Array `format` → a multi-cell call row: each element is a cell template.
+    if (Array.isArray(obj.format)) {
+      const formatCells = obj.format
+        .map((x) =>
+          typeof x === "string"
+            ? x
+            : Array.isArray(x) && x.length === 1 && typeof x[0] === "string"
+              ? `[[${x[0]}]]`
+              : ""
+        )
+        .filter(Boolean);
+      if (formatCells.length > 0) {
+        out.push({ call, formatCells });
+        continue;
+      }
+    }
     const format = typeof obj.format === "string" && obj.format ? obj.format : "${name}";
     out.push({ call, format });
   }
@@ -88,8 +137,7 @@ export function parseListBlock(blockName: string, source: string): ListBlock {
       ? (parsed as Record<string, unknown>)
       : {};
 
-  const name =
-    typeof fm.name === "string" && fm.name.trim() ? fm.name.trim() : titleFromSlug(blockName);
+  const { name, titleCells } = coerceName(fm.name, blockName);
   const id =
     typeof fm.id === "string" && fm.id.trim() ? fm.id.trim() : blockName || slugify(name);
   const subtitle =
@@ -98,6 +146,7 @@ export function parseListBlock(blockName: string, source: string): ListBlock {
 
   return {
     name,
+    titleCells,
     subtitle,
     id,
     columns: coerceColumns(fm.columns),

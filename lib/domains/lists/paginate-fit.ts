@@ -15,6 +15,8 @@ export type HeadingRow = {
   name: string;
   subtitle?: string;
   cont?: boolean;
+  /** Two-label bar cells (`name: [A, B]`), left → right. */
+  titleCells?: string[];
 };
 export type EntryRow = {
   kind: "entry";
@@ -22,6 +24,8 @@ export type EntryRow = {
   markdown: string;
   key: string;
   highlight?: ListHighlight;
+  /** Multi-cell row (from an `items` entry): each string is one cell. */
+  cells?: string[];
 };
 export type Row = HeadingRow | EntryRow;
 
@@ -30,6 +34,7 @@ export interface Section {
   name: string;
   subtitle?: string;
   cont?: boolean;
+  titleCells?: string[];
   lines: EntryRow[];
 }
 
@@ -38,7 +43,13 @@ export interface Section {
 export function buildRows(lists: ResolvedList[]): Row[] {
   const rows: Row[] = [];
   for (const { block, lines } of lists) {
-    rows.push({ kind: "heading", listId: block.id, name: block.name, subtitle: block.subtitle });
+    rows.push({
+      kind: "heading",
+      listId: block.id,
+      name: block.name,
+      subtitle: block.subtitle,
+      titleCells: block.titleCells,
+    });
     lines.forEach((l, i) =>
       // Key by list id + index: stable and unique even for literal lines
       // (which have no file path).
@@ -48,6 +59,7 @@ export function buildRows(lists: ResolvedList[]): Row[] {
         markdown: l.markdown,
         key: `${block.id}:${i}`,
         highlight: l.highlight,
+        cells: l.cells,
       })
     );
   }
@@ -139,6 +151,7 @@ export function withContinuations(pages: Row[][], byId: Map<string, ListBlock>):
       listId: lid,
       name: meta.name,
       subtitle: meta.subtitle,
+      titleCells: meta.titleCells,
       cont: true,
     };
     return [cont, ...page];
@@ -156,6 +169,7 @@ export function groupIntoSections(rows: Row[]): Section[] {
         name: row.name,
         subtitle: row.subtitle,
         cont: row.cont,
+        titleCells: row.titleCells,
         lines: [],
       };
       sections.push(cur);

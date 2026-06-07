@@ -161,6 +161,84 @@ function buildRecord(
   };
 }
 
+/** Parse a CR-like token for ordering (`"1/8"` → 0.125); NaN when non-numeric. */
+function parseNumericish(s: string): number {
+  const t = s.trim();
+  const frac = t.match(/^(-?\d+)\s*\/\s*(\d+)$/);
+  if (frac) {
+    const d = Number(frac[2]);
+    return d !== 0 ? Number(frac[1]) / d : NaN;
+  }
+  const n = Number(t);
+  return t !== "" && Number.isFinite(n) ? n : NaN;
+}
+
+/** Ascending compare: numeric (incl. fraction) keys sort numerically and ahead
+ *  of any non-numeric keys (which sort alphabetically). */
+function compareGroupKeys(a: string, b: string): number {
+  const na = parseNumericish(a);
+  const nb = parseNumericish(b);
+  const aNum = !Number.isNaN(na);
+  const bNum = !Number.isNaN(nb);
+  if (aNum && bNum) return na - nb;
+  if (aNum) return -1;
+  if (bNum) return 1;
+  return a.localeCompare(b);
+}
+
+function fieldToString(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return String(v).trim();
+}
+
+/** A `"Head, Tail"` name reads as two items in a comma-joined list, so render
+ *  `"Lizard, Giant"` as `"Lizard (Giant)"`. Names without `", "` pass through. */
+function adaptGroupName(name: string): string {
+  const idx = name.indexOf(", ");
+  return idx >= 0 ? `${name.slice(0, idx)} (${name.slice(idx + 2)})` : name;
+}
+
+/**
+ * Collapse records into one synthetic record per distinct value of `field`,
+ * ordered ascending (CR-aware). Each group record exposes:
+ *   - `[field]`  the group key (e.g. `cr`)
+ *   - `links`    members as `[[name]]` wikilinks, comma-joined (name-sorted)
+ *   - `names`    members' plain names, comma-joined
+ *   - `count`    member count
+ * so a `format` like `["${links}", "${cr}"]` prints "links… | CR".
+ */
+function groupRecords(records: ResolvedRecord[], field: string): ResolvedRecord[] {
+  const groups = new Map<string, ResolvedRecord[]>();
+  for (const r of records) {
+    const key = fieldToString(r.fields[field]);
+    if (!key) continue; // ignore records that don't have the grouped attribute
+    let arr = groups.get(key);
+    if (!arr) groups.set(key, (arr = []));
+    arr.push(r);
+  }
+  return [...groups.keys()].sort(compareGroupKeys).map((key) => {
+    const members = groups.get(key)!.slice().sort((a, b) => a.name.localeCompare(b.name));
+    // `"Lizard, Giant"` → display `"Lizard (Giant)"`, linking the real target:
+    // `[[Lizard, Giant|Lizard (Giant)]]`. Comma-free names use a bare `[[name]]`.
+    const linkOf = (m: ResolvedRecord) => {
+      const disp = adaptGroupName(m.name);
+      return disp === m.name ? `[[${m.name}]]` : `[[${m.name}|${disp}]]`;
+    };
+    return {
+      fields: {
+        [field]: key,
+        links: members.map(linkOf).join(", "),
+        names: members.map((m) => adaptGroupName(m.name)).join(", "),
+        count: members.length,
+        homebrew: members.some((m) => m.fields.homebrew === true),
+      },
+      name: key,
+      file: members[0]?.file ?? "",
+    };
+  });
+}
+
 /** Locate a `rpg list.*` fence by id (or the first one) in a file's content. */
 function findListFence(content: string, id: string | undefined): ListBlock | null {
   const openRe = /^(`{3,})\s*rpg\s+list(?:\.([A-Za-z0-9_-]+))?\s*$/gm;
@@ -178,6 +256,47 @@ function findListFence(content: string, id: string | undefined): ListBlock | nul
     openRe.lastIndex = bodyStart + (cm ? cm.index + cm[0].length : rest.length);
   }
   return null;
+}
+
+/**
+ * A `stat.monster` carrying `category: "[[Cat]]"` inherits its effective
+ * `habitat` / `treasure` from that category for data purposes (filtering,
+ * grouping, `${habitat}`), so categorized creatures answer to their category's
+ * terrain. The monster card still hides its own habitat line when categorized;
+ * this only affects fetched field values. The monster's own value wins; the
+ * category only fills it in when the monster has none.
+ */
+async function applyCategoryInheritance(
+  fields: Record<string, unknown>,
+  source: ListSource,
+  sourcePath: string,
+  cache?: Map<string, Record<string, unknown> | null>
+): Promise<Record<string, unknown>> {
+  const cat = typeof fields.category === "string" ? fields.category.trim() : "";
+  if (!cat) return fields;
+  const target = cat
+    .replace(/^\[\[|\]\]$/g, "")
+    .split("|")[0]
+    .split("#")[0]
+    .trim();
+  if (!target) return fields;
+  let head = cache?.get(target);
+  if (head === undefined) {
+    head = null;
+    const file = source.resolveFile(target, sourcePath);
+    if (file) {
+      const content = await source.read(file.path);
+      if (content)
+        head = findFenceBody(content, "stat.category") ?? findFenceBody(content, "stat.group");
+    }
+    cache?.set(target, head);
+  }
+  if (!head) return fields;
+  const out = { ...fields };
+  // The monster's own value wins; the category only fills a gap (no own value).
+  if (!fieldToString(out.habitat) && head.habitat != null) out.habitat = head.habitat;
+  if (!fieldToString(out.treasure) && head.treasure != null) out.treasure = head.treasure;
+  return out;
 }
 
 /**
@@ -217,11 +336,13 @@ export async function resolveRecords(
   // Folder target — one record per `.md` file.
   if (call.target.endsWith("/")) {
     const out: ResolvedRecord[] = [];
+    const catCache = new Map<string, Record<string, unknown> | null>();
     for (const file of source.listFolderFiles(call.target)) {
       const content = await source.read(file.path);
       const fileFm = source.frontmatter(file.path);
       const homebrew = isHomebrewSource(fileFm?.source, officialSources);
-      const fields = (content ? selectFenceFields(content, call) : null) ?? fileFm ?? {};
+      const raw = (content ? selectFenceFields(content, call) : null) ?? fileFm ?? {};
+      const fields = await applyCategoryInheritance(raw, source, file.path, catCache);
       const record = buildRecord(fields, file, homebrew);
       if (!passesFilters(call.chain, record.fields)) continue;
       out.push(record);
@@ -235,7 +356,8 @@ export async function resolveRecords(
   const content = await source.read(file.path);
   const fileFm = source.frontmatter(file.path);
   const homebrew = isHomebrewSource(fileFm?.source, officialSources);
-  const fields = (content ? selectFenceFields(content, call) : null) ?? fileFm ?? {};
+  const raw = (content ? selectFenceFields(content, call) : null) ?? fileFm ?? {};
+  const fields = await applyCategoryInheritance(raw, source, file.path);
   const record = buildRecord(fields, file, homebrew);
   if (!passesFilters(call.chain, record.fields)) return [];
   return [record];
@@ -258,6 +380,11 @@ export async function resolveListLines(
     // Literal line: fixed markdown, used as-is (mixes with call entries).
     if (typeof entry.text === "string") {
       lines.push({ listId: block.id, markdown: entry.text, file: "" });
+      continue;
+    }
+    // Explicit multi-cell row (`- [A, B]`): one row, each item a cell.
+    if (entry.items && entry.items.length > 0) {
+      lines.push({ listId: block.id, markdown: "", cells: entry.items, file: "" });
       continue;
     }
     if (!entry.call) continue;
@@ -287,10 +414,20 @@ export async function resolveListLines(
       };
     }
     const records = await resolveRecords(call, sourcePath, source, visited, officialSources);
-    for (const record of records) {
+    // `.group(field)` collapses the records into one row per distinct field
+    // value (e.g. one row per CR), exposing `${links}` / `${names}` / `${count}`.
+    const groupSeg = call.chain.find((s) => s.fn === "group");
+    const groupField =
+      groupSeg && typeof groupSeg.args[0] === "string" ? (groupSeg.args[0] as string) : undefined;
+    const finalRecords = groupField ? groupRecords(records, groupField) : records;
+    for (const record of finalRecords) {
+      const cells = entry.formatCells
+        ? entry.formatCells.map((t) => formatLine(t, record.fields))
+        : undefined;
       lines.push({
         listId: block.id,
-        markdown: formatLine(entry.format ?? "${name}", record.fields),
+        markdown: cells ? "" : formatLine(entry.format ?? "${name}", record.fields),
+        cells,
         file: record.file,
         highlight: highlightFor ? highlightFor(record.fields) : undefined,
       });

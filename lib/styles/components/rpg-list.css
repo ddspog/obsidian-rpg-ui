@@ -27,6 +27,9 @@
    * rule-block.css sets) clamps it on narrow panes so it never overflows. */
   --rpg-list-col: 17rem;
   --rpg-list-col-gap: var(--size-4-8, 2rem);
+  /* Width of a value column in a `[name, value]` cell row (e.g. the CR column),
+     so the name takes the slack and the value stays snug. Tune to taste. */
+  --rpg-list-val-col: 2.5rem;
   --rpg-list-max-cols: 3;
   --rpg-list-cap: calc(
     var(--rpg-list-max-cols) * var(--rpg-list-col) +
@@ -116,7 +119,9 @@
   color: var(--text-title);
   font-family: var(--font-text);
   font-weight: 700;
-  font-size: var(--font-ui-medium, 1rem);
+  /* Just a hair larger than the entry text (var(--font-ui-small)); the
+     uppercase + bold + tint already make the bar read as a heading. */
+  font-size: calc(var(--font-ui-small, 0.8125rem) * 1.06);
   line-height: 1.25;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -132,6 +137,30 @@
   font-style: italic;
   font-weight: normal;
   color: var(--text-muted);
+}
+
+/* Two-label bar (`name: [A, B]`): the SAME column grid as the `--cells` entry
+   rows below, with matching inline padding, so each label sits directly above
+   its data column. */
+.rpg-list__heading--split :is(h1, h2, h3, h4, h5, h6) {
+  display: grid;
+  /* Fallback (2-col: flexible name + fixed value); the view sets the exact
+     track list inline so it matches the entry rows below. */
+  grid-template-columns: minmax(0, 1fr) var(--rpg-list-val-col, 2.5rem);
+  column-gap: var(--size-4-3, 0.75rem);
+  align-items: baseline;
+}
+
+/* Right-align the bar's last label (e.g. CR) to match the right-aligned data
+   column below. Only when there are 2+ labels (a lone label stays left). */
+.rpg-list__heading--split :is(h1, h2, h3, h4, h5, h6) > :last-child:not(:first-child) {
+  text-align: right;
+}
+
+/* The right cell reads as the secondary half (e.g. XP / count). */
+.rpg-list__title-r {
+  font-weight: 600;
+  opacity: 0.82;
 }
 
 /* ── Entry lines: hanging indent so wrapped lines tuck under the first ── */
@@ -167,6 +196,47 @@
   display: block;
   text-indent: 0;
   margin-top: var(--size-2-2, 0.25rem);
+}
+
+/* ── Multi-cell rows (`- [A, B]`): N equal columns within one entry row.
+ * `--rpg-list-cells` (the item count) is set inline by the view. Each cell is
+ * a block grid item with its own hanging indent; its inner run stays inline —
+ * the `> .rpg-list__cell` selectors (0,2,0) override the single-entry
+ * `.rpg-list__entry > div { display: inline }` rule above (0,1,1). ── */
+.rpg-list__entry--cells {
+  display: grid;
+  /* Fallback (2-col: flexible name + fixed value); the view sets the exact
+     track list inline to match the bar. */
+  grid-template-columns: minmax(0, 1fr) var(--rpg-list-val-col, 2.5rem);
+  column-gap: var(--size-4-3, 0.75rem);
+  /* Match the heading bar's inline padding so the entry column tracks line up
+     exactly under the bar's labels. */
+  padding-inline: var(--size-4-2, 0.5rem);
+  text-indent: 0;
+}
+
+.rpg-list__entry--cells > .rpg-list__cell {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  /* No hanging indent in cell rows: wrapped lines stay flush with the first
+     line (the column edge) rather than tucking under it. */
+  padding-left: 0;
+  text-indent: 0;
+}
+
+.rpg-list__entry--cells > .rpg-list__cell > :first-child {
+  display: inline;
+  margin: 0;
+}
+
+/* Right-align the last data column (e.g. CR) so the values hug the column's
+   right edge; no hanging indent there since the text is right-aligned. Only
+   when there are 2+ cells (a lone cell stays left). */
+.rpg-list__entry--cells > .rpg-list__cell:last-child:not(:first-child) {
+  text-align: right;
+  padding-left: 0;
+  text-indent: 0;
 }
 
 /* ── Highlighted entries (e.g. homebrew, via `.highlight()`) ── */

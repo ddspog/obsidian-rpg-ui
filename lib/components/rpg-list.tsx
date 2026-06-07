@@ -33,7 +33,6 @@ import {
   computeLayout,
   withContinuations,
   groupIntoSections,
-  firstPageByList,
   sameBoundaries,
   type Layout,
   type Section,
@@ -44,15 +43,39 @@ function maxColsOf(columns: ListColumns): number {
 }
 
 function SectionView({ section, sourcePath }: { section: Section; sourcePath: string }) {
-  const headingCls = "rpg-list__heading" + (section.cont ? " rpg-list__heading--cont" : "");
+  const headingCls =
+    "rpg-list__heading" +
+    (section.cont ? " rpg-list__heading--cont" : "") +
+    (section.titleCells ? " rpg-list__heading--split" : "");
   return (
     <section className="rpg-list__section" data-list-id={section.listId}>
       {section.name ? (
         <hgroup className={headingCls}>
           {/* h3 so the bars nest beneath the document's own h1/h2 outline. */}
-          <h3>
-            {section.name}
-            {section.cont ? " (cont.)" : ""}
+          <h3
+            style={
+              section.titleCells
+                ? {
+                    gridTemplateColumns:
+                      "minmax(0, 1fr)" +
+                      " var(--rpg-list-val-col, 2.5rem)".repeat(section.titleCells.length - 1),
+                  }
+                : undefined
+            }
+          >
+            {section.titleCells ? (
+              section.titleCells.map((cell, ci) => (
+                <span key={ci} className={ci === 0 ? "rpg-list__title-l" : "rpg-list__title-r"}>
+                  {cell}
+                  {ci === 0 && section.cont ? " (cont.)" : ""}
+                </span>
+              ))
+            ) : (
+              <>
+                {section.name}
+                {section.cont ? " (cont.)" : ""}
+              </>
+            )}
           </h3>
           {section.subtitle && !section.cont ? (
             <p>
@@ -63,19 +86,42 @@ function SectionView({ section, sourcePath }: { section: Section; sourcePath: st
       ) : null}
       {section.lines.length > 0 ? (
         <ul className="rpg-list__entries">
-          {section.lines.map((line) => (
-            <li
-              className={"rpg-list__entry" + (line.highlight ? " rpg-list__entry--hl" : "")}
-              key={line.key}
-              style={
-                line.highlight?.color
-                  ? ({ ["--rpg-list-hl" as string]: line.highlight.color } as React.CSSProperties)
-                  : undefined
-              }
-            >
-              <Markdown source={line.markdown} sourcePath={sourcePath} />
-            </li>
-          ))}
+          {section.lines.map((line) => {
+            const style: React.CSSProperties = {};
+            if (line.cells) {
+              // First column flexible (the name), each remaining column a narrow
+              // fixed value width — shared with the bar so they stay aligned.
+              style.gridTemplateColumns =
+                "minmax(0, 1fr)" +
+                " var(--rpg-list-val-col, 2.5rem)".repeat(line.cells.length - 1);
+            }
+            if (line.highlight?.color)
+              (style as Record<string, unknown>)["--rpg-list-hl"] = line.highlight.color;
+            return (
+              <li
+                className={
+                  "rpg-list__entry" +
+                  (line.cells ? " rpg-list__entry--cells" : "") +
+                  (line.highlight ? " rpg-list__entry--hl" : "")
+                }
+                key={line.key}
+                style={Object.keys(style).length ? style : undefined}
+              >
+                {line.cells ? (
+                  line.cells.map((cell, ci) => (
+                    <Markdown
+                      key={ci}
+                      source={cell}
+                      sourcePath={sourcePath}
+                      className="rpg-list__cell"
+                    />
+                  ))
+                ) : (
+                  <Markdown source={line.markdown} sourcePath={sourcePath} />
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="rpg-list__empty">No entries.</p>
@@ -252,26 +298,36 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
   const current = Math.min(page, pageCount - 1);
   const pageRows = displayPages[current] ?? [];
   const sections = groupIntoSections(pageRows);
-  const firstPageOf = firstPageByList(displayPages);
-  // Lists that land on the same page collapse into ONE pill. Its label shows
-  // just the first and last section names with an ellipsis between (e.g.
-  // "Cantrips … 2nd Circle"); a single-list pill shows its name. Lists are in
-  // page order, so same-page lists are always consecutive.
-  const pillGroups: { page: number; names: string[] }[] = [];
-  for (const r of resolved) {
-    const p = firstPageOf.get(r.block.id) ?? 0;
-    const last = pillGroups[pillGroups.length - 1];
-    if (last && last.page === p) last.names.push(r.block.name);
-    else pillGroups.push({ page: p, names: [r.block.name] });
-  }
-  const pills = pillGroups.map((g) => ({
-    page: g.page,
-    label: g.names.length > 1 ? `${g.names[0]} … ${g.names[g.names.length - 1]}` : g.names[0],
-  }));
-  // The active pill owns the current page: the last pill whose page <= current
-  // (so continuation pages stay attributed to the list that started them).
-  let activePill = 0;
-  for (let i = 0; i < pills.length; i++) if (pills[i].page <= current) activePill = i;
+  // One pill per page — a grouped table of contents. The label is the range of
+  // lists that START on that page ("First … Last"); a pure-overflow page (only
+  // a continuation, no new list) is labeled with the continuing list + (cont.).
+  const pills = displayPages.map((pgRows, pi) => {
+    const starts: string[] = [];
+    let contName: string | undefined;
+    const seen = new Set<string>();
+    for (const row of pgRows) {
+      if (row.kind !== "heading") continue;
+      const nm = row.titleCells?.[0] ?? row.name;
+      if (row.cont) {
+        if (contName === undefined) contName = nm;
+        continue;
+      }
+      if (!seen.has(row.listId)) {
+        seen.add(row.listId);
+        starts.push(nm);
+      }
+    }
+    const label =
+      starts.length === 0
+        ? contName
+          ? `${contName} (cont.)`
+          : `Page ${pi + 1}`
+        : starts.length > 1
+          ? `${starts[0]} … ${starts[starts.length - 1]}`
+          : starts[0];
+    return { page: pi, label };
+  });
+  const activePill = current;
 
   // Prev/next shows whenever there's more than one page; the pills only when
   // they'd lead to more than one distinct page.

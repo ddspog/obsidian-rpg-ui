@@ -25,14 +25,34 @@ export interface ListEntry {
    * line is emitted per resolved record.
    */
   format?: string;
+  /**
+   * Multi-cell `format` for a call entry — `format: ["[[${name}]]", "${cr}"]`.
+   * Each element is a cell template, interpolated per record into one cell of a
+   * two-(or N-)cell row. The call's `${field}` interpolation works the same as
+   * `format`; this just splits the output across cells. Mutually exclusive with
+   * the single-string `format`.
+   */
+  formatCells?: string[];
   /** A fixed markdown line, used as-is (no resolution). Mixes with call entries. */
   text?: string;
+  /**
+   * Explicit multi-cell row — `- [A, B]` in YAML. Each element is a literal
+   * markdown item rendered as one cell, side-by-side on a single row. Literal
+   * only (call output is one line per record and isn't packed into cells).
+   */
+  items?: string[];
 }
 
 /** A parsed `rpg list.<name>` block (one fence). */
 export interface ListBlock {
   /** Heading-bar text. */
   name: string;
+  /**
+   * Two-label heading bar (`name: [A, B]`): the cells, left → right. When set,
+   * the bar renders A left / B right (justified). `name` holds the joined form
+   * for pills, keys, and fallback rendering.
+   */
+  titleCells?: string[];
   /** Optional italic subtitle under the bar. */
   subtitle?: string;
   /** Stable id (defaults to the `<name>` after the dot in the fence meta). */
@@ -78,6 +98,9 @@ export interface ListLine {
   file: string;
   /** Set when the entry's call carried `.highlight()` — badges the line. */
   highlight?: ListHighlight;
+  /** When set, the line is a multi-cell row (from an `items` entry): each
+   *  string renders as one cell, side-by-side. `markdown` is unused then. */
+  cells?: string[];
 }
 
 /** A list block paired with its resolved entry lines (what the view renders). */
