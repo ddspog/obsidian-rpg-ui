@@ -30,10 +30,22 @@ export function appListSource(app: App): ListSource {
         }
       }
       if (!folder) return [];
-      return folder.children
-        .filter((f): f is TFile => f instanceof TFile && f.extension === "md")
-        .sort((a, b) => a.basename.localeCompare(b.basename))
-        .map((f) => ({ path: f.path, basename: f.basename }));
+      // Recurse into subfolders so a parent target (e.g. `bestiary/`, whose
+      // direct children are subfolders like `families/` and `monsters/`) sweeps
+      // every `.md` beneath it — not just direct children. Mirrors the inline
+      // folder-call behaviour (`collectMarkdownFiles`).
+      const out: ListFile[] = [];
+      const walk = (dir: TFolder): void => {
+        for (const child of dir.children) {
+          if (child instanceof TFile && child.extension === "md") {
+            out.push({ path: child.path, basename: child.basename });
+          } else if (child instanceof TFolder) {
+            walk(child);
+          }
+        }
+      };
+      walk(folder);
+      return out.sort((a, b) => a.basename.localeCompare(b.basename));
     },
 
     resolveFile(target: string, sourcePath: string): ListFile | null {
