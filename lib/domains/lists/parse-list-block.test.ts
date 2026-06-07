@@ -56,6 +56,18 @@ describe("parseListBlock", () => {
     expect(parseListBlock("x", 'columns: "2"').columns).toBe(2);
   });
 
+  it("parses a two-label header (`name: [A, B]`) into titleCells + joined name", () => {
+    const b = parseListBlock("cr0", 'name: ["Challenge 0", "10 XP"]');
+    expect(b.titleCells).toEqual(["Challenge 0", "10 XP"]);
+    expect(b.name).toBe("Challenge 0 10 XP"); // joined form for pills / keys / fallback
+  });
+
+  it("degrades a single-element name array to a plain name (no titleCells)", () => {
+    const b = parseListBlock("x", 'name: ["Solo"]');
+    expect(b.name).toBe("Solo");
+    expect(b.titleCells).toBeUndefined();
+  });
+
   it("parses entries, skipping malformed ones and defaulting format", () => {
     const b = parseListBlock(
       "x",
@@ -89,6 +101,45 @@ describe("parseListBlock", () => {
       { text: "*Fixed Spell* (Evocation) Homebrew line." },
       { text: "*Another* (Illusion) Also fixed." },
       { call: "@[[/spells/cantrips/]].spell()", format: "${name}" },
+    ]);
+  });
+
+  it("parses an array entry into a multi-cell row (`- [A, B]`), mixed with singles", () => {
+    const b = parseListBlock(
+      "x",
+      [
+        "entries:",
+        "  - [Badger, Bat]", // two literal cells
+        "  - [Ankheg, 2]", // numeric second cell → stringified (not dropped)
+        "  - [Worg, 1/2]", // fraction stays a string
+        '  - ["[[Crab, Giant]]", "[[Eagle]]"]', // quoted wikilink cells
+        "  - Cat", // single literal (one cell)
+        "  - []", // empty array → dropped
+      ].join("\n")
+    );
+    expect(b.entries).toEqual([
+      { items: ["Badger", "Bat"] },
+      { items: ["Ankheg", "2"] },
+      { items: ["Worg", "1/2"] },
+      { items: ["[[Crab, Giant]]", "[[Eagle]]"] },
+      { text: "Cat" },
+    ]);
+  });
+
+  it("parses an array `format` on a call into formatCells (multi-cell call rows)", () => {
+    const b = parseListBlock(
+      "x",
+      [
+        "entries:",
+        '  - call: "@[[bestiary/]].filter(type like /Animal/).block(0)"',
+        '    format: ["[[${name}]]", "${cr}"]',
+      ].join("\n")
+    );
+    expect(b.entries).toEqual([
+      {
+        call: "@[[bestiary/]].filter(type like /Animal/).block(0)",
+        formatCells: ["[[${name}]]", "${cr}"],
+      },
     ]);
   });
 

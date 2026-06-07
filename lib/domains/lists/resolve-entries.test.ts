@@ -63,6 +63,135 @@ describe("findFenceBody", () => {
 });
 
 describe("resolveListLines", () => {
+  it("resolves an `items` entry into one multi-cell line; singles unchanged", async () => {
+    const src = new FakeSource();
+    const lines = await resolveListLines(
+      block([{ items: ["[[Badger]]", "[[Bat]]"] }, { text: "Cat" }]),
+      "host.md",
+      src,
+      []
+    );
+    expect(lines).toEqual([
+      { listId: "list", markdown: "", cells: ["[[Badger]]", "[[Bat]]"], file: "" },
+      { listId: "list", markdown: "Cat", file: "" },
+    ]);
+  });
+
+  it("resolves a call with array `format` into a multi-cell row per record", async () => {
+    const src = new FakeSource();
+    src.files.set("bestiary/Ankheg.md", "```rpg stat.monster\nname: Ankheg\ncr: 2\n```\n");
+    src.folders.set("/bestiary/", [{ path: "bestiary/Ankheg.md", basename: "Ankheg" }]);
+    const lines = await resolveListLines(
+      block([{ call: "@[[/bestiary/]].block(0)", formatCells: ["[[${name}]]", "${cr}"] }]),
+      "host.md",
+      src,
+      []
+    );
+    expect(lines).toEqual([
+      { listId: "list", markdown: "", cells: ["[[Ankheg]]", "2"], file: "bestiary/Ankheg.md" },
+    ]);
+  });
+
+  it("groups records by a field with `.group()` (CR-aware ascending, links per group)", async () => {
+    const src = new FakeSource();
+    const mon = (name: string, cr: string) =>
+      "```rpg stat.monster\n" + `name: ${name}\n` + `cr: ${cr}\n` + "```\n";
+    src.files.set("b/Ankheg.md", mon("Ankheg", "2"));
+    src.files.set("b/Bat.md", mon("Bat", "0"));
+    src.files.set("b/Frog.md", mon("Frog", "0"));
+    src.files.set("b/Stirge.md", mon("Stirge", "1/8"));
+    src.files.set("b/Mystery.md", "```rpg stat.monster\nname: Mystery\n```\n"); // no cr → ignored
+    src.folders.set("/b/", [
+      { path: "b/Ankheg.md", basename: "Ankheg" },
+      { path: "b/Bat.md", basename: "Bat" },
+      { path: "b/Frog.md", basename: "Frog" },
+      { path: "b/Stirge.md", basename: "Stirge" },
+      { path: "b/Mystery.md", basename: "Mystery" },
+    ]);
+    const lines = await resolveListLines(
+      block([{ call: "@[[/b/]].group(cr).block(0)", formatCells: ["${links}", "${cr}"] }]),
+      "host.md",
+      src,
+      []
+    );
+    expect(lines).toEqual([
+      { listId: "list", markdown: "", cells: ["[[Bat]], [[Frog]]", "0"], file: "b/Bat.md" },
+      { listId: "list", markdown: "", cells: ["[[Stirge]]", "1/8"], file: "b/Stirge.md" },
+      { listId: "list", markdown: "", cells: ["[[Ankheg]]", "2"], file: "b/Ankheg.md" },
+    ]);
+  });
+
+  it("adapts comma-names in `.group()` links (`Lizard, Giant` → `[[Lizard, Giant|Lizard (Giant)]]`)", async () => {
+    const src = new FakeSource();
+    src.files.set("b/Boar.md", "```rpg stat.monster\nname: Boar\ncr: 1/4\n```\n");
+    src.files.set("b/Lizard, Giant.md", '```rpg stat.monster\nname: "Lizard, Giant"\ncr: 1/4\n```\n');
+    src.folders.set("/b/", [
+      { path: "b/Boar.md", basename: "Boar" },
+      { path: "b/Lizard, Giant.md", basename: "Lizard, Giant" },
+    ]);
+    const lines = await resolveListLines(
+      block([{ call: "@[[/b/]].group(cr).block(0)", formatCells: ["${links}", "${cr}"] }]),
+      "host.md",
+      src,
+      []
+    );
+    expect(lines).toEqual([
+      {
+        listId: "list",
+        markdown: "",
+        cells: ["[[Boar]], [[Lizard, Giant|Lizard (Giant)]]", "1/4"],
+        file: "b/Boar.md",
+      },
+    ]);
+  });
+
+  it("inherits habitat/treasure from a monster's `category` for fetching/filtering", async () => {
+    const src = new FakeSource();
+    src.files.set(
+      "cats/Druids.md",
+      "````rpg stat.category\nhabitat: Forest\ntreasure: Relics\n---\nbody\n````\n"
+    );
+    src.files.set(
+      "mon/Druid.md",
+      '```rpg stat.monster\nname: Druid\ncr: 2\ncategory: "[[Druids]]"\n```\n'
+    );
+    src.folders.set("/mon/", [{ path: "mon/Druid.md", basename: "Druid" }]);
+    const lines = await resolveListLines(
+      block([
+        {
+          call: "@[[/mon/]].filter(habitat like /Forest/).block(0)",
+          format: "${name} (${habitat}, ${treasure})",
+        },
+      ]),
+      "host.md",
+      src,
+      []
+    );
+    expect(lines).toEqual([
+      { listId: "list", markdown: "Druid (Forest, Relics)", file: "mon/Druid.md" },
+    ]);
+  });
+
+  it("prioritizes the monster's own habitat over its category's (category fills only gaps)", async () => {
+    const src = new FakeSource();
+    src.files.set("cats/Druids.md", "````rpg stat.category\nhabitat: Forest\ntreasure: Relics\n---\nb\n````\n");
+    src.files.set(
+      "mon/Swamp Druid.md",
+      '```rpg stat.monster\nname: Swamp Druid\nhabitat: Swamp\ncategory: "[[Druids]]"\n```\n'
+    );
+    src.folders.set("/m/", [{ path: "mon/Swamp Druid.md", basename: "Swamp Druid" }]);
+    const lines = await resolveListLines(
+      block([{ call: "@[[/m/]].block(0)", format: "${habitat} / ${treasure}" }]),
+      "host.md",
+      src,
+      []
+    );
+    // Own habitat (Swamp) wins; treasure has no own value so it inherits Relics.
+    expect(lines).toEqual([
+      { listId: "list", markdown: "Swamp / Relics", file: "mon/Swamp Druid.md" },
+    ]);
+  });
+
   it("enumerates a folder, one formatted line per file (sorted)", async () => {
     const src = new FakeSource();
     src.files.set("spells/cantrips/Fire Bolt.md", spellFile("Evocation", "Fire harms foe."));
