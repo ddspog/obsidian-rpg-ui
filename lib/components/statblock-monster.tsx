@@ -37,7 +37,7 @@ const STAT_LABELS: Record<string, string> = {
   ac: "Armor Class",
   hp: "Hit Points",
   speed: "Speed",
-  immune: "Immunities",
+  immune: "Immune",
   pas_perception: "Perception",
   pas_stealth: "Stealth",
   vulnerable: "Vulnerable",
@@ -71,10 +71,16 @@ export function StatblockMonster({
     </section>
   ) : null;
 
-  // Ensure senses and languages always appear (with __ when empty).
-  const displayStats = { ...stats };
-  if (!displayStats.senses) displayStats.senses = "__";
-  if (!displayStats.languages) displayStats.languages = "__";
+  // Senses and languages always appear (with __ when empty) and always sit at
+  // the end, senses before languages. Building the map explicitly avoids
+  // appending a missing `senses` *after* an existing `languages`.
+  const displayStats: Record<string, string> = {};
+  for (const [k, v] of Object.entries(stats)) {
+    if (k === "senses" || k === "languages") continue;
+    displayStats[k] = v;
+  }
+  displayStats.senses = stats.senses ?? "__";
+  displayStats.languages = stats.languages ?? "__";
 
   return (
     <article className="rpg-statblock rpg-statblock-monster">
