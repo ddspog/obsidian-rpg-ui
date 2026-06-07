@@ -22,7 +22,9 @@
   margin: 12px 0 0;
 }
 
-.rpg-statblock-desc:last-child::before {
+/* Asterism divider above a trailing description — monster/vehicle only. The
+   category uses its bordered Habitat/Treasure line as the divider instead. */
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-desc:last-child::before {
   content: "※";
   display: block;
   text-align: center;
@@ -31,16 +33,18 @@
   letter-spacing: 0.3em;
 }
 
-/* ─── Title bar ──────────────────────────────────────────────────────────── */
+/* ─── Title bar (monster + vehicle only) ─────────────────────────────────── */
+/* The category heading is a plain heading (styled like rule.content headings),
+   so the title-bar treatment is scoped to the monster and vehicle cards. */
 
-.rpg-statblock-header {
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-header {
   background: var(--statblock-title);
   padding: 4px 12px;
   margin: 0;
   border-radius: 0 10px 10px 0;
 }
 
-.rpg-statblock-header h3 {
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-header h3 {
   margin: 0;
   font-size: 1.1em;
   font-weight: 700;
@@ -117,10 +121,10 @@ p.rpg-statblock-subtitle {
   }
 }
 
-/* On a monster card the line is a footer — separated from the statblock
-   body (and any description) by a rule. The group's line stays at the top
-   under the subtitle, so it gets no separator. */
-.rpg-statblock-monster .rpg-statblock-habitat-treasure {
+/* A rule above the Habitat/Treasure line. On a monster card it separates the
+   line (a footer) from the statblock body; on a category it sits under the
+   heading/subtitle and acts as the divider ahead of the description. */
+:is(.rpg-statblock-monster, .rpg-statblock-category) .rpg-statblock-habitat-treasure {
   margin-top: var(--size-4-4, 1rem);
   padding-top: var(--size-4-2, 0.5rem);
   border-top: 1px solid var(--statblock-rule);

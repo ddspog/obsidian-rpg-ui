@@ -37,6 +37,8 @@ export interface StatMonsterData {
 /** A monster category — shared habitat/treasure + flavor for several monsters. */
 export interface StatCategoryData {
   name: string;
+  /** Heading level (1–6) for the category title; defaults to 2 when omitted. */
+  level?: number;
   subtitle?: string;
   habitat?: string;
   treasure?: string;

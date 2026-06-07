@@ -1614,7 +1614,9 @@ export interface StatMonsterData {
   cr?: string;
   habitat?: string;
   treasure?: string;
-  group?: string;
+  /** Link to a `stat.category` note. Categorized monsters inherit its habitat/
+   *  treasure when fetched (own value wins) and hide their own habitat line. */
+  category?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
   features: StatFeatureRef[];
@@ -1628,7 +1630,9 @@ export interface StatblockMonsterProps {
   cr?: string;
   habitat?: string;
   treasure?: string;
-  group?: string;
+  /** Link to a `stat.category` note (`[[Bears]]`). When set, the monster's own
+   *  Habitat/Treasure line is hidden (the category supplies those). */
+  category?: string;
   image?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
@@ -1645,6 +1649,8 @@ export declare function mapMonster(self: Record<string, unknown>): StatMonsterDa
 
 export interface StatCategoryData {
   name: string;
+  /** Heading level (1–6) for the category title; defaults to 2. */
+  level?: number;
   subtitle?: string;
   habitat?: string;
   treasure?: string;
@@ -1657,6 +1663,8 @@ export type StatGroupData = StatCategoryData;
 
 export interface StatblockCategoryProps {
   name: string;
+  /** Heading level (1–6) for the title; defaults to 2. */
+  level?: number;
   subtitle?: string;
   habitat?: string;
   treasure?: string;
