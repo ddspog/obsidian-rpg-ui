@@ -376,6 +376,26 @@ function resolveCall(
         return;
       }
 
+      // ── Special case: `bare` renders the whole note body ───────────────
+      // `@[[file]].bare()` renders the entire note as Markdown — every block
+      // (stat.*, table, prose) and inline call resolves — minus the local-only
+      // rule.related / rule.notes blocks (already dropped from `cleaned`) and
+      // the YAML frontmatter.
+      if (call.fn === "bare") {
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        root.render(
+          React.createElement(Markdown, {
+            source: stripFileFrontmatter(cleaned),
+            sourcePath: targetPath,
+          })
+        );
+        return;
+      }
+
       // ── Special case: `stat` view extracts rpg stat.* fences ─────────
       // `@[[file]].stat()` renders the stat block from the target file.
       // `@[[file]].stat(desc-before)` overrides description placement.
@@ -601,10 +621,10 @@ function resolveCall(
       // post-`---` body text. Special-cased views (stat/magic/spell/danger)
       // return earlier and never reach here.
       if (fenced.length === 0) {
-        const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
+        const anyFenceRe = /(`{3,})\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)\n\1/;
         const fenceMatch = anyFenceRe.exec(cleaned);
         if (fenceMatch) {
-          const fenceRaw = fenceMatch[1];
+          const fenceRaw = fenceMatch[2];
           const sepIdx = fenceRaw.indexOf("\n---\n");
           const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
           const bodyText =
@@ -793,6 +813,11 @@ function extractContentBlocks(text: string): HarvestedBlock[] {
   const out: HarvestedBlock[] = [];
   const fences = extractAllRpgFences(text);
   for (const f of fences) {
+    // Skip fences nested inside another fence — e.g. a `rule.side` embedded in
+    // a `stat.category` body belongs to that card, not the top-level content
+    // harvest. extractAllRpgFences is backtick-count aware, so an outer fence's
+    // [start, end) fully contains any fence nested in its body.
+    if (fences.some((g) => g !== f && g.start < f.start && g.end > f.end)) continue;
     if (f.entity === "rule" && f.block === "content") {
       const inner = sliceFenceBody(text, f.start, f.end);
       const parsed = parseRuleContent(inner);
@@ -1422,6 +1447,45 @@ function resolveFolderCall(
         return;
       }
 
+      // ── Terminal `bare` for folder: render each matching file's whole body ──
+      if (call.fn === "bare") {
+        span.classList.remove("rpg-call--pending");
+        span.removeAttribute("aria-label");
+        span.textContent = "";
+        const bareNodes: React.ReactNode[] = [];
+        for (const { file: f, raw } of entries) {
+          const cleaned = stripLocalFences(raw);
+          if (call.chain.length > 0) {
+            const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
+              | Record<string, unknown>
+              | undefined) ?? {};
+            const blockSpec = call.chain.find((s) => s.fn === "block");
+            const fileData = extractFileData(
+              cleaned,
+              chainFm,
+              blockSpec ? String(blockSpec.args[0] ?? "") : undefined,
+              f.basename
+            );
+            if (!applyChain(call.chain, fileData).pass) continue;
+          }
+          bareNodes.push(
+            React.createElement(Markdown, {
+              key: f.path,
+              source: stripFileFrontmatter(cleaned),
+              sourcePath: f.path,
+            })
+          );
+        }
+        if (bareNodes.length === 0) {
+          renderError(span, `No files matched in [[${call.target}]] with .bare()`);
+          return;
+        }
+        const root = ReactDOM.createRoot(span);
+        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        root.render(React.createElement(React.Fragment, null, ...bareNodes));
+        return;
+      }
+
       if (!view) {
         renderError(span, `View "${call.fn}" not registered`);
         return;
@@ -1509,10 +1573,10 @@ function resolveFolderCall(
         // When no rule.content blocks exist, try any rpg entity.block fence
         // so views like .magic(), .stat(), .row() can read their YAML.
         if (fenced.length === 0) {
-          const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
+          const anyFenceRe = /(`{3,})\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)\n\1/;
           const fenceMatch = anyFenceRe.exec(cleaned);
           if (fenceMatch) {
-            const fenceRaw = fenceMatch[1];
+            const fenceRaw = fenceMatch[2];
             const sepIdx = fenceRaw.indexOf("\n---\n");
             const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
             const bodyText = sepIdx >= 0 ? fenceRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : undefined;
@@ -1726,10 +1790,10 @@ function resolveFolderCall(
             const fenced = extractContentBlocks(cleaned);
             let matching: HarvestedBlock[];
             if (fenced.length === 0) {
-              const anyFenceRe = /```+\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)```+/;
+              const anyFenceRe = /(`{3,})\s*rpg\s+\w+(?:\.\w+)?\s*\n([\s\S]*?)\n\1/;
               const fenceMatch = anyFenceRe.exec(cleaned);
               if (!fenceMatch) continue;
-              const fenceRaw = fenceMatch[1];
+              const fenceRaw = fenceMatch[2];
               const sepIdx = fenceRaw.indexOf("\n---\n");
               const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
               let fenceFm: Record<string, unknown> = {};
