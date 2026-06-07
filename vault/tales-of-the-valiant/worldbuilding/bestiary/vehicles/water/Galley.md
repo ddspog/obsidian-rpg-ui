@@ -3,6 +3,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg stat.vehicle
 name: Galley
+image: "![[galley-ship.webp|384]]"
 size: Gargantuan
 type: Water Vehicle
 dimensions: 130 ft. by 20 ft.

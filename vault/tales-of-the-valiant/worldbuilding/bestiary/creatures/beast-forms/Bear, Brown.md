@@ -2,9 +2,17 @@
 cssclasses:
   - note-statblock
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+aliases:
+  - brown bear
+  - Brown Bear
+  - Brown bear
+  - brown bears
+  - Brown Bears
+  - Brown bears
 ---
 ```rpg stat.monster
 name: "Bear, Brown"
+image: "![[brown-bear.webp|384]]"
 type: "Large [[Beast]]"
 cr: "1"
 pronunciation: BAIR, brown

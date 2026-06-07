@@ -13,6 +13,7 @@ name: "Crab, Giant"
 image: "![[giant-crab.webp|384]]"
 type: "Medium [[Beast]]"
 cr: "1/4"
+pronunciation: krab, jEYE-uhnt
 habitat:
   - "[[Coastal]]"
   - "[[Underwater]]"

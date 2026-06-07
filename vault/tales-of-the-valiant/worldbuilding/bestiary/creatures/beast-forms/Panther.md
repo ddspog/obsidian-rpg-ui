@@ -8,6 +8,7 @@ name: "Panther"
 image: "![[panther.webp|384]]"
 type: "Medium [[Beast]]"
 cr: "1/4"
+pronunciation: PAN-thir
 habitat:
   - "[[Forest]]"
   - "[[Grassland]]"

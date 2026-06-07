@@ -7,7 +7,8 @@ source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 name: "Eagle"
 image: "![[eagle.webp|384]]"
 type: "Small [[Beast]]"
-cr: "0"
+cr: 0
+pronunciation: ee-guhl
 habitat:
   - "[[Coastal]]"
   - "[[Grassland]]"
