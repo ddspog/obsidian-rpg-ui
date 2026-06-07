@@ -4,6 +4,8 @@ import { HabitatTreasureLine, InlineWikilinks } from "./statblock-shared";
 
 export interface StatblockCategoryProps {
   name: string;
+  /** Heading level (1–6) for the title; defaults to 2. */
+  level?: number;
   subtitle?: string;
   habitat?: string;
   treasure?: string;
@@ -19,6 +21,7 @@ export interface StatblockCategoryProps {
  */
 export function StatblockCategory({
   name,
+  level,
   subtitle,
   habitat,
   treasure,
@@ -26,11 +29,18 @@ export function StatblockCategory({
   hideTitle,
   sourcePath,
 }: StatblockCategoryProps) {
+  const Heading = `h${Math.min(6, Math.max(1, level ?? 2))}` as
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6";
   return (
     <article className="rpg-statblock rpg-statblock-category">
       {!hideTitle && (
         <header className="rpg-statblock-header">
-          <h3>{name}</h3>
+          <Heading>{name}</Heading>
         </header>
       )}
 

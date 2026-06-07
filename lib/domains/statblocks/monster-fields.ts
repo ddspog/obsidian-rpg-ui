@@ -38,6 +38,18 @@ function parseMod(value: unknown): number {
   return 0;
 }
 
+/** Heading level (1–6) for a category title; undefined when absent/invalid. */
+function parseLevel(value: unknown): number | undefined {
+  const n =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? parseInt(value, 10)
+        : NaN;
+  if (!Number.isFinite(n)) return undefined;
+  return Math.min(6, Math.max(1, Math.trunc(n)));
+}
+
 /** `#CR-1` / `CR 1` / `1` → `1`. Returns undefined when blank. */
 function crDisplay(value: unknown): string | undefined {
   const s = stringifyValue(value);
@@ -77,11 +89,11 @@ const STAT_FIELDS = [
   "ac",
   "hp",
   "speed",
-  "immune",
   "pas_perception",
   "pas_stealth",
   "vulnerable",
   "resistant",
+  "immune",
   "senses",
   "languages",
 ] as const;
@@ -132,6 +144,7 @@ export function mapCategory(self: Record<string, unknown>): StatCategoryData {
   const treasure = stringifyValue(self.treasure);
   return {
     name: typeof self.name === "string" ? self.name : "",
+    level: parseLevel(self.level),
     subtitle: isBlank(subtitle) ? undefined : subtitle,
     habitat: isBlank(habitat) ? undefined : habitat,
     treasure: isBlank(treasure) ? undefined : treasure,
