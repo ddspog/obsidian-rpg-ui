@@ -2,6 +2,9 @@
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+aliases:
+  - Golems
+  - golems
 ---
 # Golem
 ```rpg rule.content

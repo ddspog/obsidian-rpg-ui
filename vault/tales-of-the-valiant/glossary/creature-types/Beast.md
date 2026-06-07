@@ -1,5 +1,5 @@
 ---
-source: From **Tales of the Valiant** "Monster Vault" book by **Kobold Press**
+source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 aliases:
   - Beasts
   - beasts
@@ -24,14 +24,13 @@ tab-color: var(--color-green)
 |Bat, Swarm of Bats|1/4|bat, sworm uhv batz|
 |Bear, Black|1/2|BAIR, blak|
 |`@[[Bear, Brown]].highlight().row(link, cr, pronunciation)`|
-|[[Bear, Brown]]|1|BAIR, brown|
-|[[Bear, Polar]]|2|BAIR, POHL-ar|
+|`@[[Bear, Polar]].highlight().row(link, cr, pronunciation)`|
 |Boar|1/4|borr|
 |Boar, Giant|2|borr, jEYE-uhnt|
 |Camel|1/8|KAM-uhl|
 |Cat|0|kat|
 |Crab|0|krab|
-|[[Crab, Giant]]|1/8|krab, jEYE-uhnt|
+|`@[[Crab, Giant]].highlight().row(link, cr, pronunciation)`|
 |Crocodile|1/2|krok-uh-dEYEl|
 |Crocodile, Giant|5|krok-uh-dEYEl, jEYE-uhnt|
 |Deer|0|deer|
@@ -40,10 +39,10 @@ tab-color: var(--color-green)
 |Dinosaur, Triceratops|5|DEYE-nuh-sorr, TREYE-sair-uh-tahps|
 |Dinosaur, Tyrannosaurus Rex|8|DEYE-nuh-sorr, TEYE-ran-noh- SORR-uhs reks|
 |Dinosaur, Velociraptor|1/2|DEYE-nuh-sorr, veh-lah-seh-rap-tir|
-|[[Eagle]]|0|ee-guhl|
+|`@[[Eagle]].highlight().row(link, cr, pronunciation)`|
 |Eagle, Giant|1|ee-guhl, jEYE-uhnt|
 |Elephant|4|ehl-uh-fuhnt|
-|[[Elk]]|1/4|ehlk|
+|`@[[Elk]].highlight().row(link, cr, pronunciation)`|
 |Elk, Giant|2|ehlk, jEYE-uhnt|
 |Frog|0|frawg|
 |Frog, Giant|1/4|frawg, jEYE-uhnt|
@@ -75,8 +74,8 @@ tab-color: var(--color-green)
 |Octopus, Giant|1|AHK-tuh-puhs, jEYE-uhnt|
 |Orca|3|orrk-uh|
 |Owl|0|owl|
-|[[Owl, Giant]]|1/4|owl, jEYE-uhnt|
-|[[Panther]]|1/4|PAN-thir|
+|`@[[Owl, Giant]].highlight().row(link, cr, pronunciation)`|
+|`@[[Panther]].highlight().row(link, cr, pronunciation)`|
 |Pony|1/8|POH-nee|
 |Quipper|0|KWIP-ir|
 |Quipper, Swarm of Quippers|1|KWIP-ir, sworm uhv KWIP-ir|
@@ -111,8 +110,8 @@ tab-color: var(--color-green)
 |Wolf, Dire|1|wulf, dEYEr|
 ```
 ### Allies
-Because most Beasts aren’t overly intelligent, their allies tend to be others of their own kind, such as a pack of wolves. In other cases, they ally themselves with Humanoids or other creatures that use the Beasts, for instance as mounts or guardian animals. Because of the sheer variety of Beasts, they have the widest range of allies, making such allies too numerous to include in the table in this section. 
+Because most [[Beast|Beasts]] aren’t overly intelligent, their allies tend to be others of their own kind, such as a pack of wolves. In other cases, they ally themselves with [[Humanoid|Humanoids]] or other creatures that use the Beasts, for instance as mounts or guardian animals. Because of the sheer variety of Beasts, they have the widest range of allies, making such allies too numerous to include in the table in this section. 
 ### Traits and Themes
-The Beast category includes almost all real-world animals, in their full variety of shapes, sizes, and appearances, and each adapted to its environment and niche. As natural creatures, Beasts never cast spells or use magic, though some have unique adaptations to magical environments, such as being resistant to specific environmental damage or effects. Beasts also typically have less intelligence than many other creatures, operating almost entirely on instincts when hunting, eating, and sleeping. 
+The [[Beast]] category includes almost all real-world animals, in their full variety of shapes, sizes, and appearances, and each adapted to its environment and niche. As natural creatures, Beasts never cast spells or use magic, though some have unique adaptations to magical environments, such as being resistant to specific environmental damage or effects. Beasts also typically have less intelligence than many other creatures, operating almost entirely on instincts when hunting, eating, and sleeping. 
 ### Encounter Locations 
-Beasts are found anywhere on the Material Plane where a natural order of plants, animals, and climate exists. Beasts are rarely found near sites of unnatural magic or places where nature is destroyed, corrupted, or unwelcome. Similarly, Undead and sites imbued with necromantic magic unnerve or frighten most Beasts. Few Beasts are adapted to urban environments or life alongside Humanoids, and most avoid the noise of Humanoid cities. 
+[[Beast|Beasts]] are found anywhere on the [[Material Plane]] where a natural order of plants, animals, and climate exists. Beasts are rarely found near sites of unnatural magic or places where nature is destroyed, corrupted, or unwelcome. Similarly, [[Undead]] and sites imbued with necromantic magic unnerve or frighten most Beasts. Few Beasts are adapted to urban environments or life alongside [[Humanoid|Humanoids]], and most avoid the noise of Humanoid cities. 
