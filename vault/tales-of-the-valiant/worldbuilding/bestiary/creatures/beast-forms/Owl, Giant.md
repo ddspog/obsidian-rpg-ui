@@ -1,6 +1,4 @@
 ---
-cssclasses:
-  - note-statblock
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 ---
 ```rpg stat.monster
@@ -8,6 +6,7 @@ name: "Owl, Giant"
 image: "![[giant-owl.webp|384]]"
 type: "Large [[Beast]]"
 cr: "1/4"
+pronunciation: owl, jEYE-uhnt
 habitat:
   - "[[Arctic]]"
   - "[[Forest]]"

@@ -1,10 +1,13 @@
 ---
-.metadata: 
+.metadata:
 cssclasses:
   - note-feature
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 tab-icon: ear
 tab-color: var(--color-green)
+aliases:
+  - elves
+  - Elves
 ---
 ### Elf
 ![[elf.webp|right|384]]Elves are a long-lived people, regarded as the first mortal beings to walk the world. They boast ancestral ties to magic realms populated by immortal creatures. Some elves claim that their ancestors were themselves immortal beings made mortal to steward newborn lands. 

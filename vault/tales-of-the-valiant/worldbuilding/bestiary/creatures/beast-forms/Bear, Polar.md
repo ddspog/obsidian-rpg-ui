@@ -1,6 +1,4 @@
 ---
-cssclasses:
-  - note-statblock
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 aliases:
   - polar bear
@@ -10,8 +8,10 @@ aliases:
 ---
 ```rpg stat.monster
 name: "Bear, Polar"
+image: "![[polar-bear.webp|384]]"
 type: "Large [[Beast]]"
-cr: "2"
+cr: 2
+pronunciation: BAIR, POHL-ar
 habitat:
   - "[[Arctic]]"
 treasure: None

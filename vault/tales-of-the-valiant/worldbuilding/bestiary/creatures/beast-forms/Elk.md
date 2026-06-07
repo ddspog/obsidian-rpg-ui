@@ -8,6 +8,7 @@ name: "Elk"
 image: "![[elk.webp|384]]"
 type: "Large [[Beast]]"
 cr: "1/4"
+pronunciation: ehlk
 habitat:
   - "[[Forest]]"
   - "[[Grassland]]"

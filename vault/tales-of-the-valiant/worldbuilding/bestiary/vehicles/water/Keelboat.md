@@ -3,6 +3,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg stat.vehicle
 name: Keelboat
+image: "![[smaller-ships.webp|384]]"
 size: Gargantuan
 type: Water Vehicle
 dimensions: 60 ft. by 20 ft.
