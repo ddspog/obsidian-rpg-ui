@@ -9791,6 +9791,7 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   --rpg-list-min-col-height: 14rem;
   --rpg-list-col: 17rem;
   --rpg-list-col-gap: var(--size-4-8, 2rem);
+  --rpg-list-val-col: 2.5rem;
   --rpg-list-max-cols: 3;
   --rpg-list-cap: calc( var(--rpg-list-max-cols) * var(--rpg-list-col) + (var(--rpg-list-max-cols) - 1) * var(--rpg-list-col-gap) );
   --rpg-list-width: min(100cqi, var(--rpg-list-cap));
@@ -9840,7 +9841,7 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   color: var(--text-title);
   font-family: var(--font-text);
   font-weight: 700;
-  font-size: var(--font-ui-medium, 1rem);
+  font-size: calc(var(--font-ui-small, 0.8125rem) * 1.06);
   line-height: 1.25;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -9854,6 +9855,19 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   font-style: italic;
   font-weight: normal;
   color: var(--text-muted);
+}
+.rpg-list__heading--split :is(h1, h2, h3, h4, h5, h6) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rpg-list-val-col, 2.5rem);
+  column-gap: var(--size-4-3, 0.75rem);
+  align-items: baseline;
+}
+.rpg-list__heading--split :is(h1, h2, h3, h4, h5, h6) > :last-child:not(:first-child) {
+  text-align: right;
+}
+.rpg-list__title-r {
+  font-weight: 600;
+  opacity: 0.82;
 }
 .rpg-list__entries {
   margin: 0 0 var(--size-4-4, 1rem);
@@ -9878,6 +9892,29 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   display: block;
   text-indent: 0;
   margin-top: var(--size-2-2, 0.25rem);
+}
+.rpg-list__entry--cells {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rpg-list-val-col, 2.5rem);
+  column-gap: var(--size-4-3, 0.75rem);
+  padding-inline: var(--size-4-2, 0.5rem);
+  text-indent: 0;
+}
+.rpg-list__entry--cells > .rpg-list__cell {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding-left: 0;
+  text-indent: 0;
+}
+.rpg-list__entry--cells > .rpg-list__cell > :first-child {
+  display: inline;
+  margin: 0;
+}
+.rpg-list__entry--cells > .rpg-list__cell:last-child:not(:first-child) {
+  text-align: right;
+  padding-left: 0;
+  text-indent: 0;
 }
 .rpg-list__entry--hl {
   background:
@@ -10008,6 +10045,7 @@ button.rpg-list__page-arrow:disabled {
   --statblock-title: var(--text-title, light-dark(#3a2a14, #e8d8b0));
   --statblock-title-faint: color-mix(in srgb, var(--statblock-title) 50%, transparent);
   --statblock-rule: var(--statblock-title);
+  container-type: inline-size;
   font-family: var(--font-text);
 }
 .rpg-statblock-desc {
@@ -10016,7 +10054,7 @@ button.rpg-list__page-arrow:disabled {
 .rpg-statblock-desc:last-child {
   margin: 12px 0 0;
 }
-.rpg-statblock-desc:last-child::before {
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-desc:last-child::before {
   content: "\203b";
   display: block;
   text-align: center;
@@ -10024,13 +10062,13 @@ button.rpg-list__page-arrow:disabled {
   margin-bottom: 8px;
   letter-spacing: 0.3em;
 }
-.rpg-statblock-header {
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-header {
   background: var(--statblock-title);
   padding: 4px 12px;
   margin: 0;
   border-radius: 0 10px 10px 0;
 }
-.rpg-statblock-header h3 {
+:is(.rpg-statblock-monster, .rpg-statblock-vehicle) .rpg-statblock-header h3 {
   margin: 0;
   font-size: 1.1em;
   font-weight: 700;
@@ -10058,17 +10096,31 @@ p.rpg-statblock-subtitle {
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin: var(--size-4-3, 0.75rem) 0 0;
   padding-inline: var(--size-4-2, 0.5rem);
   font-size: 0.9em;
   color: light-dark(#5a5040, #a09880);
 }
+.rpg-statblock-ht-habitat {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rpg-statblock-ht-treasure {
+  flex: 0 0 auto;
+}
 .rpg-statblock-habitat-treasure strong {
   font-weight: 700;
   color: var(--statblock-title);
 }
-.rpg-statblock-monster .rpg-statblock-habitat-treasure {
+@container (max-width: 28rem) {
+  .rpg-statblock-habitat-treasure {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+:is(.rpg-statblock-monster, .rpg-statblock-category) .rpg-statblock-habitat-treasure {
   margin-top: var(--size-4-4, 1rem);
   padding-top: var(--size-4-2, 0.5rem);
   border-top: 1px solid var(--statblock-rule);
