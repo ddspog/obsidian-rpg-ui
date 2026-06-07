@@ -5389,10 +5389,15 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
           return l !== r;
       }
     }
-    const arithMatch = expr.match(/^(.+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
+    const arithMatch = expr.match(/^([\s\S]+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
     if (arithMatch) {
-      const l = toNumber(evalExpr(arithMatch[1].trim(), ctx));
-      const r = toNumber(evalExpr(arithMatch[3].trim(), ctx));
+      const lRaw = evalExpr(arithMatch[1].trim(), ctx);
+      const rRaw = evalExpr(arithMatch[3].trim(), ctx);
+      const l = toNumber(lRaw);
+      const r = toNumber(rRaw);
+      if (arithMatch[2] === "+" && (l === null || r === null)) {
+        return (lRaw == null ? "" : String(lRaw)) + (rRaw == null ? "" : String(rRaw));
+      }
       if (l === null || r === null) return null;
       switch (arithMatch[2]) {
         case "+":
@@ -5509,14 +5514,19 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       if (!self.text) return void 0;
       if (!self.example) return self.text;
       const exSelf = (_a2 = self.example.self) != null ? _a2 : {};
-      const exTierKey = self.example.tier != null ? String(self.example.tier) : void 0;
       const tiers = self.tiers;
       let tierParams = {};
       if (tiers && Object.keys(tiers).length > 0) {
-        tierParams = (_c = (_b = exTierKey != null ? tiers[exTierKey] : void 0) != null ? _b : tiers[Object.keys(tiers)[0]]) != null ? _c : {};
+        let tierKey = self.example.tier != null ? String(self.example.tier) : void 0;
+        const auto = self.auto;
+        if (tierKey == null && typeof auto === "string") {
+          const autoVal = resolvePath(exSelf, auto);
+          if (autoVal != null) tierKey = String(autoVal);
+        }
+        tierParams = (_c = (_b = tierKey != null ? tiers[tierKey] : void 0) != null ? _b : tiers[Object.keys(tiers)[0]]) != null ? _c : {};
       }
       return substituteExample(self.text, tierParams, exSelf);
-    }, [self.text, self.example, self.tiers]);
+    }, [self.text, self.example, self.tiers, self.auto]);
     const cls = ["rpg-feature-card"];
     if (isHomebrew) cls.push("rpg-feature-homebrew");
     return /* @__PURE__ */ React17.createElement("article", { className: cls.join(" "), "aria-label": `Feature ${self.name}` }, isHomebrew && /* @__PURE__ */ React17.createElement(HomebrewBadge, { source: (_a = self.source) != null ? _a : "" }), isParagraphMode ? /* @__PURE__ */ React17.createElement(React17.Fragment, null, displayText && /* @__PURE__ */ React17.createElement(
@@ -5656,8 +5666,10 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   // vault:tales-of-the-valiant/config/blocks/stat/monster.tsx
   var React23 = __toESM(__require("react"));
   var import_rpg_ui_toolkit21 = __require("rpg-ui-toolkit");
-  var monster = ({ self }) => {
-    var _a, _b;
+  var monster = (props) => {
+    var _a, _b, _c;
+    const { self } = props;
+    const propSourcePath = props.sourcePath;
     const data = React23.useMemo(
       () => (0, import_rpg_ui_toolkit21.mapMonster)(self),
       [self]
@@ -5665,15 +5677,15 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const [resolved, setResolved] = React23.useState([]);
     const app = globalThis.app;
     const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
-    const name = data.name || (activeFile == null ? void 0 : activeFile.basename) || "";
+    const filePath = propSourcePath || (activeFile == null ? void 0 : activeFile.path) || "";
+    const fileBasename = filePath ? (_c = filePath.split("/").pop()) == null ? void 0 : _c.replace(/\.[^./]+$/, "") : void 0;
+    const name = data.name || fileBasename || (activeFile == null ? void 0 : activeFile.basename) || "";
     React23.useEffect(() => {
-      var _a2;
       if (!data.features || data.features.length === 0) {
         setResolved([]);
         return;
       }
       let cancelled = false;
-      const sourcePath = (_a2 = activeFile == null ? void 0 : activeFile.path) != null ? _a2 : "";
       const selfProps = {
         name: name.toLowerCase(),
         type: data.type,
@@ -5681,7 +5693,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         abilities: data.abilities,
         stats: data.stats
       };
-      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(data.features, sourcePath, selfProps).then(
+      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(data.features, filePath, selfProps).then(
         (results) => {
           if (!cancelled) setResolved(results);
         }
@@ -5689,7 +5701,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       return () => {
         cancelled = true;
       };
-    }, [data, name, activeFile == null ? void 0 : activeFile.path]);
+    }, [data, name, filePath]);
     return /* @__PURE__ */ React23.createElement(
       import_rpg_ui_toolkit21.StatblockMonster,
       {
@@ -5698,7 +5710,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         cr: data.cr,
         habitat: data.habitat,
         treasure: data.treasure,
-        group: data.group,
+        category: data.category,
         image: typeof data.image === "string" ? data.image : void 0,
         stats: data.stats,
         abilities: data.abilities,
@@ -5712,24 +5724,28 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   // vault:tales-of-the-valiant/config/blocks/stat/category.tsx
   var React24 = __toESM(__require("react"));
   var import_rpg_ui_toolkit22 = __require("rpg-ui-toolkit");
-  var category = ({ self }) => {
-    var _a, _b;
+  var category = (props) => {
+    var _a, _b, _c;
+    const { self } = props;
+    const sourcePath = props.sourcePath;
     const data = React24.useMemo(
       () => (0, import_rpg_ui_toolkit22.mapCategory)(self),
       [self]
     );
     const app = globalThis.app;
     const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
-    const name = data.name || (activeFile == null ? void 0 : activeFile.basename) || "";
+    const fileBasename = sourcePath ? (_c = sourcePath.split("/").pop()) == null ? void 0 : _c.replace(/\.[^./]+$/, "") : void 0;
+    const name = data.name || fileBasename || (activeFile == null ? void 0 : activeFile.basename) || "";
     return /* @__PURE__ */ React24.createElement(
       import_rpg_ui_toolkit22.StatblockCategory,
       {
         name,
+        level: data.level,
         subtitle: data.subtitle,
         habitat: data.habitat,
         treasure: data.treasure,
         body: data.text,
-        sourcePath: activeFile == null ? void 0 : activeFile.path
+        sourcePath: sourcePath != null ? sourcePath : activeFile == null ? void 0 : activeFile.path
       }
     );
   };
@@ -5914,7 +5930,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       cr: data.cr,
       habitat: data.habitat,
       treasure: data.treasure,
-      group: data.group,
+      category: data.category,
       image: typeof data.image === "string" ? data.image : void 0,
       stats: data.stats,
       abilities: data.abilities,
@@ -5927,6 +5943,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const data = React25.useMemo(() => (0, import_rpg_ui_toolkit24.mapGroup)(self), [self]);
     return React25.createElement(import_rpg_ui_toolkit24.StatblockGroup, {
       name: data.name || name,
+      level: data.level,
       subtitle: data.subtitle,
       habitat: data.habitat,
       treasure: data.treasure,
@@ -6280,17 +6297,17 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
     stat: {
       mode: "join",
       render: (ctx, args) => {
-        const fenceRe = /```+\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)```+/;
+        const fenceRe = /(`{3,})\s*rpg\s+stat\.(\w+)\s*\n([\s\S]*?)\n\1/;
         const m = fenceRe.exec(ctx.content);
-        if ((m == null ? void 0 : m[1]) === "monster") {
+        if ((m == null ? void 0 : m[2]) === "monster") {
           let fenceFm = {};
-          const raw2 = m[2];
+          const raw2 = m[3];
           const sepIdx2 = raw2.indexOf("\n---\n");
           const head = sepIdx2 >= 0 ? raw2.slice(0, sepIdx2) : raw2;
           if (head.trim()) {
             try {
-              const { parse } = __require("yaml");
-              const parsedHead = parse(head);
+              const { parseYaml } = __require("obsidian");
+              const parsedHead = parseYaml(head);
               if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
                 fenceFm = parsedHead;
               }
@@ -6304,16 +6321,16 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
             name: ctx.name
           });
         }
-        if ((m == null ? void 0 : m[1]) === "group") {
+        if ((m == null ? void 0 : m[2]) === "group" || (m == null ? void 0 : m[2]) === "category") {
           let fenceFm = {};
-          const raw2 = m[2];
+          const raw2 = m[3];
           const sepIdx2 = raw2.indexOf("\n---\n");
           const head = sepIdx2 >= 0 ? raw2.slice(0, sepIdx2) : raw2;
           const groupBody = sepIdx2 >= 0 ? raw2.slice(sepIdx2 + 5).trim() || void 0 : void 0;
           if (head.trim()) {
             try {
-              const { parse } = __require("yaml");
-              const parsedHead = parse(head);
+              const { parseYaml } = __require("obsidian");
+              const parsedHead = parseYaml(head);
               if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
                 fenceFm = parsedHead;
               }
@@ -6329,7 +6346,7 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           });
         }
         if (!m) return null;
-        const raw = m[2];
+        const raw = m[3];
         const sepIdx = raw.indexOf("\n---\n");
         const sepEnd = raw.indexOf("\n---");
         const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
@@ -6343,8 +6360,8 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
         }
         let parsed = {};
         try {
-          const { parse } = __require("yaml");
-          const result = parse(yamlText);
+          const { parseYaml } = __require("obsidian");
+          const result = parseYaml(yamlText);
           if (result && typeof result === "object" && !Array.isArray(result)) parsed = result;
         } catch (e) {
         }

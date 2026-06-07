@@ -217,7 +217,7 @@ function StatMonsterCall({ self, sourcePath, name }: {
     cr: data.cr,
     habitat: data.habitat,
     treasure: data.treasure,
-    group: data.group,
+    category: data.category,
     image: typeof data.image === "string" ? data.image : undefined,
     stats: data.stats,
     abilities: data.abilities,
