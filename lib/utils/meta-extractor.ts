@@ -32,6 +32,28 @@ const SOURCE_KEY_TO_META: Array<{ keys: string[]; meta: string }> = [
 ];
 
 /**
+ * Recognise `stat.*` entity fences from their YAML key-set. Stat blocks are the
+ * one entity family whose identity the body alone can't reveal — but their keys
+ * are distinctive enough to classify when the fence info string is unavailable
+ * (nested / `.bare()` renders, where `getSectionInfo` returns null):
+ *   - stat.monster: nested `stats:` / `abilities:` objects, or a `cr` rating.
+ *   - stat.category: a creature-family intro — keyed off `habitat`/`treasure`,
+ *     which are stat-block-only fields present whether or not the category
+ *     declares an explicit `name:` (a named category with `subtitle`/`level`
+ *     would otherwise read as feature.details). `subtitle` alone is a weaker
+ *     signal, so it only counts when there's no `name`.
+ * Monster is tested first so a categorized monster (which also carries
+ * habitat/treasure) is never mistaken for a category.
+ */
+function detectStatMeta(keys: Set<string>, hasName: boolean): string | null {
+  if (keys.has("stats") || keys.has("abilities") || keys.has("cr")) return "stat.monster";
+  if (keys.has("habitat") || keys.has("treasure") || (!hasName && keys.has("subtitle"))) {
+    return "stat.category";
+  }
+  return null;
+}
+
+/**
  * Detects the meta identifier from raw YAML source by checking for distinctive
  * top-level keys. This is the reliable fallback used in reading view where
  * getSectionInfo returns null and the element contains no code HTML.
@@ -62,6 +84,12 @@ export function detectMetaFromSource(source: string): string | null {
         headerValues.set(m[1], m[2].trim());
       }
     }
+    // stat.* entity fences (head before `---`, markdown/nested-fence body):
+    // classify by key-set since the info string ("rpg stat.category") is gone.
+    // Must precede the feature.details check below — a monster carries
+    // `name` + `type`, which would otherwise read as a feature.
+    const statMeta = detectStatMeta(headerKeys, headerKeys.has("name"));
+    if (statMeta) return statMeta;
     // rule.side fence-mode: `kind:` (float/callout/commentary), `type:`
     // (preset name), or `title:` without `name:` (side uses title, not name).
     // `type` alone is ambiguous — feature.details also uses `type: passive`;
@@ -103,6 +131,9 @@ export function detectMetaFromSource(source: string): string | null {
   // ── Pure-YAML blocks (no `---` separator) ─────────────────────────────
   // `topLevelKeys` is safe here since there's no markdown body that could
   // contain nested fence YAML.
+  // stat.monster with no traits body lands here (pure-YAML head only).
+  const statMetaYaml = detectStatMeta(topLevelKeys, topLevelKeys.has("name"));
+  if (statMetaYaml) return statMetaYaml;
   if (topLevelKeys.has("parent")) return "feature.choice";
   if (topLevelKeys.has("kind") && topLevelKeys.has("level")) return "feature.unlock";
   // feature.level is data-only: just `level` (+ maybe `traits`) with no name,
