@@ -1,5 +1,20 @@
 import type { PersistentTag, InventoryTag, WealthTag, RoomTag } from "./types";
 
+/** Kinds recognized by the tag grammar — shared by extraction and stripping. */
+const TAG_KINDS = "N|L|E|Clock|Track|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R";
+
+/**
+ * Remove all persistent `[...]` tags from a string, leaving only narration.
+ * Used to derive a consequence's prose `conclusion` from its raw `text`.
+ */
+export function stripTags(text: string): string {
+  const re = new RegExp(`\\[(?:#)?(?:${TAG_KINDS}):[^\\]]+\\]`, "g");
+  return text
+    .replace(re, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Extract all persistent tags from a text string */
 export function extractTags(text: string): PersistentTag[] {
   const tags: PersistentTag[] = [];
@@ -58,7 +73,11 @@ export function extractTags(text: string): PersistentTag[] {
         break;
       }
       case "Thread":
-        tags.push({ kind: "thread", name: content.split("|")[0].trim(), state: content.split("|")[1]?.trim() || "Open" });
+        tags.push({
+          kind: "thread",
+          name: content.split("|")[0].trim(),
+          state: content.split("|")[1]?.trim() || "Open",
+        });
         break;
       case "PC": {
         const parts = content.split("|").map((s) => s.trim());
@@ -146,14 +165,22 @@ function parseWealthTag(content: string): WealthTag[] {
     // Delta: Gold+15 or Gold-8
     const deltaMatch = entry.match(/^(.+?)([+-])(\d+)$/);
     if (deltaMatch) {
-      tags.push({ kind: "wealth", currency: deltaMatch[1].trim(), delta: parseInt(deltaMatch[3], 10) * (deltaMatch[2] === "-" ? -1 : 1) });
+      tags.push({
+        kind: "wealth",
+        currency: deltaMatch[1].trim(),
+        delta: parseInt(deltaMatch[3], 10) * (deltaMatch[2] === "-" ? -1 : 1),
+      });
       continue;
     }
 
     // Transition: Gold 45→52 or Gold 45->52
     const transMatch = entry.match(/^(.+?)\s+(\d+)\s*(?:→|->)\s*(\d+)$/);
     if (transMatch) {
-      tags.push({ kind: "wealth", currency: transMatch[1].trim(), transition: { from: parseInt(transMatch[2], 10), to: parseInt(transMatch[3], 10) } });
+      tags.push({
+        kind: "wealth",
+        currency: transMatch[1].trim(),
+        transition: { from: parseInt(transMatch[2], 10), to: parseInt(transMatch[3], 10) },
+      });
       continue;
     }
 
@@ -185,7 +212,10 @@ function parseRoomTag(content: string, isRef: boolean): RoomTag {
     // Exits field: "exits N:R2, E:R3"
     if (part.toLowerCase().startsWith("exits ") || part.toLowerCase().startsWith("exits:")) {
       const exitsStr = part.replace(/^exits[\s:]+/i, "");
-      tag.exits = exitsStr.split(",").map((e) => e.trim()).filter(Boolean);
+      tag.exits = exitsStr
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
       continue;
     }
 

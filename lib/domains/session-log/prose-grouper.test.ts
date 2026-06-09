@@ -45,7 +45,24 @@ describe("groupIntoProse", () => {
     if (segments[0].type === "oracle") {
       expect(segments[0].question.text).toBe("Is the door locked?");
       expect(segments[0].answer?.text).toBe("Yes, but...");
-      expect(segments[0].consequence?.text).toBe("The lock is rusted.");
+      expect(segments[0].consequences[0]?.text).toBe("The lock is rusted.");
+    }
+  });
+
+  it("absorbs a generator + its working line + the resulting consequence into one oracle block", () => {
+    const entries: LonelogEntry[] = [
+      { type: "oracle_question", text: "Does the scene occur?", chaosFactor: 5 },
+      { type: "generator", source: "Testing", result: "the Expected Scene" },
+      { type: "continuation", text: "Alterations: d10=8 vs CF 5 -> Expected Scene" },
+      { type: "consequence", text: "S01 After the Landslide", tags: [], conclusion: "S01 After the Landslide" },
+    ];
+    const segments = groupIntoProse(entries);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].type).toBe("oracle");
+    if (segments[0].type === "oracle") {
+      expect(segments[0].generators).toHaveLength(1);
+      expect(segments[0].consequences[0]?.text).toBe("S01 After the Landslide");
+      expect(segments[0].continuations).toContain("Alterations: d10=8 vs CF 5 -> Expected Scene");
     }
   });
 
@@ -101,9 +118,7 @@ describe("groupIntoProse", () => {
   });
 
   it("action with no trailing rolls produces group with empty rolls", () => {
-    const entries: LonelogEntry[] = [
-      { type: "action", text: "Elara hides" },
-    ];
+    const entries: LonelogEntry[] = [{ type: "action", text: "Elara hides" }];
     const segments = groupIntoProse(entries);
     expect(segments).toHaveLength(1);
     if (segments[0].type === "action-group") {

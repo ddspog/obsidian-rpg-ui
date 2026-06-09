@@ -10,22 +10,35 @@ import type {
   DialogueEntry,
   NarrativeEntry,
   MetaNoteEntry,
+  TableRollEntry,
+  GeneratorEntry,
   CombatMarkerEntry,
-  RoundMarkerEntry,
   ResourceMarkerEntry,
   DungeonStatusMarkerEntry,
 } from "lib/domains/lonelog/types";
 
-export type ProseSegment =
+/** The discriminated shape of a prose segment, before shared fields are mixed in. */
+export type ProseSegmentKind =
   | { type: "scene"; entry: SceneEntry }
   | { type: "action-group"; action: ActionEntry; rolls: RollEntry[]; consequences: ConsequenceEntry[] }
   | { type: "world-event"; entry: WorldEventEntry; rolls: RollEntry[]; consequences: ConsequenceEntry[] }
-  | { type: "oracle"; question: OracleQuestionEntry; answer?: OracleAnswerEntry; consequence?: ConsequenceEntry }
+  | {
+      type: "oracle";
+      question: OracleQuestionEntry;
+      answer?: OracleAnswerEntry;
+      rolls: RollEntry[];
+      generators: GeneratorEntry[];
+      tables: TableRollEntry[];
+      consequences: ConsequenceEntry[];
+    }
   | { type: "dialogue"; entry: DialogueEntry }
   | { type: "narrative"; entry: NarrativeEntry }
   | { type: "meta"; entry: MetaNoteEntry }
   | { type: "standalone-consequence"; entry: ConsequenceEntry }
   | { type: "standalone-roll"; entry: RollEntry }
+  | { type: "standalone-table"; entry: TableRollEntry }
+  | { type: "standalone-generator"; entry: GeneratorEntry }
+  | { type: "concat" }
   | { type: "combat-start"; entry: CombatMarkerEntry }
   | { type: "combat-end"; entry: CombatMarkerEntry }
   | { type: "round"; round: number }
@@ -34,118 +47,164 @@ export type ProseSegment =
   | { type: "dungeon-status-start"; entry: DungeonStatusMarkerEntry }
   | { type: "dungeon-status-end"; entry: DungeonStatusMarkerEntry };
 
+export type ProseSegment = ProseSegmentKind & {
+  /**
+   * Index of this segment's anchor entry in the source `entries[]` array — a
+   * stable id shared by the prose dot, the sidebar card, and the scroll target.
+   */
+  sourceIndex: number;
+  /** Working/detail lines (indented under the block) — surfaced in the sidebar only. */
+  continuations?: string[];
+};
+
 export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
   const segments: ProseSegment[] = [];
   let i = 0;
 
+  const push = (seg: ProseSegmentKind, sourceIndex: number, continuations?: string[]) => {
+    const full = { ...seg, sourceIndex } as ProseSegment;
+    if (continuations && continuations.length > 0) full.continuations = continuations;
+    segments.push(full);
+  };
+
   while (i < entries.length) {
+    const start = i;
     const entry = entries[i];
 
     switch (entry.type) {
+      case "continuation": {
+        // A continuation that wasn't absorbed by a resolution block above
+        // attaches to whatever segment precedes it (scene, narration, …).
+        const last = segments[segments.length - 1];
+        if (last) (last.continuations ??= []).push(entry.text);
+        i++;
+        break;
+      }
+
+      case "concat":
+        push({ type: "concat" }, start);
+        i++;
+        break;
+
       case "scene":
-        segments.push({ type: "scene", entry });
+        push({ type: "scene", entry }, start);
         i++;
         break;
 
       case "combat_marker":
-        segments.push({ type: entry.state === "open" ? "combat-start" : "combat-end", entry });
+        push({ type: entry.state === "open" ? "combat-start" : "combat-end", entry }, start);
         i++;
         break;
 
       case "resource_marker":
-        segments.push({ type: entry.state === "open" ? "resource-start" : "resource-end", entry });
+        push({ type: entry.state === "open" ? "resource-start" : "resource-end", entry }, start);
         i++;
         break;
 
       case "dungeon_status_marker":
-        segments.push({ type: entry.state === "open" ? "dungeon-status-start" : "dungeon-status-end", entry });
+        push({ type: entry.state === "open" ? "dungeon-status-start" : "dungeon-status-end", entry }, start);
         i++;
         break;
 
       case "round_marker":
-        segments.push({ type: "round", round: entry.round });
+        push({ type: "round", round: entry.round }, start);
         i++;
         break;
 
       case "action": {
         const rolls: RollEntry[] = [];
         const consequences: ConsequenceEntry[] = [];
+        const continuations: string[] = [];
         i++;
         while (i < entries.length) {
           const next = entries[i];
-          if (next.type === "roll") {
-            rolls.push(next);
-            i++;
-          } else if (next.type === "consequence") {
-            consequences.push(next);
-            i++;
-          } else {
-            break;
-          }
+          if (next.type === "roll") rolls.push(next);
+          else if (next.type === "consequence") consequences.push(next);
+          else if (next.type === "continuation") continuations.push(next.text);
+          else break;
+          i++;
         }
-        segments.push({ type: "action-group", action: entry, rolls, consequences });
+        push({ type: "action-group", action: entry, rolls, consequences }, start, continuations);
         break;
       }
 
       case "world_event": {
         const rolls: RollEntry[] = [];
         const consequences: ConsequenceEntry[] = [];
+        const continuations: string[] = [];
         i++;
         while (i < entries.length) {
           const next = entries[i];
-          if (next.type === "roll") {
-            rolls.push(next);
-            i++;
-          } else if (next.type === "consequence") {
-            consequences.push(next);
-            i++;
-          } else {
-            break;
-          }
+          if (next.type === "roll") rolls.push(next);
+          else if (next.type === "consequence") consequences.push(next);
+          else if (next.type === "continuation") continuations.push(next.text);
+          else break;
+          i++;
         }
-        segments.push({ type: "world-event", entry, rolls, consequences });
+        push({ type: "world-event", entry, rolls, consequences }, start, continuations);
         break;
       }
 
       case "oracle_question": {
+        // A GM interaction groups the question with its resolution mechanics
+        // (answer, generators, tables, rolls) and the consequence(s) it yields,
+        // mirroring how an action absorbs its rolls + consequences.
         const question = entry;
-        i++;
         let answer: OracleAnswerEntry | undefined;
-        let consequence: ConsequenceEntry | undefined;
-        if (i < entries.length && entries[i].type === "oracle_answer") {
-          answer = entries[i] as OracleAnswerEntry;
+        const rolls: RollEntry[] = [];
+        const generators: GeneratorEntry[] = [];
+        const tables: TableRollEntry[] = [];
+        const consequences: ConsequenceEntry[] = [];
+        const continuations: string[] = [];
+        i++;
+        while (i < entries.length) {
+          const next = entries[i];
+          if (next.type === "oracle_answer") {
+            if (!answer) answer = next;
+          } else if (next.type === "roll") rolls.push(next);
+          else if (next.type === "generator") generators.push(next);
+          else if (next.type === "table_roll") tables.push(next);
+          else if (next.type === "consequence") consequences.push(next);
+          else if (next.type === "continuation") continuations.push(next.text);
+          else break;
           i++;
         }
-        if (i < entries.length && entries[i].type === "consequence") {
-          consequence = entries[i] as ConsequenceEntry;
-          i++;
-        }
-        segments.push({ type: "oracle", question, answer, consequence });
+        push({ type: "oracle", question, answer, rolls, generators, tables, consequences }, start, continuations);
         break;
       }
 
       case "consequence":
-        segments.push({ type: "standalone-consequence", entry });
+        push({ type: "standalone-consequence", entry }, start);
         i++;
         break;
 
       case "roll":
-        segments.push({ type: "standalone-roll", entry });
+        push({ type: "standalone-roll", entry }, start);
+        i++;
+        break;
+
+      case "table_roll":
+        push({ type: "standalone-table", entry }, start);
+        i++;
+        break;
+
+      case "generator":
+        push({ type: "standalone-generator", entry }, start);
         i++;
         break;
 
       case "dialogue":
-        segments.push({ type: "dialogue", entry });
+        push({ type: "dialogue", entry }, start);
         i++;
         break;
 
       case "narrative":
-        segments.push({ type: "narrative", entry });
+        push({ type: "narrative", entry }, start);
         i++;
         break;
 
       case "meta_note":
-        segments.push({ type: "meta", entry });
+        push({ type: "meta", entry }, start);
         i++;
         break;
 

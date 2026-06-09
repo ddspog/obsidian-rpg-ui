@@ -21,8 +21,7 @@
 @import "./components/item-magic-card.css";
 @import "./components/features.css";
 /* Session Log Components - Split from monolithic file */
-@import "./components/session-log-scene.css";
-@import "./components/session-log-events.css";
+@import "./components/session-log-prose.css";
 @import "./components/session-log-tags.css";
 @import "./components/session-log-hud.css";
 @import "./components/session-log-overview.css";
