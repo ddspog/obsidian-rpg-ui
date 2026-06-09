@@ -4,8 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseLonelog, extractTags } from "./parser";
-import type { LonelogEntry, PersistentTag } from "./types";
+import { parseLonelog, extractTags, parseSceneMarker } from "./parser";
 
 describe("Lonelog Parser", () => {
   describe("Scene markers", () => {
@@ -132,6 +131,7 @@ describe("Lonelog Parser", () => {
         type: "consequence",
         text: "She slips between the trees",
         tags: [],
+        conclusion: "She slips between the trees",
       });
     });
   });
@@ -665,7 +665,13 @@ d: 1d8+4=9 slashing damage
     it("should parse [R:] room tags with status and description", () => {
       const tags = extractTags("[R:4|active|storage room, dusty shelves]");
       expect(tags).toHaveLength(1);
-      expect(tags[0]).toEqual({ kind: "room", id: "4", ref: false, status: "active", description: "storage room, dusty shelves" });
+      expect(tags[0]).toEqual({
+        kind: "room",
+        id: "4",
+        ref: false,
+        status: "active",
+        description: "storage room, dusty shelves",
+      });
     });
 
     it("should parse [R:] room tags with exits", () => {
@@ -695,6 +701,91 @@ d: 1d8+4=9 slashing damage
       expect(result[0]).toEqual({ type: "dungeon_status_marker", state: "open" });
       expect(result[1].type).toBe("consequence");
       expect(result[2]).toEqual({ type: "dungeon_status_marker", state: "close" });
+    });
+  });
+
+  describe("Prose-mode extensions", () => {
+    it("derives a tag-stripped conclusion from a consequence", () => {
+      const result = parseLonelog("=> She slips past unseen. [N:Goblin Lookout|distracted] [Clock:Alarm 1/4]");
+      expect(result).toHaveLength(1);
+      const entry = result[0];
+      expect(entry.type).toBe("consequence");
+      if (entry.type === "consequence") {
+        expect(entry.conclusion).toBe("She slips past unseen.");
+        expect(entry.tags).toHaveLength(2);
+      }
+    });
+
+    it("leaves an empty conclusion for tag-only consequence lines", () => {
+      const result = parseLonelog("[PC:Elara|HP-5]");
+      const entry = result[0];
+      expect(entry.type).toBe("consequence");
+      if (entry.type === "consequence") {
+        expect(entry.conclusion).toBe("");
+      }
+    });
+
+    it("parses a bare ++ as a concat marker", () => {
+      const result = parseLonelog("=> First.\n++\n=> Second.");
+      expect(result.map((e) => e.type)).toEqual(["consequence", "concat", "consequence"]);
+    });
+
+    it("extracts a [CF:n] chaos factor from an oracle question", () => {
+      const result = parseLonelog("? [CF:5] Does the scene occur?");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        type: "oracle_question",
+        text: "Does the scene occur?",
+        actor: undefined,
+        chaosFactor: 5,
+      });
+    });
+
+    it("extracts both attribution and chaos factor", () => {
+      const result = parseLonelog("?(Sable) [CF:3] Is the ruin inhabited?");
+      expect(result[0]).toEqual({
+        type: "oracle_question",
+        actor: "Sable",
+        chaosFactor: 3,
+        text: "Is the ruin inhabited?",
+      });
+    });
+
+    it("treats indented plain-prose lines as continuations of the previous entry", () => {
+      const log = [
+        "gen: Testing the Expected Scene",
+        "  Alterations: d10=8 vs CF 5 -> Expected Scene",
+        "=> S01 After the Landslide",
+      ].join("\n");
+      const result = parseLonelog(log);
+      expect(result.map((e) => e.type)).toEqual(["generator", "continuation", "consequence"]);
+      const cont = result[1];
+      if (cont.type === "continuation") {
+        expect(cont.text).toBe("Alterations: d10=8 vs CF 5 -> Expected Scene");
+      }
+    });
+
+    it("does not treat a leading indented line (no previous entry) as a continuation", () => {
+      const result = parseLonelog("  The mist settles over the valley.");
+      expect(result[0].type).toBe("narrative");
+    });
+
+    it("keeps an indented semantic marker as its real type (not a continuation)", () => {
+      const result = parseLonelog("=> Setup [Clock:Boss 0/4]\n  => Final blow [Clock:Boss 4/4]");
+      expect(result.map((e) => e.type)).toEqual(["consequence", "consequence"]);
+      const second = result[1];
+      if (second.type === "consequence") {
+        expect(second.tags).toHaveLength(1);
+        expect(second.conclusion).toBe("Final blow");
+      }
+    });
+
+    it("recognizes scene-shaped consequence text via parseSceneMarker", () => {
+      expect(parseSceneMarker("S01 After the Landslide")).toEqual({
+        number: "S01",
+        context: "After the Landslide",
+      });
+      expect(parseSceneMarker("Just some prose.")).toBeNull();
     });
   });
 });

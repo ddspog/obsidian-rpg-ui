@@ -1,10 +1,20 @@
 /** Lonelog/Partylog Parser — tokenizes session notation into structured entries */
 
 import type { LonelogEntry } from "./types";
-import { extractTags } from "./tag-extractor";
+import { extractTags, stripTags } from "./tag-extractor";
 import { parseRollField } from "./dice-expression";
 import { isCardDraw } from "./card-expression";
 export { extractTags } from "./tag-extractor";
+
+/** Scene-marker grammar: S1, S1a, S1.1, T1-S1, etc. Shared by the line parser
+ *  and prose assembly (a `=> S## Title` consequence can also open a scene). */
+const SCENE_MARKER = /^(T\d+-S\d+[a-z]?|S\d+(?:\.\d+|[a-z])?)\s+(.+)$/i;
+
+export function parseSceneMarker(text: string): { number: string; context: string } | null {
+  const m = text.match(SCENE_MARKER);
+  if (!m) return null;
+  return { number: m[1], context: m[2].replace(/^\*|\*$/g, "").trim() };
+}
 
 export function parseLonelog(body: string): LonelogEntry[] {
   const lines = body.split("\n");
@@ -15,9 +25,18 @@ export function parseLonelog(body: string): LonelogEntry[] {
     if (!trimmed) continue;
 
     const entry = parseLine(trimmed);
-    if (entry) {
-      entries.push(entry);
+    if (!entry) continue;
+
+    // An indented line that is only plain prose is working/detail of the
+    // preceding entry (e.g. the roll breakdown under a `gen:`). Recognized
+    // markers (`=>`, `@`, `?`, `!`, …) keep their own type even when indented,
+    // so their tags / conclusion / metadata are still extracted.
+    if (entry.type === "narrative" && entries.length > 0 && /^\s/.test(line)) {
+      entries.push({ type: "continuation", text: trimmed });
+      continue;
     }
+
+    entries.push(entry);
   }
 
   return entries;
@@ -25,11 +44,9 @@ export function parseLonelog(body: string): LonelogEntry[] {
 
 function parseLine(line: string): LonelogEntry | null {
   // Scene marker: S1, S1a, T1-S1, S1.1, etc.
-  const sceneMatch = line.match(/^(T\d+-S\d+[a-z]?|S\d+(?:\.\d+|[a-z])?)\s+(.*)$/i);
-  if (sceneMatch) {
-    const number = sceneMatch[1];
-    const context = sceneMatch[2].replace(/^\*|\*$/g, "").trim();
-    return { type: "scene", number, context };
+  const scene = parseSceneMarker(line);
+  if (scene) {
+    return { type: "scene", number: scene.number, context: scene.context };
   }
 
   // Combat markers: [COMBAT] / [/COMBAT]
@@ -48,6 +65,9 @@ function parseLine(line: string): LonelogEntry | null {
   const roundMatch = line.match(/^R(\d+)$/);
   if (roundMatch) return { type: "round_marker", round: parseInt(roundMatch[1], 10) };
 
+  // Concat marker: a bare `++` joins the surrounding conclusions in prose.
+  if (line === "++") return { type: "concat" };
+
   // Action: @(Name) text, @(Name > Assist) text, @(Name+Name) text, or bare @ text
   if (line.startsWith("@")) {
     return parseAction(line);
@@ -60,13 +80,22 @@ function parseLine(line: string): LonelogEntry | null {
     return { type: "world_event", text, tags };
   }
 
-  // Oracle question: ? text or ?(Name) text
+  // Oracle question: ? text, ?(Name) text, with optional [CF:n] chaos factor
   if (line.startsWith("?")) {
-    const oracleMatch = line.match(/^\?\(([^)]+)\)\s+(.+)$/);
-    if (oracleMatch) {
-      return { type: "oracle_question", text: oracleMatch[2], actor: oracleMatch[1] };
+    let rest = line.slice(1).trim();
+    let actor: string | undefined;
+    const actorMatch = rest.match(/^\(([^)]+)\)\s*/);
+    if (actorMatch) {
+      actor = actorMatch[1].trim();
+      rest = rest.slice(actorMatch[0].length);
     }
-    return { type: "oracle_question", text: line.slice(1).trim() };
+    let chaosFactor: number | undefined;
+    const cfMatch = rest.match(/^\[CF:\s*(\d+)\]\s*/i);
+    if (cfMatch) {
+      chaosFactor = parseInt(cfMatch[1], 10);
+      rest = rest.slice(cfMatch[0].length);
+    }
+    return { type: "oracle_question", text: rest.trim(), actor, chaosFactor };
   }
 
   // Oracle answer: -> text
@@ -87,13 +116,13 @@ function parseLine(line: string): LonelogEntry | null {
   if (line.startsWith("=>")) {
     const text = line.slice(2).trim();
     const tags = extractTags(text);
-    return { type: "consequence", text, tags };
+    return { type: "consequence", text, tags, conclusion: stripTags(text) };
   }
 
   // Dialogue: PC(Name): "text" or N(Name): "text"
   const dialogueMatch = line.match(/^(PC|N)\(([^)]+)\):\s*(?:"([^"]*)"|(.+))$/);
   if (dialogueMatch) {
-    const speakerType = dialogueMatch[1] === "PC" ? "pc" as const : "npc" as const;
+    const speakerType = dialogueMatch[1] === "PC" ? ("pc" as const) : ("npc" as const);
     const speaker = dialogueMatch[2];
     const text = dialogueMatch[3] ?? dialogueMatch[4];
     return { type: "dialogue", speaker, speakerType, text };
@@ -144,7 +173,7 @@ function parseLine(line: string): LonelogEntry | null {
   if (line.startsWith("[") && line.match(/^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Timer|Thread|E|L):/)) {
     const tags = extractTags(line);
     if (tags.length > 0) {
-      return { type: "consequence", text: line, tags };
+      return { type: "consequence", text: line, tags, conclusion: stripTags(line) };
     }
   }
 

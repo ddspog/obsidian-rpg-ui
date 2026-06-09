@@ -2178,287 +2178,660 @@ p.rpg-item-magic-card__subtitle {
   background: var(--background-primary-alt);
 }
 
-/* lib/styles/components/session-log-scene.css */
-.lonelog-scene-header {
+/* lib/styles/components/session-log-prose.css */
+.lonelog-log-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  margin: 1.5rem 0 1rem 0;
-  border-left: 4px solid var(--color-primary, #646cff);
-  background: var(--background-secondary);
-  border-radius: 4px;
+  gap: 0.35rem;
+  align-items: flex-start;
 }
-.scene-number {
-  font-weight: bold;
-  font-size: 1.2em;
-  color: var(--color-primary, #646cff);
-  min-width: 3em;
-}
-.scene-context {
-  font-style: italic;
-  color: var(--text-muted);
-}
-.scene-flashback {
-  opacity: 0.85;
-  font-style: italic;
-  border-left-color: var(--color-accent, #ffa500);
-}
-.scene-parallel {
-  border-left-width: 6px;
-  border-left-color: var(--color-success, #10b981);
-}
-.scene-montage {
-  padding: 0.5rem 1rem;
-  font-size: 0.9em;
-}
-
-/* lib/styles/components/session-log-events.css */
-.lonelog-prose {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  line-height: 1.6;
-}
-.lonelog-prose-line {
-  margin: 0;
-}
-.lonelog-prose-action {
-  margin: 0.25rem 0;
-}
-.prose-action-text {
-  margin: 0;
-  display: inline;
-}
-.prose-action-marker {
-  font-weight: 700;
-  color: var(--interactive-accent);
-  margin-right: 0.25em;
-  user-select: none;
-}
-.prose-detail-toggle {
-  display: inline-flex;
-  gap: 0.25rem;
-  align-items: center;
-  padding: 0;
-  margin-left: 0.35em;
-  border: none;
-  background: none;
+.lonelog-log-toggle,
+.lonelog-log-save {
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
   cursor: pointer;
-  vertical-align: baseline;
-}
-.prose-roll-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2em;
-  padding: 0.05em 0.4em;
-  border-radius: 3px;
   font-size: 0.8em;
-  font-family: var(--font-monospace);
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+  line-height: 1.4;
   color: var(--text-muted);
-  border: 1px solid transparent;
-  transition: border-color 0.15s ease;
+  box-shadow: none;
 }
-.prose-detail-toggle:hover .prose-roll-chip {
-  border-color: var(--background-modifier-border);
-}
-.prose-roll-chip.chip-success {
-  background: light-dark(rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.15));
-  color: light-dark(#047857, #6ee7b7);
-}
-.prose-roll-chip.chip-failure {
-  background: light-dark(rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15));
-  color: light-dark(#b91c1c, #fca5a5);
-}
-.chip-result {
+.lonelog-log-save {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
   font-weight: 600;
 }
-.prose-detail-block {
-  margin: 0.25rem 0 0.25rem 1.2em;
-  padding: 0.35rem 0.5rem;
-  border-left: 2px solid var(--background-modifier-border);
+.lonelog-log-toggle[aria-pressed=true] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-faint);
+  padding: 0.1rem 0.35rem;
+}
+.lonelog-log-toggle[aria-pressed=true]:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+.lonelog-log-toggle:focus-visible,
+.lonelog-log-save:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+.lonelog-prose-layout {
+  --log-sidebar-width: 24rem;
+  position: relative;
   display: flex;
+  align-items: flex-start;
+}
+.lonelog-prose-layout.with-sidebar:not(.is-stacked) {
+  width: calc(100% + var(--log-sidebar-width));
+  margin-inline-start: calc(var(--log-sidebar-width) / -2);
+}
+.lonelog-prose-layout.is-stacked.with-sidebar {
   flex-direction: column;
-  gap: 0.15rem;
 }
-.prose-roll-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  font-size: 0.85em;
+.lonelog-prose-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.prose-roll-inline code {
-  font-size: inherit;
-  padding: 0.05em 0.3em;
-  border-radius: 3px;
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+.lonelog-prose-doc {
+  font-family: var(--font-text);
+  line-height: 1.7;
 }
-.prose-roll-inline.roll-success {
-  color: light-dark(#047857, #6ee7b7);
-}
-.prose-roll-inline.roll-failure {
-  color: light-dark(#b91c1c, #fca5a5);
-}
-.roll-label {
-  font-weight: 500;
-  font-style: italic;
-}
-.roll-total {
-  font-weight: 700;
-  font-family: var(--font-monospace);
-}
-.roll-vs {
-  font-size: 0.9em;
-  color: var(--text-muted);
-}
-.prose-consequence-text {
-  margin: 0;
-  padding-left: 1.2em;
-  color: var(--text-muted);
-}
-.lonelog-prose-oracle {
-  margin: 0.25rem 0;
-  padding-left: 0.5em;
-  border-left: 2px solid light-dark(rgba(255, 165, 0, 0.4), rgba(255, 165, 0, 0.3));
-}
-.prose-oracle-question {
-  margin: 0;
-  font-style: italic;
-}
-.prose-oracle-marker {
-  font-weight: 700;
-  color: light-dark(#d97706, #fbbf24);
-  margin-right: 0.25em;
-}
-.prose-oracle-answer {
-  margin: 0;
-}
-.prose-oracle-arrow {
-  color: var(--text-muted);
-  margin-right: 0.25em;
-}
-.prose-oracle-roll {
-  font-size: 0.85em;
-  color: var(--text-muted);
-  margin-left: 0.3em;
-}
-.prose-dialogue {
-  margin: 0.15rem 0;
-}
-.prose-speaker {
-  font-weight: 600;
-}
-.prose-speaker-npc {
-  color: light-dark(#7c3aed, #a78bfa);
-}
-.prose-narrative {
-  color: var(--text-muted);
-  margin: 0.15rem 0;
-}
-.prose-meta {
-  font-size: 0.85em;
+.lonelog-prose-empty {
   color: var(--text-faint);
   font-style: italic;
 }
-.prose-consequence {
-  padding-left: 1.2em;
-  color: var(--text-muted);
+.lonelog-prose-scene {
+  margin-bottom: 1rem;
 }
-.prose-actor-name {
+.lonelog-prose-scene-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 1.9rem 0 0.9rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  scroll-margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.lonelog-prose-scene:first-child .lonelog-prose-scene-head {
+  margin-top: 0;
+}
+.lonelog-prose-scene-id {
+  flex: none;
+  align-self: center;
+  color: var(--text-accent);
+  font-size: 0.66rem;
   font-weight: 700;
-  color: var(--text-accent);
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
-.prose-assist-name {
-  font-weight: 500;
-  color: var(--text-muted);
-}
-.roll-actor {
+.lonelog-prose-scene-title {
+  font-size: 1.2em;
   font-weight: 600;
-  font-size: 0.9em;
-  color: var(--text-accent);
+  color: var(--text-normal);
 }
-.chip-actor {
-  font-weight: 500;
+.lonelog-conclusion {
+  margin: 0 0 0.8rem;
+}
+.lonelog-fragment {
+  scroll-margin-top: 2rem;
+}
+.lonelog-md-inline p {
+  display: inline;
+  margin: 0;
+}
+.lonelog-prose-narration {
+  margin: 0 0 0.8rem;
+}
+.lonelog-prose-narration p {
+  margin: 0 0 0.8rem;
+}
+.lonelog-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  padding: 0;
+  margin-left: 0.18em;
+  border: none;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  cursor: pointer;
+  vertical-align: super;
+  box-shadow: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.lonelog-dot::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+.lonelog-dot:hover {
+  transform: scale(1.3);
+}
+.lonelog-dot:focus-visible {
+  outline: none;
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+.lonelog-dot.is-selected {
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+.lonelog-balloon {
+  --balloon-width: 56%;
+  width: var(--balloon-width);
+  box-sizing: border-box;
+  margin-block: 0.45rem;
+  margin-inline-start: calc((100% - var(--balloon-width)) * var(--lane, 0.5));
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+.lonelog-balloon-pc {
+  background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
+  border-color: light-dark(rgba(109, 124, 186, 0.32), rgba(160, 160, 208, 0.34));
+}
+.lonelog-balloon-npc {
+  background: light-dark(rgba(179, 157, 219, 0.16), rgba(179, 157, 219, 0.2));
+  border-color: light-dark(rgba(179, 157, 219, 0.36), rgba(179, 157, 219, 0.42));
+}
+.lonelog-balloon-speaker {
+  display: block;
+  font-weight: 600;
+  font-size: 0.78em;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+  opacity: 0.85;
+}
+.lonelog-balloon-pc .lonelog-balloon-speaker {
+  color: light-dark(#4d5aa0, #a0a0d0);
+}
+.lonelog-balloon-npc .lonelog-balloon-speaker {
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+.lonelog-balloon-text p {
+  display: inline;
+  margin: 0;
+}
+.lonelog-sidebar {
+  flex: 0 0 var(--log-sidebar-width);
+  align-self: stretch;
+  max-height: 70vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--background-modifier-border);
+}
+.lonelog-prose-layout.is-stacked .lonelog-sidebar {
+  position: static;
+  flex: 1 1 auto;
+  width: 100%;
+  max-height: 22rem;
+  margin-top: 1rem;
+  padding-left: 0;
+  padding-top: 0.5rem;
+  border-left: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.lonelog-sidebar-header {
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  margin-bottom: 0.4rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.2rem 2rem 0.2rem 0;
+  background: var(--background-primary);
+}
+.lonelog-sidebar-empty {
+  color: var(--text-faint);
+  font-style: italic;
   font-size: 0.85em;
 }
-.lonelog-prose-world-event {
-  margin: 0.25rem 0;
+.lonelog-sidebar-item {
+  position: relative;
+  padding: 0.4rem 0.1rem;
+  cursor: pointer;
+  font-size: 0.72em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  scroll-margin-block: 1rem;
 }
-.prose-world-event-text {
-  margin: 0;
-  display: inline;
+.lonelog-sidebar-item:last-child {
+  border-bottom: none;
 }
-.prose-world-event-marker {
-  font-weight: 700;
-  color: light-dark(#dc2626, #f87171);
-  margin-right: 0.25em;
-  user-select: none;
+.lonelog-sidebar-item:hover {
+  background: var(--background-modifier-hover);
 }
-.lonelog-combat-marker {
-  height: 2px;
-  margin: 0.5rem 0;
-  border-radius: 1px;
+.lonelog-sidebar-item.is-selected {
+  background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
 }
-.lonelog-combat-marker.combat-start {
-  background:
+.lonelog-sidebar-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+.lonelog-sidebar-item:not(.is-selected) {
+  max-height: 6rem;
+  overflow: hidden;
+  mask-image:
     linear-gradient(
-      to right,
-      light-dark(#dc2626, #f87171),
+      to bottom,
+      #000 4rem,
       transparent);
 }
-.lonelog-combat-marker.combat-end {
-  background:
-    linear-gradient(
-      to right,
-      transparent,
-      light-dark(#dc2626, #f87171));
+.lonelog-sidebar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
 }
-.lonelog-round-marker {
-  font-size: 0.7rem;
+.lonelog-sidebar .lonelog-sidebar-table,
+.lonelog-sidebar .lonelog-sidebar-table td {
+  font-size: inherit;
+}
+.lonelog-sidebar-table td {
+  padding: 0.05rem 0;
+  border: none;
+  vertical-align: baseline;
+  line-height: 1.45;
+}
+.lonelog-row-icon {
+  width: 1.5em;
+  padding-right: 0.4rem;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.lonelog-row-content {
+  width: 100%;
+}
+.lonelog-row-detail {
+  display: block;
+  padding-left: 1.4em;
+  color: var(--text-muted);
+}
+.lonelog-row-bullet {
+  margin-right: 0.45em;
+  color: var(--text-faint);
+}
+.lonelog-row-label {
+  margin-right: 0.5em;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: light-dark(#8a7038, #a09880);
+}
+.lonelog-contest {
+  white-space: nowrap;
+}
+.lonelog-contest-vs {
+  margin: 0 0.35em;
+  font-size: 0.85em;
+  font-style: italic;
+  color: var(--text-faint);
+}
+.lonelog-formula-yields {
+  margin: 0 0.4em;
+  color: var(--text-accent);
+}
+.lonelog-formula-result {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+.lonelog-sidebar input.lonelog-formula-result-input {
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  max-width: 16em;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: var(--text-normal);
+  font-weight: 500;
+  vertical-align: baseline;
+  field-sizing: content;
+}
+.lonelog-sidebar input.lonelog-formula-result-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+.lonelog-sidebar input.lonelog-formula-result-input:focus,
+.lonelog-sidebar input.lonelog-formula-result-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+.lonelog-term.is-loser {
+  opacity: 0.4;
+}
+.lonelog-threshold {
+  white-space: nowrap;
+}
+.lonelog-threshold-label {
+  margin-right: 0.1em;
+  font-size: 0.82em;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
+  vertical-align: 0.04em;
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+.lonelog-threshold-value {
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-sidebar input.lonelog-threshold-input {
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+  field-sizing: content;
+}
+.lonelog-sidebar input.lonelog-threshold-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+.lonelog-sidebar input.lonelog-threshold-input:focus,
+.lonelog-sidebar input.lonelog-threshold-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+.lonelog-term.is-winner .lonelog-threshold-label {
+  color: light-dark(#8a6a10, #e6c34d);
+}
+.lonelog-term.is-winner .lonelog-threshold-value {
+  font-weight: 700;
+  color: light-dark(#7a5d0c, #f0d066);
+  text-shadow: 0 0 6px light-dark(rgba(180, 140, 20, 0.32), rgba(230, 195, 77, 0.45));
+}
+.lonelog-die {
+  white-space: nowrap;
+}
+.lonelog-die-token {
+  position: relative;
+  display: inline-block;
+  width: 2.1em;
+  height: 1.9em;
+  line-height: 1.9em;
+  text-align: center;
+  vertical-align: baseline;
+}
+.lonelog-die-token + .lonelog-die-token {
+  margin-left: 0.15em;
+}
+.lonelog-die-value {
+  position: relative;
+  z-index: 1;
+  font-size: 0.9em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-die-token[data-sides="4"] {
+  vertical-align: 0.12em;
+}
+.lonelog-die-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.lonelog-die-op {
+  margin: 0 0.1em 0 0.2em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.lonelog-die-sign {
+  margin-right: 0.22em;
+}
+.lonelog-die-modterm + .lonelog-die-modterm {
+  margin-left: 0.22em;
+}
+.lonelog-die-total {
+  margin-left: 0.25em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-die-eq {
+  margin-right: 0.12em;
   color: var(--text-faint);
-  margin: 0.35rem 0 0.1rem;
 }
-.lonelog-resource-marker {
-  height: 1px;
-  margin: 0.5rem 0;
-  border-radius: 1px;
+.lonelog-die-outline {
+  fill: light-dark(rgba(109, 124, 186, 0.08), rgba(160, 160, 208, 0.1));
+  stroke: var(--text-muted);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
-.lonelog-resource-marker.resource-start {
-  background:
-    linear-gradient(
-      to right,
-      light-dark(#7c3aed, #a78bfa),
-      transparent);
+.lonelog-die-facet {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 0.8;
+  opacity: 0.4;
+  vector-effect: non-scaling-stroke;
 }
-.lonelog-resource-marker.resource-end {
-  background:
-    linear-gradient(
-      to right,
-      transparent,
-      light-dark(#7c3aed, #a78bfa));
+.lonelog-die.is-pending .lonelog-die-outline {
+  fill: none;
+  stroke-dasharray: 2.5 2;
 }
-.lonelog-dungeon-marker {
-  height: 1px;
-  margin: 0.5rem 0;
-  border-radius: 1px;
+.lonelog-die.is-pending .lonelog-die-facet {
+  display: none;
 }
-.lonelog-dungeon-marker.dungeon-start {
-  background:
-    linear-gradient(
-      to right,
-      light-dark(#4b5563, #9ca3af),
-      transparent);
+.lonelog-die.is-pending .lonelog-die-value {
+  font-weight: 400;
+  color: var(--text-faint);
 }
-.lonelog-dungeon-marker.dungeon-end {
-  background:
-    linear-gradient(
-      to right,
-      transparent,
-      light-dark(#4b5563, #9ca3af));
+.lonelog-term.is-winner .lonelog-die-value {
+  color: light-dark(#7a5d0c, #f0d066);
+  font-weight: 700;
+}
+.lonelog-term.is-winner .lonelog-die-op {
+  color: light-dark(#7a5d0c, #f0d066);
+}
+.lonelog-term.is-winner .lonelog-die-outline {
+  stroke: light-dark(#8a6a10, #e6c34d);
+  fill: light-dark(rgba(230, 195, 77, 0.3), rgba(230, 195, 77, 0.32));
+}
+.lonelog-term.is-winner .lonelog-die-token {
+  filter: drop-shadow(0 0 2px light-dark(rgba(180, 140, 20, 0.5), rgba(230, 195, 77, 0.55)));
+}
+.lonelog-die--percentile .lonelog-die-token:first-child {
+  transform: rotate(-10deg);
+  z-index: 2;
+}
+.lonelog-die--percentile .lonelog-die-token + .lonelog-die-token {
+  margin-left: -0.3em;
+  transform: rotate(10deg);
+  z-index: 1;
+}
+.lonelog-die--percentile.is-editing .lonelog-die-token,
+.lonelog-die--percentile.is-editing .lonelog-die-token:first-child,
+.lonelog-die--percentile.is-editing .lonelog-die-token + .lonelog-die-token {
+  transform: none;
+  margin-left: 0.2em;
+}
+.lonelog-die--percentile.is-editing .lonelog-die-token:first-child {
+  margin-left: 0;
+}
+.lonelog-sidebar input.lonelog-scene-input {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  padding: 0 0.12em;
+  margin: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  min-width: 1ch;
+  field-sizing: content;
+}
+.lonelog-sidebar input.lonelog-scene-input:hover {
+  box-shadow: inset 0 -1px 0 var(--background-modifier-border);
+}
+.lonelog-sidebar input.lonelog-scene-input:focus,
+.lonelog-sidebar input.lonelog-scene-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.6), rgba(160, 160, 208, 0.6));
+}
+.lonelog-scene-num {
+  color: var(--text-accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-sidebar input.lonelog-die-input {
+  display: inline-block;
+  vertical-align: baseline;
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  max-width: 1.7em;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  color: inherit;
+  text-align: center;
+  field-sizing: content;
+}
+.lonelog-sidebar input.lonelog-die-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+.lonelog-sidebar input.lonelog-die-input:focus,
+.lonelog-sidebar input.lonelog-die-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+.lonelog-term.is-winner input.lonelog-die-input {
+  color: light-dark(#7a5d0c, #f0d066);
+  font-weight: 700;
+}
+.lonelog-row-glyph {
+  font-family: var(--font-monospace);
+  font-weight: 700;
+  color: var(--text-accent);
+}
+.lonelog-sidebar-item.kind-world-event .lonelog-row-glyph {
+  color: light-dark(#c0524f, #e57373);
+}
+.lonelog-sidebar-item.kind-oracle .lonelog-row-glyph {
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+.lonelog-row-lucide {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.15em;
+  opacity: 0.7;
+}
+.lonelog-tag-strip-cell {
+  padding-bottom: 0.25rem !important;
+}
+.lonelog-tag-strip {
+  display: block;
+  line-height: 1.5;
+}
+.lonelog-tag {
+  white-space: nowrap;
+}
+.lonelog-tag + .lonelog-tag::before {
+  content: "\b7";
+  margin: 0 0.45em;
+  color: var(--text-faint);
+  font-weight: 400;
+}
+.lonelog-tag-key {
+  font-size: 0.86em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lonelog-tag-hue, var(--text-muted));
+  opacity: 0.85;
+}
+.lonelog-tag-val {
+  margin-left: 0.3em;
+  color: var(--text-normal);
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-tag.kind-cf,
+.lonelog-tag.kind-npc {
+  --lonelog-tag-hue: light-dark(#6a4ea8, #b39ddb);
+}
+.lonelog-tag.kind-foe {
+  --lonelog-tag-hue: light-dark(#c0524f, #e57373);
+}
+.lonelog-tag.kind-pc {
+  --lonelog-tag-hue: light-dark(#4d5aa0, #a0a0d0);
+}
+.lonelog-tag.kind-location,
+.lonelog-tag.kind-room,
+.lonelog-tag.kind-inventory,
+.lonelog-tag.kind-wealth {
+  --lonelog-tag-hue: light-dark(#8a7038, #a09880);
+}
+.lonelog-tag.kind-clock,
+.lonelog-tag.kind-event,
+.lonelog-tag.kind-track,
+.lonelog-tag.kind-timer,
+.lonelog-tag.kind-thread {
+  --lonelog-tag-hue: light-dark(#2f8f86, #64d8cb);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lonelog-dot {
+    transition: none;
+  }
+  .lonelog-dot:hover,
+  .lonelog-dot:focus-visible {
+    transform: none;
+  }
 }
 
 /* lib/styles/components/session-log-tags.css */

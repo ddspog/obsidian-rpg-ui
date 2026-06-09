@@ -1,0 +1,878 @@
+/* Session Log — Prose Mode
+ * The reading view: scenes, narration, dotted conclusions, chat balloons,
+ * and the read-only Log sidebar.
+ */
+
+/* ── Log controls (Save + the single toggle, tucked top-right) ── */
+
+.lonelog-log-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.lonelog-log-toggle,
+.lonelog-log-save {
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.lonelog-log-save {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+
+/* Open state shows a bare ✕ over the sidebar header: no box, just a muted
+ * glyph that gains a faint hover wash. (Closed "Log" keeps its chip so it stays
+ * legible floating over the prose.) */
+.lonelog-log-toggle[aria-pressed="true"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-faint);
+  padding: 0.1rem 0.35rem;
+}
+
+.lonelog-log-toggle[aria-pressed="true"]:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+
+.lonelog-log-toggle:focus-visible,
+.lonelog-log-save:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background-primary),
+    0 0 0 4px var(--interactive-accent);
+}
+
+/* ── Layout (prose + sidebar). When the sidebar opens, the block widens by the
+ *    sidebar width into the page margin and shifts left by half that, so the
+ *    prose keeps its width and the whole thing stays centred. The width is
+ *    measured at runtime and clamped to the available margin; when there is
+ *    too little room the panel stacks below the prose (.is-stacked). ── */
+
+.lonelog-prose-layout {
+  --log-sidebar-width: 24rem;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+}
+
+.lonelog-prose-layout.with-sidebar:not(.is-stacked) {
+  width: calc(100% + var(--log-sidebar-width));
+  margin-inline-start: calc(var(--log-sidebar-width) / -2);
+}
+
+.lonelog-prose-layout.is-stacked.with-sidebar {
+  flex-direction: column;
+}
+
+.lonelog-prose-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Prose document ── */
+
+.lonelog-prose-doc {
+  font-family: var(--font-text);
+  line-height: 1.7;
+}
+
+.lonelog-prose-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.lonelog-prose-scene {
+  margin-bottom: 1rem;
+}
+
+.lonelog-prose-scene-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 1.9rem 0 0.9rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  scroll-margin-top: 1rem;
+  /* Neutralize the <h4> defaults; the child spans carry the type scale. */
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.lonelog-prose-scene:first-child .lonelog-prose-scene-head {
+  margin-top: 0;
+}
+
+/* Scene number as a small uppercase accent label (DESIGN.md signpost rule). */
+.lonelog-prose-scene-id {
+  flex: none;
+  align-self: center;
+  color: var(--text-accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.lonelog-prose-scene-title {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.lonelog-conclusion {
+  margin: 0 0 0.8rem;
+}
+
+.lonelog-fragment {
+  scroll-margin-top: 2rem;
+}
+
+.lonelog-md-inline p {
+  display: inline;
+  margin: 0;
+}
+
+.lonelog-prose-narration {
+  margin: 0 0 0.8rem;
+}
+
+.lonelog-prose-narration p {
+  margin: 0 0 0.8rem;
+}
+
+/* ── Provenance dot (the "*") ── */
+
+.lonelog-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  padding: 0;
+  margin-left: 0.18em;
+  border: none;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  cursor: pointer;
+  vertical-align: super;
+  box-shadow: none;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+/* Keep the 6px visual, but give it a ~24px hit target for mouse and touch. */
+.lonelog-dot::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+
+.lonelog-dot:hover {
+  transform: scale(1.3);
+}
+
+.lonelog-dot:focus-visible {
+  outline: none;
+  transform: scale(1.3);
+  box-shadow:
+    0 0 0 2px var(--background-primary),
+    0 0 0 4px var(--interactive-accent);
+}
+
+.lonelog-dot.is-selected {
+  box-shadow:
+    0 0 0 2px var(--background-primary),
+    0 0 0 4px var(--interactive-accent);
+}
+
+/* ── Chat balloons ── */
+
+.lonelog-balloon {
+  --balloon-width: 56%;
+  width: var(--balloon-width);
+  box-sizing: border-box;
+  margin-block: 0.45rem;
+  /* Centre the balloon on its speaker's lane: lane 0 → flush left, 1 → flush right. */
+  margin-inline-start: calc((100% - var(--balloon-width)) * var(--lane, 0.5));
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+/* PC = periwinkle (the structural chroma); NPC = soft-amethyst (arcane). Per DESIGN.md palette. */
+.lonelog-balloon-pc {
+  background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
+  border-color: light-dark(rgba(109, 124, 186, 0.32), rgba(160, 160, 208, 0.34));
+}
+
+.lonelog-balloon-npc {
+  background: light-dark(rgba(179, 157, 219, 0.16), rgba(179, 157, 219, 0.2));
+  border-color: light-dark(rgba(179, 157, 219, 0.36), rgba(179, 157, 219, 0.42));
+}
+
+.lonelog-balloon-speaker {
+  display: block;
+  font-weight: 600;
+  font-size: 0.78em;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+  opacity: 0.85;
+}
+
+.lonelog-balloon-pc .lonelog-balloon-speaker {
+  color: light-dark(#4d5aa0, #a0a0d0);
+}
+
+.lonelog-balloon-npc .lonelog-balloon-speaker {
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+
+.lonelog-balloon-text p {
+  display: inline;
+  margin: 0;
+}
+
+/* ── Sidebar (read-only Log) ── */
+
+.lonelog-sidebar {
+  flex: 0 0 var(--log-sidebar-width);
+  align-self: stretch;
+  max-height: 70vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+/* Stacked fallback (narrow panes): the panel sits below the prose, full width. */
+.lonelog-prose-layout.is-stacked .lonelog-sidebar {
+  position: static;
+  flex: 1 1 auto;
+  width: 100%;
+  max-height: 22rem;
+  margin-top: 1rem;
+  padding-left: 0;
+  padding-top: 0.5rem;
+  border-left: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.lonelog-sidebar-header {
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  margin-bottom: 0.4rem;
+  /* Keep the heading visible while scrolling a long list of entries. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.2rem 2rem 0.2rem 0; /* room for the floating toggle on the right */
+  background: var(--background-primary);
+}
+
+.lonelog-sidebar-empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+/* Flat by default: tonal layering, hairline separators, no card chrome. */
+.lonelog-sidebar-item {
+  position: relative;
+  padding: 0.4rem 0.1rem;
+  cursor: pointer;
+  font-size: 0.72em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  scroll-margin-block: 1rem;
+}
+
+.lonelog-sidebar-item:last-child {
+  border-bottom: none;
+}
+
+.lonelog-sidebar-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.lonelog-sidebar-item.is-selected {
+  background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
+}
+
+.lonelog-sidebar-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+
+/* Clamp long entries until selected, with a soft fade where they are cut. */
+.lonelog-sidebar-item:not(.is-selected) {
+  max-height: 6rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 4rem, transparent);
+}
+
+/* ── Entry table: icon | content | pills ── */
+
+.lonelog-sidebar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+/* Inherit the entry's reduced size — Obsidian sets a font-size on table cells
+ * directly, which would otherwise override the size inherited from the item. */
+.lonelog-sidebar .lonelog-sidebar-table,
+.lonelog-sidebar .lonelog-sidebar-table td {
+  font-size: inherit;
+}
+
+.lonelog-sidebar-table td {
+  padding: 0.05rem 0;
+  border: none;
+  vertical-align: baseline;
+  line-height: 1.45;
+}
+
+.lonelog-row-icon {
+  width: 1.5em;
+  padding-right: 0.4rem;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.lonelog-row-content {
+  width: 100%;
+}
+
+/* ── Indented working lines, shown as nested bullets ──
+ * These span the whole row (no icon/pills columns), so the indent is pulled
+ * back from the old icon-column offset and the text gets the full width. */
+
+.lonelog-row-detail {
+  display: block;
+  padding-left: 1.4em;
+  color: var(--text-muted);
+}
+
+.lonelog-row-bullet {
+  margin-right: 0.45em;
+  color: var(--text-faint);
+}
+
+/* The `label:` prefix as a small uppercase caption (faded-amber, the system's
+ * "quiet voice of lore"; uppercase per the signpost rule). */
+.lonelog-row-label {
+  margin-right: 0.5em;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: light-dark(#8a7038, #a09880);
+}
+
+/* ── Roll / check formulas: `check -> result`, contests, dice, thresholds ── */
+
+.lonelog-contest {
+  white-space: nowrap;
+}
+
+/* The contest operator and the yields arrow read as quiet connectors; the
+ * result is the story-facing outcome, distinct from the muted mechanical check. */
+.lonelog-contest-vs {
+  margin: 0 0.35em;
+  font-size: 0.85em;
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+.lonelog-formula-yields {
+  margin: 0 0.4em;
+  color: var(--text-accent);
+}
+
+.lonelog-formula-result {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+/* Editable result: an inline input merging with the result text (like the
+ * scene/die inputs), faint underline on hover/focus. Beats Obsidian's
+ * `input[type="text"]` chrome via the `.lonelog-sidebar input.…` specificity. */
+.lonelog-sidebar input.lonelog-formula-result-input {
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  max-width: 16em;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: var(--text-normal);
+  font-weight: 500;
+  vertical-align: baseline;
+  field-sizing: content; /* size to content where supported; `size` attr is the fallback */
+}
+
+.lonelog-sidebar input.lonelog-formula-result-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+
+.lonelog-sidebar input.lonelog-formula-result-input:focus,
+.lonelog-sidebar input.lonelog-formula-result-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+
+.lonelog-term.is-loser {
+  opacity: 0.4;
+}
+
+/* Threshold (CF / DC): a small uppercase label hugging a full-size value. */
+.lonelog-threshold {
+  white-space: nowrap;
+}
+
+.lonelog-threshold-label {
+  margin-right: 0.1em;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: 0.04em;
+  /* CF / DC are named comparison gates: highlighted in soft-amethyst (the
+   * threshold chroma), hugging their value. */
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+
+.lonelog-threshold-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editable CF/DC value: an inline input that merges with the threshold text
+ * (like the scene/die inputs), gaining a faint underline only on hover/focus.
+ * The specificity beats Obsidian's `input[type="text"]` chrome. */
+.lonelog-sidebar input.lonelog-threshold-input {
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+  field-sizing: content; /* size to digits where supported; `size` attr is the fallback */
+}
+
+.lonelog-sidebar input.lonelog-threshold-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+
+.lonelog-sidebar input.lonelog-threshold-input:focus,
+.lonelog-sidebar input.lonelog-threshold-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+
+/* When the threshold wins, the whole gate (label + value) escalates to gold
+ * with a soft glow — meaningful presence, kept tight (no detaching underline). */
+.lonelog-term.is-winner .lonelog-threshold-label {
+  color: light-dark(#8a6a10, #e6c34d);
+}
+
+.lonelog-term.is-winner .lonelog-threshold-value {
+  font-weight: 700;
+  color: light-dark(#7a5d0c, #f0d066);
+  text-shadow: 0 0 6px light-dark(rgba(180, 140, 20, 0.32), rgba(230, 195, 77, 0.45));
+}
+
+/* Dice: the value is real text on the baseline; the die silhouette is an SVG
+ * positioned behind it (dashed/empty when unrolled). */
+.lonelog-die {
+  white-space: nowrap;
+}
+
+/* Each die is a fixed-size, in-flow badge: the silhouette never stretches with
+ * the value, 1–2 digits sit centered inside with room, and because it's in-flow
+ * the line box grows to fit it (no overlap with neighbouring rows). */
+/* Fixed-size, in-flow die badge. line-height centers the value vertically and
+ * makes the token's baseline the value's baseline, so the number sits level
+ * with the inline ± modifier and = total; the box height grows the line (no
+ * overlap) and the silhouette never stretches with the value. */
+.lonelog-die-token {
+  position: relative;
+  display: inline-block;
+  width: 2.1em;
+  height: 1.9em;
+  line-height: 1.9em;
+  text-align: center;
+  vertical-align: baseline;
+}
+
+.lonelog-die-token + .lonelog-die-token {
+  margin-left: 0.15em; /* gap between pool dice */
+}
+
+.lonelog-die-value {
+  position: relative;
+  z-index: 1;
+  font-size: 0.9em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* d4: a shorter triangle whose centroid sits at the box centre (so the digit
+ * gets the same centred treatment as the other dice), and a small lift of the
+ * whole badge so the point-up shape doesn't read low in the row. */
+.lonelog-die-token[data-sides="4"] {
+  vertical-align: 0.12em;
+}
+
+.lonelog-die-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Modifier (+5/-1) and pool total read as clear operators, not faint marks. */
+.lonelog-die-op {
+  margin: 0 0.1em 0 0.2em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Space the sign off its value so "+ 5" reads as an operation, not a number;
+ * chained modifiers (+3 - 1) get the same gap between terms. */
+.lonelog-die-sign {
+  margin-right: 0.22em;
+}
+
+.lonelog-die-modterm + .lonelog-die-modterm {
+  margin-left: 0.22em;
+}
+
+.lonelog-die-total {
+  margin-left: 0.25em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lonelog-die-eq {
+  margin-right: 0.12em;
+  color: var(--text-faint);
+}
+
+.lonelog-die-outline {
+  fill: light-dark(rgba(109, 124, 186, 0.08), rgba(160, 160, 208, 0.1));
+  stroke: var(--text-muted);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lonelog-die-facet {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 0.8;
+  opacity: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.lonelog-die.is-pending .lonelog-die-outline {
+  fill: none;
+  stroke-dasharray: 2.5 2;
+}
+
+.lonelog-die.is-pending .lonelog-die-facet {
+  display: none;
+}
+
+.lonelog-die.is-pending .lonelog-die-value {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.lonelog-term.is-winner .lonelog-die-value {
+  color: light-dark(#7a5d0c, #f0d066);
+  font-weight: 700;
+}
+
+/* The winning roll's modifier carries the win too (gold), so a +2 that tips a
+ * contest reads as part of the victory rather than a muted afterthought. */
+.lonelog-term.is-winner .lonelog-die-op {
+  color: light-dark(#7a5d0c, #f0d066);
+}
+
+/* The winning die "lights up": a gold fill + glow, so the win is read by
+ * presence, not just hue. */
+.lonelog-term.is-winner .lonelog-die-outline {
+  stroke: light-dark(#8a6a10, #e6c34d);
+  fill: light-dark(rgba(230, 195, 77, 0.3), rgba(230, 195, 77, 0.32));
+}
+
+.lonelog-term.is-winner .lonelog-die-token {
+  filter: drop-shadow(0 0 2px light-dark(rgba(180, 140, 20, 0.5), rgba(230, 195, 77, 0.55)));
+}
+
+/* ── Percentile: two d10s tumbled together (tens + units). The front (tens) die
+ *    leans left, the back (units) die leans right — splaying outward like a
+ *    freshly tossed pair, both sitting level on the same line. The tens die
+ *    overlaps on top; the units die tucks behind to the right. ── */
+.lonelog-die--percentile .lonelog-die-token:first-child {
+  transform: rotate(-10deg);
+  z-index: 2;
+}
+
+.lonelog-die--percentile .lonelog-die-token + .lonelog-die-token {
+  margin-left: -0.3em;
+  transform: rotate(10deg);
+  z-index: 1;
+}
+
+/* When editing, the two percentile digits sit upright and apart so each is its
+ * own clear input (no tumble/overlap). */
+.lonelog-die--percentile.is-editing .lonelog-die-token,
+.lonelog-die--percentile.is-editing .lonelog-die-token:first-child,
+.lonelog-die--percentile.is-editing .lonelog-die-token + .lonelog-die-token {
+  transform: none;
+  margin-left: 0.2em;
+}
+
+.lonelog-die--percentile.is-editing .lonelog-die-token:first-child {
+  margin-left: 0;
+}
+
+/* ── Inline scene editor (inputs that read as plain text until touched) ──
+ * The `.lonelog-sidebar input.…` specificity is deliberate: it has to outrank
+ * Obsidian's own `input[type="text"]` chrome (filled box, border, focus ring),
+ * which would otherwise make these read as form fields. */
+
+.lonelog-sidebar input.lonelog-scene-input {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  padding: 0 0.12em;
+  margin: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  min-width: 1ch;
+  field-sizing: content; /* size to content where supported; `size` attr is the fallback */
+}
+
+/* No affordance at rest (they merge with the row); a hairline hints on hover,
+ * a slightly stronger accent line on focus. */
+.lonelog-sidebar input.lonelog-scene-input:hover {
+  box-shadow: inset 0 -1px 0 var(--background-modifier-border);
+}
+
+.lonelog-sidebar input.lonelog-scene-input:focus,
+.lonelog-sidebar input.lonelog-scene-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.6), rgba(160, 160, 208, 0.6));
+}
+
+.lonelog-scene-num {
+  color: var(--text-accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editable die value: an inline input that merges with the die face (the same
+ * quiet treatment as the scene inputs), gaining a faint underline only on
+ * hover/focus. The specificity beats Obsidian's `input[type="text"]` chrome. */
+.lonelog-sidebar input.lonelog-die-input {
+  display: inline-block;
+  vertical-align: baseline;
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1ch;
+  max-width: 1.7em;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  color: inherit;
+  text-align: center;
+  field-sizing: content; /* size to digits where supported; `size` attr is the fallback */
+}
+
+.lonelog-sidebar input.lonelog-die-input:hover {
+  box-shadow: inset 0 -1px 0 var(--text-faint);
+}
+
+.lonelog-sidebar input.lonelog-die-input:focus,
+.lonelog-sidebar input.lonelog-die-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
+}
+
+/* The winning die's input value carries the gold like the static value does. */
+.lonelog-term.is-winner input.lonelog-die-input {
+  color: light-dark(#7a5d0c, #f0d066);
+  font-weight: 700;
+}
+
+.lonelog-row-glyph {
+  font-family: var(--font-monospace);
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.lonelog-sidebar-item.kind-world-event .lonelog-row-glyph {
+  color: light-dark(#c0524f, #e57373);
+}
+
+.lonelog-sidebar-item.kind-oracle .lonelog-row-glyph {
+  color: light-dark(#6a4ea8, #b39ddb);
+}
+
+.lonelog-row-lucide {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.15em;
+  opacity: 0.7;
+}
+
+/* ── Entry tag strip: a typographic "dateline" across the top of an entry ──
+ * Each tag is a muted small-caps key (tinted by category) + an emphasized
+ * value; tags are joined by faint middots. No chip chrome. */
+
+.lonelog-tag-strip-cell {
+  padding-bottom: 0.25rem !important;
+}
+
+.lonelog-tag-strip {
+  display: block;
+  line-height: 1.5;
+}
+
+.lonelog-tag {
+  white-space: nowrap;
+}
+
+/* Faint middot between consecutive tags (a dateline separator, not a bullet). */
+.lonelog-tag + .lonelog-tag::before {
+  content: "·";
+  margin: 0 0.45em;
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+/* The key: a small-caps caption carrying the category hue (set per kind below);
+ * muted so the value leads. */
+.lonelog-tag-key {
+  font-size: 0.86em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lonelog-tag-hue, var(--text-muted));
+  opacity: 0.85;
+}
+
+/* The value: the state/number, in normal text so it reads as the payload. */
+.lonelog-tag-val {
+  margin-left: 0.3em;
+  color: var(--text-normal);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Category hues, from the DESIGN.md palette. */
+.lonelog-tag.kind-cf,
+.lonelog-tag.kind-npc {
+  --lonelog-tag-hue: light-dark(#6a4ea8, #b39ddb); /* soft-amethyst (arcane) */
+}
+
+.lonelog-tag.kind-foe {
+  --lonelog-tag-hue: light-dark(#c0524f, #e57373); /* ember-red (danger) */
+}
+
+.lonelog-tag.kind-pc {
+  --lonelog-tag-hue: light-dark(#4d5aa0, #a0a0d0); /* periwinkle (the player) */
+}
+
+.lonelog-tag.kind-location,
+.lonelog-tag.kind-room,
+.lonelog-tag.kind-inventory,
+.lonelog-tag.kind-wealth {
+  --lonelog-tag-hue: light-dark(#8a7038, #a09880); /* faded-amber (place / lore / goods) */
+}
+
+.lonelog-tag.kind-clock,
+.lonelog-tag.kind-event,
+.lonelog-tag.kind-track,
+.lonelog-tag.kind-timer,
+.lonelog-tag.kind-thread {
+  --lonelog-tag-hue: light-dark(#2f8f86, #64d8cb); /* arcane-teal (gauges / progress) */
+}
+
+/* ── Reduced motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .lonelog-dot {
+    transition: none;
+  }
+  .lonelog-dot:hover,
+  .lonelog-dot:focus-visible {
+    transform: none;
+  }
+}

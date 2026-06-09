@@ -13,7 +13,29 @@ import { parseSessionLogBlock, processSessionLog } from "lib/domains/session-log
 import type { SessionLogData } from "lib/domains/session-log";
 import { EntityResolver } from "lib/services/entity-resolver";
 import type { EntityData } from "lib/services/entity-resolver";
-import { EventList } from "lib/components/session-log/event-list";
+import { ProseView } from "lib/components/session-log/prose-view";
+import { LogSidebar } from "lib/components/session-log/log-sidebar";
+import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
+import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
+import {
+  assembleProse,
+  buildSidebarItems,
+  reconstructScene,
+  applySceneEdits,
+  applyTokenEdits,
+  dieEditKey,
+  resultEditKey,
+} from "lib/domains/session-log/prose-model";
+import {
+  parseFormula,
+  editableTerms,
+  setTermRaw,
+  termSlots,
+  termSlotInitial,
+  combineTermValue,
+  resultReplacement,
+} from "lib/domains/session-log/formula";
+import type { EditableTerm } from "lib/domains/session-log/formula";
 import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
@@ -26,7 +48,6 @@ import type { SessionConsumableState } from "lib/domains/session-log/consumable-
 
 export class SessionLogView extends BaseView {
   public codeblock = "log";
-
   private kv: KeyValueStore;
   private entityResolver: EntityResolver;
 
@@ -59,6 +80,8 @@ class SessionLogMarkdown extends ReactMarkdown {
   private baseView: BaseView;
   private logData: SessionLogData | null = null;
   private entities: EntityData[] = [];
+  private stateKey = "default-log";
+  private initialSidebarOpen = false;
 
   constructor(
     el: HTMLElement,
@@ -86,6 +109,8 @@ class SessionLogMarkdown extends ReactMarkdown {
     try {
       const block = parseSessionLogBlock(this.source);
       this.logData = processSessionLog(block);
+      this.stateKey = block.state_key;
+      this.initialSidebarOpen = (await this.kv.get<boolean>(`${block.state_key}:log-sidebar-open`)) === true;
 
       if (block.entities && block.entities.length > 0) {
         this.entities = await this.entityResolver.resolveEntities(block.entities);
@@ -126,6 +151,36 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
   }
 
+  /**
+   * Rewrite the code-block body for sidebar edits: scene `=> …` lines (matched
+   * by text after `=>`) and inline die values (a token swap on a matched line).
+   * Both are applied to one read of the file and written once.
+   */
+  private async editLogBody(
+    sceneReplacements: Array<{ from: string; to: string }>,
+    dieReplacements: Array<{ line: string; from: string; to: string }>
+  ) {
+    if (sceneReplacements.length === 0 && dieReplacements.length === 0) return;
+    try {
+      const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
+      if (!file || !(file instanceof TFile)) {
+        console.error("File not found:", this.filePath);
+        return;
+      }
+
+      const content = await this.baseView.app.vault.read(file);
+      let updatedContent = applySceneEdits(content, sceneReplacements);
+      updatedContent = applyTokenEdits(updatedContent, dieReplacements);
+      if (updatedContent === content) {
+        console.warn("rpg log: no edited lines matched; nothing saved");
+        return;
+      }
+      await this.baseView.app.vault.modify(file as any, updatedContent);
+    } catch (error) {
+      console.error("Error editing log:", error);
+    }
+  }
+
   private buildActionCards(): {
     pcStacks: Map<string, CardStack[]>;
     gmStacks: CardStack[];
@@ -157,7 +212,10 @@ class SessionLogMarkdown extends ReactMarkdown {
       return;
     }
 
-    const root = ReactDOM.createRoot(this.containerEl);
+    // Reuse the instance's React root so it is unmounted on unload (see
+    // ReactMarkdown.onunload) and never double-created on re-render.
+    if (this.reactRoot) this.reactRoot.unmount();
+    this.reactRoot = ReactDOM.createRoot(this.containerEl);
     const { pcStacks, gmStacks, allCards, sheetSpent } = this.buildActionCards();
     const entityNames = this.entities.map((e) => e.name);
     const initialConsumableState = initSessionConsumables(allCards, sheetSpent);
@@ -166,14 +224,18 @@ class SessionLogMarkdown extends ReactMarkdown {
       await this.appendToLogBody(text);
     };
 
-    root.render(
+    this.reactRoot.render(
       <SessionLogRoot
         logData={this.logData}
+        sourcePath={this.filePath}
+        initialSidebarOpen={this.initialSidebarOpen}
+        onSidebarToggle={(open) => void this.kv.set(`${this.stateKey}:log-sidebar-open`, open)}
         pcStacks={pcStacks}
         gmStacks={gmStacks}
         entityNames={entityNames}
         initialConsumableState={initialConsumableState}
         onAppendText={handleAppendText}
+        onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
       />
     );
   }
@@ -181,32 +243,291 @@ class SessionLogMarkdown extends ReactMarkdown {
 
 interface SessionLogRootProps {
   logData: SessionLogData;
+  sourcePath: string;
+  initialSidebarOpen: boolean;
+  onSidebarToggle: (open: boolean) => void;
   pcStacks: Map<string, CardStack[]>;
   gmStacks: CardStack[];
   entityNames: string[];
   initialConsumableState: SessionConsumableState;
   onAppendText: (text: string) => void;
+  onSave: (edits: {
+    scenes: Array<{ from: string; to: string }>;
+    dice: Array<{ line: string; from: string; to: string }>;
+  }) => void | Promise<void>;
 }
 
 function SessionLogRoot({
   logData,
+  sourcePath,
+  initialSidebarOpen,
+  onSidebarToggle,
   pcStacks,
   gmStacks,
   entityNames,
   initialConsumableState,
   onAppendText,
+  onSave,
 }: SessionLogRootProps) {
   const [consumableState, setConsumableState] = React.useState(initialConsumableState);
+  const [sidebarOpen, setSidebarOpen] = React.useState(initialSidebarOpen);
+  const [sceneEdits, setSceneEdits] = React.useState<Record<string, SceneEditValue>>({});
+  const [dieEdits, setDieEdits] = React.useState<Record<string, string>>({});
+  // `n` forces the scroll effect to re-run even when the same id is re-clicked.
+  const [selection, setSelection] = React.useState<{ id: number; side: "prose" | "sidebar"; n: number } | null>(null);
+
+  // Persist open/closed so the panel survives the re-render that a save (or any
+  // edit to the note) triggers, and so reopening the note restores it.
+  React.useEffect(() => {
+    onSidebarToggle(sidebarOpen);
+  }, [sidebarOpen]);
+
+  const segments = React.useMemo(() => groupIntoProse(logData.entries), [logData.entries]);
+  const scenes = React.useMemo(() => assembleProse(segments), [segments]);
+  const sidebarItems = React.useMemo(() => buildSidebarItems(segments), [segments]);
+
+  const proseAnchors = React.useRef(new Map<number, HTMLElement>());
+  const sidebarAnchors = React.useRef(new Map<number, HTMLElement>());
+  const clickTick = React.useRef(0);
+  const layoutRef = React.useRef<HTMLDivElement>(null);
+
+  // The sidebar invades the page margin. Measure how much free margin the
+  // surrounding Obsidian column actually has and size the invasion to fit
+  // (up to the desired width); when there's too little room, stack the panel
+  // below the prose instead of clipping it off the edge.
+  const [sidebarPx, setSidebarPx] = React.useState<number | null>(null);
+  const [stacked, setStacked] = React.useState(false);
+
+  React.useEffect(() => {
+    const layout = layoutRef.current;
+    const container = layout?.parentElement;
+    if (!layout || !container) return;
+
+    const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const desiredPx = 24 * remPx;
+    const minSidebarPx = 13 * remPx;
+    const view = layout.closest(".markdown-preview-view, .markdown-source-view, .cm-sizer") as HTMLElement | null;
+
+    const measure = () => {
+      const c = container.getBoundingClientRect();
+      let room: number;
+      if (view) {
+        const v = view.getBoundingClientRect();
+        const vs = getComputedStyle(view);
+        const leftRoom = c.left - (v.left + (parseFloat(vs.paddingLeft) || 0));
+        const rightRoom = v.right - (parseFloat(vs.paddingRight) || 0) - c.right;
+        room = Math.max(0, Math.min(leftRoom, rightRoom));
+      } else {
+        room = Math.max(0, (window.innerWidth - c.width) / 2 - remPx);
+      }
+      const fits = Math.min(desiredPx, room * 2); // invasion spends `room` on each side
+      if (fits < minSidebarPx) {
+        setStacked(true);
+        setSidebarPx(null);
+      } else {
+        setStacked(false);
+        setSidebarPx(Math.round(fits));
+      }
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    if (view) ro.observe(view);
+    return () => ro.disconnect();
+  }, []);
+
+  const registerAnchor =
+    (map: React.MutableRefObject<Map<number, HTMLElement>>) => (id: number, el: HTMLElement | null) => {
+      if (el) map.current.set(id, el);
+      else map.current.delete(id);
+    };
+  const registerProse = React.useMemo(() => registerAnchor(proseAnchors), []);
+  const registerSidebar = React.useMemo(() => registerAnchor(sidebarAnchors), []);
+
+  React.useEffect(() => {
+    if (!selection) return;
+    const map = selection.side === "sidebar" ? sidebarAnchors.current : proseAnchors.current;
+    map.get(selection.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selection]);
+
+  const handleDotClick = (id: number) => {
+    setSidebarOpen(true);
+    clickTick.current += 1;
+    setSelection({ id, side: "sidebar", n: clickTick.current });
+  };
+  const handleSidebarClick = (id: number) => {
+    clickTick.current += 1;
+    setSelection({ id, side: "prose", n: clickTick.current });
+  };
 
   const handleSpend = (cardId: string) => {
     setConsumableState((s) => spendUse(s, cardId));
   };
 
+  // Original scene values keyed by their `=>` text, for dirty-checking + save.
+  const sceneOriginals = React.useMemo(() => {
+    const map: Record<string, { number: string; name: string; hadS: boolean }> = {};
+    for (const item of sidebarItems) {
+      for (const row of item.rows) {
+        if (row.scene)
+          map[row.scene.original] = { number: row.scene.number, name: row.scene.name, hadS: row.scene.hadS };
+      }
+    }
+    return map;
+  }, [sidebarItems]);
+
+  const pendingScenes = React.useMemo(
+    () =>
+      Object.entries(sceneEdits).filter(([original, v]) => {
+        const o = sceneOriginals[original];
+        return o && (v.number !== o.number || v.name !== o.name);
+      }),
+    [sceneEdits, sceneOriginals]
+  );
+
+  // Editable formula terms across the sidebar (dice + CF/DC thresholds), with
+  // the source line and original value for dirty-checking + write-back.
+  const editTerms = React.useMemo(() => {
+    const list: Array<{ source: string; raw: string; term: EditableTerm; original: string }> = [];
+    for (const item of sidebarItems) {
+      for (const row of item.rows) {
+        if (!row.detail || !row.source) continue;
+        const formula = parseFormula(row.content);
+        if (!formula) continue;
+        for (const term of editableTerms(formula)) {
+          list.push({
+            source: row.source,
+            raw: term.raw,
+            term,
+            original: term.value != null ? String(term.value) : "",
+          });
+        }
+      }
+    }
+    return list;
+  }, [sidebarItems]);
+
+  // Formula results (the text after `->`), with their source line + original, so
+  // the result can be edited and written back like the terms.
+  const editResults = React.useMemo(() => {
+    const list: Array<{ source: string; original: string }> = [];
+    for (const item of sidebarItems) {
+      for (const row of item.rows) {
+        if (!row.detail || !row.source) continue;
+        const formula = parseFormula(row.content);
+        if (formula?.result != null) list.push({ source: row.source, original: formula.result });
+      }
+    }
+    return list;
+  }, [sidebarItems]);
+
+  // Each term whose edited slots combine to a different value than the original
+  // becomes a token-swap on its source line. Untouched terms (no pending slot)
+  // are skipped, so a pool's blank per-die boxes never clobber its saved total.
+  // Edited results add their own arrow-anchored swap on the same line.
+  const dieReplacements = React.useMemo(() => {
+    const out: Array<{ line: string; from: string; to: string }> = [];
+    for (const e of editTerms) {
+      const slotCount = termSlots(e.term);
+      const keys = Array.from({ length: slotCount }, (_, i) => dieEditKey(e.source, e.raw, i));
+      if (!keys.some((k) => k in dieEdits)) continue; // untouched
+      const slots = keys.map((k, i) => dieEdits[k] ?? termSlotInitial(e.term, i));
+      const next = combineTermValue(e.term, slots);
+      if (next !== e.original) out.push({ line: e.source, from: e.raw, to: setTermRaw(e.term, next) });
+    }
+    for (const r of editResults) {
+      const key = resultEditKey(r.source);
+      if (!(key in dieEdits)) continue;
+      const next = dieEdits[key];
+      if (next === r.original) continue;
+      const swap = resultReplacement(r.source, next);
+      if (swap) out.push({ line: r.source, ...swap });
+    }
+    return out;
+  }, [editTerms, editResults, dieEdits]);
+
+  const isDirty = pendingScenes.length > 0 || dieReplacements.length > 0;
+
+  const handleSceneChange = (original: string, next: SceneEditValue) => {
+    setSceneEdits((prev) => ({ ...prev, [original]: next }));
+  };
+
+  const handleDieChange = (source: string, raw: string, slot: number, value: string) => {
+    setDieEdits((prev) => ({ ...prev, [dieEditKey(source, raw, slot)]: value }));
+  };
+
+  const handleResultChange = (source: string, value: string) => {
+    setDieEdits((prev) => ({ ...prev, [resultEditKey(source)]: value }));
+  };
+
+  const handleSave = async () => {
+    const scenes = pendingScenes.map(([original, v]) => ({
+      from: original,
+      to: reconstructScene(v.number, v.name, sceneOriginals[original].hadS),
+    }));
+    await onSave({ scenes, dice: dieReplacements });
+    setSceneEdits({});
+    setDieEdits({});
+  };
+
   const hasActions = pcStacks.size > 0 || gmStacks.length > 0;
+  const selectedId = selection?.id ?? null;
 
   return (
     <div className="session-log-container">
-      <EventList entries={logData.entries} />
+      <div
+        ref={layoutRef}
+        className={`lonelog-prose-layout ${sidebarOpen ? "with-sidebar" : ""} ${stacked ? "is-stacked" : ""}`}
+        style={sidebarPx != null ? ({ "--log-sidebar-width": `${sidebarPx}px` } as React.CSSProperties) : undefined}
+      >
+        {sidebarItems.length > 0 && (
+          <div className="lonelog-log-controls">
+            {isDirty && (
+              <button
+                type="button"
+                className="lonelog-log-save"
+                aria-label="Save log edits"
+                onClick={() => void handleSave()}
+              >
+                Save
+              </button>
+            )}
+            <button
+              type="button"
+              className="lonelog-log-toggle"
+              aria-pressed={sidebarOpen}
+              aria-label={sidebarOpen ? "Close log" : "Open log"}
+              onClick={() => setSidebarOpen((o) => !o)}
+            >
+              {sidebarOpen ? "✕" : "Log"}
+            </button>
+          </div>
+        )}
+        <div className="lonelog-prose-main">
+          <ProseView
+            scenes={scenes}
+            sourcePath={sourcePath}
+            selectedId={selectedId}
+            onSelectSource={handleDotClick}
+            registerAnchor={registerProse}
+          />
+        </div>
+        {sidebarOpen && (
+          <LogSidebar
+            items={sidebarItems}
+            selectedId={selectedId}
+            onSelect={handleSidebarClick}
+            registerAnchor={registerSidebar}
+            sourcePath={sourcePath}
+            sceneEdits={sceneEdits}
+            onSceneChange={handleSceneChange}
+            dieEdits={dieEdits}
+            onDieChange={handleDieChange}
+            onResultChange={handleResultChange}
+          />
+        )}
+      </div>
 
       {hasActions ? (
         <BottomDrawer

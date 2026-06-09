@@ -19,7 +19,9 @@ export type LonelogEntry =
   | CombatMarkerEntry
   | RoundMarkerEntry
   | ResourceMarkerEntry
-  | DungeonStatusMarkerEntry;
+  | DungeonStatusMarkerEntry
+  | ConcatMarkerEntry
+  | ContinuationEntry;
 
 export interface SceneEntry {
   type: "scene";
@@ -57,6 +59,8 @@ export interface OracleQuestionEntry {
   type: "oracle_question";
   text: string;
   actor?: string;
+  /** Chaos/Confidence factor from a leading `[CF:n]` token (sidebar-only metadata). */
+  chaosFactor?: number;
 }
 
 export interface OracleAnswerEntry {
@@ -69,6 +73,11 @@ export interface ConsequenceEntry {
   type: "consequence";
   text: string;
   tags: PersistentTag[];
+  /**
+   * Narration with inline `[...]` tags stripped — the story-facing text shown
+   * in prose mode. Falls back to `text` when absent. Empty for tag-only lines.
+   */
+  conclusion?: string;
 }
 
 export interface DialogueEntry {
@@ -121,8 +130,37 @@ export interface DungeonStatusMarkerEntry {
   state: "open" | "close";
 }
 
+/**
+ * A bare `++` line. Joins the conclusion before it and the conclusion after it
+ * into a single prose paragraph (each keeps its own provenance dot).
+ */
+export interface ConcatMarkerEntry {
+  type: "concat";
+}
+
+/**
+ * An indented line — treated as working/detail of the preceding entry (e.g. the
+ * roll breakdown under a `gen:`). Never surfaces in prose; shown in the sidebar.
+ */
+export interface ContinuationEntry {
+  type: "continuation";
+  text: string;
+}
+
 // Persistent tag types
-export type PersistentTag = NPCTag | LocationTag | EventTag | ClockTag | TrackTag | TimerTag | ThreadTag | PCTag | FoeTag | InventoryTag | WealthTag | RoomTag;
+export type PersistentTag =
+  | NPCTag
+  | LocationTag
+  | EventTag
+  | ClockTag
+  | TrackTag
+  | TimerTag
+  | ThreadTag
+  | PCTag
+  | FoeTag
+  | InventoryTag
+  | WealthTag
+  | RoomTag;
 
 export interface NPCTag {
   kind: "npc";
