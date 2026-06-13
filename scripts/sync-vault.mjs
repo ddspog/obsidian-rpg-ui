@@ -34,8 +34,8 @@
  * state, not shared history.
  *
  * Scope: syncs specific subdirectories (config, worldbuilding, glossary,
- *        adventurers, compendium, concepts) within each registered system.
- *        Files outside those prefixes are ignored.
+ *        adventuring, compendium, concepts, atlas, binder) within each
+ *        registered system. Files outside those prefixes are ignored.
  *
  * Usage:
  *   npm run sync                # sync (apply changes, confirm deletions)
@@ -74,7 +74,7 @@ if (PUSH_ONLY && PULL_ONLY) {
   process.exit(1);
 }
 
-const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventurers", "compendium", "concepts"];
+const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventuring", "compendium", "concepts", "atlas", "binder", "gm-tools"];
 
 // Each entry maps a system name to its plugin-mirror and vault-root directories.
 // Systems at the vault root (no `systems/` prefix) list their paths directly.

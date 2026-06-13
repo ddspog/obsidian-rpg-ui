@@ -32,18 +32,24 @@
 .card-stack-slot {
   position: absolute;
   bottom: 0;
-  transition: transform 0.25s ease, opacity 0.2s ease;
-  transform:
-    translateY(calc(var(--card-index) * -8px))
+  transition:
+    transform 0.25s ease,
+    opacity 0.2s ease;
+  transform: translateY(calc(var(--card-index) * -8px))
     rotate(calc((var(--card-index) - (var(--card-count) - 1) / 2) * 2.5deg));
   z-index: var(--card-index);
 }
 
 .card-stack-fan:hover .card-stack-slot {
-  transform:
-    translateY(calc(var(--card-index) * -60px))
-    rotate(0deg);
+  transform: translateY(calc(var(--card-index) * -60px)) rotate(0deg);
   z-index: calc(var(--card-count) - var(--card-index));
+}
+
+/* The card being pointed at sits above all its neighbors so it's fully
+ * visible. Higher specificity than the fan-hover rule above, and `+ 1` clears
+ * the max stacking value any sibling can take. */
+.card-stack-fan:hover .card-stack-slot:hover {
+  z-index: calc(var(--card-count) + 1);
 }
 
 /* ── TCG Card Face ── */
@@ -62,7 +68,10 @@
     0 1px 4px rgba(0, 0, 0, 0.15),
     inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
   font-family: inherit;
   text-align: center;
 }
@@ -88,13 +97,12 @@
 /* Art area — top portion of the card */
 .action-card-art {
   flex: 1;
-  background:
-    linear-gradient(
-      135deg,
-      light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.06)) 0%,
-      light-dark(rgba(106, 78, 42, 0.02), rgba(212, 168, 64, 0.02)) 50%,
-      light-dark(rgba(106, 78, 42, 0.06), rgba(212, 168, 64, 0.04)) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.06)) 0%,
+    light-dark(rgba(106, 78, 42, 0.02), rgba(212, 168, 64, 0.02)) 50%,
+    light-dark(rgba(106, 78, 42, 0.06), rgba(212, 168, 64, 0.04)) 100%
+  );
   border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
 }
 
@@ -126,4 +134,38 @@
   font-weight: 500;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Feature example showcase (feature.gm `example:`) ──────────────────────── */
+
+.lonelog-feature-example {
+  display: block;
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 2px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.02));
+}
+
+.lonelog-feature-example-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.lonelog-feature-example-prose {
+  margin-top: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+.lonelog-feature-example-prose p {
+  margin: 0 0 0.2rem;
+  font-style: italic;
+  color: var(--text-normal);
+  line-height: 1.5;
 }

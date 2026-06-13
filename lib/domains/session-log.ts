@@ -11,6 +11,9 @@ export interface SessionLogBlock {
   state_key: string;
   scene?: string;
   entities?: EntityReference[];
+  /** Wikilink to a GM Screen file declaring `rpg feature.gm` blocks. When set,
+   *  its features become the GM card stacks (replacing the built-in generics). */
+  gm?: string;
   body: string; // Lonelog content
 }
 
@@ -61,6 +64,11 @@ export function parseSessionLogBlock(source: string): SessionLogBlock {
     } else if (trimmed.startsWith("scene:")) {
       block.scene = trimmed
         .replace("scene:", "")
+        .trim()
+        .replace(/^["']|["']$/g, "");
+    } else if (trimmed.startsWith("gm:")) {
+      block.gm = trimmed
+        .replace("gm:", "")
         .trim()
         .replace(/^["']|["']$/g, "");
     } else if (trimmed.startsWith("entities:")) {

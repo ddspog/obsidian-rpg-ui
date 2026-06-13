@@ -18,6 +18,7 @@ import type {
   FeatureChoiceOption,
   FeatureDetails,
   FeatureLevelAddition,
+  GMFeature,
   SourceDoc,
   SourceDocKind,
   UnlockBlock,
@@ -56,7 +57,7 @@ function safeParse<T>(yaml: string, ctx: string): T | null {
   }
 }
 
-type FeatureBlockKind = "details" | "choice" | "unlock" | "level";
+type FeatureBlockKind = "details" | "choice" | "unlock" | "level" | "gm";
 
 interface OrderedBlock {
   kind: FeatureBlockKind;
@@ -64,40 +65,58 @@ interface OrderedBlock {
 }
 
 /**
- * Scan a document body for every `rpg feature.{details,choice,unlock,level}`
+ * Fold a feature fence body into a YAML string. In "fence mode" a `\n---\n`
+ * separator splits a YAML head from a trailing markdown body; the body is
+ * folded under a `text:` key (unless the head already declares one). Bodies
+ * with no separator pass through unchanged.
+ */
+function foldFenceText(rawBody: string): string {
+  const raw = rawBody.replace(/\n+$/, "");
+  const sepIdx = raw.indexOf("\n---\n");
+  const sepEnd = raw.indexOf("\n---");
+  const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
+  if (effectiveSep < 0) return raw;
+  const yaml = raw.slice(0, effectiveSep);
+  const fenceText =
+    raw
+      .slice(effectiveSep + 4)
+      .replace(/^\n+/, "")
+      .replace(/\n+$/, "") || undefined;
+  if (!fenceText || /^text\s*:/m.test(yaml)) return yaml;
+  return (
+    yaml +
+    "\ntext: |\n" +
+    fenceText
+      .split("\n")
+      .map((l) => "  " + l)
+      .join("\n")
+  );
+}
+
+/**
+ * Scan a document body for every `rpg feature.{details,choice,unlock,level,gm}`
  * fence and return them in document order. Callout markers are stripped first
  * so fences inside callouts are still picked up.
  */
 function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
   const cleaned = stripCalloutMarkers(body);
-  const re = /```rpg feature\.(details|choice|unlock|level)\s*\n([\s\S]*?)```/g;
+  const re = /```rpg feature\.(details|choice|unlock|level|gm)\s*\n([\s\S]*?)```/g;
   const blocks: OrderedBlock[] = [];
   for (const m of cleaned.matchAll(re)) {
-    const raw = m[2].replace(/\n+$/, "");
-    // Support fence mode: if body contains a `---` separator, only
-    // parse the YAML head. Store the fence body as a `text` field so
-    // feature descriptions remain accessible to the compendium.
-    const sepIdx = raw.indexOf("\n---\n");
-    const sepEnd = raw.indexOf("\n---");
-    const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1);
-    let yaml: string;
-    let fenceText: string | undefined;
-    if (effectiveSep >= 0) {
-      yaml = raw.slice(0, effectiveSep);
-      fenceText = raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
-    } else {
-      yaml = raw;
-    }
-    // Append text field to YAML if the body had markdown after ---
-    const finalYaml = fenceText && !yaml.match(/^text\s*:/m)
-      ? yaml + "\ntext: |\n" + fenceText.split("\n").map(l => "  " + l).join("\n")
-      : yaml;
     blocks.push({
       kind: m[1] as FeatureBlockKind,
-      yaml: finalYaml,
+      yaml: foldFenceText(m[2]),
     });
   }
   return blocks;
+}
+
+/**
+ * Parse a single `rpg feature.gm` fence body (as handed to the markdown
+ * post-processor) into a `GMFeature`. Returns null on a malformed block.
+ */
+export function parseGMFeatureBlock(source: string): GMFeature | null {
+  return safeParse<GMFeature>(foldFenceText(source), "feature.gm block");
 }
 
 /**
@@ -124,6 +143,7 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
   const details: FeatureDetails[] = [];
   const options: FeatureChoiceOption[] = [];
   const unlocks: UnlockBlock[] = [];
+  const gmFeatures: GMFeature[] = [];
 
   // Track the most recent details block so feature.level can attach without
   // needing an explicit `parent:` field.
@@ -169,6 +189,14 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
         currentDetails.levels.push(parsed);
         break;
       }
+      case "gm": {
+        const parsed = safeParse<GMFeature>(block.yaml, ctx);
+        if (parsed) {
+          if (!parsed.name) parsed.name = `__auto_gm_${gmFeatures.length}`;
+          gmFeatures.push(parsed);
+        }
+        break;
+      }
     }
   }
 
@@ -209,6 +237,7 @@ export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): Source
     details,
     options,
     unlocks,
+    gmFeatures,
     tables: extractTableBlocks(body).map((t) => ({ ...t, source: raw.$name })),
     parent_class,
   };

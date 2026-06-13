@@ -118,6 +118,174 @@ export interface FeatureAspect {
 // `RollAspect` from the same surface as the other feature types.
 export type { RollAspect, DamageSpec, RollSave, RollEffect } from "./roll";
 
+// ─── GM features (rpg feature.gm) ──────────────────────────────────────────────
+//
+// The GM-side analog of `FeatureDetails`. A `feature.gm` block declares one GM
+// feature whose nested aspect sub-objects each map to a lonelog prefix:
+//
+//   oracle    → ?            roll      → d:           table     → tbl:
+//   generator → gen:         event     → !            scene     → => / S##
+//
+// Aspects emit UNROLLED (`d10=`, bare `->`); the reader fills dice/answers via
+// the session-log's inline editing. `interpret` / `likelihood` are metadata used
+// to resolve the `->` answer (see ../gm/fate-chart.ts), not written into the line.
+// The emitter lives in ../gm/emit.ts.
+
+/** The lonelog-machinery stack a GM card lives under — mirrors the aspect keys. */
+export type GMStack = "oracle" | "roll" | "table" | "generator" | "event" | "scene";
+
+/**
+ * Worded outcomes keyed by a comparison expression evaluated against the roll
+ * (and the chaos factor). Object key order is significant — the first matching
+ * key wins. Supported key grammar (see ../gm/fate-chart.ts → resolveInterpret):
+ *   - vs CF:     ">CF" ">=CF" "<CF" "<=CF"
+ *   - vs number: ">18" ">=7" "<3" "<=15" "=20"
+ *   - range:     "4-15"  (inclusive)
+ *   - parity:    "even" "odd"  (combine with a comparison via comma: "<=CF, odd")
+ */
+export type GMInterpret = Record<string, string>;
+
+/** Likelihood band for a Mythic-style fate question — drives Fate Chart odds
+ *  against the current chaos factor (see ../gm/fate-chart.ts). */
+export type GMLikelihood =
+  | "certain"
+  | "near-certain"
+  | "very-likely"
+  | "likely"
+  | "50/50"
+  | "unlikely"
+  | "very-unlikely"
+  | "near-impossible"
+  | "impossible";
+
+/** `oracle:` aspect → emits a `?` question (plus a `->` answer line when the
+ *  oracle bears its own resolution: roll / likelihood / interpret). */
+export interface GMOracleAspect {
+  /** Yes/no or open question. Supports `{{placeholders}}`. */
+  question: string;
+  /** Attribution → `?(Name)`. */
+  attribution?: string;
+  /** Emit `[CF:n]` from the session chaos factor (a `{{cf}}` slot until session
+   *  CF state exists). */
+  chaos?: boolean;
+  /** Constant chaos factor — overrides `chaos` and bakes the literal `[CF:n]`. */
+  cf?: number;
+  /** Likelihood band → Fate Chart odds against the chaos factor. */
+  likelihood?: GMLikelihood;
+  /** Die rolled for the answer (e.g. `d100`). Emitted unrolled. */
+  roll?: string;
+  /** Contest target. `"CF"` expands to `CF <n>`; otherwise verbatim. */
+  vs?: string;
+  interpret?: GMInterpret;
+}
+
+/** `roll:` aspect → emits `d:` / `d(Name):`. */
+export interface GMRollAspect {
+  /** Attribution / check name → `d(Name):`. */
+  name?: string;
+  /** Dice expression, e.g. `d20+5`. Emitted unrolled. */
+  die: string;
+  /** Contest target, e.g. `DC 15` (or `CF`). */
+  vs?: string;
+  interpret?: GMInterpret;
+}
+
+/** `table:` aspect → emits `tbl:`. */
+export interface GMTableAspect {
+  /** Table reference — an `@[[…]]` call or a bare table name. */
+  source: string;
+  /** Die override; defaults to the referenced table's own die. */
+  die?: string;
+}
+
+/** `generator:` aspect → emits `gen:` plus an optional indented working line. */
+export interface GMGeneratorAspect {
+  /** Generator label → `gen: <name>`. */
+  name: string;
+  /** Optional roll for the indented working line. Emitted unrolled. */
+  roll?: string;
+  /** Contest target for the working line. `"CF"` expands to `CF <n>`. */
+  vs?: string;
+  /** Label of the indented working line (e.g. `Alterations`). */
+  work?: string;
+  interpret?: GMInterpret;
+  /**
+   * Follow-up strategies a result offers, keyed by the result text, then by the
+   * option label → the lonelog line that picking it generates (empty string =
+   * no generated line, just records the pick). When that result comes up the GM
+   * picks one from the `[opt/opt - ]` dropdown and the generated line is
+   * inserted under the generator. A generated line may itself reference a shared
+   * `rpg table.*` (e.g. `tbl: Scene Adjustment d10= ->`) or carry a nested
+   * `[a/b - ]` choice.
+   */
+  follow?: Record<string, Record<string, string>>;
+}
+
+/** `event:` aspect → emits `!` (optionally preceded by `gen:` focus/meaning). */
+export interface GMEventAspect {
+  /** World-event text → `! <text>`. Supports `{{placeholders}}`. Defaults to a
+   *  `{{event}}` slot. */
+  text?: string;
+  /** Event-focus oracle reference → a leading `gen:` line. */
+  focus?: string;
+  /** Meaning-table references → leading `gen:` lines. */
+  meaning?: string[];
+}
+
+/** `scene:` aspect → emits a `=>` consequence (scene-opening or plain). */
+export interface GMSceneAspect {
+  /** Opens a numbered scene → `=> S## <title>`. Supports `{{placeholders}}`. */
+  opens?: string;
+  /** Plain (non-scene) consequence → `=> <text>`. */
+  consequence?: string;
+}
+
+/**
+ * Fill-in values that showcase a GM feature in use. Combined with the feature's
+ * emit template they produce a concrete lonelog excerpt, rendered in the feature
+ * card as an "Example" (mechanical entry + narrated prose). See ../gm/example.ts.
+ *
+ * Reserved keys: `rolls` (die expression → rolled value, e.g. `{ d10: 8 }`),
+ * `result` (explicit `->` outcome — otherwise computed from the aspect's
+ * `interpret`/`likelihood` using the roll), `narration` (alias that fills
+ * `{{title}}` when no `title` is given). Every other key fills the matching
+ * `{{placeholder}}` in the emitted template (`scene`, `cf`, `n`, `title`, …).
+ */
+export interface GMExample {
+  rolls?: Record<string, number>;
+  result?: string;
+  narration?: string;
+  [placeholder: string]: unknown;
+}
+
+/**
+ * One GM feature, parsed from a `rpg feature.gm` block. Nested aspect
+ * sub-objects chain (in canonical order: oracle, roll, table, generator, event,
+ * scene) into one multi-line lonelog block when the card is used. The card's
+ * stack defaults to the first declared aspect (override with `stack:`).
+ */
+export interface GMFeature {
+  name: string;
+  /** Card description (markdown). */
+  text?: string;
+  /** Override the card's stack (defaults to the first declared aspect). */
+  stack?: GMStack;
+  /** Optional limited uses (reuses the consumable mechanics). */
+  uses?: number;
+  /** Free-form recovery cadence for `uses`. */
+  recovery?: string;
+  /** Homebrew attribution badge. */
+  source?: string;
+  /** Fill-in values that showcase the feature in use (rendered as an Example). */
+  example?: GMExample;
+  oracle?: GMOracleAspect;
+  roll?: GMRollAspect;
+  table?: GMTableAspect;
+  generator?: GMGeneratorAspect;
+  event?: GMEventAspect;
+  scene?: GMSceneAspect;
+}
+
 export interface FeatureDetails {
   name: string;
   /**
@@ -440,6 +608,9 @@ export interface SourceDoc {
   options: FeatureChoiceOption[];
   unlocks: UnlockBlock[];
   tables: TableDef[];
+  /** GM features parsed from `rpg feature.gm` blocks (a GM Screen file). Empty
+   *  for ordinary class/lineage/etc. docs. */
+  gmFeatures?: GMFeature[];
   parent_class?: string;
 }
 

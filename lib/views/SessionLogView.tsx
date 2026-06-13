@@ -40,8 +40,10 @@ import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
 import { extractCardsFromEntity, getEntitySpentState } from "lib/services/session-feature-loader";
-import { buildGMStacks } from "lib/domains/session-log/gm-cards";
+import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
+import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
+import type { GMFeature } from "lib/domains/features/types";
 import type { CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
 import { initSessionConsumables, spendUse } from "lib/domains/session-log/consumable-state";
 import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
@@ -80,6 +82,7 @@ class SessionLogMarkdown extends ReactMarkdown {
   private baseView: BaseView;
   private logData: SessionLogData | null = null;
   private entities: EntityData[] = [];
+  private gmFeatures: GMFeature[] = [];
   private stateKey = "default-log";
   private initialSidebarOpen = false;
 
@@ -116,10 +119,56 @@ class SessionLogMarkdown extends ReactMarkdown {
         this.entities = await this.entityResolver.resolveEntities(block.entities);
       }
 
+      if (block.gm) {
+        this.gmFeatures = await this.loadGMScreen(block.gm);
+      }
+
       this.renderSessionLog();
     } catch (error) {
       console.error("Error processing session log:", error);
       this.containerEl.innerHTML = `<div class="notice notice-error">Error processing session log: ${error instanceof Error ? error.message : String(error)}</div>`;
+    }
+  }
+
+  /** Resolve a `[[wikilink]]` (or bare name) to a vault file, relative to this note. */
+  private resolveLink(ref: string): TFile | null {
+    const linktext = ref.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
+    const f = this.baseView.app.metadataCache.getFirstLinkpathDest(linktext, this.filePath);
+    return f instanceof TFile ? f : null;
+  }
+
+  /** Parse a file's `rpg feature.gm` blocks into GMFeatures. */
+  private async loadGMFeatures(file: TFile): Promise<GMFeature[]> {
+    const content = await this.baseView.app.vault.read(file);
+    return parseSourceDoc({ $name: file.basename, $contents: content }, "class").gmFeatures ?? [];
+  }
+
+  /**
+   * Load a linked GM Screen: its own `rpg feature.gm` blocks plus every tool it
+   * assigns via the `gm-tools:` frontmatter (each a `[[wikilink]]` to a tool page
+   * under gm-tools/<type>/). All become GM card stacks. The wikilink is resolved
+   * relative to this note via Obsidian's metadata cache.
+   */
+  private async loadGMScreen(ref: string): Promise<GMFeature[]> {
+    try {
+      const file = this.resolveLink(ref);
+      if (!file) {
+        console.warn(`rpg log: GM screen "${ref}" not found`);
+        return [];
+      }
+      const features = await this.loadGMFeatures(file);
+
+      const fm = this.baseView.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
+      const assigned = fm?.["gm-tools"];
+      const refs = Array.isArray(assigned) ? assigned : assigned != null ? [assigned] : [];
+      for (const toolRef of refs) {
+        const toolFile = this.resolveLink(String(toolRef));
+        if (toolFile) features.push(...(await this.loadGMFeatures(toolFile)));
+      }
+      return features;
+    } catch (error) {
+      console.error("Error loading GM screen:", error);
+      return [];
     }
   }
 
@@ -202,7 +251,14 @@ class SessionLogMarkdown extends ReactMarkdown {
       }
     }
 
-    const gmStacks = buildGMStacks();
+    const gmStacks = this.gmFeatures.length > 0 ? buildGMStacksFromFeatures(this.gmFeatures) : buildGMStacks();
+    // Authored GM cards can carry `uses`; fold them into the consumable set so
+    // their counters render and spend in-session.
+    for (const stack of gmStacks) {
+      for (const card of stack.cards) {
+        if (card.maxUses != null) allCards.push(card);
+      }
+    }
     return { pcStacks, gmStacks, allCards, sheetSpent };
   }
 

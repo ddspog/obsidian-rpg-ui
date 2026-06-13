@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildGMStacks, getGMCards, GM_ACTOR } from "./gm-cards";
+import { buildGMStacks, buildGMStacksFromFeatures, getGMCards, GM_ACTOR } from "./gm-cards";
+import type { GMFeature } from "../features/types";
 
 describe("GM Cards", () => {
   describe("getGMCards", () => {
@@ -32,12 +33,7 @@ describe("GM Cards", () => {
     it("returns stacks grouped by category", () => {
       const stacks = buildGMStacks();
       expect(stacks.length).toBe(4);
-      expect(stacks.map((s) => s.bucket)).toEqual([
-        "narration",
-        "oracle",
-        "mechanics",
-        "meta",
-      ]);
+      expect(stacks.map((s) => s.bucket)).toEqual(["narration", "oracle", "mechanics", "meta"]);
     });
 
     it("sets actorType to gm on all stacks", () => {
@@ -80,6 +76,54 @@ describe("GM Cards", () => {
           expect(card.logTemplate).toContain("{{");
         }
       }
+    });
+  });
+
+  describe("buildGMStacksFromFeatures", () => {
+    const features: GMFeature[] = [
+      {
+        name: "Scene Check",
+        oracle: { question: "Does {{scene}} occur?", chaos: true },
+        generator: { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Alterations" },
+        scene: { opens: "S{{n}} {{title}}" },
+      },
+      { name: "Perception", roll: { name: "Perception", die: "d20", vs: "DC 12" } },
+      { name: "Weather", table: { source: "@[[Tables/Weather]]", die: "d6" } },
+      { name: "Plot Twist", uses: 1, recovery: "1/session", generator: { name: "Plot Twist", roll: "d100" } },
+    ];
+
+    it("groups authored features into stacks by their primary aspect, in canonical order", () => {
+      const stacks = buildGMStacksFromFeatures(features);
+      expect(stacks.map((s) => s.bucket)).toEqual(["oracle", "roll", "table", "generator"]);
+      for (const stack of stacks) {
+        expect(stack.actorType).toBe("gm");
+        expect(stack.actor).toBe(GM_ACTOR);
+      }
+    });
+
+    it("puts a card's full multi-line emitted lonelog into its logTemplate", () => {
+      const oracle = buildGMStacksFromFeatures(features).find((s) => s.bucket === "oracle")!;
+      const card = oracle.cards.find((c) => c.name === "Scene Check")!;
+      expect(card.logTemplate).toBe(
+        [
+          "? [CF:{{cf}}] Does {{scene}} occur?",
+          "gen: Testing the Expected Scene",
+          "  Alterations: d10= vs CF {{cf}} ->",
+          "=> S{{n}} {{title}}",
+        ].join("\n")
+      );
+    });
+
+    it("carries uses/recovery onto the card", () => {
+      const gen = buildGMStacksFromFeatures(features).find((s) => s.bucket === "generator")!;
+      const twist = gen.cards.find((c) => c.name === "Plot Twist")!;
+      expect(twist.maxUses).toBe(1);
+      expect(twist.recovery).toBe("1/session");
+    });
+
+    it("skips features with no emittable aspect and returns nothing for an empty screen", () => {
+      expect(buildGMStacksFromFeatures([{ name: "Empty" }])).toEqual([]);
+      expect(buildGMStacksFromFeatures([])).toEqual([]);
     });
   });
 });

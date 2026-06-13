@@ -88,6 +88,14 @@
   margin: 0;
 }
 
+/* Source / attribution citation (e.g. a GM feature's system credit). */
+.rpg-feature-card-source {
+  margin: var(--size-4-2, 0.5rem) 0 0;
+  font-size: var(--font-ui-smaller);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 .rpg-feature-card menu,
 .rpg-feature-card ul {
   display: flex;

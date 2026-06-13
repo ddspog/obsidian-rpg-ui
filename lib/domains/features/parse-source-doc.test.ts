@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { parseSourceDoc, parseSourceDocs } from "./parse-source-doc";
+import { parseSourceDoc, parseSourceDocs, parseGMFeatureBlock } from "./parse-source-doc";
 
 const CLERIC_BODY = `
 # Cleric
@@ -306,5 +306,94 @@ text: A pool of divine energy.
       max: { 2: 1, 6: 2 },
       recovery: "short or long rest",
     });
+  });
+});
+
+const GM_SCREEN_BODY = `
+# Mythic GME
+
+A GM Screen of solo-play oracles.
+
+\`\`\`rpg feature.gm
+name: Scene Check
+oracle:
+  question: "Does {{scene}} occur?"
+  chaos: true
+generator:
+  name: Testing the Expected Scene
+  roll: d10
+  vs: CF
+  work: Alterations
+  interpret:
+    ">CF": Expected Scene
+    "<=CF, even": Altered Scene
+    "<=CF, odd": Interrupt Scene
+scene:
+  opens: "S{{n}} {{title}}"
+---
+Test whether the expected scene plays out as imagined.
+\`\`\`
+
+\`\`\`rpg feature.gm
+name: Fate Question
+oracle:
+  question: "Is the door locked?"
+  chaos: true
+  likelihood: likely
+  roll: d100
+\`\`\`
+`;
+
+describe("parseSourceDoc — feature.gm blocks", () => {
+  it("pulls GMFeatures out of feature.gm code blocks with nested aspects", () => {
+    const doc = parseSourceDoc({ $name: "Mythic GME", $contents: GM_SCREEN_BODY }, "class");
+    expect(doc.gmFeatures).toHaveLength(2);
+
+    const sceneCheck = doc.gmFeatures?.find((g) => g.name === "Scene Check");
+    expect(sceneCheck).toMatchObject({
+      name: "Scene Check",
+      oracle: { question: "Does {{scene}} occur?", chaos: true },
+      generator: { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Alterations" },
+      scene: { opens: "S{{n}} {{title}}" },
+    });
+    // interpret keys preserve authored order
+    expect(Object.keys(sceneCheck!.generator!.interpret!)).toEqual([">CF", "<=CF, even", "<=CF, odd"]);
+    // body after `---` folds into the card text
+    expect(sceneCheck?.text).toContain("Test whether the expected scene");
+
+    const fate = doc.gmFeatures?.find((g) => g.name === "Fate Question");
+    expect(fate?.oracle).toMatchObject({ likelihood: "likely", roll: "d100", chaos: true });
+  });
+
+  it("leaves gmFeatures empty for ordinary docs and keeps feature.details unaffected", () => {
+    const doc = parseSourceDoc({ $name: "Cleric", $contents: CLERIC_BODY }, "class");
+    expect(doc.gmFeatures).toEqual([]);
+    expect(doc.details).toHaveLength(3);
+  });
+});
+
+describe("parseGMFeatureBlock", () => {
+  it("parses a single feature.gm fence body and folds trailing markdown into text", () => {
+    const body = [
+      "name: Scene Check",
+      "oracle:",
+      '  question: "Does {{scene}} occur?"',
+      "  chaos: true",
+      "scene:",
+      '  opens: "S{{n}} {{title}}"',
+      "---",
+      "Test whether the expected scene plays out.",
+    ].join("\n");
+    const f = parseGMFeatureBlock(body);
+    expect(f).toMatchObject({
+      name: "Scene Check",
+      oracle: { question: "Does {{scene}} occur?", chaos: true },
+      scene: { opens: "S{{n}} {{title}}" },
+    });
+    expect(f?.text).toContain("Test whether the expected scene");
+  });
+
+  it("returns null for an empty body", () => {
+    expect(parseGMFeatureBlock("")).toBeNull();
   });
 });
