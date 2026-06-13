@@ -376,12 +376,24 @@ function resolveCall(
         return;
       }
 
-      // ── Special case: `bare` renders the whole note body ───────────────
-      // `@[[file]].bare()` renders the entire note as Markdown — every block
-      // (stat.*, table, prose) and inline call resolves — minus the local-only
-      // rule.related / rule.notes blocks (already dropped from `cleaned`) and
-      // the YAML frontmatter.
+      // ── Special case: `bare` renders the note body as Markdown ─────────
+      // `@[[file]].bare()` renders the whole note — every block (stat.*, table,
+      // prose) and inline call resolves — minus the local-only rule.related /
+      // rule.notes blocks (already dropped from `cleaned`), the YAML frontmatter,
+      // AND the file's first heading (bare = no title heading; provide your own).
+      // `@[[file]].bare(id)` renders just the `rule.content` block with that id
+      // (or `.bare(0)` the Nth rpg fence) — body only, no heading.
       if (call.fn === "bare") {
+        const bareArg = call.args[0];
+        let bareBody: string | null = null;
+        if (typeof bareArg === "string") {
+          bareBody = findContentBlockById(cleaned, bareArg);
+        } else if (typeof bareArg === "number" && Number.isInteger(bareArg) && bareArg >= 0) {
+          bareBody = selectFenceBodyByIndex(cleaned, bareArg);
+        }
+        if (bareBody === null) {
+          bareBody = stripFirstHeading(stripFileFrontmatter(cleaned));
+        }
         const root = ReactDOM.createRoot(span);
         child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
         span.classList.remove("rpg-call--pending");
@@ -389,7 +401,7 @@ function resolveCall(
         span.textContent = "";
         root.render(
           React.createElement(Markdown, {
-            source: stripFileFrontmatter(cleaned),
+            source: bareBody,
             sourcePath: targetPath,
           })
         );
