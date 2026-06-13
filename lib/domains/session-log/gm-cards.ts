@@ -1,4 +1,6 @@
 import { CardStack } from "./card-types";
+import type { GMFeature, GMStack } from "../features/types";
+import { emitGMFeature, gmPrimaryStack, gmStacks } from "../gm/emit";
 
 export interface GMCard {
   id: string;
@@ -119,6 +121,58 @@ export function buildGMStacks(): CardStack[] {
         text: gm.icon,
         source: "gm",
         actor: GM_ACTOR,
+      })),
+    });
+  }
+
+  return stacks;
+}
+
+/** Stack order + labels for authored `feature.gm` cards (one stack per aspect). */
+const GM_STACK_ORDER: GMStack[] = ["oracle", "roll", "table", "generator", "event", "scene"];
+const GM_STACK_LABELS: Record<GMStack, string> = {
+  oracle: "Oracle",
+  roll: "Roll",
+  table: "Table",
+  generator: "Generator",
+  event: "Event",
+  scene: "Scene",
+};
+
+/**
+ * Build GM card stacks from authored `feature.gm` features (a linked GM Screen
+ * file). Each feature emits its multi-line lonelog template up front and lands
+ * in the stack of its primary aspect; stacks render in canonical aspect order.
+ */
+export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
+  const byStack = new Map<GMStack, GMFeature[]>();
+  for (const feature of features) {
+    if (gmStacks(feature).length === 0) continue; // no emittable aspect
+    const stack = gmPrimaryStack(feature)!;
+    const list = byStack.get(stack) ?? [];
+    list.push(feature);
+    byStack.set(stack, list);
+  }
+
+  const stacks: CardStack[] = [];
+  for (const stack of GM_STACK_ORDER) {
+    const feats = byStack.get(stack);
+    if (!feats || feats.length === 0) continue;
+    stacks.push({
+      actor: GM_ACTOR,
+      actorType: "gm",
+      bucket: stack,
+      label: GM_STACK_LABELS[stack],
+      cards: feats.map((feature) => ({
+        id: `gm:${stack}:${feature.name}`,
+        name: feature.name,
+        bucket: stack as any,
+        logTemplate: emitGMFeature(feature),
+        text: feature.text,
+        source: "gm",
+        actor: GM_ACTOR,
+        maxUses: feature.uses,
+        recovery: feature.recovery,
       })),
     });
   }

@@ -298,11 +298,12 @@
   font-size: 0.85em;
 }
 
-/* Flat by default: tonal layering, hairline separators, no card chrome. */
+/* Flat by default: tonal layering, hairline separators, no card chrome. The
+ * base look is shared (under the common `.lonelog-entries` class); the
+ * interactive behavior below is the live sidebar's only. */
 .lonelog-sidebar-item {
   position: relative;
   padding: 0.4rem 0.1rem;
-  cursor: pointer;
   font-size: 0.72em;
   border-bottom: 1px solid var(--background-modifier-border);
   scroll-margin-block: 1rem;
@@ -312,21 +313,26 @@
   border-bottom: none;
 }
 
-.lonelog-sidebar-item:hover {
+.lonelog-sidebar .lonelog-sidebar-item {
+  cursor: pointer;
+}
+
+.lonelog-sidebar .lonelog-sidebar-item:hover {
   background: var(--background-modifier-hover);
 }
 
-.lonelog-sidebar-item.is-selected {
+.lonelog-sidebar .lonelog-sidebar-item.is-selected {
   background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
 }
 
-.lonelog-sidebar-item:focus-visible {
+.lonelog-sidebar .lonelog-sidebar-item:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--interactive-accent);
 }
 
-/* Clamp long entries until selected, with a soft fade where they are cut. */
-.lonelog-sidebar-item:not(.is-selected) {
+/* Clamp long entries until selected, with a soft fade where they are cut.
+ * Sidebar-only — the read-only example shows entries in full. */
+.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
   max-height: 6rem;
   overflow: hidden;
   mask-image: linear-gradient(to bottom, #000 4rem, transparent);
@@ -342,8 +348,8 @@
 
 /* Inherit the entry's reduced size — Obsidian sets a font-size on table cells
  * directly, which would otherwise override the size inherited from the item. */
-.lonelog-sidebar .lonelog-sidebar-table,
-.lonelog-sidebar .lonelog-sidebar-table td {
+.lonelog-entries .lonelog-sidebar-table,
+.lonelog-entries .lonelog-sidebar-table td {
   font-size: inherit;
 }
 
@@ -415,6 +421,86 @@
 .lonelog-formula-result {
   color: var(--text-normal);
   font-weight: 500;
+}
+
+/* Inline choice dropdown (`[a/b/c - sel]`). Quiet at rest like the other inline
+ * controls (die values, CF threshold, result inputs): it hugs the current
+ * selection, carries a small caret, and reveals an underline + accent on
+ * hover/focus. A transparent native <select> overlays the visible label so it
+ * stays a real, keyboard-operable control with the native option list, while
+ * the label (not the longest option) sets the width. */
+.lonelog-choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24em;
+  margin-left: 0.4em;
+  padding: 0 0.05em;
+  color: var(--text-normal);
+  font-weight: 600;
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Unset: a muted italic prompt, not a committed value. */
+.lonelog-choice.is-empty {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.lonelog-choice:hover,
+.lonelog-choice:focus-within {
+  color: var(--text-accent);
+  border-bottom-color: currentColor;
+}
+
+.lonelog-choice-label {
+  white-space: nowrap;
+}
+
+.lonelog-choice-caret {
+  flex: none;
+  width: 0.6em;
+  height: 0.4em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+  transition: opacity 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lonelog-choice:hover .lonelog-choice-caret,
+.lonelog-choice:focus-within .lonelog-choice-caret {
+  opacity: 1;
+}
+
+/* The real control: transparent, covering the label, so clicks/keys land on it
+ * and the native option list anchors to the trigger. */
+.lonelog-choice-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  opacity: 0;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lonelog-choice,
+  .lonelog-choice-caret {
+    transition: none;
+  }
 }
 
 /* Editable result: an inline input merging with the result text (like the

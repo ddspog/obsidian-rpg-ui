@@ -12,6 +12,7 @@
 import * as React from "react";
 import type { Formula, FormulaCheck, FormulaTerm, DiceTerm, ThresholdTerm } from "lib/domains/session-log/formula";
 import { combineDiceSlots } from "lib/domains/session-log/formula";
+import { splitResultChoice, buildResultChoice, type ChoiceToken } from "lib/domains/session-log/choice";
 
 /** Keep clicks/keys inside an input from triggering the row's scroll/select. */
 const stopEvent = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -31,7 +32,17 @@ export interface DieEditContext {
   onResultChange?: (value: string) => void;
 }
 
-export function FormulaView({ formula, edit }: { formula: Formula; edit?: DieEditContext }) {
+export function FormulaView({
+  formula,
+  edit,
+  onChoice,
+}: {
+  formula: Formula;
+  edit?: DieEditContext;
+  /** Overrides result write-back for a choice token: called with the picked
+   *  option (used by the feature example to insert the generated line). */
+  onChoice?: (selected: string) => void;
+}) {
   return (
     <span className="lonelog-formula">
       <CheckView check={formula.check} edit={edit} />
@@ -40,23 +51,102 @@ export function FormulaView({ formula, edit }: { formula: Formula; edit?: DieEdi
           <span className="lonelog-formula-yields" aria-hidden="true">
             →
           </span>
-          {edit?.onResultChange ? (
-            <input
-              type="text"
-              className="lonelog-formula-result lonelog-formula-result-input"
-              aria-label="Result"
-              value={edit.resultValue ?? formula.result}
-              size={Math.max((edit.resultValue ?? formula.result).length, 1)}
-              spellCheck={false}
-              onClick={stopEvent}
-              onKeyDown={stopEvent}
-              onChange={(e) => edit.onResultChange!(e.target.value)}
-            />
-          ) : (
-            <span className="lonelog-formula-result">{formula.result}</span>
-          )}
+          <ResultView result={formula.result} edit={edit} onChoice={onChoice} />
         </>
       )}
+    </span>
+  );
+}
+
+/**
+ * The text after `→`. When it carries a choice token (`[a/b/c - sel]`) the
+ * leading text plus a dropdown of the options render; otherwise it's an
+ * editable input (when editable) or static text. Picking calls `onChoice` when
+ * provided (example: insert the generated line), else writes the selection back
+ * through `onResultChange` (live sidebar).
+ */
+function ResultView({
+  result,
+  edit,
+  onChoice,
+}: {
+  result: string;
+  edit?: DieEditContext;
+  onChoice?: (selected: string) => void;
+}) {
+  // The pending edit (if any) is the source of truth for the current selection.
+  const text = edit?.resultValue ?? result;
+  const { before, choice } = splitResultChoice(text);
+
+  if (choice) {
+    const onPick = onChoice
+      ? onChoice
+      : edit?.onResultChange
+        ? (selected: string) => edit.onResultChange!(buildResultChoice(before, choice.options, selected))
+        : undefined;
+    return (
+      <>
+        {before && <span className="lonelog-formula-result">{before}</span>}
+        <ChoiceSelect choice={choice} onPick={onPick} />
+      </>
+    );
+  }
+
+  if (edit?.onResultChange) {
+    const val = edit.resultValue ?? result;
+    return (
+      <input
+        type="text"
+        className="lonelog-formula-result lonelog-formula-result-input"
+        aria-label="Result"
+        value={val}
+        size={Math.max(val.length, 1)}
+        spellCheck={false}
+        onClick={stopEvent}
+        onKeyDown={stopEvent}
+        onChange={(e) => edit.onResultChange!(e.target.value)}
+      />
+    );
+  }
+  return <span className="lonelog-formula-result">{result}</span>;
+}
+
+/** A `[a/b/c - sel]` choice rendered as a quiet inline dropdown that hugs its
+ *  current selection. A transparent native `<select>` overlays the visible
+ *  label, so it stays a real keyboard-operable control with the native option
+ *  list while the label sizes to the selection (not the longest option). With
+ *  `onPick` the selection writes back to the log line; without it (read-only
+ *  example) the pick is local. */
+function ChoiceSelect({ choice, onPick }: { choice: ChoiceToken; onPick?: (selected: string) => void }) {
+  const [local, setLocal] = React.useState(choice.selected);
+  const value = onPick ? choice.selected : local;
+  return (
+    <span className={`lonelog-choice${value ? "" : " is-empty"}`}>
+      <span className="lonelog-choice-label" aria-hidden="true">
+        {value || "pick"}
+      </span>
+      <svg className="lonelog-choice-caret" viewBox="0 0 10 6" aria-hidden="true">
+        <path d="M1 1 L5 5 L9 1" />
+      </svg>
+      <select
+        className="lonelog-choice-native"
+        aria-label="Follow-up strategy"
+        value={value}
+        onClick={stopEvent}
+        onKeyDown={stopEvent}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (onPick) onPick(v);
+          else setLocal(v);
+        }}
+      >
+        <option value="">pick</option>
+        {choice.options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
     </span>
   );
 }

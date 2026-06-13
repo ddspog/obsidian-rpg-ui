@@ -40,6 +40,10 @@ export default withMermaid(
 					items: [{ text: "Rule: Related", link: "/components/rule-related" }],
 				},
 				{
+					text: "Session Log",
+					items: [{ text: "GM Features", link: "/components/feature-gm" }],
+				},
+				{
 					text: "Character Sheet",
 					items: [
 						{ text: "Frontmatter", link: "/character-sheet/frontmatter" },

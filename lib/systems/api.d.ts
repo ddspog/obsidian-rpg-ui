@@ -734,6 +734,71 @@ export interface UnlockBlock {
 
 export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent" | "item";
 
+/** GM-feature aspects (rpg feature.gm) — see lib/domains/features/types.ts. */
+export type GMStack = "oracle" | "roll" | "table" | "generator" | "event" | "scene";
+export type GMInterpret = Record<string, string>;
+export type GMLikelihood =
+  | "certain"
+  | "near-certain"
+  | "very-likely"
+  | "likely"
+  | "50/50"
+  | "unlikely"
+  | "very-unlikely"
+  | "near-impossible"
+  | "impossible";
+
+export interface GMOracleAspect {
+  question: string;
+  attribution?: string;
+  chaos?: boolean;
+  cf?: number;
+  likelihood?: GMLikelihood;
+  roll?: string;
+  vs?: string;
+  interpret?: GMInterpret;
+}
+export interface GMRollAspect {
+  name?: string;
+  die: string;
+  vs?: string;
+  interpret?: GMInterpret;
+}
+export interface GMTableAspect {
+  source: string;
+  die?: string;
+}
+export interface GMGeneratorAspect {
+  name: string;
+  roll?: string;
+  vs?: string;
+  work?: string;
+  interpret?: GMInterpret;
+}
+export interface GMEventAspect {
+  text?: string;
+  focus?: string;
+  meaning?: string[];
+}
+export interface GMSceneAspect {
+  opens?: string;
+  consequence?: string;
+}
+export interface GMFeature {
+  name: string;
+  text?: string;
+  stack?: GMStack;
+  uses?: number;
+  recovery?: string;
+  source?: string;
+  oracle?: GMOracleAspect;
+  roll?: GMRollAspect;
+  table?: GMTableAspect;
+  generator?: GMGeneratorAspect;
+  event?: GMEventAspect;
+  scene?: GMSceneAspect;
+}
+
 export interface SourceDoc {
   name: string;
   kind: SourceDocKind;
@@ -742,6 +807,7 @@ export interface SourceDoc {
   options: FeatureChoiceOption[];
   unlocks: UnlockBlock[];
   tables: TableDef[];
+  gmFeatures?: GMFeature[];
   parent_class?: string;
 }
 
