@@ -46,5 +46,5 @@ In addition, this book features other familiars that might have specific require
 |Robot, Drone|278|
 [ADDITIONAL FAMILIARS #css/tx/table]
 ```
-# A
-`@[[bestiary/animals/]].filter(A prefix name).highlight().stat()`
+# T
+`@[[bestiary/animals/]].filter(T prefix name).highlight().stat()`

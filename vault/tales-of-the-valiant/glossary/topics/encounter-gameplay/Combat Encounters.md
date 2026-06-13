@@ -13,7 +13,7 @@ aliases:
 `@[[combat.webp]].banner(tall)`
 A typical combat encounter is a clash between two sides, a flurry of weapon swings, feints, parries, footwork, and spellcasting. The game organizes this chaos into a cycle of rounds and turns. 
 
-A round represents about 6 seconds in the game world. During a round, each participant takes a turn. The order of turns is determined at the beginning of a combat encounter, when all participants—PCs and monsters alike—roll [[initiative]]. Once everyone has taken a turn, if neither side has won, a new round begins. 
+A round represents about 6 seconds in the game world. During a round, each participant takes a turn. The order of turns is determined at the beginning of a combat encounter, when all participants—PCs and monsters alike—roll [[Initiative]]. Once everyone has taken a turn, if neither side has won, a new round begins. 
 
 GM-facing information regarding building and running combat encounters is available in the _Monster Vault_.
 ````rpg rule.tab

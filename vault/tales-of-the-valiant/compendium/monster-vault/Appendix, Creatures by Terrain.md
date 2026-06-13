@@ -12,11 +12,10 @@ name: [Any, CR]
 paginate: auto
 entries:
   - [Commoner, 0]
-  - ["Bandit, Cultist, Guard, Kobold, Noble", 1/8]
-  - ["Acolyte, Elf (Drow), Skeleton, Star Crow", 1/4]
-  - ["Scout, Thug", 1/2]
+  - ["Bandit, Cultist, Guard", 1/8]
+  - ["Elf (Drow), Skeleton, Star Crow", 1/4]
   - ["Mage Apprentice, Spy, Vampire (Thrall)", 1]
-  - ["Bandit Captain, Berserker, Cultist (Fanatic), Mechanist, Nimbostratus Spirit, Priest", 2]
+  - ["Bandit Captain, Berserker, Cultist (Fanatic), Mechanist, Nimbostratus Spirit", 2]
   - ["Knight, Kobold (Swiftblade), Veteran", 3]
   - ["Bard, Chol (Col), Fey Guardian, Gladiator", 5]
   - [Mage, 6]
@@ -99,7 +98,7 @@ entries:
   - ["Awakened Shrub, Badger, Cat, Deer, Frog, Fungi (Shrieker), Hawk, Hyena, Jackal, Lizard, Owi, Rat, Raven, Spider, Weasel", 0]
   - ["Baboon, Hawk (Blood), Mastiff, Snake (Flying), Snake (Poisonous), Stirge, Wild Warrior", 1/8]
   - ["Badger (Giant), Bat (Giant), Bat (Swarm of Bats), Blink Dog, Boar, Dragonette (Pseudodragon), Frog (Giant), Goblin, Lizard (Giant), Rat (Giant), Rat (Swarm of Rats), Raven (Swarm of Ravens), Snake (Constrictor), Snake (Giant Poisonous), Spider (Giant Wolf), Sprite, Weasel (Giant), Wolf", 1/4]
-  - ["Ape, Bear (Black), Dinosaur (Velociraptor), Goblin (Hobgoblin), Insect (Giant Wasp), Insect (Swarm of Insects), Lizardfolk, Mycolid (Commoner), Orc, Satyr, Scout, Sporeborn (Skullbloom), Wood Herald, Worg", 1/2]
+  - ["Ape, Bear (Black), Dinosaur (Velociraptor), Goblin (Hobgoblin), Insect (Giant Wasp), Insect (Swarm of Insects), Lizardfolk, Mycolid (Commoner), Orc, Satyr, Sporeborn (Skullbloom), Wood Herald, Worg", 1/2]
   - ["Dryad, Flinderbeast, Frog (Giant Poisonous), Goblin (Bugbear), Goblin (Goblin Captain), Hyena (Giant), Spider (Giant), Tiger, Wolf (Dire)", 1]
   - call: "@[[worldbuilding/bestiary/]].filter(habitat like /Forest/).group(cr).block(0)"
     format: [ "${links}", "${cr}" ]

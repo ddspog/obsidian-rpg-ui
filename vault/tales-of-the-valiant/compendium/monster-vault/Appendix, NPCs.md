@@ -40,3 +40,7 @@ For example, a powerful spellcaster might send its goblin mage apprentice to sto
 `@[[bestiary/npcs/]].filter(G prefix name).highlight().bare()`
 # N
 `@[[bestiary/npcs/]].filter(N prefix name).highlight().bare()`
+# P
+`@[[bestiary/npcs/]].filter(P prefix name).highlight().bare()`
+# S
+`@[[bestiary/npcs/]].filter(S prefix name).highlight().bare()`
