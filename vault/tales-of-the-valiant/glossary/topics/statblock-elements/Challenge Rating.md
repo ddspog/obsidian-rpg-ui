@@ -10,7 +10,7 @@ tab-name: CR & Basics
 ## Name
 This is what most people call this kind of creature. Some creatures have alternate names, regional names, or even specific titles, all of which are included in its lore.
 ## Challenge Rating (CR)
-A creature’s [[challenge rating]] (CR) tells you how great a threat the creature is. An appropriately equipped and well‑rested party of four adventurers should be able to defeat a creature with a CR equal to its level without suffering any deaths. For example, a party of four 3rd-level characters should find a creature with a CR of 3 to be a worthy challenge, but not a deadly one. 
+A creature’s [[Challenge Rating]] (CR) tells you how great a threat the creature is. An appropriately equipped and well‑rested party of four adventurers should be able to defeat a creature with a CR equal to its level without suffering any deaths. For example, a party of four 3rd-level characters should find a creature with a CR of 3 to be a worthy challenge, but not a deadly one. 
 
 Creatures that are significantly weaker than 1st-level characters have a challenge rating lower than 1. Creatures with a challenge rating of 0 are insignificant except in large numbers. Some creatures present a greater challenge than even a typical 20th-level party can handle. These creatures have a CR of 21 or higher and are specifically designed to test player skill. 
 

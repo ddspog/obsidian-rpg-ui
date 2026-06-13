@@ -150,7 +150,7 @@ bonus:
       As a bonus action, you raise your [[Shield]] to intercept incoming attacks. Select one enemy creature within 5 feet of you. That creature has [[Advantage|Disadvantage]] on the first attack roll it makes against you or an ally within 5 feet of you before the start of your next turn.
   - name: Quick Strike
     text: |
-      After you take the Attack action on your turn and attack with a [[013. Glossary/Weapon Property/Light]] [[Melee]] weapon that you're holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you're holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don't add your ability modifier to the damage of these additional attacks unless the modifier is negative.
+      After you take the Attack action on your turn and attack with a [[Light]] [[Melee]] weapon that you're holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you're holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don't add your ability modifier to the damage of these additional attacks unless the modifier is negative.
   - name: Wind Up
     text: |
       As a bonus action, you ready a powerful attack against a nearby target. Select one target you can see within 10 feet of you. If you hit that target with a [[Melee]] weapon attack before the end of your turn, the first such attack deals extra damage equal to your PB (of the same damage type as the weapon).

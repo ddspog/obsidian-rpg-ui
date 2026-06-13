@@ -15,6 +15,7 @@ example:
 heading: p
 auto: "cr"
 tiers:
+  1/2: { score: 18 }
   1: { score: 18 }
 ---
 The {{ self.name() }}'s [[Perception]] is {{score}} when perceiving by hearing or sight.
@@ -61,6 +62,36 @@ heading: p
 ---
 While the {{ self.name() }} is conscious and wearing no armor and wielding no shield, it adds its CHA modifier to its AC (included above). In addition, it is resistant to the [[charmed]] and [[frightened]] conditions.
 ```
+```rpg feature.details
+name: Divine Providence
+type: trait
+example:
+  self: { name: "Humanoid" }
+heading: p
+---
+Each friendly creature within 20 feet of the {{ self.name() }} that isn’t a [[Construct]] or [[Undead]] has [[advantage]] on death saves.
+```
+```rpg feature.details
+name: Divine Blessing
+type: trait
+example:
+  self: { name: "Humanoid" }
+heading: p
+---
+The {{ self.name() }} is resistant to necrotic damage or radiant damage, as appropriate for the {{ self.name() }}’s deity.
+```
+```rpg feature.details
+name: Divine Weapons
+type: trait
+example:
+  self: { name: "Humanoid", cr: 2 }
+heading: p
+auto: "cr"
+tiers:
+  2: { extra: 2d6 }
+---
+The {{ self.name() }}’s weapons are shrouded in dark or golden flames, as appropriate for the {{ self.name() }}’s deity. When the {{ self.name() }} hits with any weapon, the weapon deals an extra {{ extra }} necrotic damage or radiant damage (included in the attack), the {{ self.name() }}’s choice.
+```
 ## Joining Forces
 ```rpg feature.details
 name: Combat Tunneler
@@ -83,6 +114,7 @@ tiers:
   druid: { attacks: "two Flowering Quarterstaff or Poison Bolt" }
   peer: { attacks: "two Rapier" }
   scout: { attacks: "two Shortsword or Shortbow" }
+  priest: { attacks: "two Mace or Divine Bolt" }
   kobold_tinkerer: { attacks: "two Tinkerer's Hammer or Parts-Filled Sling" }
 ---
 The {{ self.name() }} makes {{ attacks }} attacks.
@@ -95,11 +127,14 @@ example:
 heading: p
 tiers:
   druid: { attr: "WIS", dc: 13, at_will: "[[druidcraft]], [[speak with animals]]", 3_day: "[[entangle]], [[cure wounds]], [[thunderwave]]", 2_day: "[[barkskin]], [[spike growth]]" }
+  acolyte: { attr: "WIS", dc: 13, at_will: "[[lux]], [[thaumaturgy]]", 3_day: "[[bless]], [[cure wounds]], [[sanctuary]]" }
+  priest: { attr: "WIS", dc: 13, at_will: "[[guidance]], [[lux]], [[thaumaturgy]]", 2_day: "[[bane]], [[bless]], [[cure wounds]]", 1_day: "[[dispel magic]], [[restoration]]" }
 ---
 The {{ self.name() }} cast one of the following spells, using {{ attr }} as the spellcasting ability (spell save DC {{ dc }}).{{ at_will ? '
 - At will: ' + at_will }}{{ 3_day ? '
 - 3/day each: ' + 3_day }}{{ 2_day ? '
-- 2/day each: ' + 2_day }}
+- 2/day each: ' + 2_day }}{{ 1_day ? '
+- 1/day each: ' + 1_day }}
 ```
 ## Weapons
 ```rpg feature.details
@@ -122,6 +157,7 @@ example:
 heading: p
 auto: "cr"
 tiers:
+  1/2: { hit: 4, reach: "5 ft.", targets: "one target", damage: "5 (1d6 + 2)" }
   1: { hit: 4, reach: "5 ft.", targets: "one target", damage: "5 (1d6 + 2)" }
 ---
 _Melee Weapon Attack:_ +{{hit}} to hit, reach {{reach}}, {{targets}}. _Hit:_ {{damage}} piercing damage.
@@ -152,6 +188,20 @@ tiers:
 _Melee Weapon Attack:_ +{{hit}} to hit, reach {{reach}}, {{targets}}. _Hit:_ {{damage}} bludgeoning damage.
 ```
 ```rpg feature.details
+id: mace-priests
+name: Mace
+type: action
+example:
+  self: { name: "Humanoid", cr: 1/4 }
+heading: p
+auto: "cr"
+tiers:
+  1/4: { hit: 2, reach: "5 ft.", targets: "one target", damage: "3 (1d6)", extra: "3 (1d6)" }
+  2: { hit: 3, reach: "5 ft.", targets: "one target", damage: "4 (1d6 + 1)", extra: "7 (2d6)" }
+---
+_Melee Weapon Attack:_ +{{hit}} to hit, reach {{reach}}, {{targets}}. _Hit:_ {{damage}} bludgeoning damage plus {{extra}} necrotic or radiant damage (the {{self.last_name()}}'s choice).
+```
+```rpg feature.details
 name: Shortbow
 type: action
 example:
@@ -159,6 +209,7 @@ example:
 heading: p
 auto: "cr"
 tiers:
+  1/2: { hit: 4, range: "80/320 ft.", targets: "one target", damage: "5 (1d6 + 2)" }
   1: { hit: 4, range: "80/320 ft.", targets: "one target", damage: "5 (1d6 + 2)" }
 ---
 _Ranged Weapon Attack:_ +{{hit}} to hit, range {{range}}, {{targets}}. _Hit:_ {{damage}} piercing damage.
@@ -260,6 +311,30 @@ tiers:
   3: { hit: 5, range: "60 ft.", targets: "one target", damage: "10 (3d4 + 3)" }
 ---
 _Ranged Spell Attack:_ +{{hit}} hit, range {{range}}, {{targets}}. _Hit:_ {{damage}} poison damage.
+```
+```rpg feature.details
+name: Radiant Bolt
+type: action
+example:
+  self: { name: "Humanoid", cr: 1/4 }
+heading: p
+auto: "cr"
+tiers:
+  1/4: { hit: 6, range: "60 ft.", targets: "one target", damage: "6 (1d4 + 4)" }
+---
+_Ranged Spell Attack:_ +{{hit}} hit, range {{range}}, {{targets}}. _Hit:_ {{damage}} radiant damage.
+```
+```rpg feature.details
+name: Divine Bolt
+type: action
+example:
+  self: { name: "Humanoid", cr: 2 }
+heading: p
+auto: "cr"
+tiers:
+  2: { hit: 5, range: "60 ft.", targets: "one target", damage: "10 (2d6 + 3)" }
+---
+_Ranged Spell Attack:_ +{{hit}} hit, range {{range}}, {{targets}}. _Hit:_ {{damage}} necrotic damage or radiant damage (the {{ self.last_name() }}'s choice).
 ```
 ## Equipments
 ```rpg feature.details

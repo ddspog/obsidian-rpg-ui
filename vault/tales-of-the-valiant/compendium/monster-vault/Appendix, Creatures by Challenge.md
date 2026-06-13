@@ -65,7 +65,6 @@ entries:
 ```rpg list.challenge-CR1-4
 name: "Challenge 1/4 (50 XP)"
 entries:
-  - Acolyte
   - Animated objects, Flying
   - Axe Beak
   - Badger, Giant
@@ -133,7 +132,6 @@ entries:
   - Rust Monster
   - Sahuagin
   - Satyr
-  - Scout
   - Seahorse, Giant
   - Shadow
   - Shark, Reef
@@ -225,7 +223,6 @@ entries:
   - Ochre Jelly
   - Ogre
   - Pegasus
-  - Priest
   - Rhinoceros
   - Sahuagin, Captain
   - Shark, Hunter
@@ -238,5 +235,12 @@ entries:
   - Will-o'-Wisp
   - Zombie, Ogre
   - call: "@[[worldbuilding/bestiary/]].filter(cr == 2).highlight().block(0)"
+    format: "[[${name}]]"
+```
+
+```rpg list.challenge-CR5
+name: "Challenge 5 (1,800 XP)"
+entries:
+  - call: "@[[worldbuilding/bestiary/]].filter(cr == 5).highlight().block(0)"
     format: "[[${name}]]"
 ```

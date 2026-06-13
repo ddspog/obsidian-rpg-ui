@@ -187,7 +187,7 @@ bonus:
       As a bonus action, you take the time to increase the effectiveness of your next [[Ranged]] weapon attack. Select one target you can see. If you make a ranged weapon attack against that target before the end of your turn, double your PB for the first attack roll.
   - name: Quick Strike
     text: |
-      After you take the Attack action on your turn and attack with a [[013. Glossary/Weapon Property/Light]] [[Melee]] weapon that you're holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you're holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don't add your ability modifier to the damage of these additional attacks unless the modifier is negative.
+      After you take the Attack action on your turn and attack with a [[Light]] [[Melee]] weapon that you're holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you're holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don't add your ability modifier to the damage of these additional attacks unless the modifier is negative.
 
 ---
 Your tactical expertise allows you to act quickly on the battlefield. You can take a bonus action on each of your turns in combat to perform a [[Weapon Option]] or one of the martial actions granted by this feature. 

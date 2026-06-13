@@ -19,7 +19,7 @@ shop:
   cheap: 150 gp
   expensive: 300 gp
   availability:
-    - "[[013. Glossary/Product Availability/Urban]]"
+    - "[[Urbane]]"
     - "[[Premium]]"
 ---
 This armor is made of narrow vertical strips of metal riveted to a backing of leather that is worn over cloth padding. Flexible chain mail protects the joints.
