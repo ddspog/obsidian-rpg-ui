@@ -44,6 +44,10 @@ import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-lo
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
 import type { GMFeature } from "lib/domains/features/types";
+import type { TableDef } from "lib/domains/tables/types";
+import { applyChoicePick } from "lib/domains/session-log/choice";
+import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
+import { parseBranchRef, selectStepBlock } from "lib/domains/gm/steps";
 import type { CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
 import { initSessionConsumables, spendUse } from "lib/domains/session-log/consumable-state";
 import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
@@ -83,6 +87,7 @@ class SessionLogMarkdown extends ReactMarkdown {
   private logData: SessionLogData | null = null;
   private entities: EntityData[] = [];
   private gmFeatures: GMFeature[] = [];
+  private stepCtx: GMStepContext = {};
   private stateKey = "default-log";
   private initialSidebarOpen = false;
 
@@ -121,6 +126,7 @@ class SessionLogMarkdown extends ReactMarkdown {
 
       if (block.gm) {
         this.gmFeatures = await this.loadGMScreen(block.gm);
+        this.stepCtx = await this.loadStepCtx(this.gmFeatures);
       }
 
       this.renderSessionLog();
@@ -172,6 +178,68 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
   }
 
+  /**
+   * Resolve the GM features' `interpret` branch links to step blocks (and any
+   * tables those steps roll against), so the live sidebar can surface the
+   * branch dropdown and auto-fill table/fate results. Mirrors FeatureGMView.
+   */
+  private async loadStepCtx(features: GMFeature[]): Promise<GMStepContext> {
+    const steps: Record<string, GMFeature> = {};
+    const tables: Record<string, TableDef> = {};
+    for (const feature of features) {
+      for (const value of Object.values(feature.generator?.interpret ?? {})) {
+        const ref = parseBranchRef(value);
+        if (!ref || steps[ref.target]) continue;
+        const file = this.resolveLink(ref.target);
+        if (!file) continue;
+        try {
+          const doc = parseSourceDoc(
+            { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
+            "class"
+          );
+          const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
+          if (!step) continue;
+          steps[ref.target] = step;
+          for (const s of step.steps ?? []) {
+            const t = s.table ? (parseBranchRef(s.table)?.target ?? s.table) : null;
+            if (!t || tables[t]) continue;
+            const tf = this.resolveLink(t);
+            if (!tf) continue;
+            const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) }, "class");
+            if (tdoc.tables[0]) tables[t] = tdoc.tables[0];
+          }
+        } catch {
+          /* unreadable target — skip; that branch just has no dropdown/auto-fill */
+        }
+      }
+    }
+    return { steps, tables };
+  }
+
+  /** Rewrite the `rpg log` block body via a transform, then persist. The
+   *  generalized form of {@link appendToLogBody} used for GM step picks. */
+  private async rewriteLogBody(transform: (body: string) => string) {
+    const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
+    if (!(file instanceof TFile)) return;
+    const content = await this.baseView.app.vault.read(file);
+    const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;
+    const match = content.match(codeBlockRegex);
+    if (!match) return;
+    const [, header, body, closing] = match;
+    const updatedBody = transform(body);
+    if (updatedBody === body) return;
+    await this.baseView.app.vault.modify(file as any, `${header}${updatedBody}${closing}`);
+  }
+
+  /** A GM step dropdown pick: insert the chosen step's `label: calc` line under
+   *  the gen: (via applyChoicePick), re-resolve, and persist to the note. */
+  private async onChoicePick(selected: string) {
+    const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
+    await this.rewriteLogBody((body) =>
+      resolveGmBody(applyChoicePick(body, selected, stepLines), this.gmFeatures, this.stepCtx)
+    );
+  }
+
   private async appendToLogBody(newText: string) {
     try {
       const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
@@ -220,6 +288,14 @@ class SessionLogMarkdown extends ReactMarkdown {
       const content = await this.baseView.app.vault.read(file);
       let updatedContent = applySceneEdits(content, sceneReplacements);
       updatedContent = applyTokenEdits(updatedContent, dieReplacements);
+      // Re-resolve GM-feature lines from their now-edited dice so a rolled
+      // branch surfaces its label + step dropdown (and step lines auto-fill).
+      if (this.gmFeatures.length > 0) {
+        updatedContent = updatedContent.replace(
+          /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/,
+          (_m, h, b, c) => `${h}${resolveGmBody(b, this.gmFeatures, this.stepCtx)}${c}`
+        );
+      }
       if (updatedContent === content) {
         console.warn("rpg log: no edited lines matched; nothing saved");
         return;
@@ -291,6 +367,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         entityNames={entityNames}
         initialConsumableState={initialConsumableState}
         onAppendText={handleAppendText}
+        onChoice={(selected) => void this.onChoicePick(selected)}
         onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
       />
     );
@@ -307,6 +384,8 @@ interface SessionLogRootProps {
   entityNames: string[];
   initialConsumableState: SessionConsumableState;
   onAppendText: (text: string) => void;
+  /** A GM step dropdown pick — inserts the chosen step line into the note. */
+  onChoice: (selected: string) => void;
   onSave: (edits: {
     scenes: Array<{ from: string; to: string }>;
     dice: Array<{ line: string; from: string; to: string }>;
@@ -323,6 +402,7 @@ function SessionLogRoot({
   entityNames,
   initialConsumableState,
   onAppendText,
+  onChoice,
   onSave,
 }: SessionLogRootProps) {
   const [consumableState, setConsumableState] = React.useState(initialConsumableState);
@@ -581,6 +661,7 @@ function SessionLogRoot({
             dieEdits={dieEdits}
             onDieChange={handleDieChange}
             onResultChange={handleResultChange}
+            onChoice={onChoice}
           />
         )}
       </div>

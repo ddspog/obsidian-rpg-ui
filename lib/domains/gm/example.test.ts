@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature } from "../features/types";
 import type { TableDef } from "../tables/types";
-import { buildGMExampleLog, gmFollowLines, gmStepLines, resolveContest, applyDieEdit } from "./example";
+import { buildGMExampleLog, gmFollowLines, gmStepLines, resolveContest, applyDieEdit, resolveGmBody } from "./example";
 
 const sceneCheck: GMFeature = {
   name: "Scene Check",
@@ -173,6 +173,53 @@ describe("buildGMExampleLog — cross-file step branches", () => {
       "A Tweak": "A Tweak: (note: tweak the scene)",
       "Fate Question": "Fate Question: d100= ->",
     });
+  });
+});
+
+describe("resolveGmBody — re-resolve GM lines in a live body", () => {
+  const entry: GMFeature = {
+    name: "Testing the Expected Scene",
+    generator: {
+      name: "Testing the Expected Scene",
+      work: "Scene",
+      roll: "d10",
+      vs: "CF",
+      interpret: {
+        ">CF": "@[[Scene Check|Expected Scene]]",
+        "<=CF, odd": "@[[Altered Scene]]",
+        "<=CF, even": "@[[Interrupt Scene]]",
+      },
+    },
+  };
+  const stepCtx = {
+    steps: {
+      "Altered Scene": {
+        name: "Altered Scene",
+        steps: [
+          { choice: "A Tweak", calc: "(note: tweak)" },
+          { choice: "Fate Question", calc: "d100= ->", likelihood: "50/50" as const },
+        ],
+      },
+    },
+  };
+
+  it("resolves the primary contest to a branch label + step dropdown", () => {
+    const body = ['? [CF:5] Does the "x" scene happen?', "gen: Testing the Expected Scene", "  Scene: d10=3 vs CF 5 ->", '=> Start Scene(): "y"'].join("\n");
+    const out = resolveGmBody(body, [entry], stepCtx);
+    expect(out).toContain("  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - ]");
+  });
+
+  it("resolves an appended fate-question step line via the Fate Chart (CF from the body)", () => {
+    const body = ["? [CF:5] q", "gen: Testing the Expected Scene", "  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - Fate Question]", "  Fate Question: d100=20 ->"].join("\n");
+    const out = resolveGmBody(body, [entry], stepCtx);
+    expect(out).toMatch(/ {2}Fate Question: d100=20 -> \S/);
+  });
+
+  it("leaves non-GM blocks and unrolled lines untouched", () => {
+    const body = ["? [CF:5] q", "d(PC): d20=15 vs DC 12 -> Success", "gen: Testing the Expected Scene", "  Scene: d10= vs CF 5 ->"].join("\n");
+    const out = resolveGmBody(body, [entry], stepCtx);
+    expect(out).toContain("d(PC): d20=15 vs DC 12 -> Success");
+    expect(out).toContain("  Scene: d10= vs CF 5 -> ");
   });
 });
 

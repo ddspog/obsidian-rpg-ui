@@ -274,3 +274,69 @@ function reResolveStepLine(
   }
   return result ? `${head} -> ${result}` : `${head} -> `;
 }
+
+/** Chaos factor baked into a live log body's `[CF:n]` tag (the GM's session CF). */
+function bodyCf(body: string): number | undefined {
+  const m = body.match(/\[CF:\s*(\d+)\s*\]/);
+  return m ? parseInt(m[1], 10) : undefined;
+}
+
+/**
+ * Re-resolve every GM-feature line in a LIVE log body. For each `gen: <name>`
+ * matching a loaded feature, re-resolves its indented `label: contest -> …`
+ * lines from their current die values: the primary work line via the feature's
+ * `interpret` (a branch-link result becomes `label [step/step - ]`, importing
+ * the linked step block's choices); an APPENDED step line via that step's
+ * `table` / `likelihood` / `interpret`. Idempotent — unrolled lines and
+ * non-GM blocks are left untouched. Used at save time so rolling a die surfaces
+ * the branch + dropdown (the editable lonelog body is the source of truth).
+ */
+export function resolveGmBody(body: string, features: GMFeature[], stepCtx?: GMStepContext): string {
+  const lines = body.split("\n");
+  const cf = bodyCf(body);
+  const steps = stepByLabel(stepCtx);
+  let feature: GMFeature | null = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const genM = line.match(/^gen:\s*(.+)$/);
+    if (genM) {
+      feature = features.find((f) => f.generator?.name === genM[1].trim()) ?? null;
+      continue;
+    }
+    if (!/^\s/.test(line)) {
+      feature = null; // left the gen block (a new entry head)
+      continue;
+    }
+    if (!feature || !/->|→/.test(line)) continue;
+    const label = line.match(/^\s*([^:]+):\s/)?.[1]?.trim();
+    const step = label ? steps[label] : undefined;
+    if (step && (step.table || step.likelihood || step.interpret)) {
+      lines[i] = reResolveStepLine(line, step, stepCtx, cf);
+    } else if (feature.generator?.interpret) {
+      lines[i] = reResolveBranchLine(line, feature, stepCtx, cf);
+    }
+  }
+  return lines.join("\n");
+}
+
+/** Re-resolve a primary contest line to a branch result: roll vs interpret →
+ *  the matched value; a `@[[link]]` value renders as `label [step/step - ]`
+ *  (importing the linked step block's choices). Blanks on a cleared die. */
+function reResolveBranchLine(
+  line: string,
+  feature: GMFeature,
+  stepCtx: GMStepContext | undefined,
+  bodyCfValue: number | undefined
+): string {
+  const arrow = line.match(/->|→/);
+  if (!arrow) return line;
+  const head = line.slice(0, line.indexOf(arrow[0])).replace(/\s*$/, "");
+  const content = head.replace(/^\s*[^:]+:\s*/, "").trim();
+  const rolled = content.match(/d\d+\s*=\s*(\d+)/i);
+  if (!rolled) return `${head} -> `;
+  const vsCf = content.match(/vs\s+CF\s+(\d+)/i);
+  const cf = vsCf ? parseInt(vsCf[1], 10) : bodyCfValue;
+  const baseRaw = resolveInterpret(feature.generator!.interpret!, { roll: parseInt(rolled[1], 10), cf });
+  const result = baseRaw ? resultLine(baseRaw, feature, stepCtx) : null;
+  return result ? `${head} -> ${result}` : `${head} -> `;
+}
