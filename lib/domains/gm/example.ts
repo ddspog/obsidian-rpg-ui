@@ -10,12 +10,26 @@
  * Pure string assembly; no Obsidian / vault dependencies.
  */
 
-import type { GMFeature, GMInterpret } from "../features/types";
+import type { GMFeature, GMInterpret, GMStep } from "../features/types";
+import type { TableDef } from "../tables/types";
 import { emitGMFeature } from "./emit";
 import { resolveInterpret, fateResult, FATE_WORDING } from "./fate-chart";
+import { parseBranchRef, stepLabels, resolveTableRoll } from "./steps";
 import { parseFormula, setDiceValue } from "../session-log/formula";
 
 const RESERVED = new Set(["rolls", "result", "narration"]);
+
+/**
+ * Cross-file step context: the step blocks an entry feature's `interpret`
+ * branch links resolve to (keyed by the link target's basename), plus any
+ * tables a step's `calc` rolls against (keyed by the table link's basename).
+ * Loaded by the render layer (it needs vault access); the pure builders and
+ * resolvers take it as input.
+ */
+export interface GMStepContext {
+  steps?: Record<string, GMFeature>;
+  tables?: Record<string, TableDef>;
+}
 
 /** First rolled value in the example's `rolls` map (the primary die). */
 function firstRoll(rolls: unknown): number | undefined {
@@ -43,9 +57,11 @@ function escapeRegExp(s: string): string {
 
 /**
  * Build the filled lonelog excerpt for a feature's `example`, or null when the
- * feature declares none.
+ * feature declares none. When a result resolves to a `@[[link]]` branch ref and
+ * the linked step block is supplied in `stepCtx`, the result shows the branch
+ * label plus a `[step / step - ]` dropdown of that block's choices.
  */
-export function buildGMExampleLog(feature: GMFeature): string | null {
+export function buildGMExampleLog(feature: GMFeature, stepCtx?: GMStepContext): string | null {
   const ex = feature.example;
   if (!ex) return null;
   let out = emitGMFeature(feature);
@@ -73,20 +89,50 @@ export function buildGMExampleLog(feature: GMFeature): string | null {
     }
   }
 
-  // 3. Outcome fill. Two shapes: an oracle answer carrying the die
-  // parenthetically (`-> (d100=3)` → `-> Yes (d100=3)`), or a bare line-ending
-  // arrow on a contest/working line (`… ->` → `… -> Expected Scene`). When the
-  // rolled result offers follow-up strategies, a `[opt/opt - ]` choice slot is
-  // appended (the GM picks the next check type there — rendered as a dropdown).
-  const base = typeof ex.result === "string" ? ex.result : computeResult(feature, roll, cf);
-  const options = base ? feature.generator?.follow?.[base] : undefined;
-  const labels = options ? Object.keys(options) : [];
-  const result = labels.length > 0 ? `${base} [${labels.join("/")} - ]` : base;
+  // 3. Outcome fill. The result is the matched `interpret`/`likelihood` value.
+  // When it's a `@[[link]]` branch ref, the line shows the branch LABEL plus a
+  // `[opt/opt - ]` dropdown of the linked step block's choices; otherwise it
+  // falls back to the legacy inline `follow` strategies on the generator.
+  const baseRaw = typeof ex.result === "string" ? ex.result : computeResult(feature, roll, cf);
+  const result = resultLine(baseRaw, feature, stepCtx);
   if (result) {
     const withAnswer = out.replace(/->\s*(\([^)]*\))\s*$/m, `-> ${result} $1`);
     out = withAnswer !== out ? withAnswer : out.replace(/->(?=\s*$)/m, `-> ${result}`);
   }
 
+  return out;
+}
+
+/** Compose a result string (label + optional `[opt/opt - ]` dropdown) from a raw
+ *  interpret value: a `@[[link]]` branch ref imports the linked step block's
+ *  choices; otherwise the legacy generator `follow` map supplies them. */
+function resultLine(baseRaw: string | null, feature: GMFeature, stepCtx?: GMStepContext): string | null {
+  if (!baseRaw) return null;
+  const ref = parseBranchRef(baseRaw);
+  if (ref) {
+    const step = stepCtx?.steps?.[ref.target];
+    const labels = step ? stepLabels(step) : [];
+    return labels.length > 0 ? `${ref.label} [${labels.join("/")} - ]` : ref.label;
+  }
+  const options = feature.generator?.follow?.[baseRaw];
+  const labels = options ? Object.keys(options) : [];
+  return labels.length > 0 ? `${baseRaw} [${labels.join("/")} - ]` : baseRaw;
+}
+
+/**
+ * Flatten every pickable follow-up into one option-label → generated-line map,
+ * for the dropdown's pick-to-insert (consumed by `applyChoicePick`). Merges the
+ * legacy generator `follow` lines with the imported step blocks' choices — a
+ * step's line is the flat labeled form `"<choice>: <calc>"` (empty `calc` =
+ * record the pick with no line).
+ */
+export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
+  const out = gmFollowLines(feature);
+  for (const step of Object.values(stepCtx?.steps ?? {})) {
+    for (const s of step.steps ?? []) {
+      out[s.choice] = s.calc.trim() === "" ? "" : `${s.choice}: ${s.calc}`;
+    }
+  }
   return out;
 }
 
@@ -151,15 +197,80 @@ function reResolveContestLine(
 
 /**
  * Apply a die edit to the lonelog: set the die value on the matched line, then
- * re-resolve that line's contest result through the feature's interpret/follow.
+ * re-resolve that line's result. An APPENDED step line (its label matches a
+ * loaded step carrying resolution metadata) resolves via that step's table /
+ * likelihood / interpret; otherwise the entry's own contest re-resolution runs.
  * Used by the example simulator (the lonelog string is the editable state).
  */
-export function applyDieEdit(log: string, source: string, raw: string, value: string, feature: GMFeature): string {
+export function applyDieEdit(
+  log: string,
+  source: string,
+  raw: string,
+  value: string,
+  feature: GMFeature,
+  stepCtx?: GMStepContext
+): string {
   const lines = log.split("\n");
   const idx = lines.findIndex((l) => l.trim() === source);
   if (idx < 0) return log;
   let line = lines[idx].includes(raw) ? lines[idx].replace(raw, setDiceValue(raw, value)) : lines[idx];
-  line = reResolveContestLine(line, feature.generator?.interpret, feature.generator?.follow);
+  const label = line.match(/^\s*([^:]+):\s/)?.[1]?.trim();
+  const step = label ? stepByLabel(stepCtx)[label] : undefined;
+  if (step && (step.table || step.likelihood || step.interpret)) {
+    line = reResolveStepLine(line, step, stepCtx, exampleCf(feature));
+  } else {
+    line = reResolveContestLine(line, feature.generator?.interpret, feature.generator?.follow);
+  }
   lines[idx] = line;
   return lines.join("\n");
+}
+
+/** The chaos factor an example resolves against: explicit `example.cf`, else the
+ *  oracle's constant `cf`. */
+function exampleCf(feature: GMFeature): number | undefined {
+  const ex = feature.example?.cf;
+  return typeof ex === "number" ? ex : feature.oracle?.cf;
+}
+
+/** Every loaded step keyed by its choice label, for resolving appended lines. */
+function stepByLabel(stepCtx?: GMStepContext): Record<string, GMStep> {
+  const out: Record<string, GMStep> = {};
+  for (const block of Object.values(stepCtx?.steps ?? {})) {
+    for (const s of block.steps ?? []) out[s.choice] = s;
+  }
+  return out;
+}
+
+/**
+ * Re-resolve an appended step line after its die changed: fill the `->` from the
+ * step's `table` (looked-up row), `likelihood` (Fate Chart), or `interpret`
+ * (comparison map). Blanks the result when the die is cleared.
+ */
+function reResolveStepLine(
+  line: string,
+  step: GMStep,
+  stepCtx: GMStepContext | undefined,
+  cf: number | undefined
+): string {
+  const arrow = line.match(/->|→/);
+  if (!arrow) return line;
+  const head = line.slice(0, line.indexOf(arrow[0])).replace(/\s*$/, "");
+  const content = head.replace(/^\s*[^:]+:\s*/, "").trim();
+  const rolled = content.match(/d\d+\s*=\s*(\d+)/i);
+  if (!rolled) return `${head} -> `;
+  const n = parseInt(rolled[1], 10);
+  let result: string | null = null;
+  if (step.table) {
+    const target = parseBranchRef(step.table)?.target ?? step.table;
+    const table = stepCtx?.tables?.[target];
+    if (table) {
+      const filled = resolveTableRoll(`${content} ->`, table).match(/->\s*(\S.*)$/);
+      result = filled ? filled[1].trim() : null;
+    }
+  } else if (step.likelihood && cf != null) {
+    result = FATE_WORDING[fateResult(n, cf, step.likelihood)];
+  } else if (step.interpret) {
+    result = resolveInterpret(step.interpret, { roll: n, cf }) ?? null;
+  }
+  return result ? `${head} -> ${result}` : `${head} -> `;
 }

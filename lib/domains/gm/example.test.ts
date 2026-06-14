@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature } from "../features/types";
-import { buildGMExampleLog, gmFollowLines, resolveContest, applyDieEdit } from "./example";
+import type { TableDef } from "../tables/types";
+import { buildGMExampleLog, gmFollowLines, gmStepLines, resolveContest, applyDieEdit } from "./example";
 
 const sceneCheck: GMFeature = {
   name: "Scene Check",
@@ -116,6 +117,65 @@ describe("buildGMExampleLog — follow-strategy choice slot", () => {
   });
 });
 
+describe("buildGMExampleLog — cross-file step branches", () => {
+  // Entry feature: interpret results are @[[link]] branch refs (the new model).
+  const entry: GMFeature = {
+    name: "Testing the Expected Scene",
+    oracle: { question: 'Does the "{{scene}}" scene happen as expected?', chaos: true },
+    generator: {
+      name: "Testing the Expected Scene",
+      work: "Scene",
+      roll: "d10",
+      vs: "CF",
+      interpret: {
+        ">CF": "@[[Scene Check|Expected Scene]]",
+        "<=CF, odd": "@[[Altered Scene]]",
+        "<=CF, even": "@[[Interrupt Scene]]",
+      },
+    },
+    scene: { opens: 'Start Scene(): "{{next}}"' },
+    example: { scene: "ambush at the rockslide", cf: 5, rolls: { d10: 3 }, next: "the back exit" },
+  };
+  const alteredStep: GMFeature = {
+    name: "Altered Scene",
+    steps: [
+      { choice: "The Next Expectation", calc: "" },
+      { choice: "A Tweak", calc: "(note: tweak the scene)" },
+      { choice: "Fate Question", calc: "d100= ->" },
+    ],
+  };
+  const stepCtx = { steps: { "Altered Scene": alteredStep } };
+
+  it("shows the branch label + the linked step block's choices as a dropdown", () => {
+    const out = buildGMExampleLog(entry, stepCtx)!;
+    expect(out).toContain(
+      "  Scene: d10=3 vs CF 5 -> Altered Scene [The Next Expectation/A Tweak/Fate Question - ]"
+    );
+    expect(out).toContain('=> Start Scene(): "the back exit"');
+  });
+
+  it("shows the branch label with no dropdown when the step block isn't loaded", () => {
+    const out = buildGMExampleLog(entry)!; // no stepCtx
+    expect(out).toContain("-> Altered Scene");
+    expect(out).not.toContain(" - ]");
+  });
+
+  it("uses just the link label for a branch with no step block (Expected)", () => {
+    const f: GMFeature = { ...entry, example: { ...entry.example, rolls: { d10: 8 } } }; // >CF → Expected
+    const out = buildGMExampleLog(f, stepCtx)!;
+    expect(out).toContain("-> Expected Scene");
+    expect(out).not.toContain(" - ]");
+  });
+
+  it("gmStepLines flattens loaded step choices to labeled `choice: calc` lines", () => {
+    expect(gmStepLines(entry, stepCtx)).toEqual({
+      "The Next Expectation": "",
+      "A Tweak": "A Tweak: (note: tweak the scene)",
+      "Fate Question": "Fate Question: d100= ->",
+    });
+  });
+});
+
 describe("gmFollowLines", () => {
   it("flattens every result's option->line into one lookup", () => {
     const f: GMFeature = {
@@ -183,5 +243,56 @@ describe("applyDieEdit", () => {
     const withNote = log + "\n  (note: keep me)";
     const out = applyDieEdit(withNote, "(note: keep me)", "d10=3", "8", feature);
     expect(out).toContain("(note: keep me)");
+  });
+});
+
+describe("applyDieEdit — appended step lines resolve via the step's metadata", () => {
+  const entry: GMFeature = {
+    name: "Testing the Expected Scene",
+    oracle: { question: "Does {{scene}} occur?", chaos: true },
+    generator: { name: "Testing the Expected Scene", work: "Scene", roll: "d10", vs: "CF" },
+    example: { scene: "x", cf: 5 },
+  };
+  const sceneAdjustment: TableDef = {
+    name: "scene-adjustment",
+    columns: ["1d10", "result"],
+    columnLabels: ["1D10", "RESULT"],
+    headerRows: [],
+    rows: [
+      { cells: [{ value: "1" }, { value: "Remove a Character" }] },
+      { cells: [{ value: "2" }, { value: "Add a Character" }] },
+    ],
+    classes: [],
+    footerRows: [],
+  };
+  const stepCtx = {
+    steps: {
+      "Altered Scene": {
+        name: "Altered Scene",
+        steps: [
+          { choice: "Fate Question", calc: "d100= ->", likelihood: "50/50" as const },
+          { choice: "Scene Adjustment", calc: "d10= ->", table: "[[Scene Adjustment]]" },
+        ],
+      },
+    },
+    tables: { "Scene Adjustment": sceneAdjustment },
+  };
+
+  it("auto-fills a table-backed step from the looked-up row", () => {
+    const log = "gen: Testing the Expected Scene\n  Scene: d10=3 vs CF 5 -> Altered Scene\n  Scene Adjustment: d10= ->";
+    const out = applyDieEdit(log, "Scene Adjustment: d10= ->", "d10=", "2", entry, stepCtx);
+    expect(out).toContain("  Scene Adjustment: d10=2 -> Add a Character");
+  });
+
+  it("resolves a likelihood step via the Fate Chart", () => {
+    const log = "gen: Testing the Expected Scene\n  Fate Question: d100= ->";
+    const out = applyDieEdit(log, "Fate Question: d100= ->", "d100=", "20", entry, stepCtx);
+    expect(out).toMatch(/Fate Question: d100=20 -> \S/); // a worded answer was filled
+  });
+
+  it("blanks the result when the die is cleared", () => {
+    const log = "gen: Testing the Expected Scene\n  Scene Adjustment: d10=2 -> Add a Character";
+    const out = applyDieEdit(log, "Scene Adjustment: d10=2 -> Add a Character", "d10=2", "", entry, stepCtx);
+    expect(out).toContain("  Scene Adjustment: d10= -> ");
   });
 });

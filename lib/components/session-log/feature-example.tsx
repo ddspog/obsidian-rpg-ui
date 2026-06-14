@@ -14,7 +14,7 @@
 
 import * as React from "react";
 import type { GMFeature } from "lib/domains/features/types";
-import { buildGMExampleLog, gmFollowLines, applyDieEdit } from "lib/domains/gm/example";
+import { buildGMExampleLog, gmStepLines, applyDieEdit, type GMStepContext } from "lib/domains/gm/example";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
 import { assembleProse, buildSidebarItems } from "lib/domains/session-log/prose-model";
@@ -22,10 +22,20 @@ import { applyChoicePick } from "lib/domains/session-log/choice";
 import { InlineMarkdown } from "./inline-markdown";
 import { SidebarEntry, type SidebarEditContext } from "./sidebar-entry";
 
-export function FeatureExample({ feature, sourcePath }: { feature: GMFeature; sourcePath?: string }) {
+export function FeatureExample({
+  feature,
+  sourcePath,
+  stepCtx,
+}: {
+  feature: GMFeature;
+  sourcePath?: string;
+  /** Cross-file step blocks the feature's branch links resolve to (loaded by
+   *  the view). Drives the dropdown options and the pick-to-insert lines. */
+  stepCtx?: GMStepContext;
+}) {
   const sp = sourcePath ?? "";
-  const followLines = React.useMemo(() => gmFollowLines(feature), [feature]);
-  const initial = React.useMemo(() => buildGMExampleLog(feature) ?? "", [feature]);
+  const followLines = React.useMemo(() => gmStepLines(feature, stepCtx), [feature, stepCtx]);
+  const initial = React.useMemo(() => buildGMExampleLog(feature, stepCtx) ?? "", [feature, stepCtx]);
 
   // The lonelog string is the mutable state; edits accumulate in it.
   const [log, setLog] = React.useState(initial);
@@ -39,7 +49,7 @@ export function FeatureExample({ feature, sourcePath }: { feature: GMFeature; so
   // onSceneChange); the dropdown writes through onChoice (not onResultChange).
   const edit: SidebarEditContext = {
     dieEdits: {},
-    onDieChange: (source, raw, _slot, value) => setLog((l) => applyDieEdit(l, source, raw, value, feature)),
+    onDieChange: (source, raw, _slot, value) => setLog((l) => applyDieEdit(l, source, raw, value, feature, stepCtx)),
     onResultChange: () => {},
   };
 

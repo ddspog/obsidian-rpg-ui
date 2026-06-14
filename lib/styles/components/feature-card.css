@@ -21,6 +21,29 @@
   font-family: var(--font-text);
 }
 
+/* Step block: the follow-up choices a step feature offers, imported into a
+ * parent gen: line. Rendered as a definition list (choice → calc). */
+.rpg-feature-steps {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--size-2-1, 0.25rem) var(--size-4-2, 0.5rem);
+  margin: var(--size-4-2, 0.5rem) 0;
+}
+
+.rpg-feature-steps dt {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+
+.rpg-feature-steps dd {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.rpg-feature-steps dd code {
+  font-size: var(--font-smaller, 0.85em);
+}
+
 .rpg-feature-card hgroup {
   display: block;
   margin-bottom: var(--size-4-2, 0.5rem);

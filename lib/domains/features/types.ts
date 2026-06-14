@@ -241,6 +241,38 @@ export interface GMSceneAspect {
 }
 
 /**
+ * One reusable follow-up CHOICE a step block offers. When an entry feature's
+ * `interpret` result is a `@[[link]]` to a step block, the UI imports that
+ * block's `steps` as a dropdown on the branching `gen:` line; picking one
+ * appends a flat `  <choice>: <calc>` line under the `gen:` (one indent level,
+ * never a nested block).
+ *
+ * `calc` is the expression appended after the choice label:
+ *   - `""`                            → just records the pick, no line
+ *   - `"(note: …)"`                   → a terminal note
+ *   - `"d100= ->"`                    → a roll resolved in place
+ *   - `"@[[Scene Adjustment]] d10= ->"` → a roll whose `->` result auto-fills
+ *     from the linked table's rolled row (editable)
+ */
+export interface GMStep {
+  /** Choice label — shown in the dropdown and used as the appended line's label. */
+  choice: string;
+  /** Expression appended as `  <choice>: <calc>` under the `gen:` line. */
+  calc: string;
+  /**
+   * Resolve the calc's rolled die against this table (a `@[[…]]` / `[[…]]`
+   * link): the matched row fills the `->` result, editable. (Auto-fill.)
+   */
+  table?: string;
+  /** Resolve the calc's rolled die as a fate question with this likelihood
+   *  (against the current chaos factor, via the Fate Chart). */
+  likelihood?: GMLikelihood;
+  /** Resolve the calc's rolled die through a comparison-expression map (same
+   *  grammar as an aspect's `interpret`). */
+  interpret?: GMInterpret;
+}
+
+/**
  * Fill-in values that showcase a GM feature in use. Combined with the feature's
  * emit template they produce a concrete lonelog excerpt, rendered in the feature
  * card as an "Example" (mechanical entry + narrated prose). See ../gm/example.ts.
@@ -284,6 +316,13 @@ export interface GMFeature {
   generator?: GMGeneratorAspect;
   event?: GMEventAspect;
   scene?: GMSceneAspect;
+  /**
+   * Step block: reusable follow-up choices imported into a parent `gen:` line
+   * across files. A feature carrying `steps:` (and typically no other aspect)
+   * is a STEP block, referenced by an entry feature's `interpret` result via a
+   * `@[[file]]` / `@[[file]]#blockid` branch link. Not emitted standalone.
+   */
+  steps?: GMStep[];
 }
 
 export interface FeatureDetails {

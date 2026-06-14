@@ -25,9 +25,9 @@ In cases when your Expected Scene is changed check the number you rolled. If the
 ```rpg table.testing-the-expected-scene
 | Roll 1d10 and Compare It To The Chaos Factor. ||
 | --- | --- |
-|Roll Over Chaos Factor | Expected Scene|
-|Roll Odd (1, 3, 5, 7, 9) Within Chaos Factor | Altered Scene |
-|Roll Even (2, 4, 6, 8) Within Chaos Factor | Interrupt Scene |
+|Roll Over Chaos Factor | [[Scene Check|Expected Scene]]|
+|Roll Odd (1, 3, 5, 7, 9) Within Chaos Factor | [[Altered Scene]] |
+|Roll Even (2, 4, 6, 8) Within Chaos Factor | [[Interrupt Scene]] |
 [TESTING THE EXPECTED SCENE]
 ```
 
@@ -40,30 +40,20 @@ oracle:
   chaos: true
 generator:
   name: Testing the Expected Scene
+  work: Scene
   roll: d10
   vs: CF
-  work: Alterations
   interpret:
-    ">CF": Expected Scene
-    "<=CF, odd": Altered Scene
-    "<=CF, even": Interrupt Scene
-  follow:
-    Altered Scene:
-      The Next Expectation: ""
-      A Tweak: "(note: tweak the activity, an NPC, an object, or the location)"
-      Fate Question: "? [CF:{{cf}}] {{question}} -> (d100=)"
-      Meaning Tables Inspiration: "Meaning: d100= ->"
-      Scene Adjustment Table: "Scene Adjustment: d10= ->"
-    Interrupt Scene:
-      Generate a Random Event: "Event Focus: d100= ->"
+    ">CF": "@[[Scene Check|Expected Scene]]"
+    "<=CF, odd": "@[[Altered Scene]]"
+    "<=CF, even": "@[[Interrupt Scene]]"
 scene:
-  opens: "S{{n}} {{title}}"
+  opens: 'Start Scene(): "{{next}}"'
 example:
   scene: "ambush at the rockslide"
   cf: 5
   rolls: { d10: 3 }
-  n: "01"
-  title: "After the landslide: the road north lies buried."
+  next: "the suspect slips out the back"
 ---
 State the scene you expect, then test it against the Chaos Factor.
 ```
