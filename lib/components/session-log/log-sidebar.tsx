@@ -28,6 +28,8 @@ export interface LogSidebarProps {
   dieEdits: Record<string, string>;
   onDieChange: (source: string, raw: string, slot: number, value: string) => void;
   onResultChange: (source: string, value: string) => void;
+  /** A GM step dropdown pick — inserts the chosen step line into the note. */
+  onChoice?: (selected: string) => void;
 }
 
 export function LogSidebar({
@@ -41,6 +43,7 @@ export function LogSidebar({
   dieEdits,
   onDieChange,
   onResultChange,
+  onChoice,
 }: LogSidebarProps) {
   const edit: SidebarEditContext = { sceneEdits, onSceneChange, dieEdits, onDieChange, onResultChange };
 
@@ -60,6 +63,7 @@ export function LogSidebar({
             selected={selectedId === item.id}
             onSelect={onSelect}
             anchorRef={(el) => registerAnchor(item.id, el)}
+            onChoice={onChoice}
           />
         ))
       )}
