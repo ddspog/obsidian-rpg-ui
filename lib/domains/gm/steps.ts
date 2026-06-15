@@ -25,23 +25,26 @@ export interface BranchRef {
 }
 
 /**
- * Parse an `interpret` result that is a branch reference — a `@[[file]]`,
- * `[[file]]`, `[[file#blockid]]`, or `[[file|Label]]` (in any combination).
- * Returns null for a plain-text result (e.g. `"Expected Scene"` with no link).
+ * Parse an `interpret` result / `table` ref that is a branch reference — a
+ * `@[[file]]`, `[[file]]`, `[[file#blockid]]`, `@[[file]]#blockid`, or
+ * `[[file|Label]]` (in any combination). The block id may sit inside the
+ * brackets (`#blockid` before `]]`) or trail them (`]]#blockid`). Returns null
+ * for a plain-text result (e.g. `"Expected Scene"` with no link).
  */
 export function parseBranchRef(result: string): BranchRef | null {
-  const m = result.trim().match(/^@?\[\[([^\]]+)\]\]$/);
+  const m = result.trim().match(/^@?\[\[([^\]]+)\]\](?:#([\w./-]+))?$/);
   if (!m) return null;
   const inner = m[1].trim();
+  const outerBlock = m[2]?.trim() || undefined;
   const pipe = inner.indexOf("|");
   const explicitLabel = pipe >= 0 ? inner.slice(pipe + 1).trim() : "";
   const beforePipe = pipe >= 0 ? inner.slice(0, pipe) : inner;
   const hash = beforePipe.indexOf("#");
-  const block = hash >= 0 ? beforePipe.slice(hash + 1).trim() || undefined : undefined;
+  const innerBlock = hash >= 0 ? beforePipe.slice(hash + 1).trim() || undefined : undefined;
   const target = (hash >= 0 ? beforePipe.slice(0, hash) : beforePipe).trim();
   const label = explicitLabel || (target.split("/").pop() ?? target).trim();
   if (!target) return null;
-  return { label, target, block };
+  return { label, target, block: outerBlock ?? innerBlock };
 }
 
 /** The choice labels a step block offers (in declared order). */

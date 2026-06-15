@@ -31,13 +31,18 @@ describe("parseBranchRef", () => {
     });
   });
 
-  it("extracts a #blockid", () => {
-    expect(parseBranchRef("@[[Altered Scene]]#tweaks")).toBeNull(); // # must be inside the brackets
+  it("extracts a #blockid (inside or trailing the brackets)", () => {
+    expect(parseBranchRef("@[[Altered Scene]]#tweaks")).toEqual({
+      label: "Altered Scene",
+      target: "Altered Scene",
+      block: "tweaks",
+    });
     expect(parseBranchRef("@[[Altered Scene#tweaks]]")).toEqual({
       label: "Altered Scene",
       target: "Altered Scene",
       block: "tweaks",
     });
+    expect(parseBranchRef("@[[Altered Scene]]#scene-adjustment-table")?.block).toBe("scene-adjustment-table");
   });
 
   it("handles target#block|label together", () => {

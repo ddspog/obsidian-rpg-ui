@@ -2554,7 +2554,7 @@ p.rpg-item-magic-card__subtitle {
     transition: none;
   }
 }
-.lonelog-sidebar input.lonelog-formula-result-input {
+.lonelog-entries input.lonelog-formula-result-input {
   appearance: none;
   box-sizing: content-box;
   width: auto;
@@ -2575,11 +2575,11 @@ p.rpg-item-magic-card__subtitle {
   vertical-align: baseline;
   field-sizing: content;
 }
-.lonelog-sidebar input.lonelog-formula-result-input:hover {
+.lonelog-entries input.lonelog-formula-result-input:hover {
   box-shadow: inset 0 -1px 0 var(--text-faint);
 }
-.lonelog-sidebar input.lonelog-formula-result-input:focus,
-.lonelog-sidebar input.lonelog-formula-result-input:focus-visible {
+.lonelog-entries input.lonelog-formula-result-input:focus,
+.lonelog-entries input.lonelog-formula-result-input:focus-visible {
   outline: none;
   box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
 }
@@ -2601,7 +2601,7 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-threshold-value {
   font-variant-numeric: tabular-nums;
 }
-.lonelog-sidebar input.lonelog-threshold-input {
+.lonelog-entries input.lonelog-threshold-input {
   appearance: none;
   box-sizing: content-box;
   width: auto;
@@ -2621,11 +2621,11 @@ p.rpg-item-magic-card__subtitle {
   vertical-align: baseline;
   field-sizing: content;
 }
-.lonelog-sidebar input.lonelog-threshold-input:hover {
+.lonelog-entries input.lonelog-threshold-input:hover {
   box-shadow: inset 0 -1px 0 var(--text-faint);
 }
-.lonelog-sidebar input.lonelog-threshold-input:focus,
-.lonelog-sidebar input.lonelog-threshold-input:focus-visible {
+.lonelog-entries input.lonelog-threshold-input:focus,
+.lonelog-entries input.lonelog-threshold-input:focus-visible {
   outline: none;
   box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
 }
@@ -2661,6 +2661,9 @@ p.rpg-item-magic-card__subtitle {
 }
 .lonelog-die-token[data-sides="4"] {
   vertical-align: 0.12em;
+}
+.lonelog-die:not(.lonelog-die--percentile) .lonelog-die-token[data-sides="10"] {
+  vertical-align: -0.3em;
 }
 .lonelog-die-shape {
   position: absolute;
@@ -2748,7 +2751,7 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-die--percentile.is-editing .lonelog-die-token:first-child {
   margin-left: 0;
 }
-.lonelog-sidebar input.lonelog-scene-input {
+.lonelog-entries input.lonelog-scene-input {
   appearance: none;
   font: inherit;
   color: inherit;
@@ -2765,11 +2768,11 @@ p.rpg-item-magic-card__subtitle {
   min-width: 1ch;
   field-sizing: content;
 }
-.lonelog-sidebar input.lonelog-scene-input:hover {
+.lonelog-entries input.lonelog-scene-input:hover {
   box-shadow: inset 0 -1px 0 var(--background-modifier-border);
 }
-.lonelog-sidebar input.lonelog-scene-input:focus,
-.lonelog-sidebar input.lonelog-scene-input:focus-visible {
+.lonelog-entries input.lonelog-scene-input:focus,
+.lonelog-entries input.lonelog-scene-input:focus-visible {
   outline: none;
   box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.6), rgba(160, 160, 208, 0.6));
 }
@@ -2778,7 +2781,7 @@ p.rpg-item-magic-card__subtitle {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.lonelog-sidebar input.lonelog-die-input {
+.lonelog-entries input.lonelog-die-input {
   display: inline-block;
   vertical-align: baseline;
   position: relative;
@@ -2806,11 +2809,11 @@ p.rpg-item-magic-card__subtitle {
   text-align: center;
   field-sizing: content;
 }
-.lonelog-sidebar input.lonelog-die-input:hover {
+.lonelog-entries input.lonelog-die-input:hover {
   box-shadow: inset 0 -1px 0 var(--text-faint);
 }
-.lonelog-sidebar input.lonelog-die-input:focus,
-.lonelog-sidebar input.lonelog-die-input:focus-visible {
+.lonelog-entries input.lonelog-die-input:focus,
+.lonelog-entries input.lonelog-die-input:focus-visible {
   outline: none;
   box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
 }
@@ -6815,21 +6818,21 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin-block: var(--size-4-5, 1.25rem) var(--size-4-2, 0.5rem);
   font-family: var(--font-text);
 }
-.rpg-feature-steps {
+.rpg-feature-card .rpg-feature-steps {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: var(--size-2-1, 0.25rem) var(--size-4-2, 0.5rem);
   margin: var(--size-4-2, 0.5rem) 0;
 }
-.rpg-feature-steps dt {
+.rpg-feature-card .rpg-feature-steps dt {
   font-weight: var(--font-semibold, 600);
   color: var(--text-normal);
 }
-.rpg-feature-steps dd {
+.rpg-feature-card .rpg-feature-steps dd {
   margin: 0;
   color: var(--text-muted);
 }
-.rpg-feature-steps dd code {
+.rpg-feature-card .rpg-feature-steps dd code {
   font-size: var(--font-smaller, 0.85em);
 }
 .rpg-feature-card hgroup {

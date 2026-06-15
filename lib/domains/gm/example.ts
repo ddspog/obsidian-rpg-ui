@@ -261,8 +261,7 @@ function reResolveStepLine(
   const n = parseInt(rolled[1], 10);
   let result: string | null = null;
   if (step.table) {
-    const target = parseBranchRef(step.table)?.target ?? step.table;
-    const table = stepCtx?.tables?.[target];
+    const table = stepCtx?.tables?.[step.table];
     if (table) {
       const filled = resolveTableRoll(`${content} ->`, table).match(/->\s*(\S.*)$/);
       result = filled ? filled[1].trim() : null;

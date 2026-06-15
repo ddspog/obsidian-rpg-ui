@@ -318,11 +318,11 @@ describe("applyDieEdit — appended step lines resolve via the step's metadata",
         name: "Altered Scene",
         steps: [
           { choice: "Fate Question", calc: "d100= ->", likelihood: "50/50" as const },
-          { choice: "Scene Adjustment", calc: "d10= ->", table: "[[Scene Adjustment]]" },
+          { choice: "Scene Adjustment", calc: "d10= ->", table: "@[[Altered Scene]]#scene-adjustment" },
         ],
       },
     },
-    tables: { "Scene Adjustment": sceneAdjustment },
+    tables: { "@[[Altered Scene]]#scene-adjustment": sceneAdjustment },
   };
 
   it("auto-fills a table-backed step from the looked-up row", () => {

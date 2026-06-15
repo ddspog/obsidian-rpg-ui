@@ -82,20 +82,19 @@ class FeatureGMRenderChild extends ReactMarkdown {
   }
 
   /** Load each `table`-backed step's linked `rpg table.*` so its roll can
-   *  auto-fill the matched row. Keyed by the table link's basename. */
+   *  auto-fill the matched row. Keyed by the step's raw `table` ref; the block
+   *  id (`@[[file]]#id`) selects the specific table when a page has several. */
   private async loadStepTables(step: GMFeature, into: Record<string, TableDef>): Promise<void> {
     for (const s of step.steps ?? []) {
-      if (!s.table) continue;
+      if (!s.table || into[s.table]) continue;
       const ref = parseBranchRef(s.table);
-      const target = ref?.target ?? s.table;
-      if (into[target]) continue;
-      const file = this.app.metadataCache.getFirstLinkpathDest(target, this.sourcePath);
+      const file = this.app.metadataCache.getFirstLinkpathDest(ref?.target ?? s.table, this.sourcePath);
       if (!(file instanceof TFile)) continue;
       try {
         const content = await this.app.vault.read(file);
         const doc = parseSourceDoc({ $name: file.basename, $contents: content }, "class");
-        const table = doc.tables[0];
-        if (table) into[target] = table;
+        const table = (ref?.block && doc.tables.find((t) => t.name === ref.block)) || doc.tables[0];
+        if (table) into[s.table] = table;
       } catch {
         /* skip an unreadable table — the step just won't auto-fill */
       }

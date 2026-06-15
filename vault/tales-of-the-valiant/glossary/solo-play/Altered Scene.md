@@ -146,7 +146,7 @@ steps:
     calc: "d100= ->"
   - choice: Scene Adjustment
     calc: "d10= ->"
-    table: "[[Scene Adjustment]]"
+    table: "@[[Altered Scene]]#scene-adjustment-table"
 ---
 The ways to turn an [[Expected Scene]] into an altered one. Imported by the
 [[Scene Check]] when its roll lands on Altered: pick one and it appends a
