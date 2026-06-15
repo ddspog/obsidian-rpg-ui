@@ -201,12 +201,13 @@ class SessionLogMarkdown extends ReactMarkdown {
           if (!step) continue;
           steps[ref.target] = step;
           for (const s of step.steps ?? []) {
-            const t = s.table ? (parseBranchRef(s.table)?.target ?? s.table) : null;
-            if (!t || tables[t]) continue;
-            const tf = this.resolveLink(t);
+            if (!s.table || tables[s.table]) continue;
+            const tref = parseBranchRef(s.table);
+            const tf = this.resolveLink(tref?.target ?? s.table);
             if (!tf) continue;
             const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) }, "class");
-            if (tdoc.tables[0]) tables[t] = tdoc.tables[0];
+            const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
+            if (table) tables[s.table] = table;
           }
         } catch {
           /* unreadable target — skip; that branch just has no dropdown/auto-fill */
