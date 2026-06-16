@@ -2663,7 +2663,7 @@ p.rpg-item-magic-card__subtitle {
   vertical-align: 0.12em;
 }
 .lonelog-die:not(.lonelog-die--percentile) .lonelog-die-token[data-sides="10"] {
-  vertical-align: -0.3em;
+  vertical-align: -0.1em;
 }
 .lonelog-die-shape {
   position: absolute;
