@@ -43,6 +43,25 @@ A more structured way to use Meaning Tables for the first Scene is to apply a 4W
 
 **WHY**: Roll on the Actions Meaning Tables to learn the motivations behind Why the Characters are taking these actions.
 
+```rpg figure.mermaid
+align: right
+width: 40%
+caption: First Scene 4W Strategy
+---
+flowchart TD
+    WHO[WHO]:::step
+    R1(Roll on the Characters<br/>Elements Meaning Table.)
+    WHAT[WHAT]:::step
+    R2(Roll on the Actions<br/>Meaning Tables.)
+    WHERE[WHERE]:::step
+    R3(Roll on the Locations<br/>Elements Meaning Table.)
+    WHY[WHY]:::step
+    R4(Roll on the Actions<br/>Meaning Tables.)
+    RESULT[INTERPRET THE RESULTS]:::step
+
+    WHO --> R1 --> WHAT --> R2 --> WHERE --> R3 --> WHY --> R4 --> RESULT         
+    classDef step fill:#cfc6ad,stroke:#000,stroke-width:3px,font-weight:bold;
+```
 Once you have your 4Ws combine them into the most interesting interpretation you can think of.
 
 ![[zombies-arising-to-party.webp|right|384]]*The PC is a modern mage living in Los Angeles. The Player has no idea what the adventure will be about and they want to be surprised.*
