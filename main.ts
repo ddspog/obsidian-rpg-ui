@@ -28,6 +28,8 @@ import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild, installListUnfoldObserver } from "lib/domains/lists/render-list-group";
+import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
+import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
 import { setOfficialSourcesResolver, homebrewBySetting } from "lib/domains/lists/official-sources";
 import {
   parseRuleContent,
@@ -366,6 +368,24 @@ export default class DndUIToolkitPlugin extends Plugin {
           } catch (err) {
             console.error("rpg list.* render failed", err);
             el.innerHTML = '<div class="notice">Error rendering rpg list</div>';
+          }
+          return;
+        }
+
+        // `rpg figure.mermaid` — a floatable diagram figure. The body is a
+        // mermaid diagram (optionally preceded by a YAML-ish config head with
+        // align/width/caption). We re-fence it as ```mermaid, let Obsidian's
+        // own renderer produce the SVG, then float the wrapping <figure> per
+        // the `align` config — Obsidian drops the fence's trailing info-string
+        // tokens, so alignment must live in the config head, not the fence.
+        if (meta === "figure" || meta.startsWith("figure.")) {
+          try {
+            const block = parseFigureBlock(source);
+            const child = new FigureRenderChild(el, block, ctx.sourcePath);
+            ctx.addChild(child);
+          } catch (err) {
+            console.error("rpg figure.* render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg figure</div>';
           }
           return;
         }
