@@ -54,11 +54,57 @@ function detectStatMeta(keys: Set<string>, hasName: boolean): string | null {
 }
 
 /**
+ * A mermaid diagram declaration that opens an `rpg figure.mermaid` body.
+ *
+ * Two tiers keep false positives near zero in the fallback path:
+ *   - `flowchart`/`graph` must carry a direction token (`TD`, `LR`, …);
+ *   - jargon / camelCase / hyphenated diagram keywords match on a word
+ *     boundary (they don't occur as prose sentence-starters);
+ *   - the three English-ambiguous keywords (`journey`, `timeline`, `pie`)
+ *     must stand ALONE on the line.
+ * Case-sensitive: mermaid keywords are lowercase, whereas prose usually
+ * capitalises the first word of a body.
+ */
+const MERMAID_DECL_RE = new RegExp(
+  "^(?:" +
+    "(?:flowchart|graph)\\s+(?:TB|TD|BT|RL|LR)\\b" +
+    "|(?:sequenceDiagram|classDiagram(?:-v2)?|stateDiagram(?:-v2)?|erDiagram" +
+    "|gitGraph|quadrantChart|requirementDiagram|gantt|mindmap|kanban|treemap" +
+    "|sankey-beta|xychart-beta|block-beta|packet-beta|architecture-beta|radar-beta" +
+    "|C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)\\b" +
+    "|(?:journey|timeline|pie)\\s*$" +
+    ")"
+);
+
+/**
+ * `rpg figure.mermaid` — a diagram figure. Detected when the body's FIRST
+ * meaningful line (after an optional config head + `---`) is a mermaid diagram
+ * declaration. Deliberately conservative: only the first body line is
+ * inspected, so a rule/feature body that merely embeds a mermaid fence deeper
+ * down is never mistaken for a figure.
+ */
+function looksLikeMermaidFigure(source: string): boolean {
+  const lines = source.split("\n");
+  const sepIdx = lines.findIndex((l) => l.trim() === "---");
+  const bodyStart = sepIdx >= 0 ? sepIdx + 1 : 0;
+  for (let i = bodyStart; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t) continue;
+    return MERMAID_DECL_RE.test(t);
+  }
+  return false;
+}
+
+/**
  * Detects the meta identifier from raw YAML source by checking for distinctive
  * top-level keys. This is the reliable fallback used in reading view where
  * getSectionInfo returns null and the element contains no code HTML.
  */
 export function detectMetaFromSource(source: string): string | null {
+  // `rpg figure.mermaid` — checked first: a leading mermaid diagram
+  // declaration is unambiguous and appears in no other block type's body.
+  if (looksLikeMermaidFigure(source)) return "figure.mermaid";
+
   // Parse only the top-level keys by scanning for "key:" at the start of lines
   // (no YAML library needed — avoids circular dependency and is fast)
   const topLevelKeys = new Set<string>();

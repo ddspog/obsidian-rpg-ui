@@ -4924,6 +4924,55 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
       black 40%);
 }
 
+/* lib/styles/components/figure-block.css */
+.rpg-figure {
+  --rpg-figure-w: 40%;
+  margin: 0 0 1rem;
+}
+.rpg-figure--right {
+  float: right;
+  width: var(--rpg-figure-w);
+  margin: 0 0 1rem 1.5rem;
+  clear: right;
+}
+.rpg-figure--left {
+  float: left;
+  width: var(--rpg-figure-w);
+  margin: 0 1.5rem 1rem 0;
+  clear: left;
+}
+.rpg-figure--center {
+  width: var(--rpg-figure-w);
+  margin-inline: auto;
+}
+.rpg-figure--full {
+  width: 100%;
+}
+.rpg-figure__diagram {
+  display: flex;
+  justify-content: center;
+}
+.rpg-figure__diagram .mermaid {
+  max-width: 100%;
+}
+.rpg-figure__diagram .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.rpg-figure__caption {
+  margin-top: 0.4rem;
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.3;
+}
+.rpg-figure__caption > div > :first-child {
+  margin-top: 0;
+}
+.rpg-figure__caption > div > :last-child {
+  margin-bottom: 0;
+}
+
 /* lib/styles/components/line-control-stats.css */
 [aria-details="Line Control"] {
   display: flex;

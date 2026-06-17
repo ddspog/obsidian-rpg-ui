@@ -29,6 +29,8 @@ import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild } from "lib/domains/lists/render-list-group";
+import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
+import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { detectMetaFromSource } from "lib/utils/meta-extractor";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -101,6 +103,20 @@ export function processUnrenderedRpgFences(
       try {
         const block = parseListBlock(listName, source);
         const child = new ListRenderChild(el, app, block, sourcePath);
+        parent.addChild(child);
+      } catch (err) {
+        el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
+      }
+      continue;
+    }
+
+    // Figure blocks (rpg figure.mermaid) — floatable diagram figures. The
+    // body is a mermaid diagram (optionally with an align/width/caption head);
+    // re-fenced and rendered through Obsidian's own renderer, then floated.
+    if (meta === "figure" || meta.startsWith("figure.")) {
+      try {
+        const block = parseFigureBlock(source);
+        const child = new FigureRenderChild(el, block, sourcePath);
         parent.addChild(child);
       } catch (err) {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
