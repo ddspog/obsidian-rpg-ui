@@ -1,5 +1,98 @@
 import { describe, it, expect } from "vitest";
-import { parseTableBlock, splitCells, normalizeColumnKey } from "./parse-table-block";
+import { parseAxisCell, parseTableBlock, splitCells, normalizeColumnKey } from "./parse-table-block";
+
+describe("parseAxisCell", () => {
+  it("parses `\\` as the ↘ (down) diagonal", () => {
+    expect(parseAxisCell("{{ axis Stat \\ Mod }}")).toEqual({ col: "Stat", row: "Mod", dir: "down" });
+  });
+
+  it("parses `/` as the ↗ (up) diagonal", () => {
+    expect(parseAxisCell("{{ axis Stat / Mod }}")).toEqual({ col: "Stat", row: "Mod", dir: "up" });
+  });
+
+  it("tolerates tight braces and multi-word labels, splitting on the first separator", () => {
+    expect(parseAxisCell("{{axis Ability Score / Saving Throw}}")).toEqual({
+      col: "Ability Score",
+      row: "Saving Throw",
+      dir: "up",
+    });
+  });
+
+  it("returns null for non-axis cells", () => {
+    expect(parseAxisCell("Stat")).toBeNull();
+    expect(parseAxisCell("{{ roll : x }}")).toBeNull();
+    expect(parseAxisCell("{{ axis NoSeparator }}")).toBeNull();
+  });
+});
+
+describe("parseTableBlock: header vertical merge", () => {
+  it("resolves a `^` marker in the last header row and carries the column key down", () => {
+    const body = `| LEVEL | SPELL SLOTS ||
+| ^ | 1st | 2nd |
+|---|---|---|
+| 1 | 2 | — |`;
+    const t = parseTableBlock("p", body);
+    // The `^` in the last header row becomes a content-free merge marker.
+    expect(t.headerRows[1].cells[0].mergeUp).toBe(true);
+    expect(t.headerRows[1].cells[0].value).toBe("");
+    // Column 0's key carries down from "LEVEL" despite the `^` below it; the
+    // group row's wider span doesn't inflate the column count.
+    expect(t.columns).toEqual(["level", "1st", "2nd"]);
+    expect(t.keyColumn).toBe("level");
+  });
+
+  it("captures an explicit alignment glyph (`^-`) on a header marker", () => {
+    const body = `| LEVEL | X |
+| ^- | y |
+|---|---|
+| 1 | a |`;
+    const t = parseTableBlock("p", body);
+    expect(t.headerRows[1].cells[0].mergeUp).toBe(true);
+    expect(t.headerRows[1].cells[0].mergeAlign).toBe("middle");
+  });
+});
+
+describe("parseTableBlock: footer cells (second `|---|` separator)", () => {
+  it("captures rows after a second separator as footerCells, not body rows", () => {
+    const body = `| LVL | DMG |
+|---|---|
+| 1 | 1d6 |
+| 2 | 2d6 |
+|-----|-----|
+| Avg | 7 |`;
+    const t = parseTableBlock("dmg", body);
+    expect(t.rows).toHaveLength(2);
+    expect(t.footerCells).toHaveLength(1);
+    expect(t.footerCells[0].cells.map((c) => c.value)).toEqual(["Avg", "7"]);
+  });
+
+  it("leaves footerCells empty without a second separator", () => {
+    const body = `| A | B |
+|---|---|
+| 1 | 2 |`;
+    expect(parseTableBlock("x", body).footerCells).toEqual([]);
+  });
+
+  it("does not treat a body row of single-hyphen cells as the footer boundary", () => {
+    const body = `| A | B |
+|---|---|
+| - | - |
+| 1 | 2 |`;
+    const t = parseTableBlock("x", body);
+    expect(t.footerCells).toEqual([]);
+    expect(t.rows).toHaveLength(2);
+  });
+
+  it("supports `||` colspan in footer cells", () => {
+    const body = `| A | B |
+|---|---|
+| 1 | 2 |
+|---|---|
+| Total || x |`;
+    const t = parseTableBlock("x", body);
+    expect(t.footerCells[0].cells).toEqual([{ value: "Total", colspan: 2 }, { value: "x" }]);
+  });
+});
 
 describe("normalizeColumnKey", () => {
   it("lowercases and collapses non-alphanumeric runs to `_`", () => {
@@ -278,5 +371,96 @@ describe("parseTableBlock: indented cells", () => {
     const t = parseTableBlock("edge", body);
     expect(t.rows[0].cells[0].indent).toBeUndefined();
     expect(t.rows[0].cells[0].value).toBe(">5 gp");
+  });
+});
+
+describe("parseTableBlock: cell @modifiers", () => {
+  it("strips recognised leading @modifiers into cell.mods", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @compact @highlight-col Caster Level | x |`);
+    expect(t.rows[0].cells[0].mods).toEqual(["compact", "highlight-col"]);
+    expect(t.rows[0].cells[0].value).toBe("Caster Level");
+  });
+
+  it("recognises @highlight-cross as the cross-highlight modifier", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @highlight-cross 7 | x |`);
+    expect(t.rows[0].cells[0].mods).toEqual(["highlight-cross"]);
+    expect(t.rows[0].cells[0].value).toBe("7");
+  });
+
+  it("does not recognise the old @highlight-both as a modifier", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @highlight-both x | y |`);
+    expect(t.rows[0].cells[0].mods).toBeUndefined();
+    expect(t.rows[0].cells[0].value).toBe("@highlight-both x");
+  });
+
+  it("works on header cells and keeps the column key from the stripped text", () => {
+    const t = parseTableBlock("m", `| @highlight-col LEVEL | B |\n|---|---|\n| 1 | 2 |`);
+    expect(t.headerRows[0].cells[0].mods).toEqual(["highlight-col"]);
+    expect(t.headerRows[0].cells[0].value).toBe("LEVEL");
+    expect(t.columns).toEqual(["level", "b"]);
+  });
+
+  it("leaves unknown @words and @[[refs]] untouched as content", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @bogus keep | @[[File]].x |`);
+    expect(t.rows[0].cells[0].mods).toBeUndefined();
+    expect(t.rows[0].cells[0].value).toBe("@bogus keep");
+    expect(t.rows[0].cells[1].mods).toBeUndefined();
+    expect(t.rows[0].cells[1].value).toBe("@[[File]].x");
+  });
+
+  it("accepts a modifier with content after it", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @highlight-row x | y |`);
+    expect(t.rows[0].cells[0].mods).toEqual(["highlight-row"]);
+    expect(t.rows[0].cells[0].value).toBe("x");
+  });
+
+  it("strips trailing @modifiers, leaving the core content (e.g. an axis cell)", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| {{ axis Odds / Chaos Factor }} @header @highlight-cross | x |`);
+    const cell = t.rows[0].cells[0];
+    expect(cell.value).toBe("{{ axis Odds / Chaos Factor }}");
+    expect(cell.mods?.slice().sort()).toEqual(["header", "highlight-cross"]);
+  });
+
+  it("strips modifiers flanking the content (leading + trailing)", () => {
+    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| @compact Caster Level @header | x |`);
+    const cell = t.rows[0].cells[0];
+    expect(cell.value).toBe("Caster Level");
+    expect(cell.mods?.slice().sort()).toEqual(["compact", "header"]);
+  });
+
+  it("parses @modifiers on footer cells (after a 2nd separator)", () => {
+    const t = parseTableBlock(
+      "m",
+      `| A | B |\n|---|---|\n| 1 | 2 |\n|---|---|\n| {{ axis O / C }} @header @highlight-cross | 1 |`
+    );
+    const cell = t.footerCells[0].cells[0];
+    expect(cell.value).toBe("{{ axis O / C }}");
+    expect(cell.mods?.slice().sort()).toEqual(["header", "highlight-cross"]);
+  });
+
+  it("recognises the @middle vertical-centering family", () => {
+    const t = parseTableBlock(
+      "m",
+      `| A | B | C | D |\n|---|---|---|---|\n| @middle a | @middle-col b | @middle-row c | @middle-cross d |`
+    );
+    expect(t.rows[0].cells[0].mods).toEqual(["middle"]);
+    expect(t.rows[0].cells[0].value).toBe("a");
+    expect(t.rows[0].cells[1].mods).toEqual(["middle-col"]);
+    expect(t.rows[0].cells[2].mods).toEqual(["middle-row"]);
+    expect(t.rows[0].cells[3].mods).toEqual(["middle-cross"]);
+  });
+});
+
+describe("parseTableBlock: caption @title", () => {
+  it("captures @title and keeps the remaining caption text", () => {
+    const t = parseTableBlock("c", `| A |\n|---|\n| 1 |\n[Cleric Progression @title]`);
+    expect(t.caption).toBe("Cleric Progression");
+    expect(t.captionTitle).toBe(true);
+  });
+
+  it("leaves captionTitle undefined without @title", () => {
+    const t = parseTableBlock("c", `| A |\n|---|\n| 1 |\n[Plain Caption]`);
+    expect(t.caption).toBe("Plain Caption");
+    expect(t.captionTitle).toBeUndefined();
   });
 });

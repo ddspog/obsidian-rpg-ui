@@ -25,6 +25,72 @@
   padding: 4px 10px;
 }
 
+/* ─── Cell `@modifier`s ─────────────────────────────────────────────────────
+ * Leading `@…` tokens parsed off a cell's text. `@highlight-col` /
+ * `@highlight-row` / `@highlight-cross` band the column / row / both with the
+ * same tan category style as a `| Section ||||` divider row (the cross
+ * pattern when both axes meet); `@compact` shrinks the text to fit; `@header`
+ * styles a single body cell like a header `<th>` — but the element stays a
+ * `<td>`. `@header` takes precedence over `@highlight-*` ON THE SAME CELL:
+ * the col-highlight class isn't added, and the `:not()` qualifier here drops
+ * the row-highlight rule inherited from the `<tr>`. */
+
+.rpg-table td.rpg-table-col-highlight,
+.rpg-table th.rpg-table-col-highlight,
+.rpg-table tr.rpg-table-row-highlight > td:not(.rpg-table-cell--header),
+.rpg-table tr.rpg-table-row-highlight > th:not(.rpg-table-cell--header) {
+  /* `!important` beats Obsidian core's column-zebra
+   * (`.markdown-rendered tbody tr > td:nth-child(2n+2)`, specificity 0,2,3),
+   * which otherwise repaints even-positioned cells and hides our band. */
+  background: light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14)) !important;
+  color: light-dark(#3a2a14, #f0e8d0);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.rpg-table .rpg-table-cell--compact {
+  font-size: 0.82em;
+  line-height: 1.25;
+}
+
+/* `@middle` / `@middle-col` (per-cell) and `@middle-row` / `@middle-cross`
+ * (whole row) — vertically centre a cell's content within its row height.
+ * Visible when the row is taller than the cell (a wrapped neighbour or a
+ * rowspan). */
+.rpg-table .rpg-table-cell--middle,
+.rpg-table tr.rpg-table-row-middle > td,
+.rpg-table tr.rpg-table-row-middle > th {
+  vertical-align: middle;
+}
+
+/* `@header` — style a body/footer `<td>` like the theme's header `<th>`
+ * (dark title bar, light text). Tag stays `<td>` (no semantic role swap
+ * mid-body); the colours are the same `--text-title` / `--background-primary`
+ * tokens the Ribbons theme uses for `thead th`. */
+.rpg-table td.rpg-table-cell--header,
+.rpg-table th.rpg-table-cell--header {
+  background: var(--text-title) !important;
+  color: var(--background-primary);
+  font-weight: 700;
+  font-style: normal;
+  text-align: center;
+  letter-spacing: normal;
+}
+
+/* `@title` — render the caption like a header row: dark title bar + light
+ * text (matching `thead th`), but DO NOT touch font-family — the caption
+ * keeps whatever font Obsidian gives it. */
+.rpg-table caption.rpg-table-caption--title {
+  background: var(--text-title);
+  color: var(--background-primary);
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 0.45em 0.6em;
+}
+
 /* Indented cell — signals a child/sub-item via leading `> ` in the source.
  * Any cell can carry indentation independently. */
 .rpg-table td[data-indent] {
@@ -62,6 +128,107 @@
 
 .rpg-table td[data-valign="bottom"] {
   vertical-align: bottom;
+}
+
+/* Vertically-merged HEADER cells (`^`/`^^`/`^v`/`^-` in a header row). A
+ * merged `th` spans multiple header rows; `data-valign` positions its label
+ * within the span. `^-` (or a bare `^`) → centred, which is the usual choice
+ * for a column-name that straddles a group row. Header text is centred
+ * horizontally so the value sits in the middle of the merged cell. */
+.rpg-table thead th[rowspan] {
+  text-align: center;
+}
+.rpg-table thead th[data-valign="top"] {
+  vertical-align: top;
+}
+.rpg-table thead th[data-valign="middle"] {
+  vertical-align: middle;
+}
+.rpg-table thead th[data-valign="bottom"] {
+  vertical-align: bottom;
+}
+
+/* ─── Axis (diagonal corner) cell — `{{ axis Col / Row }}` ─────────────────
+ * A full-cell diagonal divides a corner header into two labels: the COLUMN
+ * label (upper-right triangle) and the ROW label (lower-left triangle). The
+ * SVG line stretches corner-to-corner (preserveAspectRatio="none"), and the
+ * two labels are pinned to opposite corners. */
+.rpg-table .rpg-table-axis-cell {
+  position: relative;
+  vertical-align: middle;
+  min-width: 5.5em;
+  min-height: 2.6em;
+  padding: 0.35em 0.6em;
+}
+
+.rpg-table-axis-cell__line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Follow the cell's text colour so the divider stays visible on a dark
+   * `@header` background (light line) or a light cell (dark line). */
+  stroke: currentColor;
+  stroke-width: 2px;
+  /* keep the 2px stroke crisp even though the viewBox is scaled non-uniformly */
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.rpg-table-axis-cell__col {
+  position: relative;
+  display: block;
+  text-align: right;
+  line-height: 1.1;
+}
+
+.rpg-table-axis-cell__row {
+  position: relative;
+  display: block;
+  text-align: left;
+  line-height: 1.1;
+}
+
+/* `/` (↗) variant: mirror the labels horizontally — column hugs the upper-
+ * LEFT, row hugs the lower-RIGHT. (The diagonal itself flips in the SVG.) */
+.rpg-table-axis-cell--up .rpg-table-axis-cell__col {
+  text-align: left;
+}
+
+.rpg-table-axis-cell--up .rpg-table-axis-cell__row {
+  text-align: right;
+}
+
+/* Axis crosshair — in a table with an `{{ axis }}` cell, the "data" cells
+ * (the quadrant the diagonal points into) get a crosshair cursor; hovering one
+ * lights up its whole row + column (body, header, AND footer), so the
+ * row/column axis labels at the ends light up too. The hover background is
+ * painted INLINE with `!important` by the renderer (so it beats both
+ * Obsidian's column-zebra and our own `@highlight-*` band, which out-specify a
+ * plain class); these vars just supply the (themeable) colours. The focal cell
+ * (row ∩ col) gets the stronger tint. */
+.rpg-table {
+  --rpg-axis-cross-bg: color-mix(in srgb, var(--text-accent, #7c2d12) 13%, transparent);
+  --rpg-axis-cross-focal-bg: color-mix(in srgb, var(--text-accent, #7c2d12) 28%, transparent);
+}
+
+.rpg-table .rpg-table-axis-data {
+  cursor: crosshair;
+}
+
+/* ─── Cell math (`$…$` / `$$…$$`) ──────────────────────────────────────────
+ * Inline math sits on the text baseline. Display math (`$$…$$`) is coerced to
+ * inline-block so it fits inside the cell instead of breaking to a full-width
+ * centred block. */
+.rpg-table-math {
+  white-space: nowrap;
+}
+
+.rpg-table-math--display,
+.rpg-table-math--display .math {
+  display: inline-block;
+  margin: 0;
 }
 
 /* Variant: `#css/tx/s/wide` — keep cells from wrapping on wide progression

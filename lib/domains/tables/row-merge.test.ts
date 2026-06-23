@@ -53,9 +53,9 @@ describe("parseTableBlock: merge markers", () => {
     expect(t.rows[0].cells[0]).toEqual({ value: "^ hi" });
   });
 
-  it("does not treat header `^` cells as merges (headers excluded)", () => {
-    const t = parseTableBlock("p", `| ^ | B |\n|---|---|\n| 1 | 2 |`);
-    expect(t.headerRows[0].cells[0]).toEqual({ value: "^" });
+  it("treats header `^` cells as merge markers too (vertical header merge)", () => {
+    const t = parseTableBlock("p", `| LEVEL | B |\n| ^ | C |\n|---|---|\n| 1 | 2 |`);
+    expect(t.headerRows[1].cells[0]).toEqual({ value: "", mergeUp: true });
   });
 
   it("strips a `||` colspan off a marker so it stays single-column", () => {

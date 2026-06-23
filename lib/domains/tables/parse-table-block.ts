@@ -87,8 +87,9 @@ function isSeparatorLine(line: string): boolean {
   return /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/.test(t);
 }
 
-/** A footer line: `[CAPTION #css/tx/table #css/tx/wide]`. */
-function parseFooter(line: string): { caption: string; classes: string[] } | null {
+/** A footer line: `[CAPTION #css/tx/table @title]`. The `@title` token
+ *  flags the caption to render larger/header-styled. */
+function parseFooter(line: string): { caption: string; classes: string[]; title: boolean } | null {
   const t = line.trim();
   if (!t.startsWith("[") || !t.endsWith("]")) return null;
   const inner = t.slice(1, -1).trim();
@@ -96,14 +97,17 @@ function parseFooter(line: string): { caption: string; classes: string[] } | nul
   const tokens = inner.split(/\s+/);
   const classes: string[] = [];
   const captionParts: string[] = [];
+  let title = false;
   for (const tok of tokens) {
     if (tok.startsWith("#")) {
       classes.push(tok.slice(1));
+    } else if (tok === "@title") {
+      title = true;
     } else {
       captionParts.push(tok);
     }
   }
-  return { caption: captionParts.join(" "), classes };
+  return { caption: captionParts.join(" "), classes, title };
 }
 
 /**
@@ -252,6 +256,108 @@ function parseFooterRollLine(line: string): FooterRow {
 }
 
 /**
+ * A stricter separator that marks the body/footer boundary — the SECOND
+ * `|---|`. Requires 3+ dashes per column so a body row of single-hyphen
+ * cells (`| - | - |`) isn't mistaken for the boundary; author empty cells
+ * with an em-dash (`—`), not `-`.
+ */
+function isFooterBoundaryLine(line: string): boolean {
+  const t = line.trim();
+  return /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/.test(t);
+}
+
+/**
+ * Detect an axis (diagonal corner) cell: `{{ axis <col> <sep> <row> }}`. The
+ * separator glyph IS the diagonal drawn:
+ *   - `\` → ↘ (top-left → bottom-right); col label in the upper-right triangle.
+ *   - `/` → ↗ (bottom-left → top-right); col label in the upper-left triangle.
+ * In both, the FIRST label names what the COLUMNS mean (hugs the top) and the
+ * SECOND names the ROWS (hugs the bottom). Splits on the first `/` or `\`.
+ * Returns null when the cell isn't an axis expression.
+ */
+export function parseAxisCell(value: string): { col: string; row: string; dir: "up" | "down" } | null {
+  const m = value.trim().match(/^\{\{\s*axis\s+(.+?)\s*([/\\])\s*(.+?)\s*\}\}$/);
+  if (!m) return null;
+  return { col: m[1].trim(), row: m[3].trim(), dir: m[2] === "/" ? "up" : "down" };
+}
+
+/** Recognised per-cell `@modifier` tokens (see TableCell.mods). */
+const CELL_MODIFIERS = new Set([
+  "compact",
+  "highlight-col",
+  "highlight-row",
+  "highlight-cross",
+  "header",
+  "middle",
+  "middle-col",
+  "middle-row",
+  "middle-cross",
+]);
+
+/**
+ * Strip leading `@modifier` tokens from a cell value. A modifier is `@<name>`
+ * at the very start followed by whitespace or end-of-cell; only RECOGNISED
+ * names are consumed (so unknown `@words` and `@[[refs]]` stay as content).
+ * Returns the consumed mod names and the remaining text.
+ */
+/**
+ * Strip `@modifier` tokens from a cell value — both LEADING and TRAILING runs,
+ * so they can flank the content (`@compact Foo`, `Foo @header`, or
+ * `{{ axis A / B }} @header @highlight-cross`). A modifier is `@<name>`
+ * bounded by whitespace / cell edges; only RECOGNISED names are consumed, so
+ * unknown `@words` and `@[[refs]]` stay as content. Returns the consumed mod
+ * names and the remaining text.
+ */
+function stripCellModifiers(value: string): { mods: string[]; rest: string } {
+  const mods: string[] = [];
+  let rest = value;
+  const LEAD = /^@([a-z][a-z-]*)(?:\s+|$)/;
+  const TRAIL = /\s+@([a-z][a-z-]*)$/;
+  let m: RegExpMatchArray | null;
+  while ((m = rest.match(LEAD)) !== null && CELL_MODIFIERS.has(m[1])) {
+    mods.push(m[1]);
+    rest = rest.slice(m[0].length);
+  }
+  while ((m = rest.match(TRAIL)) !== null && CELL_MODIFIERS.has(m[1])) {
+    mods.push(m[1]);
+    rest = rest.slice(0, rest.length - m[0].length);
+  }
+  return { mods, rest };
+}
+
+/**
+ * Apply per-cell markers to a parsed row, in place — shared by header and
+ * body rows so vertical merges work in either:
+ *   - `^` / `^^` / `^v` / `^-` → `mergeUp` (+ optional `mergeAlign`); the
+ *     cell content is blanked and any `||` colspan dropped (a marker occupies
+ *     exactly one column).
+ *   - leading `@modifier` tokens → `mods` (stripped from the value).
+ *   - a leading `> ` (repeatable) → `indent` depth, stripped from the value.
+ */
+function applyRowMarkers(row: TableRow): void {
+  for (const cell of row.cells) {
+    const marker = parseMergeMarker(cell.value);
+    if (marker) {
+      cell.mergeUp = true;
+      if (marker.align) cell.mergeAlign = marker.align;
+      cell.value = "";
+      delete cell.colspan;
+      continue;
+    }
+    const { mods, rest } = stripCellModifiers(cell.value);
+    if (mods.length) {
+      cell.mods = mods;
+      cell.value = rest;
+    }
+    const m = cell.value.match(/^(>+)\s/);
+    if (m) {
+      cell.indent = m[1].length;
+      cell.value = cell.value.slice(m[0].length);
+    }
+  }
+}
+
+/**
  * Parse the body of a `rpg table.<name>` fence.
  *
  * Key column resolution: a header cell ending in `*` (e.g. `LEVEL*`) marks
@@ -265,7 +371,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
   // ── Split into: table lines, footer caption, roll-footer rows ──
   const tableLines: string[] = [];
   const footerRollLines: string[] = [];
-  let footer: { caption: string; classes: string[] } | null = null;
+  let footer: { caption: string; classes: string[]; title: boolean } | null = null;
   let pagination: PaginationConfig | undefined;
   let wide = false;
 
@@ -303,59 +409,72 @@ export function parseTableBlock(name: string, body: string): TableDef {
     }
   }
 
-  // ── Find the separator row and split header / body ──
+  // ── Split into header / body / footer-cell sections ──
+  // The first separator splits header from the rest; a SECOND (strict)
+  // separator splits body rows from custom footer-cell rows.
   const sepIdx = tableLines.findIndex(isSeparatorLine);
   const headerLines = sepIdx >= 0 ? tableLines.slice(0, sepIdx) : [];
-  const bodyLines = sepIdx >= 0 ? tableLines.slice(sepIdx + 1) : tableLines;
+  const afterHeader = sepIdx >= 0 ? tableLines.slice(sepIdx + 1) : tableLines;
+  const footIdxRel = afterHeader.findIndex(isFooterBoundaryLine);
+  const bodyLines = footIdxRel >= 0 ? afterHeader.slice(0, footIdxRel) : afterHeader;
+  const footerCellLines = footIdxRel >= 0 ? afterHeader.slice(footIdxRel + 1) : [];
 
-  const headerRows: TableRow[] = headerLines.map((l) => ({ cells: splitCells(l) }));
+  const headerRows: TableRow[] = headerLines.map((l) => {
+    const row: TableRow = { cells: splitCells(l) };
+    applyRowMarkers(row);
+    return row;
+  });
   const rows: TableRow[] = bodyLines.map((l) => {
     const row: TableRow = { cells: splitCells(l) };
-    for (const cell of row.cells) {
-      // `^` (and its aligned variants) marks a vertical merge: the cell
-      // carries no content and joins the cell above. Detected before the
-      // `> ` indent rule since a marker is content-free. A marker occupies
-      // exactly one column, so any `||` colspan it picked up is dropped — the
-      // anchor's own colspan governs the merged region's width.
-      const marker = parseMergeMarker(cell.value);
-      if (marker) {
-        cell.mergeUp = true;
-        if (marker.align) cell.mergeAlign = marker.align;
-        cell.value = "";
-        delete cell.colspan;
-        continue;
-      }
-      const m = cell.value.match(/^(>+)\s/);
-      if (m) {
-        cell.indent = m[1].length;
-        cell.value = cell.value.slice(m[0].length);
-      }
-    }
+    applyRowMarkers(row);
+    return row;
+  });
+  // Footer cells render as authored (no vertical merge in the tfoot), but
+  // still split on `||` for colspan and honour `@modifier`s + axis cells.
+  const footerCells: TableRow[] = footerCellLines.map((l) => {
+    const row: TableRow = { cells: splitCells(l) };
+    applyRowMarkers(row);
     return row;
   });
 
-  // ── Derive columns from the LAST header row (most specific names). The
-  //    same row carries the `*` key sigil — we strip it here and remember
-  //    which column index it pointed at.
-  const lastHeader = headerRows[headerRows.length - 1];
-  const columnLabels: string[] = [];
+  // ── Derive columns ──
+  // `*` key sigil: scan every header cell (any row); the first wins. Strip it
+  // from the displayed label.
   let keyColumnIndex = -1;
-  if (lastHeader) {
+  for (const hr of headerRows) {
     let columnPos = 0;
-    for (const cell of lastHeader.cells) {
+    for (const cell of hr.cells) {
       const span = cell.colspan ?? 1;
       const trimmed = cell.value.trim();
-      const isKey = trimmed.length > 1 && trimmed.endsWith("*");
-      const display = isKey ? trimmed.slice(0, -1).trimEnd() : cell.value;
-      if (isKey) {
-        cell.value = display;
+      if (trimmed.length > 1 && trimmed.endsWith("*")) {
+        cell.value = trimmed.slice(0, -1).trimEnd();
         if (keyColumnIndex < 0) keyColumnIndex = columnPos;
       }
-      columnLabels.push(display);
-      for (let i = 1; i < span; i++) columnLabels.push(display);
       columnPos += span;
     }
   }
+  // Effective label per grid column: walk header rows top→bottom, recording
+  // each column's value from any non-merge cell (expanded across its colspan).
+  // A `^` marker carries no value, so a column that merges down keeps the
+  // label from the row above.
+  const colValue: string[] = [];
+  for (const hr of headerRows) {
+    let columnPos = 0;
+    for (const cell of hr.cells) {
+      const span = cell.colspan ?? 1;
+      if (!cell.mergeUp) {
+        for (let i = 0; i < span; i++) colValue[columnPos + i] = cell.value;
+      }
+      columnPos += span;
+    }
+  }
+  // The column COUNT comes from the LAST header row (the column-name row), so
+  // a group row that spans extra columns via trailing `||` doesn't inflate it.
+  const lastHeader = headerRows[headerRows.length - 1];
+  let columnCount = 0;
+  if (lastHeader) for (const cell of lastHeader.cells) columnCount += cell.colspan ?? 1;
+  const columnLabels: string[] = [];
+  for (let c = 0; c < columnCount; c++) columnLabels.push(colValue[c] ?? "");
   const columns = columnLabels.map(normalizeColumnKey);
 
   // Default: first column is the key when no `*` sigil was given.
@@ -368,8 +487,10 @@ export function parseTableBlock(name: string, body: string): TableDef {
     columnLabels,
     rows,
     headerRows,
+    footerCells,
     keyColumn,
     caption: footer?.caption,
+    captionTitle: footer?.title || undefined,
     classes: footer?.classes ?? [],
     footerRows: footerRollLines.map(parseFooterRollLine),
     pagination,
