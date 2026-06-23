@@ -10,6 +10,20 @@
   border: none;
 }
 
+/* Custom footer-cell rows (authored after the 2nd `|---|`). They sit above
+ * the roll/pagination rows; give them real cell padding and centre the
+ * content the way a totals/summary row reads. A faint top rule on the first
+ * one separates the footer cells from the body above. */
+.rpg-table-tfoot__cell-row td {
+  padding: 4px 10px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.rpg-table-tfoot__cell-row:first-child td {
+  border-top: 1px solid color-mix(in srgb, var(--text-faint, #999) 50%, transparent) !important;
+}
+
 /* Roll row inside tfoot */
 .rpg-table-tfoot__roll-row td {
   padding: 0;

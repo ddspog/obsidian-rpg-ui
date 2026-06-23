@@ -84,6 +84,11 @@ export interface RenderCell {
    * re-show a merge group orphaned at the top of the current page.
    */
   carried?: boolean;
+  /** `@modifier` tokens carried from the source cell (see TableCell.mods). */
+  mods?: string[];
+  /** Absolute grid column index of this cell's first column — used to apply
+   *  column highlighting regardless of merges. */
+  colStart?: number;
 }
 
 /** A row ready to render. Category rows expose their cleaned label instead. */
@@ -124,12 +129,21 @@ interface Anchor {
  * that begin before `range.start` are accounted for, but emits `RenderRow`s
  * only for rows inside `[range.start, range.end)`. Category rows reset all
  * active spans — a data cell can't merge into a section band.
+ *
+ * `opts.categories` (default true) toggles category-divider detection. Pass
+ * `false` when resolving header rows, where a full-width spanning cell is a
+ * column-group title, not a section band. `opts.colStart` (default false)
+ * populates each emitted cell's absolute `colStart` — opt-in so callers that
+ * don't need column highlighting keep a minimal cell shape.
  */
 export function resolveRenderRows(
   allRows: TableRow[],
   columnCount: number,
-  range?: RowRange
+  range?: RowRange,
+  opts: { categories?: boolean; colStart?: boolean } = {}
 ): RenderRow[] {
+  const categories = opts.categories ?? true;
+  const withColStart = opts.colStart ?? false;
   const start = range?.start ?? 0;
   const end = range?.end ?? allRows.length;
 
@@ -143,7 +157,7 @@ export function resolveRenderRows(
     const visible = r >= start;
 
     // A category divider breaks every active vertical span.
-    if (isCategoryRow(row, columnCount)) {
+    if (categories && isCategoryRow(row, columnCount)) {
       colAnchor = [];
       if (visible) {
         out.push({
@@ -195,6 +209,7 @@ export function resolveRenderRows(
               valign: anchor.align,
               carried: true,
             };
+            if (withColStart) promoted.colStart = colPos;
             if (anchor.colspan > 1) promoted.colspan = anchor.colspan;
             renderCells.push(promoted);
             anchor.cell = promoted;
@@ -207,6 +222,7 @@ export function resolveRenderRows(
           // the marker as an empty cell so the grid stays aligned, and let it
           // seed a fresh (empty) anchor.
           const empty: RenderCell = { value: "" };
+          if (withColStart) empty.colStart = colPos;
           if (span > 1) empty.colspan = span;
           const seeded: Anchor = {
             value: "",
@@ -221,8 +237,10 @@ export function resolveRenderRows(
       } else {
         // Normal cell → becomes the fresh anchor for its column range.
         const rc: RenderCell = { value: cell.value };
+        if (withColStart) rc.colStart = colPos;
         if (span > 1) rc.colspan = span;
         if (cell.indent) rc.indent = cell.indent;
+        if (cell.mods) rc.mods = cell.mods;
         if (visible) renderCells.push(rc);
         const fresh: Anchor = {
           value: cell.value,

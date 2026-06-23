@@ -36,6 +36,16 @@ export interface TableCell {
    * span's default (centred). Only meaningful when `mergeUp` is true.
    */
   mergeAlign?: VAlign;
+  /**
+   * Recognized `@modifier` tokens stripped from the cell's leading text:
+   * `compact` (smaller font), `highlight-col` / `highlight-row` /
+   * `highlight-cross` (category-band the column / row / both through this
+   * cell — a cross when both axes are flagged), `header` (style the cell
+   * like a header `<th>` without changing its tag), `middle` / `middle-col` /
+   * `middle-row` / `middle-cross` (vertically centre the cell / column / row /
+   * both). Absent when none.
+   */
+  mods?: string[];
 }
 
 /** One row of the table body. */
@@ -97,10 +107,21 @@ export interface TableDef {
   rows: TableRow[];
   /** Every header row as authored — allows multi-row headers. */
   headerRows: TableRow[];
+  /**
+   * Custom footer cell rows authored after a SECOND `|---|` separator. They
+   * render as `<tr>`s inside the shared `<tfoot>`, ABOVE the roll and
+   * pagination rows, and are never paginated. Cells support colspan, math,
+   * wikilinks, and `{{ axis }}` like body cells. Empty when no second
+   * separator is present.
+   */
+  footerCells: TableRow[];
   /** Which column keys a row by value. Omitted ⇒ row-index lookup only. */
   keyColumn?: string;
   /** Caption from the trailing `[CAPTION #css/...]` footer. */
   caption?: string;
+  /** True when the caption footer carried the `@title` modifier — render the
+   *  caption larger and header-styled (same font family as the body). */
+  captionTitle?: boolean;
   /** Classes from the footer (strings after `#`, e.g. `css/tx/table`). */
   classes: string[];
   /** Roll-footer rows parsed from `|= … =|` lines (may be empty). */

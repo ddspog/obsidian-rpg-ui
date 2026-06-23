@@ -993,6 +993,7 @@ describe("resolveFeatures: tables", () => {
         columnLabels: ["LEVEL", "PB"],
         rows: [{ cells: [{ value: "1" }, { value: "+2" }] }, { cells: [{ value: "2" }, { value: "+2" }] }],
         headerRows: [{ cells: [{ value: "LEVEL" }, { value: "PB" }] }],
+        footerCells: [],
         keyColumn: "level",
         classes: [],
         footerRows: [],
