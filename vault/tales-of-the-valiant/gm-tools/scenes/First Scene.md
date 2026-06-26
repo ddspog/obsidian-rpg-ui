@@ -1,9 +1,9 @@
 # THE FIRST SCENE
 The First Scene of your adventure is a special one because it gets the story rolling. There are a few different ways you can come up with a First Scene depending on how much Context you're starting with and how surprised you want to be.
 ```rpg table.first-scene-strategies
-| FIRST SCENE STRATEGIES ||||
 | --- | --- | --- | --- |
 | INSPIRED IDEA | RANDOM EVENT | MEANING TABLES | 4W: WHO, WHAT, WHERE, WHY |
+[FIRST SCENE STRATEGIES @title]
 ```
 ### INSPIRED IDEA
 Mythic adventures are full of surprises, but you can always start with a fully formed idea of your own. You can think of these as "what if" ideas, such as "What if my cybernetic superhero PC gets a lead on the shadowy organization that created him? " Starting with an idea that excites you makes for a solid beginning that will lead to a solid adventure.
@@ -33,16 +33,6 @@ You can skip the Event Focus altogether and go straight to the Meaning Tables fo
 
 *He successfully falls in line with a column of recruits marching towards a garrison. Once inside, he finds the outpost to be much more lavish and well-guarded than a standard border keep. Something is going on here and Weyland aims to figure out what.*
 ### THE 4W
-A more structured way to use Meaning Tables for the first Scene is to apply a 4W approach: Who, What, Where, and Why. You can roll for these in whatever order you find the most logical; you can even add How or When if a randomized method or time period would add something meaningful to your adventure.
-
-**WHO**: To find out Who is primarily involved in the Scene roll on the Characters Elements Meaning Table and go with whatever interpretation makes sense, whether that's your own PC, an existing NPC, or a new NPC inspired by the word pair.
-
-**WHAT**: Roll on the Actions Meaning tables to see What the main activity of the Scene will be.
-
-**WHERE**: For the location Where the main activity is taking place roll on the Locations Elements Meaning Table. Just like with Who, this can be any new or existing location that fits the word pair.
-
-**WHY**: Roll on the Actions Meaning Tables to learn the motivations behind Why the Characters are taking these actions.
-
 ```rpg figure.mermaid
 align: right
 width: 40%
@@ -62,9 +52,19 @@ flowchart TD
     WHO --> R1 --> WHAT --> R2 --> WHERE --> R3 --> WHY --> R4 --> RESULT         
     classDef step fill:#cfc6ad,stroke:#000,stroke-width:3px,font-weight:bold;
 ```
+A more structured way to use Meaning Tables for the first Scene is to apply a 4W approach: Who, What, Where, and Why. You can roll for these in whatever order you find the most logical; you can even add How or When if a randomized method or time period would add something meaningful to your adventure.
+
+**WHO**: To find out Who is primarily involved in the Scene roll on the Characters Elements Meaning Table and go with whatever interpretation makes sense, whether that's your own PC, an existing NPC, or a new NPC inspired by the word pair.
+
+**WHAT**: Roll on the Actions Meaning tables to see What the main activity of the Scene will be.
+
+**WHERE**: For the location Where the main activity is taking place roll on the Locations Elements Meaning Table. Just like with Who, this can be any new or existing location that fits the word pair.
+
+**WHY**: Roll on the Actions Meaning Tables to learn the motivations behind Why the Characters are taking these actions.
+
 Once you have your 4Ws combine them into the most interesting interpretation you can think of.
 
-![[zombies-arising-to-party.webp|right|384]]*The PC is a modern mage living in Los Angeles. The Player has no idea what the adventure will be about and they want to be surprised.*
+*The PC is a modern mage living in Los Angeles. The Player has no idea what the adventure will be about and they want to be surprised.*
 
 *Starting with Who, the Player rolls on the Characters Elements Meaning Table to get "Excited" and "Unusual". Interesting. The Player decides to wait until they have more information to attempt an interpretation.*
 
@@ -76,7 +76,7 @@ Once you have your 4Ws combine them into the most interesting interpretation you
 
 *The Player thinks about this for a moment then they decide on this interpretation: The PC has been invited to a special Day of the Dead Festival. The partygoers themselves are dead —or rather, undead. They are a community of beings who have been summoned by spellcasters over the years. Unable to return to the afterlife, they now live quietly in Los Angeles searching for a way to get back to where they belong.*
 
-*When the Player Character gets to the party he sees an assortment of undead in varying stages of decay socializing with each other. The festival is spirited though the PC dares not eat any of the food served), but the undead revelers have a goal beyond merrymaking: they hope to open a portal to the Underworld so they can all return to rest. The festival is one part celebration of unlife and one part conference as they invite local mages to help them solve their dilemma.*
+![[zombies-arising-to-party.webp|right|384]]*When the Player Character gets to the party he sees an assortment of undead in varying stages of decay socializing with each other. The festival is spirited though the PC dares not eat any of the food served), but the undead revelers have a goal beyond merrymaking: they hope to open a portal to the Underworld so they can all return to rest. The festival is one part celebration of unlife and one part conference as they invite local mages to help them solve their dilemma.*
 
 *The Player is happy with this interpretation and decides to add these ideas to their Lists before beginning the adventure. To the Threads List they add "Help the undead return to the Underworld"; to the Characters List they add "Community of undead" and "Other mages at the festival". The Player is now ready to begin their adventure with a nicely detailed First Scene.*
 

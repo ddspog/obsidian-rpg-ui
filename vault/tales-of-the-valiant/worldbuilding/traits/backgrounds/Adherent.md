@@ -59,5 +59,6 @@ Many adherents don’t stray far from the object of their devotion. Those who ro
 | 6 | When I triumph through adventuring, I will bring glory and notoriety to my order. |
 | 7 | Adventuring furnishes me with the tithe my order deserves. |
 | 8 | Staying on the move keeps me from being dragged back to the order from which I narrowly escaped. |
+|---|---|
 |= {{ roll }} =|
 ```
