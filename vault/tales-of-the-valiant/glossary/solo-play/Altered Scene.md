@@ -24,9 +24,9 @@ Altering a Scene can be as simple as making a single tweak to your Expected Scen
 
 Think about all the different elements of an Expected Scene: the activity taking place, the NPCs involved, the objects of importance, and the location it all happens in. A change to any of these elements would give you an Altered Scene.
 ```rpg table.altered-scene-strategies
-| ALTERED SCENE STRATEGIES |||||
 | --- | --- | --- | --- | --- |
 | THE NEXT EXPECTATION | A TWEAK | FATE QUESTION | MEANING TABLES INSPIRATION | SCENE ADJUSTMENT TABLE |
+[ALTERED SCENE STRATEGIES @title]
 ```
 Since our Expected Scene with the forest fire had no NPCs in it, adding a Character, the fire spirit, was an easy tweak. The activity in this Scene is the fire itself, so tweaking that could mean that the fire is bigger or smaller than expected. There were no important objects in our Expected Scene so a tweak there could be adding one, like a magical stone provided by an ally to protect the PC from the fire.
 ```rpg rule.side

@@ -74,9 +74,9 @@ The default approach to starting and ending Scenes is to focus on points of inte
 
 *The Player could decide to continue this Scene by having the PC search for a safe place to hide, but the original point of interest was the meeting. After the fight and the escape, this point of interest has ended—a good sign that the Scene should come to a close.*
 ```rpg table.scene-start-and-end-strategies
-|SCENE START AND END STRATEGIES |||||
 |---|---|---|---|---|
 | INTEREST | TIME OR LOCATION | NARRATIVE SHIFT | MOOD | AUTOMATIC INTERRUPT |
+[SCENE START AND END STRATEGIES @title]
 ```
 ### TIME OR LOCATION
 A jump in time or change in location is another way to mark the transition from one Scene to the next.
