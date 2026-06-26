@@ -1,0 +1,8 @@
+# Selectors for css-report on 21-TEST-RULE-NOTE.md
+# The `kind: note` variant renders on .rpg-rule-side--letter (NOT .rpg-rule-side--note,
+# which is the blue `type: note` PRESET). The keyword lives on data-rpg-side-kind="note".
+.rpg-rule-side--letter
+.rpg-rule-side--letter .rpg-rule-side__header
+.rpg-rule-side--letter .rpg-rule-side__title
+.rpg-rule-side--letter .rpg-rule-side__body
+.rpg-rule-side--letter.rpg-rule-side--danger

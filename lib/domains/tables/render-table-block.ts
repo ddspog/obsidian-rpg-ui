@@ -24,13 +24,18 @@
  */
 
 import { finishRenderMath, loadMathJax, renderMath } from "obsidian";
-import type { FooterCell, FooterRow, TableDef } from "./types";
-import type { PaginationConfig, PaginationState } from "./pagination";
+import * as React from "react";
+import * as ReactDOM from "react-dom/client";
+import { FormulaView } from "lib/components/session-log/formula";
+import { parseFormula } from "lib/domains/session-log/formula";
+import type { FooterCell, TableCell, TableDef } from "./types";
+import type { PaginationState } from "./pagination";
 import { totalPages } from "./pagination";
 import type { RenderCell, RowRange } from "./row-merge";
 import { resolveRenderRows } from "./row-merge";
 import { parseAxisCell } from "./parse-table-block";
-import { formatRollOutcome, rollCell, rollOnce } from "./roll";
+import { rollCell } from "./roll";
+import { interpretOracle, parseOracleThresholds, rollDice } from "./oracle";
 import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
 /**
@@ -62,6 +67,16 @@ function cellsRequestAny(cells: ReadonlyArray<{ mods?: string[] }>, tokens: stri
   return cells.some((c) => hasMod(c.mods, tokens));
 }
 
+/** The cell arrays of every grid row (header + body + footer cell-rows) —
+ *  used by the scans below; footer `expr`/`divider` rows have no grid cells. */
+function gridCellRows(def: TableDef): TableCell[][] {
+  return [
+    ...def.headerRows.map((r) => r.cells),
+    ...def.rows.map((r) => r.cells),
+    ...def.footer.flatMap((it) => (it.kind === "cells" ? [it.cells] : [])),
+  ];
+}
+
 /**
  * Grid column indices flagged by cells carrying one of `tokens` (a `-col` /
  * `-cross` scope). Scanned from the parsed (pre-merge) header + body + footer
@@ -69,9 +84,9 @@ function cellsRequestAny(cells: ReadonlyArray<{ mods?: string[] }>, tokens: stri
  */
 function collectScopedCols(def: TableDef, tokens: string[]): Set<number> {
   const cols = new Set<number>();
-  for (const row of [...def.headerRows, ...def.rows, ...def.footerCells]) {
+  for (const cells of gridCellRows(def)) {
     let pos = 0;
-    for (const cell of row.cells) {
+    for (const cell of cells) {
       const span = cell.colspan ?? 1;
       if (hasMod(cell.mods, tokens)) {
         for (let i = 0; i < span; i++) cols.add(pos + i);
@@ -88,6 +103,22 @@ function cellInCols(cell: RenderCell, cols: Set<number>): boolean {
   const span = cell.colspan ?? 1;
   for (let i = 0; i < span; i++) if (cols.has(cell.colStart + i)) return true;
   return false;
+}
+
+/**
+ * Effective grid column count = the widest row across header + body + footer
+ * (sum of colspans). Needed because a header-less table (one that starts with
+ * `|---|`) has no derived `columns`, yet full-width footer rows (`|= … =|`,
+ * pagination) and category dividers must still span every column.
+ */
+function gridColumnCount(def: TableDef): number {
+  let max = def.columns.length;
+  for (const cells of gridCellRows(def)) {
+    let n = 0;
+    for (const cell of cells) n += cell.colspan ?? 1;
+    if (n > max) max = n;
+  }
+  return max || 1;
 }
 
 /**
@@ -149,11 +180,25 @@ function buildGridCoords(table: HTMLTableElement): Map<HTMLTableCellElement, { r
  * to the table once and reads `data-rpg-row` / `data-rpg-col` set by remark.
  */
 function wireAxisCrosshair(
-  table: HTMLTableElement
+  table: HTMLTableElement,
+  selKey: string
 ): { remark: () => void; dispose: () => void } | null {
   const axisCell = table.querySelector(".rpg-table-axis-cell") as HTMLElement | null;
   if (!axisCell) return null;
   const up = axisCell.classList.contains("rpg-table-axis-cell--up");
+
+  // Re-apply the persistent "selected odds cell" marker from the store (the
+  // selection survives body re-renders / virtualization).
+  const applySelection = (): void => {
+    for (const el of Array.from(table.querySelectorAll(".rpg-table-axis-selected"))) {
+      el.classList.remove("rpg-table-axis-selected");
+    }
+    const sel = getRollResult(selKey);
+    if (sel && sel.length >= 2) {
+      const cell = table.querySelector(`[data-rpg-row="${sel[0]}"][data-rpg-col="${sel[1]}"]`);
+      if (cell) cell.classList.add("rpg-table-axis-selected");
+    }
+  };
 
   const remark = (): void => {
     const coords = buildGridCoords(table);
@@ -165,6 +210,7 @@ function wireAxisCrosshair(
       const isData = c.col > axis.col && (up ? c.row < axis.row : c.row > axis.row);
       cell.classList.toggle("rpg-table-axis-data", isData);
     }
+    applySelection();
   };
 
   // The hover highlight is painted INLINE with `!important` priority — that
@@ -203,12 +249,29 @@ function wireAxisCrosshair(
     clear();
   };
 
+  // Click a data cell to select it as the active odds (toggle). The `{{ oracle }}`
+  // footer reads this selection when rolled.
+  const onClick = (ev: Event): void => {
+    const cell = (ev.target as HTMLElement).closest("td, th") as HTMLElement | null;
+    if (!cell || !cell.classList.contains("rpg-table-axis-data")) return;
+    const row = cell.getAttribute("data-rpg-row");
+    const col = cell.getAttribute("data-rpg-col");
+    if (row == null || col == null) return;
+    const cur = getRollResult(selKey);
+    if (cur && cur[0] === row && cur[1] === col) setRollResult(selKey, []);
+    else setRollResult(selKey, [row, col]);
+  };
+
   remark();
   table.addEventListener("mouseover", onOver);
   table.addEventListener("mouseleave", onLeave);
+  table.addEventListener("click", onClick);
+  const subSel = subscribeRollResult(selKey, applySelection);
   const dispose = (): void => {
     table.removeEventListener("mouseover", onOver);
     table.removeEventListener("mouseleave", onLeave);
+    table.removeEventListener("click", onClick);
+    subSel();
   };
   return { remark, dispose };
 }
@@ -467,71 +530,33 @@ function hasRollSegment(cell: FooterCell): boolean {
 }
 
 /**
- * Emit one footer row as a `.el-p` div wrapping a `<p>` with one or more
- * `.dice-roller` cell spans. Cells without any `{{ roll }}` are rendered
- * as plain text (no button affordance). Clicking an interactive cell
- * re-rolls every expression in that cell atomically, writes through to
- * the store, and re-renders the segments in place.
+ * The React tree for an oracle footer cell. With a fresh result for the current
+ * selection it renders a `FormulaView` (`d100=14 → Answer`), reusing the log
+ * blocks' dice UI (the `lonelog-die` silhouette + `→ result`). Otherwise it's a
+ * dimmed prompt — "ask" when a cell is selected, "select odds" when none is.
+ * The stored result `[answer, roll, dice, selRow, selCol]` only counts as fresh
+ * while its selRow/selCol still match `selKey`.
  */
-function renderFooterRow(
-  doc: Document,
-  def: TableDef,
-  row: FooterRow,
-  rowIdx: number,
-  filePath: string
-): { element: HTMLElement; disposers: Array<() => void> } {
-  const wrap = doc.createElement("div");
-  wrap.classList.add("el-p", "rpg-table-footer-row");
-
-  const p = doc.createElement("p");
-  wrap.appendChild(p);
-
-  const disposers: Array<() => void> = [];
-
-  row.cells.forEach((cell, cellIdx) => {
-    const key = rollStoreKey(filePath, def.name, rowIdx, cellIdx);
-    const interactive = hasRollSegment(cell);
-    const span = doc.createElement("span");
-    span.classList.add("dice-roller", "rpg-table-roll-cell");
-    if (interactive) {
-      span.setAttribute("role", "button");
-      span.setAttribute("tabindex", "0");
-    } else {
-      span.classList.add("rpg-table-roll-cell-static");
-    }
-
-    const paint = () => {
-      renderCellContents(doc, cell, span, getRollResult(key));
-    };
-
-    // Auto-roll on first render so the cell surfaces a result immediately
-    // (no empty/collapsed state before the user clicks). Persistence kicks
-    // in on subsequent remounts — next scroll-in finds the stored value
-    // and paints it directly instead of re-rolling.
-    if (interactive && getRollResult(key) === undefined) {
-      setRollResult(key, rollCell(def, cell));
-    }
-    paint();
-
-    if (interactive) {
-      const roll = () => {
-        const values = rollCell(def, cell);
-        setRollResult(key, values);
-      };
-      span.addEventListener("click", roll);
-      span.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter" || ev.key === " ") {
-          ev.preventDefault();
-          roll();
-        }
-      });
-      disposers.push(subscribeRollResult(key, paint));
-    }
-
-    p.appendChild(span);
-  });
-
-  return { element: wrap, disposers };
+function oracleTree(key: string, selKey: string): React.ReactElement {
+  const stored = getRollResult(key);
+  const sel = getRollResult(selKey);
+  const hasSel = !!sel && sel.length >= 2;
+  const fresh = !!stored && stored.length >= 5 && hasSel && stored[3] === sel![0] && stored[4] === sel![1];
+  if (fresh) {
+    const formula = parseFormula(`${stored![2]}=${stored![1]} → ${stored![0]}`);
+    if (formula) return React.createElement(FormulaView, { formula });
+    // Spec didn't parse as a formula — fall back to plain "answer · dice=roll".
+    return React.createElement(
+      "span",
+      { className: "rpg-table-oracle-result" },
+      `${stored![0]} · ${stored![2]}=${stored![1]}`
+    );
+  }
+  return React.createElement(
+    "span",
+    { className: "rpg-table-oracle-result rpg-table-oracle-result--prompt" },
+    hasSel ? "ask" : "select odds"
+  );
 }
 
 export interface RenderTableOptions {
@@ -568,7 +593,7 @@ export function renderTableBlock(
     table.appendChild(cap);
   }
 
-  const colCount = def.columns.length || 1;
+  const colCount = gridColumnCount(def);
   const highlightCols = collectScopedCols(def, HL_COL);
   const middleCols = collectScopedCols(def, MID_COL);
   const needsColStart = highlightCols.size > 0 || middleCols.size > 0;
@@ -607,7 +632,7 @@ export function renderTableBlock(
   const allRows = def.rows;
   const paginationConfig = def.pagination;
 
-  let state: PaginationState = { page: 0, visiblePages: 1 };
+  const state: PaginationState = { page: 0, visiblePages: 1 };
 
   // Visible window of body rows, mirroring `sliceRows` semantics. Spans are
   // resolved over this window so a `^` orphaned at a page top re-anchors.
@@ -626,7 +651,7 @@ export function renderTableBlock(
 
   function renderRows(): void {
     tbody.innerHTML = "";
-    const rendered = resolveRenderRows(allRows, def.columns.length, computeRange(), {
+    const rendered = resolveRenderRows(allRows, colCount, computeRange(), {
       colStart: needsColStart,
     });
     for (const rr of rendered) {
@@ -634,7 +659,7 @@ export function renderTableBlock(
       if (rr.category) {
         tr.setAttribute("data-category", "true");
         const td = doc.createElement("td");
-        td.colSpan = def.columns.length || 1;
+        td.colSpan = colCount;
         td.textContent = rr.categoryLabel ?? "";
         tr.appendChild(td);
       } else {
@@ -652,6 +677,10 @@ export function renderTableBlock(
           }
           if (cell.indent) td.setAttribute("data-indent", String(cell.indent));
           if (cell.carried) td.setAttribute("data-merge-carried", "true");
+          // Stash the raw cell source so a selected odds cell's thresholds can
+          // be re-parsed by the `{{ oracle }}` footer (the rendered DOM has the
+          // typeset math, not the `^{a} b ^{c}` source).
+          td.setAttribute("data-rpg-cell-raw", cell.value);
           applyCellMods(td, cell, highlightCols, middleCols);
           renderCellValue(td, cell.value);
           tr.appendChild(td);
@@ -679,33 +708,100 @@ export function renderTableBlock(
 
   const disposers: Array<() => void> = [];
   const filePath = opts.filePath ?? "";
+  // Store slot for the currently-selected odds cell (one per table), read by
+  // `{{ oracle }}`. Row/cell -1 can't collide with real roll/oracle cell keys.
+  const selKey = rollStoreKey(filePath, def.name, -1, -1);
 
-  // Build a shared <tfoot> for custom footer cells + roll footers + pagination
-  if (def.footerRows.length > 0 || paginationConfig || def.footerCells.length > 0) {
+  // Build a shared <tfoot> from the footer items, in source order.
+  if (def.footer.length > 0) {
     const tfoot = doc.createElement("tfoot");
     tfoot.classList.add("rpg-table-tfoot");
 
-    // Match thead background as the tfoot border-bottom color
+    // Match thead background as the tfoot border-bottom color — and paint the
+    // internal group dividers with the same colour so they read as the same
+    // structural line that closes the table.
     requestAnimationFrame(() => {
       const theadTh = table.querySelector("thead th") as HTMLElement | null;
       if (theadTh) {
         const bg = getComputedStyle(theadTh).backgroundColor;
         if (bg && bg !== "rgba(0, 0, 0, 0)") {
           tfoot.style.borderBottom = `3px solid ${bg}`;
+          tfoot.querySelectorAll<HTMLElement>(".rpg-table-tfoot__divider td").forEach((td) => {
+            td.style.borderTop = `3px solid ${bg}`;
+          });
         }
       }
     });
 
-    // Custom footer-cell rows (authored after the 2nd `|---|`) sit above the
-    // roll and pagination rows and are never paginated. They honour cell
-    // `@modifier`s, axis cells, and math just like body cells.
-    def.footerCells.forEach((row) => {
+    // Build the pagination controls into `cell` (reused by a paginate expr).
+    const renderPaginationControls = (cell: HTMLElement): void => {
+      if (!paginationConfig) return;
+      const makeBtn = (cls: string, text: string): HTMLButtonElement => {
+        const btn = doc.createElement("button");
+        btn.classList.add(cls);
+        btn.textContent = text;
+        btn.style.background = "none";
+        btn.style.backgroundColor = "transparent";
+        btn.style.border = "none";
+        btn.style.boxShadow = "none";
+        btn.style.outline = "none";
+        return btn;
+      };
+      const updateControls = (): void => {
+        cell.innerHTML = "";
+        const pages = totalPages(allRows.length, paginationConfig.size);
+        const isShowMore = paginationConfig.controls === "show-more";
+        if (!isShowMore) {
+          const prev = makeBtn("rpg-table-pagination__arrow", "‹");
+          prev.disabled = state.page === 0;
+          prev.addEventListener("click", () => {
+            if (state.page > 0) { state.page--; renderRows(); updateControls(); }
+          });
+          cell.appendChild(prev);
+        }
+        const middle = doc.createElement("span");
+        middle.classList.add("rpg-table-pagination__middle");
+        if (isShowMore) {
+          const allVisible = paginationConfig.size * state.visiblePages >= allRows.length;
+          if (!allVisible) {
+            const remaining = allRows.length - paginationConfig.size * state.visiblePages;
+            const btn = makeBtn("rpg-table-pagination__page", `Show More (+${remaining})`);
+            btn.addEventListener("click", () => { state.visiblePages++; renderRows(); updateControls(); });
+            middle.appendChild(btn);
+          } else {
+            const btn = makeBtn("rpg-table-pagination__page", "Collapse");
+            btn.addEventListener("click", () => { state.visiblePages = 1; renderRows(); updateControls(); });
+            middle.appendChild(btn);
+          }
+        } else {
+          for (let i = 0; i < pages; i++) {
+            const btn = makeBtn("rpg-table-pagination__page", String(i + 1));
+            if (i === state.page) btn.classList.add("rpg-table-pagination__page--active");
+            btn.addEventListener("click", () => { state.page = i; renderRows(); updateControls(); });
+            middle.appendChild(btn);
+          }
+        }
+        cell.appendChild(middle);
+        if (!isShowMore) {
+          const next = makeBtn("rpg-table-pagination__arrow", "›");
+          next.disabled = state.page >= pages - 1;
+          next.addEventListener("click", () => {
+            if (state.page < pages - 1) { state.page++; renderRows(); updateControls(); }
+          });
+          cell.appendChild(next);
+        }
+      };
+      updateControls();
+    };
+
+    // Render a multi-column cell row (e.g. the axis row).
+    const renderCellsRow = (cells: TableCell[]): void => {
       const tr = doc.createElement("tr");
       tr.classList.add("rpg-table-tfoot__cell-row");
-      if (cellsRequestAny(row.cells, HL_ROW)) tr.classList.add("rpg-table-row-highlight");
-      if (cellsRequestAny(row.cells, MID_ROW)) tr.classList.add("rpg-table-row-middle");
+      if (cellsRequestAny(cells, HL_ROW)) tr.classList.add("rpg-table-row-highlight");
+      if (cellsRequestAny(cells, MID_ROW)) tr.classList.add("rpg-table-row-middle");
       let pos = 0;
-      for (const cell of row.cells) {
+      for (const cell of cells) {
         const span = cell.colspan && cell.colspan > 1 ? cell.colspan : 1;
         const td = doc.createElement("td");
         if (span > 1) td.colSpan = span;
@@ -716,20 +812,66 @@ export function renderTableBlock(
         pos += span;
       }
       tfoot.appendChild(tr);
-    });
+    };
 
-    // Roll footer rows
-    def.footerRows.forEach((row, rowIdx) => {
+    // Render a full-width `|= … =|` expression row (roll / oracle / paginate).
+    const renderExprRow = (cells: FooterCell[], rowIdx: number): void => {
       const tr = doc.createElement("tr");
-      tr.classList.add("rpg-table-tfoot__roll-row");
+      tr.classList.add("rpg-table-tfoot__expr-row");
       const td = doc.createElement("td");
       td.colSpan = colCount;
-
       const flexWrap = doc.createElement("span");
       flexWrap.classList.add("rpg-table-tfoot__roll-cell");
 
-      row.cells.forEach((cell, cellIdx) => {
+      cells.forEach((cell, cellIdx) => {
         const key = rollStoreKey(filePath, def.name, rowIdx, cellIdx);
+
+        // Pagination controls — positioned wherever the {{ paginate }} sits.
+        if (cell.segments.some((s) => s.kind === "paginate")) {
+          const span = doc.createElement("span");
+          span.classList.add("rpg-table-pagination__cell");
+          renderPaginationControls(span);
+          flexWrap.appendChild(span);
+          return;
+        }
+
+        // Oracle cell: clicking rolls the configured die and interprets it
+        // against the table's currently-selected odds cell.
+        const oracleSeg = cell.segments.find(
+          (s): s is { kind: "oracle"; dice: string; answers: string[] } => s.kind === "oracle"
+        );
+        if (oracleSeg) {
+          const span = doc.createElement("span");
+          span.classList.add("dice-roller", "rpg-table-roll-cell", "rpg-table-oracle-cell");
+          span.setAttribute("role", "button");
+          span.setAttribute("tabindex", "0");
+          // Render the result with the log blocks' dice UI (FormulaView).
+          const root = ReactDOM.createRoot(span);
+          const paint = () => root.render(oracleTree(key, selKey));
+          paint();
+          const ask = () => {
+            const sel = getRollResult(selKey);
+            if (!sel || sel.length < 2) return; // nothing selected — no-op
+            const selCell = table.querySelector(`[data-rpg-row="${sel[0]}"][data-rpg-col="${sel[1]}"]`);
+            const raw = selCell?.getAttribute("data-rpg-cell-raw") ?? "";
+            const rolled = rollDice(oracleSeg.dice);
+            const answer = interpretOracle(rolled, parseOracleThresholds(raw), oracleSeg.answers);
+            setRollResult(key, [answer, String(rolled), oracleSeg.dice, sel[0], sel[1]]);
+          };
+          span.addEventListener("click", ask);
+          span.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              ask();
+            }
+          });
+          disposers.push(subscribeRollResult(key, paint));
+          disposers.push(subscribeRollResult(selKey, paint));
+          disposers.push(() => root.unmount());
+          flexWrap.appendChild(span);
+          return;
+        }
+
         const interactive = hasRollSegment(cell);
         const span = doc.createElement("span");
         span.classList.add("dice-roller", "rpg-table-roll-cell");
@@ -739,21 +881,15 @@ export function renderTableBlock(
         } else {
           span.classList.add("rpg-table-roll-cell-static");
         }
-
         const paint = () => {
           renderCellContents(doc, cell, span, getRollResult(key));
         };
-
         if (interactive && getRollResult(key) === undefined) {
           setRollResult(key, rollCell(def, cell));
         }
         paint();
-
         if (interactive) {
-          const roll = () => {
-            const values = rollCell(def, cell);
-            setRollResult(key, values);
-          };
+          const roll = () => setRollResult(key, rollCell(def, cell));
           span.addEventListener("click", roll);
           span.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter" || ev.key === " ") {
@@ -763,97 +899,28 @@ export function renderTableBlock(
           });
           disposers.push(subscribeRollResult(key, paint));
         }
-
         flexWrap.appendChild(span);
       });
 
       td.appendChild(flexWrap);
       tr.appendChild(td);
       tfoot.appendChild(tr);
-    });
+    };
 
-    // Pagination row
-    if (paginationConfig) {
-      const tr = doc.createElement("tr");
-      tr.classList.add("rpg-table-tfoot__pagination-row");
-      const td = doc.createElement("td");
-      td.colSpan = colCount;
-
-      const cell = doc.createElement("span");
-      cell.classList.add("rpg-table-pagination__cell");
-      td.appendChild(cell);
-      tr.appendChild(td);
-      tfoot.appendChild(tr);
-
-      function makeBtn(cls: string, text: string): HTMLButtonElement {
-        const btn = doc.createElement("button");
-        btn.classList.add(cls);
-        btn.textContent = text;
-        btn.style.background = "none";
-        btn.style.backgroundColor = "transparent";
-        btn.style.border = "none";
-        btn.style.boxShadow = "none";
-        btn.style.outline = "none";
-        return btn;
+    let exprRowIdx = 0;
+    for (const item of def.footer) {
+      if (item.kind === "divider") {
+        const tr = doc.createElement("tr");
+        tr.classList.add("rpg-table-tfoot__divider");
+        const td = doc.createElement("td");
+        td.colSpan = colCount;
+        tr.appendChild(td);
+        tfoot.appendChild(tr);
+      } else if (item.kind === "cells") {
+        renderCellsRow(item.cells);
+      } else {
+        renderExprRow(item.cells, exprRowIdx++);
       }
-
-      function updateControls(): void {
-        cell.innerHTML = "";
-        const pages = totalPages(allRows.length, paginationConfig!.size);
-        const isShowMore = paginationConfig!.controls === "show-more";
-
-        if (!isShowMore) {
-          const prev = makeBtn("rpg-table-pagination__arrow", "‹");
-          prev.disabled = state.page === 0;
-          prev.addEventListener("click", () => {
-            if (state.page > 0) { state.page--; renderRows(); updateControls(); }
-          });
-          cell.appendChild(prev);
-        }
-
-        const middle = doc.createElement("span");
-        middle.classList.add("rpg-table-pagination__middle");
-
-        if (paginationConfig!.controls === "show-more") {
-          const allVisible = paginationConfig!.size * state.visiblePages >= allRows.length;
-          if (!allVisible) {
-            const remaining = allRows.length - paginationConfig!.size * state.visiblePages;
-            const btn = makeBtn("rpg-table-pagination__page", `Show More (+${remaining})`);
-            btn.addEventListener("click", () => {
-              state.visiblePages++; renderRows(); updateControls();
-            });
-            middle.appendChild(btn);
-          } else {
-            const btn = makeBtn("rpg-table-pagination__page", "Collapse");
-            btn.addEventListener("click", () => {
-              state.visiblePages = 1; renderRows(); updateControls();
-            });
-            middle.appendChild(btn);
-          }
-        } else {
-          for (let i = 0; i < pages; i++) {
-            const btn = makeBtn("rpg-table-pagination__page", String(i + 1));
-            if (i === state.page) btn.classList.add("rpg-table-pagination__page--active");
-            btn.addEventListener("click", () => {
-              state.page = i; renderRows(); updateControls();
-            });
-            middle.appendChild(btn);
-          }
-        }
-
-        cell.appendChild(middle);
-
-        if (!isShowMore) {
-          const next = makeBtn("rpg-table-pagination__arrow", "›");
-          next.disabled = state.page >= pages - 1;
-          next.addEventListener("click", () => {
-            if (state.page < pages - 1) { state.page++; renderRows(); updateControls(); }
-          });
-          cell.appendChild(next);
-        }
-      }
-
-      updateControls();
     }
 
     table.appendChild(tfoot);
@@ -865,7 +932,7 @@ export function renderTableBlock(
   // Axis crosshair: tag data cells + bind row/column hover highlight. The
   // axis cell may live in the tfoot, so this runs after the whole table is
   // built. `remark` re-tags data cells whenever the body re-renders.
-  const crosshair = wireAxisCrosshair(table);
+  const crosshair = wireAxisCrosshair(table, selKey);
   if (crosshair) {
     remarkAxisData = crosshair.remark;
     crosshair.remark();

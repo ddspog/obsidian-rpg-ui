@@ -8418,6 +8418,43 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   letter-spacing: 0.02em;
   padding: 4px 10px;
 }
+.rpg-table td.rpg-table-col-highlight,
+.rpg-table th.rpg-table-col-highlight,
+.rpg-table tr.rpg-table-row-highlight > td:not(.rpg-table-cell--header),
+.rpg-table tr.rpg-table-row-highlight > th:not(.rpg-table-cell--header) {
+  background: light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14)) !important;
+  color: light-dark(#3a2a14, #f0e8d0);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.rpg-table .rpg-table-cell--compact {
+  font-size: 0.82em;
+  line-height: 1.25;
+}
+.rpg-table .rpg-table-cell--middle,
+.rpg-table tr.rpg-table-row-middle > td,
+.rpg-table tr.rpg-table-row-middle > th {
+  vertical-align: middle;
+}
+.rpg-table td.rpg-table-cell--header,
+.rpg-table th.rpg-table-cell--header {
+  background: var(--text-title) !important;
+  color: var(--background-primary);
+  font-weight: 700;
+  font-style: normal;
+  text-align: center;
+  letter-spacing: normal;
+}
+.rpg-table caption.rpg-table-caption--title {
+  background: var(--text-title);
+  color: var(--background-primary);
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 0.45em 0.6em;
+}
 .rpg-table td[data-indent] {
   padding-left: calc(10px + 1.2em * attr(data-indent type(<number>), 1));
 }
@@ -8445,6 +8482,86 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 .rpg-table td[data-valign=bottom] {
   vertical-align: bottom;
+}
+.rpg-table thead th[rowspan] {
+  text-align: center;
+}
+.rpg-table thead th[data-valign=top] {
+  vertical-align: top;
+}
+.rpg-table thead th[data-valign=middle] {
+  vertical-align: middle;
+}
+.rpg-table thead th[data-valign=bottom] {
+  vertical-align: bottom;
+}
+.rpg-table .rpg-table-axis-cell {
+  position: relative;
+  vertical-align: middle;
+  min-width: 5.5em;
+  min-height: 2.6em;
+  padding: 0.35em 0.6em;
+}
+.rpg-table-axis-cell__line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.rpg-table-axis-cell__col {
+  position: relative;
+  display: block;
+  text-align: right;
+  line-height: 1.1;
+}
+.rpg-table-axis-cell__row {
+  position: relative;
+  display: block;
+  text-align: left;
+  line-height: 1.1;
+}
+.rpg-table-axis-cell--up .rpg-table-axis-cell__col {
+  text-align: left;
+}
+.rpg-table-axis-cell--up .rpg-table-axis-cell__row {
+  text-align: right;
+}
+.rpg-table {
+  --rpg-axis-cross-bg: color-mix(in srgb, var(--text-accent, #7c2d12) 13%, transparent);
+  --rpg-axis-cross-focal-bg: color-mix(in srgb, var(--text-accent, #7c2d12) 28%, transparent);
+}
+.rpg-table .rpg-table-axis-data {
+  cursor: crosshair;
+}
+.rpg-table td.rpg-table-axis-selected,
+.rpg-table th.rpg-table-axis-selected {
+  box-shadow: inset 0 0 0 2px var(--text-accent, #7c2d12);
+  background-color: var(--rpg-axis-cross-focal-bg) !important;
+}
+.rpg-table-oracle-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+.rpg-table-roll-cell.rpg-table-oracle-cell::after {
+  content: none;
+}
+.rpg-table-oracle-result--prompt {
+  opacity: 0.5;
+  font-style: italic;
+}
+.rpg-table-math {
+  white-space: nowrap;
+}
+.rpg-table-math--display,
+.rpg-table-math--display .math {
+  display: inline-block;
+  margin: 0;
 }
 .rpg-table:has(a[href="#css/tx/s/wide"]) th,
 .rpg-table:has(a[href="#css/tx/s/wide"]) td {
@@ -9309,6 +9426,83 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-rule-side--commentary .rpg-rule-side__body em {
   font-style: normal;
 }
+.rpg-rule-side--letter {
+  --rpg-note-paper: color-mix(in srgb, #e3d2a8 32%, var(--background-primary, #fff));
+  --rpg-note-edge: color-mix(in srgb, var(--rpg-rule-side-color, #8b6f47) 28%, transparent);
+  --rpg-note-dogear: 1.4rem;
+  --rpg-note-font:
+    "Iowan Old Style",
+    "Palatino Linotype",
+    Palatino,
+    Georgia,
+    serif;
+  --rpg-note-title-font:
+    "Snell Roundhand",
+    "Apple Chancery",
+    "Brush Script MT",
+    var(--rpg-note-font);
+  position: relative;
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: 42rem;
+  margin-block: var(--size-4-3, 0.75rem);
+  margin-inline: 0;
+  padding: 0.95rem 1.25rem 1rem;
+  background-color: var(--rpg-note-paper);
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 7%, transparent) 0%,
+      transparent 30%,
+      color-mix(in srgb, #4a3a1e 7%, transparent) 100%);
+  border: 1px solid var(--rpg-note-edge);
+  border-radius: 2px;
+  outline: none;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--background-modifier-box-shadow, #000) 22%, transparent);
+  color: var(--text-normal);
+  font-family: var(--rpg-note-font);
+  font-style: italic;
+  isolation: isolate;
+}
+.rpg-rule-side--letter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--rpg-note-dogear);
+  height: var(--rpg-note-dogear);
+  background:
+    linear-gradient(
+      to bottom left,
+      color-mix(in srgb, var(--rpg-note-paper) 60%, #000) 0 50%,
+      transparent 50% 100%);
+  filter: drop-shadow(-1px 1px 1px color-mix(in srgb, #000 25%, transparent));
+  pointer-events: none;
+}
+.rpg-rule-side--letter .rpg-rule-side__header {
+  margin-bottom: 0.45rem;
+  padding-inline-end: var(--rpg-note-dogear);
+  color: var(--rpg-rule-side-color, #8b6f47);
+}
+.rpg-rule-side--letter .rpg-rule-side__title {
+  font-family: var(--rpg-note-title-font);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 1.35em;
+  line-height: 1.1;
+}
+.rpg-rule-side--letter .rpg-rule-side__body {
+  color: var(--text-normal);
+  line-height: 1.55;
+}
+.rpg-rule-side--letter code,
+.rpg-rule-side--letter pre {
+  font-style: normal;
+}
 .rpg-rule-side--spread {
   --p-spacing: 0.25em;
   display: block;
@@ -9744,6 +9938,34 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   position: absolute;
   top: 0.2em;
   right: 0.2em;
+}
+.rpg-call-highlight:has(.rpg-rule-side--letter) {
+  padding: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+.rpg-call-highlight:has(.rpg-rule-side--letter)::before,
+.rpg-call-highlight:has(.rpg-rule-side--letter)::after {
+  display: none;
+}
+.rpg-call-highlight .rpg-rule-side--letter {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 7%, transparent) 0%,
+      transparent 30%,
+      color-mix(in srgb, #4a3a1e 7%, transparent) 100%);
+}
+.rpg-call-highlight:has(.rpg-rule-side--letter) .rpg-call-highlight__badge {
+  position: absolute;
+  top: 0.3em;
+  right: calc(var(--rpg-note-dogear, 1.4rem) + 0.2em);
 }
 tr.rpg-row-highlight {
   background-image:
@@ -10236,8 +10458,19 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
 .rpg-table-tfoot tr td {
   border: none;
 }
-.rpg-table-tfoot__roll-row td {
+.rpg-table-tfoot__cell-row td {
+  padding: 4px 10px;
+  text-align: center;
+  font-weight: 600;
+}
+.rpg-table-tfoot__cell-row:first-child td {
+  border-top: 1px solid color-mix(in srgb, var(--text-faint, #999) 50%, transparent) !important;
+}
+.rpg-table-tfoot__expr-row td {
   padding: 0;
+  position: relative;
+  text-align: center;
+  line-height: 1;
 }
 .rpg-table-tfoot__roll-cell {
   display: flex;
@@ -10249,13 +10482,7 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   flex: 1 1 auto;
   margin-right: 0;
 }
-.rpg-table-tfoot__pagination-row td {
-  padding: 0;
-  text-align: center;
-  line-height: 1;
-  position: relative;
-}
-.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::before {
+.rpg-table-tfoot__expr-row + .rpg-table-tfoot__expr-row td::before {
   content: "\25c6";
   position: absolute;
   top: -0.4em;
@@ -10268,7 +10495,7 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   background: var(--background-primary, #fff);
   padding: 0 0.3em;
 }
-.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::after {
+.rpg-table-tfoot__expr-row + .rpg-table-tfoot__expr-row td::after {
   content: "";
   position: absolute;
   top: 0;
@@ -10278,12 +10505,19 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   background: var(--text-faint, #999);
   opacity: 0.4;
 }
+.rpg-table-tfoot__divider td {
+  padding: 0;
+  height: 0;
+  line-height: 0;
+  border-top: 3px solid var(--text-title, var(--background-secondary-alt, #3a2a4a)) !important;
+}
 .rpg-table-pagination__cell {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   width: 100%;
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow {
+.rpg-table-tfoot button.rpg-table-pagination__arrow {
   font-size: 1.4em;
   padding: 0 0.4em;
   opacity: 0.5;
@@ -10292,10 +10526,10 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   flex-shrink: 0;
   color: inherit;
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:hover:not(:disabled) {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled) {
   opacity: 1;
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:disabled {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled {
   opacity: 0.15;
   cursor: default;
 }
@@ -10307,7 +10541,7 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   gap: 0.3em;
   overflow: hidden;
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page {
+.rpg-table-tfoot button.rpg-table-pagination__page {
   font-family: inherit;
   font-size: 0.9em;
   padding: 0 0.25em;
@@ -10317,11 +10551,11 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   white-space: nowrap;
   color: inherit;
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page:hover {
+.rpg-table-tfoot button.rpg-table-pagination__page:hover {
   opacity: 0.8;
   transform: scale(1.2);
 }
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page.rpg-table-pagination__page--active {
+.rpg-table-tfoot button.rpg-table-pagination__page.rpg-table-pagination__page--active {
   opacity: 1;
   font-weight: 600;
 }

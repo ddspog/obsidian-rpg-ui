@@ -136,8 +136,9 @@ export function detectMetaFromSource(source: string): string | null {
     // `name` + `type`, which would otherwise read as a feature.
     const statMeta = detectStatMeta(headerKeys, headerKeys.has("name"));
     if (statMeta) return statMeta;
-    // rule.side fence-mode: `kind:` (float/callout/commentary), `type:`
-    // (preset name), or `title:` without `name:` (side uses title, not name).
+    // rule.side fence-mode: `kind:` (float/callout/commentary/spread/note),
+    // `type:` (preset name), or `title:` without `name:` (side uses title,
+    // not name).
     // `type` alone is ambiguous — feature.details also uses `type: passive`;
     // require absence of `name` AND that the type value isn't a known
     // feature type to avoid stealing feature blocks.

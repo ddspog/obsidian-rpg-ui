@@ -170,11 +170,24 @@ source:
     expect(parseRuleSide("kind: commentary\ncontent: c").variant).toBe("commentary");
     expect(parseRuleSide("kind: callout\ncontent: c").variant).toBe("callout");
     expect(parseRuleSide("kind: spread\ncontent: c").variant).toBe("spread");
+    expect(parseRuleSide("kind: note\ncontent: c").variant).toBe("note");
     expect(parseRuleSide("kind: float\ncontent: c").variant).toBe("float");
     // Unknown kind values fall back to float.
     expect(parseRuleSide("kind: bogus\ncontent: c").variant).toBe("float");
     // Commentary doesn't require a title — content can stand alone.
     expect(parseRuleSide("kind: commentary\ncontent: c").title).toBe("");
+  });
+
+  it("note variant allows an optional title — content can stand alone", () => {
+    const titled = parseRuleSide("kind: note\ntitle: A Letter\ncontent: Dearest traveler.");
+    expect(titled.variant).toBe("note");
+    expect(titled.title).toBe("A Letter");
+    expect(titled.content).toBe("Dearest traveler.");
+
+    const untitled = parseRuleSide("kind: note\ncontent: Dearest traveler.");
+    expect(untitled.variant).toBe("note");
+    expect(untitled.title).toBe("");
+    expect(untitled.content).toBe("Dearest traveler.");
   });
 
   it("parses subtitle for spread variant", () => {

@@ -451,6 +451,53 @@ function RuleSideSpread({
   );
 }
 
+function RuleSideNote({
+  block,
+  sourcePath,
+}: {
+  block: RuleSideBlock;
+  sourcePath: string;
+}) {
+  // NOTE: the variant keyword is `note`, but its CSS hook is
+  // `rpg-rule-side--letter`. The `note` *preset* (`type: note`) already owns
+  // `.rpg-rule-side--note` (blue accent), so reusing it for the variant would
+  // (a) tint every letter blue and (b) leak parchment styling onto any other
+  // variant that sets `type: note`. The `data-rpg-side-kind="note"` marker
+  // keeps the keyword discoverable.
+  const cls = ["rpg-rule-side", "rpg-rule-side--letter"];
+  if (block.preset) cls.push(`rpg-rule-side--${block.preset}`);
+
+  const style: React.CSSProperties = {};
+  if (block.color) (style as Record<string, string>)["--rpg-rule-side-color"] = block.color;
+  // A bare letter (no preset, no explicit color) defaults to a warm ink-brown
+  // rather than the theme accent — set inline so any preset/color still wins.
+  else if (!block.preset)
+    (style as Record<string, string>)["--rpg-rule-side-color"] = "var(--rpg-note-ink, #8b6f47)";
+
+  // Icon resolution mirrors the other variants, with one twist: a default
+  // quill ("feather") is only injected when the note carries a title. A
+  // bare, title-less note stays chrome-free — just the parchment + body —
+  // which is the common case the variant is built for.
+  const presetIcon = block.preset ? SIDE_PRESETS[block.preset]?.icon : undefined;
+  const iconName = block.icon ?? presetIcon ?? (block.title ? "feather" : undefined);
+
+  return (
+    <aside className={cls.join(" ")} data-rpg-rule="side" data-rpg-side-kind="note" style={style}>
+      {block.title || iconName ? (
+        <header className="rpg-rule-side__header">
+          {iconName ? <IconSlot name={iconName} /> : null}
+          {block.title ? <strong className="rpg-rule-side__title">{block.title}</strong> : null}
+        </header>
+      ) : null}
+      {block.content ? (
+        <div className="rpg-rule-side__body">
+          <Markdown source={block.content} sourcePath={sourcePath} />
+        </div>
+      ) : null}
+    </aside>
+  );
+}
+
 function RuleSideView({
   block,
   sourcePath,
@@ -466,6 +513,9 @@ function RuleSideView({
   }
   if (block.variant === "spread") {
     return <RuleSideSpread block={block} sourcePath={sourcePath} />;
+  }
+  if (block.variant === "note") {
+    return <RuleSideNote block={block} sourcePath={sourcePath} />;
   }
   return <RuleSideFloat block={block} sourcePath={sourcePath} />;
 }
@@ -484,8 +534,8 @@ function RuleSideView({
  */
 export interface RuleSideProps {
   /** Structural variant. Default `float`. */
-  variant?: "float" | "callout" | "commentary" | "spread";
-  /** Heading title (commentary may omit). */
+  variant?: "float" | "callout" | "commentary" | "spread" | "note";
+  /** Heading title (commentary and note may omit). */
   title?: string;
   /** Subtitle line (only used by spread variant). */
   subtitle?: string;

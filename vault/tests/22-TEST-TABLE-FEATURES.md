@@ -40,14 +40,16 @@ cells carry inline `$…$` math.
 | Modifier | $0$ | $+2$ |
 ```
 
-## 3 — Footer cells (2nd `|---|`), math, roll + pagination
+## 3 — Footer cells (2nd `|---|`), math, roll + positioned paginate
 
 Rows after the **second** `|---|` separator render in the `<tfoot>` ABOVE the
 roll and pagination rows, and aren't paginated. Note the colspan (`||`) and
-display math (`$$…$$`) in the footer cell.
+display math (`$$…$$`) in the footer cell. Pagination is a **positioned**
+`|= {{ paginate pages=N }} =|` expression — the control type is the kwarg key
+(`pages` / `prev-next` / `show-more`). Two consecutive `|= … =|` rows with no
+`|---|` between them get the ◆ ornament.
 
 ```rpg table.weapondice
-@paginate 3 pages
 | WEAPON* | DAMAGE | AVG |
 |---|---|---|
 | Dagger | $1d4$ | 2.5 |
@@ -58,6 +60,7 @@ display math (`$$…$$`) in the footer cell.
 |---|---|---|
 | Average damage || $$\bar{x}=4.9$$ |
 |= You draw the {{ roll : weapon }} dealing {{ roll : damage }}. =|
+|= {{ paginate pages=3 }} =|
 [Weapon Damage #css/tx/table]
 ```
 
@@ -156,5 +159,17 @@ corner) respond.
 |Impossible|$^{x}\;1\;^{81}$|$^{x}\;1\;^{81}$|$^{x}\;1\;^{81}$|$^{1}\;5\;^{82}$|$^{2}\;10\;^{83}$|$^{3}\;15\;^{84}$|$^{5}\;25\;^{86}$|$^{7}\;35\;^{88}$|$^{10}\;50\;^{91}$|
 |---|---|---|---|---|---|---|---|---|---|
 |{{ axis Odds / Chaos Factor }} @header @highlight-cross |1|2|3|4|5|6|7|8|9|
+|---|---|---|---|---|---|---|---|---|---|
+|= {{ oracle }} =|
 [FATE CHART @title]
 ```
+
+A `|---|` authored **between** two footer rows (here, between the axis row and
+the oracle row) renders a thin accent **group divider** instead of the ◆
+ornament — grouping the odds/CF axis apart from the oracle roll.
+
+**Oracle:** click a probability cell to select it (accent ring), then click the
+`{{ oracle }}` row to roll a d100 and read the answer — **Exceptional Yes /
+Yes / No / Exceptional No** — from that cell's three thresholds. The roll shows
+in the log blocks' dice UI (the d100 percentile pair) → answer. Configure with
+`{{ oracle dice=d100 answers="Exceptional Yes | Yes | No | Exceptional No" }}`.

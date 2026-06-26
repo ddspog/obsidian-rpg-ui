@@ -305,13 +305,12 @@ describe("applyDieEdit — appended step lines resolve via the step's metadata",
     columns: ["1d10", "result"],
     columnLabels: ["1D10", "RESULT"],
     headerRows: [],
-    footerCells: [],
     rows: [
       { cells: [{ value: "1" }, { value: "Remove a Character" }] },
       { cells: [{ value: "2" }, { value: "Add a Character" }] },
     ],
     classes: [],
-    footerRows: [],
+    footer: [],
   };
   const stepCtx = {
     steps: {

@@ -217,6 +217,35 @@
   cursor: crosshair;
 }
 
+/* Selected odds cell (clicked) — a persistent accent ring + stronger tint,
+ * distinct from the transient hover crosshair. `!important` on the background
+ * beats the column-zebra; the inset ring is immune to it. The `{{ oracle }}`
+ * footer reads this cell when rolled. */
+.rpg-table td.rpg-table-axis-selected,
+.rpg-table th.rpg-table-axis-selected {
+  box-shadow: inset 0 0 0 2px var(--text-accent, #7c2d12);
+  background-color: var(--rpg-axis-cross-focal-bg) !important;
+}
+
+/* `{{ oracle }}` footer cell. The rolled result renders via the log blocks'
+ * dice UI (`FormulaView` → `lonelog-die` + `→ answer`); the pre-roll prompt
+ * ("ask" / "select odds") is dimmed + italic. Suppress the roll-cell's dice-6
+ * hover glyph — the lonelog die already is the dice visual. */
+.rpg-table-oracle-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.rpg-table-roll-cell.rpg-table-oracle-cell::after {
+  content: none;
+}
+
+.rpg-table-oracle-result--prompt {
+  opacity: 0.5;
+  font-style: italic;
+}
+
 /* ─── Cell math (`$…$` / `$$…$$`) ──────────────────────────────────────────
  * Inline math sits on the text baseline. Display math (`$$…$$`) is coerced to
  * inline-block so it fits inside the cell instead of breaking to a full-width

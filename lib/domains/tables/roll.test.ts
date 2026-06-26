@@ -79,10 +79,9 @@ function tableOf(columns: string[], rows: string[][], keyColumn?: string): Table
     columnLabels: columns,
     rows: rows.map((cells) => ({ cells: cells.map((value) => ({ value })) })),
     headerRows: [],
-    footerCells: [],
     keyColumn,
     classes: [],
-    footerRows: [],
+    footer: [],
   };
 }
 

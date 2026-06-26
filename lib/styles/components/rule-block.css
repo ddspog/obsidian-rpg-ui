@@ -730,6 +730,119 @@
  * `.rpg-rule-homebrew` class is no longer added by the React renderer
  * for kind=side, so no overrides are needed here. */
 
+/* ── Note variant (`kind: note`, in-flow parchment "letter") ──────── */
+/*
+ * `kind: note` renders an in-flow card styled as a piece of in-world
+ * correspondence: aged parchment, a folded dog-ear corner (top-right),
+ * a serif italic body, and an optional script-style title. Title is
+ * optional — when omitted the header element isn't rendered at all, so a
+ * bare note is just the paper + body. Direction is meaningless (in-flow)
+ * and ignored.
+ *
+ * Hook class is `rpg-rule-side--letter`, NOT `--note`: the `note` *preset*
+ * (`type: note`) already owns `.rpg-rule-side--note` (blue accent), so the
+ * variant uses a distinct class to avoid tinting every letter blue and
+ * leaking parchment onto other variants that set `type: note`. The
+ * `data-rpg-side-kind="note"` attribute carries the keyword.
+ *
+ * The parchment tone is mixed against `--background-primary` so it adapts
+ * to light and dark themes (a warm-cream tint in light mode, a warm-dark
+ * tint in dark mode) instead of forcing a blinding cream box. The default
+ * ink accent is set inline by the renderer (`--rpg-note-ink`), so any
+ * `type:` preset or explicit `color:` still overrides it.
+ *
+ * Title/body fonts fall back through native macOS script + serif faces
+ * (the dev's platform) before the generic families, and stay overridable
+ * via `--rpg-note-title-font` / `--rpg-note-font`.
+ */
+.rpg-rule-side--letter {
+  --rpg-note-paper: color-mix(in srgb, #e3d2a8 32%, var(--background-primary, #fff));
+  --rpg-note-edge: color-mix(in srgb, var(--rpg-rule-side-color, #8b6f47) 28%, transparent);
+  --rpg-note-dogear: 1.4rem;
+  --rpg-note-font: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --rpg-note-title-font: "Snell Roundhand", "Apple Chancery", "Brush Script MT", var(--rpg-note-font);
+
+  position: relative;
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: 42rem;
+  margin-block: var(--size-4-3, 0.75rem);
+  margin-inline: 0;
+  padding: 0.95rem 1.25rem 1rem;
+
+  background-color: var(--rpg-note-paper);
+  /* A faint top-light / bottom-shade gradient gives the paper an aged,
+   * slightly uneven tone without a texture image. */
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 7%, transparent) 0%,
+    transparent 30%,
+    color-mix(in srgb, #4a3a1e 7%, transparent) 100%
+  );
+  border: 1px solid var(--rpg-note-edge);
+  border-radius: 2px;
+  outline: none;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--background-modifier-box-shadow, #000) 22%, transparent);
+  color: var(--text-normal);
+  font-family: var(--rpg-note-font);
+  font-style: italic;
+  isolation: isolate;
+}
+
+/*
+ * Folded dog-ear: a small triangle pinned to the top-right corner. The
+ * `to bottom left` gradient fills the corner-side half of the box, so the
+ * flap is the top-right triangle whose hypotenuse is the fold line. A
+ * `drop-shadow` filter (not box-shadow) follows the triangle's alpha so
+ * the lift reads as a fold, not a square card behind it.
+ */
+.rpg-rule-side--letter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--rpg-note-dogear);
+  height: var(--rpg-note-dogear);
+  background: linear-gradient(
+    to bottom left,
+    color-mix(in srgb, var(--rpg-note-paper) 60%, #000) 0 50%,
+    transparent 50% 100%
+  );
+  filter: drop-shadow(-1px 1px 1px color-mix(in srgb, #000 25%, transparent));
+  pointer-events: none;
+}
+
+.rpg-rule-side--letter .rpg-rule-side__header {
+  margin-bottom: 0.45rem;
+  /* Leave room for the dog-ear so a long title doesn't slide under it. */
+  padding-inline-end: var(--rpg-note-dogear);
+  color: var(--rpg-rule-side-color, #8b6f47);
+}
+
+/* Script-style title — overrides the base uppercase/letterspaced title. */
+.rpg-rule-side--letter .rpg-rule-side__title {
+  font-family: var(--rpg-note-title-font);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 1.35em;
+  line-height: 1.1;
+}
+
+.rpg-rule-side--letter .rpg-rule-side__body {
+  color: var(--text-normal);
+  line-height: 1.55;
+}
+
+/* Code spans/blocks inside a note shouldn't inherit the letter's italic. */
+.rpg-rule-side--letter code,
+.rpg-rule-side--letter pre {
+  font-style: normal;
+}
+
 /* ── Spread variant (in-flow, two-column grid when grouped) ────────── */
 /*
  * `kind: spread` renders in-flow like callout but is designed to be
@@ -1270,6 +1383,45 @@
   position: absolute;
   top: 0.2em;
   right: 0.2em;
+}
+
+/* ── Box-specific highlight: note ─────────────────────────────────────
+ * Collapse the external offset frame and lay the homebrew stripes over
+ * the parchment (above the aged gradient, below text) so the letter keeps
+ * its dog-ear and paper while still reading as homebrew. */
+
+.rpg-call-highlight:has(.rpg-rule-side--letter) {
+  padding: 0;
+  margin-inline: 0;
+  isolation: auto;
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--letter)::before,
+.rpg-call-highlight:has(.rpg-rule-side--letter)::after {
+  display: none;
+}
+
+.rpg-call-highlight .rpg-rule-side--letter {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 4px,
+      color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 4px,
+      color-mix(in srgb, var(--text-faint, #999) 14%, transparent) 5px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 7%, transparent) 0%,
+      transparent 30%,
+      color-mix(in srgb, #4a3a1e 7%, transparent) 100%
+    );
+}
+
+.rpg-call-highlight:has(.rpg-rule-side--letter) .rpg-call-highlight__badge {
+  position: absolute;
+  top: 0.3em;
+  right: calc(var(--rpg-note-dogear, 1.4rem) + 0.2em);
 }
 
 /* ── Row-specific highlight ──────────────────────────────────────────

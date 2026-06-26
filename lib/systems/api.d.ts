@@ -1464,13 +1464,21 @@ export interface TableCell {
 export interface TableRow {
   cells: TableCell[];
 }
-export type FooterSegment = { kind: "text"; text: string } | { kind: "roll"; targets: string[]; by?: string };
+export type FooterSegment =
+  | { kind: "text"; text: string }
+  | { kind: "roll"; targets: string[]; by?: string }
+  | { kind: "oracle"; dice: string; answers: string[] }
+  | { kind: "paginate"; size: number; controls: "prev-next" | "pages" | "show-more" };
 export interface FooterCell {
   segments: FooterSegment[];
 }
 export interface FooterRow {
   cells: FooterCell[];
 }
+export type FooterRowItem =
+  | { kind: "cells"; cells: TableCell[] }
+  | { kind: "expr"; cells: FooterCell[] }
+  | { kind: "divider" };
 export interface TableDef {
   name: string;
   source?: string;
@@ -1481,7 +1489,7 @@ export interface TableDef {
   keyColumn?: string;
   caption?: string;
   classes: string[];
-  footerRows: FooterRow[];
+  footer: FooterRowItem[];
 }
 
 export interface EvalContext {
@@ -1584,9 +1592,10 @@ export type RuleViewMap = Record<string, RuleViewEntry>;
 // ── Rule.side wrapper component ────────────────────────────────────
 // React component for rendering an arbitrary string as a rule.side
 // block from inside a view function. Composes the same float / callout /
-// commentary / spread variants used by the `rpg rule.side` block processor.
+// commentary / spread / note variants used by the `rpg rule.side` block
+// processor.
 
-export type SideKind = "float" | "callout" | "commentary" | "spread";
+export type SideKind = "float" | "callout" | "commentary" | "spread" | "note";
 export type SidePreset =
   | "note"
   | "info"
@@ -1602,7 +1611,7 @@ export type SidePreset =
 export interface RuleSideProps {
   /** Structural variant. Default `float`. */
   variant?: SideKind;
-  /** Heading title (commentary may omit). */
+  /** Heading title (commentary and note may omit). */
   title?: string;
   /** Subtitle line — only used by the `spread` variant. */
   subtitle?: string;

@@ -163,14 +163,13 @@ const sceneAdjustment: TableDef = {
   columns: ["1d10", "result"],
   columnLabels: ["1D10", "RESULT"],
   headerRows: [],
-  footerCells: [],
   rows: [
     { cells: [{ value: "1" }, { value: "Remove a Character" }] },
     { cells: [{ value: "2" }, { value: "Add a Character" }] },
     { cells: [{ value: "7-10" }, { value: "Make 2 Adjustments" }] },
   ],
   classes: [],
-  footerRows: [],
+  footer: [],
 };
 
 describe("resolveTableRoll", () => {
