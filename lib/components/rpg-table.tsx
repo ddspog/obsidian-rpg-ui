@@ -263,7 +263,8 @@ export function RpgTable({ def, filePath = "", sourcePath }: RpgTableProps) {
   }, []);
 
   const columnCount = def.columns.length || 1;
-  const hasFooter = def.footerRows.length > 0 || def.pagination != null;
+  const exprRows = def.footer.filter((it): it is { kind: "expr"; cells: FooterCell[] } => it.kind === "expr");
+  const hasFooter = exprRows.length > 0 || def.pagination != null;
 
   // Visible window of body rows, mirroring `sliceRows`. Spans are resolved
   // over this window so a `^` orphaned at a page top re-anchors via carry-down.
@@ -298,8 +299,8 @@ export function RpgTable({ def, filePath = "", sourcePath }: RpgTableProps) {
         </tbody>
         {hasFooter && (
           <tfoot className="rpg-table-tfoot">
-            {def.footerRows.map((row, i) => (
-              <FooterRowView key={i} row={row} rowIdx={i} def={def} filePath={filePath} />
+            {exprRows.map((row, i) => (
+              <FooterRowView key={i} row={{ cells: row.cells }} rowIdx={i} def={def} filePath={filePath} />
             ))}
             {def.pagination && (
               <PaginationControls

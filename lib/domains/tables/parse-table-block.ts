@@ -16,8 +16,8 @@
  * unchanged to `<thead>`.
  */
 
-import type { FooterCell, FooterRow, FooterSegment, TableCell, TableDef, TableRow } from "./types";
-import { parsePaginateDirective, type PaginationConfig } from "./pagination";
+import type { FooterCell, FooterRow, FooterRowItem, FooterSegment, TableCell, TableDef, TableRow } from "./types";
+import { parsePaginateDirective, type PaginationConfig, type PaginationControls } from "./pagination";
 import { parseMergeMarker } from "./row-merge";
 
 /** Normalise a column label into a stable key: lowercase, non-alphanum → `_`. */
@@ -205,11 +205,68 @@ function parseRollExpression(inner: string): { targets: string[]; by?: string } 
 }
 
 /**
- * Tokenize a footer cell body into `{ kind: "text" | "roll" }` segments.
- * Literal text outside `{{ }}` becomes a text segment; a well-formed
- * `{{ roll : … }}` becomes a roll segment. A `{{ … }}` that isn't a roll
- * expression is preserved verbatim as text so the raw author intent
- * round-trips (the same policy `substituteExpressions` uses).
+ * Parse the inside of `{{ oracle[ key=value …] }}`. Recognised kwargs:
+ *
+ *   dice=d100                 — die to roll (default `d100`)
+ *   answers="A | B | C | D"   — ordered period labels (default the four
+ *                               Mythic labels), pipe-separated; quotes let
+ *                               labels contain spaces
+ *
+ * Returns null when the expression isn't an `oracle` call. Unknown kwargs are
+ * ignored.
+ */
+function parseOracleExpression(inner: string): { dice: string; answers: string[] } | null {
+  const m = inner.trim().match(/^oracle\b\s*(.*)$/);
+  if (!m) return null;
+  let dice = "d100";
+  let answers = ["Exceptional Yes", "Yes", "No", "Exceptional No"];
+  const KW = /(\w+)\s*=\s*("([^"]*)"|'([^']*)'|(\S+))/g;
+  let k: RegExpExecArray | null;
+  while ((k = KW.exec(m[1])) !== null) {
+    const val = k[3] ?? k[4] ?? k[5] ?? "";
+    if (k[1] === "dice") dice = val.trim();
+    else if (k[1] === "answers") {
+      const parsed = val.split("|").map((s) => s.trim()).filter(Boolean);
+      if (parsed.length) answers = parsed;
+    }
+  }
+  return { dice, answers };
+}
+
+/**
+ * Parse the inside of `{{ paginate[ <controls>=<size> | size=N controls=C] }}`.
+ * The control type doubles as a kwarg key holding the page size:
+ * `{{ paginate pages=10 }}` / `prev-next=10` / `show-more=10`. Bare
+ * `{{ paginate }}` defaults to numbered pages of 10. Returns null when it
+ * isn't a `paginate` call.
+ */
+function parsePaginateExpression(inner: string): { size: number; controls: PaginationControls } | null {
+  const m = inner.trim().match(/^paginate\b\s*(.*)$/);
+  if (!m) return null;
+  let size = 10;
+  let controls: PaginationControls = "pages";
+  const KW = /([\w-]+)\s*=\s*(\d+)/g;
+  let k: RegExpExecArray | null;
+  while ((k = KW.exec(m[1])) !== null) {
+    const key = k[1];
+    const val = parseInt(k[2], 10);
+    if ((key === "prev-next" || key === "pages" || key === "show-more") && val > 0) {
+      controls = key;
+      size = val;
+    } else if (key === "size" && val > 0) {
+      size = val;
+    }
+  }
+  return { size, controls };
+}
+
+/**
+ * Tokenize a footer cell body into `text` / `roll` / `oracle` / `paginate`
+ * segments. Literal text outside `{{ }}` becomes a text segment; a well-formed
+ * `{{ roll … }}` / `{{ oracle … }}` / `{{ paginate … }}` becomes the matching
+ * segment. A `{{ … }}` that's none of these is preserved verbatim as text so
+ * the raw author intent round-trips (the same policy `substituteExpressions`
+ * uses).
  */
 function tokenizeFooterCell(body: string): FooterSegment[] {
   const out: FooterSegment[] = [];
@@ -221,9 +278,15 @@ function tokenizeFooterCell(body: string): FooterSegment[] {
     if (match.index > lastIndex) {
       out.push({ kind: "text", text: body.slice(lastIndex, match.index) });
     }
-    const parsed = parseRollExpression(match[1]);
-    if (parsed) {
-      out.push({ kind: "roll", targets: parsed.targets, by: parsed.by });
+    const roll = parseRollExpression(match[1]);
+    const oracle = roll ? null : parseOracleExpression(match[1]);
+    const paginate = roll || oracle ? null : parsePaginateExpression(match[1]);
+    if (roll) {
+      out.push({ kind: "roll", targets: roll.targets, by: roll.by });
+    } else if (oracle) {
+      out.push({ kind: "oracle", dice: oracle.dice, answers: oracle.answers });
+    } else if (paginate) {
+      out.push({ kind: "paginate", size: paginate.size, controls: paginate.controls });
     } else {
       // Unknown expression — keep verbatim so other helpers downstream
       // (e.g. `substituteExpressions`) still see it.
@@ -244,12 +307,41 @@ function tokenizeFooterCell(body: string): FooterSegment[] {
  * segments. Leading/trailing whitespace on each cell is preserved on the
  * surrounding text segments so authored spacing round-trips.
  */
+/**
+ * Split a `|= … =|` interior into cells on `|`, but NOT on a `|` inside a
+ * `{{ … }}` expression (e.g. `{{ oracle answers="Yes | No" }}`), so an
+ * expression's own pipes don't fracture it across cells.
+ */
+function splitFooterCells(inner: string): string[] {
+  const parts: string[] = [];
+  let cur = "";
+  let depth = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === "{" && inner[i + 1] === "{") {
+      depth++;
+      cur += "{{";
+      i++;
+    } else if (ch === "}" && inner[i + 1] === "}" && depth > 0) {
+      depth--;
+      cur += "}}";
+      i++;
+    } else if (ch === "|" && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts;
+}
+
 function parseFooterRollLine(line: string): FooterRow {
   const t = line.trim();
   // Strip `|=` prefix and `=|` suffix.
   const inner = t.slice(2, -2);
-  const parts = inner.split("|");
-  const cells: FooterCell[] = parts.map((body) => ({
+  const cells: FooterCell[] = splitFooterCells(inner).map((body) => ({
     segments: tokenizeFooterCell(body),
   }));
   return { cells };
@@ -368,33 +460,32 @@ function applyRowMarkers(row: TableRow): void {
 export function parseTableBlock(name: string, body: string): TableDef {
   const lines = body.split("\n");
 
-  // ── Split into: table lines, footer caption, roll-footer rows ──
+  // ── Split into: table lines (all `|`-lines, in source order), caption,
+  //    @wide, and a legacy `@paginate` directive (deprecated). `|= … =|`
+  //    rows stay in `tableLines` so the footer keeps its authored order. ──
   const tableLines: string[] = [];
-  const footerRollLines: string[] = [];
   let footer: { caption: string; classes: string[]; title: boolean } | null = null;
-  let pagination: PaginationConfig | undefined;
+  let legacyPaginate: PaginationConfig | undefined;
   let wide = false;
 
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line) continue;
 
-    if (!pagination && line.trim().startsWith("@paginate")) {
-      const p = parsePaginateDirective(line);
-      if (p) {
-        pagination = p;
-        continue;
-      }
-    }
-
     if (line.trim() === "@wide") {
       wide = true;
       continue;
     }
 
-    if (isFooterRollLine(line)) {
-      footerRollLines.push(line);
-      continue;
+    // Legacy `@paginate <size> <controls>` directive — superseded by the
+    // `{{ paginate … }}` footer expression. Still honoured: it appends a
+    // pagination row at the end of the footer (see below).
+    if (!legacyPaginate && line.trim().startsWith("@paginate")) {
+      const p = parsePaginateDirective(line);
+      if (p) {
+        legacyPaginate = p;
+        continue;
+      }
     }
 
     if (line.trim().startsWith("|")) {
@@ -409,15 +500,30 @@ export function parseTableBlock(name: string, body: string): TableDef {
     }
   }
 
-  // ── Split into header / body / footer-cell sections ──
-  // The first separator splits header from the rest; a SECOND (strict)
-  // separator splits body rows from custom footer-cell rows.
+  // ── Split header / body / footer ──
+  // First separator → header | rest. The body/footer boundary is the first of:
+  // a second (strict `---`) separator, or the first `|= … =|` row.
   const sepIdx = tableLines.findIndex(isSeparatorLine);
   const headerLines = sepIdx >= 0 ? tableLines.slice(0, sepIdx) : [];
   const afterHeader = sepIdx >= 0 ? tableLines.slice(sepIdx + 1) : tableLines;
-  const footIdxRel = afterHeader.findIndex(isFooterBoundaryLine);
-  const bodyLines = footIdxRel >= 0 ? afterHeader.slice(0, footIdxRel) : afterHeader;
-  const footerCellLines = footIdxRel >= 0 ? afterHeader.slice(footIdxRel + 1) : [];
+
+  let boundary = afterHeader.length;
+  let boundaryIsSep = false;
+  for (let i = 0; i < afterHeader.length; i++) {
+    if (isFooterRollLine(afterHeader[i])) {
+      boundary = i;
+      break;
+    }
+    if (isFooterBoundaryLine(afterHeader[i])) {
+      boundary = i;
+      boundaryIsSep = true;
+      break;
+    }
+  }
+  const bodyLines = afterHeader.slice(0, boundary);
+  // When the boundary is a separator it's the tbody→tfoot transition (consumed);
+  // when it's a `|= … =|` row the footer starts at it.
+  const footerLines = afterHeader.slice(boundaryIsSep ? boundary + 1 : boundary);
 
   const headerRows: TableRow[] = headerLines.map((l) => {
     const row: TableRow = { cells: splitCells(l) };
@@ -429,12 +535,15 @@ export function parseTableBlock(name: string, body: string): TableDef {
     applyRowMarkers(row);
     return row;
   });
-  // Footer cells render as authored (no vertical merge in the tfoot), but
-  // still split on `||` for colspan and honour `@modifier`s + axis cells.
-  const footerCells: TableRow[] = footerCellLines.map((l) => {
+
+  // ── Footer items, in source order ──
+  //   `|= … =|` → expr · strict `|---|` → group divider · else → cells row.
+  const footerItems: FooterRowItem[] = footerLines.map((l) => {
+    if (isFooterRollLine(l)) return { kind: "expr", cells: parseFooterRollLine(l).cells };
+    if (isFooterBoundaryLine(l)) return { kind: "divider" };
     const row: TableRow = { cells: splitCells(l) };
     applyRowMarkers(row);
-    return row;
+    return { kind: "cells", cells: row.cells };
   });
 
   // ── Derive columns ──
@@ -481,19 +590,45 @@ export function parseTableBlock(name: string, body: string): TableDef {
   if (keyColumnIndex < 0 && columns.length > 0) keyColumnIndex = 0;
   const keyColumn = keyColumnIndex >= 0 ? columns[keyColumnIndex] : undefined;
 
+  // Pagination config — from a `{{ paginate }}` footer expression if present,
+  // else the legacy `@paginate` directive (which then appends a pagination row
+  // at the END of the footer so it still renders, in the new row style).
+  let pagination = findFooterPaginate(footerItems);
+  if (!pagination && legacyPaginate) {
+    pagination = legacyPaginate;
+    footerItems.push({
+      kind: "expr",
+      cells: [{ segments: [{ kind: "paginate", size: legacyPaginate.size, controls: legacyPaginate.controls }] }],
+    });
+  }
+
   return {
     name,
     columns,
     columnLabels,
     rows,
     headerRows,
-    footerCells,
+    footer: footerItems,
     keyColumn,
     caption: footer?.caption,
     captionTitle: footer?.title || undefined,
     classes: footer?.classes ?? [],
-    footerRows: footerRollLines.map(parseFooterRollLine),
     pagination,
     wide: wide || undefined,
   };
 }
+
+/** The pagination config carried by the first `{{ paginate }}` footer
+ *  expression, or undefined when the footer has none. */
+function findFooterPaginate(items: FooterRowItem[]): PaginationConfig | undefined {
+  for (const it of items) {
+    if (it.kind !== "expr") continue;
+    for (const cell of it.cells) {
+      for (const seg of cell.segments) {
+        if (seg.kind === "paginate") return { size: seg.size, controls: seg.controls };
+      }
+    }
+  }
+  return undefined;
+}
+

@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { parseAxisCell, parseTableBlock, splitCells, normalizeColumnKey } from "./parse-table-block";
+import type { FooterRowItem, TableDef } from "./types";
+
+/** The `kind: "expr"` footer rows (the `|= … =|` rows), in order. */
+const exprRows = (t: TableDef) =>
+  t.footer.filter((it): it is Extract<FooterRowItem, { kind: "expr" }> => it.kind === "expr");
+/** The `kind: "cells"` footer rows (multi-column rows, e.g. an axis row). */
+const cellRows = (t: TableDef) =>
+  t.footer.filter((it): it is Extract<FooterRowItem, { kind: "cells" }> => it.kind === "cells");
 
 describe("parseAxisCell", () => {
   it("parses `\\` as the ↘ (down) diagonal", () => {
@@ -53,7 +61,7 @@ describe("parseTableBlock: header vertical merge", () => {
 });
 
 describe("parseTableBlock: footer cells (second `|---|` separator)", () => {
-  it("captures rows after a second separator as footerCells, not body rows", () => {
+  it("captures rows after a second separator as footer cell rows, not body rows", () => {
     const body = `| LVL | DMG |
 |---|---|
 | 1 | 1d6 |
@@ -62,15 +70,15 @@ describe("parseTableBlock: footer cells (second `|---|` separator)", () => {
 | Avg | 7 |`;
     const t = parseTableBlock("dmg", body);
     expect(t.rows).toHaveLength(2);
-    expect(t.footerCells).toHaveLength(1);
-    expect(t.footerCells[0].cells.map((c) => c.value)).toEqual(["Avg", "7"]);
+    expect(cellRows(t)).toHaveLength(1);
+    expect(cellRows(t)[0].cells.map((c) => c.value)).toEqual(["Avg", "7"]);
   });
 
-  it("leaves footerCells empty without a second separator", () => {
+  it("leaves the footer empty without a second separator", () => {
     const body = `| A | B |
 |---|---|
 | 1 | 2 |`;
-    expect(parseTableBlock("x", body).footerCells).toEqual([]);
+    expect(parseTableBlock("x", body).footer).toEqual([]);
   });
 
   it("does not treat a body row of single-hyphen cells as the footer boundary", () => {
@@ -79,7 +87,7 @@ describe("parseTableBlock: footer cells (second `|---|` separator)", () => {
 | - | - |
 | 1 | 2 |`;
     const t = parseTableBlock("x", body);
-    expect(t.footerCells).toEqual([]);
+    expect(t.footer).toEqual([]);
     expect(t.rows).toHaveLength(2);
   });
 
@@ -90,7 +98,7 @@ describe("parseTableBlock: footer cells (second `|---|` separator)", () => {
 |---|---|
 | Total || x |`;
     const t = parseTableBlock("x", body);
-    expect(t.footerCells[0].cells).toEqual([{ value: "Total", colspan: 2 }, { value: "x" }]);
+    expect(cellRows(t)[0].cells).toEqual([{ value: "Total", colspan: 2 }, { value: "x" }]);
   });
 });
 
@@ -222,9 +230,9 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 3   | Second |
 |= {{ roll : motivation }} =|`;
     const t = parseTableBlock("npc", body);
-    expect(t.footerRows).toHaveLength(1);
-    expect(t.footerRows[0].cells).toHaveLength(1);
-    expect(t.footerRows[0].cells[0].segments).toEqual([
+    expect(exprRows(t)).toHaveLength(1);
+    expect(exprRows(t)[0].cells).toHaveLength(1);
+    expect(exprRows(t)[0].cells[0].segments).toEqual([
       { kind: "text", text: " " },
       { kind: "roll", targets: ["motivation"] },
       { kind: "text", text: " " },
@@ -238,7 +246,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 2 | Second |
 |= {{ roll }} =|`;
     const t = parseTableBlock("npc", body);
-    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    const roll = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "roll");
     expect(roll).toEqual({ kind: "roll", targets: [] });
   });
 
@@ -248,7 +256,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | a | 1 | First |
 |= {{ roll by=w }} =|`;
     const t = parseTableBlock("npc", body);
-    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    const roll = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "roll");
     expect(roll).toEqual({ kind: "roll", targets: [], by: "w" });
   });
 
@@ -258,12 +266,12 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 1 | A | X |
 |= {{ roll : name }} | {{ roll : title }} =|`;
     const t = parseTableBlock("npc", body);
-    expect(t.footerRows[0].cells).toHaveLength(2);
-    expect(t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll")).toEqual({
+    expect(exprRows(t)[0].cells).toHaveLength(2);
+    expect(exprRows(t)[0].cells[0].segments.find((s) => s.kind === "roll")).toEqual({
       kind: "roll",
       targets: ["name"],
     });
-    expect(t.footerRows[0].cells[1].segments.find((s) => s.kind === "roll")).toEqual({
+    expect(exprRows(t)[0].cells[1].segments.find((s) => s.kind === "roll")).toEqual({
       kind: "roll",
       targets: ["title"],
     });
@@ -275,7 +283,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 1 | A | X |
 |= You are {{ roll : name }} who desires {{ roll : motivation }}. =|`;
     const t = parseTableBlock("npc", body);
-    const segs = t.footerRows[0].cells[0].segments;
+    const segs = exprRows(t)[0].cells[0].segments;
     expect(segs).toHaveLength(5);
     expect(segs[0]).toEqual({ kind: "text", text: " You are " });
     expect(segs[1]).toEqual({ kind: "roll", targets: ["name"] });
@@ -290,7 +298,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 3 | A | X |
 |= {{ roll : name, motivation by=weight }} =|`;
     const t = parseTableBlock("npc", body);
-    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    const roll = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "roll");
     expect(roll).toEqual({
       kind: "roll",
       targets: ["name", "motivation"],
@@ -304,7 +312,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 1 | Line |
 |= {{ roll : 'Adventuring Motivation' }} =|`;
     const t = parseTableBlock("npc", body);
-    const roll = t.footerRows[0].cells[0].segments.find((s) => s.kind === "roll");
+    const roll = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "roll");
     expect(roll).toEqual({ kind: "roll", targets: ["adventuring_motivation"] });
   });
 
@@ -314,7 +322,7 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 | 1 | A |
 |= {{ unknown : foo }} =|`;
     const t = parseTableBlock("npc", body);
-    const segs = t.footerRows[0].cells[0].segments;
+    const segs = exprRows(t)[0].cells[0].segments;
     expect(segs.every((s) => s.kind === "text")).toBe(true);
     expect(segs.map((s) => (s as { text: string }).text).join("")).toBe(" {{ unknown : foo }} ");
   });
@@ -324,8 +332,132 @@ describe("parseTableBlock: |= … =| footer rows", () => {
 |---|---|
 | 1 || A |`;
     const t = parseTableBlock("npc", body);
-    expect(t.footerRows).toEqual([]);
+    expect(exprRows(t)).toEqual([]);
     expect(t.rows).toHaveLength(1);
+  });
+
+  it("parses a bare `{{ oracle }}` footer with defaults", () => {
+    const body = `| a | b |
+|---|---|
+| 1 | 2 |
+|= {{ oracle }} =|`;
+    const t = parseTableBlock("fc", body);
+    const seg = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "oracle");
+    expect(seg).toEqual({
+      kind: "oracle",
+      dice: "d100",
+      answers: ["Exceptional Yes", "Yes", "No", "Exceptional No"],
+    });
+  });
+
+  it("parses `{{ oracle }}` kwargs (dice + pipe-separated answers)", () => {
+    const body = `| a | b |
+|---|---|
+| 1 | 2 |
+|= {{ oracle dice=2d10 answers="Yes | No" }} =|`;
+    const t = parseTableBlock("fc", body);
+    const seg = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "oracle");
+    expect(seg).toEqual({ kind: "oracle", dice: "2d10", answers: ["Yes", "No"] });
+  });
+});
+
+describe("parseTableBlock: {{ paginate }} footer expression", () => {
+  it("parses a bare `{{ paginate }}` as numbered pages of 10", () => {
+    const body = `| A | B |
+|---|---|
+| 1 | 2 |
+|= {{ paginate }} =|`;
+    const t = parseTableBlock("p", body);
+    const seg = exprRows(t)[0].cells[0].segments.find((s) => s.kind === "paginate");
+    expect(seg).toEqual({ kind: "paginate", size: 10, controls: "pages" });
+    // The expr drives the table's pagination config (body-row slicing).
+    expect(t.pagination).toEqual({ size: 10, controls: "pages" });
+  });
+
+  it("reads the control type from the kwarg key (`pages=` / `prev-next=` / `show-more=`)", () => {
+    const cases: Array<[string, "pages" | "prev-next" | "show-more", number]> = [
+      ["pages=5", "pages", 5],
+      ["prev-next=8", "prev-next", 8],
+      ["show-more=3", "show-more", 3],
+    ];
+    for (const [kw, controls, size] of cases) {
+      const t = parseTableBlock("p", `| A |\n|---|\n| 1 |\n|= {{ paginate ${kw} }} =|`);
+      expect(t.pagination).toEqual({ size, controls });
+    }
+  });
+
+  it("renders the paginate controls at the authored position, after a roll row", () => {
+    const body = `| dice | name |
+|---|---|
+| 1 | A |
+|= {{ roll : name }} =|
+|= {{ paginate pages=4 }} =|`;
+    const t = parseTableBlock("p", body);
+    expect(t.footer.map((it) => it.kind)).toEqual(["expr", "expr"]);
+    expect(exprRows(t)[1].cells[0].segments.find((s) => s.kind === "paginate")).toEqual({
+      kind: "paginate",
+      size: 4,
+      controls: "pages",
+    });
+  });
+});
+
+describe("parseTableBlock: footer group dividers", () => {
+  it("turns a `|---|` between footer rows into a divider item, keeping order", () => {
+    const body = `|---|---|
+| Certain | 50 |
+| Likely | 35 |
+|---|---|
+| {{ axis Odds / CF }} | 1 |
+|---|---|
+|= {{ oracle }} =|`;
+    const t = parseTableBlock("fc", body);
+    // body rows above the boundary; footer keeps axis · divider · oracle.
+    expect(t.rows).toHaveLength(2);
+    expect(t.footer.map((it) => it.kind)).toEqual(["cells", "divider", "expr"]);
+    expect(cellRows(t)[0].cells[0].value).toBe("{{ axis Odds / CF }}");
+    expect(exprRows(t)[0].cells[0].segments.some((s) => s.kind === "oracle")).toBe(true);
+  });
+
+  it("does not emit a divider for the boundary separator itself (it is consumed)", () => {
+    const body = `| A | B |
+|---|---|
+| 1 | 2 |
+|---|---|
+| Avg | 7 |`;
+    const t = parseTableBlock("x", body);
+    expect(t.footer.map((it) => it.kind)).toEqual(["cells"]);
+  });
+});
+
+describe("parseTableBlock: legacy @paginate back-compat", () => {
+  it("appends a paginate expr at the end of the footer when @paginate is used", () => {
+    const body = `@paginate 3 pages
+| A | B |
+|---|---|
+| 1 | 2 |
+| 3 | 4 |`;
+    const t = parseTableBlock("p", body);
+    expect(t.pagination).toEqual({ size: 3, controls: "pages" });
+    expect(t.footer).toHaveLength(1);
+    expect(exprRows(t)[0].cells[0].segments[0]).toEqual({ kind: "paginate", size: 3, controls: "pages" });
+  });
+
+  it("lets an explicit {{ paginate }} expr take precedence over @paginate", () => {
+    const body = `@paginate 3 pages
+| A | B |
+|---|---|
+| 1 | 2 |
+|= {{ paginate pages=7 }} =|`;
+    const t = parseTableBlock("p", body);
+    expect(t.pagination).toEqual({ size: 7, controls: "pages" });
+    // No duplicate paginate expr appended — only the authored one.
+    expect(exprRows(t)).toHaveLength(1);
+    expect(exprRows(t)[0].cells[0].segments.find((s) => s.kind === "paginate")).toEqual({
+      kind: "paginate",
+      size: 7,
+      controls: "pages",
+    });
   });
 });
 
@@ -433,7 +565,7 @@ describe("parseTableBlock: cell @modifiers", () => {
       "m",
       `| A | B |\n|---|---|\n| 1 | 2 |\n|---|---|\n| {{ axis O / C }} @header @highlight-cross | 1 |`
     );
-    const cell = t.footerCells[0].cells[0];
+    const cell = cellRows(t)[0].cells[0];
     expect(cell.value).toBe("{{ axis O / C }}");
     expect(cell.mods?.slice().sort()).toEqual(["header", "highlight-cross"]);
   });

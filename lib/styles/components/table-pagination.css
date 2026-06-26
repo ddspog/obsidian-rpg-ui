@@ -1,4 +1,4 @@
-/* ── rpg table tfoot (roll + pagination rows) ──────────────────────── */
+/* ── rpg table tfoot (cell rows · |= … =| expr rows · group dividers) ─────── */
 
 /* Shared tfoot bottom border — matches thead background color */
 .rpg-table-tfoot {
@@ -10,10 +10,10 @@
   border: none;
 }
 
-/* Custom footer-cell rows (authored after the 2nd `|---|`). They sit above
- * the roll/pagination rows; give them real cell padding and centre the
- * content the way a totals/summary row reads. A faint top rule on the first
- * one separates the footer cells from the body above. */
+/* Custom footer-cell rows (a `| a | b |` row in the footer, e.g. an axis row
+ * or a totals line). They sit above the expr rows; give them real cell
+ * padding and centre the content the way a totals/summary row reads. A faint
+ * top rule on the first one separates the footer cells from the body above. */
 .rpg-table-tfoot__cell-row td {
   padding: 4px 10px;
   text-align: center;
@@ -24,9 +24,15 @@
   border-top: 1px solid color-mix(in srgb, var(--text-faint, #999) 50%, transparent) !important;
 }
 
-/* Roll row inside tfoot */
-.rpg-table-tfoot__roll-row td {
+/* `|= … =|` expression rows (roll / oracle / paginate). Their single full-width
+ * cell hosts a flex strip of roll/oracle/pagination cells; the td is flush so
+ * the strip controls its own padding. `position: relative` anchors the ◆
+ * ornament drawn between consecutive expr rows. */
+.rpg-table-tfoot__expr-row td {
   padding: 0;
+  position: relative;
+  text-align: center;
+  line-height: 1;
 }
 
 .rpg-table-tfoot__roll-cell {
@@ -41,16 +47,11 @@
   margin-right: 0;
 }
 
-/* Pagination row inside tfoot */
-.rpg-table-tfoot__pagination-row td {
-  padding: 0;
-  text-align: center;
-  line-height: 1;
-  position: relative;
-}
-
-/* Center diamond ornament between roll row and pagination */
-.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::before {
+/* Fancy ◆ ornament between two consecutive expr rows with no group divider
+ * between them (e.g. a roll row directly above a pagination row). A `|---|`
+ * authored between footer rows renders a `.rpg-table-tfoot__divider` instead,
+ * which breaks the adjacency so this ornament does NOT fire. */
+.rpg-table-tfoot__expr-row + .rpg-table-tfoot__expr-row td::before {
   content: "◆";
   position: absolute;
   top: -0.4em;
@@ -64,7 +65,7 @@
   padding: 0 0.3em;
 }
 
-.rpg-table-tfoot__roll-row + .rpg-table-tfoot__pagination-row td::after {
+.rpg-table-tfoot__expr-row + .rpg-table-tfoot__expr-row td::after {
   content: "";
   position: absolute;
   top: 0;
@@ -75,14 +76,33 @@
   opacity: 0.4;
 }
 
+/* Group divider — a `|---|` authored BETWEEN footer rows. Matches the table's
+ * header/footer framing: a 3px solid rule in `--text-title` (the same token the
+ * theme paints the header/footer bar with, and that `@header` cells use), so
+ * the footer reads as split by the same structural line that frames the table.
+ * `--table-header-background` is intentionally NOT used — themes can define it
+ * as `transparent`, which would render the divider invisible. When a header is
+ * present the renderer repaints this with the measured thead background. Beats
+ * the `border: none` reset with `!important`. */
+.rpg-table-tfoot__divider td {
+  padding: 0;
+  height: 0;
+  line-height: 0;
+  border-top: 3px solid var(--text-title, var(--background-secondary-alt, #3a2a4a)) !important;
+}
+
+/* Pagination cell — a flex strip inside an expr row. `flex: 1 1 auto` lets it
+ * fill the row when it's the only cell; the arrows pin to the ends and the
+ * numbered middle centres. */
 .rpg-table-pagination__cell {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   width: 100%;
 }
 
 /* Arrow buttons */
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow {
+.rpg-table-tfoot button.rpg-table-pagination__arrow {
   font-size: 1.4em;
   padding: 0 0.4em;
   opacity: 0.5;
@@ -92,11 +112,11 @@
   color: inherit;
 }
 
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:hover:not(:disabled) {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled) {
   opacity: 1;
 }
 
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__arrow:disabled {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled {
   opacity: 0.15;
   cursor: default;
 }
@@ -112,7 +132,7 @@
 }
 
 /* Page number buttons */
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page {
+.rpg-table-tfoot button.rpg-table-pagination__page {
   font-family: inherit;
   font-size: 0.9em;
   padding: 0 0.25em;
@@ -123,12 +143,12 @@
   color: inherit;
 }
 
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page:hover {
+.rpg-table-tfoot button.rpg-table-pagination__page:hover {
   opacity: 0.8;
   transform: scale(1.2);
 }
 
-.rpg-table-tfoot__pagination-row button.rpg-table-pagination__page.rpg-table-pagination__page--active {
+.rpg-table-tfoot button.rpg-table-pagination__page.rpg-table-pagination__page--active {
   opacity: 1;
   font-weight: 600;
 }

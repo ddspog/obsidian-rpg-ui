@@ -11,7 +11,7 @@
  * separator) are preserved as authored so multi-row headers round-trip.
  */
 
-import type { PaginationConfig } from "./pagination";
+import type { PaginationConfig, PaginationControls } from "./pagination";
 
 /** Vertical alignment of a row-spanning (merged) cell's content. */
 export type VAlign = "top" | "middle" | "bottom";
@@ -55,14 +55,23 @@ export interface TableRow {
 
 /**
  * One segment of a footer cell. Footer cells mix literal markdown with
- * embedded `{{ roll … }}` expressions; each source segment is either raw
- * text or a parsed roll expression.
+ * embedded `{{ roll … }}` / `{{ oracle … }}` expressions; each source segment
+ * is raw text, a parsed roll expression, or a parsed oracle expression.
  *
- * Targets are the column keys (normalised) the rolled row should display.
- * `by` is the weight-column key override — when omitted the renderer falls
- * back to the table's `keyColumn`, then the first column.
+ * For `roll`: targets are the column keys (normalised) the rolled row should
+ * display; `by` is the weight-column key override (falls back to `keyColumn`,
+ * then the first column).
+ *
+ * For `oracle` (Mythic Fate Chart style): `dice` is the die to roll (default
+ * `d100`); `answers` are the ordered outcome labels for the periods the
+ * selected odds cell's thresholds carve out (default the four Mythic labels).
+ * The oracle reads the table's currently-selected data cell at roll time.
  */
-export type FooterSegment = { kind: "text"; text: string } | { kind: "roll"; targets: string[]; by?: string };
+export type FooterSegment =
+  | { kind: "text"; text: string }
+  | { kind: "roll"; targets: string[]; by?: string }
+  | { kind: "oracle"; dice: string; answers: string[] }
+  | { kind: "paginate"; size: number; controls: PaginationControls };
 
 /**
  * One cell within a `|= … =|` footer row. Each cell is independently
@@ -78,6 +87,18 @@ export interface FooterCell {
 export interface FooterRow {
   cells: FooterCell[];
 }
+
+/**
+ * One row of the table's footer, in source order. The footer is a flat list:
+ *   - `cells`   — a multi-column row (`| a | b |`, e.g. an axis row).
+ *   - `expr`    — a full-width `|= … =|` row (roll / oracle / paginate).
+ *   - `divider` — a `|---|` line: a group divider rendered as a thin rule.
+ * Consecutive `expr` rows with no divider between them get the ◆ ornament.
+ */
+export type FooterRowItem =
+  | { kind: "cells"; cells: TableCell[] }
+  | { kind: "expr"; cells: FooterCell[] }
+  | { kind: "divider" };
 
 /**
  * A single `rpg table.<name>` block.
@@ -108,13 +129,12 @@ export interface TableDef {
   /** Every header row as authored — allows multi-row headers. */
   headerRows: TableRow[];
   /**
-   * Custom footer cell rows authored after a SECOND `|---|` separator. They
-   * render as `<tr>`s inside the shared `<tfoot>`, ABOVE the roll and
-   * pagination rows, and are never paginated. Cells support colspan, math,
-   * wikilinks, and `{{ axis }}` like body cells. Empty when no second
-   * separator is present.
+   * The table's footer, in source order — multi-column cell rows (e.g. an
+   * axis row), full-width `|= … =|` expression rows (roll / oracle /
+   * paginate), and `|---|` group dividers. Rendered into a shared `<tfoot>`.
+   * Empty when the table has no footer rows.
    */
-  footerCells: TableRow[];
+  footer: FooterRowItem[];
   /** Which column keys a row by value. Omitted ⇒ row-index lookup only. */
   keyColumn?: string;
   /** Caption from the trailing `[CAPTION #css/...]` footer. */
@@ -124,9 +144,9 @@ export interface TableDef {
   captionTitle?: boolean;
   /** Classes from the footer (strings after `#`, e.g. `css/tx/table`). */
   classes: string[];
-  /** Roll-footer rows parsed from `|= … =|` lines (may be empty). */
-  footerRows: FooterRow[];
-  /** Pagination config from `@paginate <size> <controls>` directive. */
+  /** Pagination config — from a `{{ paginate … }}` footer expression (or the
+   *  legacy `@paginate` directive). Drives body-row slicing; the controls
+   *  render at the footer expression's position (legacy: appended at the end). */
   pagination?: PaginationConfig;
   /** When true, the table wrapper scrolls horizontally (`@wide` directive). */
   wide?: boolean;

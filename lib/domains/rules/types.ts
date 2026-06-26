@@ -66,13 +66,17 @@ export type SidePreset =
  *     comments on the preceding block.
  *   - `spread`: in-flow block that merges with consecutive spread siblings
  *     into a responsive two-column grid — rulebook reference layout.
+ *   - `note`: in-flow parchment card styled as a piece of in-world
+ *     correspondence — aged paper, folded dog-ear corner, serif italic
+ *     body, optional script-style title. Title is optional (omit it and
+ *     the header simply disappears, leaving a bare letter).
  */
-export type SideKind = "float" | "callout" | "commentary" | "spread";
+export type SideKind = "float" | "callout" | "commentary" | "spread" | "note";
 
 /**
  * Parsed `rpg rule.side` block. Body is pure YAML; shape mirrors a callout:
  *
- *   kind: commentary     # optional — structural variant; default `callout`
+ *   kind: commentary     # optional — structural variant; default `float`
  *   type: tip            # optional — preset (color/icon/title)
  *   title: Quick tip     # overrides preset or stands alone
  *   icon: lightbulb      # Lucide name or single emoji (optional)

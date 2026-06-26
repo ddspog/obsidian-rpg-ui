@@ -121,7 +121,9 @@ export function parseRuleSide(source: string): RuleSideBlock {
         ? "callout"
         : rec.kind === "spread"
           ? "spread"
-          : "float";
+          : rec.kind === "note"
+            ? "note"
+            : "float";
   const title = typeof rec.title === "string" ? rec.title : defaults?.title ?? "";
   const subtitle = typeof rec.subtitle === "string" ? rec.subtitle : undefined;
   const icon = typeof rec.icon === "string" ? rec.icon : defaults?.icon;
