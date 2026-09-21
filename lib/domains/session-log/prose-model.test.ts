@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { groupIntoProse } from "./prose-grouper";
+import { resolveListOps } from "lib/domains/lonelog/list-ops";
 import {
   assembleProse,
   buildSidebarItems,
@@ -323,5 +324,83 @@ describe("dieEditKey", () => {
     expect(dieEditKey("Alterations: d10=8", "d10=8", 0)).toBe(dieEditKey("Alterations: d10=8", "d10=8", 0));
     expect(dieEditKey("Alterations: d10=8", "d10=8", 0)).not.toBe(dieEditKey("Alterations: d10=8", "d10=8", 1));
     expect(dieEditKey("Alterations: d10=8", "d10=8", 0)).not.toBe(dieEditKey("Likely: d10=8", "d10=8", 0));
+  });
+});
+
+describe("continuation rows — word-pair table refs are hidden", () => {
+  const rowsFor = (body: string) =>
+    buildSidebarItems(groupIntoProse(parseLonelog(body)))
+      .flatMap((i) => i.rows)
+      .filter((r) => r.detail);
+
+  it("shows just the die + result, keeping the raw ref in `source`", () => {
+    const body = [
+      "? A Random Event fires — what is it?",
+      "gen: Random Event",
+      "  + Actions 1: @[[Actions Meaning]]#action-01 d100=13 -> Betray",
+    ].join("\n");
+    const [row] = rowsFor(body);
+    expect(row.label).toBe("Actions 1");
+    expect(row.content).toBe("d100=13 -> Betray"); // ref stripped from display
+    expect(row.source).toContain("@[[Actions Meaning]]#action-01"); // ref kept for resolution
+  });
+
+  it("leaves a line that merely links (no die after the ref) untouched", () => {
+    const body = ["gen: G", "  + Generate a Random Event: @[[Random Event]]#random-event (roll it)"].join("\n");
+    expect(rowsFor(body)[0].content).toBe("@[[Random Event]]#random-event (roll it)");
+  });
+});
+
+describe("verbatim-repeated lines are edited by occurrence", () => {
+  const line = "? Rolling on the List [Characters@ r1=3 r2=1]";
+  const content = ["```rpg log", line, line, "```"].join("\n");
+
+  it("numbers each row against its source text", () => {
+    const rows = buildSidebarItems(groupIntoProse(parseLonelog([line, line].join("\n"))))
+      .flatMap((i) => i.rows)
+      .filter((r) => r.source);
+    expect(rows.map((r) => r.sourceNth)).toEqual([0, 1]);
+  });
+
+  it("edits ONLY the named occurrence, leaving its twin alone", () => {
+    // Without `nth` a text match would rewrite both lines, so the two draws'
+    // dice moved in lockstep.
+    const out = applyTokenEdits(content, [
+      { line, from: "[Characters@ r1=3 r2=1]", to: "[Characters@ r1=9 r2=1]", nth: 1 },
+    ]);
+    expect(out.split("\n")[1]).toContain("r1=3");
+    expect(out.split("\n")[2]).toContain("r1=9");
+  });
+
+  it("defaults to the first occurrence when `nth` is omitted", () => {
+    const out = applyTokenEdits(content, [{ line, from: "r1=3", to: "r1=9" }]);
+    expect(out.split("\n")[1]).toContain("r1=9");
+    expect(out.split("\n")[2]).toContain("r1=3");
+  });
+});
+
+describe("list draw pills — each roll says what it selects", () => {
+  const decls = (n: number) => ({
+    Threads: { name: "Threads", default: "Any Thread", entries: Array.from({ length: n }, (_, i) => `T${i + 1}`) },
+  });
+  const dice = (body: string, n: number) => {
+    const entries = parseLonelog(body);
+    return buildSidebarItems(groupIntoProse(entries), undefined, resolveListOps(entries, decls(n)))
+      .flatMap((i) => i.rows)
+      .flatMap((r) => r.pills)
+      .find((p) => p.dice)?.dice;
+  };
+
+  it("labels a lone roll as the ROW, not the section", () => {
+    // A list inside one section needs no section roll — mislabelling it "sec"
+    // would tell the reader to roll something the sheet never asks for.
+    expect(dice("? Rolling [Threads@ r1=3]", 3)).toEqual([{ sides: 10, value: 3, label: "row" }]);
+  });
+
+  it("labels a two-roll draw section-then-row", () => {
+    expect(dice("? Rolling [Threads@ r1=3 r2=1]", 8)).toEqual([
+      { sides: 4, value: 3, label: "sec" },
+      { sides: 10, value: 1, label: "row" },
+    ]);
   });
 });

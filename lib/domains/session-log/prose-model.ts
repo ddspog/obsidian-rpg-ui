@@ -14,7 +14,11 @@
  */
 
 import { parseSceneMarker } from "lib/domains/lonelog/parser";
-import type { RollEntry, PersistentTag } from "lib/domains/lonelog/types";
+import { answerFateQuestion, fateThreshold } from "lib/domains/gm/fate-chart";
+import { rolledValue } from "./formula";
+import type { RollEntry, PersistentTag, OracleCallEntry } from "lib/domains/lonelog/types";
+import type { ResolvedDialOp } from "lib/domains/lonelog/dial-ops";
+import type { ResolvedListOp } from "lib/domains/lonelog/list-ops";
 import type { ProseSegment } from "./prose-grouper";
 import { summarizeRoll } from "./prose-grouper";
 
@@ -164,6 +168,7 @@ export type SidebarItemKind =
   | "roll"
   | "table"
   | "generator"
+  | "dial"
   | "meta";
 
 /**
@@ -175,6 +180,23 @@ export interface SidebarPill {
   name: string;
   value?: string;
   kind: string;
+  /** A consult pill's selectable entries — rendered as an inline picker so the
+   *  reader can override the rolled result. */
+  options?: string[];
+  /** The raw token this pill came from (`[Characters?= Bertha]`), so a pick can
+   *  be written back into the source line. */
+  token?: string;
+  /** The source line holding `token` (trimmed), for the write-back lookup. */
+  source?: string;
+  /** Which occurrence of `source` the pill's row is (0-based) — disambiguates
+   *  verbatim-repeated log lines. */
+  sourceNth?: number;
+  /** A list pill's live sheet state, so clicking the name can show the printed
+   *  page (which rolls address which slot). */
+  sheet?: { decl: import("lib/domains/lonelog/list-ops").ListDecl; entries: string[] };
+  /** A list draw's dice: the die each roll uses, its value (blank until rolled),
+   *  and what it selects — rendered as labelled, editable die badges. */
+  dice?: Array<{ sides: number; value?: number; label?: string }>;
 }
 
 /**
@@ -209,8 +231,21 @@ export interface SidebarRow {
   detail?: boolean;
   /** The `label:` prefix of a detail line, styled apart from its content. */
   label?: string;
+  /** A composed sub-step (authored with a leading `+ `) — rendered one level
+   *  deeper than its parent detail row. */
+  child?: boolean;
+  /** This step spawns the following step(s) (authored with a trailing ` ...`) —
+   *  rendered with a subtle "unfolds into" indicator. */
+  spawns?: boolean;
   /** The raw (trimmed) source line — used to write inline die-value edits back. */
   source?: string;
+  /**
+   * Which occurrence of `source` this row is (0-based). A log may repeat a line
+   * verbatim (two identical `? Rolling on the List [Characters@ …]` draws), so
+   * text alone is not an identity — an edit must name the occurrence or it
+   * rewrites every twin.
+   */
+  sourceNth?: number;
 }
 
 /** Rebuild the `=> ` text for an edited scene (re-adding the "S" prefix when it was present). */
@@ -254,7 +289,10 @@ export function applySceneEdits(content: string, replacements: Array<{ from: str
  * are applied together (so editing two tokens on one line both land), leaving
  * indentation and the rest of the line intact. Unchanged when nothing matched.
  */
-export function applyTokenEdits(content: string, edits: Array<{ line: string; from: string; to: string }>): string {
+export function applyTokenEdits(
+  content: string,
+  edits: Array<{ line: string; from: string; to: string; nth?: number }>
+): string {
   if (edits.length === 0) return content;
   const codeBlockRegex = /(```rpg log\n)([\s\S]*?)(```)/;
   const match = content.match(codeBlockRegex);
@@ -264,14 +302,21 @@ export function applyTokenEdits(content: string, edits: Array<{ line: string; fr
   const lines = blockContent.split("\n");
   // Group by target line so several token swaps on one line all apply (each is
   // matched against the original line text before any swap changes it).
+  // Keyed by line text AND occurrence: a log may repeat a line verbatim, so an
+  // edit names which one it means (`nth`, default the first).
   const byLine = new Map<string, Array<{ from: string; to: string }>>();
-  for (const { line, from, to } of edits) {
-    const swaps = byLine.get(line) ?? [];
+  for (const { line, from, to, nth } of edits) {
+    const key = `${nth ?? 0}\u0000${line}`;
+    const swaps = byLine.get(key) ?? [];
     swaps.push({ from, to });
-    byLine.set(line, swaps);
+    byLine.set(key, swaps);
   }
-  for (const [line, swaps] of byLine) {
-    const idx = lines.findIndex((l) => l.trim() === line);
+  for (const [key, swaps] of byLine) {
+    const sep = key.indexOf("\u0000");
+    const nth = parseInt(key.slice(0, sep), 10);
+    const line = key.slice(sep + 1);
+    let seen = 0;
+    const idx = lines.findIndex((l) => l.trim() === line && seen++ === nth);
     if (idx < 0) continue;
     let updated = lines[idx];
     for (const { from, to } of swaps) {
@@ -292,12 +337,6 @@ export interface SidebarItem {
   rows: SidebarRow[];
 }
 
-function rollLine(roll: { roll: string; result: string; actor?: string }): string {
-  const actor = roll.actor ? `${roll.actor}: ` : "";
-  const result = roll.result ? ` → ${roll.result}` : "";
-  return `${actor}${roll.roll}${result}`;
-}
-
 /** Stable key for a formula result edit (the text after `->` on a source line). */
 export function resultEditKey(source: string): string {
   return `${source} #result`;
@@ -305,7 +344,7 @@ export function resultEditKey(source: string): string {
 
 /** Stable key for one die-value edit slot: source line + die raw + slot index. */
 export function dieEditKey(source: string, raw: string, slot: number): string {
-  return `${source} ${raw} #${slot}`;
+  return `${source}\u0000${raw} #${slot}`;
 }
 
 /** A persistent tag split into a key (`name`) and an optional state (`value`). */
@@ -322,6 +361,14 @@ function tagPill(tag: PersistentTag): SidebarPill {
     case "event":
     case "track":
       return { name: tag.name, value: `${tag.current}/${tag.max}`, kind: tag.kind };
+    case "dial":
+      return { name: tag.name, value: `${tag.current} (${tag.min}–${tag.max})`, kind: tag.kind };
+    case "dial-op":
+      // Placeholder — the running value is filled position-aware by buildSidebarItems.
+      return { name: tag.name ?? tag.abbr ?? "", kind: "dial" };
+    case "list-op":
+      // Placeholder — the running entries are filled position-aware below.
+      return { name: tag.name, value: tag.entry, kind: "list" };
     case "timer":
       return { name: tag.name, value: String(tag.value), kind: tag.kind };
     case "thread":
@@ -335,17 +382,112 @@ function tagPill(tag: PersistentTag): SidebarPill {
   }
 }
 
-const rollRow = (r: RollEntry): SidebarRow => ({ icon: { glyph: "d" }, content: rollLine(r), pills: [] });
+/** A resolved dial op → a clean `name: value` pill (the running value). */
+function dialOpPill(r: ResolvedDialOp): SidebarPill {
+  return { name: r.name, value: String(r.current), kind: "dial" };
+}
+
+/** The exact ROLL token for `name` on a source line — `[Characters@]` or a baked
+ *  `[Characters@ Bertha]` — so a pick can swap it in place. */
+function consultToken(source: string, name: string): string | undefined {
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return source.match(new RegExp(`\\[${esc}\\s*@[^\\][]*\\]`))?.[0];
+}
+
+/** A resolved list op → a pill showing what changed and the resulting size:
+ *  `Characters  +Bertha (2)`, `Threads  -Find the stone (1)`, `Characters  Bertha`. */
+function listOpPill(r: ResolvedListOp): SidebarPill {
+  const mark = r.op === "add" ? "+" : r.op === "remove" ? "−" : "";
+  const entry = r.entry ?? "";
+  if (r.op === "add" || r.op === "remove") {
+    // Merged same-line ops list every entry behind one mark, comma-joined for
+    // reading: `+A Mouse, Brian (2)` (the SOURCE separator is `;`).
+    const all = r.entries?.length ? r.entries.join(", ") : entry;
+    return { name: r.name, value: `${mark}${all} (${r.count})`, kind: "list" };
+  }
+  // An INSPECT shows the whole list, read-only. A ROLL shows the rolled dice
+  // (when rolled) and is pickable: its options let the reader override it.
+  if (r.op === "inspect") return { name: r.name, value: `${entry} (${r.count})`, kind: "list" };
+  // The sheet's dice: a section die (only once the list spans >1 section) plus
+  // the row die. Rendered unrolled too, so a bare `[Characters@]` shows the dice
+  // waiting to be rolled rather than nothing.
+  // Pair the list's CURRENT dice with the recorded roll values, in order — the
+  // log stores `r1`/`r2`, the list decides which polyhedron each one is.
+  const dice: Array<{ sides: number; value?: number; label?: string }> = [];
+  // Label each roll by what it selects. A one-section list rolls only the row, so
+  // the labels are derived from which dice actually exist, never assumed.
+  const spec: Array<{ sides: number; label: string }> = [];
+  if (r.dice?.section) spec.push({ sides: r.dice.section, label: "sec" });
+  if (r.dice?.row) spec.push({ sides: r.dice.row, label: "row" });
+  spec.forEach((d, i) => dice.push({ sides: d.sides, value: r.rolls?.[i], label: d.label }));
+  return {
+    name: r.name,
+    value: entry,
+    kind: "list",
+    options: r.options,
+    ...(dice.length > 0 ? { dice } : {}),
+  };
+}
+
+/**
+ * A `d:` / `d(Name):` roll row. The actor goes in `label`, NOT into `content` —
+ * a leading `Name: ` sits exactly where the formula parser looks for a die, so
+ * folding it in turned every attributed roll into plain text.
+ */
+const rollRow = (r: RollEntry): SidebarRow => ({
+  icon: { glyph: "d" },
+  content: `${r.roll}${r.result ? ` → ${r.result}` : ""}`,
+  label: r.actor,
+  pills: [],
+});
 
 // Indented working lines become nested bullet rows. A leading `label:` prefix
-// (e.g. "Alterations: d10=8 …") is split out so it can be styled apart.
+// (e.g. "Alterations: d10=8 …") is split out so it can be styled apart. A
+// leading `+ ` marks a composed child (rendered one level deeper); a trailing
+// ` ...` marks a step that spawns the following step(s).
 const continuationRows = (extras: string[]): SidebarRow[] =>
-  extras.map((text) => {
+  extras.map((raw) => {
+    const child = /^\+\s/.test(raw);
+    const spawns = /\s\.\.\.$/.test(raw);
+    let text = raw;
+    if (child) text = text.replace(/^\+\s+/, "");
+    if (spawns) text = text.replace(/\s*\.\.\.$/, "");
+    // A word-pair line self-describes its table (`@[[file]]#id d100= ->`) so the
+    // roll knows what to fill from. That ref is plumbing, not content — hide it
+    // and show just the die + result. `source` keeps the raw line, so editing
+    // and re-resolution still find the table.
+    text = text.replace(/(:\s+)@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?\s+(?=d\d)/i, "$1");
     const m = text.match(/^([A-Za-z][\w ]*?):\s+(.+)$/);
-    return m
-      ? { icon: null, content: m[2], label: m[1], detail: true, pills: [], source: text }
-      : { icon: null, content: text, detail: true, pills: [], source: text };
+    const row: SidebarRow = m
+      ? { icon: null, content: m[2], label: m[1], detail: true, pills: [], source: raw }
+      : { icon: null, content: text, detail: true, pills: [], source: raw };
+    if (child) row.child = true;
+    if (spawns) row.spawns = true;
+    return row;
   });
+/**
+ * An `o:` row: `Fate Chart (likely) d100=22 -> Yes`.
+ *
+ * The odds and the chaos factor pick a cell of the chart, so the row shows what the
+ * roll had to beat — the reason to consult a chart at all — and reads the answer off
+ * the roll. A written result survives only where the roll cannot decide one.
+ */
+const oracleCallRow = (call: OracleCallEntry, cf: number | undefined): SidebarRow => {
+  const rolled = call.roll ? rolledValue(call.roll) : null;
+  const answer =
+    call.likelihood && cf != null && rolled != null ? answerFateQuestion(rolled, cf, call.likelihood) : null;
+  const threshold = call.likelihood && cf != null ? fateThreshold(cf, call.likelihood) : null;
+  const result = answer ? answer.wording : (call.result ?? "");
+  return {
+    icon: { lucide: "Dices" },
+    content: `${call.roll ?? ""}${result ? ` → ${result}` : ""}`.trim(),
+    pills: [
+      { name: call.source, value: call.oddsText ?? "", kind: "oracle" },
+      ...(threshold != null ? [{ name: "yes on", value: `≤${threshold}`, kind: "cf" }] : []),
+    ],
+  };
+};
+
 const consequenceRow = (c: { conclusion?: string; text: string; tags: PersistentTag[] }): SidebarRow => {
   const conclusion = c.conclusion || c.text;
   const scene = parseSceneMarker(conclusion);
@@ -373,7 +515,11 @@ const consequenceRow = (c: { conclusion?: string; text: string; tags: Persistent
  * (icon | content | pills). Dialogue, narration and scene headers are the prose
  * itself and are intentionally excluded.
  */
-export function buildSidebarItems(segments: ProseSegment[]): SidebarItem[] {
+export function buildSidebarItems(
+  segments: ProseSegment[],
+  dialOps?: Map<number, ResolvedDialOp[]>,
+  listOps?: Map<number, ResolvedListOp[]>
+): SidebarItem[] {
   const items: SidebarItem[] = [];
 
   for (const seg of segments) {
@@ -417,18 +563,34 @@ export function buildSidebarItems(segments: ProseSegment[]): SidebarItem[] {
 
       case "oracle": {
         const actor = seg.question.actor ? `(${seg.question.actor}) ` : "";
-        const headPills: SidebarPill[] =
-          seg.question.chaosFactor != null ? [{ name: "CF", value: String(seg.question.chaosFactor), kind: "cf" }] : [];
+        const cf = seg.question.chaosFactor;
+        const headPills: SidebarPill[] = [
+          ...(seg.question.chaosFactor != null
+            ? [{ name: "CF", value: String(seg.question.chaosFactor), kind: "cf" }]
+            : []),
+          // Dial-op placeholders on the question — resolved to running values by the fill pass.
+          ...(seg.question.dialOps ?? []).map(tagPill),
+        ];
         const rows: SidebarRow[] = [
-          { icon: { glyph: "?" }, content: `${actor}${seg.question.text}`, pills: headPills },
+          {
+            icon: { glyph: "?" },
+            content: `${actor}${seg.question.text}`,
+            pills: headPills,
+            // The raw line (tags intact) so an editable op token on the question
+            // can be written back; `text` has had its tags stripped.
+            source: seg.question.raw,
+          },
         ];
         if (seg.answer) {
           rows.push({
             icon: { lucide: "ArrowRight" },
-            content: `${seg.answer.text}${seg.answer.roll ? ` (${seg.answer.roll})` : ""}`,
+            content: `${seg.answer.text}${seg.answer.roll ? ` (${seg.answer.roll})` : ""}`.trim(),
             pills: [],
           });
         }
+        // Each oracle consulted gets its own row: source and odds as pills, the
+        // number to beat, and the answer READ OFF THE ROLL rather than typed.
+        for (const o of seg.oracles) rows.push(oracleCallRow(o, cf));
         for (const g of seg.generators) {
           rows.push({ icon: { lucide: "Sprout" }, content: `${g.source}${g.result ? ` ${g.result}` : ""}`, pills: [] });
         }
@@ -442,13 +604,26 @@ export function buildSidebarItems(segments: ProseSegment[]): SidebarItem[] {
         break;
       }
 
-      case "standalone-consequence":
+      case "standalone-consequence": {
+        const conclusion = (seg.entry.conclusion ?? "").trim();
+        const dialTags = seg.entry.tags.filter((t) => t.kind === "dial-op");
+        // A bare dial-op line (`[CF+1]`) → a mechanical dial entry (no prose);
+        // its pills get the computed running value in the fill pass below.
+        if (!conclusion && dialTags.length > 0) {
+          items.push({
+            id,
+            kind: "dial",
+            rows: [{ icon: { lucide: "Gauge" }, content: "", pills: dialTags.map(tagPill) }],
+          });
+          break;
+        }
         items.push({
           id,
           kind: "consequence",
           rows: [consequenceRow(seg.entry), ...continuationRows(extras)],
         });
         break;
+      }
 
       case "standalone-roll":
         items.push({ id, kind: "roll", rows: [rollRow(seg.entry), ...continuationRows(extras)] });
@@ -495,6 +670,68 @@ export function buildSidebarItems(segments: ProseSegment[]): SidebarItem[] {
       default:
         // scenes, dialogue, narration, concat, structural markers, rounds
         break;
+    }
+  }
+
+  // Number each row against its source text, so a repeated line can be edited by
+  // OCCURRENCE rather than by text (which would hit all its twins — a log may
+  // repeat `? Rolling on the List [Characters@ …]` verbatim).
+  const seenSource = new Map<string, number>();
+  for (const item of items) {
+    for (const row of item.rows) {
+      if (!row.source) continue;
+      const nth = seenSource.get(row.source) ?? 0;
+      row.sourceNth = nth;
+      seenSource.set(row.source, nth + 1);
+    }
+  }
+
+  // Position-aware fill: replace placeholder dial pills (a `[CF+1]` token, which
+  // tagPill can't value on its own) with the computed running value, in order.
+  if (dialOps) {
+    for (const item of items) {
+      const ops = dialOps.get(item.id);
+      if (!ops || ops.length === 0) continue;
+      let oi = 0;
+      for (const row of item.rows) {
+        row.pills = row.pills.map((p) =>
+          p.kind === "dial" && p.value === undefined && oi < ops.length ? dialOpPill(ops[oi++]) : p
+        );
+      }
+    }
+  }
+
+  // Same pass for LIST ops (`[Characters+ …]`): the placeholder carries only the
+  // list name, so swap in the resolved entry + running count, in order.
+  if (listOps) {
+    for (const item of items) {
+      const ops = listOps.get(item.id);
+      if (!ops || ops.length === 0) continue;
+      let oi = 0;
+      for (const row of item.rows) {
+        // flatMap, not map: same-line ops on one list MERGE, so there can be
+        // fewer resolved ops than placeholders — the surplus placeholders are
+        // dropped rather than left showing a bare list name.
+        row.pills = row.pills.flatMap((p) => {
+          if (p.kind !== "list") return [p];
+          if (oi >= ops.length) return [];
+          const r = ops[oi++];
+          const pill = listOpPill(r);
+          if (r.sheet) pill.sheet = r.sheet;
+          // Carry the source line + the exact roll token so a pick can be
+          // written back into the note (mirrors the die-edit token swap).
+          const src = row.source ?? row.content;
+          if (r.op === "roll" && src) {
+            const token = consultToken(src, r.name);
+            if (token) {
+              pill.source = src;
+              pill.token = token;
+              pill.sourceNth = row.sourceNth ?? 0;
+            }
+          }
+          return [pill];
+        });
+      }
     }
   }
 

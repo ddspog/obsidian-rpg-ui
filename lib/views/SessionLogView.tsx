@@ -17,6 +17,8 @@ import { ProseView } from "lib/components/session-log/prose-view";
 import { LogSidebar } from "lib/components/session-log/log-sidebar";
 import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
+import { resolveDialOps, collectResources, foldResources, type DialDecl } from "lib/domains/lonelog/dial-ops";
+import { collectLists, resolveListOps, type ListDecl } from "lib/domains/lonelog/list-ops";
 import {
   assembleProse,
   buildSidebarItems,
@@ -39,15 +41,17 @@ import type { EditableTerm } from "lib/domains/session-log/formula";
 import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
-import { extractCardsFromEntity, getEntitySpentState } from "lib/services/session-feature-loader";
+import { extractCardsFromEntity, extractResourcesFromEntity, getEntitySpentState } from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
-import type { GMFeature } from "lib/domains/features/types";
-import type { TableDef } from "lib/domains/tables/types";
+import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
-import { parseBranchRef, selectStepBlock } from "lib/domains/gm/steps";
+import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
+import { parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
+import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
+import { expandCalledGenerator } from "lib/domains/gm/expand-gen";
 import type { CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
 import { initSessionConsumables, spendUse } from "lib/domains/session-log/consumable-state";
 import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
@@ -129,6 +133,21 @@ class SessionLogMarkdown extends ReactMarkdown {
         this.stepCtx = await this.loadStepCtx(this.gmFeatures);
       }
 
+      // Fold PC-declared resources (feature.details `resources:` + legacy
+      // `type: resource`) into the resource registry, so `[Char/Resource op]`
+      // tokens resolve to running values seeded from the sheet. GM resources
+      // (already in the registry) win on any name collision (foldResources is
+      // first-key-wins).
+      if (this.entities.length > 0) {
+        const decls = this.entities.flatMap((e) => extractResourcesFromEntity(e));
+        if (decls.length > 0) {
+          this.stepCtx = {
+            ...this.stepCtx,
+            resources: foldResources(decls, { ...(this.stepCtx.resources ?? {}) }),
+          };
+        }
+      }
+
       this.renderSessionLog();
     } catch (error) {
       console.error("Error processing session log:", error);
@@ -171,7 +190,11 @@ class SessionLogMarkdown extends ReactMarkdown {
         const toolFile = this.resolveLink(String(toolRef));
         if (toolFile) features.push(...(await this.loadGMFeatures(toolFile)));
       }
-      return features;
+      // Resolve each feature's cross-file card `@ref`s (`@[[File]]#id`) into
+      // inlined `generators:` entries so the emitter sees them as local refs.
+      const resolved: GMFeature[] = [];
+      for (const f of features) resolved.push(await this.resolveCardRefs(f));
+      return resolved;
     } catch (error) {
       console.error("Error loading GM screen:", error);
       return [];
@@ -179,42 +202,269 @@ class SessionLogMarkdown extends ReactMarkdown {
   }
 
   /**
+   * Resolve a feature's cross-file card refs (`@[[File]]#id`) by reading each
+   * target page, selecting the addressed generator (a `generators:` entry or a
+   * feature.gm whose `id:` matches), and inlining it — after which `emitCard`
+   * treats the ref as a local `@id`. Unresolved refs are left for the emitter
+   * to drop.
+   */
+  private async resolveCardRefs(feature: GMFeature): Promise<GMFeature> {
+    const refs = cardXFileRefs(feature);
+    if (refs.length === 0) return feature;
+    const resolved: Record<string, GMGeneratorAspect> = {};
+    for (const ref of refs) {
+      const bref = parseBranchRef(ref);
+      if (!bref) continue;
+      const file = this.resolveLink(bref.target);
+      if (!file) continue;
+      try {
+        const doc = parseSourceDoc(
+          { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
+          "class"
+        );
+        const gen = selectGenerator(doc.gmFeatures ?? [], bref.block);
+        if (gen) resolved[ref] = gen;
+      } catch {
+        /* unreadable target — leave unresolved; emitCard drops the ref */
+      }
+    }
+    return inlineCardXFileRefs(feature, resolved);
+  }
+
+  /**
    * Resolve the GM features' `interpret` branch links to step blocks (and any
-   * tables those steps roll against), so the live sidebar can surface the
-   * branch dropdown and auto-fill table/fate results. Mirrors FeatureGMView.
+   * tables those steps roll against), plus the dials they `reads:`, so the live
+   * sidebar can surface the branch dropdown, auto-fill table/fate results, and
+   * fall back to a dial's `default` when the log omits its `[<abbr>:n]` token.
+   * Mirrors FeatureGMView.
    */
   private async loadStepCtx(features: GMFeature[]): Promise<GMStepContext> {
     const steps: Record<string, GMFeature> = {};
     const tables: Record<string, TableDef> = {};
+    const calls: Record<string, string[]> = {};
+    const stepTables: Record<string, string> = {};
+    const stepFollows: Record<string, import("lib/domains/features/types").GMInterpret> = {};
+    const lists: Record<string, ListDecl> = {};
+    const dials: NonNullable<GMStepContext["dials"]> = {};
+    const resFeatures: GMFeature[] = [...features];
     for (const feature of features) {
-      for (const value of Object.values(feature.generator?.interpret ?? {})) {
-        const ref = parseBranchRef(value);
-        if (!ref || steps[ref.target]) continue;
-        const file = this.resolveLink(ref.target);
+      // A dial declaration imported onto the GM Screen (via `gm-tools:`) is
+      // itself a loaded feature — register its dial so the whole log can read
+      // its current value / `default` (the session-wide path).
+      if (feature.dial?.abbr && !dials[feature.dial.abbr]) dials[feature.dial.abbr] = { ...feature.dial, name: feature.name };
+      // A feature may also DECLARE a dial dependency via `reads:` (e.g. used
+      // standalone, off-screen) — resolve those links too.
+      for (const ref of feature.reads ?? []) {
+        const file = this.resolveLink(ref);
         if (!file) continue;
         try {
-          const doc = parseSourceDoc(
-            { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
-            "class"
-          );
-          const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
-          if (!step) continue;
-          steps[ref.target] = step;
-          for (const s of step.steps ?? []) {
-            if (!s.table || tables[s.table]) continue;
-            const tref = parseBranchRef(s.table);
-            const tf = this.resolveLink(tref?.target ?? s.table);
-            if (!tf) continue;
-            const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) }, "class");
-            const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
-            if (table) tables[s.table] = table;
+          const loaded = await this.loadGMFeatures(file);
+          resFeatures.push(...loaded);
+          for (const f of loaded) {
+            if (f.dial?.abbr && !dials[f.dial.abbr]) dials[f.dial.abbr] = { ...f.dial, name: f.name };
           }
         } catch {
-          /* unreadable target — skip; that branch just has no dropdown/auto-fill */
+          /* unreadable dial — skip; CF resolution falls back to its legacy path */
+        }
+      }
+      for (const gen of [feature.generator, ...(feature.generators ?? [])]) {
+        for (const genStep of gen ? generatorSteps(gen) : []) {
+          for (const value of Object.values(genStep.interpret ?? {})) {
+            const ref = parseBranchRef(value);
+            if (!ref || steps[ref.target]) continue;
+            const file = this.resolveLink(ref.target);
+            if (!file) continue;
+            try {
+              const doc = parseSourceDoc(
+                { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
+                "class"
+              );
+              const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
+              if (!step) continue;
+              const expanded = await this.expandStepUses(step);
+              steps[ref.target] = expanded;
+              for (const s of expanded.steps ?? []) {
+                const refs = [...(s.table ? [s.table] : []), ...(s.tables ?? [])];
+                for (const rawRef of refs) {
+                  if (tables[rawRef]) continue;
+                  const tref = parseBranchRef(rawRef);
+                  const tf = this.resolveLink(tref?.target ?? rawRef);
+                  if (!tf) continue;
+                  const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) }, "class");
+                  const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
+                  if (table) tables[rawRef] = table;
+                }
+                // A step that `calls:` a sub-procedure → resolve its generator's
+                // steps into the child lines laid out as `+ ` children (expanding
+                // any cross-file `emits:` sub-generators), and load any TABLE
+                // those steps roll (so children auto-fill).
+                if (s.calls && !calls[s.calls.trim()]) {
+                  const cref = parseBranchRef(s.calls);
+                  const cfile = this.resolveLink(cref?.target ?? s.calls);
+                  if (cfile) {
+                    const cdoc = parseSourceDoc({ $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) }, "class");
+                    const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
+                    if (gen) {
+                      // Lists the called file (and sub-generator files) `reads:`
+                      // travel with the call; step blocks a `choices` step needs
+                      // feed the pick map.
+                      await this.loadReadsLists(cdoc.gmFeatures ?? [], lists);
+                      const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
+                      await this.loadReadsLists(expanded.readsFeatures, lists);
+                      for (const sb of expanded.stepBlocks) {
+                        if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
+                        // A `choices` pick's word-pair tables (Actions/Descriptions).
+                        for (const bs of sb.steps ?? []) {
+                          for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
+                            if (tables[rawRef]) continue;
+                            const btref = parseBranchRef(rawRef);
+                            const btf = this.resolveLink(btref?.target ?? rawRef);
+                            if (!btf) continue;
+                            const btdoc = parseSourceDoc({ $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) }, "class");
+                            const bt = (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
+                            if (bt) tables[rawRef] = bt;
+                          }
+                        }
+                      }
+                      const gsteps = expanded.steps;
+                      calls[s.calls.trim()] = gsteps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
+                      for (const gs of gsteps) {
+                        if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
+                        if (!gs.table || !gs.work) continue;
+                        stepTables[gs.work] = gs.table;
+                        if (tables[gs.table]) continue;
+                        const gtref = parseBranchRef(gs.table);
+                        const gtf = this.resolveLink(gtref?.target ?? gs.table);
+                        if (!gtf) continue;
+                        const gtdoc = parseSourceDoc({ $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) }, "class");
+                        const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
+                        if (gtable) tables[gs.table] = gtable;
+                      }
+                    }
+                  }
+                }
+              }
+            } catch {
+              /* unreadable target — skip; that branch just has no dropdown/auto-fill */
+            }
+          }
         }
       }
     }
-    return { steps, tables };
+    // Lists the GM-screen features THEMSELVES `reads:` (their declared imports).
+    await this.loadReadsLists(features, lists);
+    // A GM feature's OWN steps may be a pick map whose choices roll tables (a
+    // feature declaring both a `choices` generator and what each pick spawns) —
+    // load those so a picked line auto-fills when rolled.
+    for (const feature of features) {
+      for (const s of feature.steps ?? []) {
+        for (const rawRef of [...(s.table ? [s.table] : []), ...(s.tables ?? [])]) {
+          if (tables[rawRef]) continue;
+          const oref = parseBranchRef(rawRef);
+          const of = this.resolveLink(oref?.target ?? rawRef);
+          if (!of) continue;
+          try {
+            const odoc = parseSourceDoc({ $name: of.basename, $contents: await this.baseView.app.vault.read(of) }, "class");
+            const ot = (oref?.block && odoc.tables.find((t) => t.name === oref.block)) || odoc.tables[0];
+            if (ot) tables[rawRef] = ot;
+          } catch {
+            /* skip an unreadable table — that pick just won't auto-fill */
+          }
+        }
+      }
+    }
+    // A GM feature's own generator → its working lines (its own `steps:`, plus
+    // any cross-file `emits:` sub-gens composed in), so a log's empty
+    // `gen: <name>` block is populated from them.
+    const genLines: Record<string, string[]> = {};
+    for (const feature of features) {
+      for (const gen of [feature.generator, ...(feature.generators ?? [])]) {
+        if (!gen || genLines[gen.name]) continue;
+        const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
+        await this.loadReadsLists(expanded.readsFeatures, lists);
+        for (const sb of expanded.stepBlocks) if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
+        for (const gs of expanded.steps) {
+          if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
+          if (!gs.table || !gs.work) continue;
+          stepTables[gs.work] = gs.table;
+          if (tables[gs.table]) continue;
+          const gtref = parseBranchRef(gs.table);
+          const gtf = this.resolveLink(gtref?.target ?? gs.table);
+          if (!gtf) continue;
+          const gtdoc = parseSourceDoc({ $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) }, "class");
+          const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
+          if (gtable) tables[gs.table] = gtable;
+        }
+        genLines[gen.name] = expanded.steps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
+      }
+    }
+    Object.assign(lists, { ...collectLists(resFeatures), ...lists });
+    return {
+      steps,
+      tables,
+      dials,
+      calls,
+      stepTables,
+      stepFollows,
+      lists,
+      genLines,
+      resources: collectResources(resFeatures),
+    };
+  }
+
+  /** Read a linked file's GM features by wikilink target (for the composition
+   *  expander), or null when unresolved / unparseable. */
+  private async readGMFeatures(target: string): Promise<GMFeature[] | null> {
+    const file = this.resolveLink(target);
+    if (!file) return null;
+    try {
+      return parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class").gmFeatures ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Load the `list:` feature each of `features`' `reads:` links points at into
+   *  the registry, so a consult (`[Characters?]`) resolves to its default. Only
+   *  EXPLICITLY imported lists load — a bare consult token never triggers a
+   *  load, so lists don't leak onto features that didn't ask for them. */
+  private async loadReadsLists(features: GMFeature[], lists: Record<string, ListDecl>): Promise<void> {
+    for (const feature of features) {
+      for (const ref of feature.reads ?? []) {
+        const file = this.resolveLink(parseBranchRef(ref)?.target ?? ref);
+        if (!file) continue;
+        try {
+          const doc = parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class");
+          Object.assign(lists, collectLists(doc.gmFeatures ?? []));
+        } catch {
+          /* unreadable list — the consult falls back to the raw `[Name?]` ref */
+        }
+      }
+    }
+  }
+
+  /** Splice a step-block's `use: @[[…]]` steps with the imported block's steps
+   *  (composition), so a shared step-set is defined once and reused. */
+  private async expandStepUses(step: GMFeature): Promise<GMFeature> {
+    const links = stepUseLinks(step.steps ?? []);
+    if (links.length === 0) return step;
+    const resolved: Record<string, GMStep[]> = {};
+    for (const link of links) {
+      const tref = parseBranchRef(link);
+      const file = this.resolveLink(tref?.target ?? link);
+      if (!file) continue;
+      try {
+        const doc = parseSourceDoc(
+          { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
+          "class"
+        );
+        const target = selectStepBlock(doc.gmFeatures ?? [], tref?.block);
+        if (target?.steps) resolved[link] = target.steps;
+      } catch {
+        /* unresolved use: → that splice step drops out */
+      }
+    }
+    return { ...step, steps: spliceStepUses(step.steps ?? [], resolved) };
   }
 
   /** Rewrite the `rpg log` block body via a transform, then persist. The
@@ -370,6 +620,8 @@ class SessionLogMarkdown extends ReactMarkdown {
         onAppendText={handleAppendText}
         onChoice={(selected) => void this.onChoicePick(selected)}
         onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
+        resources={this.stepCtx.resources ?? {}}
+        lists={this.stepCtx.lists ?? {}}
       />
     );
   }
@@ -391,6 +643,12 @@ interface SessionLogRootProps {
     scenes: Array<{ from: string; to: string }>;
     dice: Array<{ line: string; from: string; to: string }>;
   }) => void | Promise<void>;
+  /** Declared resources (session by abbr, PC by name) for resolving
+   *  `[<abbr>±n]` / `[<PC>/<name>±n]` ops to running values. */
+  resources: Record<string, DialDecl>;
+  /** Declared lonelog lists (by name) for folding `[Name+ …]` / `[Name?]` ops
+   *  into running entries. */
+  lists: Record<string, ListDecl>;
 }
 
 function SessionLogRoot({
@@ -405,11 +663,17 @@ function SessionLogRoot({
   onAppendText,
   onChoice,
   onSave,
+  resources,
+  lists,
 }: SessionLogRootProps) {
   const [consumableState, setConsumableState] = React.useState(initialConsumableState);
   const [sidebarOpen, setSidebarOpen] = React.useState(initialSidebarOpen);
   const [sceneEdits, setSceneEdits] = React.useState<Record<string, SceneEditValue>>({});
   const [dieEdits, setDieEdits] = React.useState<Record<string, string>>({});
+  /** Pending token swaps (list-consult picks), applied on save like die edits. */
+  const [tokenEdits, setTokenEdits] = React.useState<
+    Array<{ line: string; from: string; to: string; nth: number }>
+  >([]);
   // `n` forces the scroll effect to re-run even when the same id is re-clicked.
   const [selection, setSelection] = React.useState<{ id: number; side: "prose" | "sidebar"; n: number } | null>(null);
 
@@ -421,7 +685,12 @@ function SessionLogRoot({
 
   const segments = React.useMemo(() => groupIntoProse(logData.entries), [logData.entries]);
   const scenes = React.useMemo(() => assembleProse(segments), [segments]);
-  const sidebarItems = React.useMemo(() => buildSidebarItems(segments), [segments]);
+  const dialOps = React.useMemo(() => resolveDialOps(logData.entries, resources), [logData.entries, resources]);
+  const listOps = React.useMemo(() => resolveListOps(logData.entries, lists), [logData.entries, lists]);
+  const sidebarItems = React.useMemo(
+    () => buildSidebarItems(segments, dialOps, listOps),
+    [segments, dialOps, listOps]
+  );
 
   const proseAnchors = React.useRef(new Map<number, HTMLElement>());
   const sidebarAnchors = React.useRef(new Map<number, HTMLElement>());
@@ -584,7 +853,7 @@ function SessionLogRoot({
     return out;
   }, [editTerms, editResults, dieEdits]);
 
-  const isDirty = pendingScenes.length > 0 || dieReplacements.length > 0;
+  const isDirty = pendingScenes.length > 0 || dieReplacements.length > 0 || tokenEdits.length > 0;
 
   const handleSceneChange = (original: string, next: SceneEditValue) => {
     setSceneEdits((prev) => ({ ...prev, [original]: next }));
@@ -598,14 +867,24 @@ function SessionLogRoot({
     setDieEdits((prev) => ({ ...prev, [resultEditKey(source)]: value }));
   };
 
+  // A list-consult pick (`[Characters?]` → `[Characters?= Bertha]`) is a plain
+  // token swap on its source line — batched with the die edits and written on save.
+  const handleTokenChange = (source: string, from: string, to: string, nth: number) => {
+    setTokenEdits((prev) => {
+      const rest = prev.filter((e) => !(e.line === source && e.from === from && e.nth === nth));
+      return [...rest, { line: source, from, to, nth }];
+    });
+  };
+
   const handleSave = async () => {
     const scenes = pendingScenes.map(([original, v]) => ({
       from: original,
       to: reconstructScene(v.number, v.name, sceneOriginals[original].hadS),
     }));
-    await onSave({ scenes, dice: dieReplacements });
+    await onSave({ scenes, dice: [...dieReplacements, ...tokenEdits] });
     setSceneEdits({});
     setDieEdits({});
+    setTokenEdits([]);
   };
 
   const hasActions = pcStacks.size > 0 || gmStacks.length > 0;
@@ -662,6 +941,7 @@ function SessionLogRoot({
             dieEdits={dieEdits}
             onDieChange={handleDieChange}
             onResultChange={handleResultChange}
+            onTokenChange={handleTokenChange}
             onChoice={onChoice}
           />
         )}

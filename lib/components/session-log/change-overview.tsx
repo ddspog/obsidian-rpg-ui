@@ -86,7 +86,15 @@ interface ProgressChangeSummaryProps {
 
 function ProgressChangeSummary({ progress }: ProgressChangeSummaryProps) {
   const icon =
-    progress.kind === "clock" ? "🕐" : progress.kind === "track" ? "📊" : progress.kind === "timer" ? "⏱" : "📅";
+    progress.kind === "clock"
+      ? "🕐"
+      : progress.kind === "track"
+        ? "📊"
+        : progress.kind === "timer"
+          ? "⏱"
+          : progress.kind === "dial"
+            ? "🎚"
+            : "📅";
 
   return (
     <div className="progress-change-summary">
@@ -94,7 +102,9 @@ function ProgressChangeSummary({ progress }: ProgressChangeSummaryProps) {
       <span className="progress-name">{progress.name}:</span>
       <span className="progress-value">
         {progress.current}
-        {progress.max !== undefined && `/${progress.max}`}
+        {progress.kind === "dial"
+          ? progress.min !== undefined && ` (${progress.min}–${progress.max})`
+          : progress.max !== undefined && `/${progress.max}`}
       </span>
     </div>
   );

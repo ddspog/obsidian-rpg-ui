@@ -39,6 +39,9 @@ export function TagPill({ tag, onClick }: TagPillProps) {
       case "track":
         return `${tag.name} ${tag.current}/${tag.max}`;
 
+      case "dial":
+        return `${tag.name} ${tag.current} (${tag.min}–${tag.max})`;
+
       case "timer":
         return `${tag.name}: ${tag.value}`;
 
@@ -79,6 +82,15 @@ export function TagPill({ tag, onClick }: TagPillProps) {
       const percentage = (tag.current / tag.max) * 100;
       return (
         <div className="tag-progress-bar">
+          <div className="tag-progress-fill" style={{ width: `${percentage}%` }} />
+        </div>
+      );
+    }
+    if (tag.kind === "dial") {
+      const span = tag.max - tag.min;
+      const percentage = span > 0 ? Math.max(0, Math.min(100, ((tag.current - tag.min) / span) * 100)) : 0;
+      return (
+        <div className="tag-progress-bar tag-progress-bar--dial">
           <div className="tag-progress-fill" style={{ width: `${percentage}%` }} />
         </div>
       );
