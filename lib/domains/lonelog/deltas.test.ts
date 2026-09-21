@@ -135,6 +135,21 @@ describe("Delta Tracker", () => {
       });
     });
 
+    it("should extract dial progress changes", () => {
+      const log = `=> [Dial:Chaos Factor|6|1-9]`;
+      const entries = parseLonelog(log);
+      const { progressChanges } = extractDeltas(entries);
+
+      expect(progressChanges).toHaveLength(1);
+      expect(progressChanges[0]).toEqual({
+        name: "Chaos Factor",
+        kind: "dial",
+        current: 6,
+        min: 1,
+        max: 9,
+      });
+    });
+
     it("should extract thread state changes", () => {
       const log = `=> [Thread:Find Sister|Closed]`;
       const entries = parseLonelog(log);
@@ -193,6 +208,29 @@ describe("Delta Tracker", () => {
       expect(entityDeltas[0].changes).toHaveLength(2);
       expect(entityDeltas[0].changes).toContainEqual({ type: "hp", delta: -2 });
       expect(entityDeltas[0].changes).toContainEqual({ type: "hp", delta: 5 });
+    });
+
+    it("routes a PC resource op (`[Char/Resource-1]`) into a stat delta on that PC", () => {
+      const { entityDeltas } = extractDeltas(parseLonelog(`=> Talon marks the target. [Talon/Mystic Mark-1]`));
+      expect(entityDeltas).toHaveLength(1);
+      expect(entityDeltas[0]).toEqual({
+        entity: "Talon",
+        entityType: "pc",
+        changes: [{ type: "stat", stat: "Mystic Mark", delta: -1 }],
+      });
+    });
+
+    it("tracks a PC resource gain (`+n`) on a standalone op line", () => {
+      const { entityDeltas } = extractDeltas(parseLonelog(`[Talon/Mystic Mark+2]`));
+      expect(entityDeltas[0].changes).toContainEqual({ type: "stat", stat: "Mystic Mark", delta: 2 });
+    });
+
+    it("ignores session dial ops and PC inspect/set ops (no delta to record)", () => {
+      // session op → running-value display only, not a PC delta
+      expect(extractDeltas(parseLonelog(`=> The tension rises. [CF+1]`)).entityDeltas).toHaveLength(0);
+      // inspect + absolute set carry no delta
+      expect(extractDeltas(parseLonelog(`[Talon/Mystic Mark?]`)).entityDeltas).toHaveLength(0);
+      expect(extractDeltas(parseLonelog(`[Talon/Mystic Mark=3]`)).entityDeltas).toHaveLength(0);
     });
   });
 

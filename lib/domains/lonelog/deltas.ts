@@ -9,6 +9,7 @@ import {
   TagProcessorRegistry,
   PCTagProcessor,
   NPCTagProcessor,
+  DialOpTagProcessor,
   ProgressTagProcessor,
   ThreadTagProcessor,
   parseChange,
@@ -21,8 +22,10 @@ function createProcessorRegistry(): TagProcessorRegistry {
   const registry = new TagProcessorRegistry();
   registry.register("pc", new PCTagProcessor());
   registry.register("npc", new NPCTagProcessor());
+  registry.register("dial-op", new DialOpTagProcessor());
   registry.register("clock", new ProgressTagProcessor());
   registry.register("track", new ProgressTagProcessor());
+  registry.register("dial", new ProgressTagProcessor());
   registry.register("event", new ProgressTagProcessor());
   registry.register("timer", new ProgressTagProcessor());
   registry.register("thread", new ThreadTagProcessor());

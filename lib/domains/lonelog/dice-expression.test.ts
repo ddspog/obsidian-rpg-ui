@@ -138,3 +138,54 @@ describe("highlightDiceNotation", () => {
     expect(tokens[1]).toEqual({ text: "kh1", type: "modifier" });
   });
 });
+
+describe("party rolls: one expression per character", () => {
+  it("separates expressions on `;`, keeping each leading name", () => {
+    // The common case: everyone makes the same check, each with their own modifier.
+    const f = parseRollField("Talon d20+5=18; Kowyn d20+3=12; Lilith d20+7=21");
+    expect(f.expressions.map((e) => [e.label, e.expression, e.total])).toEqual([
+      ["Talon", "d20+5", 18],
+      ["Kowyn", "d20+3", 12],
+      ["Lilith", "d20+7", 21],
+    ]);
+  });
+
+  it("keeps a comma inside a name, which is why `;` separates", () => {
+    const f = parseRollField("Loki, the old God d20+2=15; Brian d20=9");
+    expect(f.expressions.map((e) => e.label)).toEqual(["Loki, the old God", "Brian"]);
+  });
+
+  it("still reads the older comma form, where the label follows the dice", () => {
+    const f = parseRollField("4d6dl1 // STR=14, 4d6dl1 // DEX=12");
+    expect(f.expressions.map((e) => [e.description, e.total])).toEqual([
+      ["STR", 14],
+      ["DEX", 12],
+    ]);
+  });
+
+  it("takes the name before a pipe, whatever it contains", () => {
+    const f = parseRollField("Stealth | d20+5=18 vs DC 14 -> success");
+    expect(f.expressions[0].label).toBe("Stealth");
+    expect(f.expressions[0].expression).toBe("d20+5");
+    // A party roll: one name per expression, split on `;`.
+    const party = parseRollField("Talon | d20+5=18; Loki, the old God | d20+2=15");
+    expect(party.expressions.map((e) => [e.label, e.total])).toEqual([
+      ["Talon", 18],
+      ["Loki, the old God", 15],
+    ]);
+  });
+
+  it("labels a single check without touching the dice", () => {
+    const f = parseRollField("Thieves' Tools d20+0=8 vs DC 15 -> Fail");
+    expect(f.expressions[0].label).toBe("Thieves' Tools");
+    expect(f.expressions[0].expression).toBe("d20+0");
+    expect(f.vsTarget).toBe("DC 15");
+    expect(f.outcome).toBe("Fail");
+  });
+
+  it("leaves a bare expression unlabelled", () => {
+    // `d20+5` must not read its own `d` as a one-letter name.
+    expect(parseRollField("d20+5=18").expressions[0].label).toBeUndefined();
+    expect(parseRollField("2d6=[4,3]").expressions[0].label).toBeUndefined();
+  });
+});

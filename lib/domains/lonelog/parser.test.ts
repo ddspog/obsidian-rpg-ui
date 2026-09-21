@@ -282,6 +282,22 @@ describe("Lonelog Parser", () => {
       });
     });
 
+    it("should extract dial tags", () => {
+      const tags = extractTags("[Dial:Chaos Factor|5|1-9]");
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toEqual({
+        kind: "dial",
+        name: "Chaos Factor",
+        current: 5,
+        min: 1,
+        max: 9,
+      });
+    });
+
+    it("ignores a malformed dial (missing range)", () => {
+      expect(extractTags("[Dial:Chaos Factor|5]")).toHaveLength(0);
+    });
+
     it("should extract track tags", () => {
       const tags = extractTags("[Track:Escape 3/8]");
       expect(tags).toHaveLength(1);
@@ -787,5 +803,136 @@ d: 1d8+4=9 slashing damage
       });
       expect(parseSceneMarker("Just some prose.")).toBeNull();
     });
+  });
+});
+
+describe("dial-op tokens", () => {
+  it("classifies a bare dial-op line as a mechanical consequence with empty conclusion", () => {
+    const [entry] = parseLonelog("[CF+1]");
+    expect(entry.type).toBe("consequence");
+    if (entry.type === "consequence") {
+      expect(entry.conclusion).toBe(""); // strips to nothing → excluded from prose
+      expect(entry.tags).toEqual([{ kind: "dial-op", abbr: "CF", op: "inc", amount: 1 }]);
+    }
+  });
+
+  it("parses set / dec / inspect forms", () => {
+    expect(extractTags("[CF=5]")).toEqual([{ kind: "dial-op", abbr: "CF", op: "set", amount: 5 }]);
+    expect(extractTags("[CF:5]")).toEqual([{ kind: "dial-op", abbr: "CF", op: "set", amount: 5 }]);
+    expect(extractTags("[CF-2]")).toEqual([{ kind: "dial-op", abbr: "CF", op: "dec", amount: 2 }]);
+    expect(extractTags("[CF?]")).toEqual([{ kind: "dial-op", abbr: "CF", op: "inspect" }]);
+  });
+
+  it("extracts an inline dial-op and strips it from the conclusion", () => {
+    const [entry] = parseLonelog("=> The tension rises. [CF+1]");
+    expect(entry.type).toBe("consequence");
+    if (entry.type === "consequence") {
+      expect(entry.conclusion).toBe("The tension rises.");
+      expect(entry.tags).toContainEqual({ kind: "dial-op", abbr: "CF", op: "inc", amount: 1 });
+    }
+  });
+
+  it("does not treat a [[wikilink]] or a [Dial:…] tag as a dial-op", () => {
+    expect(extractTags("[[Some Page]]").filter((t) => t.kind === "dial-op")).toEqual([]);
+    const dial = extractTags("[Dial:Chaos Factor|5|1-9]");
+    expect(dial).toContainEqual({ kind: "dial", name: "Chaos Factor", current: 5, min: 1, max: 9 });
+    expect(dial.filter((t) => t.kind === "dial-op")).toEqual([]);
+  });
+
+  it("keeps the inline [CF:n] on an oracle `?` line as a chaosFactor snapshot", () => {
+    const [entry] = parseLonelog("? [CF:5] Does the door open?");
+    expect(entry.type).toBe("oracle_question");
+    if (entry.type === "oracle_question") expect(entry.chaosFactor).toBe(5);
+  });
+
+  it("parses a PC resource op `[Character/Resource op]` (name may contain spaces)", () => {
+    expect(extractTags("[Talon/Mystic Mark-1]")).toEqual([
+      { kind: "dial-op", pc: "Talon", name: "Mystic Mark", op: "dec", amount: 1 },
+    ]);
+    expect(extractTags("[Talon/Mystic Mark=3]")).toEqual([
+      { kind: "dial-op", pc: "Talon", name: "Mystic Mark", op: "set", amount: 3 },
+    ]);
+    expect(extractTags("[Talon/Mystic Mark?]")).toEqual([
+      { kind: "dial-op", pc: "Talon", name: "Mystic Mark", op: "inspect" },
+    ]);
+  });
+
+  it("classifies a bare PC-op line as a mechanical consequence, stripped from prose", () => {
+    const [entry] = parseLonelog("[Talon/Mystic Mark-1]");
+    expect(entry.type).toBe("consequence");
+    if (entry.type === "consequence") {
+      expect(entry.conclusion).toBe("");
+      expect(entry.tags).toContainEqual({ kind: "dial-op", pc: "Talon", name: "Mystic Mark", op: "dec", amount: 1 });
+    }
+    const [inline] = parseLonelog("=> Talon marks the target. [Talon/Mystic Mark-1]");
+    if (inline.type === "consequence") expect(inline.conclusion).toBe("Talon marks the target.");
+  });
+
+  it("does NOT mistake wikilinks, [PC:…] deltas, or date-like tokens for PC ops", () => {
+    const pcOps = (s: string) => extractTags(s).filter((t) => t.kind === "dial-op" && "pc" in t && t.pc);
+    expect(pcOps("[[Some/Page]]")).toEqual([]); // wikilink with a slash
+    expect(pcOps("[PC:Talon|Mystic Mark-1]")).toEqual([]); // existing PC delta form (colon)
+    expect(pcOps("Met at [2026/06/30] near noon.")).toEqual([]); // date-like, two slashes, no op
+    expect(pcOps("[Inv:Rope/2]")).toEqual([]); // kind:content
+  });
+});
+
+describe("parseLonelog — hard-wrapped prose", () => {
+  it("joins soft-wrapped narrative lines into one paragraph", () => {
+    const out = parseLonelog(["Imported by the [[Scene Check]] when its roll", "lands on Interrupt."].join("\n"));
+    expect(out).toEqual([
+      { type: "narrative", text: "Imported by the [[Scene Check]] when its roll lands on Interrupt." },
+    ]);
+  });
+
+  it("breaks the paragraph on a blank line", () => {
+    const out = parseLonelog(["First para line one", "line two", "", "Second para"].join("\n"));
+    expect(out.map((e) => (e as { text: string }).text)).toEqual(["First para line one line two", "Second para"]);
+  });
+
+  it("never joins across a mechanical line", () => {
+    const out = parseLonelog(["Prose before", "? A question", "Prose after"].join("\n"));
+    expect(out.map((e) => e.type)).toEqual(["narrative", "oracle_question", "narrative"]);
+  });
+});
+
+describe("list ops — `[Name+ entry]` / `[Name- entry]` / `[Name?]` / `[Name@]`", () => {
+  const tagsOf = (line: string) => {
+    const e = parseLonelog(line)[0];
+    return e.type === "consequence" || e.type === "world_event" ? e.tags : e.type === "oracle_question" ? (e.dialOps ?? []) : [];
+  };
+
+  it("parses add / remove / inspect / roll, keeping multi-word entries intact", () => {
+    expect(tagsOf("=> A new ally. [Characters+ Bertha the Angry Avian]")).toEqual([
+      { kind: "list-op", name: "Characters", op: "add", entry: "Bertha the Angry Avian" },
+    ]);
+    expect(tagsOf("=> Resolved. [Threads- Find the mystical stone]")).toEqual([
+      { kind: "list-op", name: "Threads", op: "remove", entry: "Find the mystical stone" },
+    ]);
+    // `?` INSPECTS the whole list; `@` ROLLS one entry off the sheet.
+    expect(tagsOf("? Who acts? [Characters?]")).toEqual([{ kind: "list-op", name: "Characters", op: "inspect" }]);
+    expect(tagsOf("? Who acts? [Characters@]")).toEqual([{ kind: "list-op", name: "Characters", op: "roll" }]);
+    expect(tagsOf("? Who acts? [Characters@ r1=3 r2=7]")).toEqual([
+      { kind: "list-op", name: "Characters", op: "roll", rolled: true, rolls: [3, 7] },
+    ]);
+  });
+
+  it("strips the op from the narration", () => {
+    const e = parseLonelog("=> A new ally. [Characters+ Bertha]")[0];
+    expect(e.type === "consequence" && e.conclusion).toBe("A new ally.");
+  });
+
+  it("stays disjoint from resource ops and other tag kinds", () => {
+    // ALLCAPS abbr → resource, not a list (Title Case is the list discriminator).
+    expect(tagsOf("=> Chaos rises. [CF+1]")).toEqual([{ kind: "dial-op", abbr: "CF", op: "inc", amount: 1 }]);
+    expect(tagsOf("=> Mark spent. [Talon/Mystic Mark-1]")[0].kind).toBe("dial-op");
+    expect(tagsOf("=> An NPC. [N:Bertha|hostile]")[0].kind).toBe("npc");
+    expect(tagsOf("=> A thread. [Thread:Find the stone|Open]")[0].kind).toBe("thread");
+  });
+
+  it("leaves wikilinks alone", () => {
+    const e = parseLonelog("=> A link [[Some Note]] stays.")[0];
+    expect(e.type === "consequence" && e.tags).toEqual([]);
+    expect(e.type === "consequence" && e.conclusion).toBe("A link [[Some Note]] stays.");
   });
 });
