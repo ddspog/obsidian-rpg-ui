@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { extractMeta } from "./meta-extractor";
+import { extractMeta, detectMetaFromSource } from "./meta-extractor";
 import { MarkdownPostProcessorContext } from "obsidian";
 
 describe("meta-extractor", () => {
@@ -320,5 +320,41 @@ describe("meta-extractor", () => {
       const source = 'name: Heroic Boon\nsubtitle: "10th-Level Cleric Feature"\npick: 1\n';
       expect(extractMeta(ctx, el, source)).toBe("feature.details");
     });
+  });
+});
+
+describe("detectMetaFromSource — feature.gm fence-mode", () => {
+  // When a gm fence is imported into another note the info string ("rpg
+  // feature.gm") is gone, so classification falls back to the body. It used to
+  // land on `rule.content`, which rendered the lonelog as literal prose.
+  it("detects a GM block by its aspect keys, not as rule.content", () => {
+    const src = [
+      "id: random-event",
+      "name: Random Event",
+      "heading: none",
+      'reads: ["@[[Characters]]", "@[[Threads]]"]',
+      "generators:",
+      "  - id: random-event",
+      "cards:",
+      "  - name: Trigger a Random Event",
+      "---",
+      "? A Random Event fires — what is it?",
+      "gen: Random Event",
+    ].join("\n");
+    expect(detectMetaFromSource(src)).toBe("feature.gm");
+  });
+
+  it("recognizes each GM-only aspect key", () => {
+    for (const key of ["generators", "cards", "oracle", "dial", "list", "reads", "steps", "scene", "event"]) {
+      const src = [`id: x`, `name: X`, `${key}:`, "  - a", "---", "body"].join("\n");
+      expect(detectMetaFromSource(src)).toBe("feature.gm");
+    }
+  });
+
+  it("does not steal a plain rule.content or feature.details block", () => {
+    expect(detectMetaFromSource(["id: summary", "---", "Just prose."].join("\n"))).toBe("rule.content");
+    expect(detectMetaFromSource(["name: Second Wind", "type: bonus", "---", "Regain HP."].join("\n"))).toBe(
+      "feature.details"
+    );
   });
 });

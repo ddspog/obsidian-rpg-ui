@@ -41,10 +41,12 @@ import { findAllFences } from "lib/domains/lists/resolve-entries";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { selectFenceBodyByIndex, sliceFenceInner } from "lib/domains/rules/select-fence";
+import { inlineContentFences } from "lib/domains/rules/import-fences";
 import { TabGroupView } from "lib/domains/rules/render-tab-group";
-import { findRuleContentBlock, resolveTabBlockFields } from "lib/domains/rules/resolve-tab";
+import { findRuleContentBlock, findGMFeatureById, resolveTabBlockFields } from "lib/domains/rules/resolve-tab";
 import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
+import { GMFeatureCard } from "lib/components/session-log/gm-feature-card";
 import { StatblockVehicle } from "lib/components/statblock-vehicle";
 import { StatblockMonster } from "lib/components/statblock-monster";
 import { StatblockCategory } from "lib/components/statblock-group";
@@ -388,6 +390,23 @@ function resolveCall(
         let bareBody: string | null = null;
         if (typeof bareArg === "string") {
           bareBody = findContentBlockById(cleaned, bareArg);
+          // No rule.content match → a feature.gm id renders the GM card (React),
+          // honoring its `heading` (a chained `.hN()` overrides the attr).
+          if (bareBody === null) {
+            const gmFileName = call.section ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
+            const gm = findGMFeatureById(cleaned, gmFileName, bareArg);
+            if (gm) {
+              const chainH = call.chain.find((s) => /^h[1-6]$/.test(s.fn));
+              const feature = chainH ? { ...gm, heading: parseInt(chainH.fn.slice(1), 10) } : gm;
+              const root = ReactDOM.createRoot(span);
+              child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+              span.classList.remove("rpg-call--pending");
+              span.removeAttribute("aria-label");
+              span.textContent = "";
+              root.render(React.createElement(GMFeatureCard, { feature, sourcePath: targetPath }));
+              return;
+            }
+          }
         } else if (typeof bareArg === "number" && Number.isInteger(bareArg) && bareArg >= 0) {
           bareBody = selectFenceBodyByIndex(cleaned, bareArg);
         }
@@ -884,53 +903,6 @@ function stripLocalFences(text: string): string {
   return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
 }
 
-/**
- * Replace all `rpg ...` fences with their markdown body (text after
- * the `---` separator). Used for whole-file imports so the view renders
- * prose inline without re-triggering the code block processor (which would
- * add standalone homebrew/special decorations).
- */
-function inlineContentFences(text: string): string {
-  const FENCE_OPEN = /^(`{3,})rpg\s+([^\n]+)$/gm;
-  let result = "";
-  let cursor = 0;
-  let m: RegExpExecArray | null;
-  while ((m = FENCE_OPEN.exec(text)) !== null) {
-    const ticks = m[1].length;
-    const fenceType = m[2].trim();
-    const headEnd = m.index + m[0].length + 1; // +1 for newline
-    const closeRe = new RegExp(`^\\x60{${ticks}}\\s*$`, "m");
-    const tail = text.slice(headEnd);
-    const closeMatch = closeRe.exec(tail);
-    if (!closeMatch) continue;
-    const inner = tail.slice(0, closeMatch.index);
-    const fenceEnd = headEnd + closeMatch.index + closeMatch[0].length;
-    const trailingNewline = text[fenceEnd] === "\n" ? 1 : 0;
-    // Preserve fences that need Obsidian's code block processor to render.
-    if (fenceType.startsWith("table")) {
-      result += text.slice(cursor, fenceEnd + trailingNewline);
-      cursor = fenceEnd + trailingNewline;
-      FENCE_OPEN.lastIndex = cursor;
-      continue;
-    }
-    result += text.slice(cursor, m.index);
-    const sep = inner.indexOf("\n---\n");
-    if (sep >= 0) {
-      result += inlineContentFences(inner.slice(sep + 5));
-    } else {
-      const sepEnd = inner.indexOf("\n---");
-      if (sepEnd >= 0 && sepEnd + 4 >= inner.length) {
-        // body is empty after separator
-      } else {
-        result += inlineContentFences(inner);
-      }
-    }
-    cursor = fenceEnd + trailingNewline;
-    FENCE_OPEN.lastIndex = cursor;
-  }
-  result += text.slice(cursor);
-  return result;
-}
 
 function findContentBlockById(text: string, id: string): string | null {
   return findRuleContentBlock(text, id)?.body ?? null;

@@ -124,6 +124,26 @@ export function processUnrenderedRpgFences(
       continue;
     }
 
+    // GM feature blocks (`rpg feature.gm`) — a GM tool page imported into
+    // another note (`@[[file]].bare()`) keeps its fence, so the card renders
+    // here with its interactive lonelog body (question, `gen:` block, dice,
+    // dropdowns) instead of the raw YAML. Not registry-backed, so it must be
+    // handled before the generic entity path below.
+    if (meta === "feature.gm") {
+      try {
+        // Required lazily: FeatureGMView → GMFeatureCard → Markdown imports
+        // THIS module, so a top-level import would form a cycle and the class
+        // can be undefined at init (`Class extends undefined`).
+        const { FeatureGMRenderChild } = require("lib/views/FeatureGMView") as {
+          FeatureGMRenderChild: new (el: HTMLElement, app: App, source: string, sourcePath: string) => MarkdownRenderChild;
+        };
+        parent.addChild(new FeatureGMRenderChild(el, app, source, sourcePath));
+      } catch (err) {
+        el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
+      }
+      continue;
+    }
+
     const ruleSubtype = subtypeFromMeta(meta);
     if (ruleSubtype) {
       try {

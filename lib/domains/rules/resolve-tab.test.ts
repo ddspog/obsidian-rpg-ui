@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findRuleContentBlock, resolveTabBlockFields } from "./resolve-tab";
+import { findRuleContentBlock, findGMFeatureById, resolveTabBlockFields } from "./resolve-tab";
 
 // Triple-backtick fence opener can't be written literally inside a template
 // literal, so build fences from a constant.
@@ -148,5 +148,27 @@ describe("resolveTabBlockFields", () => {
   it("ignores a non-numeric block order and falls back to the file order", () => {
     const text = file(contentBlock("id: main-content\norder: high", "Body."));
     expect(resolveTabBlockFields(text, { "tab-order": 3 }, fileName, "main-content")?.order).toBe(3);
+  });
+});
+
+describe("findGMFeatureById", () => {
+  function gmBlock(yaml: string): string {
+    return [`${TICK}rpg feature.gm`, yaml, TICK].join("\n");
+  }
+
+  it("matches a feature.gm block by id", () => {
+    const text = file(gmBlock("id: scene-check\nname: Testing the Expected Scene"));
+    const gm = findGMFeatureById(text, "Scene Check", "scene-check");
+    expect(gm?.name).toBe("Testing the Expected Scene");
+  });
+
+  it("falls back to matching by name when id is absent", () => {
+    const text = file(gmBlock("name: Chaos Factor\ndial: { abbr: CF, min: 1, max: 9, default: 5 }"));
+    expect(findGMFeatureById(text, "Chaos Factor", "Chaos Factor")?.dial?.abbr).toBe("CF");
+  });
+
+  it("returns null when no feature.gm matches", () => {
+    const text = file(gmBlock("id: scene-check\nname: Scene Check"));
+    expect(findGMFeatureById(text, "Scene Check", "missing")).toBeNull();
   });
 });
