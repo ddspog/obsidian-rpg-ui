@@ -67,10 +67,11 @@ interface OrderedBlock {
 /**
  * Fold a feature fence body into a YAML string. In "fence mode" a `\n---\n`
  * separator splits a YAML head from a trailing markdown body; the body is
- * folded under a `text:` key (unless the head already declares one). Bodies
- * with no separator pass through unchanged.
+ * folded under `key` (default `text:`, unless the head already declares one).
+ * `feature.gm` folds under `body:` (the worked-example log). Bodies with no
+ * separator pass through unchanged.
  */
-function foldFenceText(rawBody: string): string {
+function foldFenceText(rawBody: string, key = "text"): string {
   const raw = rawBody.replace(/\n+$/, "");
   const sepIdx = raw.indexOf("\n---\n");
   const sepEnd = raw.indexOf("\n---");
@@ -82,10 +83,10 @@ function foldFenceText(rawBody: string): string {
       .slice(effectiveSep + 4)
       .replace(/^\n+/, "")
       .replace(/\n+$/, "") || undefined;
-  if (!fenceText || /^text\s*:/m.test(yaml)) return yaml;
+  if (!fenceText || new RegExp(`^${key}\\s*:`, "m").test(yaml)) return yaml;
   return (
     yaml +
-    "\ntext: |\n" +
+    `\n${key}: |\n` +
     fenceText
       .split("\n")
       .map((l) => "  " + l)
@@ -105,7 +106,7 @@ function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
   for (const m of cleaned.matchAll(re)) {
     blocks.push({
       kind: m[1] as FeatureBlockKind,
-      yaml: foldFenceText(m[2]),
+      yaml: foldFenceText(m[2], m[1] === "gm" ? "body" : "text"),
     });
   }
   return blocks;
@@ -116,7 +117,7 @@ function extractOrderedFeatureBlocks(body: string): OrderedBlock[] {
  * post-processor) into a `GMFeature`. Returns null on a malformed block.
  */
 export function parseGMFeatureBlock(source: string): GMFeature | null {
-  return safeParse<GMFeature>(foldFenceText(source), "feature.gm block");
+  return safeParse<GMFeature>(foldFenceText(source, "body"), "feature.gm block");
 }
 
 /**

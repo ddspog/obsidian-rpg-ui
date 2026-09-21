@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractCards, buildCardStacks, resolveMaxCount } from "./extract-cards";
+import { extractCards, buildCardStacks, resolveMaxCount, extractResourceDecls } from "./extract-cards";
 import type { FeatureDetails } from "../features/types";
 import type { ResolvedSourceSlice } from "./extract-cards";
 
@@ -33,6 +33,37 @@ describe("resolveMaxCount", () => {
   it("picks last entry when no character level provided", () => {
     const map = { 2: 1, 6: 2 };
     expect(resolveMaxCount(map)).toBe(2);
+  });
+});
+
+describe("extractResourceDecls", () => {
+  it("passes through the unified `resources:` list on a feature", () => {
+    const slices: ResolvedSourceSlice[] = [
+      {
+        source: "Mystic",
+        level: 5,
+        features: [{ name: "Mark", resources: [{ charges: { name: "Mystic Mark", max: 3, recovery: "short rest" } }] }],
+      },
+    ];
+    expect(extractResourceDecls(slices)).toEqual([
+      { charges: { name: "Mystic Mark", max: 3, recovery: "short rest" } },
+    ]);
+  });
+
+  it("maps a legacy `type: resource` feature to a charges resource (max resolved for level)", () => {
+    const slices: ResolvedSourceSlice[] = [
+      { source: "Fighter", level: 6, features: [{ name: "Second Wind", type: "resource", max: { 1: 1, 5: 2 }, recovery: "short rest" }] },
+    ];
+    expect(extractResourceDecls(slices)).toEqual([
+      { charges: { name: "Second Wind", max: 2, recovery: "short rest" } },
+    ]);
+  });
+
+  it("ignores non-resource features and a resource with no max", () => {
+    const slices: ResolvedSourceSlice[] = [
+      { source: "X", level: 1, features: [{ name: "Passive Trait", text: "always on" }, { name: "Vague", type: "resource" }] },
+    ];
+    expect(extractResourceDecls(slices)).toEqual([]);
   });
 });
 

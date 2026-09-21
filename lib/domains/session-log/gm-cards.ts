@@ -1,6 +1,6 @@
 import { CardStack } from "./card-types";
 import type { GMFeature, GMStack } from "../features/types";
-import { emitGMFeature, gmPrimaryStack, gmStacks } from "../gm/emit";
+import { emitGMFeature, emitCard, cardPrimaryStack, gmPrimaryStack, gmStacks } from "../gm/emit";
 
 export interface GMCard {
   id: string;
@@ -141,38 +141,66 @@ const GM_STACK_LABELS: Record<GMStack, string> = {
 
 /**
  * Build GM card stacks from authored `feature.gm` features (a linked GM Screen
- * file). Each feature emits its multi-line lonelog template up front and lands
- * in the stack of its primary aspect; stacks render in canonical aspect order.
+ * file). A feature carrying `cards:` contributes one clickable card per declared
+ * card (each emitting its composed `emits`); a feature without `cards:` is itself
+ * one card from its aspects. Each card lands in the stack of its primary aspect;
+ * stacks render in canonical aspect order.
  */
 export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
-  const byStack = new Map<GMStack, GMFeature[]>();
+  interface Entry {
+    name: string;
+    stack: GMStack;
+    logTemplate: string;
+    text?: string;
+    uses?: number;
+    recovery?: string;
+  }
+  const byStack = new Map<GMStack, Entry[]>();
+  const add = (e: Entry) => {
+    const list = byStack.get(e.stack) ?? [];
+    list.push(e);
+    byStack.set(e.stack, list);
+  };
+
   for (const feature of features) {
+    if (feature.cards?.length) {
+      for (const card of feature.cards) {
+        const stack = cardPrimaryStack(card, feature.generators);
+        if (!stack) continue; // no emittable piece
+        add({ name: card.name, stack, logTemplate: emitCard(card, feature.generators), text: card.text, uses: card.uses, recovery: card.recovery });
+      }
+      continue; // a `cards:` feature is a container — its own aspects aren't a card
+    }
     if (gmStacks(feature).length === 0) continue; // no emittable aspect
-    const stack = gmPrimaryStack(feature)!;
-    const list = byStack.get(stack) ?? [];
-    list.push(feature);
-    byStack.set(stack, list);
+    add({
+      name: feature.name,
+      stack: gmPrimaryStack(feature)!,
+      logTemplate: emitGMFeature(feature),
+      text: feature.text,
+      uses: feature.uses,
+      recovery: feature.recovery,
+    });
   }
 
   const stacks: CardStack[] = [];
   for (const stack of GM_STACK_ORDER) {
-    const feats = byStack.get(stack);
-    if (!feats || feats.length === 0) continue;
+    const entries = byStack.get(stack);
+    if (!entries || entries.length === 0) continue;
     stacks.push({
       actor: GM_ACTOR,
       actorType: "gm",
       bucket: stack,
       label: GM_STACK_LABELS[stack],
-      cards: feats.map((feature) => ({
-        id: `gm:${stack}:${feature.name}`,
-        name: feature.name,
+      cards: entries.map((e) => ({
+        id: `gm:${stack}:${e.name}`,
+        name: e.name,
         bucket: stack as any,
-        logTemplate: emitGMFeature(feature),
-        text: feature.text,
+        logTemplate: e.logTemplate,
+        text: e.text,
         source: "gm",
         actor: GM_ACTOR,
-        maxUses: feature.uses,
-        recovery: feature.recovery,
+        maxUses: e.uses,
+        recovery: e.recovery,
       })),
     });
   }

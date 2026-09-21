@@ -125,5 +125,45 @@ describe("GM Cards", () => {
       expect(buildGMStacksFromFeatures([{ name: "Empty" }])).toEqual([]);
       expect(buildGMStacksFromFeatures([])).toEqual([]);
     });
+
+    it("expands a feature's `cards:` into one clickable card each, bucketed by first piece", () => {
+      const screen: GMFeature = {
+        name: "Mythic Screen",
+        cards: [
+          { name: "Fate Question", emits: [{ oracle: { question: "Is it locked?", chaos: true, likelihood: "likely", roll: "d100" } }] },
+          {
+            name: "Scene Check",
+            emits: [
+              { oracle: { question: "Does {{scene}} occur?", chaos: true } },
+              { generator: { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene" } },
+              { scene: { opens: "S{{n}} {{title}}" } },
+            ],
+          },
+        ],
+      };
+      const oracle = buildGMStacksFromFeatures([screen]).find((s) => s.bucket === "oracle")!;
+      // Both cards lead with an oracle → both in the oracle bucket, in order.
+      expect(oracle.cards.map((c) => c.name)).toEqual(["Fate Question", "Scene Check"]);
+      // The card emits its pieces in the declared order.
+      expect(oracle.cards.find((c) => c.name === "Scene Check")!.logTemplate).toBe(
+        [
+          "? [CF:{{cf}}] Does {{scene}} occur?",
+          "gen: Testing the Expected Scene",
+          "  Scene: d10= vs CF {{cf}} ->",
+          "=> S{{n}} {{title}}",
+        ].join("\n")
+      );
+    });
+
+    it("honors a card's `stack:` override + carries uses/recovery", () => {
+      const screen: GMFeature = {
+        name: "Screen",
+        cards: [
+          { name: "Weather", stack: "table", uses: 2, recovery: "1/day", emits: [{ oracle: { question: "Storm?" } }] },
+        ],
+      };
+      const table = buildGMStacksFromFeatures([screen]).find((s) => s.bucket === "table")!;
+      expect(table.cards[0]).toMatchObject({ name: "Weather", maxUses: 2, recovery: "1/day" });
+    });
   });
 });

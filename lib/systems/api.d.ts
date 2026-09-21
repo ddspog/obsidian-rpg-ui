@@ -765,7 +765,7 @@ export interface GMRollAspect {
   interpret?: GMInterpret;
 }
 export interface GMTableAspect {
-  source: string;
+  source: string | string[];
   die?: string;
 }
 export interface GMGeneratorAspect {

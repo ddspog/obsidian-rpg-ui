@@ -76,17 +76,33 @@ export function resolveInterpret(interpret: GMInterpret, ctx: InterpretContext):
 export type FateResult = "Exceptional Yes" | "Yes" | "No" | "Exceptional No";
 
 /** Base d100 "Yes" probability at a neutral chaos factor of 5. */
-const FATE_BASE: Record<GMLikelihood, number> = {
-  certain: 99,
-  "near-certain": 95,
-  "very-likely": 85,
-  likely: 75,
-  "50/50": 50,
-  unlikely: 25,
-  "very-unlikely": 15,
-  "near-impossible": 5,
-  impossible: 1,
-};
+/**
+ * The Fate Chart, as printed.
+ *
+ * Every cell in the chart comes from ONE ladder of percentages, and each step down
+ * the odds — or back down the chaos factor — moves one rung along it. So the chart
+ * is not a formula over a base value; it is this ladder, indexed.
+ *
+ * It matters: scaling a base linearly (`base × cf / 5`) agrees with the book only in
+ * the 50/50 row, and puts Likely at CF 5 on 75 where the chart says 65.
+ */
+const FATE_LADDER = [1, 5, 10, 15, 25, 35, 50, 65, 75, 85, 90, 95, 99];
+
+/** Odds from most to least likely — their order IS their offset along the ladder. */
+const FATE_ODDS: GMLikelihood[] = [
+  "certain",
+  "near-certain",
+  "very-likely",
+  "likely",
+  "50/50",
+  "unlikely",
+  "very-unlikely",
+  "near-impossible",
+  "impossible",
+];
+
+/** Where 50/50 at chaos factor 5 sits, the chart's centre. */
+const FATE_CENTRE = 6;
 
 const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, n));
 
@@ -100,7 +116,21 @@ const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.m
  * match a specific chart.
  */
 export function fateThreshold(cf: number, likelihood: GMLikelihood): number {
-  return clamp(Math.round((FATE_BASE[likelihood] * clamp(cf, 1, 9)) / 5), 1, 99);
+  const odds = FATE_ODDS.indexOf(likelihood);
+  const rung = clamp(FATE_CENTRE - (odds < 0 ? 4 : odds) + (clamp(cf, 1, 9) - 1), 0, FATE_LADDER.length - 1);
+  return FATE_LADDER[rung];
+}
+
+/**
+ * The extreme fifths printed either side of a cell: at or below the first is an
+ * Exceptional Yes, at or above the second an Exceptional No.
+ *
+ * Rounded, not floored, which is what the chart shows — a 99 cell prints 20, and
+ * `floor(99/5)` is 19. Where a fifth rounds away to nothing the chart prints "x", and
+ * an exceptional result is impossible: 0 can never be rolled, and neither can 101.
+ */
+export function fateExceptional(threshold: number): { yes: number; no: number } {
+  return { yes: Math.round(threshold / 5), no: 100 - Math.round((100 - threshold) / 5) + 1 };
 }
 
 /**
@@ -110,11 +140,10 @@ export function fateThreshold(cf: number, likelihood: GMLikelihood): number {
  */
 export function fateResult(roll: number, cf: number, likelihood: GMLikelihood): FateResult {
   const yes = fateThreshold(cf, likelihood);
-  const exYes = Math.floor(yes / 5);
-  const exNoStart = 100 - Math.floor((100 - yes) / 5) + 1;
-  if (roll <= exYes) return "Exceptional Yes";
+  const ex = fateExceptional(yes);
+  if (roll <= ex.yes) return "Exceptional Yes";
   if (roll <= yes) return "Yes";
-  if (roll >= exNoStart) return "Exceptional No";
+  if (roll >= ex.no) return "Exceptional No";
   return "No";
 }
 
@@ -125,3 +154,36 @@ export const FATE_WORDING: Record<FateResult, string> = {
   No: "No",
   "Exceptional No": "No, and...",
 };
+
+/** A Fate Question answered: the outcome, how to word it, and the number the roll
+ *  had to beat — which is the whole point of consulting the chart. */
+export interface FateAnswer {
+  result: FateResult;
+  wording: string;
+  /** The Yes threshold for these odds at this chaos factor. */
+  threshold: number;
+  /** At or below this is an Exceptional Yes; 0 when the odds allow none. */
+  exceptionalYes: number;
+  /** At or above this is an Exceptional No; 101 when the odds allow none. */
+  exceptionalNo: number;
+}
+
+/**
+ * Answer a Fate Question from its roll, chaos factor and odds.
+ *
+ * The one call a log line needs: everything about how the chart is read lives here,
+ * so a question that names its oracle resolves the same way the chart in the book
+ * does, and rolling again re-answers it.
+ */
+export function answerFateQuestion(roll: number, cf: number, likelihood: GMLikelihood): FateAnswer {
+  const threshold = fateThreshold(cf, likelihood);
+  const ex = fateExceptional(threshold);
+  const result = fateResult(roll, cf, likelihood);
+  return {
+    result,
+    wording: FATE_WORDING[result],
+    threshold,
+    exceptionalYes: ex.yes,
+    exceptionalNo: ex.no,
+  };
+}

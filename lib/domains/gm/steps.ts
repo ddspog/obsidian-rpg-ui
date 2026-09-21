@@ -12,7 +12,8 @@
  * branch ref to an actual step `GMFeature` (cross-file) and hands it in.
  */
 
-import type { GMFeature } from "../features/types";
+import { rolledValue } from "../session-log/formula";
+import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
 
 export interface BranchRef {
@@ -47,14 +48,29 @@ export function parseBranchRef(result: string): BranchRef | null {
   return { label, target, block: outerBlock ?? innerBlock };
 }
 
-/** The choice labels a step block offers (in declared order). */
+/** The choice labels a step block offers (in declared order; skips `use:` splices). */
 export function stepLabels(step: GMFeature): string[] {
-  return (step.steps ?? []).map((s) => s.choice);
+  return (step.steps ?? []).map((s) => s.choice).filter((c): c is string => !!c);
 }
 
 /** The `calc` expression for a given choice on a step block, or undefined. */
 export function stepCalc(step: GMFeature, choice: string): string | undefined {
   return (step.steps ?? []).find((s) => s.choice === choice)?.calc;
+}
+
+/** The `@[[link]]`s referenced by `use:` steps in a step list (to load + splice). */
+export function stepUseLinks(steps: GMStep[]): string[] {
+  return steps.filter((s) => s.use).map((s) => s.use as string);
+}
+
+/**
+ * Replace each `use: @[[link]]` step with the imported block's steps (from
+ * `resolved`, keyed by the raw use link), flattening the list. Unresolved
+ * `use:` steps drop out. Pure — the render layer loads the targets (cross-file)
+ * and hands in the resolved map. Runs at load time so downstream sees flat steps.
+ */
+export function spliceStepUses(steps: GMStep[], resolved: Record<string, GMStep[]>): GMStep[] {
+  return steps.flatMap((s) => (s.use ? (resolved[s.use] ?? []) : [s]));
 }
 
 /**
@@ -109,9 +125,8 @@ function rangeMatches(key: string, n: number): boolean {
 export function resolveTableRoll(calc: string, table: TableDef): string {
   const arrow = calc.match(/->\s*(\S.*)?$/);
   if (arrow && arrow[1]) return calc; // already has a result after `->`
-  const rolled = calc.match(/d\d+\s*=\s*(\d+)/i);
-  if (!rolled) return calc;
-  const n = parseInt(rolled[1], 10);
+  const n = rolledValue(calc);
+  if (n == null) return calc;
   for (const row of table.rows) {
     const key = row.cells[0]?.value ?? "";
     if (rangeMatches(key, n)) {
@@ -123,3 +138,19 @@ export function resolveTableRoll(calc: string, table: TableDef): string {
   return calc;
 }
 
+/**
+ * Choose `pick` of `tables` at random (for a word-pair step's `pick` field, e.g.
+ * 2 of the 3 Elements tables). When `pick` is null/undefined or ≥ the list
+ * length, the list is returned unchanged (a full pair). Uses a partial
+ * Fisher–Yates shuffle; `rng` is injectable so the selection is deterministic in
+ * tests (`Math.random` by default — allowed in plugin runtime).
+ */
+export function chooseTables(tables: string[], pick?: number, rng: () => number = Math.random): string[] {
+  if (pick == null || pick >= tables.length) return [...tables];
+  const arr = [...tables];
+  for (let i = 0; i < pick; i++) {
+    const j = i + Math.floor(rng() * (arr.length - i));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, pick);
+}

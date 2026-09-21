@@ -45,10 +45,16 @@ export function buildResultChoice(before: string, options: string[], selected: s
 
 /**
  * Apply a dropdown pick to a lonelog excerpt: set the choice token's selection
- * on the line that holds it, and insert the option's generated line (if any)
- * right after, matching that line's indentation. Returns the input unchanged
- * when there's no choice token. Selecting the empty option clears it (no
- * inserted line).
+ * on the line that holds it, and insert the option's generated line(s) right
+ * after as `+ ` CHILDREN of the picking line. Returns the input unchanged when
+ * there's no choice token. Selecting the empty option clears the pick (and its
+ * children).
+ *
+ * The `+ ` prefix marks each inserted line as "spawned by the line above", which
+ * is also how a re-pick cleans up: every contiguous `+ ` child below the choice
+ * is dropped before the new option's lines go in. That's structural, so it works
+ * even after the reader has rolled values into those children (an exact-text
+ * match would miss them and the stale lines would pile up).
  */
 export function applyChoicePick(lonelog: string, selected: string, followLines: Record<string, string>): string {
   const lines = lonelog.split("\n");
@@ -61,18 +67,19 @@ export function applyChoicePick(lonelog: string, selected: string, followLines: 
     .split("/")
     .map((s) => s.trim())
     .filter(Boolean);
-  const oldSelected = m[2].trim();
   const indent = line.match(/^\s*/)?.[0] ?? "";
   const out = [...lines];
 
-  // Drop the previous selection's inserted line (if it sits right after) so
-  // re-picking swaps the follow-up rather than stacking copies.
-  const oldGenerated = oldSelected && followLines[oldSelected] ? `${indent}${followLines[oldSelected]}` : null;
-  if (oldGenerated && out[idx + 1] === oldGenerated) out.splice(idx + 1, 1);
+  // Drop the previous pick's children — every contiguous `+ ` line below.
+  while (out[idx + 1] != null && /^\s*\+\s/.test(out[idx + 1])) out.splice(idx + 1, 1);
 
   out[idx] = line.slice(0, m.index) + `[${options.join("/")} - ${selected}]` + line.slice(m.index + m[0].length);
 
   const generated = followLines[selected];
-  if (generated) out.splice(idx + 1, 0, `${indent}${generated}`);
+  if (generated) {
+    // Each physical line of a (possibly multi-line) generated block becomes a
+    // child, so a word-pair step's two lines both attach to the pick.
+    out.splice(idx + 1, 0, ...generated.split("\n").map((l) => `${indent}+ ${l}`));
+  }
   return out.join("\n");
 }
