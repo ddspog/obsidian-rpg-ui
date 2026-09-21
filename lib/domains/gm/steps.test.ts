@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { GMFeature } from "../features/types";
+import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
 import {
   parseBranchRef,
@@ -8,7 +8,46 @@ import {
   selectStepBlock,
   appendStepLine,
   resolveTableRoll,
+  chooseTables,
+  stepUseLinks,
+  spliceStepUses,
 } from "./steps";
+
+describe("step composition — use:", () => {
+  const meaning: GMStep[] = [
+    { choice: "Meaning Actions", tables: ["@[[Actions Meaning]]#action-01", "@[[Actions Meaning]]#action-02"] },
+    { choice: "Meaning Elements", pick: 2, tables: ["@[[Location Descriptors]]#locations"] },
+  ];
+
+  it("stepUseLinks collects the `use:` links (skipping normal steps)", () => {
+    const steps: GMStep[] = [{ choice: "A", calc: "" }, { use: "@[[Meaning]]" }, { use: "@[[Extras]]" }];
+    expect(stepUseLinks(steps)).toEqual(["@[[Meaning]]", "@[[Extras]]"]);
+  });
+
+  it("spliceStepUses replaces a `use:` step with the imported block's steps, in order", () => {
+    const steps: GMStep[] = [
+      { choice: "A Tweak", calc: "(note: …)" },
+      { use: "@[[Meaning]]" },
+      { choice: "Scene Adjustment", calc: "d10= ->" },
+    ];
+    expect(spliceStepUses(steps, { "@[[Meaning]]": meaning }).map((s) => s.choice)).toEqual([
+      "A Tweak",
+      "Meaning Actions",
+      "Meaning Elements",
+      "Scene Adjustment",
+    ]);
+  });
+
+  it("drops an unresolved `use:` step", () => {
+    const steps: GMStep[] = [{ choice: "A", calc: "" }, { use: "@[[Missing]]" }];
+    expect(spliceStepUses(steps, {}).map((s) => s.choice)).toEqual(["A"]);
+  });
+
+  it("stepLabels skips `use:` splices (no choice)", () => {
+    const block: GMFeature = { name: "Altered", steps: [{ choice: "A Tweak", calc: "" }, { use: "@[[Meaning]]" }] };
+    expect(stepLabels(block)).toEqual(["A Tweak"]);
+  });
+});
 
 describe("parseBranchRef", () => {
   it("parses a bare @[[file]] call", () => {
@@ -75,12 +114,7 @@ const altered: GMFeature = {
 
 describe("stepLabels / stepCalc", () => {
   it("lists the choice labels in order", () => {
-    expect(stepLabels(altered)).toEqual([
-      "The Next Expectation",
-      "A Tweak",
-      "Fate Question",
-      "Scene Adjustment",
-    ]);
+    expect(stepLabels(altered)).toEqual(["The Next Expectation", "A Tweak", "Fate Question", "Scene Adjustment"]);
   });
 
   it("returns the calc for a choice", () => {
@@ -184,16 +218,54 @@ describe("resolveTableRoll", () => {
   });
 
   it("leaves the calc unchanged when the die isn't rolled", () => {
-    expect(resolveTableRoll("@[[Scene Adjustment]] d10= ->", sceneAdjustment)).toBe(
-      "@[[Scene Adjustment]] d10= ->"
-    );
+    expect(resolveTableRoll("@[[Scene Adjustment]] d10= ->", sceneAdjustment)).toBe("@[[Scene Adjustment]] d10= ->");
   });
 
   it("leaves the calc unchanged when no row matches", () => {
     expect(resolveTableRoll("d10=5 ->", sceneAdjustment)).toBe("d10=5 ->");
   });
 
+  it("resolves a pool recorded die-by-die on the sum of its dice", () => {
+    // `[1,1]` sums to 2, so it must land where a bare `=2` lands.
+    expect(resolveTableRoll("2d10=[1,1] ->", sceneAdjustment)).toBe("2d10=[1,1] -> Add a Character");
+    expect(resolveTableRoll("2d10=[7,2] ->", sceneAdjustment)).toBe("2d10=[7,2] -> Make 2 Adjustments");
+  });
+
   it("does not overwrite an already-filled result", () => {
     expect(resolveTableRoll("d10=2 -> Already Set", sceneAdjustment)).toBe("d10=2 -> Already Set");
+  });
+});
+
+describe("chooseTables", () => {
+  const els = [
+    "@[[Location Descriptors]]#locations",
+    "@[[Character Descriptors]]#characters",
+    "@[[Objects Descriptors]]#objects",
+  ];
+
+  it("returns the full list when pick is omitted", () => {
+    expect(chooseTables(els)).toEqual(els);
+  });
+
+  it("returns the full list when pick >= length", () => {
+    expect(chooseTables(els, 5)).toEqual(els);
+  });
+
+  it("returns exactly `pick` entries, all from the input, with no duplicates", () => {
+    const out = chooseTables(els, 2, () => 0.5);
+    expect(out).toHaveLength(2);
+    expect(new Set(out).size).toBe(2);
+    out.forEach((t) => expect(els).toContain(t));
+  });
+
+  it("is deterministic given an injected rng", () => {
+    expect(chooseTables(els, 2, () => 0)).toEqual([els[0], els[1]]);
+    expect(chooseTables(els, 2, () => 0.99)).toEqual([els[2], els[0]]);
+  });
+
+  it("does not mutate the input array", () => {
+    const copy = [...els];
+    chooseTables(els, 2, () => 0.99);
+    expect(els).toEqual(copy);
   });
 });

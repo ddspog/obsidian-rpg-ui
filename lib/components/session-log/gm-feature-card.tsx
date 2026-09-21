@@ -1,10 +1,12 @@
 import * as React from "react";
 import type { GMFeature, GMStack } from "../../domains/features/types";
 import { gmPrimaryStack } from "../../domains/gm/emit";
+import { collectResources } from "../../domains/lonelog/dial-ops";
 import type { GMStepContext } from "../../domains/gm/example";
 import { Markdown } from "../markdown";
 import { InlineMarkdown } from "./inline-markdown";
 import { FeatureExample } from "./feature-example";
+import { GMFeatureBody } from "./gm-feature-body";
 
 const STACK_LABELS: Record<GMStack, string> = {
   oracle: "Oracle",
@@ -33,10 +35,13 @@ export function GMFeatureCard({
   stepCtx?: GMStepContext;
 }) {
   const stack = gmPrimaryStack(feature);
+  // Heading level for the name: 1–6, or `"none"` to suppress it (default 3).
+  const headingLevel = feature.heading === "none" ? null : typeof feature.heading === "number" ? feature.heading : 3;
+  const HeadingTag = headingLevel ? (`h${headingLevel}` as keyof React.JSX.IntrinsicElements) : null;
   return (
     <article className="rpg-feature-card" aria-label={`Feature ${feature.name}`}>
       <hgroup>
-        <h3>{feature.name}</h3>
+        {HeadingTag && <HeadingTag>{feature.name}</HeadingTag>}
         <p>
           {stack && <small aria-details="GM Stack">{STACK_LABELS[stack]}</small>}
           {feature.uses != null && (
@@ -48,17 +53,16 @@ export function GMFeatureCard({
         </p>
       </hgroup>
       {feature.text && <Markdown source={feature.text} sourcePath={sourcePath} className="rpg-feature-text" />}
-      {feature.steps && feature.steps.length > 0 && (
-        <dl className="rpg-feature-steps" aria-label="Steps">
-          {feature.steps.map((s) => (
-            <React.Fragment key={s.choice}>
-              <dt>{s.choice}</dt>
-              <dd>{s.calc.trim() ? <code>{s.calc}</code> : <em>records the pick</em>}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
+      {feature.body ? (
+        <GMFeatureBody
+          feature={feature}
+          sourcePath={sourcePath}
+          stepCtx={stepCtx}
+          decls={stepCtx?.resources ?? collectResources([feature])}
+        />
+      ) : (
+        feature.example && <FeatureExample feature={feature} sourcePath={sourcePath} stepCtx={stepCtx} />
       )}
-      {feature.example && <FeatureExample feature={feature} sourcePath={sourcePath} stepCtx={stepCtx} />}
       {feature.source && (
         <p className="rpg-feature-card-source">
           <InlineMarkdown source={feature.source} sourcePath={sourcePath ?? ""} />

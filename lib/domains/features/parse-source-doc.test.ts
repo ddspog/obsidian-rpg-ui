@@ -358,8 +358,8 @@ describe("parseSourceDoc — feature.gm blocks", () => {
     });
     // interpret keys preserve authored order
     expect(Object.keys(sceneCheck!.generator!.interpret!)).toEqual([">CF", "<=CF, even", "<=CF, odd"]);
-    // body after `---` folds into the card text
-    expect(sceneCheck?.text).toContain("Test whether the expected scene");
+    // body after `---` folds into the GM block's `body` (log content), not `text`
+    expect(sceneCheck?.body).toContain("Test whether the expected scene");
 
     const fate = doc.gmFeatures?.find((g) => g.name === "Fate Question");
     expect(fate?.oracle).toMatchObject({ likelihood: "likely", roll: "d100", chaos: true });
@@ -370,10 +370,77 @@ describe("parseSourceDoc — feature.gm blocks", () => {
     expect(doc.gmFeatures).toEqual([]);
     expect(doc.details).toHaveLength(3);
   });
+
+  it("round-trips a `dial:` aspect and a `reads:` resource list", () => {
+    const body = `# Chaos Factor
+
+\`\`\`rpg feature.gm
+name: Chaos Factor
+dial:
+  abbr: CF
+  min: 1
+  max: 9
+  default: 5
+\`\`\`
+
+\`\`\`rpg feature.gm
+name: Scene Check
+reads: ["@[[Chaos Factor]]"]
+generator:
+  name: Testing the Expected Scene
+  roll: d10
+  vs: CF
+\`\`\`
+`;
+    const doc = parseSourceDoc({ $name: "Chaos Factor", $contents: body }, "class");
+    const dial = doc.gmFeatures?.find((g) => g.name === "Chaos Factor");
+    expect(dial?.dial).toEqual({ abbr: "CF", min: 1, max: 9, default: 5 });
+    // a head-only block (no `---`) has no body
+    expect(dial?.body).toBeUndefined();
+
+    const sceneCheck = doc.gmFeatures?.find((g) => g.name === "Scene Check");
+    expect(sceneCheck?.reads).toEqual(["@[[Chaos Factor]]"]);
+  });
+
+  it("parses `id` and `heading` and folds the body as log content", () => {
+    const body = [
+      "```rpg feature.gm",
+      "id: scene-check",
+      "heading: 2",
+      "name: Scene Check",
+      "generator: { name: Testing the Expected Scene, roll: d10, vs: CF }",
+      "---",
+      "When a scene ends, test it.",
+      "",
+      "? [CF:5] Does it happen?",
+      "  Scene: d10=3 vs CF 5 -> Altered Scene",
+      "```",
+    ].join("\n");
+    const doc = parseSourceDoc({ $name: "Scene Check", $contents: body }, "class");
+    const f = doc.gmFeatures?.find((g) => g.name === "Scene Check");
+    expect(f?.id).toBe("scene-check");
+    expect(f?.heading).toBe(2);
+    expect(f?.body).toContain("? [CF:5] Does it happen?");
+    expect(f?.body).toContain("When a scene ends, test it.");
+    // the log body is NOT folded into `text` (which stays the tooltip slot)
+    expect(f?.text).toBeUndefined();
+  });
+
+  it("accepts `heading: none` to suppress the name heading", () => {
+    const body = ["```rpg feature.gm", "name: Bare Tool", "heading: none", "---", "Just prose.", "```"].join("\n");
+    const doc = parseSourceDoc({ $name: "Bare Tool", $contents: body }, "class");
+    expect(doc.gmFeatures?.[0]?.heading).toBe("none");
+  });
+
+  it("still folds a feature.details body into `text` (not `body`)", () => {
+    const body = ["```rpg feature.details", "name: Second Wind", "---", "Regain HP as a bonus action.", "```"].join("\n");
+    const doc = parseSourceDoc({ $name: "Fighter", $contents: body }, "class");
+    expect(doc.details?.[0]?.text).toContain("Regain HP as a bonus action.");
+  });
 });
 
 describe("parseGMFeatureBlock", () => {
-  it("parses a single feature.gm fence body and folds trailing markdown into text", () => {
+  it("parses a single feature.gm fence body and folds trailing markdown into body", () => {
     const body = [
       "name: Scene Check",
       "oracle:",
@@ -390,7 +457,7 @@ describe("parseGMFeatureBlock", () => {
       oracle: { question: "Does {{scene}} occur?", chaos: true },
       scene: { opens: "S{{n}} {{title}}" },
     });
-    expect(f?.text).toContain("Test whether the expected scene");
+    expect(f?.body).toContain("Test whether the expected scene");
   });
 
   it("returns null for an empty body", () => {

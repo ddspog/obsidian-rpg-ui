@@ -51,9 +51,12 @@ describe("resolveInterpret", () => {
 });
 
 describe("fateThreshold", () => {
-  it("returns the neutral base at chaos factor 5", () => {
+  it("reads the chart's centre, and its neighbours", () => {
     expect(fateThreshold(5, "50/50")).toBe(50);
-    expect(fateThreshold(5, "likely")).toBe(75);
+    // 65, not 75: one rung along the chart's ladder, not a base scaled by chaos.
+    // Every cell is asserted against the printed table in fate-chart-printed.test.ts.
+    expect(fateThreshold(5, "likely")).toBe(65);
+    expect(fateThreshold(5, "unlikely")).toBe(35);
   });
 
   it("rises with the chaos factor and with the likelihood", () => {
@@ -70,7 +73,7 @@ describe("fateThreshold", () => {
 
 describe("fateResult", () => {
   it("bands a d100 roll into yes/no with exceptional edges", () => {
-    // 50/50 at CF 5 → Yes threshold 50, exceptional-yes ≤ 10, exceptional-no ≥ 91.
+    // 50/50 at CF 5 → the chart's 10 · 50 · 91 cell.
     expect(fateResult(5, 5, "50/50")).toBe("Exceptional Yes");
     expect(fateResult(40, 5, "50/50")).toBe("Yes");
     expect(fateResult(60, 5, "50/50")).toBe("No");

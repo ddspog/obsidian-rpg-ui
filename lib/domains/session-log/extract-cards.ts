@@ -1,4 +1,4 @@
-import { FeatureAspect, FeatureDetails } from "../features/types";
+import { FeatureAspect, FeatureDetails, ResourceDecl } from "../features/types";
 import {
   ASPECT_BUCKETS,
   AspectBucket,
@@ -109,6 +109,29 @@ export function extractCards(
   }
 
   return cards;
+}
+
+/**
+ * Extract the unified resource declarations a character's features grant, so a
+ * lonelog PC op (`[Talon/Mystic Mark-1]`) resolves against the sheet-declared
+ * bounds/default. Two sources per feature:
+ *   - the new `resources:` list (shared lonelog vocabulary), passed through; and
+ *   - the legacy `type: resource` + `max`/`recovery` form, mapped to a `charges`
+ *     resource (its `max` resolved for the character's level).
+ * Pure; the loader supplies already-resolved feature slices.
+ */
+export function extractResourceDecls(sources: ResolvedSourceSlice[]): ResourceDecl[] {
+  const out: ResourceDecl[] = [];
+  for (const src of sources) {
+    for (const feature of src.features) {
+      for (const r of feature.resources ?? []) out.push(r);
+      if (feature.type === "resource") {
+        const max = resolveMaxCount(feature.max, src.level);
+        if (max != null) out.push({ charges: { name: feature.name, max, recovery: feature.recovery } });
+      }
+    }
+  }
+  return out;
 }
 
 export function buildCardStacks(cards: SessionFeatureCard[], actor: string): CardStack[] {

@@ -1,6 +1,145 @@
 import { describe, it, expect } from "vitest";
-import type { GMFeature } from "../features/types";
-import { emitGMFeature, gmPrimaryStack, gmStacks, refLabel } from "./emit";
+import type { GMFeature, GMCardDef, NamedGenerator } from "../features/types";
+import { emitGMFeature, emitCard, cardPrimaryStack, gmPrimaryStack, gmStacks, refLabel } from "./emit";
+
+describe("emitCard", () => {
+  it("emits a card's pieces in the declared order, sharing the oracle's cf", () => {
+    const card: GMCardDef = {
+      name: "Scene Check",
+      emits: [
+        { oracle: { question: 'Does the "{{scene}}" scene happen?', chaos: true } },
+        { generator: { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene" } },
+        { scene: { opens: 'Start Scene(): "{{next}}"' } },
+      ],
+    };
+    expect(emitCard(card)).toBe(
+      [
+        '? [CF:{{cf}}] Does the "{{scene}}" scene happen?',
+        "gen: Testing the Expected Scene",
+        "  Scene: d10= vs CF {{cf}} ->",
+        '=> Start Scene(): "{{next}}"',
+      ].join("\n")
+    );
+  });
+
+  it("respects the written order even when it differs from the aspect order", () => {
+    const card: GMCardDef = { name: "X", emits: [{ scene: { opens: "S{{n}}" } }, { roll: { die: "d6" } }] };
+    expect(emitCard(card)).toBe(["=> S{{n}}", "d: d6= ->"].join("\n"));
+  });
+
+  it("cardPrimaryStack uses `stack:` else the first emit piece's aspect", () => {
+    expect(cardPrimaryStack({ name: "A", emits: [{ table: { source: "@[[T]]" } }] })).toBe("table");
+    expect(cardPrimaryStack({ name: "B", stack: "scene", emits: [{ oracle: { question: "?" } }] })).toBe("scene");
+    expect(cardPrimaryStack({ name: "C", emits: [] })).toBeNull();
+  });
+
+  it("resolves a local `@ref` in emits against the feature's generators", () => {
+    const generators: NamedGenerator[] = [
+      { id: "scene-check", name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene" },
+    ];
+    const card: GMCardDef = {
+      name: "Test a Scene",
+      emits: [
+        { oracle: { question: 'Does the "{{scene}}" scene happen?', chaos: true } },
+        "@scene-check",
+        { scene: { opens: 'Start Scene(): "{{next}}"' } },
+      ],
+    };
+    expect(emitCard(card, generators)).toBe(
+      [
+        '? [CF:{{cf}}] Does the "{{scene}}" scene happen?',
+        "gen: Testing the Expected Scene",
+        "  Scene: d10= vs CF {{cf}} ->",
+        '=> Start Scene(): "{{next}}"',
+      ].join("\n")
+    );
+    // a local @ref as the lead piece → generator stack
+    expect(cardPrimaryStack({ name: "G", emits: ["@scene-check"] }, generators)).toBe("generator");
+  });
+
+  it("drops an unresolved (cross-file / unknown) `@ref`, emitting the rest", () => {
+    const card: GMCardDef = { name: "X", emits: [{ oracle: { question: "Locked?" } }, "@[[Other]]#gen"] };
+    expect(emitCard(card)).toBe("? Locked?");
+  });
+});
+
+describe("generator composition (emits)", () => {
+  it("expands a feature generator's `emits:` sub-generators inline, in order", () => {
+    const feature: GMFeature = {
+      name: "Random Event",
+      generators: [
+        { id: "focus", name: "Event Focus", roll: "d100" },
+        { id: "action", name: "Event Meaning: Action", roll: "d100" },
+        { id: "subject", name: "Event Meaning: Subject", roll: "d100" },
+      ],
+      generator: { name: "Random Event", emits: ["@focus", "@action", "@subject"] },
+    };
+    expect(emitGMFeature(feature)).toBe(
+      [
+        "gen: Random Event",
+        "gen: Event Focus",
+        "  d100= ->",
+        "gen: Event Meaning: Action",
+        "  d100= ->",
+        "gen: Event Meaning: Subject",
+        "  d100= ->",
+      ].join("\n")
+    );
+  });
+
+  it("recurses through a nested generator `emits:` chain", () => {
+    const generators: NamedGenerator[] = [
+      { id: "outer", name: "Outer", emits: ["@inner"] },
+      { id: "inner", name: "Inner", roll: "d6" },
+    ];
+    const card: GMCardDef = { name: "C", emits: ["@outer"] };
+    expect(emitCard(card, generators)).toBe(["gen: Outer", "gen: Inner", "  d6= ->"].join("\n"));
+  });
+
+  it("breaks a generator cycle instead of looping forever", () => {
+    const generators: NamedGenerator[] = [
+      { id: "a", name: "A", emits: ["@b"] },
+      { id: "b", name: "B", emits: ["@a"] },
+    ];
+    // A -> B -> (A already seen, stop)
+    expect(emitCard({ name: "C", emits: ["@a"] }, generators)).toBe(["gen: A", "gen: B", "gen: A"].join("\n"));
+  });
+});
+
+describe("generator steps", () => {
+  it("emits one working line per `steps:` entry under a single gen header", () => {
+    const feature: GMFeature = {
+      name: "Random Event",
+      generator: {
+        name: "Random Event",
+        steps: [
+          { work: "Event Focus", roll: "d100" },
+          { work: "Action", roll: "d100" },
+          { work: "Subject", roll: "d100" },
+        ],
+      },
+    };
+    expect(emitGMFeature(feature)).toBe(
+      ["gen: Random Event", "  Event Focus: d100= ->", "  Action: d100= ->", "  Subject: d100= ->"].join("\n")
+    );
+  });
+
+  it("still supports the flat work/roll/vs sugar as a single step", () => {
+    expect(emitGMFeature({ name: "G", generator: { name: "Test", work: "Alterations", roll: "d10", vs: "CF" } })).toBe(
+      ["gen: Test", "  Alterations: d10= vs CF ->"].join("\n")
+    );
+  });
+
+  it("emits a `choices:` step as a pick dropdown (no die)", () => {
+    const feature: GMFeature = {
+      name: "Event Meaning",
+      generator: { name: "Event Meaning", steps: [{ work: "Event Meaning", choices: ["Actions", "Descriptions", "Elements"] }] },
+    };
+    expect(emitGMFeature(feature)).toBe(
+      ["gen: Event Meaning", "  Event Meaning: [Actions/Descriptions/Elements - ]"].join("\n")
+    );
+  });
+});
 
 describe("emitGMFeature", () => {
   it("emits a Mythic scene check (oracle + generator + scene) as the canonical block", () => {
@@ -32,6 +171,28 @@ describe("emitGMFeature", () => {
     expect(emitGMFeature({ name: "Q", oracle: { question: "Locked?" } })).toBe("? Locked?");
   });
 
+  it("references an imported resource by `tag:` — emits `[<tag>:{{<tag>}}]`", () => {
+    // `chaos: true` is now sugar for `tag: CF`
+    expect(emitGMFeature({ name: "Q", oracle: { question: "Locked?", tag: "CF" } })).toBe("? [CF:{{cf}}] Locked?");
+    // any other imported dial works the same, keyed by its declared abbr
+    expect(emitGMFeature({ name: "Q", oracle: { question: "Reinforcements arrive?", tag: "RF" } })).toBe(
+      "? [RF:{{rf}}] Reinforcements arrive?"
+    );
+    // a constant `cf:` still bakes a literal under the tag
+    expect(emitGMFeature({ name: "Q", oracle: { question: "Q?", tag: "RF", cf: 3 } })).toBe("? [RF:3] Q?");
+  });
+
+  it("shares the oracle's `tag` value with the generator's `vs: CF`", () => {
+    const feature: GMFeature = {
+      name: "Scene Check",
+      oracle: { question: "Happens?", tag: "CF" },
+      generator: { name: "Test", work: "Alterations", roll: "d10", vs: "CF" },
+    };
+    expect(emitGMFeature(feature)).toBe(
+      ["? [CF:{{cf}}] Happens?", "gen: Test", "  Alterations: d10= vs CF {{cf}} ->"].join("\n")
+    );
+  });
+
   it("emits an oracle answer line only when the oracle resolves itself", () => {
     expect(
       emitGMFeature({ name: "Fate", oracle: { question: "Locked?", chaos: true, likelihood: "likely", roll: "d100" } })
@@ -59,6 +220,22 @@ describe("emitGMFeature", () => {
       "tbl: Weather d6= ->"
     );
     expect(emitGMFeature({ name: "Weather", table: { source: "Weather" } })).toBe("tbl: Weather ->");
+  });
+
+  it("emits one tbl line per source when the table aspect lists several (same or other files)", () => {
+    expect(
+      emitGMFeature({
+        name: "Actions Meaning",
+        table: { source: ["@[[Actions Meaning]].table(action-01)", "@[[Actions Meaning]].table(action-02)"] },
+      })
+    ).toBe(["tbl: action-01 ->", "tbl: action-02 ->"].join("\n"));
+    // cross-file + a shared die override
+    expect(
+      emitGMFeature({
+        name: "Elements",
+        table: { source: ["@[[Location Descriptors]].table(locations)", "@[[Objects Descriptors]].table(objects)"], die: "d100" },
+      })
+    ).toBe(["tbl: locations d100= ->", "tbl: objects d100= ->"].join("\n"));
   });
 
   it("emits an event with leading focus/meaning generators then the ! line", () => {

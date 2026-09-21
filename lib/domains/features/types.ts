@@ -165,10 +165,19 @@ export interface GMOracleAspect {
   question: string;
   /** Attribution → `?(Name)`. */
   attribution?: string;
-  /** Emit `[CF:n]` from the session chaos factor (a `{{cf}}` slot until session
-   *  CF state exists). */
+  /**
+   * Reference an imported resource by the tag NAME declared in a `reads:` file
+   * (its `abbr` — e.g. `CF`, declared as a `dial:` in Chaos Factor) → emits
+   * `[<tag>:{{<tag>}}]` on the question line, and shares that value with the
+   * feature's generator `vs:`. The generalized form of `chaos: true` (which is
+   * now just sugar for `tag: CF`). A constant `cf:` still overrides to bake a
+   * literal `[<tag>:n]`.
+   */
+  tag?: string;
+  /** Sugar for `tag: CF` — emit `[CF:n]` from the session chaos factor (a
+   *  `{{cf}}` slot until session CF state exists). */
   chaos?: boolean;
-  /** Constant chaos factor — overrides `chaos` and bakes the literal `[CF:n]`. */
+  /** Constant chaos factor — overrides `chaos`/`tag` and bakes the literal `[CF:n]`. */
   cf?: number;
   /** Likelihood band → Fate Chart odds against the chaos factor. */
   likelihood?: GMLikelihood;
@@ -192,21 +201,70 @@ export interface GMRollAspect {
 
 /** `table:` aspect → emits `tbl:`. */
 export interface GMTableAspect {
-  /** Table reference — an `@[[…]]` call or a bare table name. */
-  source: string;
+  /**
+   * Table reference(s) — each an `@[[file]].table(id)` call (same file or
+   * another) or a bare table name. A single string rolls one table; an array
+   * rolls EVERY listed table, emitting one `tbl:` line each (e.g. a Meaning
+   * word-pair, or cross-file descriptor facets rolled together). For a
+   * choose-one dropdown or a random pick-N over tables, use a `steps` block.
+   */
+  source: string | string[];
   /** Die override; defaults to the referenced table's own die. */
   die?: string;
 }
 
-/** `generator:` aspect → emits `gen:` plus an optional indented working line. */
-export interface GMGeneratorAspect {
-  /** Generator label → `gen: <name>`. */
-  name: string;
-  /** Optional roll for the indented working line. Emitted unrolled. */
+/**
+ * One rolled working line a generator emits — the indented
+ * `  <work>: <roll>= vs <vs> ->` under the `gen:` header, resolved via
+ * `interpret` (roll → result) and optional `follow` (per-result dropdown). A
+ * generator's `steps:` is a list of these, so one `gen:` can roll several lines
+ * (e.g. Event Focus + Action + Subject).
+ */
+export interface GMGenStep {
+  /** Label of the indented working line (e.g. `Alterations`). Omit for a bare
+   *  `  <roll>= vs <vs> ->` line. */
+  work?: string;
+  /** Die for the working line, emitted unrolled (`d10=`). */
   roll?: string;
   /** Contest target for the working line. `"CF"` expands to `CF <n>`. */
   vs?: string;
-  /** Label of the indented working line (e.g. `Alterations`). */
+  interpret?: GMInterpret;
+  follow?: Record<string, Record<string, string>>;
+  /**
+   * Roll this step's die against a table (a `@[[file]]#id` / `@[[file]].table(id)`
+   * ref): rolling auto-fills the `->` from the matched row. This is a generator
+   * step CALLING a table inline (a `gen:` composing table rolls into a concept)
+   * — distinct from a standalone `tbl:` consultation. Auto-fill flows through the
+   * step's composed `+ ` children too.
+   */
+  table?: string;
+  /**
+   * Unconditional CHOICE this working line presents — the GM PICKS rather than
+   * rolls. Emits `  <work>: [a/b/c - ]`; picking an option in the live log spawns
+   * that option's generated line(s) (mapped from a companion step block whose
+   * `choice:` labels match — e.g. Event Meaning's Actions/Descriptions/Elements,
+   * each a word-pair). Distinct from `interpret`/`follow` (which are keyed by a
+   * roll RESULT); a `choices` step has no die.
+   */
+  choices?: string[];
+}
+
+/** `generator:` aspect → emits `gen:` plus its rolled working line(s). */
+export interface GMGeneratorAspect {
+  /** Generator label → `gen: <name>`. */
+  name: string;
+  /**
+   * The rolled working line(s) under the `gen:` header. When present, this is
+   * the canonical form. The flat `work` / `roll` / `vs` / `interpret` / `follow`
+   * fields below are backward-compat SUGAR for a single step (synthesized when
+   * `steps` is absent), so existing generators keep working unchanged.
+   */
+  steps?: GMGenStep[];
+  /** Sugar: die for a single implicit working line. Emitted unrolled. */
+  roll?: string;
+  /** Sugar: contest target for the single working line. `"CF"` → `CF <n>`. */
+  vs?: string;
+  /** Sugar: label of the single working line (e.g. `Alterations`). */
   work?: string;
   interpret?: GMInterpret;
   /**
@@ -219,6 +277,14 @@ export interface GMGeneratorAspect {
    * `[a/b - ]` choice.
    */
   follow?: Record<string, Record<string, string>>;
+  /**
+   * Sub-generators this generator COMPOSES: each entry is a piece (usually a
+   * generator `@ref` — local `@id` or `@[[File]]#id`) whose emitted lines are
+   * appended inline after this generator's own line. Lets a generator call
+   * other generators (e.g. a Random Event = Event Focus + Event Meaning), define
+   * once and reuse. Expansion is depth- and cycle-guarded (see ./emit).
+   */
+  emits?: EmitPiece[];
 }
 
 /** `event:` aspect → emits `!` (optionally preceded by `gen:` focus/meaning). */
@@ -241,6 +307,100 @@ export interface GMSceneAspect {
 }
 
 /**
+ * `dial:` aspect → declares an importable bounded dial (e.g. the Chaos Factor).
+ * DECLARED once in a `gm-tools/dials/` file so logs don't re-state the range
+ * each time: a log block carries just a leading `[<abbr>:n]` token (current
+ * value), and any feature that `reads:` this declaration falls back to
+ * `default` when no token is present. The self-contained `[Dial:Name|cur|min-max]`
+ * body tag (see lonelog/tag-extractor) is the inline alternative; `[<abbr>:n]`
+ * references this declared dial by its `abbr`. A dial-only feature emits no
+ * lonelog line — it renders a dial widget and is a resource, not an action.
+ */
+export interface GMDialAspect {
+  /** Short token used in logs: `[<abbr>:n]` (e.g. `CF`). */
+  abbr: string;
+  /** Lower bound of the band. */
+  min: number;
+  /** Upper bound of the band. */
+  max: number;
+  /** Value used when no `[<abbr>:n]` token is present in the log block. */
+  default: number;
+}
+
+/**
+ * `list:` aspect → declares an importable lonelog LIST (Characters, Threads, …).
+ * A list is a named collection the log grows and consults:
+ *   - `[<name>+ entry]` appends an entry,
+ *   - `[<name>- entry]` removes one,
+ *   - `[<name>?]`       consults it (rolls a live entry; falls back to `default`
+ *                        when the list has no entries — the testing path).
+ * DECLARED once in a `gm-tools/` file (like a `dial:`) and imported via `reads:`
+ * so a log block references it by name without re-stating it. A list-only
+ * feature emits no lonelog line — it's a resource, not an action.
+ */
+export interface GMListAspect {
+  /** List name used in tokens (`[<name>?]`); falls back to the feature name. */
+  name?: string;
+  /** Consult fallback returned when the list has no live entries. */
+  default: string;
+  /** Optional seed entries (used by live entry-rolls; consult→default ignores). */
+  entries?: string[];
+  /**
+   * Rows per SECTION (Mythic's X = 5). The row roll is a d(2×section), so five
+   * rows are picked by a d10 read in pairs (1-2 → row 1, 3-4 → row 2, …).
+   */
+  section?: number;
+  /**
+   * Maximum entries the sheet holds (Mythic's Y = 25) — `max / section` sections.
+   * Rolls landing past the last live entry hit a void cell → the `default`.
+   */
+  max?: number;
+}
+
+/**
+ * A declared lonelog RESOURCE — a bounded numeric value with a default,
+ * referenced in the log by a token. The reference form decides scope:
+ *   - has `abbr` → SESSION resource, referenced `[<abbr>±n]` / `[<abbr>?]`,
+ *     tracked across the whole log (e.g. the Chaos Factor dial).
+ *   - no `abbr`  → PC resource, referenced `[<Character>/<name>±n]`, tracked
+ *     per character (e.g. `[Talon/Mystic Mark-1]`).
+ * Shapes differ only in bounds/default (see `normalizeResource`): dial swings
+ * within a band; clock/track fill 0→max; counter/charges start full and spend
+ * down; timer counts down. A `feature.gm`'s top-level `dial:` aspect is sugar
+ * for a single dial resource.
+ */
+interface ResourceBase {
+  /** Local id for `@ref` import (used from Phase 2 on); optional now. */
+  id?: string;
+  /** Display name for the pill (falls back to abbr/name/id). */
+  name?: string;
+}
+export interface DialResource extends ResourceBase {
+  abbr: string;
+  min: number;
+  max: number;
+  default: number;
+}
+/** clock/track → 0..max, starts at 0 (fills up). `abbr` → session, else PC. */
+export interface ClockResource extends ResourceBase {
+  abbr?: string;
+  max: number;
+}
+/** counter/charges → 0..max, starts FULL (`-n` spends). `abbr` → session, else PC. */
+export interface ChargesResource extends ResourceBase {
+  abbr?: string;
+  max: number;
+  recovery?: string;
+}
+export type ResourceDecl =
+  | { dial: DialResource }
+  | { clock: ClockResource }
+  | { track: ClockResource }
+  | { counter: ChargesResource }
+  | { charges: ChargesResource }
+  | { timer: ChargesResource };
+
+/**
  * One reusable follow-up CHOICE a step block offers. When an entry feature's
  * `interpret` result is a `@[[link]]` to a step block, the UI imports that
  * block's `steps` as a dropdown on the branching `gen:` line; picking one
@@ -255,10 +415,37 @@ export interface GMSceneAspect {
  *     from the linked table's rolled row (editable)
  */
 export interface GMStep {
-  /** Choice label — shown in the dropdown and used as the appended line's label. */
-  choice: string;
-  /** Expression appended as `  <choice>: <calc>` under the `gen:` line. */
-  calc: string;
+  /** Choice label — shown in the dropdown and used as the appended line's
+   *  label. Absent on a pure `use:` splice step. */
+  choice?: string;
+  /**
+   * NORMAL (deterministic) step label — like `choice`, but the step ALWAYS
+   * fires rather than being one of a pick-one dropdown. Use for a branch whose
+   * follow-up isn't a decision (e.g. Interrupt Scene → always "Generate a Random
+   * Event"): its `  <step>: <calc>` line is inserted automatically, no dropdown.
+   * A block may mix normal steps (all fire) with `choice` steps (pick one).
+   */
+  step?: string;
+  /** Expression appended as `  <choice|step>: <calc>` under the `gen:` line.
+   *  Absent on a `use:` splice step. */
+  calc?: string;
+  /**
+   * COMPOSITION as CHILDREN: a `@[[link]]#id` to a generator / step-set whose
+   * steps are emitted as this step's `+ ` children (flat, one level below). Used
+   * for a deterministic hand-off — e.g. Interrupt Scene's `Random Event` step
+   * `calls:` the Random Event generator, so its Event Focus / Meaning rolls
+   * appear as `+ ` children under it (no nested `gen:`).
+   */
+  calls?: string;
+  /**
+   * COMPOSITION: import another step-block's steps in place of this one — a
+   * `@[[link]]` (optionally `#blockid`) to a `feature.gm` carrying `steps:`.
+   * Spliced at LOAD time, so the imported choices appear inline in this block's
+   * dropdown; the shared step-set is defined once and reused (e.g. a `Meaning`
+   * block reused by Altered Scene, Interrupt Scene, …). A `use:` step carries no
+   * `choice`/`calc` of its own.
+   */
+  use?: string;
   /**
    * Resolve the calc's rolled die against this table (a `@[[…]]` / `[[…]]`
    * link): the matched row fills the `->` result, editable. (Auto-fill.)
@@ -270,6 +457,17 @@ export interface GMStep {
   /** Resolve the calc's rolled die through a comparison-expression map (same
    *  grammar as an aspect's `interpret`). */
   interpret?: GMInterpret;
+  /**
+   * WORD-PAIR auto-fill: an ordered list of table refs (`@[[file]]#blockid`).
+   * The pick emits ONE indented line per table — each a self-describing
+   * single-die roll (`<choice> <n>: <ref> d100= ->`) that auto-fills from its
+   * own table, exactly like `table`. Mutually exclusive with
+   * `table`/`likelihood`/`interpret`.
+   */
+  tables?: string[];
+  /** WORD-PAIR: randomly choose this many of `tables` at pick time (e.g. 2 of
+   *  3 for Elements). Omitted → roll every entry in `tables`. */
+  pick?: number;
 }
 
 /**
@@ -298,8 +496,26 @@ export interface GMExample {
  */
 export interface GMFeature {
   name: string;
-  /** Card description (markdown). */
+  /** Card description (markdown) AND the GM card-stack tooltip. */
   text?: string;
+  /**
+   * Addressable id for `@[[file]].bare(id)` import (matched like a
+   * `rule.content` block's `id`, falling back to `name`).
+   */
+  id?: string;
+  /**
+   * Heading level (1–6) for the card's name; `"none"` suppresses the name
+   * heading. Default 3. Mirrors `FeatureDetails.heading` + `view: "No Title"`.
+   * A chained `.hN()` on a `.bare(id)` import overrides this.
+   */
+  heading?: number | "none";
+  /**
+   * Worked-example body, authored as `rpg log` content (prose narration +
+   * lonelog mechanics) after the fence's `---` separator. Rendered read-only
+   * as prose with a toggle revealing the detailed mechanical log. The
+   * read-only successor to the `example:` fill-in template.
+   */
+  body?: string;
   /** Override the card's stack (defaults to the first declared aspect). */
   stack?: GMStack;
   /** Optional limited uses (reuses the consumable mechanics). */
@@ -317,12 +533,87 @@ export interface GMFeature {
   event?: GMEventAspect;
   scene?: GMSceneAspect;
   /**
+   * Dial declaration (Chaos Factor, Tension, …). A dial-only feature.gm renders
+   * a dial widget and is referenced by other features' `reads:`. Emits no
+   * lonelog line on its own.
+   */
+  dial?: GMDialAspect;
+  /**
+   * List declaration (Characters, Threads, …). A list-only feature.gm renders a
+   * list widget and is referenced by other features' `reads:` and by generator
+   * ramifications (an Event Focus "NPC" result consults `[Characters?]`). Emits
+   * no lonelog line on its own.
+   */
+  list?: GMListAspect;
+  /**
+   * Resource links this feature reads, e.g. `["@[[Chaos Factor]]"]`. Each link
+   * resolves to a `dial:` declaration so the feature knows how to read the
+   * current value (a `[<abbr>:n]` token) and what `default` to fall back to.
+   * (Distinct from the numeric `uses:` limited-use count.)
+   */
+  reads?: string[];
+  /**
+   * Declared resources (dial / clock / track / counter / charges / timer) — see
+   * `ResourceDecl`. Session resources (with `abbr`) are referenced `[<abbr>±n]`;
+   * PC resources (no `abbr`) as `[<Character>/<name>±n]`. The top-level `dial:`
+   * aspect is sugar for a single dial resource.
+   */
+  resources?: ResourceDecl[];
+  /**
    * Step block: reusable follow-up choices imported into a parent `gen:` line
    * across files. A feature carrying `steps:` (and typically no other aspect)
    * is a STEP block, referenced by an entry feature's `interpret` result via a
    * `@[[file]]` / `@[[file]]#blockid` branch link. Not emitted standalone.
    */
   steps?: GMStep[];
+  /**
+   * Multiple CARDS declared on one feature.gm block. Each card composes an
+   * ordered list of pieces (`emits`) and, on click in the session log, inserts
+   * that composed lonelog block. When `cards:` is present the feature is a
+   * container — its own top-level aspects are NOT emitted as a card. (A feature
+   * without `cards:` is itself a single card from its aspects, as before.)
+   */
+  cards?: GMCardDef[];
+  /**
+   * Named generator pieces this feature declares, referenceable from a card's
+   * `emits` by a local `@ref` (`"@scene-check"`) or cross-file
+   * (`"@[[File]]#id"`). Each is a generator aspect plus an `id`.
+   */
+  generators?: NamedGenerator[];
+}
+
+/** A generator aspect with a local `id`, referenceable from a card's `emits`. */
+export type NamedGenerator = GMGeneratorAspect & { id: string };
+
+/**
+ * One piece a card emits. Either an inline aspect (a single-key wrapper) or an
+ * `@ref` string: `"@localId"` (a `generators:` entry on the same feature) or
+ * `"@[[File]]#id"` (a generator declared in another file, resolved at load).
+ */
+export type EmitPiece =
+  | { oracle: GMOracleAspect }
+  | { roll: GMRollAspect }
+  | { table: GMTableAspect }
+  | { generator: GMGeneratorAspect }
+  | { event: GMEventAspect }
+  | { scene: GMSceneAspect }
+  | string;
+
+/**
+ * A clickable card declared under a feature's `cards:`. `emits` are the pieces
+ * it appends to the log, in order. Lands in the stack of `stack:` (else the
+ * first emit piece's aspect).
+ */
+export interface GMCardDef {
+  name: string;
+  id?: string;
+  stack?: GMStack;
+  /** Card description / tooltip. */
+  text?: string;
+  /** Limited uses (reuses the consumable mechanics). */
+  uses?: number;
+  recovery?: string;
+  emits: EmitPiece[];
 }
 
 export interface FeatureDetails {
@@ -398,6 +689,16 @@ export interface FeatureDetails {
   recovery?: string;
   /** Optional reference to another feature (a resource) by name — purely declarative. */
   uses_resource?: string;
+  /**
+   * Unified resource declarations (the shared lonelog vocabulary, same shape as
+   * `feature.gm`'s `resources:`). A PC feature can declare `charges` / `clock` /
+   * etc. here so lonelog PC ops (`[Talon/Mystic Mark-1]`) resolve against its
+   * bounds/default and feed the delta tracker. Coexists with the legacy
+   * `type: resource` + `max`/`recovery` scalar form. Collected via
+   * `collectResourceDecls` (see lonelog/dial-ops.ts); wiring the character-sheet
+   * feature-resolution path into the session-log registry is still pending.
+   */
+  resources?: ResourceDecl[];
   /**
    * Aspect sub-objects. Each key, when present, places the feature in that
    * type's bucket on the character-sheet accordion with the aspect's own
@@ -622,6 +923,9 @@ export interface FeatureChoiceOption {
   features?: FeatureDetails[];
   /** Optional reference to a `feature.resource` by name. */
   uses_resource?: string;
+  /** Unified resource declarations granted by picking this option (shared
+   *  lonelog vocabulary; see {@link FeatureDetails.resources}). */
+  resources?: ResourceDecl[];
   /**
    * Inline pick spec that fires as a sub-choice once the parent option is
    * picked. Values picked against this choose contribute to the named trait
