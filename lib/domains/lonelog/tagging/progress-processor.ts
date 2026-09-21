@@ -32,6 +32,16 @@ export class ProgressTagProcessor implements TagProcessor {
         });
         return true;
 
+      case "dial":
+        progressChanges.push({
+          name: tag.name,
+          kind,
+          current: (tag as any).current,
+          min: (tag as any).min,
+          max: (tag as any).max,
+        });
+        return true;
+
       case "timer":
         progressChanges.push({
           name: tag.name,

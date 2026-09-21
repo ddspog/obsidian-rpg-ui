@@ -1,9 +1,10 @@
 /** Lonelog/Partylog Parser — tokenizes session notation into structured entries */
 
-import type { LonelogEntry } from "./types";
+import type { LonelogEntry, DialOpTag, ListOpTag } from "./types";
 import { extractTags, stripTags } from "./tag-extractor";
 import { parseRollField } from "./dice-expression";
 import { isCardDraw } from "./card-expression";
+import { parseOracleCallLine } from "./oracle-call";
 export { extractTags } from "./tag-extractor";
 
 /** Scene-marker grammar: S1, S1a, S1.1, T1-S1, etc. Shared by the line parser
@@ -19,10 +20,17 @@ export function parseSceneMarker(text: string): { number: string; context: strin
 export function parseLonelog(body: string): LonelogEntry[] {
   const lines = body.split("\n");
   const entries: LonelogEntry[] = [];
+  // A blank line ends a paragraph: consecutive prose lines are a SOFT WRAP and
+  // join into one narrative entry (markdown semantics), so hard-wrapped prose in
+  // a feature body renders as flowing paragraphs, not one stub per source line.
+  let openParagraph = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed) continue;
+    if (!trimmed) {
+      openParagraph = false;
+      continue;
+    }
 
     const entry = parseLine(trimmed);
     if (!entry) continue;
@@ -33,9 +41,17 @@ export function parseLonelog(body: string): LonelogEntry[] {
     // so their tags / conclusion / metadata are still extracted.
     if (entry.type === "narrative" && entries.length > 0 && /^\s/.test(line)) {
       entries.push({ type: "continuation", text: trimmed });
+      openParagraph = false;
       continue;
     }
 
+    const prev = entries[entries.length - 1];
+    if (entry.type === "narrative" && openParagraph && prev?.type === "narrative") {
+      prev.text = `${prev.text} ${entry.text}`;
+      continue;
+    }
+
+    openParagraph = entry.type === "narrative";
     entries.push(entry);
   }
 
@@ -95,7 +111,20 @@ function parseLine(line: string): LonelogEntry | null {
       chaosFactor = parseInt(cfMatch[1], 10);
       rest = rest.slice(cfMatch[0].length);
     }
-    return { type: "oracle_question", text: rest.trim(), actor, chaosFactor };
+    // Resource + LIST ops on the question line (`[CF+1]`, `[CF?]`,
+    // `[Characters?]`) → running-value / running-entries pills.
+    const dialOps = extractTags(rest).filter(
+      (t): t is DialOpTag | ListOpTag => t.kind === "dial-op" || t.kind === "list-op"
+    );
+    const text = (dialOps.length > 0 ? stripTags(rest) : rest).trim();
+    return {
+      type: "oracle_question",
+      text,
+      actor,
+      chaosFactor,
+      dialOps: dialOps.length ? dialOps : undefined,
+      raw: dialOps.length ? line : undefined,
+    };
   }
 
   // Oracle answer: -> text
@@ -152,6 +181,15 @@ function parseLine(line: string): LonelogEntry | null {
     return { type: "table_roll", source: parts[0] || "", roll: parts[1] || "", result: parts.slice(2).join(" ") };
   }
 
+  // Oracle consulted: o: source (odds) roll -> result
+  //
+  // One letter, like `d:` — a fate question is the most frequent mechanical line in
+  // solo play, so the most-written marker is the shortest. (Not `orc:`, which in a
+  // fantasy log reads as the monster.)
+  if (line.startsWith("o:")) {
+    return { type: "oracle_call", ...parseOracleCallLine(line.slice(2).trim()) };
+  }
+
   // Generator: gen: source -> result
   if (line.startsWith("gen:")) {
     const content = line.slice(4).trim();
@@ -169,11 +207,19 @@ function parseLine(line: string): LonelogEntry | null {
     return { type: "meta_note", text: `${noteMatch[1]}: ${noteMatch[2]}` };
   }
 
-  // Standalone tag lines: [Inv:...] [Wealth:...] [PC:...] [R:...] etc. — treat as consequence
-  if (line.startsWith("[") && line.match(/^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Timer|Thread|E|L):/)) {
-    const tags = extractTags(line);
-    if (tags.length > 0) {
-      return { type: "consequence", text: line, tags, conclusion: stripTags(line) };
+  // Standalone tag lines: [Inv:...] [Wealth:...] [PC:...] [R:...] etc. — treat as
+  // consequence. Also a bare resource-op line — session ([CF+1], [CF?]) or PC
+  // ([Talon/Mystic Mark-1]) — so it becomes a mechanical entry (its conclusion
+  // strips to "", so it never reaches prose).
+  if (line.startsWith("[")) {
+    const isKnownTagLine = /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L):/.test(line);
+    const isDialOpLine = /^\[[A-Z][A-Z0-9]*(?:[:=+-]\s*\d+|\?)\]/.test(line);
+    const isPcOpLine = /^\[[^\]|/:]+\/[^\]|/:]+?\s*(?:[=+-]\s*\d+|\?)\]$/.test(line);
+    if (isKnownTagLine || isDialOpLine || isPcOpLine) {
+      const tags = extractTags(line);
+      if (tags.length > 0) {
+        return { type: "consequence", text: line, tags, conclusion: stripTags(line) };
+      }
     }
   }
 
