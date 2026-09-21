@@ -9,12 +9,29 @@ tab-icon: activity
 tab-color: var(--color-orange)
 ---
 # Chaos Factor
-```rpg rule.content
+```rpg feature.gm
 id: summary
+name: Chaos Factor
+heading: none
+dial:
+  abbr: CF
+  min: 1
+  max: 9
+  default: 5
 ---
 A good GM knows when to ramp up the tension and when to ease off and let the players catch their breath. This ebb and flow of action is a crucial part of any adventure and it rarely stays the same throughout.
 
 The Chaos Factor is Mythic's way of simulating this changing tempo. It uses a value between 1 and 9 to measure how much control the PC has over the action. The higher the value the more Mythic generates active elements such as [[Random Event|Random Events]], unexpected Scenes, and Yes answers to [[Fate Question|Fate Questions]].
+
+? The default value [CF?]
+
+? We can increase [CF+1]
+
+? Consult [CF?]
+
+? Set to custom value [CF:8]
+
+? And decrease [CF-1]
 ```
 ## The Chaos Factor
 ```rpg figure.mermaid

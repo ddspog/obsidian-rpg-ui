@@ -132,18 +132,18 @@ type: rules
 **INTERRUPT SCENE**: The Event Focus Table gives NPC Negative with the NPC result of "Choose". The Player chooses "Enemy warband" since that's who the PC is currently robbing. The Event Meaning Tables give "Punish" and "Battle". The Player comes up with this interpretation: Before the PC can attempt his planned theft the encampment is attacked by a rival road gang, resulting in all-out battle the PC will have to survive long enough to swipe the fuel he needs.
 ```
 ```rpg feature.gm
+id: altered-scene
 name: Altered Scene
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 steps:
   - choice: The Next Expectation
-    calc: ""
+    calc: "(note: Mythic said No — open the Scene you'd next most expect, besides the one you tested.)"
   - choice: A Tweak
-    calc: "(note: tweak the activity, an NPC, an object, or the location)"
+    calc: "(note: Make one change to the Expected Scene — its activity, an NPC, an object, or the location.)"
   - choice: Fate Question
     calc: "d100= ->"
     likelihood: "50/50"
-  - choice: Meaning Tables Inspiration
-    calc: "d100= ->"
+  - use: "@[[Event Meaning]]"
   - choice: Scene Adjustment
     calc: "d10= ->"
     table: "@[[Altered Scene]]#scene-adjustment-table"

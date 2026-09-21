@@ -38,19 +38,18 @@ _On the other hand, maybe the original owner of the library is unknown but the P
 [FATE CHART @title]
 ```
 ```rpg feature.gm
+id: fate-chart
 name: Fate Chart
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 oracle:
   question: '{{question}}'
   chaos: true
-example:
-  question: Does he find any tomes of magic?
-  cf: 3
-  rolls: { d100: 35 }
-  result: Yes
 ---
 Mythic's core oracle. Ask a Yes/No [[Fate Question]], judge the Odds, then read the
 cell where your Odds row meets the current [[Chaos Factor]] and roll d100 against it.
+
+? [CF:3] Does he find any tomes of magic?
+-> Yes (d100=35)
 ```
 ## Choosing Odds
 ````rpg rule.side

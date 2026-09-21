@@ -18,6 +18,7 @@ Be careful not to fall into the trap of asking for more detail than you need. A 
 ```
 Not everyone likes looking up percentile values on a table. If you'd rather not use the [[Fate Chart]] to answer [[Fate Question|Fate Questions]] you can skip the Chart and use a Fate Check instead. You still roll 2d10, but this time you add the dice together instead of treating them like a percentile. This method of answering Fate Questions can be faster than using the Fate Chart and it matches the Odds fairly closely aside from a higher chance of Exceptional results.
 ```rpg feature.gm
+id: fate-check
 name: Fate Check
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 steps:
