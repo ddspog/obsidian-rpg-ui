@@ -74,6 +74,26 @@ Emits:
 
 Once you enter the `d100`, the `likelihood` × Chaos Factor resolves the answer (Yes / No, with exceptional `Yes, and…` / `No, and…` edges).
 
+### Odds declared vs odds asked
+
+`likelihood` on the aspect fixes the odds for every question the feature emits. That
+suits a feature that always asks at the same odds, but it cannot express Mythic's
+Fate Chart, where **judging the odds is part of asking** — which is why the vault's
+Fate Chart feature declares none.
+
+For that, an `o:` line consults the oracle per question — the oracle sibling of
+`tbl:` and `gen:`, naming its source the same way they do:
+
+```
+? [CF:5] Is the gate still guarded?
+o: Fate Chart (likely) d100=22 -> Yes
+```
+
+A **bare name**, because that is how a log line names a feature; `@[[…]]` stays in
+the YAML that declares one. Both routes end in the same resolver, so a question
+resolves identically whether its odds were declared on the feature or judged on the
+line.
+
 ## Other aspects
 
 ````yaml
