@@ -12,6 +12,8 @@
 
 import { parseRuleContent } from "./parse-rule-block";
 import type { RuleContentBlock } from "./types";
+import { parseSourceDoc } from "../features/parse-source-doc";
+import type { GMFeature } from "../features/types";
 
 /**
  * Find the `rpg rule.content` block in `text` whose frontmatter `id` or
@@ -43,6 +45,16 @@ export function findRuleContentBlock(text: string, id: string): RuleContentBlock
     i = bodyEnd;
   }
   return null;
+}
+
+/**
+ * Find a `rpg feature.gm` block in `text` by its `id` (falling back to `name`),
+ * for `@[[file]].bare(id)` card dispatch. `fileName` is the target's basename
+ * (used as the parse doc name). Returns the parsed `GMFeature`, or `null`.
+ */
+export function findGMFeatureById(text: string, fileName: string, id: string): GMFeature | null {
+  const doc = parseSourceDoc({ $name: fileName, $contents: text }, "class");
+  return doc.gmFeatures?.find((g) => g.id === id || g.name === id) ?? null;
 }
 
 /** Display fields + body resolved for one tab in a `.tab(id)` import. */

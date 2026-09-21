@@ -153,6 +153,17 @@ export function detectMetaFromSource(source: string): string | null {
     if (headerKeys.has("icon") || headerKeys.has("color")) {
       return "rule.tab";
     }
+    // `rpg feature.gm` in fence-mode (YAML head + `---` + lonelog body). Must
+    // precede feature.details / rule.content: a GM block's head is just
+    // `id:`/`name:` plus GM-only aspect keys, which would otherwise fall through
+    // to rule.content and render the lonelog body as literal prose. These keys
+    // belong to no other block schema.
+    const GM_HEADER_MARKERS = [
+      "generators", "cards", "oracle", "dial", "list", "reads", "emits", "scene", "event", "stack", "steps",
+    ];
+    if (GM_HEADER_MARKERS.some((k) => headerKeys.has(k))) {
+      return "feature.gm";
+    }
     // feature.choice in fence-mode
     if (headerKeys.has("parent")) return "feature.choice";
     // feature.details in fence-mode (YAML + --- + markdown body).
