@@ -15,39 +15,76 @@
   align-items: flex-start;
 }
 
-.lonelog-log-toggle,
-.lonelog-log-save {
-  border: 1px solid var(--background-modifier-border);
-  background: var(--background-primary);
-  border-radius: 6px;
-  padding: 0.15rem 0.55rem;
+/* Closed toggle: a small folded dog-ear in the top-right corner (like a
+ * `rule.side` note) with a cursive italic "l" (for Log) in the fold. The prose
+ * reserves a matching notch (`.lonelog-log-notch`) so the first line wraps
+ * clear of it. */
+.lonelog-log-toggle[aria-pressed="false"] {
+  position: relative;
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  border: none;
   cursor: pointer;
-  font-size: 0.8em;
-  line-height: 1.4;
-  color: var(--text-muted);
-  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  background: linear-gradient(to bottom left, var(--interactive-accent) 0 50%, transparent 50%);
+  filter: drop-shadow(-1px 1px 1px color-mix(in srgb, #000 22%, transparent));
 }
 
-.lonelog-log-save {
-  background: var(--interactive-accent);
-  border-color: var(--interactive-accent);
-  color: var(--text-on-accent);
-  font-weight: 600;
+/* "Log", rotated 45° to run along the fold; a dark halo keeps the white text
+ * legible even where it crosses onto the page background. */
+.lonelog-log-toggle[aria-pressed="false"]::after {
+  content: "Log";
+  position: absolute;
+  top: 0.5rem;
+  right: 0.28rem;
+  transform: rotate(45deg);
+  transform-origin: center;
+  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 0.56rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 2px color-mix(in srgb, #000 85%, transparent),
+    0 0 1px color-mix(in srgb, #000 90%, transparent);
 }
 
-/* Open state shows a bare ✕ over the sidebar header: no box, just a muted
- * glyph that gains a faint hover wash. (Closed "Log" keeps its chip so it stays
- * legible floating over the prose.) */
+.lonelog-log-toggle[aria-pressed="false"]:hover {
+  filter: drop-shadow(-1px 1px 1px color-mix(in srgb, #000 22%, transparent)) brightness(1.12);
+}
+
+/* Open toggle: a bare ✕ over the sidebar header — no box, a muted glyph with a
+ * faint hover wash. */
 .lonelog-log-toggle[aria-pressed="true"] {
-  border-color: transparent;
+  border: none;
   background: transparent;
   color: var(--text-faint);
   padding: 0.1rem 0.35rem;
+  font-size: 0.8em;
+  line-height: 1.4;
+  cursor: pointer;
 }
 
 .lonelog-log-toggle[aria-pressed="true"]:hover {
   background: var(--background-modifier-hover);
   color: var(--text-muted);
+  border-radius: 6px;
+}
+
+/* Save chip (live log only). */
+.lonelog-log-save {
+  border: 1px solid var(--interactive-accent);
+  background: var(--interactive-accent);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--text-on-accent);
+  font-weight: 600;
 }
 
 .lonelog-log-toggle:focus-visible,
@@ -56,6 +93,13 @@
   box-shadow:
     0 0 0 2px var(--background-primary),
     0 0 0 4px var(--interactive-accent);
+}
+
+/* Reserved top-right corner so the first prose line wraps clear of the dog-ear. */
+.lonelog-log-notch {
+  float: right;
+  width: 2.5rem;
+  height: 2.3rem;
 }
 
 /* ── Layout (prose + sidebar). When the sidebar opens, the block widens by the
@@ -331,11 +375,25 @@
 }
 
 /* Clamp long entries until selected, with a soft fade where they are cut.
- * Sidebar-only — the read-only example shows entries in full. */
+ * Sidebar-only — the read-only example shows entries in full.
+ *
+ * The fade is a PAINTED gradient, not `mask-image`: a mask clips everything inside
+ * the element, including out-of-flow descendants whose containing block is the
+ * viewport. That silently cut off a roll chip's expanded layer even though
+ * `position: fixed` had escaped both `overflow: hidden` and the scroll container.
+ * Measured — the mask was the only ancestor still clipping. */
 .lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
+  position: relative;
   max-height: 6rem;
   overflow: hidden;
-  mask-image: linear-gradient(to bottom, #000 4rem, transparent);
+}
+
+.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 4rem, var(--background-primary));
 }
 
 /* ── Entry table: icon | content | pills ── */
@@ -380,6 +438,20 @@
   display: block;
   padding-left: 1.4em;
   color: var(--text-muted);
+}
+
+/* A composed sub-step (`+ ` in the log) stays at the SAME level as its peers —
+ * the `+` bullet just sits in the indent/bullet column, no deeper padding. */
+.lonelog-row-detail.is-child .lonelog-row-bullet {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* The `...` "unfolds into the following steps" indicator — a quiet trailing
+ * connector, not a value. */
+.lonelog-row-spawns {
+  margin-left: 0.4em;
+  color: var(--text-faint);
 }
 
 .lonelog-row-bullet {
@@ -615,58 +687,6 @@
   white-space: nowrap;
 }
 
-/* Each die is a fixed-size, in-flow badge: the silhouette never stretches with
- * the value, 1–2 digits sit centered inside with room, and because it's in-flow
- * the line box grows to fit it (no overlap with neighbouring rows). */
-/* Fixed-size, in-flow die badge. line-height centers the value vertically and
- * makes the token's baseline the value's baseline, so the number sits level
- * with the inline ± modifier and = total; the box height grows the line (no
- * overlap) and the silhouette never stretches with the value. */
-.lonelog-die-token {
-  position: relative;
-  display: inline-block;
-  width: 2.1em;
-  height: 1.9em;
-  line-height: 1.9em;
-  text-align: center;
-  vertical-align: baseline;
-}
-
-.lonelog-die-token + .lonelog-die-token {
-  margin-left: 0.15em; /* gap between pool dice */
-}
-
-.lonelog-die-value {
-  position: relative;
-  z-index: 1;
-  font-size: 0.9em;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* d4: a shorter triangle whose centroid sits at the box centre (so the digit
- * gets the same centred treatment as the other dice), and a small lift of the
- * whole badge so the point-up shape doesn't read low in the row. */
-.lonelog-die-token[data-sides="4"] {
-  vertical-align: 0.12em;
-}
-
-/* d10 (single die, not the percentile pair): nudge the badge so its centred
- * digit sits on the line's centre. */
-.lonelog-die:not(.lonelog-die--percentile) .lonelog-die-token[data-sides="10"] {
-  vertical-align: -0.1em;
-}
-
-.lonelog-die-shape {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-
 /* Modifier (+5/-1) and pool total read as clear operators, not faint marks. */
 .lonelog-die-op {
   margin: 0 0.1em 0 0.2em;
@@ -682,17 +702,6 @@
 
 .lonelog-die-modterm + .lonelog-die-modterm {
   margin-left: 0.22em;
-}
-
-.lonelog-die-total {
-  margin-left: 0.25em;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.lonelog-die-eq {
-  margin-right: 0.12em;
-  color: var(--text-faint);
 }
 
 .lonelog-die-outline {
@@ -720,16 +729,6 @@
   display: none;
 }
 
-.lonelog-die.is-pending .lonelog-die-value {
-  font-weight: 400;
-  color: var(--text-faint);
-}
-
-.lonelog-term.is-winner .lonelog-die-value {
-  color: light-dark(#7a5d0c, #f0d066);
-  font-weight: 700;
-}
-
 /* The winning roll's modifier carries the win too (gold), so a +2 that tips a
  * contest reads as part of the victory rather than a muted afterthought. */
 .lonelog-term.is-winner .lonelog-die-op {
@@ -741,38 +740,6 @@
 .lonelog-term.is-winner .lonelog-die-outline {
   stroke: light-dark(#8a6a10, #e6c34d);
   fill: light-dark(rgba(230, 195, 77, 0.3), rgba(230, 195, 77, 0.32));
-}
-
-.lonelog-term.is-winner .lonelog-die-token {
-  filter: drop-shadow(0 0 2px light-dark(rgba(180, 140, 20, 0.5), rgba(230, 195, 77, 0.55)));
-}
-
-/* ── Percentile: two d10s tumbled together (tens + units). The front (tens) die
- *    leans left, the back (units) die leans right — splaying outward like a
- *    freshly tossed pair, both sitting level on the same line. The tens die
- *    overlaps on top; the units die tucks behind to the right. ── */
-.lonelog-die--percentile .lonelog-die-token:first-child {
-  transform: rotate(-10deg);
-  z-index: 2;
-}
-
-.lonelog-die--percentile .lonelog-die-token + .lonelog-die-token {
-  margin-left: -0.3em;
-  transform: rotate(10deg);
-  z-index: 1;
-}
-
-/* When editing, the two percentile digits sit upright and apart so each is its
- * own clear input (no tumble/overlap). */
-.lonelog-die--percentile.is-editing .lonelog-die-token,
-.lonelog-die--percentile.is-editing .lonelog-die-token:first-child,
-.lonelog-die--percentile.is-editing .lonelog-die-token + .lonelog-die-token {
-  transform: none;
-  margin-left: 0.2em;
-}
-
-.lonelog-die--percentile.is-editing .lonelog-die-token:first-child {
-  margin-left: 0;
 }
 
 /* ── Inline scene editor (inputs that read as plain text until touched) ──
@@ -814,54 +781,6 @@
   color: var(--text-accent);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-
-/* Editable die value: an inline input that merges with the die face (the same
- * quiet treatment as the scene inputs), gaining a faint underline only on
- * hover/focus. The specificity beats Obsidian's `input[type="text"]` chrome. */
-.lonelog-entries input.lonelog-die-input {
-  display: inline-block;
-  vertical-align: baseline;
-  position: relative;
-  z-index: 1;
-  appearance: none;
-  box-sizing: content-box;
-  width: auto;
-  min-width: 1ch;
-  max-width: 1.7em;
-  height: auto;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  outline: none;
-  background: transparent;
-  box-shadow: none;
-  font: inherit;
-  font-size: 0.9em;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: inherit;
-  color: inherit;
-  text-align: center;
-  field-sizing: content; /* size to digits where supported; `size` attr is the fallback */
-}
-
-.lonelog-entries input.lonelog-die-input:hover {
-  box-shadow: inset 0 -1px 0 var(--text-faint);
-}
-
-.lonelog-entries input.lonelog-die-input:focus,
-.lonelog-entries input.lonelog-die-input:focus-visible {
-  outline: none;
-  box-shadow: inset 0 -1px 0 light-dark(rgba(109, 124, 186, 0.7), rgba(160, 160, 208, 0.7));
-}
-
-/* The winning die's input value carries the gold like the static value does. */
-.lonelog-term.is-winner input.lonelog-die-input {
-  color: light-dark(#7a5d0c, #f0d066);
-  font-weight: 700;
 }
 
 .lonelog-row-glyph {
@@ -919,11 +838,112 @@
   letter-spacing: 0.04em;
   color: var(--lonelog-tag-hue, var(--text-muted));
   opacity: 0.85;
+  /* The gap sits on the KEY, not the value, so it applies to whatever follows —
+   * a plain value, a list draw's die badges, or a picker control. */
+  margin-right: 0.3em;
+}
+
+/* A list name OPENS the printed sheet. It must be a real button for keyboard
+ * use, but it has to look exactly like the static key beside it — so every bit of
+ * Obsidian's button chrome is stripped, and the only affordance is a hover
+ * colour lift plus a soft glow. */
+.lonelog-tag-key--sheet,
+.lonelog-entries button.lonelog-tag-key--sheet {
+  appearance: none;
+  display: inline;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  /* Keep the key's trailing gap — a blanket `margin: 0` reset would weld the
+   * name to whatever follows it. */
+  margin: 0 0.3em 0 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.86em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: inherit;
+  text-align: inherit;
+  color: var(--lonelog-tag-hue, var(--text-muted));
+  opacity: 0.85;
+  cursor: pointer;
+  transition:
+    opacity 0.12s ease,
+    text-shadow 0.12s ease;
+}
+
+.lonelog-tag-key--sheet:hover,
+.lonelog-tag-key--sheet:focus-visible {
+  outline: none;
+  opacity: 1;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--lonelog-tag-hue) 45%, transparent);
+}
+
+/* ── List sheet modal: the printed list page ── */
+
+.rpg-list-sheet-modal h3 {
+  margin: 0 0 0.15rem;
+}
+
+.rpg-list-sheet-hint {
+  margin: 0 0 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.rpg-list-sheet {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The die + section cells band their block in the same tan the plugin uses for a
+ * table's category-divider row, so a section reads as one unit. */
+.rpg-list-sheet .rpg-list-sheet-die,
+.rpg-list-sheet .rpg-list-sheet-section {
+  background: light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.14)) !important;
+  color: light-dark(#3a2a14, #f0e8d0);
+  vertical-align: middle;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Row range and slot number are scaffolding — kept quiet so the entries lead. */
+.rpg-list-sheet .rpg-list-sheet-row,
+.rpg-list-sheet .rpg-list-sheet-slot {
+  color: var(--text-faint);
+  font-size: 0.85em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Every column is centred EXCEPT the entry, which stays left-aligned so the
+ * names read as a list rather than a ragged column. Headers follow their cells.
+ * `!important` beats the theme's own `th`/`td` alignment. */
+.rpg-list-sheet th {
+  text-align: center !important;
+}
+
+.rpg-list-sheet th.rpg-list-sheet-entry-head,
+.rpg-list-sheet td.rpg-list-sheet-entry {
+  text-align: left !important;
+}
+
+.rpg-list-sheet .rpg-list-sheet-entry {
+  width: 100%;
+}
+
+.rpg-list-sheet tr.is-void .rpg-list-sheet-entry {
+  color: var(--text-faint);
 }
 
 /* The value: the state/number, in normal text so it reads as the payload. */
 .lonelog-tag-val {
-  margin-left: 0.3em;
   color: var(--text-normal);
   font-variant-numeric: tabular-nums;
 }
@@ -957,14 +977,671 @@
   --lonelog-tag-hue: light-dark(#2f8f86, #64d8cb); /* arcane-teal (gauges / progress) */
 }
 
-/* ── Reduced motion ── */
+.lonelog-tag.kind-dial {
+  --lonelog-tag-hue: light-dark(#b8860b, #d4a840); /* dial-amber (the swinging tempo) */
+}
 
-@media (prefers-reduced-motion: reduce) {
-  .lonelog-dot {
-    transition: none;
-  }
-  .lonelog-dot:hover,
-  .lonelog-dot:focus-visible {
-    transform: none;
-  }
+.lonelog-tag.kind-list {
+  --lonelog-tag-hue: light-dark(#7a4b8c, #c39bd8); /* list-violet (the cast + goals) */
+}
+
+/* The oracle a question consults — the same violet as the lists, since both are the
+ * GM's own machinery being named rather than something the story knows about. */
+.lonelog-tag.kind-oracle {
+  --lonelog-tag-hue: light-dark(#7a4b8c, #c39bd8);
+}
+
+/* Several dice summed (`d8+d6+2=13`): the operators sit quiet between the badges
+ * so the dice stay the figures and the arithmetic is the ground. */
+/* Plain inline: an inline-FLEX line box here grew the row height, which is the
+ * one thing these rows must not do. */
+.lonelog-sum {
+  white-space: nowrap;
+}
+
+.lonelog-sum-op {
+  margin: 0 0.14em;
+  padding: 0 0.06em;
+  color: var(--text-faint);
+}
+
+.lonelog-sum-const {
+  /* Part of the spacing moved from margin to padding, so the hover outline has room
+   * to sit off the digits without the block shifting when it appears. */
+  margin: 0 0.06em;
+  padding: 0 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* ── The parts of an expression that are NOT dice ─────────────────────────────
+ *
+ * A constant, a threshold, the result. None of them is rolled and none is typed,
+ * so they carry no permanent frame — the eye should follow the dice. Pointing at
+ * one outlines it, which is enough to show where one part of the formula ends and
+ * the next begins.
+ *
+ * Drawn with `box-shadow`, never `border`: a border appearing on hover would
+ * reflow the line under the pointer. */
+.lonelog-sum-const,
+.lonelog-threshold,
+.lonelog-expr {
+  border-radius: 3px;
+  transition: box-shadow 0.12s ease;
+}
+
+.lonelog-sum-const:hover,
+.lonelog-threshold:hover,
+.lonelog-expr:hover {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--roll-hue, var(--text-faint)) 45%, transparent);
+}
+
+/* ── A list pill, in three sections ──────────────────────────────────────────
+ *
+ *   THREADS │ sec △₄ 3   row ⬡₁₀ 1 │ Sunset
+ *   └ name ─┘ └───── dice ────────┘ └ values ┘
+ *
+ * NAME says which list, DICE says what to roll (and what came up), VALUES holds
+ * the outcome — the drawn entry, or the entries an add/remove touched. Each
+ * section only renders when it has something to say, so an add pill is name +
+ * values while a draw is all three.
+ *
+ * Height discipline: everything is inline / inline-flex with NO vertical padding
+ * and a sub-1 line-height on the chips, so the strip keeps its own 1.5 leading.
+ * The row never grows and nothing escapes the sidebar's `overflow: hidden` clamp.
+ */
+
+.lonelog-tag-name,
+.lonelog-tag-dice,
+.lonelog-tag-values {
+  display: inline;
+}
+
+/* Section rhythm: a wider gap BETWEEN sections than within one, so the grouping
+ * reads without needing rules or separators. */
+.lonelog-tag-dice {
+  margin-right: 0.5em;
+}
+
+.lonelog-roll-chip + .lonelog-roll-chip {
+  margin-left: 0.3em;
+}
+
+/* One roll: label, result. Collapsed, it wears NO frame — a result sitting in a
+ * sentence is just a number, and a dotted box around every one of them turned the
+ * log into a field of little cells. The frame belongs to the expanded layer, which
+ * is genuinely a thing lifted off the page.
+ *
+ * The chip is used BOTH inside a list pill (which sets `--lonelog-tag-hue`) and on
+ * a formula's dice, where no hue is in scope — hence the fallback, so the ink is
+ * never transparent. */
+.lonelog-roll-chip {
+  --roll-hue: var(--lonelog-tag-hue, light-dark(#8a6a10, #e6c34d));
+  display: inline-flex;
+  align-items: baseline;
+  /* Separates the label from the result — the parts that are conceptually
+     distinct. Inside the die's notation the gap is far tighter. */
+  gap: 0.3em;
+  /* No padding now that there is no edge to hold off, and no vertical padding or
+   * 1.15-leading ever: the chip must not add a single pixel to the row. */
+  line-height: 1;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+/* ── Roll states: unrolled, rolled, rollable ──────────────────────────────────
+ *
+ * Three states must be told apart at a glance: a die NOT YET ROLLED, a die with
+ * a RESULT, and the whole expression's total. A dashed chip means "no result
+ * yet"; a solid chip with a divider means "this die rolled that number".
+ */
+
+/* Not yet rolled needs no styling of its own: the chip shows its NOTATION where a
+ * rolled one shows a number, which tells the two apart on its own.
+ */
+
+.lonelog-roll-empty {
+  font-size: 0.82em;
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* The divider between a die and its result — the whole point is that the two are
+ * one unit but never one number. Hidden while unrolled (nothing to divide). */
+/* Fixed height, NOT `align-self: stretch` — stretching made the chip as tall as
+ * its flex line and pushed the whole row down. */
+.lonelog-roll-sep {
+  width: 1px;
+  height: 0.85em;
+  align-self: center;
+  margin: 0 0.04em;
+  background: color-mix(in srgb, var(--roll-hue) 28%, transparent);
+}
+
+/* A rollable die is a button: no chrome at rest, lifts on hover so it reads as
+ * clickable without shouting. */
+/* A rollable die is a real <button>, so Obsidian's global button metrics apply
+ * unless every one is neutralised. `min-height` was the leak: it is why only the
+ * rows with rollable dice (the notation showcase) sat taller than the list pills,
+ * which render a plain span. */
+.lonelog-roll-expr--btn,
+.lonelog-entries button.lonelog-roll-expr--btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: baseline;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  color: inherit;
+  vertical-align: baseline;
+  cursor: pointer;
+  /* The highlight eases in with the lift, so colour and movement read as one
+   * gesture rather than a snap plus a slide. */
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    color 0.12s ease,
+    opacity 0.12s ease;
+}
+
+/* Hover / focus lifts and tilts the WHOLE notation — count, silhouette and side
+ * count together, since they are one die. The ink shifts toward the text colour
+ * rather than to some accent, so the highlight reads the same in either theme
+ * (brighter on dark, deeper on light) and stays one colour across all three
+ * parts. The `.lonelog-entries` variant is needed to outrank Obsidian's own
+ * `button:hover`, which would otherwise recolour only the button's contents —
+ * that is the accidental partial highlight this replaces. */
+.lonelog-roll-expr--btn:hover,
+.lonelog-roll-expr--btn:focus-visible,
+.lonelog-entries button.lonelog-roll-expr--btn:hover,
+.lonelog-entries button.lonelog-roll-expr--btn:focus-visible {
+  outline: none;
+  opacity: 1;
+  color: color-mix(in srgb, var(--roll-hue) 78%, var(--text-normal));
+}
+
+/* ── The expression pill ── */
+
+/* Joins several dice into one formula and registers the result. No frame of its
+ * own: the result is carried by weight and colour, and an outline appears only
+ * under the pointer (see the hover rule below). */
+.lonelog-expr {
+  --roll-hue: var(--lonelog-tag-hue, light-dark(#8a6a10, #e6c34d));
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.16em;
+  margin-left: 0.3em;
+  padding: 0 0.38em;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+.lonelog-expr-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(#7a5d0c, #f0d066);
+}
+
+/* The `=` doubles as the reroll-everything control. */
+/* Same button leak as the die: without `min-height: 0` Obsidian's own metrics
+ * give this control a floor height and the whole row grows. */
+.lonelog-expr-eq,
+.lonelog-expr-roll,
+.lonelog-entries button.lonelog-expr-roll {
+  appearance: none;
+  display: inline-flex;
+  align-items: baseline;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  color: var(--text-faint);
+  vertical-align: baseline;
+}
+
+.lonelog-expr-roll {
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.lonelog-expr-roll:hover,
+.lonelog-expr-roll:focus-visible {
+  outline: none;
+  color: var(--roll-hue);
+}
+
+/* How many dice. Glued to the LEFT of the die with no gap, so it reads as part
+ * of the notation (`3d8`) rather than as a factor multiplying the result. Colour
+ * and alpha come from the die it sits in — never its own, or the set would drift
+ * out of step on hover.
+ *
+ * Lifted onto the line the OTHER DIGITS sit on: its siblings baseline-align and an
+ * <svg>'s baseline is its bottom edge, which left the count ~2px below the result.
+ * `position: relative` shifts it without touching layout — the same trick the side
+ * count uses. Centring the flex line instead dropped the whole chip off the prose
+ * baseline. */
+.lonelog-roll-count {
+  position: relative;
+  top: -0.15em;
+  margin-right: -0.02em;
+  font-size: 0.86em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+/* ── Collapsed, and expanded on hover ─────────────────────────────────────────
+ *
+ * A result is the FACT the log keeps; the notation is reference. So a rolled chip
+ * rests as `LABEL 7ᐟ` and pointing at it lifts the whole expression into view.
+ *
+ * The COLLAPSED view is the one in flow: it alone sizes the chip, so expanding
+ * never reflows the line. The expanded view floats above it. */
+.lonelog-roll-body {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* The origin probe: measures where fixed coordinates begin, and takes part in
+ * nothing else — no size, no ink, no hit area. */
+.lonelog-roll-origin {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Sizes the chip, and is never a click target — the chip's own hover raises the
+ * interactive layer over it, so a pointer anywhere on the pill reaches the real
+ * controls rather than this stand-in. */
+.lonelog-roll-brief {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.14em;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+/* The die and its `<special>` stack in ONE column beside the result: die above the
+ * baseline, marks below it, like a superscript over a subscript.
+ *
+ * A single-cell grid so the column is as wide as whichever of the two is wider, and
+ * `height: 0` so the stack — which is taller than the line — contributes nothing to
+ * the row. The children overflow it on purpose. */
+.lonelog-roll-affix {
+  display: inline-grid;
+  grid-template-areas: "stack";
+  place-items: center;
+  height: 0;
+  margin-left: 0.06em;
+  line-height: 0;
+  vertical-align: baseline;
+}
+
+.lonelog-roll-affix > * {
+  grid-area: stack;
+}
+
+/* The small die: "this number came from a die". */
+.lonelog-roll-brief-die {
+  width: 0.62em;
+  height: 0.62em;
+  /* The same -0.34em it was raised by before it gained a neighbour, measured against
+   * the old rule rather than reasoned about: an inline grid takes its baseline from
+   * its first item, so the die still hangs its bottom edge on the text baseline and
+   * the offset means exactly what it used to. */
+  transform: translateY(-0.34em);
+  flex: none;
+  overflow: visible;
+  opacity: 0.75;
+}
+
+/* The expanded layer.
+ *
+ * `position: fixed` with NO offsets keeps it at its static position while making
+ * the viewport its containing block — which is what lets it escape the Log
+ * sidebar's `overflow` and the entry clamp's mask. An absolute layer would be cut
+ * off at their edges; now only the viewport can clip it.
+ *
+ * Opaque and raised, so it reads as one pill lifted over its neighbours instead
+ * of two strings overlapping. The negative margin cancels its own padding, so the
+ * expression starts exactly where the collapsed number was — the label and the
+ * pill's left edge never appear to move. */
+.lonelog-roll-full {
+  position: fixed;
+  z-index: 40;
+  /* `top`/`left` are set from the collapsed CHIP's viewport rect (see
+   * `useExpandOnPoint`) — a fixed box with auto offsets resolves its static
+   * position in document coordinates, so on a scrolled page it would appear a
+   * screenful away. `translateY(-50%)` then centres it on the chip it grew out of,
+   * without needing to know its own height. */
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.14em;
+  /* Horizontal only. A negative margin-left cancels the padding so the expression
+   * starts exactly where the collapsed number was; a negative margin-TOP would
+   * just shift a positioned box off the centre `top` already places it on. */
+  margin: 0 -0.4em;
+  padding: 0.16em 0.4em;
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--roll-hue) 30%, transparent),
+    0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow, #000) 45%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+/* Gated on `is-open` rather than `:hover`, because the layer must not appear until
+ * it has been MEASURED — a CSS-only reveal would flash it at a stale position.
+ * The state covers focus as well as the pointer, so a pointer leaving the pill
+ * cannot yank the result input out from under someone typing in it. */
+.lonelog-roll-chip.is-open .lonelog-roll-full {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Fade the stand-in as the real thing arrives — it stays in place (opacity, not
+ * visibility) so the chip keeps its width. The LABEL fades with it: the expanded
+ * layer carries its own, and two copies a pixel apart would read as doubled. */
+.lonelog-roll-chip.is-open > .lonelog-roll-label,
+.lonelog-roll-chip.is-open .lonelog-roll-brief {
+  opacity: 0;
+}
+
+/* …but not the one inside the layer, which is the copy now doing the work. It keeps
+ * the chip's rhythm: a wider gap after the label than between the roll's own parts,
+ * added as a margin because one flex `gap` cannot differ per item. */
+.lonelog-roll-chip.is-open .lonelog-roll-full .lonelog-roll-label {
+  opacity: 1;
+}
+
+.lonelog-roll-full .lonelog-roll-label {
+  margin-right: 0.16em;
+}
+
+/* The expression reads as one clickable thing: a tinted plate under the whole
+ * notation on hover, while the die itself keeps the lift and tilt. */
+.lonelog-roll-expr {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.14em;
+  border-radius: 3px;
+}
+
+/* A tinted plate under the whole notation: the CLICK TARGET is the expression, so
+ * the affordance covers all of it. */
+.lonelog-roll-expr--btn:hover,
+.lonelog-roll-expr--btn:focus-visible {
+  background: color-mix(in srgb, var(--roll-hue) 14%, transparent);
+}
+
+/* The die group sets its own colour, which would otherwise block the button's
+ * hover ink from reaching the count, the silhouette and the side count.
+ * `inherit` hands the whole set back to the button. */
+.lonelog-roll-expr--btn:hover .lonelog-roll-die,
+.lonelog-roll-expr--btn:focus-visible .lonelog-roll-die {
+  color: inherit;
+  opacity: 1;
+}
+
+/* Only the DIE moves. Tilting the selector and modifier with it would read as the
+ * whole line wobbling rather than a die being thrown. */
+.lonelog-roll-expr--btn:hover .lonelog-roll-mark,
+.lonelog-roll-expr--btn:focus-visible .lonelog-roll-mark {
+  transform: translateY(-1px) rotate(-6deg);
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--roll-hue) 45%, transparent));
+}
+
+/* The recorded dice and the brackets that hold them. The brackets are DRAWN, not
+ * typed: keeping them out of the field means a stray backspace cannot turn a list
+ * into a number. Quiet, and not selectable, so they never look like content. */
+.lonelog-roll-field {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* One bracketed group per recorded list: the dice thrown, then the dice those
+ * generated. The second reads a step quieter — it is a consequence of the first,
+ * not a second roll of equal standing. */
+.lonelog-roll-group {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.lonelog-roll-group + .lonelog-roll-group {
+  margin-left: 0.12em;
+}
+
+.lonelog-roll-group.is-generated {
+  opacity: 0.78;
+}
+
+.lonelog-roll-bracket {
+  color: var(--text-faint);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Point at the result and it says "type here" — the expression rerolls, but the
+ * number can always be entered by hand. */
+.lonelog-roll-value--input {
+  cursor: text;
+}
+
+.lonelog-roll-value--input:hover,
+.lonelog-roll-value--input:focus {
+  text-decoration: underline dotted color-mix(in srgb, var(--roll-hue) 55%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+/* Annotations that operate ON the roll — quiet, and outside the glued unit. */
+.lonelog-roll-mod {
+  font-size: 0.82em;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The `<special>`: what it does to the dice ────────────────────────────────
+ *
+ * The marks are a system, not a set of icons: a FILLED triangle keeps and a HOLLOW
+ * one drops, each pointing at the end of the range it acts on — `▲` keeps the high
+ * die, `▽` drops the low one. `✱` explodes, `↻` rerolls, `≥`/`≤` clamp.
+ *
+ * Collapsed, only the marks ride along with the number, because a 19 taken with
+ * advantage is a different fact from a 19 and that is the view the log is read in.
+ * Expanded, each mark is spelled out. */
+/* Dropped below the baseline, under the die it qualifies. */
+.lonelog-roll-flags {
+  display: inline-flex;
+  gap: 0.1em;
+  /* A true subscript: its centre sits just BELOW the baseline the die is raised
+   * from, measured against a baseline probe rather than an assumed descender (the
+   * descender here is 2px, not the ~3px arithmetic would suggest). */
+  transform: translateY(0.57em);
+  font-size: 0.58em;
+  line-height: 0;
+  white-space: nowrap;
+  color: var(--roll-hue);
+  opacity: 0.85;
+}
+
+.lonelog-roll-special {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18em;
+  font-size: 0.82em;
+  color: var(--text-faint);
+}
+
+.lonelog-roll-special-mark {
+  color: var(--roll-hue);
+  opacity: 0.9;
+}
+
+/* Small caps: subordinate to the notation without shrinking further, which at this
+ * size would stop being readable. */
+.lonelog-roll-special-name {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.03em;
+}
+
+/* Several checks on one row — a party roll. They wrap rather than overflow, and a
+ * faint divider keeps one character's roll from reading as part of the next. */
+.lonelog-party {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.7em;
+}
+
+.lonelog-party > .lonelog-formula + .lonelog-formula::before {
+  content: "·";
+  margin-right: 0.7em;
+  color: var(--text-faint);
+}
+
+/* The check's name, ahead of its formula. Same treatment as a chip's own label, so
+ * a named check and a named die read as one family. */
+.lonelog-formula-label {
+  margin-right: 0.34em;
+}
+
+/* The chip's first section — `sec` / `row`, what this roll selects. Small caps
+ * keep it subordinate to the value without shrinking the font (which would drop
+ * it off the chip's optical centre). `line-height: 1` + flex centring park it on
+ * the chip's midline rather than the text baseline, so it sits level with the
+ * die and the number. */
+.lonelog-roll-label {
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.12s ease;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+/* The die: its real silhouette plus the max face as a subscript. The shapes are
+ * near-identical at this size, so the number is what tells a d4 from a d10 while
+ * the outline supplies the "a die was rolled" read. */
+.lonelog-roll-die {
+  display: inline-flex;
+  /* BASELINE, in both the rollable <button> and the read-only <span>, so the die
+   * sits level with the result digit whatever the chip holds. Centring made the
+   * die's position depend on whether a count was present (the flex baseline comes
+   * from the first child: a digit's baseline, or an <svg>'s bottom edge) — one
+   * chip's die landed 1.6px high, another's 1.9px low. */
+  align-items: baseline;
+  gap: 0.02em;
+  /* ONE colour and ONE alpha for the count, the outline and the side count: they
+   * are set on the container and inherited, so nothing can highlight alone. */
+  color: var(--roll-hue, var(--text-muted));
+  opacity: 0.85;
+}
+
+.lonelog-roll-mark {
+  width: 0.95em;
+  height: 0.95em;
+  flex: none;
+  overflow: visible;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
+}
+
+/* Own outline/facet styling — the formula-die rules are scoped to `.lonelog-die`
+ * and `.lonelog-term`, so nothing leaks in or out. */
+.lonelog-roll-mark .lonelog-die-outline {
+  fill: color-mix(in srgb, var(--roll-hue) 14%, transparent);
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lonelog-roll-mark .lonelog-die-facet {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The side count, set as a subscript WITHOUT `<sub>`: that element's
+ * `vertical-align: sub` extends the line box and grew every row it appeared in.
+ * `position: relative` shifts it visually while contributing nothing to layout. */
+.lonelog-roll-sides {
+  position: relative;
+  top: 0.18em;
+  font-size: 0.68em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 0;
+  vertical-align: baseline;
+  color: inherit;
+}
+
+/* The rolled value: tabular so 1 and 10 hold the same column, so the strip does
+ * not reflow while typing. `!important` beats Obsidian's global input chrome. */
+.lonelog-roll-value,
+.lonelog-entries input.lonelog-roll-value {
+  appearance: none;
+  display: inline;
+  width: auto;
+  min-width: 1ch;
+  height: auto;
+  min-height: 0;
+  padding: 0 !important;
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  text-align: center;
+  color: var(--roll-hue, var(--text-normal));
+  field-sizing: content;
+}
+
+/* An unrolled slot shows a mid-dot rather than an empty gap, so the chip reads
+ * as "not yet rolled" instead of broken. */
+.lonelog-roll-value::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+.lonelog-roll-chip:has(input) {
+  cursor: text;
+}
+
+.lonelog-entries input.lonelog-roll-value:focus,
+.lonelog-entries input.lonelog-roll-value:focus-visible {
+  outline: none;
 }

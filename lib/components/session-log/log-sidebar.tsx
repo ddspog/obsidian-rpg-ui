@@ -18,16 +18,18 @@ export type { SceneEditValue };
 export interface LogSidebarProps {
   items: SidebarItem[];
   selectedId: number | null;
-  onSelect: (id: number) => void;
-  registerAnchor: (id: number, el: HTMLElement | null) => void;
+  onSelect?: (id: number) => void;
+  registerAnchor?: (id: number, el: HTMLElement | null) => void;
   sourcePath: string;
   /** Pending scene edits keyed by the scene's original `=>` text. */
-  sceneEdits: Record<string, SceneEditValue>;
-  onSceneChange: (original: string, next: SceneEditValue) => void;
+  sceneEdits?: Record<string, SceneEditValue>;
+  onSceneChange?: (original: string, next: SceneEditValue) => void;
   /** Pending die-value edits keyed by `dieEditKey(source, raw, slot)`. */
-  dieEdits: Record<string, string>;
-  onDieChange: (source: string, raw: string, slot: number, value: string) => void;
-  onResultChange: (source: string, value: string) => void;
+  dieEdits?: Record<string, string>;
+  onDieChange?: (source: string, raw: string, slot: number, value: string) => void;
+  onResultChange?: (source: string, value: string) => void;
+  /** Swap a token on a source line — powers the list-consult picker. */
+  onTokenChange?: (source: string, from: string, to: string, nth: number) => void;
   /** A GM step dropdown pick — inserts the chosen step line into the note. */
   onChoice?: (selected: string) => void;
 }
@@ -43,9 +45,22 @@ export function LogSidebar({
   dieEdits,
   onDieChange,
   onResultChange,
+  onTokenChange,
   onChoice,
 }: LogSidebarProps) {
-  const edit: SidebarEditContext = { sceneEdits, onSceneChange, dieEdits, onDieChange, onResultChange };
+  // Editable only when write-back handlers are wired (the live log); a read-only
+  // host (a feature.gm body) passes none, so entries render static.
+  const edit: SidebarEditContext | undefined =
+    onSceneChange || onDieChange || onResultChange || onTokenChange
+      ? {
+          sceneEdits: sceneEdits ?? {},
+          onSceneChange: onSceneChange ?? (() => {}),
+          dieEdits: dieEdits ?? {},
+          onDieChange: onDieChange ?? (() => {}),
+          onResultChange: onResultChange ?? (() => {}),
+          onTokenChange,
+        }
+      : undefined;
 
   return (
     <aside className="lonelog-sidebar lonelog-entries" aria-label="Session log">
@@ -62,7 +77,7 @@ export function LogSidebar({
             edit={edit}
             selected={selectedId === item.id}
             onSelect={onSelect}
-            anchorRef={(el) => registerAnchor(item.id, el)}
+            anchorRef={registerAnchor ? (el) => registerAnchor(item.id, el) : undefined}
             onChoice={onChoice}
           />
         ))

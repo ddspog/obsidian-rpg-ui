@@ -6,6 +6,7 @@ import type {
   RollEntry,
   ConsequenceEntry,
   OracleQuestionEntry,
+  OracleCallEntry,
   OracleAnswerEntry,
   DialogueEntry,
   NarrativeEntry,
@@ -24,6 +25,8 @@ export type ProseSegmentKind =
   | { type: "world-event"; entry: WorldEventEntry; rolls: RollEntry[]; consequences: ConsequenceEntry[] }
   | {
       type: "oracle";
+      /** `o:` lines consulted for this question. */
+      oracles: OracleCallEntry[];
       question: OracleQuestionEntry;
       answer?: OracleAnswerEntry;
       rolls: RollEntry[];
@@ -154,6 +157,7 @@ export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
         const rolls: RollEntry[] = [];
         const generators: GeneratorEntry[] = [];
         const tables: TableRollEntry[] = [];
+        const oracles: OracleCallEntry[] = [];
         const consequences: ConsequenceEntry[] = [];
         const continuations: string[] = [];
         i++;
@@ -161,7 +165,8 @@ export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
           const next = entries[i];
           if (next.type === "oracle_answer") {
             if (!answer) answer = next;
-          } else if (next.type === "roll") rolls.push(next);
+          } else if (next.type === "oracle_call") oracles.push(next);
+          else if (next.type === "roll") rolls.push(next);
           else if (next.type === "generator") generators.push(next);
           else if (next.type === "table_roll") tables.push(next);
           else if (next.type === "consequence") consequences.push(next);
@@ -169,7 +174,11 @@ export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
           else break;
           i++;
         }
-        push({ type: "oracle", question, answer, rolls, generators, tables, consequences }, start, continuations);
+        push(
+          { type: "oracle", question, answer, oracles, rolls, generators, tables, consequences },
+          start,
+          continuations
+        );
         break;
       }
 

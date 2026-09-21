@@ -14,8 +14,10 @@
 import * as React from "react";
 import { Lucide } from "lib/ui/primitives/Lucide";
 import { InlineMarkdown } from "./inline-markdown";
-import { FormulaView, type DieEditContext } from "./formula";
-import { parseFormula, editableTerms, termSlotInitial } from "lib/domains/session-log/formula";
+import { ChoiceOnlyView, ChoiceSelect, DieChip, FormulaView, type DieEditContext } from "./formula";
+import { parseFormulaLine, editableTerms, rollDie, termSlotInitial } from "lib/domains/session-log/formula";
+import { splitResultChoice } from "lib/domains/session-log/choice";
+import { ListSheetModal } from "./list-sheet-modal";
 import { dieEditKey, resultEditKey } from "lib/domains/session-log/prose-model";
 import type { SidebarItem, SidebarRow, RowIcon, SceneRowData, SidebarPill } from "lib/domains/session-log/prose-model";
 
@@ -33,14 +35,18 @@ export interface SidebarEditContext {
    *  (the feature example edits dice but not scenes). */
   sceneEdits?: Record<string, SceneEditValue>;
   onSceneChange?: (original: string, next: SceneEditValue) => void;
+  /** Swap one token on a source line (`[Characters@]` → `[Characters@ Bertha]`)
+   *  — powers the list picker and its dice. `nth` names WHICH occurrence of a
+   *  repeated line to edit. Omitted in read-only renders. */
+  onTokenChange?: (source: string, from: string, to: string, nth: number) => void;
 }
 
 /** True when a detail row carries a formula with at least one editable term. */
 export function hasEditableValue(rows: SidebarRow[]): boolean {
   return rows.some((row) => {
     if (!row.detail || !row.source) return false;
-    const formula = parseFormula(row.content);
-    return formula != null && editableTerms(formula).length > 0;
+    // Every formula on the line, so a party roll counts as editable as any other.
+    return (parseFormulaLine(row.content) ?? []).some((f) => editableTerms(f).length > 0);
   });
 }
 
@@ -57,15 +63,92 @@ function RowIconView({ icon }: { icon: RowIcon }) {
  * An entry's tags as a typographic "dateline" run: each tag is a muted
  * small-caps key (tinted by category) followed by its emphasized value.
  */
-function TagStrip({ tags }: { tags: SidebarPill[] }) {
+function TagStrip({ tags, edit }: { tags: SidebarPill[]; edit?: SidebarEditContext }) {
   return (
     <span className="lonelog-tag-strip">
-      {tags.map((tag, i) => (
-        <span key={i} className={`lonelog-tag kind-${tag.kind}`}>
-          <span className="lonelog-tag-key">{tag.name}</span>
-          {tag.value && <span className="lonelog-tag-val">{tag.value}</span>}
-        </span>
-      ))}
+      {tags.map((tag, i) => {
+        // A consult pill (`[Characters?]`) is PICKABLE: the reader can override
+        // the rolled entry, which is written back into the token as `?= entry`.
+        const pickable = tag.options && tag.options.length > 0 && tag.source && tag.token && edit?.onTokenChange;
+        return (
+          /* Three sections: NAME | DICE | VALUES. Each is present only when it
+             has something to say, so an add pill is name + values while a draw
+             is all three. */
+          <span key={i} className={`lonelog-tag kind-${tag.kind}`}>
+            <span className="lonelog-tag-name">
+              {tag.sheet ? (
+                // The list name opens the printed sheet — which rolls land
+                // where, and how a repeated entry occupies several slots.
+                <button
+                  type="button"
+                  className="lonelog-tag-key lonelog-tag-key--sheet"
+                  title={`Show the ${tag.name} sheet`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const app = (globalThis as unknown as { app?: unknown }).app;
+                    if (app) new ListSheetModal(app as never, tag.sheet!.decl, tag.sheet!.entries).open();
+                  }}
+                >
+                  {tag.name}
+                </button>
+              ) : (
+                <span className="lonelog-tag-key">{tag.name}</span>
+              )}
+            </span>
+
+            {tag.dice && tag.dice.length > 0 && (
+              <span className="lonelog-tag-dice">
+                {tag.dice.map((d, j) => {
+                  // Editing a roll rewrites the whole token, so every value is
+                  // sent together — the others keep what they had.
+                  const write = (raw: string) => {
+                    const next = tag.dice!.map((o, k) => (k === j ? (raw === "" ? undefined : Number(raw)) : o.value));
+                    // Positional: the log records WHAT was rolled, never which die.
+                    const spec = tag.dice!.map((_o, k) => `r${k + 1}=${next[k] ?? ""}`).join(" ");
+                    edit!.onTokenChange!(tag.source!, tag.token!, `[${tag.name}@ ${spec}]`, tag.sourceNth ?? 0);
+                  };
+                  const editable = tag.source && tag.token && edit?.onTokenChange;
+                  const shown = d.value != null ? String(d.value) : "";
+                  const role = d.label === "sec" ? "Section" : "Row";
+                  return (
+                    <DieChip
+                      key={`d${j}`}
+                      sides={d.sides}
+                      sidesLabel={String(d.sides)}
+                      label={d.label}
+                      value={shown}
+                      // Parenthesised, so appending "— click to reroll" does not read
+                      // as a sentence with two dashes in it.
+                      title={`${role} roll (d${d.sides})`}
+                      edit={editable ? { onChange: write, max: d.sides } : undefined}
+                      // The section and row dice reroll like any other: the draw is
+                      // two rolls, so each is thrown on its own rather than as a pair.
+                      onRoll={editable ? () => write(String(rollDie(d.sides))) : undefined}
+                    />
+                  );
+                })}
+              </span>
+            )}
+
+            {(tag.value || pickable) && (
+              <span className="lonelog-tag-values">
+                {pickable ? (
+                  // Same quiet inline control a follow-up choice uses: a label
+                  // that sizes to the selection, not a boxed <select>.
+                  <ChoiceSelect
+                    choice={{ options: tag.options!, selected: tag.value ?? "", raw: tag.token! }}
+                    onPick={(picked) =>
+                      edit!.onTokenChange!(tag.source!, tag.token!, `[${tag.name}@ ${picked}]`, tag.sourceNth ?? 0)
+                    }
+                  />
+                ) : (
+                  tag.value && <span className="lonelog-tag-val">{tag.value}</span>
+                )}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -131,8 +214,17 @@ function RowContent({
     return <SceneEditor scene={row.scene} value={value} onChange={edit.onSceneChange} />;
   }
   if (row.detail) {
-    const formula = parseFormula(row.content);
+    // A line can hold SEVERAL checks — a party roll, one per character. A single one
+    // keeps the path it always had, so nothing about an ordinary row changes.
+    const formulas = parseFormulaLine(row.content);
+    const formula = formulas?.length === 1 ? formulas[0] : null;
+    const party = formulas && formulas.length > 1 ? formulas : null;
     const source = row.source;
+    // A dieless line whose content is just a `[a/b/c - ]` token is a GM-picks
+    // step (`GMGenStep.choices`) — no formula, but it still renders a dropdown
+    // rather than literal text. Tested on the TOKEN, not on the element (a JSX
+    // element is always truthy, so it can't be used as a `??` fallback).
+    const hasChoice = !formula && !party && splitResultChoice(row.content).choice != null;
     // Dice/thresholds + result become inputs only when an edit context can
     // locate the source line; otherwise FormulaView renders static glyphs.
     const die: DieEditContext | undefined =
@@ -142,23 +234,69 @@ function RowContent({
             onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value),
             resultValue: formula?.result != null ? (edit.dieEdits[resultEditKey(source)] ?? formula.result) : undefined,
             onResultChange: (value) => edit.onResultChange(source, value),
+            // A sum's stored total is expression text, not a term — swap it directly.
+            onTokenSwap: edit.onTokenChange
+              ? (from, to) => edit.onTokenChange!(source, from, to, row.sourceNth ?? 0)
+              : undefined,
           }
         : undefined;
     return (
-      <span className="lonelog-row-detail">
+      <span className={`lonelog-row-detail${row.child ? " is-child" : ""}`}>
         <span className="lonelog-row-bullet" aria-hidden="true">
-          •
+          {row.child ? "+" : "•"}
         </span>
         {row.label && <span className="lonelog-row-label">{row.label}</span>}
-        {formula ? (
+        {party ? (
+          <span className="lonelog-party">
+            {party.map((f, i) => (
+              <FormulaView key={i} formula={f} edit={die} />
+            ))}
+          </span>
+        ) : formula ? (
           <FormulaView formula={formula} edit={die} onChoice={onChoice} />
+        ) : hasChoice ? (
+          <ChoiceOnlyView
+            text={row.content}
+            onChoice={onChoice}
+            onResultChange={source && edit ? (value) => edit.onResultChange(source, value) : undefined}
+          />
         ) : (
           <InlineMarkdown source={row.content} sourcePath={sourcePath} />
+        )}
+        {row.spawns && (
+          <span className="lonelog-row-spawns" aria-label="generates the following steps">
+            …
+          </span>
         )}
       </span>
     );
   }
-  return <InlineMarkdown source={row.content} sourcePath={sourcePath} />;
+  // A top-level roll row (`d: 3d8!=19`) carries a formula too, so it renders as
+  // dice rather than as text. Read-only: these rows have no source line to write
+  // an edit back to, unlike the indented working lines under a `gen:`.
+  const formulas = parseFormulaLine(row.content);
+  if (formulas) {
+    return (
+      <>
+        {row.label && <span className="lonelog-row-label">{row.label}</span>}
+        {formulas.length > 1 ? (
+          <span className="lonelog-party">
+            {formulas.map((f, i) => (
+              <FormulaView key={i} formula={f} />
+            ))}
+          </span>
+        ) : (
+          <FormulaView formula={formulas[0]} />
+        )}
+      </>
+    );
+  }
+  return (
+    <>
+      {row.label && <span className="lonelog-row-label">{row.label}</span>}
+      <InlineMarkdown source={row.content} sourcePath={sourcePath} />
+    </>
+  );
 }
 
 export interface SidebarEntryProps {
@@ -182,6 +320,11 @@ export interface SidebarEntryProps {
  */
 export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSelect, onChoice }: SidebarEntryProps) {
   const tags = item.rows.flatMap((row) => row.pills);
+  // A "pills-only" row (icon + pills, no content — e.g. a dial change) has its
+  // pills shown in the dateline strip; render its icon there and skip the empty
+  // body row, so the icon sits beside the pill instead of orphaned below it.
+  const isPillsOnly = (row: SidebarRow) => !row.scene && !row.detail && !row.content && row.pills.length > 0;
+  const headerIcon = item.rows.find(isPillsOnly)?.icon ?? null;
   // Entries that nest inputs (scene editor or editable dice) can't be a button;
   // they stay mouse-clickable. Read-only entries are keyboard-activatable buttons.
   const editableEntry = !!edit && (item.rows.some((row) => row.scene) || hasEditableValue(item.rows));
@@ -211,14 +354,14 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
         <tbody>
           {tags.length > 0 && (
             <tr>
-              <td className="lonelog-row-icon" />
+              <td className="lonelog-row-icon">{headerIcon && <RowIconView icon={headerIcon} />}</td>
               <td className="lonelog-tag-strip-cell">
-                <TagStrip tags={tags} />
+                <TagStrip tags={tags} edit={edit} />
               </td>
             </tr>
           )}
           {item.rows.map((row, ri) =>
-            row.detail ? (
+            isPillsOnly(row) ? null : row.detail ? (
               <tr key={ri}>
                 <td className="lonelog-row-detail-cell" colSpan={2}>
                   <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
