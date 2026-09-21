@@ -22,7 +22,6 @@ Random Events can occur when you ask a Fate Question or when you start a new Sce
 ```
 ````
 ## Generating Random Events
-Once a Random Event has been triggered you need to figure out what happens. There are two components to a Random Event: [[Event Focus]] and [[Event Meaning]]. Both of these components are interpreted through the lens of [[Context]]. Interpret those elements together to get your final result.
 ```rpg figure.mermaid
 align: right
 width: 40%
@@ -36,4 +35,27 @@ flowchart TD
 
   A --> B --> C --> D
   classDef step fill:#cfc6ad,stroke:#000,stroke-width:3px,font-weight:bold;
+```
+```rpg feature.gm
+id: random-event
+name: Random Event
+heading: none
+reads: ["@[[Characters]]", "@[[Threads]]"]
+generators:
+  - id: random-event
+    name: Random Event
+    emits:
+      - "@[[Event Focus]]#event-focus"
+      - "@[[Event Meaning]]#event-meaning"
+cards:
+  - name: Trigger a Random Event
+    stack: generator
+    emits:
+      - "@random-event"
+      - { event: { text: "{{event}}" } }
+---
+Once a Random Event has been triggered you need to figure out what happens. There are two components to a Random Event: [[Event Focus]] and [[Event Meaning]]. Both of these components are interpreted through the lens of [[Context]]. Interpret those elements together to get your final result.
+
+? A Random Event fires — what is it?
+gen: Random Event
 ```

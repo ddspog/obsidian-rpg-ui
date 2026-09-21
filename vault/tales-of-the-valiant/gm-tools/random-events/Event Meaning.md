@@ -32,7 +32,7 @@ _In our war example the Player knows the Focus of the Random Event (Current Cont
 
 _After considering the Context of the adventure and the Fate Question that generated the Event, the Player makes this interpretation: as the PC ducks behind a burnt-out car, she sees someone tacking a sign to the wall of a building (Attach). It's a propaganda poster (Lies); this must be a soldier from the Ministry of Information._
 ```
-# Meanings To Choose From
+## Meanings To Choose From
 Event Meaning Tables come in three varieties: Actions, Descriptions, and Elements.
 
 The Actions and Descriptions Meaning Tables each have a set of two d100 tables, while the numerous Elements Meaning Tables each have a single, specialized d100 table. You can find the Actions and Descriptions Meaning Tables, as well as the three most general Elements Meaning Tables, on the next few pages. For more specialized Elements Meaning Tables visit the "Scenes" chapter on page 84.
@@ -50,12 +50,35 @@ _While they're exploring Mythic triggers another Random Event, this one with a N
 ## Choosing The Right Meaning
 With multiple Meaning Tables to choose from, how do you know you're selecting the right one for your Random Event? It comes down to a matter of taste: every table gives useful results, but each of them gives slightly different results
 `@[[gm-tools/tables/general-meaning/]].tab()`
-# Rolling For Meaning
+### Rolling For Meaning
+```rpg feature.gm
+id: event-meaning
+name: Event Meaning
+heading: none
+generators:
+  - id: event-meaning
+    name: Event Meaning
+    steps:
+      - work: Event Meaning
+        choices: [Actions, Descriptions, Elements]
+steps:
+  - choice: Actions
+    tables: ["@[[Actions Meaning]]#action-01", "@[[Actions Meaning]]#action-02"]
+  - choice: Descriptions
+    tables: ["@[[Descriptions Meaning]]#description-01", "@[[Descriptions Meaning]]#description-02"]
+  - choice: Elements
+    tables: ["@[[Location Descriptors]]#locations", "@[[Character Descriptors]]#characters", "@[[Objects Descriptors]]#objects"]
+    pick: 2
+---
 Both the Actions and the Descriptions Meaning Tables are made up of two tables, each with 100 results. To determine the Event Meaning roll 1d100 on the first table and again on the second table. This will give you a word from each table to pair together.
+
+? What does this Random Event mean?
+gen: Event Meaning
 
 The Elements Meaning Tables are each a single d100 table; roll 1d100 twice on your chosen table to get a word pair.
 
 Whichever table you got them from, this pair of words will help inspire your interpretation of the Random Event.
+```
 ```rpg rule.content
 id: example-meaning-roll
 ---

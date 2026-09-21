@@ -108,7 +108,7 @@ _"We make our way through the woods. Do we encounter anything today?"_
 If you find yourself conflicted, follow your interests, consider the Context of the adventure, and listen to your gut. Does it feel right to pose this detail as a Fate Question, or are you certain enough to take it for granted?
 
 As your adventure progresses and develops more Context Fate Questions and their answers will get easier and easier to come up with. Much of the narrative's richness will come from details that were fleshed out by prior Fate Questions. Establishing that a certain NPC is unfriendly will shape your later expectations about that Character and might impact the Odds of future Fate Questions concerning their actions. In this way, a logical chain of events will build upon itself, shaping the structure of the adventure and spinning it into a narrative just like a Game Master would.
-# Give me More!
+## Give me More!
 In order to keep things moving in your adventure a good rule of thumb is to try and limit yourself to no more than two Fate Questions for any one detail; that should give you enough information to reach a reasonable expectation for just about anything. If you can manage with only one Question so much the better.
 ```rpg rule.content
 id: example-graveyard

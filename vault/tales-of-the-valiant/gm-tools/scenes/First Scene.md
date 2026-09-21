@@ -81,15 +81,15 @@ Once you have your 4Ws combine them into the most interesting interpretation you
 *The Player is happy with this interpretation and decides to add these ideas to their Lists before beginning the adventure. To the Threads List they add "Help the undead return to the Underworld"; to the Characters List they add "Community of undead" and "Other mages at the festival". The Player is now ready to begin their adventure with a nicely detailed First Scene.*
 
 ```rpg feature.gm
+id: first-scene
 name: First Scene
 stack: scene
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 scene:
   opens: "S{{n}} {{title}}"
-example:
-  n: "01"
-  title: "The monster-haunted village: Weyland rides in to end its reign of terror."
 ---
 Brainstorm the opening with one of the four strategies above, then open `S01`
 and seed your [[Threads List]] and Characters List from what you generated.
+
+=> S01 The monster-haunted village: Weyland rides in to end its reign of terror.
 ```
