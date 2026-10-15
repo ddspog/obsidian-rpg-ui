@@ -1,0 +1,155 @@
+/* Plugin settings tab — tabs along the top, collapsible sections in each.
+ * Sections are <details>; nested ones (a folder style, a system mapping,
+ * a card frame kind) are drawn as bordered cards. */
+
+.rpg-settings-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2, 8px);
+  padding: var(--size-4-2, 8px) 0;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1, 4px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-settings-tab {
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  border-radius: var(--radius-m, 6px);
+  font-weight: var(--font-medium, 500);
+}
+
+.rpg-settings-tab:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-settings-tab.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-settings-bar-actions {
+  display: flex;
+  margin-left: auto;
+}
+
+.rpg-settings-panel {
+  padding-top: var(--size-4-2, 8px);
+}
+
+/* Sections */
+
+.rpg-settings-section {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-settings-section-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2, 8px);
+  padding: var(--size-4-3, 12px) 0;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.rpg-settings-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.rpg-settings-section-summary::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 0.45em;
+  height: 0.45em;
+  margin: 0 0.2em;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+}
+
+.rpg-settings-section[open] > .rpg-settings-section-summary::before {
+  transform: rotate(45deg);
+}
+
+.rpg-settings-section-title {
+  font-size: var(--font-ui-large, 1.1em);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+
+.rpg-settings-section-note {
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller, 0.85em);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-settings-section-body {
+  padding-bottom: var(--size-4-3, 12px);
+}
+
+.rpg-settings-section-body > .setting-item-description:first-child {
+  margin-top: 0;
+}
+
+/* Nested sections: cards. Overrides the old block padding of the
+ * folder-style and system-mapping entries, now the <details> itself. */
+
+.rpg-settings-section .rpg-settings-section {
+  margin-bottom: var(--size-4-2, 8px);
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  background: var(--background-secondary);
+}
+
+.rpg-settings-section .rpg-settings-section > .rpg-settings-section-summary {
+  padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+}
+
+.rpg-settings-section .rpg-settings-section > .rpg-settings-section-summary .rpg-settings-section-title {
+  font-size: var(--font-ui-medium, 1em);
+}
+
+.rpg-settings-section .rpg-settings-section > .rpg-settings-section-body {
+  padding: 0 var(--size-4-3, 12px) var(--size-4-2, 8px);
+}
+
+/* Colours: a grid of compact pickers per group. */
+
+.rpg-settings-subheading {
+  margin: var(--size-4-3, 12px) 0 var(--size-4-1, 4px);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small, 0.9em);
+  font-weight: var(--font-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rpg-settings-color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0 var(--size-4-4, 16px);
+}
+
+.rpg-settings-color-grid > .setting-item {
+  padding: var(--size-4-1, 4px) 0;
+  border-top: none;
+}

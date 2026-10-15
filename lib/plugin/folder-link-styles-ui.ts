@@ -15,6 +15,7 @@
  */
 
 import { App, Setting } from "obsidian";
+import { createSection } from "lib/plugin/settings-sections";
 import { FolderSuggest } from "lib/utils/folder-suggest";
 import { generateFolderLinkCss, OBSIDIAN_COLOR_PRESETS, findPresetForValue } from "lib/domains/folder-link-styles";
 import type { FolderLinkStyle, DndUIToolkitSettings } from "settings";
@@ -73,7 +74,17 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
 
   for (let i = 0; i < ctx.settings.folderLinkStyles.length; i++) {
     const entry = ctx.settings.folderLinkStyles[i];
-    const block = containerEl.createDiv({ cls: "rpg-folder-link-block" });
+    // Collapsed to a summary line (label + folders); a new, empty entry opens.
+    const section = createSection(containerEl, `folder-link:${entry.id}`, "", {
+      open: !entry.label && entry.folderPaths.length === 0,
+      cls: "rpg-folder-link-block",
+    });
+    const block = section.body;
+    const refreshSummary = (): void => {
+      section.title.setText(entry.label || `Folder style ${i + 1}`);
+      section.note.setText(entry.folderPaths.join(", ") || "no folders");
+    };
+    refreshSummary();
 
     // 1) Header row: label + delete
     const headerSetting = new Setting(block).setName(`Folder style ${i + 1}`);
@@ -86,6 +97,7 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
           entry.label = value || undefined;
           await ctx.onSave();
           refreshSwatch();
+          refreshSummary();
         });
       return text;
     });
@@ -156,6 +168,7 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
     const chipsContainer = foldersSetting.controlEl.createDiv({ cls: "rpg-folder-list" });
 
     const renderFolderList = (): void => {
+      refreshSummary();
       chipsContainer.empty();
       entry.folderPaths.forEach((path) => {
         const chip = chipsContainer.createDiv({ cls: "rpg-folder-chip" });
