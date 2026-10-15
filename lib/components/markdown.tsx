@@ -13,6 +13,7 @@ import * as React from "react";
 import { App, Component, MarkdownRenderer } from "obsidian";
 import { substituteExpressions, type EvalContext } from "../domains/tables/expressions";
 import { processUnrenderedRpgFences } from "../plugin/process-rpg-fences";
+import { wrapBareTables } from "lib/utils/wrap-tables";
 import { processCallsInContainer } from "../plugin/rule-call-processor";
 
 export interface MarkdownProps {
@@ -80,6 +81,7 @@ export function Markdown({ source, sourcePath, className, context }: MarkdownPro
     Promise.resolve(promise)
       .then(() => {
         if (app && container.isConnected) {
+          wrapBareTables(container);
           processUnrenderedRpgFences(container, app as App, effectiveSourcePath, component);
           processCallsInContainer(container, effectiveSourcePath, component);
         }
