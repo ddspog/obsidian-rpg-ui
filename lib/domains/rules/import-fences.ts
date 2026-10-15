@@ -21,7 +21,7 @@
  * never opens as a code fence either.
  */
 export function isProcessedFence(fenceType: string): boolean {
-  return /^(table|feature\.gm|log|figure)\b/.test(fenceType);
+  return /^(table|feature\.gm|log|figure|map)\b/.test(fenceType);
 }
 
 /**

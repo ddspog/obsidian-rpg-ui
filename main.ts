@@ -34,6 +34,7 @@ import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild, installListUnfoldObserver } from "lib/domains/lists/render-list-group";
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
+import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
 import { setOfficialSourcesResolver, homebrewBySetting } from "lib/domains/lists/official-sources";
 import {
   parseRuleContent,
@@ -410,6 +411,18 @@ export default class DndUIToolkitPlugin extends Plugin {
           } catch (err) {
             console.error("rpg figure.* render failed", err);
             el.innerHTML = '<div class="notice">Error rendering rpg figure</div>';
+          }
+          return;
+        }
+
+        // `rpg map` — a battle map: terrain on a square grid with chessboard
+        // labels. A combat in a session log binds it with `[COMBAT: [[Map]]]`.
+        if (meta === "map" || meta.startsWith("map.")) {
+          try {
+            ctx.addChild(new MapRenderChild(el, this.app, source, ctx.sourcePath));
+          } catch (err) {
+            console.error("rpg map render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg map</div>';
           }
           return;
         }

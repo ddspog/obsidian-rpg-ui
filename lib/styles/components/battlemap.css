@@ -1,0 +1,634 @@
+/* ── Battle maps (rpg map, and the session log's map pane) ──
+ * Terrain under a fine grid, chessboard labels in the gutter, tokens as discs:
+ * PCs in the accent, foes in ember red, the fallen greyed. */
+
+.rpg-map-block {
+  margin: 0.75rem 0;
+}
+
+.rpg-map-block figcaption {
+  margin-top: 0.3rem;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.rpg-battlemap {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 48rem;
+  font-family: var(--font-interface);
+}
+
+.rpg-battlemap-terrain rect.is-blocking {
+  filter: brightness(0.75);
+}
+
+.rpg-battlemap-grid line {
+  stroke: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.14));
+  stroke-width: 0.6;
+}
+
+/* Over a picture: its own grid shows through; ours is only a faint guide. */
+.rpg-battlemap.has-image .rpg-battlemap-grid line {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 0.5;
+}
+
+.rpg-battlemap.has-image .rpg-battlemap-terrain rect:hover {
+  fill: rgba(255, 255, 255, 0.12);
+}
+
+/* Labels keep their size on screen as a view zooms (the group's size is set
+   inline, scaled to the view); the strip behind them only shows when zoomed. */
+.rpg-battlemap-coords {
+  font-size: 7px;
+}
+
+.rpg-battlemap-gutter {
+  fill: var(--background-primary);
+  opacity: 0.88;
+}
+
+.rpg-battlemap-coords text {
+  fill: var(--text-faint);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.rpg-battlemap-difficult {
+  stroke: rgba(0, 0, 0, 0.25);
+  stroke-width: 1;
+}
+
+.rpg-battlemap-cover {
+  fill: rgba(255, 255, 255, 0.7);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.6;
+}
+
+.rpg-battlemap-label {
+  font-size: 8px;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 2px;
+}
+
+/* Tokens */
+.rpg-battlemap-token-disc {
+  stroke: #fff;
+  stroke-width: 1.2;
+}
+
+.rpg-battlemap-token.is-pc .rpg-battlemap-token-disc {
+  fill: var(--interactive-accent);
+}
+
+.rpg-battlemap-token.is-foe .rpg-battlemap-token-disc {
+  fill: light-dark(#c0524f, #b04a47);
+}
+
+.rpg-battlemap-token.is-npc .rpg-battlemap-token-disc {
+  fill: light-dark(#8a7038, #a09880);
+}
+
+.rpg-battlemap-token-text {
+  font-size: 8px;
+  font-weight: 700;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* With an emoji: the emoji large, the initials small below it. */
+.rpg-battlemap-token-icon {
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.rpg-battlemap-token-text.is-small {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.rpg-battlemap-token-hp {
+  fill: none;
+  stroke: light-dark(#3a8a4a, #6cc07a);
+  stroke-width: 1.6;
+}
+
+.rpg-battlemap-token-condition {
+  fill: light-dark(#d9a42b, #e6c34d);
+  stroke: #fff;
+  stroke-width: 0.6;
+}
+
+.rpg-battlemap-token.is-down {
+  opacity: 0.35;
+}
+
+.rpg-battlemap-token.is-down .rpg-battlemap-token-disc {
+  fill: var(--text-faint);
+}
+
+.rpg-battlemap-token.is-active .rpg-battlemap-token-disc {
+  stroke: light-dark(#d9a42b, #e6c34d);
+  stroke-width: 2.4;
+}
+
+/* A turn: the path moved, the line of an attack */
+.rpg-battlemap-arrow {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.rpg-battlemap-arrow.is-move {
+  stroke: light-dark(#2d5f9a, #7fb0e6);
+  stroke-dasharray: 3 2;
+}
+
+.rpg-battlemap-arrow.is-attack {
+  stroke: light-dark(#c0524f, #e57373);
+}
+
+.rpg-battlemap-arrowhead.is-move {
+  fill: light-dark(#2d5f9a, #7fb0e6);
+}
+
+/* A move after the action: another colour, finer dots, a hollow head — the
+   way out, not the way in. */
+.rpg-battlemap-arrow.is-after {
+  stroke: light-dark(#2f8a6b, #6fd1aa);
+  stroke-dasharray: 1 2.2;
+  stroke-width: 1.8;
+}
+
+.rpg-battlemap-arrowhead.is-after {
+  fill: light-dark(#f4f1ea, #1e1e1e);
+  stroke: light-dark(#2f8a6b, #6fd1aa);
+  stroke-width: 1.4;
+}
+
+.rpg-battlemap-arrowhead.is-attack {
+  fill: light-dark(#c0524f, #e57373);
+}
+
+/* How an attack went: a hit (solid, its damage at the target) or a miss
+   (grey, dashed, said so) — and a creature the fight leaves at 0 HP, KO. */
+.rpg-battlemap-arrow.is-attack.is-hit {
+  stroke-width: 2;
+}
+
+.rpg-battlemap-arrow.is-attack.is-miss {
+  stroke: light-dark(#7d7a74, #a8a49c);
+  stroke-dasharray: 2.5 2;
+}
+
+.rpg-battlemap-arrowhead.is-miss {
+  fill: light-dark(#7d7a74, #a8a49c);
+}
+
+.rpg-battlemap-arrow-note {
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.rpg-battlemap-arrow-note.is-hit {
+  fill: #ff8a80;
+}
+
+.rpg-battlemap-arrow-note.is-miss {
+  fill: #e8e4dc;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.rpg-battlemap-token-ko rect {
+  fill: light-dark(#b3261e, #d84a3e);
+  stroke: #fff;
+  stroke-width: 0.8;
+}
+
+.rpg-battlemap-token-ko text {
+  fill: #fff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* A KO'd token greys like the rest of the downed — all but its badge. */
+.rpg-battlemap-token.is-down.is-ko {
+  opacity: 1;
+}
+
+.rpg-battlemap-token.is-ko > :not(.rpg-battlemap-token-ko) {
+  opacity: 0.4;
+}
+
+/* ── The map in the session log ──
+ * Log open: the pane heads the fight's entries in the Log sidebar, sticking
+ * under the Log heading while they scroll past and letting go where the fight
+ * ends; it closes in on each turn's action.
+ * Log closed: the map sits behind the prose (the backdrop below). */
+
+.lonelog-sidebar-section-head {
+  position: sticky;
+  top: var(--lonelog-sidebar-head-h, 1.6rem);
+  z-index: 2;
+  background: var(--background-primary);
+}
+
+/* The fight's entries hang from their map: a rule down the side, to the end. */
+.lonelog-sidebar-section {
+  border-left: 2px solid var(--background-modifier-border);
+  margin-left: -0.5rem;
+  padding-left: calc(0.5rem - 2px);
+  margin-bottom: 0.5rem;
+}
+
+/* The map heads the fight's entries looking like one of them: flat, a hairline
+   below, the entries' type scale, their muted icon column (a map) and their
+   small-caps key ("MAP", as "MOVE") — the map and the replay buttons sitting
+   in the content column, buttons on the right. Wide (16:9) so the entries
+   scrolling under it keep most of the room; the turns' dots stay out — those
+   entries are the timeline here. */
+.lonelog-battle-pane {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon head head"
+    ". map controls";
+  align-items: start;
+  padding: 0.4rem 0.1rem 0.45rem;
+  font-size: 0.72em;
+  line-height: 1.45;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.lonelog-battle-icon {
+  grid-area: icon;
+  /* The entries' icon column, to the pixel: their content starts where ours does. */
+  width: 1.25em;
+  box-sizing: content-box;
+  padding: 0 0.35rem 0 0.4rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.lonelog-battle-icon svg {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.15em;
+  opacity: 0.7;
+}
+
+.lonelog-battle-pane .lonelog-battle-head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3em;
+  margin-bottom: 0.3rem;
+  font-size: inherit;
+  min-width: 0;
+}
+
+.lonelog-battle-key {
+  font-size: 0.86em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.lonelog-battle-pane .lonelog-battle-title {
+  font-weight: normal;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lonelog-battle-pane .lonelog-battle-where {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--text-faint);
+}
+
+.lonelog-battle-pane .rpg-battlemap {
+  grid-area: map;
+  width: 100%;
+  max-width: 100%;
+  max-height: 30vh;
+  margin: 0;
+  clip-path: inset(0 round 4px);
+}
+
+.lonelog-prose-layout.is-stacked .lonelog-battle-pane .rpg-battlemap {
+  width: auto;
+  max-height: 10rem;
+}
+
+/* Setup in the pane's own slots: who's picked (or what to do) on the header's
+   right — cut short, never pushing the title out — and their actions in the
+   button column, as quiet as the replay buttons. */
+.lonelog-battle-pane .lonelog-battle-where.is-setup {
+  min-width: 0;
+  max-width: 62%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+
+.lonelog-battle-pane .lonelog-battle-head .lonelog-battle-title {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.lonelog-battle-setup-emoji {
+  margin-left: auto;
+}
+
+.lonelog-battle-setup-emoji input {
+  width: 2.8em;
+  height: 1.35rem;
+  padding: 0 0.2rem;
+  font-size: inherit;
+  text-align: center;
+}
+
+/* Under the replay buttons (roll everyone missing), set apart by a hairline. */
+.lonelog-battle-controls + .lonelog-battle-controls.is-setup {
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Tokens to pick, the one picked, and squares to place it on. */
+.rpg-battlemap-token.is-pickable {
+  cursor: pointer;
+}
+
+.rpg-battlemap-token.is-pickable:focus-visible {
+  outline: none;
+}
+
+.rpg-battlemap-token.is-pickable:focus-visible .rpg-battlemap-token-disc,
+.rpg-battlemap-token.is-selected .rpg-battlemap-token-disc {
+  stroke: var(--text-accent);
+  stroke-width: 2.6;
+}
+
+.rpg-battlemap.is-placing .rpg-battlemap-token,
+.rpg-battlemap.is-placing .rpg-battlemap-arrows {
+  pointer-events: none;
+}
+
+.rpg-battlemap.is-placing .rpg-battlemap-terrain rect {
+  cursor: crosshair;
+}
+
+.rpg-battlemap.is-placing .rpg-battlemap-terrain rect:hover {
+  fill: rgba(255, 255, 255, 0.28);
+}
+
+.lonelog-battle-pane .lonelog-battle-timeline {
+  grid-area: controls;
+  margin: 0 0 0 0.3rem;
+}
+
+.lonelog-battle-pane .lonelog-battle-rounds {
+  display: none;
+}
+
+/* Replay buttons as the Log's quiet controls: no chrome until hovered. */
+.lonelog-battle-pane .lonelog-battle-controls {
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.lonelog-battle-pane .lonelog-battle-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.45rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.lonelog-battle-pane .lonelog-battle-controls button:not(:disabled):hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.lonelog-battle-pane .lonelog-battle-controls button.is-play:not(:disabled) {
+  color: var(--text-accent);
+}
+
+.lonelog-battle-pane .lonelog-battle-controls button:disabled {
+  opacity: 0.3;
+}
+
+.lonelog-battle-pane.is-missing {
+  display: block;
+}
+
+/* ── Backdrop: the map behind the prose, while the fight is read ──
+ * A sticky layer of no height, so it never pushes the text: the map hangs from
+ * it, faded under the words, and only while the reader is inside the fight.
+ * The chip keeps the round and the controls in reach; hovering it brings the
+ * map up full, to look without leaving the page. */
+
+.lonelog-prose-main.has-battle {
+  position: relative;
+}
+
+.lonelog-prose-main.has-battle > .lonelog-prose-body {
+  position: relative;
+  z-index: 1;
+}
+
+.lonelog-battle-backdrop {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.lonelog-battle-backdrop-map {
+  position: absolute;
+  top: 2.5rem;
+  left: 50%;
+  width: min(100%, 36rem);
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.lonelog-battle-backdrop.is-in-fight .lonelog-battle-backdrop-map {
+  opacity: 0.16;
+}
+
+/* Peek: hovering the chip lifts the map above the text, full strength. */
+.lonelog-battle-backdrop:has(.lonelog-battle-chip:hover) .lonelog-battle-backdrop-map {
+  opacity: 0.97;
+  z-index: 3;
+}
+
+.lonelog-battle-chip {
+  position: absolute;
+  top: 0.4rem;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-size: var(--font-ui-smaller);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lonelog-battle-backdrop.is-in-fight .lonelog-battle-chip {
+  opacity: 1;
+}
+
+.lonelog-battle-backdrop:not(.is-in-fight) .lonelog-battle-chip {
+  pointer-events: none;
+}
+
+.lonelog-battle-chip .lonelog-battle-controls button {
+  padding: 0 0.35rem;
+}
+
+.lonelog-battle-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: var(--font-ui-smaller);
+}
+
+.lonelog-battle-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.lonelog-battle-where {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lonelog-battle-missing {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* Timeline: replay controls, then each round with a tick per turn */
+.lonelog-battle-timeline {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lonelog-battle-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.lonelog-battle-controls button {
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.lonelog-battle-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.lonelog-battle-rounds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+}
+
+.lonelog-battle-rounds li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.lonelog-battle-round {
+  font-size: var(--font-smallest);
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.lonelog-battle-ticks {
+  display: flex;
+  gap: 2px;
+}
+
+.lonelog-battle-tick {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--text-faint);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.lonelog-battle-tick.is-quiet {
+  opacity: 0.45;
+}
+
+.lonelog-battle-tick.is-current {
+  background: var(--interactive-accent);
+  transform: scale(1.35);
+}
+
+.lonelog-battle-tick:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}

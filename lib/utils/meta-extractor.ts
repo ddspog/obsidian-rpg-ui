@@ -100,6 +100,16 @@ function looksLikeMermaidFigure(source: string): boolean {
  * top-level keys. This is the reliable fallback used in reading view where
  * getSectionInfo returns null and the element contains no code HTML.
  */
+/** Lonelog lines: an action (`@(Talon)`), a question (`?`), a roll (`d:`),
+ *  an outcome (`=>`), a generator (`gen:`), a tag (`[COMBAT]`), a scene (`S01`). */
+const LONELOG_LINE = /^\s*(?:@\(|\?\s|d(?:\([^)]*\))?:|=>|->|gen:|tbl:|\[|S\d|T\d|R\(|PC\()/;
+
+/** Whether a body reads as Lonelog — its first written line one of its kinds. */
+function looksLikeLonelog(lines: string[]): boolean {
+  const first = lines.find((l) => l.trim());
+  return !!first && LONELOG_LINE.test(first);
+}
+
 export function detectMetaFromSource(source: string): string | null {
   // `rpg figure.mermaid` — checked first: a leading mermaid diagram
   // declaration is unambiguous and appears in no other block type's body.
@@ -129,6 +139,25 @@ export function detectMetaFromSource(source: string): string | null {
         headerKeys.add(m[1]);
         headerValues.set(m[1], m[2].trim());
       }
+    }
+    // `rpg log` with its head (`maps:`, `scene:`, `gm:`…) — only a log's own
+    // keys above the separator, and Lonelog below it. Must precede feature.gm:
+    // `scene:` is a GM head key too, but a GM block's head always names it.
+    const LOG_HEAD_KEYS = new Set(["state_key", "scene", "entities", "gm", "maps"]);
+    if (
+      headerKeys.size > 0 &&
+      [...headerKeys].every((k) => LOG_HEAD_KEYS.has(k)) &&
+      looksLikeLonelog(sourceLines.slice(sepLineIdx + 1))
+    ) {
+      return "log";
+    }
+    // `rpg map` — a battle map: its head names a `grid:` (square/hex) or
+    // carries a `legend:` for the drawn cells below the separator.
+    if (
+      /^(square|hex)$/i.test(headerValues.get("grid") ?? "") ||
+      (headerKeys.has("legend") && !headerKeys.has("name"))
+    ) {
+      return "map";
     }
     // stat.* entity fences (head before `---`, markdown/nested-fence body):
     // classify by key-set since the info string ("rpg stat.category") is gone.
