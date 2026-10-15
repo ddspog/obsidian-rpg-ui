@@ -15,7 +15,9 @@ import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/vie
 import { COMPILATION_VIEW_TYPE, compilationFactory, compilationOptions } from "lib/views/CompilationBasesView";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
-import { DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
+import { DEFAULT_IMAGE_STUDIO, DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
+import { ImageStudioModal, setImageStudioSettings } from "lib/plugin/image-studio-modal";
+import { setCardFrameSource } from "lib/services/card-frame-config";
 import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
 import { extractMeta, detectMetaFromSource } from "lib/utils/meta-extractor";
@@ -799,6 +801,22 @@ export default class DndUIToolkitPlugin extends Plugin {
     // hasn't picked the change up yet. Bound to the Command Palette as
     // "RPG UI: Reload systems & re-render" so it can be triggered without
     // restarting Obsidian.
+    // The image studio's settings, for views that open it (the hotbar's tiles).
+    setImageStudioSettings(() => this.settings.imageStudio);
+    // The card frame framed pictures are drawn in: CSS, or the generated one.
+    setCardFrameSource(() => this.settings.cardFrames);
+    // The image studio, on the note that's open.
+    this.addCommand({
+      id: "rpg-ui-image-studio",
+      name: "Open image studio",
+      callback: () =>
+        new ImageStudioModal(
+          this.app,
+          this.settings.imageStudio,
+          this.app.workspace.getActiveFile() ?? undefined
+        ).open(),
+    });
+
     this.addCommand({
       id: "rpg-ui-reload",
       name: "Reload systems & re-render active views",
@@ -929,6 +947,8 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.settings.systemMappings = this.normalizeSystemMappings(this.settings.systemMappings);
     this.settings.folderLinkStyles = this.normalizeFolderLinkStyles(this.settings.folderLinkStyles);
+    // The image studio's settings, any left out filled from the defaults.
+    this.settings.imageStudio = { ...DEFAULT_IMAGE_STUDIO, ...(this.settings.imageStudio ?? {}) };
   }
 
   async saveSettings() {

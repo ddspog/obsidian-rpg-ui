@@ -1,3 +1,5 @@
+import { CardFrame } from "lib/components/card-frame/CardFrame";
+import { frameSpec } from "lib/services/card-frame-config";
 /**
  * `<SpellCard>` — the React rendering of a `rpg spell` fence body.
  *
@@ -99,6 +101,10 @@ export interface SpellBody {
   image?: string;
   /** Optional override for the auto-derived title. */
   name?: string;
+  /** The picture is the art alone: draw it in the card frame (the studio writes this); a frame's name (`item`) picks another. */
+  framed?: boolean | string;
+  /** `false`, or `none`: no name on the frame; `band` or `plaque` say where. */
+  "frame-name"?: boolean | string;
 }
 
 export interface SpellCardProps {
@@ -160,6 +166,7 @@ export function SpellCard({ body, sourcePath, title }: SpellCardProps): React.Re
 
   const text = typeof body.text === "string" ? body.text : "";
   const image = typeof body.image === "string" ? body.image : "";
+  const frame = frameSpec(body.framed, body["frame-name"], "spell");
 
   return (
     <article className="rpg-spell-card">
@@ -192,9 +199,22 @@ export function SpellCard({ body, sourcePath, title }: SpellCardProps): React.Re
         ) : null}
 
         {image.trim() ? (
-          <figure className="rpg-spell-figure">
-            <Markdown source={image} sourcePath={sourcePath} />
-          </figure>
+          frame ? (
+            // The art alone, drawn in the card frame with the spell's name on its plaque.
+            <div className="rpg-spell-figure is-framed">
+              <CardFrame
+                kind={frame.kind}
+                {...(frame.name ? { name: frame.name } : {})}
+                title={title ?? body.name ?? sourcePath.split("/").pop()?.replace(/\.md$/, "")}
+              >
+                <Markdown source={image} sourcePath={sourcePath} />
+              </CardFrame>
+            </div>
+          ) : (
+            <figure className="rpg-spell-figure">
+              <Markdown source={image} sourcePath={sourcePath} />
+            </figure>
+          )
         ) : null}
       </div>
     </article>

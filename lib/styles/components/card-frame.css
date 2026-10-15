@@ -1,0 +1,152 @@
+/* The card frame: gold filigree on deep violet, a name plaque — drawn here,
+   so the art inside can be the picture alone. */
+
+figure.rpg-card-frame {
+  --frame-gold-light: #f6dd92;
+  --frame-gold: #a67c1d;
+  --frame-gold-dark: #6f4f12;
+  --frame-violet: #3b1650;
+  --frame-plaque: #14183a;
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0.16rem;
+  border-radius: 0.45rem;
+  background: linear-gradient(
+    135deg,
+    var(--frame-gold-light),
+    var(--frame-gold) 35%,
+    var(--frame-gold-light) 55%,
+    var(--frame-gold-dark)
+  );
+  box-shadow: 0 0.2rem 0.7rem rgba(0, 0, 0, 0.4);
+}
+
+.rpg-card-frame-inner {
+  padding: 0.1rem;
+  border-radius: 0.3rem;
+  background: var(--frame-violet);
+  box-shadow: inset 0 0 0 1px rgba(246, 221, 146, 0.45);
+}
+
+.rpg-card-frame-art {
+  overflow: hidden;
+  border-radius: 0.22rem;
+  line-height: 0;
+}
+
+.rpg-card-frame-art img,
+.rpg-card-frame-window img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+figcaption.rpg-card-frame-plaque {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 50%;
+  max-width: 85%;
+  padding: 0 0.6rem;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border: 1px solid var(--frame-gold);
+  border-radius: 999px;
+  background: var(--frame-plaque);
+  box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.6);
+  font-family: var(--font-text);
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--frame-gold-light);
+}
+
+/* A generated frame: the art in its window, the frame's picture over it. */
+figure.rpg-card-frame.is-image {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.rpg-card-frame-window {
+  position: absolute;
+  overflow: hidden;
+}
+
+img.rpg-card-frame-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Embedded pictures (rendered markdown) fill the art. */
+.rpg-card-frame-art .internal-embed,
+.rpg-card-frame-art .image-embed,
+.rpg-card-frame-window .internal-embed {
+  display: block;
+  width: 100%;
+}
+
+.rpg-spell-figure.is-framed {
+  max-width: 28rem;
+  margin: 0.8rem auto;
+}
+
+/* The slim frame for a small card (the roster's portraits). */
+figure.rpg-card-frame.is-mini {
+  width: 100%;
+  height: 100%;
+  padding: 0.12rem;
+  border-radius: 0.4rem;
+  box-shadow: none;
+}
+
+figure.rpg-card-frame.is-mini .rpg-card-frame-inner {
+  height: 100%;
+  padding: 0.07rem;
+  border-radius: 0.3rem;
+}
+
+figure.rpg-card-frame.is-mini .rpg-card-frame-art {
+  height: 100%;
+  border-radius: 0.22rem;
+}
+
+/* On a generated frame: just the name, centred in the frame's bottom band. */
+figcaption.rpg-card-frame-plaque.is-on-frame {
+  transform: translate(-50%, 50%);
+  border: none;
+  background: none;
+  box-shadow: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* The settings' preview: stand-in art. */
+.rpg-card-frame-preview {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.rpg-card-frame-sample {
+  width: 100%;
+  height: 100%;
+  min-height: 4rem;
+  background: radial-gradient(circle at 35% 30%, #d9b45a, #7a3fa0 55%, #1d1233);
+}
+
+/* The art fills its frame whatever holds it. */
+.rpg-card-frame-art > figure,
+.rpg-card-frame-window > figure {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+figure.rpg-card-frame.is-mini .rpg-card-frame-art {
+  aspect-ratio: auto !important;
+}
