@@ -47,7 +47,7 @@ export function declKey(t: DialOpTag): string {
 
 /** The RUNNING-value key for an op: session → abbr; PC → `Character/Resource`. */
 export function runKey(t: DialOpTag): string {
-  return t.pc && t.name ? `${t.pc}/${t.name}` : t.abbr ?? "";
+  return t.pc && t.name ? `${t.pc}/${t.name}` : (t.abbr ?? "");
 }
 
 /**

@@ -24,7 +24,7 @@
   font-weight: 700;
   padding: 6px 10px;
   border-radius: 6px;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
 }
 .rpg-stat__save {
   position: relative;

@@ -11,7 +11,7 @@ span[aria-details="Link Pill"] {
   color: var(--color-yellow, #e0ac00);
   font-size: 0.75rem;
   font-family: var(--inline-title-font, "SF Compact Display", "SF Pro Display", system-ui, sans-serif);
-  
+
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: -0.015em;

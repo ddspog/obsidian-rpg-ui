@@ -21,7 +21,9 @@ dd[aria-label="Dice Tray"] > button {
   font-size: 0.7em;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s, opacity 0.15s;
+  transition:
+    background-color 0.15s,
+    opacity 0.15s;
   filter: drop-shadow(0 0 1.5px rgba(90, 32, 32, 0.9));
   /* Default: square (d6) */
   clip-path: polygon(5% 5%, 95% 5%, 95% 95%, 5% 95%);

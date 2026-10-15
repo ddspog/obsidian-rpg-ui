@@ -1,8 +1,7 @@
 /* ── Item card (element / magic / container / personal share) ─────────────── */
 
 .rpg-item-card {
-  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino,
-      "Book Antiqua", Georgia, serif);
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   color: var(--text-normal);
   padding: 0.75rem 1rem;
   margin: 0.5rem 0;
@@ -111,8 +110,7 @@
 /* ── Container card (sectioned inventory chrome on a stash page) ─────────── */
 
 .rpg-item-container-card {
-  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino,
-      "Book Antiqua", Georgia, serif);
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   color: var(--text-normal);
   padding: 0.75rem 1rem;
   margin: 0.5rem 0;

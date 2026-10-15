@@ -11,10 +11,7 @@ const monster: EntityBlock<StatMonsterData, StatEntity> = (props) => {
   // Creature notes keep their statblock data as flat frontmatter keys, so
   // `self` is the raw frontmatter (merged with any fence YAML) — map it into
   // the structured shape the card renders.
-  const data = React.useMemo(
-    () => mapMonster(self as unknown as Record<string, unknown>),
-    [self]
-  );
+  const data = React.useMemo(() => mapMonster(self as unknown as Record<string, unknown>), [self]);
   const [resolved, setResolved] = React.useState<ResolvedStatFeature[]>([]);
 
   const app = (
@@ -28,7 +25,10 @@ const monster: EntityBlock<StatMonsterData, StatEntity> = (props) => {
   // file is the host note, so prefer the supplied sourcePath over it.
   const filePath = propSourcePath || activeFile?.path || "";
   const fileBasename = filePath
-    ? filePath.split("/").pop()?.replace(/\.[^./]+$/, "")
+    ? filePath
+        .split("/")
+        .pop()
+        ?.replace(/\.[^./]+$/, "")
     : undefined;
   const name = data.name || fileBasename || activeFile?.basename || "";
 
@@ -45,11 +45,9 @@ const monster: EntityBlock<StatMonsterData, StatEntity> = (props) => {
       abilities: data.abilities,
       stats: data.stats,
     };
-    resolveStatFeatures(data.features, filePath, selfProps).then(
-      (results: ResolvedStatFeature[]) => {
-        if (!cancelled) setResolved(results);
-      }
-    );
+    resolveStatFeatures(data.features, filePath, selfProps).then((results: ResolvedStatFeature[]) => {
+      if (!cancelled) setResolved(results);
+    });
     return () => {
       cancelled = true;
     };

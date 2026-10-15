@@ -1,8 +1,7 @@
 /* ── Inventory Block (new schema, Phase A) ────────────────────────────────── */
 
 .rpg-inventory-block {
-  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino,
-      "Book Antiqua", Georgia, serif);
+  font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   color: var(--text-normal);
   padding: 0.35rem 0.5rem 1rem;
   margin: 0.25rem 0;
@@ -318,7 +317,10 @@
   font-weight: 700;
   line-height: 1;
   opacity: 0;
-  transition: opacity 80ms ease, background-color 80ms ease, color 80ms ease;
+  transition:
+    opacity 80ms ease,
+    background-color 80ms ease,
+    color 80ms ease;
   box-shadow: none;
   border-radius: 3px;
   /* Keeps the nested sell button on top of any ancestor pseudo-elements
@@ -350,7 +352,7 @@
 /* Flagged rows read slightly dimmed so the player sees at a glance
  * which items are slated to leave the pack at the next shop stop. */
 .rpg-inventory-block__item:has(.rpg-inventory-block__sell-btn[data-for-sale="true"]) {
-  background: light-dark(rgba(212, 168, 64, 0.06), rgba(212, 168, 64, 0.10));
+  background: light-dark(rgba(212, 168, 64, 0.06), rgba(212, 168, 64, 0.1));
 }
 
 /* ── To Sell row ───────────────────────────────────────────────────────── */
@@ -695,5 +697,7 @@
 }
 
 .rpg-inventory-block__capacity[data-level="critical"] .rpg-inventory-block__encumbrance-marker {
-  box-shadow: 0 0 0 1px var(--background-primary), 0 0 6px 2px rgba(184, 74, 74, 0.8);
+  box-shadow:
+    0 0 0 1px var(--background-primary),
+    0 0 6px 2px rgba(184, 74, 74, 0.8);
 }

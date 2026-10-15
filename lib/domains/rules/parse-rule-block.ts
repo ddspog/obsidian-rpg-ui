@@ -27,10 +27,7 @@ import type {
  * vocabulary so side blocks visually rhyme with `> [!tip]`-style callouts
  * elsewhere in the vault. Each field is overridable on the block.
  */
-export const SIDE_PRESETS: Record<
-  SidePreset,
-  { title: string; icon: string; color: string }
-> = {
+export const SIDE_PRESETS: Record<SidePreset, { title: string; icon: string; color: string }> = {
   note: { title: "Note", icon: "pencil", color: "var(--color-blue, #3498db)" },
   info: { title: "Info", icon: "info", color: "var(--color-cyan, #17a2b8)" },
   tip: { title: "Tip", icon: "lightbulb", color: "var(--color-yellow, #f1c40f)" },
@@ -107,9 +104,7 @@ export function parseRuleSide(source: string): RuleSideBlock {
     parsed = null;
   }
   const rec: Record<string, unknown> =
-    parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+    parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
 
   const preset: SidePreset | undefined = isSidePreset(rec.type) ? rec.type : undefined;
   const defaults = preset ? SIDE_PRESETS[preset] : undefined;
@@ -124,13 +119,17 @@ export function parseRuleSide(source: string): RuleSideBlock {
           : rec.kind === "note"
             ? "note"
             : "float";
-  const title = typeof rec.title === "string" ? rec.title : defaults?.title ?? "";
+  const title = typeof rec.title === "string" ? rec.title : (defaults?.title ?? "");
   const subtitle = typeof rec.subtitle === "string" ? rec.subtitle : undefined;
   const icon = typeof rec.icon === "string" ? rec.icon : defaults?.icon;
   const color = typeof rec.color === "string" ? rec.color : defaults?.color;
   const content = hasFenceBody
     ? bodyText.replace(/^\n+/, "").replace(/\n+$/, "")
-    : typeof rec.content === "string" ? rec.content : typeof rec.text === "string" ? rec.text : "";
+    : typeof rec.content === "string"
+      ? rec.content
+      : typeof rec.text === "string"
+        ? rec.text
+        : "";
   const direction: "left" | "right" = rec.direction === "left" ? "left" : "right";
 
   return {
@@ -316,14 +315,6 @@ export function parseRuleBlock(subtype: RuleSubtype, source: string) {
 export function subtypeFromMeta(meta: string): RuleSubtype | null {
   if (!meta.startsWith("rule.")) return null;
   const tail = meta.slice("rule.".length);
-  if (
-    tail === "content" ||
-    tail === "side" ||
-    tail === "related" ||
-    tail === "notes" ||
-    tail === "tab"
-  )
-    return tail;
+  if (tail === "content" || tail === "side" || tail === "related" || tail === "notes" || tail === "tab") return tail;
   return null;
 }
-

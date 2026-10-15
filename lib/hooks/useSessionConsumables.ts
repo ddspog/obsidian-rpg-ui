@@ -21,39 +21,22 @@ export interface UseSessionConsumablesReturn {
 
 export function useSessionConsumables(
   cards: SessionFeatureCard[],
-  sheetSpent: Record<string, number>,
+  sheetSpent: Record<string, number>
 ): UseSessionConsumablesReturn {
-  const [state, setState] = useState<SessionConsumableState>(() =>
-    initSessionConsumables(cards, sheetSpent),
-  );
+  const [state, setState] = useState<SessionConsumableState>(() => initSessionConsumables(cards, sheetSpent));
 
-  const spend = useCallback(
-    (cardId: string) => setState((s) => spendUse(s, cardId)),
-    [],
-  );
+  const spend = useCallback((cardId: string) => setState((s) => spendUse(s, cardId)), []);
 
-  const unspend = useCallback(
-    (cardId: string) => setState((s) => unspendUse(s, cardId)),
-    [],
-  );
+  const unspend = useCallback((cardId: string) => setState((s) => unspendUse(s, cardId)), []);
 
-  const reset = useCallback(
-    (recovery: string) => setState((s) => resetByRecovery(s, cards, recovery)),
-    [cards],
-  );
+  const reset = useCallback((recovery: string) => setState((s) => resetByRecovery(s, cards, recovery)), [cards]);
 
-  const remaining = useCallback(
-    (card: SessionFeatureCard) => getRemainingUses(state, card),
-    [state],
-  );
+  const remaining = useCallback((card: SessionFeatureCard) => getRemainingUses(state, card), [state]);
 
-  const available = useCallback(
-    (card: SessionFeatureCard) => isAvailable(state, card),
-    [state],
-  );
+  const available = useCallback((card: SessionFeatureCard) => isAvailable(state, card), [state]);
 
   return useMemo(
     () => ({ state, spend, unspend, reset, remaining, available }),
-    [state, spend, unspend, reset, remaining, available],
+    [state, spend, unspend, reset, remaining, available]
   );
 }

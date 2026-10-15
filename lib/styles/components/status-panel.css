@@ -36,7 +36,7 @@ dd[aria-label="Conditions List"] {
 
 [aria-details="No Conditions"] {
   font-size: 0.75em;
-  color: var(--rpg-no-conditions-color, rgba(255,255,255,0.25));
+  color: var(--rpg-no-conditions-color, rgba(255, 255, 255, 0.25));
   line-height: 20px;
 }
 
@@ -57,7 +57,9 @@ button[aria-details="Condition Pill"] {
   white-space: nowrap;
   min-width: max-content;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 button[aria-details="Condition Pill"][data-linked="true"]:hover {

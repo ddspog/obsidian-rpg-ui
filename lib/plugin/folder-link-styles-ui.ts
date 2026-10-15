@@ -16,11 +16,7 @@
 
 import { App, Setting } from "obsidian";
 import { FolderSuggest } from "lib/utils/folder-suggest";
-import {
-  generateFolderLinkCss,
-  OBSIDIAN_COLOR_PRESETS,
-  findPresetForValue,
-} from "lib/domains/folder-link-styles";
+import { generateFolderLinkCss, OBSIDIAN_COLOR_PRESETS, findPresetForValue } from "lib/domains/folder-link-styles";
 import type { FolderLinkStyle, DndUIToolkitSettings } from "settings";
 
 export interface FolderLinkStylesContext {
@@ -217,7 +213,7 @@ export function renderFolderLinkStyles(containerEl: HTMLElement, ctx: FolderLink
         // `onChange` and resets itself to "Custom" on any picker edit.
         const currentValue = get();
         const preset = findPresetForValue(currentValue);
-        picker.setValue(preset ? preset.fallback : currentValue ?? fallback).onChange(async (value) => {
+        picker.setValue(preset ? preset.fallback : (currentValue ?? fallback)).onChange(async (value) => {
           set(value);
           if (dropdownRef.el) dropdownRef.el.value = "";
           await ctx.onSave();

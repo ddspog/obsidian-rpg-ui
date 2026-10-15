@@ -167,7 +167,14 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
       for (const card of feature.cards) {
         const stack = cardPrimaryStack(card, feature.generators);
         if (!stack) continue; // no emittable piece
-        add({ name: card.name, stack, logTemplate: emitCard(card, feature.generators), text: card.text, uses: card.uses, recovery: card.recovery });
+        add({
+          name: card.name,
+          stack,
+          logTemplate: emitCard(card, feature.generators),
+          text: card.text,
+          uses: card.uses,
+          recovery: card.recovery,
+        });
       }
       continue; // a `cards:` feature is a container — its own aspects aren't a card
     }

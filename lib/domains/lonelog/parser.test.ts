@@ -899,7 +899,11 @@ describe("parseLonelog — hard-wrapped prose", () => {
 describe("list ops — `[Name+ entry]` / `[Name- entry]` / `[Name?]` / `[Name@]`", () => {
   const tagsOf = (line: string) => {
     const e = parseLonelog(line)[0];
-    return e.type === "consequence" || e.type === "world_event" ? e.tags : e.type === "oracle_question" ? (e.dialOps ?? []) : [];
+    return e.type === "consequence" || e.type === "world_event"
+      ? e.tags
+      : e.type === "oracle_question"
+        ? (e.dialOps ?? [])
+        : [];
   };
 
   it("parses add / remove / inspect / roll, keeping multi-word entries intact", () => {

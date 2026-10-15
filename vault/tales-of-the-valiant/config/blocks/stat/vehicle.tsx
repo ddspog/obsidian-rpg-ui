@@ -28,11 +28,9 @@ const vehicle: EntityBlock<StatVehicleData, StatEntity> = ({ self }) => {
       abilities: self.abilities,
     };
 
-    resolveStatFeatures(self.features, sourcePath, selfProps).then(
-      (results: ResolvedStatFeature[]) => {
-        if (!cancelled) setResolved(results);
-      }
-    );
+    resolveStatFeatures(self.features, sourcePath, selfProps).then((results: ResolvedStatFeature[]) => {
+      if (!cancelled) setResolved(results);
+    });
 
     return () => {
       cancelled = true;

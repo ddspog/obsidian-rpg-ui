@@ -7,11 +7,7 @@
 
 import * as React from "react";
 import { Markdown } from "./markdown";
-import type {
-  AbilityScores,
-  ResolvedStatFeature,
-  StatFeatureCategory,
-} from "../domains/statblocks/types";
+import type { AbilityScores, ResolvedStatFeature, StatFeatureCategory } from "../domains/statblocks/types";
 import { STAT_SECTION_LABELS, STAT_SECTION_ORDER } from "../domains/statblocks/types";
 
 export function formatModifier(value: number): string {
@@ -42,7 +38,13 @@ export function normalizeStatValue(raw: unknown): string {
   if (typeof raw === "string") return raw;
   if (raw == null) return "";
   if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
-  if (Array.isArray(raw) && raw.length === 1 && Array.isArray(raw[0]) && raw[0].length === 1 && typeof raw[0][0] === "string") {
+  if (
+    Array.isArray(raw) &&
+    raw.length === 1 &&
+    Array.isArray(raw[0]) &&
+    raw[0].length === 1 &&
+    typeof raw[0][0] === "string"
+  ) {
     return `[[${raw[0][0]}]]`;
   }
   return String(raw);
@@ -111,13 +113,7 @@ export function HabitatTreasureLine({
   );
 }
 
-export function FeatureEntry({
-  feature,
-  sourcePath,
-}: {
-  feature: ResolvedStatFeature;
-  sourcePath?: string;
-}) {
+export function FeatureEntry({ feature, sourcePath }: { feature: ResolvedStatFeature; sourcePath?: string }) {
   if (!feature.name) {
     if (!feature.text) return null;
     return (

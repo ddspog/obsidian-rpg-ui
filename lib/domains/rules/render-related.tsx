@@ -38,13 +38,7 @@ function prepareMarkdownSource(source: string): string {
   return source;
 }
 
-function RuleRelatedView({
-  block,
-  sourcePath,
-}: {
-  block: RuleRelatedBlock;
-  sourcePath: string;
-}) {
+function RuleRelatedView({ block, sourcePath }: { block: RuleRelatedBlock; sourcePath: string }) {
   const Heading = `h${block.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
   function renderEntry(entry: RelatedEntry, i: number) {
@@ -59,9 +53,7 @@ function RuleRelatedView({
 
   return (
     <section className="rpg-rule-related" data-rpg-rule="related">
-      {block.view === "footer" ? (
-        <div className="rpg-rule-related__sep" role="separator" aria-hidden="true" />
-      ) : null}
+      {block.view === "footer" ? <div className="rpg-rule-related__sep" role="separator" aria-hidden="true" /> : null}
       {block.entries.map(renderEntry)}
     </section>
   );

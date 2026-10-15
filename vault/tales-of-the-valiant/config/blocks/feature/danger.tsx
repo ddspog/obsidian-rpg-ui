@@ -44,15 +44,7 @@ export interface DangerProps {
 
 /** One run-in mechanic line ("**Trigger** …"). Renders nothing when empty so
  *  a danger can omit any of trigger / effects / resolution. */
-function Mechanic({
-  label,
-  value,
-  sourcePath,
-}: {
-  label: string;
-  value?: string;
-  sourcePath?: string;
-}) {
+function Mechanic({ label, value, sourcePath }: { label: string; value?: string; sourcePath?: string }) {
   if (typeof value !== "string" || !value.trim()) return null;
   return (
     <div className="rpg-danger-card__mechanic">
@@ -71,26 +63,9 @@ export interface DangerCardProps extends DangerProps {
 
 /** Pure presentational card — shared by the `feature.danger` block and the
  *  `@[[file]].danger()` import view so both render identically. */
-export function DangerCard({
-  name,
-  type,
-  trigger,
-  effects,
-  resolution,
-  text,
-  heading,
-  sourcePath,
-}: DangerCardProps) {
-  const HeadingTag = `h${Math.max(1, Math.min(6, heading ?? 3))}` as
-    | "h1"
-    | "h2"
-    | "h3"
-    | "h4"
-    | "h5"
-    | "h6";
-  const hasMechanics = [trigger, effects, resolution].some(
-    (v) => typeof v === "string" && v.trim()
-  );
+export function DangerCard({ name, type, trigger, effects, resolution, text, heading, sourcePath }: DangerCardProps) {
+  const HeadingTag = `h${Math.max(1, Math.min(6, heading ?? 3))}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  const hasMechanics = [trigger, effects, resolution].some((v) => typeof v === "string" && v.trim());
   return (
     <article className="rpg-danger-card" aria-label={`Danger ${name ?? ""}`.trim()}>
       <hgroup>
@@ -102,9 +77,7 @@ export function DangerCard({
         )}
       </hgroup>
 
-      {text && (
-        <Markdown source={text} sourcePath={sourcePath} className="rpg-danger-card__desc" />
-      )}
+      {text && <Markdown source={text} sourcePath={sourcePath} className="rpg-danger-card__desc" />}
 
       {hasMechanics && (
         <dl className="rpg-danger-card__mechanics">

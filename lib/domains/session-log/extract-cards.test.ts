@@ -52,7 +52,11 @@ describe("extractResourceDecls", () => {
 
   it("maps a legacy `type: resource` feature to a charges resource (max resolved for level)", () => {
     const slices: ResolvedSourceSlice[] = [
-      { source: "Fighter", level: 6, features: [{ name: "Second Wind", type: "resource", max: { 1: 1, 5: 2 }, recovery: "short rest" }] },
+      {
+        source: "Fighter",
+        level: 6,
+        features: [{ name: "Second Wind", type: "resource", max: { 1: 1, 5: 2 }, recovery: "short rest" }],
+      },
     ];
     expect(extractResourceDecls(slices)).toEqual([
       { charges: { name: "Second Wind", max: 2, recovery: "short rest" } },
@@ -61,7 +65,14 @@ describe("extractResourceDecls", () => {
 
   it("ignores non-resource features and a resource with no max", () => {
     const slices: ResolvedSourceSlice[] = [
-      { source: "X", level: 1, features: [{ name: "Passive Trait", text: "always on" }, { name: "Vague", type: "resource" }] },
+      {
+        source: "X",
+        level: 1,
+        features: [
+          { name: "Passive Trait", text: "always on" },
+          { name: "Vague", type: "resource" },
+        ],
+      },
     ];
     expect(extractResourceDecls(slices)).toEqual([]);
   });
@@ -216,9 +227,7 @@ describe("buildCardStacks", () => {
   });
 
   it("skips empty buckets", () => {
-    const cards = [
-      { id: "a", name: "A", bucket: "reaction" as const, logTemplate: "", source: "X", actor: "Hero" },
-    ];
+    const cards = [{ id: "a", name: "A", bucket: "reaction" as const, logTemplate: "", source: "X", actor: "Hero" }];
 
     const stacks = buildCardStacks(cards, "Hero");
     expect(stacks).toHaveLength(1);

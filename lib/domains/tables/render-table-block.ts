@@ -394,8 +394,7 @@ function appendTextWithLinks(el: HTMLElement, text: string): void {
  * `2 * 3` stays literal), and `_` must sit on word boundaries (so `snake_case`
  * isn't italicised). Unmatched delimiters stay literal.
  */
-const CELL_EMPHASIS_RE =
-  /\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(?!\s)(.+?)(?<!\s)\*|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)/g;
+const CELL_EMPHASIS_RE = /\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(?!\s)(.+?)(?<!\s)\*|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)/g;
 
 function appendEmphasis(el: HTMLElement, text: string): void {
   const doc = el.ownerDocument;
@@ -755,7 +754,11 @@ export function renderTableBlock(
           const prev = makeBtn("rpg-table-pagination__arrow", "‹");
           prev.disabled = state.page === 0;
           prev.addEventListener("click", () => {
-            if (state.page > 0) { state.page--; renderRows(); updateControls(); }
+            if (state.page > 0) {
+              state.page--;
+              renderRows();
+              updateControls();
+            }
           });
           cell.appendChild(prev);
         }
@@ -766,18 +769,30 @@ export function renderTableBlock(
           if (!allVisible) {
             const remaining = allRows.length - paginationConfig.size * state.visiblePages;
             const btn = makeBtn("rpg-table-pagination__page", `Show More (+${remaining})`);
-            btn.addEventListener("click", () => { state.visiblePages++; renderRows(); updateControls(); });
+            btn.addEventListener("click", () => {
+              state.visiblePages++;
+              renderRows();
+              updateControls();
+            });
             middle.appendChild(btn);
           } else {
             const btn = makeBtn("rpg-table-pagination__page", "Collapse");
-            btn.addEventListener("click", () => { state.visiblePages = 1; renderRows(); updateControls(); });
+            btn.addEventListener("click", () => {
+              state.visiblePages = 1;
+              renderRows();
+              updateControls();
+            });
             middle.appendChild(btn);
           }
         } else {
           for (let i = 0; i < pages; i++) {
             const btn = makeBtn("rpg-table-pagination__page", String(i + 1));
             if (i === state.page) btn.classList.add("rpg-table-pagination__page--active");
-            btn.addEventListener("click", () => { state.page = i; renderRows(); updateControls(); });
+            btn.addEventListener("click", () => {
+              state.page = i;
+              renderRows();
+              updateControls();
+            });
             middle.appendChild(btn);
           }
         }
@@ -786,7 +801,11 @@ export function renderTableBlock(
           const next = makeBtn("rpg-table-pagination__arrow", "›");
           next.disabled = state.page >= pages - 1;
           next.addEventListener("click", () => {
-            if (state.page < pages - 1) { state.page++; renderRows(); updateControls(); }
+            if (state.page < pages - 1) {
+              state.page++;
+              renderRows();
+              updateControls();
+            }
           });
           cell.appendChild(next);
         }
@@ -806,7 +825,12 @@ export function renderTableBlock(
         const td = doc.createElement("td");
         if (span > 1) td.colSpan = span;
         if (cell.indent) td.setAttribute("data-indent", String(cell.indent));
-        applyCellMods(td, { value: cell.value, colspan: cell.colspan, mods: cell.mods, colStart: pos }, highlightCols, middleCols);
+        applyCellMods(
+          td,
+          { value: cell.value, colspan: cell.colspan, mods: cell.mods, colStart: pos },
+          highlightCols,
+          middleCols
+        );
         renderCellValue(td, cell.value);
         tr.appendChild(td);
         pos += span;

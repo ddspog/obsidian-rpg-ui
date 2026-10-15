@@ -62,16 +62,10 @@ export interface ParsedCall {
  */
 const ARGS_INNER = String.raw`(?:[^)"'\n]*(?:"[^"\n]*"|'[^'\n]*'))*[^)"'\n]*`;
 export { ARGS_INNER };
-export const CALL_PATTERN = new RegExp(
-  String.raw`@\[\[([^\]\n]+)\]\]((?:\.[A-Za-z_][\w-]*\(${ARGS_INNER}\))+)`,
-  "g",
-);
+export const CALL_PATTERN = new RegExp(String.raw`@\[\[([^\]\n]+)\]\]((?:\.[A-Za-z_][\w-]*\(${ARGS_INNER}\))+)`, "g");
 
 /** Segment pattern: `.fn(args)` */
-const SEGMENT_RE = new RegExp(
-  String.raw`\.([A-Za-z_][\w-]*)\((${ARGS_INNER})\)`,
-  "g",
-);
+const SEGMENT_RE = new RegExp(String.raw`\.([A-Za-z_][\w-]*)\((${ARGS_INNER})\)`, "g");
 
 function parseSegments(chainStr: string): ChainSegment[] {
   const segments: ChainSegment[] = [];

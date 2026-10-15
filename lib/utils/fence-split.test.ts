@@ -62,9 +62,7 @@ describe("stripRpgFences", () => {
       "````",
       "After.",
     ].join("\n");
-    expect(stripRpgFences(input)).toBe(
-      "Intro.\nOuter body.\n\n```rpg table.weapons\n| A | B |\n```\nAfter."
-    );
+    expect(stripRpgFences(input)).toBe("Intro.\nOuter body.\n\n```rpg table.weapons\n| A | B |\n```\nAfter.");
   });
 
   it("handles deeply nested fences (5-backtick wrapping 4 wrapping 3)", () => {

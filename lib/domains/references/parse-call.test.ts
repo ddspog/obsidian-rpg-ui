@@ -41,12 +41,7 @@ describe("parseArgs", () => {
   });
 
   it("handles mixed types", () => {
-    expect(parseArgs('grapple, "size 1", 5, true').positional).toEqual([
-      "grapple",
-      "size 1",
-      5,
-      true,
-    ]);
+    expect(parseArgs('grapple, "size 1", 5, true').positional).toEqual(["grapple", "size 1", 5, true]);
   });
 
   it("treats unterminated quotes by taking the rest of the input", () => {

@@ -128,9 +128,8 @@ export const rolls: EntityBlock<RollsProps, CharacterEntity> = ({ self, blocks, 
  *  `spells.tsx`. */
 function useNoteKey(): string {
   return React.useMemo(() => {
-    const app = (
-      globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } }
-    ).app;
+    const app = (globalThis as unknown as { app?: { workspace?: { getActiveFile?: () => { path?: string } | null } } })
+      .app;
     return app?.workspace?.getActiveFile?.()?.path ?? "default";
   }, []);
 }
@@ -230,10 +229,7 @@ function RollRowUI({
   // Interactive upcast + swap state, persisted per-note per-row via
   // localStorage. Scoped by `noteKey` so multiple character files
   // don't clobber each other.
-  const [upcastCircleRaw, setUpcastCircle] = usePersistentNumber(
-    `${noteKey}:rolls:${row.id}:upcast`,
-    baseRoll.circle
-  );
+  const [upcastCircleRaw, setUpcastCircle] = usePersistentNumber(`${noteKey}:rolls:${row.id}:upcast`, baseRoll.circle);
   // If the persisted circle is no longer castable (player just spent
   // its slot), fall back to the highest castable circle so the row
   // reflects something the caster can actually do. Base circle wins
@@ -251,20 +247,14 @@ function RollRowUI({
     const match = swapOptions.findIndex((o) => o.value === baseValue);
     return match >= 0 ? match : 0;
   }, [baseRoll, swapOptions]);
-  const [swapIndexRaw, setSwapIndex] = usePersistentNumber(
-    `${noteKey}:rolls:${row.id}:swap`,
-    swapInitialIdx
-  );
+  const [swapIndexRaw, setSwapIndex] = usePersistentNumber(`${noteKey}:rolls:${row.id}:swap`, swapInitialIdx);
   const swapIndex = swapIndexRaw ?? swapInitialIdx;
 
   // Cost amount — variable-cost features (Last Stand, Nature's Gift)
   // declare a `max` and the player cycles 1..max. Fixed-cost rolls
   // (Mystic Mark, Channel Divinity) have `max` omitted and the cell
   // is a non-interactive label.
-  const [costAmountRaw, setCostAmount] = usePersistentNumber(
-    `${noteKey}:rolls:${row.id}:cost`,
-    baseRoll.cost?.amount
-  );
+  const [costAmountRaw, setCostAmount] = usePersistentNumber(`${noteKey}:rolls:${row.id}:cost`, baseRoll.cost?.amount);
   const costAmount = costAmountRaw;
 
   // Compose the effective roll by applying the selected upcast + swap
@@ -339,18 +329,9 @@ function RollRowUI({
   };
 
   return (
-    <tr
-      data-form={roll.form}
-      data-available={available ? "true" : "false"}
-      aria-description={unavailReason}
-    >
+    <tr data-form={roll.form} data-available={available ? "true" : "false"} aria-description={unavailReason}>
       <td className="rpg-rolls__name">
-        <FormCell
-          roll={baseRoll}
-          effectiveCircle={upcastCircle}
-          onCycle={cycleUpcast}
-          canCycle={castable.length > 1}
-        />
+        <FormCell roll={baseRoll} effectiveCircle={upcastCircle} onCycle={cycleUpcast} canCycle={castable.length > 1} />
         <SwapOrText
           field="name"
           value={name}
@@ -366,12 +347,7 @@ function RollRowUI({
       <td className="rpg-rolls__hit">{hitText}</td>
       <td className="rpg-rolls__dc">{dcText}</td>
       <td className="rpg-rolls__range">
-        <SwapOrText
-          field="range"
-          value={roll.range ?? ""}
-          swapOn={baseRoll.swapOn}
-          onCycle={cycleSwap}
-        />
+        <SwapOrText field="range" value={roll.range ?? ""} swapOn={baseRoll.swapOn} onCycle={cycleSwap} />
       </td>
       <td className="rpg-rolls__damage">
         <DamageCell damage={roll.damage} />
@@ -460,12 +436,7 @@ function EffectsCell({ roll }: { roll: RollAspect }) {
   return (
     <>
       {pills.map((p) => (
-        <span
-          key={p.key}
-          className={`rpg-rolls__icon ${p.cls ?? ""}`}
-          data-tip={p.label}
-          aria-label={p.label}
-        >
+        <span key={p.key} className={`rpg-rolls__icon ${p.cls ?? ""}`} data-tip={p.label} aria-label={p.label}>
           {p.glyph}
         </span>
       ))}
@@ -732,7 +703,12 @@ function applyRollOverride(base: RollAspect, override: RollOverride | undefined)
  *  when the roll doesn't declare `leveled`, no level is available, or
  *  no threshold is met (i.e. character is below the first threshold —
  *  the base roll itself is the pre-threshold default). */
-function resolveLeveled(base: RollAspect, kind: RollRow["kind"], sourceLevel: number | undefined, characterLevel: number): RollAspect {
+function resolveLeveled(
+  base: RollAspect,
+  kind: RollRow["kind"],
+  sourceLevel: number | undefined,
+  characterLevel: number
+): RollAspect {
   const leveled = base.leveled;
   if (!leveled) return base;
   // Default dimension: class level for features (use source level),
@@ -932,10 +908,7 @@ function stripWikilink(raw: string): string {
   return m[1].split("|")[0].split("/").pop()!.trim();
 }
 
-function resolveCasters(
-  blocks: unknown,
-  lookup: CharacterEntity["lookup"] | undefined
-): Map<string, CasterInfo> {
+function resolveCasters(blocks: unknown, lookup: CharacterEntity["lookup"] | undefined): Map<string, CasterInfo> {
   const out = new Map<string, CasterInfo>();
   const header = (blocks as { header?: unknown })?.header;
   const features = (blocks as { features?: FeaturesBlockData })?.features;
@@ -1137,12 +1110,7 @@ function hasWeaponProperty(element: ItemElementData, name: string): boolean {
   return hasProperty(element.weapon?.properties, name);
 }
 
-function isRollAvailable(
-  kind: RollRow["kind"],
-  roll: RollAspect,
-  sourceNote: string,
-  equip: EquipState
-): boolean {
+function isRollAvailable(kind: RollRow["kind"], roll: RollAspect, sourceNote: string, equip: EquipState): boolean {
   const requires = roll.requires ?? (roll.form === "melee" || roll.form === "ranged" ? "one_hand" : "none");
 
   if (kind === "weapon") {

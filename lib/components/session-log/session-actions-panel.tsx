@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { CardStack as CardStackData, SessionFeatureCard } from "../../domains/session-log/card-types";
 import { SessionConsumableState } from "../../domains/session-log/consumable-state";
-import { parseLogTemplate, needsUserInput, resolveWithContext, ResolutionContext } from "../../domains/session-log/template-resolver";
+import {
+  parseLogTemplate,
+  needsUserInput,
+  resolveWithContext,
+  ResolutionContext,
+} from "../../domains/session-log/template-resolver";
 import { CardStack } from "./card-stack";
 import { PlaceholderPopover } from "./placeholder-popover";
 
@@ -26,8 +31,7 @@ export function SessionActionsPanel({
   const [selectedActor, setSelectedActor] = useState(actors[0] || "Game Master");
   const [activeCard, setActiveCard] = useState<SessionFeatureCard | null>(null);
 
-  const currentStacks =
-    selectedActor === "Game Master" ? gmStacks : pcStacks.get(selectedActor) || [];
+  const currentStacks = selectedActor === "Game Master" ? gmStacks : pcStacks.get(selectedActor) || [];
 
   const handleCardClick = (card: SessionFeatureCard) => {
     const placeholders = parseLogTemplate(card.logTemplate);
@@ -56,7 +60,10 @@ export function SessionActionsPanel({
           <button
             key={actor}
             className={`actor-chip ${actor === selectedActor ? "is-active" : ""}`}
-            onClick={() => { setSelectedActor(actor); setActiveCard(null); }}
+            onClick={() => {
+              setSelectedActor(actor);
+              setActiveCard(null);
+            }}
           >
             {actor === "Game Master" ? "GM" : actor}
           </button>
@@ -71,9 +78,7 @@ export function SessionActionsPanel({
             onCardClick={handleCardClick}
           />
         ))}
-        {currentStacks.length === 0 && (
-          <p className="actions-empty">No actions available</p>
-        )}
+        {currentStacks.length === 0 && <p className="actions-empty">No actions available</p>}
       </div>
       {activeCard && (
         <PlaceholderPopover

@@ -12,12 +12,7 @@ class FakeSource implements FileSource {
 }
 
 const ruleBlock = (id: string, valuesYaml: string, body = "Rule prose.") =>
-  "```rpg rule.content\n" +
-  `id: ${id}\n` +
-  `values:\n${valuesYaml}\n` +
-  "---\n" +
-  `${body}\n` +
-  "```\n";
+  "```rpg rule.content\n" + `id: ${id}\n` + `values:\n${valuesYaml}\n` + "---\n" + `${body}\n` + "```\n";
 
 describe("ValueResolver", () => {
   let resolver: ValueResolver;
@@ -40,10 +35,7 @@ describe("ValueResolver", () => {
   });
 
   it("resolves dotted paths", async () => {
-    source.files.set(
-      "rules/luck.md",
-      ruleBlock("luck", "  max: 5\n  reset:\n    die: d4")
-    );
+    source.files.set("rules/luck.md", ruleBlock("luck", "  max: 5\n  reset:\n    die: d4"));
     await resolver.warmup();
     expect(resolver.getValue<string>("luck", "reset.die")).toBe("d4");
     expect(resolver.getValue<number>("luck", "max")).toBe(5);
@@ -63,10 +55,7 @@ describe("ValueResolver", () => {
 
   it("indexes multiple files", async () => {
     source.files.set("rules/luck.md", ruleBlock("luck", "  max: 5"));
-    source.files.set(
-      "rules/grappling.md",
-      ruleBlock("grapple", "  size_diff_max: 1\n  action_cost: attack")
-    );
+    source.files.set("rules/grappling.md", ruleBlock("grapple", "  size_diff_max: 1\n  action_cost: attack"));
     await resolver.warmup();
     expect(resolver.getValue<number>("luck", "max")).toBe(5);
     expect(resolver.getValue<number>("grapple", "size_diff_max")).toBe(1);
@@ -74,19 +63,13 @@ describe("ValueResolver", () => {
   });
 
   it("ignores rule.content blocks without an id", async () => {
-    source.files.set(
-      "rules/orphan.md",
-      "```rpg rule.content\nvalues:\n  x: 1\n---\nNo id here.\n```\n"
-    );
+    source.files.set("rules/orphan.md", "```rpg rule.content\nvalues:\n  x: 1\n---\nNo id here.\n```\n");
     await resolver.warmup();
     expect(resolver.list().size).toBe(0);
   });
 
   it("ignores rule.content blocks without a values map", async () => {
-    source.files.set(
-      "rules/no-vals.md",
-      "```rpg rule.content\nid: alpha\n---\nNo values.\n```\n"
-    );
+    source.files.set("rules/no-vals.md", "```rpg rule.content\nid: alpha\n---\nNo values.\n```\n");
     await resolver.warmup();
     // Block IS indexed (id present) but with empty values.
     expect(resolver.getValuesById("alpha")).toEqual({});

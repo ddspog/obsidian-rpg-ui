@@ -1,11 +1,4 @@
-export const ASPECT_BUCKETS = [
-  "action",
-  "bonus",
-  "reaction",
-  "active",
-  "passive",
-  "resource",
-] as const;
+export const ASPECT_BUCKETS = ["action", "bonus", "reaction", "active", "passive", "resource"] as const;
 
 export type AspectBucket = (typeof ASPECT_BUCKETS)[number];
 

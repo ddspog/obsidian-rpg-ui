@@ -226,7 +226,10 @@ function parseOracleExpression(inner: string): { dice: string; answers: string[]
     const val = k[3] ?? k[4] ?? k[5] ?? "";
     if (k[1] === "dice") dice = val.trim();
     else if (k[1] === "answers") {
-      const parsed = val.split("|").map((s) => s.trim()).filter(Boolean);
+      const parsed = val
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (parsed.length) answers = parsed;
     }
   }
@@ -631,4 +634,3 @@ function findFooterPaginate(items: FooterRowItem[]): PaginationConfig | undefine
   }
   return undefined;
 }
-

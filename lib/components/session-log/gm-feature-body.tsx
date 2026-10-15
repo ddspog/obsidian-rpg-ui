@@ -17,7 +17,13 @@
 
 import * as React from "react";
 import type { GMFeature } from "lib/domains/features/types";
-import { applyDieEdit, expandStepBlockGens, gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
+import {
+  applyDieEdit,
+  expandStepBlockGens,
+  gmStepLines,
+  resolveGmBody,
+  type GMStepContext,
+} from "lib/domains/gm/example";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { resolveDialOps, type DialDecl } from "lib/domains/lonelog/dial-ops";
 import { resolveListOps } from "lib/domains/lonelog/list-ops";

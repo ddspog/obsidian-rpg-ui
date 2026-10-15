@@ -1541,11 +1541,7 @@ export interface GetRuleValueOpts<T> {
  * frontmatter `values:` map. `path` supports dotted notation
  * (`"reset.die"`).
  */
-export declare function getRuleValue<T = unknown>(
-  id: string,
-  path: string,
-  opts?: GetRuleValueOpts<T>
-): T | undefined;
+export declare function getRuleValue<T = unknown>(id: string, path: string, opts?: GetRuleValueOpts<T>): T | undefined;
 
 export declare function getRuleValuesById(id: string): Record<string, unknown> | undefined;
 export declare function listRuleValues(): Map<string, Record<string, unknown>>;

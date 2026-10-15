@@ -79,9 +79,4 @@ export const STAT_SECTION_LABELS: Record<StatFeatureCategory, string> = {
   legendary: "LEGENDARY ACTIONS",
 };
 
-export const STAT_SECTION_ORDER: StatFeatureCategory[] = [
-  "action",
-  "bonus",
-  "reaction",
-  "legendary",
-];
+export const STAT_SECTION_ORDER: StatFeatureCategory[] = ["action", "bonus", "reaction", "legendary"];

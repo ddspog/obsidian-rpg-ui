@@ -66,13 +66,15 @@ section[aria-details="Character Rolls"] + section[aria-details="Character Profic
   border-top: none;
 }
 
-div:has(> section[aria-details="Character Skills"]):has(+ div > section[aria-details="Character Rolls"]) > section[aria-details="Character Skills"] {
+div:has(> section[aria-details="Character Skills"]):has(+ div > section[aria-details="Character Rolls"])
+  > section[aria-details="Character Skills"] {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
 }
 
-div:has(> section[aria-details="Character Rolls"]):has(+ div > section[aria-details="Character Proficiencies"]) > section[aria-details="Character Rolls"] {
+div:has(> section[aria-details="Character Rolls"]):has(+ div > section[aria-details="Character Proficiencies"])
+  > section[aria-details="Character Rolls"] {
   margin-block-end: 0;
 }
 

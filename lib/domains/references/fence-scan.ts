@@ -61,22 +61,23 @@ export function extractAllRpgFences(contents: string): FenceMatch[] {
     let body: Record<string, unknown> | null;
     const sepIdx = rawBody.indexOf("\n---\n");
     const sepIdx2 = rawBody.indexOf("\n---");
-    const effectiveSep = sepIdx >= 0 ? sepIdx : (sepIdx2 >= 0 && sepIdx2 + 4 >= rawBody.length ? sepIdx2 : -1);
+    const effectiveSep = sepIdx >= 0 ? sepIdx : sepIdx2 >= 0 && sepIdx2 + 4 >= rawBody.length ? sepIdx2 : -1;
     if (effectiveSep >= 0) {
       body = parseRuleContentHead(rawBody);
       if (body && !("text" in body)) {
-        const fenceBody = rawBody.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "");
+        const fenceBody = rawBody
+          .slice(effectiveSep + 4)
+          .replace(/^\n+/, "")
+          .replace(/\n+$/, "");
         if (fenceBody) body.text = fenceBody;
       }
     } else {
       const parsed = safeParseYaml(rawBody);
-      body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : null;
+      body =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
     }
 
-    const nameField =
-      body && typeof body.name === "string" ? body.name : undefined;
+    const nameField = body && typeof body.name === "string" ? body.name : undefined;
     out.push({
       entity,
       block,
@@ -123,9 +124,7 @@ function parseRuleContentHead(raw: string): Record<string, unknown> | null {
   if (!head.trim()) return null;
   try {
     const parsed = parseYAML(head);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  findFenceBody,
-  resolveListLines,
-  type ListFile,
-  type ListSource,
-} from "./resolve-entries";
+import { findFenceBody, resolveListLines, type ListFile, type ListSource } from "./resolve-entries";
 import type { ListBlock } from "./types";
 
 /** In-memory ListSource — mirrors the FakeSource pattern in value-resolver.test.ts. */
@@ -87,15 +82,12 @@ describe("resolveListLines", () => {
       src,
       []
     );
-    expect(lines).toEqual([
-      { listId: "list", markdown: "", cells: ["[[Ankheg]]", "2"], file: "bestiary/Ankheg.md" },
-    ]);
+    expect(lines).toEqual([{ listId: "list", markdown: "", cells: ["[[Ankheg]]", "2"], file: "bestiary/Ankheg.md" }]);
   });
 
   it("groups records by a field with `.group()` (CR-aware ascending, links per group)", async () => {
     const src = new FakeSource();
-    const mon = (name: string, cr: string) =>
-      "```rpg stat.monster\n" + `name: ${name}\n` + `cr: ${cr}\n` + "```\n";
+    const mon = (name: string, cr: string) => "```rpg stat.monster\n" + `name: ${name}\n` + `cr: ${cr}\n` + "```\n";
     src.files.set("b/Ankheg.md", mon("Ankheg", "2"));
     src.files.set("b/Bat.md", mon("Bat", "0"));
     src.files.set("b/Frog.md", mon("Frog", "0"));
@@ -147,14 +139,8 @@ describe("resolveListLines", () => {
 
   it("inherits habitat/treasure from a monster's `category` for fetching/filtering", async () => {
     const src = new FakeSource();
-    src.files.set(
-      "cats/Druids.md",
-      "````rpg stat.category\nhabitat: Forest\ntreasure: Relics\n---\nbody\n````\n"
-    );
-    src.files.set(
-      "mon/Druid.md",
-      '```rpg stat.monster\nname: Druid\ncr: 2\ncategory: "[[Druids]]"\n```\n'
-    );
+    src.files.set("cats/Druids.md", "````rpg stat.category\nhabitat: Forest\ntreasure: Relics\n---\nbody\n````\n");
+    src.files.set("mon/Druid.md", '```rpg stat.monster\nname: Druid\ncr: 2\ncategory: "[[Druids]]"\n```\n');
     src.folders.set("/mon/", [{ path: "mon/Druid.md", basename: "Druid" }]);
     const lines = await resolveListLines(
       block([
@@ -167,9 +153,7 @@ describe("resolveListLines", () => {
       src,
       []
     );
-    expect(lines).toEqual([
-      { listId: "list", markdown: "Druid (Forest, Relics)", file: "mon/Druid.md" },
-    ]);
+    expect(lines).toEqual([{ listId: "list", markdown: "Druid (Forest, Relics)", file: "mon/Druid.md" }]);
   });
 
   it("prioritizes the monster's own habitat over its category's (category fills only gaps)", async () => {
@@ -187,9 +171,7 @@ describe("resolveListLines", () => {
       []
     );
     // Own habitat (Swamp) wins; treasure has no own value so it inherits Relics.
-    expect(lines).toEqual([
-      { listId: "list", markdown: "Swamp / Relics", file: "mon/Swamp Druid.md" },
-    ]);
+    expect(lines).toEqual([{ listId: "list", markdown: "Swamp / Relics", file: "mon/Swamp Druid.md" }]);
   });
 
   it("enumerates a folder, one formatted line per file (sorted)", async () => {
@@ -246,9 +228,7 @@ describe("resolveListLines", () => {
     const src = new FakeSource();
     src.files.set("spells/cantrips/Light.md", "# Light\n\nNo fence here.\n");
     src.fm.set("spells/cantrips/Light.md", { school: "Evocation", summary: "Glow." });
-    src.folders.set("/spells/cantrips/", [
-      { path: "spells/cantrips/Light.md", basename: "Light" },
-    ]);
+    src.folders.set("/spells/cantrips/", [{ path: "spells/cantrips/Light.md", basename: "Light" }]);
 
     const lines = await resolveListLines(
       block([{ call: "@[[/spells/cantrips/]].block(0)", format: "${name}: ${school}, ${summary}" }]),
@@ -287,11 +267,7 @@ describe("resolveListLines", () => {
     const src = new FakeSource();
     src.files.set("things/T.md", "```rpg item.a\nval: first\n```\n```rpg item.b\nval: second\n```\n");
 
-    const lines = await resolveListLines(
-      block([{ call: "@[[things/T]].block(1)", format: "${val}" }]),
-      "host.md",
-      src
-    );
+    const lines = await resolveListLines(block([{ call: "@[[things/T]].block(1)", format: "${val}" }]), "host.md", src);
     expect(lines.map((l) => l.markdown)).toEqual(["second"]);
   });
 
@@ -310,9 +286,7 @@ describe("resolveListLines", () => {
   it("composes another list block via .list(id), re-formatting its records", async () => {
     const src = new FakeSource();
     src.files.set("spells/cantrips/Fire Bolt.md", spellFile("Evocation", "Fire harms foe."));
-    src.folders.set("/spells/cantrips/", [
-      { path: "spells/cantrips/Fire Bolt.md", basename: "Fire Bolt" },
-    ]);
+    src.folders.set("/spells/cantrips/", [{ path: "spells/cantrips/Fire Bolt.md", basename: "Fire Bolt" }]);
     src.files.set(
       "lists/arcane.md",
       "```rpg list.extra\n" +
@@ -354,20 +328,14 @@ describe("resolveListLines", () => {
 
   it("skips entries whose call doesn't parse", async () => {
     const src = new FakeSource();
-    const lines = await resolveListLines(
-      block([{ call: "not a call", format: "${name}" }]),
-      "host.md",
-      src
-    );
+    const lines = await resolveListLines(block([{ call: "not a call", format: "${name}" }]), "host.md", src);
     expect(lines).toEqual([]);
   });
 
   it("emits literal text entries as-is, mixed with resolved call entries", async () => {
     const src = new FakeSource();
     src.files.set("spells/cantrips/Fire Bolt.md", spellFile("Evocation", "Fire harms foe."));
-    src.folders.set("/spells/cantrips/", [
-      { path: "spells/cantrips/Fire Bolt.md", basename: "Fire Bolt" },
-    ]);
+    src.folders.set("/spells/cantrips/", [{ path: "spells/cantrips/Fire Bolt.md", basename: "Fire Bolt" }]);
 
     const lines = await resolveListLines(
       block([

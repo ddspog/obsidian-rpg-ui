@@ -11,14 +11,28 @@ const EVENT_FOCUS: GMFeature[] = [
       {
         id: "event-focus",
         name: "Event Focus",
-        steps: [{ work: "Event Focus", roll: "d100", table: "@[[Event Focus]]#focus", interpret: { NPC: "[Characters?]" } }],
+        steps: [
+          { work: "Event Focus", roll: "d100", table: "@[[Event Focus]]#focus", interpret: { NPC: "[Characters?]" } },
+        ],
       },
     ],
   },
 ];
 const EVENT_MEANING: GMFeature[] = [
-  { name: "Event Meaning", generators: [{ id: "event-meaning", name: "Event Meaning", steps: [{ work: "Event Meaning", choices: ["Actions", "Descriptions"] }] }] },
-  { name: "Meaning Tables", steps: [{ choice: "Actions", tables: ["@[[Actions Meaning]]#action-01", "@[[Actions Meaning]]#action-02"] }] },
+  {
+    name: "Event Meaning",
+    generators: [
+      {
+        id: "event-meaning",
+        name: "Event Meaning",
+        steps: [{ work: "Event Meaning", choices: ["Actions", "Descriptions"] }],
+      },
+    ],
+  },
+  {
+    name: "Meaning Tables",
+    steps: [{ choice: "Actions", tables: ["@[[Actions Meaning]]#action-01", "@[[Actions Meaning]]#action-02"] }],
+  },
 ];
 
 const read = async (target: string): Promise<GMFeature[] | null> =>

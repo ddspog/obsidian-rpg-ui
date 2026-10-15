@@ -29,7 +29,9 @@
   font-size: 0.7rem;
   cursor: pointer;
   color: var(--text-muted);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   z-index: 1;
 }
 
@@ -65,7 +67,9 @@
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .actor-chip:hover {

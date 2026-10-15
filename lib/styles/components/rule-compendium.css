@@ -28,7 +28,9 @@
   z-index: 10;
   background: var(--background-primary, #1e1e1e);
   padding-top: 12px;
-  transition: padding-top 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    padding-top 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .rpg-rule-tab-group__sticky-bar--stuck {
@@ -154,7 +156,9 @@
   font-size: 0.9em;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
   white-space: nowrap;
 }
 
@@ -201,59 +205,109 @@
   position: relative;
   background-image:
     /* 25% cluster: 6 lines */
-    repeating-linear-gradient(to bottom,
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
-      transparent 3px, transparent 9px),
-    repeating-linear-gradient(to bottom,
+      transparent 3px,
+      transparent 9px
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
-      transparent 5px, transparent 12px),
-    linear-gradient(to bottom,
+      transparent 5px,
+      transparent 12px
+    ),
+    linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
-      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
-    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
-      transparent 7px, transparent 16px),
-    repeating-linear-gradient(to bottom,
+      transparent 7px,
+      transparent 16px
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
-      transparent 4px, transparent 10px),
-    linear-gradient(to bottom,
+      transparent 4px,
+      transparent 10px
+    ),
+    linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
-      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
+      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)
+    ),
     /* 75% cluster: 6 lines (mirrored) */
-    linear-gradient(to bottom,
-      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
-      color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)),
-    repeating-linear-gradient(to bottom,
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent),
+        color-mix(in srgb, var(--background-modifier-border, #444) 20%, transparent)
+      ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 30%, transparent) 4px,
-      transparent 4px, transparent 10px),
-    repeating-linear-gradient(to bottom,
+      transparent 4px,
+      transparent 10px
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent) 7px,
-      transparent 7px, transparent 16px),
-    linear-gradient(to bottom,
+      transparent 7px,
+      transparent 16px
+    ),
+    linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent),
-      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)),
-    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--background-modifier-border, #444) 45%, transparent)
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 35%, transparent) 5px,
-      transparent 5px, transparent 12px),
-    repeating-linear-gradient(to bottom,
+      transparent 5px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      to bottom,
       color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 0px,
       color-mix(in srgb, var(--background-modifier-border, #444) 25%, transparent) 3px,
-      transparent 3px, transparent 9px);
+      transparent 3px,
+      transparent 9px
+    );
   background-position:
-    calc(25% - 36px) 0, calc(25% - 22px) 0, calc(25% - 8px) 0,
-    calc(25% + 8px) 0, calc(25% + 22px) 0, calc(25% + 36px) 0,
-    calc(75% - 36px) 0, calc(75% - 22px) 0, calc(75% - 8px) 0,
-    calc(75% + 8px) 0, calc(75% + 22px) 0, calc(75% + 36px) 0;
+    calc(25% - 36px) 0,
+    calc(25% - 22px) 0,
+    calc(25% - 8px) 0,
+    calc(25% + 8px) 0,
+    calc(25% + 22px) 0,
+    calc(25% + 36px) 0,
+    calc(75% - 36px) 0,
+    calc(75% - 22px) 0,
+    calc(75% - 8px) 0,
+    calc(75% + 8px) 0,
+    calc(75% + 22px) 0,
+    calc(75% + 36px) 0;
   background-size:
-    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%,
-    1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%;
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%,
+    1px 100%;
   background-repeat: no-repeat;
 }
 

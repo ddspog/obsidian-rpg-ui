@@ -153,12 +153,12 @@ section[aria-details="Character Senses"] + section[aria-details="Character Skill
   border-top-right-radius: 0;
   margin-block-start: -2px;
   background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* Through wrapper divs (Obsidian renders each block in a div) */
-div:has(> section[aria-details="Character Senses"]):has(+ div > section[aria-details="Character Skills"]) > section[aria-details="Character Senses"] {
+div:has(> section[aria-details="Character Senses"]):has(+ div > section[aria-details="Character Skills"])
+  > section[aria-details="Character Senses"] {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
@@ -170,6 +170,5 @@ div:has(> section[aria-details="Character Senses"]) + div > section[aria-details
   border-top-right-radius: 0;
   margin-block-start: -2px;
   background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.18));
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }

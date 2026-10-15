@@ -3,99 +3,99 @@
  */
 
 .lonelog-tag-pills {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-	margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .lonelog-tag-pill {
-	display: inline-flex;
-	flex-direction: column;
-	align-items: stretch;
-	padding: 0.25rem 0.75rem;
-	border-radius: 12px;
-	font-size: 0.85em;
-	font-weight: 500;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	gap: 0.25rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  gap: 0.25rem;
 }
 
 .lonelog-tag-pill.clickable {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 .lonelog-tag-pill.clickable:hover {
-	background: var(--background-modifier-hover);
-	border-color: var(--color-primary);
+  background: var(--background-modifier-hover);
+  border-color: var(--color-primary);
 }
 
 /* Tag Type Color Variants */
 .tag-npc {
-	background: var(--background-modifier-success);
-	border-color: var(--color-success);
+  background: var(--background-modifier-success);
+  border-color: var(--color-success);
 }
 
 .tag-location {
-	background: var(--background-modifier-info);
-	border-color: var(--color-info);
+  background: var(--background-modifier-info);
+  border-color: var(--color-info);
 }
 
 .tag-pc {
-	background: var(--background-modifier-accent);
-	border-color: var(--color-accent);
-	font-weight: 600;
+  background: var(--background-modifier-accent);
+  border-color: var(--color-accent);
+  font-weight: 600;
 }
 
 .tag-clock,
 .tag-track,
 .tag-event {
-	background: var(--background-modifier-warning);
-	border-color: var(--color-warning);
+  background: var(--background-modifier-warning);
+  border-color: var(--color-warning);
 }
 
 .tag-thread {
-	background: var(--background-modifier-primary);
-	border-color: var(--color-primary);
+  background: var(--background-modifier-primary);
+  border-color: var(--color-primary);
 }
 
 .tag-foe {
-	background: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.15));
-	border-color: light-dark(#dc2626, #f87171);
-	font-weight: 600;
+  background: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.15));
+  border-color: light-dark(#dc2626, #f87171);
+  font-weight: 600;
 }
 
 .tag-inventory {
-	background: light-dark(rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.12));
-	border-color: light-dark(#7c3aed, #a78bfa);
+  background: light-dark(rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.12));
+  border-color: light-dark(#7c3aed, #a78bfa);
 }
 
 .tag-wealth {
-	background: light-dark(rgba(212, 168, 64, 0.12), rgba(212, 168, 64, 0.15));
-	border-color: light-dark(#b8860b, #d4a840);
+  background: light-dark(rgba(212, 168, 64, 0.12), rgba(212, 168, 64, 0.15));
+  border-color: light-dark(#b8860b, #d4a840);
 }
 
 .tag-room {
-	background: light-dark(rgba(75, 85, 99, 0.12), rgba(156, 163, 175, 0.12));
-	border-color: light-dark(#4b5563, #9ca3af);
-	font-variant-numeric: tabular-nums;
+  background: light-dark(rgba(75, 85, 99, 0.12), rgba(156, 163, 175, 0.12));
+  border-color: light-dark(#4b5563, #9ca3af);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Tag Progress Indicator */
 .tag-progress-bar {
-	height: 4px;
- 	/* Squared track with double border */
- 	background: #000000;
- 	border: 2px solid #000000; /* inner black border */
- 	box-shadow: 0 0 0 3px #FFD400; /* outer yellow ring */
- 	border-radius: 0;
- 	overflow: hidden;
- 	margin-top: 0.25rem;
+  height: 4px;
+  /* Squared track with double border */
+  background: #000000;
+  border: 2px solid #000000; /* inner black border */
+  box-shadow: 0 0 0 3px #ffd400; /* outer yellow ring */
+  border-radius: 0;
+  overflow: hidden;
+  margin-top: 0.25rem;
 }
 
 .tag-progress-fill {
- 	height: 100%;
- 	background: #FFD400;
- 	transition: width 0.3s ease;
+  height: 100%;
+  background: #ffd400;
+  transition: width 0.3s ease;
 }

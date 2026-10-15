@@ -16,7 +16,10 @@ button[aria-details="Trigger Button"] {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s;
   flex-shrink: 0;
   position: relative;
 

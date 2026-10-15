@@ -14,7 +14,10 @@ function resolvePath(obj: unknown, path: string): unknown {
 
 function toNumber(val: unknown): number | null {
   if (typeof val === "number") return val;
-  if (typeof val === "string") { const n = Number(val); return Number.isFinite(n) ? n : null; }
+  if (typeof val === "string") {
+    const n = Number(val);
+    return Number.isFinite(n) ? n : null;
+  }
   return null;
 }
 
@@ -22,8 +25,12 @@ function findChar(expr: string, ch: string): number {
   let inQ: string | null = null;
   for (let i = 0; i < expr.length; i++) {
     const c = expr[i];
-    if (inQ) { if (c === inQ) inQ = null; }
-    else { if (c === '"' || c === "'") inQ = c; else if (c === ch) return i; }
+    if (inQ) {
+      if (c === inQ) inQ = null;
+    } else {
+      if (c === '"' || c === "'") inQ = c;
+      else if (c === ch) return i;
+    }
   }
   return -1;
 }
@@ -37,7 +44,7 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     const truePart = colonIdx >= 0 ? rest.slice(0, colonIdx).trim() : rest.trim();
     const falsePart = colonIdx >= 0 ? rest.slice(colonIdx + 1).trim() : "";
     const condVal = evalExpr(cond, ctx);
-    return condVal ? evalExpr(truePart, ctx) : (falsePart ? evalExpr(falsePart, ctx) : "");
+    return condVal ? evalExpr(truePart, ctx) : falsePart ? evalExpr(falsePart, ctx) : "";
   }
   if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
     return expr.slice(1, -1);
@@ -48,9 +55,18 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     const r = toNumber(evalExpr(cmpMatch[3].trim(), ctx));
     if (l === null || r === null) return false;
     switch (cmpMatch[2]) {
-      case ">": return l > r; case "<": return l < r;
-      case ">=": return l >= r; case "<=": return l <= r;
-      case "==": return l === r; case "!=": return l !== r;
+      case ">":
+        return l > r;
+      case "<":
+        return l < r;
+      case ">=":
+        return l >= r;
+      case "<=":
+        return l <= r;
+      case "==":
+        return l === r;
+      case "!=":
+        return l !== r;
     }
   }
   const arithMatch = expr.match(/^([\s\S]+?)\s*([+\-*/])\s*([^+\-*/]+)$/);
@@ -65,8 +81,14 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     }
     if (l === null || r === null) return null;
     switch (arithMatch[2]) {
-      case "+": return l + r; case "-": return l - r;
-      case "*": return l * r; case "/": return r !== 0 ? Math.floor(l / r) : 0;
+      case "+":
+        return l + r;
+      case "-":
+        return l - r;
+      case "*":
+        return l * r;
+      case "/":
+        return r !== 0 ? Math.floor(l / r) : 0;
     }
   }
   const t = expr.trim();
@@ -85,15 +107,20 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
 function callBuiltin(value: unknown, fn: string): unknown {
   let raw: string;
   if (typeof value === "string") raw = value;
-  else if (value && typeof value === "object" && typeof (value as Record<string, unknown>).name === "string") raw = (value as Record<string, unknown>).name as string;
+  else if (value && typeof value === "object" && typeof (value as Record<string, unknown>).name === "string")
+    raw = (value as Record<string, unknown>).name as string;
   else raw = "";
   const name = raw.toLowerCase();
   const commaIdx = name.indexOf(", ");
   switch (fn) {
-    case "first_name": return commaIdx >= 0 ? name.slice(commaIdx + 2) : name;
-    case "last_name": return commaIdx >= 0 ? name.slice(0, commaIdx) : name;
-    case "name": return commaIdx >= 0 ? `${name.slice(commaIdx + 2)} ${name.slice(0, commaIdx)}` : name;
-    default: return undefined;
+    case "first_name":
+      return commaIdx >= 0 ? name.slice(commaIdx + 2) : name;
+    case "last_name":
+      return commaIdx >= 0 ? name.slice(0, commaIdx) : name;
+    case "name":
+      return commaIdx >= 0 ? `${name.slice(commaIdx + 2)} ${name.slice(0, commaIdx)}` : name;
+    default:
+      return undefined;
   }
 }
 
@@ -126,15 +153,7 @@ function HomebrewBadge({ source }: { source: string }) {
     }
   }, []);
   const label = `Homebrew — ${source}`;
-  return (
-    <span
-      ref={ref}
-      className="rpg-feature-card__homebrew-badge"
-      role="img"
-      aria-label={label}
-      title={label}
-    />
-  );
+  return <span ref={ref} className="rpg-feature-card__homebrew-badge" role="img" aria-label={label} title={label} />;
 }
 
 /** Resolve `[[Target]]` against the vault — returns null if no file exists. */
@@ -181,14 +200,23 @@ function isNoTitleView(raw: unknown): boolean {
   return raw.toLowerCase().replace(/[\s\-_]+/g, "") === "notitle";
 }
 
-export const details: EntityBlock<FeatureDetails & { $homebrew?: boolean; example?: { self?: Record<string, unknown>; tier?: string | number } }, { lookup: DetailsLookup }> = ({ self, lookup }) => {
+export const details: EntityBlock<
+  FeatureDetails & { $homebrew?: boolean; example?: { self?: Record<string, unknown>; tier?: string | number } },
+  { lookup: DetailsLookup }
+> = ({ self, lookup }) => {
   const resolvedLink = self.link ? resolveWikilink(self.link) : null;
   const isResource = self.type === "resource";
   const hideTitle = isNoTitleView(self.view);
   const isParagraphMode = self.heading === "p";
   const HeadingTag = isParagraphMode
     ? null
-    : (`h${Math.max(1, Math.min(6, typeof self.heading === "number" ? self.heading : 3))}`) as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+    : (`h${Math.max(1, Math.min(6, typeof self.heading === "number" ? self.heading : 3))}` as
+        | "h1"
+        | "h2"
+        | "h3"
+        | "h4"
+        | "h5"
+        | "h6");
   const isHomebrew = !!(self as any).$homebrew;
 
   const context: EvalContext = React.useMemo(() => ({ tables: lookup?.$tables ?? {}, vars: {} }), [lookup?.$tables]);
@@ -225,9 +253,7 @@ export const details: EntityBlock<FeatureDetails & { $homebrew?: boolean; exampl
 
   return (
     <article className={cls.join(" ")} aria-label={`Feature ${self.name}`}>
-      {isHomebrew && (
-        <HomebrewBadge source={self.source ?? ""} />
-      )}
+      {isHomebrew && <HomebrewBadge source={self.source ?? ""} />}
       {isParagraphMode ? (
         <>
           {displayText && (

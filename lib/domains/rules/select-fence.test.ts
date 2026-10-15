@@ -51,9 +51,7 @@ describe("selectFenceBodyByIndex", () => {
     expect(selectFenceBodyByIndex(ATTACK, 1)).toBe(
       "Used in hand-to-hand combat, a melee attack typically uses a handheld weapon."
     );
-    expect(selectFenceBodyByIndex(ATTACK, 2)).toBe(
-      "When you make a ranged attack, you might fire a bow."
-    );
+    expect(selectFenceBodyByIndex(ATTACK, 2)).toBe("When you make a ranged attack, you might fire a bow.");
   });
 
   it("keeps a nested table fence inside the selected item.element body", () => {

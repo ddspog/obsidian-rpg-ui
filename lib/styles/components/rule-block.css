@@ -201,7 +201,9 @@
   background: var(--background-primary);
   color: var(--text-muted, #888);
   cursor: help;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .rpg-rule-content__marker:hover {
@@ -214,7 +216,7 @@
   height: 0.75rem;
 }
 
-/* ── rule.related: see-also section with embedded transclusions ──── *//*
+/* ── rule.related: see-also section with embedded transclusions ──── */ /*
  * Rendered when reading a rule file directly. Each entry is either a
  * raw `![[file]]` embed or a heading + embed pair. The block itself is
  * just a layout wrapper; the heavy lifting is Obsidian's own embed
@@ -330,10 +332,7 @@
    * single length). Container queries (`100cqi`) make this calc reactive
    * — no more stale values when the pane resizes after mount.
    */
-  --rpg-side-escape: calc(
-    var(--rpg-file-margins-clean, 1rem) +
-    max(0px, (100cqi - var(--file-line-width)) / 2)
-  );
+  --rpg-side-escape: calc(var(--rpg-file-margins-clean, 1rem) + max(0px, (100cqi - var(--file-line-width)) / 2));
   /* Half of file-margins, used for the inner-side breathing room. */
   --rpg-side-padding-inline: calc(var(--rpg-file-margins-clean, 1rem) / 2);
 
@@ -593,7 +592,8 @@
     radial-gradient(circle 4px at 6px 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
     radial-gradient(circle 4px at calc(100% - 6px) 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
     radial-gradient(circle 4px at 6px calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
-    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%)
+      no-repeat,
     color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
   border-radius: 0;
   border-block: 3px solid var(--rpg-rule-side-color);
@@ -1312,7 +1312,8 @@
     radial-gradient(circle 4px at 6px 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
     radial-gradient(circle 4px at calc(100% - 6px) 6px, var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
     radial-gradient(circle 4px at 6px calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
-    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%) no-repeat,
+    radial-gradient(circle 4px at calc(100% - 6px) calc(100% - 6px), var(--rpg-rule-side-color) 99%, transparent 100%)
+      no-repeat,
     color-mix(in srgb, var(--rpg-rule-side-color) 8%, transparent);
 }
 

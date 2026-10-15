@@ -28,15 +28,17 @@ function normalizeAbilities(raw: unknown): AbilityScores {
 
 function normalizeFeatures(raw: unknown): StatFeatureRef[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((entry) => {
-    if (typeof entry === "string") return { ref: entry };
-    if (entry && typeof entry === "object" && "ref" in entry) return entry as StatFeatureRef;
-    // Handle YAML-parsed [[Name]] → nested array
-    if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) {
-      return { ref: `[[${entry[0][0]}]]` };
-    }
-    return null;
-  }).filter((x): x is StatFeatureRef => x !== null);
+  return raw
+    .map((entry) => {
+      if (typeof entry === "string") return { ref: entry };
+      if (entry && typeof entry === "object" && "ref" in entry) return entry as StatFeatureRef;
+      // Handle YAML-parsed [[Name]] → nested array
+      if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) {
+        return { ref: `[[${entry[0][0]}]]` };
+      }
+      return null;
+    })
+    .filter((x): x is StatFeatureRef => x !== null);
 }
 
 function normalizeStats(raw: unknown): Record<string, string> {

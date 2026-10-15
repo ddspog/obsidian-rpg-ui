@@ -23,20 +23,22 @@ article[aria-label="Character Features"] {
   border-left: var(--_wood-border);
   border-right: var(--_wood-border);
   border-image: linear-gradient(
-    to bottom,
-    light-dark(#8b6914, #a07830),
-    light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
-  ) 1;
+      to bottom,
+      light-dark(#8b6914, #a07830),
+      light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
+    )
+    1;
 }
 
 .rpg-feature-group:last-child {
   border-left: var(--_wood-border);
   border-right: var(--_wood-border);
   border-image: linear-gradient(
-    to top,
-    light-dark(#8b6914, #a07830),
-    light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
-  ) 1;
+      to top,
+      light-dark(#8b6914, #a07830),
+      light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04))
+    )
+    1;
 }
 
 .rpg-feature-group > summary {
@@ -51,11 +53,19 @@ article[aria-label="Character Features"] {
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-feature-group > summary::-webkit-details-marker { display: none; }
-.rpg-feature-group > summary::marker { content: ""; }
+.rpg-feature-group > summary::-webkit-details-marker {
+  display: none;
+}
+.rpg-feature-group > summary::marker {
+  content: "";
+}
 
-.rpg-feature-group-icon { flex-shrink: 0; }
-.rpg-feature-group-name { flex: 1; }
+.rpg-feature-group-icon {
+  flex-shrink: 0;
+}
+.rpg-feature-group-name {
+  flex: 1;
+}
 
 .rpg-feature-group-count {
   font-weight: 400;
@@ -116,8 +126,12 @@ article[aria-label="Character Features"] {
   color: light-dark(#1a1208, #e3dcce);
 }
 
-.rpg-feature-entry > summary::-webkit-details-marker { display: none; }
-.rpg-feature-entry > summary::marker { content: ""; }
+.rpg-feature-entry > summary::-webkit-details-marker {
+  display: none;
+}
+.rpg-feature-entry > summary::marker {
+  content: "";
+}
 
 /* ── Feature collapsed/expanded toggle ─────────────────────────────────── */
 
@@ -135,8 +149,12 @@ article[aria-label="Character Features"] {
   align-items: baseline;
 }
 
-.rpg-feature-entry[open] .rpg-feature-collapsed { display: none; }
-.rpg-feature-entry[open] .rpg-feature-expanded { display: flex; }
+.rpg-feature-entry[open] .rpg-feature-collapsed {
+  display: none;
+}
+.rpg-feature-entry[open] .rpg-feature-expanded {
+  display: flex;
+}
 
 .rpg-feature-entry-name {
   font-weight: 600;

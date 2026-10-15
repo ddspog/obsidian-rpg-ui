@@ -201,9 +201,7 @@ export function deriveWeaponRolls(
 
   // Explicit rolls list wins.
   if (Array.isArray(weapon.rolls) && weapon.rolls.length > 0) {
-    return weapon.rolls.map((template, idx) =>
-      fillRollTemplate(template, element, stats, overlay, displayName, idx)
-    );
+    return weapon.rolls.map((template, idx) => fillRollTemplate(template, element, stats, overlay, displayName, idx));
   }
 
   // Inference from damage + properties.

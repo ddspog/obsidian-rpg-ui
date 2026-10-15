@@ -24,7 +24,7 @@ import { parseBranchRef } from "./steps";
 export function selectGenerator(features: GMFeature[], id?: string): GMGeneratorAspect | null {
   if (!id) {
     const withGen = features.filter((f) => f.generator);
-    return withGen.length === 1 ? withGen[0].generator ?? null : null;
+    return withGen.length === 1 ? (withGen[0].generator ?? null) : null;
   }
   for (const f of features) {
     const named = f.generators?.find((g) => g.id === id);
@@ -67,10 +67,7 @@ export function cardXFileRefs(feature: GMFeature): string[] {
  * Unresolved refs stay as-is (emitCard drops them). Pure — the caller supplies
  * the resolved map (ref → generator).
  */
-export function inlineCardXFileRefs(
-  feature: GMFeature,
-  resolved: Record<string, GMGeneratorAspect>
-): GMFeature {
+export function inlineCardXFileRefs(feature: GMFeature, resolved: Record<string, GMGeneratorAspect>): GMFeature {
   const refs = cardXFileRefs(feature).filter((r) => resolved[r]);
   if (refs.length === 0) return feature;
   const rename: Record<string, string> = {};

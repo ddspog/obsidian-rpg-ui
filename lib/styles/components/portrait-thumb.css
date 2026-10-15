@@ -10,13 +10,17 @@ figure[aria-details="Portrait Thumb"] {
   overflow: visible;
   cursor: zoom-in;
   transform-origin: top left;
-  transition: transform 0.25s ease, z-index 0s 0.25s;
+  transition:
+    transform 0.25s ease,
+    z-index 0s 0.25s;
 }
 
 figure[aria-details="Portrait Thumb"]:hover {
   transform: scale(1.5);
   z-index: 20;
-  transition: transform 0.25s ease, z-index 0s;
+  transition:
+    transform 0.25s ease,
+    z-index 0s;
 }
 
 figure[aria-details="Portrait Thumb"] img {

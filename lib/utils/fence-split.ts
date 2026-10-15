@@ -18,7 +18,12 @@ export function splitFenceBody(source: string): FenceSplit {
     if (lines[i].trim() === "---") {
       return {
         yaml: lines.slice(0, i).join("\n"),
-        text: lines.slice(i + 1).join("\n").replace(/^\n+/, "").replace(/\n+$/, "") || undefined,
+        text:
+          lines
+            .slice(i + 1)
+            .join("\n")
+            .replace(/^\n+/, "")
+            .replace(/\n+$/, "") || undefined,
       };
     }
   }
@@ -52,7 +57,10 @@ export function stripRpgFences(source: string): string {
     const sepIdx = rawBody.indexOf("\n---\n");
     let body = "";
     if (sepIdx >= 0) {
-      body = rawBody.slice(sepIdx + 5).replace(/^\n+/, "").replace(/\n+$/, "");
+      body = rawBody
+        .slice(sepIdx + 5)
+        .replace(/^\n+/, "")
+        .replace(/\n+$/, "");
     }
     replacements.push({ start: m.index, end: fenceEnd, body });
 

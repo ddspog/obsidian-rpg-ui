@@ -98,7 +98,9 @@ describe("resolveListOps — running entries", () => {
 
   it("`[Name?]` INSPECTS — the whole list, not one entry", () => {
     const ops = fold(
-      ["=> A rat. [Characters+ Giant rats]", "=> Bertha. [Characters+ Bertha]", "? Who's around? [Characters?]"].join("\n")
+      ["=> A rat. [Characters+ Giant rats]", "=> Bertha. [Characters+ Bertha]", "? Who's around? [Characters?]"].join(
+        "\n"
+      )
     );
     const inspect = [...ops.values()].flat().find((o) => o.op === "inspect");
     expect(inspect).toMatchObject({ op: "inspect", entry: "Giant rats, Bertha", count: 2 });
@@ -296,7 +298,9 @@ describe("duplicate entries weight the draw", () => {
 
   it("removes exactly ONE copy per remove, so removes undo adds one-for-one", () => {
     const ops = fold(
-      ["? Stock [Characters+ Wolf; Wolf; Wolf; Bear]", "? Thin [Characters- Wolf]", "? Thin [Characters- Wolf]"].join("\n")
+      ["? Stock [Characters+ Wolf; Wolf; Wolf; Bear]", "? Thin [Characters- Wolf]", "? Thin [Characters- Wolf]"].join(
+        "\n"
+      )
     );
     expect(ops.map((o) => o.count)).toEqual([4, 3, 2]);
     expect(ops[2].sheet?.entries).toEqual(["Wolf", "Bear"]);

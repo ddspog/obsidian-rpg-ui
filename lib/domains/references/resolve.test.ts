@@ -95,18 +95,9 @@ describe("resolveReference — fence-body paths", () => {
       "```",
     ].join("\n");
     const view = buildView(doc);
-    const sling = resolveReference(
-      parseReference("@[[Pouch]].container.ammo_cap['Sling Bullets']")!,
-      view
-    );
-    const needles = resolveReference(
-      parseReference("@[[Pouch]].container.ammo_cap[Blowgun Needles]")!,
-      view
-    );
-    const caseInsensitive = resolveReference(
-      parseReference("@[[Pouch]].container.ammo_cap[sling bullets]")!,
-      view
-    );
+    const sling = resolveReference(parseReference("@[[Pouch]].container.ammo_cap['Sling Bullets']")!, view);
+    const needles = resolveReference(parseReference("@[[Pouch]].container.ammo_cap[Blowgun Needles]")!, view);
+    const caseInsensitive = resolveReference(parseReference("@[[Pouch]].container.ammo_cap[sling bullets]")!, view);
     expect(sling.value).toBe(20);
     expect(needles.value).toBe(50);
     expect(caseInsensitive.value).toBe(20);

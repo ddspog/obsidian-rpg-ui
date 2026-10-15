@@ -41,11 +41,16 @@ import type { EditableTerm } from "lib/domains/session-log/formula";
 import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
-import { extractCardsFromEntity, extractResourcesFromEntity, getEntitySpentState } from "lib/services/session-feature-loader";
+import {
+  extractCardsFromEntity,
+  extractResourcesFromEntity,
+  getEntitySpentState,
+} from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
-import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";import type { TableDef } from "lib/domains/tables/types";
+import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
+import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
@@ -251,7 +256,8 @@ class SessionLogMarkdown extends ReactMarkdown {
       // A dial declaration imported onto the GM Screen (via `gm-tools:`) is
       // itself a loaded feature — register its dial so the whole log can read
       // its current value / `default` (the session-wide path).
-      if (feature.dial?.abbr && !dials[feature.dial.abbr]) dials[feature.dial.abbr] = { ...feature.dial, name: feature.name };
+      if (feature.dial?.abbr && !dials[feature.dial.abbr])
+        dials[feature.dial.abbr] = { ...feature.dial, name: feature.name };
       // A feature may also DECLARE a dial dependency via `reads:` (e.g. used
       // standalone, off-screen) — resolve those links too.
       for (const ref of feature.reads ?? []) {
@@ -290,7 +296,10 @@ class SessionLogMarkdown extends ReactMarkdown {
                   const tref = parseBranchRef(rawRef);
                   const tf = this.resolveLink(tref?.target ?? rawRef);
                   if (!tf) continue;
-                  const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) }, "class");
+                  const tdoc = parseSourceDoc(
+                    { $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) },
+                    "class"
+                  );
                   const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
                   if (table) tables[rawRef] = table;
                 }
@@ -302,7 +311,10 @@ class SessionLogMarkdown extends ReactMarkdown {
                   const cref = parseBranchRef(s.calls);
                   const cfile = this.resolveLink(cref?.target ?? s.calls);
                   if (cfile) {
-                    const cdoc = parseSourceDoc({ $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) }, "class");
+                    const cdoc = parseSourceDoc(
+                      { $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) },
+                      "class"
+                    );
                     const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
                     if (gen) {
                       // Lists the called file (and sub-generator files) `reads:`
@@ -320,8 +332,12 @@ class SessionLogMarkdown extends ReactMarkdown {
                             const btref = parseBranchRef(rawRef);
                             const btf = this.resolveLink(btref?.target ?? rawRef);
                             if (!btf) continue;
-                            const btdoc = parseSourceDoc({ $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) }, "class");
-                            const bt = (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
+                            const btdoc = parseSourceDoc(
+                              { $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) },
+                              "class"
+                            );
+                            const bt =
+                              (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
                             if (bt) tables[rawRef] = bt;
                           }
                         }
@@ -336,8 +352,12 @@ class SessionLogMarkdown extends ReactMarkdown {
                         const gtref = parseBranchRef(gs.table);
                         const gtf = this.resolveLink(gtref?.target ?? gs.table);
                         if (!gtf) continue;
-                        const gtdoc = parseSourceDoc({ $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) }, "class");
-                        const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
+                        const gtdoc = parseSourceDoc(
+                          { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
+                          "class"
+                        );
+                        const gtable =
+                          (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
                         if (gtable) tables[gs.table] = gtable;
                       }
                     }
@@ -364,7 +384,10 @@ class SessionLogMarkdown extends ReactMarkdown {
           const of = this.resolveLink(oref?.target ?? rawRef);
           if (!of) continue;
           try {
-            const odoc = parseSourceDoc({ $name: of.basename, $contents: await this.baseView.app.vault.read(of) }, "class");
+            const odoc = parseSourceDoc(
+              { $name: of.basename, $contents: await this.baseView.app.vault.read(of) },
+              "class"
+            );
             const ot = (oref?.block && odoc.tables.find((t) => t.name === oref.block)) || odoc.tables[0];
             if (ot) tables[rawRef] = ot;
           } catch {
@@ -391,7 +414,10 @@ class SessionLogMarkdown extends ReactMarkdown {
           const gtref = parseBranchRef(gs.table);
           const gtf = this.resolveLink(gtref?.target ?? gs.table);
           if (!gtf) continue;
-          const gtdoc = parseSourceDoc({ $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) }, "class");
+          const gtdoc = parseSourceDoc(
+            { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
+            "class"
+          );
           const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
           if (gtable) tables[gs.table] = gtable;
         }
@@ -418,7 +444,10 @@ class SessionLogMarkdown extends ReactMarkdown {
     const file = this.resolveLink(target);
     if (!file) return null;
     try {
-      return parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class").gmFeatures ?? null;
+      return (
+        parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class")
+          .gmFeatures ?? null
+      );
     } catch {
       return null;
     }
@@ -434,7 +463,10 @@ class SessionLogMarkdown extends ReactMarkdown {
         const file = this.resolveLink(parseBranchRef(ref)?.target ?? ref);
         if (!file) continue;
         try {
-          const doc = parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class");
+          const doc = parseSourceDoc(
+            { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
+            "class"
+          );
           Object.assign(lists, collectLists(doc.gmFeatures ?? []));
         } catch {
           /* unreadable list — the consult falls back to the raw `[Name?]` ref */
@@ -671,9 +703,9 @@ function SessionLogRoot({
   const [sceneEdits, setSceneEdits] = React.useState<Record<string, SceneEditValue>>({});
   const [dieEdits, setDieEdits] = React.useState<Record<string, string>>({});
   /** Pending token swaps (list-consult picks), applied on save like die edits. */
-  const [tokenEdits, setTokenEdits] = React.useState<
-    Array<{ line: string; from: string; to: string; nth: number }>
-  >([]);
+  const [tokenEdits, setTokenEdits] = React.useState<Array<{ line: string; from: string; to: string; nth: number }>>(
+    []
+  );
   // `n` forces the scroll effect to re-run even when the same id is re-clicked.
   const [selection, setSelection] = React.useState<{ id: number; side: "prose" | "sidebar"; n: number } | null>(null);
 
@@ -687,10 +719,7 @@ function SessionLogRoot({
   const scenes = React.useMemo(() => assembleProse(segments), [segments]);
   const dialOps = React.useMemo(() => resolveDialOps(logData.entries, resources), [logData.entries, resources]);
   const listOps = React.useMemo(() => resolveListOps(logData.entries, lists), [logData.entries, lists]);
-  const sidebarItems = React.useMemo(
-    () => buildSidebarItems(segments, dialOps, listOps),
-    [segments, dialOps, listOps]
-  );
+  const sidebarItems = React.useMemo(() => buildSidebarItems(segments, dialOps, listOps), [segments, dialOps, listOps]);
 
   const proseAnchors = React.useRef(new Map<number, HTMLElement>());
   const sidebarAnchors = React.useRef(new Map<number, HTMLElement>());

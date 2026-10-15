@@ -249,12 +249,16 @@ export function parseItemMagic(yamlSource: string): ItemMagicData | null {
   if (!yamlSource || !yamlSource.trim()) return {};
   const sepIdx = yamlSource.indexOf("\n---\n");
   const sepEnd = yamlSource.indexOf("\n---");
-  const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= yamlSource.length ? sepEnd : -1);
+  const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= yamlSource.length ? sepEnd : -1;
   let head: string;
   let bodyText: string | undefined;
   if (effectiveSep >= 0) {
     head = yamlSource.slice(0, effectiveSep);
-    bodyText = yamlSource.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
+    bodyText =
+      yamlSource
+        .slice(effectiveSep + 4)
+        .replace(/^\n+/, "")
+        .replace(/\n+$/, "") || undefined;
   } else {
     head = yamlSource;
   }

@@ -35,10 +35,7 @@ describe("findMatchingStyle", () => {
   });
 
   it("picks the longest matching prefix across entries", () => {
-    const styles = [
-      style("people", ["People"]),
-      style("villains", ["People/Villains"]),
-    ];
+    const styles = [style("people", ["People"]), style("villains", ["People/Villains"])];
     expect(findMatchingStyle("People/Villains/Sauron.md", styles)?.id).toBe("villains");
     expect(findMatchingStyle("People/Heroes/Frodo.md", styles)?.id).toBe("people");
   });
@@ -51,9 +48,7 @@ describe("findMatchingStyle", () => {
   });
 
   it("picks the longest prefix even when it lives inside one entry", () => {
-    const styles = [
-      style("spells", ["Spells", "Compendium/Spells", "Compendium/Spells/Cantrips"]),
-    ];
+    const styles = [style("spells", ["Spells", "Compendium/Spells", "Compendium/Spells/Cantrips"])];
     // longest is `Compendium/Spells/Cantrips`; still resolves to `spells`
     expect(findMatchingStyle("Compendium/Spells/Cantrips/Guidance.md", styles)?.id).toBe("spells");
   });

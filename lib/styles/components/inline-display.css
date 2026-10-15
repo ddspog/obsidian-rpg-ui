@@ -189,11 +189,11 @@
   .rpg-inline-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .rpg-inline-table {
     font-size: 0.9em;
   }
-  
+
   .rpg-inline-table th,
   .rpg-inline-table td {
     padding: 8px 12px;

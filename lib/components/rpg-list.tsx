@@ -57,8 +57,7 @@ function SectionView({ section, sourcePath }: { section: Section; sourcePath: st
               section.titleCells
                 ? {
                     gridTemplateColumns:
-                      "minmax(0, 1fr)" +
-                      " var(--rpg-list-val-col, 2.5rem)".repeat(section.titleCells.length - 1),
+                      "minmax(0, 1fr)" + " var(--rpg-list-val-col, 2.5rem)".repeat(section.titleCells.length - 1),
                   }
                 : undefined
             }
@@ -92,11 +91,9 @@ function SectionView({ section, sourcePath }: { section: Section; sourcePath: st
               // First column flexible (the name), each remaining column a narrow
               // fixed value width — shared with the bar so they stay aligned.
               style.gridTemplateColumns =
-                "minmax(0, 1fr)" +
-                " var(--rpg-list-val-col, 2.5rem)".repeat(line.cells.length - 1);
+                "minmax(0, 1fr)" + " var(--rpg-list-val-col, 2.5rem)".repeat(line.cells.length - 1);
             }
-            if (line.highlight?.color)
-              (style as Record<string, unknown>)["--rpg-list-hl"] = line.highlight.color;
+            if (line.highlight?.color) (style as Record<string, unknown>)["--rpg-list-hl"] = line.highlight.color;
             return (
               <li
                 className={
@@ -109,12 +106,7 @@ function SectionView({ section, sourcePath }: { section: Section; sourcePath: st
               >
                 {line.cells ? (
                   line.cells.map((cell, ci) => (
-                    <Markdown
-                      key={ci}
-                      source={cell}
-                      sourcePath={sourcePath}
-                      className="rpg-list__cell"
-                    />
+                    <Markdown key={ci} source={cell} sourcePath={sourcePath} className="rpg-list__cell" />
                   ))
                 ) : (
                   <Markdown source={line.markdown} sourcePath={sourcePath} />
@@ -180,10 +172,7 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
   const columns = blocks[0]?.columns ?? "auto";
   const paginated = React.useMemo(() => !!blocks.find((b) => b.paginate), [blocks]);
   const rows = React.useMemo(() => (resolved ? buildRows(resolved) : []), [resolved]);
-  const byId = React.useMemo(
-    () => new Map((resolved ?? []).map((r) => [r.block.id, r.block])),
-    [resolved]
-  );
+  const byId = React.useMemo(() => new Map((resolved ?? []).map((r) => [r.block.id, r.block])), [resolved]);
 
   // Measure every row's height in a hidden single-column box (one column
   // wide), then pick a column count + page split via computeLayout. Runs for
@@ -222,9 +211,7 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
         availWidth = Math.max(0, pane.clientWidth - padX);
       }
       const fitCols =
-        availWidth > 0
-          ? Math.max(1, Math.floor((availWidth + gap) / (colWidth + gap)))
-          : maxColsOf(columns);
+        availWidth > 0 ? Math.max(1, Math.floor((availWidth + gap) / (colWidth + gap))) : maxColsOf(columns);
       const maxCols = Math.min(maxColsOf(columns), fitCols);
 
       // Measure at exactly one column width (columns are always ~17rem wide,
@@ -234,23 +221,17 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
         measure.style.width = wpx;
         return; // re-fires via the measure observer once content rewraps
       }
-      const els = Array.from(
-        measure.querySelectorAll<HTMLElement>(".rpg-list__heading, .rpg-list__entry")
-      );
+      const els = Array.from(measure.querySelectorAll<HTMLElement>(".rpg-list__heading, .rpg-list__entry"));
       if (els.length === 0 || els.length !== rows.length) return;
       const rects = els.map((e) => e.getBoundingClientRect());
-      const consumed = rects.map((r, i) =>
-        i < rects.length - 1 ? Math.max(0, rects[i + 1].top - r.top) : r.height
-      );
+      const consumed = rects.map((r, i) => (i < rects.length - 1 ? Math.max(0, rects[i + 1].top - r.top) : r.height));
       const next = computeLayout(rows, consumed, {
         maxHeight: H,
         maxCols,
         minColHeight,
         paginate: paginated,
       });
-      setLayout((prev) =>
-        prev && prev.cols === next.cols && sameBoundaries(prev.pages, next.pages) ? prev : next
-      );
+      setLayout((prev) => (prev && prev.cols === next.cols && sameBoundaries(prev.pages, next.pages) ? prev : next));
     }
 
     let raf = 0;
@@ -282,9 +263,7 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
     const active = container.querySelector<HTMLElement>(".rpg-list__chip--active");
     if (!active) return;
     const target = active.offsetLeft - (container.clientWidth - active.offsetWidth) / 2;
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     container.scrollTo({ left: Math.max(0, target), behavior: reduce ? "auto" : "smooth" });
   }, [page, layout]);
 
@@ -350,10 +329,7 @@ export function RpgListView({ blocks, sourcePath, source }: RpgListViewProps) {
   }
 
   return (
-    <div
-      className="rpg-list"
-      style={{ ["--rpg-list-max-cols" as string]: layoutCols } as React.CSSProperties}
-    >
+    <div className="rpg-list" style={{ ["--rpg-list-max-cols" as string]: layoutCols } as React.CSSProperties}>
       {/* Hidden single-column measuring box — same markup as the display so
           measured heights match. */}
       <div

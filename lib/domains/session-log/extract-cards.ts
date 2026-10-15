@@ -14,10 +14,7 @@ export interface ResolvedSourceSlice {
   features: FeatureDetails[];
 }
 
-export function resolveMaxCount(
-  max: FeatureAspect["max"],
-  characterLevel?: number,
-): number | undefined {
+export function resolveMaxCount(max: FeatureAspect["max"], characterLevel?: number): number | undefined {
   if (max == null) return undefined;
   if (typeof max === "number") return max;
   if (typeof max === "string") {
@@ -47,7 +44,7 @@ function extractAspectCard(
   bucket: AspectBucket,
   source: string,
   actor: string,
-  characterLevel?: number,
+  characterLevel?: number
 ): SessionFeatureCard {
   const name = aspect.name || feature.name;
   const logTemplate = aspect.log || DEFAULT_LOG_TEMPLATE;
@@ -72,10 +69,7 @@ function extractAspectCard(
   };
 }
 
-export function extractCards(
-  sources: ResolvedSourceSlice[],
-  actor: string,
-): SessionFeatureCard[] {
+export function extractCards(sources: ResolvedSourceSlice[], actor: string): SessionFeatureCard[] {
   const cards: SessionFeatureCard[] = [];
 
   for (const src of sources) {
@@ -83,9 +77,7 @@ export function extractCards(
       for (const bucket of ASPECT_BUCKETS) {
         const aspect = feature[bucket];
         if (!aspect) continue;
-        cards.push(
-          extractAspectCard(feature, aspect, bucket, src.source, actor, src.level),
-        );
+        cards.push(extractAspectCard(feature, aspect, bucket, src.source, actor, src.level));
       }
 
       if (
@@ -101,9 +93,7 @@ export function extractCards(
           max: feature.max,
           recovery: feature.recovery,
         };
-        cards.push(
-          extractAspectCard(feature, syntheticAspect, bucket, src.source, actor, src.level),
-        );
+        cards.push(extractAspectCard(feature, syntheticAspect, bucket, src.source, actor, src.level));
       }
     }
   }

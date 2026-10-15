@@ -21,18 +21,14 @@ describe("generateFolderLinkCss", () => {
   });
 
   it("emits bold and italic declarations", () => {
-    const styles: FolderLinkStyle[] = [
-      { id: "spells", folderPaths: ["Spells"], bold: true, italic: true },
-    ];
+    const styles: FolderLinkStyle[] = [{ id: "spells", folderPaths: ["Spells"], bold: true, italic: true }];
     const out = generateFolderLinkCss(styles);
     expect(out).toContain("font-weight: bold");
     expect(out).toContain("font-style: italic");
   });
 
   it("omits bold/italic declarations when flags are unset", () => {
-    const styles: FolderLinkStyle[] = [
-      { id: "plain", folderPaths: ["Plain"], color: "#111" },
-    ];
+    const styles: FolderLinkStyle[] = [{ id: "plain", folderPaths: ["Plain"], color: "#111" }];
     const out = generateFolderLinkCss(styles);
     expect(out).not.toContain("font-weight");
     expect(out).not.toContain("font-style");
@@ -75,9 +71,7 @@ describe("generateFolderLinkCss", () => {
   });
 
   it("borderStyle 'none' removes the default internal-link underline", () => {
-    const styles: FolderLinkStyle[] = [
-      { id: "plain", folderPaths: ["Plain"], color: "#111", borderStyle: "none" },
-    ];
+    const styles: FolderLinkStyle[] = [{ id: "plain", folderPaths: ["Plain"], color: "#111", borderStyle: "none" }];
     const out = generateFolderLinkCss(styles);
     expect(out).toContain("text-decoration: none");
     expect(out).toContain("border-bottom: none");

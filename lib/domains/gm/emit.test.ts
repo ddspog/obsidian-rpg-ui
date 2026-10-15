@@ -133,7 +133,10 @@ describe("generator steps", () => {
   it("emits a `choices:` step as a pick dropdown (no die)", () => {
     const feature: GMFeature = {
       name: "Event Meaning",
-      generator: { name: "Event Meaning", steps: [{ work: "Event Meaning", choices: ["Actions", "Descriptions", "Elements"] }] },
+      generator: {
+        name: "Event Meaning",
+        steps: [{ work: "Event Meaning", choices: ["Actions", "Descriptions", "Elements"] }],
+      },
     };
     expect(emitGMFeature(feature)).toBe(
       ["gen: Event Meaning", "  Event Meaning: [Actions/Descriptions/Elements - ]"].join("\n")
@@ -233,7 +236,10 @@ describe("emitGMFeature", () => {
     expect(
       emitGMFeature({
         name: "Elements",
-        table: { source: ["@[[Location Descriptors]].table(locations)", "@[[Objects Descriptors]].table(objects)"], die: "d100" },
+        table: {
+          source: ["@[[Location Descriptors]].table(locations)", "@[[Objects Descriptors]].table(objects)"],
+          die: "d100",
+        },
       })
     ).toBe(["tbl: locations d100= ->", "tbl: objects d100= ->"].join("\n"));
   });

@@ -32,8 +32,7 @@
   --rpg-list-val-col: 2.5rem;
   --rpg-list-max-cols: 3;
   --rpg-list-cap: calc(
-    var(--rpg-list-max-cols) * var(--rpg-list-col) +
-    (var(--rpg-list-max-cols) - 1) * var(--rpg-list-col-gap)
+    var(--rpg-list-max-cols) * var(--rpg-list-col) + (var(--rpg-list-max-cols) - 1) * var(--rpg-list-col-gap)
   );
   --rpg-list-width: min(100cqi, var(--rpg-list-cap));
 
@@ -58,7 +57,6 @@
 [class*="block-language-"]:has(.rpg-list) {
   overflow: visible;
 }
-
 
 /* ── Flowing multi-column container ── */
 .rpg-list__columns {
@@ -401,4 +399,3 @@ button.rpg-list__page-arrow:disabled {
 .rpg-list__heading--cont :is(h1, h2, h3, h4, h5, h6) {
   opacity: 0.75;
 }
-

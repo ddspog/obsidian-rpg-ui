@@ -40,12 +40,7 @@ function parseMod(value: unknown): number {
 
 /** Heading level (1–6) for a category title; undefined when absent/invalid. */
 function parseLevel(value: unknown): number | undefined {
-  const n =
-    typeof value === "number"
-      ? value
-      : typeof value === "string"
-        ? parseInt(value, 10)
-        : NaN;
+  const n = typeof value === "number" ? value : typeof value === "string" ? parseInt(value, 10) : NaN;
   if (!Number.isFinite(n)) return undefined;
   return Math.min(6, Math.max(1, Math.trunc(n)));
 }
@@ -66,7 +61,12 @@ function normalizeFeatures(raw: unknown): StatFeatureRef[] {
       if (!isBlank(entry)) out.push({ ref: entry.trim() });
     } else if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>)) {
       out.push(entry as StatFeatureRef);
-    } else if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0]) && typeof entry[0][0] === "string") {
+    } else if (
+      Array.isArray(entry) &&
+      entry.length === 1 &&
+      Array.isArray(entry[0]) &&
+      typeof entry[0][0] === "string"
+    ) {
       out.push({ ref: `[[${entry[0][0]}]]` });
     }
   }

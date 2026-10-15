@@ -15,14 +15,17 @@ interface FeatureDetailsBody {
 function parseFeatureDetailsBlock(raw: string): FeatureDetailsBody | null {
   const sepIdx = raw.indexOf("\n---\n");
   const sepEnd = raw.indexOf("\n---");
-  const effectiveSep =
-    sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
+  const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
 
   let yamlText: string;
   let bodyText: string | undefined;
   if (effectiveSep >= 0) {
     yamlText = raw.slice(0, effectiveSep);
-    bodyText = raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
+    bodyText =
+      raw
+        .slice(effectiveSep + 4)
+        .replace(/^\n+/, "")
+        .replace(/\n+$/, "") || undefined;
   } else {
     yamlText = raw;
   }
@@ -92,11 +95,7 @@ function resolvePath(obj: Record<string, unknown>, path: string): unknown {
   return cur;
 }
 
-function substituteText(
-  text: string,
-  params: Record<string, unknown>,
-  selfProps: Record<string, unknown>
-): string {
+function substituteText(text: string, params: Record<string, unknown>, selfProps: Record<string, unknown>): string {
   const ctx = { self: selfProps, ...params };
 
   // Replace all `{{ expr }}` blocks with their evaluated result.
@@ -199,12 +198,18 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     const right = toNumber(evalExpr(cmpMatch[3].trim(), ctx));
     if (left === null || right === null) return false;
     switch (cmpMatch[2]) {
-      case ">": return left > right;
-      case "<": return left < right;
-      case ">=": return left >= right;
-      case "<=": return left <= right;
-      case "==": return left === right;
-      case "!=": return left !== right;
+      case ">":
+        return left > right;
+      case "<":
+        return left < right;
+      case ">=":
+        return left >= right;
+      case "<=":
+        return left <= right;
+      case "==":
+        return left === right;
+      case "!=":
+        return left !== right;
     }
   }
 
@@ -224,10 +229,14 @@ function evalExpr(expr: string, ctx: Record<string, unknown>): unknown {
     }
     if (left === null || right === null) return null;
     switch (arithMatch[2]) {
-      case "+": return left + right;
-      case "-": return left - right;
-      case "*": return left * right;
-      case "/": return right !== 0 ? Math.floor(left / right) : 0;
+      case "+":
+        return left + right;
+      case "-":
+        return left - right;
+      case "*":
+        return left * right;
+      case "/":
+        return right !== 0 ? Math.floor(left / right) : 0;
     }
   }
 
@@ -320,9 +329,7 @@ export async function resolveStatFeatures(
       contentCache.set(fileStem, content);
     }
 
-    const feature = blockName
-      ? extractFeatureByName(content, blockName)
-      : extractFirstFeatureDetails(content);
+    const feature = blockName ? extractFeatureByName(content, blockName) : extractFirstFeatureDetails(content);
 
     if (!feature) {
       results.push({ name: blockName ?? fileStem, text: "" });
@@ -340,8 +347,7 @@ export async function resolveStatFeatures(
         if (autoVal != null) tierKey = String(autoVal);
       }
       const tierValues =
-        (tierKey != null ? feature.tiers[tierKey] : undefined) ??
-        feature.tiers[Object.keys(feature.tiers)[0]];
+        (tierKey != null ? feature.tiers[tierKey] : undefined) ?? feature.tiers[Object.keys(feature.tiers)[0]];
       if (tierValues && typeof tierValues === "object") {
         mergedParams = { ...tierValues, ...ref };
       }

@@ -8,12 +8,7 @@
  * `extractSpellBlocks` harvester used by the character spell index.
  */
 
-import {
-  App,
-  MarkdownPostProcessorContext,
-  MarkdownRenderChild,
-  parseYaml,
-} from "obsidian";
+import { App, MarkdownPostProcessorContext, MarkdownRenderChild, parseYaml } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { splitFenceBody } from "lib/utils/fence-split";

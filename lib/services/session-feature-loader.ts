@@ -1,6 +1,12 @@
 import { parse as parseYaml } from "yaml";
 import type { EntityData } from "./entity-resolver";
-import type { CharacterDecl, CompendiumLib, ResolvedSource, ResolvedView, ResourceDecl } from "lib/domains/features/types";
+import type {
+  CharacterDecl,
+  CompendiumLib,
+  ResolvedSource,
+  ResolvedView,
+  ResourceDecl,
+} from "lib/domains/features/types";
 import { resolveFeatures } from "lib/domains/features/resolver";
 import { extractCards, extractResourceDecls, type ResolvedSourceSlice } from "lib/domains/session-log/extract-cards";
 import type { SessionFeatureCard } from "lib/domains/session-log/card-types";
@@ -19,12 +25,7 @@ function linkStem(raw: unknown): string | undefined {
   let v: unknown = raw;
   while (Array.isArray(v)) v = v[0];
   if (typeof v !== "string") return undefined;
-  const stem = v
-    .replace(/^\[\[/, "")
-    .replace(/\]\]$/, "")
-    .replace(/\.md$/, "")
-    .split("|")[0]
-    .trim();
+  const stem = v.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/\.md$/, "").split("|")[0].trim();
   return stem || undefined;
 }
 
@@ -35,10 +36,7 @@ function pillStem(p: { file?: unknown } | unknown): string | undefined {
   return linkStem(file);
 }
 
-function buildDeclFromHeader(
-  header: HeaderBlock,
-  featuresData: Record<string, unknown>,
-): CharacterDecl {
+function buildDeclFromHeader(header: HeaderBlock, featuresData: Record<string, unknown>): CharacterDecl {
   return {
     classes: (header.classes ?? []).map((c) => ({
       name: linkStem(c.name) ?? "",
@@ -69,7 +67,7 @@ function extractSpellCards(
   resolved: ResolvedView,
   spellsYaml: Record<string, unknown> | undefined,
   spellLibrary: Record<string, Record<string, unknown>>,
-  actorName: string,
+  actorName: string
 ): SessionFeatureCard[] {
   const cards: SessionFeatureCard[] = [];
   if (!resolved.casters || resolved.casters.length === 0) return cards;

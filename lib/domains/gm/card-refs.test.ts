@@ -65,7 +65,9 @@ describe("inlineCardXFileRefs", () => {
       "@[[Scene Check]]#scene-check": { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene" },
     };
     const out = inlineCardXFileRefs(feature, resolved);
-    expect(out.generators).toEqual([{ name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene", id: "xref-0" }]);
+    expect(out.generators).toEqual([
+      { name: "Testing the Expected Scene", roll: "d10", vs: "CF", work: "Scene", id: "xref-0" },
+    ]);
     expect(out.cards![0].emits[1]).toBe("@xref-0");
     // and it now emits as a full generator through emitCard
     expect(emitCard(out.cards![0], out.generators)).toBe(
@@ -74,7 +76,10 @@ describe("inlineCardXFileRefs", () => {
   });
 
   it("leaves an unresolved ref untouched (emitCard drops it)", () => {
-    const feature: GMFeature = { name: "X", cards: [{ name: "A", emits: [{ oracle: { question: "Q?" } }, "@[[Gone]]#x"] }] };
+    const feature: GMFeature = {
+      name: "X",
+      cards: [{ name: "A", emits: [{ oracle: { question: "Q?" } }, "@[[Gone]]#x"] }],
+    };
     const out = inlineCardXFileRefs(feature, {});
     expect(out).toBe(feature); // no resolved refs → same reference, no rewrite
     expect(emitCard(out.cards![0])).toBe("? Q?");

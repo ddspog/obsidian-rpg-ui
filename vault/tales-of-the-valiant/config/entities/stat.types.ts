@@ -21,4 +21,12 @@ export type StatExpressions = Record<string, never>;
 
 export type StatEntity = EntityDescriptor<StatBlocks, StatLookup, StatExpressions>;
 
-export type { AbilityScores, ResolvedStatFeature, StatFeatureRef, StatCategoryData, StatGroupData, StatMonsterData, StatVehicleData };
+export type {
+  AbilityScores,
+  ResolvedStatFeature,
+  StatFeatureRef,
+  StatCategoryData,
+  StatGroupData,
+  StatMonsterData,
+  StatVehicleData,
+};

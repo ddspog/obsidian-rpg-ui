@@ -159,7 +159,17 @@ export function detectMetaFromSource(source: string): string | null {
     // to rule.content and render the lonelog body as literal prose. These keys
     // belong to no other block schema.
     const GM_HEADER_MARKERS = [
-      "generators", "cards", "oracle", "dial", "list", "reads", "emits", "scene", "event", "stack", "steps",
+      "generators",
+      "cards",
+      "oracle",
+      "dial",
+      "list",
+      "reads",
+      "emits",
+      "scene",
+      "event",
+      "stack",
+      "steps",
     ];
     if (GM_HEADER_MARKERS.some((k) => headerKeys.has(k))) {
       return "feature.gm";
@@ -171,10 +181,26 @@ export function detectMetaFromSource(source: string): string | null {
     // keys unique to the feature schema (rule.content uses `id:`, not `name:`).
     if (headerKeys.has("name")) {
       const featureHeaderMarkers = [
-        "subtitle", "traits", "level", "pick", "resource",
-        "action", "reaction", "passive", "bonus", "active",
-        "spellcasting", "choose", "roll", "tag", "uses",
-        "link", "value", "values", "update", "type",
+        "subtitle",
+        "traits",
+        "level",
+        "pick",
+        "resource",
+        "action",
+        "reaction",
+        "passive",
+        "bonus",
+        "active",
+        "spellcasting",
+        "choose",
+        "roll",
+        "tag",
+        "uses",
+        "link",
+        "value",
+        "values",
+        "update",
+        "type",
       ];
       if (featureHeaderMarkers.some((k) => headerKeys.has(k))) {
         return "feature.details";
@@ -224,9 +250,7 @@ export function detectMetaFromSource(source: string): string | null {
   // `entries:`) — none of which appear in rule.related or show bodies.
   if (topLevelKeys.has("entries")) {
     const hasListMarker =
-      topLevelKeys.has("columns") ||
-      topLevelKeys.has("paginate") ||
-      /^[ \t]+(?:call|format|text)[ \t]*:/m.test(source);
+      topLevelKeys.has("columns") || topLevelKeys.has("paginate") || /^[ \t]+(?:call|format|text)[ \t]*:/m.test(source);
     if (hasListMarker) return "list";
   }
 
@@ -238,9 +262,7 @@ export function detectMetaFromSource(source: string): string | null {
   const sourceLines2 = source.split("\n");
   const hasArrayItems = sourceLines2.some((l) => /^\s*-\s/.test(l));
   if (hasArrayItems) {
-    const hasEmbedOrCall = sourceLines2.some((l) =>
-      /!\[\[|@\[\[/.test(l)
-    );
+    const hasEmbedOrCall = sourceLines2.some((l) => /!\[\[|@\[\[/.test(l));
     if (hasEmbedOrCall) return "rule.related";
   }
 

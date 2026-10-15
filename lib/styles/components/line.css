@@ -62,7 +62,10 @@ menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
 /* Strong override for environments where other rules block margin-left from applying */
 /* Use a single, high-specificity selector to position the inspirational widget.
    Avoid !important by relying on specificity and load order. */
-header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] > menu[aria-details="Line of Big Elements"] > .rpg-inspirational-level {
+header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  > menu[aria-details="Line of Big Elements"]
+  > .rpg-inspirational-level {
   margin-left: auto;
 }
 

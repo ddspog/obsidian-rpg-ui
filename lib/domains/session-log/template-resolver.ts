@@ -52,10 +52,7 @@ export function needsUserInput(placeholders: ParsedPlaceholder[]): ParsedPlaceho
   return placeholders.filter((p) => !p.autoResolvable);
 }
 
-export function resolveLogTemplate(
-  template: string,
-  values: Record<string, string>,
-): string {
+export function resolveLogTemplate(template: string, values: Record<string, string>): string {
   return template.replace(PLACEHOLDER_RE, (match, key) => values[key] ?? match);
 }
 
@@ -69,7 +66,7 @@ export function buildAutoValues(ctx: ResolutionContext): Record<string, string> 
 export function resolveWithContext(
   template: string,
   ctx: ResolutionContext,
-  userValues: Record<string, string>,
+  userValues: Record<string, string>
 ): string {
   const values = { ...buildAutoValues(ctx), ...userValues };
   return resolveLogTemplate(template, values);
