@@ -1,4 +1,5 @@
 ---
+token: "🏹"
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg character.header
@@ -17,14 +18,15 @@ luck: 0
 banner: "#ac8080"
 ```
 ```rpg character.health
-portrait: [[cleric-harold-davies.webp]]
+portrait: "[[Talon Pallton.webp]]"
+framed: true
 max_hp: 10
 current_hp: 10
 temp_hp: 0
 hit_dice:
   d10:
     max: 1
-    current: 0
+    current: 1
 death_saves:
   successes: 0
   failures: 0
@@ -110,8 +112,8 @@ items:
         qty: 19
   - name: "[[Shortsword]]"
     qty: 2
-    slot: main_hand
     notes: For melee, dual
+    slot: main_hand
   - name: "[[Leather]]"
     slot: armor
   - name: "[[Clothes, fine]]"
@@ -121,6 +123,11 @@ items:
     container: main
   - name: "[[Pouch]]"
     container: main
+# What's in hand — each loadout has a name; switch from the Log's Gear button or here.
+# The Shortswords are one entry (qty 2): in hand, they are the pair.
+loadouts:
+  Bow:    { main_hand: "[[Longbow]]" }
+  Blades: { main_hand: "[[Shortsword]]", off_hand: "[[Shortsword]]" }
 currency:
   pp: 0
   gp: 20

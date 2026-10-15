@@ -1,4 +1,5 @@
 ---
+token: "🌿"
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg character.header
@@ -18,14 +19,15 @@ luck: 0
 banner: "#ac8080"
 ```
 ```rpg character.health
-portrait: [[cleric-harold-davies.webp]]
+portrait: "[[Kowyn 1.webp]]"
+framed: true
 max_hp: 10
 current_hp: 10
 temp_hp: 0
 hit_dice:
   d8:
     max: 1
-    current: 0
+    current: 1
 death_saves:
   successes: 0
   failures: 0
@@ -121,19 +123,25 @@ casters:
 items:
   - name: "[[Quarterstaff]]"
     notes: SC Focus
-    slot: main_hand          # off-hand empty → 2-handed 1d8 mode unlocks
+    slot: main_hand
   - name: "[[Leather]]"
     slot: armor
   - name: "[[Shield]]"
-    slot: shield
-  - "[[Clothes, common]]"
+  - name: "[[Clothes, common]]"
   - name: "[[Druidic Focus]]"
     notes: Totem
-  - "[[Waterskin]]"
+    slot: off_hand
+  - name: "[[Waterskin]]"
   - name: "[[Pouch]]"
     contents:
       - "[[Incense (one block) ᴺ]]"
       - "[[Ceremonial Dagger ᴺ]]"
+# What's in hand — each loadout has a name; switch from the Log's Gear button or here.
+# A hand holds one item: a weapon, a shield, or a spellcasting focus.
+loadouts:
+  Staff & Shield: { main_hand: "[[Quarterstaff]]", shield: "[[Shield]]" }
+  Staff & Totem:  { main_hand: "[[Quarterstaff]]", off_hand: "[[Druidic Focus]]" }   # casting with the totem
+  Staff:          { main_hand: "[[Quarterstaff]]" }   # off hand free: grips it in two hands (1d8)
 currency:
   pp: 0
   gp: 10

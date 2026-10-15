@@ -6,6 +6,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 # Attack
 ```rpg feature.details
 type: action
+icon: "⚔️"
 ---
 The most common action in combat is the [[Attack]] action, whether you swing a sword, fire an arrow from a bow, or brawl with your fists. With this action, you make one [[Melee Attack|melee]] or ranged attack. Certain features, such as the fighter’s Multiattack, allow you to make more than one attack with this action. 
 

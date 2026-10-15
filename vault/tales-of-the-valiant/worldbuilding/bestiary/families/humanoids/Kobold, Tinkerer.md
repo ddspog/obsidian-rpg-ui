@@ -1,4 +1,5 @@
 ---
+token: "⚙️"
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
 ---
 ```rpg stat.monster

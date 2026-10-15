@@ -74,6 +74,7 @@ Martial weapons, including swords, axes, and polearms, require training to use e
 `@[[Improvised Weapon]].highlight().bare()`
 ````
 ````rpg rule.tab
+id: options
 name: Options
 icon: hand
 color: var(--color-yellow)

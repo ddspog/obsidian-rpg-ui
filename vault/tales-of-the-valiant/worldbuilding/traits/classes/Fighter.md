@@ -145,6 +145,9 @@ bonus:
   - name: Aim
     text: |
       As a bonus action, you take the time to increase the effectiveness of your next [[Ranged]] weapon attack. Select one target you can see. If you make a ranged weapon attack against that target before the end of your turn, double your PB for the first attack roll.
+    rider:
+      with: ranged
+      hit: PB
   - name: Guard
     text: |
       As a bonus action, you raise your [[Shield]] to intercept incoming attacks. Select one enemy creature within 5 feet of you. That creature has [[Advantage|Disadvantage]] on the first attack roll it makes against you or an ally within 5 feet of you before the start of your next turn.
@@ -154,6 +157,9 @@ bonus:
   - name: Wind Up
     text: |
       As a bonus action, you ready a powerful attack against a nearby target. Select one target you can see within 10 feet of you. If you hit that target with a [[Melee]] weapon attack before the end of your turn, the first such attack deals extra damage equal to your PB (of the same damage type as the weapon).
+    rider:
+      with: melee
+      damage: PB
 
 ---
 Your tactical expertise allows you to act quickly on the battlefield. You can take a bonus action on each of your turns in combat to perform a [[Weapon Option]] or one of the martial actions granted by this feature.

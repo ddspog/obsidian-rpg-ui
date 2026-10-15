@@ -6,6 +6,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 # Opportunity Attack
 ```rpg feature.details
 type: reaction
+icon: "🗡️"
 ---
 In a fight, everyone is constantly watching for a chance to strike an enemy who flees or passes by. Such a strike is called an [[opportunity attack]]. 
 

@@ -147,6 +147,7 @@ resource:
     While a creature is marked (including for the attack that triggered the mark), you deal an extra {{ leveled: { 1: 1d4, 6: 1d6, 13: 1d8, 17: 1d10 } }} damage to it (of the same damage type as the weapon) each time you successfully hit it with a weapon attack.
 roll:
   form: rider
+  mark: marked
   range: Any
   damage:
     roll: 1d4
@@ -185,6 +186,9 @@ bonus:
   - name: Aim
     text: |
       As a bonus action, you take the time to increase the effectiveness of your next [[Ranged]] weapon attack. Select one target you can see. If you make a ranged weapon attack against that target before the end of your turn, double your PB for the first attack roll.
+    rider:
+      with: ranged
+      hit: PB
   - name: Quick Strike
     text: |
       After you take the Attack action on your turn and attack with a [[Light]] [[Melee]] weapon that you're holding in one hand, you can use a bonus action to make two attacks with a different Light melee weapon that you're holding in the other hand—instead of the one attack typically granted by [[Two-Weapon Fighting]]. Don't add your ability modifier to the damage of these additional attacks unless the modifier is negative.

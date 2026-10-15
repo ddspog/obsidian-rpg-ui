@@ -1,4 +1,5 @@
 ---
+token: "⛏️"
 source: From **D&D 5e** "Creature Codex" by **Kobold Press**.
 aliases:
   - elite kobold
