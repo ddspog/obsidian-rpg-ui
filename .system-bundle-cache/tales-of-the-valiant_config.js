@@ -341,96 +341,165 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     return table2[clamped - 1].slice();
   }
 
-  // vault:tales-of-the-valiant/config/blocks/character/header.tsx
-  var React = __toESM(__require("react"));
-  var import_obsidian = __require("obsidian");
-  var import_rpg_ui_toolkit = __require("rpg-ui-toolkit");
-  function bareLink(value) {
-    let raw = value;
-    while (Array.isArray(raw)) raw = raw[0];
-    if (typeof raw !== "string") return "";
-    return raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+  // vault:tales-of-the-valiant/config/entities/basic-actions.ts
+  var FOLDERS = [
+    { folder: "concepts/actions", type: "action" },
+    { folder: "concepts/bonus-actions", type: "bonus" },
+    { folder: "concepts/reactions", type: "reaction" }
+  ];
+  async function loadBasicActions(wiki) {
+    const docs = await Promise.all(FOLDERS.map((f) => wiki.folder(f.folder)));
+    return FOLDERS.flatMap(
+      ({ type }, i) => {
+        var _a;
+        return ((_a = docs[i]) != null ? _a : []).map((d) => {
+          var _a2, _b;
+          return { $name: (_a2 = d == null ? void 0 : d.$name) != null ? _a2 : "", $contents: (_b = d == null ? void 0 : d.$contents) != null ? _b : "", type };
+        });
+      }
+    );
   }
-  function CommentMarkdown({ source }) {
-    const ref = React.useRef(null);
-    React.useEffect(() => {
-      var _a, _b, _c, _d, _e, _f;
-      const el = ref.current;
-      if (!el) return;
-      (_a = el.empty) == null ? void 0 : _a.call(el);
-      el.innerHTML = "";
-      if (!source) return;
-      const app = globalThis.app;
-      const sourcePath = (_e = (_d = (_c = (_b = app == null ? void 0 : app.workspace) == null ? void 0 : _b.getActiveFile) == null ? void 0 : _c.call(_b)) == null ? void 0 : _d.path) != null ? _e : "";
-      const comp = new import_obsidian.Component();
-      comp.load();
-      const renderer = import_obsidian.MarkdownRenderer;
-      const promise = typeof renderer.render === "function" ? renderer.render(app, source, el, sourcePath, comp) : (_f = renderer.renderMarkdown) == null ? void 0 : _f.call(renderer, source, el, sourcePath, comp);
-      Promise.resolve(promise).then(() => {
-        const p = el.querySelector("p");
-        if (p && p.parentElement === el) {
-          while (p.firstChild) el.appendChild(p.firstChild);
-          p.remove();
-        }
-      }).catch(() => {
-        el.textContent = source;
-      });
-      return () => {
-        try {
-          comp.unload();
-        } catch (e) {
-        }
-      };
-    }, [source]);
-    return /* @__PURE__ */ React.createElement("span", { ref });
-  }
-  function PillRef({ details: details2 }) {
-    const link = bareLink(details2.file);
-    const label = details2.text || link;
-    return /* @__PURE__ */ React.createElement("span", { "aria-details": "Pill Reference", className: "rpg-pill-ref" }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Pill.Link, { link }, label), details2.comment && /* @__PURE__ */ React.createElement("small", { "aria-details": "Pill Comment", className: "rpg-pill-comment" }, /* @__PURE__ */ React.createElement(CommentMarkdown, { source: details2.comment })));
-  }
-  var header = ({ self, lookup, expressions, trigger }) => {
+  function fenceHeader(contents) {
     var _a;
-    return /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Header.Banner, { label: "Character", background: self.banner, distribution: "2 1" }, /* @__PURE__ */ React.createElement("hgroup", { "aria-details": "Name & Summary" }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Title, null), /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Line.Pills, null, self.classes && self.classes.map((cls, i) => {
-      var _a2;
-      const className = bareLink(cls.name);
-      const subclass = bareLink((_a2 = cls.sub) != null ? _a2 : cls.subclass);
-      return /* @__PURE__ */ React.createElement(React.Fragment, { key: `class-${i}` }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Pill.Link, { link: className }, className, " ", cls.level), subclass && /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Pill.Link, { link: subclass }, subclass));
-    }), self.lineage && /* @__PURE__ */ React.createElement(PillRef, { details: self.lineage }), self.heritage && /* @__PURE__ */ React.createElement(PillRef, { details: self.heritage }), self.background && /* @__PURE__ */ React.createElement(PillRef, { details: self.background }))), /* @__PURE__ */ React.createElement("fieldset", { "aria-details": "Leveling" }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Line.BigElements, null, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Line.Buttons, null, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Button.Trigger, { onClick: () => trigger("short-rest"), "aria-label": "Short Rest" }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Lucide.UtensilsCrossed, { size: 28, strokeWidth: 1 })), /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Button.Trigger, { onClick: () => trigger("long-rest"), "aria-label": "Long Rest" }, /* @__PURE__ */ React.createElement(import_rpg_ui_toolkit.Lucide.FlameKindling, { size: 28, strokeWidth: 1 }))), /* @__PURE__ */ React.createElement(
-      import_rpg_ui_toolkit.Level.Inspirational,
-      {
-        level: expressions.CharacterLevel(),
-        inspiration: self.luck,
-        maxPoints: 5,
-        onUpdateInspiration: (value) => self.setLuck(value)
-      }
-    )), /* @__PURE__ */ React.createElement(
-      import_rpg_ui_toolkit.Progress.Bar,
-      {
-        value: self.xp,
-        max: (_a = lookup.table.xp[expressions.CharacterLevel()]) != null ? _a : lookup.table.xp[expressions.CharacterLevel() - 1]
-      }
-    )));
-  };
-  var header_default = header;
+    return (_a = contents == null ? void 0 : contents.match(/```rpg feature\.details\n([\s\S]*?)(?:\n---\n|\n```)/)) == null ? void 0 : _a[1];
+  }
+  function scalar(header2, key) {
+    var _a;
+    const raw = (_a = header2 == null ? void 0 : header2.match(new RegExp(`^${key}:\\s*(.+?)\\s*$`, "m"))) == null ? void 0 : _a[1];
+    const value = raw == null ? void 0 : raw.replace(/^["']|["']$/g, "");
+    return value || void 0;
+  }
+  function list(header2, key) {
+    var _a;
+    const raw = (_a = header2 == null ? void 0 : header2.match(new RegExp(`^${key}:\\s*\\[(.*)\\]\\s*$`, "m"))) == null ? void 0 : _a[1];
+    const items = raw == null ? void 0 : raw.split(",").map((v) => v.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    return items && items.length > 0 ? items : void 0;
+  }
+  function basicSessionActions(basics) {
+    const skip = /* @__PURE__ */ new Set(["attack", "cast a spell"]);
+    return (basics != null ? basics : []).filter((f) => f.$name && !skip.has(f.$name.toLowerCase())).map((f) => {
+      var _a;
+      const header2 = fenceHeader(f.$contents);
+      const icon = scalar(header2, "icon");
+      const summary = scalar(header2, "summary");
+      const skills2 = list(header2, "skills");
+      const target = scalar(header2, "target") === "true";
+      const freeform = scalar(header2, "freeform") === "true";
+      const rank = Number(scalar(header2, "rank"));
+      return {
+        name: f.$name,
+        // Its own note describes it — the card links there.
+        link: f.$name,
+        origin: "basic",
+        bucket: (_a = f.type) != null ? _a : "action",
+        ...icon ? { icon } : {},
+        ...summary ? { summary } : {},
+        ...skills2 ? { skills: skills2 } : {},
+        ...target ? { target } : {},
+        ...freeform ? { freeform } : {},
+        ...Number.isFinite(rank) && rank > 0 ? { rank } : {}
+      };
+    });
+  }
 
-  // vault:tales-of-the-valiant/config/blocks/character/health.tsx
-  var React2 = __toESM(__require("react"));
-  var import_rpg_ui_toolkit2 = __require("rpg-ui-toolkit");
-  function parseCondition(raw) {
-    var _a, _b, _c, _d, _e;
-    if (Array.isArray(raw)) raw = raw[0];
-    if (raw && typeof raw === "object") {
-      const obj = raw;
-      raw = (_d = (_c = (_b = (_a = obj.link) != null ? _a : obj.path) != null ? _b : obj.file) != null ? _c : obj.src) != null ? _d : "";
+  // vault:tales-of-the-valiant/config/entities/character.skills.ts
+  var SKILLS = [
+    { name: "Acrobatics", attr: "DEX" },
+    { name: "Animal Handling", attr: "WIS" },
+    { name: "Arcana", attr: "INT" },
+    { name: "Athletics", attr: "STR" },
+    { name: "Deception", attr: "CHA" },
+    { name: "History", attr: "INT" },
+    { name: "Insight", attr: "WIS" },
+    { name: "Intimidation", attr: "CHA" },
+    { name: "Investigation", attr: "INT" },
+    { name: "Medicine", attr: "WIS" },
+    { name: "Nature", attr: "INT" },
+    { name: "Perception", attr: "WIS" },
+    { name: "Performance", attr: "CHA" },
+    { name: "Persuasion", attr: "CHA" },
+    { name: "Religion", attr: "INT" },
+    { name: "Sleight of Hand", attr: "DEX" },
+    { name: "Stealth", attr: "DEX" },
+    { name: "Survival", attr: "WIS" }
+  ];
+  var SKILL_SET = new Set(SKILLS.map((s) => s.name));
+  var ATTR_BY_NAME = {
+    strength: "STR",
+    dexterity: "DEX",
+    constitution: "CON",
+    intelligence: "INT",
+    wisdom: "WIS",
+    charisma: "CHA"
+  };
+  function bareLabel(raw) {
+    return raw.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+  }
+  function skillResolver(self, traits) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
+    const profCounts = /* @__PURE__ */ new Map();
+    for (const raw of (_a = traits["Skill P."]) != null ? _a : []) {
+      const name = bareLabel(raw);
+      if (!SKILL_SET.has(name)) continue;
+      profCounts.set(name, ((_b = profCounts.get(name)) != null ? _b : 0) + 1);
     }
-    let val = typeof raw === "string" ? raw : String(raw != null ? raw : "");
-    const aliasMatch = val.match(/^\[\[(.+?)\|(.+)\]\]$/);
-    if (aliasMatch) return { linkpath: aliasMatch[1].trim(), label: aliasMatch[2].trim() };
-    const wikiMatch = val.match(/^\[\[(.+)\]\]$/);
-    if (wikiMatch) val = wikiMatch[1].trim();
-    const segment = (_e = val.split(/[/\\]/).pop()) != null ? _e : val;
-    return { label: segment.replace(/\.[^.]+$/, "").trim(), linkpath: val || null };
+    for (const raw of (_c = traits["Skill E."]) != null ? _c : []) {
+      const name = bareLabel(raw);
+      if (!SKILL_SET.has(name)) continue;
+      profCounts.set(name, Math.max((_d = profCounts.get(name)) != null ? _d : 0, 2));
+    }
+    const halfNames = /* @__PURE__ */ new Set();
+    for (const raw of (_e = traits["Skill J."]) != null ? _e : []) {
+      const name = bareLabel(raw);
+      if (SKILL_SET.has(name)) halfNames.add(name);
+    }
+    const vantageByName = /* @__PURE__ */ new Map();
+    const bonusByName = /* @__PURE__ */ new Map();
+    for (const raw of (_f = traits["Skill A."]) != null ? _f : []) {
+      const name = bareLabel(raw);
+      if (!SKILL_SET.has(name)) continue;
+      vantageByName.set(name, ((_g = vantageByName.get(name)) != null ? _g : 0) + 1);
+    }
+    for (const raw of (_h = traits["Skill D."]) != null ? _h : []) {
+      const name = bareLabel(raw);
+      if (!SKILL_SET.has(name)) continue;
+      vantageByName.set(name, ((_i = vantageByName.get(name)) != null ? _i : 0) - 1);
+    }
+    for (const raw of (_j = traits["Skill B."]) != null ? _j : []) {
+      const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
+      if (!match) continue;
+      const bonus = parseFloat(match[1]);
+      const name = bareLabel(match[2]);
+      if (!Number.isFinite(bonus) || !SKILL_SET.has(name)) continue;
+      bonusByName.set(name, ((_k = bonusByName.get(name)) != null ? _k : 0) + bonus);
+    }
+    const additional = (_l = self == null ? void 0 : self.additional) != null ? _l : {};
+    for (const n of (_m = additional.profs) != null ? _m : []) {
+      if (SKILL_SET.has(n)) profCounts.set(n, ((_n = profCounts.get(n)) != null ? _n : 0) + 1);
+    }
+    for (const n of (_o = additional.expertise) != null ? _o : []) {
+      if (SKILL_SET.has(n)) profCounts.set(n, Math.max((_p = profCounts.get(n)) != null ? _p : 0, 2));
+    }
+    for (const n of (_q = additional.half_profs) != null ? _q : []) {
+      if (SKILL_SET.has(n)) halfNames.add(n);
+    }
+    const derivedProficiency = (name) => {
+      var _a2;
+      const count = (_a2 = profCounts.get(name)) != null ? _a2 : 0;
+      if (count >= 2) return 2;
+      if (count >= 1) return 1;
+      if (halfNames.has(name)) return 0.5;
+      return 0;
+    };
+    return (name) => {
+      var _a2, _b2, _c2, _d2, _e2;
+      const override = self == null ? void 0 : self[name];
+      return {
+        proficiency: (_a2 = override == null ? void 0 : override.proficiency) != null ? _a2 : derivedProficiency(name),
+        vantage: (_c2 = (_b2 = override == null ? void 0 : override.vantage) != null ? _b2 : vantageByName.get(name)) != null ? _c2 : 0,
+        bonus: (_e2 = (_d2 = override == null ? void 0 : override.bonus) != null ? _d2 : bonusByName.get(name)) != null ? _e2 : 0
+      };
+    };
   }
   function parseNumericTrait(raw) {
     if (typeof raw === "number") return raw;
@@ -439,69 +508,30 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const n = parseFloat(cleaned.replace(/^[+\s]+/, ""));
     return Number.isFinite(n) ? n : 0;
   }
-  var health = ({ self, blocks, lookup, expressions }) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
-    const deathSaves = (_a = self.death_saves) != null ? _a : { successes: 0, failures: 0 };
-    const yamlHitDice = (_b = self.hit_dice) != null ? _b : {};
-    const conditions = (_c = self.conditions) != null ? _c : [];
-    const exhaustion = (_d = self.exhaustion) != null ? _d : 0;
-    const header2 = blocks.header;
-    const featuresBlock = blocks.features;
-    const inventory2 = blocks.inventory;
-    const view = (_e = lookup.$features) == null ? void 0 : _e.call(lookup, header2, featuresBlock == null ? void 0 : featuresBlock.choices, featuresBlock == null ? void 0 : featuresBlock.additional, inventory2);
-    const traits = (_f = view == null ? void 0 : view.traits) != null ? _f : {};
-    const hitDice = resolveHitDice(view, yamlHitDice);
-    const speeds = resolveSpeeds(self.speed, traits);
-    const naturalAcFromTraits = ((_g = traits["Natural AC"]) != null ? _g : []).map(parseNumericTrait).filter((n) => Number.isFinite(n) && n > 0);
-    const naturalAc = Math.max((_h = self.natural_ac) != null ? _h : 10, ...naturalAcFromTraits.length > 0 ? naturalAcFromTraits : [0]);
-    const initExpertise = ((_i = traits["Initiative E."]) != null ? _i : []).length > 0;
-    const initFull = ((_j = traits["Initiative P."]) != null ? _j : []).length > 0;
-    const initHalf = ((_k = traits["Initiative J."]) != null ? _k : []).length > 0;
-    const initProfLevel = initExpertise ? 2 : initFull ? 1 : initHalf ? 0.5 : 0;
-    const initFlat = ((_l = traits["Initiative B."]) != null ? _l : []).reduce((n, raw) => n + parseNumericTrait(raw), 0);
-    const initiativeTotal = expressions.ModifierTotal({
-      attribute: "DEX",
-      proficiency: initProfLevel,
-      bonus: initFlat
-    });
-    const initAdv = ((_m = traits["Initiative A."]) != null ? _m : []).length > 0;
-    const initDis = ((_n = traits["Initiative D."]) != null ? _n : []).length > 0;
-    const initVantage = initAdv && !initDis ? "adv" : initDis && !initAdv ? "dis" : void 0;
-    const handleSpendDie = (dieType) => {
-      var _a2, _b2;
-      const current = (_b2 = (_a2 = hitDice[dieType]) == null ? void 0 : _a2.current) != null ? _b2 : 0;
-      if (current <= 0) return;
-      self.setHit_dice({
-        ...yamlHitDice,
-        [dieType]: current - 1
-      });
+  function initiativeDetails(traits) {
+    var _a, _b, _c, _d, _e, _f;
+    const expertise = ((_a = traits["Initiative E."]) != null ? _a : []).length > 0;
+    const full = ((_b = traits["Initiative P."]) != null ? _b : []).length > 0;
+    const half = ((_c = traits["Initiative J."]) != null ? _c : []).length > 0;
+    const adv = ((_d = traits["Initiative A."]) != null ? _d : []).length > 0;
+    const dis = ((_e = traits["Initiative D."]) != null ? _e : []).length > 0;
+    return {
+      attr: "DEX",
+      proficiency: expertise ? 2 : full ? 1 : half ? 0.5 : 0,
+      bonus: ((_f = traits["Initiative B."]) != null ? _f : []).reduce((n, raw) => n + parseNumericTrait(raw), 0),
+      vantage: adv && !dis ? 1 : dis && !adv ? -1 : 0
     };
-    const equippedAc = resolveEquippedAc(blocks, lookup, naturalAc);
-    return /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Section.Row, { label: "Health Management", distribution: "1 2" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.PortraitThumb, { src: self.portrait }), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Article.Column, { label: "Content" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.HGroup.Row, { label: "Defense Stats" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Line.Control, null, /* @__PURE__ */ React2.createElement(
-      import_rpg_ui_toolkit2.DeathSaveDots,
-      {
-        side: "failures",
-        count: 3,
-        filled: deathSaves.failures,
-        onChange: (v) => self.setDeath_saves({ ...deathSaves, failures: v })
-      }
-    ), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Badge.Shield, { value: equippedAc.armor, label: "Armor" }), equippedAc.shieldBonus > 0 && /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Badge.Shield, { value: equippedAc.armor + equippedAc.shieldBonus, label: "Shield" }), /* @__PURE__ */ React2.createElement(
-      import_rpg_ui_toolkit2.DeathSaveDots,
-      {
-        side: "successes",
-        count: 3,
-        filled: deathSaves.successes,
-        onChange: (v) => self.setDeath_saves({ ...deathSaves, successes: v })
-      }
-    )), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Line.Stats, null, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Stat.Diamond, { label: "Initiative", value: initiativeTotal, format: "bonus", vantage: initVantage }), speeds.map((s, i) => {
-      var _a2, _b2;
-      return /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Stat.Diamond, { key: i, label: (_a2 = s.type) != null ? _a2 : "Walk", value: (_b2 = s.value) != null ? _b2 : 30, format: "unit", size: "lg" });
-    }), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Stat.Diamond, { label: "Proficiency", value: expressions.ProficiencyBonus(), format: "bonus" }))), /* @__PURE__ */ React2.createElement("p", { "aria-details": "Health Management Row", style: { alignItems: "stretch" } }, /* @__PURE__ */ React2.createElement("dl", { "aria-label": "Health Controller", style: { flex: 3 } }, /* @__PURE__ */ React2.createElement("dt", null, "HIT POINTS"), /* @__PURE__ */ React2.createElement("dd", { "aria-label": "Progress Health" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Progress.Health, { value: (_o = self.current_hp) != null ? _o : 0, max: (_p = self.max_hp) != null ? _p : 0, secondary: (_q = self.temp_hp) != null ? _q : 0 })), /* @__PURE__ */ React2.createElement("dt", null, "Hit Dice"), /* @__PURE__ */ React2.createElement("dd", { "aria-label": "Dice Tray" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.DiceTray, { dice: hitDice, onSpend: handleSpendDie }))), /* @__PURE__ */ React2.createElement("dl", { "aria-label": "Character Status", style: { flex: 2 } }, /* @__PURE__ */ React2.createElement("dt", null, "Exhaustion"), /* @__PURE__ */ React2.createElement("dd", { "aria-label": "Progress Numbered" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Progress.Numbered, { value: exhaustion, max: 6 })), /* @__PURE__ */ React2.createElement("dt", null, "Conditions"), /* @__PURE__ */ React2.createElement("dd", { "aria-label": "Conditions List" }, conditions.length === 0 ? /* @__PURE__ */ React2.createElement("span", { "aria-details": "No Conditions" }, "\u2014") : conditions.map((raw, i) => {
-      const { label, linkpath } = parseCondition(raw);
-      return /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.ConditionPill, { key: i, value: raw, label, linkpath });
-    }))))));
-  };
-  var health_default = health;
+  }
+
+  // vault:tales-of-the-valiant/config/entities/character.defense.ts
+  function characterArmorClass(blocks, lookup, traits, naturalAcYaml) {
+    var _a, _b;
+    const fromTraits = ((_a = traits["Natural AC"]) != null ? _a : []).map(parseNumericTrait).filter((n) => Number.isFinite(n) && n > 0);
+    const naturalAc = Math.max(naturalAcYaml != null ? naturalAcYaml : 10, ...fromTraits.length > 0 ? fromTraits : [0]);
+    const traitBonus = ((_b = traits["AC Bonus"]) != null ? _b : []).reduce((n, raw) => n + parseNumericTrait(raw), 0);
+    const worn = resolveEquippedAc(blocks, lookup, naturalAc);
+    return { ...worn, bonus: worn.bonus + traitBonus };
+  }
   function resolveEquippedAc(blocks, lookup, naturalAc) {
     var _a, _b;
     const inv = blocks == null ? void 0 : blocks.inventory;
@@ -510,6 +540,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const dexMod = abilityModFromBlocks(blocks, "DEX");
     let armor = naturalAc;
     let shieldBonus = 0;
+    let bonus = 0;
+    const handsAssigned = items.some(
+      (raw) => {
+        var _a2;
+        return !!raw && typeof raw === "object" && ["main_hand", "off_hand", "shield"].includes((_a2 = raw.slot) != null ? _a2 : "");
+      }
+    );
     for (const raw of items) {
       if (!raw || typeof raw !== "object") continue;
       const o = raw;
@@ -519,17 +556,24 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const fm = lib[name];
       if (!fm) continue;
       const armorBlock = fm.armor && typeof fm.armor === "object" ? fm.armor : void 0;
+      if (typeof o.slot === "string" && o.slot) {
+        const extra = parseAcBonus(
+          typeof fm.ac_bonus === "number" || typeof fm.ac_bonus === "string" ? String(fm.ac_bonus) : typeof (armorBlock == null ? void 0 : armorBlock.bonus) === "number" || typeof (armorBlock == null ? void 0 : armorBlock.bonus) === "string" ? String(armorBlock.bonus) : void 0
+        );
+        bonus += extra;
+      }
       if (!armorBlock) continue;
       const formula = typeof armorBlock.ac === "string" ? armorBlock.ac : void 0;
       const category2 = typeof armorBlock.category === "string" ? armorBlock.category.toLowerCase() : void 0;
       if (category2 === "shield") {
-        const bonus = parseAcBonus(formula);
-        if (bonus > shieldBonus) shieldBonus = bonus;
+        const wielded = !handsAssigned || o.slot === "shield" || o.slot === "off_hand";
+        const value = wielded ? parseAcBonus(formula) : 0;
+        if (value > shieldBonus) shieldBonus = value;
       } else if (o.slot === "armor") {
         armor = (_b = computeArmorValue(formula, category2, dexMod)) != null ? _b : armor;
       }
     }
-    return { armor, shieldBonus };
+    return { armor, shieldBonus, bonus };
   }
   function abilityModFromBlocks(blocks, key) {
     var _a;
@@ -566,6 +610,949 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const inner = m ? m[1] : raw;
     return inner.split("|")[0].split("/").pop().trim();
   }
+
+  // vault:tales-of-the-valiant/config/blocks/character/rolls.tsx
+  var React = __toESM(__require("react"));
+  var import_rpg_ui_toolkit = __require("rpg-ui-toolkit");
+
+  // vault:tales-of-the-valiant/config/entities/roll-card.ts
+  function rollBucket(roll, hurts) {
+    const attacks = roll.form === "melee" || roll.form === "ranged" || roll.form === "spell";
+    return attacks || hurts ? "attack" : "action";
+  }
+  function rollInflicts(roll, conditions) {
+    var _a;
+    if (roll.inflicts) return roll.inflicts;
+    if (!roll.save) return void 0;
+    const effect = ((_a = roll.effects) != null ? _a : []).map((e) => {
+      var _a2;
+      return (typeof e === "string" ? e : (_a2 = e.label) != null ? _a2 : "").trim().toLowerCase();
+    }).find((e) => !!e && !!(conditions == null ? void 0 : conditions[e]));
+    return effect ? { condition: effect, on: "fail", ...roll.notes ? { note: roll.notes } : {} } : void 0;
+  }
+
+  // vault:tales-of-the-valiant/config/blocks/character/rolls.tsx
+  function deriveRollRows(manual, blocks, lookup) {
+    const stats2 = resolveWielderStats(blocks);
+    const characterLevel = resolveCharacterLevel(blocks);
+    const equip = resolveEquipState(blocks, lookup);
+    const resolvedCasters = resolveCasters(blocks, lookup);
+    const rawRows = [
+      ...deriveWeaponRows(blocks, lookup, stats2, equip),
+      ...deriveSpellRows(blocks, lookup, stats2, resolvedCasters, characterLevel),
+      ...deriveFeatureRows(blocks, lookup, characterLevel),
+      ...deriveManualRows(manual)
+    ];
+    const rows = rawRows.map((row) => ({
+      ...row,
+      available: isRollAvailable(row.kind, row.roll, row.sourceNote, equip)
+    }));
+    return { rows, stats: stats2, characterLevel };
+  }
+  function rollRowAction(row, conditions) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    const roll = row.roll;
+    const name = (_a = roll.name) != null ? _a : row.sourceNote;
+    const specs = Array.isArray(roll.damage) ? roll.damage : roll.damage ? [roll.damage] : [];
+    const first = specs[0];
+    const damage = first ? `${first.roll}${first.bonus ? /^[+-]/.test(first.bonus) ? first.bonus : `+${first.bonus}` : ""} ${(_b = first.type) != null ? _b : ""}`.trim() : void 0;
+    const attacks = roll.form === "melee" || roll.form === "ranged" || roll.form === "spell";
+    const dmg = (r) => {
+      var _a2;
+      const s = Array.isArray(r.damage) ? r.damage[0] : r.damage;
+      return s ? `${s.roll}${s.bonus ? /^[+-]/.test(s.bonus) ? s.bonus : `+${s.bonus}` : ""} ${(_a2 = s.type) != null ? _a2 : ""}`.trim() : void 0;
+    };
+    const circle = typeof roll.circle === "number" ? roll.circle : void 0;
+    const cast = row.kind === "spell" && circle != null && circle > 0 ? {
+      circle,
+      damage: Object.fromEntries(
+        [circle, ...Object.keys((_c = roll.upcast) != null ? _c : {}).map(Number)].map((c) => {
+          var _a2;
+          return [c, dmg(c === circle ? roll : applyRollOverride(roll, (_a2 = roll.upcast) == null ? void 0 : _a2[c]))];
+        }).filter((e) => !!e[1])
+      )
+    } : void 0;
+    if (roll.form === "rider") {
+      return {
+        name,
+        bucket: "rider",
+        rider: {
+          ...damage ? { damage } : {},
+          ...roll.cost ? { cost: { resource: name, amount: (_d = roll.cost.amount) != null ? _d : 1 } } : {},
+          ...roll.mark ? { mark: roll.mark } : {}
+        },
+        ...row.sourceNote ? { link: `${row.sourceNote}#${name}` } : {}
+      };
+    }
+    const inflicts = rollInflicts(roll, conditions);
+    const heals = ((_e = first == null ? void 0 : first.type) == null ? void 0 : _e.toLowerCase()) === "healing";
+    const spends = roll.cost && row.kind !== "spell" ? { resource: roll.cost.type === "hit-dice" ? "Hit Dice" : name, amount: (_f = roll.cost.amount) != null ? _f : 1 } : void 0;
+    return {
+      name,
+      origin: row.kind === "spell" ? "spell" : row.kind === "weapon" ? "weapon" : "feature",
+      bucket: rollBucket(roll, !!damage && !heals),
+      ...attacks && roll.to_hit ? { hit: roll.to_hit } : {},
+      ...attacks ? { attackForm: roll.form } : {},
+      ...((_g = roll.save) == null ? void 0 : _g.dc) ? { save: `${roll.save.ability} ${roll.save.dc}` } : {},
+      ...damage && !heals ? { damage } : {},
+      ...damage && heals ? { heal: damage.replace(/\s*healing$/i, "") } : {},
+      ...spends ? { spends } : {},
+      ...roll.range ? { range: roll.range } : {},
+      // The note the roll comes from (the weapon, the spell) — the card links there;
+      // a feature, to itself among its source's (`Druid#Nature's Gift`).
+      ...row.sourceNote ? { link: row.kind === "feature" && name !== row.sourceNote ? `${row.sourceNote}#${name}` : row.sourceNote } : {},
+      ...cast ? { cast } : {},
+      ...inflicts ? { inflicts } : {}
+    };
+  }
+  var rolls = ({ self, blocks, lookup }) => {
+    const { rows, stats: stats2, characterLevel } = deriveRollRows(self.rolls, blocks, lookup);
+    return /* @__PURE__ */ React.createElement("section", { "aria-details": "Character Rolls", className: "rpg-rolls" }, rows.length === 0 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React.createElement("span", null, "Rolls")), /* @__PURE__ */ React.createElement("p", { className: "rpg-rolls__empty" }, /* @__PURE__ */ React.createElement("em", null, "No rolls available."))) : /* @__PURE__ */ React.createElement("div", { className: "rpg-rolls__scroll" }, /* @__PURE__ */ React.createElement("table", { className: "rpg-rolls__table" }, /* @__PURE__ */ React.createElement("thead", { className: "rpg-rolls__head-band" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "rpg-rolls__head-label" }, "Rolls"), /* @__PURE__ */ React.createElement("th", null, "Hit"), /* @__PURE__ */ React.createElement("th", null, "DC"), /* @__PURE__ */ React.createElement("th", null, "Range"), /* @__PURE__ */ React.createElement("th", null, "Damage"), /* @__PURE__ */ React.createElement("th", null, "Cost"), /* @__PURE__ */ React.createElement("th", null, "Effects"))), /* @__PURE__ */ React.createElement("tbody", null, rows.map((row) => /* @__PURE__ */ React.createElement(RollRowUI, { key: row.id, row, blocks, stats: stats2, characterLevel }))))));
+  };
+  function useNoteKey() {
+    return React.useMemo(() => {
+      var _a, _b, _c, _d;
+      const app = globalThis.app;
+      return (_d = (_c = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a)) == null ? void 0 : _c.path) != null ? _d : "default";
+    }, []);
+  }
+  function usePersistentNumber(storageKey, defaultValue) {
+    const [value, setValue] = React.useState(() => {
+      try {
+        if (typeof localStorage === "undefined") return defaultValue;
+        const stored = localStorage.getItem(storageKey);
+        if (stored === null || stored === "") return defaultValue;
+        const parsed = Number(stored);
+        return Number.isFinite(parsed) ? parsed : defaultValue;
+      } catch (e) {
+        return defaultValue;
+      }
+    });
+    const update = React.useCallback(
+      (next) => {
+        setValue(next);
+        try {
+          if (next === void 0) localStorage.removeItem(storageKey);
+          else localStorage.setItem(storageKey, String(next));
+        } catch (e) {
+        }
+      },
+      [storageKey]
+    );
+    return [value, update];
+  }
+  function filterCastableCircles(declaredCircles, caster, blocks) {
+    var _a;
+    if (!caster || caster.tier === "none") {
+      return { castable: declaredCircles, anyAvailable: true };
+    }
+    const spells2 = blocks == null ? void 0 : blocks.spells;
+    const state = (_a = spells2 == null ? void 0 : spells2.casters) == null ? void 0 : _a[caster.source];
+    const maxByCircle = slotsForCaster(caster.tier, caster.level);
+    const castable = declaredCircles.filter((c) => {
+      var _a2, _b, _c, _d, _e;
+      if (c === 0) return true;
+      const max = (_a2 = maxByCircle[c - 1]) != null ? _a2 : 0;
+      const spent = Number((_e = (_d = (_b = state == null ? void 0 : state.spent) == null ? void 0 : _b[c]) != null ? _d : (_c = state == null ? void 0 : state.spent) == null ? void 0 : _c[String(c)]) != null ? _e : 0) || 0;
+      return max - spent > 0;
+    });
+    const anyAvailable = declaredCircles.length === 0 || castable.length > 0;
+    return { castable, anyAvailable };
+  }
+  function RollRowUI({
+    row,
+    blocks,
+    stats: stats2,
+    characterLevel
+  }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    const noteKey = useNoteKey();
+    const baseRoll = row.roll;
+    const declaredCircles = baseRoll.upcast ? [baseRoll.circle, ...Object.keys(baseRoll.upcast).map(Number)].filter((n) => typeof n === "number" && Number.isFinite(n)).sort((a, b) => a - b) : [];
+    const { castable, anyAvailable } = filterCastableCircles(declaredCircles, row.caster, blocks);
+    const [upcastCircleRaw, setUpcastCircle] = usePersistentNumber(`${noteKey}:rolls:${row.id}:upcast`, baseRoll.circle);
+    const upcastCircle = React.useMemo(() => {
+      var _a2;
+      if (castable.length === 0) return upcastCircleRaw;
+      if (upcastCircleRaw != null && castable.includes(upcastCircleRaw)) return upcastCircleRaw;
+      return castable.includes((_a2 = baseRoll.circle) != null ? _a2 : -1) ? baseRoll.circle : castable[0];
+    }, [upcastCircleRaw, castable, baseRoll.circle]);
+    const swapOptions = (_b = (_a = baseRoll.swapOn) == null ? void 0 : _a.options) != null ? _b : [];
+    const swapInitialIdx = React.useMemo(() => {
+      if (!baseRoll.swapOn) return 0;
+      const baseValue = baseRoll.swapOn.field === "range" ? baseRoll.range : baseRoll.name;
+      const match = swapOptions.findIndex((o) => o.value === baseValue);
+      return match >= 0 ? match : 0;
+    }, [baseRoll, swapOptions]);
+    const [swapIndexRaw, setSwapIndex] = usePersistentNumber(`${noteKey}:rolls:${row.id}:swap`, swapInitialIdx);
+    const swapIndex = swapIndexRaw != null ? swapIndexRaw : swapInitialIdx;
+    const [costAmountRaw, setCostAmount] = usePersistentNumber(`${noteKey}:rolls:${row.id}:cost`, (_c = baseRoll.cost) == null ? void 0 : _c.amount);
+    const costAmount = costAmountRaw;
+    let roll = baseRoll;
+    if (baseRoll.upcast && upcastCircle != null && upcastCircle !== baseRoll.circle) {
+      roll = applyRollOverride(roll, baseRoll.upcast[upcastCircle]);
+    }
+    if (baseRoll.swapOn && swapOptions[swapIndex]) {
+      const opt = swapOptions[swapIndex];
+      roll = applyRollOverride(roll, opt);
+      if (baseRoll.swapOn.field === "range") roll = { ...roll, range: opt.value };
+      else roll = { ...roll, name: opt.value };
+    }
+    const name = roll.name || row.sourceNote;
+    const dcText = roll.save ? `${roll.save.ability} ${(_d = roll.save.dc) != null ? _d : "\u2014"}` : "";
+    const formHasHit = roll.form === "melee" || roll.form === "ranged" || roll.form === "spell";
+    const hitText = formHasHit ? (_e = roll.to_hit) != null ? _e : "" : "";
+    const slotGated = row.kind === "spell" && declaredCircles.length > 0 && !anyAvailable;
+    const available = row.available && !slotGated;
+    const unavailReason = !row.available ? `Unavailable: needs ${(_f = roll.requires) != null ? _f : "equip"}` : slotGated ? "Unavailable: out of spell slots" : void 0;
+    const cycleUpcast = () => {
+      if (castable.length <= 1) return;
+      const active = upcastCircle != null ? upcastCircle : castable[0];
+      const idx = castable.indexOf(active);
+      const next = castable[(idx + 1) % castable.length];
+      setUpcastCircle(next);
+    };
+    const cycleSwap = () => {
+      if (swapOptions.length <= 1) return;
+      setSwapIndex((swapIndex + 1) % swapOptions.length);
+    };
+    const resolvedCostMax = resolveCostMax((_g = baseRoll.cost) == null ? void 0 : _g.max, {
+      pb: stats2.pb,
+      characterLevel,
+      sourceLevel: row.sourceLevel
+    });
+    const cycleCost = () => {
+      const cost = baseRoll.cost;
+      if (!cost || resolvedCostMax == null || resolvedCostMax <= 1) return;
+      const current = costAmount != null ? costAmount : cost.amount;
+      const next = current >= resolvedCostMax ? 1 : current + 1;
+      setCostAmount(next);
+    };
+    return /* @__PURE__ */ React.createElement("tr", { "data-form": roll.form, "data-available": available ? "true" : "false", "aria-description": unavailReason }, /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__name" }, /* @__PURE__ */ React.createElement(FormCell, { roll: baseRoll, effectiveCircle: upcastCircle, onCycle: cycleUpcast, canCycle: castable.length > 1 }), /* @__PURE__ */ React.createElement(
+      SwapOrText,
+      {
+        field: "name",
+        value: name,
+        swapOn: baseRoll.swapOn,
+        onCycle: cycleSwap,
+        fallback: /* @__PURE__ */ React.createElement("a", { className: "internal-link", href: row.sourceNote, "data-href": row.sourceNote }, name)
+      }
+    )), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__hit" }, hitText), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__dc" }, dcText), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__range" }, /* @__PURE__ */ React.createElement(SwapOrText, { field: "range", value: (_h = roll.range) != null ? _h : "", swapOn: baseRoll.swapOn, onCycle: cycleSwap })), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__damage" }, /* @__PURE__ */ React.createElement(DamageCell, { damage: roll.damage })), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__cost" }, /* @__PURE__ */ React.createElement(
+      CostCell,
+      {
+        cost: roll.cost,
+        amount: (_j = costAmount != null ? costAmount : (_i = roll.cost) == null ? void 0 : _i.amount) != null ? _j : 1,
+        resolvedMax: resolvedCostMax,
+        onCycle: cycleCost
+      }
+    )), /* @__PURE__ */ React.createElement("td", { className: "rpg-rolls__effects" }, /* @__PURE__ */ React.createElement(EffectsCell, { roll })));
+  }
+  function DamageCell({ damage }) {
+    if (!damage) return null;
+    const list2 = Array.isArray(damage) ? damage : [damage];
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, list2.map((d, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: i }, i > 0 && /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__damage-sep" }, " + "), /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__damage-roll" }, compactDie(d.roll, d.bonus)), /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__damage-type" }, " ", d.type))));
+  }
+  function compactDie(roll, bonus) {
+    if (!bonus || bonus === "+0") return roll;
+    return `${roll}${bonus.startsWith("-") ? bonus : `+${bonus.replace(/^\+/, "")}`}`;
+  }
+  function EffectsCell({ roll }) {
+    var _a, _b, _c, _d, _e;
+    const pills = [];
+    const onSuccess = (_c = (_b = (_a = roll.save) == null ? void 0 : _a.on_success) == null ? void 0 : _b.toLowerCase()) != null ? _c : "";
+    if (onSuccess.includes("half")) {
+      pills.push({
+        glyph: "\xBD",
+        label: "Half damage on successful save",
+        cls: "rpg-rolls__icon--save-half",
+        key: "save-half"
+      });
+    } else if (onSuccess.includes("no")) {
+      pills.push({
+        glyph: "\u2205",
+        label: "No damage on successful save",
+        cls: "rpg-rolls__icon--save-none",
+        key: "save-none"
+      });
+    } else if (roll.save) {
+      pills.push({
+        glyph: "\u21BA",
+        label: `On save: ${(_d = roll.save.on_success) != null ? _d : "negates effect"}`,
+        cls: "rpg-rolls__icon--save-other",
+        key: "save-other"
+      });
+    }
+    for (const [idx, eff] of ((_e = roll.effects) != null ? _e : []).entries()) {
+      const resolved = resolveEffect(eff);
+      if (!resolved) continue;
+      pills.push({
+        glyph: resolved.glyph,
+        label: resolved.label,
+        cls: "rpg-rolls__icon--condition",
+        key: `eff-${idx}`
+      });
+    }
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, pills.map((p) => {
+      var _a2;
+      return /* @__PURE__ */ React.createElement("span", { key: p.key, className: `rpg-rolls__icon ${(_a2 = p.cls) != null ? _a2 : ""}`, "data-tip": p.label, "aria-label": p.label }, p.glyph);
+    }), roll.notes && /* @__PURE__ */ React.createElement("small", { className: "rpg-rolls__notes-text" }, roll.notes));
+  }
+  var EFFECT_VOCABULARY = {
+    blinded: { glyph: "\u{1F441}", label: "Blinded" },
+    prone: { glyph: "\u2935", label: "Knocked prone" },
+    poisoned: { glyph: "\u2620", label: "Poisoned" },
+    charmed: { glyph: "\u2665", label: "Charmed" },
+    restrained: { glyph: "\u{1FAA2}", label: "Restrained" },
+    grappled: { glyph: "\u270A", label: "Grappled" },
+    frightened: { glyph: "\u{1F631}", label: "Frightened" },
+    stunned: { glyph: "\u{1F4AB}", label: "Stunned" },
+    deafened: { glyph: "\u{1F442}", label: "Deafened" },
+    unconscious: { glyph: "\u{1F4A4}", label: "Unconscious" },
+    push: { glyph: "\u2192", label: "Pushes the target" },
+    pin: { glyph: "\u{1F4CC}", label: "Pinned" }
+  };
+  function resolveEffect(eff) {
+    var _a;
+    if (typeof eff === "string") {
+      const hit = EFFECT_VOCABULARY[eff.toLowerCase()];
+      if (hit) return hit;
+      return { glyph: eff, label: eff };
+    }
+    if (eff && typeof eff === "object" && typeof eff.icon === "string") {
+      return { glyph: eff.icon, label: (_a = eff.label) != null ? _a : eff.icon };
+    }
+    return null;
+  }
+  function CostCell({
+    cost,
+    amount,
+    resolvedMax,
+    onCycle
+  }) {
+    if (!cost) return null;
+    const resolved = resolveCost(cost);
+    const label = `${amount}\xD7 ${resolved.label}`;
+    const canCycle = resolvedMax != null && resolvedMax > 1;
+    const content = /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__cost-amount" }, amount), /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__cost-icon", "aria-hidden": "true" }, resolved.glyph));
+    if (canCycle) {
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "rpg-rolls__cost-btn",
+          onClick: onCycle,
+          "aria-label": `${label}. Click to cycle.`,
+          "data-tip": `${label} \u2014 click to cycle`
+        },
+        content
+      );
+    }
+    return /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__cost-label", "aria-label": label, "data-tip": label }, content);
+  }
+  var COST_VOCABULARY = {
+    "hit-dice": { glyph: "\u{1F3B2}", label: "Hit dice" },
+    "channel-divinity": { glyph: "\u271D", label: "Channel Divinity" },
+    "wild-shape": { glyph: "\u{1F43E}", label: "Wild Shape" },
+    "mystic-mark": { glyph: "\u{1F3AF}", label: "Mystic Mark" },
+    "pb-pool": { glyph: "\u2742", label: "PB-pool use" },
+    rage: { glyph: "\u{1F525}", label: "Rage" },
+    ki: { glyph: "\u262F", label: "Ki point" },
+    "sorcery-point": { glyph: "\u27E1", label: "Sorcery point" },
+    "superiority-die": { glyph: "\u25C8", label: "Superiority die" },
+    "bardic-inspiration": { glyph: "\u{1F3B5}", label: "Bardic Inspiration" }
+  };
+  function resolveCost(cost) {
+    const hit = COST_VOCABULARY[cost.type.toLowerCase()];
+    if (hit) return hit;
+    return { glyph: cost.type, label: cost.type };
+  }
+  var CIRCLED_NUMERALS = {
+    0: "\u24EA",
+    1: "\u2460",
+    2: "\u2461",
+    3: "\u2462",
+    4: "\u2463",
+    5: "\u2464",
+    6: "\u2465",
+    7: "\u2466",
+    8: "\u2467",
+    9: "\u2468"
+  };
+  function FormCell({
+    roll,
+    effectiveCircle,
+    onCycle,
+    canCycle
+  }) {
+    var _a;
+    if (roll.circle != null) {
+      const circle = effectiveCircle != null ? effectiveCircle : roll.circle;
+      const glyph = (_a = CIRCLED_NUMERALS[circle]) != null ? _a : "\u2728";
+      if (roll.upcast && canCycle) {
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            className: "rpg-rolls__form-icon rpg-rolls__form-icon--upcast",
+            onClick: onCycle,
+            "aria-label": `Cast at circle ${circle}. Click to cycle.`,
+            "data-tip": `Circle ${circle} \u2014 click to cycle`
+          },
+          glyph
+        );
+      }
+      return /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__form-icon", "aria-label": `Circle ${circle}` }, glyph);
+    }
+    return /* @__PURE__ */ React.createElement("span", { className: "rpg-rolls__form-icon", "aria-label": `Form: ${roll.form}` }, /* @__PURE__ */ React.createElement(FormIcon, { form: roll.form }));
+  }
+  function SwapOrText({
+    field,
+    value,
+    swapOn,
+    onCycle,
+    fallback
+  }) {
+    if ((swapOn == null ? void 0 : swapOn.field) === field && swapOn.options.length > 1) {
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "rpg-rolls__swap-btn",
+          onClick: onCycle,
+          "aria-label": `${value}. Click to cycle.`,
+          "data-tip": `${value} \u2014 click to cycle`
+        },
+        value
+      );
+    }
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, fallback != null ? fallback : value);
+  }
+  function FormIcon({ form }) {
+    var _a;
+    const map = {
+      melee: "\u2694",
+      ranged: "\u{1F3F9}",
+      spell: "\u2728",
+      save: "\u{1F6E1}",
+      rider: "\u2295",
+      healing: "\u271A",
+      temp: "\u{1F499}"
+    };
+    return /* @__PURE__ */ React.createElement("span", { "aria-hidden": "true" }, (_a = map[form]) != null ? _a : "?");
+  }
+  function resolveCharacterLevel(blocks) {
+    const header2 = blocks == null ? void 0 : blocks.header;
+    if (!Array.isArray(header2 == null ? void 0 : header2.classes)) return 0;
+    return header2.classes.reduce(
+      (acc, c) => acc + (typeof c.level === "number" ? c.level : 0),
+      0
+    );
+  }
+  function applyRollOverride(base, override) {
+    if (!override) return base;
+    const next = { ...base };
+    if (override.name !== void 0) next.name = override.name;
+    if (override.damage !== void 0) next.damage = override.damage;
+    if (override.to_hit !== void 0) next.to_hit = override.to_hit;
+    if (override.range !== void 0) next.range = override.range;
+    if (override.save !== void 0) next.save = override.save;
+    if (override.effects !== void 0) next.effects = override.effects;
+    if (override.notes !== void 0) next.notes = override.notes;
+    return next;
+  }
+  function resolveLeveled(base, kind, sourceLevel, characterLevel) {
+    var _a;
+    const leveled = base.leveled;
+    if (!leveled) return base;
+    const by = (_a = leveled.by) != null ? _a : kind === "feature" ? "class" : "character";
+    const level2 = by === "class" ? sourceLevel : characterLevel;
+    if (level2 == null) return base;
+    const thresholds = Object.keys(leveled.at).map((k) => Number(k)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+    let picked;
+    for (const t of thresholds) {
+      if (t <= level2) picked = t;
+      else break;
+    }
+    if (picked == null) return base;
+    return applyRollOverride(base, leveled.at[picked]);
+  }
+  function resolveCostMax(max, ctx) {
+    var _a;
+    if (max == null) return void 0;
+    if (typeof max === "number") return max;
+    const raw = max.trim();
+    if (!raw) return void 0;
+    switch (raw) {
+      case "PB":
+        return ctx.pb;
+      case "level":
+        return ctx.characterLevel;
+      case "class_level":
+        return (_a = ctx.sourceLevel) != null ? _a : ctx.characterLevel;
+      default: {
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : void 0;
+      }
+    }
+  }
+  function resolveWielderStats(blocks) {
+    var _a;
+    const stats2 = (_a = blocks == null ? void 0 : blocks.stats) != null ? _a : {};
+    const pick = (key) => {
+      const cell = stats2[key];
+      if (typeof cell === "number") return cell;
+      if (cell && typeof cell === "object" && typeof cell.value === "number") {
+        return cell.value;
+      }
+      return 10;
+    };
+    const mod = (score) => Math.floor((score - 10) / 2);
+    const header2 = blocks == null ? void 0 : blocks.header;
+    const classLevels = Array.isArray(header2 == null ? void 0 : header2.classes) ? header2.classes.reduce(
+      (acc, c) => acc + (typeof c.level === "number" ? c.level : 0),
+      0
+    ) : 0;
+    const pb = Math.floor(Math.max(0, classLevels - 1) / 4) + 2;
+    return {
+      str: mod(pick("STR")),
+      dex: mod(pick("DEX")),
+      con: mod(pick("CON")),
+      int: mod(pick("INT")),
+      wis: mod(pick("WIS")),
+      cha: mod(pick("CHA")),
+      pb
+    };
+  }
+  function deriveWeaponRows(blocks, lookup, stats2, equip) {
+    var _a, _b, _c, _d, _e;
+    const inv = blocks == null ? void 0 : blocks.inventory;
+    const rawItems = Array.isArray(inv == null ? void 0 : inv.items) ? inv.items : [];
+    const items = rawItems.flatMap(flattenItemEntries);
+    const library = (_a = lookup == null ? void 0 : lookup.$items) != null ? _a : {};
+    const magicLib = (_b = lookup == null ? void 0 : lookup.$magic) != null ? _b : {};
+    const personalLib = (_c = lookup == null ? void 0 : lookup.$personal) != null ? _c : {};
+    const rows = [];
+    const handItems = /* @__PURE__ */ new Set();
+    if (equip.mainHand) handItems.add(equip.mainHand);
+    if (equip.offHand) handItems.add(equip.offHand);
+    const qtyByName = /* @__PURE__ */ new Map();
+    for (const entry of items) {
+      const name = stripWikilink(entry.name);
+      if (!name) continue;
+      const prev = (_d = qtyByName.get(name)) != null ? _d : 0;
+      qtyByName.set(name, prev + (typeof entry.qty === "number" ? entry.qty : 1));
+    }
+    const emitted = /* @__PURE__ */ new Set();
+    for (const entry of items) {
+      const target = stripWikilink(entry.name);
+      if (!target) continue;
+      if (!handItems.has(target)) continue;
+      if (emitted.has(target)) continue;
+      emitted.add(target);
+      const personal2 = personalLib[target];
+      let element2;
+      let overlay;
+      if (personal2) {
+        const resolution = (0, import_rpg_ui_toolkit.resolvePersonalItem)(personal2, { elements: library, magic: magicLib }, target);
+        if (!resolution) continue;
+        element2 = resolution.effectiveElement;
+        overlay = resolution.weaponOverlay;
+      } else {
+        const itemData = library[target];
+        if (!itemData) continue;
+        element2 = itemData;
+      }
+      const derived = (0, import_rpg_ui_toolkit.deriveWeaponRolls)(element2, stats2, overlay, target);
+      if (derived.length === 0) continue;
+      derived.forEach((roll, i) => {
+        rows.push({
+          id: derived.length > 1 ? `weapon:${target}:${i}` : `weapon:${target}`,
+          kind: "weapon",
+          roll,
+          sourceNote: target
+        });
+      });
+      const qty = (_e = qtyByName.get(target)) != null ? _e : 0;
+      if (target === equip.mainHand && qty >= 2 && hasWeaponProperty(element2, "light")) {
+        const offHand = (0, import_rpg_ui_toolkit.deriveWeaponRolls)(element2, stats2, { ...overlay, offHand: true }, `${target} (Off-hand)`);
+        const primary = offHand[0];
+        if (primary) {
+          rows.push({
+            id: `weapon:${target}:offhand`,
+            kind: "weapon",
+            roll: primary,
+            sourceNote: target
+          });
+        }
+      }
+    }
+    return rows;
+  }
+  function flattenItemEntries(raw) {
+    if (typeof raw === "string") return [{ name: raw }];
+    if (!raw || typeof raw !== "object") return [];
+    const o = raw;
+    const out = [];
+    if (typeof o.name === "string") {
+      const qty = typeof o.qty === "number" ? o.qty : typeof o.quantity === "number" ? o.quantity : void 0;
+      out.push({ name: o.name, qty, equipped: o.equipped, slot: o.slot });
+    }
+    if (Array.isArray(o.contents)) {
+      for (const c of o.contents) out.push(...flattenItemEntries(c));
+    }
+    return out;
+  }
+  function stripWikilink(raw) {
+    const m = raw.match(/^\[\[(.+?)\]\]$/);
+    if (!m) return raw.trim();
+    return m[1].split("|")[0].split("/").pop().trim();
+  }
+  function resolveCasters(blocks, lookup) {
+    var _a, _b;
+    const out = /* @__PURE__ */ new Map();
+    const header2 = blocks == null ? void 0 : blocks.header;
+    const features2 = blocks == null ? void 0 : blocks.features;
+    if (!header2 || !(lookup == null ? void 0 : lookup.$features)) return out;
+    try {
+      const view = lookup.$features(header2, features2 == null ? void 0 : features2.choices, features2 == null ? void 0 : features2.additional);
+      for (const caster of (_a = view.casters) != null ? _a : []) {
+        const c = caster;
+        out.set(c.source, {
+          source: c.source,
+          ability: c.ability,
+          tier: (_b = c.tier) != null ? _b : "none",
+          level: typeof c.level === "number" ? c.level : 0
+        });
+      }
+    } catch (e) {
+    }
+    return out;
+  }
+  function deriveSpellRows(blocks, lookup, stats2, casters, characterLevel) {
+    var _a, _b, _c, _d, _e, _f;
+    const spellsBlock = blocks == null ? void 0 : blocks.spells;
+    const castersState = (_a = spellsBlock == null ? void 0 : spellsBlock.casters) != null ? _a : {};
+    const library = (_b = lookup == null ? void 0 : lookup.$spells) != null ? _b : {};
+    const seen = /* @__PURE__ */ new Set();
+    const rows = [];
+    for (const [source, state] of Object.entries(castersState)) {
+      const resolved = casters.get(source);
+      if (!resolved) continue;
+      const abilityMod = abilityModFromStats(stats2, resolved.ability);
+      const toHit = `${(0, import_rpg_ui_toolkit.signed)(stats2.pb + abilityMod)} (${resolved.ability})`;
+      const dc = `${8 + stats2.pb + abilityMod}`;
+      const pool = [...(_c = state.cantrips) != null ? _c : [], ...flattenSpellLevels(state.prepared), ...flattenSpellLevels(state.known)];
+      for (const raw of pool) {
+        const name = stripWikilink(raw);
+        if (!name || seen.has(name)) continue;
+        seen.add(name);
+        const body = library[name];
+        const roll = body == null ? void 0 : body.roll;
+        if (!roll) continue;
+        const filled = {
+          ...roll,
+          name: (_d = roll.name) != null ? _d : name,
+          to_hit: roll.form === "spell" ? (_e = roll.to_hit) != null ? _e : toHit : roll.to_hit,
+          save: roll.save ? { ...roll.save, dc: (_f = roll.save.dc) != null ? _f : dc } : roll.save
+        };
+        const leveled = resolveLeveled(filled, "spell", void 0, characterLevel);
+        rows.push({
+          id: `spell:${source}:${name}`,
+          kind: "spell",
+          roll: leveled,
+          sourceNote: name,
+          caster: resolved
+        });
+      }
+    }
+    return rows;
+  }
+  function abilityModFromStats(stats2, ability) {
+    const key = ability.trim().toUpperCase();
+    switch (key) {
+      case "STR":
+        return stats2.str;
+      case "DEX":
+        return stats2.dex;
+      case "CON":
+        return stats2.con;
+      case "INT":
+        return stats2.int;
+      case "WIS":
+        return stats2.wis;
+      case "CHA":
+        return stats2.cha;
+      default:
+        return 0;
+    }
+  }
+  function flattenSpellLevels(map) {
+    if (!map) return [];
+    return Object.values(map).flatMap((v) => Array.isArray(v) ? v : []);
+  }
+  function deriveFeatureRows(blocks, lookup, characterLevel) {
+    var _a, _b;
+    const header2 = blocks == null ? void 0 : blocks.header;
+    const features2 = blocks == null ? void 0 : blocks.features;
+    if (!header2 || !(lookup == null ? void 0 : lookup.$features)) return [];
+    const view = lookup.$features(header2, features2 == null ? void 0 : features2.choices, features2 == null ? void 0 : features2.additional);
+    const rows = [];
+    for (const src of (_a = view.sources) != null ? _a : []) {
+      for (const f of src.features) {
+        if (!f.roll) continue;
+        const rowName = (_b = f.roll.name) != null ? _b : f.name;
+        const named = { ...f.roll, name: rowName };
+        const leveled = resolveLeveled(named, "feature", src.level, characterLevel);
+        rows.push({
+          id: `feature:${src.source}:${f.name}:${rowName}`,
+          kind: "feature",
+          roll: leveled,
+          sourceNote: src.source,
+          sourceLevel: src.level
+        });
+      }
+    }
+    return rows;
+  }
+  function deriveManualRows(manual) {
+    if (!Array.isArray(manual)) return [];
+    const rows = [];
+    manual.forEach((atk, i) => {
+      const name = atk.name || atk.label || `Roll ${i + 1}`;
+      const aspect = {
+        name,
+        form: "melee",
+        to_hit: typeof atk.to_hit === "number" ? (0, import_rpg_ui_toolkit.signed)(atk.to_hit) : typeof atk.to_hit === "string" ? atk.to_hit : void 0,
+        range: atk.range,
+        damage: atk.damage ? { roll: atk.damage.roll, type: atk.damage.type, bonus: atk.damage.bonus } : void 0,
+        notes: atk.notes
+      };
+      rows.push({
+        id: `manual:${i}`,
+        kind: "manual",
+        roll: aspect,
+        sourceNote: name
+      });
+    });
+    return rows;
+  }
+  function resolveEquipState(blocks, lookup) {
+    var _a;
+    const state = { mainHand: null, offHand: null };
+    const inv = blocks == null ? void 0 : blocks.inventory;
+    const rawItems = Array.isArray(inv == null ? void 0 : inv.items) ? inv.items : [];
+    const items = rawItems.flatMap(flattenItemEntries);
+    const library = (_a = lookup == null ? void 0 : lookup.$items) != null ? _a : {};
+    for (const entry of items) {
+      if (!entry.equipped && !entry.slot) continue;
+      const target = stripWikilink(entry.name);
+      if (!target) continue;
+      const itemData = library[target];
+      const isTwoHanded = (itemData == null ? void 0 : itemData.weapon) ? hasProperty(itemData.weapon.properties, "two-handed") : false;
+      if (entry.slot === "main_hand") {
+        state.mainHand = target;
+        if (isTwoHanded) state.offHand = target;
+      } else if (entry.slot === "off_hand" || entry.slot === "shield") {
+        state.offHand = target;
+      } else if (entry.equipped && (itemData == null ? void 0 : itemData.weapon)) {
+        if (!state.mainHand) state.mainHand = target;
+        if (isTwoHanded && !state.offHand) state.offHand = target;
+      }
+    }
+    return state;
+  }
+  function hasProperty(properties, name) {
+    if (!properties) return false;
+    const target = name.toLowerCase();
+    return properties.some((p) => {
+      const bare = p.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].toLowerCase();
+      return bare === target;
+    });
+  }
+  function hasWeaponProperty(element2, name) {
+    var _a;
+    return hasProperty((_a = element2.weapon) == null ? void 0 : _a.properties, name);
+  }
+  function isRollAvailable(kind, roll, sourceNote, equip) {
+    var _a;
+    const requires = (_a = roll.requires) != null ? _a : roll.form === "melee" || roll.form === "ranged" ? "one_hand" : "none";
+    if (kind === "weapon") {
+      const inMain = equip.mainHand === sourceNote;
+      const inOff = equip.offHand === sourceNote;
+      if (!inMain && !inOff) return false;
+      if (requires === "two_hands") {
+        return inMain && (equip.offHand === null || equip.offHand === sourceNote);
+      }
+      return true;
+    }
+    switch (requires) {
+      case "none":
+        return true;
+      case "one_hand":
+        return equip.mainHand !== null || equip.offHand !== null;
+      case "two_hands":
+        return equip.mainHand !== null && (equip.offHand === null || equip.offHand === equip.mainHand);
+      case "free_hand":
+        return equip.mainHand === null || equip.offHand === null;
+      default:
+        return true;
+    }
+  }
+  var rolls_default = rolls;
+
+  // vault:tales-of-the-valiant/config/blocks/character/header.tsx
+  var React2 = __toESM(__require("react"));
+  var import_obsidian = __require("obsidian");
+  var import_rpg_ui_toolkit2 = __require("rpg-ui-toolkit");
+  function bareLink(value) {
+    let raw = value;
+    while (Array.isArray(raw)) raw = raw[0];
+    if (typeof raw !== "string") return "";
+    return raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+  }
+  function CommentMarkdown({ source }) {
+    const ref = React2.useRef(null);
+    React2.useEffect(() => {
+      var _a, _b, _c, _d, _e, _f;
+      const el = ref.current;
+      if (!el) return;
+      (_a = el.empty) == null ? void 0 : _a.call(el);
+      el.innerHTML = "";
+      if (!source) return;
+      const app = globalThis.app;
+      const sourcePath = (_e = (_d = (_c = (_b = app == null ? void 0 : app.workspace) == null ? void 0 : _b.getActiveFile) == null ? void 0 : _c.call(_b)) == null ? void 0 : _d.path) != null ? _e : "";
+      const comp = new import_obsidian.Component();
+      comp.load();
+      const renderer = import_obsidian.MarkdownRenderer;
+      const promise = typeof renderer.render === "function" ? renderer.render(app, source, el, sourcePath, comp) : (_f = renderer.renderMarkdown) == null ? void 0 : _f.call(renderer, source, el, sourcePath, comp);
+      Promise.resolve(promise).then(() => {
+        const p = el.querySelector("p");
+        if (p && p.parentElement === el) {
+          while (p.firstChild) el.appendChild(p.firstChild);
+          p.remove();
+        }
+      }).catch(() => {
+        el.textContent = source;
+      });
+      return () => {
+        try {
+          comp.unload();
+        } catch (e) {
+        }
+      };
+    }, [source]);
+    return /* @__PURE__ */ React2.createElement("span", { ref });
+  }
+  function PillRef({ details: details2 }) {
+    const link = bareLink(details2.file);
+    const label = details2.text || link;
+    return /* @__PURE__ */ React2.createElement("span", { "aria-details": "Pill Reference", className: "rpg-pill-ref" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Pill.Link, { link }, label), details2.comment && /* @__PURE__ */ React2.createElement("small", { "aria-details": "Pill Comment", className: "rpg-pill-comment" }, /* @__PURE__ */ React2.createElement(CommentMarkdown, { source: details2.comment })));
+  }
+  var header = ({ self, lookup, expressions, trigger }) => {
+    var _a;
+    return /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Header.Banner, { label: "Character", background: self.banner, distribution: "2 1" }, /* @__PURE__ */ React2.createElement("hgroup", { "aria-details": "Name & Summary" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Title, null), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Line.Pills, null, self.classes && self.classes.map((cls, i) => {
+      var _a2;
+      const className = bareLink(cls.name);
+      const subclass = bareLink((_a2 = cls.sub) != null ? _a2 : cls.subclass);
+      return /* @__PURE__ */ React2.createElement(React2.Fragment, { key: `class-${i}` }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Pill.Link, { link: className }, className, " ", cls.level), subclass && /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Pill.Link, { link: subclass }, subclass));
+    }), self.lineage && /* @__PURE__ */ React2.createElement(PillRef, { details: self.lineage }), self.heritage && /* @__PURE__ */ React2.createElement(PillRef, { details: self.heritage }), self.background && /* @__PURE__ */ React2.createElement(PillRef, { details: self.background }))), /* @__PURE__ */ React2.createElement("fieldset", { "aria-details": "Leveling" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Line.BigElements, null, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Line.Buttons, null, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Button.Trigger, { onClick: () => trigger("short-rest"), "aria-label": "Short Rest" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Lucide.UtensilsCrossed, { size: 28, strokeWidth: 1 })), /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Button.Trigger, { onClick: () => trigger("long-rest"), "aria-label": "Long Rest" }, /* @__PURE__ */ React2.createElement(import_rpg_ui_toolkit2.Lucide.FlameKindling, { size: 28, strokeWidth: 1 }))), /* @__PURE__ */ React2.createElement(
+      import_rpg_ui_toolkit2.Level.Inspirational,
+      {
+        level: expressions.CharacterLevel(),
+        inspiration: self.luck,
+        maxPoints: 5,
+        onUpdateInspiration: (value) => self.setLuck(value)
+      }
+    )), /* @__PURE__ */ React2.createElement(
+      import_rpg_ui_toolkit2.Progress.Bar,
+      {
+        value: self.xp,
+        max: (_a = lookup.table.xp[expressions.CharacterLevel()]) != null ? _a : lookup.table.xp[expressions.CharacterLevel() - 1]
+      }
+    )));
+  };
+  var header_default = header;
+
+  // vault:tales-of-the-valiant/config/blocks/character/health.tsx
+  var React3 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit3 = __require("rpg-ui-toolkit");
+  function parseCondition(raw) {
+    var _a, _b, _c, _d, _e;
+    if (Array.isArray(raw)) raw = raw[0];
+    if (raw && typeof raw === "object") {
+      const obj = raw;
+      raw = (_d = (_c = (_b = (_a = obj.link) != null ? _a : obj.path) != null ? _b : obj.file) != null ? _c : obj.src) != null ? _d : "";
+    }
+    let val = typeof raw === "string" ? raw : String(raw != null ? raw : "");
+    const aliasMatch = val.match(/^\[\[(.+?)\|(.+)\]\]$/);
+    if (aliasMatch) return { linkpath: aliasMatch[1].trim(), label: aliasMatch[2].trim() };
+    const wikiMatch = val.match(/^\[\[(.+)\]\]$/);
+    if (wikiMatch) val = wikiMatch[1].trim();
+    const segment = (_e = val.split(/[/\\]/).pop()) != null ? _e : val;
+    return { label: segment.replace(/\.[^.]+$/, "").trim(), linkpath: val || null };
+  }
+  var health = ({ self, blocks, lookup, expressions }) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    const deathSaves = (_a = self.death_saves) != null ? _a : { successes: 0, failures: 0 };
+    const yamlHitDice = (_b = self.hit_dice) != null ? _b : {};
+    const conditions = (_c = self.conditions) != null ? _c : [];
+    const exhaustion = (_d = self.exhaustion) != null ? _d : 0;
+    const header2 = blocks.header;
+    const featuresBlock = blocks.features;
+    const inventory2 = blocks.inventory;
+    const view = (_e = lookup.$features) == null ? void 0 : _e.call(lookup, header2, featuresBlock == null ? void 0 : featuresBlock.choices, featuresBlock == null ? void 0 : featuresBlock.additional, inventory2);
+    const traits = (_f = view == null ? void 0 : view.traits) != null ? _f : {};
+    const hitDice = resolveHitDice(view, yamlHitDice);
+    const speeds = resolveSpeeds(self.speed, traits);
+    const init = initiativeDetails(traits);
+    const initiativeTotal = expressions.ModifierTotal({
+      attribute: init.attr,
+      proficiency: init.proficiency,
+      bonus: init.bonus
+    });
+    const initVantage = init.vantage > 0 ? "adv" : init.vantage < 0 ? "dis" : void 0;
+    const handleSpendDie = (dieType) => {
+      var _a2, _b2;
+      const current = (_b2 = (_a2 = hitDice[dieType]) == null ? void 0 : _a2.current) != null ? _b2 : 0;
+      if (current <= 0) return;
+      self.setHit_dice({
+        ...yamlHitDice,
+        [dieType]: current - 1
+      });
+    };
+    const equippedAc = characterArmorClass(blocks, lookup, traits, self.natural_ac);
+    return /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Section.Row, { label: "Health Management", distribution: "1 2" }, /* @__PURE__ */ React3.createElement(
+      import_rpg_ui_toolkit3.PortraitThumb,
+      {
+        src: self.portrait,
+        framed: self.framed,
+        frameName: self["frame-name"]
+      }
+    ), /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Article.Column, { label: "Content" }, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.HGroup.Row, { label: "Defense Stats" }, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Line.Control, null, /* @__PURE__ */ React3.createElement(
+      import_rpg_ui_toolkit3.DeathSaveDots,
+      {
+        side: "failures",
+        count: 3,
+        filled: deathSaves.failures,
+        onChange: (v) => self.setDeath_saves({ ...deathSaves, failures: v })
+      }
+    ), /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Badge.Shield, { value: equippedAc.armor + equippedAc.bonus, label: "Armor" }), equippedAc.shieldBonus > 0 && /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Badge.Shield, { value: equippedAc.armor + equippedAc.bonus + equippedAc.shieldBonus, label: "Shield" }), /* @__PURE__ */ React3.createElement(
+      import_rpg_ui_toolkit3.DeathSaveDots,
+      {
+        side: "successes",
+        count: 3,
+        filled: deathSaves.successes,
+        onChange: (v) => self.setDeath_saves({ ...deathSaves, successes: v })
+      }
+    )), /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Line.Stats, null, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Stat.Diamond, { label: "Initiative", value: initiativeTotal, format: "bonus", vantage: initVantage }), speeds.map((s, i) => {
+      var _a2, _b2;
+      return /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Stat.Diamond, { key: i, label: (_a2 = s.type) != null ? _a2 : "Walk", value: (_b2 = s.value) != null ? _b2 : 30, format: "unit", size: "lg" });
+    }), /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Stat.Diamond, { label: "Proficiency", value: expressions.ProficiencyBonus(), format: "bonus" }))), /* @__PURE__ */ React3.createElement("p", { "aria-details": "Health Management Row", style: { alignItems: "stretch" } }, /* @__PURE__ */ React3.createElement("dl", { "aria-label": "Health Controller", style: { flex: 3 } }, /* @__PURE__ */ React3.createElement("dt", null, "HIT POINTS"), /* @__PURE__ */ React3.createElement("dd", { "aria-label": "Progress Health" }, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Progress.Health, { value: (_g = self.current_hp) != null ? _g : 0, max: (_h = self.max_hp) != null ? _h : 0, secondary: (_i = self.temp_hp) != null ? _i : 0 })), /* @__PURE__ */ React3.createElement("dt", null, "Hit Dice"), /* @__PURE__ */ React3.createElement("dd", { "aria-label": "Dice Tray" }, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.DiceTray, { dice: hitDice, onSpend: handleSpendDie }))), /* @__PURE__ */ React3.createElement("dl", { "aria-label": "Character Status", style: { flex: 2 } }, /* @__PURE__ */ React3.createElement("dt", null, "Exhaustion"), /* @__PURE__ */ React3.createElement("dd", { "aria-label": "Progress Numbered" }, /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.Progress.Numbered, { value: exhaustion, max: 6 })), /* @__PURE__ */ React3.createElement("dt", null, "Conditions"), /* @__PURE__ */ React3.createElement("dd", { "aria-label": "Conditions List" }, conditions.length === 0 ? /* @__PURE__ */ React3.createElement("span", { "aria-details": "No Conditions" }, "\u2014") : conditions.map((raw, i) => {
+      const { label, linkpath } = parseCondition(raw);
+      return /* @__PURE__ */ React3.createElement(import_rpg_ui_toolkit3.ConditionPill, { key: i, value: raw, label, linkpath });
+    }))))));
+  };
+  var health_default = health;
   var SPEED_KEYS = [
     { trait: "Walk", type: "Walk" },
     { trait: "Fly", type: "Fly" },
@@ -645,8 +1632,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   }
 
   // vault:tales-of-the-valiant/config/blocks/character/stats.tsx
-  var React3 = __toESM(__require("react"));
-  var import_rpg_ui_toolkit3 = __require("rpg-ui-toolkit");
+  var React4 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit4 = __require("rpg-ui-toolkit");
   var ATTRS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
   var ATTR_ALIAS = {
     STR: "STR",
@@ -792,7 +1779,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const saveProfsAuto = saveProfLevelsFromTraits((_c = view == null ? void 0 : view.traits) != null ? _c : {});
     const saveBonusAuto = saveBonusFromTraits((_d = view == null ? void 0 : view.traits) != null ? _d : {});
     const saveVantageAuto = saveVantageFromTraits((_e = view == null ? void 0 : view.traits) != null ? _e : {});
-    return /* @__PURE__ */ React3.createElement("section", { "aria-details": "Character Stats" }, ATTRS.map((attr) => {
+    return /* @__PURE__ */ React4.createElement("section", { "aria-details": "Character Stats" }, ATTRS.map((attr) => {
       var _a2, _b2;
       const cell = readAttr(self[attr]);
       const finalValue = cell.baseValue + asi[attr];
@@ -802,8 +1789,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         proficiency,
         bonus: ((_b2 = cell.saveBonus) != null ? _b2 : 0) + saveBonusAuto[attr]
       });
-      return /* @__PURE__ */ React3.createElement(
-        import_rpg_ui_toolkit3.Stat,
+      return /* @__PURE__ */ React4.createElement(
+        import_rpg_ui_toolkit4.Stat,
         {
           key: attr,
           value: finalValue,
@@ -818,15 +1805,15 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var stats_default = stats;
 
   // vault:tales-of-the-valiant/config/blocks/character/senses.tsx
-  var React4 = __toESM(__require("react"));
-  function bareLabel(raw) {
+  var React5 = __toESM(__require("react"));
+  function bareLabel2(raw) {
     return raw.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
   }
   function countProfs(traitValues, valid) {
     var _a;
     const counts = /* @__PURE__ */ new Map();
     for (const raw of traitValues != null ? traitValues : []) {
-      const name = bareLabel(raw);
+      const name = bareLabel2(raw);
       if (!valid.has(name)) continue;
       counts.set(name, ((_a = counts.get(name)) != null ? _a : 0) + 1);
     }
@@ -892,29 +1879,29 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const traits = (_b = view == null ? void 0 : view.traits) != null ? _b : {};
     const profCounts = countProfs(traits["Skill P."], SENSES_SKILLS);
     for (const raw of (_c = traits["Skill E."]) != null ? _c : []) {
-      const name = bareLabel(raw);
+      const name = bareLabel2(raw);
       if (SENSES_SKILLS.has(name)) profCounts.set(name, Math.max((_d = profCounts.get(name)) != null ? _d : 0, 2));
     }
     const halfNames = /* @__PURE__ */ new Set();
     for (const raw of (_e = traits["Skill J."]) != null ? _e : []) {
-      const name = bareLabel(raw);
+      const name = bareLabel2(raw);
       if (SENSES_SKILLS.has(name)) halfNames.add(name);
     }
     const vantageByName = /* @__PURE__ */ new Map();
     const bonusByName = /* @__PURE__ */ new Map();
     for (const raw of (_f = traits["Skill A."]) != null ? _f : []) {
-      const name = bareLabel(raw);
+      const name = bareLabel2(raw);
       if (SENSES_SKILLS.has(name)) vantageByName.set(name, ((_g = vantageByName.get(name)) != null ? _g : 0) + 1);
     }
     for (const raw of (_h = traits["Skill D."]) != null ? _h : []) {
-      const name = bareLabel(raw);
+      const name = bareLabel2(raw);
       if (SENSES_SKILLS.has(name)) vantageByName.set(name, ((_i = vantageByName.get(name)) != null ? _i : 0) - 1);
     }
     for (const raw of (_j = traits["Skill B."]) != null ? _j : []) {
       const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
       if (!match) continue;
       const bonus = parseFloat(match[1]);
-      const name = bareLabel(match[2]);
+      const name = bareLabel2(match[2]);
       if (!Number.isFinite(bonus) || !SENSES_SKILLS.has(name)) continue;
       bonusByName.set(name, ((_k = bonusByName.get(name)) != null ? _k : 0) + bonus);
     }
@@ -954,141 +1941,55 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       seen.add(key);
       merged.push(norm);
     }
-    return /* @__PURE__ */ React4.createElement("section", { "aria-details": "Character Senses" }, /* @__PURE__ */ React4.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React4.createElement("span", null, "Passive")), /* @__PURE__ */ React4.createElement("output", { "aria-label": "Passive Insight" }, /* @__PURE__ */ React4.createElement("data", null, expressions.Passive({
+    return /* @__PURE__ */ React5.createElement("section", { "aria-details": "Character Senses" }, /* @__PURE__ */ React5.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React5.createElement("span", null, "Passive")), /* @__PURE__ */ React5.createElement("output", { "aria-label": "Passive Insight" }, /* @__PURE__ */ React5.createElement("data", null, expressions.Passive({
       attribute: "WIS",
       proficiency: insight.proficiency,
       vantage: insight.vantage,
       bonus: insight.bonus
-    })), /* @__PURE__ */ React4.createElement("small", null, "Insight")), /* @__PURE__ */ React4.createElement("output", { "aria-label": "Passive Investigation" }, /* @__PURE__ */ React4.createElement("data", null, expressions.Passive({
+    })), /* @__PURE__ */ React5.createElement("small", null, "Insight")), /* @__PURE__ */ React5.createElement("output", { "aria-label": "Passive Investigation" }, /* @__PURE__ */ React5.createElement("data", null, expressions.Passive({
       attribute: "INT",
       proficiency: investigation.proficiency,
       vantage: investigation.vantage,
       bonus: investigation.bonus
-    })), /* @__PURE__ */ React4.createElement("small", null, "Investigation")), /* @__PURE__ */ React4.createElement("output", { "aria-label": "Passive Perception" }, /* @__PURE__ */ React4.createElement("data", null, expressions.Passive({
+    })), /* @__PURE__ */ React5.createElement("small", null, "Investigation")), /* @__PURE__ */ React5.createElement("output", { "aria-label": "Passive Perception" }, /* @__PURE__ */ React5.createElement("data", null, expressions.Passive({
       attribute: "WIS",
       proficiency: perception.proficiency,
       vantage: perception.vantage,
       bonus: perception.bonus
-    })), /* @__PURE__ */ React4.createElement("small", null, "Perception")), /* @__PURE__ */ React4.createElement("dl", { "aria-label": "Senses List" }, /* @__PURE__ */ React4.createElement("dt", { className: "rpg-tag-heading" }, /* @__PURE__ */ React4.createElement("span", null, "Senses")), merged.length === 0 ? /* @__PURE__ */ React4.createElement("dd", { "aria-details": "No Senses" }, /* @__PURE__ */ React4.createElement("span", null, "\u2014")) : merged.map((sense, i) => /* @__PURE__ */ React4.createElement("dd", { key: i }, sense.link ? /* @__PURE__ */ React4.createElement("a", { className: "internal-link", href: sense.link, "data-href": sense.link }, sense.type) : /* @__PURE__ */ React4.createElement("span", null, sense.type), sense.range != null && /* @__PURE__ */ React4.createElement("span", { "aria-details": "Sense Range" }, sense.range, " ft.")))));
+    })), /* @__PURE__ */ React5.createElement("small", null, "Perception")), /* @__PURE__ */ React5.createElement("dl", { "aria-label": "Senses List" }, /* @__PURE__ */ React5.createElement("dt", { className: "rpg-tag-heading" }, /* @__PURE__ */ React5.createElement("span", null, "Senses")), merged.length === 0 ? /* @__PURE__ */ React5.createElement("dd", { "aria-details": "No Senses" }, /* @__PURE__ */ React5.createElement("span", null, "\u2014")) : merged.map((sense, i) => /* @__PURE__ */ React5.createElement("dd", { key: i }, sense.link ? /* @__PURE__ */ React5.createElement("a", { className: "internal-link", href: sense.link, "data-href": sense.link }, sense.type) : /* @__PURE__ */ React5.createElement("span", null, sense.type), sense.range != null && /* @__PURE__ */ React5.createElement("span", { "aria-details": "Sense Range" }, sense.range, " ft.")))));
   };
   var senses_default = senses;
 
   // vault:tales-of-the-valiant/config/blocks/character/skills.tsx
-  var React5 = __toESM(__require("react"));
-  var import_rpg_ui_toolkit4 = __require("rpg-ui-toolkit");
-  var SKILLS = [
-    { name: "Acrobatics", attr: "DEX" },
-    { name: "Animal Handling", attr: "WIS" },
-    { name: "Arcana", attr: "INT" },
-    { name: "Athletics", attr: "STR" },
-    { name: "Deception", attr: "CHA" },
-    { name: "History", attr: "INT" },
-    { name: "Insight", attr: "WIS" },
-    { name: "Intimidation", attr: "CHA" },
-    { name: "Investigation", attr: "INT" },
-    { name: "Medicine", attr: "WIS" },
-    { name: "Nature", attr: "INT" },
-    { name: "Perception", attr: "WIS" },
-    { name: "Performance", attr: "CHA" },
-    { name: "Persuasion", attr: "CHA" },
-    { name: "Religion", attr: "INT" },
-    { name: "Sleight of Hand", attr: "DEX" },
-    { name: "Stealth", attr: "DEX" },
-    { name: "Survival", attr: "WIS" }
-  ];
-  var SKILL_SET = new Set(SKILLS.map((s) => s.name));
+  var React6 = __toESM(__require("react"));
+  var import_rpg_ui_toolkit5 = __require("rpg-ui-toolkit");
   function formatMod(n) {
     return (n >= 0 ? "+" : "\u2212") + Math.abs(n);
   }
-  function bareLabel2(raw) {
-    return raw.replace(/^\+/, "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
-  }
   function ProfDot({ level: level2 }) {
     if (level2 >= 2) {
-      return /* @__PURE__ */ React5.createElement("svg", { "aria-label": "Expertise", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React5.createElement("circle", { cx: "5", cy: "5", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }), /* @__PURE__ */ React5.createElement("circle", { cx: "5", cy: "5", r: "2.5", fill: "currentColor" }));
+      return /* @__PURE__ */ React6.createElement("svg", { "aria-label": "Expertise", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React6.createElement("circle", { cx: "5", cy: "5", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }), /* @__PURE__ */ React6.createElement("circle", { cx: "5", cy: "5", r: "2.5", fill: "currentColor" }));
     }
     if (level2 >= 1) {
-      return /* @__PURE__ */ React5.createElement("svg", { "aria-label": "Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React5.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "currentColor" }));
+      return /* @__PURE__ */ React6.createElement("svg", { "aria-label": "Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React6.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "currentColor" }));
     }
     if (level2 > 0) {
-      return /* @__PURE__ */ React5.createElement("svg", { "aria-label": "Half Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React5.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }), /* @__PURE__ */ React5.createElement("path", { d: "M5 1.5 A3.5 3.5 0 0 0 5 8.5 Z", fill: "currentColor" }));
+      return /* @__PURE__ */ React6.createElement("svg", { "aria-label": "Half Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React6.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }), /* @__PURE__ */ React6.createElement("path", { d: "M5 1.5 A3.5 3.5 0 0 0 5 8.5 Z", fill: "currentColor" }));
     }
-    return /* @__PURE__ */ React5.createElement("svg", { "aria-label": "Not Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React5.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }));
+    return /* @__PURE__ */ React6.createElement("svg", { "aria-label": "Not Proficient", viewBox: "0 0 10 10", width: "12", height: "12" }, /* @__PURE__ */ React6.createElement("circle", { cx: "5", cy: "5", r: "3.5", fill: "none", stroke: "currentColor", strokeWidth: "1" }));
   }
   function VantageBadge({ kind }) {
-    return /* @__PURE__ */ React5.createElement("span", { className: "rpg-vantage-badge", "data-vantage": kind, "aria-label": kind === "adv" ? "Advantage" : "Disadvantage" }, /* @__PURE__ */ React5.createElement("sup", null, kind === "adv" ? "A" : "D"));
+    return /* @__PURE__ */ React6.createElement("span", { className: "rpg-vantage-badge", "data-vantage": kind, "aria-label": kind === "adv" ? "Advantage" : "Disadvantage" }, /* @__PURE__ */ React6.createElement("sup", null, kind === "adv" ? "A" : "D"));
   }
   var skills = ({ self, blocks, lookup, expressions }) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
+    var _a, _b;
     const header2 = blocks.header;
     const features2 = blocks.features;
     const inventory2 = blocks.inventory;
     const view = (_a = lookup.$features) == null ? void 0 : _a.call(lookup, header2, features2 == null ? void 0 : features2.choices, features2 == null ? void 0 : features2.additional, inventory2);
     const traits = (_b = view == null ? void 0 : view.traits) != null ? _b : {};
-    const profCounts = /* @__PURE__ */ new Map();
-    for (const raw of (_c = traits["Skill P."]) != null ? _c : []) {
-      const name = bareLabel2(raw);
-      if (!SKILL_SET.has(name)) continue;
-      profCounts.set(name, ((_d = profCounts.get(name)) != null ? _d : 0) + 1);
-    }
-    for (const raw of (_e = traits["Skill E."]) != null ? _e : []) {
-      const name = bareLabel2(raw);
-      if (!SKILL_SET.has(name)) continue;
-      profCounts.set(name, Math.max((_f = profCounts.get(name)) != null ? _f : 0, 2));
-    }
-    const halfNames = /* @__PURE__ */ new Set();
-    for (const raw of (_g = traits["Skill J."]) != null ? _g : []) {
-      const name = bareLabel2(raw);
-      if (SKILL_SET.has(name)) halfNames.add(name);
-    }
-    const vantageByName = /* @__PURE__ */ new Map();
-    const bonusByName = /* @__PURE__ */ new Map();
-    for (const raw of (_h = traits["Skill A."]) != null ? _h : []) {
-      const name = bareLabel2(raw);
-      if (!SKILL_SET.has(name)) continue;
-      vantageByName.set(name, ((_i = vantageByName.get(name)) != null ? _i : 0) + 1);
-    }
-    for (const raw of (_j = traits["Skill D."]) != null ? _j : []) {
-      const name = bareLabel2(raw);
-      if (!SKILL_SET.has(name)) continue;
-      vantageByName.set(name, ((_k = vantageByName.get(name)) != null ? _k : 0) - 1);
-    }
-    for (const raw of (_l = traits["Skill B."]) != null ? _l : []) {
-      const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
-      if (!match) continue;
-      const bonus = parseFloat(match[1]);
-      const name = bareLabel2(match[2]);
-      if (!Number.isFinite(bonus) || !SKILL_SET.has(name)) continue;
-      bonusByName.set(name, ((_m = bonusByName.get(name)) != null ? _m : 0) + bonus);
-    }
-    const additional = (_n = self.additional) != null ? _n : {};
-    for (const n of (_o = additional.profs) != null ? _o : []) {
-      if (SKILL_SET.has(n)) profCounts.set(n, ((_p = profCounts.get(n)) != null ? _p : 0) + 1);
-    }
-    for (const n of (_q = additional.expertise) != null ? _q : []) {
-      if (SKILL_SET.has(n)) profCounts.set(n, Math.max((_r = profCounts.get(n)) != null ? _r : 0, 2));
-    }
-    for (const n of (_s = additional.half_profs) != null ? _s : []) {
-      if (SKILL_SET.has(n)) halfNames.add(n);
-    }
-    const derivedProficiency = (name) => {
-      var _a2;
-      const count = (_a2 = profCounts.get(name)) != null ? _a2 : 0;
-      if (count >= 2) return 2;
-      if (count >= 1) return 1;
-      if (halfNames.has(name)) return 0.5;
-      return 0;
-    };
-    const resolveSkill = (name) => {
-      var _a2, _b2, _c2, _d2, _e2;
-      const override = self[name];
-      return {
-        proficiency: (_a2 = override == null ? void 0 : override.proficiency) != null ? _a2 : derivedProficiency(name),
-        vantage: (_c2 = (_b2 = override == null ? void 0 : override.vantage) != null ? _b2 : vantageByName.get(name)) != null ? _c2 : 0,
-        bonus: (_e2 = (_d2 = override == null ? void 0 : override.bonus) != null ? _d2 : bonusByName.get(name)) != null ? _e2 : 0
-      };
-    };
-    return /* @__PURE__ */ React5.createElement("section", { "aria-details": "Character Skills" }, /* @__PURE__ */ React5.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React5.createElement("span", null, "Skills")), /* @__PURE__ */ React5.createElement("menu", null, SKILLS.map(({ name, attr }) => {
+    const resolveSkill = skillResolver(self, traits);
+    return /* @__PURE__ */ React6.createElement("section", { "aria-details": "Character Skills" }, /* @__PURE__ */ React6.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React6.createElement("span", null, "Skills")), /* @__PURE__ */ React6.createElement("menu", null, SKILLS.map(({ name, attr }) => {
       const skill = resolveSkill(name);
       const mod = expressions.ModifierTotal({
         attribute: attr,
@@ -1096,769 +1997,10 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         bonus: skill.bonus
       });
       const vantage = skill.vantage;
-      return /* @__PURE__ */ React5.createElement("li", { key: name, "data-vantage": vantage > 0 ? "adv" : vantage < 0 ? "dis" : void 0 }, /* @__PURE__ */ React5.createElement(ProfDot, { level: skill.proficiency }), /* @__PURE__ */ React5.createElement("abbr", { "aria-details": "Skill Attribute" }, attr), /* @__PURE__ */ React5.createElement("span", { "aria-details": "Skill Name" }, /* @__PURE__ */ React5.createElement(import_rpg_ui_toolkit4.Markdown, { source: `[[${name}]]`, className: "rpg-inline-md" })), /* @__PURE__ */ React5.createElement("data", { value: mod }, vantage > 0 && /* @__PURE__ */ React5.createElement(VantageBadge, { kind: "adv" }), vantage < 0 && /* @__PURE__ */ React5.createElement(VantageBadge, { kind: "dis" }), formatMod(mod)));
+      return /* @__PURE__ */ React6.createElement("li", { key: name, "data-vantage": vantage > 0 ? "adv" : vantage < 0 ? "dis" : void 0 }, /* @__PURE__ */ React6.createElement(ProfDot, { level: skill.proficiency }), /* @__PURE__ */ React6.createElement("abbr", { "aria-details": "Skill Attribute" }, attr), /* @__PURE__ */ React6.createElement("span", { "aria-details": "Skill Name" }, /* @__PURE__ */ React6.createElement(import_rpg_ui_toolkit5.Markdown, { source: `[[${name}]]`, className: "rpg-inline-md" })), /* @__PURE__ */ React6.createElement("data", { value: mod }, vantage > 0 && /* @__PURE__ */ React6.createElement(VantageBadge, { kind: "adv" }), vantage < 0 && /* @__PURE__ */ React6.createElement(VantageBadge, { kind: "dis" }), formatMod(mod)));
     })));
   };
   var skills_default = skills;
-
-  // vault:tales-of-the-valiant/config/blocks/character/rolls.tsx
-  var React6 = __toESM(__require("react"));
-  var import_rpg_ui_toolkit5 = __require("rpg-ui-toolkit");
-  var rolls = ({ self, blocks, lookup }) => {
-    const stats2 = resolveWielderStats(blocks);
-    const characterLevel = resolveCharacterLevel(blocks);
-    const equip = resolveEquipState(blocks, lookup);
-    const resolvedCasters = resolveCasters(blocks, lookup);
-    const rawRows = [
-      ...deriveWeaponRows(blocks, lookup, stats2, equip),
-      ...deriveSpellRows(blocks, lookup, stats2, resolvedCasters, characterLevel),
-      ...deriveFeatureRows(blocks, lookup, characterLevel),
-      ...deriveManualRows(self.rolls)
-    ];
-    const rows = rawRows.map((row) => ({
-      ...row,
-      available: isRollAvailable(row.kind, row.roll, row.sourceNote, equip)
-    }));
-    return /* @__PURE__ */ React6.createElement("section", { "aria-details": "Character Rolls", className: "rpg-rolls" }, rows.length === 0 ? /* @__PURE__ */ React6.createElement(React6.Fragment, null, /* @__PURE__ */ React6.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React6.createElement("span", null, "Rolls")), /* @__PURE__ */ React6.createElement("p", { className: "rpg-rolls__empty" }, /* @__PURE__ */ React6.createElement("em", null, "No rolls available."))) : /* @__PURE__ */ React6.createElement("div", { className: "rpg-rolls__scroll" }, /* @__PURE__ */ React6.createElement("table", { className: "rpg-rolls__table" }, /* @__PURE__ */ React6.createElement("thead", { className: "rpg-rolls__head-band" }, /* @__PURE__ */ React6.createElement("tr", null, /* @__PURE__ */ React6.createElement("th", { className: "rpg-rolls__head-label" }, "Rolls"), /* @__PURE__ */ React6.createElement("th", null, "Hit"), /* @__PURE__ */ React6.createElement("th", null, "DC"), /* @__PURE__ */ React6.createElement("th", null, "Range"), /* @__PURE__ */ React6.createElement("th", null, "Damage"), /* @__PURE__ */ React6.createElement("th", null, "Cost"), /* @__PURE__ */ React6.createElement("th", null, "Effects"))), /* @__PURE__ */ React6.createElement("tbody", null, rows.map((row) => /* @__PURE__ */ React6.createElement(RollRowUI, { key: row.id, row, blocks, stats: stats2, characterLevel }))))));
-  };
-  function useNoteKey() {
-    return React6.useMemo(() => {
-      var _a, _b, _c, _d;
-      const app = globalThis.app;
-      return (_d = (_c = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a)) == null ? void 0 : _c.path) != null ? _d : "default";
-    }, []);
-  }
-  function usePersistentNumber(storageKey, defaultValue) {
-    const [value, setValue] = React6.useState(() => {
-      try {
-        if (typeof localStorage === "undefined") return defaultValue;
-        const stored = localStorage.getItem(storageKey);
-        if (stored === null || stored === "") return defaultValue;
-        const parsed = Number(stored);
-        return Number.isFinite(parsed) ? parsed : defaultValue;
-      } catch (e) {
-        return defaultValue;
-      }
-    });
-    const update = React6.useCallback(
-      (next) => {
-        setValue(next);
-        try {
-          if (next === void 0) localStorage.removeItem(storageKey);
-          else localStorage.setItem(storageKey, String(next));
-        } catch (e) {
-        }
-      },
-      [storageKey]
-    );
-    return [value, update];
-  }
-  function filterCastableCircles(declaredCircles, caster, blocks) {
-    var _a;
-    if (!caster || caster.tier === "none") {
-      return { castable: declaredCircles, anyAvailable: true };
-    }
-    const spells2 = blocks == null ? void 0 : blocks.spells;
-    const state = (_a = spells2 == null ? void 0 : spells2.casters) == null ? void 0 : _a[caster.source];
-    const maxByCircle = slotsForCaster(caster.tier, caster.level);
-    const castable = declaredCircles.filter((c) => {
-      var _a2, _b, _c, _d, _e;
-      if (c === 0) return true;
-      const max = (_a2 = maxByCircle[c - 1]) != null ? _a2 : 0;
-      const spent = Number((_e = (_d = (_b = state == null ? void 0 : state.spent) == null ? void 0 : _b[c]) != null ? _d : (_c = state == null ? void 0 : state.spent) == null ? void 0 : _c[String(c)]) != null ? _e : 0) || 0;
-      return max - spent > 0;
-    });
-    const anyAvailable = declaredCircles.length === 0 || castable.length > 0;
-    return { castable, anyAvailable };
-  }
-  function RollRowUI({
-    row,
-    blocks,
-    stats: stats2,
-    characterLevel
-  }) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
-    const noteKey = useNoteKey();
-    const baseRoll = row.roll;
-    const declaredCircles = baseRoll.upcast ? [baseRoll.circle, ...Object.keys(baseRoll.upcast).map(Number)].filter((n) => typeof n === "number" && Number.isFinite(n)).sort((a, b) => a - b) : [];
-    const { castable, anyAvailable } = filterCastableCircles(declaredCircles, row.caster, blocks);
-    const [upcastCircleRaw, setUpcastCircle] = usePersistentNumber(
-      `${noteKey}:rolls:${row.id}:upcast`,
-      baseRoll.circle
-    );
-    const upcastCircle = React6.useMemo(() => {
-      var _a2;
-      if (castable.length === 0) return upcastCircleRaw;
-      if (upcastCircleRaw != null && castable.includes(upcastCircleRaw)) return upcastCircleRaw;
-      return castable.includes((_a2 = baseRoll.circle) != null ? _a2 : -1) ? baseRoll.circle : castable[0];
-    }, [upcastCircleRaw, castable, baseRoll.circle]);
-    const swapOptions = (_b = (_a = baseRoll.swapOn) == null ? void 0 : _a.options) != null ? _b : [];
-    const swapInitialIdx = React6.useMemo(() => {
-      if (!baseRoll.swapOn) return 0;
-      const baseValue = baseRoll.swapOn.field === "range" ? baseRoll.range : baseRoll.name;
-      const match = swapOptions.findIndex((o) => o.value === baseValue);
-      return match >= 0 ? match : 0;
-    }, [baseRoll, swapOptions]);
-    const [swapIndexRaw, setSwapIndex] = usePersistentNumber(
-      `${noteKey}:rolls:${row.id}:swap`,
-      swapInitialIdx
-    );
-    const swapIndex = swapIndexRaw != null ? swapIndexRaw : swapInitialIdx;
-    const [costAmountRaw, setCostAmount] = usePersistentNumber(
-      `${noteKey}:rolls:${row.id}:cost`,
-      (_c = baseRoll.cost) == null ? void 0 : _c.amount
-    );
-    const costAmount = costAmountRaw;
-    let roll = baseRoll;
-    if (baseRoll.upcast && upcastCircle != null && upcastCircle !== baseRoll.circle) {
-      roll = applyRollOverride(roll, baseRoll.upcast[upcastCircle]);
-    }
-    if (baseRoll.swapOn && swapOptions[swapIndex]) {
-      const opt = swapOptions[swapIndex];
-      roll = applyRollOverride(roll, opt);
-      if (baseRoll.swapOn.field === "range") roll = { ...roll, range: opt.value };
-      else roll = { ...roll, name: opt.value };
-    }
-    const name = roll.name || row.sourceNote;
-    const dcText = roll.save ? `${roll.save.ability} ${(_d = roll.save.dc) != null ? _d : "\u2014"}` : "";
-    const formHasHit = roll.form === "melee" || roll.form === "ranged" || roll.form === "spell";
-    const hitText = formHasHit ? (_e = roll.to_hit) != null ? _e : "" : "";
-    const slotGated = row.kind === "spell" && declaredCircles.length > 0 && !anyAvailable;
-    const available = row.available && !slotGated;
-    const unavailReason = !row.available ? `Unavailable: needs ${(_f = roll.requires) != null ? _f : "equip"}` : slotGated ? "Unavailable: out of spell slots" : void 0;
-    const cycleUpcast = () => {
-      if (castable.length <= 1) return;
-      const active = upcastCircle != null ? upcastCircle : castable[0];
-      const idx = castable.indexOf(active);
-      const next = castable[(idx + 1) % castable.length];
-      setUpcastCircle(next);
-    };
-    const cycleSwap = () => {
-      if (swapOptions.length <= 1) return;
-      setSwapIndex((swapIndex + 1) % swapOptions.length);
-    };
-    const resolvedCostMax = resolveCostMax((_g = baseRoll.cost) == null ? void 0 : _g.max, {
-      pb: stats2.pb,
-      characterLevel,
-      sourceLevel: row.sourceLevel
-    });
-    const cycleCost = () => {
-      const cost = baseRoll.cost;
-      if (!cost || resolvedCostMax == null || resolvedCostMax <= 1) return;
-      const current = costAmount != null ? costAmount : cost.amount;
-      const next = current >= resolvedCostMax ? 1 : current + 1;
-      setCostAmount(next);
-    };
-    return /* @__PURE__ */ React6.createElement(
-      "tr",
-      {
-        "data-form": roll.form,
-        "data-available": available ? "true" : "false",
-        "aria-description": unavailReason
-      },
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__name" }, /* @__PURE__ */ React6.createElement(
-        FormCell,
-        {
-          roll: baseRoll,
-          effectiveCircle: upcastCircle,
-          onCycle: cycleUpcast,
-          canCycle: castable.length > 1
-        }
-      ), /* @__PURE__ */ React6.createElement(
-        SwapOrText,
-        {
-          field: "name",
-          value: name,
-          swapOn: baseRoll.swapOn,
-          onCycle: cycleSwap,
-          fallback: /* @__PURE__ */ React6.createElement("a", { className: "internal-link", href: row.sourceNote, "data-href": row.sourceNote }, name)
-        }
-      )),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__hit" }, hitText),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__dc" }, dcText),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__range" }, /* @__PURE__ */ React6.createElement(
-        SwapOrText,
-        {
-          field: "range",
-          value: (_h = roll.range) != null ? _h : "",
-          swapOn: baseRoll.swapOn,
-          onCycle: cycleSwap
-        }
-      )),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__damage" }, /* @__PURE__ */ React6.createElement(DamageCell, { damage: roll.damage })),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__cost" }, /* @__PURE__ */ React6.createElement(
-        CostCell,
-        {
-          cost: roll.cost,
-          amount: (_j = costAmount != null ? costAmount : (_i = roll.cost) == null ? void 0 : _i.amount) != null ? _j : 1,
-          resolvedMax: resolvedCostMax,
-          onCycle: cycleCost
-        }
-      )),
-      /* @__PURE__ */ React6.createElement("td", { className: "rpg-rolls__effects" }, /* @__PURE__ */ React6.createElement(EffectsCell, { roll }))
-    );
-  }
-  function DamageCell({ damage }) {
-    if (!damage) return null;
-    const list = Array.isArray(damage) ? damage : [damage];
-    return /* @__PURE__ */ React6.createElement(React6.Fragment, null, list.map((d, i) => /* @__PURE__ */ React6.createElement(React6.Fragment, { key: i }, i > 0 && /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__damage-sep" }, " + "), /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__damage-roll" }, compactDie(d.roll, d.bonus)), /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__damage-type" }, " ", d.type))));
-  }
-  function compactDie(roll, bonus) {
-    if (!bonus || bonus === "+0") return roll;
-    return `${roll}${bonus.startsWith("-") ? bonus : `+${bonus.replace(/^\+/, "")}`}`;
-  }
-  function EffectsCell({ roll }) {
-    var _a, _b, _c, _d, _e;
-    const pills = [];
-    const onSuccess = (_c = (_b = (_a = roll.save) == null ? void 0 : _a.on_success) == null ? void 0 : _b.toLowerCase()) != null ? _c : "";
-    if (onSuccess.includes("half")) {
-      pills.push({
-        glyph: "\xBD",
-        label: "Half damage on successful save",
-        cls: "rpg-rolls__icon--save-half",
-        key: "save-half"
-      });
-    } else if (onSuccess.includes("no")) {
-      pills.push({
-        glyph: "\u2205",
-        label: "No damage on successful save",
-        cls: "rpg-rolls__icon--save-none",
-        key: "save-none"
-      });
-    } else if (roll.save) {
-      pills.push({
-        glyph: "\u21BA",
-        label: `On save: ${(_d = roll.save.on_success) != null ? _d : "negates effect"}`,
-        cls: "rpg-rolls__icon--save-other",
-        key: "save-other"
-      });
-    }
-    for (const [idx, eff] of ((_e = roll.effects) != null ? _e : []).entries()) {
-      const resolved = resolveEffect(eff);
-      if (!resolved) continue;
-      pills.push({
-        glyph: resolved.glyph,
-        label: resolved.label,
-        cls: "rpg-rolls__icon--condition",
-        key: `eff-${idx}`
-      });
-    }
-    return /* @__PURE__ */ React6.createElement(React6.Fragment, null, pills.map((p) => {
-      var _a2;
-      return /* @__PURE__ */ React6.createElement(
-        "span",
-        {
-          key: p.key,
-          className: `rpg-rolls__icon ${(_a2 = p.cls) != null ? _a2 : ""}`,
-          "data-tip": p.label,
-          "aria-label": p.label
-        },
-        p.glyph
-      );
-    }), roll.notes && /* @__PURE__ */ React6.createElement("small", { className: "rpg-rolls__notes-text" }, roll.notes));
-  }
-  var EFFECT_VOCABULARY = {
-    blinded: { glyph: "\u{1F441}", label: "Blinded" },
-    prone: { glyph: "\u2935", label: "Knocked prone" },
-    poisoned: { glyph: "\u2620", label: "Poisoned" },
-    charmed: { glyph: "\u2665", label: "Charmed" },
-    restrained: { glyph: "\u{1FAA2}", label: "Restrained" },
-    grappled: { glyph: "\u270A", label: "Grappled" },
-    frightened: { glyph: "\u{1F631}", label: "Frightened" },
-    stunned: { glyph: "\u{1F4AB}", label: "Stunned" },
-    deafened: { glyph: "\u{1F442}", label: "Deafened" },
-    unconscious: { glyph: "\u{1F4A4}", label: "Unconscious" },
-    push: { glyph: "\u2192", label: "Pushes the target" },
-    pin: { glyph: "\u{1F4CC}", label: "Pinned" }
-  };
-  function resolveEffect(eff) {
-    var _a;
-    if (typeof eff === "string") {
-      const hit = EFFECT_VOCABULARY[eff.toLowerCase()];
-      if (hit) return hit;
-      return { glyph: eff, label: eff };
-    }
-    if (eff && typeof eff === "object" && typeof eff.icon === "string") {
-      return { glyph: eff.icon, label: (_a = eff.label) != null ? _a : eff.icon };
-    }
-    return null;
-  }
-  function CostCell({
-    cost,
-    amount,
-    resolvedMax,
-    onCycle
-  }) {
-    if (!cost) return null;
-    const resolved = resolveCost(cost);
-    const label = `${amount}\xD7 ${resolved.label}`;
-    const canCycle = resolvedMax != null && resolvedMax > 1;
-    const content = /* @__PURE__ */ React6.createElement(React6.Fragment, null, /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__cost-amount" }, amount), /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__cost-icon", "aria-hidden": "true" }, resolved.glyph));
-    if (canCycle) {
-      return /* @__PURE__ */ React6.createElement(
-        "button",
-        {
-          type: "button",
-          className: "rpg-rolls__cost-btn",
-          onClick: onCycle,
-          "aria-label": `${label}. Click to cycle.`,
-          "data-tip": `${label} \u2014 click to cycle`
-        },
-        content
-      );
-    }
-    return /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__cost-label", "aria-label": label, "data-tip": label }, content);
-  }
-  var COST_VOCABULARY = {
-    "hit-dice": { glyph: "\u{1F3B2}", label: "Hit dice" },
-    "channel-divinity": { glyph: "\u271D", label: "Channel Divinity" },
-    "wild-shape": { glyph: "\u{1F43E}", label: "Wild Shape" },
-    "mystic-mark": { glyph: "\u{1F3AF}", label: "Mystic Mark" },
-    "pb-pool": { glyph: "\u2742", label: "PB-pool use" },
-    rage: { glyph: "\u{1F525}", label: "Rage" },
-    ki: { glyph: "\u262F", label: "Ki point" },
-    "sorcery-point": { glyph: "\u27E1", label: "Sorcery point" },
-    "superiority-die": { glyph: "\u25C8", label: "Superiority die" },
-    "bardic-inspiration": { glyph: "\u{1F3B5}", label: "Bardic Inspiration" }
-  };
-  function resolveCost(cost) {
-    const hit = COST_VOCABULARY[cost.type.toLowerCase()];
-    if (hit) return hit;
-    return { glyph: cost.type, label: cost.type };
-  }
-  var CIRCLED_NUMERALS = {
-    0: "\u24EA",
-    1: "\u2460",
-    2: "\u2461",
-    3: "\u2462",
-    4: "\u2463",
-    5: "\u2464",
-    6: "\u2465",
-    7: "\u2466",
-    8: "\u2467",
-    9: "\u2468"
-  };
-  function FormCell({
-    roll,
-    effectiveCircle,
-    onCycle,
-    canCycle
-  }) {
-    var _a;
-    if (roll.circle != null) {
-      const circle = effectiveCircle != null ? effectiveCircle : roll.circle;
-      const glyph = (_a = CIRCLED_NUMERALS[circle]) != null ? _a : "\u2728";
-      if (roll.upcast && canCycle) {
-        return /* @__PURE__ */ React6.createElement(
-          "button",
-          {
-            type: "button",
-            className: "rpg-rolls__form-icon rpg-rolls__form-icon--upcast",
-            onClick: onCycle,
-            "aria-label": `Cast at circle ${circle}. Click to cycle.`,
-            "data-tip": `Circle ${circle} \u2014 click to cycle`
-          },
-          glyph
-        );
-      }
-      return /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__form-icon", "aria-label": `Circle ${circle}` }, glyph);
-    }
-    return /* @__PURE__ */ React6.createElement("span", { className: "rpg-rolls__form-icon", "aria-label": `Form: ${roll.form}` }, /* @__PURE__ */ React6.createElement(FormIcon, { form: roll.form }));
-  }
-  function SwapOrText({
-    field,
-    value,
-    swapOn,
-    onCycle,
-    fallback
-  }) {
-    if ((swapOn == null ? void 0 : swapOn.field) === field && swapOn.options.length > 1) {
-      return /* @__PURE__ */ React6.createElement(
-        "button",
-        {
-          type: "button",
-          className: "rpg-rolls__swap-btn",
-          onClick: onCycle,
-          "aria-label": `${value}. Click to cycle.`,
-          "data-tip": `${value} \u2014 click to cycle`
-        },
-        value
-      );
-    }
-    return /* @__PURE__ */ React6.createElement(React6.Fragment, null, fallback != null ? fallback : value);
-  }
-  function FormIcon({ form }) {
-    var _a;
-    const map = {
-      melee: "\u2694",
-      ranged: "\u{1F3F9}",
-      spell: "\u2728",
-      save: "\u{1F6E1}",
-      rider: "\u2295",
-      healing: "\u271A",
-      temp: "\u{1F499}"
-    };
-    return /* @__PURE__ */ React6.createElement("span", { "aria-hidden": "true" }, (_a = map[form]) != null ? _a : "?");
-  }
-  function resolveCharacterLevel(blocks) {
-    const header2 = blocks == null ? void 0 : blocks.header;
-    if (!Array.isArray(header2 == null ? void 0 : header2.classes)) return 0;
-    return header2.classes.reduce(
-      (acc, c) => acc + (typeof c.level === "number" ? c.level : 0),
-      0
-    );
-  }
-  function applyRollOverride(base, override) {
-    if (!override) return base;
-    const next = { ...base };
-    if (override.name !== void 0) next.name = override.name;
-    if (override.damage !== void 0) next.damage = override.damage;
-    if (override.to_hit !== void 0) next.to_hit = override.to_hit;
-    if (override.range !== void 0) next.range = override.range;
-    if (override.save !== void 0) next.save = override.save;
-    if (override.effects !== void 0) next.effects = override.effects;
-    if (override.notes !== void 0) next.notes = override.notes;
-    return next;
-  }
-  function resolveLeveled(base, kind, sourceLevel, characterLevel) {
-    var _a;
-    const leveled = base.leveled;
-    if (!leveled) return base;
-    const by = (_a = leveled.by) != null ? _a : kind === "feature" ? "class" : "character";
-    const level2 = by === "class" ? sourceLevel : characterLevel;
-    if (level2 == null) return base;
-    const thresholds = Object.keys(leveled.at).map((k) => Number(k)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
-    let picked;
-    for (const t of thresholds) {
-      if (t <= level2) picked = t;
-      else break;
-    }
-    if (picked == null) return base;
-    return applyRollOverride(base, leveled.at[picked]);
-  }
-  function resolveCostMax(max, ctx) {
-    var _a;
-    if (max == null) return void 0;
-    if (typeof max === "number") return max;
-    const raw = max.trim();
-    if (!raw) return void 0;
-    switch (raw) {
-      case "PB":
-        return ctx.pb;
-      case "level":
-        return ctx.characterLevel;
-      case "class_level":
-        return (_a = ctx.sourceLevel) != null ? _a : ctx.characterLevel;
-      default: {
-        const n = Number(raw);
-        return Number.isFinite(n) ? n : void 0;
-      }
-    }
-  }
-  function resolveWielderStats(blocks) {
-    var _a;
-    const stats2 = (_a = blocks == null ? void 0 : blocks.stats) != null ? _a : {};
-    const pick = (key) => {
-      const cell = stats2[key];
-      if (typeof cell === "number") return cell;
-      if (cell && typeof cell === "object" && typeof cell.value === "number") {
-        return cell.value;
-      }
-      return 10;
-    };
-    const mod = (score) => Math.floor((score - 10) / 2);
-    const header2 = blocks == null ? void 0 : blocks.header;
-    const classLevels = Array.isArray(header2 == null ? void 0 : header2.classes) ? header2.classes.reduce(
-      (acc, c) => acc + (typeof c.level === "number" ? c.level : 0),
-      0
-    ) : 0;
-    const pb = Math.floor(Math.max(0, classLevels - 1) / 4) + 2;
-    return {
-      str: mod(pick("STR")),
-      dex: mod(pick("DEX")),
-      con: mod(pick("CON")),
-      int: mod(pick("INT")),
-      wis: mod(pick("WIS")),
-      cha: mod(pick("CHA")),
-      pb
-    };
-  }
-  function deriveWeaponRows(blocks, lookup, stats2, equip) {
-    var _a, _b, _c, _d, _e;
-    const inv = blocks == null ? void 0 : blocks.inventory;
-    const rawItems = Array.isArray(inv == null ? void 0 : inv.items) ? inv.items : [];
-    const items = rawItems.flatMap(flattenItemEntries);
-    const library = (_a = lookup == null ? void 0 : lookup.$items) != null ? _a : {};
-    const magicLib = (_b = lookup == null ? void 0 : lookup.$magic) != null ? _b : {};
-    const personalLib = (_c = lookup == null ? void 0 : lookup.$personal) != null ? _c : {};
-    const rows = [];
-    const handItems = /* @__PURE__ */ new Set();
-    if (equip.mainHand) handItems.add(equip.mainHand);
-    if (equip.offHand) handItems.add(equip.offHand);
-    const qtyByName = /* @__PURE__ */ new Map();
-    for (const entry of items) {
-      const name = stripWikilink(entry.name);
-      if (!name) continue;
-      const prev = (_d = qtyByName.get(name)) != null ? _d : 0;
-      qtyByName.set(name, prev + (typeof entry.qty === "number" ? entry.qty : 1));
-    }
-    const emitted = /* @__PURE__ */ new Set();
-    for (const entry of items) {
-      const target = stripWikilink(entry.name);
-      if (!target) continue;
-      if (!handItems.has(target)) continue;
-      if (emitted.has(target)) continue;
-      emitted.add(target);
-      const personal2 = personalLib[target];
-      let element2;
-      let overlay;
-      if (personal2) {
-        const resolution = (0, import_rpg_ui_toolkit5.resolvePersonalItem)(personal2, { elements: library, magic: magicLib }, target);
-        if (!resolution) continue;
-        element2 = resolution.effectiveElement;
-        overlay = resolution.weaponOverlay;
-      } else {
-        const itemData = library[target];
-        if (!itemData) continue;
-        element2 = itemData;
-      }
-      const derived = (0, import_rpg_ui_toolkit5.deriveWeaponRolls)(element2, stats2, overlay, target);
-      if (derived.length === 0) continue;
-      derived.forEach((roll, i) => {
-        rows.push({
-          id: derived.length > 1 ? `weapon:${target}:${i}` : `weapon:${target}`,
-          kind: "weapon",
-          roll,
-          sourceNote: target
-        });
-      });
-      const qty = (_e = qtyByName.get(target)) != null ? _e : 0;
-      if (target === equip.mainHand && qty >= 2 && hasWeaponProperty(element2, "light")) {
-        const offHand = (0, import_rpg_ui_toolkit5.deriveWeaponRolls)(element2, stats2, { ...overlay, offHand: true }, `${target} (Off-hand)`);
-        const primary = offHand[0];
-        if (primary) {
-          rows.push({
-            id: `weapon:${target}:offhand`,
-            kind: "weapon",
-            roll: primary,
-            sourceNote: target
-          });
-        }
-      }
-    }
-    return rows;
-  }
-  function flattenItemEntries(raw) {
-    if (typeof raw === "string") return [{ name: raw }];
-    if (!raw || typeof raw !== "object") return [];
-    const o = raw;
-    const out = [];
-    if (typeof o.name === "string") {
-      const qty = typeof o.qty === "number" ? o.qty : typeof o.quantity === "number" ? o.quantity : void 0;
-      out.push({ name: o.name, qty, equipped: o.equipped, slot: o.slot });
-    }
-    if (Array.isArray(o.contents)) {
-      for (const c of o.contents) out.push(...flattenItemEntries(c));
-    }
-    return out;
-  }
-  function stripWikilink(raw) {
-    const m = raw.match(/^\[\[(.+?)\]\]$/);
-    if (!m) return raw.trim();
-    return m[1].split("|")[0].split("/").pop().trim();
-  }
-  function resolveCasters(blocks, lookup) {
-    var _a, _b;
-    const out = /* @__PURE__ */ new Map();
-    const header2 = blocks == null ? void 0 : blocks.header;
-    const features2 = blocks == null ? void 0 : blocks.features;
-    if (!header2 || !(lookup == null ? void 0 : lookup.$features)) return out;
-    try {
-      const view = lookup.$features(header2, features2 == null ? void 0 : features2.choices, features2 == null ? void 0 : features2.additional);
-      for (const caster of (_a = view.casters) != null ? _a : []) {
-        const c = caster;
-        out.set(c.source, {
-          source: c.source,
-          ability: c.ability,
-          tier: (_b = c.tier) != null ? _b : "none",
-          level: typeof c.level === "number" ? c.level : 0
-        });
-      }
-    } catch (e) {
-    }
-    return out;
-  }
-  function deriveSpellRows(blocks, lookup, stats2, casters, characterLevel) {
-    var _a, _b, _c, _d, _e, _f;
-    const spellsBlock = blocks == null ? void 0 : blocks.spells;
-    const castersState = (_a = spellsBlock == null ? void 0 : spellsBlock.casters) != null ? _a : {};
-    const library = (_b = lookup == null ? void 0 : lookup.$spells) != null ? _b : {};
-    const seen = /* @__PURE__ */ new Set();
-    const rows = [];
-    for (const [source, state] of Object.entries(castersState)) {
-      const resolved = casters.get(source);
-      if (!resolved) continue;
-      const abilityMod = abilityModFromStats(stats2, resolved.ability);
-      const toHit = `${(0, import_rpg_ui_toolkit5.signed)(stats2.pb + abilityMod)} (${resolved.ability})`;
-      const dc = `${8 + stats2.pb + abilityMod}`;
-      const pool = [...(_c = state.cantrips) != null ? _c : [], ...flattenSpellLevels(state.prepared), ...flattenSpellLevels(state.known)];
-      for (const raw of pool) {
-        const name = stripWikilink(raw);
-        if (!name || seen.has(name)) continue;
-        seen.add(name);
-        const body = library[name];
-        const roll = body == null ? void 0 : body.roll;
-        if (!roll) continue;
-        const filled = {
-          ...roll,
-          name: (_d = roll.name) != null ? _d : name,
-          to_hit: roll.form === "spell" ? (_e = roll.to_hit) != null ? _e : toHit : roll.to_hit,
-          save: roll.save ? { ...roll.save, dc: (_f = roll.save.dc) != null ? _f : dc } : roll.save
-        };
-        const leveled = resolveLeveled(filled, "spell", void 0, characterLevel);
-        rows.push({
-          id: `spell:${source}:${name}`,
-          kind: "spell",
-          roll: leveled,
-          sourceNote: name,
-          caster: resolved
-        });
-      }
-    }
-    return rows;
-  }
-  function abilityModFromStats(stats2, ability) {
-    const key = ability.trim().toUpperCase();
-    switch (key) {
-      case "STR":
-        return stats2.str;
-      case "DEX":
-        return stats2.dex;
-      case "CON":
-        return stats2.con;
-      case "INT":
-        return stats2.int;
-      case "WIS":
-        return stats2.wis;
-      case "CHA":
-        return stats2.cha;
-      default:
-        return 0;
-    }
-  }
-  function flattenSpellLevels(map) {
-    if (!map) return [];
-    return Object.values(map).flatMap((v) => Array.isArray(v) ? v : []);
-  }
-  function deriveFeatureRows(blocks, lookup, characterLevel) {
-    var _a, _b;
-    const header2 = blocks == null ? void 0 : blocks.header;
-    const features2 = blocks == null ? void 0 : blocks.features;
-    if (!header2 || !(lookup == null ? void 0 : lookup.$features)) return [];
-    const view = lookup.$features(header2, features2 == null ? void 0 : features2.choices, features2 == null ? void 0 : features2.additional);
-    const rows = [];
-    for (const src of (_a = view.sources) != null ? _a : []) {
-      for (const f of src.features) {
-        if (!f.roll) continue;
-        const rowName = (_b = f.roll.name) != null ? _b : f.name;
-        const named = { ...f.roll, name: rowName };
-        const leveled = resolveLeveled(named, "feature", src.level, characterLevel);
-        rows.push({
-          id: `feature:${src.source}:${f.name}:${rowName}`,
-          kind: "feature",
-          roll: leveled,
-          sourceNote: src.source,
-          sourceLevel: src.level
-        });
-      }
-    }
-    return rows;
-  }
-  function deriveManualRows(manual) {
-    if (!Array.isArray(manual)) return [];
-    const rows = [];
-    manual.forEach((atk, i) => {
-      const name = atk.name || atk.label || `Roll ${i + 1}`;
-      const aspect = {
-        name,
-        form: "melee",
-        to_hit: typeof atk.to_hit === "number" ? (0, import_rpg_ui_toolkit5.signed)(atk.to_hit) : typeof atk.to_hit === "string" ? atk.to_hit : void 0,
-        range: atk.range,
-        damage: atk.damage ? { roll: atk.damage.roll, type: atk.damage.type, bonus: atk.damage.bonus } : void 0,
-        notes: atk.notes
-      };
-      rows.push({
-        id: `manual:${i}`,
-        kind: "manual",
-        roll: aspect,
-        sourceNote: name
-      });
-    });
-    return rows;
-  }
-  function resolveEquipState(blocks, lookup) {
-    var _a;
-    const state = { mainHand: null, offHand: null };
-    const inv = blocks == null ? void 0 : blocks.inventory;
-    const rawItems = Array.isArray(inv == null ? void 0 : inv.items) ? inv.items : [];
-    const items = rawItems.flatMap(flattenItemEntries);
-    const library = (_a = lookup == null ? void 0 : lookup.$items) != null ? _a : {};
-    for (const entry of items) {
-      if (!entry.equipped && !entry.slot) continue;
-      const target = stripWikilink(entry.name);
-      if (!target) continue;
-      const itemData = library[target];
-      const isTwoHanded = (itemData == null ? void 0 : itemData.weapon) ? hasProperty(itemData.weapon.properties, "two-handed") : false;
-      if (entry.slot === "main_hand") {
-        state.mainHand = target;
-        if (isTwoHanded) state.offHand = target;
-      } else if (entry.slot === "off_hand" || entry.slot === "shield") {
-        state.offHand = target;
-      } else if (entry.equipped && (itemData == null ? void 0 : itemData.weapon)) {
-        if (!state.mainHand) state.mainHand = target;
-        if (isTwoHanded && !state.offHand) state.offHand = target;
-      }
-    }
-    return state;
-  }
-  function hasProperty(properties, name) {
-    if (!properties) return false;
-    const target = name.toLowerCase();
-    return properties.some((p) => {
-      const bare = p.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].toLowerCase();
-      return bare === target;
-    });
-  }
-  function hasWeaponProperty(element2, name) {
-    var _a;
-    return hasProperty((_a = element2.weapon) == null ? void 0 : _a.properties, name);
-  }
-  function isRollAvailable(kind, roll, sourceNote, equip) {
-    var _a;
-    const requires = (_a = roll.requires) != null ? _a : roll.form === "melee" || roll.form === "ranged" ? "one_hand" : "none";
-    if (kind === "weapon") {
-      const inMain = equip.mainHand === sourceNote;
-      const inOff = equip.offHand === sourceNote;
-      if (!inMain && !inOff) return false;
-      if (requires === "two_hands") {
-        return inMain && (equip.offHand === null || equip.offHand === sourceNote);
-      }
-      return true;
-    }
-    switch (requires) {
-      case "none":
-        return true;
-      case "one_hand":
-        return equip.mainHand !== null || equip.offHand !== null;
-      case "two_hands":
-        return equip.mainHand !== null && (equip.offHand === null || equip.offHand === equip.mainHand);
-      case "free_hand":
-        return equip.mainHand === null || equip.offHand === null;
-      default:
-        return true;
-    }
-  }
-  var rolls_default = rolls;
 
   // vault:tales-of-the-valiant/config/blocks/character/proficiencies.tsx
   var React7 = __toESM(__require("react"));
@@ -2297,23 +2439,23 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     };
     for (const caster of casters) {
       const state = (_a = castersState[caster.source]) != null ? _a : {};
-      for (const [lvlStr, list] of Object.entries((_b = caster.granted.cantrips) != null ? _b : {})) {
+      for (const [lvlStr, list2] of Object.entries((_b = caster.granted.cantrips) != null ? _b : {})) {
         if (Number(lvlStr) > caster.level) continue;
-        for (const s of list != null ? list : []) push(s);
+        for (const s of list2 != null ? list2 : []) push(s);
       }
-      for (const [lvlStr, list] of Object.entries((_c = caster.granted.prepared) != null ? _c : {})) {
+      for (const [lvlStr, list2] of Object.entries((_c = caster.granted.prepared) != null ? _c : {})) {
         if (Number(lvlStr) > caster.level) continue;
-        for (const s of list != null ? list : []) push(s);
+        for (const s of list2 != null ? list2 : []) push(s);
       }
-      for (const [lvlStr, list] of Object.entries((_d = caster.granted.rituals) != null ? _d : {})) {
+      for (const [lvlStr, list2] of Object.entries((_d = caster.granted.rituals) != null ? _d : {})) {
         if (Number(lvlStr) > caster.level) continue;
-        for (const s of list != null ? list : []) push(s);
+        for (const s of list2 != null ? list2 : []) push(s);
       }
       for (const s of (_e = state.cantrips) != null ? _e : []) push(s);
       for (const m of [state.prepared, state.known, state.rituals]) {
         if (!m) continue;
-        for (const list of Object.values(m)) {
-          for (const s of list != null ? list : []) push(s);
+        for (const list2 of Object.values(m)) {
+          for (const s of list2 != null ? list2 : []) push(s);
         }
       }
     }
@@ -2481,9 +2623,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       ...caster.granted.cantrips,
       ...caster.granted.prepared,
       ...caster.granted.rituals
-    }).some((list) => {
+    }).some((list2) => {
       var _a2;
-      return ((_a2 = list == null ? void 0 : list.length) != null ? _a2 : 0) > 0;
+      return ((_a2 = list2 == null ? void 0 : list2.length) != null ? _a2 : 0) > 0;
     });
     if (!hasBase && !hasLeveled && !subHasBase && !subHasLeveled && !hasAnyGrants) return null;
     if (isClass) {
@@ -2540,8 +2682,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const caster = casters == null ? void 0 : casters.find((c) => c.source === sourceName);
       if (!caster) return false;
       for (const m of [caster.granted.cantrips, caster.granted.prepared, caster.granted.rituals]) {
-        for (const list of Object.values(m != null ? m : {})) {
-          if (((_a = list == null ? void 0 : list.length) != null ? _a : 0) > 0) return true;
+        for (const list2 of Object.values(m != null ? m : {})) {
+          if (((_a = list2 == null ? void 0 : list2.length) != null ? _a : 0) > 0) return true;
         }
       }
       return false;
@@ -2598,7 +2740,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     return [...groups.entries()].sort(([a], [b]) => {
       var _a2, _b;
       return ((_a2 = order.get(a)) != null ? _a2 : Infinity) - ((_b = order.get(b)) != null ? _b : Infinity);
-    }).map(([source, list]) => ({ source, pendings: list }));
+    }).map(([source, list2]) => ({ source, pendings: list2 }));
   }
   function gatherDecisions(sources, choices) {
     var _a, _b;
@@ -2698,12 +2840,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         out[bucket] = [...entries];
       }
       for (const [bucket, entries] of Object.entries(grantedTrivials)) {
-        const list = (_a = out[bucket]) != null ? _a : out[bucket] = [];
-        const seen = new Set(list.map((e) => e.$name));
+        const list2 = (_a = out[bucket]) != null ? _a : out[bucket] = [];
+        const seen = new Set(list2.map((e) => e.$name));
         for (const e of entries) {
           if (seen.has(e.$name)) continue;
           seen.add(e.$name);
-          list.push(e);
+          list2.push(e);
         }
       }
       return out;
@@ -2916,12 +3058,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       }
       const spellTrivials = collectSpellTrivials(view.casters, (_d2 = spellsBlock == null ? void 0 : spellsBlock.casters) != null ? _d2 : {}, spellLibrary);
       for (const [bucket, entries] of Object.entries(spellTrivials)) {
-        const list = (_e2 = out[bucket]) != null ? _e2 : out[bucket] = [];
-        const seen = new Set(list.map((e) => e.$name));
+        const list2 = (_e2 = out[bucket]) != null ? _e2 : out[bucket] = [];
+        const seen = new Set(list2.map((e) => e.$name));
         for (const e of entries) {
           if (seen.has(e.$name)) continue;
           seen.add(e.$name);
-          list.push(e);
+          list2.push(e);
         }
       }
       const inv = blocks == null ? void 0 : blocks.inventory;
@@ -3038,8 +3180,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const maps = [state.prepared, state.known, state.rituals];
       for (const m of maps) {
         if (!m) continue;
-        for (const list of Object.values(m)) {
-          if ((list != null ? list : []).length > 0) return true;
+        for (const list2 of Object.values(m)) {
+          if ((list2 != null ? list2 : []).length > 0) return true;
         }
       }
     }
@@ -3330,17 +3472,17 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     };
     const styleSet = /* @__PURE__ */ new Set();
     for (const s of caster.style) {
-      const list = [];
-      collectStrings(s, list);
-      for (const n of list) styleSet.add(n);
+      const list2 = [];
+      collectStrings(s, list2);
+      for (const n of list2) styleSet.add(n);
     }
     if (styleSet.size === 0) return [];
     const out = [];
     for (const [stem, doc] of Object.entries(spellLibrary)) {
       if (inPool.has(stem)) continue;
-      const list = [];
-      collectStrings(doc.style, list);
-      if (list.some((s) => styleSet.has(s))) {
+      const list2 = [];
+      collectStrings(doc.style, list2);
+      if (list2.some((s) => styleSet.has(s))) {
         out.push(`[[${stem}]]`);
       }
     }
@@ -3390,11 +3532,11 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         const budget = (_e = preparedBudgets[caster.source]) != null ? _e : 0;
         const preparedPicksByCircle = {};
         const allPicks = [];
-        for (const [cStr, list] of Object.entries((_f = state.prepared) != null ? _f : {})) {
+        for (const [cStr, list2] of Object.entries((_f = state.prepared) != null ? _f : {})) {
           const c = Number(cStr);
           if (!Number.isFinite(c)) continue;
           const bucket = (_g = preparedPicksByCircle[c]) != null ? _g : preparedPicksByCircle[c] = [];
-          for (const s of list != null ? list : []) {
+          for (const s of list2 != null ? list2 : []) {
             const stem = bareStem(s);
             if (stem) {
               bucket.push(stem);
@@ -3717,13 +3859,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         var _a2, _b2;
         const nextMap = { ...prev != null ? prev : {} };
         const casterPrev = { ...(_a2 = nextMap[source]) != null ? _a2 : {} };
-        const list = [...(_b2 = casterPrev.cantrips) != null ? _b2 : []];
+        const list2 = [...(_b2 = casterPrev.cantrips) != null ? _b2 : []];
         const bare = bareStem(option);
-        const idx = list.findIndex((s) => bareStem(s) === bare);
-        if (idx >= 0) list.splice(idx, 1);
-        else list.push(option);
-        if (list.length === 0) delete casterPrev.cantrips;
-        else casterPrev.cantrips = list;
+        const idx = list2.findIndex((s) => bareStem(s) === bare);
+        if (idx >= 0) list2.splice(idx, 1);
+        else list2.push(option);
+        if (list2.length === 0) delete casterPrev.cantrips;
+        else casterPrev.cantrips = list2;
         nextMap[source] = casterPrev;
         return nextMap;
       });
@@ -3734,13 +3876,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         const nextMap = { ...prev != null ? prev : {} };
         const casterPrev = { ...(_a2 = nextMap[source]) != null ? _a2 : {} };
         const bucketMap = { ...(_b2 = casterPrev[category2]) != null ? _b2 : {} };
-        const list = [...(_c2 = bucketMap[circle]) != null ? _c2 : []];
+        const list2 = [...(_c2 = bucketMap[circle]) != null ? _c2 : []];
         const bare = bareStem(option);
-        const idx = list.findIndex((s) => bareStem(s) === bare);
+        const idx = list2.findIndex((s) => bareStem(s) === bare);
         if (idx < 0) return prev != null ? prev : {};
-        list.splice(idx, 1);
-        if (list.length === 0) delete bucketMap[circle];
-        else bucketMap[circle] = list;
+        list2.splice(idx, 1);
+        if (list2.length === 0) delete bucketMap[circle];
+        else bucketMap[circle] = list2;
         if (Object.keys(bucketMap).length === 0) delete casterPrev[category2];
         else casterPrev[category2] = bucketMap;
         nextMap[source] = casterPrev;
@@ -3756,12 +3898,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         const nextMap = { ...prev != null ? prev : {} };
         const casterPrev = { ...(_a2 = nextMap[source]) != null ? _a2 : {} };
         const bucketMap = { ...(_b2 = casterPrev.prepared) != null ? _b2 : {} };
-        const list = [...(_c2 = bucketMap[circle]) != null ? _c2 : []];
-        const idx = list.findIndex((s) => bareStem(s) === stem);
-        if (idx >= 0) list.splice(idx, 1);
-        else list.push(option);
-        if (list.length === 0) delete bucketMap[circle];
-        else bucketMap[circle] = list;
+        const list2 = [...(_c2 = bucketMap[circle]) != null ? _c2 : []];
+        const idx = list2.findIndex((s) => bareStem(s) === stem);
+        if (idx >= 0) list2.splice(idx, 1);
+        else list2.push(option);
+        if (list2.length === 0) delete bucketMap[circle];
+        else bucketMap[circle] = list2;
         if (Object.keys(bucketMap).length === 0) delete casterPrev.prepared;
         else casterPrev.prepared = bucketMap;
         nextMap[source] = casterPrev;
@@ -3777,12 +3919,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         const nextMap = { ...prev != null ? prev : {} };
         const casterPrev = { ...(_a2 = nextMap[source]) != null ? _a2 : {} };
         const bucketMap = { ...(_b2 = casterPrev.rituals) != null ? _b2 : {} };
-        const list = [...(_c2 = bucketMap[level2]) != null ? _c2 : []];
-        const idx = list.findIndex((s) => bareStem(s) === stem);
-        if (idx >= 0) list.splice(idx, 1);
-        else list.push(option);
-        if (list.length === 0) delete bucketMap[level2];
-        else bucketMap[level2] = list;
+        const list2 = [...(_c2 = bucketMap[level2]) != null ? _c2 : []];
+        const idx = list2.findIndex((s) => bareStem(s) === stem);
+        if (idx >= 0) list2.splice(idx, 1);
+        else list2.push(option);
+        if (list2.length === 0) delete bucketMap[level2];
+        else bucketMap[level2] = list2;
         if (Object.keys(bucketMap).length === 0) delete casterPrev.rituals;
         else casterPrev.rituals = bucketMap;
         nextMap[source] = casterPrev;
@@ -3943,7 +4085,28 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       }
       setItems(toggleForSale(items, target));
     } : void 0;
-    return /* @__PURE__ */ React10.createElement(import_rpg_ui_toolkit9.InventoryBlock, { data, onToggleEquip: handleToggleEquip, onToggleForSale: handleToggleForSale });
+    const loadouts = (0, import_rpg_ui_toolkit9.readLoadouts)(self.loadouts);
+    const heldNow = (list2) => JSON.stringify(
+      list2.flatMap(
+        (e) => e && e.slot && /^(main_hand|off_hand|shield|light|instrument)$/.test(e.slot) ? [`${e.name}@${e.slot}`] : []
+      ).sort()
+    );
+    const current = heldNow(items);
+    const isHeld = (l) => heldNow((0, import_rpg_ui_toolkit9.applyLoadout)(items, l).items) === current;
+    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, loadouts.length > 0 && /* @__PURE__ */ React10.createElement("nav", { className: "rpg-loadouts", "aria-label": "Loadouts" }, /* @__PURE__ */ React10.createElement("span", { className: "rpg-loadouts-label" }, "In hand"), loadouts.map((l) => /* @__PURE__ */ React10.createElement(
+      "button",
+      {
+        key: l.name,
+        type: "button",
+        className: `rpg-loadout${isHeld(l) ? " is-held" : ""}`,
+        "aria-pressed": isHeld(l),
+        title: (0, import_rpg_ui_toolkit9.describeLoadout)(l),
+        disabled: !setItems || isHeld(l),
+        onClick: () => setItems == null ? void 0 : setItems((0, import_rpg_ui_toolkit9.applyLoadout)(items, l).items)
+      },
+      /* @__PURE__ */ React10.createElement("b", null, l.name),
+      /* @__PURE__ */ React10.createElement("small", null, (0, import_rpg_ui_toolkit9.describeLoadout)(l))
+    ))), /* @__PURE__ */ React10.createElement(import_rpg_ui_toolkit9.InventoryBlock, { data, onToggleEquip: handleToggleEquip, onToggleForSale: handleToggleForSale }));
   };
   function expandContainerEntry(entry, lookups) {
     var _a;
@@ -4107,6 +4270,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const out = { name: o.name };
     if (typeof o.qty === "number") out.qty = o.qty;
     if (typeof o.notes === "string") out.notes = o.notes;
+    const label = source.label;
+    if (typeof label === "string") out.label = label;
     if (o.for_sale === true) out.for_sale = true;
     if (Array.isArray(o.contents)) {
       out.contents = o.contents.map(toInventoryItemEntry).filter((e) => e !== null);
@@ -4147,6 +4312,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     if (typeof o.equipped === "boolean") entry.equipped = o.equipped;
     if (typeof o.for_sale === "boolean") entry.for_sale = o.for_sale;
     if (typeof o.notes === "string") entry.notes = o.notes;
+    if (typeof o.label === "string") entry.label = o.label;
     if (Array.isArray(o.contents)) entry.contents = normaliseItems(o.contents);
     return entry;
   }
@@ -4445,7 +4611,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       return [keyRow, valueRow];
     }))));
   }
-  function AppearanceTab({ appearance, sourcePath }) {
+  function AppearanceTab({
+    appearance,
+    sourcePath,
+    framed,
+    frameName
+  }) {
     var _a, _b;
     const prompt = React12.useMemo(() => buildImagePrompt(appearance), [appearance]);
     const isEmpty = !appearance || !appearance.body && !appearance.clothes && !appearance.art && ((_a = appearance.side_props) != null ? _a : []).length === 0;
@@ -4455,7 +4626,25 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     const artStyle = {
       ["--rpg-art-position"]: artPosition
     };
-    return /* @__PURE__ */ React12.createElement("div", { className: "rpg-description-appearance" }, /* @__PURE__ */ React12.createElement("figure", { className: "rpg-description-appearance-art", "data-fit": artFit, style: artStyle, "aria-label": "Character art" }, /* @__PURE__ */ React12.createElement(import_rpg_ui_toolkit10.PortraitThumb, { src: artSrc, alt: "Character art" })), /* @__PURE__ */ React12.createElement("div", { className: "rpg-description-appearance-body" }, /* @__PURE__ */ React12.createElement(SidePropsGrid, { rows: (_b = appearance == null ? void 0 : appearance.side_props) != null ? _b : [] }), (appearance == null ? void 0 : appearance.body) && /* @__PURE__ */ React12.createElement("section", { "aria-label": "Body description" }, /* @__PURE__ */ React12.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React12.createElement("span", null, "Body")), /* @__PURE__ */ React12.createElement(import_rpg_ui_toolkit10.Markdown, { source: appearance.body, sourcePath })), (appearance == null ? void 0 : appearance.clothes) && /* @__PURE__ */ React12.createElement("section", { "aria-label": "Clothes description" }, /* @__PURE__ */ React12.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React12.createElement("span", null, "Attire")), /* @__PURE__ */ React12.createElement(import_rpg_ui_toolkit10.Markdown, { source: appearance.clothes, sourcePath })), /* @__PURE__ */ React12.createElement("footer", { className: "rpg-description-appearance-actions" }, /* @__PURE__ */ React12.createElement(
+    return /* @__PURE__ */ React12.createElement("div", { className: "rpg-description-appearance" }, /* @__PURE__ */ React12.createElement(
+      "figure",
+      {
+        className: `rpg-description-appearance-art${framed ? " is-framed" : ""}`,
+        "data-fit": artFit,
+        style: artStyle,
+        "aria-label": "Character art"
+      },
+      /* @__PURE__ */ React12.createElement(
+        import_rpg_ui_toolkit10.PortraitThumb,
+        {
+          src: artSrc,
+          alt: "Character art",
+          framed,
+          frameName: frameName != null ? frameName : false,
+          aspect: 9 / 16
+        }
+      )
+    ), /* @__PURE__ */ React12.createElement("div", { className: "rpg-description-appearance-body" }, /* @__PURE__ */ React12.createElement(SidePropsGrid, { rows: (_b = appearance == null ? void 0 : appearance.side_props) != null ? _b : [] }), (appearance == null ? void 0 : appearance.body) && /* @__PURE__ */ React12.createElement("section", { "aria-label": "Body description" }, /* @__PURE__ */ React12.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React12.createElement("span", null, "Body")), /* @__PURE__ */ React12.createElement(import_rpg_ui_toolkit10.Markdown, { source: appearance.body, sourcePath })), (appearance == null ? void 0 : appearance.clothes) && /* @__PURE__ */ React12.createElement("section", { "aria-label": "Clothes description" }, /* @__PURE__ */ React12.createElement("header", { className: "rpg-tag-heading" }, /* @__PURE__ */ React12.createElement("span", null, "Attire")), /* @__PURE__ */ React12.createElement(import_rpg_ui_toolkit10.Markdown, { source: appearance.clothes, sourcePath })), /* @__PURE__ */ React12.createElement("footer", { className: "rpg-description-appearance-actions" }, /* @__PURE__ */ React12.createElement(
       "button",
       {
         type: "button",
@@ -4586,7 +4775,15 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         {
           id: "appearance",
           label: "Appearance",
-          render: () => /* @__PURE__ */ React12.createElement(AppearanceTab, { appearance: self.appearance, sourcePath })
+          render: () => /* @__PURE__ */ React12.createElement(
+            AppearanceTab,
+            {
+              appearance: self.appearance,
+              sourcePath,
+              framed: self.framed,
+              frameName: self["frame-name"]
+            }
+          )
         },
         {
           id: "backstory",
@@ -4698,6 +4895,57 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var description_default = description;
 
   // vault:tales-of-the-valiant/config/entities/character.tsx
+  function wieldsTwoLightWeapons(blocks, lookup) {
+    var _a, _b, _c, _d;
+    const b = blocks;
+    const items = (_d = (_c = (_a = b == null ? void 0 : b.inventory) == null ? void 0 : _a.items) != null ? _c : (_b = b == null ? void 0 : b.sheet) == null ? void 0 : _b.items) != null ? _d : [];
+    const stem = (n) => typeof n === "string" ? n.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop().trim() : "";
+    let light = 0;
+    const walk = (list2) => {
+      var _a2, _b2, _c2, _d2;
+      for (const raw of list2) {
+        if (!raw || typeof raw !== "object") continue;
+        const e = raw;
+        const held = e.slot === "main_hand" || e.slot === "off_hand" || e.equipped === true;
+        const weapon = (_a2 = lookup == null ? void 0 : lookup.$items) == null ? void 0 : _a2[stem(e.name)];
+        const isLight = ((_c2 = (_b2 = weapon == null ? void 0 : weapon.weapon) == null ? void 0 : _b2.properties) != null ? _c2 : []).some((p) => /^light$/i.test(stem(p)));
+        const melee = /melee/i.test((_d2 = weapon == null ? void 0 : weapon.type) != null ? _d2 : "");
+        if (held && isLight && melee) light += typeof e.qty === "number" && e.qty > 0 ? e.qty : 1;
+      }
+    };
+    walk(Array.isArray(items) ? items : []);
+    return light >= 2;
+  }
+  var AMMO_OF = [
+    [/crossbow/i, /crossbow bolts?/i],
+    [/bow/i, /^arrows?$/i],
+    [/sling/i, /sling bullets?/i],
+    [/blowgun/i, /blowgun needles?/i]
+  ];
+  function ammoFor(weapon, blocks, lookup) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const stem = (n) => typeof n === "string" ? n.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("/").pop().trim() : "";
+    const element2 = (_a = lookup == null ? void 0 : lookup.$items) == null ? void 0 : _a[stem(weapon)];
+    const fires = ((_c = (_b = element2 == null ? void 0 : element2.weapon) == null ? void 0 : _b.properties) != null ? _c : []).some((p) => /^ammunition$/i.test(stem(p)));
+    const kind = (_d = AMMO_OF.find(([w]) => w.test(stem(weapon)))) == null ? void 0 : _d[1];
+    if (!fires || !kind) return void 0;
+    const b = blocks;
+    const items = (_h = (_g = (_e = b == null ? void 0 : b.inventory) == null ? void 0 : _e.items) != null ? _g : (_f = b == null ? void 0 : b.sheet) == null ? void 0 : _f.items) != null ? _h : [];
+    const find = (list2, path) => {
+      for (const raw of list2) {
+        const entry = typeof raw === "string" ? { name: raw } : raw;
+        const name = stem(entry == null ? void 0 : entry.name);
+        if (kind.test(name)) return { item: name, ...path.length ? { path } : {} };
+        if (Array.isArray(entry == null ? void 0 : entry.contents)) {
+          const label = typeof entry.label === "string" ? entry.label : name;
+          const inner = find(entry.contents, [...path, label]);
+          if (inner) return inner;
+        }
+      }
+      return void 0;
+    };
+    return find(Array.isArray(items) ? items : [], []);
+  }
   var character = (0, import_rpg_ui_toolkit11.CreateEntity)(async ({ wiki }) => {
     const [
       classDocs,
@@ -4707,10 +4955,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       backgroundDocs,
       skillDocs,
       languageDocs,
-      actionDocs,
-      reactionDocs,
-      bonusActionDocs,
-      talentDocs
+      basicActions,
+      talentDocs,
+      conditionDocs
     ] = await Promise.all([
       wiki.folder("worldbuilding/traits/classes"),
       wiki.folder("worldbuilding/traits/subclasses"),
@@ -4719,10 +4966,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       wiki.folder("worldbuilding/traits/backgrounds"),
       wiki.folder("glossary/skills"),
       wiki.folder("worldbuilding/traits/languages"),
-      wiki.folder("glossary/actions"),
-      wiki.folder("glossary/reactions"),
-      wiki.folder("glossary/bonus-actions"),
-      wiki.folder("worldbuilding/traits/talents")
+      // The basic actions live under `concepts/` (they moved from `glossary/`,
+      // which left this list empty). Shared with the stat entity.
+      loadBasicActions(wiki),
+      wiki.folder("worldbuilding/traits/talents"),
+      // The conditions (`concepts/conditions/Restrained.md`): what a status
+      // card names, and the rules it shows.
+      wiki.folder("concepts/conditions")
     ]);
     const refPaths = /* @__PURE__ */ new Set();
     const refRe = /@([A-Za-z0-9][A-Za-z0-9/_\-]*)/g;
@@ -4748,6 +4998,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     refPaths.add("worldbuilding/magic-items");
     refPaths.add("worldbuilding/containers");
     refPaths.add("adventurers");
+    refPaths.add("worldbuilding/enchantments");
+    refPaths.add("adventuring/collected");
     const refLoads = await Promise.all(
       [...refPaths].map(async (p) => {
         var _a;
@@ -4873,6 +5125,16 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         spellLibrary[name] = blocks[0];
       }
     }
+    const conditionLibrary = {};
+    for (const d of conditionDocs != null ? conditionDocs : []) {
+      const name = d == null ? void 0 : d.$name;
+      const contents = typeof (d == null ? void 0 : d.$contents) === "string" ? d.$contents : "";
+      if (!name) continue;
+      const rules = contents.split("\n").filter((l) => /^\s*-\s+/.test(l)).map(
+        (l) => l.replace(/^\s*-\s+/, "").replace(/!\[\[[^\]]*\]\]/g, "").trim()
+      ).filter(Boolean);
+      conditionLibrary[String(name).toLowerCase()] = { name, rules };
+    }
     const itemLibrary = {};
     const magicLibrary = {};
     const personalLibrary = {};
@@ -4886,7 +5148,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const isItemsFolder = $path.includes("worldbuilding/items/");
       const isMagicItemsFolder = $path.includes("worldbuilding/magic-items/");
       const isContainersFolder = $path.includes("worldbuilding/containers/");
-      const isAdventurersFolder = $path.includes("adventurers/");
+      const isAdventurersFolder = $path.includes("adventurers/") || $path.includes("adventuring/collected/") || $path.includes("worldbuilding/enchantments/");
       if (!isItemsFolder && !isMagicItemsFolder && !isContainersFolder && !isAdventurersFolder) continue;
       if (isItemsFolder && !itemLibrary[name]) {
         const parsed = (0, import_rpg_ui_toolkit11.extractItemElementBlocks)(contents);
@@ -4933,19 +5195,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       console.log("[RPG UI] spell library size:", Object.keys(spellLibrary).length);
       console.log("[RPG UI] spell library sample:", Object.keys(spellLibrary).slice(0, 20));
     }
-    const toDefaultFeature = (type) => (d) => {
-      var _a, _b;
-      return {
-        $name: (_a = d == null ? void 0 : d.$name) != null ? _a : "",
-        $contents: (_b = d == null ? void 0 : d.$contents) != null ? _b : "",
-        type
-      };
-    };
-    const defaultFeatures = [
-      ...(actionDocs != null ? actionDocs : []).map(toDefaultFeature("action")),
-      ...(bonusActionDocs != null ? bonusActionDocs : []).map(toDefaultFeature("bonus")),
-      ...(reactionDocs != null ? reactionDocs : []).map(toDefaultFeature("reaction"))
-    ];
+    const defaultFeatures = basicActions;
     const pillStem2 = (p) => {
       if (!(p == null ? void 0 : p.file)) return void 0;
       let raw = p.file;
@@ -5089,6 +5339,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         $defaultFeatures: defaultFeatures,
         $features,
         $spells: spellLibrary,
+        $conditions: conditionLibrary,
         $items: itemLibrary,
         $magic: magicLibrary,
         $personal: personalLibrary,
@@ -5116,6 +5367,16 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
           const header2 = (_a = blocks.header) != null ? _a : blocks.sheet;
           const classes = (_b = header2 == null ? void 0 : header2.classes) != null ? _b : [];
           return classes.map((c) => c.level).reduce((a, b) => a + b, 0);
+        },
+        // A caster's spell slots by circle (index 0 = 1st), from its tier and
+        // class level — what the session log counts slots left against.
+        SpellSlots: ([caster], { blocks, lookup }) => {
+          var _a, _b, _c, _d, _e, _f;
+          const header2 = (_a = blocks.header) != null ? _a : blocks.sheet;
+          const featuresBlock = (_b = blocks.features) != null ? _b : blocks.sheet;
+          const view = (_c = lookup.$features) == null ? void 0 : _c.call(lookup, header2, featuresBlock == null ? void 0 : featuresBlock.choices, featuresBlock == null ? void 0 : featuresBlock.additional);
+          const found = ((_d = view == null ? void 0 : view.casters) != null ? _d : []).find((c) => c.source === caster);
+          return found ? slotsForCaster((_e = found.tier) != null ? _e : "none", (_f = found.level) != null ? _f : 0) : [];
         },
         ProficiencyBonus: (_, { expressions }) => {
           const level2 = expressions.CharacterLevel();
@@ -5155,6 +5416,76 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         },
         Passive: ([{ attribute, proficiency, bonus, vantage }], { expressions }) => {
           return 10 + expressions.ModifierTotal({ attribute, proficiency, bonus }) + 5 * vantage;
+        },
+        ArmorClass: (_, { blocks, lookup }) => {
+          var _a, _b, _c, _d, _e;
+          const header2 = (_a = blocks.header) != null ? _a : blocks.sheet;
+          const featuresBlock = (_b = blocks.features) != null ? _b : blocks.sheet;
+          const traits = (_e = (_d = (_c = lookup.$features) == null ? void 0 : _c.call(
+            lookup,
+            header2,
+            featuresBlock == null ? void 0 : featuresBlock.choices,
+            featuresBlock == null ? void 0 : featuresBlock.additional,
+            blocks.inventory
+          )) == null ? void 0 : _d.traits) != null ? _e : {};
+          const health2 = blocks.health;
+          const ac = characterArmorClass(blocks, lookup, traits, health2 == null ? void 0 : health2.natural_ac);
+          return ac.armor + ac.shieldBonus + ac.bonus;
+        },
+        HitPoints: (_, { blocks }) => {
+          var _a;
+          const health2 = blocks.health;
+          if ((health2 == null ? void 0 : health2.max_hp) == null) return void 0;
+          return { current: (_a = health2.current_hp) != null ? _a : health2.max_hp, max: health2.max_hp };
+        },
+        Modifier: ([name], { blocks, lookup, expressions }) => {
+          var _a, _b, _c, _d, _e, _f;
+          const key = bareLabel(String(name != null ? name : ""));
+          const lower = key.toLowerCase();
+          const skill = SKILLS.find((s) => s.name.toLowerCase() === lower);
+          if (skill || lower === "initiative") {
+            const header2 = (_a = blocks.header) != null ? _a : blocks.sheet;
+            const featuresBlock = (_b = blocks.features) != null ? _b : blocks.sheet;
+            const traits = (_e = (_d = (_c = lookup.$features) == null ? void 0 : _c.call(
+              lookup,
+              header2,
+              featuresBlock == null ? void 0 : featuresBlock.choices,
+              featuresBlock == null ? void 0 : featuresBlock.additional,
+              blocks.inventory
+            )) == null ? void 0 : _d.traits) != null ? _e : {};
+            if (!skill) {
+              const init = initiativeDetails(traits);
+              return expressions.ModifierTotal({
+                attribute: init.attr,
+                proficiency: init.proficiency,
+                bonus: init.bonus
+              });
+            }
+            const details2 = skillResolver(blocks.skills, traits)(skill.name);
+            return expressions.ModifierTotal({
+              attribute: skill.attr,
+              proficiency: details2.proficiency,
+              bonus: details2.bonus
+            });
+          }
+          const attr = (_f = ATTR_BY_NAME[lower]) != null ? _f : /^(str|dex|con|int|wis|cha)$/.test(lower) ? key.toUpperCase() : void 0;
+          if (attr) return expressions.ModifierTotal({ attribute: attr, proficiency: 0, bonus: 0 });
+          return void 0;
+        },
+        SessionActions: (_, { blocks, lookup }) => {
+          var _a;
+          const manual = (_a = blocks.rolls) == null ? void 0 : _a.rolls;
+          const { rows } = deriveRollRows(manual, blocks, lookup);
+          const attacks = rows.filter((r) => r.available).map((r) => {
+            const action = rollRowAction(r, lookup.$conditions);
+            const ammo = r.kind === "weapon" ? ammoFor(r.sourceNote, blocks, lookup) : void 0;
+            return ammo ? { ...action, ammo } : action;
+          });
+          const dual = wieldsTwoLightWeapons(blocks, lookup);
+          const basics = basicSessionActions(lookup.$defaultFeatures).filter(
+            (a) => dual || !/^two-weapon fighting$/i.test(a.name)
+          );
+          return [...attacks, ...basics];
         }
       }
     };
@@ -5167,10 +5498,28 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   // vault:tales-of-the-valiant/config/blocks/item/element.tsx
   var React13 = __toESM(__require("react"));
   var import_rpg_ui_toolkit12 = __require("rpg-ui-toolkit");
-  var element = ({ self }) => {
-    const data = { ...self };
+  var element = ({ self, lookup }) => {
+    var _a;
+    let data = { ...self };
     if (!data.desc && typeof self.text === "string") {
       data.desc = self.text;
+    }
+    const raw = self;
+    const magic2 = Array.isArray(raw.magic) ? raw.magic : [];
+    if (magic2.length > 0) {
+      const resolved = (0, import_rpg_ui_toolkit12.resolvePersonalItem)(
+        {
+          base: "[[__self__]]",
+          magic: magic2,
+          ...raw.variants && typeof raw.variants === "object" ? { variants: raw.variants } : {},
+          ...data.name ? { name: data.name } : {}
+        },
+        { elements: { __self__: data }, magic: (_a = lookup == null ? void 0 : lookup.$magic) != null ? _a : {} }
+      );
+      if (resolved) {
+        const texts = [...resolved.magicTexts, ...data.desc ? [data.desc] : []];
+        data = { ...resolved.effectiveElement, ...texts.length ? { desc: texts.join("\n\n") } : {} };
+      }
     }
     return /* @__PURE__ */ React13.createElement(import_rpg_ui_toolkit12.ItemElementCard, { data, renderMarkdown: (src) => /* @__PURE__ */ React13.createElement(import_rpg_ui_toolkit12.Markdown, { source: src }) });
   };
@@ -5270,11 +5619,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
 
   // vault:tales-of-the-valiant/config/entities/item.tsx
   var item = (0, import_rpg_ui_toolkit16.CreateEntity)(async ({ wiki }) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const compendium = (_a = await wiki.folder("worldbuilding/items")) != null ? _a : [];
     const magicCompendium = (_b = await wiki.folder("worldbuilding/magic-items")) != null ? _b : [];
     const containersCompendium = (_c = await wiki.folder("worldbuilding/containers")) != null ? _c : [];
     const adventurers = (_d = await wiki.folder("adventurers")) != null ? _d : [];
+    const enchantments = (_e = await wiki.folder("worldbuilding/enchantments")) != null ? _e : [];
+    const collected = (_f = await wiki.folder("adventuring/collected")) != null ? _f : [];
     const items = {};
     const magic2 = {};
     const personal2 = {};
@@ -5306,6 +5657,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     index(magicCompendium);
     index(containersCompendium);
     index(adventurers);
+    index(enchantments);
+    index(collected);
     return {
       lookup: {
         $items: items,
@@ -5424,7 +5777,8 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   function callBuiltin(value, fn) {
     let raw;
     if (typeof value === "string") raw = value;
-    else if (value && typeof value === "object" && typeof value.name === "string") raw = value.name;
+    else if (value && typeof value === "object" && typeof value.name === "string")
+      raw = value.name;
     else raw = "";
     const name = raw.toLowerCase();
     const commaIdx = name.indexOf(", ");
@@ -5468,16 +5822,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       }
     }, []);
     const label = `Homebrew \u2014 ${source}`;
-    return /* @__PURE__ */ React17.createElement(
-      "span",
-      {
-        ref,
-        className: "rpg-feature-card__homebrew-badge",
-        role: "img",
-        "aria-label": label,
-        title: label
-      }
-    );
+    return /* @__PURE__ */ React17.createElement("span", { ref, className: "rpg-feature-card__homebrew-badge", role: "img", "aria-label": label, title: label });
   }
   function resolveWikilink(link) {
     var _a, _b;
@@ -5572,28 +5917,13 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   // vault:tales-of-the-valiant/config/blocks/feature/danger.tsx
   var React21 = __toESM(__require("react"));
   var import_rpg_ui_toolkit19 = __require("rpg-ui-toolkit");
-  function Mechanic({
-    label,
-    value,
-    sourcePath
-  }) {
+  function Mechanic({ label, value, sourcePath }) {
     if (typeof value !== "string" || !value.trim()) return null;
     return /* @__PURE__ */ React21.createElement("div", { className: "rpg-danger-card__mechanic" }, /* @__PURE__ */ React21.createElement("dt", null, label), /* @__PURE__ */ React21.createElement("dd", null, /* @__PURE__ */ React21.createElement(import_rpg_ui_toolkit19.Markdown, { source: value.trim(), sourcePath })));
   }
-  function DangerCard({
-    name,
-    type,
-    trigger,
-    effects,
-    resolution,
-    text,
-    heading,
-    sourcePath
-  }) {
+  function DangerCard({ name, type, trigger, effects, resolution, text, heading, sourcePath }) {
     const HeadingTag = `h${Math.max(1, Math.min(6, heading != null ? heading : 3))}`;
-    const hasMechanics = [trigger, effects, resolution].some(
-      (v) => typeof v === "string" && v.trim()
-    );
+    const hasMechanics = [trigger, effects, resolution].some((v) => typeof v === "string" && v.trim());
     return /* @__PURE__ */ React21.createElement("article", { className: "rpg-danger-card", "aria-label": `Danger ${name != null ? name : ""}`.trim() }, /* @__PURE__ */ React21.createElement("hgroup", null, /* @__PURE__ */ React21.createElement(HeadingTag, null, name), type && /* @__PURE__ */ React21.createElement("p", null, /* @__PURE__ */ React21.createElement("small", { "aria-details": "Danger Type" }, type))), text && /* @__PURE__ */ React21.createElement(import_rpg_ui_toolkit19.Markdown, { source: text, sourcePath, className: "rpg-danger-card__desc" }), hasMechanics && /* @__PURE__ */ React21.createElement("dl", { className: "rpg-danger-card__mechanics" }, /* @__PURE__ */ React21.createElement(Mechanic, { label: "Trigger", value: trigger, sourcePath }), /* @__PURE__ */ React21.createElement(Mechanic, { label: "Effects", value: effects, sourcePath }), /* @__PURE__ */ React21.createElement(Mechanic, { label: "Resolution", value: resolution, sourcePath })));
   }
   var danger = ({ self }) => /* @__PURE__ */ React21.createElement(
@@ -5636,11 +5966,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         stats: self.stats,
         abilities: self.abilities
       };
-      (0, import_rpg_ui_toolkit20.resolveStatFeatures)(self.features, sourcePath, selfProps).then(
-        (results) => {
-          if (!cancelled) setResolved(results);
-        }
-      );
+      (0, import_rpg_ui_toolkit20.resolveStatFeatures)(self.features, sourcePath, selfProps).then((results) => {
+        if (!cancelled) setResolved(results);
+      });
       return () => {
         cancelled = true;
       };
@@ -5670,10 +5998,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     var _a, _b, _c;
     const { self } = props;
     const propSourcePath = props.sourcePath;
-    const data = React23.useMemo(
-      () => (0, import_rpg_ui_toolkit21.mapMonster)(self),
-      [self]
-    );
+    const data = React23.useMemo(() => (0, import_rpg_ui_toolkit21.mapMonster)(self), [self]);
     const [resolved, setResolved] = React23.useState([]);
     const app = globalThis.app;
     const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
@@ -5693,11 +6018,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         abilities: data.abilities,
         stats: data.stats
       };
-      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(data.features, filePath, selfProps).then(
-        (results) => {
-          if (!cancelled) setResolved(results);
-        }
-      );
+      (0, import_rpg_ui_toolkit21.resolveStatFeatures)(data.features, filePath, selfProps).then((results) => {
+        if (!cancelled) setResolved(results);
+      });
       return () => {
         cancelled = true;
       };
@@ -5728,10 +6051,7 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     var _a, _b, _c;
     const { self } = props;
     const sourcePath = props.sourcePath;
-    const data = React24.useMemo(
-      () => (0, import_rpg_ui_toolkit22.mapCategory)(self),
-      [self]
-    );
+    const data = React24.useMemo(() => (0, import_rpg_ui_toolkit22.mapCategory)(self), [self]);
     const app = globalThis.app;
     const activeFile = (_b = (_a = app == null ? void 0 : app.workspace) == null ? void 0 : _a.getActiveFile) == null ? void 0 : _b.call(_a);
     const fileBasename = sourcePath ? (_c = sourcePath.split("/").pop()) == null ? void 0 : _c.replace(/\.[^./]+$/, "") : void 0;
@@ -5752,12 +6072,122 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
   var category_default = category;
 
   // vault:tales-of-the-valiant/config/entities/stat.tsx
-  var stat = (0, import_rpg_ui_toolkit23.CreateEntity)(() => ({
+  var ABILITY_KEYS = {
+    str: "str",
+    strength: "str",
+    dex: "dex",
+    dexterity: "dex",
+    con: "con",
+    constitution: "con",
+    int: "int",
+    intelligence: "int",
+    wis: "wis",
+    wisdom: "wis",
+    cha: "cha",
+    charisma: "cha"
+  };
+  var XP_BY_CR = {
+    "0": 10,
+    "1/8": 25,
+    "1/4": 50,
+    "1/2": 100,
+    "1": 200,
+    "2": 450,
+    "3": 700,
+    "4": 1100,
+    "5": 1800,
+    "6": 2300,
+    "7": 2900,
+    "8": 3900,
+    "9": 5e3,
+    "10": 5900,
+    "11": 7200,
+    "12": 8400,
+    "13": 1e4,
+    "14": 11500,
+    "15": 13e3,
+    "16": 15e3,
+    "17": 18e3,
+    "18": 2e4,
+    "19": 22e3,
+    "20": 25e3,
+    "21": 33e3,
+    "22": 41e3,
+    "23": 5e4,
+    "24": 62e3,
+    "25": 75e3,
+    "26": 9e4,
+    "27": 105e3,
+    "28": 12e4,
+    "29": 135e3,
+    "30": 155e3
+  };
+  var stat = (0, import_rpg_ui_toolkit23.CreateEntity)(async ({ wiki }) => ({
+    lookup: {
+      // The basic actions any creature can take (Dash, Dodge, Opportunity
+      // Attack, …) — the same notes a character's sheet uses.
+      $defaultFeatures: await loadBasicActions(wiki)
+    },
     blocks: {
       vehicle: vehicle_default,
       monster: monster_default,
       category: category_default,
       group: category_default
+    },
+    expressions: {
+      /**
+       * What a creature can do in a session beyond its statblock: the basic
+       * actions. Its statblock's own actions (Mining Pick, Sling, …) are read by
+       * the session log from the statblock's feature refs and listed first.
+       */
+      SessionActions: (_args, { lookup }) => basicSessionActions(lookup.$defaultFeatures),
+      /**
+       * What a named roll term is worth for this creature — the statblock side of
+       * a session log's `d20+[[Initiative]]`. Statblock `abilities:` are already
+       * modifiers (`dex: 3`). Initiative is the DEX modifier unless the statblock
+       * writes its own `initiative:` under `stats:`.
+       */
+      /** The statblock's `ac:` — its leading number (`14 (leather armor)` → 14). */
+      ArmorClass: (_args, { blocks }) => {
+        var _a, _b;
+        const stats2 = (_a = blocks.monster) == null ? void 0 : _a.stats;
+        const n = parseInt(String((_b = stats2 == null ? void 0 : stats2.ac) != null ? _b : ""), 10);
+        return Number.isFinite(n) ? n : void 0;
+      },
+      /** What defeating it is worth: its own `xp:`, else its `cr:` on the XP table (`1/2` → 100). */
+      ExperiencePoints: (_args, { blocks }) => {
+        var _a, _b, _c, _d;
+        const data = blocks.monster;
+        const own = Number(
+          String((_c = (_b = data == null ? void 0 : data.xp) != null ? _b : (_a = data == null ? void 0 : data.stats) == null ? void 0 : _a.xp) != null ? _c : "").replace(/[,\s]/g, "")
+        );
+        if (Number.isFinite(own) && own > 0) return own;
+        const cr = String((_d = data == null ? void 0 : data.cr) != null ? _d : "").trim();
+        return XP_BY_CR[cr];
+      },
+      /** The statblock's `hp:` — its leading number, full (`26 (4d8 + 8)` → 26 of 26). */
+      HitPoints: (_args, { blocks }) => {
+        var _a, _b;
+        const stats2 = (_a = blocks.monster) == null ? void 0 : _a.stats;
+        const n = parseInt(String((_b = stats2 == null ? void 0 : stats2.hp) != null ? _b : ""), 10);
+        return Number.isFinite(n) ? { current: n, max: n } : void 0;
+      },
+      Modifier: ([name], { blocks }) => {
+        var _a, _b, _c;
+        const data = blocks.monster;
+        if (!data) return void 0;
+        const key = String(name != null ? name : "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim().toLowerCase();
+        const read = (v) => {
+          const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v.replace(/^\+/, "")) : NaN;
+          return Number.isFinite(n) ? n : void 0;
+        };
+        if (key === "initiative") {
+          const stats2 = data.stats;
+          return (_b = read(stats2 == null ? void 0 : stats2.initiative)) != null ? _b : read((_a = data.abilities) == null ? void 0 : _a.dex);
+        }
+        const ability = ABILITY_KEYS[key];
+        return ability ? read((_c = data.abilities) == null ? void 0 : _c[ability]) : void 0;
+      }
     }
   }));
   var stat_default = stat;
@@ -5791,12 +6221,18 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       const pipe = inner.indexOf("|");
       const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
       const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop().trim();
-      parts.push(React25.createElement("a", {
-        key: `l${m.index}`,
-        className: "internal-link",
-        href: target,
-        "data-href": target
-      }, label));
+      parts.push(
+        React25.createElement(
+          "a",
+          {
+            key: `l${m.index}`,
+            className: "internal-link",
+            href: target,
+            "data-href": target
+          },
+          label
+        )
+      );
       cursor = m.index + m[0].length;
     }
     if (cursor < text.length) {
@@ -5863,12 +6299,18 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     if (!Array.isArray(raw)) return [];
     return raw.map((entry) => {
       if (typeof entry === "string") return { ref: entry };
-      if (entry && typeof entry === "object" && "ref" in entry) return entry;
+      if (entry && typeof entry === "object" && "ref" in entry)
+        return entry;
       if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
       return null;
     }).filter((x) => x !== null);
   }
-  function StatblockCall({ parsed, body, view, sourcePath }) {
+  function StatblockCall({
+    parsed,
+    body,
+    view,
+    sourcePath
+  }) {
     const [resolved, setResolved] = React25.useState([]);
     const features2 = React25.useMemo(() => normalizeFeatures(parsed.features), [parsed.features]);
     const name = typeof parsed.name === "string" ? parsed.name : "";
@@ -5878,7 +6320,14 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         return;
       }
       let cancelled = false;
-      const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: parsed.stats, abilities: parsed.abilities };
+      const selfProps = {
+        name: name.toLowerCase(),
+        size: parsed.size,
+        type: parsed.type,
+        dimensions: parsed.dimensions,
+        stats: parsed.stats,
+        abilities: parsed.abilities
+      };
       (0, import_rpg_ui_toolkit24.resolveStatFeatures)(features2, sourcePath, selfProps).then((r) => {
         if (!cancelled) setResolved(r);
       });
@@ -5899,7 +6348,11 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       sourcePath
     });
   }
-  function StatMonsterCall({ self, sourcePath, name }) {
+  function StatMonsterCall({
+    self,
+    sourcePath,
+    name
+  }) {
     const data = React25.useMemo(() => (0, import_rpg_ui_toolkit24.mapMonster)(self), [self]);
     const [resolved, setResolved] = React25.useState([]);
     React25.useEffect(() => {
@@ -5915,11 +6368,9 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
         abilities: data.abilities,
         stats: data.stats
       };
-      (0, import_rpg_ui_toolkit24.resolveStatFeatures)(data.features, sourcePath, selfProps).then(
-        (results) => {
-          if (!cancelled) setResolved(results);
-        }
-      );
+      (0, import_rpg_ui_toolkit24.resolveStatFeatures)(data.features, sourcePath, selfProps).then((results) => {
+        if (!cancelled) setResolved(results);
+      });
       return () => {
         cancelled = true;
       };
@@ -5939,7 +6390,12 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
       sourcePath
     });
   }
-  function StatGroupCall({ self, body, sourcePath, name }) {
+  function StatGroupCall({
+    self,
+    body,
+    sourcePath,
+    name
+  }) {
     const data = React25.useMemo(() => (0, import_rpg_ui_toolkit24.mapGroup)(self), [self]);
     return React25.createElement(import_rpg_ui_toolkit24.StatblockGroup, {
       name: data.name || name,
@@ -6213,11 +6669,15 @@ ${ctx.content.slice(firstNl)}` : `**${name}.** ${ctx.content}`;
           if (f === "name") return (_a = headingText(ctx)) != null ? _a : "";
           if (f === "link") {
             const label = (_b = headingText(ctx)) != null ? _b : ctx.name;
-            return React25.createElement("a", {
-              className: "internal-link",
-              href: ctx.file,
-              "data-href": ctx.file
-            }, label);
+            return React25.createElement(
+              "a",
+              {
+                className: "internal-link",
+                href: ctx.file,
+                "data-href": ctx.file
+              },
+              label
+            );
           }
           const v = resolvePath2(ctx.frontmatter, f);
           const text = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
