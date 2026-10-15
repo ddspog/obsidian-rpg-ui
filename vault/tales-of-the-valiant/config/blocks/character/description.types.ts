@@ -113,6 +113,10 @@ export type MotivationCard = {
 };
 
 export type DescriptionBlockData = {
+  /** The appearance art is the picture alone: draw it in the character frame (the image studio writes this). */
+  framed?: boolean | string;
+  /** `false`, or `none`: no name on the frame; `band` / `plaque` say where. */
+  "frame-name"?: boolean | string;
   appearance?: AppearanceSection;
   backstory?: BackstorySection;
   allies?: RibbonEntry[];

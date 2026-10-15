@@ -16,6 +16,8 @@ import {
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
+import { initiativeDetails, parseNumericTrait } from "../../entities/character.skills";
+import { characterArmorClass } from "../../entities/character.defense";
 
 /** Extract display label and linkpath from any frontmatter condition value */
 function parseCondition(raw: unknown): { label: string; linkpath: string | null } {
@@ -31,16 +33,6 @@ function parseCondition(raw: unknown): { label: string; linkpath: string | null 
   if (wikiMatch) val = wikiMatch[1].trim();
   const segment = val.split(/[/\\]/).pop() ?? val;
   return { label: segment.replace(/\.[^.]+$/, "").trim(), linkpath: val || null };
-}
-
-/** Parse a trait value that may carry a leading sign (`+3`) or wikilink
- *  (`[[…]]`) and extract the underlying number. Non-numeric values return 0. */
-function parseNumericTrait(raw: unknown): number {
-  if (typeof raw === "number") return raw;
-  if (typeof raw !== "string") return 0;
-  const cleaned = raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
-  const n = parseFloat(cleaned.replace(/^[+\s]+/, ""));
-  return Number.isFinite(n) ? n : 0;
 }
 
 export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
@@ -75,15 +67,6 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   // character basis without touching the trait taxonomy.
   const speeds = resolveSpeeds(self.speed, traits);
 
-  // Natural AC: author may set `natural_ac:` in the YAML or a feature may
-  // grant it via a `Natural AC` trait entry (Monk-style unarmored defense,
-  // heritage armored skin, …). Take the highest so a trait grant never
-  // regresses a player's written AC but a high feature floor still wins.
-  const naturalAcFromTraits = (traits["Natural AC"] ?? [])
-    .map(parseNumericTrait)
-    .filter((n) => Number.isFinite(n) && n > 0);
-  const naturalAc = Math.max(self.natural_ac ?? 10, ...(naturalAcFromTraits.length > 0 ? naturalAcFromTraits : [0]));
-
   // Initiative bonus: the DEX modifier sets the baseline (standard 5e /
   // ToV rule), then the trait taxonomy layers on top — `Initiative P.` =
   // full proficiency, `Initiative J.` (Jack) = half, `Initiative E.` =
@@ -91,22 +74,16 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   // `Initiative B.`. All three fold through `expressions.ModifierTotal`
   // so the DEX modifier automatically reflects ASI picks. Advantage /
   // disadvantage ride the vantage badge on the diamond (below).
-  const initExpertise = (traits["Initiative E."] ?? []).length > 0;
-  const initFull = (traits["Initiative P."] ?? []).length > 0;
-  const initHalf = (traits["Initiative J."] ?? []).length > 0;
-  const initProfLevel = initExpertise ? 2 : initFull ? 1 : initHalf ? 0.5 : 0;
-  const initFlat = (traits["Initiative B."] ?? []).reduce((n, raw) => n + parseNumericTrait(raw), 0);
+  const init = initiativeDetails(traits);
   const initiativeTotal = expressions.ModifierTotal({
-    attribute: "DEX",
-    proficiency: initProfLevel,
-    bonus: initFlat,
+    attribute: init.attr,
+    proficiency: init.proficiency,
+    bonus: init.bonus,
   });
   // Advantage / disadvantage for initiative are flag-shaped — presence
   // of any value in the trait map is enough, since there's one
   // initiative track per character.
-  const initAdv = (traits["Initiative A."] ?? []).length > 0;
-  const initDis = (traits["Initiative D."] ?? []).length > 0;
-  const initVantage: "adv" | "dis" | undefined = initAdv && !initDis ? "adv" : initDis && !initAdv ? "dis" : undefined;
+  const initVantage: "adv" | "dis" | undefined = init.vantage > 0 ? "adv" : init.vantage < 0 ? "dis" : undefined;
 
   const handleSpendDie = (dieType: string) => {
     const current = hitDice[dieType]?.current ?? 0;
@@ -126,11 +103,15 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   // The two badges render side by side: armor-only always, armor+shield
   // when a shield is equipped — so the player can preview the trade-off
   // before swapping to a two-handed weapon.
-  const equippedAc = resolveEquippedAc(blocks, lookup, naturalAc);
+  const equippedAc = characterArmorClass(blocks, lookup, traits, self.natural_ac);
 
   return (
     <Section.Row label="Health Management" distribution="1 2">
-      <PortraitThumb src={self.portrait} />
+      <PortraitThumb
+        src={self.portrait}
+        framed={(self as { framed?: unknown }).framed}
+        frameName={(self as { "frame-name"?: unknown })["frame-name"]}
+      />
       <Article.Column label="Content">
         <HGroup.Row label="Defense Stats">
           <Line.Control>
@@ -140,9 +121,9 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
               filled={deathSaves.failures}
               onChange={(v) => self.setDeath_saves({ ...deathSaves, failures: v })}
             />
-            <Badge.Shield value={equippedAc.armor} label="Armor" />
+            <Badge.Shield value={equippedAc.armor + equippedAc.bonus} label="Armor" />
             {equippedAc.shieldBonus > 0 && (
-              <Badge.Shield value={equippedAc.armor + equippedAc.shieldBonus} label="Shield" />
+              <Badge.Shield value={equippedAc.armor + equippedAc.bonus + equippedAc.shieldBonus} label="Shield" />
             )}
             <DeathSaveDots
               side="successes"
@@ -196,98 +177,6 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
 };
 
 export default health;
-
-// ─── Equipped AC ────────────────────────────────────────────────────────────
-
-/**
- * Combine the inventory's equipped armor + shield with the character's
- * DEX modifier into the two AC values shown on the defense badges.
- * Falls back to `naturalAc` when no body armor is equipped, so unarmored
- * Monks / Barbarians still get a sensible base.
- */
-function resolveEquippedAc(
-  blocks: unknown,
-  lookup: { $items?: Record<string, Record<string, unknown>> } | undefined,
-  naturalAc: number
-): { armor: number; shieldBonus: number } {
-  const inv = (blocks as { inventory?: { items?: unknown[] } })?.inventory;
-  const items = Array.isArray(inv?.items) ? inv.items : [];
-  const lib = lookup?.$items ?? {};
-  const dexMod = abilityModFromBlocks(blocks, "DEX");
-
-  let armor = naturalAc;
-  let shieldBonus = 0;
-
-  for (const raw of items) {
-    if (!raw || typeof raw !== "object") continue;
-    const o = raw as { name?: unknown; slot?: unknown };
-    if (typeof o.name !== "string") continue;
-    const name = wikiStem(o.name);
-    if (!name) continue;
-    const fm = lib[name];
-    if (!fm) continue;
-    const armorBlock =
-      fm.armor && typeof fm.armor === "object" ? (fm.armor as { ac?: unknown; category?: unknown }) : undefined;
-    if (!armorBlock) continue;
-    const formula = typeof armorBlock.ac === "string" ? armorBlock.ac : undefined;
-    const category = typeof armorBlock.category === "string" ? armorBlock.category.toLowerCase() : undefined;
-
-    if (category === "shield") {
-      // Shields are "equipped" by mere inventory presence — the player
-      // doesn't toggle them. Take the strongest shield bonus so multiple
-      // shields don't stack (5e rule: only one shield at a time).
-      const bonus = parseAcBonus(formula);
-      if (bonus > shieldBonus) shieldBonus = bonus;
-    } else if (o.slot === "armor") {
-      armor = computeArmorValue(formula, category, dexMod) ?? armor;
-    }
-  }
-  return { armor, shieldBonus };
-}
-
-function abilityModFromBlocks(blocks: unknown, key: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"): number {
-  const stats = (blocks as { stats?: Record<string, unknown> })?.stats ?? {};
-  const cell = stats[key];
-  let score = 10;
-  if (typeof cell === "number") score = cell;
-  else if (cell && typeof cell === "object" && typeof (cell as { value?: number }).value === "number") {
-    score = (cell as { value: number }).value;
-  }
-  return Math.floor((score - 10) / 2);
-}
-
-/** Parse a bonus-style AC formula (`"+2"`, `"+1"`). Falls back to 0. */
-function parseAcBonus(raw: string | undefined): number {
-  if (!raw) return 0;
-  const m = raw.match(/[+-]?\d+/);
-  if (!m) return 0;
-  const n = Number(m[0]);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/** Resolve a body-armor AC string into a numeric value for the wielder.
- *  Parses out the base (leading integer), the DEX component (`+ DEX`),
- *  and an optional inline cap (`(max N)`). Falls back to the 5e default
- *  per category when no explicit cap is declared — medium ≤ 2, heavy = 0,
- *  light uncapped. */
-function computeArmorValue(formula: string | undefined, category: string | undefined, dexMod: number): number | null {
-  if (!formula) return null;
-  const baseMatch = formula.match(/-?\d+/);
-  if (!baseMatch) return null;
-  const base = Number(baseMatch[0]);
-  if (!Number.isFinite(base)) return null;
-  const wantsDex = /\bdex\b/i.test(formula);
-  if (!wantsDex) return base;
-  const explicitCap = formula.match(/max\s+(\d+)/i);
-  const cap = explicitCap ? Number(explicitCap[1]) : category === "heavy" ? 0 : category === "medium" ? 2 : Infinity;
-  return base + Math.min(dexMod, cap);
-}
-
-function wikiStem(raw: string): string {
-  const m = raw.match(/^\[\[(.+?)\]\]$/);
-  const inner = m ? m[1] : raw;
-  return inner.split("|")[0].split("/").pop()!.trim();
-}
 
 /**
  * Fold heritage / class-granted speed traits into the stat-diamond

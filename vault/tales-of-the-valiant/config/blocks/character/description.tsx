@@ -269,7 +269,17 @@ function SidePropsGrid({ rows }: { rows: SidePropRow[] }) {
   );
 }
 
-function AppearanceTab({ appearance, sourcePath }: { appearance?: AppearanceSection; sourcePath: string }) {
+function AppearanceTab({
+  appearance,
+  sourcePath,
+  framed,
+  frameName,
+}: {
+  appearance?: AppearanceSection;
+  sourcePath: string;
+  framed?: unknown;
+  frameName?: unknown;
+}) {
   const prompt = React.useMemo(() => buildImagePrompt(appearance), [appearance]);
   const isEmpty =
     !appearance ||
@@ -285,8 +295,19 @@ function AppearanceTab({ appearance, sourcePath }: { appearance?: AppearanceSect
 
   return (
     <div className="rpg-description-appearance">
-      <figure className="rpg-description-appearance-art" data-fit={artFit} style={artStyle} aria-label="Character art">
-        <PortraitThumb src={artSrc} alt="Character art" />
+      <figure
+        className={`rpg-description-appearance-art${framed ? " is-framed" : ""}`}
+        data-fit={artFit}
+        style={artStyle}
+        aria-label="Character art"
+      >
+        <PortraitThumb
+          src={artSrc}
+          alt="Character art"
+          framed={framed}
+          frameName={frameName ?? false}
+          aspect={9 / 16}
+        />
       </figure>
       <div className="rpg-description-appearance-body">
         <SidePropsGrid rows={appearance?.side_props ?? []} />
@@ -635,7 +656,14 @@ export const description: EntityBlock<DescriptionBlockData, CharacterEntity> = (
       {
         id: "appearance",
         label: "Appearance",
-        render: () => <AppearanceTab appearance={self.appearance} sourcePath={sourcePath} />,
+        render: () => (
+          <AppearanceTab
+            appearance={self.appearance}
+            sourcePath={sourcePath}
+            framed={self.framed}
+            frameName={self["frame-name"]}
+          />
+        ),
       },
       {
         id: "backstory",

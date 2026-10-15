@@ -16,8 +16,13 @@ import {
   resolvePersonalItem,
   resolveContainer,
 } from "rpg-ui-toolkit";
-import { xpTable as xp } from "./character.lookup";
+import { slotsForCaster, xpTable as xp } from "./character.lookup";
 import type { CharacterEntity } from "./character.types";
+import { basicSessionActions, loadBasicActions } from "./basic-actions";
+import { characterArmorClass } from "./character.defense";
+import { deriveRollRows, rollRowAction } from "../blocks/character/rolls";
+import type { RollEntry } from "../blocks/character/rolls.types";
+import { ATTR_BY_NAME, SKILLS, bareLabel, initiativeDetails, skillResolver, type Attr } from "./character.skills";
 import header from "../blocks/character/header";
 import health from "../blocks/character/health";
 import stats from "../blocks/character/stats";
@@ -34,6 +39,93 @@ import type { HeaderProps } from "../blocks/character/header.types";
 import type { StatsProps } from "../blocks/character/stats.types";
 import type { FeaturesBlockData } from "../blocks/character/features.types";
 
+/**
+ * Whether the character is wielding two Light melee weapons — one in each
+ * hand, as the sheet's equip slots say (`main_hand` / `off_hand`, or
+ * `equipped`; a `qty: 2` entry in a hand is a pair). What Two-Weapon
+ * Fighting needs.
+ */
+function wieldsTwoLightWeapons(blocks: unknown, lookup: Record<string, any>): boolean {
+  const b = blocks as { inventory?: { items?: unknown[] }; sheet?: { items?: unknown[] } };
+  const items = b?.inventory?.items ?? b?.sheet?.items ?? [];
+  const stem = (n: unknown) =>
+    typeof n === "string"
+      ? n
+          .replace(/^\[\[|\]\]$/g, "")
+          .split("|")[0]
+          .split("/")
+          .pop()!
+          .trim()
+      : "";
+  let light = 0;
+  const walk = (list: unknown[]) => {
+    for (const raw of list) {
+      if (!raw || typeof raw !== "object") continue;
+      const e = raw as { name?: unknown; qty?: unknown; slot?: unknown; equipped?: unknown; contents?: unknown[] };
+      const held = e.slot === "main_hand" || e.slot === "off_hand" || e.equipped === true;
+      const weapon = lookup?.$items?.[stem(e.name)] as
+        | { type?: string; weapon?: { properties?: string[] } }
+        | undefined;
+      const isLight = (weapon?.weapon?.properties ?? []).some((p) => /^light$/i.test(stem(p)));
+      const melee = /melee/i.test(weapon?.type ?? "");
+      if (held && isLight && melee) light += typeof e.qty === "number" && e.qty > 0 ? e.qty : 1;
+      // (What's in a bag isn't in hand.)
+    }
+  };
+  walk(Array.isArray(items) ? items : []);
+  return light >= 2;
+}
+
+/** The ammunition a weapon fires, by its name (a bow its Arrows). */
+const AMMO_OF: Array<[RegExp, RegExp]> = [
+  [/crossbow/i, /crossbow bolts?/i],
+  [/bow/i, /^arrows?$/i],
+  [/sling/i, /sling bullets?/i],
+  [/blowgun/i, /blowgun needles?/i],
+];
+
+/**
+ * What a weapon with the Ammunition property spends, and where it's carried:
+ * the first matching ammunition in the inventory, at any depth (`Arrows` in
+ * the `Quiver`). Undefined for a weapon without the property, or none carried.
+ */
+function ammoFor(
+  weapon: string,
+  blocks: unknown,
+  lookup: Record<string, any>
+): { item: string; path?: string[] } | undefined {
+  const stem = (n: unknown) =>
+    typeof n === "string"
+      ? n
+          .replace(/^\[\[|\]\]$/g, "")
+          .split("|")[0]
+          .split("/")
+          .pop()!
+          .trim()
+      : "";
+  const element = lookup?.$items?.[stem(weapon)] as { weapon?: { properties?: string[] } } | undefined;
+  const fires = (element?.weapon?.properties ?? []).some((p) => /^ammunition$/i.test(stem(p)));
+  const kind = AMMO_OF.find(([w]) => w.test(stem(weapon)))?.[1];
+  if (!fires || !kind) return undefined;
+  const b = blocks as { inventory?: { items?: unknown[] }; sheet?: { items?: unknown[] } };
+  const items = b?.inventory?.items ?? b?.sheet?.items ?? [];
+  const find = (list: unknown[], path: string[]): { item: string; path?: string[] } | undefined => {
+    for (const raw of list) {
+      const entry =
+        typeof raw === "string" ? { name: raw } : (raw as { name?: unknown; label?: unknown; contents?: unknown[] });
+      const name = stem(entry?.name);
+      if (kind.test(name)) return { item: name, ...(path.length ? { path } : {}) };
+      if (Array.isArray(entry?.contents)) {
+        const label = typeof entry.label === "string" ? entry.label : name;
+        const inner = find(entry.contents, [...path, label]);
+        if (inner) return inner;
+      }
+    }
+    return undefined;
+  };
+  return find(Array.isArray(items) ? items : [], []);
+}
+
 const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
   const [
     classDocs,
@@ -43,10 +135,9 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     backgroundDocs,
     skillDocs,
     languageDocs,
-    actionDocs,
-    reactionDocs,
-    bonusActionDocs,
+    basicActions,
     talentDocs,
+    conditionDocs,
   ] = await Promise.all([
     wiki.folder("worldbuilding/traits/classes") as Promise<any[]>,
     wiki.folder("worldbuilding/traits/subclasses") as Promise<any[]>,
@@ -55,10 +146,13 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     wiki.folder("worldbuilding/traits/backgrounds") as Promise<any[]>,
     wiki.folder("glossary/skills") as Promise<any[]>,
     wiki.folder("worldbuilding/traits/languages") as Promise<any[]>,
-    wiki.folder("glossary/actions") as Promise<any[]>,
-    wiki.folder("glossary/reactions") as Promise<any[]>,
-    wiki.folder("glossary/bonus-actions") as Promise<any[]>,
+    // The basic actions live under `concepts/` (they moved from `glossary/`,
+    // which left this list empty). Shared with the stat entity.
+    loadBasicActions(wiki),
     wiki.folder("worldbuilding/traits/talents") as Promise<any[]>,
+    // The conditions (`concepts/conditions/Restrained.md`): what a status
+    // card names, and the rules it shows.
+    wiki.folder("concepts/conditions") as Promise<any[]>,
   ]);
 
   // Auto-discover every `@folder/path` referenced inside a compendium
@@ -115,6 +209,10 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
   // folders (`adventurers/<name>/magic-items/**`). Scan the whole
   // tree so `rpg item.personal` instances land in the lookup.
   refPaths.add("adventurers");
+  // This vault's own folders: enchantments (the `item.magic` templates) and
+  // the party's collected magic and personal items (Kowyn's Bag, Druid Glaive).
+  refPaths.add("worldbuilding/enchantments");
+  refPaths.add("adventuring/collected");
 
   // Load each referenced folder in parallel. A missing / stale path
   // resolves to [] so a typo doesn't break bundle loading — it just
@@ -279,6 +377,27 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     }
   }
 
+  // Condition library — each condition's rules, keyed by its lowercase name
+  // (`restrained`), so a status card can tell a condition the system knows
+  // from an effect only its source defines (Icicle Javelin's `pinned`).
+  const conditionLibrary: Record<string, { name: string; rules: string[] }> = {};
+  for (const d of conditionDocs ?? []) {
+    const name = (d as any)?.$name;
+    const contents = typeof (d as any)?.$contents === "string" ? (d as any).$contents : "";
+    if (!name) continue;
+    const rules = contents
+      .split("\n")
+      .filter((l: string) => /^\s*-\s+/.test(l))
+      .map((l: string) =>
+        l
+          .replace(/^\s*-\s+/, "")
+          .replace(/!\[\[[^\]]*\]\]/g, "")
+          .trim()
+      )
+      .filter(Boolean);
+    conditionLibrary[String(name).toLowerCase()] = { name, rules };
+  }
+
   // Item library — every doc under `worldbuilding/items/**` or
   // `adventurers/**` gets its first fence of each kind (element /
   // magic / personal) parsed and keyed by basename. The inventory
@@ -304,7 +423,10 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     const isItemsFolder = $path.includes("worldbuilding/items/");
     const isMagicItemsFolder = $path.includes("worldbuilding/magic-items/");
     const isContainersFolder = $path.includes("worldbuilding/containers/");
-    const isAdventurersFolder = $path.includes("adventurers/");
+    const isAdventurersFolder =
+      $path.includes("adventurers/") ||
+      $path.includes("adventuring/collected/") ||
+      $path.includes("worldbuilding/enchantments/");
     if (!isItemsFolder && !isMagicItemsFolder && !isContainersFolder && !isAdventurersFolder) continue;
     if (isItemsFolder && !itemLibrary[name]) {
       const parsed = extractItemElementBlocks(contents);
@@ -366,18 +488,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
   // `lookup.$defaultFeatures` and renders each one as a compact link in
   // its bucket rather than a full card (the entry's full content lives
   // in its own vault page).
-  const toDefaultFeature =
-    (type: "action" | "reaction" | "bonus") =>
-    (d: any): FeatureEntry => ({
-      $name: d?.$name ?? "",
-      $contents: d?.$contents ?? "",
-      type,
-    });
-  const defaultFeatures: FeatureEntry[] = [
-    ...(actionDocs ?? []).map(toDefaultFeature("action")),
-    ...(bonusActionDocs ?? []).map(toDefaultFeature("bonus")),
-    ...(reactionDocs ?? []).map(toDefaultFeature("reaction")),
-  ];
+  const defaultFeatures: FeatureEntry[] = basicActions;
 
   // Strip a header pillish object (`{ file: "[[Foo]]", text?: ... }`) down
   // to its target stem so it slots straight into a `CharacterDecl`. Mirrors
@@ -589,6 +700,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
       $defaultFeatures: defaultFeatures,
       $features,
       $spells: spellLibrary,
+      $conditions: conditionLibrary,
       $items: itemLibrary,
       $magic: magicLibrary,
       $personal: personalLibrary,
@@ -620,6 +732,21 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
           | undefined;
         const classes = header?.classes ?? [];
         return classes.map((c) => c.level).reduce((a, b) => a + b, 0);
+      },
+      // A caster's spell slots by circle (index 0 = 1st), from its tier and
+      // class level — what the session log counts slots left against.
+      SpellSlots: ([caster], { blocks, lookup }) => {
+        const header = (blocks.header ?? (blocks as unknown as { sheet?: HeaderProps }).sheet) as
+          | HeaderProps
+          | undefined;
+        const featuresBlock = (blocks.features ?? (blocks as unknown as { sheet?: FeaturesBlockData }).sheet) as
+          | FeaturesBlockData
+          | undefined;
+        const view = lookup.$features?.(header, featuresBlock?.choices, featuresBlock?.additional);
+        const found = (view?.casters ?? []).find((c: { source: string }) => c.source === caster) as
+          | { tier?: "full" | "half" | "third" | "none"; level?: number }
+          | undefined;
+        return found ? slotsForCaster(found.tier ?? "none", found.level ?? 0) : [];
       },
       ProficiencyBonus: (_, { expressions }) => {
         const level = expressions.CharacterLevel();
@@ -675,6 +802,89 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
       },
       Passive: ([{ attribute, proficiency, bonus, vantage }], { expressions }) => {
         return 10 + expressions.ModifierTotal({ attribute, proficiency, bonus }) + 5 * vantage;
+      },
+      ArmorClass: (_, { blocks, lookup }) => {
+        const header = (blocks.header ?? (blocks as unknown as { sheet?: HeaderProps }).sheet) as
+          | HeaderProps
+          | undefined;
+        const featuresBlock = (blocks.features ?? (blocks as unknown as { sheet?: FeaturesBlockData }).sheet) as
+          | FeaturesBlockData
+          | undefined;
+        const traits =
+          lookup.$features?.(
+            header,
+            featuresBlock?.choices,
+            featuresBlock?.additional,
+            (blocks as unknown as { inventory?: unknown }).inventory
+          )?.traits ?? {};
+        const health = (blocks as unknown as { health?: { natural_ac?: number } }).health;
+        const ac = characterArmorClass(blocks, lookup as never, traits, health?.natural_ac);
+        return ac.armor + ac.shieldBonus + ac.bonus;
+      },
+      HitPoints: (_, { blocks }) => {
+        const health = (blocks as unknown as { health?: { current_hp?: number; max_hp?: number } }).health;
+        if (health?.max_hp == null) return undefined;
+        return { current: health.current_hp ?? health.max_hp, max: health.max_hp };
+      },
+      Modifier: ([name], { blocks, lookup, expressions }) => {
+        const key = bareLabel(String(name ?? ""));
+        const lower = key.toLowerCase();
+        const skill = SKILLS.find((s) => s.name.toLowerCase() === lower);
+        if (skill || lower === "initiative") {
+          const header = (blocks.header ?? (blocks as unknown as { sheet?: HeaderProps }).sheet) as
+            | HeaderProps
+            | undefined;
+          const featuresBlock = (blocks.features ?? (blocks as unknown as { sheet?: FeaturesBlockData }).sheet) as
+            | FeaturesBlockData
+            | undefined;
+          const traits =
+            lookup.$features?.(
+              header,
+              featuresBlock?.choices,
+              featuresBlock?.additional,
+              (blocks as unknown as { inventory?: unknown }).inventory
+            )?.traits ?? {};
+          if (!skill) {
+            const init = initiativeDetails(traits);
+            return expressions.ModifierTotal({
+              attribute: init.attr,
+              proficiency: init.proficiency,
+              bonus: init.bonus,
+            });
+          }
+          const details = skillResolver(blocks.skills as Record<string, unknown> | undefined, traits)(skill.name);
+          return expressions.ModifierTotal({
+            attribute: skill.attr,
+            proficiency: details.proficiency,
+            bonus: details.bonus,
+          });
+        }
+        const attr =
+          ATTR_BY_NAME[lower] ?? (/^(str|dex|con|int|wis|cha)$/.test(lower) ? (key.toUpperCase() as Attr) : undefined);
+        if (attr) return expressions.ModifierTotal({ attribute: attr, proficiency: 0, bonus: 0 });
+        return undefined;
+      },
+      SessionActions: (_, { blocks, lookup }) => {
+        // The Rolls block's own rows, so a card rolls exactly what the sheet
+        // shows — only those usable now (a weapon has to be in hand).
+        const manual = (blocks as unknown as { rolls?: { rolls?: RollEntry[] } }).rolls?.rolls;
+        const { rows } = deriveRollRows(manual, blocks, lookup);
+        const attacks = rows
+          .filter((r) => r.available)
+          .map((r) => {
+            const action = rollRowAction(r, lookup.$conditions);
+            // A weapon that fires ammunition spends a piece each shot, from
+            // where the sheet carries it (Talon's Quiver of Arrows).
+            const ammo = r.kind === "weapon" ? ammoFor(r.sourceNote, blocks, lookup) : undefined;
+            return ammo ? { ...action, ammo } : action;
+          });
+        // Then the basic actions every creature has — Two-Weapon Fighting only
+        // for one wielding two Light melee weapons.
+        const dual = wieldsTwoLightWeapons(blocks, lookup);
+        const basics = basicSessionActions(lookup.$defaultFeatures).filter(
+          (a) => dual || !/^two-weapon fighting$/i.test(a.name)
+        );
+        return [...attacks, ...basics];
       },
     },
   };

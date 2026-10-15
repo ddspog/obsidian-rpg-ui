@@ -2,6 +2,9 @@ import * as React from "react";
 import {
   EntityBlock,
   InventoryBlock as InventoryBlockComponent,
+  applyLoadout,
+  describeLoadout,
+  readLoadouts,
   resolveContainer,
   resolveInventory,
   resolvePersonalItem,
@@ -10,6 +13,7 @@ import {
   type ItemElementData,
   type ItemMagicData,
   type ItemPersonalData,
+  type Loadout,
   type LookupFn,
   type NewInventoryBlock,
   type ResolvedItem,
@@ -130,8 +134,42 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({ self, 
       }
     : undefined;
 
+  // The loadouts the sheet declares (`loadouts:`), one click to put one in hand.
+  const loadouts = readLoadouts((self as { loadouts?: unknown }).loadouts);
+  const heldNow = (list: unknown[]) =>
+    JSON.stringify(
+      (list as Array<{ name?: string; slot?: string }>)
+        .flatMap((e) =>
+          e && e.slot && /^(main_hand|off_hand|shield|light|instrument)$/.test(e.slot) ? [`${e.name}@${e.slot}`] : []
+        )
+        .sort()
+    );
+  const current = heldNow(items);
+  const isHeld = (l: Loadout) => heldNow(applyLoadout(items, l).items) === current;
+
   return (
-    <InventoryBlockComponent data={data} onToggleEquip={handleToggleEquip} onToggleForSale={handleToggleForSale} />
+    <>
+      {loadouts.length > 0 && (
+        <nav className="rpg-loadouts" aria-label="Loadouts">
+          <span className="rpg-loadouts-label">In hand</span>
+          {loadouts.map((l) => (
+            <button
+              key={l.name}
+              type="button"
+              className={`rpg-loadout${isHeld(l) ? " is-held" : ""}`}
+              aria-pressed={isHeld(l)}
+              title={describeLoadout(l)}
+              disabled={!setItems || isHeld(l)}
+              onClick={() => setItems?.(applyLoadout(items, l).items as InventoryItemEntry[])}
+            >
+              <b>{l.name}</b>
+              <small>{describeLoadout(l)}</small>
+            </button>
+          ))}
+        </nav>
+      )}
+      <InventoryBlockComponent data={data} onToggleEquip={handleToggleEquip} onToggleForSale={handleToggleForSale} />
+    </>
   );
 };
 
@@ -412,6 +450,8 @@ function toInventoryItemEntry(source: unknown): InventoryItemEntry | null {
   const out: InventoryItemEntry = { name: o.name };
   if (typeof o.qty === "number") out.qty = o.qty;
   if (typeof o.notes === "string") out.notes = o.notes;
+  const label = (source as { label?: unknown }).label;
+  if (typeof label === "string") out.label = label;
   // Carry the for_sale flag through synthesis — without this the
   // character inventory's sellTotals row ignores items flagged on
   // the container file (the carrier needs to see what's set aside
@@ -476,6 +516,7 @@ function normaliseItem(raw: unknown): InventoryItemEntry | null {
   if (typeof o.equipped === "boolean") entry.equipped = o.equipped;
   if (typeof o.for_sale === "boolean") entry.for_sale = o.for_sale;
   if (typeof o.notes === "string") entry.notes = o.notes;
+  if (typeof o.label === "string") entry.label = o.label;
   if (Array.isArray(o.contents)) entry.contents = normaliseItems(o.contents);
   return entry;
 }

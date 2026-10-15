@@ -15,12 +15,14 @@ import {
   type ItemPersonalData,
   type WeaponOverlay,
   type WielderStats,
+  type SessionAction,
 } from "rpg-ui-toolkit";
 import type { RollsProps, RollEntry } from "./rolls.types";
 import type { CharacterEntity } from "../../entities/character.types";
 import type { FeaturesBlockData } from "./features.types";
 import type { HeaderProps } from "./header.types";
 import { slotsForCaster } from "../../entities/character.lookup";
+import { rollBucket, rollInflicts } from "../../entities/roll-card";
 
 type CasterTier = "full" | "half" | "third" | "none";
 
@@ -31,7 +33,7 @@ interface CasterInfo {
   level: number;
 }
 
-interface RollRow {
+export interface RollRow {
   id: string;
   kind: "weapon" | "spell" | "feature" | "manual";
   roll: RollAspect;
@@ -67,7 +69,18 @@ interface EquipState {
  *   - `upcast` / `swapOn` → applied at render time in `RollRowUI`
  *     based on user-selected state (React-local; resets on reload).
  */
-export const rolls: EntityBlock<RollsProps, CharacterEntity> = ({ self, blocks, lookup }) => {
+/**
+ * Every roll the character has, each marked available or not: weapons in hand,
+ * spells with a `roll:`, features with one, and the block's manual `rolls:`.
+ * Shared by this block (which tabulates them) and the character's
+ * `SessionActions` expression (which offers them as session-log cards), so the
+ * two always agree.
+ */
+export function deriveRollRows(
+  manual: RollEntry[] | undefined,
+  blocks: unknown,
+  lookup: CharacterEntity["lookup"] | undefined
+): { rows: RollRow[]; stats: WielderStats; characterLevel: number } {
   const stats = resolveWielderStats(blocks);
   const characterLevel = resolveCharacterLevel(blocks);
   const equip = resolveEquipState(blocks, lookup);
@@ -76,12 +89,92 @@ export const rolls: EntityBlock<RollsProps, CharacterEntity> = ({ self, blocks, 
     ...deriveWeaponRows(blocks, lookup, stats, equip),
     ...deriveSpellRows(blocks, lookup, stats, resolvedCasters, characterLevel),
     ...deriveFeatureRows(blocks, lookup, characterLevel),
-    ...deriveManualRows(self.rolls),
+    ...deriveManualRows(manual),
   ];
   const rows: RollRow[] = rawRows.map((row) => ({
     ...row,
     available: isRollAvailable(row.kind, row.roll, row.sourceNote, equip),
   }));
+  return { rows, stats, characterLevel };
+}
+
+/** A session action for one roll row: its name, to-hit or forced save, and
+ *  damage — what a session-log card needs to roll it. */
+export function rollRowAction(row: RollRow, conditions?: Record<string, unknown>): SessionAction {
+  const roll = row.roll;
+  const name = roll.name ?? row.sourceNote;
+  const specs = Array.isArray(roll.damage) ? roll.damage : roll.damage ? [roll.damage] : [];
+  const first = specs[0];
+  const damage = first
+    ? `${first.roll}${first.bonus ? (/^[+-]/.test(first.bonus) ? first.bonus : `+${first.bonus}`) : ""} ${first.type ?? ""}`.trim()
+    : undefined;
+  const attacks = roll.form === "melee" || roll.form === "ranged" || roll.form === "spell";
+  // A spell cast with a slot: its damage at each circle it can be cast at.
+  const dmg = (r: RollAspect) => {
+    const s = Array.isArray(r.damage) ? r.damage[0] : r.damage;
+    return s
+      ? `${s.roll}${s.bonus ? (/^[+-]/.test(s.bonus) ? s.bonus : `+${s.bonus}`) : ""} ${s.type ?? ""}`.trim()
+      : undefined;
+  };
+  const circle = typeof roll.circle === "number" ? roll.circle : undefined;
+  const cast =
+    row.kind === "spell" && circle != null && circle > 0
+      ? {
+          circle,
+          damage: Object.fromEntries(
+            [circle, ...Object.keys(roll.upcast ?? {}).map(Number)]
+              .map((c) => [c, dmg(c === circle ? roll : applyRollOverride(roll, roll.upcast?.[c]))] as const)
+              .filter((e): e is readonly [number, string] => !!e[1])
+          ),
+        }
+      : undefined;
+  // A rider isn't an action of its own: it goes with an attack — its extra
+  // damage, the uses it spends (the feature's own count), the mark it leaves.
+  if (roll.form === "rider") {
+    return {
+      name,
+      bucket: "rider",
+      rider: {
+        ...(damage ? { damage } : {}),
+        ...(roll.cost ? { cost: { resource: name, amount: roll.cost.amount ?? 1 } } : {}),
+        ...(roll.mark ? { mark: roll.mark } : {}),
+      },
+      ...(row.sourceNote ? { link: `${row.sourceNote}#${name}` } : {}),
+    };
+  }
+  // The condition it leaves — on a failed save, for one its save brings on.
+  const inflicts = rollInflicts(roll, conditions);
+  // A healing roll restores its target's hit points instead of dealing damage.
+  const heals = first?.type?.toLowerCase() === "healing";
+  // The uses it spends, as the log names them: the feature's own pool
+  // (`[Kowyn/Nature's Gift-1]`), or the hit dice it rolls.
+  const spends =
+    roll.cost && row.kind !== "spell"
+      ? { resource: roll.cost.type === "hit-dice" ? "Hit Dice" : name, amount: roll.cost.amount ?? 1 }
+      : undefined;
+  return {
+    name,
+    origin: row.kind === "spell" ? "spell" : row.kind === "weapon" ? "weapon" : "feature",
+    bucket: rollBucket(roll, !!damage && !heals),
+    ...(attacks && roll.to_hit ? { hit: roll.to_hit } : {}),
+    ...(attacks ? { attackForm: roll.form as "melee" | "ranged" | "spell" } : {}),
+    ...(roll.save?.dc ? { save: `${roll.save.ability} ${roll.save.dc}` } : {}),
+    ...(damage && !heals ? { damage } : {}),
+    ...(damage && heals ? { heal: damage.replace(/\s*healing$/i, "") } : {}),
+    ...(spends ? { spends } : {}),
+    ...(roll.range ? { range: roll.range } : {}),
+    // The note the roll comes from (the weapon, the spell) — the card links there;
+    // a feature, to itself among its source's (`Druid#Nature's Gift`).
+    ...(row.sourceNote
+      ? { link: row.kind === "feature" && name !== row.sourceNote ? `${row.sourceNote}#${name}` : row.sourceNote }
+      : {}),
+    ...(cast ? { cast } : {}),
+    ...(inflicts ? { inflicts } : {}),
+  };
+}
+
+export const rolls: EntityBlock<RollsProps, CharacterEntity> = ({ self, blocks, lookup }) => {
+  const { rows, stats, characterLevel } = deriveRollRows(self.rolls, blocks, lookup);
 
   return (
     <section aria-details="Character Rolls" className="rpg-rolls">
