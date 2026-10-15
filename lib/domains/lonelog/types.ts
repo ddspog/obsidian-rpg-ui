@@ -21,6 +21,7 @@ export type LonelogEntry =
   | NarrativeEntry
   | CombatMarkerEntry
   | RoundMarkerEntry
+  | TurnMarkerEntry
   | ResourceMarkerEntry
   | DungeonStatusMarkerEntry
   | ConcatMarkerEntry
@@ -37,6 +38,8 @@ export interface ActionEntry {
   text: string;
   actor?: string;
   assist?: string;
+  /** Map tags written on the action line (`[Mv: E3]`), lifted off its text. */
+  tags?: PersistentTag[];
 }
 
 export interface WorldEventEntry {
@@ -56,6 +59,9 @@ export interface RollEntry {
   breakdown?: string;
   vsTarget?: string;
   isCardDraw?: boolean;
+  /** The line as written (trimmed), so a roll entered in the Log can be
+   *  written back into it. */
+  raw?: string;
 }
 
 export interface OracleQuestionEntry {
@@ -71,6 +77,8 @@ export interface OracleQuestionEntry {
   /** The raw line (trimmed, tags intact) when ops were stripped from `text` —
    *  lets an editable op token be written back into the source line. */
   raw?: string;
+  /** Foes the question brings in (`? Combat begins. [F:Kobold|HP 9]`). */
+  foes?: FoeTag[];
 }
 
 /**
@@ -96,6 +104,9 @@ export interface OracleCallEntry {
   roll?: string;
   /** What came back. Derived from the roll when the odds allow it. */
   result?: string;
+  /** The line as written (trimmed), so a roll entered in the Log can be
+   *  written back into it. */
+  raw?: string;
 }
 
 export interface OracleAnswerEntry {
@@ -148,11 +159,24 @@ export interface NarrativeEntry {
 export interface CombatMarkerEntry {
   type: "combat_marker";
   state: "open" | "close";
+  /** The battle map the fight is on — `[COMBAT: [[Kobold Ambush]]]`. */
+  map?: string;
 }
 
+/**
+ * A pass through the initiative order — written `T2` (the table calls it a
+ * TURN; Lonelog's `R2` reads the same). Internally the rules' "round".
+ */
 export interface RoundMarkerEntry {
   type: "round_marker";
   round: number;
+}
+
+/** `R(Talon)` — one creature's slot in the pass (the table calls it their
+ *  ROUND), before what they do. Internally the rules' "turn". */
+export interface TurnMarkerEntry {
+  type: "turn_marker";
+  actor: string;
 }
 
 export interface ResourceMarkerEntry {
@@ -198,7 +222,62 @@ export type PersistentTag =
   | FoeTag
   | InventoryTag
   | WealthTag
-  | RoomTag;
+  | RoomTag
+  | InitiativeTag
+  | PositionTag
+  | MoveTag
+  | TimeTag
+  | WeatherTag;
+
+/**
+ * Where combatants stand on the battle map — `[Pos: Talon C4; [[Kobold, Elite]] H2]`.
+ * Squares are named like a chessboard (columns A…, rows 1…).
+ */
+export interface PositionTag {
+  kind: "position";
+  entries: Array<{ name: string; at: string }>;
+}
+
+/**
+ * A move on the battle map. `[Mv: E3]` moves the acting creature; `[Mv: G4>F4>E4]`
+ * gives the route; `[Mv: Lilith D5]` moves someone else (shoved, carried).
+ */
+export interface MoveTag {
+  kind: "move";
+  /** Who moves, when it isn't the actor. */
+  who?: string;
+  /** Written after the action on its line (`Shortsword → Kobold [Mv: J14]`):
+   *  the move comes once the action is done. Before it, it comes first. */
+  after?: boolean;
+  /** The squares passed through, ending where it stops (`["G4", "F4", "E4"]`). */
+  path: string[];
+}
+
+/** One combatant in an `[Init: …]` tag: a name and, when written, its value. */
+export interface InitiativeEntry {
+  /** As written — may be a `[[wikilink]]`. */
+  name: string;
+  /** The initiative: a plain number, or the total a written roll came to. */
+  value?: number;
+  /** The roll that produced `value`, when written (`d20+1=`). */
+  roll?: string;
+  /** Where it starts on the battle map, written after it (`@J14`). */
+  at?: string;
+  /** Its token's emoji in this fight (`🐸`), over its page's `token:`. */
+  icon?: string;
+}
+
+/**
+ * Combat order. `[Init: Talon 17; Kobold 12]` SETS the order (sorted by value,
+ * highest first; ties and unvalued names keep the written order).
+ * `[Init:+ Kobold Archer 14]` adds combatants mid-fight; `[Init:- Kobold]`
+ * removes them (dead, fled).
+ */
+export interface InitiativeTag {
+  kind: "initiative";
+  op: "set" | "add" | "remove";
+  entries: InitiativeEntry[];
+}
 
 export interface NPCTag {
   kind: "npc";
@@ -264,6 +343,8 @@ export interface DialOpTag {
   op: "set" | "inc" | "dec" | "inspect";
   /** Operand for set/inc/dec; absent for inspect. */
   amount?: number;
+  /** Synthesized from a question's leading `[CF:n]` rather than written as an op. */
+  stated?: boolean;
 }
 
 /**
@@ -305,6 +386,26 @@ export interface ListOpTag {
   rolls?: number[];
 }
 
+/**
+ * The day's clock: `[Time: +8h]` moves it on (hours, or `+2d` days),
+ * `[Time: Day 2, 08:00]` sets it. What a long rest's once-a-day and a
+ * stage's hours on the road are read against.
+ */
+export interface TimeTag {
+  kind: "time";
+  /** Hours it moves the clock on. */
+  advance?: number;
+  /** The day and hour it sets. */
+  set?: { day?: number; hour?: number };
+  raw: string;
+}
+
+/** The weather now, a running tag: `[Weather: Autumn · warm · calm · clear]`. */
+export interface WeatherTag {
+  kind: "weather";
+  parts: string[];
+}
+
 export interface TimerTag {
   kind: "timer";
   name: string;
@@ -325,14 +426,30 @@ export interface PCTag {
 
 export interface FoeTag {
   kind: "foe";
+  /** As written — may be or hold a `[[wikilink]]` (`Fat [[Kobold, A]]`). */
   name: string;
   tags: string[];
+  /** `[#F:Name]` — a mention of a foe already in play, not a new entry. */
+  ref?: boolean;
+  /** HP as written: `HP 26` sets it, `HP-5` / `HP+3` moves it, `HP 21/26`
+   *  sets the value and its max. */
+  hp?: { set?: number; delta?: number; max?: number };
+  /** An end state written as a tag (`dead`, `fled`, `defeated`, `unconscious`). */
+  state?: string;
 }
 
 export interface InventoryTag {
   kind: "inventory";
   name: string;
   ref: boolean;
+  /** Whose item it is, when written (`[Inv:Talon/Rope+1]`). Otherwise the
+   *  line's actor owns it, or the party when nobody acts. */
+  owner?: string;
+  /** The containers it's in, below the owner, outermost first
+   *  (`[Inv:Kowyn's Bag/[[Pouch]]/[[Sling bullets]]+15]` → `["Pouch"]`). */
+  path?: string[];
+  /** The name was written as a `[[wikilink]]`, so it names a note. */
+  link?: boolean;
   quantity?: number;
   delta?: number;
   transition?: { from: number; to: number };

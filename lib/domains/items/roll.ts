@@ -354,7 +354,15 @@ function fillRollTemplate(
     toHit = `${signed(stats.pb + mod + weaponBonus)} (${ability})`;
   }
 
-  const name = template.name ?? (index === 0 ? displayName : displayName ? `${displayName} (${index + 1})` : undefined);
+  // A Versatile weapon's second hold reads as the weapon's own — `Warhammer
+  // (two-handed)` — not a bare `Two-Handed`, which is easy to mistake for a
+  // card of its own (or for Two-Weapon Fighting).
+  // The same for a thrown strike: `Dagger (thrown)`, not a bare `Thrown`.
+  const variant = template.name === "Two-Handed" ? "two-handed" : template.name === "Thrown" ? "thrown" : undefined;
+  const name =
+    variant && displayName
+      ? `${displayName} (${variant})`
+      : (template.name ?? (index === 0 ? displayName : displayName ? `${displayName} (${index + 1})` : undefined));
 
   return {
     ...template,

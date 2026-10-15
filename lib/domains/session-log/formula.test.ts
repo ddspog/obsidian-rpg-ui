@@ -52,7 +52,8 @@ describe("parseFormula", () => {
   it("makes the threshold the winner when it is higher", () => {
     const f = parseFormula("d20+2=8 vs DC 15 -> Fail");
     if (f!.check.kind === "contest") {
-      expect(f!.check.left).toMatchObject({ kind: "dice", sides: 20, modifier: "+2", value: 8 });
+      // 8 is the result: a 6 on the die, +2.
+      expect(f!.check.left).toMatchObject({ kind: "dice", sides: 20, modifier: "+2", value: 6, total: 8 });
       expect(f!.check.winner).toBe("right"); // DC 15 > 8
     }
   });
@@ -80,7 +81,9 @@ describe("parseFormula", () => {
       expect(f!.check.term.count).toBe(2);
       expect(f!.check.term.sides).toBe(6);
       expect(f!.check.term.modifier).toBe("+3");
-      expect(f!.check.term.value).toBe(11);
+      // The result as written; the dice came to 8.
+      expect(f!.check.term.total).toBe(11);
+      expect(f!.check.term.value).toBe(8);
     }
     expect(f!.result).toBeNull();
   });
@@ -142,9 +145,9 @@ describe("diceSlots / diceSlotInitial", () => {
   it("gives a pool's slot its recorded list, so a roll round-trips", () => {
     const pool = editableDice(parseFormula("2d6=[4,3]")!)[0];
     expect(diceSlotInitial(pool, 0)).toBe("[4,3]");
-    // A pool recorded as a bare total (older logs) keeps that total.
+    // A pool recorded as its result: the slot holds what the dice came to.
     const legacy = editableDice(parseFormula("2d6+3=11")!)[0];
-    expect(diceSlotInitial(legacy, 0)).toBe("11");
+    expect(diceSlotInitial(legacy, 0)).toBe("8");
   });
 });
 
@@ -250,7 +253,7 @@ describe("parseFormula — selectors and special dice", () => {
   });
 
   it("accepts a selector followed by a numeric modifier", () => {
-    expect(dieOf("4d6dl1+2=15")).toMatchObject({ selector: "dl1", modifier: "+2", value: 15 });
+    expect(dieOf("4d6dl1+2=15")).toMatchObject({ selector: "dl1", modifier: "+2", value: 13, total: 15 });
   });
 
   it("maps special dice to a shape while keeping the authored spec", () => {
@@ -261,7 +264,7 @@ describe("parseFormula — selectors and special dice", () => {
   });
 
   it("leaves a plain die untouched", () => {
-    expect(dieOf("d20+5=18")).toMatchObject({ sides: 20, selector: "", modifier: "+5", value: 18 });
+    expect(dieOf("d20+5=18")).toMatchObject({ sides: 20, selector: "", modifier: "+5", value: 13, total: 18 });
   });
 });
 
@@ -744,5 +747,88 @@ describe("a pool records every die and shows their sum", () => {
   it("selects nothing to drop from a single recorded die", () => {
     expect(countedDice([7], "dl1")).toEqual([7]);
     expect(countedDice([4, 3], "")).toEqual([4, 3]);
+  });
+});
+
+describe("bare threshold labels — `vs CF` reads the running value", () => {
+  it("fills a bare CF from the vars, as an inferred threshold", () => {
+    const f = parseFormula("d10=8 vs CF -> Expected Scene", { vars: { CF: 5 } })!;
+    expect(f.check.kind).toBe("contest");
+    if (f.check.kind !== "contest") return;
+    expect(f.check.right).toEqual({ kind: "threshold", label: "CF", value: 5, raw: "CF", inferred: true });
+    expect(f.check.winner).toBe("left");
+  });
+
+  it("leaves a bare CF as text when no value is known", () => {
+    const f = parseFormula("d10=8 vs CF -> Expected Scene")!;
+    if (f.check.kind !== "contest") throw new Error("expected contest");
+    expect(f.check.right).toEqual({ kind: "text", text: "CF" });
+  });
+
+  it("keeps an authored value over the running one", () => {
+    const f = parseFormula("d10=8 vs CF 4", { vars: { CF: 7 } })!;
+    if (f.check.kind !== "contest") throw new Error("expected contest");
+    expect(f.check.right).toMatchObject({ value: 4 });
+    expect((f.check.right as { inferred?: boolean }).inferred).toBeUndefined();
+  });
+
+  it("does not offer an inferred threshold for editing — the dial owns it", () => {
+    const terms = editableTerms(parseFormula("d10=8 vs CF", { vars: { CF: 5 } })!);
+    expect(terms.map((t) => t.kind)).toEqual(["dice"]);
+  });
+});
+
+describe("named modifiers — `d20+[[Insight]]` reads the actor's value", () => {
+  it("parses a [[Name]] modifier as a die modifier", () => {
+    const f = parseFormula("d20+[[Insight]]=11 vs DC 10 -> Success")!;
+    if (f.check.kind !== "contest") throw new Error("expected contest");
+    expect(f.check.left).toMatchObject({ kind: "dice", sides: 20, value: 11, modifier: "+[[Insight]]" });
+    expect((f.check.left as { mods?: unknown }).mods).toEqual([{ sign: "+", name: "Insight", value: undefined }]);
+  });
+
+  it("fills the name from the refs, by link stem", () => {
+    const f = parseFormula("d20+[[Insight|ins]]-1=14", { refs: { Insight: 3 } })!;
+    if (f.check.kind !== "single") throw new Error("expected single");
+    expect((f.check.term as { mods?: unknown }).mods).toEqual([
+      { sign: "+", name: "Insight", value: 3 },
+      { sign: "-", value: 1 },
+    ]);
+  });
+
+  it("leaves plain numeric modifiers without mods", () => {
+    const f = parseFormula("d20+5=18")!;
+    if (f.check.kind !== "single") throw new Error("expected single");
+    expect((f.check.term as { mods?: unknown }).mods).toBeUndefined();
+  });
+});
+
+describe("the result as written — the dice worked out from it", () => {
+  const term = (t: string, refs?: Record<string, number>) => {
+    const f = parseFormula(t, refs ? { refs } : {})!;
+    return f.check.kind === "single" ? f.check.term : f.check.kind === "contest" ? f.check.left : null;
+  };
+
+  it("reads one die's face from its result", () => {
+    expect(term("1d4+2=6")).toMatchObject({ value: 4, total: 6 });
+    expect(term("d20+[[Insight]]=11", { Insight: 4 })).toMatchObject({ value: 7, total: 11 });
+    expect(term("d10=8")).toMatchObject({ value: 8, total: 8 });
+  });
+
+  it("reads a pool's dice, then its result", () => {
+    expect(term("2d6+3=[4,3]=10")).toMatchObject({ values: [4, 3], value: 7, total: 10 });
+    expect(term("2d6+3=[4,3]")).toMatchObject({ values: [4, 3], value: 7, total: 10 });
+  });
+
+  it("still reads an older line that wrote only the die", () => {
+    expect(term("d20+5=3")).toMatchObject({ value: 3, total: 8 });
+  });
+
+  it("writes dice rolled as their faces as the result", () => {
+    const one = term("1d4+2=")!;
+    expect(one.kind === "dice" && setTermRaw(one, "4")).toBe("1d4+2=6");
+    const pool = term("2d6+3=")!;
+    expect(pool.kind === "dice" && setTermRaw(pool, "[4,3]")).toBe("2d6+3=[4,3]=10");
+    const plain = term("d10=")!;
+    expect(plain.kind === "dice" && setTermRaw(plain, "8")).toBe("d10=8");
   });
 });

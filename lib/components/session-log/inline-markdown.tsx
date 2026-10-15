@@ -9,6 +9,8 @@
 
 import * as React from "react";
 import { Component, MarkdownRenderer } from "obsidian";
+import { findActionCalls } from "lib/domains/session-log/action-call";
+import { ActionCallView } from "./action-call";
 
 export interface InlineMarkdownProps {
   source: string;
@@ -20,6 +22,27 @@ export interface InlineMarkdownProps {
 const NEEDS_RENDER = /\[\[|!\[|`|\*|_|~~|==|\[[^\]]*\]\(/;
 
 export function InlineMarkdown({ source, sourcePath, className }: InlineMarkdownProps) {
+  // An action called on its actor's page (`@[[Kobold, Elite]].action(…)`) is
+  // drawn here, not by Obsidian — which would read its `[[…]]` as a plain link.
+  const calls = findActionCalls(source);
+  if (calls.length > 0) {
+    const parts: React.ReactNode[] = [];
+    // The actor shows once a line: a second action of theirs (`… with Mystic
+    // Mark`) is named alone.
+    const shown = new Set<string>();
+    let at = 0;
+    calls.forEach((call, i) => {
+      const before = source.slice(at, call.start);
+      if (before) parts.push(<InlineMarkdown key={`t${i}`} source={before} sourcePath={sourcePath} />);
+      const key = call.page.toLowerCase();
+      parts.push(<ActionCallView key={`c${i}`} call={call} sourcePath={sourcePath} showActor={!shown.has(key)} />);
+      shown.add(key);
+      at = call.end;
+    });
+    const rest = source.slice(at);
+    if (rest) parts.push(<InlineMarkdown key="rest" source={rest} sourcePath={sourcePath} />);
+    return <span className={className}>{parts}</span>;
+  }
   // Fast path: plain text (most sidebar rows) skips the MarkdownRenderer +
   // Component machinery entirely, which matters when a long log mounts dozens
   // of these at once.

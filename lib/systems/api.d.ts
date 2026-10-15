@@ -735,7 +735,9 @@ export interface UnlockBlock {
 export type SourceDocKind = "class" | "subclass" | "lineage" | "heritage" | "background" | "talent" | "item";
 
 /** GM-feature aspects (rpg feature.gm) — see lib/domains/features/types.ts. */
-export type GMStack = "oracle" | "roll" | "table" | "generator" | "event" | "scene";
+/** A drawer stack. The aspect names, plus `meaning` (Meaning Tables) and
+ *  `list` (rolls on a lonelog list) for cards that group by use, not aspect. */
+export type GMStack = "oracle" | "meaning" | "list" | "combat" | "roll" | "table" | "generator" | "event" | "scene";
 export type GMInterpret = Record<string, string>;
 export type GMLikelihood =
   | "certain"
@@ -753,6 +755,12 @@ export interface GMOracleAspect {
   attribution?: string;
   chaos?: boolean;
   cf?: number;
+  /** Amounts the card may move the resource by as it opens the question (`[+1, -1]`). */
+  adjust?: Array<number | string>;
+  /** The oracle that answers (`Fate Chart`, `Fate Check`) → an `o:` line. */
+  consult?: string;
+  /** The odds the `o:` line asks at; `ask` (default) picks them per question. */
+  odds?: GMLikelihood | "ask";
   likelihood?: GMLikelihood;
   roll?: string;
   vs?: string;
@@ -785,6 +793,12 @@ export interface GMSceneAspect {
   consequence?: string;
 }
 export interface GMFeature {
+  /** Utility within its stack (1 = top of the deck). Also on each `cards:` entry. */
+  rank?: number;
+  /** One sentence on what the card does — the confirmation shown when played. */
+  summary?: string;
+  /** A Lucide icon name (`help-circle`) drawn large on the card. Also on each `cards:` entry. */
+  icon?: string;
   name: string;
   text?: string;
   stack?: GMStack;
@@ -1015,6 +1029,8 @@ export interface InventoryYamlEntry {
   equipped?: boolean;
   for_sale?: boolean;
   notes?: string;
+  /** Its own name, shown instead of the item's (`Sling Pouch`). */
+  label?: string;
   contents?: InventoryYamlEntry[];
 }
 
@@ -1214,12 +1230,23 @@ export interface PersonalResolution {
   weaponOverlay: WeaponOverlay;
   traits: Record<string, string[]>;
   magicFeatureSources: string[];
+  /** Each template's text, its `{{column}}`s filled from the picked strength. */
+  magicTexts: string[];
   attuned: boolean;
   notes?: string;
   history?: string;
   discovered?: string[];
   displayName: string;
 }
+
+/** A character's loadout: what's in each hand (`loadouts:` on its inventory). */
+export interface Loadout {
+  name: string;
+  hands: Partial<Record<"main_hand" | "off_hand" | "shield", string>>;
+}
+export declare function readLoadouts(raw: unknown): Loadout[];
+export declare function describeLoadout(l: Loadout): string;
+export declare function applyLoadout(items: unknown[], loadout: Loadout): { items: unknown[]; missing: string[] };
 
 export declare function resolvePersonalItem(
   personal: ItemPersonalData,
@@ -1296,6 +1323,24 @@ export interface RollSave {
 
 export type RollEffect = string | { icon: string; label?: string };
 
+/**
+ * A condition a roll can leave on what it hits (`pinned`), and how it's shaken
+ * off: a saving throw (`STR`) made `when` (at the start of its turn), what a
+ * failure means, and whether it only `may` apply (next to a wall, say).
+ */
+export interface RollInflict {
+  condition: string;
+  save?: string;
+  when?: string;
+  fail?: string;
+  /** It may apply — the caster says whether it does (`if next to a wall`). */
+  optional?: boolean;
+  note?: string;
+  /** It lands on a hit, or — `fail` — only when the target fails the roll's save
+   *  too (Luminous Bolt's `blinded`). */
+  on?: "fail";
+}
+
 /** Subset of RollAspect fields a variant can override. Excludes `form`
  *  and the variant fields themselves. Shallow merge. */
 export type RollOverride = Partial<
@@ -1339,9 +1384,82 @@ export interface RollCost {
   max?: number | string;
 }
 
+/**
+ * One thing an entity can do in a session — a card the session log offers for
+ * it. A system returns these from an entity expression named `SessionActions`
+ * (a character's attacks and basic actions, a creature's statblock actions);
+ * the log builds the cards, so its notation is the same in every system.
+ */
+export interface SessionAction {
+  name: string;
+  /** Its drawer stack: `attack`, `action`, `bonus`, `reaction`, … Defaults to
+   *  `attack` when it rolls to hit, else `action`. */
+  bucket?: string;
+  /** Attack bonus (`+5`, or `+[[Initiative]]`-style notation). With it, the
+   *  card rolls an attack and asks for a target. */
+  hit?: string;
+  /** Damage dice and type: `1d6+3 piercing`. */
+  damage?: string;
+  /** A saving throw it forces: `DEX 13`. */
+  save?: string;
+  /** The skills it checks with, one picked when played (`Study`: Arcana,
+   *  History, …) — the card rolls `d20+[[Skill]]` for the chosen one. */
+  skills?: string[];
+  /** It is aimed at a creature (Influence), so the card asks for a target. */
+  target?: boolean;
+  /** Free-form: the card asks what happens (and, optionally, how it turns out
+   *  and any item gained) instead of naming itself — for anything no other
+   *  card covers. */
+  freeform?: boolean;
+  range?: string;
+  /** The confirmation sentence shown before the card plays. */
+  summary?: string;
+  icon?: string;
+  rank?: number;
+  /** The note that describes it (`Dash`, `Shortsword`, `Humanoid Traits#Mining Pick`) —
+   *  where a card's hover reads the action's description from. */
+  link?: string;
+  /**
+   * A rider — rolled WITH an attack, never on its own (Mystic Mark): the extra
+   * damage it adds, the uses it costs (`Mystic Mark`, 1), and the condition it
+   * leaves on the target (`marked`), which later attacks find and ride free on.
+   */
+  rider?: { damage?: string; cost?: { resource: string; amount: number }; mark?: string };
+  /** The ammunition each shot spends, and where the actor carries it. */
+  ammo?: { item: string; path?: string[] };
+  /** Where it comes from — a `spell`, a `weapon`, a `feature`, or one of the
+   *  `basic` actions anyone has — so a crowded stack can be split by it. */
+  origin?: "spell" | "weapon" | "feature" | "basic";
+  /** A spell cast with a slot: its lowest circle, and its damage at each
+   *  circle it can be cast at (`{ 1: "3d8 cold", 2: "4d8 cold" }`). */
+  cast?: { circle: number; damage: Record<number, string> };
+  /** A condition it can leave on its target (Icicle Javelin's `pinned`). */
+  inflicts?: {
+    condition: string;
+    save?: string;
+    when?: string;
+    fail?: string;
+    optional?: boolean;
+    note?: string;
+    on?: "fail";
+  };
+  /** The hit points it restores to its target, as dice (`2d4`) — aimed at the party. */
+  heal?: string;
+  /** The uses it spends as it plays, as the log names them (`Nature's Gift`, 1). */
+  spends?: { resource: string; amount: number };
+  /** A Multiattack: how many attacks, and which, its one action holds. */
+  multiattack?: { count: number; attacks: string[] };
+  /** An attack's reach — a `melee` or `ranged` weapon, or a `spell`. */
+  attackForm?: "melee" | "ranged" | "spell";
+}
+
 export interface RollAspect {
   name?: string;
   form: "melee" | "ranged" | "spell" | "save" | "rider" | "healing" | "temp";
+  /** A rider's mark: the condition it leaves on what it hits (`marked`). */
+  mark?: string;
+  /** A condition it can leave on what it hits, and how it's shaken off. */
+  inflicts?: RollInflict;
   /** Spell circle (0 = cantrip). When set with `form: spell`, the form
    *  icon renders as a circled numeral. With `upcast`, it becomes a
    *  clickable cycle button. */

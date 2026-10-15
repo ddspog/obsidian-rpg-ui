@@ -45,6 +45,7 @@ export type ProseSegmentKind =
   | { type: "combat-start"; entry: CombatMarkerEntry }
   | { type: "combat-end"; entry: CombatMarkerEntry }
   | { type: "round"; round: number }
+  | { type: "turn"; actor: string }
   | { type: "resource-start"; entry: ResourceMarkerEntry }
   | { type: "resource-end"; entry: ResourceMarkerEntry }
   | { type: "dungeon-status-start"; entry: DungeonStatusMarkerEntry }
@@ -111,6 +112,11 @@ export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
 
       case "round_marker":
         push({ type: "round", round: entry.round }, start);
+        i++;
+        break;
+
+      case "turn_marker":
+        push({ type: "turn", actor: entry.actor }, start);
         i++;
         break;
 

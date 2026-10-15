@@ -1,0 +1,536 @@
+/* Session Log - Hotbar Module
+   The drawer's cards as a hotbar (after Baldur's Gate 3's): the actor's
+   resources as pills above, every card a square tile below — an outlined
+   glyph in its kind's colour, the name and text on hover. */
+
+.rpg-hotbar {
+  --hotbar-tile: 3.6rem;
+  --hotbar-attack: light-dark(#b8432f, #e2735f);
+  --hotbar-action: light-dark(#a8741a, #e3b04b);
+  --hotbar-bonus: light-dark(#b85a14, #f08a3c);
+  --hotbar-reaction: light-dark(#1f8a7e, #4cc4b4);
+  --hotbar-spell: light-dark(#2f64c4, #6b9cf5);
+  --hotbar-pact: light-dark(#7a3fbf, #b17cf2);
+  --hotbar-passive: light-dark(#3f8a43, #7ccc80);
+  --hotbar-gm: light-dark(#6a4fbf, #a78bfa);
+  --hotbar-party: light-dark(#8a6a2e, #d6b46e);
+  --hotbar-use: light-dark(#a3376b, #e879b4);
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+/* ── The pills: each kind of resource in a box of its own ── */
+
+.rpg-hotbar-pills {
+  display: flex;
+  padding-top: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.rpg-hotbar-pill-group {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+}
+
+button.rpg-hotbar-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+  min-width: 1.6rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+button.rpg-hotbar-pill:hover {
+  background: var(--background-modifier-hover);
+}
+
+button.rpg-hotbar-pill.is-active {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+}
+
+/* A slot's circle, as BG3 numbers its boxes: small, above the pips. */
+.rpg-hotbar-pill-circle {
+  position: absolute;
+  top: -0.55rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rpg-hotbar-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.rpg-hotbar-pill-count {
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* The pips: a dot, a triangle, a diamond, squares — filled while there to spend. */
+.rpg-hotbar-pip {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border: 1.5px solid var(--pip);
+  background: transparent;
+}
+
+.rpg-hotbar-pip.is-full {
+  background: var(--pip);
+}
+
+.rpg-hotbar-pip.is-action {
+  --pip: var(--hotbar-action);
+  border-radius: 50%;
+}
+
+.rpg-hotbar-pip.is-bonus {
+  --pip: var(--hotbar-bonus);
+  border: none;
+  background: transparent;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  box-shadow: inset 0 0 0 1.5px var(--pip);
+}
+
+.rpg-hotbar-pip.is-bonus.is-full {
+  background: var(--pip);
+}
+
+/* A hollow triangle: an outline drawn by a smaller triangle punched through. */
+.rpg-hotbar-pip.is-bonus:not(.is-full) {
+  background:
+    linear-gradient(var(--background-secondary), var(--background-secondary)) content-box,
+    var(--pip);
+  padding: 2px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.rpg-hotbar-pip.is-reaction {
+  --pip: var(--hotbar-reaction);
+  width: 0.55rem;
+  height: 0.55rem;
+  transform: rotate(45deg);
+}
+
+.rpg-hotbar-pip.is-slot {
+  --pip: var(--hotbar-spell);
+}
+
+.rpg-hotbar-pip.is-pact {
+  --pip: var(--hotbar-pact);
+}
+
+/* A feature's uses: its own glyph, lit while one's left. */
+.rpg-hotbar-pip.is-use {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  border: none;
+  color: var(--text-faint);
+}
+
+.rpg-hotbar-pip.is-use.is-full {
+  background: none;
+  color: var(--hotbar-use);
+}
+
+/* ── The tiles ── */
+
+.rpg-hotbar-body {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+button.rpg-hotbar-page {
+  flex: 0 0 auto;
+  align-self: center;
+  height: calc(var(--hotbar-tile) * 2);
+  max-height: 100%;
+  padding: 0 0.15rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+button.rpg-hotbar-page:disabled {
+  visibility: hidden;
+}
+
+/* The tiles run on sideways, two rows high; the arrows page through them. */
+.rpg-hotbar-strip {
+  display: flex;
+  flex: 1;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.2rem 0.1rem 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rpg-hotbar-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* A stack's tiles together, its name over them, a rule between stacks. */
+.rpg-hotbar-group {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.2rem;
+  /* As wide as its tiles: its name wraps to fit over them. */
+  width: min-content;
+  padding-right: 0.6rem;
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+/* The groups sit in the middle of the strip; it scrolls once they outgrow it. */
+.rpg-hotbar-group:first-child {
+  margin-left: auto;
+}
+
+.rpg-hotbar-group:last-child {
+  margin-right: auto;
+}
+
+.rpg-hotbar-group:last-child {
+  padding-right: 0;
+  border-right: none;
+}
+
+.rpg-hotbar-group-label {
+  display: flex;
+  align-items: flex-start;
+  /* Two lines held for every name, so all the groups' tiles start level. */
+  min-height: 1.5rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rpg-hotbar-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows, 2), var(--hotbar-tile));
+  grid-auto-columns: var(--hotbar-tile);
+  gap: 0.25rem;
+}
+
+button.rpg-hotbar-tile {
+  --tile: var(--text-muted);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--hotbar-tile);
+  height: var(--hotbar-tile);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--tile) 55%, var(--background-modifier-border));
+  border-radius: 4px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--tile) 10%, var(--background-primary)),
+    var(--background-primary)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile) 12%, transparent);
+  color: var(--tile);
+  cursor: pointer;
+}
+
+button.rpg-hotbar-tile:hover {
+  border-color: var(--tile);
+  background: color-mix(in srgb, var(--tile) 18%, var(--background-primary));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tile) 45%, transparent);
+}
+
+button.rpg-hotbar-tile.is-depleted {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+  cursor: default;
+}
+
+.rpg-hotbar-tile.is-attack {
+  --tile: var(--hotbar-attack);
+}
+.rpg-hotbar-tile.is-action {
+  --tile: var(--hotbar-action);
+}
+.rpg-hotbar-tile.is-bonus {
+  --tile: var(--hotbar-bonus);
+}
+.rpg-hotbar-tile.is-reaction {
+  --tile: var(--hotbar-reaction);
+}
+.rpg-hotbar-tile.is-spell {
+  --tile: var(--hotbar-spell);
+}
+.rpg-hotbar-tile.is-passive {
+  --tile: var(--hotbar-passive);
+}
+.rpg-hotbar-tile.is-gm {
+  --tile: var(--hotbar-gm);
+}
+.rpg-hotbar-tile.is-party {
+  --tile: var(--hotbar-party);
+}
+
+/* A spell's circle in its corner; a card's uses in the other. */
+.rpg-hotbar-tile-circle,
+.rpg-hotbar-tile-uses {
+  position: absolute;
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rpg-hotbar-tile-circle {
+  top: 0.15rem;
+  left: 0.2rem;
+}
+
+.rpg-hotbar-tile-uses {
+  right: 0.2rem;
+  bottom: 0.15rem;
+  color: var(--text-muted);
+}
+
+/* ── The tile's name, small along its foot ── */
+
+button.rpg-hotbar-tile {
+  grid-template-rows: 1fr auto;
+  padding: 0.3rem 0.15rem 0.15rem;
+  overflow: hidden;
+}
+
+button.rpg-hotbar-tile .rpg-hotbar-tile-name {
+  display: -webkit-box;
+  /* A button doesn't wrap its text; its name does, to a second line. */
+  white-space: normal;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-family: var(--font-interface);
+  font-size: 0.42rem;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+
+/* ── Where it comes from: the tile's ground ──
+   The kind still colours its rim and glyph; the source tints behind it. */
+
+.rpg-hotbar-tile {
+  --src: transparent;
+}
+
+.rpg-hotbar-tile.from-basic {
+  --src: light-dark(#8a8a8a, #6f6f6f);
+}
+.rpg-hotbar-tile.from-item {
+  --src: light-dark(#7a6a55, #8c7a62);
+}
+.rpg-hotbar-tile.from-class {
+  --src: light-dark(#8e2a2a, #a63a3a);
+}
+.rpg-hotbar-tile.from-subclass {
+  --src: light-dark(#7a2a6e, #9a3f8c);
+}
+.rpg-hotbar-tile.from-lineage {
+  --src: light-dark(#1f6f6a, #2f8f88);
+}
+.rpg-hotbar-tile.from-heritage {
+  --src: light-dark(#3d7a2f, #4f9a3d);
+}
+.rpg-hotbar-tile.from-background {
+  --src: light-dark(#7a5a2a, #9a7438);
+}
+.rpg-hotbar-tile.from-talent {
+  --src: light-dark(#9a7a1a, #c9a227);
+}
+.rpg-hotbar-tile.from-spell {
+  --src: light-dark(#2a3f8e, #3a55b0);
+}
+.rpg-hotbar-tile.from-gm {
+  --src: light-dark(#4f3a8e, #6a4fbf);
+}
+.rpg-hotbar-tile.from-party {
+  --src: light-dark(#7a6230, #a8864a);
+}
+
+button.rpg-hotbar-tile {
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--src) 28%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--src) 22%, var(--background-primary)), var(--background-primary));
+}
+
+button.rpg-hotbar-tile:hover {
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tile) 25%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--src) 30%, var(--background-primary)), var(--background-primary));
+}
+
+/* ── Its own art, when the vault has some: filling the tile, the name over it ── */
+
+button.rpg-hotbar-tile.has-art {
+  padding: 0;
+}
+
+.rpg-hotbar-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-hotbar-tile.has-art .rpg-hotbar-tile-name {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0.1rem 0.1rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  color: #f2ead8;
+}
+
+.rpg-hotbar-tile-circle,
+.rpg-hotbar-tile-uses {
+  z-index: 1;
+}
+
+/* ── Toggles and passives: pills with their own glyph, lit while on ── */
+
+.rpg-hotbar-pip.is-toggle,
+.rpg-hotbar-pip.is-passive {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  border: none;
+  color: var(--text-faint);
+}
+
+.rpg-hotbar-pip.is-toggle.is-full {
+  background: none;
+  color: var(--hotbar-bonus);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--hotbar-bonus) 70%, transparent));
+}
+
+.rpg-hotbar-pip.is-passive.is-full {
+  background: none;
+  color: var(--hotbar-passive);
+}
+
+/* A toggle that's on: its tile lit. */
+button.rpg-hotbar-tile.is-toggle.is-on {
+  border-color: var(--tile);
+  box-shadow:
+    0 0 8px color-mix(in srgb, var(--tile) 60%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--tile) 40%, transparent);
+}
+
+button.rpg-hotbar-tile.is-toggle:not(.is-on) {
+  filter: saturate(0.55);
+}
+
+/* A card another feature changes: a small diamond in its corner. */
+.rpg-hotbar-tile-changed {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  z-index: 1;
+  width: 0.4rem;
+  height: 0.4rem;
+  transform: rotate(45deg);
+  background: var(--text-accent);
+  box-shadow: 0 0 4px var(--text-accent);
+}
+
+/* A group's name, centred under its tiles. */
+.rpg-hotbar-group-label {
+  justify-content: center;
+  text-align: center;
+}
+
+/* A pill that picks out a kind of card (the table's): an icon in its own colour, nothing more. */
+button.rpg-hotbar-pill.is-class {
+  --pill: var(--text-muted);
+  padding: 0.25rem 0.4rem;
+  color: var(--pill);
+}
+
+button.rpg-hotbar-pill.is-class.is-active {
+  border-color: var(--pill);
+  background: color-mix(in srgb, var(--pill) 18%, transparent);
+}
+
+button.rpg-hotbar-pill.is-class.m-oracles {
+  --pill: var(--hotbar-spell);
+}
+
+button.rpg-hotbar-pill.is-class.m-generators {
+  --pill: var(--hotbar-pact);
+}
+
+button.rpg-hotbar-pill.is-class.m-tables {
+  --pill: var(--hotbar-action);
+}
+
+button.rpg-hotbar-pill.is-class.m-rolls {
+  --pill: var(--hotbar-use);
+}
+
+button.rpg-hotbar-pill.is-class.m-compound {
+  --pill: var(--hotbar-reaction);
+}
+
+button.rpg-hotbar-pill.is-class.m-events-scenes {
+  --pill: var(--hotbar-bonus);
+}
+
+button.rpg-hotbar-pill.is-class.m-controls {
+  --pill: var(--hotbar-attack);
+}
+
+button.rpg-hotbar-pill.is-class.m-procedures {
+  --pill: var(--hotbar-passive);
+}
+
+/* Spells left out for want of a free hand or a focus: said, small, under the tiles. */
+.rpg-hotbar-away {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  text-align: center;
+  color: var(--text-faint);
+}

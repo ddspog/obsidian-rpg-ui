@@ -161,6 +161,10 @@ export interface RollAspect {
    *  another roll (Mystic Mark, Hex, Divine Smite). `healing` restores
    *  HP; `temp` grants temporary HP. */
   form: "melee" | "ranged" | "spell" | "save" | "rider" | "healing" | "temp";
+  /** A rider's mark: the condition it leaves on what it hits (`marked`). */
+  mark?: string;
+  /** A condition it can leave on what it hits (`pinned`), and how it's shaken off. */
+  inflicts?: { condition: string; save?: string; when?: string; fail?: string; optional?: boolean; note?: string };
   /** Spell circle this roll is tied to. `0` = cantrip; `1`..`9` =
    *  leveled spells. When set on `form: spell`, the rolls block
    *  renders the form icon as a circled numeral (⓪ ① ② …) instead of

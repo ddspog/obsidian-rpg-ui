@@ -6,13 +6,17 @@
  * marked with a clickable provenance dot) and rendering `[[wikilinks]]` through
  * Obsidian's markdown renderer. The mechanical machinery (rolls, oracles,
  * tables, markers) is hidden here and lives in the sidebar / mechanical mode.
+ *
+ * A fight is told as a section of its own: its turns (`Turn 2`), and each
+ * action beside the creature who took it.
  */
 
 import * as React from "react";
 import { Markdown } from "lib/components/markdown";
 import { InlineMarkdown } from "./inline-markdown";
-import { laneForSpeaker } from "lib/domains/session-log/prose-model";
-import type { ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
+import { Swords } from "lucide-react";
+import { actorLabel, laneForSpeaker } from "lib/domains/session-log/prose-model";
+import type { ProseFragment, ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
 
 export interface ProseViewProps {
   scenes: ProseScene[];
@@ -23,9 +27,24 @@ export interface ProseViewProps {
   onSelectSource: (id: number) => void;
   /** Register a prose element as the scroll target for a provenance id. */
   registerAnchor: (id: number, el: HTMLElement | null) => void;
+  /** A fight's map for one turn, drawn before it (`turnId`: the turn's marker). */
+  renderTurnMap?: (turnId: number, headInto?: HTMLElement | null) => React.ReactNode;
+  /** An action in a fight was clicked: go to it — the map moves there. */
+  onSelectStep?: (id: number) => void;
+  /** A party member's name as the log knows them (`Talon Pallton` → `Talon`). */
+  partyName?: (actor: string) => string | undefined;
 }
 
-export function ProseView({ scenes, sourcePath, selectedId, onSelectSource, registerAnchor }: ProseViewProps) {
+export function ProseView({
+  scenes,
+  sourcePath,
+  selectedId,
+  onSelectSource,
+  registerAnchor,
+  renderTurnMap,
+  onSelectStep,
+  partyName,
+}: ProseViewProps) {
   if (scenes.length === 0) {
     return <div className="lonelog-prose-empty">Nothing to narrate yet.</div>;
   }
@@ -58,6 +77,9 @@ export function ProseView({ scenes, sourcePath, selectedId, onSelectSource, regi
               selectedId={selectedId}
               onSelectSource={onSelectSource}
               registerAnchor={registerAnchor}
+              {...(renderTurnMap ? { renderTurnMap } : {})}
+              {...(onSelectStep ? { onSelectStep } : {})}
+              {...(partyName ? { partyName } : {})}
             />
           ))}
         </section>
@@ -66,33 +88,121 @@ export function ProseView({ scenes, sourcePath, selectedId, onSelectSource, regi
   );
 }
 
-function ProseNodeView({
-  node,
-  sourcePath,
-  selectedId,
-  onSelectSource,
-  registerAnchor,
-}: {
-  node: ProseNode;
+interface NodeViewProps {
   sourcePath: string;
   selectedId: number | null;
   onSelectSource: (id: number) => void;
   registerAnchor: (id: number, el: HTMLElement | null) => void;
-}) {
+  renderTurnMap?: (turnId: number, headInto?: HTMLElement | null) => React.ReactNode;
+  onSelectStep?: (id: number) => void;
+  partyName?: (actor: string) => string | undefined;
+}
+
+/** A run of conclusions, each with its provenance dot. */
+function Fragments({
+  fragments,
+  sourcePath,
+  selectedId,
+  onSelectSource,
+  registerAnchor,
+}: NodeViewProps & { fragments: ProseFragment[] }) {
+  return (
+    <>
+      {fragments.map((frag, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && " "}
+          <span className="lonelog-fragment" ref={(el) => registerAnchor(frag.sourceId, el)}>
+            <InlineMarkdown source={frag.text} sourcePath={sourcePath} className="lonelog-md-inline" />
+            <ProseDot id={frag.sourceId} selected={selectedId === frag.sourceId} onClick={onSelectSource} />
+          </span>
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
+/** A fight's nodes, its consecutive actions gathered into one list. */
+function CombatView({ node, ...props }: NodeViewProps & { node: Extract<ProseNode, { kind: "combat" }> }) {
+  const runs: Array<ProseNode | Array<Extract<ProseNode, { kind: "beat" }>>> = [];
+  for (const n of node.nodes) {
+    const last = runs[runs.length - 1];
+    if (n.kind === "beat" && Array.isArray(last)) last.push(n);
+    else runs.push(n.kind === "beat" ? [n] : n);
+  }
+  // The fight's first map titles itself on this header line (`Combat · Map
+  // Clearing … Setup`), rather than on a line of its own.
+  const [headSlot, setHeadSlot] = React.useState<HTMLElement | null>(null);
+  const firstTurn = node.nodes.find((n) => n.kind === "turn")?.sourceId;
+  return (
+    <section className="lonelog-prose-combat" aria-label="Combat">
+      <header className="lonelog-prose-combat-head">
+        <Swords size={14} aria-hidden="true" /> Combat
+        <span className="lonelog-prose-combat-map" ref={setHeadSlot} />
+      </header>
+      {runs.map((run, i) =>
+        Array.isArray(run) ? (
+          <dl key={i} className="lonelog-prose-beats">
+            {run.map((beat, j) => (
+              <div
+                key={j}
+                className={`lonelog-prose-beat${props.onSelectStep ? " is-steppable" : ""}`}
+                // A click shows it on the turn's map. (Keyboard users step the map
+                // with its replay buttons; the passage's dot is a real button.)
+                {...(props.onSelectStep ? { onClick: () => props.onSelectStep!(beat.fragments[0].sourceId) } : {})}
+              >
+                <dt className="lonelog-prose-actor" title={beat.actor.replace(/\[\[|\]\]/g, "")}>
+                  {props.partyName?.(beat.actor) ?? actorLabel(beat.actor)}
+                </dt>
+                <dd className="lonelog-conclusion">
+                  <Fragments fragments={beat.fragments} {...props} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : run.kind === "turn" ? (
+          // Each turn opens on the map: the fight as it stands in that turn.
+          <React.Fragment key={i}>
+            {props.renderTurnMap?.(run.sourceId, run.sourceId === firstTurn ? headSlot : undefined)}
+            <ProseNodeView node={run} {...props} />
+          </React.Fragment>
+        ) : (
+          <ProseNodeView key={i} node={run} {...props} />
+        )
+      )}
+    </section>
+  );
+}
+
+function ProseNodeView({ node, ...props }: NodeViewProps & { node: ProseNode }) {
+  const { sourcePath, registerAnchor } = props;
   switch (node.kind) {
     case "paragraph":
       return (
         <p className="lonelog-conclusion">
-          {node.fragments.map((frag, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && " "}
-              <span className="lonelog-fragment" ref={(el) => registerAnchor(frag.sourceId, el)}>
-                <InlineMarkdown source={frag.text} sourcePath={sourcePath} className="lonelog-md-inline" />
-                <ProseDot id={frag.sourceId} selected={selectedId === frag.sourceId} onClick={onSelectSource} />
-              </span>
-            </React.Fragment>
-          ))}
+          <Fragments fragments={node.fragments} {...props} />
         </p>
+      );
+
+    case "combat":
+      return <CombatView node={node} {...props} />;
+
+    case "turn":
+      return (
+        <h5 className="lonelog-prose-turn" ref={(el) => registerAnchor(node.sourceId, el)}>
+          Turn {node.number}
+        </h5>
+      );
+
+    case "beat":
+      return (
+        <dl className="lonelog-prose-beats">
+          <div className="lonelog-prose-beat">
+            <dt className="lonelog-prose-actor">{props.partyName?.(node.actor) ?? actorLabel(node.actor)}</dt>
+            <dd className="lonelog-conclusion">
+              <Fragments fragments={node.fragments} {...props} />
+            </dd>
+          </div>
+        </dl>
       );
 
     case "narration":

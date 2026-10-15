@@ -129,15 +129,37 @@ export function buildGMStacks(): CardStack[] {
 }
 
 /** Stack order + labels for authored `feature.gm` cards (one stack per aspect). */
-const GM_STACK_ORDER: GMStack[] = ["oracle", "roll", "table", "generator", "event", "scene"];
+const GM_STACK_ORDER: GMStack[] = [
+  "oracle",
+  "meaning",
+  "list",
+  "combat",
+  "roll",
+  "table",
+  "generator",
+  "event",
+  "scene",
+];
 const GM_STACK_LABELS: Record<GMStack, string> = {
   oracle: "Oracle",
+  meaning: "Meaning",
+  list: "List",
+  combat: "Combat",
   roll: "Roll",
   table: "Table",
   generator: "Generator",
   event: "Event",
   scene: "Scene",
 };
+
+/** Most useful first: ranked cards by `rank` (1 = top), then the unranked in the
+ *  order declared. Stable, so equal ranks keep their declared order too. */
+function byUtility<T extends { rank?: number }>(entries: T[]): T[] {
+  return entries
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => (a.e.rank ?? Infinity) - (b.e.rank ?? Infinity) || a.i - b.i)
+    .map(({ e }) => e);
+}
 
 /**
  * Build GM card stacks from authored `feature.gm` features (a linked GM Screen
@@ -152,6 +174,10 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
     stack: GMStack;
     logTemplate: string;
     text?: string;
+    summary?: string;
+    icon?: string;
+    kind?: "start-combat" | "next-round" | "next-turn" | "end-combat";
+    rank?: number;
     uses?: number;
     recovery?: string;
   }
@@ -166,12 +192,16 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
     if (feature.cards?.length) {
       for (const card of feature.cards) {
         const stack = cardPrimaryStack(card, feature.generators);
-        if (!stack) continue; // no emittable piece
+        if (!stack) continue; // no emittable piece (nor a `stack:` of its own)
         add({
           name: card.name,
           stack,
           logTemplate: emitCard(card, feature.generators),
           text: card.text,
+          summary: card.summary,
+          icon: card.icon,
+          kind: card.kind,
+          rank: card.rank,
           uses: card.uses,
           recovery: card.recovery,
         });
@@ -184,6 +214,9 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
       stack: gmPrimaryStack(feature)!,
       logTemplate: emitGMFeature(feature),
       text: feature.text,
+      summary: feature.summary,
+      icon: feature.icon,
+      rank: feature.rank,
       uses: feature.uses,
       recovery: feature.recovery,
     });
@@ -191,8 +224,8 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
 
   const stacks: CardStack[] = [];
   for (const stack of GM_STACK_ORDER) {
-    const entries = byStack.get(stack);
-    if (!entries || entries.length === 0) continue;
+    const entries = byUtility(byStack.get(stack) ?? []);
+    if (entries.length === 0) continue;
     stacks.push({
       actor: GM_ACTOR,
       actorType: "gm",
@@ -204,6 +237,9 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
         bucket: stack as any,
         logTemplate: e.logTemplate,
         text: e.text,
+        summary: e.summary,
+        icon: e.icon,
+        ...(e.kind ? { kind: e.kind } : {}),
         source: "gm",
         actor: GM_ACTOR,
         maxUses: e.uses,

@@ -14,6 +14,7 @@ import type {
   Formula,
   FormulaCheck,
   FormulaTerm,
+  DiceMod,
   DiceTerm,
   SumPart,
   ThresholdTerm,
@@ -27,6 +28,7 @@ import {
   contestWinner,
   generatesDice,
   liveTermValue,
+  modifierTotal,
   readDiceValue,
   recordedGroups,
   resolvePool,
@@ -63,19 +65,25 @@ export function FormulaView({
   formula,
   edit,
   onChoice,
+  named,
 }: {
   formula: Formula;
   edit?: DieEditContext;
   /** Overrides result write-back for a choice token: called with the picked
    *  option (used by the feature example to insert the generated line). */
   onChoice?: (selected: string) => void;
+  /** The line is already named (a row caption such as an initiative entry's
+   *  combatant), so a `[[Name]]` modifier does not label the die too — its
+   *  name shows on hover only. A formula's own `Label |` counts the same. */
+  named?: boolean;
 }) {
+  const quiet = named || !!formula.label;
   return (
     <span className="lonelog-formula">
       {/* The check's name, ahead of the dice — the same slot a die chip gives its own
           label, so a named check and a named die read as the same kind of thing. */}
       {formula.label && <span className="lonelog-roll-label lonelog-formula-label">{formula.label}</span>}
-      <CheckView check={formula.check} edit={edit} />
+      <CheckView check={formula.check} edit={edit} quiet={quiet} />
       {formula.result != null && (
         <>
           <span className="lonelog-formula-yields" aria-hidden="true">
@@ -289,8 +297,8 @@ function SumView({ check, edit }: { check: Extract<FormulaCheck, { kind: "sum" }
   );
 }
 
-function CheckView({ check, edit }: { check: FormulaCheck; edit?: DieEditContext }) {
-  if (check.kind === "single") return <TermView term={check.term} state="neutral" edit={edit} />;
+function CheckView({ check, edit, quiet }: { check: FormulaCheck; edit?: DieEditContext; quiet?: boolean }) {
+  if (check.kind === "single") return <TermView term={check.term} state="neutral" edit={edit} quiet={quiet} />;
   if (check.kind === "sum") return <SumView check={check} edit={edit} />;
   // Recomputed from the values the interface has, so rolling a contest moves the
   // emphasis to the side that now leads instead of the side that led on disk.
@@ -299,30 +307,43 @@ function CheckView({ check, edit }: { check: FormulaCheck; edit?: DieEditContext
   const rightState = winner === "right" ? "winner" : winner ? "loser" : "neutral";
   return (
     <span className="lonelog-contest">
-      <TermView term={check.left} state={leftState} edit={edit} />
+      <TermView term={check.left} state={leftState} edit={edit} quiet={quiet} />
       <span className="lonelog-contest-vs">vs</span>
-      <TermView term={check.right} state={rightState} edit={edit} />
+      <TermView term={check.right} state={rightState} edit={edit} quiet={quiet} />
     </span>
   );
 }
 
 type TermState = "winner" | "loser" | "neutral";
 
-function TermView({ term, state, edit }: { term: FormulaTerm; state: TermState; edit?: DieEditContext }) {
+function TermView({
+  term,
+  state,
+  edit,
+  quiet,
+}: {
+  term: FormulaTerm;
+  state: TermState;
+  edit?: DieEditContext;
+  quiet?: boolean;
+}) {
   const cls = `lonelog-term is-${state}`;
   if (term.kind === "dice") {
     return (
       <span className={cls}>
-        <Die term={term} edit={edit} />
+        <Die term={term} edit={edit} quiet={quiet} />
       </span>
     );
   }
   if (term.kind === "threshold") {
     return (
       <span className={cls}>
-        <span className="lonelog-threshold">
+        <span
+          className={`lonelog-threshold${term.inferred ? " is-inferred" : ""}`}
+          title={term.inferred ? `Current ${term.label}, from the log` : undefined}
+        >
           <span className="lonelog-threshold-label">{term.label}</span>
-          {edit ? (
+          {edit && !term.inferred ? (
             <input
               type="text"
               className="lonelog-threshold-value lonelog-threshold-input"
@@ -472,9 +493,11 @@ export function DieChip({
   specials,
   generates,
   modifier,
+  mods,
   title,
   edit,
   onRoll,
+  result,
 }: {
   /** Side count used for the SHAPE (a `d%` uses the d100 kite). */
   sides: number;
@@ -482,6 +505,8 @@ export function DieChip({
   sidesLabel: string;
   /** What the COLLAPSED view shows: one number, the roll's outcome. */
   value?: string;
+  /** With a named modifier shown, the result it comes to (`7 +4 = 11`). */
+  result?: string;
   /**
    * What the EXPANDED view shows and edits: exactly what the log records, which for
    * a pool is every die (`[6,2,2]`). Defaults to `value` for dice that record a
@@ -498,6 +523,9 @@ export function DieChip({
    *  own list to be recorded in. */
   generates?: boolean;
   modifier?: string;
+  /** The modifier term by term, when it names something (`+[[Insight]]`) —
+   *  rendered with each name's resolved value instead of the raw text. */
+  mods?: Array<DiceMod & { caption?: boolean }>;
   title?: string;
   /** Makes the recorded value typeable, so every die of a pool can be entered. */
   edit?: { onChange: (value: string) => void; max?: number };
@@ -548,7 +576,7 @@ export function DieChip({
           <span className="lonelog-roll-special-name">{sp.label}</span>
         </span>
       ))}
-      {modifier && <span className="lonelog-roll-mod">{modifier}</span>}
+      {mods ? <ModList mods={mods} /> : modifier && <span className="lonelog-roll-mod">{modifier}</span>}
     </>
   );
   return (
@@ -598,6 +626,17 @@ export function DieChip({
                   </span>
                 )}
               </span>
+              {/* A named modifier's value stays in view (`11 +3` for an Insight
+                  check), so the collapsed roll still shows what it added. */}
+              {mods?.some((m) => m.name != null && m.value != null) && (
+                <span className="lonelog-roll-brief-mods">
+                  {mods
+                    .filter((m) => m.value != null)
+                    .map((m) => signed(m.sign === "-" ? -m.value! : m.value!))
+                    .join(" ")}
+                </span>
+              )}
+              {result != null && <span className="lonelog-roll-brief-total">= {result}</span>}
             </>
           )}
         </span>
@@ -689,6 +728,45 @@ function sidesLabelOf(term: DiceTerm): string {
 }
 
 /**
+ * A die's modifier read term by term: a number stays a number, and a named term
+ * (`+[[Insight]]`) shows the actor's value with the name as its caption —
+ * `+3 INSIGHT`, the way `DC 10` pairs a label with its number. A name the
+ * actor has no value for shows on its own, so the gap is visible.
+ */
+const signed = (n: number) => (n < 0 ? `\u2212${-n}` : `+${n}`);
+
+function ModList({ mods }: { mods: Array<DiceMod & { caption?: boolean }> }) {
+  return (
+    <span className="lonelog-roll-mod">
+      {mods.map((m, i) =>
+        m.name == null ? (
+          <span key={i}>{`${m.sign}${m.value}`}</span>
+        ) : (
+          <span
+            key={i}
+            className={`lonelog-roll-mod-ref${m.value == null ? " is-unresolved" : ""}`}
+            title={m.value == null ? `${m.name}: no value for this actor` : `${m.name} modifier`}
+          >
+            {m.value == null ? (
+              // Unknown value: the name says what is missing — unless the chip's
+              // label already says it, where a `?` marks the gap instead.
+              m.caption === false ? (
+                `${m.sign}?`
+              ) : (
+                m.sign
+              )
+            ) : (
+              <span className="lonelog-roll-mod-value">{signed(m.sign === "-" ? -m.value : m.value)}</span>
+            )}
+            {m.caption !== false && <span className="lonelog-roll-mod-name">{m.name}</span>}
+          </span>
+        )
+      )}
+    </span>
+  );
+}
+
+/**
  * A formula's die, rendered as the shared chip.
  *
  * A POOL records every die it rolled (`2d6=[4,3]`) so the log stays auditable,
@@ -696,14 +774,43 @@ function sidesLabelOf(term: DiceTerm): string {
  * displayed rather than typed — rolling is how a pool changes. A single die keeps
  * its editable value, since there the recorded number IS the face.
  */
-function Die({ term, edit, label }: { term: DiceTerm; edit?: DieEditContext; label?: string }) {
+function Die({
+  term,
+  edit,
+  label,
+  quiet,
+}: {
+  term: DiceTerm;
+  edit?: DieEditContext;
+  label?: string;
+  /** The line is named elsewhere: keep `[[Name]]` modifiers off the label. */
+  quiet?: boolean;
+}) {
   const spec = `${term.spec}${term.selector}${term.modifier}`;
+  // A named modifier says what the roll IS (`d20+[[Insight]]` is an Insight
+  // check), and the collapsed chip shows only the number — so the name becomes
+  // the chip's label, the one part that is always visible. An authored label
+  // still wins. With a single name, the expanded view drops it from the
+  // modifier (the label already says it); several keep theirs, so each value
+  // stays matched to its name.
+  const named = (term.mods ?? []).filter((m) => m.name != null);
+  const derived = label == null && !quiet && named.length > 0;
+  const shownLabel = label ?? (derived ? named.map((m) => m.name).join(" + ") : undefined);
+  const mods =
+    term.mods && derived && named.length === 1
+      ? term.mods.map((m) => (m.name != null ? { ...m, caption: false } : m))
+      : term.mods;
   // The pending edit wins over the parsed term, so a chip shows the roll that
   // was just made rather than the one still saved on disk.
   const recorded = edit ? edit.valueFor(term, 0) : term.value != null ? String(term.value) : "";
   // Read through the TERM, so its `<special>` decides which dice count. Summing the
   // text on its own made `2d20kh1=[19,4]` read 23 instead of 19.
   const { value, values, extra } = readDiceValue(term, recorded);
+  // The roll's RESULT — its dice and its modifier — is what the collapsed chip
+  // shows; a named modifier keeps its arithmetic in view (`7 +4 = 11`).
+  const shift = modifierTotal(term.modifier, term.mods);
+  const result = value == null ? null : shift != null ? value + shift : value;
+  const showsArithmetic = (term.mods ?? []).some((m) => m.name != null && m.value != null);
   const specials = describeSelector(term);
   const how = specials.length ? ` (${specials.map((sp) => sp.description).join("; ")})` : "";
   const thrown = values.join(", ") + (extra.length ? `, then ${extra.join(", ")}` : "");
@@ -711,8 +818,8 @@ function Die({ term, edit, label }: { term: DiceTerm; edit?: DieEditContext; lab
     value == null
       ? `${spec}, not yet rolled${how}`
       : values.length > 1 || extra.length
-        ? `${spec}, rolled ${thrown} → ${value}${how}`
-        : `${spec}, rolled ${value}${how}`;
+        ? `${spec}, rolled ${thrown} → ${result}${how}`
+        : `${spec}${term.modifier}, rolled ${value}${result !== value ? ` → ${result}` : ""}${how}`;
   // Typing a result is always available, pools included: a total entered by hand
   // replaces the recorded list (`2d6=11`), because a sum somebody typed is not a
   // set of dice. Rolling puts the list back. The chip shows the SUM either way —
@@ -724,15 +831,17 @@ function Die({ term, edit, label }: { term: DiceTerm; edit?: DieEditContext; lab
   return (
     <span className="lonelog-die">
       <DieChip
-        label={label}
+        label={shownLabel}
         sides={term.sides}
         sidesLabel={sidesLabelOf(term)}
-        value={value == null ? "" : String(value)}
+        value={value == null ? "" : String(showsArithmetic ? value : result)}
+        {...(showsArithmetic && result != null && result !== value ? { result: String(result) } : {})}
         recorded={recorded}
         count={term.count}
         specials={specials}
         generates={generatesDice(term.selector)}
         modifier={term.modifier}
+        mods={mods}
         title={title}
         edit={slotEdit}
         onRoll={onRoll}

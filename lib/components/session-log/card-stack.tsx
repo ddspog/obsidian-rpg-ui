@@ -11,9 +11,14 @@ interface CardStackProps {
 
 export function CardStack({ stack, consumableState, onCardClick }: CardStackProps) {
   return (
-    <div className="lonelog-card-stack" aria-label={`${stack.label} stack for ${stack.actor}`}>
-      <div className="card-stack-fan">
-        {stack.cards.map((card, i) => (
+    <div
+      className={`lonelog-card-stack is-${stack.bucket.split(":")[0]}`}
+      aria-label={`${stack.label} stack for ${stack.actor}`}
+    >
+      <div className="card-stack-fan" style={{ "--card-count": stack.cards.length } as React.CSSProperties}>
+        {/* Cards come most useful first; the LAST slot is the deck's front card,
+            so they are laid down in reverse — the most useful lands on top. */}
+        {[...stack.cards].reverse().map((card, i) => (
           <div
             key={card.id}
             className="card-stack-slot"

@@ -97,9 +97,31 @@ export interface FeatureLevelAddition {
  * aspect's `text` shown on the card instead of the parent feature's full
  * compendium prose.
  */
+/**
+ * What a passive (always on) or an active (switched on and off) feature does
+ * to other cards. `on` says which: `attack`, `melee attack`, `ranged attack`,
+ * `spell attack`, `spell`, `save`, or a card's own name.
+ */
+export interface AspectModifier {
+  on: string;
+  /** Added to the damage: `2`, `+2`, or dice (`1d4`). */
+  damage?: number | string;
+  /** Added to the attack roll. */
+  to_hit?: number | string;
+  /** Advantage on the roll: `true`, or which saves (`STR`, `STR, CON`). */
+  advantage?: boolean | string;
+  disadvantage?: boolean | string;
+  /** Said on the card, nothing rewritten (`speed +10 ft.`, `resistance to slashing`). */
+  note?: string;
+}
+
 export interface FeatureAspect {
   /** Aspect-specific name, overrides the parent feature's name in the bucket. */
   name?: string;
+  /** What it does to other cards while it applies (a passive's always; an active's while on). */
+  modifies?: AspectModifier | AspectModifier[];
+  /** An `active:` that switches on and off, even with nothing to modify. */
+  toggle?: boolean;
   /** Aspect card text on the character sheet. Falls back to parent `text`. */
   text?: string;
   /** Name of a resource feature this aspect consumes (by-name reference). */
@@ -112,7 +134,18 @@ export interface FeatureAspect {
   recharge?: string;
   /** Lonelog template appended to session log when this aspect is used. */
   log?: string;
+  /**
+   * It can go WITH an attack, as well as on its own (Wind Up, Aim): which
+   * attacks (`melee` / `ranged` weapon attacks), the damage it adds and what it
+   * adds to the attack roll — a number or `PB`. Taken as this aspect's own
+   * action (a martial action's bonus action), hit or miss.
+   */
+  rider?: { with?: "melee" | "ranged"; damage?: number | string; hit?: number | string };
 }
+
+/** One entry of an aspect list: a named aspect, or a `[[link]]` to a note (YAML
+ *  may read an unquoted `[[Weapon Option]]` as a nested array). */
+export type AspectItem = FeatureAspect | string | unknown[];
 
 // Re-export the roll aspect types so downstream modules can import
 // `RollAspect` from the same surface as the other feature types.
@@ -132,7 +165,9 @@ export type { RollAspect, DamageSpec, RollSave, RollEffect } from "./roll";
 // The emitter lives in ../gm/emit.ts.
 
 /** The lonelog-machinery stack a GM card lives under — mirrors the aspect keys. */
-export type GMStack = "oracle" | "roll" | "table" | "generator" | "event" | "scene";
+/** A drawer stack. The aspect names, plus `meaning` (Meaning Tables) and
+ *  `list` (rolls on a lonelog list) for cards that group by use, not aspect. */
+export type GMStack = "oracle" | "meaning" | "list" | "combat" | "roll" | "table" | "generator" | "event" | "scene";
 
 /**
  * Worded outcomes keyed by a comparison expression evaluated against the roll
@@ -179,6 +214,21 @@ export interface GMOracleAspect {
   chaos?: boolean;
   /** Constant chaos factor — overrides `chaos`/`tag` and bakes the literal `[CF:n]`. */
   cf?: number;
+  /**
+   * The amounts the card may MOVE the resource by as it opens the question —
+   * `adjust: [+1, -1]` emits `? [CF+1] …` or `? [CF-1] …`, picked when the card
+   * is played. Wins over `cf` / `tag`'s set form; the feature's checks then read
+   * the moved value (`vs CF`) from the log.
+   */
+  adjust?: Array<number | string>;
+  /**
+   * The oracle that answers, by name (`Fate Chart`, `Fate Check`) — emits an
+   * `o:` line under the question, resolved from its roll, odds and the log's
+   * current chaos factor. Rolls `d100` (Fate Check: `2d10`) unless `roll` says.
+   */
+  consult?: string;
+  /** The odds an `o:` line asks at; `ask` (the default) picks them per question. */
+  odds?: GMLikelihood | "ask";
   /** Likelihood band → Fate Chart odds against the chaos factor. */
   likelihood?: GMLikelihood;
   /** Die rolled for the answer (e.g. `d100`). Emitted unrolled. */
@@ -498,6 +548,12 @@ export interface GMFeature {
   name: string;
   /** Card description (markdown) AND the GM card-stack tooltip. */
   text?: string;
+  /** Utility within its stack when the feature is itself a card (1 = top). */
+  rank?: number;
+  /** One sentence on what the card does — shown when it is played, to confirm. */
+  summary?: string;
+  /** A Lucide icon name drawn large on the card (when the feature is itself one). */
+  icon?: string;
   /**
    * Addressable id for `@[[file]].bare(id)` import (matched like a
    * `rule.content` block's `id`, falling back to `name`).
@@ -610,6 +666,19 @@ export interface GMCardDef {
   stack?: GMStack;
   /** Card description / tooltip. */
   text?: string;
+  /** How useful the card is within its stack — 1 is the most useful and sits
+   *  on top of the deck; unranked cards follow in the order declared. */
+  rank?: number;
+  /** One sentence on what the card does — shown when it is played, to confirm. */
+  summary?: string;
+  /** A Lucide icon name (`help-circle`, `clapperboard`) drawn large on the card. */
+  icon?: string;
+  /** A card whose lines come from the fight rather than a template:
+   *  `start-combat` sets up a fight (foes, party, initiative) in its own popup;
+   *  `next-turn` starts the next pass through the initiative order (`T2`);
+   *  `next-round` marks whose round it is in it (`R(Talon)`), the next in
+   *  initiative by default. */
+  kind?: "start-combat" | "next-round" | "next-turn" | "end-combat";
   /** Limited uses (reuses the consumable mechanics). */
   uses?: number;
   recovery?: string;
@@ -705,12 +774,14 @@ export interface FeatureDetails {
    * `text` on the card. A feature can carry multiple aspects (e.g. an
    * `active:` and a `passive:` version of the same ability).
    */
-  action?: FeatureAspect;
-  bonus?: FeatureAspect;
-  reaction?: FeatureAspect;
-  active?: FeatureAspect;
-  passive?: FeatureAspect;
-  resource?: FeatureAspect;
+  // …or a list of them — named aspects and `[[links]]` mixed (Martial Action's
+  // `bonus: [ [[Weapon Option]], {name: Aim}, {name: Wind Up}, … ]`).
+  action?: FeatureAspect | AspectItem[];
+  bonus?: FeatureAspect | AspectItem[];
+  reaction?: FeatureAspect | AspectItem[];
+  active?: FeatureAspect | AspectItem[];
+  passive?: FeatureAspect | AspectItem[];
+  resource?: FeatureAspect | AspectItem[];
   /**
    * Roll aspect — describes any dice-roll this feature grants (attack,
    * save, rider, healing, or temp-HP). Surfaced by `rpg character.rolls`

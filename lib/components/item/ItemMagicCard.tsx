@@ -1,4 +1,5 @@
 import * as React from "react";
+import { variantTextUnfilled } from "lib/domains/items/magic-overlay";
 import type { ItemMagicData, ItemMagicVariant, ItemMagicVariantsConfig } from "lib/domains/items/schema";
 
 interface ItemMagicCardProps {
@@ -30,7 +31,8 @@ export function ItemMagicCard({ data, showDescription = true, renderMarkdown }: 
 
         {showDescription && data.text && (
           <div className="rpg-item-magic-card__text">
-            {renderMarkdown ? renderMarkdown(data.text) : <p>{data.text}</p>}
+            {/* Its `{{column}}`s, with no strength picked, name their column. */}
+            {renderMarkdown ? renderMarkdown(variantTextUnfilled(data.text)) : <p>{variantTextUnfilled(data.text)}</p>}
           </div>
         )}
 

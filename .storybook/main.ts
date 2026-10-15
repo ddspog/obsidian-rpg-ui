@@ -25,6 +25,8 @@ const config: StorybookConfig = {
       resolve: {
         alias: {
           "rpg-ui-toolkit": path.resolve(__dirname, "../lib/systems/storybook-shim.ts"),
+          // The project's own `lib/...` imports, as the bundler and tsconfig resolve them.
+          lib: path.resolve(__dirname, "../lib"),
           obsidian: path.resolve(__dirname, "../scripts/obsidian-shim.js"),
         },
       },

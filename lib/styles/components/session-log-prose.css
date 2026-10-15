@@ -3,7 +3,17 @@
  * and the read-only Log sidebar.
  */
 
-/* ── Log controls (Save + the single toggle, tucked top-right) ── */
+/* ── Log controls (Save + the single toggle, tucked top-right) ──
+ * They ride a rail of no height that sticks to the top of the page, so the
+ * Log can be opened (and edits saved) from anywhere down the prose. Opened,
+ * the Log closes from its own header — sticky with the Log itself. */
+
+.lonelog-log-rail {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 4;
+}
 
 .lonelog-log-controls {
   position: absolute;
@@ -87,7 +97,25 @@
   font-weight: 600;
 }
 
+/* Undo chip — quiet sibling of Save; discards pending edits. */
+.lonelog-log-undo {
+  border: 1px solid var(--background-modifier-border);
+  background: transparent;
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.lonelog-log-undo:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
 .lonelog-log-toggle:focus-visible,
+.lonelog-log-undo:focus-visible,
 .lonelog-log-save:focus-visible {
   outline: none;
   box-shadow:
@@ -328,12 +356,24 @@
   letter-spacing: 0.07em;
   color: var(--text-faint);
   margin-bottom: 0.4rem;
-  /* Keep the heading visible while scrolling a long list of entries. */
+  /* Keep the heading visible while scrolling a long list of entries — and with
+     it the ✕ that closes the Log, at its right. */
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 0.2rem 2rem 0.2rem 0; /* room for the floating toggle on the right */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.1rem 0.2rem 0;
   background: var(--background-primary);
+}
+
+/* Stacked, the panel's top padding would leave a strip that scrolled entries
+   show through above the sticky heading — the heading covers it instead. */
+.lonelog-prose-layout.is-stacked .lonelog-sidebar-header {
+  top: -0.5rem;
+  margin-top: -0.5rem;
+  padding-top: 0.7rem;
 }
 
 .lonelog-sidebar-empty {
@@ -355,6 +395,52 @@
 
 .lonelog-sidebar-item:last-child {
   border-bottom: none;
+}
+
+/* A card that calls other cards — a Multiattack, an Opportunity Attack — is
+   one entry: its first attack's header strip names it (`OPPORTUNITY ATTACK
+   1 attack · …`), and its attacks run on inside one framed panel — tinted,
+   an accent edge down its side — a faint dashed line where the next begins. */
+.lonelog-sidebar-item.in-multiattack {
+  margin-left: 0.15rem;
+  padding-left: 0.35rem;
+  border-left: 2px solid color-mix(in srgb, var(--text-accent) 45%, transparent);
+  background-color: color-mix(in srgb, var(--text-accent) 5%, transparent);
+}
+
+/* The theme's margin on every table (a whole line's height) would open a gap
+   above the panel and inside it: taken back there, and on the entry just
+   before it, so the card reads as answering what came right before. */
+.lonelog-sidebar-item.in-multiattack table.lonelog-sidebar-table,
+.lonelog-sidebar-item:has(+ .lonelog-sidebar-item.in-multiattack) table.lonelog-sidebar-table {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.lonelog-sidebar-item.in-multiattack:not(.in-multiattack + .in-multiattack) {
+  margin-top: 0.3rem;
+}
+
+.lonelog-sidebar-item.in-multiattack.is-part {
+  border-bottom: none;
+  padding-bottom: 0.1rem;
+}
+
+/* The panel's top and floor, rounded where it opens and where it closes. */
+.lonelog-sidebar-item.in-multiattack:not(.in-multiattack + .in-multiattack) {
+  border-top-right-radius: 6px;
+}
+
+.lonelog-sidebar-item.in-multiattack.is-last {
+  border-bottom-right-radius: 6px;
+}
+
+.lonelog-sidebar-item.in-multiattack.is-part + .lonelog-sidebar-item.in-multiattack {
+  padding-top: 0.15rem;
+  background-image: linear-gradient(to right, var(--background-modifier-border) 50%, transparent 0);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+  background-position: 1.9rem 0;
 }
 
 .lonelog-sidebar .lonelog-sidebar-item {
@@ -418,9 +504,15 @@
   line-height: 1.45;
 }
 
-.lonelog-row-icon {
-  width: 1.5em;
-  padding-right: 0.4rem;
+/* A narrow, centred icon column: glyphs (`?`, `@`) and lucide icons share one
+ * axis, inset a little from the entry edge and close to their text. Scoped to
+ * the table so it beats the generic `td` padding and Obsidian's `text-align:
+ * start` on table cells. */
+.lonelog-sidebar-table td.lonelog-row-icon {
+  width: 1.25em;
+  min-width: 1.25em;
+  box-sizing: content-box;
+  padding: 0.05rem 0.35rem 0.05rem 0.4rem;
   text-align: center;
   white-space: nowrap;
   color: var(--text-muted);
@@ -633,6 +725,13 @@
 
 .lonelog-threshold-value {
   font-variant-numeric: tabular-nums;
+}
+
+/* A bare `vs CF` filled from the running log state: read-only, and muted so
+ * it reads as looked-up rather than authored (the title says from where). */
+.lonelog-threshold.is-inferred .lonelog-threshold-value {
+  color: var(--text-muted);
+  cursor: help;
 }
 
 /* Editable CF/DC value: an inline input that merges with the threshold text
@@ -950,12 +1049,18 @@
 
 /* Category hues, from the DESIGN.md palette. */
 .lonelog-tag.kind-cf,
+/* A Multiattack's header: the accent its round slot is drawn in. */
+.lonelog-tag.kind-multiattack {
+  --lonelog-tag-hue: var(--text-accent);
+}
+
 .lonelog-tag.kind-npc {
   --lonelog-tag-hue: light-dark(#6a4ea8, #b39ddb); /* soft-amethyst (arcane) */
 }
 
-.lonelog-tag.kind-foe {
-  --lonelog-tag-hue: light-dark(#c0524f, #e57373); /* ember-red (danger) */
+.lonelog-tag.kind-foe,
+.lonelog-tag.kind-warn {
+  --lonelog-tag-hue: light-dark(#c0524f, #e57373); /* ember-red (danger / attention) */
 }
 
 .lonelog-tag.kind-pc {
@@ -1465,6 +1570,43 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A named modifier (`+[[Insight]]`): the actor's value, then the name as a
+ * small-caps caption — the same label/number pairing as `DC 10`. */
+.lonelog-roll-mod-ref {
+  white-space: nowrap;
+}
+
+/* The collapsed roll's named-modifier values (`11 +3`): quieter than the die. */
+.lonelog-roll-brief-mods {
+  margin-left: 0.2em;
+  font-size: 0.82em;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* What a named modifier brings the die to (`7 +4 = 11`): the result, in full. */
+.lonelog-roll-brief-total {
+  margin-left: 0.25em;
+  font-weight: 600;
+  color: var(--text-normal);
+  font-variant-numeric: tabular-nums;
+}
+
+.lonelog-roll-mod-value {
+  color: var(--text-muted);
+}
+
+.lonelog-roll-mod-name {
+  margin-left: 0.2em;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
+}
+
+.lonelog-roll-mod-ref.is-unresolved .lonelog-roll-mod-name {
+  margin-left: 0;
+  font-style: italic;
+}
+
 /* ── The `<special>`: what it does to the dice ────────────────────────────────
  *
  * The marks are a system, not a set of icons: a FILLED triangle keeps and a HOLLOW
@@ -1644,4 +1786,642 @@
 .lonelog-entries input.lonelog-roll-value:focus,
 .lonelog-entries input.lonelog-roll-value:focus-visible {
   outline: none;
+}
+
+/* ── Bookkeeping: what the session changed on the party's sheets ──
+ * In the Log's own voice: a tray glued under the card drawer (its width, its
+ * tint), headed like an entry's tag strip; one small card per character, as
+ * the drawer's chips are drawn, its `@` squircle on top; each change a Log row
+ * — icon, small-caps label, `10 → 6` with the result bold — and a quiet
+ * "write". Done changes fade, behind the header's "Written" toggle. */
+
+.lonelog-bookkeeping {
+  clear: both;
+  margin: 0 -2rem;
+  padding: 0.55rem 1.5rem 0.85rem;
+  border-top: 1px dashed var(--background-modifier-border);
+  background: light-dark(rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.02));
+  font-size: var(--font-ui-small);
+}
+
+hgroup.lonelog-bookkeeping-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  margin: 0 0 0.5rem;
+}
+
+.lonelog-bookkeeping-head h3 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.82em;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: light-dark(#8a7038, #a09880);
+}
+
+.lonelog-bookkeeping-head p {
+  margin: 0;
+  font-size: 0.82em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.lonelog-bookkeeping-head menu {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+/* The drawer's segmented-control voice: small, quiet, a hairline frame. */
+button.lonelog-bookkeeping-tool {
+  height: auto;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.lonelog-bookkeeping-tool:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+button.lonelog-bookkeeping-tool.is-on {
+  border-color: var(--interactive-accent);
+  color: var(--text-accent);
+}
+
+/* One card per character, side by side as the drawer's stacks are. */
+.lonelog-bookkeeping-sheets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  align-items: start;
+  gap: 0.5rem;
+}
+
+/* The card's rows share its columns, so labels and values line up down it. */
+dl.lonelog-bookkeeping-sheet {
+  display: grid;
+  grid-template-columns: 1.25em max-content 1fr auto;
+  column-gap: 0.45em;
+  margin: 0;
+  padding: 0.4rem 0.55rem 0.35rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+}
+
+.lonelog-bookkeeping-sheet dt {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3em;
+  margin-bottom: 0.15rem;
+}
+
+button.lonelog-bookkeeping-recount {
+  height: auto;
+  margin-left: auto;
+  padding: 0 0.25rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.85em;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+button.lonelog-bookkeeping-recount:hover {
+  color: var(--text-muted);
+}
+
+/* A change, as the Log draws a row: icon | label | value | write. */
+.lonelog-bookkeeping-sheet dd.lonelog-bookkeeping-change {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  margin: 0;
+  padding: 0.12rem 0;
+  border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  line-height: 1.45;
+}
+
+.lonelog-bookkeeping-sheet dt + dd.lonelog-bookkeeping-change {
+  border-top: none;
+}
+
+.lonelog-bookkeeping-icon {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.lonelog-bookkeeping-change .lonelog-row-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.lonelog-bookkeeping-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lonelog-bookkeeping-value .lonelog-formula-yields {
+  margin: 0 0.3em;
+}
+
+.lonelog-bookkeeping-from,
+.lonelog-bookkeeping-max {
+  color: var(--text-muted);
+}
+
+.lonelog-bookkeeping-delta {
+  margin-left: 0.45em;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.lonelog-bookkeeping-delta.is-loss {
+  color: light-dark(#b3261e, #ef6a5d);
+}
+
+.lonelog-bookkeeping-delta.is-gain {
+  color: light-dark(#2e7d32, #81c784);
+}
+
+.lonelog-bookkeeping-short {
+  margin-left: 0.45em;
+  font-size: 0.8em;
+  font-style: italic;
+  color: var(--text-warning);
+}
+
+.lonelog-bookkeeping-status {
+  margin-left: 0.45em;
+  font-size: 0.82em;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
+  color: var(--text-accent);
+}
+
+/* "write": the Log's quiet inline control — text until hovered. */
+button.lonelog-bookkeeping-write {
+  height: auto;
+  padding: 0 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+button.lonelog-bookkeeping-write:hover {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+}
+
+button.lonelog-bookkeeping-write.is-quiet {
+  color: var(--text-faint);
+}
+
+.lonelog-bookkeeping-tick {
+  padding: 0 0.4rem;
+  color: light-dark(#2e7d32, #81c784);
+}
+
+.lonelog-bookkeeping-change.is-done {
+  opacity: 0.55;
+}
+
+/* ── Foes listed in an entry: the link, with health on hover ──
+ * The health is the row's detail, not its headline, so it waits for the
+ * pointer (or focus within the entry) rather than crowding every list. */
+
+.lonelog-foe-health {
+  margin-left: 0.5em;
+  font-size: 0.82em;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(#c0524f, #e57373);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.lonelog-row-detail:hover .lonelog-foe-health,
+.lonelog-sidebar-item:focus-within .lonelog-foe-health {
+  opacity: 1;
+}
+
+.lonelog-foe-health.is-down {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ── A fight in the prose ──
+ * Its own framed section, headed "Combat": each turn a small divider, and each
+ * action told beside the creature who took it — names in a margin column, so
+ * the story reads down the right and who acted down the left. */
+
+.lonelog-prose-combat {
+  margin: 1.1rem 0;
+  padding: 0.55rem 0.95rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: light-dark(rgba(176, 74, 71, 0.04), rgba(229, 115, 115, 0.05));
+}
+
+.lonelog-prose-combat-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-bottom: 0.2rem;
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Over the theme's heading rules (some right-align an h5). */
+.lonelog-prose-doc .lonelog-prose-combat h5.lonelog-prose-turn {
+  margin: 0.75rem 0 0.3rem;
+  text-align: left;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-family: var(--font-interface);
+  font-size: var(--font-smallest);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lonelog-prose-beats {
+  margin: 0.25rem 0;
+}
+
+.lonelog-prose-beat {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  column-gap: 0.85rem;
+  margin: 0.45rem 0;
+}
+
+.lonelog-prose-actor {
+  padding-top: 0.15em;
+  font-size: 0.82em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.lonelog-prose-beat > dd {
+  margin: 0;
+}
+
+/* Turn and round markers in the Log: small headings for the entries they
+   open — tight, with no rule between them and what follows, so they read as
+   part of it rather than as entries of their own. */
+.lonelog-sidebar .lonelog-sidebar-item.kind-round,
+.lonelog-sidebar .lonelog-sidebar-item.kind-turn,
+.lonelog-entries .lonelog-sidebar-item.kind-round,
+.lonelog-entries .lonelog-sidebar-item.kind-turn {
+  padding: 0.35rem 0.1rem 0;
+  border-bottom: none;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar-item.kind-round + .lonelog-sidebar-item,
+.lonelog-sidebar-item.kind-turn + .lonelog-sidebar-item {
+  padding-top: 0.1rem;
+}
+
+.lonelog-sidebar-item.kind-round .lonelog-row-content {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* A round's tally on its line: action · bonus · reaction as slots — hollow
+   until used, filled once, flagged red past one (a feature may allow it) —
+   then the attacks made and who else reacted. Quiet, like the marker. */
+.lonelog-economy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  margin-left: 0.6em;
+  vertical-align: baseline;
+}
+
+.lonelog-economy-slot {
+  padding: 0 0.4em;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.lonelog-economy-slot.is-used {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--text-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--text-accent) 14%, transparent);
+  color: var(--text-accent);
+}
+
+.lonelog-economy-slot.is-over {
+  border-color: light-dark(#b3261e, #ef6a5d);
+  background: color-mix(in srgb, light-dark(#b3261e, #ef6a5d) 14%, transparent);
+  color: light-dark(#b3261e, #ef6a5d);
+}
+
+.lonelog-economy-attacks {
+  font-size: 0.82em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.lonelog-economy-reacted {
+  font-size: 0.78em;
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* The theme gives every table a margin above and below; a marker's is its
+   whole height, so it's taken back here. */
+.lonelog-sidebar-item.kind-round table.lonelog-sidebar-table,
+.lonelog-sidebar-item.kind-turn table.lonelog-sidebar-table {
+  margin: 0;
+}
+
+/* ── An action called on its actor's page ──
+ * `@[[Kobold, Elite]].action("Mining Pick")`: the actor once, in a squircle
+ * with the `@` that marks the action as theirs (a link to their page); then the
+ * action, dotted to say it has more to show — its description, on hover. */
+
+.lonelog-action-call {
+  white-space: normal;
+}
+
+.lonelog-action-actor,
+.lonelog-action-actor.internal-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  padding: 0 0.4em 0.04em 0.25em;
+  border-radius: 0.4em;
+  background: color-mix(in srgb, var(--text-normal) 4%, transparent);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+  color: var(--text-normal);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lonelog-action-actor.internal-link:hover {
+  background: color-mix(in srgb, var(--text-normal) 8%, transparent);
+  text-decoration: none;
+}
+
+.lonelog-action-at {
+  font-family: var(--font-monospace);
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+/* In the Log, the squircle starts in the icon column: its `@` sits where the
+ * other rows' `@` and `d` do, and the name runs on into the text — the row
+ * gives up no width to it. (The icon cell is 1.25em wide, inset 0.4rem and
+ * 0.35rem; the `@`, half a monospace character, is centred on it.) */
+.lonelog-sidebar-table .lonelog-row-content > .lonelog-action-actor:first-child,
+.lonelog-sidebar-table .lonelog-row-content > .lonelog-action-call:first-child > .lonelog-action-actor,
+.lonelog-sidebar-table
+  .lonelog-row-content
+  > span:first-child
+  > .lonelog-action-call:first-child
+  > .lonelog-action-actor {
+  margin-left: calc(-0.625em - 0.35rem - 0.25em - 0.3em);
+}
+
+/* The theme clips table cells; the squircle reaches back into the icon cell. */
+.lonelog-sidebar-table td.lonelog-row-content {
+  overflow: visible;
+}
+
+.lonelog-action-name {
+  text-decoration: underline dotted color-mix(in srgb, var(--text-accent) 60%, transparent);
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.lonelog-action-name:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.lonelog-action-tip {
+  position: fixed;
+  z-index: var(--layer-popover, 30);
+  width: max-content;
+  max-width: 20rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  font-size: var(--font-ui-small);
+  line-height: 1.45;
+  color: var(--text-normal);
+  white-space: normal;
+  pointer-events: none;
+}
+
+.lonelog-action-tip-text p {
+  margin: 0 0 0.35em;
+}
+
+.lonelog-action-tip-text p:last-child {
+  margin-bottom: 0;
+}
+
+.lonelog-action-tip-wait {
+  color: var(--text-faint);
+}
+
+/* A passage (or a Log entry) just gone to: lit, then fading back, so the eye
+   lands on it after the scroll. Without motion, it simply stays lit a moment. */
+@keyframes lonelog-flash {
+  0%,
+  35% {
+    background-color: color-mix(in srgb, var(--interactive-accent) 24%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 24%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+.lonelog-fragment.is-flash,
+.lonelog-sidebar-item.is-flash {
+  border-radius: 4px;
+  animation: lonelog-flash 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lonelog-fragment.is-flash,
+  .lonelog-sidebar-item.is-flash {
+    animation: none;
+    background-color: color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+  }
+}
+
+/* The fight's map in the text, opening each turn: the section's own tint
+   behind it, a little larger than the Log could give it. An action in a turn
+   can be clicked to show it on that map. */
+.lonelog-turn-map {
+  margin: 0.6rem 0 0.15rem;
+}
+
+.lonelog-turn-map .lonelog-battle-pane {
+  background: transparent;
+  border-bottom: none;
+  font-size: 0.8em;
+  padding: 0.2rem 0 0.3rem;
+}
+
+.lonelog-turn-map .lonelog-battle-pane .rpg-battlemap {
+  max-height: 46vh;
+}
+
+.lonelog-prose-beat.is-steppable {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.lonelog-prose-beat.is-steppable:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
+}
+
+/* The fight's first map titled on the Combat line: `⚔ COMBAT · MAP Clearing …
+   Setup` — its name in the line's flow, its step at the far right. */
+.lonelog-prose-combat-head {
+  gap: 0.35em;
+}
+
+.lonelog-prose-combat-map {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  margin-left: 0.5rem;
+}
+
+.lonelog-prose-combat-head .lonelog-battle-head {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 0.35em;
+  min-width: 0;
+  margin: 0;
+  font-size: inherit;
+  font-weight: normal;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.lonelog-prose-combat-head .lonelog-battle-head-icon {
+  align-self: center;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.lonelog-prose-combat-head .lonelog-battle-key {
+  font-size: 0.86em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lonelog-prose-combat-head .lonelog-battle-title {
+  color: var(--text-normal);
+}
+
+.lonelog-prose-combat-head .lonelog-battle-where {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+
+/* A map titled elsewhere: no title row of its own. */
+.lonelog-battle-pane.is-headless {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "map controls";
+}
+
+/* What a damage row left its target with: `→ Fat Kobold, A  KO` — the target a
+   link, its health after in bold, and KO in red. */
+.lonelog-row-leaves {
+  margin-left: 0.3em;
+  white-space: nowrap;
+}
+
+.lonelog-row-leaves-arrow {
+  color: var(--text-accent);
+}
+
+.lonelog-row-leaves-left {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The conditions an entry left on its target (`pinned`), after the attack's
+   result — amber, like the Status stack a condition gives its bearer. */
+.lonelog-row-inflicts {
+  margin-left: 0.4em;
+  white-space: nowrap;
+}
+
+.lonelog-row-inflict {
+  display: inline-block;
+  padding: 0 0.45em;
+  border-radius: 999px;
+  border: 1px solid rgb(201 138 26 / 0.55);
+  background: rgb(201 138 26 / 0.12);
+  color: light-dark(#8a5a00, #e0a84a);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.lonelog-row-inflict + .lonelog-row-inflict {
+  margin-left: 0.25em;
+}
+
+.lonelog-row-inflict.is-lifted {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.lonelog-row-leaves-left.is-ko {
+  color: light-dark(#b3261e, #ef6a5d);
+  letter-spacing: 0.04em;
 }

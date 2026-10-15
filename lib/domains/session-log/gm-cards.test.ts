@@ -170,3 +170,38 @@ describe("GM Cards", () => {
     });
   });
 });
+
+describe("card utility — `rank` orders a stack, most useful first", () => {
+  const feature = (cards: Array<{ name: string; rank?: number }>) =>
+    ({
+      name: "Tools",
+      cards: cards.map((c) => ({ ...c, stack: "oracle", emits: [{ oracle: { question: "Q?" } }] })),
+    }) as unknown as GMFeature;
+
+  it("sorts ranked cards by rank, then the unranked in declared order", () => {
+    const [stack] = buildGMStacksFromFeatures([
+      feature([{ name: "C" }, { name: "B", rank: 2 }, { name: "D" }, { name: "A", rank: 1 }]),
+    ]);
+    expect(stack.cards.map((c) => c.name)).toEqual(["A", "B", "C", "D"]);
+  });
+
+  it("ranks across features in the same stack", () => {
+    const [stack] = buildGMStacksFromFeatures([
+      feature([{ name: "NPC Behavior", rank: 3 }]),
+      feature([{ name: "Fate Question", rank: 1 }]),
+    ]);
+    expect(stack.cards.map((c) => c.name)).toEqual(["Fate Question", "NPC Behavior"]);
+  });
+});
+
+describe("card icons", () => {
+  it("carries a card's `icon` onto the drawer card", () => {
+    const [stack] = buildGMStacksFromFeatures([
+      {
+        name: "Tools",
+        cards: [{ name: "Fate Question", icon: "help-circle", emits: [{ oracle: { question: "Q?" } }] }],
+      } as unknown as GMFeature,
+    ]);
+    expect(stack.cards[0].icon).toBe("help-circle");
+  });
+});

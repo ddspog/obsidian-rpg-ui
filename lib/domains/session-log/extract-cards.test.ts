@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractCards, buildCardStacks, resolveMaxCount, extractResourceDecls } from "./extract-cards";
+import { extractCards, buildCardStacks, resolveMaxCount, extractResourceDecls, STACK_LIMIT } from "./extract-cards";
 import type { FeatureDetails } from "../features/types";
 import type { ResolvedSourceSlice } from "./extract-cards";
 
@@ -236,5 +236,59 @@ describe("buildCardStacks", () => {
 
   it("returns empty array when no cards", () => {
     expect(buildCardStacks([], "Nobody")).toEqual([]);
+  });
+});
+
+describe("a crowded stack, split", () => {
+  const card = (name: string, bucket: "action" | "bonus", origin?: "spell" | "basic" | "feature") => ({
+    id: name,
+    name,
+    bucket,
+    logTemplate: "",
+    source: "pc",
+    actor: "Talon",
+    ...(origin ? { origin } : {}),
+  });
+
+  it("keeps a stack whole up to the limit", () => {
+    const cards = [card("Dash", "action", "basic"), card("Douse Light", "action", "spell")];
+    expect(buildCardStacks(cards, "Talon").map((s) => s.label)).toEqual(["Action"]);
+  });
+
+  it("past it, gives the spells a stack of their own", () => {
+    const basics = Array.from({ length: STACK_LIMIT }, (_, i) => card(`Basic ${i}`, "action", "basic"));
+    const cards = [...basics, card("Douse Light", "action", "spell"), card("Hex", "bonus", "spell")];
+    const stacks = buildCardStacks(cards, "Talon");
+    expect(stacks.map((s) => [s.label, s.cards.length])).toEqual([
+      ["Action", STACK_LIMIT],
+      ["Action · Spells", 1],
+      ["Bonus Action", 1],
+    ]);
+    expect(new Set(stacks.map((s) => s.bucket)).size).toBe(stacks.length);
+  });
+});
+
+describe("a feature's list of aspects", () => {
+  it("is a card each — a named aspect as itself, a link as the note it names", () => {
+    const martial = {
+      name: "Martial Action",
+      level: 1,
+      bonus: [
+        [["Weapon Option"]],
+        { name: "Aim", text: "As a bonus action…", rider: { with: "ranged", hit: "PB" } },
+        { name: "Wind Up", text: "As a bonus action…", rider: { with: "melee", damage: "PB" } },
+      ],
+    };
+    const cards = extractCards([{ source: "Fighter", level: 1, features: [martial as never] }], "Lilith");
+    expect(cards.map((c) => [c.name, c.bucket, c.link, c.ridesWith])).toEqual([
+      ["Weapon Option", "bonus", "Weapon Option", undefined],
+      ["Aim", "bonus", undefined, { with: "ranged", hit: "PB" }],
+      ["Wind Up", "bonus", undefined, { with: "melee", damage: "PB" }],
+    ]);
+    expect(cards.map((c) => c.id)).toEqual([
+      "Fighter:Weapon Option:bonus",
+      "Fighter:Aim:bonus",
+      "Fighter:Wind Up:bonus",
+    ]);
   });
 });

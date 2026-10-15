@@ -294,3 +294,37 @@ describe("refLabel", () => {
     expect(refLabel("Weather")).toBe("Weather");
   });
 });
+
+describe("oracle `adjust` — a card that moves the dial as it opens the question", () => {
+  const card = {
+    name: "New Scene",
+    emits: [{ oracle: { question: "Does the scene happen?", tag: "CF", adjust: [1, -1] } }, "@check"],
+  } as unknown as GMCardDef;
+  const generators = [
+    { id: "check", name: "Testing", steps: [{ work: "Alterations", roll: "d10", vs: "CF" }] },
+  ] as unknown as NamedGenerator[];
+
+  it("emits a CF op choice at the start of the question", () => {
+    expect(emitCard(card, generators).split("\n")[0]).toBe("? [CF{{cf:+1|-1}}] Does the scene happen?");
+  });
+
+  it("leaves the check's `vs CF` bare, to read the moved value", () => {
+    expect(emitCard(card, generators)).toContain("Alterations: d10= vs CF ->");
+  });
+});
+
+describe("oracle `consult` — an o: line under the question", () => {
+  const card = (oracle: Record<string, unknown>) =>
+    emitCard({ name: "Ask", emits: [{ oracle: { question: "{{question}}", ...oracle } }] } as unknown as GMCardDef);
+
+  it("asks the odds per question, rolling d100 for the Fate Chart", () => {
+    expect(card({ consult: "Fate Chart" }).split("\n")).toEqual([
+      "? {{question}}",
+      "o: Fate Chart ({{odds:Certain|Nearly Certain|Very Likely|Likely|50/50|Unlikely|Very Unlikely|Nearly Impossible|Impossible}}) d100=",
+    ]);
+  });
+
+  it("rolls 2d10 for a Fate Check, and bakes fixed odds in", () => {
+    expect(card({ consult: "Fate Check", odds: "likely" }).split("\n")[1]).toBe("o: Fate Check (Likely) 2d10=");
+  });
+});

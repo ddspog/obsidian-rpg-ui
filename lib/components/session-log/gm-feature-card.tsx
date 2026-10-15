@@ -10,6 +10,9 @@ import { GMFeatureBody } from "./gm-feature-body";
 
 const STACK_LABELS: Record<GMStack, string> = {
   oracle: "Oracle",
+  meaning: "Meaning",
+  list: "List",
+  combat: "Combat",
   roll: "Roll",
   table: "Table",
   generator: "Generator",

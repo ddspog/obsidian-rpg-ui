@@ -5,6 +5,8 @@ import {
   resolveLogTemplate,
   resolveWithContext,
   buildAutoValues,
+  requiredFilled,
+  previewLogTemplate,
 } from "./template-resolver";
 
 describe("parseLogTemplate", () => {
@@ -106,5 +108,69 @@ describe("resolveWithContext", () => {
       result: "Success",
     });
     expect(result).toBe("d: d20+5=18 vs DC 15 -> Success");
+  });
+});
+
+describe("choice placeholders", () => {
+  it("reads `{{name:a|b}}` as a slot with options", () => {
+    expect(parseLogTemplate("? [CF{{cf:+1|-1}}] Does {{scene}} happen?")).toEqual([
+      { kind: "cf", raw: "{{cf:+1|-1}}", autoResolvable: false, options: ["+1", "-1"] },
+      { kind: "scene", raw: "{{scene}}", autoResolvable: false },
+    ]);
+  });
+
+  it("fills the slot with the picked option", () => {
+    expect(resolveLogTemplate("? [CF{{cf:+1|-1}}] Go", { cf: "-1" })).toBe("? [CF-1] Go");
+  });
+});
+
+describe("optional placeholders", () => {
+  const tpl = "=> [Threads+ {{threads_added?}}]\n=> [Threads- {{threads_closed?}}]";
+
+  it("marks `{{name?}}` optional", () => {
+    expect(parseLogTemplate(tpl).map((p) => [p.kind, p.optional])).toEqual([
+      ["threads_added", true],
+      ["threads_closed", true],
+    ]);
+  });
+
+  it("drops the line of an optional slot left blank", () => {
+    expect(resolveLogTemplate(tpl, { threads_added: "Find the relic", threads_closed: "" })).toBe(
+      "=> [Threads+ Find the relic]"
+    );
+  });
+
+  it("does not require optional slots to be filled", () => {
+    expect(requiredFilled(parseLogTemplate(tpl), {})).toBe(true);
+    expect(requiredFilled(parseLogTemplate("{{question}}"), {})).toBe(false);
+  });
+});
+
+describe("previewLogTemplate — the card as it will append", () => {
+  const ctx = { actor: "Kobold, Elite", name: "Mining Pick", entities: [] };
+
+  it("fills what is known and marks what is still empty", () => {
+    expect(previewLogTemplate("@({{actor}}) Mining Pick → {{target}}\nd: Attack | d20+5=", ctx, {})).toBe(
+      "@(Kobold, Elite) Mining Pick → …\nd: Attack | d20+5="
+    );
+    expect(previewLogTemplate("@({{actor}}) Mining Pick → {{target}}", ctx, { target: "Lilith" })).toBe(
+      "@(Kobold, Elite) Mining Pick → Lilith"
+    );
+  });
+
+  it("drops an optional line left blank, as appending will", () => {
+    expect(
+      previewLogTemplate("=> [Threads+ {{added?}}]\n=> [Threads- {{closed?}}]", ctx, { added: "Find the relic" })
+    ).toBe("=> [Threads+ Find the relic]");
+  });
+});
+
+describe("a slot used twice is asked once", () => {
+  it("merges repeats of one name, keeping the listed options", () => {
+    const slots = parseLogTemplate("d: {{skill:Arcana|History}} | d20+[[{{skill}}]]=");
+    expect(slots.map((s) => [s.kind, s.options])).toEqual([["skill", ["Arcana", "History"]]]);
+    expect(resolveLogTemplate("d: {{skill:Arcana|History}} | d20+[[{{skill}}]]=", { skill: "History" })).toBe(
+      "d: History | d20+[[History]]="
+    );
   });
 });

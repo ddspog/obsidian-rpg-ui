@@ -19,36 +19,41 @@
   white-space: nowrap;
 }
 
+/* At rest a stack is a DECK: cards squared up a few pixels apart with a slight
+ * splay, the front card's head on top. Pointing at the deck spreads it upward
+ * by one head per card, so every card's name shows and each is a click target;
+ * pointing at one card brings it to the front, whole. */
 .card-stack-fan {
+  --card-peek: 1.9rem;
+  --card-height: 7rem;
+  --card-rest: 4px;
   position: relative;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  width: 5.4rem;
-  min-height: 8rem;
-  padding-top: 0.5rem;
+  width: 6.4rem;
+  height: calc(var(--card-height) + (var(--card-count, 1) - 1) * var(--card-rest));
+}
+
+.card-stack-fan:hover,
+.card-stack-fan:focus-within {
+  z-index: 5;
 }
 
 .card-stack-slot {
   position: absolute;
   bottom: 0;
-  transition:
-    transform 0.25s ease,
-    opacity 0.2s ease;
-  transform: translateY(calc(var(--card-index) * -8px))
-    rotate(calc((var(--card-index) - (var(--card-count) - 1) / 2) * 2.5deg));
+  left: 50%;
+  transition: transform 0.22s ease;
+  transform: translate(-50%, calc((var(--card-count) - 1 - var(--card-index)) * var(--card-rest) * -1))
+    rotate(calc((var(--card-index) - (var(--card-count) - 1) / 2) * 1.5deg));
   z-index: var(--card-index);
 }
 
-.card-stack-fan:hover .card-stack-slot {
-  transform: translateY(calc(var(--card-index) * -60px)) rotate(0deg);
-  z-index: calc(var(--card-count) - var(--card-index));
+.card-stack-fan:hover .card-stack-slot,
+.card-stack-fan:focus-within .card-stack-slot {
+  transform: translate(-50%, calc((var(--card-count) - 1 - var(--card-index)) * var(--card-peek) * -1)) rotate(0deg);
 }
 
-/* The card being pointed at sits above all its neighbors so it's fully
- * visible. Higher specificity than the fan-hover rule above, and `+ 1` clears
- * the max stacking value any sibling can take. */
-.card-stack-fan:hover .card-stack-slot:hover {
+.card-stack-fan:hover .card-stack-slot:hover,
+.card-stack-fan .card-stack-slot:focus-within {
   z-index: calc(var(--card-count) + 1);
 }
 
@@ -57,8 +62,8 @@
 .lonelog-action-card {
   display: flex;
   flex-direction: column;
-  width: 5rem;
-  height: 7rem;
+  width: 6rem;
+  height: var(--card-height, 7rem);
   padding: 0;
   overflow: hidden;
   border: 2px solid light-dark(rgba(106, 78, 42, 0.35), rgba(212, 168, 64, 0.3));
@@ -94,39 +99,74 @@
   filter: grayscale(0.6);
 }
 
-/* Art area — top portion of the card */
+/* Art area — the rest of the card, below its head; holds the card's icon. */
 .action-card-art {
-  flex: 1;
+  flex: 1 1 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1rem;
   background: linear-gradient(
     135deg,
     light-dark(rgba(106, 78, 42, 0.08), rgba(212, 168, 64, 0.06)) 0%,
     light-dark(rgba(106, 78, 42, 0.02), rgba(212, 168, 64, 0.02)) 50%,
     light-dark(rgba(106, 78, 42, 0.06), rgba(212, 168, 64, 0.04)) 100%
   );
-  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
 }
 
-/* Footer — name + resource at bottom */
-.action-card-footer {
+/* Head — the name (and uses) at the top: exactly one peek tall, so a card
+ * behind the front one shows all of it. */
+.action-card-head {
+  flex: 0 0 auto;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.05rem;
-  padding: 0.2rem 0.25rem;
-  min-height: 2rem;
+  box-sizing: border-box;
+  min-height: calc(var(--card-peek, 1.9rem) - 2px);
+  padding: 0.15rem 0.3rem;
   background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.04));
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06));
 }
 
-.action-card-name {
-  font-size: 0.6rem;
+/* The whole name, wrapped — the card is read by its name. The card is a
+ * <button>, and Obsidian's button styles set `white-space: nowrap`, which cut
+ * the name off sideways; the selector is scoped under the card to win. */
+.lonelog-action-card .action-card-name {
+  display: block;
+  font-size: 0.62rem;
   font-weight: 600;
-  line-height: 1.15;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* The card's icon: large, in the faded-amber of the card's edge, brightening
+ * with the border when the card is pointed at. */
+.action-card-icon {
+  color: light-dark(rgba(106, 78, 42, 0.55), rgba(212, 168, 64, 0.55));
+  transition: color 0.15s ease;
+}
+
+.lonelog-action-card:hover:not(.is-depleted) .action-card-icon {
+  color: var(--interactive-accent);
+}
+
+/* An emoji icon, in full colour and filling the art area. The colour-emoji
+ * fonts are named first, so a theme's text font can't render it monochrome. */
+.action-card-emoji {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 3.2rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.lonelog-action-card:hover:not(.is-depleted) .action-card-emoji {
+  transform: scale(1.08);
 }
 
 .action-card-uses {
@@ -168,4 +208,16 @@
   font-style: italic;
   color: var(--text-normal);
   line-height: 1.5;
+}
+
+/* A Status stack — conditions its bearer has to shake off (pinned, …): marked
+   apart from what they can do, in amber, so it's seen before it's forgotten. */
+.lonelog-card-stack.is-status .lonelog-action-card {
+  border-color: light-dark(#c98a1a, #e0a63a);
+  background: light-dark(#fff6e5, color-mix(in srgb, #e0a63a 14%, var(--background-primary)));
+}
+
+.lonelog-card-stack.is-status .card-stack-label {
+  color: light-dark(#a8690a, #e9b354);
+  font-weight: 700;
 }

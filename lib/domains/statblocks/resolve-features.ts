@@ -359,6 +359,8 @@ export async function resolveStatFeatures(
       name: feature.name,
       type: feature.type,
       text,
+      params: mergedParams,
+      source: blockName ? `${fileStem}#${blockName}` : fileStem,
     });
   }
   return results;

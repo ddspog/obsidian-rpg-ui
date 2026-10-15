@@ -166,6 +166,23 @@ export interface FateAnswer {
   exceptionalYes: number;
   /** At or above this is an Exceptional No; 101 when the odds allow none. */
   exceptionalNo: number;
+  /** The roll was a double whose digit is at or below the chaos factor — a
+   *  Random Event fires alongside the answer. */
+  randomEvent: boolean;
+}
+
+/**
+ * Whether a Fate roll triggers a Random Event: a double (11, 22, … 99 on the
+ * d100; two matching d10s on a Fate Check) whose single digit is at or below
+ * the chaos factor. A 100 (`00`) is not a double for this — its digit is 0.
+ */
+export function fateRandomEvent(dice: number | [number, number], cf: number): boolean {
+  if (Array.isArray(dice)) {
+    const [a, b] = dice;
+    return a === b && a >= 1 && a <= 9 && a <= cf;
+  }
+  if (dice < 11 || dice > 99 || dice % 11 !== 0) return false;
+  return dice / 11 <= cf;
 }
 
 /**
@@ -185,5 +202,58 @@ export function answerFateQuestion(roll: number, cf: number, likelihood: GMLikel
     threshold,
     exceptionalYes: ex.yes,
     exceptionalNo: ex.no,
+    randomEvent: fateRandomEvent(roll, cf),
+  };
+}
+
+/** Fate Check modifier by position along the odds / chaos ladders (+5 … −5). */
+const FATE_CHECK_STEPS = [5, 4, 2, 1, 0, -1, -2, -4, -5];
+
+/** The Fate Check roll modifier for these odds plus this chaos factor. */
+export function fateCheckModifier(cf: number, likelihood: GMLikelihood): number {
+  const odds = FATE_ODDS.indexOf(likelihood);
+  const oddsMod = FATE_CHECK_STEPS[odds < 0 ? 4 : odds];
+  // CF 9 → +5 … CF 1 → −5: the same ladder, read from the top.
+  const cfMod = FATE_CHECK_STEPS[9 - clamp(Math.round(cf), 1, 9)];
+  return oddsMod + cfMod;
+}
+
+/** A Fate Check answered: the outcome, the modified total, and what it needed. */
+export interface FateCheckAnswer {
+  result: FateResult;
+  wording: string;
+  /** The two d10s added, plus the odds and chaos modifiers. */
+  total: number;
+  modifier: number;
+  /** The smallest dice sum that answers Yes (a total of 11 or more). */
+  yesOn: number;
+  randomEvent: boolean;
+}
+
+/**
+ * Answer a Fate Question by Fate Check: 2d10 added, plus the Odds and Chaos
+ * Factor modifiers. A total of 11+ is a Yes, 10 or less a No; a total landing
+ * in 18–20 is an Exceptional Yes and in 2–4 an Exceptional No — exactly those
+ * ranges, so a modifier that pushes a total past them leaves it plain.
+ * Matching dice at or under the chaos factor also fire a Random Event.
+ */
+export function answerFateCheck(dice: [number, number], cf: number, likelihood: GMLikelihood): FateCheckAnswer {
+  const modifier = fateCheckModifier(cf, likelihood);
+  const total = dice[0] + dice[1] + modifier;
+  const result: FateResult =
+    total >= 18 && total <= 20
+      ? "Exceptional Yes"
+      : total >= 11
+        ? "Yes"
+        : total >= 2 && total <= 4
+          ? "Exceptional No"
+          : "No";
+  return {
+    result,
+    wording: FATE_WORDING[result],
+    total,
+    modifier,
+    yesOn: 11 - modifier,
+    randomEvent: fateRandomEvent(dice, cf),
   };
 }

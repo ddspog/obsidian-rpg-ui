@@ -274,6 +274,9 @@ export interface EntityTypeDef<TLookup = Record<string, unknown>> {
   lookup?: Readonly<TLookup>;
   /** Block component definitions for `rpg entity.<name>` code blocks */
   blocks?: Record<string, Component>;
+  /** This entity's own expressions. They win over same-named ones from other
+   *  entities in the system-wide `RPGSystem.expressions` map. */
+  expressions?: Map<string, ExpressionDef>;
 }
 
 /** Feature definition for default entity features in system definitions */

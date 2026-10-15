@@ -52,10 +52,13 @@ const mockSystemWithBlocks = {
   conditions: [],
 };
 
+// The system a file resolves to — swappable, to model one still loading.
+const registryState = vi.hoisted(() => ({ system: undefined as unknown }));
+
 vi.mock("lib/systems/registry", () => ({
   SystemRegistry: {
     getInstance: vi.fn(() => ({
-      getSystemForFile: vi.fn(() => mockSystemWithBlocks),
+      getSystemForFile: vi.fn(() => registryState.system ?? mockSystemWithBlocks),
     })),
   },
 }));
@@ -310,5 +313,28 @@ name: Aria
       expect(entityData.codeBlocks.has("character.health")).toBe(false);
       expect(entityData.codeBlocks.size).toBe(0);
     });
+  });
+});
+
+describe("Entity cache across a system load", () => {
+  it("re-reads a file parsed under the default system once its real system loads", async () => {
+    const resolver = new EntityResolver(mockApp as any);
+    const mockFile = { basename: "Aria", path: "Characters/Aria.md" };
+    const { TFile } = await import("obsidian");
+    Object.setPrototypeOf(mockFile, TFile.prototype);
+    mockApp.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+    mockApp.vault.read.mockResolvedValue("```rpg character.header\nname: Aria\n```\n");
+    mockApp.metadataCache.getFileCache.mockReturnValue(null);
+
+    // Still loading: the default system knows no `character` entity.
+    registryState.system = { ...mockSystemWithBlocks, entities: {} };
+    const early = await resolver.resolveEntity({ file: "Characters/Aria.md" });
+    expect(early.codeBlocks.has("character.header")).toBe(false);
+
+    // Loaded: the same file now yields its entity blocks.
+    registryState.system = mockSystemWithBlocks;
+    const late = await resolver.resolveEntity({ file: "Characters/Aria.md" });
+    expect(late.codeBlocks.has("character.header")).toBe(true);
+    registryState.system = undefined;
   });
 });
