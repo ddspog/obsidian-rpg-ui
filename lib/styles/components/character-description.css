@@ -1274,3 +1274,16 @@
     column-count: 1;
   }
 }
+
+/* Framed: the card frame gives the shape and the edge; the figure just holds it. */
+.rpg-description-appearance-art.is-framed {
+  aspect-ratio: auto;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.rpg-description-appearance-art.is-framed > div {
+  width: 100%;
+}

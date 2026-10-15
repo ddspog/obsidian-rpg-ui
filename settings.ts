@@ -1,3 +1,4 @@
+import type { CardFrameSettings, FrameKind } from "lib/services/card-frame-config";
 import { THEMES } from "lib/themes";
 
 /**
@@ -51,9 +52,54 @@ export interface PageFooterField {
   label?: string;
 }
 
+/** The image studio's links and choices — where it asks for images and prompts. */
+export interface ImageStudioSettings {
+  /** Base URL of an Anthropic-compatible endpoint (drafts prompts). Empty: off. */
+  anthropicUrl: string;
+  anthropicKey: string;
+  anthropicModel: string;
+  /** Base URL of a Gemini-compatible endpoint (makes images). Empty: off. */
+  geminiUrl: string;
+  geminiKey: string;
+  geminiImageModel: string;
+  /** Base URL of an Ollama server (makes images with a local model). Empty: off. */
+  ollamaUrl: string;
+  ollamaImageModel: string;
+  /** Which one makes the images. */
+  imageProvider: "gemini" | "ollama";
+  /** What every prompt starts with — the look all the images share. */
+  stylePrompt: string;
+  /** Where hotbar icons are saved (a folder named `Icons` is where the hotbar looks). */
+  iconFolder: string;
+}
+
+export const DEFAULT_IMAGE_STUDIO: ImageStudioSettings = {
+  anthropicUrl: "",
+  anthropicKey: "",
+  anthropicModel: "claude-sonnet-5",
+  geminiUrl: "",
+  geminiKey: "",
+  geminiImageModel: "gemini-2.5-flash-image",
+  ollamaUrl: "",
+  ollamaImageModel: "",
+  imageProvider: "gemini",
+  stylePrompt:
+    "Baldur's Gate 3 ability icon. A square tile of rough, weathered, cracked stone, clearly tinted {tint} — a medium-dark, " +
+    "visibly coloured stone with darker corners — filling the whole image to all four edges, with sharp square corners: " +
+    "no rounded tile, no margin, nothing around it. On it, ONE bold symbolic pictogram " +
+    "drawn as thick, slightly hand-drawn glowing neon line-art strokes in luminous {glow}, like light etched into the stone, " +
+    "filling about 80% of the tile: flat, 2D, minimal, centred, readable at 32 pixels — outlines only, a few strong strokes, " +
+    "a soft outer glow. One single symbol, not several stacked. Not a realistic object, not a 3D render, not a scene. " +
+    "No text, no letters, no numbers, no words, no frame, no border, no UI.",
+  iconFolder: "Icons",
+};
+
 export interface DndUIToolkitSettings {
   statePath: string;
   selectedTheme: string;
+  imageStudio: ImageStudioSettings;
+  /** Card frames by kind (spell, portrait, item…): a generated image replacing the CSS one, how the name shows, the prompt style. */
+  cardFrames?: Partial<Record<FrameKind, CardFrameSettings>>;
 
   // System mappings: folder path → system definition folder path
   // Empty folder path ("") represents the root/default for the entire vault
@@ -131,6 +177,7 @@ export interface DndUIToolkitSettings {
 export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   statePath: ".dnd-ui-toolkit-state.json",
   selectedTheme: "default",
+  imageStudio: DEFAULT_IMAGE_STUDIO,
   systemMappings: [],
   folderLinkStyles: [],
   pageFooterFields: [],

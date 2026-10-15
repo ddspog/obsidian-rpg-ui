@@ -1,6 +1,9 @@
 import * as React from "react";
 import type { App } from "obsidian";
-import { TFile } from "obsidian";
+import { Menu, TFile } from "obsidian";
+import { CardFrame } from "lib/components/card-frame/CardFrame";
+import { openImageStudio } from "lib/plugin/image-studio-modal";
+import { frameSpec } from "lib/services/card-frame-config";
 
 export interface PortraitThumbProps {
   /** Vault file reference — plain filename, wikilink syntax, or path */
@@ -9,6 +12,13 @@ export interface PortraitThumbProps {
   alt?: string;
   /** Forwarded by SectionRow.distribution via cloneElement */
   style?: React.CSSProperties;
+  /** The picture is the art alone: draw it in the card frame, the character's name on its plaque. */
+  /** Draw it in the card frame: `true`, or a frame's name. */
+  framed?: unknown;
+  /** `false`, or `none`: no name on the frame. */
+  frameName?: unknown;
+  /** The art's shape in the frame, width / height, over the frame kind's own. */
+  aspect?: number;
 }
 
 /** Extract a usable linkpath from any format frontmatter might give us.
@@ -44,7 +54,15 @@ function extractLinkpath(val: unknown): string | null {
   return str;
 }
 
-export function PortraitThumb({ src, alt = "Character portrait", style }: PortraitThumbProps) {
+export function PortraitThumb({
+  src,
+  alt = "Character portrait",
+  style,
+  framed,
+  frameName,
+  aspect,
+}: PortraitThumbProps) {
+  const frame = frameSpec(framed, frameName, "portrait");
   const containerRef = React.useRef<HTMLElement | null>(null);
   const linkpath = extractLinkpath(src);
 
@@ -67,5 +85,45 @@ export function PortraitThumb({ src, alt = "Character portrait", style }: Portra
     el.appendChild(img);
   }, [linkpath, alt]);
 
-  return <figure aria-details="Portrait Thumb" ref={containerRef} style={style} data-empty={!linkpath || undefined} />;
+  /** Right-click: make the picture again in the image studio. */
+  const onContextMenu = (ev: React.MouseEvent) => {
+    const app = (globalThis as any).app as App | undefined;
+    const file = app?.workspace.getActiveFile();
+    if (!app || !file) return;
+    ev.preventDefault();
+    const menu = new Menu();
+    menu.addItem((i) =>
+      i
+        .setTitle("Regenerate picture…")
+        .setIcon("image-plus")
+        .onClick(() => openImageStudio(app, { file, focus: "portrait" }))
+    );
+    menu.showAtMouseEvent(ev.nativeEvent);
+  };
+
+  if (frame && linkpath) {
+    const name = ((globalThis as any).app as App | undefined)?.workspace.getActiveFile()?.basename;
+    return (
+      <div style={{ ...style, alignSelf: "center" }} onContextMenu={onContextMenu}>
+        {/* The sheet's heading already says the name: none unless the block asks for one. */}
+        <CardFrame
+          kind={frame.kind}
+          name={frame.name ?? "none"}
+          {...(aspect ? { aspect } : {})}
+          {...(name ? { title: name } : {})}
+        >
+          <figure aria-details="Portrait Thumb" ref={containerRef} data-empty={undefined} />
+        </CardFrame>
+      </div>
+    );
+  }
+  return (
+    <figure
+      aria-details="Portrait Thumb"
+      ref={containerRef}
+      style={style}
+      data-empty={!linkpath || undefined}
+      onContextMenu={onContextMenu}
+    />
+  );
 }

@@ -46,3 +46,27 @@ figure[aria-details="Portrait Thumb"][data-empty] {
   align-self: auto;
   aspect-ratio: 3 / 4;
 }
+
+/* In a card frame the frame stays put; hovering zooms the picture into the
+   face — the upper middle of a portrait — clipped by the frame's window. */
+.rpg-card-frame figure[aria-details="Portrait Thumb"] {
+  width: 100%;
+  overflow: hidden;
+  cursor: zoom-in;
+  transform: none;
+}
+
+.rpg-card-frame figure[aria-details="Portrait Thumb"]:hover {
+  transform: none;
+}
+
+.rpg-card-frame figure[aria-details="Portrait Thumb"] img {
+  object-position: center;
+  border-radius: 0;
+  transform-origin: 50% 20%;
+  transition: transform 0.3s ease;
+}
+
+.rpg-card-frame figure[aria-details="Portrait Thumb"]:hover img {
+  transform: scale(1.9);
+}
