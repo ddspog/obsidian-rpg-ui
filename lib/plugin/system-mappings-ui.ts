@@ -4,6 +4,7 @@
  */
 
 import { App, Setting, Notice, Modal } from "obsidian";
+import { createSection } from "lib/plugin/settings-sections";
 import { FolderSuggest } from "lib/utils/folder-suggest";
 import { DndUIToolkitSettings } from "settings";
 import { SystemRegistry } from "lib/systems/registry";
@@ -52,7 +53,19 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
   for (let i = 0; i < ctx.settings.systemMappings.length; i++) {
     const mapping = ctx.settings.systemMappings[i];
     // mapping container groups the three setting rows visually
-    const mappingContainer = containerEl.createDiv({ cls: "rpg-mapping-block" });
+    // Collapsed to a summary line (system + folders); a new, empty mapping opens.
+    const section = createSection(containerEl, `system-mapping:${i}`, "", {
+      open: !mapping.systemFolderPath && mapping.folderPaths.length === 0,
+      cls: "rpg-mapping-block",
+    });
+    const mappingContainer = section.body;
+    const refreshSummary = () => {
+      // "systems/tales-of-the-valiant/config" reads as "tales-of-the-valiant".
+      const parts = mapping.systemFolderPath.split("/").filter((p) => p && p !== "config");
+      section.title.setText(parts.pop() || `Mapping ${i + 1}`);
+      section.note.setText(mapping.folderPaths.map((p) => p || "(root)").join(", ") || "no folders");
+    };
+    refreshSummary();
 
     // 1) Header row: Mapping name + System folder + Delete + Process
     const headerSetting = new Setting(mappingContainer).setName(`Mapping ${i + 1}`);
@@ -62,12 +75,14 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
         .setValue(mapping.systemFolderPath)
         .onChange(async (value) => {
           mapping.systemFolderPath = value;
+          refreshSummary();
           await saveAndSync(ctx);
         });
 
       // Enable folder suggestions (combobox-like)
       const folderSuggest = new FolderSuggest(ctx.app, text, async (selection) => {
         mapping.systemFolderPath = selection;
+        refreshSummary();
         text.setValue(selection);
         await saveAndSync(ctx);
       });
@@ -187,6 +202,7 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
     const chipsContainer = folderSetting.controlEl.createDiv({ cls: "rpg-folder-list" });
 
     const renderFolderList = () => {
+      refreshSummary();
       chipsContainer.empty();
       mapping.folderPaths.forEach((path) => {
         const chip = chipsContainer.createDiv({ cls: "rpg-folder-chip" });
