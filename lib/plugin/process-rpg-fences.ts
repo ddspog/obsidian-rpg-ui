@@ -31,6 +31,7 @@ import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild } from "lib/domains/lists/render-list-group";
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
+import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { detectMetaFromSource } from "lib/utils/meta-extractor";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -118,6 +119,16 @@ export function processUnrenderedRpgFences(
         const block = parseFigureBlock(source);
         const child = new FigureRenderChild(el, block, sourcePath);
         parent.addChild(child);
+      } catch (err) {
+        el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
+      }
+      continue;
+    }
+
+    // Battle maps (rpg map) — drawn the same inside an embed as on their page.
+    if (meta === "map" || meta.startsWith("map.")) {
+      try {
+        parent.addChild(new MapRenderChild(el, app, source, sourcePath));
       } catch (err) {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }

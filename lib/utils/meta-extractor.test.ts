@@ -358,3 +358,20 @@ describe("detectMetaFromSource — feature.gm fence-mode", () => {
     );
   });
 });
+
+describe("detectMetaFromSource — a log with its head", () => {
+  it("reads a log's own head keys over Lonelog as `log`, not rule.content", () => {
+    expect(
+      detectMetaFromSource("maps:\n  Clearing:\n    image: x\n---\n? Does it rain?\ngen: Testing\n=> S01 After")
+    ).toBe("log");
+    expect(detectMetaFromSource('scene: Ambush\ngm: "[[GM Screen]]"\n---\n@(Talon) Shoots\nd: Attack | d20+4=21')).toBe(
+      "log"
+    );
+  });
+
+  it("leaves a GM block's head to feature.gm", () => {
+    expect(detectMetaFromSource("id: scene-test\nname: Scene Test\nscene: true\n---\n@(GM) Tests the scene")).toBe(
+      "feature.gm"
+    );
+  });
+});
