@@ -84,6 +84,9 @@ Once you have your 4Ws combine them into the most interesting interpretation you
 id: first-scene
 name: First Scene
 stack: scene
+rank: 4
+icon: "🚩"
+summary: Open the adventure's first scene — S01 — after brainstorming how it begins.
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 scene:
   opens: "S{{n}} {{title}}"

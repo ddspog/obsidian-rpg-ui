@@ -130,3 +130,24 @@ At the end of a Scene roll a d10. If you roll equal to the current Chaos Factor 
 
 With this method the tone of your adventure will shift at random intervals based on your Chaos rolls from Scene to Scene. As with Revert Toward The Mean, extreme values will be rare, with the CF more frequently moving back toward the middle.
 ```
+## Bookkeeping card
+```rpg feature.gm
+id: bookkeeping
+name: End of Scene Bookkeeping
+heading: none
+reads: ["@[[Threads]]", "@[[Characters]]"]
+source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
+cards:
+  - name: End Scene
+    stack: scene
+    rank: 2
+    icon: "✅"
+    summary: Update the Threads and Characters lists before the next scene — add what was active, remove what no longer matters.
+    emits:
+      - { scene: { consequence: "[Threads+ {{threads_added?}}]" } }
+      - { scene: { consequence: "[Threads- {{threads_closed?}}]" } }
+      - { scene: { consequence: "[Characters+ {{characters_added?}}]" } }
+      - { scene: { consequence: "[Characters- {{characters_removed?}}]" } }
+---
+Update the Lists before the next Scene: add the Threads and Characters that were active (again, to weight them, up to three slots each), and remove the ones that no longer matter. Separate several with `;`. Leave a field blank to skip it. The Chaos Factor moves when you open the next Scene with **New Scene**.
+```

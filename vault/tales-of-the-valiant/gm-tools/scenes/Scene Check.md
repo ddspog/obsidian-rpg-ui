@@ -36,10 +36,13 @@ generators:
           "<=CF, odd": "@[[Altered Scene]]"
           "<=CF, even": "@[[Interrupt Scene]]"
 cards:
-  - name: Test a Scene
-    stack: generator
+  - name: New Scene
+    stack: scene
+    rank: 1
+    icon: "🎬"
+    summary: Move the Chaos Factor for the scene that ended, then test whether the next one starts as you expect (d10 against the Chaos Factor).
     emits:
-      - { oracle: { question: 'Does the "{{scene}}" scene happen as expected?', tag: CF } }
+      - { oracle: { question: 'Does the "{{scene}}" scene happen as expected?', tag: CF, adjust: [+1, -1] } }
       - "@scene-check"
       - { scene: { opens: 'Start Scene(): "{{next}}"' } }
 ---

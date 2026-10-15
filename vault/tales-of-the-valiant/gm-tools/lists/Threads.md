@@ -2,10 +2,19 @@
 ```rpg feature.gm
 id: threads-list
 name: Threads
+heading: none
 list:
   default: Any Thread
   section: 5
   max: 25
+cards:
+  - name: Roll on Threads
+    stack: list
+    rank: 1
+    icon: "🧵"
+    summary: Roll on the Threads list to pick which goal something involves.
+    emits:
+      - { oracle: { question: "Which Thread? [Threads@]" } }
 ---
 Threads are the quests, tasks, and missions you choose to pursue through your Player Character. You can make anything into an open Thread at any time by writing it on the Threads List. Once a Thread has been added to the List it becomes an important part of your adventure and will likely be invoked by Random Events.
 
