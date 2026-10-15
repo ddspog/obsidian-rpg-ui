@@ -56,9 +56,15 @@ import { findAllFences } from "lib/domains/lists/resolve-entries";
 import type { FileRefCache } from "lib/domains/references";
 import { parseRuleContent } from "lib/domains/rules/parse-rule-block";
 import { selectFenceBodyByIndex, sliceFenceInner } from "lib/domains/rules/select-fence";
+import { wrapBareTables } from "lib/utils/wrap-tables";
 import { inlineContentFences } from "lib/domains/rules/import-fences";
 import { TabGroupView } from "lib/domains/rules/render-tab-group";
-import { findRuleContentBlock, findGMFeatureById, resolveTabBlockFields } from "lib/domains/rules/resolve-tab";
+import {
+  findRuleContentBlock,
+  findGMFeatureById,
+  findRuleFenceBodyById,
+  resolveTabBlockFields,
+} from "lib/domains/rules/resolve-tab";
 import type { RuleTabBlock } from "lib/domains/rules/types";
 import { Markdown } from "lib/components/markdown";
 import { GMFeatureCard } from "lib/components/session-log/gm-feature-card";
@@ -440,6 +446,8 @@ function resolveCall(
               return;
             }
           }
+          // Nor a GM card: another rule block with that id — a `rule.tab`'s body.
+          if (bareBody === null) bareBody = findRuleFenceBodyById(cleaned, bareArg);
         } else if (typeof bareArg === "number" && Number.isInteger(bareArg) && bareArg >= 0) {
           bareBody = selectFenceBodyByIndex(cleaned, bareArg);
         }
@@ -660,9 +668,13 @@ function resolveCall(
         child.register(() => comp.unload());
         const renderer = MarkdownRenderer as any;
         if (typeof renderer.render === "function") {
-          renderer.render(deps.app, source, span, targetPath, comp);
+          void Promise.resolve(renderer.render(deps.app, source, span, targetPath, comp)).then(() =>
+            wrapBareTables(span)
+          );
         } else if (typeof renderer.renderMarkdown === "function") {
-          renderer.renderMarkdown(source, span, targetPath, comp);
+          void Promise.resolve(renderer.renderMarkdown(source, span, targetPath, comp)).then(() =>
+            wrapBareTables(span)
+          );
         }
         const hlFm =
           (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
@@ -1538,9 +1550,13 @@ function resolveFolderCall(
           const source = "#".repeat(hLevel) + " " + f.basename + "\n" + body;
           const renderer = MarkdownRenderer as any;
           if (typeof renderer.render === "function") {
-            renderer.render(deps.app, source, section, f.path, comp);
+            void Promise.resolve(renderer.render(deps.app, source, section, f.path, comp)).then(() =>
+              wrapBareTables(section)
+            );
           } else if (typeof renderer.renderMarkdown === "function") {
-            renderer.renderMarkdown(source, section, f.path, comp);
+            void Promise.resolve(renderer.renderMarkdown(source, section, f.path, comp)).then(() =>
+              wrapBareTables(section)
+            );
           }
           if (highlight.active) {
             const entryFm =

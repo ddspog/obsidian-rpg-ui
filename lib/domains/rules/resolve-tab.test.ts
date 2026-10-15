@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findRuleContentBlock, findGMFeatureById, resolveTabBlockFields } from "./resolve-tab";
+import { findRuleContentBlock, findGMFeatureById, findRuleFenceBodyById, resolveTabBlockFields } from "./resolve-tab";
 
 // Triple-backtick fence opener can't be written literally inside a template
 // literal, so build fences from a constant.
@@ -164,5 +164,26 @@ describe("findGMFeatureById", () => {
   it("returns null when no feature.gm matches", () => {
     const text = file(gmBlock("id: scene-check\nname: Scene Check"));
     expect(findGMFeatureById(text, "Scene Check", "missing")).toBeNull();
+  });
+});
+
+describe("findRuleFenceBodyById", () => {
+  it("finds a rule.tab's body by its id", () => {
+    const text = [
+      "````rpg rule.tab",
+      "id: options",
+      "name: Options",
+      "---",
+      "### Weapon Options",
+      "body",
+      "````",
+      "```rpg rule.content",
+      "id: other",
+      "---",
+      "x",
+      "```",
+    ].join("\n");
+    expect(findRuleFenceBodyById(text, "options")).toBe("### Weapon Options\nbody");
+    expect(findRuleFenceBodyById(text, "missing")).toBeNull();
   });
 });

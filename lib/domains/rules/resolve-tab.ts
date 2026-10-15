@@ -48,6 +48,41 @@ export function findRuleContentBlock(text: string, id: string): RuleContentBlock
 }
 
 /**
+ * The markdown body (below its `---`) of the first `rpg rule.*` fence in
+ * `text` — a `rule.tab`, a `rule.side` — whose head names `id` (or `name`).
+ * What `.bare(id)` falls back to when no `rule.content` has that id.
+ */
+export function findRuleFenceBodyById(text: string, id: string): string | null {
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const open = lines[i].match(/^(`{3,})\s*rpg\s+rule\.(?!related\b|notes\b)[\w-]+\s*$/);
+    if (!open) continue;
+    const close = new RegExp(`^\`{${open[1].length}}\\s*$`);
+    let end = lines.length;
+    for (let j = i + 1; j < lines.length; j++) {
+      if (close.test(lines[j])) {
+        end = j;
+        break;
+      }
+    }
+    const inner = lines.slice(i + 1, end);
+    const sep = inner.findIndex((l) => l.trim() === "---");
+    const head = sep >= 0 ? inner.slice(0, sep) : [];
+    const named = head.some((l) => {
+      const m = l.match(/^(id|name):\s*["']?(.*?)["']?\s*$/);
+      return !!m && m[2] === id;
+    });
+    if (named)
+      return inner
+        .slice(sep + 1)
+        .join("\n")
+        .replace(/^\n+|\n+$/g, "");
+    i = end;
+  }
+  return null;
+}
+
+/**
  * Find a `rpg feature.gm` block in `text` by its `id` (falling back to `name`),
  * for `@[[file]].bare(id)` card dispatch. `fileName` is the target's basename
  * (used as the parse doc name). Returns the parsed `GMFeature`, or `null`.
