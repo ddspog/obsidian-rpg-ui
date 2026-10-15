@@ -6,6 +6,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 # Help
 ```rpg feature.details
 type: action
+icon: "🤝"
 ---
 The [[Help]] action lets you aid a creature to complete a task. That creature gains advantage on the next ability check it makes to perform the task you are helping with, provided that it makes the check before the start of your next turn.
 

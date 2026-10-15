@@ -1,4 +1,5 @@
 ---
+token: "✨"
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg character.sheet
@@ -18,14 +19,15 @@ xp: 88
 luck: 0
 banner: "#ac8080"
 # Health
-portrait: [[cleric-harold-davies.webp]]
+portrait: "[[Jacqui Ilitul 1.webp]]"
+framed: true
 max_hp: 9
 current_hp: 9
 temp_hp: 0
 hit_dice:
   d8:
     max: 1
-    current: 0
+    current: 1
 death_saves:
   successes: 0
   failures: 0
@@ -108,8 +110,8 @@ casters:
 ```rpg character.inventory
 items:
   - name: "[[Warhammer]]"
-    slot: main_hand
     notes: For melee range
+    slot: main_hand
   - name: "[[Chain Mail]]"
     slot: armor
     notes: Heavy Armor, [[Noisy]]
@@ -117,6 +119,7 @@ items:
     notes: (worn)
   - name: "[[Holy Symbol]]"
     notes: An amulet for [[Lusanda, the Muse]] (Under clothes)
+    slot: off_hand
   - name: "[[Holy Symbol]]"
     notes: An emblem of [[Aderyn, the Fuel]] (Near neck)
   - name: "[[Waterskin]]"
@@ -125,6 +128,11 @@ items:
       - name: "[[Incense (one block) ᴺ]]"
       - name: "[[Prayer book ᴺ]]"
       - name: "[[Contract, Lurkers Hall ᴺ]]"
+# What's in hand — each loadout has a name; switch from the Log's Gear button or here.
+# A hand holds one item: a weapon, a shield, or a spellcasting focus.
+loadouts:
+  Hammer:          { main_hand: "[[Warhammer]]" }   # off hand free: grips it in two hands (1d10)
+  Hammer & Symbol: { main_hand: "[[Warhammer]]", off_hand: "[[Holy Symbol]]" }   # casting with the amulet
 currency:
   pp: 0
   gp: 10

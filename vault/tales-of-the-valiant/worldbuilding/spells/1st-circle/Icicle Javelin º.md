@@ -31,6 +31,13 @@ roll:
     type: cold
   effects:
     - pin
+  inflicts:
+    condition: pinned
+    save: STR
+    when: at the start of its turn
+    fail: its speed is 0 until the start of its next turn
+    optional: true
+    note: if it's next to a wall or a similar large, immobile object
   notes: may pin target adjacent to large surface
   upcast:
     2: { damage: { roll: 4d8, type: cold } }

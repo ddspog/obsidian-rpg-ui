@@ -6,6 +6,7 @@ source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 # Ready
 ```rpg feature.details
 type: action
+icon: "⏳"
 ---
 When you take the [[Ready]] action, you prepare to do something on another creature’s turn using your reaction. This lets you get the jump on a foe or wait for a particular circumstance before you act. You must take your readied reaction before the start of your next turn. 
 

@@ -34,3 +34,39 @@ Once all participants have rolled, the GM ranks all participants in order from t
 
 In case of a tie, the GM decides the order among tied NPCs, and the PCs decide among their tied characters. The GM decides the order if the tie is between an NPC and a PC. Optionally, the GM can have tied creatures each roll a d20 with no modifiers to determine the order, highest roll going first.
 ```
+```rpg feature.gm
+id: start-combat
+name: Start Combat
+heading: none
+cards:
+  - name: Start Combat
+    kind: start-combat
+    stack: combat
+    rank: 1
+    icon: "⚔️"
+    summary: Set up a fight — add the foes, choose who in the party is in it, and roll everyone's initiative (d20 + their Initiative); the order runs from the highest total down.
+    emits: []
+  - name: Next Turn
+    kind: next-turn
+    stack: combat
+    rank: 2
+    icon: "🔄"
+    summary: Start the next turn of the fight — everyone's rounds again, in initiative order from the top. Writes its marker (T1, T2…).
+    emits: []
+  - name: Next Round
+    kind: next-round
+    stack: combat
+    rank: 3
+    icon: "👉"
+    summary: Mark whose round it is — the next in initiative, already picked, or whoever acts out of order. Writes R(Name).
+    emits: []
+  - name: End Combat
+    kind: end-combat
+    stack: combat
+    rank: 4
+    icon: "🏳️"
+    summary: End the fight — the foes are beaten, fled or bargained with, or the party got away. Writes [/COMBAT], and how it ended.
+    emits: []
+---
+Played from a session log's GM drawer, this opens an encounter: the foes join with their HP, every participant rolls initiative, and the order is set before the first round.
+```

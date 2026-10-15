@@ -1,4 +1,5 @@
 ---
+token: "⚔️"
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
 ---
 ```rpg character.header
@@ -17,7 +18,8 @@ luck: 0
 banner: "#ac8080"
 ```
 ```rpg character.health
-portrait: [[cleric-harold-davies.webp]]
+portrait: "[[Lilith 1.webp]]"
+framed: true
 max_hp: 12
 current_hp: 12
 temp_hp: 0
@@ -122,6 +124,12 @@ items:
     contents:
       - name: A belaying pin
       - name: A lucky charm
+# What's in hand — each loadout has a name; switch from the Log's Gear button or here.
+# These are all two-handed: the one item holds both hands.
+loadouts:
+  Glaive:   { main_hand: "[[Glaive]]" }
+  Maul:     { main_hand: "[[Maul]]" }
+  Crossbow: { main_hand: "[[Crossbow, light]]" }
 currency:
   pp: 0
   gp: 10
