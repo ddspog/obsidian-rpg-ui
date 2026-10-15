@@ -89,6 +89,20 @@ export interface DndUIToolkitSettings {
   /** Banner height in pixels (fixed across all notes). */
   bannerHeight: number;
 
+  /** Vault folder holding hex map texture packs, one subfolder per pack
+   *  (`<folder>/<pack>/{terrain,path,stack}/…` plus `pack.yml`). */
+  hexPacksFolder: string;
+  /** Pack a hex map uses when its head names none (`flat` = plain colours). */
+  hexDefaultPack: string;
+  /** Outline every hex on hex maps. */
+  hexGridLines: boolean;
+  /** Hex coordinates when a map's head doesn't say: off, in the hover tooltip, or always drawn. */
+  hexCoords: "off" | "hover" | "always";
+  /** Multiplier on hex map place and region label size. */
+  hexLabelScale: number;
+  /** Tallest a hex map gets in a note, in % of the window height. */
+  hexMapMaxHeight: number;
+
   // Color variables
   colorBgPrimary: string;
   colorBgSecondary: string;
@@ -123,6 +137,12 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   scrollRestoreDelayMs: 600,
   bannerField: "banner",
   bannerHeight: 200,
+  hexPacksFolder: "z52. Hex Packs",
+  hexDefaultPack: "basic",
+  hexGridLines: false,
+  hexCoords: "hover",
+  hexLabelScale: 1,
+  hexMapMaxHeight: 75,
 
   ...THEMES.default.colors,
 };

@@ -7,6 +7,7 @@ import {
   MarkdownSectionInformation,
   Notice,
   parseYaml,
+  TAbstractFile,
   TFile,
 } from "obsidian";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
@@ -20,6 +21,7 @@ import * as Fm from "lib/domains/frontmatter";
 import { extractMeta, detectMetaFromSource } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { EntityResolver } from "lib/services/entity-resolver";
+import { hexPackIndex, hexPacksKey, hexSettingsKey } from "lib/services/hex-pack-index";
 import { settingsStore } from "lib/services/settings-store";
 import { getEntityBus } from "lib/services/entity-event-bus";
 import { patchYamlBlock } from "lib/utils/yaml-patcher";
@@ -89,6 +91,10 @@ export default class DndUIToolkitPlugin extends Plugin {
   /** Bumped on every `saveSettings` so the CM6 extension knows when to
    *  re-tag visible editor anchors without waiting for a docChanged. */
   private folderLinkStylesVersion = 0;
+  /** The hex map settings at the last save, to spot a change. */
+  private hexPackKey = "";
+  /** The packs folder + default pack at the last save. */
+  private hexPacksSource = "";
 
   applyColorSettings(): void {
     const apply = (root: HTMLElement) => {
@@ -118,6 +124,25 @@ export default class DndUIToolkitPlugin extends Plugin {
     );
 
     this.initDataStore();
+
+    // Hex map texture packs: indexed from the vault on first use, rebuilt
+    // when anything under the packs folder changes (a tile, a pack.yml).
+    hexPackIndex.init(this.app);
+    this.hexPackKey = hexSettingsKey(this.settings);
+    this.hexPacksSource = hexPacksKey(this.settings);
+    let hexPackTimer: number | null = null;
+    const onHexPackChange = (file: TAbstractFile, oldPath?: string) => {
+      if (!hexPackIndex.covers(file.path) && !(oldPath && hexPackIndex.covers(oldPath))) return;
+      if (hexPackTimer !== null) window.clearTimeout(hexPackTimer);
+      hexPackTimer = window.setTimeout(() => {
+        hexPackTimer = null;
+        hexPackIndex.invalidate();
+      }, 300);
+    };
+    this.registerEvent(this.app.vault.on("create", (f) => onHexPackChange(f)));
+    this.registerEvent(this.app.vault.on("delete", (f) => onHexPackChange(f)));
+    this.registerEvent(this.app.vault.on("modify", (f) => onHexPackChange(f)));
+    this.registerEvent(this.app.vault.on("rename", (f, oldPath) => onHexPackChange(f, oldPath)));
 
     // Initialize esbuild-wasm early, using the bundled WASM file if available
     const pluginDir = (this.manifest as any).dir ?? `.obsidian/plugins/${this.manifest.id}`;
@@ -915,6 +940,17 @@ export default class DndUIToolkitPlugin extends Plugin {
     // next read comes from the new backing file.
     this.initDataStore();
     if (this.kv) this.kv.setStore(this.dataStore);
+
+    // Any hex map setting changed (packs folder, default pack, display):
+    // rebuild the index; open hex maps redraw.
+    const hexKey = hexSettingsKey(this.settings);
+    if (hexKey !== this.hexPackKey) {
+      const packsChanged = hexPacksKey(this.settings) !== this.hexPacksSource;
+      this.hexPackKey = hexKey;
+      this.hexPacksSource = hexPacksKey(this.settings);
+      if (packsChanged) hexPackIndex.invalidate();
+      else hexPackIndex.notify();
+    }
 
     // System mappings change: invalidate every cached system bundle so
     // the entity factory rebuilds from disk on next render. New folder

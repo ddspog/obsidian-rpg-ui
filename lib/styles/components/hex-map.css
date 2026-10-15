@@ -1,0 +1,395 @@
+/* rpg map grid: hex — overworld hex maps (lib/components/hexmap). */
+
+.rpg-hexmap {
+  margin: 1em 0;
+}
+
+.rpg-hexmap-viewport {
+  position: relative;
+  width: 100%;
+  max-height: 75vh;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.rpg-hexmap-viewport:active {
+  cursor: grabbing;
+}
+
+.rpg-hexmap-viewport.is-over-place {
+  cursor: pointer;
+}
+
+.rpg-hexmap-viewport > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rpg-hexmap-fill {
+  stroke: rgba(0, 0, 0, 0.25);
+  stroke-width: 0.5;
+}
+
+.rpg-hexmap-border {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.55);
+}
+
+.rpg-hexmap-hatch {
+  stroke: rgba(180, 0, 0, 0.55);
+}
+
+.rpg-hexmap-hover {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: var(--interactive-accent);
+  pointer-events: none;
+}
+
+.rpg-hexmap-label,
+.rpg-hexmap-coord {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  fill: #1d1a16;
+  font-family: var(--font-interface);
+  font-weight: 700;
+}
+
+.rpg-hexmap-label.is-place {
+  fill: #3a2410;
+}
+
+.rpg-hexmap-coord {
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.rpg-hexmap-controls {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  display: flex;
+  gap: 0.25em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexmap-controls button {
+  width: 1.9em;
+  height: 1.9em;
+  padding: 0;
+  font-size: var(--font-ui-small);
+  background: var(--background-primary);
+  opacity: 0.85;
+}
+
+.rpg-hexmap-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: 22em;
+  padding: 0.4em 0.6em;
+  pointer-events: none;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-s);
+}
+
+.rpg-hexmap-tooltip-place {
+  font-weight: 600;
+}
+
+.rpg-hexmap-tooltip dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 0.6em;
+  margin: 0.2em 0 0;
+}
+
+.rpg-hexmap-tooltip dt {
+  color: var(--text-muted);
+}
+
+.rpg-hexmap-tooltip dd {
+  margin: 0;
+}
+
+.rpg-hexmap-tooltip-file,
+.rpg-hexmap-tooltip-scale {
+  color: var(--text-faint);
+}
+
+.rpg-hexmap > figcaption {
+  margin-top: 0.4em;
+  text-align: center;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.rpg-hexmap-errors {
+  margin-top: 0.4em;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error);
+}
+
+.rpg-hexmap--loading {
+  padding: 2em;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.rpg-hexmap-grid {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.6;
+  pointer-events: none;
+}
+
+/* A joined path with no tile for its sides. */
+.rpg-hexmap-stroke {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+/* Regions: tinted shape, outlined border; colour comes from `color`. */
+.rpg-hexmap-region {
+  pointer-events: none;
+}
+
+.rpg-hexmap-region-fill {
+  fill: currentColor;
+  fill-opacity: 0.16;
+  stroke: none;
+}
+
+.rpg-hexmap-region-edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-opacity: 0.9;
+}
+
+.rpg-hexmap-region:not(.depth-0) .rpg-hexmap-region-fill {
+  fill-opacity: 0.1;
+}
+
+.rpg-hexmap-region:not(.depth-0) .rpg-hexmap-region-edge {
+  stroke-dasharray: 4 3;
+}
+
+.rpg-hexmap-region-label {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  font-family: var(--font-interface);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.rpg-hexmap-static {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Settings → Hex maps → Pack browser (lib/components/hexmap/hex-pack-studio). */
+.rpg-hexstudio {
+  display: grid;
+  gap: 0.75em;
+  margin-bottom: 1.5em;
+}
+
+.rpg-hexstudio menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexstudio > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.rpg-hexstudio-save {
+  margin-left: auto !important;
+}
+
+.rpg-hexstudio button.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-hexstudio-count {
+  margin-left: 0.35em;
+  font-size: var(--font-ui-smaller);
+  opacity: 0.7;
+}
+
+.rpg-hexstudio-browse {
+  display: grid;
+  grid-template-columns: minmax(10em, 14em) 1fr;
+  gap: 0.75em;
+  height: 18em;
+}
+
+.rpg-hexstudio-tree,
+.rpg-hexstudio-tiles {
+  overflow: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 0.4em;
+}
+
+.rpg-hexstudio-tree ul {
+  margin: 0;
+  padding-left: 0.9em;
+  list-style: none;
+}
+
+.rpg-hexstudio-tree > ul {
+  padding-left: 0;
+}
+
+.rpg-hexstudio-tree button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.15em 0.4em;
+  height: auto;
+  box-shadow: none;
+  background: none;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-tiles ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5em, 1fr));
+  gap: 0.3em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexstudio-tiles button {
+  width: 100%;
+  height: 4.5em;
+  padding: 0.15em;
+  background: var(--background-secondary);
+}
+
+.rpg-hexstudio-tiles img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.rpg-hexstudio-detail {
+  display: grid;
+  grid-template-columns: minmax(12em, 1fr) minmax(12em, 1fr);
+  gap: 0.75em;
+}
+
+.rpg-hexstudio-preview {
+  grid-row: span 2;
+  margin: 0;
+  padding: 0.5em;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+}
+
+.rpg-hexstudio-preview > svg {
+  max-height: 16em;
+}
+
+.rpg-hexstudio-preview figcaption {
+  margin-top: 0.3em;
+  text-align: center;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexstudio fieldset {
+  margin: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 0.4em 0.6em 0.6em;
+}
+
+.rpg-hexstudio fieldset legend {
+  padding: 0 0.3em;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+}
+
+.rpg-hexstudio-tune {
+  display: grid;
+  gap: 0.3em;
+}
+
+.rpg-hexstudio-tune label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-tune input {
+  width: 6em;
+}
+
+.rpg-hexstudio-name {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+}
+
+.rpg-hexstudio-name input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rpg-hexstudio-catalog table {
+  width: 100%;
+  margin: 0.4em 0;
+}
+
+.rpg-hexstudio-catalog td input {
+  width: 100%;
+}
+
+.rpg-hexstudio-catalog td:nth-child(3),
+.rpg-hexstudio-catalog td:nth-child(4) {
+  width: 2em;
+}
+
+.rpg-hexstudio-swatch {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  vertical-align: middle;
+}

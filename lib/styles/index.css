@@ -58,6 +58,7 @@
 @import "./components/hgroup-row.css";
 @import "./components/figure-column.css";
 @import "./components/figure-block.css";
+@import "./components/hex-map.css";
 @import "./components/line-control-stats.css";
 @import "./components/fieldset-health.css";
 @import "./components/progress-numbered.css";
