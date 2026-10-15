@@ -35,6 +35,9 @@ export interface InventoryItemEntry {
   equipped?: boolean;
   for_sale?: boolean;
   notes?: string;
+  /** Its own name, shown instead of the item's — what tells one Pouch from
+   *  another, and what a log addresses it by (`[Inv:Talon/Sling Pouch/…]`). */
+  label?: string;
   contents?: InventoryItemEntry[];
 }
 

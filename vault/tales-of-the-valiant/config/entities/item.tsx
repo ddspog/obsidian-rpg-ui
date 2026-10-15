@@ -56,6 +56,18 @@ const item = CreateEntity<ItemEntity>(async ({ wiki }) => {
       $name?: string;
       $contents?: string;
     }>) ?? [];
+  // Where this vault keeps them: enchantments (the `item.magic` templates),
+  // and the party's own collected magic and personal items.
+  const enchantments =
+    ((await wiki.folder("worldbuilding/enchantments")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
+  const collected =
+    ((await wiki.folder("adventuring/collected")) as unknown as Array<{
+      $name?: string;
+      $contents?: string;
+    }>) ?? [];
 
   const items: Record<string, ItemElementData> = {};
   const magic: Record<string, ItemMagicData> = {};
@@ -90,6 +102,8 @@ const item = CreateEntity<ItemEntity>(async ({ wiki }) => {
   index(magicCompendium);
   index(containersCompendium);
   index(adventurers);
+  index(enchantments);
+  index(collected);
 
   return {
     lookup: {

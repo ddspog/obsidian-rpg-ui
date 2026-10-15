@@ -1,4 +1,11 @@
-import { EntityDescriptor, CharacterDecl, CompendiumLib, FeatureEntry, ResolvedView } from "rpg-ui-toolkit";
+import {
+  EntityDescriptor,
+  CharacterDecl,
+  CompendiumLib,
+  FeatureEntry,
+  ResolvedView,
+  SessionAction,
+} from "rpg-ui-toolkit";
 import { HeaderProps } from "../blocks/character/header.types";
 import { HealthProps } from "../blocks/character/health.types";
 import { StatsProps } from "../blocks/character/stats.types";
@@ -31,6 +38,12 @@ export type CharacterLookup = {
    * its own page in the vault.
    */
   $defaultFeatures: FeatureEntry[];
+  /**
+   * The conditions the system knows (`concepts/conditions/*`), by lowercase
+   * name: each one's rules — what a status card shows, and how a roll's
+   * `effects` tell a condition from a mere note.
+   */
+  $conditions?: Record<string, { name: string; rules: string[] }>;
   /**
    * Resolve features for the current character given header + recorded
    * picks. Memoised by content within a render cycle so multiple
@@ -100,6 +113,8 @@ export type CharacterExpressions = {
   CharacterLevel: () => number;
   /** Proficiency Bonus based on Character Level. */
   ProficiencyBonus: () => number;
+  /** A caster's spell slots by circle (index 0 = 1st), from its tier and class level. */
+  SpellSlots: (caster: string) => number[];
   /** Generic calculation for any attribute or skill modifier, given the attribute value, proficiency bonus, and any other bonuses or penalties. */
   ModifierTotal: (params: {
     attribute: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
@@ -113,6 +128,22 @@ export type CharacterExpressions = {
     vantage: number;
     bonus: number;
   }) => number;
+  /**
+   * What a named roll term is worth for this character — the system's answer to
+   * a session log's `d20+[[Insight]]`. A skill (`Insight`) or an attribute
+   * (`Wisdom`, `WIS`); `undefined` for a name this system does not know.
+   */
+  Modifier: (name: string) => number | undefined;
+  /** The Armor Class attacks are rolled against — worn armor and shield, as the sheet shows it. */
+  ArmorClass: () => number;
+  /** Hit points as the sheet has them: current and max. */
+  HitPoints: () => { current: number; max: number } | undefined;
+  /**
+   * What the character can do in a session — its available attacks (weapons
+   * in hand, attack and save spells, feature rolls) and the basic actions —
+   * as session-log cards.
+   */
+  SessionActions: () => SessionAction[];
 };
 
 /** Props shapes for each block in the character entity */
