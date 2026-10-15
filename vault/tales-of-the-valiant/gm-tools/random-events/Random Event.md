@@ -49,7 +49,10 @@ generators:
       - "@[[Event Meaning]]#event-meaning"
 cards:
   - name: Trigger a Random Event
-    stack: generator
+    stack: scene
+    rank: 3
+    icon: "⚡"
+    summary: Generate a Random Event — roll its Event Focus, then its Meaning, and interpret the two together.
     emits:
       - "@random-event"
       - { event: { text: "{{event}}" } }

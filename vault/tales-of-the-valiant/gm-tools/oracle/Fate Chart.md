@@ -44,6 +44,14 @@ source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
 oracle:
   question: '{{question}}'
   chaos: true
+cards:
+  - name: Fate Question
+    stack: oracle
+    rank: 1
+    icon: "🔮"
+    summary: Ask a yes/no question, pick its odds, and roll d100 — the answer comes from the roll and the current Chaos Factor.
+    emits:
+      - { oracle: { question: "{{question}}", consult: Fate Chart } }
 ---
 Mythic's core oracle. Ask a Yes/No [[Fate Question]], judge the Odds, then read the
 cell where your Odds row meets the current [[Chaos Factor]] and roll d100 against it.

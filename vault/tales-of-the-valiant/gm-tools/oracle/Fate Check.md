@@ -21,13 +21,19 @@ Not everyone likes looking up percentile values on a table. If you'd rather not 
 id: fate-check
 name: Fate Check
 source: 'From **System Neutral** "Mythic Game Emulator 2E" by **Word Mill**'
-steps:
-  - choice: Roll a Fate Check
-    calc: "(note: pending — 2d10 + Odds/Chaos modifiers and doubles≤CF detection not yet built; use the tables below)"
+cards:
+  - name: Fate Check
+    stack: oracle
+    rank: 2
+    icon: "🎲"
+    summary: Ask a yes/no question and roll 2d10 plus the odds and Chaos Factor modifiers — 11 or more is a Yes.
+    emits:
+      - { oracle: { question: "{{question}}", consult: Fate Check } }
 ---
 The 2d10 alternative to the Fate Chart. Add the dice, apply the Odds and Chaos Factor
-modifiers, and read the total against the answers table. (Interactive resolver pending —
-the modifier and answer tables below are the operating reference.)
+modifiers, and read the total against the answers table below: 11 or more is a Yes,
+18–20 an Exceptional Yes, 2–4 an Exceptional No, and matching dice at or under the
+Chaos Factor also trigger a [[Random Event]].
 ```
 ## Adjusts for Odds & Chaos Factor
 Like the d100 Fate Chart, a 2d10 Fate Check is modified based on the current [[Chaos Factor]] and the Odds assigned to a Fate Question. The "Fate Check Modifiers" table on the next page breaks down how the Odds and Chaos Factor affect your roll results.
