@@ -1,0 +1,21 @@
+# SVG hex pack — imported from hex-map-editor.
+# Square textures: drawn clipped to the hex (clip: true).
+name: "SVG"
+description: "Flat vector textures, clipped to each hex"
+version: "1.0.0"
+
+defaults:
+  hexWidth: 200
+  zoom: 1.0
+  offsetX: 0
+  offsetY: 0
+  borderWidth: 0.5
+  clip: true
+
+terrains: {}
+files: {}
+catalog:
+  plains: grass
+  forest: forest
+  ocean: water
+  mountain: stone

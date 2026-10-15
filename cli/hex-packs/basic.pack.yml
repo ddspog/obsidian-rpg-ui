@@ -1,0 +1,158 @@
+# Basic hex pack — imported from hex-map-editor.
+# hexWidth: image pixels the hex face spans (tiles and sprites share a scale).
+# offsetX / offsetY: image pixels. zoom: extra multiplier.
+name: "Basic"
+description: "Hand-drawn 3D hex tiles, paths and stack sprites"
+version: "1.0.0"
+
+defaults:
+  hexWidth: 477
+  zoom: 1.0
+  offsetX: 0
+  offsetY: 0
+  borderWidth: 0
+
+# Per-layer, per-folder ("forest" or "stack/island") and per-file
+# ("forest/lush/conifer-0") overrides, most specific last.
+layers: {}
+terrains: {}
+files:
+  # The peak tiles' art sits 49 px left and 7 px up of the image centre.
+  "mountain/Hex - Mountains, peak (badlands)": { offsetX: 49, offsetY: 7 }
+  "mountain/Hex - Mountains, peak (cursed)": { offsetX: 49, offsetY: 7 }
+  "mountain/rocky/peak": { offsetX: 49, offsetY: 7 }
+  "mountain/lush/peak": { offsetX: 49, offsetY: 7 }
+  "mountain/snowy/peak": { offsetX: 49, offsetY: 7 }
+
+# Short names usable in maps: `t(0,0): dry-plains`.
+catalog:
+  plains: plains[lush]
+  grassland: plains[lush][clean]
+  dry-plains: plains(dry)
+  dead-plains: plains(dead)
+  cursed-plains: plains(cursed)
+  wasteland: plains(wasteland)
+  damp-plains: plains[damp]
+  desert: plains[desert]
+  farmland: plains[farmland]
+  snow: plains[Snow]
+  forest: forest[lush]
+  conifer-forest: forest[lush][conifer]
+  deciduous-forest: forest[lush][deciduous]
+  snowy-forest: forest[snowy]
+  dry-forest: forest(dry)
+  dead-forest: forest(dead)
+  hills: hills[lush]
+  snowy-hills: hills[snowy]
+  desert-hills: hills[desert]
+  mountain: mountain[rocky][medium]
+  mountains: mountain[rocky][low]
+  peak: mountain[rocky][peak]
+  foothills: mountain[lush][foothills]
+  snowy-mountain: mountain[snowy]
+  volcano: mountain[rocky][volcano]
+  ocean: water[Ocean](still water)
+  sea: water[Ocean](soft waves)
+  rough-sea: water[Ocean](waves)
+  lake: water[Ocean](still water)
+  swamp: water[Swamp]
+  wetlands: wetlands(lush)
+  marsh: wetlands(damp)
+  city: urban[City](lush)
+  town: urban[Town](lush)
+  village: urban[Farm ](lush)
+  fields: urban[Farmland](lush)
+  monastery: urban[Monastery](lush)
+  tower: urban[Tower](lush)
+  ruin: landmarks(lush)
+
+# Paths that join up: `p(q,r): roads` picks the tile for the sides that
+# face neighbouring hexes with the same path (sides N,NE,SE,S,SW,NW; tiles
+# are paths in the path layer, without extension). Measured from the art.
+# A side combination with no tile is drawn as a plain stroke.
+autotile:
+  roads:
+    tiles:
+      "N": "roads/clean/start-0"
+      "NE": "roads/clean/start-1"
+      "SE": "roads/clean/start-2"
+      "S": "roads/clean/start-3"
+      "SW": "roads/clean/culdesac-4"
+      "NW": "roads/clean/culdesac-5"
+      "N,NE": "roads/clean/turn60-0"
+      "N,S": "roads/clean/straight-0"
+      "N,SW": "roads/clean/turn120-4"
+      "N,NW": "roads/messy/turn60-5"
+      "NE,SE": "roads/clean/turn60-1"
+      "NE,SW": "roads/clean/straight-1"
+      "NE,NW": "roads/clean/turn120-5"
+      "SE,S": "roads/clean/turn60-2"
+      "SE,SW": "roads/clean/turn120-2"
+      "SE,NW": "roads/messy/straight-2"
+      "S,SW": "roads/messy/turn60-3"
+      "S,NW": "roads/clean/turn120-3"
+      "SW,NW": "roads/messy/turn60-4"
+      "N,NE,SE": "roads/clean/nfork-1"
+      "N,NE,S": "roads/messy/yfork-3"
+      "N,NE,NW": "roads/clean/nfork-0"
+      "N,SE,S": "roads/messy/lfork-0"
+      "N,SE,NW": "roads/clean/yfork-2"
+      "N,S,SW": "roads/clean/yfork-0"
+      "NE,SE,S": "roads/clean/nfork-2"
+      "NE,SE,SW": "roads/messy/yfork-4"
+      "NE,SE,NW": "roads/messy/lfork-5"
+      "NE,SW,NW": "roads/clean/yfork-1"
+      "SE,S,SW": "roads/clean/nfork-3"
+      "N,NE,S,NW": "roads/clean/pfork-3"
+      "N,SE,S,SW": "roads/clean/pfork-0"
+      "N,SE,S,NW": "roads/clean/xfork-0"
+      "N,SE,SW,NW": "roads/clean/pfork-2"
+      "NE,SE,SW,NW": "roads/clean/xfork-6"
+      "NE,S,SW,NW": "roads/clean/pfork-1"
+  rivers:
+    connectsTo: [water]   # also runs into a neighbouring water hex
+    tiles:
+      "N": ["rivers/Hex - River 1 N", "rivers/Hex - River 10 N", "rivers/Hex - River 6 N"]
+      "NE": ["rivers/Hex - River 1 NE", "rivers/Hex - River 6 NE"]
+      "SE": ["rivers/Hex - River 1 SE", "rivers/Hex - River 6 SE"]
+      "S": ["rivers/Hex - River 1 S", "rivers/Hex - River 10 S", "rivers/Hex - River 6 S"]
+      "SW": "rivers/Hex - River 10 SW"
+      "NW": "rivers/Hex - River 10 NW"
+      "N,NE": "rivers/Hex - River 5 NE"
+      "N,S": ["rivers/Hex - River 2 N", "rivers/Hex - River 9 N"]
+      "N,SW": ["rivers/Hex - River 14", "rivers/Hex - River 4 N"]
+      "N,NW": "rivers/Hex - River 8 NW"
+      "NE,SE": "rivers/Hex - River 5 E"
+      "NE,SW": "rivers/Hex - River 2 NE"
+      "NE,NW": "rivers/Hex - River 4 NE"
+      "SE,S": "rivers/Hex - River 5 SE"
+      "SE,SW": "rivers/Hex - River 4 SE"
+      "SE,NW": "rivers/Hex - River 9 SE"
+      "S,SW": "rivers/Hex - River 8 SW"
+      "S,NW": ["rivers/Hex - River 4 S", "rivers/Hex - River 4b"]
+      "SW,NW": "rivers/Hex - River 8 W"
+      "N,NE,SE": "rivers/Hex - River 11 NE"
+      "N,NE,S": "rivers/Hex - River 7 S"
+      "N,NE,NW": "rivers/Hex - River 11 N"
+      "N,SE,S": "rivers/Hex - River 7 N"
+      "N,SE,NW": ["rivers/Hex - River 3 SE", "rivers/Hex - River 7 SE"]
+      "N,S,SW": "rivers/Hex - River 3 N"
+      "NE,SE,S": "rivers/Hex - River 11 SE"
+      "NE,SE,SW": "rivers/Hex - River 7 SW"
+      "NE,SE,NW": "rivers/Hex - River 7 NW"
+      "NE,SW,NW": "rivers/Hex - River 3 NE"
+      "SE,S,SW": "rivers/Hex - River 11 S"
+      "N,NE,S,NW": "rivers/Hex - River 13 S"
+      "N,SE,S,SW": "rivers/Hex - River 13 N"
+      "N,SE,S,NW": "rivers/Hex - River 12 N"
+      "N,SE,SW,NW": "rivers/Hex - River 13 SE"
+      "NE,SE,SW,NW": "rivers/Hex - River 12 E"
+      "NE,S,SW,NW": "rivers/Hex - River 13 NE"
+  wall:
+    tiles:
+      "N,S": "wall/Hex - Great Wall 2"
+      "N,SW": "wall/Hex - Great Wall 4"
+      "NE,SW": "wall/Hex - Great Wall 1"
+      "NE,NW": "wall/Hex - Great Wall 3"
+      "SE,SW": "wall/Hex - Great Wall 6"
+      "S,NW": "wall/Hex - Great Wall 5"
