@@ -13,10 +13,13 @@
 
 import * as React from "react";
 import { Lucide } from "lib/ui/primitives/Lucide";
+import { ActorPill } from "./action-call";
 import { InlineMarkdown } from "./inline-markdown";
 import { ChoiceOnlyView, ChoiceSelect, DieChip, FormulaView, type DieEditContext } from "./formula";
 import { parseFormulaLine, editableTerms, rollDie, termSlotInitial } from "lib/domains/session-log/formula";
 import { splitResultChoice } from "lib/domains/session-log/choice";
+import type { ConditionChange } from "lib/domains/session-log/conditions";
+import type { RoundEconomy } from "lib/domains/session-log/round-economy";
 import { ListSheetModal } from "./list-sheet-modal";
 import { dieEditKey, resultEditKey } from "lib/domains/session-log/prose-model";
 import type { SidebarItem, SidebarRow, RowIcon, SceneRowData, SidebarPill } from "lib/domains/session-log/prose-model";
@@ -44,7 +47,7 @@ export interface SidebarEditContext {
 /** True when a detail row carries a formula with at least one editable term. */
 export function hasEditableValue(rows: SidebarRow[]): boolean {
   return rows.some((row) => {
-    if (!row.detail || !row.source) return false;
+    if (!(row.detail || row.rollable) || !row.source) return false;
     // Every formula on the line, so a party roll counts as editable as any other.
     return (parseFormulaLine(row.content) ?? []).some((f) => editableTerms(f).length > 0);
   });
@@ -57,6 +60,20 @@ function RowIconView({ icon }: { icon: RowIcon }) {
     icon.lucide
   ];
   return Comp ? <Comp size={15} className="lonelog-row-lucide" /> : null;
+}
+
+/** A foe's health as of this entry — `HP 19/26 · surprised`, or its end state — shown on hover. */
+function FoeHealth({ foe }: { foe: { current?: number; max?: number; state?: string; conditions?: string[] } }) {
+  const hp =
+    foe.current != null
+      ? `HP ${foe.current}${foe.max != null ? `/${foe.max}` : ""}`
+      : foe.max != null
+        ? `HP ${foe.max}`
+        : "";
+  const text = [hp, ...(foe.conditions ?? []), foe.state].filter(Boolean).join(" · ");
+  if (!text) return null;
+  const down = foe.state != null || foe.current === 0;
+  return <span className={`lonelog-foe-health${down ? " is-down" : ""}`}>{text}</span>;
 }
 
 /**
@@ -216,7 +233,7 @@ function RowContent({
   if (row.detail) {
     // A line can hold SEVERAL checks — a party roll, one per character. A single one
     // keeps the path it always had, so nothing about an ordinary row changes.
-    const formulas = parseFormulaLine(row.content);
+    const formulas = parseFormulaLine(row.content, { vars: row.vars, refs: row.refs });
     const formula = formulas?.length === 1 ? formulas[0] : null;
     const party = formulas && formulas.length > 1 ? formulas : null;
     const source = row.source;
@@ -253,7 +270,7 @@ function RowContent({
             ))}
           </span>
         ) : formula ? (
-          <FormulaView formula={formula} edit={die} onChoice={onChoice} />
+          <FormulaView formula={formula} edit={die} onChoice={onChoice} named={!!row.combatant} />
         ) : hasChoice ? (
           <ChoiceOnlyView
             text={row.content}
@@ -263,6 +280,7 @@ function RowContent({
         ) : (
           <InlineMarkdown source={row.content} sourcePath={sourcePath} />
         )}
+        {row.foe && <FoeHealth foe={row.foe} />}
         {row.spawns && (
           <span className="lonelog-row-spawns" aria-label="generates the following steps">
             …
@@ -272,30 +290,122 @@ function RowContent({
     );
   }
   // A top-level roll row (`d: 3d8!=19`) carries a formula too, so it renders as
-  // dice rather than as text. Read-only: these rows have no source line to write
-  // an edit back to, unlike the indented working lines under a `gen:`.
-  const formulas = parseFormulaLine(row.content);
+  // dice rather than as text. Read-only unless it is ROLLABLE (an `o:` line, which
+  // keeps its source): then its dice roll and take typed values like a working
+  // line's, while its answer stays derived from the roll.
+  const formulas = parseFormulaLine(row.content, { vars: row.vars, refs: row.refs });
   if (formulas) {
+    const source = row.source;
+    const rollEdit: DieEditContext | undefined =
+      row.rollable && edit && source
+        ? {
+            valueFor: (term, slot) => edit.dieEdits[dieEditKey(source, term.raw, slot)] ?? termSlotInitial(term, slot),
+            onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value),
+          }
+        : undefined;
     return (
       <>
         {row.label && <span className="lonelog-row-label">{row.label}</span>}
         {formulas.length > 1 ? (
           <span className="lonelog-party">
             {formulas.map((f, i) => (
-              <FormulaView key={i} formula={f} />
+              <FormulaView key={i} formula={f} edit={rollEdit} />
             ))}
           </span>
         ) : (
-          <FormulaView formula={formulas[0]} />
+          <FormulaView formula={formulas[0]} edit={rollEdit} />
         )}
+        {row.leaves && <TargetLeft leaves={row.leaves} sourcePath={sourcePath} />}
+        {row.inflicts && <Inflicts changes={row.inflicts} />}
       </>
     );
   }
   return (
     <>
+      {row.actorPill && (
+        <>
+          <ActorPill label={row.actorPill.label} page={row.actorPill.page} sourcePath={sourcePath} />{" "}
+        </>
+      )}
       {row.label && <span className="lonelog-row-label">{row.label}</span>}
       <InlineMarkdown source={row.content} sourcePath={sourcePath} />
+      {row.inflicts && <Inflicts changes={row.inflicts} />}
+      {row.economy && <RoundTally economy={row.economy} />}
     </>
+  );
+}
+
+/**
+ * A round's tally, on its line: the owner's action, bonus action and reaction
+ * — each a slot, filled once used, flagged past one (a feature may allow it) —
+ * the attacks made, and who else reacted in it.
+ */
+function RoundTally({ economy }: { economy: RoundEconomy }) {
+  // Its hover says what spent it: `bonus: Wind Up (with Glaive)`.
+  const slot = (label: string, n: number, used: string[]) => (
+    <data
+      value={n}
+      className={`lonelog-economy-slot${n > 0 ? " is-used" : ""}${n > 1 ? " is-over" : ""}`}
+      title={n === 0 ? `No ${label} yet` : `${label}: ${used.join(", ")}${n > 1 ? " — more than one" : ""}`}
+    >
+      {label}
+      {n > 1 && ` ×${n}`}
+    </data>
+  );
+  return (
+    <span className="lonelog-economy">
+      {slot(economy.multiattack ? "action · multiattack" : "action", economy.action, economy.used.action)}
+      {slot("bonus", economy.bonus, economy.used.bonus)}
+      {slot("reaction", economy.reaction, economy.used.reaction)}
+      {economy.attacks > 0 && (
+        <data
+          value={economy.attacks}
+          className="lonelog-economy-attacks"
+          title={`${economy.attacks} attack${economy.attacks > 1 ? "s" : ""}`}
+        >
+          ⚔ {economy.attacks}
+        </data>
+      )}
+      {economy.reacted.length > 0 && (
+        <small
+          className="lonelog-economy-reacted"
+          title={economy.reactions.map((r) => `${r.actor}: ${r.name}`).join(", ")}
+        >
+          {economy.reacted.join(", ")} reacted
+        </small>
+      )}
+    </span>
+  );
+}
+
+/** The conditions an entry gave its target (`pinned`) or lifted, by what left them. */
+function Inflicts({ changes }: { changes: ConditionChange[] }) {
+  return (
+    <span className="lonelog-row-inflicts">
+      {changes.map((c) => (
+        <span
+          key={`${c.add ? "+" : "-"}${c.condition}`}
+          className={`lonelog-row-inflict${c.add ? "" : " is-lifted"}`}
+          title={`${c.add ? "Leaves it" : "Frees it from being"} ${c.condition}${c.from ? ` (${c.from})` : ""}`}
+        >
+          {c.condition}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** What a damage row left its target with: `→ Fat Kobold, A KO` — the target a
+ *  link (as the log wrote it), its health after it. */
+function TargetLeft({ leaves, sourcePath }: { leaves: { target: string; left: string }; sourcePath: string }) {
+  return (
+    <span className="lonelog-row-leaves">
+      <span className="lonelog-row-leaves-arrow" aria-hidden="true">
+        →
+      </span>{" "}
+      <InlineMarkdown source={leaves.target} sourcePath={sourcePath} className="lonelog-row-leaves-target" />{" "}
+      <span className={`lonelog-row-leaves-left${leaves.left === "KO" ? " is-ko" : ""}`}>{leaves.left}</span>
+    </span>
   );
 }
 
@@ -347,7 +457,7 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
   return (
     <div
       ref={anchorRef}
-      className={`lonelog-sidebar-item kind-${item.kind} ${selected ? "is-selected" : ""}`}
+      className={`lonelog-sidebar-item kind-${item.kind}${item.group ? ` in-multiattack is-${item.group}` : ""} ${selected ? "is-selected" : ""}`}
       {...interaction}
     >
       <table className="lonelog-sidebar-table">

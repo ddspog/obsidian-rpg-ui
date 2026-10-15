@@ -17,6 +17,7 @@ import type {
   GMFeature,
   GMGenStep,
   GMGeneratorAspect,
+  GMLikelihood,
   GMOracleAspect,
   GMRollAspect,
   GMSceneAspect,
@@ -26,11 +27,11 @@ import type {
 } from "../features/types";
 
 /** Canonical emission order — aspects chain into one block in this order. */
-const ASPECT_ORDER: GMStack[] = ["oracle", "roll", "table", "generator", "event", "scene"];
+const ASPECT_ORDER = ["oracle", "roll", "table", "generator", "event", "scene"] as const satisfies readonly GMStack[];
 
 /** The aspects a feature declares, in canonical emission order. */
 export function gmStacks(feature: GMFeature): GMStack[] {
-  return ASPECT_ORDER.filter((k) => feature[k] != null);
+  return ASPECT_ORDER.filter((k) => feature[k] != null) as GMStack[];
 }
 
 /** The stack a card lives under: explicit `stack:` or the first declared aspect. */
@@ -44,8 +45,19 @@ export function gmPrimaryStack(feature: GMFeature): GMStack | null {
  * imported resource, named by the `abbr` declared in a `reads:` file) or the
  * `chaos:` / `cf:` sugar (both default the abbr to `CF`). Null when none.
  */
-function oracleCf(o: GMOracleAspect | undefined): { abbr: string; value: string } | null {
+function oracleCf(o: GMOracleAspect | undefined): { abbr: string; value: string; adjust?: true } | null {
   if (!o) return null;
+  // `adjust: [+1, -1]` — the card MOVES the resource as it opens the question
+  // (`? [CF-1] …`), the amount picked when the card is played. Its checks then
+  // read the moved value from the log, so nothing is baked in for them.
+  if (o.adjust && o.adjust.length > 0) {
+    const abbr = o.tag ?? "CF";
+    const options = o.adjust.map((a) => {
+      const n = typeof a === "number" ? a : parseInt(String(a), 10);
+      return Number.isFinite(n) ? (n < 0 ? `${n}` : `+${n}`) : String(a);
+    });
+    return { abbr, value: `{{${abbr.toLowerCase()}:${options.join("|")}}}`, adjust: true };
+  }
   if (o.cf != null) return { abbr: o.tag ?? "CF", value: String(o.cf) };
   if (o.tag) return { abbr: o.tag, value: `{{${o.tag.toLowerCase()}}}` };
   if (o.chaos) return { abbr: "CF", value: "{{cf}}" };
@@ -55,7 +67,8 @@ function oracleCf(o: GMOracleAspect | undefined): { abbr: string; value: string 
 /** The resource token VALUE shared across a feature's aspects (its generator's
  *  `vs:` reads the same slot/literal the oracle emits). */
 function cfToken(feature: GMFeature): string | null {
-  return oracleCf(feature.oracle)?.value ?? null;
+  const tok = oracleCf(feature.oracle);
+  return tok && !tok.adjust ? tok.value : null;
 }
 
 /** Ensure a dice expression is emitted unrolled (`d10` → `d10=`). */
@@ -86,11 +99,33 @@ export function refLabel(ref: string): string {
   return seg.replace(/\.md$/i, "").replace(/#.*$/, "").trim();
 }
 
+/** The odds as a Fate Chart prints them, in its order — the `o:` line's choices. */
+const ODDS_WORDING: Record<GMLikelihood, string> = {
+  certain: "Certain",
+  "near-certain": "Nearly Certain",
+  "very-likely": "Very Likely",
+  likely: "Likely",
+  "50/50": "50/50",
+  unlikely: "Unlikely",
+  "very-unlikely": "Very Unlikely",
+  "near-impossible": "Nearly Impossible",
+  impossible: "Impossible",
+};
+
 function emitOracle(o: GMOracleAspect): string[] {
   const head = "?" + (o.attribution ? `(${o.attribution})` : "");
   const tok = oracleCf(o);
-  const cfTag = tok ? ` [${tok.abbr}:${tok.value}]` : "";
+  const cfTag = tok ? (tok.adjust ? ` [${tok.abbr}${tok.value}]` : ` [${tok.abbr}:${tok.value}]`) : "";
   const lines = [`${head}${cfTag} ${o.question}`.trim()];
+  // `consult:` names the oracle that answers — an `o:` line under the question,
+  // with the odds judged as it is asked (a choice) unless the card fixes them.
+  // Its chaos factor is the log's current one, so nothing is baked in.
+  if (o.consult) {
+    const odds =
+      o.odds && o.odds !== "ask" ? ODDS_WORDING[o.odds] : `{{odds:${Object.values(ODDS_WORDING).join("|")}}}`;
+    lines.push(`o: ${o.consult} (${odds}) ${unrolled(o.roll ?? (/fate\s*check/i.test(o.consult) ? "2d10" : "d100"))}`);
+    return lines;
+  }
   // An answer line only when the oracle resolves itself (roll / likelihood /
   // interpret). When a generator/roll aspect carries the resolution instead,
   // the question stands alone — e.g. a Mythic scene check.
@@ -265,7 +300,8 @@ function resolveEmits(emits: EmitPiece[], generators?: NamedGenerator[]): Inline
  *  the generator's `vs:` reads the same slot/literal the oracle emits. */
 function cardCfToken(pieces: InlinePiece[]): string | null {
   const o = pieces.find((p): p is { oracle: GMOracleAspect } => "oracle" in p)?.oracle;
-  return oracleCf(o)?.value ?? null;
+  const tok = oracleCf(o);
+  return tok && !tok.adjust ? tok.value : null;
 }
 
 /**

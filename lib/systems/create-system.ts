@@ -217,6 +217,10 @@ function buildEntity(
     };
     computedExpressions.set(exprId, expr);
   }
+  // Kept per entity too: the system-wide map is keyed by name alone, so two
+  // entities defining the same expression (`Modifier` on character AND stat)
+  // would otherwise overwrite each other.
+  entityDef.expressions = computedExpressions;
 
   return { entityDef, computedExpressions };
 }

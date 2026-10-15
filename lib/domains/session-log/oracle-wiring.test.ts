@@ -17,8 +17,9 @@ describe("an `o:` line answering the question above it", () => {
     const rows = rowsOf("? [CF:5] Is the gate still guarded?\no: Fate Chart (likely) d100=22 ->\n");
     // The question names nothing: it is the question, and nothing else.
     expect(shown(rows[0])).toBe("[CF 5] Is the gate still guarded?");
-    // Likely at CF 5 is the chart's 65 cell, and 22 beats it.
-    expect(shown(rows[1])).toBe("[Fate Chart likely] [yes on ≤65] d100=22 → Yes");
+    // Likely at CF 5 is the chart's 65 cell, and 22 beats it. 22 is also a
+    // double whose digit (2) is within CF 5 — a Random Event fires too.
+    expect(shown(rows[1])).toBe("[Fate Chart likely] [yes on ≤65] [Random Event] d100=22 → Yes");
   });
 
   it("reads the answer off the roll, not off what was typed", () => {
@@ -61,5 +62,30 @@ describe("an `o:` line answering the question above it", () => {
       "? [CF:5] Does the storm break?\no: Fate Chart (likely) d100=22 ->\no: Fate Chart (unlikely) d100=80 ->\n"
     );
     expect(rows.slice(1).map((r) => r.content)).toEqual(["d100=22 → Yes", "d100=80 → No"]);
+  });
+});
+
+describe("Fate rolls that trigger a Random Event, and the Fate Check", () => {
+  it("flags a d100 double only when its digit is within the chaos factor", () => {
+    const at = (roll: number, cf: number) =>
+      rowsOf(`? [CF:${cf}] Q?\no: Fate Chart (50/50) d100=${roll} ->\n`)[1].pills.some(
+        (p) => p.name === "Random Event"
+      );
+    expect(at(55, 8)).toBe(true);
+    expect(at(55, 3)).toBe(false);
+    expect(at(54, 9)).toBe(false);
+  });
+
+  it("answers a Fate Check from 2d10 plus the odds and chaos modifiers", () => {
+    // The book's example: Nearly Impossible (-4) at CF 6 (+1) is -3; a 3 and a 3
+    // make 3 — an Exceptional No, and a double within CF 6, so a Random Event.
+    const [, row] = rowsOf("? [CF:6] Is the guard asleep?\no: Fate Check (Nearly Impossible) 2d10=[3,3] ->\n");
+    expect(shown(row)).toBe("[Fate Check Nearly Impossible] [yes on ≥14] [Random Event] 2d10=[3,3] → No, and... (3)");
+  });
+
+  it("keeps the o: line's source so its die can be rolled in the Log", () => {
+    const [, row] = rowsOf("? Q?\no: Fate Chart (Likely) d100=\n");
+    expect(row.source).toBe("o: Fate Chart (Likely) d100=");
+    expect(row.rollable).toBe(true);
   });
 });

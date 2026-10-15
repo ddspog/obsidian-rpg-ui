@@ -27,6 +27,8 @@
 @import "./components/session-log-overview.css";
 @import "./components/session-log-cards.css";
 @import "./components/session-log-popover.css";
+@import "./components/session-log-hotbar.css";
+@import "./components/session-log-hud-bar.css";
 @import "./components/card-frame.css";
 @import "./components/image-studio.css";
 @import "./components/session-log-drawer.css";

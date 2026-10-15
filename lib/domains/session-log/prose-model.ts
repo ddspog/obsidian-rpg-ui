@@ -13,13 +13,20 @@
  * sidebar card and the scroll target all reference one shared id.
  */
 
+import { actionTarget, leadingActionCall } from "./action-call";
 import { parseSceneMarker } from "lib/domains/lonelog/parser";
-import { answerFateQuestion, fateThreshold } from "lib/domains/gm/fate-chart";
-import { rolledValue } from "./formula";
+import { answerFateCheck, answerFateQuestion, fateCheckModifier, fateThreshold } from "lib/domains/gm/fate-chart";
+import { parseFormula, refStem, rolledDice, rolledValue, type FormulaContext, type FormulaVars } from "./formula";
+import { combatantKey, foldInitiative } from "./initiative";
+import { matchActor } from "./actors";
+import { conditionChange, type ConditionChange } from "./conditions";
+import { foldFoes, segmentFoes } from "./foes";
+import type { InitiativeEntry, InitiativeTag, InventoryTag } from "lib/domains/lonelog/types";
 import type { RollEntry, PersistentTag, OracleCallEntry } from "lib/domains/lonelog/types";
 import type { ResolvedDialOp } from "lib/domains/lonelog/dial-ops";
 import type { ResolvedListOp } from "lib/domains/lonelog/list-ops";
 import type { ProseSegment } from "./prose-grouper";
+import type { RoundEconomy } from "./round-economy";
 import { summarizeRoll } from "./prose-grouper";
 
 export interface ProseFragment {
@@ -40,7 +47,35 @@ export interface ProseSceneHead {
 export type ProseNode =
   | { kind: "paragraph"; fragments: ProseFragment[] }
   | { kind: "narration"; text: string; sourceId: number }
-  | { kind: "dialogue"; speaker: string; speakerType: "pc" | "npc"; text: string; sourceId: number };
+  | { kind: "dialogue"; speaker: string; speakerType: "pc" | "npc"; text: string; sourceId: number }
+  /** A fight, `[COMBAT]` to `[/COMBAT]`: its turns, and who did what in them. */
+  | { kind: "combat"; nodes: ProseNode[]; sourceId: number }
+  /** A turn of the fight (`T2`) — a pass through the initiative order. */
+  | { kind: "turn"; number: number; sourceId: number }
+  /** In a fight, what one creature's action came to — told beside its name. */
+  | { kind: "beat"; actor: string; fragments: ProseFragment[] };
+
+/**
+ * A creature's name as the prose margin shows it, short: a statblock's `Kobold,
+ * Tinkerer` as `K. Tinkerer` (the creature, then which one); one told apart by
+ * a word before it and a letter after (`Thin Kobold, A`) as `T. Kobold` — the
+ * word, then the creature; anything else as written, links read as their text.
+ */
+export function actorLabel(name: string): string {
+  const shown = name
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g, (_m, t: string, a?: string) => a ?? t)
+    .trim();
+  const m = shown.match(/^(.+?),\s*(\S.*)$/);
+  if (!m) return shown;
+  const words = m[1].trim().split(/\s+/);
+  const kind = words.pop()!;
+  const which = m[2].trim();
+  // A variant letter (`, A`): what tells it apart is the word before the creature.
+  if (which.length === 1) {
+    return words.length > 0 ? [...words.map((w) => `${w[0]}.`), kind].join(" ") : shown;
+  }
+  return [...words, `${kind[0]}.`, which].join(" ");
+}
 
 export interface ProseScene {
   head: ProseSceneHead | null;
@@ -58,6 +93,23 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
   let lastParagraph: Extract<ProseNode, { kind: "paragraph" }> | null = null;
   let joinNext = false;
 
+  // The fight being told, if one is open: what follows goes inside it. A fight
+  // opens at its first turn — what's said and done after `[COMBAT]` but before
+  // anyone's turn (the standoff, the taunts) is still the story around it.
+  let combat: Extract<ProseNode, { kind: "combat" }> | null = null;
+  let pendingCombat: number | null = null;
+  const into = (): ProseNode[] => (combat ? combat.nodes : current.nodes);
+  // A round (`R(Kobold, Tinkerer)`) tells everything done in it as one: its
+  // creature's name, beside every action's outcome merged into one paragraph.
+  let round: { actor: string; beat: Extract<ProseNode, { kind: "beat" }> | null } | null = null;
+  const openCombat = () => {
+    if (pendingCombat == null) return;
+    combat = { kind: "combat", nodes: [], sourceId: pendingCombat };
+    current.nodes.push(combat);
+    pendingCombat = null;
+    breakFlow();
+  };
+
   const flushScene = () => {
     if (current.head || current.nodes.length > 0) scenes.push(current);
   };
@@ -67,6 +119,11 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
     current = { head, nodes: [] };
     lastParagraph = null;
     joinNext = false;
+    // A fight that runs on into a new scene carries on there.
+    if (combat) {
+      combat = { kind: "combat", nodes: [], sourceId: combat.sourceId };
+      current.nodes.push(combat);
+    }
   };
 
   const addFragment = (fragment: ProseFragment) => {
@@ -74,7 +131,7 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
       lastParagraph.fragments.push(fragment);
     } else {
       lastParagraph = { kind: "paragraph", fragments: [fragment] };
-      current.nodes.push(lastParagraph);
+      into().push(lastParagraph);
     }
     joinNext = false;
   };
@@ -106,9 +163,61 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
         joinNext = true;
         break;
 
-      case "action-group":
+      case "action-group": {
+        // A fight with no turn marker opens at its first action.
+        openCombat();
+        // In a fight, each action is told beside who took it — or, in a round,
+        // beside whose round it is, joined to what else happened in it.
+        const told = seg.consequences.map((c) => (c.conclusion ?? "").trim()).filter((t) => t && !parseSceneMarker(t));
+        const fragments = told.map((text) => ({ text, sourceId: seg.sourceIndex }));
+        if (combat && round && told.length > 0) {
+          const nodes = into();
+          // Still the latest thing told (nothing said in between): add to it.
+          if (round.beat && nodes[nodes.length - 1] === round.beat) round.beat.fragments.push(...fragments);
+          else {
+            round.beat = { kind: "beat", actor: round.actor, fragments };
+            nodes.push(round.beat);
+          }
+          breakFlow();
+          break;
+        }
+        if (combat && seg.action.actor && told.length > 0) {
+          into().push({ kind: "beat", actor: seg.action.actor, fragments });
+          breakFlow();
+          break;
+        }
+        for (const c of seg.consequences) consumeConclusion(c.conclusion, seg.sourceIndex);
+        break;
+      }
+
       case "world-event":
         for (const c of seg.consequences) consumeConclusion(c.conclusion, seg.sourceIndex);
+        break;
+
+      case "combat-start":
+        pendingCombat = seg.sourceIndex;
+        break;
+
+      case "combat-end":
+        combat = null;
+        pendingCombat = null;
+        round = null;
+        breakFlow();
+        break;
+
+      case "turn":
+        // Whose round it is: what's done next is told beside their name.
+        openCombat();
+        round = combat ? { actor: seg.actor, beat: null } : null;
+        break;
+
+      case "round":
+        openCombat();
+        round = null;
+        if (combat) {
+          into().push({ kind: "turn", number: seg.round, sourceId: seg.sourceIndex });
+          breakFlow();
+        }
         break;
 
       case "oracle":
@@ -120,7 +229,7 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
         break;
 
       case "dialogue":
-        current.nodes.push({
+        into().push({
           kind: "dialogue",
           speaker: seg.entry.speaker,
           speakerType: seg.entry.speakerType,
@@ -131,7 +240,7 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
         break;
 
       case "narrative":
-        current.nodes.push({ kind: "narration", text: seg.entry.text, sourceId: seg.sourceIndex });
+        into().push({ kind: "narration", text: seg.entry.text, sourceId: seg.sourceIndex });
         breakFlow();
         break;
 
@@ -169,7 +278,10 @@ export type SidebarItemKind =
   | "table"
   | "generator"
   | "dial"
-  | "meta";
+  | "meta"
+  | "initiative"
+  | "round"
+  | "turn";
 
 /**
  * One tag in an entry's top "dateline" strip (e.g. `CF 5`, `Goblin: dead`). The
@@ -246,6 +358,42 @@ export interface SidebarRow {
    * rewrites every twin.
    */
   sourceNth?: number;
+  /** Running resource values in effect at this row (`CF` → 5), so a bare
+   *  threshold in a formula (`d10=8 vs CF`) reads the current value. */
+  vars?: FormulaVars;
+  /** Who acts on this row (`@(Talon)`, `d(Talon):`) — whose modifiers a
+   *  `[[Name]]` term in its roll reads. */
+  actor?: string;
+  /** An action's actor, shown once before its text — in the `@` squircle, a
+   *  link to their page once the log knows it (`Talon` → `Talon Pallton`). */
+  actorPill?: { label: string; page?: string };
+  /** What a damage row left its target with: the target as the log wrote it
+   *  (its link — `Fat [[Kobold, A]]`) and its health after (`6/9 HP`, `KO`). */
+  leaves?: { target: string; left: string };
+  /** What the entry did to its target's conditions (`+pinned` from Icicle
+   *  Javelin º), shown on its attack row — the target's own row would only
+   *  repeat the action line. */
+  inflicts?: ConditionChange[];
+  /** A round line's tally: the owner's action, bonus action, reaction and
+   *  attacks so far, and who else reacted in it. */
+  economy?: RoundEconomy;
+  /** The action's target as the log first named it — its link (`Fat [[Kobold, A]]`) —
+   *  once its own row is dropped for repeating the action line. */
+  targetAs?: string;
+  /** The actor's value for each `[[Name]]` on the row (`Insight` → 3), filled
+   *  by {@link withActorRefs} once the PCs are loaded. */
+  refs?: Record<string, number>;
+  /** An initiative-order row's combatant, so its written roll can be worked
+   *  back from the total once the combatant's modifiers are known. */
+  combatant?: InitiativeEntry;
+  /** A foe row: its health and conditions as of this entry, shown on hover. */
+  foe?: { current?: number; max?: number; state?: string; conditions?: string[] };
+  /** A top-level row whose DICE can be rolled and typed in the Log (an `o:`
+   *  line), written back through `source`. Its result is derived, not typed. */
+  rollable?: boolean;
+  /** A check's result worked out from its roll — `Success` / `Failure` against
+   *  its DC — when none was written. */
+  derivedResult?: string;
 }
 
 /** Rebuild the `=> ` text for an edited scene (re-adding the "S" prefix when it was present). */
@@ -330,6 +478,9 @@ export function applyTokenEdits(
 }
 
 export interface SidebarItem {
+  /** An attack a Multiattack holds (`part`, the `last` of them) — drawn on as
+   *  one entry, its line folded into the first one's header strip. */
+  group?: "part" | "last";
   /** Shared provenance id (segment.sourceIndex). */
   id: number;
   kind: SidebarItemKind;
@@ -351,8 +502,10 @@ export function dieEditKey(source: string, raw: string, slot: number): string {
 function tagPill(tag: PersistentTag): SidebarPill {
   switch (tag.kind) {
     case "npc":
-    case "foe":
       return { name: tag.name, value: tag.tags.length ? tag.tags.join(", ") : undefined, kind: tag.kind };
+    case "foe":
+      // Listed as the entry's foe rows (with tracked HP), not as a pill.
+      return { name: "", kind: tag.kind };
     case "location":
       return { name: tag.name, kind: tag.kind };
     case "pc":
@@ -379,6 +532,17 @@ function tagPill(tag: PersistentTag): SidebarPill {
       return { name: tag.currency, kind: tag.kind };
     case "room":
       return { name: `R${tag.id}`, kind: tag.kind };
+    case "initiative":
+      // Rendered as its own entry (the order list), not as a dateline pill.
+      return { name: "", kind: tag.kind };
+    case "position":
+    case "move":
+      // Drawn on the battle map, not shown as a pill.
+      return { name: "", kind: tag.kind };
+    case "time":
+      return { name: "Time", value: tag.raw, kind: "time" };
+    case "weather":
+      return { name: "Weather", value: tag.parts.join(" · "), kind: "weather" };
   }
 }
 
@@ -438,7 +602,11 @@ const rollRow = (r: RollEntry): SidebarRow => ({
   icon: { glyph: "d" },
   content: `${r.roll}${r.result ? ` → ${r.result}` : ""}`,
   label: r.actor,
+  actor: r.actor,
   pills: [],
+  // Its dice roll and take typed values in the Log (a card's `d: d20+5=`),
+  // written back through the line it came from.
+  ...(r.raw ? { source: r.raw, rollable: true } : {}),
 });
 
 // Indented working lines become nested bullet rows. A leading `label:` prefix
@@ -473,6 +641,27 @@ const continuationRows = (extras: string[]): SidebarRow[] =>
  * the roll. A written result survives only where the roll cannot decide one.
  */
 const oracleCallRow = (call: OracleCallEntry, cf: number | undefined): SidebarRow => {
+  const source = { name: call.source, value: call.oddsText ?? "", kind: "oracle" };
+  const randomEvent = { name: "Random Event", kind: "warn" };
+  // A Fate Check adds two d10s plus the odds and chaos modifiers, so it shows
+  // the dice sum that answers Yes rather than a d100 cell.
+  if (/fate\s*check/i.test(call.source)) {
+    const dice = call.roll ? rolledDice(call.roll) : [];
+    const pair = dice.length === 2 ? ([dice[0], dice[1]] as [number, number]) : null;
+    const answer = call.likelihood && cf != null && pair ? answerFateCheck(pair, cf, call.likelihood) : null;
+    const yesOn = call.likelihood && cf != null ? 11 - fateCheckModifier(cf, call.likelihood) : null;
+    const result = answer ? `${answer.wording} (${answer.total})` : (call.result ?? "");
+    return {
+      icon: { lucide: "Dices" },
+      content: `${call.roll ?? ""}${result ? ` → ${result}` : ""}`.trim(),
+      ...(call.raw ? { source: call.raw, rollable: true } : {}),
+      pills: [
+        source,
+        ...(yesOn != null ? [{ name: "yes on", value: `≥${yesOn}`, kind: "cf" }] : []),
+        ...(answer?.randomEvent ? [randomEvent] : []),
+      ],
+    };
+  }
   const rolled = call.roll ? rolledValue(call.roll) : null;
   const answer =
     call.likelihood && cf != null && rolled != null ? answerFateQuestion(rolled, cf, call.likelihood) : null;
@@ -481,15 +670,66 @@ const oracleCallRow = (call: OracleCallEntry, cf: number | undefined): SidebarRo
   return {
     icon: { lucide: "Dices" },
     content: `${call.roll ?? ""}${result ? ` → ${result}` : ""}`.trim(),
+    ...(call.raw ? { source: call.raw, rollable: true } : {}),
     pills: [
-      { name: call.source, value: call.oddsText ?? "", kind: "oracle" },
+      source,
       ...(threshold != null ? [{ name: "yes on", value: `≤${threshold}`, kind: "cf" }] : []),
+      ...(answer?.randomEvent ? [randomEvent] : []),
     ],
   };
 };
 
+/**
+ * Whether an entry's `=>` line shows in the Log. A line that is nothing but an
+ * `[Inv:]` tag (`=> [Inv:[[Kowyn's Bag]]+1]`) is bookkeeping for the inventory
+ * checklist — the entry already says what happened — so it stays out of view.
+ */
+const isShown = (c: { conclusion?: string; tags: PersistentTag[] }): boolean =>
+  !!c.conclusion?.trim() || c.tags.length === 0 || !c.tags.every((t) => t.kind === "inventory");
+
+/** A map tag as a sentence: `Placed Talon at C4, Kobold, Elite at H2` / `Moved Lilith to D5`. */
+function describeMapTag(t: PersistentTag): string | null {
+  if (t.kind === "position") return `Placed ${t.entries.map((e) => `${shownName(e.name)} at ${e.at}`).join(", ")}`;
+  if (t.kind === "move") return `Then moved ${t.who ? `${shownName(t.who)} ` : ""}to ${t.path[t.path.length - 1]}`;
+  return null;
+}
+
+/** A move on an action line, as a pill: `Move → E3` (or `→ G4 › F4 › E4` for a route). */
+function movePills(tags: PersistentTag[] | undefined): SidebarPill[] {
+  return (tags ?? []).flatMap((t) =>
+    // Before the action, a move; after it, what came next.
+    t.kind === "move"
+      ? [
+          {
+            name: `${t.after ? "Then" : "Move"}${t.who ? ` ${shownName(t.who)}` : ""}`,
+            value: `→ ${t.path.join(" › ")}`,
+            kind: "move",
+          },
+        ]
+      : []
+  );
+}
+
+/** A row with something to show — text, a pill, or a scene to edit. */
+const saysSomething = (row: SidebarRow): boolean => !!row.content || row.pills.length > 0 || !!row.scene;
+
 const consequenceRow = (c: { conclusion?: string; text: string; tags: PersistentTag[] }): SidebarRow => {
-  const conclusion = c.conclusion || c.text;
+  // A line that only places or moves combatants reads as what it did.
+  if (!c.conclusion?.trim() && c.tags.length > 0 && c.tags.every((t) => t.kind === "position" || t.kind === "move")) {
+    return { icon: { lucide: "Map" }, content: c.tags.map(describeMapTag).filter(Boolean).join("; "), pills: [] };
+  }
+  // A tag-only `[Init:…]` line inside an entry says what changed, not its raw tag.
+  const inits = c.tags.filter((t): t is InitiativeTag => t.kind === "initiative");
+  if (!c.conclusion?.trim() && inits.length > 0) return initiativeHeader(inits);
+  // A line of tags only (`=> [F:…|+marked] [Talon/Mystic Mark-1]`) is
+  // bookkeeping: its pills go up to the entry's strip, its text isn't shown.
+  const conclusion = c.conclusion?.trim() || (c.tags.length > 0 ? "" : c.text);
+  // A move in an outcome comes after the action: `Then → J14`.
+  const thenPills: SidebarPill[] = c.tags.flatMap((t) =>
+    t.kind === "move"
+      ? [{ name: t.who ? `Then ${shownName(t.who)}` : "Then", value: `→ ${t.path.join(" › ")}`, kind: "move" }]
+      : []
+  );
   const scene = parseSceneMarker(conclusion);
   if (scene) {
     const hadS = /^s/i.test(scene.number);
@@ -501,12 +741,225 @@ const consequenceRow = (c: { conclusion?: string; text: string; tags: Persistent
       scene: { original: c.text, number, name: scene.context, hadS },
     };
   }
+  // An `[Inv:]` on a line that already says what happened is bookkeeping for
+  // the inventory checklist, not a heading for the entry.
+  const said = !!c.conclusion?.trim();
   return {
     icon: { lucide: "CornerDownRight" },
     content: conclusion,
-    pills: c.tags.map(tagPill).filter((p) => p.name),
+    pills: [
+      ...c.tags
+        .filter((t) => !(said && t.kind === "inventory"))
+        .map(tagPill)
+        .filter((p) => p.name),
+      ...thenPills,
+    ],
   };
 };
+
+/**
+ * What an entry stowed, by where it went — one detail row per place, what
+ * was put inside a container found under it:
+ *
+ *   • KOWYN'S BAG  1 Leather · 2 Sling · 1 Pouch
+ *     + IN POUCH   1 Sling bullets
+ *   • TALON › QUIVER  1 Arrows
+ */
+function stowRows(tags: PersistentTag[]): SidebarRow[] {
+  const inv = tags.filter((t): t is InventoryTag => t.kind === "inventory" && !!t.name && !!t.owner);
+  if (inv.length === 0) return [];
+  const item = (t: InventoryTag) => {
+    const n = t.delta ?? t.quantity ?? t.transition?.to;
+    const count = t.depleted ? "used up" : n == null ? "" : t.delta != null && t.delta < 0 ? `−${-t.delta}` : String(n);
+    return `${count ? `${count} ` : ""}${t.link ? `[[${t.name}]]` : t.name}`;
+  };
+  const places = new Map<string, { at: string[]; items: string[] }>();
+  for (const t of inv) {
+    const at = [t.owner!, ...(t.path ?? [])];
+    const key = at.join("/").toLowerCase();
+    if (!places.has(key)) places.set(key, { at, items: [] });
+    places.get(key)!.items.push(item(t));
+  }
+  // A place inside something stowed in the same line (a Pouch found) goes under it.
+  const keys = [...places.keys()];
+  const parentOf = (key: string) =>
+    keys.find((k) => k !== key && key.startsWith(`${k}/`) && key.split("/").length === k.split("/").length + 1);
+  const rows: SidebarRow[] = [];
+  const emit = (key: string, child: boolean) => {
+    const p = places.get(key)!;
+    rows.push({
+      icon: { lucide: "Package" },
+      detail: true,
+      ...(child ? { child: true } : {}),
+      label: child ? `in ${p.at[p.at.length - 1]}` : p.at.join(" › "),
+      content: p.items.join(" · "),
+      pills: [],
+    });
+    for (const k of keys) if (parentOf(k) === key) emit(k, true);
+  };
+  for (const k of keys) if (!parentOf(k)) emit(k, false);
+  return rows;
+}
+
+/** An outcome's row, and under it what it stowed where. */
+const consequenceRows = (c: { conclusion?: string; text: string; tags: PersistentTag[] }): SidebarRow[] => [
+  consequenceRow(c),
+  ...stowRows(c.tags),
+];
+
+/** A combatant's name for a caption: links read as their text. */
+const shownName = (name: string) =>
+  name.replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g, (_m, t: string, a?: string) => a ?? t).trim();
+
+/**
+ * The order as indented rows. A plain value reads `14 Talon`. A written roll
+ * reads as the roll — the name as its caption, the dice, and the total it came
+ * to (`TALON  d20 +4 INITIATIVE → 14`); the die's face is worked back from that
+ * total by {@link withCombatantRolls} once the modifiers are known.
+ */
+const orderRows = (order: InitiativeEntry[]): SidebarRow[] =>
+  order.map((e) =>
+    e.roll && e.value != null
+      ? {
+          icon: null,
+          detail: true,
+          label: shownName(e.name),
+          content: `${e.roll} → ${e.value}`,
+          pills: [],
+          combatant: e,
+        }
+      : { icon: null, detail: true, label: e.value != null ? String(e.value) : "—", content: e.name, pills: [] }
+  );
+
+/**
+ * Fill each initiative roll for its combatant: resolve the roll's `[[Name]]`
+ * modifiers, so the total as written reads its die (`d20+[[Initiative]]=14`
+ * with Initiative +4 rolled a 10). A roll with a modifier that cannot be
+ * resolved stays unrolled.
+ */
+export function withCombatantRolls(
+  items: SidebarItem[],
+  resolve: (combatant: string, name: string) => number | undefined
+): SidebarItem[] {
+  return items.map((item) => ({
+    ...item,
+    rows: item.rows.map((row) => {
+      const c = row.combatant;
+      if (!c?.roll || c.value == null) return row;
+      const refs: Record<string, number> = {};
+      let mods = 0;
+      for (const m of c.roll.matchAll(/([+-])\s*(\d+|\[\[[^\]\n]+\]\])/g)) {
+        const sign = m[1] === "-" ? -1 : 1;
+        if (/^\d+$/.test(m[2])) {
+          mods += sign * parseInt(m[2], 10);
+          continue;
+        }
+        const name = refStem(m[2]);
+        const value = resolve(c.name, name);
+        if (value == null) return row;
+        refs[name] = value;
+        mods += sign * value;
+      }
+      void mods;
+      return { ...row, content: `${c.roll}${c.value}`, refs };
+    }),
+  }));
+}
+
+/** What `[Init:…]` tags did, as a row: `Initiative — Kobold Archer joins`. */
+function initiativeHeader(tags: InitiativeTag[]): SidebarRow {
+  const names = (op: InitiativeTag["op"]) =>
+    tags.filter((t) => t.op === op).flatMap((t) => t.entries.map((e) => e.name));
+  const joined = names("add");
+  const left = names("remove");
+  const what = [
+    ...(joined.length ? [`${joined.join(", ")} joins`] : []),
+    ...(left.length ? [`${left.join(", ")} leaves`] : []),
+  ];
+  return {
+    icon: { lucide: "ListOrdered" },
+    content: what.length ? `Initiative — ${what.join("; ")}` : "Initiative",
+    pills: [],
+  };
+}
+
+/** A bare `[Init:…]` line: what it did, then the order it leaves. */
+function initiativeRows(tags: InitiativeTag[], order: InitiativeEntry[]): SidebarRow[] {
+  return [initiativeHeader(tags), ...orderRows(order)];
+}
+
+/**
+ * A check's result from its roll: `Success` when the die plus its modifiers
+ * meets the DC, `Failure` otherwise. Null unless the line is a single die
+ * `vs DC n`, rolled, with every modifier known, and no result written.
+ */
+export function checkResult(content: string, ctx: FormulaContext): string | null {
+  const f = parseFormula(content, ctx);
+  if (!f || (f.result != null && f.result.trim() !== "") || f.check.kind !== "contest") return null;
+  const { left, right } = f.check;
+  // A check against a DC succeeds or fails; an attack against an AC hits or misses.
+  if (
+    left.kind !== "dice" ||
+    left.value == null ||
+    right.kind !== "threshold" ||
+    (right.label !== "DC" && right.label !== "AC")
+  )
+    return null;
+  let mods = 0;
+  if (left.mods) {
+    for (const m of left.mods) {
+      if (m.value == null) return null; // a modifier still unresolved
+      mods += m.sign === "-" ? -m.value : m.value;
+    }
+  } else {
+    for (const m of left.modifier.matchAll(/([+-])\s*(\d+)/g)) mods += (m[1] === "-" ? -1 : 1) * parseInt(m[2], 10);
+  }
+  const met = left.value + mods >= right.value;
+  return right.label === "AC" ? (met ? "Hit" : "Miss") : met ? "Success" : "Failure";
+}
+
+/** Give each check row with no written result the one its roll implies. */
+export function withCheckResults(items: SidebarItem[]): SidebarItem[] {
+  return items.map((item) => ({
+    ...item,
+    rows: item.rows.map((row) => {
+      if (!(row.detail || row.rollable)) return row;
+      const result = checkResult(row.content, { vars: row.vars, refs: row.refs });
+      if (!result) return row;
+      const content = `${row.content.replace(/\s*(?:->|→)\s*$/, "")} → ${result}`;
+      return { ...row, content, derivedResult: result };
+    }),
+  }));
+}
+
+/** A row's own actor (`d(Kowyn):`) wins; otherwise it acts for its entry's. */
+const withActor = (row: SidebarRow, actor: string | undefined): SidebarRow =>
+  row.actor || !actor ? row : { ...row, actor };
+
+/**
+ * Fill each row's `[[Name]]` terms with its actor's value for them, so
+ * `d20+[[Insight]]` under `@(Talon)` reads Talon's Insight. `resolve` is the
+ * system's answer (a character's `Modifier` expression) and returns undefined
+ * for a name it does not know, which leaves that term unresolved.
+ */
+export function withActorRefs(
+  items: SidebarItem[],
+  resolve: (actor: string, name: string) => number | undefined
+): SidebarItem[] {
+  return items.map((item) => ({
+    ...item,
+    rows: item.rows.map((row) => {
+      if (!row.actor || !row.content.includes("[[")) return row;
+      const refs: Record<string, number> = {};
+      for (const m of row.content.matchAll(/[+-]\s*(\[\[[^\]\n]+\]\])/g)) {
+        const name = refStem(m[1]);
+        const value = resolve(row.actor, name);
+        if (value != null) refs[name] = value;
+      }
+      return Object.keys(refs).length > 0 ? { ...row, refs } : row;
+    }),
+  }));
+}
 
 /**
  * The mechanical entries surfaced in the right-rail "Log" sidebar — every `@` /
@@ -518,9 +971,59 @@ const consequenceRow = (c: { conclusion?: string; text: string; tags: Persistent
 export function buildSidebarItems(
   segments: ProseSegment[],
   dialOps?: Map<number, ResolvedDialOp[]>,
-  listOps?: Map<number, ResolvedListOp[]>
+  listOps?: Map<number, ResolvedListOp[]>,
+  /** Starting values for bare thresholds — the declared resources' defaults. */
+  seedVars?: FormulaVars
 ): SidebarItem[] {
   const items: SidebarItem[] = [];
+
+  // Ops are keyed by ENTRY, items by SEGMENT (its first entry). A segment spans
+  // several entries — an action, its rolls, its `=>` lines, a bare `[CF-1]`
+  // after them — so an op on any of those lines belongs to the segment it falls
+  // in, not to a segment of its own.
+  const starts = segments.map((seg) => seg.sourceIndex);
+  const bySegment = <T>(m?: Map<number, T[]>): Map<number, T[]> | undefined => {
+    if (!m) return m;
+    const out = new Map<number, T[]>();
+    for (const [i, list] of Array.from(m.entries()).sort((a, b) => a[0] - b[0])) {
+      let id = starts[0] ?? i;
+      for (const start of starts) {
+        if (start > i) break;
+        id = start;
+      }
+      out.set(id, [...(out.get(id) ?? []), ...list]);
+    }
+    return out;
+  };
+  // Ops written on a question's own line, before regrouping hides which line
+  // they were on: they move the dial BEFORE the question is asked.
+  const questionOpCount = new Map<number, number>();
+  for (const seg of segments) {
+    if (seg.type === "oracle") questionOpCount.set(seg.sourceIndex, dialOps?.get(seg.sourceIndex)?.length ?? 0);
+  }
+  dialOps = bySegment(dialOps);
+  listOps = bySegment(listOps);
+
+  const initAt = foldInitiative(segments);
+  const foesAt = foldFoes(segments);
+
+  // Running resource values in effect at each segment, so a bare `vs CF` and a
+  // Fate Chart row read what CF IS at that point: declared defaults, then each
+  // question's own `[CF:n]` or `[CF±n]` (the value its checks run against), then
+  // every later op's result after it.
+  const varsAt = new Map<number, FormulaVars>();
+  {
+    const running: FormulaVars = { ...seedVars };
+    for (const seg of segments) {
+      const ops = dialOps?.get(seg.sourceIndex) ?? [];
+      const asked = questionOpCount.get(seg.sourceIndex) ?? 0;
+      const stated = seg.type === "oracle" ? seg.question.chaosFactor : undefined;
+      if (stated != null) running.CF = stated;
+      for (const op of ops.slice(0, asked)) running[op.key] = op.current;
+      varsAt.set(seg.sourceIndex, { ...running });
+      for (const op of ops.slice(asked)) running[op.key] = op.current;
+    }
+  }
 
   for (const seg of segments) {
     const id = seg.sourceIndex;
@@ -528,18 +1031,31 @@ export function buildSidebarItems(
 
     switch (seg.type) {
       case "action-group": {
-        const actor = seg.action.actor
-          ? `${seg.action.actor}${seg.action.assist ? ` > ${seg.action.assist}` : ""}: `
-          : "";
+        // An action called on its actor's page (`@[[Kobold, Elite]].action(…)`)
+        // names the actor itself, once — the row is the call, no `Actor:` before it.
+        // Either way the actor shows once, in the `@` squircle: an action written
+        // plainly (`@(Talon) Checking if the Kobold is lying`) gets it before its
+        // text; an assisted one (`@(Talon > Lilith)`) keeps its written form.
+        const called = !seg.action.assist && leadingActionCall(seg.action.text);
+        const pill = !called && !seg.action.assist && seg.action.actor ? { label: seg.action.actor } : undefined;
+        const actor =
+          seg.action.actor && !called && !pill
+            ? `${seg.action.actor}${seg.action.assist ? ` > ${seg.action.assist}` : ""}: `
+            : "";
         items.push({
           id,
           kind: "action",
           rows: [
-            { icon: { glyph: "@" }, content: `${actor}${seg.action.text}`, pills: [] },
+            {
+              icon: called || pill ? null : { glyph: "@" },
+              content: `${actor}${seg.action.text}`,
+              pills: movePills(seg.action.tags),
+              ...(pill ? { actorPill: pill } : {}),
+            },
             ...seg.rolls.map(rollRow),
             ...continuationRows(extras),
-            ...seg.consequences.map(consequenceRow),
-          ],
+            ...seg.consequences.filter(isShown).flatMap(consequenceRows).filter(saysSomething),
+          ].map((row) => withActor(row, seg.action.actor)),
         });
         break;
       }
@@ -556,14 +1072,18 @@ export function buildSidebarItems(
             },
             ...seg.rolls.map(rollRow),
             ...continuationRows(extras),
-            ...seg.consequences.map(consequenceRow),
+            ...seg.consequences.filter(isShown).flatMap(consequenceRows).filter(saysSomething),
           ],
         });
         break;
 
       case "oracle": {
         const actor = seg.question.actor ? `(${seg.question.actor}) ` : "";
-        const cf = seg.question.chaosFactor;
+        // A question states its CF (`? [CF:4]`) or runs on the current one. Only
+        // what was WRITTEN gets a pill — a stated value here, a `[CF±1]` op as its
+        // own pill below; the running value surfaces where it is used (`vs CF`, a
+        // Fate Chart row), not as a pill on every question.
+        const cf = seg.question.chaosFactor ?? varsAt.get(id)?.CF;
         const headPills: SidebarPill[] = [
           ...(seg.question.chaosFactor != null
             ? [{ name: "CF", value: String(seg.question.chaosFactor), kind: "cf" }]
@@ -599,13 +1119,19 @@ export function buildSidebarItems(
         }
         rows.push(...seg.rolls.map(rollRow));
         rows.push(...continuationRows(extras));
-        rows.push(...seg.consequences.map(consequenceRow));
-        items.push({ id, kind: "oracle", rows });
+        rows.push(...seg.consequences.filter(isShown).flatMap(consequenceRows).filter(saysSomething));
+        items.push({ id, kind: "oracle", rows: rows.map((row) => withActor(row, seg.question.actor)) });
         break;
       }
 
       case "standalone-consequence": {
         const conclusion = (seg.entry.conclusion ?? "").trim();
+        const initTags = seg.entry.tags.filter((t): t is InitiativeTag => t.kind === "initiative");
+        // A bare `[Init: …]` line → the combat order, as its own entry.
+        if (!conclusion && initTags.length > 0) {
+          items.push({ id, kind: "initiative", rows: initiativeRows(initTags, initAt.get(id)?.order ?? []) });
+          break;
+        }
         const dialTags = seg.entry.tags.filter((t) => t.kind === "dial-op");
         // A bare dial-op line (`[CF+1]`) → a mechanical dial entry (no prose);
         // its pills get the computed running value in the fill pass below.
@@ -620,7 +1146,7 @@ export function buildSidebarItems(
         items.push({
           id,
           kind: "consequence",
-          rows: [consequenceRow(seg.entry), ...continuationRows(extras)],
+          rows: [...consequenceRows(seg.entry), ...continuationRows(extras)],
         });
         break;
       }
@@ -667,8 +1193,24 @@ export function buildSidebarItems(
         });
         break;
 
+      case "round":
+        items.push({
+          id,
+          kind: "round",
+          rows: [{ icon: { lucide: "RotateCw" }, content: `Turn ${seg.round}`, pills: [] }],
+        });
+        break;
+
+      case "turn":
+        items.push({
+          id,
+          kind: "turn",
+          rows: [{ icon: { lucide: "ChevronsRight" }, content: `${seg.actor}'s round`, pills: [] }],
+        });
+        break;
+
       default:
-        // scenes, dialogue, narration, concat, structural markers, rounds
+        // scenes, dialogue, narration, concat, structural markers
         break;
     }
   }
@@ -690,7 +1232,8 @@ export function buildSidebarItems(
   // tagPill can't value on its own) with the computed running value, in order.
   if (dialOps) {
     for (const item of items) {
-      const ops = dialOps.get(item.id);
+      // A question's stated `[CF:n]` is a set with no pill of its own to fill.
+      const ops = dialOps.get(item.id)?.filter((op) => !op.stated);
       if (!ops || ops.length === 0) continue;
       let oi = 0;
       for (const row of item.rows) {
@@ -735,8 +1278,119 @@ export function buildSidebarItems(
     }
   }
 
+  for (const item of items) {
+    const vars = varsAt.get(item.id);
+    if (vars && Object.keys(vars).length > 0) for (const row of item.rows) row.vars = vars;
+  }
+
+  // Combat order on entries that are not the bare `[Init:]` line: an action
+  // taken ahead of its turn gets a pill; an `[Init:]` written on an `=>` line
+  // (`=> Reinforcements arrive. [Init:+ Kobold Archer 14]`) lists the new order
+  // under the entry it changed.
+  for (const item of items) {
+    const at = initAt.get(item.id);
+    if (!at || item.kind === "initiative") continue;
+    if (at.outOfTurn && item.rows[0]) {
+      item.rows[0] = { ...item.rows[0], pills: [...item.rows[0].pills, { name: "out of turn", kind: "warn" }] };
+    }
+    if (at.changed) item.rows.push(...orderRows(at.order));
+  }
+
+  // The foes an entry mentions, listed under its first line: the link, with
+  // the health they have at this point on hover.
+  for (const item of items) {
+    const all = foesAt.get(item.id);
+    if (!all || all.length === 0 || item.rows.length === 0) continue;
+    // A foe acting through a call on its page is named by the call already.
+    const caller =
+      item.kind === "action" && (item.rows[0].actorPill || leadingActionCall(item.rows[0].content))
+        ? item.rows[0].actor
+        : undefined;
+    const others = caller
+      ? all.filter(
+          (f) =>
+            combatantKey(f.name) !== combatantKey(caller) && matchActor(caller, [{ name: combatantKey(f.name) }]) < 0
+        )
+      : all;
+    // The action's target is named on its line already (`→ Kobold, Tinkerer`):
+    // what the entry did to it rides on its attack row instead of a row of its own.
+    const target = item.kind === "action" ? actionTarget(item.rows[0].content) : undefined;
+    const isTarget = (name: string) => !!target && combatantKey(name) === combatantKey(target);
+    // A foe the entry only lifts a condition from (Mystic Mark leaving Fat
+    // Kobold, A for its new target) needs no row; its HP, its state, a
+    // condition it's given, do.
+    const segHere = segments.find((s) => s.sourceIndex === item.id);
+    const tagsOf = (name: string) =>
+      (segHere ? segmentFoes(segHere) : []).filter((t) => combatantKey(t.name) === combatantKey(name));
+    const onlyConditions = (name: string) => {
+      const tags = tagsOf(name);
+      return (
+        tags.length > 0 &&
+        tags.every((t) => !t.hp && !t.state && t.tags.every((x) => conditionChange(x)?.add === false))
+      );
+    };
+    const foes = others.filter((f) => !isTarget(f.name) && !onlyConditions(f.name));
+    const named = others.find((f) => isTarget(f.name));
+    if (named) item.rows[0] = { ...item.rows[0], targetAs: named.name };
+    if (target && foes.length < others.length) {
+      const seg = segments.find((s) => s.sourceIndex === item.id);
+      const changes = (seg ? segmentFoes(seg) : [])
+        .filter((t) => isTarget(t.name))
+        .flatMap((t) => t.tags.map(conditionChange).filter((c): c is ConditionChange => !!c));
+      if (changes.length > 0) {
+        const label = (r: SidebarRow) => r.content.split("|")[0] ?? "";
+        const rolls = item.rows.map((r, i) => (r.rollable ? i : -1)).filter((i) => i >= 0);
+        // On the roll that brought it on: a save the target failed (Magnetobolt's
+        // STR save → prone), else the attack that hit, else the last roll.
+        const at =
+          rolls.find((i) => /\bsave\b/i.test(label(item.rows[i]))) ??
+          rolls.find((i) => /attack/i.test(label(item.rows[i]))) ??
+          rolls[rolls.length - 1] ??
+          0;
+        item.rows[at] = { ...item.rows[at], inflicts: changes };
+      }
+    }
+    if (foes.length === 0) continue;
+    const rows: SidebarRow[] = foes.map((f) => ({
+      icon: null,
+      detail: true,
+      content: f.name,
+      pills: [],
+      foe: {
+        current: f.current,
+        max: f.max,
+        state: f.state,
+        ...(f.conditions?.length ? { conditions: f.conditions } : {}),
+      },
+    }));
+    item.rows.splice(1, 0, ...rows);
+  }
+
   return items;
 }
 
 // Re-export so the prose view can summarize rolls from one module.
 export { summarizeRoll };
+
+/** Give each action's actor pill the page it links to — the actor's sheet or
+ *  statblock, as `pageOf` finds it from the name the log writes — and a damage
+ *  row's target written plainly (`Talon`) a link to theirs (`[[Talon Pallton|Talon]]`). */
+export function withActorPages(items: SidebarItem[], pageOf: (actor: string) => string | undefined): SidebarItem[] {
+  return items.map((item) => {
+    const rows = item.rows.map((row, i) => {
+      if (i === 0 && row.actorPill && !row.actorPill.page) {
+        const page = pageOf(row.actorPill.label);
+        if (page) return { ...row, actorPill: { ...row.actorPill, page } };
+      }
+      if (row.leaves && !row.leaves.target.includes("[[")) {
+        const page = pageOf(row.leaves.target);
+        if (page) {
+          const link = page === row.leaves.target ? `[[${page}]]` : `[[${page}|${row.leaves.target}]]`;
+          return { ...row, leaves: { ...row.leaves, target: link } };
+        }
+      }
+      return row;
+    });
+    return rows.some((r, i) => r !== item.rows[i]) ? { ...item, rows } : item;
+  });
+}

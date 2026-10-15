@@ -395,3 +395,10 @@ d: 1d8+4=9 slashing damage
     });
   });
 });
+
+describe("PC conditions, the lonelog way", () => {
+  it("records `+surprised` on a PC as a condition gained", () => {
+    const { entityDeltas } = extractDeltas(parseLonelog("=> The party is surprised. [PC:Talon|+surprised]"));
+    expect(entityDeltas[0].changes).toContainEqual({ type: "tag_add", tag: "surprised" });
+  });
+});

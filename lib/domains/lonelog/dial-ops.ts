@@ -36,6 +36,21 @@ export interface ResolvedDialOp {
   current: number;
   min: number;
   max: number;
+  /** From a question's leading `[CF:n]`, not a written op — no pill of its own. */
+  stated?: boolean;
+}
+
+/**
+ * Each session resource's declared default, keyed by its abbr (`CF` → 5) — the
+ * value a bare `vs CF` reads before the log has set or moved it. PC resources
+ * (keyed by name, not an ALLCAPS abbr) are left out.
+ */
+export function resourceDefaults(decls: Record<string, DialDecl>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [key, decl] of Object.entries(decls)) {
+    if (/^[A-Z]{2,}$/.test(key)) out[key] = decl.default;
+  }
+  return out;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -114,7 +129,15 @@ export function collectResourceDecls(
  *  resource ops on an oracle-question line. */
 function entryTags(entry: LonelogEntry): PersistentTag[] {
   if (entry.type === "consequence" || entry.type === "world_event") return entry.tags;
-  if (entry.type === "oracle_question") return entry.dialOps ?? [];
+  if (entry.type === "oracle_question") {
+    // `? [CF:4] …` states the Chaos Factor the question runs on — a set, so the
+    // dial continues from it (a later `[CF-1]` makes 3, not default − 1).
+    const stated: DialOpTag[] =
+      entry.chaosFactor != null
+        ? [{ kind: "dial-op", abbr: "CF", op: "set", amount: entry.chaosFactor, stated: true }]
+        : [];
+    return [...stated, ...(entry.dialOps ?? [])];
+  }
   return [];
 }
 
@@ -153,6 +176,7 @@ export function resolveDialOps(
         current: next,
         min: decl.min,
         max: decl.max,
+        ...(tag.stated ? { stated: true } : {}),
       };
       const list = out.get(i);
       if (list) list.push(resolved);

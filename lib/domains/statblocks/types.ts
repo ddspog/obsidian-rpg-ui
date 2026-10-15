@@ -68,6 +68,11 @@ export interface ResolvedStatFeature {
   name?: string;
   type?: string;
   text: string;
+  /** The values the text was filled from — the chosen tier merged with the
+   *  ref's own (`hit`, `damage`, `reach`…), for callers that roll them. */
+  params?: Record<string, unknown>;
+  /** Where it's described — a note, and the block in it (`Humanoid Traits#Mining Pick`). */
+  source?: string;
 }
 
 export type StatFeatureCategory = "action" | "bonus" | "reaction" | "legendary";

@@ -180,7 +180,7 @@ describe("deriveWeaponRolls", () => {
     expect(out).toHaveLength(2);
     expect(out[0].requires).toBe("one_hand");
     expect(out[0].damage).toEqual({ roll: "1d8", type: "slashing", bonus: "+3" });
-    expect(out[1].name).toBe("Two-Handed");
+    expect(out[1].name).toBe("Longsword (two-handed)");
     expect(out[1].requires).toBe("two_hands");
     expect(out[1].damage).toEqual({ roll: "1d10", type: "slashing", bonus: "+3" });
   });
@@ -197,7 +197,7 @@ describe("deriveWeaponRolls", () => {
     expect(out).toHaveLength(2);
     expect(out[0].form).toBe("melee");
     expect(out[0].damage).toEqual({ roll: "1d6", type: "piercing", bonus: "+3" });
-    expect(out[1].name).toBe("Thrown");
+    expect(out[1].name).toBe("Javelin (thrown)");
     expect(out[1].form).toBe("ranged");
     expect(out[1].range).toBe("30/120 ft.");
     // Thrown keeps STR mod (base type is Melee).

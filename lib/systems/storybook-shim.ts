@@ -10,6 +10,7 @@
 export { CreateSystem, CreateEntity } from "./create-system";
 export * from "../ui";
 export { parseSourceDoc, parseSourceDocs } from "../domains/features/parse-source-doc";
+export { readLoadouts, applyLoadout, describeLoadout } from "../domains/session-log/loadouts";
 export { resolveFeatures, normalizeTraitValue, stripWikilink } from "../domains/features/resolver";
 export { buildCompendiumIndex, expandOptionRefs } from "../domains/features/index-builder";
 export { PendingChoiceRow } from "../components/pending-choice-row";

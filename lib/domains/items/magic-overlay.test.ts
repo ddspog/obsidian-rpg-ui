@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { ItemElementData, ItemMagicData, ItemPersonalData } from "./schema";
-import { resolvePersonalItem, type PersonalResolverLookups } from "./magic-overlay";
+import {
+  fillVariantText,
+  resolvePersonalItem,
+  variantTextUnfilled,
+  type PersonalResolverLookups,
+} from "./magic-overlay";
 
 const SHIELD: ItemElementData = {
   type: "[[Shields]]",
@@ -177,5 +182,76 @@ describe("resolvePersonalItem", () => {
     };
     const r = resolvePersonalItem(personal, lookups);
     expect(r!.effectiveElement.rarity).toBe("Very Rare");
+  });
+});
+
+describe("resolvePersonalItem — an enchantment with no base", () => {
+  const potion = {
+    name: "Potion of Healing",
+    rarity: "Rarity Varies",
+    cost: "Price Varies",
+    applies_to: { kinds: ["potion" as const] },
+    text: "This red, glimmering potion…",
+    variants: {
+      columns: ["potion_of", "rarity", "hp_regained", "price"],
+      rows: [
+        { potion_of: "Healing", rarity: "Common", hp_regained: "2d4 + 2", cost: "50 gp" },
+        { potion_of: "Greater Healing", rarity: "Uncommon", hp_regained: "4d4 + 4", cost: "100 gp" },
+      ],
+    },
+  };
+
+  it("stands on its enchantment alone, its strength picked from the table", () => {
+    const r = resolvePersonalItem(
+      {
+        name: "Potion of Healing",
+        magic: ["[[Potion of Healing]]"],
+        variants: { "Potion of Healing": "Greater Healing" },
+      },
+      { elements: {}, magic: { "Potion of Healing": potion } }
+    );
+    expect(r?.effectiveElement).toMatchObject({
+      name: "Potion of Healing",
+      type: "Potion",
+      rarity: "Uncommon",
+      cost: "100 gp",
+    });
+    expect(r?.magicTexts).toContain("**HP regained:** 4d4 + 4");
+  });
+
+  it("takes its image from the enchantment", () => {
+    const r = resolvePersonalItem(
+      { magic: ["[[Potion of Healing]]"] },
+      { elements: {}, magic: { "Potion of Healing": { ...potion, image: "![[potion-of-healing.webp|384]]" } } }
+    );
+    expect(r?.effectiveElement.image).toBe("![[potion-of-healing.webp|384]]");
+  });
+
+  it("is still broken when its base names nothing", () => {
+    expect(
+      resolvePersonalItem(
+        { base: "[[Nope]]", magic: ["[[Potion of Healing]]"] },
+        { elements: {}, magic: { "Potion of Healing": potion } }
+      )
+    ).toBeNull();
+  });
+});
+
+describe("fillVariantText", () => {
+  it("fills each {{column}} from the picked row, leaving unknown ones", () => {
+    expect(
+      fillVariantText("Regain {{hp_regained}} ({{HP regained}}) hit points. {{nope}}", { hp_regained: "2d4 + 2" })
+    ).toBe("Regain 2d4 + 2 (2d4 + 2) hit points. {{nope}}");
+  });
+});
+
+describe("variant sections", () => {
+  const text =
+    "Regain {{hp_regained}} hit points.{{^variant}} It depends on its rarity.{{/variant}}{{#variant}} A {{rarity}} potion.{{/variant}}";
+  it("says one part with a strength picked, the other without", () => {
+    expect(fillVariantText(text, { hp_regained: "2d4 + 2", rarity: "Common" })).toBe(
+      "Regain 2d4 + 2 hit points. A Common potion."
+    );
+    expect(variantTextUnfilled(text)).toBe("Regain *HP regained* hit points. It depends on its rarity.");
   });
 });

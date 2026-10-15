@@ -11,7 +11,13 @@
 
 import type { DamageSpec } from "../features/roll";
 import type { WeaponOverlay } from "./roll";
-import type { ItemElementData, ItemMagicData, ItemMagicVariant, ItemPersonalData } from "./schema";
+import type {
+  ItemElementData,
+  ItemMagicData,
+  ItemMagicVariant,
+  ItemMagicVariantsConfig,
+  ItemPersonalData,
+} from "./schema";
 
 /** The resolved view a personal item produces for the rest of the
  *  character-sheet pipeline to consume. */
@@ -63,7 +69,10 @@ export function resolvePersonalItem(
   personalStem?: string
 ): PersonalResolution | null {
   const baseKey = wikiStem(personal.base ?? "");
-  const base = baseKey ? lookups.elements[baseKey] : undefined;
+  // No `base:` — an item that is its enchantment alone (a Potion of
+  // Healing, a scroll): its first template stands in for the element.
+  // A `base:` that names nothing is still a broken item.
+  const base = baseKey ? lookups.elements[baseKey] : standaloneElement(personal, lookups);
   if (!base) return null;
 
   const overlay: WeaponOverlay = {};
@@ -89,6 +98,8 @@ export function resolvePersonalItem(
   // personal didn't author one — gives the card a sensible default
   // visual without authors repeating the image reference.
   let fallbackImage: string | undefined;
+  // The first template's kind (`potion` → `Potion`), for an item with no type of its own.
+  let kindType: string | undefined;
 
   for (const magicLink of personal.magic ?? []) {
     const stem = wikiStem(magicLink);
@@ -102,7 +113,10 @@ export function resolvePersonalItem(
       magic.variants && !Array.isArray(magic.variants) && !("rows" in magic.variants)
         ? (magic.variants as Record<string, any>)
         : undefined;
-    const variant = variantKey && variantsMap ? variantsMap[variantKey] : undefined;
+    // A variants TABLE (`rows:`) is picked by its first column's value
+    // (`potion_of: Healing`); a row's `price` reads as its cost.
+    const tableRow = variantKey ? pickVariantRow(magic, variantKey) : undefined;
+    const variant = variantKey && variantsMap ? variantsMap[variantKey] : tableRow;
 
     // Compose numeric effects — variant's values take precedence over
     // the template-level defaults, matching the usual override shape.
@@ -136,9 +150,17 @@ export function resolvePersonalItem(
     if (variant?.cost) latestCost = variant.cost;
     else if (magic.cost) latestCost = magic.cost;
 
-    // Magic text — variant override wins, else the template's body.
-    const textForThis = variant?.text ?? magic.text;
+    // Magic text — variant override wins, else the template's body. A
+    // table row's values fill its `{{column}}`s (`regain {{hp_regained}}
+    // hit points`); when it names none, its other columns follow it.
+    const rawText = variant?.text ?? magic.text;
+    const textForThis = rawText && tableRow ? fillVariantText(rawText, tableRow) : rawText;
     if (textForThis && textForThis.trim()) magicTexts.push(textForThis);
+    if (tableRow && !/\{\{\s*[\w ]+\s*\}\}/.test((rawText ?? "").replace(/\{\{[#^/]variant\}\}/g, ""))) {
+      const said = variantRowFacts(magic, tableRow);
+      if (said) magicTexts.push(said);
+    }
+    if (!kindType) kindType = typeOfKind(magic);
 
     // First template with an image becomes the fallback for cards
     // where the personal didn't author one of its own.
@@ -158,6 +180,7 @@ export function resolvePersonalItem(
       bonus: composeWeaponBonus(base.weapon.bonus, attackBonusSum, damageBonusSum),
     };
   }
+  if (!effectiveElement.type && kindType) effectiveElement.type = kindType;
   if (latestRarity) effectiveElement.rarity = latestRarity;
   if (personal.rarity) effectiveElement.rarity = personal.rarity;
   if (latestCost) effectiveElement.cost = latestCost;
@@ -178,6 +201,90 @@ export function resolvePersonalItem(
     attuned: personal.attuned === true,
     displayName: personal.name ?? personalStem ?? "",
   };
+}
+
+/** The element an enchantment-only item stands on: its first template's
+ *  name, rarity, cost, weight and image, its kind as its type (`Potion`). */
+function standaloneElement(personal: ItemPersonalData, lookups: PersonalResolverLookups): ItemElementData | undefined {
+  const first = (personal.magic ?? []).map((m) => lookups.magic[wikiStem(m)]).find(Boolean);
+  if (!first) return undefined;
+  const type = typeOfKind(first);
+  return {
+    ...(first.name ? { name: first.name } : {}),
+    ...(type ? { type } : {}),
+    ...(first.rarity ? { rarity: first.rarity } : {}),
+    ...(first.cost ? { cost: first.cost } : {}),
+    ...(first.weight != null ? { weight: first.weight } : {}),
+    ...(first.image ? { image: first.image } : {}),
+  };
+}
+
+/** A template's first kind, as an item type: `potion` → `Potion`. */
+function typeOfKind(magic: ItemMagicData): string | undefined {
+  const kind = magic.applies_to?.kinds?.[0];
+  return kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : undefined;
+}
+
+/** Text said only with a strength picked (`{{#variant}}…{{/variant}}`) or
+ *  only without one (`{{^variant}}…{{/variant}}`) — the table's own page
+ *  says "depends on its rarity", a picked potion doesn't. */
+function variantSections(text: string, picked: boolean): string {
+  return text
+    .replace(/\{\{#variant\}\}([\s\S]*?)\{\{\/variant\}\}/g, (_, inner: string) => (picked ? inner : ""))
+    .replace(/\{\{\^variant\}\}([\s\S]*?)\{\{\/variant\}\}/g, (_, inner: string) => (picked ? "" : inner))
+    .replace(/[ \t]+$/gm, "");
+}
+
+/** `{{hp_regained}}` (or `{{HP regained}}`) → the row's value. */
+export function fillVariantText(text: string, row: Record<string, unknown>): string {
+  return variantSections(text, true).replace(/\{\{\s*([\w ]+?)\s*\}\}/g, (whole, key: string) => {
+    const v = row[key] ?? row[snake(key)];
+    return typeof v === "string" || typeof v === "number" ? String(v) : whole;
+  });
+}
+
+/** On the template's own card, with no row picked: each `{{column}}` as its
+ *  column's name, in italics — "regain *HP regained* hit points". */
+export function variantTextUnfilled(text: string): string {
+  return variantSections(text, false).replace(/\{\{\s*([\w ]+?)\s*\}\}/g, (_, key: string) => `*${columnLabel(key)}*`);
+}
+
+const columnLabel = (c: string) =>
+  c
+    .replace(/_/g, " ")
+    .replace(/\bhp\b/gi, "HP")
+    .replace(/^./, (x: string) => x.toUpperCase());
+
+const snake = (s: string) =>
+  s
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+/** The row of a variants table whose first column (or any value) is `key`. */
+function pickVariantRow(magic: ItemMagicData, key: string): (ItemMagicVariant & Record<string, unknown>) | undefined {
+  const raw = magic.variants;
+  if (!raw || Array.isArray(raw) || !("rows" in raw) || !Array.isArray(raw.rows)) return undefined;
+  const table = raw as ItemMagicVariantsConfig;
+  const rows = table.rows as Array<ItemMagicVariant & Record<string, unknown>>;
+  const first = table.columns?.[0];
+  const same = (v: unknown) => typeof v === "string" && v.trim().toLowerCase() === key.trim().toLowerCase();
+  const row = (first ? rows.find((r) => same(r[first])) : undefined) ?? rows.find((r) => Object.values(r).some(same));
+  if (!row) return undefined;
+  // `price` is a cost by another name.
+  return row.cost == null && typeof row.price === "string" ? { ...row, cost: row.price } : row;
+}
+
+/** A table row's columns besides its key, rarity and cost: `HP regained: 2d4 + 2`. */
+function variantRowFacts(magic: ItemMagicData, row: Record<string, unknown>): string | undefined {
+  const table = magic.variants as ItemMagicVariantsConfig;
+  const columns: string[] = (table.columns ?? Object.keys(row)).slice(1);
+  const facts = columns
+    .filter((c) => !["rarity", "cost", "price", "text", "traits"].includes(snake(c)))
+    .map((c) => [c, row[c] ?? row[snake(c)]] as const)
+    .filter(([, v]) => typeof v === "string" || typeof v === "number")
+    .map(([c, v]) => `**${columnLabel(c)}:** ${v}`);
+  return facts.length > 0 ? facts.join(" · ") : undefined;
 }
 
 /** Parse a signed integer out of a bonus string. `"+1"` → 1, `"-2"` → -2,

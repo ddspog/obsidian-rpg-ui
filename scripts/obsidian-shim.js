@@ -1,3 +1,4 @@
+import YAML from "yaml";
 /**
  * Minimal Obsidian API shim for use in Node.js bundled scripts.
  * Provides the same `FrontMatterInfo` shape as the real Obsidian API.
@@ -141,3 +142,59 @@ export const MarkdownRenderer = {
     el.innerHTML = renderMarkdownToHtml(String(md ?? ""));
   },
 };
+
+/** Storybook has no native menus: a stub that remembers its items. */
+export class Menu {
+  constructor() {
+    this.items = [];
+  }
+  addItem(build) {
+    const item = {
+      setTitle: () => item,
+      setIcon: () => item,
+      onClick: () => item,
+    };
+    build(item);
+    this.items.push(item);
+    return this;
+  }
+  showAtMouseEvent() {}
+  showAtPosition() {}
+}
+
+/* The rest of what the plugin's code imports, as inert stubs — enough for a
+   component to load and draw in Storybook. */
+export const parseYaml = (text) => YAML.parse(text);
+export const stringifyYaml = (value) => YAML.stringify(value);
+export class MarkdownRenderChild extends Component {
+  constructor(containerEl) {
+    super();
+    this.containerEl = containerEl;
+  }
+}
+export class MarkdownView {}
+export class Modal {
+  constructor(app) {
+    this.app = app;
+    this.contentEl = document.createElement("div");
+    this.titleEl = document.createElement("div");
+    this.modalEl = document.createElement("div");
+  }
+  open() {}
+  close() {}
+}
+export class Notice {
+  constructor(message) {
+    console.info("Notice:", message);
+  }
+}
+export class PluginSettingTab {}
+export class Setting {}
+export class TAbstractFile {}
+export class TFolder {}
+export class TextComponent {}
+export const finishRenderMath = async () => {};
+export const loadMathJax = async () => {};
+export const renderMath = () => document.createElement("span");
+export const requestUrl = async () => ({ status: 501, text: "", json: {} });
+export const setIcon = () => {};

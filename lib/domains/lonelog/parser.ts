@@ -1,6 +1,6 @@
 /** Lonelog/Partylog Parser — tokenizes session notation into structured entries */
 
-import type { LonelogEntry, DialOpTag, ListOpTag } from "./types";
+import type { PersistentTag, LonelogEntry, DialOpTag, FoeTag, ListOpTag } from "./types";
 import { extractTags, stripTags } from "./tag-extractor";
 import { parseRollField } from "./dice-expression";
 import { isCardDraw } from "./card-expression";
@@ -66,7 +66,9 @@ function parseLine(line: string): LonelogEntry | null {
   }
 
   // Combat markers: [COMBAT] / [/COMBAT]
-  if (line === "[COMBAT]") return { type: "combat_marker", state: "open" };
+  const combatOpen = line.match(/^\[COMBAT(?::\s*(.+))?\]$/);
+  if (combatOpen)
+    return { type: "combat_marker", state: "open", ...(combatOpen[1] ? { map: combatOpen[1].trim() } : {}) };
   if (line === "[/COMBAT]") return { type: "combat_marker", state: "close" };
 
   // Resource markers: [RESOURCES] / [/RESOURCES]
@@ -78,8 +80,14 @@ function parseLine(line: string): LonelogEntry | null {
   if (line === "[/DUNGEON STATUS]") return { type: "dungeon_status_marker", state: "close" };
 
   // Round markers: R1, R2, etc.
-  const roundMatch = line.match(/^R(\d+)$/);
-  if (roundMatch) return { type: "round_marker", round: parseInt(roundMatch[1], 10) };
+  // A pass through the initiative order: `T2` — the table's TURN 2 (Lonelog's
+  // own `R2` reads the same, so older logs keep working).
+  const cycleMatch = line.match(/^[TR](\d+)$/);
+  if (cycleMatch) return { type: "round_marker", round: parseInt(cycleMatch[1], 10) };
+
+  // One creature's slot in it: `R(Talon)` — Talon's ROUND, before what they do.
+  const slotMatch = line.match(/^R\(([^()]+)\)$/);
+  if (slotMatch) return { type: "turn_marker", actor: slotMatch[1].trim() };
 
   // Concat marker: a bare `++` joins the surrounding conclusions in prose.
   if (line === "++") return { type: "concat" };
@@ -113,17 +121,21 @@ function parseLine(line: string): LonelogEntry | null {
     }
     // Resource + LIST ops on the question line (`[CF+1]`, `[CF?]`,
     // `[Characters?]`) → running-value / running-entries pills.
-    const dialOps = extractTags(rest).filter(
-      (t): t is DialOpTag | ListOpTag => t.kind === "dial-op" || t.kind === "list-op"
-    );
-    const text = (dialOps.length > 0 ? stripTags(rest) : rest).trim();
+    const restTags = extractTags(rest);
+    const dialOps = restTags.filter((t): t is DialOpTag | ListOpTag => t.kind === "dial-op" || t.kind === "list-op");
+    // Foes a question brings in (`? Combat begins. [F:Kobold|HP 9]`) are listed
+    // apart from the question, so their tags leave its text.
+    const foes = restTags.filter((t): t is FoeTag => t.kind === "foe");
+    const stripped = dialOps.length > 0 || foes.length > 0;
+    const text = (stripped ? stripTags(rest) : rest).trim();
     return {
       type: "oracle_question",
       text,
       actor,
       chaosFactor,
       dialOps: dialOps.length ? dialOps : undefined,
-      raw: dialOps.length ? line : undefined,
+      raw: stripped ? line : undefined,
+      ...(foes.length ? { foes } : {}),
     };
   }
 
@@ -187,7 +199,7 @@ function parseLine(line: string): LonelogEntry | null {
   // solo play, so the most-written marker is the shortest. (Not `orc:`, which in a
   // fantasy log reads as the monster.)
   if (line.startsWith("o:")) {
-    return { type: "oracle_call", ...parseOracleCallLine(line.slice(2).trim()) };
+    return { type: "oracle_call", ...parseOracleCallLine(line.slice(2).trim()), raw: line };
   }
 
   // Generator: gen: source -> result
@@ -212,7 +224,7 @@ function parseLine(line: string): LonelogEntry | null {
   // ([Talon/Mystic Mark-1]) — so it becomes a mechanical entry (its conclusion
   // strips to "", so it never reaches prose).
   if (line.startsWith("[")) {
-    const isKnownTagLine = /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L):/.test(line);
+    const isKnownTagLine = /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L|Init|Pos|Mv):/.test(line);
     const isDialOpLine = /^\[[A-Z][A-Z0-9]*(?:[:=+-]\s*\d+|\?)\]/.test(line);
     const isPcOpLine = /^\[[^\]|/:]+\/[^\]|/:]+?\s*(?:[=+-]\s*\d+|\?)\]$/.test(line);
     if (isKnownTagLine || isDialOpLine || isPcOpLine) {
@@ -227,7 +239,31 @@ function parseLine(line: string): LonelogEntry | null {
   return { type: "narrative", text: line };
 }
 
+/** Lift map tags (`[Mv: E3]`, `[Pos: …]`) off an action line's text. */
+/**
+ * Lift the map tags off an action line. Where a move sits says when it happens:
+ * before the action's words (`@(Talon) [Mv: K11] Shortsword → Kobold`), it comes
+ * first; after them (`… → Kobold [Mv: J14]`), once the action is done.
+ */
+function withMapTags(entry: Extract<LonelogEntry, { type: "action" }>): LonelogEntry {
+  const mapTag = /\[(?:Mv|Pos):(?:\[\[[^\]\n]*\]\]|[^\]])+\]/g;
+  const tags: PersistentTag[] = [];
+  for (const m of entry.text.matchAll(mapTag)) {
+    const tag = extractTags(m[0]).find((t) => t.kind === "move" || t.kind === "position");
+    if (!tag) continue;
+    const said = entry.text.slice(0, m.index).replace(mapTag, "").trim() !== "";
+    tags.push(tag.kind === "move" && said ? { ...tag, after: true } : tag);
+  }
+  if (tags.length === 0) return entry;
+  const text = entry.text.replace(/\s*\[(?:Mv|Pos):(?:\[\[[^\]\n]*\]\]|[^\]])+\]/g, "").trim();
+  return { ...entry, text, tags };
+}
+
 function parseAction(line: string): LonelogEntry {
+  return withMapTags(parseActionLine(line) as Extract<LonelogEntry, { type: "action" }>);
+}
+
+function parseActionLine(line: string): LonelogEntry {
   // @(Name > Assist) text — collaborative action
   const collab = line.match(/^@\(([^>)]+)\s*>\s*([^)]+)\)\s+(.+)$/);
   if (collab) {
@@ -291,5 +327,6 @@ function parseRoll(line: string): LonelogEntry {
     breakdown: firstExpr?.breakdown,
     vsTarget: parsed.vsTarget,
     isCardDraw: isCardDraw(rollText) || undefined,
+    raw: line,
   };
 }

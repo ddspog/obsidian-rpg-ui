@@ -8,10 +8,10 @@ import type {
   ResourceDecl,
 } from "lib/domains/features/types";
 import { resolveFeatures } from "lib/domains/features/resolver";
+import { parseComponents } from "lib/domains/session-log/casting";
 import { extractCards, extractResourceDecls, type ResolvedSourceSlice } from "lib/domains/session-log/extract-cards";
 import type { SessionFeatureCard } from "lib/domains/session-log/card-types";
 import type { AspectBucket } from "lib/domains/session-log/card-types";
-import { DEFAULT_LOG_TEMPLATE } from "lib/domains/session-log/card-types";
 import { SystemRegistry } from "lib/systems/registry";
 
 interface HeaderBlock {
@@ -49,6 +49,12 @@ function buildDeclFromHeader(header: HeaderBlock, featuresData: Record<string, u
     choices: featuresData.choices as CharacterDecl["choices"],
     additional: featuresData.additional as CharacterDecl["additional"],
   };
+}
+
+/** The magic a spell is of (`source: ["[[Primordial]]"]` → `Primordial`). */
+function spellMagic(raw: unknown): string[] {
+  const list = Array.isArray(raw) ? raw.flat(2) : raw ? [raw] : [];
+  return list.map((x) => bareStem(String(x))).filter(Boolean);
 }
 
 function bareStem(ref: string): string {
@@ -131,7 +137,10 @@ function extractSpellCards(
         recovery: isCantrip ? undefined : "long rest",
         recharge: undefined,
         source: caster.source,
+        sourceKind: "spell",
         actor: actorName,
+        ...(parseComponents(doc?.components) ? { components: parseComponents(doc?.components)! } : {}),
+        ...(spellMagic(doc?.source).length ? { spellSources: spellMagic(doc?.source) } : {}),
       });
     }
   }
@@ -144,7 +153,10 @@ export function extractCardsFromEntity(entity: EntityData): SessionFeatureCard[]
   if (slices.length === 0) return [];
   const featureCards = extractCards(slices, entity.name);
   if (!resolved || !spellContext) return featureCards; // inline format → no spells
-  const spellCards = extractSpellCards(resolved, spellContext.spellsYaml, spellContext.spellLibrary, entity.name);
+  // Spells are marked as spells, so a crowded stack can give them one of their own.
+  const spellCards = extractSpellCards(resolved, spellContext.spellsYaml, spellContext.spellLibrary, entity.name).map(
+    (c) => ({ ...c, origin: "spell" as const })
+  );
   return [...featureCards, ...spellCards];
 }
 
@@ -190,7 +202,9 @@ function resolveEntityFeatures(entity: EntityData): {
   }
 
   // System-backed format (ToV adventurers) — resolve via compendium.
-  const headerRaw = entity.codeBlocks.get("character.header")?.[0];
+  // A sheet can keep its header in a block of its own, or in one combined
+  // `character.sheet` block with its health and attributes.
+  const headerRaw = entity.codeBlocks.get("character.header")?.[0] ?? entity.codeBlocks.get("character.sheet")?.[0];
   if (!headerRaw) return { slices: [] };
 
   let header: HeaderBlock;
@@ -211,6 +225,7 @@ function resolveEntityFeatures(entity: EntityData): {
     const resolved = resolveFeatures(decl, compendium);
     const slices = resolved.sources.map((src: ResolvedSource) => ({
       source: src.source,
+      kind: src.kind,
       level: src.level,
       features: src.features,
     }));

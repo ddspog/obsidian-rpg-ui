@@ -19,11 +19,25 @@ export interface DiceTerm {
   /** Modifier suffix, e.g. "+3" or "-1" (normalized, no spaces); "" when none. */
   modifier: string;
   /**
-   * The rolled TOTAL, or null when not yet rolled. For a pool recorded as a list
-   * (`2d6=[4,3]`) this is their sum, so every consumer — contests, display,
-   * comparisons — keeps working on one number.
+   * The modifier read term by term, when it names something (`+[[Insight]]`):
+   * a number, or a `[[Name]]` with the value its actor has for it (`value`
+   * stays undefined until resolved). Absent for plain numeric modifiers.
+   */
+  mods?: DiceMod[];
+  /**
+   * What the DICE came to, or null when not yet rolled — the faces, before any
+   * modifier. For a pool recorded as a list (`2d6=[4,3]`) their sum. Written
+   * lines record the RESULT (`d20+4=22`, `1d4+2=6`); the dice are worked out
+   * from it — the result less its modifiers (an 18, a 4) — so every consumer
+   * that adds the modifier (a check, an attack, damage) reads the same total.
    */
   value: number | null;
+  /**
+   * The RESULT as written — the dice and the modifier together (`d20+4=22` →
+   * 22; `2d6+3=[4,3]=10` → 10). Null when unrolled, or when an unresolved
+   * `[[Name]]` modifier leaves it unknown for a pool written as its dice.
+   */
+  total?: number | null;
   /** Per-die results when recorded as a list; empty for a single value. */
   values: number[];
   /** Dice the roll GENERATED — an explosion, or a reroll's replacement. */
@@ -45,6 +59,56 @@ export interface ThresholdTerm {
   label: string;
   value: number;
   raw: string;
+  /** Filled from the running log state (a bare `vs CF`), not written on the
+   *  line — shown, but not editable, since the dial owns the value. */
+  inferred?: boolean;
+}
+
+/** Running values a bare threshold label resolves against (`CF` → 5). */
+export type FormulaVars = Record<string, number>;
+
+/**
+ * What a formula's names mean at the line it sits on: running dial values for
+ * bare thresholds (`vs CF`), and the actor's modifiers for `[[Name]]` terms
+ * (`d20+[[Insight]]`), keyed by link stem.
+ */
+export interface FormulaContext {
+  vars?: FormulaVars;
+  refs?: Record<string, number>;
+}
+
+/** The link stem of a `[[Name|alias]]` reference: `Name`. */
+export function refStem(raw: string): string {
+  return raw.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
+}
+
+/** What a die's modifiers add up to — null while a `[[Name]]` in them is unknown. */
+export function modifierTotal(modifier: string, mods?: DiceMod[]): number | null {
+  if (mods) {
+    let sum = 0;
+    for (const m of mods) {
+      if (m.value == null) return null;
+      sum += m.sign === "-" ? -m.value : m.value;
+    }
+    return sum;
+  }
+  let sum = 0;
+  for (const m of modifier.matchAll(/([+-])\s*(\d+)/g)) sum += (m[1] === "-" ? -1 : 1) * parseInt(m[2], 10);
+  return sum;
+}
+
+/** Read a modifier suffix term by term, resolving each `[[Name]]` it holds. */
+function parseMods(raw: string, refs?: Record<string, number>): DiceMod[] {
+  const out: DiceMod[] = [];
+  for (const m of raw.matchAll(/([+-])\s*(\d+|\[\[[^\]\n]+\]\])/g)) {
+    const sign = m[1] as "+" | "-";
+    if (/^\d+$/.test(m[2])) out.push({ sign, value: parseInt(m[2], 10) });
+    else {
+      const name = refStem(m[2]);
+      out.push({ sign, name, value: refs?.[name] });
+    }
+  }
+  return out;
 }
 
 export interface TextTerm {
@@ -80,8 +144,16 @@ export interface Formula {
   result: string | null;
 }
 
+/** One modifier term: `+2`, or `+[[Insight]]` resolved (or not) to a number. */
+export interface DiceMod {
+  sign: "+" | "-";
+  /** The `[[Name]]` the term refers to, as its link stem (`Insight`). */
+  name?: string;
+  value?: number;
+}
+
 /**
- * `4d6dl1+2=13`, `3d8!=19`, `d%=45`, `dF.2=1`.
+ * `4d6dl1+2=13`, `3d8!=19`, `d%=45`, `dF.2=1`, `d20+[[Insight]]=11`.
  *   1 count · 2 sides (digits | `%` | `F[.n]`) · 3 selectors · 4 modifiers · 5 value
  * Selectors bind to the die and precede numeric modifiers, matching how the
  * notation is written.
@@ -93,7 +165,7 @@ export interface Formula {
  * Shared so the anchored parse and the "find the roll in this line" search can
  * never drift apart — they read the same groups, 1..6.
  */
-const DICE_PATTERN = String.raw`(\d*)d(\d+|%|F(?:\.\d+)?)((?:drop[<>]=?\d+|floor\d+|cap\d+|!p|!|ro\d*|kh\d*|kl\d*|dl\d*|dh\d*|s[ad]?)*)((?:\s*[+-]\s*\d+)*)(?:\s*\[([^\]]*)\])?\s*=\s*((?:\[[^\]]*\])+|\d+)`;
+const DICE_PATTERN = String.raw`(\d*)d(\d+|%|F(?:\.\d+)?)((?:drop[<>]=?\d+|floor\d+|cap\d+|!p|!|ro\d*|kh\d*|kl\d*|dl\d*|dh\d*|s[ad]?)*)((?:\s*[+-]\s*(?:\d+|\[\[[^\]\n]+\]\]))*)(?:\s*\[(?!\[)([^\]]*)\])?\s*=\s*((?:\[[^\]]*\])+(?:\s*=\s*\d+)?|\d+)`;
 
 /** A whole term, value optional (an unrolled die is still a die). */
 const DICE_RE = new RegExp(`^${DICE_PATTERN}?$`, "i");
@@ -113,6 +185,14 @@ export function rolledValue(text: string): number | null {
   const m = text.match(DICE_IN_TEXT_RE);
   if (!m) return null;
   return parseDiceValue(m[6], m[5], m[3] ?? "").value;
+}
+
+/** Each die of the first rolled pool in a line (`2d10=[3,3]` → `[3, 3]`); empty
+ *  when the line records only a total. */
+export function rolledDice(text: string): number[] {
+  const m = text.match(DICE_IN_TEXT_RE);
+  if (!m) return [];
+  return parseDiceValue(m[6], m[5], m[3] ?? "").values;
 }
 
 /** The inner text of each `[…]` group in a recorded value. `[8,5,6][3]` → two.
@@ -410,19 +490,45 @@ function shapeSides(sides: string): number {
   if (/^F/i.test(sides)) return 6; // fudge dice are cubes
   return parseInt(sides, 10);
 }
-const THRESHOLD_RE = /^(CF|DC)\s*(\d+)$/i;
+const THRESHOLD_RE = /^(CF|DC|AC)\s*(\d+)$/i;
 
-function parseTerm(raw: string): FormulaTerm {
+function parseTerm(raw: string, ctx?: FormulaContext): FormulaTerm {
+  const vars = ctx?.vars;
   const t = raw.trim();
 
   const dice = t.match(DICE_RE);
   if (dice) {
+    const modifier = dice[4].replace(/\s+/g, "");
+    const mods = dice[4].includes("[[") ? parseMods(dice[4], ctx?.refs) : undefined;
+    const count = dice[1] ? parseInt(dice[1], 10) : 1;
+    // The recorded value: a result (`=22`), or the dice (`=[4,3]`) with the
+    // result after them (`=[4,3]=10`).
+    const written = dice[6]?.match(/^((?:\[[^\]]*\])+)(?:\s*=\s*(\d+))?$/);
+    const recorded = parseDiceValue(written ? written[1] : dice[6], dice[5], dice[3] ?? "");
+    const shift = modifierTotal(modifier, mods);
+    let value = recorded.value;
+    let total: number | null = null;
+    if (written) {
+      // The dice are written: the result follows them, or is theirs plus the modifier.
+      total = written[2] != null ? parseInt(written[2], 10) : value != null && shift != null ? value + shift : null;
+    } else if (value != null && dice[6] != null) {
+      // A result: its dice are what's left once the modifier is taken off — unless
+      // that's less than the dice can roll, an older line that wrote the dice.
+      total = value;
+      if (shift != null && value - shift >= count) value -= shift;
+      else if (shift != null) total = value + shift;
+    } else if (value != null) {
+      total = shift != null ? value + shift : null;
+    }
     return {
       kind: "dice",
-      count: dice[1] ? parseInt(dice[1], 10) : 1,
+      count,
       sides: shapeSides(dice[2]),
-      modifier: dice[4].replace(/\s+/g, ""),
-      ...parseDiceValue(dice[6], dice[5], dice[3] ?? ""),
+      modifier,
+      ...(mods ? { mods } : {}),
+      ...recorded,
+      value,
+      total,
       selector: dice[3] ?? "",
       spec: `${dice[1] ?? ""}d${dice[2]}`,
       raw: t,
@@ -432,6 +538,12 @@ function parseTerm(raw: string): FormulaTerm {
   const threshold = t.match(THRESHOLD_RE);
   if (threshold) {
     return { kind: "threshold", label: threshold[1].toUpperCase(), value: parseInt(threshold[2], 10), raw: t };
+  }
+
+  // A bare label (`vs CF`) — the card leaves the value to the log, so read the
+  // running value in effect at this line.
+  if (vars && /^[A-Z]{2,}$/.test(t) && vars[t] != null) {
+    return { kind: "threshold", label: t, value: vars[t], raw: t, inferred: true };
   }
 
   return { kind: "text", text: t };
@@ -514,7 +626,8 @@ function parseSum(checkText: string): Extract<FormulaCheck, { kind: "sum" }> | n
 }
 
 function comparableValue(term: FormulaTerm): number | null {
-  if (term.kind === "dice") return term.value;
+  // A roll contests with its result — the dice and the modifier together.
+  if (term.kind === "dice") return term.total ?? term.value;
   if (term.kind === "threshold") return term.value;
   return null;
 }
@@ -532,13 +645,13 @@ function comparableValue(term: FormulaTerm): number | null {
  * Null unless EVERY part is a formula: half a line of rolls and half prose is prose,
  * and rendering the readable half would quietly drop the rest.
  */
-export function parseFormulaLine(text: string): Formula[] | null {
+export function parseFormulaLine(text: string, ctx?: FormulaContext): Formula[] | null {
   const segments = text.includes(";") ? text.split(";") : text.split(/,\s*(?=\S*\d*d[\d%F])/i);
   const formulas: Formula[] = [];
   for (const segment of segments) {
     if (!segment.trim()) return null;
     const { text: body, label } = liftTrailingLabel(segment);
-    const f = parseFormula(body);
+    const f = parseFormula(body, ctx);
     if (!f) return null;
     formulas.push(label && !f.label ? { ...f, label } : f);
   }
@@ -558,7 +671,7 @@ function liftTrailingLabel(segment: string): { text: string; label?: string } {
   return { text: dice.trim(), label: tail.trim() };
 }
 
-export function parseFormula(text: string): Formula | null {
+export function parseFormula(text: string, ctx?: FormulaContext): Formula | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
@@ -570,7 +683,8 @@ export function parseFormula(text: string): Formula | null {
   // off before anything else, so the rest parses exactly as an unlabelled line
   // would; only a pipe BEFORE the arrow is a label, never one inside a result.
   let label: string | undefined;
-  const bar = checkText.indexOf("|");
+  // A pipe inside a wikilink is its alias (`[[Insight|ins]]`), not a label.
+  const bar = checkText.replace(/\[\[[^\]\n]*\]\]/g, (m) => " ".repeat(m.length)).indexOf("|");
   if (bar > 0) {
     const name = checkText.slice(0, bar).trim();
     if (name) {
@@ -592,14 +706,14 @@ export function parseFormula(text: string): Formula | null {
   if (sum) return { label, check: sum, result };
   const vsParts = checkText.split(/\s+vs\.?\s+/i);
   if (vsParts.length === 2) {
-    const left = parseTerm(vsParts[0]);
-    const right = parseTerm(vsParts[1]);
+    const left = parseTerm(vsParts[0], ctx);
+    const right = parseTerm(vsParts[1], ctx);
     const lv = comparableValue(left);
     const rv = comparableValue(right);
     const winner = lv != null && rv != null && lv !== rv ? (lv > rv ? "left" : "right") : null;
     check = { kind: "contest", left, right, winner };
   } else {
-    check = { kind: "single", term: parseTerm(checkText) };
+    check = { kind: "single", term: parseTerm(checkText, ctx) };
   }
 
   // Only a formula if it carries a recognizable dice/threshold token; otherwise
@@ -684,7 +798,7 @@ export type EditableTerm = DiceTerm | ThresholdTerm;
  *  CF/DC thresholds. */
 export function editableTerms(formula: Formula): EditableTerm[] {
   const terms = checkTerms(formula.check);
-  return terms.filter((t): t is EditableTerm => t.kind === "dice" || t.kind === "threshold");
+  return terms.filter((t): t is EditableTerm => t.kind === "dice" || (t.kind === "threshold" && !t.inferred));
 }
 
 /** Editable slots a term exposes: dice via `diceSlots`, a threshold has one. */
@@ -704,8 +818,28 @@ export function combineTermValue(term: EditableTerm, slots: string[]): string {
 
 /** The term's new `raw` carrying an edited value (a threshold keeps its label). */
 export function setTermRaw(term: EditableTerm, value: string): string {
-  if (term.kind === "dice") return setDiceValue(term.raw, value);
+  if (term.kind === "dice") return setDiceValue(term.raw, resultText(term, value));
   return value === "" ? term.raw : term.raw.replace(/\d+/, value);
+}
+
+/**
+ * What to record for dice rolled (or typed) as their faces: the RESULT. One
+ * die writes its face with the modifier added (a 4 on `1d4+2` → `6`); a pool,
+ * whose faces a total can't give back, writes them and then the result
+ * (`[4,3]=10`). Without a modifier — or with one still unknown — the dice stand
+ * as rolled.
+ */
+function resultText(term: DiceTerm, faces: string): string {
+  const v = faces.trim();
+  if (!v) return v;
+  const shift = modifierTotal(term.modifier, term.mods);
+  if (shift == null || (shift === 0 && !term.modifier)) return v;
+  if (v.startsWith("[")) {
+    const read = readDiceValue(term, v);
+    return read.value != null ? `${v}=${read.value + shift}` : v;
+  }
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? String(n + shift) : v;
 }
 
 /**
@@ -855,7 +989,13 @@ export function liveTermValue(
   term: FormulaTerm,
   valueFor?: (term: EditableTerm, slot: number) => string
 ): number | null {
-  if (term.kind === "dice") return valueFor ? readDiceValue(term, valueFor(term, 0)).value : term.value;
+  if (term.kind === "dice") {
+    if (!valueFor) return term.total ?? term.value;
+    // A pending roll is its dice; it contests with them and its modifier.
+    const dice = readDiceValue(term, valueFor(term, 0)).value;
+    const shift = modifierTotal(term.modifier, term.mods);
+    return dice == null ? null : dice + (shift ?? 0);
+  }
   if (term.kind === "threshold") {
     if (!valueFor) return term.value;
     const n = parseInt(valueFor(term, 0), 10);

@@ -1,0 +1,1380 @@
+/* Session Log — the drawer as a HUD (after Baldur's Gate 3's):
+   roster of faces · character card · hotbar with its tabs · turn column. */
+
+.lonelog-actions-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.hud-main {
+  display: flex;
+  align-items: stretch;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.hud-main > .rpg-hotbar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── The roster: faces down the left ── */
+
+.hud-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 5.2rem;
+}
+
+.hud-roster .actions-sides {
+  width: 100%;
+}
+
+.hud-specials {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.hud-specials .actor-chip {
+  flex: 1 1 0;
+  padding: 0.2rem 0.25rem;
+  font-size: var(--font-ui-smaller);
+}
+
+ul.hud-faces {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.hud-face {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.hud-face-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+}
+
+button.hud-face:hover .hud-face-frame {
+  border-color: var(--text-muted);
+}
+
+button.hud-face.is-active .hud-face-frame {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+}
+
+button.hud-face.is-foe.is-active .hud-face-frame {
+  border-color: var(--text-error);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--text-error) 55%, transparent);
+}
+
+/* A face, not the whole picture: the tall portrait shows from the top and is
+   zoomed in on the face (the upper middle), clipped by the tile. */
+.hud-face-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 12%;
+  transform: scale(1.7);
+  transform-origin: 50% 18%;
+}
+
+.hud-face-token {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* Whoever acts next: a small gold marker in the corner. */
+.hud-face-next {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-yellow, #e3b04b);
+  box-shadow: 0 0 6px var(--color-yellow, #e3b04b);
+}
+
+button.hud-face.is-next .hud-face-frame {
+  border-color: var(--color-yellow, #e3b04b);
+}
+
+.hud-face-hp,
+.hud-portrait-hp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.hud-face-hp small,
+.hud-portrait-hp small {
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.hud-hpbar {
+  display: block;
+  width: 100%;
+  height: 0.3rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+}
+
+.hud-hpbar > span {
+  display: block;
+  height: 100%;
+  background: light-dark(#3f8a43, #5fbf63);
+}
+
+/* ── The character card: portrait, what's in hand, the loadouts ── */
+
+.hud-character {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+button.hud-portrait {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 5.6rem;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.hud-portrait-frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 50%;
+  background: var(--background-secondary);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+button.hud-portrait:hover .hud-portrait-frame {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+}
+
+.hud-gear {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.3rem;
+}
+
+.hud-hands,
+.hud-utility {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.hud-hands {
+  grid-column: 1 / -1;
+}
+
+.hud-utility {
+  grid-column: 1 / -1;
+}
+
+.hud-slot {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  font-size: 0.5rem;
+  line-height: 1.05;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.hud-slot.is-small {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.hud-slot.is-filled {
+  border-color: color-mix(in srgb, var(--text-muted) 60%, var(--background-modifier-border));
+}
+
+.hud-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hud-loadouts {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, 1.45rem);
+  gap: 0.2rem;
+}
+
+button.hud-loadout {
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.hud-loadout:hover {
+  color: var(--text-normal);
+  border-color: var(--text-muted);
+}
+
+button.hud-loadout.is-held {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  color: var(--interactive-accent);
+}
+
+/* ── Small controls in the pills row: Move, Gear ── */
+
+button.rpg-hotbar-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: auto;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.rpg-hotbar-mini:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-hotbar-extras {
+  position: relative;
+  background: transparent;
+  border-style: dashed;
+}
+
+/* ── The tabs under the tiles: Common · class · Items · Passives ── */
+
+.rpg-hotbar-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  padding-top: 0.15rem;
+}
+
+button.rpg-hotbar-tab {
+  height: auto;
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-secondary);
+  box-shadow: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.rpg-hotbar-tab:hover {
+  color: var(--text-normal);
+}
+
+button.rpg-hotbar-tab.is-active {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  color: var(--text-normal);
+}
+
+/* ── The turn column: End turn, Rest, the opportunity attack ── */
+
+.hud-turn {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: 7.5rem;
+}
+
+button.hud-endturn,
+button.hud-rest-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 100%;
+  height: auto;
+  padding: 0.5rem 0.3rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  box-shadow: none;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.hud-endturn {
+  border-color: color-mix(in srgb, var(--color-yellow, #e3b04b) 60%, var(--background-modifier-border));
+  padding-block: 0.8rem;
+}
+
+button.hud-endturn:hover,
+button.hud-rest-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.hud-rest {
+  position: relative;
+}
+
+menu.hud-rest-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: var(--layer-popover);
+  display: flex;
+  flex-direction: column;
+  min-width: 9rem;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+}
+
+menu.hud-rest-menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  height: auto;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+menu.hud-rest-menu button:hover {
+  background: var(--background-modifier-hover);
+}
+
+.hud-reactions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+button.hud-opportunity {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  height: auto;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--hotbar-reaction, #4cc4b4);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 14%, transparent);
+  box-shadow: none;
+  font-size: var(--font-ui-smaller);
+  text-align: left;
+  cursor: pointer;
+  animation: hud-pulse 1.6s ease-in-out infinite;
+}
+
+button.hud-opportunity small {
+  display: block;
+  color: var(--text-muted);
+}
+
+@keyframes hud-pulse {
+  50% {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+  }
+}
+
+.hud-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  line-height: 1.2;
+  color: var(--text-faint);
+}
+
+/* ═══ Compact: less chrome, less space between ═══════════════════════════════ */
+
+.lonelog-actions-panel {
+  position: relative;
+  gap: 0.5rem;
+}
+
+.hud-main {
+  gap: 0.5rem;
+}
+
+.rpg-hotbar {
+  --hotbar-tile: 2.7rem;
+  gap: 0.2rem;
+}
+
+/* With the roster out in the margin the panel is just the cards. */
+.lonelog-actions-panel.is-in-margin {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The roster's rail: the page's left margin beside the prose, as the Log is on
+   the right. It sticks as the page scrolls — the characters, and in a fight
+   the turn order, always in reach. */
+.lonelog-prose-main {
+  position: relative;
+}
+
+.lonelog-roster-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(100% + 0.6rem);
+  width: 3.6rem;
+  pointer-events: none;
+}
+
+.lonelog-roster-sticky {
+  position: sticky;
+  top: 3.2rem;
+  pointer-events: auto;
+}
+
+.lonelog-roster-sticky .actions-sides {
+  flex-direction: column;
+}
+
+.lonelog-roster-sticky .actions-side {
+  padding: 0.15rem 0.2rem;
+  font-size: 0.6rem;
+}
+
+.hud-roster {
+  width: 3.6rem;
+  gap: 0.3rem;
+}
+
+ul.hud-faces {
+  gap: 0.3rem;
+}
+
+.hud-face-token {
+  font-size: 1.3rem;
+}
+
+.hud-face-frame {
+  border-width: 1px;
+  border-radius: 5px;
+}
+
+button.hud-face.is-active .hud-face-frame {
+  box-shadow: none;
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -1px;
+}
+
+.hud-face-hp small,
+.hud-portrait-hp small {
+  font-size: 0.55rem;
+}
+
+.hud-hpbar {
+  height: 0.2rem;
+}
+
+.hud-specials .actor-chip {
+  padding: 0.1rem 0.15rem;
+  font-size: 0.55rem;
+}
+
+/* Pills: small, one row, no boxes within boxes. */
+.rpg-hotbar-pills {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding-top: 0.45rem;
+}
+
+.rpg-hotbar-pill-group {
+  gap: 0;
+  padding: 0.05rem;
+  border-radius: 3px;
+}
+
+button.rpg-hotbar-pill {
+  min-width: 0;
+  padding: 0.15rem 0.25rem;
+}
+
+.rpg-hotbar-pips {
+  gap: 0.12rem;
+}
+
+.rpg-hotbar-pip {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-width: 1.25px;
+}
+
+.rpg-hotbar-pip.is-reaction {
+  width: 0.42rem;
+  height: 0.42rem;
+}
+
+.rpg-hotbar-pill-circle {
+  top: -0.45rem;
+  font-size: 0.5rem;
+}
+
+.rpg-hotbar-extras {
+  border: none;
+  background: transparent;
+}
+
+button.rpg-hotbar-mini {
+  padding: 0.1rem 0.3rem;
+  font-size: 0.6rem;
+}
+
+/* Tiles: close together. */
+.rpg-hotbar-strip {
+  gap: 0.35rem;
+  padding: 0.1rem 0 0.15rem;
+}
+
+.rpg-hotbar-group {
+  gap: 0.1rem;
+  padding-right: 0.35rem;
+}
+
+.rpg-hotbar-group-label {
+  min-height: 1.1rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.rpg-hotbar-tiles {
+  gap: 0.12rem;
+}
+
+button.rpg-hotbar-tile {
+  border-radius: 3px;
+  padding: 0.15rem 0.1rem 0.1rem;
+}
+
+/* A name should break between words, not inside one. */
+button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-long {
+  font-size: 0.33rem;
+}
+
+button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-longer {
+  font-size: 0.29rem;
+}
+
+button.rpg-hotbar-tile .rpg-hotbar-tile-name {
+  font-size: 0.38rem;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+  hyphens: manual;
+}
+
+.rpg-hotbar-tile-circle,
+.rpg-hotbar-tile-uses {
+  font-size: 0.45rem;
+}
+
+button.rpg-hotbar-page {
+  height: calc(var(--hotbar-tile) * 2);
+}
+
+/* Tabs: a quiet line. */
+.rpg-hotbar-tabs {
+  gap: 0.15rem;
+  padding-top: 0;
+}
+
+button.rpg-hotbar-tab {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6rem;
+}
+
+/* The character card. */
+.hud-character {
+  gap: 0.35rem;
+}
+
+button.hud-portrait {
+  width: 3.4rem;
+}
+
+.hud-gear {
+  gap: 0.2rem;
+}
+
+.hud-slot {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.hud-slot.is-small {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.hud-hands,
+.hud-utility {
+  gap: 0.15rem;
+}
+
+.hud-loadouts {
+  grid-template-columns: repeat(4, 1.15rem);
+  gap: 0.15rem;
+}
+
+button.hud-loadout {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* The turn column: small buttons, in a row of icon and word. */
+.hud-turn {
+  width: 5.2rem;
+  gap: 0.25rem;
+}
+
+button.hud-endturn,
+button.hud-rest-btn {
+  flex-direction: row;
+  gap: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.7rem;
+}
+
+button.hud-endturn {
+  padding-block: 0.4rem;
+}
+
+button.hud-opportunity {
+  padding: 0.25rem 0.35rem;
+  font-size: 0.6rem;
+}
+
+.hud-warn {
+  font-size: 0.5rem;
+}
+
+/* ═══ The roster as one card ═════════════════════════════════════════════════
+   The side switch, the GM / Party chips and the portraits in a single frame —
+   the space of one card — each portrait a card of its own inside it. */
+
+.lonelog-roster-rail {
+  width: 6.4rem;
+}
+
+.hud-roster-card {
+  width: 100%;
+  max-height: calc(100vh - 5rem);
+  padding: 0;
+  gap: 0.35rem;
+  overflow-y: auto;
+  border: none;
+  background: none;
+  box-shadow: none;
+  scrollbar-width: none;
+}
+
+.hud-roster-card::-webkit-scrollbar {
+  display: none;
+}
+
+.hud-roster-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hud-roster-card .actions-sides {
+  flex-direction: row;
+}
+
+.hud-roster-card .actions-side {
+  flex: 1 1 0;
+  justify-content: center;
+  padding: 0.15rem 0.2rem;
+  font-size: 0.6rem;
+}
+
+.hud-roster-card ul.hud-faces {
+  gap: 0.4rem;
+}
+
+/* Obsidian's list styling indents list items and adds markers; these aren't a list to read. */
+.hud-roster-card ul.hud-faces > li.hud-card {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hud-roster-card .hud-face-frame {
+  aspect-ratio: 3 / 4;
+  border-width: 1px;
+  border-radius: 6px;
+}
+
+.hud-face-img {
+  object-position: center 25%;
+}
+
+.hud-roster-card .hud-face-token {
+  font-size: 2.4rem;
+}
+
+/* The name over the foot of the portrait, as on a card. */
+.hud-face-name {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: -webkit-box;
+  padding: 0.9rem 0.2rem 0.15rem;
+  overflow: hidden;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-align: center;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #f4ecdc;
+}
+
+.hud-face-hp small {
+  font-size: 0.6rem;
+}
+
+.hud-hpbar {
+  height: 0.25rem;
+}
+
+/* Make or remake the picture: a small button on the card's corner, on hover. */
+button.hud-card-studio {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: none;
+  color: #f4ecdc;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+li.hud-card:hover button.hud-card-studio,
+button.hud-card-studio:focus-visible {
+  opacity: 1;
+}
+
+button.hud-card-studio:hover {
+  background: var(--interactive-accent);
+}
+
+/* The character at the left, the turn column at the right, the hotbar between. */
+.hud-main > .hud-character,
+.hud-main > .hud-turn {
+  flex: 0 0 auto;
+}
+
+.hud-main > .hud-turn {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+/* Move and Gear, under the loadouts. */
+.hud-switches {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin-top: 0.15rem;
+}
+
+.hud-switches .actions-gear {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* With the roster out in the margin, the drawer keeps its width and its
+   background; the character stands outside it at the left, under the roster
+   rail, and the turn column outside it at the right, under the Log. */
+.lonelog-actions-panel.is-in-margin .hud-main > .hud-character {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 2.1rem);
+  flex-direction: column;
+  align-items: center;
+  width: 6.4rem;
+}
+
+.lonelog-actions-panel.is-in-margin .hud-main > .hud-turn {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 2.1rem);
+  margin-left: 0;
+}
+
+/* The hotbar takes the drawer's whole width, so its middle is the drawer's middle. */
+.lonelog-actions-panel > .hud-main {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+/* ── The character at the left: the face above, the hands and loadouts below ── */
+.hud-character {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 6.4rem;
+}
+
+button.hud-portrait {
+  width: 100%;
+}
+
+/* The face, close: the picture zoomed well into the upper middle. */
+.hud-portrait-frame {
+  border-radius: 8px;
+  aspect-ratio: 1;
+}
+
+.hud-portrait-frame .hud-face-img {
+  object-position: 50% 8%;
+  transform: scale(2.6);
+  transform-origin: 50% 16%;
+}
+
+.hud-gear {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.hud-hands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.hud-slot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.hud-loadouts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+}
+
+button.hud-loadout {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+button.hud-loadout img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The squares keep their size whatever is in them: equal columns that never
+   grow to their content, and a picture that fills its square without sizing it. */
+.hud-hands {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hud-loadouts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hud-slot,
+button.hud-loadout {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.hud-slot img,
+button.hud-loadout img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hud-slot b {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The lower half is as wide as the character's column (the margin rule centres its children). */
+.hud-character > .hud-gear {
+  width: 100%;
+}
+
+/* The loadout icons: larger, a fixed size, centred under the portrait. */
+.lonelog-actions-panel.is-in-margin .hud-main > .hud-character {
+  width: 7.6rem;
+}
+
+.hud-loadouts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+button.hud-loadout {
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* The hands: smaller, a fixed size, centred like the loadouts below. */
+.hud-hands {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.hud-hands > .hud-slot {
+  flex: 0 0 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+/* A click on a face or a square is the button's, not Obsidian's click-to-zoom on the picture. */
+.hud-face-img,
+.hud-slot img,
+button.hud-loadout img,
+.hud-portrait img {
+  pointer-events: none;
+}
+
+/* The roster is a narrower column, and stops above the character who stands
+   under it at the foot of the page; past that it scrolls — many foes, a long
+   turn order. */
+.lonelog-roster-rail {
+  width: 5.4rem;
+}
+
+.lonelog-roster-sticky .hud-roster-card {
+  max-height: calc(100vh - 3.2rem - 16rem);
+  scrollbar-width: thin;
+}
+
+.lonelog-roster-sticky .hud-roster-card::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.lonelog-roster-sticky .hud-roster-card::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+}
+
+/* Never sideways: the roster scrolls down only, and what's in it fits its column. */
+.hud-roster-card {
+  overflow-x: hidden;
+}
+
+.hud-roster-card > *,
+.hud-roster-card .actions-sides,
+.hud-roster-card .hud-specials,
+.hud-roster-card ul.hud-faces {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.hud-roster-card .actions-side {
+  min-width: 0;
+  padding-inline: 0.1rem;
+  white-space: nowrap;
+}
+
+/* The drawer keeps one height: room for three rows of tiles (and a group's name under them),
+   however few cards there are. */
+.rpg-hotbar-strip {
+  align-items: flex-start;
+  min-height: calc(var(--hotbar-tile) * 3 + 0.24rem + 0.2rem + 1.1rem + 0.5rem);
+}
+
+/* Armor class, small, under the hit points: it follows what's in hand (the shield). */
+.hud-portrait-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.hud-portrait-ac {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ═══ Narrow pages ═══════════════════════════════════════════════════════════
+   With no margin for the roster it joins the drawer: a strip of faces across
+   its top, then the character, the hotbar and the turn column in a row — which
+   wraps (the hotbar to a row of its own) when the drawer itself is narrow. */
+.lonelog-bottom-drawer {
+  container-type: inline-size;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+}
+
+/* The chip and the switch stay one block, the chip above the switch, as in the margin. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-head {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  /* As wide as the switch needs; the chip fills the same width. */
+  width: max-content;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-head > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-head .hud-specials {
+  display: flex;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-head .actor-chip {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+  justify-content: center;
+}
+
+/* The faces sit in the middle of the strip; it scrolls only once they outgrow it. */
+.lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card:first-child {
+  margin-left: auto;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card:last-child {
+  margin-right: auto;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) ul.hud-faces {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card {
+  flex: 0 0 3.8rem;
+  width: 3.8rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+  flex: 1 1 22rem;
+  order: 2;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+  order: 3;
+  margin-left: auto;
+}
+
+@container (max-width: 34rem) {
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+    order: 1;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+    flex-basis: 100%;
+    order: 4;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+    order: 2;
+  }
+}
+
+/* The faces sit on the drawer's own middle — where the pills and tiles are centred —
+   with the chip and switch off to the left, not pushing them aside. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > ul.hud-faces {
+  grid-column: 2;
+  max-width: 100%;
+}
+
+/* The character and the turn column the same width, so the hotbar between them is
+   centred on the drawer — on the same line as the faces above and the pills over it. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character,
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+  flex: 0 0 7.6rem;
+  width: 7.6rem;
+  box-sizing: border-box;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+  margin-left: 0;
+  align-items: stretch;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+  flex: 1 1 22rem;
+}
+
+/* ═══ The turn column: round icon buttons ═══════════════════════════════════
+   End turn, Rest, the opportunity attack, the warning switch — each a circle with
+   its icon; the words are on hover. */
+.hud-turn {
+  align-items: center;
+  gap: 0.4rem;
+}
+
+button.hud-endturn,
+button.hud-rest-btn,
+button.hud-opportunity,
+button.hud-warn {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+button.hud-warn {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  box-shadow: none;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+button.hud-warn[aria-pressed="true"] {
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+/* Words are for hover and screen readers. */
+button.hud-endturn > span,
+button.hud-rest-btn > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.hud-reactions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* In the narrow layout the side columns are slim, and equal, so the hotbar is centred. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character,
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+  flex: 0 0 6rem;
+  width: 6rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-hands > .hud-slot {
+  flex-basis: 2.4rem;
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) button.hud-loadout {
+  flex-basis: 1.3rem;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* In the margin the column is just as wide as its circles. */
+.lonelog-actions-panel.is-in-margin .hud-main > .hud-turn {
+  width: auto;
+}
+
+/* ═══ The narrow row as a grid ═══════════════════════════════════════════════
+   Character | hotbar | turn column, the two sides equal and fixed, the hotbar
+   taking everything between: the Rest circle at the drawer's right edge, the
+   hotbar centred. In a very narrow drawer the hotbar drops to a row of its own. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) 6rem;
+  align-items: start;
+  column-gap: 0.5rem;
+  row-gap: 0.6rem;
+  width: 100%;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+  grid-column: 1;
+  grid-row: 1;
+  width: auto;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+  grid-column: 2;
+  grid-row: 1;
+  order: 0;
+  min-width: 0;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: center;
+  width: auto;
+  order: 0;
+}
+
+@container (max-width: 34rem) {
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
+    grid-column: 2;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

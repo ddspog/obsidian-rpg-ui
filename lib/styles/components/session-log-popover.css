@@ -7,7 +7,7 @@
   padding: 0.75rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 14rem;
-  max-width: 20rem;
+  max-width: 24rem;
 }
 
 .placeholder-form {
@@ -16,10 +16,238 @@
   gap: 0.5rem;
 }
 
+/* The confirmation: which card, and what playing it does. */
+.placeholder-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.placeholder-title {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+.placeholder-summary {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* A status card's condition rules — or the note that it's only its source's effect. */
+.placeholder-rules {
+  margin: 0;
+  padding-left: 0.5em;
+  border-left: 2px solid rgb(201 138 26 / 0.6);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.placeholder-optional {
+  font-weight: 400;
+  text-transform: none;
+  color: var(--text-faint);
+}
+
 .placeholder-field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* A slot spent already this round (a second bonus action, say) — said, in the
+   warning red the round line flags it with; never blocking. */
+.placeholder-warn {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  color: light-dark(#b3261e, #ef6a5d);
+}
+
+.placeholder-rider .placeholder-warn {
+  display: block;
+  grid-column: 2 / -1;
+}
+
+/* What the conditions in play do to its rolls — advantage in green,
+   disadvantage and a failed save in the warning red, a cancel muted. */
+ul.placeholder-advice {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.45;
+}
+
+.placeholder-advice li,
+.placeholder-advice-line {
+  color: var(--text-muted);
+}
+
+.placeholder-advice .is-advantage,
+.placeholder-advice-line.is-advantage {
+  color: light-dark(#2e7d32, #81c784);
+}
+
+.placeholder-advice .is-disadvantage,
+.placeholder-advice .is-fails,
+.placeholder-advice-line.is-disadvantage,
+.placeholder-advice-line.is-fails {
+  color: light-dark(#b3261e, #ef6a5d);
+}
+
+/* The Party's cards: who's in, a row per member (or per find, per role), a
+   few fields side by side. */
+fieldset.placeholder-party-members,
+fieldset.placeholder-party-rows,
+fieldset.placeholder-party-coins {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  /* A fieldset is as wide as its content by default — it would push its
+     rows past the popup's edge. */
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+fieldset.placeholder-party-members {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: 0.8rem;
+}
+
+fieldset.placeholder-party-members > legend,
+fieldset.placeholder-party-rows > legend,
+fieldset.placeholder-party-coins > legend {
+  margin-bottom: 0.2rem;
+  padding: 0;
+}
+
+fieldset.placeholder-party-coins {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.6rem;
+}
+
+.placeholder-party-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.placeholder-party-row > .placeholder-input:not(.placeholder-party-qty),
+.placeholder-party-row > .placeholder-select {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.placeholder-party-die {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.placeholder-party-die > .placeholder-input,
+.placeholder-input.placeholder-party-qty {
+  width: 3.6rem;
+  flex: 0 0 auto;
+}
+
+.placeholder-party-inline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+button.placeholder-party-add {
+  align-self: flex-start;
+  height: auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.placeholder-party-add:hover {
+  border-style: solid;
+  color: var(--text-accent);
+}
+
+/* A Multiattack's attacks: one row each — the attack (when it may choose),
+   and at whom. */
+fieldset.placeholder-strikes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+fieldset.placeholder-strikes > legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+}
+
+.placeholder-strike {
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* What its target's distance means for that attack, under it. */
+.placeholder-strike-verdict {
+  grid-column: 2 / -1;
+}
+
+.placeholder-strike-n {
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.placeholder-strike-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placeholder-strike-at {
+  color: var(--text-accent);
+}
+
+/* A field's quiet note under it (where the actor stands, a move's route);
+   red when what's typed can't be used. */
+.placeholder-hint {
+  font-size: var(--font-smallest);
+  color: var(--text-faint);
+}
+
+.placeholder-hint.is-invalid {
+  color: var(--text-error);
+}
+
+.placeholder-move .placeholder-input[aria-invalid="true"] {
+  border-color: var(--text-error);
 }
 
 .placeholder-label {
@@ -30,6 +258,7 @@
 }
 
 .placeholder-input {
+  box-sizing: border-box;
   width: 100%;
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--background-modifier-border);
@@ -44,6 +273,7 @@
 }
 
 .placeholder-select {
+  box-sizing: border-box;
   flex: 1;
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--background-modifier-border);
@@ -103,4 +333,478 @@
   background: var(--background-secondary);
   font-size: var(--font-small);
   cursor: pointer;
+}
+
+/* The preview: what the card will add, drawn as the Log sidebar draws an
+ * entry, inside a quiet frame so it reads as "this, not yet". */
+.placeholder-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.placeholder-preview-label {
+  font-size: var(--font-smallest);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.placeholder-preview-entries {
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.35rem 0.5rem;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 0.85em;
+}
+
+/* An entry here is a preview, not a link into the log — only its dice act. */
+.placeholder-preview-entries .lonelog-sidebar-item {
+  cursor: default;
+}
+
+.placeholder-preview-raw summary {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.placeholder-preview-raw pre {
+  margin: 0.3rem 0 0;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  background: var(--background-secondary);
+  font-family: var(--font-monospace);
+  font-size: var(--font-smallest);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Start Combat ──
+ * Wider than a card's popup: it holds the party, the foes, and the rolled
+ * initiative order side by side with its preview. */
+.lonelog-combat-popover {
+  max-width: 28rem;
+}
+
+.combat-party {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.combat-party-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--font-ui-smaller);
+}
+
+textarea.combat-foes {
+  resize: vertical;
+  font-family: var(--font-monospace);
+  font-size: var(--font-smallest);
+}
+
+.combat-initiative {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-ui-smaller);
+}
+
+.combat-initiative caption {
+  text-align: left;
+  font-size: var(--font-smallest);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding-bottom: 0.25rem;
+}
+
+.combat-initiative th,
+.combat-initiative td {
+  padding: 0.1rem 0.3rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  text-align: left;
+}
+
+.combat-initiative thead th {
+  font-size: var(--font-smallest);
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.combat-initiative tr.is-foe th[scope="row"] {
+  color: light-dark(#c0524f, #e57373);
+}
+
+.combat-hp,
+.combat-missing {
+  font-size: var(--font-smallest);
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.combat-missing {
+  font-style: italic;
+}
+
+.combat-face {
+  width: 2.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.combat-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.combat-reroll,
+.combat-reroll-all {
+  margin-left: 0.2rem;
+  padding: 0 0.3rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+}
+
+.combat-reroll:hover,
+.combat-reroll-all:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Surprise — a three-way choice, joined like the drawer's side tabs. */
+.combat-surprise {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.combat-surprise legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.combat-surprise-option {
+  flex: 1 1 0;
+  padding: 0.25rem 0.4rem;
+  text-align: center;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.combat-surprise-option + .combat-surprise-option {
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+.combat-surprise-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.combat-surprise-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+.combat-surprise-option.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.combat-surprise-option:focus-within {
+  box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+
+/* What being surprised means, under the choice. */
+.combat-surprise-rule {
+  margin: 0;
+  font-size: var(--font-smallest);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.combat-map-status {
+  font-size: var(--font-smallest);
+  color: var(--text-faint);
+}
+
+/* A new map from a picture: its name, then its grid on one row — square size
+   and the first line's offset — with what was found in the picture below. */
+.combat-new-map {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.6rem 0.55rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+}
+
+.combat-new-map > legend {
+  padding: 0 0.25rem;
+}
+
+.combat-new-map-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.combat-new-map .placeholder-input[aria-invalid="true"] {
+  border-color: var(--text-error);
+}
+
+.combat-square {
+  width: 3.2em;
+  text-align: center;
+  font-family: var(--font-monospace);
+  font-size: var(--font-smallest);
+}
+
+/* What can ride on an attack (Mystic Mark): a choice per rider, with what it
+   adds — or, on a target it has marked already, that it rides free. */
+.placeholder-riders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.4rem 0.6rem 0.45rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+}
+
+.placeholder-riders > legend {
+  padding: 0 0.25rem;
+}
+
+.placeholder-rider {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.placeholder-rider input {
+  margin: 0;
+  align-self: center;
+}
+
+.placeholder-rider-name {
+  font-weight: 600;
+}
+
+/* Moving before the action and after it: side by side. */
+.placeholder-moves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+/* A field that finds notes as you type, its suggestions under it. */
+.rpg-note-combobox {
+  position: relative;
+  display: flex;
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.rpg-note-combobox > .placeholder-input {
+  width: 100%;
+}
+
+.rpg-note-combobox-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: var(--layer-popover);
+  max-height: 16rem;
+  margin: 0;
+  padding: var(--size-2-2);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.rpg-note-combobox-list .suggestion-note {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+
+/* Where a found thing goes — its own line under the row. */
+/* One find: its count and name, where it came from, where it goes — framed
+   together so each reads as one, an accent edge down its side. */
+.placeholder-party-find {
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  border-left: 2px solid color-mix(in srgb, var(--text-accent) 45%, transparent);
+  border-radius: 0 4px 4px 0;
+  background-color: color-mix(in srgb, var(--text-accent) 5%, transparent);
+}
+
+.placeholder-party-from {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+
+.placeholder-party-to {
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 0 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-accent);
+}
+
+.placeholder-party-to > .placeholder-select {
+  min-width: 0;
+}
+
+.placeholder-party-to > .placeholder-select.is-left {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* The coins' purse, on a line of its own under the gp / sp / cp. */
+.placeholder-party-coins-to {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.placeholder-party-coins-to .placeholder-select {
+  flex: 0 1 auto;
+  min-width: 8rem;
+}
+
+/* A container found: what it holds, indented under it, stowed with it. */
+.placeholder-party-inside {
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  margin-left: 0.6rem;
+  padding-left: 0.5rem;
+  border-left: 1px dashed var(--background-modifier-border);
+}
+
+button.placeholder-party-drop {
+  flex: 0 0 auto;
+  height: auto;
+  padding: 0 0.3rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text-faint);
+}
+
+button.placeholder-party-drop:hover {
+  color: var(--text-error);
+}
+
+/* "it holds things" — flags a find the vault doesn't know is a container. */
+button.placeholder-party-flag {
+  flex: 0 0 100%;
+  justify-content: flex-start;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  text-decoration: underline dotted;
+}
+
+/* A sheet's loadouts: what's in hand, and a click to switch. */
+.rpg-loadouts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+}
+
+.rpg-loadouts-label {
+  font-size: var(--font-ui-smaller);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+button.rpg-loadout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  height: auto;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.rpg-loadout small {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+button.rpg-loadout.is-held {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  cursor: default;
+}
+
+button.rpg-loadout:disabled:not(.is-held) {
+  opacity: 0.5;
+}
+
+/* What other features change on a card. */
+.placeholder-modified {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.placeholder-modified li::before {
+  content: "◆ ";
+  color: var(--text-accent);
+}
+
+.placeholder-modified b {
+  font-weight: 600;
+  color: var(--text-normal);
 }

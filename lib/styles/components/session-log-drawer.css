@@ -2,17 +2,50 @@
  * Margin-invading drawer with icon toggle, inline actor chips + card stacks
  */
 
-.lonelog-bottom-drawer {
+/* The prose and the drawer under it. The drawer follows the text column — with
+   the Log open the page is shifted left by half the Log's width, and the drawer
+   with it — and stays in view at the foot of the page the whole way down. */
+.lonelog-dock-zone {
+  --log-sidebar-width: 24rem;
   position: relative;
+  margin-bottom: 1.75rem;
+}
+
+.lonelog-dock-zone.with-sidebar:not(.is-stacked) > .lonelog-bottom-drawer {
+  margin-inline-start: calc(-2rem - var(--log-sidebar-width) / 2);
+  margin-inline-end: calc(-2rem + var(--log-sidebar-width) / 2);
+}
+
+.lonelog-bottom-drawer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   margin-top: 1rem;
   margin-left: -2rem;
   margin-right: -2rem;
   padding: 0.75rem 1.5rem;
-  border-top: 1px solid var(--background-modifier-border);
-  background: light-dark(rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  box-shadow: 0 -0.2rem 0.8rem rgba(0, 0, 0, 0.12);
 }
 
-/* Icon toggle — top right corner */
+.lonelog-bottom-drawer.is-collapsed {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
+  padding-block: 0.3rem;
+}
+
+.drawer-collapsed-label {
+  font-size: var(--font-ui-smaller);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* The minimise button — top right corner */
 .drawer-toggle-btn {
   position: absolute;
   top: 0.5rem;
@@ -35,6 +68,11 @@
   z-index: 1;
 }
 
+.lonelog-bottom-drawer.is-collapsed .drawer-toggle-btn {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .drawer-toggle-btn:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
@@ -55,6 +93,118 @@
   gap: 0.25rem;
   flex-shrink: 0;
   padding-top: 0.25rem;
+}
+
+/* The left column: the side tabs above that side's actors. */
+.actions-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Side tabs — Party / Foes — as a segmented radio group: one control, its
+ * options joined, the chosen one filled. Real radios underneath, so arrow
+ * keys move between sides. */
+.actions-sides {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* Named for assistive tech only; the tabs say what they are. */
+.actions-sides-legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.actions-side {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.actions-side + .actions-side {
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+.actions-side input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.actions-side:hover {
+  background: var(--background-modifier-hover);
+}
+
+.actions-side.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.actions-side.is-foe.is-active {
+  background: light-dark(#c0524f, #b04a47);
+  color: #fff;
+}
+
+.actions-side:focus-within {
+  box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+
+/* How many on the side — quiet, a count beside the name. */
+.actions-side-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+/* Just moving, for whoever's picked — the chips' voice, dashed like an open
+   slot: not one of their cards, something anyone can do in a fight. */
+button.actions-move-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  height: auto;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+button.actions-move-btn:hover {
+  border-style: solid;
+  border-color: var(--interactive-accent);
+  color: var(--text-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
 }
 
 .actor-chip {
@@ -82,6 +232,19 @@
   border-color: var(--interactive-accent);
 }
 
+/* A foe in the fight: the ember-red of foes in the Log, so the two sides read
+ * apart at a glance. */
+.actor-chip.is-foe {
+  color: light-dark(#c0524f, #e57373);
+  border-color: light-dark(rgba(192, 82, 79, 0.45), rgba(229, 115, 115, 0.45));
+}
+
+.actor-chip.is-foe.is-active {
+  background: light-dark(#c0524f, #b04a47);
+  border-color: light-dark(#c0524f, #b04a47);
+  color: #fff;
+}
+
 .actions-stacks-row {
   display: flex;
   gap: 1rem;
@@ -97,4 +260,63 @@
   font-style: italic;
   margin: 0;
   align-self: center;
+}
+
+/* Gear: the button, and under it the loadouts to put in hand. */
+.actions-gear {
+  position: relative;
+}
+
+menu.actions-gear-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: var(--layer-popover);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 14rem;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+}
+
+button.actions-gear-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  width: 100%;
+  height: auto;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.actions-gear-option small {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+button.actions-gear-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+button.actions-gear-option.is-held {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+}
+
+.actions-gear-rule {
+  padding: 0.25rem 0.5rem 0.1rem;
+  border-top: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
 }

@@ -21,7 +21,8 @@ export interface EntityData {
 }
 
 export class EntityResolver {
-  private cache: Map<string, EntityData> = new Map();
+  /** Parsed entities, with the system their fences were read under. */
+  private cache: Map<string, { data: EntityData; system: unknown }> = new Map();
   private app: App;
   private systemRegistry: SystemRegistry;
 
@@ -56,10 +57,15 @@ export class EntityResolver {
 
   public async resolveEntity(reference: EntityReference): Promise<EntityData> {
     const filePath = this.resolveFilePath(reference.file);
+    // Which fences count as entity blocks depends on the file's system. A file
+    // read while its system was still loading was parsed under the default
+    // one — wrong block names, no entity type — so re-read it once the real
+    // system is in place, rather than serving that copy until the file changes.
+    const system = this.systemRegistry.getSystemForFile(filePath);
     const cached = this.cache.get(filePath);
-    if (cached) return cached;
+    if (cached && cached.system === system) return cached.data;
     const entityData = await this.loadEntityData(filePath);
-    this.cache.set(filePath, entityData);
+    this.cache.set(filePath, { data: entityData, system });
     return entityData;
   }
 
@@ -69,6 +75,12 @@ export class EntityResolver {
 
   private resolveFilePath(fileRef: string): string {
     let path = fileRef.replace(/^\[\[/, "").replace(/\]\]$/, "");
+    // A wikilink (`[[Talon Pallton]]`) names a note, not a vault-root path, so
+    // resolve it the way Obsidian does before falling back to the literal path.
+    const linktext = path.split("|")[0].split("#")[0].trim();
+    const linked = this.app.metadataCache?.getFirstLinkpathDest?.(linktext, "");
+    if (linked instanceof TFile) return linked.path;
+    path = linktext;
     if (!path.endsWith(".md")) path += ".md";
     return path;
   }

@@ -62,6 +62,7 @@ import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
 import { PageFooterManager } from "lib/plugin/page-footer";
 import { PageBannerManager } from "lib/plugin/page-banner";
 import { splitFenceBody } from "lib/utils/fence-split";
+import { bindExpressions, buildEntityBlocks } from "lib/services/entity-context";
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
@@ -1460,78 +1461,16 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           });
         }, [self]);
 
-        // Build blocks object: parse YAML for each declared block in the entity
-        const blocksObj: Record<string, unknown> = {};
+        // Blocks + expressions come from the shared entity-context builder, so a
+        // sheet block and anything else reading this entity (a session log
+        // asking for a skill modifier) evaluate the same expressions.
+        let blocksObj: Record<string, unknown> = {};
         let lookupObj: Record<string, unknown> = {};
         try {
-          const entityDef = (system.entities as any)?.[this.entityType];
-          lookupObj = (entityDef?.lookup as Record<string, unknown>) ?? {};
-          const blockNames: string[] = entityDef ? Object.keys(entityDef.blocks ?? {}) : [];
-          // Track which blocks were authored as their own fence vs. left
-          // empty so the post-pass below can alias missing sub-blocks
-          // back to the merged `character.sheet` body when appropriate.
-          const authored = new Set<string>();
-          for (const bn of blockNames) {
-            const meta = `${this.entityType}.${bn}`;
-            const raw = entityData.codeBlocks.get(meta)?.[0];
-            if (raw) {
-              try {
-                const parsedBlock = parseYaml(raw);
-                blocksObj[bn] = parsedBlock ?? {};
-              } catch {
-                blocksObj[bn] = {};
-              }
-              authored.add(bn);
-            } else {
-              blocksObj[bn] = {};
-            }
-          }
-          // Composite-sheet aliasing: when an author bundles header /
-          // health / stats / senses / skills / rolls / proficiencies
-          // into a single `rpg character.sheet` fence, the sub-block
-          // entries above land as empty placeholders. Cross-block reads
-          // (`blocks.header.classes`, `blocks.stats.STR`, expressions like
-          // `CharacterLevel`) then look at the empty placeholder instead
-          // of the merged body and silently report 0 / no-class. Alias
-          // every absent sub-block to the sheet body so the placeholder
-          // path resolves to the real data.
-          if (blockNames.includes("sheet") && authored.has("sheet")) {
-            const sheetBody = blocksObj["sheet"];
-            for (const bn of ["header", "health", "stats", "senses", "skills", "rolls", "proficiencies"]) {
-              if (blockNames.includes(bn) && !authored.has(bn)) {
-                blocksObj[bn] = sheetBody;
-              }
-            }
-          }
+          blocksObj = buildEntityBlocks(system, this.entityType, entityData.codeBlocks);
+          lookupObj = ((system.entities as any)?.[this.entityType]?.lookup as Record<string, unknown>) ?? {};
         } catch (e) {
           // leave blocksObj empty on error
-        }
-
-        // Build expressions proxy from the system-level expressions Map.
-        // CreateSystem collects entity expressions into `system.expressions` (a Map)
-        const expressionsProxy: Record<string, (...args: any[]) => unknown> = {};
-        try {
-          const exprMap: Map<string, any> = (system as any).expressions ?? new Map();
-          for (const [name, exprDef] of exprMap.entries()) {
-            expressionsProxy[name] = (...callArgs: any[]) => {
-              try {
-                const argsArr = callArgs.length === 1 && Array.isArray(callArgs[0]) ? callArgs[0] : callArgs;
-                return exprDef.evaluate({
-                  args: argsArr,
-                  lookup: lookupObj,
-                  frontmatter: fm,
-                  blocks: blocksObj,
-                  expressions: expressionsProxy,
-                  system: systemCtx,
-                });
-              } catch (err) {
-                console.error("RPG UI: expression evaluate failed:", err);
-                return undefined;
-              }
-            };
-          }
-        } catch (e) {
-          // ignore
         }
 
         // cssclasses are applied by Obsidian itself; do not mutate DOM here.
@@ -1542,7 +1481,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
         // `substituteExpressions` against them. Tables declared in the same
         // compendium doc are reachable by bare `<name>`; cross-source reads
         // against a character's full compendium remain a sheet-side concern.
-        let fileTables: Record<string, unknown> = {};
+        const fileTables: Record<string, unknown> = {};
         try {
           const fileText = sectionInfo?.text;
           if (fileText) {
@@ -1556,6 +1495,12 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
           // leave fileTables empty on error
         }
         lookupObj = { ...lookupObj, $tables: fileTables };
+
+        const expressionsProxy = bindExpressions(
+          system,
+          { blocks: blocksObj, lookup: lookupObj, frontmatter: fm as Record<string, unknown> },
+          this.entityType
+        );
 
         const props: Record<string, unknown> = {
           self: selfWithSetters,

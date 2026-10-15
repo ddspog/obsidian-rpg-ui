@@ -193,7 +193,7 @@ function parseCoin(raw: string | undefined): { amount: number; denomination: key
 function resolveEntry(entry: YamlItemEntry, path: string, lookup: LookupFn): ResolvedItem {
   const target = wikilinkTarget(entry.name);
   const link = target ? entry.name : null;
-  const label = target ? wikilinkLabel(entry.name) : entry.name;
+  const label = entry.label?.trim() || (target ? wikilinkLabel(entry.name) : entry.name);
 
   const lookupKey = target ?? entry.name;
   const fm = lookup(lookupKey);

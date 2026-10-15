@@ -25,7 +25,7 @@ import {
   type GMStepContext,
 } from "lib/domains/gm/example";
 import { parseLonelog } from "lib/domains/lonelog/parser";
-import { resolveDialOps, type DialDecl } from "lib/domains/lonelog/dial-ops";
+import { resolveDialOps, resourceDefaults, type DialDecl } from "lib/domains/lonelog/dial-ops";
 import { resolveListOps } from "lib/domains/lonelog/list-ops";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
 import { assembleProse, buildSidebarItems } from "lib/domains/session-log/prose-model";
@@ -63,7 +63,10 @@ export function GMFeatureBody({
   const segments = React.useMemo(() => groupIntoProse(entries), [entries]);
   const dialOps = React.useMemo(() => resolveDialOps(entries, decls ?? {}), [entries, decls]);
   const listOps = React.useMemo(() => resolveListOps(entries, stepCtx?.lists ?? {}), [entries, stepCtx]);
-  const items = React.useMemo(() => buildSidebarItems(segments, dialOps, listOps), [segments, dialOps, listOps]);
+  const items = React.useMemo(
+    () => buildSidebarItems(segments, dialOps, listOps, resourceDefaults(decls ?? {})),
+    [segments, dialOps, listOps, decls]
+  );
   const scenes = React.useMemo(() => assembleProse(segments), [segments]);
 
   if (items.length === 0 && scenes.length === 0) return null;

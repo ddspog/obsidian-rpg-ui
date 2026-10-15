@@ -572,6 +572,7 @@ d: 1d8+4=9 slashing damage
         kind: "foe",
         name: "Bandit Leader",
         tags: ["HP 27", "Close"],
+        hp: { set: 27 },
       });
     });
 
@@ -938,5 +939,107 @@ describe("list ops — `[Name+ entry]` / `[Name- entry]` / `[Name?]` / `[Name@]`
     const e = parseLonelog("=> A link [[Some Note]] stays.")[0];
     expect(e.type === "consequence" && e.tags).toEqual([]);
     expect(e.type === "consequence" && e.conclusion).toBe("A link [[Some Note]] stays.");
+  });
+});
+
+describe("[Inv:] owners and wikilinks", () => {
+  it("reads a wikilinked item without ending the tag at its brackets", () => {
+    expect(extractTags("I kept it [Inv:[[Kowyn's Bag]]+1]")).toEqual([
+      { kind: "inventory", name: "Kowyn's Bag", ref: false, props: [], link: true, delta: 1 },
+    ]);
+  });
+
+  it("reads an Owner/ prefix", () => {
+    expect(extractTags("[Inv:Talon/Rope+2]")[0]).toMatchObject({ name: "Rope", owner: "Talon", delta: 2 });
+  });
+
+  it("reads the containers it goes in, one / each, the item last", () => {
+    expect(extractTags("[Inv:Kowyn's Bag/[[Pouch]]/[[Sling bullets]]+15]")[0]).toMatchObject({
+      owner: "Kowyn's Bag",
+      path: ["Pouch"],
+      name: "Sling bullets",
+      link: true,
+      delta: 15,
+    });
+    expect(extractTags("[Inv:[[Kowyn's Bag]]/[[Pouch]]+1]")[0]).toMatchObject({
+      owner: "Kowyn's Bag",
+      name: "Pouch",
+      delta: 1,
+    });
+    // A / inside a link is the link's own.
+    expect(extractTags("[Inv:Talon/[[gear/Rope]]+1]")[0]).toMatchObject({ owner: "Talon", name: "gear/Rope" });
+  });
+
+  it("keeps an alias pipe inside the link, splitting only the tag's own pipes", () => {
+    expect(extractTags("[Inv:[[Rope|a rope]]|2|frayed]")[0]).toMatchObject({
+      name: "Rope",
+      link: true,
+      quantity: 2,
+      props: ["frayed"],
+    });
+  });
+
+  it("strips a wikilinked tag from the conclusion", () => {
+    const [entry] = parseLonelog("=> I kept it close. [Inv:[[Kowyn's Bag]]+1]");
+    expect(entry.type === "consequence" && entry.conclusion).toBe("I kept it close.");
+  });
+});
+
+describe("[Init:] — combat order", () => {
+  it("reads names, values and written rolls, split on `;`", () => {
+    expect(extractTags("[Init: Talon d20+4=17; [[Kobold, Elite]] 12; Lilith]")).toEqual([
+      {
+        kind: "initiative",
+        op: "set",
+        entries: [
+          { name: "Talon", value: 17, roll: "d20+4=" },
+          { name: "[[Kobold, Elite]]", value: 12 },
+          { name: "Lilith" },
+        ],
+      },
+    ]);
+  });
+
+  it("reads a numbered name as name + value", () => {
+    expect(extractTags("[Init: Guard 2 14]")[0]).toMatchObject({ entries: [{ name: "Guard 2", value: 14 }] });
+  });
+
+  it("reads + and - as joining and leaving", () => {
+    expect(extractTags("[Init:+ Kobold Archer 14]")[0]).toMatchObject({
+      op: "add",
+      entries: [{ name: "Kobold Archer", value: 14 }],
+    });
+    expect(extractTags("[Init:- [[Kobold, Elite]]]")[0]).toMatchObject({
+      op: "remove",
+      entries: [{ name: "[[Kobold, Elite]]" }],
+    });
+  });
+
+  it("parses a bare [Init:] line as a tag-only consequence", () => {
+    const [entry] = parseLonelog("[Init: Talon 17; Lilith 9]");
+    expect(entry.type).toBe("consequence");
+    expect(entry.type === "consequence" && entry.conclusion).toBe("");
+  });
+});
+
+describe("[F:] foes — HP and state", () => {
+  it("reads a set HP, a max, a delta and an end state", () => {
+    expect(extractTags("[F:Fat [[Kobold, A]]|HP 9]")[0]).toMatchObject({ name: "Fat [[Kobold, A]]", hp: { set: 9 } });
+    expect(extractTags("[F:Ogre|HP 21/30]")[0]).toMatchObject({ hp: { set: 21, max: 30 } });
+    expect(extractTags("[F:Ogre|HP-7]")[0]).toMatchObject({ hp: { delta: -7 } });
+    expect(extractTags("[F:Ogre|dead]")[0]).toMatchObject({ state: "dead" });
+  });
+
+  it("keeps a link's alias pipe in the name", () => {
+    expect(extractTags("[F:[[Kobold, A|the fat one]]|HP 9]")[0]).toMatchObject({ name: "[[Kobold, A|the fat one]]" });
+  });
+
+  it("lifts foes off a question line", () => {
+    const [q] = parseLonelog("? Combat begins. [F:[[Kobold, Elite]]|HP 26] [F: Thin [[Kobold, A]]|HP 9]");
+    expect(q.type === "oracle_question" && q.text).toBe("Combat begins.");
+    expect(q.type === "oracle_question" && q.foes?.map((f) => f.name)).toEqual([
+      "[[Kobold, Elite]]",
+      "Thin [[Kobold, A]]",
+    ]);
   });
 });

@@ -1,7 +1,20 @@
-import type { PersistentTag, DialOpTag, ListOpTag, InventoryTag, WealthTag, RoomTag } from "./types";
+import type {
+  PersistentTag,
+  DialOpTag,
+  ListOpTag,
+  InventoryTag,
+  WealthTag,
+  RoomTag,
+  InitiativeTag,
+  InitiativeEntry,
+} from "./types";
 
 /** Kinds recognized by the tag grammar — shared by extraction and stripping. */
-const TAG_KINDS = "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R";
+const TAG_KINDS = "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R|Init|Pos|Mv|Time|Weather";
+
+/** A tag's body: anything up to its closing `]`, where a `[[wikilink]]` counts
+ *  as one piece so its own brackets don't end the tag (`[Inv:[[Rope]]+1]`). */
+const TAG_BODY = String.raw`((?:\[\[[^\]\n]*\]\]|[^\]])+)`;
 
 /**
  * A SESSION resource op, addressed by abbr: `[CF+1]`/`[CF-2]` (inc/dec),
@@ -63,7 +76,7 @@ function parseListRolls(body: string): number[] | null {
  * Used to derive a consequence's prose `conclusion` from its raw `text`.
  */
 export function stripTags(text: string): string {
-  const re = new RegExp(`\\[(?:#)?(?:${TAG_KINDS}):[^\\]]+\\]`, "g");
+  const re = new RegExp(`\\[(?:#)?(?:${TAG_KINDS}):${TAG_BODY}\\]`, "g");
   return text
     .replace(re, "")
     .replace(dialOpRegex(), "")
@@ -137,7 +150,7 @@ function extractResourceOps(text: string): DialOpTag[] {
 /** Extract all persistent tags from a text string */
 export function extractTags(text: string): PersistentTag[] {
   const tags: PersistentTag[] = [];
-  const tagRegex = /\[(?:#)?(N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R):([^\]]+)\]/g;
+  const tagRegex = new RegExp(`\\[(?:#)?(${TAG_KINDS}):${TAG_BODY}\\]`, "g");
 
   let match;
   while ((match = tagRegex.exec(text)) !== null) {
@@ -196,6 +209,37 @@ export function extractTags(text: string): PersistentTag[] {
         }
         break;
       }
+      case "Time": {
+        const raw = content.trim();
+        const advance = raw.match(/^\+\s*(\d+(?:\.\d+)?)\s*(h|hours?|d|days?|m|min(?:utes?)?)?$/i);
+        if (advance) {
+          const n = parseFloat(advance[1]);
+          const unit = (advance[2] ?? "h").toLowerCase();
+          tags.push({ kind: "time", advance: unit.startsWith("d") ? n * 24 : unit.startsWith("m") ? n / 60 : n, raw });
+        } else {
+          const day = raw.match(/day\s*(\d+)/i);
+          const hour = raw.match(/(\d{1,2}):(\d{2})/);
+          tags.push({
+            kind: "time",
+            set: {
+              ...(day ? { day: parseInt(day[1], 10) } : {}),
+              ...(hour ? { hour: parseInt(hour[1], 10) + parseInt(hour[2], 10) / 60 } : {}),
+            },
+            raw,
+          });
+        }
+        break;
+      }
+      case "Weather": {
+        tags.push({
+          kind: "weather",
+          parts: content
+            .split(/\s*[·,]\s*/)
+            .map((p) => p.trim())
+            .filter(Boolean),
+        });
+        break;
+      }
       case "Timer": {
         const m = content.match(/^(.+?)\s+(\d+)$/);
         if (m) {
@@ -221,10 +265,20 @@ export function extractTags(text: string): PersistentTag[] {
         break;
       }
       case "F": {
-        const parts = content.split("|").map((s) => s.trim());
-        const name = parts[0];
-        const tagList = parts.slice(1).filter(Boolean);
-        tags.push({ kind: "foe", name, tags: tagList });
+        tags.push(parseFoeTag(content, isRef));
+        break;
+      }
+      case "Init": {
+        tags.push(parseInitiativeTag(content));
+        break;
+      }
+      case "Pos": {
+        tags.push(parsePositionTag(content));
+        break;
+      }
+      case "Mv": {
+        const move = parseMoveTag(content);
+        if (move) tags.push(move);
         break;
       }
       case "Inv": {
@@ -255,19 +309,165 @@ export function extractTags(text: string): PersistentTag[] {
   return tags;
 }
 
+/** Split on `|` outside a `[[wikilink]]` (whose own pipe is its alias). */
+function splitPipes(content: string): string[] {
+  return content
+    .replace(/\[\[[^\]\n]*\]\]/g, (m) => m.replace(/\|/g, "\uE000"))
+    .split("|")
+    .map((part) => part.replace(/\uE000/g, "|").trim());
+}
+
+const FOE_STATES = /^(dead|fled|defeated|unconscious|down|surrendered)$/i;
+
+/**
+ * `[F:Fat [[Kobold, A]]|HP 9]` — a foe and its tags. HP is read out of them:
+ * `HP 9` sets it (`HP 9/12` with its max), `HP-5` / `HP+3` moves it; an end
+ * state (`dead`, `fled`, …) is noted. Every tag is kept as written too.
+ */
+function parseFoeTag(content: string, isRef: boolean): PersistentTag {
+  const [name, ...rest] = splitPipes(content);
+  const tag: Extract<PersistentTag, { kind: "foe" }> = { kind: "foe", name, tags: rest.filter(Boolean) };
+  if (isRef) tag.ref = true;
+  for (const t of tag.tags) {
+    const delta = t.match(/^HP\s*([+-])\s*(\d+)$/i);
+    const set = t.match(/^HP\s*:?\s*(\d+)(?:\s*\/\s*(\d+))?$/i);
+    if (delta) tag.hp = { delta: parseInt(delta[2], 10) * (delta[1] === "-" ? -1 : 1) };
+    else if (set) tag.hp = { set: parseInt(set[1], 10), ...(set[2] ? { max: parseInt(set[2], 10) } : {}) };
+    else if (FOE_STATES.test(t)) tag.state = t.toLowerCase();
+  }
+  return tag;
+}
+
+/** A square named like a chessboard: `C4`, `AA10`. */
+const SQUARE = "[A-Za-z]{1,2}\\d{1,3}";
+
+/** `[Pos: Talon C4; [[Kobold, Elite]] H2]` — each entry a name, then its square. */
+function parsePositionTag(content: string): PersistentTag {
+  const entries = splitEntries(content).flatMap((part) => {
+    const m = part.match(new RegExp(`^(.+?)\\s+(${SQUARE})$`));
+    return m ? [{ name: m[1].trim(), at: m[2].toUpperCase() }] : [];
+  });
+  return { kind: "position", entries };
+}
+
+/**
+ * `[Mv: E3]`, `[Mv: G4>F4>E4]`, `[Mv: Lilith D5]` — an optional name, then the
+ * route to where it stops. Null when no square ends it.
+ */
+function parseMoveTag(content: string): PersistentTag | null {
+  // A route may be spaced (`G4 > F4`); close it up so it can't read as a name.
+  const text = content.trim().replace(/\s*>\s*/g, ">");
+  const m = text.match(new RegExp(`^(?:(.+?)\\s+)?(${SQUARE}(?:>${SQUARE})*)$`));
+  if (!m) return null;
+  const path = m[2].split(">").map((s) => s.toUpperCase());
+  return { kind: "move", ...(m[1] ? { who: m[1].trim() } : {}), path };
+}
+
+/** Split on `;` outside a `[[wikilink]]`. */
+export function splitEntries(content: string): string[] {
+  return content
+    .replace(/\[\[[^\]\n]*\]\]/g, (m) => m.replace(/;/g, "\uE001"))
+    .split(";")
+    .map((part) => part.replace(/\uE001/g, ";").trim())
+    .filter(Boolean);
+}
+
+/**
+ * `[Init: Talon 17; [[Kobold, Elite]] 12; Lilith d20+1=9]` — entries split on
+ * `;` (names carry commas), each a name then its value: a number, or a written
+ * roll whose total follows its `=`. A leading `+` / `-` adds or removes.
+ *
+ * An entry may end with where that combatant starts on the battle map —
+ * `Talon d20+[[Initiative]]=14 @J14` — so a fight is placed in the same list,
+ * in the same order, as it's rolled; and with an emoji for its token in this
+ * fight — `Fat [[Kobold, A]] 9 @F7 🐸` — over the one its page sets.
+ */
+/** One `[Init:]` entry, as written: `Fat [[Kobold, A]] d20+[[Initiative]]=9 @F7 🐸`. */
+export function parseInitEntry(written: string): InitiativeEntry {
+  // The trailing extras, in either order: `@F7 🐸` or `🐸 @F7`.
+  let part = written.trim();
+  const extras: { at?: string; icon?: string } = {};
+  for (let more = true; more; ) {
+    more = false;
+    const square = !extras.at && part.match(/\s+@\s*([A-Za-z]{1,2}\d{1,3})$/);
+    if (square) {
+      extras.at = square[1].toUpperCase();
+      part = part.slice(0, square.index).trim();
+      more = true;
+    }
+    const emoji = !extras.icon && part.match(TRAILING_EMOJI);
+    if (emoji) {
+      extras.icon = emoji[1];
+      part = part.slice(0, emoji.index).trim();
+      more = true;
+    }
+  }
+  const at = extras.at ? { at: extras.at } : {};
+  const icon = extras.icon ? { icon: extras.icon } : {};
+  const m = part.match(/^(.+?)\s+(?:(\d*d[\d%F]\S*?=)\s*)?(-?\d+)$/i);
+  if (!m) return { name: part, ...at, ...icon };
+  return { name: m[1].trim(), value: parseInt(m[3], 10), ...(m[2] ? { roll: m[2] } : {}), ...at, ...icon };
+}
+
+/** An emoji (with its modifiers, or a ZWJ sequence) at the end, after a space. */
+const TRAILING_EMOJI =
+  /\s+(\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic}\uFE0F?)*)$/u;
+
+function parseInitiativeTag(content: string): InitiativeTag {
+  const opMatch = content.match(/^\s*([+-])/);
+  const op = opMatch ? (opMatch[1] === "+" ? "add" : "remove") : "set";
+  const body = opMatch ? content.slice(opMatch[0].length) : content;
+  const entries: InitiativeEntry[] = splitEntries(body).map(parseInitEntry);
+  return { kind: "initiative", op, entries };
+}
+
+/** An item name as written — a `[[wikilink]]` is read as its note name. */
+function itemName(raw: string, tag: InventoryTag): string {
+  const t = raw.trim();
+  const link = t.match(/^\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]$/);
+  if (!link) return t;
+  tag.link = true;
+  return link[1].trim();
+}
+
 function parseInventoryTag(content: string, isRef: boolean): InventoryTag {
   const tag: InventoryTag = { kind: "inventory", name: "", ref: isRef, props: [] };
+
+  // An owner prefix, `[Inv:Talon/Rope+1]` — the same `Character/` addressing as
+  // a PC resource op. Without one, the item belongs to whoever acts on the line.
+  // Containers it's put in follow, one `/` each, the item last:
+  // `[Inv:Kowyn's Bag/[[Pouch]]/[[Sling bullets]]+15]` (a `/` inside a
+  // `[[link]]` is the link's own).
+  const segments = content
+    .replace(/\[\[[^\]\n]*\]\]/g, (m) => m.replace(/\//g, "\uE001"))
+    .split("/")
+    .map((x) => x.replace(/\uE001/g, "/"));
+  if (segments.length > 1) {
+    const plain = (x: string) =>
+      x
+        .trim()
+        .replace(/^\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]$/, "$1")
+        .trim();
+    tag.owner = plain(segments[0]);
+    const path = segments.slice(1, -1).map(plain).filter(Boolean);
+    if (path.length > 0) tag.path = path;
+    content = segments[segments.length - 1];
+  }
 
   // Check for delta shorthand: [Inv:Item+N] or [Inv:Item-N]
   const deltaMatch = content.match(/^(.+?)([+-])(\d+)$/);
   if (deltaMatch) {
-    tag.name = deltaMatch[1].trim();
+    tag.name = itemName(deltaMatch[1], tag);
     tag.delta = parseInt(deltaMatch[3], 10) * (deltaMatch[2] === "-" ? -1 : 1);
     return tag;
   }
 
-  const parts = content.split("|").map((s) => s.trim());
-  tag.name = parts[0];
+  // Split on pipes outside a wikilink (`[[Rope|rope]]|3` is the link, then 3).
+  const parts = content
+    .replace(/\[\[[^\]\n]*\]\]/g, (m) => m.replace(/\|/g, "\uE000"))
+    .split("|")
+    .map((s) => s.replace(/\uE000/g, "|").trim());
+  tag.name = itemName(parts[0], tag);
 
   for (let i = 1; i < parts.length; i++) {
     const part = parts[i];

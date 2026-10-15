@@ -945,7 +945,8 @@ function applyFeatureUpdates(sources: ResolvedSource[]): void {
           aspect = {};
           f[bucket] = aspect;
         }
-        const aspectName = aspect?.name ?? f.name;
+        // (A list of aspects is indexed by its feature's name.)
+        const aspectName = (Array.isArray(aspect) ? undefined : aspect?.name) ?? f.name;
         if (!aspect || !aspectName) continue;
         const list = byAspectName.get(aspectName) ?? [];
         list.push({ feature: f, bucket });
