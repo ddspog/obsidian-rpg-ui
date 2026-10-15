@@ -130,9 +130,7 @@ export class ValueResolver {
       if (!fence.body) continue;
       const id = typeof fence.body.id === "string" ? fence.body.id : null;
       if (!id) continue;
-      const values = isPlainObject(fence.body.values)
-        ? (fence.body.values as Record<string, unknown>)
-        : {};
+      const values = isPlainObject(fence.body.values) ? (fence.body.values as Record<string, unknown>) : {};
       // Don't let an empty-values block overwrite one with data. When
       // multiple files declare the same id, the richer entry wins.
       const existing = this.byId.get(id);

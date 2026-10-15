@@ -278,9 +278,10 @@ function wikiStem(raw: string): string {
  *  flow through; per-type caps look up by the first content's stem,
  *  matching the label `pickAmmoLabel` will display in the stat cell
  *  so the rendered `<carried> / <cap> <label>` always agrees. */
-function resolveAmmoCap(ammoCap: number | Record<string, number> | undefined, firstContent: ResolvedItem | undefined):
-  | number
-  | undefined {
+function resolveAmmoCap(
+  ammoCap: number | Record<string, number> | undefined,
+  firstContent: ResolvedItem | undefined
+): number | undefined {
   if (ammoCap === undefined) return undefined;
   if (typeof ammoCap === "number") return ammoCap;
   if (!firstContent) return undefined;

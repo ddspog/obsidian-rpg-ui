@@ -253,7 +253,7 @@ describe("meta-extractor", () => {
       const source =
         "level: 2\n" +
         "subtitle: Steward and Sage of Nature\n" +
-        'habitat: Any\n' +
+        "habitat: Any\n" +
         'treasure: "[[Individual]], [[Relics]]"\n' +
         "---\n" +
         "![[druids-category.webp]]\n" +
@@ -272,7 +272,7 @@ describe("meta-extractor", () => {
         "name: Druids\n" +
         "level: 2\n" +
         "subtitle: Steward and Sage of Nature\n" +
-        'habitat: Any\n' +
+        "habitat: Any\n" +
         'treasure: "[[Individual]], [[Relics]]"\n' +
         "---\n" +
         "Body prose about druids.\n";
@@ -286,7 +286,7 @@ describe("meta-extractor", () => {
         'name: "Eagle"\n' +
         'type: "Small [[Beast]]"\n' +
         'cr: "0"\n' +
-        "stats:\n  ac: \"11\"\n  hp: \"8\"\n" +
+        'stats:\n  ac: "11"\n  hp: "8"\n' +
         "abilities:\n  str: -2\n  dex: 1\n" +
         "---\n" +
         "**Keen Sight.** The eagle has advantage on sight-based Perception.\n";
@@ -307,7 +307,7 @@ describe("meta-extractor", () => {
         'name: "Druid"\n' +
         'cr: "2"\n' +
         'category: "[[Druids]]"\n' +
-        'habitat: Any\n' +
+        "habitat: Any\n" +
         'treasure: "[[Relics]]"\n' +
         "---\n" +
         "**Spellcasting.** The druid casts…\n";

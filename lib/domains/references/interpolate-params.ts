@@ -7,7 +7,7 @@ const TEMPLATE_RE = /\$\{([^}]+)\}/g;
 
 export function interpolateParams(
   params: Record<string, unknown>,
-  frontmatter: Record<string, unknown>,
+  frontmatter: Record<string, unknown>
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {

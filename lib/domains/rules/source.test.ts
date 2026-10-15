@@ -4,9 +4,11 @@ import { setOfficialSourcesResolver } from "lib/domains/lists/official-sources";
 
 describe("resolveSource", () => {
   it("returns the block source when present", () => {
-    expect(
-      resolveSource({ source: { system: "tov", company: "Kobold" } }, { source: { system: "dnd5e" } })
-    ).toEqual({ system: "tov", book: undefined, company: "Kobold" });
+    expect(resolveSource({ source: { system: "tov", company: "Kobold" } }, { source: { system: "dnd5e" } })).toEqual({
+      system: "tov",
+      book: undefined,
+      company: "Kobold",
+    });
   });
 
   it("falls back to file frontmatter when block has no source", () => {
@@ -23,15 +25,11 @@ describe("resolveSource", () => {
   });
 
   it("returns a string source from block frontmatter", () => {
-    expect(resolveSource({ source: 'From **ToV** "Player\'s Guide"' }, {})).toBe(
-      'From **ToV** "Player\'s Guide"'
-    );
+    expect(resolveSource({ source: 'From **ToV** "Player\'s Guide"' }, {})).toBe('From **ToV** "Player\'s Guide"');
   });
 
   it("falls back to file string source when block has none", () => {
-    expect(resolveSource({}, { source: 'From **ToV** "Player\'s Guide"' })).toBe(
-      'From **ToV** "Player\'s Guide"'
-    );
+    expect(resolveSource({}, { source: 'From **ToV** "Player\'s Guide"' })).toBe('From **ToV** "Player\'s Guide"');
   });
 });
 
@@ -105,8 +103,8 @@ describe("isHomebrewForFile", () => {
       )
     ).toBe(false);
     // A non-official source → homebrew.
-    expect(
-      isHomebrewForFile("From **D&D 5e** by **Mage Hand Press**", undefined, "tales-of-the-valiant/x.md")
-    ).toBe(true);
+    expect(isHomebrewForFile("From **D&D 5e** by **Mage Hand Press**", undefined, "tales-of-the-valiant/x.md")).toBe(
+      true
+    );
   });
 });

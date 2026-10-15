@@ -433,7 +433,9 @@ generator:
   });
 
   it("still folds a feature.details body into `text` (not `body`)", () => {
-    const body = ["```rpg feature.details", "name: Second Wind", "---", "Regain HP as a bonus action.", "```"].join("\n");
+    const body = ["```rpg feature.details", "name: Second Wind", "---", "Regain HP as a bonus action.", "```"].join(
+      "\n"
+    );
     const doc = parseSourceDoc({ $name: "Fighter", $contents: body }, "class");
     expect(doc.details?.[0]?.text).toContain("Regain HP as a bonus action.");
   });

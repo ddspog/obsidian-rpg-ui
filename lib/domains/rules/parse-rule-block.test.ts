@@ -233,20 +233,14 @@ describe("parseRuleRelated", () => {
     const src = `- "[[ammunition]]"
 - "See also: [[shoving]]"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([
-      { markdown: "[[ammunition]]" },
-      { heading: "See also", markdown: "[[shoving]]" },
-    ]);
+    expect(r.entries).toEqual([{ markdown: "[[ammunition]]" }, { heading: "See also", markdown: "[[shoving]]" }]);
   });
 
   it("accepts call-form entries as markdown", () => {
     const src = `- "@[[Luck]].h2()"
 - Luck rules: "@[[Luck]].h3()"`;
     const r = parseRuleRelated(src);
-    expect(r.entries).toEqual([
-      { markdown: "@[[Luck]].h2()" },
-      { heading: "Luck rules", markdown: "@[[Luck]].h3()" },
-    ]);
+    expect(r.entries).toEqual([{ markdown: "@[[Luck]].h2()" }, { heading: "Luck rules", markdown: "@[[Luck]].h3()" }]);
   });
 
   it("supports object form with explicit level + entries", () => {
@@ -256,10 +250,7 @@ entries:
   - "See also: ![[shoving]]"`;
     const r = parseRuleRelated(src);
     expect(r.level).toBe(4);
-    expect(r.entries).toEqual([
-      { embed: "![[ammunition]]" },
-      { heading: "See also", embed: "![[shoving]]" },
-    ]);
+    expect(r.entries).toEqual([{ embed: "![[ammunition]]" }, { heading: "See also", embed: "![[shoving]]" }]);
   });
 
   it("clamps level to the 1–6 range; out-of-range values fall back to default", () => {
@@ -347,7 +338,7 @@ describe("parseRuleBlock dispatch", () => {
   it("routes to the right parser per subtype", () => {
     expect(parseRuleBlock("content", "x").kind).toBe("content");
     expect(parseRuleBlock("side", "title: t\ncontent: c").kind).toBe("side");
-    expect(parseRuleBlock("related", "- \"[[a]]\"").kind).toBe("related");
+    expect(parseRuleBlock("related", '- "[[a]]"').kind).toBe("related");
     expect(parseRuleBlock("notes", "Some prose.").kind).toBe("notes");
     expect(parseRuleBlock("tab", "name: T\n---\nbody").kind).toBe("tab");
   });
@@ -370,4 +361,3 @@ describe("parseRuleNotes", () => {
     expect(parseRuleNotes("").body).toBe("");
   });
 });
-

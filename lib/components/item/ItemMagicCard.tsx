@@ -124,7 +124,8 @@ function formatColumnLabel(col: string): string {
 
 function getVariantCell(variant: ItemMagicVariant, col: string): string {
   if (col === "price") return variant.price ?? variant.cost ?? "—";
-  if (col === "bonus") return variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—");
+  if (col === "bonus")
+    return variant.bonus ?? (typeof variant.damage_bonus === "number" ? signed(variant.damage_bonus) : "—");
   const val = (variant as Record<string, unknown>)[col];
   return val != null ? String(val) : "—";
 }

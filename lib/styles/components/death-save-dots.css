@@ -20,7 +20,9 @@ fieldset[aria-details="Death Save Failures"] button {
   background: transparent;
   padding: 0;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 /* Failures — filled dots turn red */

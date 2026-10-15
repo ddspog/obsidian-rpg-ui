@@ -29,13 +29,7 @@ export function StatblockCategory({
   hideTitle,
   sourcePath,
 }: StatblockCategoryProps) {
-  const Heading = `h${Math.min(6, Math.max(1, level ?? 2))}` as
-    | "h1"
-    | "h2"
-    | "h3"
-    | "h4"
-    | "h5"
-    | "h6";
+  const Heading = `h${Math.min(6, Math.max(1, level ?? 2))}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   return (
     <article className="rpg-statblock rpg-statblock-category">
       {!hideTitle && (

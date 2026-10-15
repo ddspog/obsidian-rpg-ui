@@ -47,11 +47,21 @@
 }
 
 /* per-kind accent stripe — let users tell class/lineage/background apart */
-.rpg-feature-source:has(.rpg-feature-source-class) { border-left-color: var(--interactive-accent); }
-.rpg-feature-source:has(.rpg-feature-source-subclass) { border-left-color: var(--color-purple, #8957e5); }
-.rpg-feature-source:has(.rpg-feature-source-lineage) { border-left-color: var(--color-green, #2ea043); }
-.rpg-feature-source:has(.rpg-feature-source-heritage) { border-left-color: var(--color-orange, #d29922); }
-.rpg-feature-source:has(.rpg-feature-source-background) { border-left-color: var(--color-cyan, #1f6feb); }
+.rpg-feature-source:has(.rpg-feature-source-class) {
+  border-left-color: var(--interactive-accent);
+}
+.rpg-feature-source:has(.rpg-feature-source-subclass) {
+  border-left-color: var(--color-purple, #8957e5);
+}
+.rpg-feature-source:has(.rpg-feature-source-lineage) {
+  border-left-color: var(--color-green, #2ea043);
+}
+.rpg-feature-source:has(.rpg-feature-source-heritage) {
+  border-left-color: var(--color-orange, #d29922);
+}
+.rpg-feature-source:has(.rpg-feature-source-background) {
+  border-left-color: var(--color-cyan, #1f6feb);
+}
 
 /* Inline tagged grants list: "Skill P. (+Medicine, +Insight)" */
 .rpg-feature-source dl {

@@ -77,9 +77,7 @@ export function consultSlot(decl: ListDecl, sectionRoll: number | null, rowRoll:
 export function slotFromRolls(decl: ListDecl, count: number, rolls: number[]): number | undefined {
   if (rolls.length === 0) return undefined;
   const { section } = consultDice(decl, count);
-  return section == null
-    ? consultSlot(decl, null, rolls[0])
-    : consultSlot(decl, rolls[0], rolls[1] ?? rolls[0]);
+  return section == null ? consultSlot(decl, null, rolls[0]) : consultSlot(decl, rolls[0], rolls[1] ?? rolls[0]);
 }
 
 /** One row of the printed list sheet: the row-die range that selects it, its

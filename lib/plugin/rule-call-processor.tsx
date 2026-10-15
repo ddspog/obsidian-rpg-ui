@@ -29,10 +29,25 @@
  * Render is sync — view functions return ReactNode, not Promise.
  */
 
-import { App, Component, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, parseYaml, TFile, TFolder } from "obsidian";
+import {
+  App,
+  Component,
+  MarkdownPostProcessorContext,
+  MarkdownRenderChild,
+  MarkdownRenderer,
+  parseYaml,
+  TFile,
+  TFolder,
+} from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { matchAllCalls, type ParsedCall, type ChainSegment, CALL_PATTERN, ARGS_INNER } from "lib/domains/references/parse-call";
+import {
+  matchAllCalls,
+  type ParsedCall,
+  type ChainSegment,
+  CALL_PATTERN,
+  ARGS_INNER,
+} from "lib/domains/references/parse-call";
 import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
@@ -164,9 +179,7 @@ function HighlightBadge({ source }: { source: string }) {
 /** Matches an inline-code element whose entire text content is exactly
  *  one `@[[file]].fn(args)` token. Authors wrap calls in backticks so
  *  the markdown parser doesn't mangle the `[[…]]` as a wikilink. */
-const WHOLE_CALL_PATTERN = new RegExp(
-  String.raw`^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\(${ARGS_INNER}\))+\s*$`,
-);
+const WHOLE_CALL_PATTERN = new RegExp(String.raw`^\s*@\[\[[^\]\n]+\]\](?:\.[A-Za-z_][\w-]*\(${ARGS_INNER}\))+\s*$`);
 
 export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
   storeDeps(deps);
@@ -223,7 +236,9 @@ export function buildRuleCallProcessor(deps: RuleCallProcessorDeps) {
     const child = new MarkdownRenderChild(el);
     ctx.addChild(child);
     let childUnloaded = false;
-    child.register(() => { childUnloaded = true; });
+    child.register(() => {
+      childUnloaded = true;
+    });
 
     // Track pending calls. When all resolve, merge adjacent <ul> item
     // lists into a single <ul> for proper DOM structure.
@@ -319,10 +334,20 @@ function resolveCall(
           return;
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.textContent = "";
-        const fileName = targetPath.split("/").pop()?.replace(/\.[^.]+$/, "") ?? targetPath;
+        const fileName =
+          targetPath
+            .split("/")
+            .pop()
+            ?.replace(/\.[^.]+$/, "") ?? targetPath;
         const imgCtx: RuleViewCtx = {
           name: fileName,
           content: "",
@@ -359,22 +384,24 @@ function resolveCall(
       if (call.fn === "table") {
         const tables = extractTableBlocks(cleaned);
         const tableName = typeof call.args[0] === "string" ? call.args[0] : null;
-        const matched = tableName
-          ? tables.filter((t) => t.name === tableName)
-          : tables;
+        const matched = tableName ? tables.filter((t) => t.name === tableName) : tables;
         if (matched.length === 0) {
           renderError(span, `No table "${tableName ?? "*"}" found in [[${call.target}]]`);
           return;
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
         const source = matched.map((t) => t.fenceMarkdown).join("\n\n");
-        root.render(
-          React.createElement(Markdown, { source, sourcePath: targetPath })
-        );
+        root.render(React.createElement(Markdown, { source, sourcePath: targetPath }));
         return;
       }
 
@@ -399,7 +426,13 @@ function resolveCall(
               const chainH = call.chain.find((s) => /^h[1-6]$/.test(s.fn));
               const feature = chainH ? { ...gm, heading: parseInt(chainH.fn.slice(1), 10) } : gm;
               const root = ReactDOM.createRoot(span);
-              child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+              child.register(() => {
+                try {
+                  root.unmount();
+                } catch {
+                  /* ignore */
+                }
+              });
               span.classList.remove("rpg-call--pending");
               span.removeAttribute("aria-label");
               span.textContent = "";
@@ -414,7 +447,13 @@ function resolveCall(
           bareBody = stripFirstHeading(stripFileFrontmatter(cleaned));
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
@@ -439,16 +478,21 @@ function resolveCall(
         }
         const chainHeading = call.chain.find((s) => /^h\d$/.test(s.fn));
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
         const fileName = call.section
           ? call.section
-          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
-        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+          : (targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath);
+        const fileFm =
+          (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const statCtx: RuleViewCtx = {
           name: fileName,
           content: cleaned,
@@ -459,7 +503,12 @@ function resolveCall(
           const node = statView.render(statCtx, call.args);
           if (chainHeading) {
             const HeadingTag = chainHeading.fn as keyof React.JSX.IntrinsicElements;
-            root.render(<>{React.createElement(HeadingTag, null, fileName)}{node}</>);
+            root.render(
+              <>
+                {React.createElement(HeadingTag, null, fileName)}
+                {node}
+              </>
+            );
           } else {
             root.render(<>{node}</>);
           }
@@ -478,16 +527,21 @@ function resolveCall(
           return;
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
         const fileName = call.section
           ? call.section
-          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
-        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+          : (targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath);
+        const fileFm =
+          (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const magicCtx: RuleViewCtx = {
           name: fileName,
           content: cleaned,
@@ -499,9 +553,9 @@ function resolveCall(
           const magicHighlight = extractHighlight(call.chain);
           if (magicHighlight.active) {
             const sourceStr = normalizeSource(String(fileFm.source ?? ""));
-            const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-              | Record<string, unknown>
-              | undefined) ?? {};
+            const callerFm =
+              (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ??
+              {};
             const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
             if (isImportHomebrew(fileFm.source, targetPath, callerSource)) {
               span.classList.add("rpg-call--magic-highlight");
@@ -531,16 +585,21 @@ function resolveCall(
           return;
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         span.classList.remove("rpg-call--pending");
         span.removeAttribute("aria-label");
         span.textContent = "";
         const fileName = call.section
           ? call.section
-          : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
-        const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+          : (targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath);
+        const fileFm =
+          (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const dangerCtx: RuleViewCtx = {
           name: fileName,
           content: cleaned,
@@ -551,9 +610,8 @@ function resolveCall(
           const node = dangerView.render(dangerCtx, call.args);
           const highlight = extractHighlight(call.chain);
           const sourceStr = normalizeSource(String(fileFm.source ?? ""));
-          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
+          const callerFm =
+            (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
           if (highlight.active && isImportHomebrew(fileFm.source, targetPath, callerSource)) {
             if (highlight.color) {
@@ -579,8 +637,7 @@ function resolveCall(
       const hTerminal = call.fn.match(/^h([1-6])$/);
       if (hTerminal) {
         const hLevel = parseInt(hTerminal[1], 10);
-        const sectionName = call.section
-          ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? call.target;
+        const sectionName = call.section ?? targetPath.split("/").pop()?.replace(/\.md$/, "") ?? call.target;
         // Optional block selector: `.h4(id)` picks a rule.content block by
         // id/name, `.h4(0)` picks the Nth rpg fence; no arg renders the
         // whole file body. Unmatched selectors fall back to the whole body.
@@ -607,15 +664,13 @@ function resolveCall(
         } else if (typeof renderer.renderMarkdown === "function") {
           renderer.renderMarkdown(source, span, targetPath, comp);
         }
-        const hlFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+        const hlFm =
+          (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         // Only highlight when the imported file's source differs from the
         // caller's (homebrew). Same-source content renders unadorned.
         const hlSource = normalizeSource(String(hlFm.source ?? ""));
-        const hlCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+        const hlCallerFm =
+          (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const hlCallerSource = normalizeSource(hlCallerFm.source ? String(hlCallerFm.source) : "");
         if (hlSource !== hlCallerSource) {
           applyHighlight(span, extractHighlight(call.chain), hlSource);
@@ -630,19 +685,15 @@ function resolveCall(
         const available = system?.ruleViews ? Object.keys(system.ruleViews).join(", ") : "(none)";
         renderError(
           span,
-          `View "${call.fn}" not registered for system "${sysName}". ` +
-            `Available views: ${available}.`
+          `View "${call.fn}" not registered for system "${sysName}". ` + `Available views: ${available}.`
         );
         return;
       }
 
       const fenced = extractContentBlocks(cleaned);
-      const fileName = call.section
-        ? call.section
-        : targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath;
-      const fileFm = (deps.app.metadataCache.getCache(targetPath)?.frontmatter as
-        | Record<string, unknown>
-        | undefined) ?? {};
+      const fileName = call.section ? call.section : (targetPath.split("/").pop()?.replace(/\.md$/, "") ?? targetPath);
+      const fileFm =
+        (deps.app.metadataCache.getCache(targetPath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
 
       // Fallback: files whose data lives in an `rpg <entity>.<block>` fence
       // (e.g. creature notes with `stat.monster`) have no `rule.content`
@@ -659,7 +710,12 @@ function resolveCall(
           const sepIdx = fenceRaw.indexOf("\n---\n");
           const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
           const bodyText =
-            sepIdx >= 0 ? fenceRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : "";
+            sepIdx >= 0
+              ? fenceRaw
+                  .slice(sepIdx + 4)
+                  .replace(/^\n+/, "")
+                  .replace(/\n+$/, "")
+              : "";
           let fenceFm: Record<string, unknown> = {};
           try {
             const parsed = parseYaml(yamlPart);
@@ -683,9 +739,7 @@ function resolveCall(
         matching = [fenced[firstArg]];
         viewArgs = call.args.slice(1);
       } else if (typeof firstArg === "string") {
-        const filtered = fenced.filter(
-          (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
-        );
+        const filtered = fenced.filter((b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg);
         if (filtered.length > 0) {
           matching = filtered;
           viewArgs = call.args.slice(1);
@@ -705,16 +759,13 @@ function resolveCall(
         // body, with label/icon/color pulled from the block's frontmatter);
         // `.tab()` renders the whole file.
         const blockId = typeof firstArg === "string" ? firstArg : undefined;
-        const resolved = blockId
-          ? resolveTabBlockFields(cleaned, fileFm, fileName, blockId)
-          : null;
+        const resolved = blockId ? resolveTabBlockFields(cleaned, fileFm, fileName, blockId) : null;
         const body = resolved ? resolved.body : stripFileFrontmatter(cleaned);
         const highlight = extractHighlight(call.chain);
         let homebrew = false;
         if (highlight.active) {
-          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
+          const callerFm =
+            (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
           homebrew = isImportHomebrew(fileFm.source, targetPath, callerSource);
         }
@@ -740,7 +791,11 @@ function resolveCall(
       const highlight = extractHighlight(call.chain);
       const root = ReactDOM.createRoot(span);
       child.register(() => {
-        try { root.unmount(); } catch { /* ignore */ }
+        try {
+          root.unmount();
+        } catch {
+          /* ignore */
+        }
       });
       span.classList.remove("rpg-call--pending");
       span.removeAttribute("aria-label");
@@ -756,16 +811,12 @@ function resolveCall(
           }
           wholeFileBody = stripFirstHeading(wholeFileBody);
         }
-        const node = renderByMode(
-          view, matching, viewArgs, fileName, targetPath,
-          wholeFileBody, fileFm, call.params
-        );
+        const node = renderByMode(view, matching, viewArgs, fileName, targetPath, wholeFileBody, fileFm, call.params);
         const sourceStr = normalizeSource(String(fileFm.source ?? ""));
         if (highlight.active) {
           // Compare sources: only apply highlight if file source differs from caller
-          const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
+          const callerFm =
+            (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
           const isHomebrew = isImportHomebrew(fileFm.source, targetPath, callerSource);
 
@@ -903,7 +954,6 @@ function stripLocalFences(text: string): string {
   return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
 }
 
-
 function findContentBlockById(text: string, id: string): string | null {
   return findRuleContentBlock(text, id)?.body ?? null;
 }
@@ -955,7 +1005,13 @@ function normalizeStatValueInline(raw: unknown): string {
   if (typeof raw === "string") return raw;
   if (raw == null) return "";
   if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
-  if (Array.isArray(raw) && raw.length === 1 && Array.isArray(raw[0]) && raw[0].length === 1 && typeof raw[0][0] === "string") {
+  if (
+    Array.isArray(raw) &&
+    raw.length === 1 &&
+    Array.isArray(raw[0]) &&
+    raw[0].length === 1 &&
+    typeof raw[0][0] === "string"
+  ) {
     return `[[${raw[0][0]}]]`;
   }
   return String(raw);
@@ -987,15 +1043,23 @@ function normalizeAbilitiesInline(raw: unknown) {
 
 function normalizeFeaturesInline(raw: unknown): Array<{ ref: string; [key: string]: unknown }> {
   if (!Array.isArray(raw)) return [];
-  return raw.map((entry: unknown) => {
-    if (typeof entry === "string") return { ref: entry };
-    if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>)) return entry as { ref: string; [key: string]: unknown };
-    if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
-    return null;
-  }).filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
+  return raw
+    .map((entry: unknown) => {
+      if (typeof entry === "string") return { ref: entry };
+      if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>))
+        return entry as { ref: string; [key: string]: unknown };
+      if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
+      return null;
+    })
+    .filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
 }
 
-function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
+function StatblockCallInline({
+  parsed,
+  body,
+  sourcePath,
+  hideTitle,
+}: {
   parsed: Record<string, unknown>;
   body?: string;
   sourcePath: string;
@@ -1006,13 +1070,25 @@ function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
   const name = typeof parsed.name === "string" ? parsed.name : "";
 
   React.useEffect(() => {
-    if (features.length === 0) { setResolved([]); return; }
+    if (features.length === 0) {
+      setResolved([]);
+      return;
+    }
     let cancelled = false;
-    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: normalizeStatsInline(parsed.stats), abilities: normalizeAbilitiesInline(parsed.abilities) };
+    const selfProps = {
+      name: name.toLowerCase(),
+      size: parsed.size,
+      type: parsed.type,
+      dimensions: parsed.dimensions,
+      stats: normalizeStatsInline(parsed.stats),
+      abilities: normalizeAbilitiesInline(parsed.abilities),
+    };
     resolveStatFeatures(features, sourcePath, selfProps).then((r) => {
       if (!cancelled) setResolved(r as ResolvedStatFeature[]);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [features, name, sourcePath]);
 
   return React.createElement(StatblockVehicle, {
@@ -1032,7 +1108,11 @@ function StatblockCallInline({ parsed, body, sourcePath, hideTitle }: {
 /** Inline renderer for `@[[creatures/]].stat()` over `rpg stat.monster`
  *  notes — maps the (flat) frontmatter via `mapMonster` and resolves
  *  feature refs the same way the vehicle inline path does. */
-function StatblockMonsterCallInline({ self, sourcePath, name }: {
+function StatblockMonsterCallInline({
+  self,
+  sourcePath,
+  name,
+}: {
   self: Record<string, unknown>;
   sourcePath: string;
   name: string;
@@ -1042,13 +1122,24 @@ function StatblockMonsterCallInline({ self, sourcePath, name }: {
   const displayName = data.name || name;
 
   React.useEffect(() => {
-    if (data.features.length === 0) { setResolved([]); return; }
+    if (data.features.length === 0) {
+      setResolved([]);
+      return;
+    }
     let cancelled = false;
-    const selfProps = { name: displayName.toLowerCase(), type: data.type, cr: data.cr, abilities: data.abilities, stats: data.stats };
+    const selfProps = {
+      name: displayName.toLowerCase(),
+      type: data.type,
+      cr: data.cr,
+      abilities: data.abilities,
+      stats: data.stats,
+    };
     resolveStatFeatures(data.features, sourcePath, selfProps).then((r) => {
       if (!cancelled) setResolved(r as ResolvedStatFeature[]);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [data, displayName, sourcePath]);
 
   return React.createElement(StatblockMonster, {
@@ -1068,7 +1159,12 @@ function StatblockMonsterCallInline({ self, sourcePath, name }: {
 }
 
 /** Inline renderer for a `rpg stat.category` note pulled in by `.stat()`. */
-function StatblockCategoryCallInline({ self, body, sourcePath, name }: {
+function StatblockCategoryCallInline({
+  self,
+  body,
+  sourcePath,
+  name,
+}: {
   self: Record<string, unknown>;
   body?: string;
   sourcePath: string;
@@ -1105,19 +1201,19 @@ interface ChainResult {
   headingLevel?: number;
 }
 
-function applyChain(
-  chain: ChainSegment[],
-  fileData: Record<string, unknown>
-): ChainResult {
+function applyChain(chain: ChainSegment[], fileData: Record<string, unknown>): ChainResult {
   let pass = true;
   let blockSpec: string | undefined;
   let headingLevel: number | undefined;
 
   for (const seg of chain) {
     if (seg.fn === "block") {
-      blockSpec = typeof seg.args[0] === "string" ? seg.args[0]
-        : typeof seg.args[0] === "number" ? String(seg.args[0])
-        : undefined;
+      blockSpec =
+        typeof seg.args[0] === "string"
+          ? seg.args[0]
+          : typeof seg.args[0] === "number"
+            ? String(seg.args[0])
+            : undefined;
     } else if (seg.fn === "filter") {
       const exprStr = seg.args.map(String).join(", ");
       const expr = parseFilterExpr(exprStr);
@@ -1236,13 +1332,25 @@ function renderByMode(
   if (mode === "each") {
     if (wholeFileBody !== null) {
       const mergedFm = { ...fileFrontmatter, ...(blocks[0]?.frontmatter ?? {}) };
-      return view.render({ name: fileName, content: wholeFileBody, frontmatter: mergedFm, file: filePath, params: resolveParams(mergedFm) });
+      return view.render({
+        name: fileName,
+        content: wholeFileBody,
+        frontmatter: mergedFm,
+        file: filePath,
+        params: resolveParams(mergedFm),
+      });
     }
     const items = blocks.map((b, i) =>
       React.createElement(
         React.Fragment,
         { key: i },
-        view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath, params: resolveParams(b.frontmatter) })
+        view.render({
+          name: fileName,
+          content: b.body,
+          frontmatter: b.frontmatter,
+          file: filePath,
+          params: resolveParams(b.frontmatter),
+        })
       )
     );
     if (view.wrapper) return React.createElement(view.wrapper, null, ...items);
@@ -1251,13 +1359,31 @@ function renderByMode(
   // mode: "args"
   if (wholeFileBody !== null) {
     const mergedFm = { ...fileFrontmatter, ...(blocks[0]?.frontmatter ?? {}) };
-    return view.render({ name: fileName, content: wholeFileBody, frontmatter: mergedFm, file: filePath, params: resolveParams(mergedFm) }, args);
+    return view.render(
+      {
+        name: fileName,
+        content: wholeFileBody,
+        frontmatter: mergedFm,
+        file: filePath,
+        params: resolveParams(mergedFm),
+      },
+      args
+    );
   }
   const items = blocks.map((b, i) =>
     React.createElement(
       React.Fragment,
       { key: i },
-      view.render({ name: fileName, content: b.body, frontmatter: b.frontmatter, file: filePath, params: resolveParams(b.frontmatter) }, args)
+      view.render(
+        {
+          name: fileName,
+          content: b.body,
+          frontmatter: b.frontmatter,
+          file: filePath,
+          params: resolveParams(b.frontmatter),
+        },
+        args
+      )
     )
   );
   if (view.wrapper === "table") {
@@ -1334,9 +1460,7 @@ function resolveFolderCall(
   // `@[[bestiary/creatures/]]`) sweeps every subfolder (beast-forms, …).
   // All existing folder-call targets are leaf folders, so this is a no-op
   // for them and only broadens parents-with-subfolders.
-  const files = collectMarkdownFiles(folder).sort((a, b) =>
-    a.basename.localeCompare(b.basename)
-  );
+  const files = collectMarkdownFiles(folder).sort((a, b) => a.basename.localeCompare(b.basename));
 
   if (files.length === 0) {
     renderError(span, `No .md files in [[${call.target}]]`);
@@ -1378,18 +1502,21 @@ function resolveFolderCall(
         comp.load();
         child.register(() => comp.unload());
         const highlight = extractHighlight(call.chain);
-        const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+        const callerFm =
+          (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           if (call.chain.length > 0) {
-            const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-              | Record<string, unknown>
-              | undefined) ?? {};
+            const chainFm =
+              (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
             const blockSpec = call.chain.find((s) => s.fn === "block");
-            const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined, f.basename);
+            const fileData = extractFileData(
+              cleaned,
+              chainFm,
+              blockSpec ? String(blockSpec.args[0] ?? "") : undefined,
+              f.basename
+            );
             const { pass } = applyChain(call.chain, fileData);
             if (!pass) continue;
           }
@@ -1416,9 +1543,8 @@ function resolveFolderCall(
             renderer.renderMarkdown(source, section, f.path, comp);
           }
           if (highlight.active) {
-            const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-              | Record<string, unknown>
-              | undefined) ?? {};
+            const entryFm =
+              (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
             const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
             if (isImportHomebrew(entryFm.source, f.path, callerSource)) {
               applyHighlight(section, highlight, entrySource);
@@ -1440,9 +1566,8 @@ function resolveFolderCall(
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
           if (call.chain.length > 0) {
-            const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-              | Record<string, unknown>
-              | undefined) ?? {};
+            const chainFm =
+              (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
             const blockSpec = call.chain.find((s) => s.fn === "block");
             const fileData = extractFileData(
               cleaned,
@@ -1465,7 +1590,13 @@ function resolveFolderCall(
           return;
         }
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         root.render(React.createElement(React.Fragment, null, ...bareNodes));
         return;
       }
@@ -1483,19 +1614,15 @@ function resolveFolderCall(
         // file as before.
         const built: { tab: RuleTabBlock; order: number }[] = [];
         const highlight = extractHighlight(call.chain);
-        const callerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+        const callerFm =
+          (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
         for (const { file: f, raw } of entries) {
           const cleaned = stripLocalFences(raw);
-          const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
-          const resolved = blockId
-            ? resolveTabBlockFields(cleaned, fileFm, f.basename, blockId)
-            : null;
+          const fileFm =
+            (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
+          const resolved = blockId ? resolveTabBlockFields(cleaned, fileFm, f.basename, blockId) : null;
           const body = resolved ? resolved.body : stripFileFrontmatter(cleaned);
           const order = resolved
             ? resolved.order
@@ -1525,16 +1652,21 @@ function resolveFolderCall(
         span.removeAttribute("aria-label");
         span.textContent = "";
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         root.render(<TabGroupView tabs={tabs} sourcePath={ctx.sourcePath} />);
         return;
       }
 
       const nodes: React.ReactNode[] = [];
       const folderHighlight = extractHighlight(call.chain);
-      const folderCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-        | Record<string, unknown>
-        | undefined) ?? {};
+      const folderCallerFm =
+        (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
       const folderCallerSource = normalizeSource(folderCallerFm.source ? String(folderCallerFm.source) : "");
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
@@ -1542,11 +1674,15 @@ function resolveFolderCall(
         // Apply chain operations (filter, block)
         let chainHeadingLevel: number | undefined;
         if (call.chain.length > 0) {
-          const chainFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
+          const chainFm =
+            (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const blockSpec = call.chain.find((s) => s.fn === "block");
-          const fileData = extractFileData(cleaned, chainFm, blockSpec ? String(blockSpec.args[0] ?? "") : undefined, f.basename);
+          const fileData = extractFileData(
+            cleaned,
+            chainFm,
+            blockSpec ? String(blockSpec.args[0] ?? "") : undefined,
+            f.basename
+          );
           const { pass, headingLevel } = applyChain(call.chain, fileData);
           if (!pass) continue;
           chainHeadingLevel = headingLevel;
@@ -1563,17 +1699,24 @@ function resolveFolderCall(
             const fenceRaw = fenceMatch[2];
             const sepIdx = fenceRaw.indexOf("\n---\n");
             const yamlPart = sepIdx >= 0 ? fenceRaw.slice(0, sepIdx) : fenceRaw;
-            const bodyText = sepIdx >= 0 ? fenceRaw.slice(sepIdx + 4).replace(/^\n+/, "").replace(/\n+$/, "") : undefined;
+            const bodyText =
+              sepIdx >= 0
+                ? fenceRaw
+                    .slice(sepIdx + 4)
+                    .replace(/^\n+/, "")
+                    .replace(/\n+$/, "")
+                : undefined;
             let fenceFm: Record<string, unknown> = {};
             try {
               const parsed = parseYaml(yamlPart);
               if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
                 fenceFm = parsed as Record<string, unknown>;
               }
-            } catch { /* ignore */ }
-            const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-              | Record<string, unknown>
-              | undefined) ?? {};
+            } catch {
+              /* ignore */
+            }
+            const fileFm =
+              (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
             const mergedFm = { ...fileFm, ...fenceFm };
             const fileName = f.basename;
             if (view.wrapper === "table") {
@@ -1591,7 +1734,9 @@ function resolveFolderCall(
               const isStatFence = !!statMatch;
               const isMonsterStat = statMatch?.[1] === "monster";
               const isGroupStat = statMatch?.[1] === "category" || statMatch?.[1] === "group";
-              const hLevel = chainHeadingLevel ?? (call.fn.match(/^h(\d)$/)?.[1] ? parseInt(call.fn.match(/^h(\d)$/)![1], 10) : undefined);
+              const hLevel =
+                chainHeadingLevel ??
+                (call.fn.match(/^h(\d)$/)?.[1] ? parseInt(call.fn.match(/^h(\d)$/)![1], 10) : undefined);
               if (isStatFence) {
                 try {
                   const headingEl = hLevel
@@ -1605,22 +1750,17 @@ function resolveFolderCall(
                         name: fileName,
                       })
                     : isMonsterStat
-                    ? React.createElement(StatblockMonsterCallInline, {
-                        self: mergedFm,
-                        sourcePath: f.path,
-                        name: fileName,
-                      })
-                    : React.createElement(StatblockCallInline, {
-                        parsed: mergedFm,
-                        body: bodyText,
-                        sourcePath: f.path,
-                      });
-                  const node = React.createElement(
-                    React.Fragment,
-                    null,
-                    headingEl,
-                    statNode
-                  );
+                      ? React.createElement(StatblockMonsterCallInline, {
+                          self: mergedFm,
+                          sourcePath: f.path,
+                          name: fileName,
+                        })
+                      : React.createElement(StatblockCallInline, {
+                          parsed: mergedFm,
+                          body: bodyText,
+                          sourcePath: f.path,
+                        });
+                  const node = React.createElement(React.Fragment, null, headingEl, statNode);
                   nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
                 } catch (err) {
                   console.error(`rpg-call folder ${f.path} render threw`, err);
@@ -1631,7 +1771,10 @@ function resolveFolderCall(
                   // `magic` / `danger` / `spell` re-extract their fence from
                   // content, so they need the full file body — not just the
                   // post-`---` prose that `bodyText` carries.
-                  const viewContent = call.fn === "magic" || call.fn === "danger" || call.fn === "spell" ? cleaned : (bodyText ?? cleaned);
+                  const viewContent =
+                    call.fn === "magic" || call.fn === "danger" || call.fn === "spell"
+                      ? cleaned
+                      : (bodyText ?? cleaned);
                   const viewCtx: RuleViewCtx = {
                     name: fileName,
                     content: viewContent,
@@ -1644,29 +1787,60 @@ function resolveFolderCall(
                   const shouldHighlight =
                     folderHighlight.active && isImportHomebrew(mergedFm.source, f.path, folderCallerSource);
                   if (hLevel && call.fn !== `h${hLevel}`) {
-                    const headingEl = React.createElement(`h${hLevel}` as keyof React.JSX.IntrinsicElements, null, fileName);
+                    const headingEl = React.createElement(
+                      `h${hLevel}` as keyof React.JSX.IntrinsicElements,
+                      null,
+                      fileName
+                    );
                     if (shouldHighlight) {
-                      nodes.push(React.createElement("div", {
-                        key: f.path,
-                        className: "rpg-call-highlight",
-                        style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
-                      }, React.createElement(HighlightBadge, { source: entrySource }), headingEl, terminalNode));
+                      nodes.push(
+                        React.createElement(
+                          "div",
+                          {
+                            key: f.path,
+                            className: "rpg-call-highlight",
+                            style: folderHighlight.color
+                              ? ({ "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties)
+                              : undefined,
+                          },
+                          React.createElement(HighlightBadge, { source: entrySource }),
+                          headingEl,
+                          terminalNode
+                        )
+                      );
                     } else {
                       nodes.push(React.createElement(React.Fragment, { key: f.path }, headingEl, terminalNode));
                     }
                   } else if (shouldHighlight && call.fn === "magic") {
-                    nodes.push(React.createElement("div", {
-                      key: f.path,
-                      className: "rpg-call--magic-highlight",
-                      style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
-                      "data-rpg-highlight-source": entrySource,
-                    } as React.HTMLAttributes<HTMLDivElement>, terminalNode));
+                    nodes.push(
+                      React.createElement(
+                        "div",
+                        {
+                          key: f.path,
+                          className: "rpg-call--magic-highlight",
+                          style: folderHighlight.color
+                            ? ({ "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties)
+                            : undefined,
+                          "data-rpg-highlight-source": entrySource,
+                        } as React.HTMLAttributes<HTMLDivElement>,
+                        terminalNode
+                      )
+                    );
                   } else if (shouldHighlight) {
-                    nodes.push(React.createElement("div", {
-                      key: f.path,
-                      className: "rpg-call-highlight",
-                      style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
-                    }, React.createElement(HighlightBadge, { source: entrySource }), terminalNode));
+                    nodes.push(
+                      React.createElement(
+                        "div",
+                        {
+                          key: f.path,
+                          className: "rpg-call-highlight",
+                          style: folderHighlight.color
+                            ? ({ "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties)
+                            : undefined,
+                        },
+                        React.createElement(HighlightBadge, { source: entrySource }),
+                        terminalNode
+                      )
+                    );
                   } else {
                     nodes.push(React.createElement(React.Fragment, { key: f.path }, terminalNode));
                   }
@@ -1680,9 +1854,8 @@ function resolveFolderCall(
         }
 
         const fileName = f.basename;
-        const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-          | Record<string, unknown>
-          | undefined) ?? {};
+        const fileFm =
+          (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
 
         let viewArgs = call.args;
         let matching: HarvestedBlock[] = fenced;
@@ -1691,9 +1864,7 @@ function resolveFolderCall(
           matching = [fenced[firstArg]];
           viewArgs = call.args.slice(1);
         } else if (typeof firstArg === "string") {
-          const filtered = fenced.filter(
-            (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
-          );
+          const filtered = fenced.filter((b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg);
           if (filtered.length > 0) {
             matching = filtered;
             viewArgs = call.args.slice(1);
@@ -1705,7 +1876,13 @@ function resolveFolderCall(
           for (const b of matching) {
             try {
               const row = view.render(
-                { name: fileName, content: b.body, frontmatter: b.frontmatter, file: f.path, params: hasParams ? interpolateParams(call.params, b.frontmatter) : undefined },
+                {
+                  name: fileName,
+                  content: b.body,
+                  frontmatter: b.frontmatter,
+                  file: f.path,
+                  params: hasParams ? interpolateParams(call.params, b.frontmatter) : undefined,
+                },
                 viewArgs
               );
               nodes.push(React.createElement(React.Fragment, { key: f.path }, row));
@@ -1726,11 +1903,20 @@ function resolveFolderCall(
               (span as any).__rpgHighlightFiles.push(entrySource);
               nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
             } else if (shouldHighlight) {
-              nodes.push(React.createElement("div", {
-                key: f.path,
-                className: "rpg-call-highlight",
-                style: folderHighlight.color ? { "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties : undefined,
-              }, React.createElement(HighlightBadge, { source: entrySource }), node));
+              nodes.push(
+                React.createElement(
+                  "div",
+                  {
+                    key: f.path,
+                    className: "rpg-call-highlight",
+                    style: folderHighlight.color
+                      ? ({ "--text-accent": `var(--color-${folderHighlight.color})` } as React.CSSProperties)
+                      : undefined,
+                  },
+                  React.createElement(HighlightBadge, { source: entrySource }),
+                  node
+                )
+              );
             } else {
               nodes.push(React.createElement(React.Fragment, { key: f.path }, node));
             }
@@ -1753,20 +1939,23 @@ function resolveFolderCall(
           const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
           const fields = viewArgs2.map((a) => String(a));
           const tableHighlight = extractHighlight(call.chain);
-          const tableCallerFm = (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as
-            | Record<string, unknown>
-            | undefined) ?? {};
+          const tableCallerFm =
+            (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const tableCallerSource = normalizeSource(tableCallerFm.source ? String(tableCallerFm.source) : "");
           for (const { file: f, raw } of entries) {
             const cleaned = stripLocalFences(raw);
 
             // Apply chain filter
             if (call.chain.length > 0) {
-              const fileFm2 = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-                | Record<string, unknown>
-                | undefined) ?? {};
+              const fileFm2 =
+                (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
               const blockSpec2 = call.chain.find((s) => s.fn === "block");
-              const fileData2 = extractFileData(cleaned, fileFm2, blockSpec2 ? String(blockSpec2.args[0] ?? "") : undefined, f.basename);
+              const fileData2 = extractFileData(
+                cleaned,
+                fileFm2,
+                blockSpec2 ? String(blockSpec2.args[0] ?? "") : undefined,
+                f.basename
+              );
               const { pass: pass2 } = applyChain(call.chain, fileData2);
               if (!pass2) continue;
             }
@@ -1786,10 +1975,11 @@ function resolveFolderCall(
                 if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
                   fenceFm = parsed as Record<string, unknown>;
                 }
-              } catch { /* ignore */ }
-              const fileFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-                | Record<string, unknown>
-                | undefined) ?? {};
+              } catch {
+                /* ignore */
+              }
+              const fileFm =
+                (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
               matching = [{ body: "", frontmatter: { ...fileFm, ...fenceFm } }];
             } else {
               matching = fenced;
@@ -1797,9 +1987,7 @@ function resolveFolderCall(
               if (typeof firstArg === "number" && firstArg >= 0 && firstArg < fenced.length) {
                 matching = [fenced[firstArg]];
               } else if (typeof firstArg === "string") {
-                const filtered = fenced.filter(
-                  (b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg
-                );
+                const filtered = fenced.filter((b) => b.frontmatter.id === firstArg || b.frontmatter.name === firstArg);
                 if (filtered.length > 0) matching = filtered;
               }
             }
@@ -1836,9 +2024,8 @@ function resolveFolderCall(
               hostTr.parentElement!.insertBefore(tr, hostTr);
               // Apply highlight if source differs
               if (tableHighlight.active) {
-                const entryFm = (deps.app.metadataCache.getCache(f.path)?.frontmatter as
-                  | Record<string, unknown>
-                  | undefined) ?? {};
+                const entryFm =
+                  (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
                 const entrySource = normalizeSource(entryFm.source ? String(entryFm.source) : "");
                 if (isImportHomebrew(entryFm.source, f.path, tableCallerSource)) {
                   tr.classList.add("rpg-row-highlight");
@@ -1864,25 +2051,36 @@ function resolveFolderCall(
         }
 
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         const viewArgs2 = typeof call.args[0] === "number" ? call.args.slice(1) : call.args;
         const fields = viewArgs2.map((a) => String(a));
         const thead = React.createElement(
-          "thead", null,
-          React.createElement("tr", null,
-            fields.map((a, i) =>
-              React.createElement("th", { key: i }, a.charAt(0).toUpperCase() + a.slice(1))
-            )
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            fields.map((a, i) => React.createElement("th", { key: i }, a.charAt(0).toUpperCase() + a.slice(1)))
           )
         );
         const tbody = React.createElement("tbody", null, ...nodes);
-        root.render(
-          React.createElement("table", { className: "rpg-view--table" }, thead, tbody)
-        );
+        root.render(React.createElement("table", { className: "rpg-view--table" }, thead, tbody));
       } else {
         const highlight2 = extractHighlight(call.chain);
         const root = ReactDOM.createRoot(span);
-        child.register(() => { try { root.unmount(); } catch { /* ignore */ } });
+        child.register(() => {
+          try {
+            root.unmount();
+          } catch {
+            /* ignore */
+          }
+        });
         root.render(<>{nodes}</>);
         // Post-render: inject badges into magic card headers for highlighted items
         if (highlight2.active && call.fn === "magic") {
@@ -1906,8 +2104,8 @@ function resolveFolderCall(
               let liIdx = 0;
               for (const { file: ef } of entries) {
                 if (liIdx >= allLis.length) break;
-                const efFm = (deps.app.metadataCache.getCache(ef.path)?.frontmatter as
-                  | Record<string, unknown> | undefined) ?? {};
+                const efFm =
+                  (deps.app.metadataCache.getCache(ef.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
                 const efSource = normalizeSource(efFm.source ? String(efFm.source) : "");
                 const isHl = folderHighlight.active && isImportHomebrew(efFm.source, ef.path, folderCallerSource);
                 if (isHl && allLis[liIdx]) {
@@ -2150,7 +2348,11 @@ function mergeAdjacentCallTabs(root: HTMLElement): void {
     for (const el of group) {
       const json = el.getAttribute("data-rpg-call-tab-json");
       if (!json) continue;
-      try { tabs.push(JSON.parse(json) as RuleTabBlock); } catch { continue; }
+      try {
+        tabs.push(JSON.parse(json) as RuleTabBlock);
+      } catch {
+        continue;
+      }
       if (!sourcePath) sourcePath = el.getAttribute("data-rpg-call-tab-source") ?? "";
     }
     if (tabs.length === 0) continue;
@@ -2306,7 +2508,6 @@ function mergeAdjacentCallSpreads(root: HTMLElement): void {
 
 /** Check if two sibling elements are adjacent (only whitespace text nodes between). */
 function areAdjacent(a: Element, b: Element): boolean {
-
   let node: Node | null = a.nextSibling;
   while (node) {
     if (node === b) return true;
@@ -2443,9 +2644,7 @@ export function setupGlobalTableMerger(): void {
       for (const node of Array.from(mutation.addedNodes)) {
         if (!(node instanceof HTMLElement)) continue;
         // Check if this added subtree contains a .rpg-view--table
-        const tables = node.querySelectorAll
-          ? Array.from(node.querySelectorAll("table.rpg-view--table"))
-          : [];
+        const tables = node.querySelectorAll ? Array.from(node.querySelectorAll("table.rpg-view--table")) : [];
         if (node instanceof HTMLTableElement && node.classList.contains("rpg-view--table")) {
           tables.push(node);
         }
@@ -2604,7 +2803,9 @@ export function processCallsInContainer(
   parent.register(() => child.unload());
   child.load();
   let childUnloaded = false;
-  child.register(() => { childUnloaded = true; });
+  child.register(() => {
+    childUnloaded = true;
+  });
 
   for (const { code, call } of codeHits) {
     const span = document.createElement("span");
@@ -2613,6 +2814,13 @@ export function processCallsInContainer(
     span.setAttribute("data-call", call.source);
     span.textContent = call.source;
     code.parentNode?.replaceChild(span, code);
-    resolveCall(span, call, deps, { sourcePath, addChild: (c: MarkdownRenderChild) => child.addChild(c) } as any, child, () => childUnloaded);
+    resolveCall(
+      span,
+      call,
+      deps,
+      { sourcePath, addChild: (c: MarkdownRenderChild) => child.addChild(c) } as any,
+      child,
+      () => childUnloaded
+    );
   }
 }

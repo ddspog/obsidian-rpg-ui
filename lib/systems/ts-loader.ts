@@ -18,11 +18,7 @@ import type { RPGSystem } from "./types";
 import type * as EsbuildWasm from "esbuild-wasm";
 import { resolveWikiFile, resolveWikiFolder } from "../utils/wiki-file";
 import * as UIModule from "../ui";
-import {
-  getSystemSourceMaxMtime,
-  readBundleCache,
-  writeBundleCache,
-} from "./bundle-cache";
+import { getSystemSourceMaxMtime, readBundleCache, writeBundleCache } from "./bundle-cache";
 
 /** Plugin metadata used by the bundle cache to invalidate on plugin upgrade. */
 let cacheContext: { pluginDir: string; pluginVersion: string } | null = null;

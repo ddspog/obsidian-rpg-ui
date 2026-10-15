@@ -36,9 +36,7 @@ export class PageBannerManager {
     this.host.registerEvent(app.workspace.on("active-leaf-change", () => this.scheduleRefresh()));
     this.host.registerEvent(app.workspace.on("layout-change", () => this.scheduleRefresh()));
     this.host.registerEvent(app.workspace.on("file-open", () => this.scheduleRefresh()));
-    this.host.registerEvent(
-      app.metadataCache.on("changed", () => this.scheduleRefresh())
-    );
+    this.host.registerEvent(app.metadataCache.on("changed", () => this.scheduleRefresh()));
     app.workspace.onLayoutReady(() => this.scheduleRefresh());
   }
 
@@ -98,9 +96,7 @@ export class PageBannerManager {
 
     // Per-note height override from frontmatter (falls back to settings)
     const fmHeight = fm?.["bannerHeight"] ?? fm?.["banner-height"];
-    const height = typeof fmHeight === "number" && fmHeight > 0
-      ? fmHeight
-      : settings.bannerHeight;
+    const height = typeof fmHeight === "number" && fmHeight > 0 ? fmHeight : settings.bannerHeight;
 
     // Y-position (vertical crop): number = percentage (0-100), or string for px/em/etc.
     const rawY = fm?.["banner-y"] ?? fm?.["bannerY"];
@@ -123,8 +119,7 @@ export class PageBannerManager {
 
     // Content start position (overrides auto-calculation)
     const rawContentStart = fm?.["content-start"] ?? fm?.["contentStart"];
-    const contentStart = typeof rawContentStart === "number" && rawContentStart > 0
-      ? rawContentStart : undefined;
+    const contentStart = typeof rawContentStart === "number" && rawContentStart > 0 ? rawContentStart : undefined;
 
     // Icon/emoji overlay
     const rawIcon = fm?.["banner-icon"] ?? fm?.["bannerIcon"];

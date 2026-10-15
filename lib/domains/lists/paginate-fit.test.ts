@@ -57,7 +57,11 @@ describe("computeLayout", () => {
   it("drops to 2 columns when 3 would be shorter than minColHeight", () => {
     // total 500 → /200 = 2 → 2 columns.
     const rows = Array.from({ length: 5 }, (_, i) => entry(i));
-    const layout = computeLayout(rows, rows.map(() => 100), opts());
+    const layout = computeLayout(
+      rows,
+      rows.map(() => 100),
+      opts()
+    );
     expect(layout.cols).toBe(2);
     expect(layout.pages).toEqual([rows]);
   });
@@ -70,7 +74,11 @@ describe("computeLayout", () => {
 
   it("respects an explicit maxCols cap", () => {
     const rows = Array.from({ length: 18 }, (_, i) => entry(i));
-    const layout = computeLayout(rows, rows.map(() => 100), opts({ maxCols: 2 }));
+    const layout = computeLayout(
+      rows,
+      rows.map(() => 100),
+      opts({ maxCols: 2 })
+    );
     expect(layout.cols).toBe(2); // capped even though content could fill more
   });
 
@@ -86,7 +94,11 @@ describe("computeLayout", () => {
     // 60 rows × 100 = 6000; usable cap = 3*700*0.88 = 1848 → 18 rows/page
     // → 4 pages (the 0.88 headroom keeps the boundary row off the clip line).
     const rows = Array.from({ length: 60 }, (_, i) => entry(i));
-    const layout = computeLayout(rows, rows.map(() => 100), opts({ paginate: true }));
+    const layout = computeLayout(
+      rows,
+      rows.map(() => 100),
+      opts({ paginate: true })
+    );
     expect(layout.cols).toBe(3);
     expect(layout.pages.length).toBe(4);
     expect(layout.pages.flat().length).toBe(60); // no rows dropped
@@ -117,8 +129,14 @@ describe("withContinuations", () => {
 describe("firstPageByList", () => {
   it("maps each list to the first page its content appears on", () => {
     const pages: Row[][] = [
-      [{ kind: "heading", listId: "a", name: "A" }, { kind: "entry", listId: "a", markdown: "", key: "1" }],
-      [{ kind: "heading", listId: "a", name: "A", cont: true }, { kind: "entry", listId: "a", markdown: "", key: "2" }],
+      [
+        { kind: "heading", listId: "a", name: "A" },
+        { kind: "entry", listId: "a", markdown: "", key: "1" },
+      ],
+      [
+        { kind: "heading", listId: "a", name: "A", cont: true },
+        { kind: "entry", listId: "a", markdown: "", key: "2" },
+      ],
       [{ kind: "heading", listId: "b", name: "B" }],
     ];
     const map = firstPageByList(pages);

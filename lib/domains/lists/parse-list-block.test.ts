@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseListBlock,
-  isListMeta,
-  listNameFromMeta,
-} from "./parse-list-block";
+import { parseListBlock, isListMeta, listNameFromMeta } from "./parse-list-block";
 
 describe("isListMeta / listNameFromMeta", () => {
   it("recognizes the list family", () => {
@@ -34,13 +30,9 @@ describe("parseListBlock", () => {
   it("honors explicit name / id / subtitle / columns / paginate", () => {
     const b = parseListBlock(
       "cantrips",
-      [
-        "name: Cantrips",
-        "id: arcane-cantrips",
-        "subtitle: 0-level arcane spells",
-        "columns: 2",
-        "paginate: auto",
-      ].join("\n")
+      ["name: Cantrips", "id: arcane-cantrips", "subtitle: 0-level arcane spells", "columns: 2", "paginate: auto"].join(
+        "\n"
+      )
     );
     expect(b.name).toBe("Cantrips");
     expect(b.id).toBe("arcane-cantrips");

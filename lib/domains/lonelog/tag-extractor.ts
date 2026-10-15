@@ -118,7 +118,10 @@ function extractResourceOps(text: string): DialOpTag[] {
   const sRe = dialOpRegex();
   for (let m = sRe.exec(text); m; m = sRe.exec(text)) {
     const op = opOf(m[2], m[4]);
-    found.push({ index: m.index, tag: { kind: "dial-op", abbr: m[1], op, amount: m[4] ? undefined : parseInt(m[3], 10) } });
+    found.push({
+      index: m.index,
+      tag: { kind: "dial-op", abbr: m[1], op, amount: m[4] ? undefined : parseInt(m[3], 10) },
+    });
   }
   const pRe = pcOpRegex();
   for (let m = pRe.exec(text); m; m = pRe.exec(text)) {

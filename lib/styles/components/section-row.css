@@ -12,4 +12,3 @@ section[aria-details*=" Row"] {
   margin-block-start: calc(-1 * var(--p-spacing, 1em));
   overflow: visible;
 }
-

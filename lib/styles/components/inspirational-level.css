@@ -79,7 +79,9 @@ figure[aria-details="Inspirational Level"] {
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.15s, filter 0.15s;
+      transition:
+        transform 0.15s,
+        filter 0.15s;
       z-index: 3;
       /* ensure points sit above the central badge when overlapping */
 

@@ -1,8 +1,4 @@
-export type {
-  AspectBucket,
-  SessionFeatureCard,
-  CardStack,
-} from "./card-types";
+export type { AspectBucket, SessionFeatureCard, CardStack } from "./card-types";
 export { ASPECT_BUCKETS, BUCKET_LABELS, DEFAULT_LOG_TEMPLATE } from "./card-types";
 export { extractCards, buildCardStacks, resolveMaxCount } from "./extract-cards";
 export type { ResolvedSourceSlice } from "./extract-cards";

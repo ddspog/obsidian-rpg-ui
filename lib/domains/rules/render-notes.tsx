@@ -18,13 +18,7 @@ import * as ReactDOM from "react-dom/client";
 import { Markdown } from "lib/components/markdown";
 import type { RuleNotesBlock } from "./types";
 
-function RuleNotesView({
-  block,
-  sourcePath,
-}: {
-  block: RuleNotesBlock;
-  sourcePath: string;
-}) {
+function RuleNotesView({ block, sourcePath }: { block: RuleNotesBlock; sourcePath: string }) {
   return (
     <aside className="rpg-rule-notes" data-rpg-rule="notes">
       <Markdown source={block.body} sourcePath={sourcePath} />

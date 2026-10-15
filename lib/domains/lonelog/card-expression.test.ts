@@ -148,23 +148,27 @@ describe("parseCardDraws", () => {
 
 describe("formatCard", () => {
   it("formats standard card", () => {
-    expect(formatCard({ type: "standard", raw: "Qs", rank: "Queen", suit: "Spades", reversed: false }))
-      .toBe("Queen of Spades");
+    expect(formatCard({ type: "standard", raw: "Qs", rank: "Queen", suit: "Spades", reversed: false })).toBe(
+      "Queen of Spades"
+    );
   });
 
   it("formats major arcana", () => {
-    expect(formatCard({ type: "major_arcana", raw: "M16", number: 16, name: "The Tower", reversed: false }))
-      .toBe("The Tower");
+    expect(formatCard({ type: "major_arcana", raw: "M16", number: 16, name: "The Tower", reversed: false })).toBe(
+      "The Tower"
+    );
   });
 
   it("formats reversed major arcana", () => {
-    expect(formatCard({ type: "major_arcana", raw: "M16r", number: 16, name: "The Tower", reversed: true }))
-      .toBe("The Tower (reversed)");
+    expect(formatCard({ type: "major_arcana", raw: "M16r", number: 16, name: "The Tower", reversed: true })).toBe(
+      "The Tower (reversed)"
+    );
   });
 
   it("formats minor arcana", () => {
-    expect(formatCard({ type: "minor_arcana", raw: "KnPe", rank: "Knight", suit: "Pentacles", reversed: false }))
-      .toBe("Knight of Pentacles");
+    expect(formatCard({ type: "minor_arcana", raw: "KnPe", rank: "Knight", suit: "Pentacles", reversed: false })).toBe(
+      "Knight of Pentacles"
+    );
   });
 });
 
@@ -180,7 +184,9 @@ describe("suitColor", () => {
   });
 
   it("neutral for major arcana and oracle", () => {
-    expect(suitColor({ type: "major_arcana", raw: "M0", number: 0, name: "The Fool", reversed: false })).toBe("neutral");
+    expect(suitColor({ type: "major_arcana", raw: "M0", number: 0, name: "The Fool", reversed: false })).toBe(
+      "neutral"
+    );
     expect(suitColor({ type: "oracle", raw: "X", name: "X", reversed: false })).toBe("neutral");
   });
 });

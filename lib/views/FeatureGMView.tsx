@@ -68,9 +68,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
         Object.keys(stepCtx.genLines ?? {}).length > 0 ||
         Object.keys(stepCtx.calls ?? {}).length > 0;
       if (this.reactRoot && hasCtx) {
-        this.reactRoot.render(
-          <GMFeatureCard feature={feature} sourcePath={this.sourcePath} stepCtx={stepCtx} />
-        );
+        this.reactRoot.render(<GMFeatureCard feature={feature} sourcePath={this.sourcePath} stepCtx={stepCtx} />);
       }
     });
   }

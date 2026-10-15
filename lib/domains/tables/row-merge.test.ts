@@ -68,11 +68,7 @@ describe("parseTableBlock: merge markers", () => {
 | 1 | 2 | 3 |
 | 4 | ^ || x |`
     );
-    expect(t.rows[1].cells).toEqual([
-      { value: "4" },
-      { value: "", mergeUp: true },
-      { value: "x" },
-    ]);
+    expect(t.rows[1].cells).toEqual([{ value: "4" }, { value: "", mergeUp: true }, { value: "x" }]);
   });
 });
 
@@ -86,10 +82,7 @@ describe("resolveRenderRows: vertical merge", () => {
 | 4 | +3 |`);
 
     expect(rows).toHaveLength(4);
-    expect(rows[0].cells).toEqual([
-      { value: "1" },
-      { value: "+2", rowspan: 3, valign: "middle" },
-    ]);
+    expect(rows[0].cells).toEqual([{ value: "1" }, { value: "+2", rowspan: 3, valign: "middle" }]);
     expect(rows[1].cells).toEqual([{ value: "2" }]);
     expect(rows[2].cells).toEqual([{ value: "3" }]);
     expect(rows[3].cells).toEqual([{ value: "4" }, { value: "+3" }]);
@@ -146,10 +139,7 @@ describe("resolveRenderRows: vertical merge", () => {
 |---|---|---|
 | 1 | xx ||
 | 2 | ^ | ^ |`);
-    expect(rows[0].cells).toEqual([
-      { value: "1" },
-      { value: "xx", colspan: 2, rowspan: 2, valign: "middle" },
-    ]);
+    expect(rows[0].cells).toEqual([{ value: "1" }, { value: "xx", colspan: 2, rowspan: 2, valign: "middle" }]);
     expect(rows[1].cells).toEqual([{ value: "2" }]);
   });
 
@@ -167,11 +157,7 @@ describe("resolveRenderRows: vertical merge", () => {
 |---|---|---|
 | 1 | 2 | 3 |
 | 4 | ^ || x |`);
-    expect(rows[0].cells).toEqual([
-      { value: "1" },
-      { value: "2", rowspan: 2, valign: "middle" },
-      { value: "3" },
-    ]);
+    expect(rows[0].cells).toEqual([{ value: "1" }, { value: "2", rowspan: 2, valign: "middle" }, { value: "3" }]);
     // col B covered by the rowspan; "x" lands at col C, not skipped to col D.
     expect(rows[1].cells).toEqual([{ value: "4" }, { value: "x" }]);
   });
@@ -207,10 +193,7 @@ describe("resolveRenderRows: pagination windows", () => {
     // page, so the orphaned markers re-anchor with the carried value.
     const rows = resolve(src, { start: 2, end: 4 });
     expect(rows).toHaveLength(2);
-    expect(rows[0].cells).toEqual([
-      { value: "3" },
-      { value: "+2", rowspan: 2, valign: "middle", carried: true },
-    ]);
+    expect(rows[0].cells).toEqual([{ value: "3" }, { value: "+2", rowspan: 2, valign: "middle", carried: true }]);
     expect(rows[1].cells).toEqual([{ value: "4" }]);
   });
 
@@ -244,4 +227,3 @@ describe("resolveRenderRows: pagination windows", () => {
     expect(resolve(src, { start: 99, end: 99 })).toEqual([]);
   });
 });
-

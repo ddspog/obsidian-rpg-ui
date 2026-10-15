@@ -67,12 +67,7 @@ export function buildFolderLinkProcessor(deps: FolderLinkProcessorDeps) {
   };
 }
 
-function tagAllInSubtree(
-  app: App,
-  root: HTMLElement,
-  sourcePath: string,
-  styles: readonly FolderLinkStyle[]
-): void {
+function tagAllInSubtree(app: App, root: HTMLElement, sourcePath: string, styles: readonly FolderLinkStyle[]): void {
   if (styles.length === 0) return;
   // Include the root itself in case React mounted a bare anchor as the
   // root of an added subtree — `querySelectorAll` alone would miss it.

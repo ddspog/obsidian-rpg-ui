@@ -114,33 +114,20 @@
   text-overflow: ellipsis;
   color: var(--rpg-description-tab, light-dark(#6a5a3a, #8c8272));
   background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
-  transition: color 120ms ease, background 120ms ease;
-  clip-path: polygon(
-    var(--_cut) 0,
-    100% 0,
-    calc(100% - var(--_cut)) 100%,
-    0 100%
-  );
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+  clip-path: polygon(var(--_cut) 0, 100% 0, calc(100% - var(--_cut)) 100%, 0 100%);
 }
 
 /* Flat left edge on the first tab so it docks against the block frame. */
 .rpg-description-tab-item:first-child .rpg-description-tab {
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    calc(100% - var(--_cut)) 100%,
-    0 100%
-  );
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--_cut)) 100%, 0 100%);
 }
 
 /* Flat right edge on the last tab for the same reason. */
 .rpg-description-tab-item:last-child .rpg-description-tab {
-  clip-path: polygon(
-    var(--_cut) 0,
-    100% 0,
-    100% 100%,
-    0 100%
-  );
+  clip-path: polygon(var(--_cut) 0, 100% 0, 100% 100%, 0 100%);
 }
 
 /* A single tab in isolation keeps both edges flat. */
@@ -469,7 +456,9 @@
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
   background: light-dark(rgba(106, 78, 42, 0.12), rgba(212, 168, 64, 0.18));
   border-radius: 3px;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .rpg-description-copy-prompt:hover {
@@ -587,12 +576,7 @@
   background: light-dark(#d4a840, #d4a840);
   /* Cut the bottom-right corner so the ribbon tapers off the way the
    * sheet's .rpg-tag-heading shape does — keeps the visual family. */
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    calc(100% - var(--rpg-tag-cut)) 100%,
-    0 100%
-  );
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--rpg-tag-cut)) 100%, 0 100%);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
@@ -885,12 +869,7 @@
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
   background: light-dark(rgba(212, 168, 64, 0.3), rgba(212, 168, 64, 0.3));
   text-align: left;
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    calc(100% - var(--_cut)) 100%,
-    0 100%
-  );
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--_cut)) 100%, 0 100%);
 }
 
 /* The .rpg-tag-heading parent still draws its own background via the
@@ -944,12 +923,7 @@
   background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
   text-align: left;
   text-transform: uppercase;
-  clip-path: polygon(
-    var(--_cut) 0,
-    100% 0,
-    100% 100%,
-    0 100%
-  );
+  clip-path: polygon(var(--_cut) 0, 100% 0, 100% 100%, 0 100%);
 }
 
 .rpg-description-ribbon-body {
@@ -1053,13 +1027,7 @@
   flex: 1 1 0;
   min-width: 2rem;
   height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    currentColor 45%,
-    currentColor 55%,
-    transparent 100%
-  );
+  background: linear-gradient(to right, transparent 0%, currentColor 45%, currentColor 55%, transparent 100%);
   opacity: 0.55;
 }
 
@@ -1183,12 +1151,7 @@
   break-inside: avoid;
   margin: 0 0 14px;
   padding: 14px 18px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in oklab, var(--_accent) 80%, white) 0%,
-      var(--_accent) 100%
-    );
+  background: linear-gradient(135deg, color-mix(in oklab, var(--_accent) 80%, white) 0%, var(--_accent) 100%);
   color: #2a2010;
   border-radius: 2px;
   box-shadow:
@@ -1198,16 +1161,24 @@
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
   font-size: 0.95em;
   line-height: 1.55;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 /* Tiny per-card rotation + stacking variation so the board reads as a
  * pin-board instead of a grid. Kept small (±1.2°) so nothing feels
  * deliberately skewed — just "hand-placed". Uses :nth-child to avoid
  * JS randomisation (which would rotate on every render). */
-.rpg-description-motivation-card:nth-child(3n+1) { transform: rotate(-1.1deg); }
-.rpg-description-motivation-card:nth-child(3n+2) { transform: rotate(0.6deg); }
-.rpg-description-motivation-card:nth-child(3n+3) { transform: rotate(-0.3deg) translateY(3px); }
+.rpg-description-motivation-card:nth-child(3n + 1) {
+  transform: rotate(-1.1deg);
+}
+.rpg-description-motivation-card:nth-child(3n + 2) {
+  transform: rotate(0.6deg);
+}
+.rpg-description-motivation-card:nth-child(3n + 3) {
+  transform: rotate(-0.3deg) translateY(3px);
+}
 
 .rpg-description-motivation-card:hover {
   transform: rotate(0deg) translateY(-2px);

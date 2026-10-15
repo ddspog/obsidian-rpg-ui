@@ -135,7 +135,12 @@ export function processUnrenderedRpgFences(
         // THIS module, so a top-level import would form a cycle and the class
         // can be undefined at init (`Class extends undefined`).
         const { FeatureGMRenderChild } = require("lib/views/FeatureGMView") as {
-          FeatureGMRenderChild: new (el: HTMLElement, app: App, source: string, sourcePath: string) => MarkdownRenderChild;
+          FeatureGMRenderChild: new (
+            el: HTMLElement,
+            app: App,
+            source: string,
+            sourcePath: string
+          ) => MarkdownRenderChild;
         };
         parent.addChild(new FeatureGMRenderChild(el, app, source, sourcePath));
       } catch (err) {
@@ -210,7 +215,11 @@ export function processUnrenderedRpgFences(
           );
           const child = new (class extends MarkdownRenderChild {
             onunload(): void {
-              try { root.unmount(); } catch { /* ignore */ }
+              try {
+                root.unmount();
+              } catch {
+                /* ignore */
+              }
             }
           })(el);
           parent.addChild(child);

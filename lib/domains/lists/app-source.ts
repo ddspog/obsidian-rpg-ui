@@ -64,9 +64,7 @@ export function appListSource(app: App): ListSource {
     },
 
     frontmatter(path: string): Record<string, unknown> | undefined {
-      return app.metadataCache.getCache(path)?.frontmatter as
-        | Record<string, unknown>
-        | undefined;
+      return app.metadataCache.getCache(path)?.frontmatter as Record<string, unknown> | undefined;
     },
   };
 }

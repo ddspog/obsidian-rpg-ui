@@ -3,10 +3,7 @@ import { EntityBlock, StatblockGroup, mapGroup } from "rpg-ui-toolkit";
 import type { StatEntity, StatGroupData } from "../../entities/stat.types";
 
 const group: EntityBlock<StatGroupData, StatEntity> = ({ self }) => {
-  const data = React.useMemo(
-    () => mapGroup(self as unknown as Record<string, unknown>),
-    [self]
-  );
+  const data = React.useMemo(() => mapGroup(self as unknown as Record<string, unknown>), [self]);
 
   const app = (
     globalThis as unknown as {

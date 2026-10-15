@@ -90,15 +90,7 @@ function MarkerBadge({ icon, label }: Marker) {
       el.textContent = icon;
     }
   }, [icon]);
-  return (
-    <span
-      ref={ref}
-      className="rpg-rule-content__marker"
-      role="img"
-      aria-label={label}
-      title={label}
-    />
-  );
+  return <span ref={ref} className="rpg-rule-content__marker" role="img" aria-label={label} title={label} />;
 }
 
 /**
@@ -143,17 +135,17 @@ function RuleContentView({
   // caller's view function takes over — this property is ignored.
   const viewProp = typeof fm.view === "string" ? fm.view : "bare";
   const blockName =
-    (typeof fm.name === "string" && fm.name) ||
-    (typeof fm.id === "string" && fm.id ? capitalize(fm.id) : undefined);
+    (typeof fm.name === "string" && fm.name) || (typeof fm.id === "string" && fm.id ? capitalize(fm.id) : undefined);
 
   const body = <RuleContentBody source={block.body} sourcePath={sourcePath} />;
-  const markersEl = markers.length > 0 ? (
-    <div className="rpg-rule-content__markers" aria-hidden={false}>
-      {markers.map((m, i) => (
-        <MarkerBadge key={`${m.icon}-${i}`} icon={m.icon} label={m.label} />
-      ))}
-    </div>
-  ) : null;
+  const markersEl =
+    markers.length > 0 ? (
+      <div className="rpg-rule-content__markers" aria-hidden={false}>
+        {markers.map((m, i) => (
+          <MarkerBadge key={`${m.icon}-${i}`} icon={m.icon} label={m.label} />
+        ))}
+      </div>
+    ) : null;
 
   // Heading views: h1–h6
   const headingMatch = viewProp.match(/^h([1-6])$/);
@@ -170,9 +162,10 @@ function RuleContentView({
 
   if (viewProp === "p" && blockName) {
     const firstNl = block.body.indexOf("\n");
-    const inlined = firstNl >= 0
-      ? `_**${blockName}.**_ ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
-      : `_**${blockName}.**_ ${block.body}`;
+    const inlined =
+      firstNl >= 0
+        ? `_**${blockName}.**_ ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+        : `_**${blockName}.**_ ${block.body}`;
     return (
       <section className={cls.join(" ")} data-rpg-rule="content">
         {markersEl}
@@ -183,9 +176,10 @@ function RuleContentView({
 
   if (viewProp === "inline" && blockName) {
     const firstNl = block.body.indexOf("\n");
-    const inlined = firstNl >= 0
-      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
-      : `**${blockName}.** ${block.body}`;
+    const inlined =
+      firstNl >= 0
+        ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+        : `**${blockName}.** ${block.body}`;
     return (
       <span className={[...cls, "rpg-rule-content--inline"].join(" ")} data-rpg-rule="content">
         {markersEl}
@@ -196,9 +190,10 @@ function RuleContentView({
 
   if (viewProp === "item" && blockName) {
     const firstNl = block.body.indexOf("\n");
-    const inlined = firstNl >= 0
-      ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
-      : `**${blockName}.** ${block.body}`;
+    const inlined =
+      firstNl >= 0
+        ? `**${blockName}.** ${block.body.slice(0, firstNl)}\n${block.body.slice(firstNl)}`
+        : `**${blockName}.** ${block.body}`;
     return (
       <section className={cls.join(" ")} data-rpg-rule="content">
         {markersEl}
@@ -240,13 +235,7 @@ function IconSlot({ name }: { name: string }) {
   return <span ref={ref} className="rpg-rule-side__icon" aria-hidden="true" />;
 }
 
-function RuleSideCommentary({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideCommentary({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   const asideRef = React.useRef<HTMLElement>(null);
   usePaneEscape(asideRef);
 
@@ -358,13 +347,7 @@ function usePaneEscape(asideRef: React.RefObject<HTMLElement>) {
   }, [asideRef]);
 }
 
-function RuleSideFloat({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideFloat({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   const asideRef = React.useRef<HTMLElement>(null);
   usePaneEscape(asideRef);
 
@@ -389,13 +372,7 @@ function RuleSideFloat({
   );
 }
 
-function RuleSideCallout({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideCallout({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   const cls = ["rpg-rule-side", "rpg-rule-side--callout"];
   if (block.preset) cls.push(`rpg-rule-side--${block.preset}`);
 
@@ -417,13 +394,7 @@ function RuleSideCallout({
   );
 }
 
-function RuleSideSpread({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideSpread({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   const cls = ["rpg-rule-side", "rpg-rule-side--spread", SPREAD_ITEM_CLASS];
   if (block.preset) cls.push(`rpg-rule-side--${block.preset}`);
 
@@ -451,13 +422,7 @@ function RuleSideSpread({
   );
 }
 
-function RuleSideNote({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideNote({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   // NOTE: the variant keyword is `note`, but its CSS hook is
   // `rpg-rule-side--letter`. The `note` *preset* (`type: note`) already owns
   // `.rpg-rule-side--note` (blue accent), so reusing it for the variant would
@@ -471,8 +436,7 @@ function RuleSideNote({
   if (block.color) (style as Record<string, string>)["--rpg-rule-side-color"] = block.color;
   // A bare letter (no preset, no explicit color) defaults to a warm ink-brown
   // rather than the theme accent — set inline so any preset/color still wins.
-  else if (!block.preset)
-    (style as Record<string, string>)["--rpg-rule-side-color"] = "var(--rpg-note-ink, #8b6f47)";
+  else if (!block.preset) (style as Record<string, string>)["--rpg-rule-side-color"] = "var(--rpg-note-ink, #8b6f47)";
 
   // Icon resolution mirrors the other variants, with one twist: a default
   // quill ("feather") is only injected when the note carries a title. A
@@ -498,13 +462,7 @@ function RuleSideNote({
   );
 }
 
-function RuleSideView({
-  block,
-  sourcePath,
-}: {
-  block: RuleSideBlock;
-  sourcePath: string;
-}) {
+function RuleSideView({ block, sourcePath }: { block: RuleSideBlock; sourcePath: string }) {
   if (block.variant === "commentary") {
     return <RuleSideCommentary block={block} sourcePath={sourcePath} />;
   }
@@ -587,9 +545,7 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
   }
 
   onload(): void {
-    const fm = this.app.metadataCache.getCache(this.sourcePath)?.frontmatter as
-      | Record<string, unknown>
-      | undefined;
+    const fm = this.app.metadataCache.getCache(this.sourcePath)?.frontmatter as Record<string, unknown> | undefined;
     const resolved =
       this.block.kind === "content"
         ? resolveSource(this.block.frontmatter, fm)
@@ -623,9 +579,7 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
         }
       }
     } else {
-      this.root.render(
-        <RuleContentView block={this.block} sourcePath={this.sourcePath} homebrew={homebrew} />
-      );
+      this.root.render(<RuleContentView block={this.block} sourcePath={this.sourcePath} homebrew={homebrew} />);
     }
   }
 
@@ -640,4 +594,3 @@ export class RuleContentRenderChild extends MarkdownRenderChild {
     }
   }
 }
-

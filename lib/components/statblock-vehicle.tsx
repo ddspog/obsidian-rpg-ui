@@ -1,12 +1,7 @@
 import * as React from "react";
 import { Markdown } from "./markdown";
 import type { AbilityScores, ResolvedStatFeature } from "../domains/statblocks/types";
-import {
-  AbilitiesTable,
-  FeatureSections,
-  groupFeatures,
-  renderStatEntries,
-} from "./statblock-shared";
+import { AbilitiesTable, FeatureSections, groupFeatures, renderStatEntries } from "./statblock-shared";
 
 export interface StatblockVehicleProps {
   name: string;

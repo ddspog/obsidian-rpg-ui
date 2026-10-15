@@ -92,8 +92,12 @@
   line-height: 1.55;
 }
 
-.rpg-spell-card .rpg-spell-desc p:first-child { margin-top: 0; }
-.rpg-spell-card .rpg-spell-desc p:last-child { margin-bottom: 0; }
+.rpg-spell-card .rpg-spell-desc p:first-child {
+  margin-top: 0;
+}
+.rpg-spell-card .rpg-spell-desc p:last-child {
+  margin-bottom: 0;
+}
 
 /* ── Portrait figure (transparent, no chrome) ─────────────────────────── */
 

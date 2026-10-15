@@ -130,7 +130,10 @@ describe("GM Cards", () => {
       const screen: GMFeature = {
         name: "Mythic Screen",
         cards: [
-          { name: "Fate Question", emits: [{ oracle: { question: "Is it locked?", chaos: true, likelihood: "likely", roll: "d100" } }] },
+          {
+            name: "Fate Question",
+            emits: [{ oracle: { question: "Is it locked?", chaos: true, likelihood: "likely", roll: "d100" } }],
+          },
           {
             name: "Scene Check",
             emits: [

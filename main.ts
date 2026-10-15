@@ -166,16 +166,12 @@ export default class DndUIToolkitPlugin extends Plugin {
       const systemPaths = new Set(registry.getFolderMappings().values());
       Promise.all([
         // Load system bundles
-        ...([...systemPaths].map((sys) => registry.loadSystemAsync(sys))),
+        ...[...systemPaths].map((sys) => registry.loadSystemAsync(sys)),
         // Warm up the value resolver (vault is now fully indexed)
-        this.valueResolver?.warmup().catch((err) =>
-          console.error("rpg-ui value-resolver warmup failed", err)
-        ),
+        this.valueResolver?.warmup().catch((err) => console.error("rpg-ui value-resolver warmup failed", err)),
       ])
         .then(() => {
-          console.debug(
-            `[rpg-ui] Systems loaded (${this.valueResolver?.list().size ?? 0} rules indexed).`
-          );
+          console.debug(`[rpg-ui] Systems loaded (${this.valueResolver?.list().size ?? 0} rules indexed).`);
           // Refresh the currently active page (if any) now that systems are ready.
           const activeFile = this.app.workspace.getActiveFile();
           if (activeFile) {
@@ -400,8 +396,7 @@ export default class DndUIToolkitPlugin extends Plugin {
         if (ruleSubtype) {
           if (ruleSubtype === "content" || ruleSubtype === "side") {
             try {
-              const block =
-                ruleSubtype === "content" ? parseRuleContent(source) : parseRuleSide(source);
+              const block = ruleSubtype === "content" ? parseRuleContent(source) : parseRuleSide(source);
               const child = new RuleContentRenderChild(el, this.app, block, ctx.sourcePath);
               ctx.addChild(child);
             } catch (err) {
@@ -1260,9 +1255,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       const effectiveSource = "source" in blockParsed ? blockParsed.source : fm.source;
       const hbBySetting = homebrewBySetting(effectiveSource, this.sourcePath);
       const isHomebrewBlock =
-        hbBySetting !== null
-          ? hbBySetting
-          : "source" in blockParsed && blockParsed.source !== fm.source;
+        hbBySetting !== null ? hbBySetting : "source" in blockParsed && blockParsed.source !== fm.source;
       if (isHomebrewBlock) {
         initialSelf.$homebrew = true;
         this.containerEl.classList.add("rpg-homebrew");

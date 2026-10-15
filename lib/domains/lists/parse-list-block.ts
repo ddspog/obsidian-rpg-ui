@@ -115,7 +115,10 @@ function titleFromSlug(slug: string): string {
 
 /** Slugify a display name for use as a fallback id. */
 function slugify(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+  return s
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]/g, "");
 }
 
 /**
@@ -133,15 +136,11 @@ export function parseListBlock(blockName: string, source: string): ListBlock {
     parsed = null;
   }
   const fm: Record<string, unknown> =
-    parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+    parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
 
   const { name, titleCells } = coerceName(fm.name, blockName);
-  const id =
-    typeof fm.id === "string" && fm.id.trim() ? fm.id.trim() : blockName || slugify(name);
-  const subtitle =
-    typeof fm.subtitle === "string" && fm.subtitle.trim() ? fm.subtitle.trim() : undefined;
+  const id = typeof fm.id === "string" && fm.id.trim() ? fm.id.trim() : blockName || slugify(name);
+  const subtitle = typeof fm.subtitle === "string" && fm.subtitle.trim() ? fm.subtitle.trim() : undefined;
   const paginate = coercePaginate(fm.paginate);
 
   return {

@@ -93,15 +93,7 @@ function BodyRow({ cells }: { cells: RenderCell[] }) {
   );
 }
 
-function RollCell({
-  cell,
-  storeKey,
-  def,
-}: {
-  cell: FooterCell;
-  storeKey: string;
-  def: TableDef;
-}) {
+function RollCell({ cell, storeKey, def }: { cell: FooterCell; storeKey: string; def: TableDef }) {
   const interactive = cell.segments.some((s) => s.kind === "roll");
   const { values, reroll } = useRollResult(storeKey, def, cell);
 
@@ -157,12 +149,7 @@ function FooterRowView({
     <tr className="rpg-table-tfoot__roll-row">
       <td colSpan={def.columns.length || 1}>
         {row.cells.map((cell, cellIdx) => (
-          <RollCell
-            key={cellIdx}
-            cell={cell}
-            storeKey={rollStoreKey(filePath, def.name, rowIdx, cellIdx)}
-            def={def}
-          />
+          <RollCell key={cellIdx} cell={cell} storeKey={rollStoreKey(filePath, def.name, rowIdx, cellIdx)} def={def} />
         ))}
       </td>
     </tr>

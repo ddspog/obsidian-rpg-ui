@@ -25,9 +25,7 @@ const mergingNow = new WeakSet<HTMLElement>();
  * or the element itself if no wrapper is found.
  */
 function getElPre(el: HTMLElement): HTMLElement | null {
-  return (el.closest(".el-pre") ??
-    el.closest("[class*='block-language-']") ??
-    el) as HTMLElement | null;
+  return (el.closest(".el-pre") ?? el.closest("[class*='block-language-']") ?? el) as HTMLElement | null;
 }
 
 /**
@@ -46,8 +44,7 @@ function isSiblingAdjacent(a: Element, b: Element): boolean {
     // Skip heading elements (el-h1 through el-h6)
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
-      if (/^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "") ||
-          el.className?.match?.(/\bel-h[1-6]\b/)) {
+      if (/^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "") || el.className?.match?.(/\bel-h[1-6]\b/)) {
         node = node.nextSibling;
         continue;
       }
@@ -70,8 +67,10 @@ function isLastContentChild(el: Element): boolean {
     }
     if (node.nodeType === Node.ELEMENT_NODE) {
       const htmlEl = node as HTMLElement;
-      if (/^el-h[1-6]$/i.test(htmlEl.className?.split?.(" ")?.[0] ?? "") ||
-          htmlEl.className?.match?.(/\bel-h[1-6]\b/)) {
+      if (
+        /^el-h[1-6]$/i.test(htmlEl.className?.split?.(" ")?.[0] ?? "") ||
+        htmlEl.className?.match?.(/\bel-h[1-6]\b/)
+      ) {
         node = node.nextSibling;
         continue;
       }
@@ -95,8 +94,7 @@ function isFirstContentChild(el: Element): boolean {
     // Skip heading elements
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
-      if (/^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "") ||
-          el.className?.match?.(/\bel-h[1-6]\b/)) {
+      if (/^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "") || el.className?.match?.(/\bel-h[1-6]\b/)) {
         node = node.previousSibling;
         continue;
       }
@@ -184,9 +182,7 @@ function runSpreadMerge(sizer: HTMLElement): void {
   mergingNow.add(sizer);
 
   try {
-    const allItems = Array.from(
-      sizer.querySelectorAll(`.${SPREAD_ITEM_CLASS}`)
-    ) as HTMLElement[];
+    const allItems = Array.from(sizer.querySelectorAll(`.${SPREAD_ITEM_CLASS}`)) as HTMLElement[];
     if (allItems.length === 0) return;
 
     // Get wrappers for each spread item
@@ -212,9 +208,7 @@ function runSpreadMerge(sizer: HTMLElement): void {
     }
 
     // Re-query after unwrapping — positions may have changed
-    const freshItems = Array.from(
-      sizer.querySelectorAll(`.${SPREAD_ITEM_CLASS}`)
-    ) as HTMLElement[];
+    const freshItems = Array.from(sizer.querySelectorAll(`.${SPREAD_ITEM_CLASS}`)) as HTMLElement[];
     if (freshItems.length === 0) return;
 
     const freshWrappers: HTMLElement[] = [];
@@ -268,8 +262,10 @@ function runSpreadMerge(sizer: HTMLElement): void {
             const next: Node | null = node.nextSibling;
             if (node.nodeType === Node.ELEMENT_NODE) {
               const el = node as HTMLElement;
-              if (el.className?.match?.(/\bel-h[1-6]\b/) ||
-                  /^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "")) {
+              if (
+                el.className?.match?.(/\bel-h[1-6]\b/) ||
+                /^el-h[1-6]$/i.test(el.className?.split?.(" ")?.[0] ?? "")
+              ) {
                 container.appendChild(el);
               }
             }

@@ -17,7 +17,21 @@
  */
 
 // @ts-ignore — resolved at runtime by the plugin's esbuild-wasm bundler
-import { Markdown, RuleSide, resolveVaultImage, StatblockVehicle, StatblockMonster, StatblockGroup, mapMonster, mapGroup, resolveStatFeatures, ItemMagicCard, extractItemMagicBlocks, SpellCard, extractSpellBlocks } from "rpg-ui-toolkit";
+import {
+  Markdown,
+  RuleSide,
+  resolveVaultImage,
+  StatblockVehicle,
+  StatblockMonster,
+  StatblockGroup,
+  mapMonster,
+  mapGroup,
+  resolveStatFeatures,
+  ItemMagicCard,
+  extractItemMagicBlocks,
+  SpellCard,
+  extractSpellBlocks,
+} from "rpg-ui-toolkit";
 // @ts-ignore — resolved at runtime
 import type { RuleViewCtx, RuleViewEntry, RuleViewMap, SidePreset, ResolvedStatFeature } from "rpg-ui-toolkit";
 import * as React from "react";
@@ -52,12 +66,18 @@ function renderWikilinks(text: string): React.ReactNode {
     const pipe = inner.indexOf("|");
     const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
     const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
-    parts.push(React.createElement("a", {
-      key: `l${m.index}`,
-      className: "internal-link",
-      href: target,
-      "data-href": target,
-    }, label));
+    parts.push(
+      React.createElement(
+        "a",
+        {
+          key: `l${m.index}`,
+          className: "internal-link",
+          href: target,
+          "data-href": target,
+        },
+        label
+      )
+    );
     cursor = m.index + m[0].length;
   }
   if (cursor < text.length) {
@@ -100,7 +120,13 @@ function normalizeStatValue(raw: unknown): string {
   if (typeof raw === "string") return raw;
   if (raw == null) return "";
   if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
-  if (Array.isArray(raw) && raw.length === 1 && Array.isArray(raw[0]) && raw[0].length === 1 && typeof raw[0][0] === "string") {
+  if (
+    Array.isArray(raw) &&
+    raw.length === 1 &&
+    Array.isArray(raw[0]) &&
+    raw[0].length === 1 &&
+    typeof raw[0][0] === "string"
+  ) {
     return `[[${raw[0][0]}]]`;
   }
   return String(raw);
@@ -115,7 +141,14 @@ function normalizeStats(raw: unknown): Record<string, string> {
   return out;
 }
 
-function normalizeAbilities(raw: unknown): { str: number; dex: number; con: number; int: number; wis: number; cha: number } {
+function normalizeAbilities(raw: unknown): {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+} {
   const defaults = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
   if (!raw || typeof raw !== "object") return defaults;
   const obj = raw as Record<string, unknown>;
@@ -132,15 +165,23 @@ function normalizeAbilities(raw: unknown): { str: number; dex: number; con: numb
 
 function normalizeFeatures(raw: unknown): Array<{ ref: string; [key: string]: unknown }> {
   if (!Array.isArray(raw)) return [];
-  return raw.map((entry: unknown) => {
-    if (typeof entry === "string") return { ref: entry };
-    if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>)) return entry as { ref: string; [key: string]: unknown };
-    if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
-    return null;
-  }).filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
+  return raw
+    .map((entry: unknown) => {
+      if (typeof entry === "string") return { ref: entry };
+      if (entry && typeof entry === "object" && "ref" in (entry as Record<string, unknown>))
+        return entry as { ref: string; [key: string]: unknown };
+      if (Array.isArray(entry) && entry.length === 1 && Array.isArray(entry[0])) return { ref: `[[${entry[0][0]}]]` };
+      return null;
+    })
+    .filter((x): x is { ref: string; [key: string]: unknown } => x !== null);
 }
 
-function StatblockCall({ parsed, body, view, sourcePath }: {
+function StatblockCall({
+  parsed,
+  body,
+  view,
+  sourcePath,
+}: {
   parsed: Record<string, unknown>;
   body?: string;
   view?: string;
@@ -151,13 +192,25 @@ function StatblockCall({ parsed, body, view, sourcePath }: {
   const name = typeof parsed.name === "string" ? parsed.name : "";
 
   React.useEffect(() => {
-    if (features.length === 0) { setResolved([]); return; }
+    if (features.length === 0) {
+      setResolved([]);
+      return;
+    }
     let cancelled = false;
-    const selfProps = { name: name.toLowerCase(), size: parsed.size, type: parsed.type, dimensions: parsed.dimensions, stats: parsed.stats, abilities: parsed.abilities };
+    const selfProps = {
+      name: name.toLowerCase(),
+      size: parsed.size,
+      type: parsed.type,
+      dimensions: parsed.dimensions,
+      stats: parsed.stats,
+      abilities: parsed.abilities,
+    };
     resolveStatFeatures(features, sourcePath, selfProps).then((r: ResolvedStatFeature[]) => {
       if (!cancelled) setResolved(r);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [features, name, sourcePath]);
 
   return React.createElement(StatblockVehicle, {
@@ -180,7 +233,11 @@ function StatblockCall({ parsed, body, view, sourcePath }: {
  * into the structured card shape via `mapMonster`. Features resolve the same
  * way as vehicles — unresolved refs render as name-only placeholders.
  */
-function StatMonsterCall({ self, sourcePath, name }: {
+function StatMonsterCall({
+  self,
+  sourcePath,
+  name,
+}: {
   self: Record<string, unknown>;
   sourcePath: string;
   name: string;
@@ -201,11 +258,9 @@ function StatMonsterCall({ self, sourcePath, name }: {
       abilities: data.abilities,
       stats: data.stats,
     };
-    resolveStatFeatures(data.features, sourcePath, selfProps).then(
-      (results: ResolvedStatFeature[]) => {
-        if (!cancelled) setResolved(results);
-      }
-    );
+    resolveStatFeatures(data.features, sourcePath, selfProps).then((results: ResolvedStatFeature[]) => {
+      if (!cancelled) setResolved(results);
+    });
     return () => {
       cancelled = true;
     };
@@ -229,7 +284,12 @@ function StatMonsterCall({ self, sourcePath, name }: {
 
 /** Monster-group import (`@[[creatures/]].stat()` over a `rpg stat.group`
  *  note): renders the shared header / habitat-treasure / contents. */
-function StatGroupCall({ self, body, sourcePath, name }: {
+function StatGroupCall({
+  self,
+  body,
+  sourcePath,
+  name,
+}: {
   self: Record<string, unknown>;
   body?: string;
   sourcePath: string;
@@ -263,7 +323,12 @@ function extractDangerBlock(content: string): Record<string, unknown> | null {
   const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
   const headText = effectiveSep >= 0 ? raw.slice(0, effectiveSep) : raw;
   const bodyText =
-    effectiveSep >= 0 ? raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") : "";
+    effectiveSep >= 0
+      ? raw
+          .slice(effectiveSep + 4)
+          .replace(/^\n+/, "")
+          .replace(/\n+$/, "")
+      : "";
 
   // Parse the flat `key: value` head ourselves rather than via a YAML lib:
   // the system bundle's `require` shim returns {} for "yaml", so `parse`
@@ -276,10 +341,7 @@ function extractDangerBlock(content: string): Record<string, unknown> | null {
     const lm = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
     if (!lm) continue;
     let val = lm[2].trim();
-    if (
-      val.length >= 2 &&
-      ((val[0] === '"' && val.endsWith('"')) || (val[0] === "'" && val.endsWith("'")))
-    ) {
+    if (val.length >= 2 && ((val[0] === '"' && val.endsWith('"')) || (val[0] === "'" && val.endsWith("'")))) {
       val = val.slice(1, -1);
     }
     parsed[lm[1]] = val;
@@ -313,15 +375,15 @@ export const ruleViews: RuleViewMap = {
   p: {
     mode: "join",
     render: (ctx) => {
-      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
-        ?? headingText(ctx);
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined) ?? headingText(ctx);
       let source: string;
       if (name) {
         const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
         const firstNl = content.indexOf("\n");
-        source = firstNl >= 0
-          ? `***${name}.*** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
-          : `***${name}.*** ${content}`;
+        source =
+          firstNl >= 0
+            ? `***${name}.*** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
+            : `***${name}.*** ${content}`;
       } else {
         source = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       }
@@ -344,15 +406,15 @@ export const ruleViews: RuleViewMap = {
   inline: {
     mode: "join",
     render: (ctx) => {
-      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
-        ?? headingText(ctx);
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined) ?? headingText(ctx);
       let source: string;
       if (name) {
         const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
         const firstNl = content.indexOf("\n");
-        source = firstNl >= 0
-          ? `**${name}.** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
-          : `**${name}.** ${content}`;
+        source =
+          firstNl >= 0
+            ? `**${name}.** ${content.slice(0, firstNl)}\n${content.slice(firstNl)}`
+            : `**${name}.** ${content}`;
       } else {
         source = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       }
@@ -382,9 +444,10 @@ export const ruleViews: RuleViewMap = {
       let source: string;
       if (name) {
         const firstNl = ctx.content.indexOf("\n");
-        source = firstNl >= 0
-          ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
-          : `**${name}.** ${ctx.content}`;
+        source =
+          firstNl >= 0
+            ? `**${name}.** ${ctx.content.slice(0, firstNl)}\n${ctx.content.slice(firstNl)}`
+            : `**${name}.** ${ctx.content}`;
       } else {
         source = ctx.content;
       }
@@ -443,13 +506,10 @@ export const ruleViews: RuleViewMap = {
   callout: {
     mode: "args",
     render: (ctx, args) => {
-      const preset = (
-        (typeof ctx.params?.type === "string" ? ctx.params.type : undefined)
-        ?? (typeof args?.[0] === "string" ? args[0] : undefined)
-        ?? "rules"
-      ) as SidePreset;
-      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
-        ?? headingText(ctx);
+      const preset = ((typeof ctx.params?.type === "string" ? ctx.params.type : undefined) ??
+        (typeof args?.[0] === "string" ? args[0] : undefined) ??
+        "rules") as SidePreset;
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined) ?? headingText(ctx);
       const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       return React.createElement(RuleSide, {
         variant: "callout",
@@ -486,15 +546,13 @@ export const ruleViews: RuleViewMap = {
   spread: {
     mode: "args",
     render: (ctx, args) => {
-      const preset = (
-        (typeof ctx.params?.type === "string" ? ctx.params.type : undefined)
-        ?? (typeof args?.[0] === "string" ? args[0] : undefined)
-      ) as SidePreset | undefined;
-      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined)
-        ?? headingText(ctx);
+      const preset = ((typeof ctx.params?.type === "string" ? ctx.params.type : undefined) ??
+        (typeof args?.[0] === "string" ? args[0] : undefined)) as SidePreset | undefined;
+      const name = (typeof ctx.params?.name === "string" ? ctx.params.name : undefined) ?? headingText(ctx);
       const fm = ctx.frontmatter as Record<string, unknown>;
-      const subtitle = (typeof ctx.params?.subtitle === "string" ? ctx.params.subtitle : undefined)
-        ?? (typeof fm?.subtitle === "string" ? (fm.subtitle as string) : undefined);
+      const subtitle =
+        (typeof ctx.params?.subtitle === "string" ? ctx.params.subtitle : undefined) ??
+        (typeof fm?.subtitle === "string" ? (fm.subtitle as string) : undefined);
       const content = typeof ctx.params?.content === "string" ? ctx.params.content : ctx.content;
       return React.createElement(RuleSide, {
         variant: "spread",
@@ -546,11 +604,15 @@ export const ruleViews: RuleViewMap = {
         if (f === "name") return headingText(ctx) ?? "";
         if (f === "link") {
           const label = headingText(ctx) ?? ctx.name;
-          return React.createElement("a", {
-            className: "internal-link",
-            href: ctx.file,
-            "data-href": ctx.file,
-          }, label);
+          return React.createElement(
+            "a",
+            {
+              className: "internal-link",
+              href: ctx.file,
+              "data-href": ctx.file,
+            },
+            label
+          );
         }
         const v = resolvePath(ctx.frontmatter as Record<string, unknown>, f);
         const text = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
@@ -602,9 +664,7 @@ export const ruleViews: RuleViewMap = {
       const fm = ctx.frontmatter as Record<string, unknown>;
       const rawImage = fm.image ?? fm.banner ?? null;
       // If target file itself is an image (no frontmatter image field), use it directly
-      const src = rawImage
-        ? resolveVaultImage(rawImage, ctx.file)
-        : resolveVaultImage(ctx.file, ctx.file);
+      const src = rawImage ? resolveVaultImage(rawImage, ctx.file) : resolveVaultImage(ctx.file, ctx.file);
       if (!src) {
         return React.createElement(
           "div",
@@ -656,7 +716,9 @@ export const ruleViews: RuleViewMap = {
             if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
               fenceFm = parsedHead as Record<string, unknown>;
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
         const self = { ...(ctx.frontmatter as Record<string, unknown>), ...fenceFm };
         return React.createElement(StatMonsterCall, {
@@ -681,7 +743,9 @@ export const ruleViews: RuleViewMap = {
             if (parsedHead && typeof parsedHead === "object" && !Array.isArray(parsedHead)) {
               fenceFm = parsedHead as Record<string, unknown>;
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
         const self = { ...(ctx.frontmatter as Record<string, unknown>), ...fenceFm };
         return React.createElement(StatGroupCall, {
@@ -696,12 +760,16 @@ export const ruleViews: RuleViewMap = {
       const raw = m[3];
       const sepIdx = raw.indexOf("\n---\n");
       const sepEnd = raw.indexOf("\n---");
-      const effectiveSep = sepIdx >= 0 ? sepIdx : (sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1);
+      const effectiveSep = sepIdx >= 0 ? sepIdx : sepEnd >= 0 && sepEnd + 4 >= raw.length ? sepEnd : -1;
       let yamlText: string;
       let bodyText: string | undefined;
       if (effectiveSep >= 0) {
         yamlText = raw.slice(0, effectiveSep);
-        bodyText = raw.slice(effectiveSep + 4).replace(/^\n+/, "").replace(/\n+$/, "") || undefined;
+        bodyText =
+          raw
+            .slice(effectiveSep + 4)
+            .replace(/^\n+/, "")
+            .replace(/\n+$/, "") || undefined;
       } else {
         yamlText = raw;
       }
@@ -710,7 +778,9 @@ export const ruleViews: RuleViewMap = {
         const { parseYaml } = require("obsidian");
         const result = parseYaml(yamlText);
         if (result && typeof result === "object" && !Array.isArray(result)) parsed = result;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       const viewOverride = typeof args?.[0] === "string" ? args[0] : undefined;
       const view = viewOverride ?? (typeof parsed.view === "string" ? parsed.view : undefined);

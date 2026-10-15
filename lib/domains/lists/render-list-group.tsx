@@ -33,9 +33,7 @@ const mergingNow = new WeakSet<HTMLElement>();
 /* ── Adjacency helpers (shared shape with render-tab-group.tsx) ─────────── */
 
 function getElPre(el: HTMLElement): HTMLElement | null {
-  return (el.closest(".el-pre") ??
-    el.closest("[class*='block-language-']") ??
-    el) as HTMLElement | null;
+  return (el.closest(".el-pre") ?? el.closest("[class*='block-language-']") ?? el) as HTMLElement | null;
 }
 
 function isSiblingAdjacent(a: Element, b: Element): boolean {
@@ -221,8 +219,7 @@ function findAdjacentGroup(itemWrapper: HTMLElement, _sizer: HTMLElement): HTMLE
       continue;
     }
     const group =
-      prev.querySelector(`.${LIST_GROUP_CLASS}`) ??
-      (prev.classList?.contains(LIST_GROUP_CLASS) ? prev : null);
+      prev.querySelector(`.${LIST_GROUP_CLASS}`) ?? (prev.classList?.contains(LIST_GROUP_CLASS) ? prev : null);
     if (group) return group as HTMLElement;
     break;
   }
@@ -335,18 +332,14 @@ export function installListUnfoldObserver(): void {
           (mutation.attributeName === "class" && !target.classList.contains("is-collapsed")) ||
           (mutation.attributeName === "open" && (target as HTMLDetailsElement).open)
         ) {
-          for (const item of Array.from(
-            target.querySelectorAll(`.${LIST_ITEM_CLASS}`)
-          ) as HTMLElement[]) {
+          for (const item of Array.from(target.querySelectorAll(`.${LIST_ITEM_CLASS}`)) as HTMLElement[]) {
             scheduleListMerge(item);
           }
         }
       }
       for (const added of Array.from(mutation.addedNodes)) {
         if (!(added instanceof HTMLElement)) continue;
-        for (const item of Array.from(
-          added.querySelectorAll(`.${LIST_ITEM_CLASS}`)
-        ) as HTMLElement[]) {
+        for (const item of Array.from(added.querySelectorAll(`.${LIST_ITEM_CLASS}`)) as HTMLElement[]) {
           scheduleListMerge(item);
         }
       }

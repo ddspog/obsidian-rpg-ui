@@ -72,14 +72,8 @@ export function TabGroupView({
   return <HorizontalTabGroupView tabs={tabs} sourcePath={sourcePath} heading={heading} />;
 }
 
-function SubTabGroupView({
-  tabs,
-  sourcePath,
-}: {
-  tabs: RuleTabBlock[];
-  sourcePath: string;
-}) {
-  const storageKey = `rpg-subtab:${sourcePath}:${tabs.map(t => t.name).join("|")}`;
+function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePath: string }) {
+  const storageKey = `rpg-subtab:${sourcePath}:${tabs.map((t) => t.name).join("|")}`;
   const [activeIdx, setActiveIdx] = React.useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -87,12 +81,18 @@ function SubTabGroupView({
         const idx = parseInt(saved, 10);
         if (idx >= 0 && idx < tabs.length) return idx;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return 0;
   });
 
   React.useEffect(() => {
-    try { localStorage.setItem(storageKey, String(activeIdx)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(storageKey, String(activeIdx));
+    } catch {
+      /* ignore */
+    }
   }, [activeIdx, storageKey]);
 
   const active = tabs[activeIdx];
@@ -114,7 +114,9 @@ function SubTabGroupView({
                 tabIndex={0}
                 className={`rpg-subtab-group__btn rpg-subtab-group__btn--active ${tab.homebrew ? "rpg-subtab-group__btn--homebrew" : ""}`}
                 onClick={() => setActiveIdx(i)}
-                onKeyDown={(e) => { if (e.key === "Enter") setActiveIdx(i); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setActiveIdx(i);
+                }}
               >
                 {tab.name}
               </div>
@@ -133,7 +135,12 @@ function SubTabGroupView({
           const radiusStyle: React.CSSProperties = isAbove
             ? { borderRadius: "0 24px 0 0" }
             : { borderRadius: "0 0 24px 0" };
-          const widthVar = absDistance === 1 ? "var(--subtab-w1, 40%)" : absDistance === 2 ? "var(--subtab-w2, 18%)" : "var(--subtab-w3, 13.5%)";
+          const widthVar =
+            absDistance === 1
+              ? "var(--subtab-w1, 40%)"
+              : absDistance === 2
+                ? "var(--subtab-w2, 18%)"
+                : "var(--subtab-w3, 13.5%)";
           const padding = 12 * Math.pow(0.75, absDistance);
           return (
             <div
@@ -152,7 +159,9 @@ function SubTabGroupView({
                 ...radiusStyle,
               }}
               onClick={() => setActiveIdx(i)}
-              onKeyDown={(e) => { if (e.key === "Enter") setActiveIdx(i); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setActiveIdx(i);
+              }}
             >
               {tab.name}
             </div>
@@ -183,7 +192,7 @@ function HorizontalTabGroupView({
   sourcePath: string;
   heading?: string;
 }) {
-  const storageKey = `rpg-tab:${sourcePath}:${tabs.map(t => t.name).join("|")}`;
+  const storageKey = `rpg-tab:${sourcePath}:${tabs.map((t) => t.name).join("|")}`;
   const [activeIdx, setActiveIdx] = React.useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -191,7 +200,9 @@ function HorizontalTabGroupView({
         const idx = parseInt(saved, 10);
         if (idx >= 0 && idx < tabs.length) return idx;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return 0;
   });
   const [isStuck, setIsStuck] = React.useState(false);
@@ -204,7 +215,11 @@ function HorizontalTabGroupView({
 
   // Persist selection
   React.useEffect(() => {
-    try { localStorage.setItem(storageKey, String(activeIdx)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(storageKey, String(activeIdx));
+    } catch {
+      /* ignore */
+    }
   }, [activeIdx, storageKey]);
 
   // Center active tab when not hovering
@@ -225,9 +240,7 @@ function HorizontalTabGroupView({
 
   function handleTabClick(idx: number) {
     const sentinel = sentinelRef.current;
-    const scrollContainer = sentinel?.closest(
-      ".markdown-preview-view"
-    ) as HTMLElement | null;
+    const scrollContainer = sentinel?.closest(".markdown-preview-view") as HTMLElement | null;
 
     // Only scroll if the tab bar is stuck (user scrolled past the tabs)
     const shouldScroll = isStuck && sentinel && scrollContainer;
@@ -258,13 +271,22 @@ function HorizontalTabGroupView({
         // Step 2: after Obsidian renders the heading, scroll precisely to it
         requestAnimationFrame(() => {
           const wrapper = sentinel!.closest(".el-pre") as HTMLElement | null;
-          if (!wrapper) { if (panel) panel.style.minHeight = ""; return; }
+          if (!wrapper) {
+            if (panel) panel.style.minHeight = "";
+            return;
+          }
           let heading: HTMLElement | null = null;
           let prev = wrapper.previousElementSibling as HTMLElement | null;
           while (prev) {
             const h = prev.querySelector("h1, h2, h3, h4, h5, h6") as HTMLElement | null;
-            if (h) { heading = h; break; }
-            if (/^H[1-6]$/.test(prev.tagName)) { heading = prev; break; }
+            if (h) {
+              heading = h;
+              break;
+            }
+            if (/^H[1-6]$/.test(prev.tagName)) {
+              heading = prev;
+              break;
+            }
             prev = prev.previousElementSibling as HTMLElement | null;
           }
           if (heading) {
@@ -293,16 +315,10 @@ function HorizontalTabGroupView({
         const stuck = !entry.isIntersecting;
         setIsStuck(stuck);
         if (stuck && stickyRef.current) {
-          const scrollContainer = stickyRef.current.closest(
-            ".markdown-preview-view"
-          ) as HTMLElement | null;
+          const scrollContainer = stickyRef.current.closest(".markdown-preview-view") as HTMLElement | null;
           if (scrollContainer) {
-            const padTop = parseFloat(
-              getComputedStyle(scrollContainer).paddingTop
-            ) || 0;
-            const hasHeading = stickyRef.current.querySelector(
-              ".rpg-rule-tab-group__stuck-heading"
-            );
+            const padTop = parseFloat(getComputedStyle(scrollContainer).paddingTop) || 0;
+            const hasHeading = stickyRef.current.querySelector(".rpg-rule-tab-group__stuck-heading");
             const offset = hasHeading ? padTop : Math.min(padTop, 20);
             stickyRef.current.style.top = `${-offset}px`;
           }
@@ -354,10 +370,11 @@ function HorizontalTabGroupView({
   return (
     <section data-rpg-rule="tab">
       <div ref={sentinelRef} className="rpg-rule-tab-group__sentinel" />
-      <div ref={stickyRef} className={`rpg-rule-tab-group__sticky-bar ${isStuck ? "rpg-rule-tab-group__sticky-bar--stuck" : ""}`}>
-        {isStuck && heading ? (
-          <div className="rpg-rule-tab-group__stuck-heading">{heading}</div>
-        ) : null}
+      <div
+        ref={stickyRef}
+        className={`rpg-rule-tab-group__sticky-bar ${isStuck ? "rpg-rule-tab-group__sticky-bar--stuck" : ""}`}
+      >
+        {isStuck && heading ? <div className="rpg-rule-tab-group__stuck-heading">{heading}</div> : null}
         <menu role="tablist" className="rpg-rule-tab-group__tabs">
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--left" />
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--right" />
@@ -370,7 +387,9 @@ function HorizontalTabGroupView({
             {tabs.map((tab, i) => (
               <TabButton
                 key={i}
-                ref={(el) => { tabButtonsRef.current[i] = el; }}
+                ref={(el) => {
+                  tabButtonsRef.current[i] = el;
+                }}
                 tab={tab}
                 active={i === activeIdx}
                 onClick={() => handleTabClick(i)}
@@ -421,13 +440,18 @@ function useExpandedCalls(body: string, sourcePath: string): string {
 
   React.useEffect(() => {
     const app = (globalThis as unknown as { app?: App }).app;
-    if (!app) { setExpanded(body); return; }
+    if (!app) {
+      setExpanded(body);
+      return;
+    }
 
     let cancelled = false;
     expandHeadingCalls(body, sourcePath, app).then((result) => {
       if (!cancelled) setExpanded(result);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [body, sourcePath]);
 
   return expanded;
@@ -462,7 +486,14 @@ async function expandHeadingCalls(body: string, sourcePath: string, app: App): P
   return result;
 }
 
-async function expandFolderHeading(target: string, section: string | undefined, hLevel: number, blockId: string | undefined, chain: ChainSegment[], app: App): Promise<string> {
+async function expandFolderHeading(
+  target: string,
+  section: string | undefined,
+  hLevel: number,
+  blockId: string | undefined,
+  chain: ChainSegment[],
+  app: App
+): Promise<string> {
   const clean = target.replace(/\/+$/, "");
   let folder: TFolder | null = null;
   const exact = app.vault.getAbstractFileByPath(clean);
@@ -489,9 +520,7 @@ async function expandFolderHeading(target: string, section: string | undefined, 
     let body = stripLocalFences(stripFm(raw));
 
     if (chain.length > 0) {
-      const fileFm = (app.metadataCache.getCache(f.path)?.frontmatter as
-        | Record<string, unknown>
-        | undefined) ?? {};
+      const fileFm = (app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
       if (!applyChainFilter(chain, fileFm, f.basename)) continue;
     }
 
@@ -520,7 +549,13 @@ function applyChainFilter(chain: ChainSegment[], fileFm: Record<string, unknown>
   return true;
 }
 
-async function expandFileHeading(target: string, section: string | undefined, hLevel: number, sourcePath: string, app: App): Promise<string> {
+async function expandFileHeading(
+  target: string,
+  section: string | undefined,
+  hLevel: number,
+  sourcePath: string,
+  app: App
+): Promise<string> {
   const file = app.metadataCache.getFirstLinkpathDest(target, sourcePath);
   if (!(file instanceof TFile)) return "";
 
@@ -573,11 +608,14 @@ function findContentBlock(text: string, id: string): string | null {
   return findRuleContentBlock(text, id)?.body ?? null;
 }
 
-const TabButton = React.forwardRef<HTMLButtonElement, {
-  tab: RuleTabBlock;
-  active: boolean;
-  onClick: () => void;
-}>(function TabButton({ tab, active, onClick }, ref) {
+const TabButton = React.forwardRef<
+  HTMLButtonElement,
+  {
+    tab: RuleTabBlock;
+    active: boolean;
+    onClick: () => void;
+  }
+>(function TabButton({ tab, active, onClick }, ref) {
   const iconRef = React.useRef<HTMLSpanElement>(null);
 
   React.useEffect(() => {
@@ -610,18 +648,14 @@ const TabButton = React.forwardRef<HTMLButtonElement, {
       onClick={onClick}
       style={style}
     >
-      {tab.icon ? (
-        <span ref={iconRef} className="rpg-rule-tab-group__tab-icon" aria-hidden="true" />
-      ) : null}
+      {tab.icon ? <span ref={iconRef} className="rpg-rule-tab-group__tab-icon" aria-hidden="true" /> : null}
       <span className="rpg-rule-tab-group__tab-label">{tab.name}</span>
     </button>
   );
 });
 
 function getElPre(tabEl: HTMLElement): HTMLElement | null {
-  return (tabEl.closest(".el-pre") ??
-    tabEl.closest("[class*='block-language-']") ??
-    tabEl) as HTMLElement | null;
+  return (tabEl.closest(".el-pre") ?? tabEl.closest("[class*='block-language-']") ?? tabEl) as HTMLElement | null;
 }
 
 function isSiblingAdjacent(a: Element, b: Element): boolean {
@@ -724,9 +758,7 @@ function runMerge(sizer: HTMLElement): void {
   mergingNow.add(sizer);
 
   try {
-    const allTabs = Array.from(
-      sizer.querySelectorAll(`.${TAB_CLASS}`)
-    ) as HTMLElement[];
+    const allTabs = Array.from(sizer.querySelectorAll(`.${TAB_CLASS}`)) as HTMLElement[];
     if (allTabs.length === 0) return;
 
     const groups: HTMLElement[][] = [];
@@ -773,7 +805,11 @@ function renderGroup(tabEls: HTMLElement[]): void {
     if (!data) {
       const json = el.getAttribute("data-rpg-tab-json");
       if (json) {
-        try { data = JSON.parse(json) as RuleTabBlock; } catch { /* ignore */ }
+        try {
+          data = JSON.parse(json) as RuleTabBlock;
+        } catch {
+          /* ignore */
+        }
       }
     }
     if (!data) continue;
@@ -831,7 +867,8 @@ function findAdjacentGroup(tabWrapper: HTMLElement, sizer: HTMLElement): HTMLEle
   // Look for a group in the last child of the previous section
   const lastChild = prevSection.lastElementChild;
   if (!lastChild) return null;
-  const group = lastChild.querySelector(`.${GROUP_CLASS}`) ?? (lastChild.classList?.contains(GROUP_CLASS) ? lastChild : null);
+  const group =
+    lastChild.querySelector(`.${GROUP_CLASS}`) ?? (lastChild.classList?.contains(GROUP_CLASS) ? lastChild : null);
   if (group && isLastContentChild(lastChild)) return group as HTMLElement;
   return null;
 }
@@ -844,14 +881,18 @@ function absorbIntoGroup(groupEl: HTMLElement, newTabEls: HTMLElement[]): void {
   const existing = groupTabsStore.get(groupEl);
   if (!existing) return;
 
-  const existingNames = new Set(existing.tabs.map(t => t.name));
+  const existingNames = new Set(existing.tabs.map((t) => t.name));
   const newTabs: RuleTabBlock[] = [];
   for (const el of newTabEls) {
     let data = tabDataStore.get(el);
     if (!data) {
       const json = el.getAttribute("data-rpg-tab-json");
       if (json) {
-        try { data = JSON.parse(json) as RuleTabBlock; } catch { /* ignore */ }
+        try {
+          data = JSON.parse(json) as RuleTabBlock;
+        } catch {
+          /* ignore */
+        }
       }
     }
     if (data && !existingNames.has(data.name)) newTabs.push(data);
@@ -860,7 +901,8 @@ function absorbIntoGroup(groupEl: HTMLElement, newTabEls: HTMLElement[]): void {
     // All tabs already in group — just remove the duplicate wrappers
     for (const el of newTabEls) {
       const wrapper = getElPre(el);
-      if (wrapper) wrapper.remove(); else el.remove();
+      if (wrapper) wrapper.remove();
+      else el.remove();
     }
     return;
   }
@@ -871,7 +913,11 @@ function absorbIntoGroup(groupEl: HTMLElement, newTabEls: HTMLElement[]): void {
   // Re-render the group with combined tabs
   const oldRoot = (groupEl as any).__rpgTabRoot as ReactDOM.Root | undefined;
   if (oldRoot) {
-    try { oldRoot.unmount(); } catch { /* ignore */ }
+    try {
+      oldRoot.unmount();
+    } catch {
+      /* ignore */
+    }
   }
   const heading = findPrecedingHeadingText(groupEl);
   const root = ReactDOM.createRoot(groupEl);
@@ -890,7 +936,10 @@ function absorbIntoGroup(groupEl: HTMLElement, newTabEls: HTMLElement[]): void {
 }
 
 function findPrecedingHeadingEl(el: HTMLElement): HTMLElement | null {
-  const wrapper = el.closest(".el-pre") ?? el.closest("[class*='block-language-']") ?? el.closest(`.${GROUP_CLASS}`)?.closest(".el-pre");
+  const wrapper =
+    el.closest(".el-pre") ??
+    el.closest("[class*='block-language-']") ??
+    el.closest(`.${GROUP_CLASS}`)?.closest(".el-pre");
   if (!wrapper) return null;
 
   let prev: Element | null = wrapper.previousElementSibling;
@@ -945,9 +994,7 @@ export class RuleTabRenderChild extends MarkdownRenderChild {
   }
 
   onunload(): void {
-    const root = (this.containerEl as any).__rpgTabRoot as
-      | ReactDOM.Root
-      | undefined;
+    const root = (this.containerEl as any).__rpgTabRoot as ReactDOM.Root | undefined;
     if (root) {
       try {
         root.unmount();

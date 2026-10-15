@@ -110,11 +110,7 @@ function TargetSelector({ value, entities, onChange }: TargetSelectorProps) {
           className="placeholder-input"
         />
         {entities.length > 0 && (
-          <button
-            type="button"
-            className="target-toggle"
-            onClick={() => setIsCustom(false)}
-          >
+          <button type="button" className="target-toggle" onClick={() => setIsCustom(false)}>
             List
           </button>
         )}
@@ -124,11 +120,7 @@ function TargetSelector({ value, entities, onChange }: TargetSelectorProps) {
 
   return (
     <div className="target-select-row">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="placeholder-select"
-      >
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="placeholder-select">
         <option value="">Select target...</option>
         {entities.map((name) => (
           <option key={name} value={name}>
@@ -136,11 +128,7 @@ function TargetSelector({ value, entities, onChange }: TargetSelectorProps) {
           </option>
         ))}
       </select>
-      <button
-        type="button"
-        className="target-toggle"
-        onClick={() => setIsCustom(true)}
-      >
+      <button type="button" className="target-toggle" onClick={() => setIsCustom(true)}>
         Custom
       </button>
     </div>

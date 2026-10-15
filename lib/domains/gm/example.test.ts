@@ -1,7 +1,16 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
-import { buildGMExampleLog, gmFollowLines, gmStepLines, resolveContest, applyDieEdit, resolveGmBody, stepGeneratedLine, expandStepBlockGens } from "./example";
+import {
+  buildGMExampleLog,
+  gmFollowLines,
+  gmStepLines,
+  resolveContest,
+  applyDieEdit,
+  resolveGmBody,
+  stepGeneratedLine,
+  expandStepBlockGens,
+} from "./example";
 import { applyChoicePick } from "../session-log/choice";
 
 const sceneCheck: GMFeature = {
@@ -72,7 +81,13 @@ describe("resolveGmBody — word-pair steps", () => {
   });
   const feature: GMFeature = {
     name: "Scene Check",
-    generator: { name: "Test Gen", roll: "d10", vs: "CF", work: "Alterations", interpret: { "<=CF, odd": "@[[Altered Scene]]" } },
+    generator: {
+      name: "Test Gen",
+      roll: "d10",
+      vs: "CF",
+      work: "Alterations",
+      interpret: { "<=CF, odd": "@[[Altered Scene]]" },
+    },
   };
   const pairStep: GMStep = {
     choice: "Meaning Actions",
@@ -251,9 +266,7 @@ describe("buildGMExampleLog — cross-file step branches", () => {
 
   it("shows the branch label + the linked step block's choices as a dropdown", () => {
     const out = buildGMExampleLog(entry, stepCtx)!;
-    expect(out).toContain(
-      "  Scene: d10=3 vs CF 5 -> Altered Scene [The Next Expectation/A Tweak/Fate Question - ]"
-    );
+    expect(out).toContain("  Scene: d10=3 vs CF 5 -> Altered Scene [The Next Expectation/A Tweak/Fate Question - ]");
     expect(out).toContain('=> Start Scene(): "the back exit"');
   });
 
@@ -307,19 +320,34 @@ describe("resolveGmBody — re-resolve GM lines in a live body", () => {
   };
 
   it("resolves the primary contest to a branch label + step dropdown", () => {
-    const body = ['? [CF:5] Does the "x" scene happen?', "gen: Testing the Expected Scene", "  Scene: d10=3 vs CF 5 ->", '=> Start Scene(): "y"'].join("\n");
+    const body = [
+      '? [CF:5] Does the "x" scene happen?',
+      "gen: Testing the Expected Scene",
+      "  Scene: d10=3 vs CF 5 ->",
+      '=> Start Scene(): "y"',
+    ].join("\n");
     const out = resolveGmBody(body, [entry], stepCtx);
     expect(out).toContain("  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - ]");
   });
 
   it("resolves an appended fate-question step line via the Fate Chart (CF from the body)", () => {
-    const body = ["? [CF:5] q", "gen: Testing the Expected Scene", "  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - Fate Question]", "  Fate Question: d100=20 ->"].join("\n");
+    const body = [
+      "? [CF:5] q",
+      "gen: Testing the Expected Scene",
+      "  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - Fate Question]",
+      "  Fate Question: d100=20 ->",
+    ].join("\n");
     const out = resolveGmBody(body, [entry], stepCtx);
     expect(out).toMatch(/ {2}Fate Question: d100=20 -> \S/);
   });
 
   it("leaves non-GM blocks and unrolled lines untouched", () => {
-    const body = ["? [CF:5] q", "d(PC): d20=15 vs DC 12 -> Success", "gen: Testing the Expected Scene", "  Scene: d10= vs CF 5 ->"].join("\n");
+    const body = [
+      "? [CF:5] q",
+      "d(PC): d20=15 vs DC 12 -> Success",
+      "gen: Testing the Expected Scene",
+      "  Scene: d10= vs CF 5 ->",
+    ].join("\n");
     const out = resolveGmBody(body, [entry], stepCtx);
     expect(out).toContain("d(PC): d20=15 vs DC 12 -> Success");
     expect(out).toContain("  Scene: d10= vs CF 5 -> ");
@@ -331,7 +359,11 @@ describe("resolveGmBody — re-resolve GM lines in a live body", () => {
       name: "Scene Check",
       generators: [{ id: "scene-check", ...entry.generator! }],
     };
-    const body = ['? [CF:5] Does the "x" scene happen?', "gen: Testing the Expected Scene", "  Scene: d10=3 vs CF 5 ->"].join("\n");
+    const body = [
+      '? [CF:5] Does the "x" scene happen?',
+      "gen: Testing the Expected Scene",
+      "  Scene: d10=3 vs CF 5 ->",
+    ].join("\n");
     const out = resolveGmBody(body, [carded], stepCtx);
     expect(out).toContain("  Scene: d10=3 vs CF 5 -> Altered Scene [A Tweak/Fate Question - ]");
   });
@@ -503,9 +535,7 @@ describe("resolveGmBody — named step composition (`...` spawn + `+` children)"
     steps: {
       "Interrupt Scene": {
         name: "Interrupt Scene",
-        steps: [
-          { step: "Random Event", calc: "Event and Meaning tables", calls: "@[[Random Event]]#random-event" },
-        ],
+        steps: [{ step: "Random Event", calc: "Event and Meaning tables", calls: "@[[Random Event]]#random-event" }],
       },
     },
     calls: {
@@ -618,7 +648,9 @@ describe("resolveGmBody — table-backed generator steps (a gen step rolls a tab
   });
 
   it("auto-fills a composed `+ ` child from its step's table too", () => {
-    const body = ["gen: Random Event", "  Random Event: Event and Meaning tables", "  + Event Focus: d100=34 ->"].join("\n");
+    const body = ["gen: Random Event", "  Random Event: Event and Meaning tables", "  + Event Focus: d100=34 ->"].join(
+      "\n"
+    );
     expect(resolveGmBody(body, [feature], stepCtx)).toContain("  + Event Focus: d100=34 -> NPC Action");
   });
 
@@ -634,7 +666,11 @@ describe("resolveGmBody — table-backed generator steps (a gen step rolls a tab
       name: "Interrupt Scene",
       steps: [{ step: "Random Event", calc: "Event and Meaning tables", calls: "@[[Random Event]]#random-event" }],
     };
-    const body = ["gen: Interrupt Scene", "  Random Event: Event and Meaning tables", "  + Event Focus: d100=34 ->"].join("\n");
+    const body = [
+      "gen: Interrupt Scene",
+      "  Random Event: Event and Meaning tables",
+      "  + Event Focus: d100=34 ->",
+    ].join("\n");
     expect(resolveGmBody(body, [interrupt], stepCtx)).toContain("  + Event Focus: d100=34 -> NPC Action");
   });
 
@@ -716,7 +752,13 @@ describe("resolveGmBody — Random Event demo body (a `gen:` composing emits)", 
   // `gen: Random Event` body still re-resolves the Event Focus working line.
   const feature: GMFeature = {
     name: "Random Event",
-    generators: [{ id: "random-event", name: "Random Event", emits: ["@[[Event Focus]]#event-focus", "@[[Event Meaning]]#event-meaning"] }],
+    generators: [
+      {
+        id: "random-event",
+        name: "Random Event",
+        emits: ["@[[Event Focus]]#event-focus", "@[[Event Meaning]]#event-meaning"],
+      },
+    ],
   };
   const stepCtx = {
     stepTables: { "Event Focus": "@[[Event Focus]]#random-event-focus-table" },
@@ -797,7 +839,9 @@ describe("resolveGmBody — Random Event demo body (a `gen:` composing emits)", 
       "Actions",
       gmStepLines(feature, withBlock)
     );
-    const rolled = picked.replace("action-01 d100=", "action-01 d100=13").replace("action-02 d100=", "action-02 d100=8");
+    const rolled = picked
+      .replace("action-01 d100=", "action-01 d100=13")
+      .replace("action-02 d100=", "action-02 d100=8");
     const out = resolveGmBody(rolled, [feature], withBlock);
     expect(out).toContain("+ Actions 1: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
     expect(out).toContain("+ Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
@@ -1010,7 +1054,9 @@ describe("resolveGmBody — Event Focus page body (a plain `steps:` generator)",
   it("derives the working line from a bare `gen: Event Focus`", () => {
     const body = ["? Where is this Random Event centered?", "gen: Event Focus", "! Interpret it."].join("\n");
     expect(expandStepBlockGens(body, [feature], stepCtx)).toBe(
-      ["? Where is this Random Event centered?", "gen: Event Focus", "  Event Focus: d100= ->", "! Interpret it."].join("\n")
+      ["? Where is this Random Event centered?", "gen: Event Focus", "  Event Focus: d100= ->", "! Interpret it."].join(
+        "\n"
+      )
     );
   });
 
@@ -1030,7 +1076,11 @@ describe("a feature declaring BOTH a `choices` generator and its pick-map steps"
     id: "event-meaning",
     name: "Event Meaning",
     generators: [
-      { id: "event-meaning", name: "Event Meaning", steps: [{ work: "Event Meaning", choices: ["Actions", "Elements"] }] },
+      {
+        id: "event-meaning",
+        name: "Event Meaning",
+        steps: [{ work: "Event Meaning", choices: ["Actions", "Elements"] }],
+      },
     ],
     steps: [
       { choice: "Actions", tables: ["@[[Actions Meaning]]#action-01", "@[[Actions Meaning]]#action-02"] },
@@ -1077,7 +1127,9 @@ describe("a feature declaring BOTH a `choices` generator and its pick-map steps"
       "Actions",
       gmStepLines(merged, ctx)
     );
-    const rolled = picked.replace("action-01 d100=", "action-01 d100=13").replace("action-02 d100=", "action-02 d100=8");
+    const rolled = picked
+      .replace("action-01 d100=", "action-01 d100=13")
+      .replace("action-02 d100=", "action-02 d100=8");
     const out = resolveGmBody(rolled, [merged], ctx);
     expect(out).toContain("+ Actions 1: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
     expect(out).toContain("+ Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");

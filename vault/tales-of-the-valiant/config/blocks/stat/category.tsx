@@ -9,10 +9,7 @@ const category: EntityBlock<StatCategoryData, StatEntity> = (props) => {
   // cast, the same way this file reads `app` off globalThis below.
   const sourcePath = (props as unknown as { sourcePath?: string }).sourcePath;
 
-  const data = React.useMemo(
-    () => mapCategory(self as unknown as Record<string, unknown>),
-    [self]
-  );
+  const data = React.useMemo(() => mapCategory(self as unknown as Record<string, unknown>), [self]);
 
   const app = (
     globalThis as unknown as {
@@ -24,7 +21,10 @@ const category: EntityBlock<StatCategoryData, StatEntity> = (props) => {
   // (correct even when imported into a host note via `.bare()`, where the
   // active file is the host); the active file is only a last resort.
   const fileBasename = sourcePath
-    ? sourcePath.split("/").pop()?.replace(/\.[^./]+$/, "")
+    ? sourcePath
+        .split("/")
+        .pop()
+        ?.replace(/\.[^./]+$/, "")
     : undefined;
   const name = data.name || fileBasename || activeFile?.basename || "";
 

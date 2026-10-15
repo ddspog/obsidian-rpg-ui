@@ -96,10 +96,7 @@ features:
 
     const result = parseStatVehicleBlock(source);
 
-    expect(result.features).toEqual([
-      { ref: "[[Dash]]" },
-      { ref: "[[Ram]]" },
-    ]);
+    expect(result.features).toEqual([{ ref: "[[Dash]]" }, { ref: "[[Ram]]" }]);
   });
 
   it("handles source with no separator", () => {

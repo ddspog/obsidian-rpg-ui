@@ -33,23 +33,15 @@ describe("isHomebrewSource", () => {
 
   it("uses % as the wildcard and keeps * literal (sources have ** bold markers)", () => {
     // % = any run of text
-    expect(
-      isHomebrewSource('From **D&D 5e** "Deep Magic" by **Kobold Press**', ["D&D 5e%Kobold Press"])
-    ).toBe(false);
+    expect(isHomebrewSource('From **D&D 5e** "Deep Magic" by **Kobold Press**', ["D&D 5e%Kobold Press"])).toBe(false);
     expect(isHomebrewSource("From Tales of the Valiant", ["D&D 5e%Kobold Press"])).toBe(true);
 
     // `*` is LITERAL — a pattern can include the markdown bold markers verbatim
-    expect(isHomebrewSource("From **Tales of the Valiant**", ["**Tales of the Valiant**"])).toBe(
-      false
-    );
-    expect(isHomebrewSource("From Tales of the Valiant (no bold)", ["**Tales of the Valiant**"])).toBe(
-      true
-    );
+    expect(isHomebrewSource("From **Tales of the Valiant**", ["**Tales of the Valiant**"])).toBe(false);
+    expect(isHomebrewSource("From Tales of the Valiant (no bold)", ["**Tales of the Valiant**"])).toBe(true);
 
     // plain text = case-insensitive substring (still works through the ** markers)
-    expect(isHomebrewSource('From **Tales of the Valiant** "PG"', ["tales of the valiant"])).toBe(
-      false
-    );
+    expect(isHomebrewSource('From **Tales of the Valiant** "PG"', ["tales of the valiant"])).toBe(false);
   });
 });
 
@@ -71,9 +63,7 @@ describe("homebrewBySetting", () => {
         "tales-of-the-valiant/x.md"
       )
     ).toBe(false);
-    expect(homebrewBySetting("From **D&D 5e** by **Mage Hand Press**", "tales-of-the-valiant/x.md")).toBe(
-      true
-    );
+    expect(homebrewBySetting("From **D&D 5e** by **Mage Hand Press**", "tales-of-the-valiant/x.md")).toBe(true);
     // missing source with sources configured → homebrew
     expect(homebrewBySetting(undefined, "tales-of-the-valiant/x.md")).toBe(true);
   });

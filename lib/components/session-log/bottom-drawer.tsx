@@ -20,9 +20,7 @@ export function BottomDrawer({ actionsPanel, changesPanel }: BottomDrawerProps) 
       >
         {activeTab === "actions" ? "Δ" : "▶"}
       </button>
-      <div className="drawer-content">
-        {activeTab === "actions" ? actionsPanel : changesPanel}
-      </div>
+      <div className="drawer-content">{activeTab === "actions" ? actionsPanel : changesPanel}</div>
     </div>
   );
 }

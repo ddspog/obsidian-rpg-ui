@@ -4,7 +4,14 @@
 
 import { describe, it, expect } from "vitest";
 import { parseLonelog } from "./parser";
-import { resolveDialOps, normalizeResource, collectResources, collectResourceDecls, foldResources, type DialDecl } from "./dial-ops";
+import {
+  resolveDialOps,
+  normalizeResource,
+  collectResources,
+  collectResourceDecls,
+  foldResources,
+  type DialDecl,
+} from "./dial-ops";
 import type { ResolvedDialOp } from "./dial-ops";
 
 const CF: Record<string, DialDecl> = {
@@ -67,9 +74,12 @@ describe("resolveDialOps", () => {
   });
 
   it("resolves ops carried on oracle `?` lines, accumulating across them", () => {
-    const log = ["? The default value [CF?]", "? We can increase [CF+1]", "? Consult [CF?]", "? And decrease [CF-1]"].join(
-      "\n"
-    );
+    const log = [
+      "? The default value [CF?]",
+      "? We can increase [CF+1]",
+      "? Consult [CF?]",
+      "? And decrease [CF-1]",
+    ].join("\n");
     expect(ops(log).map((o) => o.current)).toEqual([5, 6, 6, 5]);
   });
 

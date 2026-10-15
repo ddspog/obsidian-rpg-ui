@@ -128,10 +128,7 @@ describe("splitCells", () => {
   });
 
   it("preserves `|` inside [[wikilink|alias]] without splitting", () => {
-    expect(splitCells("| [[Cure Wounds|Cure]] | 1st |")).toEqual([
-      { value: "[[Cure Wounds|Cure]]" },
-      { value: "1st" },
-    ]);
+    expect(splitCells("| [[Cure Wounds|Cure]] | 1st |")).toEqual([{ value: "[[Cure Wounds|Cure]]" }, { value: "1st" }]);
   });
 
   it("handles multiple wikilinks with pipes in the same row", () => {
@@ -143,10 +140,7 @@ describe("splitCells", () => {
   });
 
   it("still supports colspan with wikilink pipes", () => {
-    expect(splitCells("| [[X|Y]] || z |")).toEqual([
-      { value: "[[X|Y]]", colspan: 2 },
-      { value: "z" },
-    ]);
+    expect(splitCells("| [[X|Y]] || z |")).toEqual([{ value: "[[X|Y]]", colspan: 2 }, { value: "z" }]);
   });
 });
 
@@ -547,7 +541,10 @@ describe("parseTableBlock: cell @modifiers", () => {
   });
 
   it("strips trailing @modifiers, leaving the core content (e.g. an axis cell)", () => {
-    const t = parseTableBlock("m", `| A | B |\n|---|---|\n| {{ axis Odds / Chaos Factor }} @header @highlight-cross | x |`);
+    const t = parseTableBlock(
+      "m",
+      `| A | B |\n|---|---|\n| {{ axis Odds / Chaos Factor }} @header @highlight-cross | x |`
+    );
     const cell = t.rows[0].cells[0];
     expect(cell.value).toBe("{{ axis Odds / Chaos Factor }}");
     expect(cell.mods?.slice().sort()).toEqual(["header", "highlight-cross"]);

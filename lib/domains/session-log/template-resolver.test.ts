@@ -79,11 +79,7 @@ describe("buildAutoValues", () => {
 describe("resolveWithContext", () => {
   it("merges auto values with user values", () => {
     const ctx = { actor: "Thorne", name: "Smite", entities: ["Goblin", "Elara"] };
-    const result = resolveWithContext(
-      "@ {{actor}} uses {{name}} on {{target}}",
-      ctx,
-      { target: "Goblin" },
-    );
+    const result = resolveWithContext("@ {{actor}} uses {{name}} on {{target}}", ctx, { target: "Goblin" });
     expect(result).toBe("@ Thorne uses Smite on Goblin");
   });
 
@@ -105,11 +101,10 @@ describe("resolveWithContext", () => {
 
   it("resolves complex mechanics template", () => {
     const ctx = { actor: "GM", name: "Roll", entities: [] };
-    const result = resolveWithContext(
-      "d: {{expression}} -> {{result}}",
-      ctx,
-      { expression: "d20+5=18 vs DC 15", result: "Success" },
-    );
+    const result = resolveWithContext("d: {{expression}} -> {{result}}", ctx, {
+      expression: "d20+5=18 vs DC 15",
+      result: "Success",
+    });
     expect(result).toBe("d: d20+5=18 vs DC 15 -> Success");
   });
 });

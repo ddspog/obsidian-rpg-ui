@@ -149,4 +149,3 @@ export interface RuleTabBlock {
 }
 
 export type RuleBlock = RuleContentBlock | RuleSideBlock | RuleRelatedBlock | RuleNotesBlock | RuleTabBlock;
-

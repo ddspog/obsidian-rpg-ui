@@ -7,7 +7,7 @@ export interface SessionConsumableState {
 
 export function initSessionConsumables(
   cards: SessionFeatureCard[],
-  sheetSpent: Record<string, number>,
+  sheetSpent: Record<string, number>
 ): SessionConsumableState {
   const spent: Record<string, number> = {};
   const initialSpent: Record<string, number> = {};
@@ -22,10 +22,7 @@ export function initSessionConsumables(
   return { spent, initialSpent };
 }
 
-export function spendUse(
-  state: SessionConsumableState,
-  cardId: string,
-): SessionConsumableState {
+export function spendUse(state: SessionConsumableState, cardId: string): SessionConsumableState {
   const current = state.spent[cardId] ?? 0;
   return {
     ...state,
@@ -33,10 +30,7 @@ export function spendUse(
   };
 }
 
-export function unspendUse(
-  state: SessionConsumableState,
-  cardId: string,
-): SessionConsumableState {
+export function unspendUse(state: SessionConsumableState, cardId: string): SessionConsumableState {
   const current = state.spent[cardId] ?? 0;
   if (current <= 0) return state;
   return {
@@ -48,7 +42,7 @@ export function unspendUse(
 export function resetByRecovery(
   state: SessionConsumableState,
   cards: SessionFeatureCard[],
-  recovery: string,
+  recovery: string
 ): SessionConsumableState {
   const normalised = recovery.toLowerCase().trim();
   const newSpent = { ...state.spent };
@@ -64,19 +58,13 @@ export function resetByRecovery(
   return { ...state, spent: newSpent };
 }
 
-export function getRemainingUses(
-  state: SessionConsumableState,
-  card: SessionFeatureCard,
-): number {
+export function getRemainingUses(state: SessionConsumableState, card: SessionFeatureCard): number {
   if (card.maxUses == null) return Infinity;
   const spent = state.spent[card.id] ?? 0;
   return Math.max(0, card.maxUses - spent);
 }
 
-export function isAvailable(
-  state: SessionConsumableState,
-  card: SessionFeatureCard,
-): boolean {
+export function isAvailable(state: SessionConsumableState, card: SessionFeatureCard): boolean {
   if (card.maxUses == null) return true;
   return getRemainingUses(state, card) > 0;
 }

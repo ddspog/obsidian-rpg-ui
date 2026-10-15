@@ -177,7 +177,11 @@ function normaliseFooterValue(raw: unknown): string {
   if (raw == null) return "";
   if (typeof raw === "string") return raw.trim();
   if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
-  if (Array.isArray(raw)) return raw.map((x) => normaliseFooterValue(x)).filter(Boolean).join(", ");
+  if (Array.isArray(raw))
+    return raw
+      .map((x) => normaliseFooterValue(x))
+      .filter(Boolean)
+      .join(", ");
   return "";
 }
 

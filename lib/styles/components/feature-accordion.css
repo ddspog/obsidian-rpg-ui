@@ -78,28 +78,24 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 
 .rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:last-of-type::before { left: -6px; }
+.rpg-feature-bucket:last-of-type::before {
+  left: -6px;
+}
 .rpg-feature-bucket:first-of-type::after,
-.rpg-feature-bucket:last-of-type::after { right: -6px; }
+.rpg-feature-bucket:last-of-type::after {
+  right: -6px;
+}
 
 /* First bucket: opaque at top, fading to transparent at the bottom. */
 .rpg-feature-bucket:first-of-type::before,
 .rpg-feature-bucket:first-of-type::after {
-  background: linear-gradient(
-    to bottom,
-    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)),
-    transparent
-  );
+  background: linear-gradient(to bottom, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)), transparent);
 }
 
 /* Last bucket: transparent at top, solidifying to opaque at the bottom. */
 .rpg-feature-bucket:last-of-type::before,
 .rpg-feature-bucket:last-of-type::after {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22))
-  );
+  background: linear-gradient(to bottom, transparent, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 
 /* ── Bucket summary (the clickable accordion header) ─────────────────────── */
@@ -211,7 +207,9 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
   opacity: 0.55;
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .rpg-feature-bucket-trivial-restore:hover,
@@ -339,7 +337,9 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   background: transparent;
   box-sizing: border-box;
   cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
+  transition:
+    background 120ms ease,
+    transform 120ms ease;
 }
 
 .rpg-feature-bucket-dot:hover:not(:disabled) {
@@ -408,8 +408,12 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   color: light-dark(#2a2018, #c9c2b4);
 }
 
-.rpg-feature-bucket-entry-desc p:first-child { margin-top: 0; }
-.rpg-feature-bucket-entry-desc p:last-child { margin-bottom: 0; }
+.rpg-feature-bucket-entry-desc p:first-child {
+  margin-top: 0;
+}
+.rpg-feature-bucket-entry-desc p:last-child {
+  margin-bottom: 0;
+}
 
 .rpg-feature-bucket-entry-desc ul {
   list-style: disc;
@@ -846,7 +850,9 @@ h3.rpg-feature-decisions-group-label {
   border: 1px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-radius: 3px;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .rpg-feature-pending-list .rpg-feature-pending menu button:hover:not(:disabled) {

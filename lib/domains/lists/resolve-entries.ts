@@ -61,9 +61,7 @@ function parseFenceHead(rawBody: string): Record<string, unknown> {
   if (!head.trim()) return {};
   try {
     const parsed = parseYAML(head);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};
   }
@@ -148,11 +146,7 @@ function passesFilters(chain: ChainSegment[], data: Record<string, unknown>): bo
 }
 
 /** Build a record from a file's harvested fields, injecting name/basename/path. */
-function buildRecord(
-  fields: Record<string, unknown>,
-  file: ListFile,
-  homebrew: boolean
-): ResolvedRecord {
+function buildRecord(fields: Record<string, unknown>, file: ListFile, homebrew: boolean): ResolvedRecord {
   const name = typeof fields.name === "string" && fields.name ? fields.name : file.basename;
   return {
     fields: { ...fields, name, basename: file.basename, path: file.path, homebrew },
@@ -218,7 +212,10 @@ function groupRecords(records: ResolvedRecord[], field: string): ResolvedRecord[
     arr.push(r);
   }
   return [...groups.keys()].sort(compareGroupKeys).map((key) => {
-    const members = groups.get(key)!.slice().sort((a, b) => a.name.localeCompare(b.name));
+    const members = groups
+      .get(key)!
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name));
     // `"Lizard, Giant"` → display `"Lizard (Giant)"`, linking the real target:
     // `[[Lizard, Giant|Lizard (Giant)]]`. Comma-free names use a bare `[[name]]`.
     const linkOf = (m: ResolvedRecord) => {
@@ -286,8 +283,7 @@ async function applyCategoryInheritance(
     const file = source.resolveFile(target, sourcePath);
     if (file) {
       const content = await source.read(file.path);
-      if (content)
-        head = findFenceBody(content, "stat.category") ?? findFenceBody(content, "stat.group");
+      if (content) head = findFenceBody(content, "stat.category") ?? findFenceBody(content, "stat.group");
     }
     cache?.set(target, head);
   }
@@ -396,17 +392,12 @@ export async function resolveListLines(
     // condition (positional or named filter expression) overrides — e.g.
     // `.highlight(when: 'name like /[ºᴷᴰᴴ]/')` to flag by filename marker.
     const hl = call.chain.find((s) => s.fn === "highlight");
-    let highlightFor: ((fields: Record<string, unknown>) => ListHighlight | undefined) | null =
-      null;
+    let highlightFor: ((fields: Record<string, unknown>) => ListHighlight | undefined) | null = null;
     if (hl) {
       const label = typeof hl.params.label === "string" ? hl.params.label : undefined;
       const color = typeof hl.params.color === "string" ? hl.params.color : undefined;
       const whenRaw =
-        typeof hl.params.when === "string"
-          ? hl.params.when
-          : typeof hl.args[0] === "string"
-            ? hl.args[0]
-            : undefined;
+        typeof hl.params.when === "string" ? hl.params.when : typeof hl.args[0] === "string" ? hl.args[0] : undefined;
       const cond = whenRaw ? parseFilterExpr(whenRaw) : null;
       highlightFor = (fields) => {
         const match = cond ? evaluateFilter(cond, fields) : fields.homebrew === true;
@@ -417,13 +408,10 @@ export async function resolveListLines(
     // `.group(field)` collapses the records into one row per distinct field
     // value (e.g. one row per CR), exposing `${links}` / `${names}` / `${count}`.
     const groupSeg = call.chain.find((s) => s.fn === "group");
-    const groupField =
-      groupSeg && typeof groupSeg.args[0] === "string" ? (groupSeg.args[0] as string) : undefined;
+    const groupField = groupSeg && typeof groupSeg.args[0] === "string" ? (groupSeg.args[0] as string) : undefined;
     const finalRecords = groupField ? groupRecords(records, groupField) : records;
     for (const record of finalRecords) {
-      const cells = entry.formatCells
-        ? entry.formatCells.map((t) => formatLine(t, record.fields))
-        : undefined;
+      const cells = entry.formatCells ? entry.formatCells.map((t) => formatLine(t, record.fields)) : undefined;
       lines.push({
         listId: block.id,
         markdown: cells ? "" : formatLine(entry.format ?? "${name}", record.fields),

@@ -15,9 +15,7 @@ function file(...blocks: string[]): string {
 
 describe("findRuleContentBlock", () => {
   it("matches a block by frontmatter id", () => {
-    const text = file(
-      contentBlock("id: main-content\nname: Death Saves", "Body of main.")
-    );
+    const text = file(contentBlock("id: main-content\nname: Death Saves", "Body of main."));
     const block = findRuleContentBlock(text, "main-content");
     expect(block).not.toBeNull();
     expect(block?.body).toBe("Body of main.");
@@ -100,9 +98,7 @@ describe("resolveTabBlockFields", () => {
   });
 
   it("block styling wins over file tab-* keys", () => {
-    const text = file(
-      contentBlock("id: main-content\nname: Block Name\nicon: heart\norder: 1", "Body.")
-    );
+    const text = file(contentBlock("id: main-content\nname: Block Name\nicon: heart\norder: 1", "Body."));
     const fileFm = {
       "tab-name": "File Name",
       "tab-icon": "skull",
@@ -124,9 +120,7 @@ describe("resolveTabBlockFields", () => {
 
   it("falls back to file tab-name, then the file name, for the label", () => {
     const text = file(contentBlock("id: main-content", "Body."));
-    expect(
-      resolveTabBlockFields(text, { "tab-name": "Tabbed" }, fileName, "main-content")?.name
-    ).toBe("Tabbed");
+    expect(resolveTabBlockFields(text, { "tab-name": "Tabbed" }, fileName, "main-content")?.name).toBe("Tabbed");
     expect(resolveTabBlockFields(text, {}, fileName, "main-content")?.name).toBe(fileName);
   });
 

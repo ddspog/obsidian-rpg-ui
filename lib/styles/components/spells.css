@@ -77,15 +77,15 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   bottom: 0;
   width: 6px;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)),
-    transparent
-  );
+  background: linear-gradient(to bottom, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)), transparent);
 }
 
-.rpg-caster > header::before { left: -6px; }
-.rpg-caster > header::after { right: -6px; }
+.rpg-caster > header::before {
+  left: -6px;
+}
+.rpg-caster > header::after {
+  right: -6px;
+}
 
 .rpg-caster-meta {
   font-size: 0.85em;
@@ -127,16 +127,16 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   pointer-events: none;
 }
 
-.rpg-spell-circle:last-of-type::before { left: -6px; }
-.rpg-spell-circle:last-of-type::after { right: -6px; }
+.rpg-spell-circle:last-of-type::before {
+  left: -6px;
+}
+.rpg-spell-circle:last-of-type::after {
+  right: -6px;
+}
 
 .rpg-spell-circle:last-of-type::before,
 .rpg-spell-circle:last-of-type::after {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22))
-  );
+  background: linear-gradient(to bottom, transparent, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 
 .rpg-spell-circle > summary {
@@ -344,8 +344,12 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   color: light-dark(#2a2018, #c9c2b4);
 }
 
-.rpg-spell-entry-text > p:first-child { margin-top: 0; }
-.rpg-spell-entry-text > p:last-child { margin-bottom: 0; }
+.rpg-spell-entry-text > p:first-child {
+  margin-top: 0;
+}
+.rpg-spell-entry-text > p:last-child {
+  margin-bottom: 0;
+}
 
 /* ── Pending picker empty-state ───────────────────────────────────────── */
 
