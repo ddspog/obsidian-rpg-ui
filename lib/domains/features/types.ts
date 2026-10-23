@@ -297,6 +297,13 @@ export interface GMGenStep {
    * roll RESULT); a `choices` step has no die.
    */
   choices?: string[];
+  /**
+   * With `choices`: ask for the pick when the card is used, as a `{{<ask>:a|b|c}}`
+   * choice slot filled in the card's popup, so the line arrives with its option
+   * already selected (and that option's generated lines spawned). The pick can
+   * still be switched in the Log afterwards.
+   */
+  ask?: string;
 }
 
 /** `generator:` aspect → emits `gen:` plus its rolled working line(s). */
