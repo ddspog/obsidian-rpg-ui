@@ -14,6 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run typecheck` - Run TypeScript type checking
 - `npm run test` - Run tests with Vitest
 - `npm run test:watch` - Run tests in watch mode
+- `npm run test:render` - Run render tests (`*.render.test.tsx`): real views in jsdom on `obsidian-test-mocks`, no Obsidian needed
+- `npm run test:render:shots` - Same, plus PNG screenshots (headless Chromium + `styles.css`) written to `tmp/render-tests/`
 - `npm run docs:dev` - Start VitePress documentation server
 - `npm run docs:build` - Build documentation
 - `task build` - Build and optionally copy to plugin directory (if PLUGIN_DIR is set)
@@ -81,6 +83,13 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
   - Single test file: `npm run test path/to/file.test.ts`
   - Pattern matching: `npm run test -- --grep "pattern"`
 - **Test Patterns:** Mock external dependencies (e.g., MockDataStore), use TypeScript generics for type safety
+
+## Render tests (headless, no Obsidian)
+
+- `lib/testing/render-block.ts` — `renderBlock(View, source, { frontmatter })` runs a view's `register()` against `obsidian-test-mocks` in jsdom and returns the DOM/HTML
+- `lib/testing/screenshot.ts` — `screenshotHtml(html, outPath)` renders that HTML with `styles.css` in Chromium and writes a PNG (layout check only; Obsidian theme variables are absent)
+- Config is `vitest.render.config.ts`; `obsidian` is aliased to the mocks there. The default `npm test` excludes `*.render.test.*`
+- Example: `lib/testing/badges.render.test.tsx`
 
 ## Development Workflow
 
