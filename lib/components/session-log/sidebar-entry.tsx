@@ -16,11 +16,19 @@ import { Lucide } from "lib/ui/primitives/Lucide";
 import { ActorPill } from "./action-call";
 import { InlineMarkdown } from "./inline-markdown";
 import { ChoiceOnlyView, ChoiceSelect, DieChip, FormulaView, type DieEditContext } from "./formula";
-import { parseFormulaLine, editableTerms, rollDie, termSlotInitial } from "lib/domains/session-log/formula";
+import {
+  combineTermValue,
+  editableTerms,
+  parseFormulaLine,
+  rollDie,
+  termSlotInitial,
+  termSlots,
+} from "lib/domains/session-log/formula";
 import { splitResultChoice } from "lib/domains/session-log/choice";
 import type { ConditionChange } from "lib/domains/session-log/conditions";
 import type { RoundEconomy } from "lib/domains/session-log/round-economy";
 import { ListSheetModal } from "./list-sheet-modal";
+import { TableRollContext } from "./table-roll-context";
 import { dieEditKey, resultEditKey } from "lib/domains/session-log/prose-model";
 import type { SidebarItem, SidebarRow, RowIcon, SceneRowData, SidebarPill } from "lib/domains/session-log/prose-model";
 
@@ -223,6 +231,7 @@ function RowContent({
   edit?: SidebarEditContext;
   onChoice?: (selected: string) => void;
 }) {
+  const tableRoll = React.useContext(TableRollContext);
   if (row.scene) {
     // Read-only: render the scene line as plain text. Editable (live sidebar):
     // inline inputs, only when an onSceneChange handler is wired.
@@ -242,6 +251,20 @@ function RowContent({
     // rather than literal text. Tested on the TOKEN, not on the element (a JSX
     // element is always truthy, so it can't be used as a `??` fallback).
     const hasChoice = !formula && !party && splitResultChoice(row.content).choice != null;
+    // A table roll with no result yet reads its row as soon as the die shows a
+    // value, pending or saved, so the outcome appears before the Log is saved.
+    const rollPreview = (): string | undefined => {
+      if (!tableRoll || !edit || !source || !formula || formula.result == null || formula.result.trim() !== "")
+        return undefined;
+      const ref = row.content.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
+      const term = editableTerms(formula).find((t) => t.kind === "dice");
+      if (!ref || !term) return undefined;
+      const slots = Array.from({ length: termSlots(term) }, (_, i) =>
+        edit.dieEdits[dieEditKey(source, term.raw, i)] ?? termSlotInitial(term, i)
+      );
+      const n = Number(combineTermValue(term, slots));
+      return Number.isFinite(n) && n > 0 ? tableRoll(ref, n) : undefined;
+    };
     // Dice/thresholds + result become inputs only when an edit context can
     // locate the source line; otherwise FormulaView renders static glyphs.
     const die: DieEditContext | undefined =
@@ -249,7 +272,10 @@ function RowContent({
         ? {
             valueFor: (term, slot) => edit.dieEdits[dieEditKey(source, term.raw, slot)] ?? termSlotInitial(term, slot),
             onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value),
-            resultValue: formula?.result != null ? (edit.dieEdits[resultEditKey(source)] ?? formula.result) : undefined,
+            resultValue:
+              formula?.result != null
+                ? (edit.dieEdits[resultEditKey(source)] ?? rollPreview() ?? formula.result)
+                : undefined,
             onResultChange: (value) => edit.onResultChange(source, value),
             // A sum's stored total is expression text, not a term — swap it directly.
             onTokenSwap: edit.onTokenChange

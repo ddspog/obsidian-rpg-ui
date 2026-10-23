@@ -88,6 +88,8 @@ import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
+import { resolveTableRoll } from "lib/domains/gm/steps";
+import { TableRollContext } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
 import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
@@ -2144,10 +2146,24 @@ class SessionLogMarkdown extends ReactMarkdown {
     const entityNames = this.entities.map((e) => logName.get(e.name) ?? e.name);
 
     const handleAppendText = async (text: string, headerMap?: HeaderMap) => {
-      await this.appendToLogBody(text, headerMap);
+      // A card that asked for its pick up front arrives with the option selected
+      // (`[a/b - a]`): spawn that option's lines, as picking it in the Log would.
+      const picked = text.match(/\[[^\][]+?\s+-\s+([^\][]+?)\]/)?.[1]?.trim();
+      const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
+      const spawned = picked && stepLines[picked] ? applyChoicePick(text, picked, stepLines) : text;
+      await this.appendToLogBody(spawned, headerMap);
+    };
+
+    // A table roll's row, read from the tables the GM tools load, so the Log can
+    // preview a result before it is saved.
+    const tableRoll = (ref: string, roll: number): string | undefined => {
+      const table = this.stepCtx.tables?.[ref];
+      if (!table) return undefined;
+      return resolveTableRoll(`${ref} d100=${roll} ->`, table).match(/->\s*(\S.*)$/)?.[1]?.trim();
     };
 
     this.reactRoot.render(
+      <TableRollContext.Provider value={tableRoll}>
       <SessionLogRoot
         logData={this.logData}
         sourcePath={this.filePath}
@@ -2209,6 +2225,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         battleMaps={this.battleMaps}
         sheetHas={this.sheetHas}
       />
+      </TableRollContext.Provider>
     );
   }
 }

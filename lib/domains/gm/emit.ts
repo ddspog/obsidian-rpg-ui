@@ -179,7 +179,8 @@ export function genStepLine(s: GMGenStep, cf: string | null = null): string | nu
   // no die, so it's checked before the roll guard.
   if (s.choices?.length) {
     const label = s.work ? `${s.work}: ` : "";
-    return `${label}[${s.choices.join("/")} - ]`;
+    const picked = s.ask ? `{{${s.ask}:${s.choices.join("|")}}}` : "";
+    return `${label}[${s.choices.join("/")} - ${picked}]`;
   }
   if (!s.roll) return null;
   const label = s.work ? `${s.work}: ` : "";
