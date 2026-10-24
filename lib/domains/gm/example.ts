@@ -16,7 +16,7 @@ import type { DialDecl } from "../lonelog/dial-ops";
 import { resolveConsult } from "../lonelog/list-ops";
 import { emitGMFeature, generatorSteps } from "./emit";
 import { answerFateQuestion, resolveInterpret } from "./fate-chart";
-import { parseBranchRef, resolveTableRoll, chooseTables } from "./steps";
+import { PICK_TOKEN, chooseTables, parseBranchRef, pickResult, pickSides, resolveTableRoll } from "./steps";
 import { NESTED_SEP } from "../session-log/choice";
 import { parseFormula, rolledValue, setDiceValue } from "../session-log/formula";
 
@@ -270,7 +270,15 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
   if (s.tables && s.tables.length > 0) {
     const tables = s.tables;
     return chooseTables(tables, s.pick, rng)
-      .map((ref, i) => `${s.labels?.[tables.indexOf(ref)]?.trim() || `${label} ${i + 1}`}: ${ref} d100= ->`)
+      .flatMap((ref, i) => {
+        const at = tables.indexOf(ref);
+        const row = `${s.labels?.[at]?.trim() || `${label} ${i + 1}`}: ${ref} d100= ->`;
+        // A second roll, on its own row under the table's: which of the row's options it takes.
+        const spec = s.choose?.[at]?.trim();
+        if (!spec) return [row];
+        const combine = spec.includes("+");
+        return [row, `${combine ? "Combine" : "Pick one"}: @pick(${spec}) d${pickSides(spec)}= ->`];
+      })
       .join("\n");
   }
   const calc = s.calc ?? "";
@@ -449,6 +457,36 @@ function reResolveStepLine(
   return result ? `${head} -> ${result}` : `${head} -> `;
 }
 
+/** The part of a line before its `->`, without the row's label: what is being rolled. */
+const rollOf = (line: string): { head: string; content: string } => {
+  const arrow = line.match(/->|→/);
+  const head = (arrow ? line.slice(0, line.indexOf(arrow[0])) : line).replace(/\s*$/, "");
+  return { head, content: head.replace(/^\s*[^:]+:\s*/, "").trim() };
+};
+
+/**
+ * Fill a second roll's result from the row above it: the nearest line that rolls a table. Left
+ * as it is while either die is unrolled, and blanked when its own die is cleared.
+ */
+export function resolvePickLine(lines: string[], i: number, stepCtx?: GMStepContext): string {
+  const { head, content } = rollOf(lines[i]);
+  const spec = content.match(PICK_TOKEN)?.[1] ?? "";
+  const pick = rolledValue(content);
+  for (let j = i - 1; j >= 0; j--) {
+    const above = rollOf(lines[j]);
+    const ref = above.content.match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
+    if (!ref) continue;
+    const table = stepCtx?.tables?.[ref];
+    const n = rolledValue(above.content);
+    // The row above reads as what it offers (`Anca / Esu + dan / bre`), not column by column.
+    const offered = table && n != null ? pickResult(table, n, spec, 0) : undefined;
+    if (offered) lines[j] = `${above.head} -> ${offered}`;
+    const result = table && n != null && pick != null ? pickResult(table, n, spec, pick) : undefined;
+    return result ? `${head} -> ${result}` : `${head} -> `;
+  }
+  return `${head} -> `;
+}
+
 /** Value baked into a live log body's `[<abbr>:n]` token (e.g. `[CF:5]`). */
 function bodyDial(body: string, abbr: string): number | undefined {
   const esc = abbr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -519,6 +557,11 @@ export function resolveGmBody(body: string, features: GMFeature[], stepCtx?: GMS
       continue;
     }
     if (!cur || !/->|→/.test(line)) continue;
+    // A second roll (`@pick(1,2+3)`): which of the rolled row above's options it takes.
+    if (PICK_TOKEN.test(line)) {
+      lines[i] = resolvePickLine(lines, i, stepCtx);
+      continue;
+    }
     const label = line.match(/^\s*([^:]+):\s/)?.[1]?.trim();
     // A generator step (or a composed `+ ` child) that rolls a table INLINE →
     // auto-fill the `->` from the matched row. Checked before the child-skip

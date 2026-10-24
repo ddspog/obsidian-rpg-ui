@@ -535,6 +535,11 @@ export interface GMStep {
    *  (`Name`, `Ending`). Omitted → `<choice> <n>`. A name starting `& ` puts that table's
    *  roll on the same row as the one above it (a Start and its Ending, one name). */
   labels?: string[];
+  /** A second roll for what a table's rolled row leaves to choose, one entry per table in `tables`
+   *  (blank for none): `"1,2"` picks one of two alternative names, `"1,2,3+4,5"` joins one of three
+   *  Starts to one of two Endings. Columns are numbered from the first value column. The roll goes
+   *  on its own row, `& Pick one` / `& Combine`, with a die of one face per option. */
+  choose?: string[];
 }
 
 /**

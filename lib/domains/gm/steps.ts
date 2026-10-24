@@ -130,6 +130,65 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
 }
 
 /**
+ * A second roll on a rolled row. `@pick(1,2,3+4,5)` names the row's value columns by number:
+ * the groups are separated by `+`, and one value of each group is joined to the others (Start 1-3
+ * + End 1-2 → six names); a single group is a plain pick among alternatives (two names in a
+ * row, use either). The die has one face per option.
+ */
+export const PICK_TOKEN = /@pick\(([\d,+\s]*)\)/;
+
+/** The groups of 1-based value-column numbers a pick spec names. */
+export function parsePickSpec(spec: string): number[][] {
+  return spec
+    .split("+")
+    .map((g) =>
+      g
+        .split(",")
+        .map((n) => parseInt(n.trim(), 10))
+        .filter((n) => n > 0)
+    )
+    .filter((g) => g.length > 0);
+}
+
+/** How many faces a pick's die has: the options the spec names, whatever the row fills. */
+export function pickSides(spec: string): number {
+  return parsePickSpec(spec).reduce((n, g) => n * g.length, 1);
+}
+
+/** What a rolled row offers a pick: every value of the first group joined to every one of the next. */
+export function pickOptions(row: TableDef["rows"][number], spec: string): string[] {
+  const groups = parsePickSpec(spec)
+    .map((g) => g.map((i) => (row.cells[i]?.value ?? "").trim()).filter((v) => v))
+    .filter((g) => g.length > 0);
+  return groups.reduce<string[]>((acc, g) => acc.flatMap((a) => g.map((v) => `${a}${v}`)), [""]).filter((o) => o);
+}
+
+/** What the row offers a pick, at a glance: alternatives split by `/`, groups joined by `+`. */
+export function pickChoices(row: TableDef["rows"][number], spec: string): string {
+  return parsePickSpec(spec)
+    .map((g) => g.map((i) => (row.cells[i]?.value ?? "").trim()).filter((v) => v))
+    .filter((g) => g.length > 0)
+    .map((g) => g.join(" / "))
+    .join(" + ");
+}
+
+/** The row of `table` that roll `n` lands on. */
+export function rowAt(table: TableDef, n: number): TableDef["rows"][number] | undefined {
+  return table.rows.find((r) => rangeMatches(r.cells[0]?.value ?? "", n));
+}
+
+/**
+ * The option a second roll `pick` takes from the row the first roll `n` landed on. A row that
+ * fills fewer columns than the spec names offers fewer options, so the roll wraps around them.
+ */
+export function pickResult(table: TableDef, n: number, spec: string, pick: number): string | undefined {
+  const row = rowAt(table, n);
+  if (pick === 0) return row ? pickChoices(row, spec) || undefined : undefined; // the options, before one is taken
+  const options = row ? pickOptions(row, spec) : [];
+  return options.length > 0 ? options[(((pick - 1) % options.length) + options.length) % options.length] : undefined;
+}
+
+/**
  * Auto-fill a table-backed calc's result from the rolled die. Given a calc like
  * `"@[[Scene Adjustment]] d10=2 ->"` and the linked `TableDef`, looks up the row
  * whose first column covers the rolled value and writes the second column after

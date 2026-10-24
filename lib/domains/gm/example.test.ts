@@ -1216,3 +1216,51 @@ describe("a feature declaring BOTH a `choices` generator and its pick-map steps"
     expect(out).toContain("+ Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
   });
 });
+
+describe("a second roll under a table row — choose", () => {
+  const ref = "@[[Towns]]#towns";
+  const names = {
+    name: "towns",
+    columnLabels: ["d100*", "Start 1", "Start 2", "End 1", "End 2"],
+    rows: [{ cells: [{ value: "1-100" }, { value: "Briga" }, { value: "Ma" }, { value: "ven" }, { value: "werp" }] }],
+  } as unknown as TableDef;
+  const step: GMStep = { choice: "Town name", tables: [ref], labels: ["Name"], choose: ["1,2+3,4"] };
+
+  it("writes a pick row under the table's, with a die of one face per option", () => {
+    expect(stepGeneratedLine(step)).toBe(`Name: ${ref} d100= ->\nCombine: @pick(1,2+3,4) d4= ->`);
+  });
+
+  it("calls a pick among alternatives Pick one", () => {
+    expect(stepGeneratedLine({ choice: "Name", tables: [ref], choose: ["1,2"] })).toContain(
+      "Pick one: @pick(1,2) d2= ->"
+    );
+  });
+
+  it("leaves a table without a spec alone", () => {
+    expect(
+      stepGeneratedLine({ choice: "Name", tables: [ref, `${ref}2`], choose: ["", "1,2"] }).split("\n")
+    ).toHaveLength(3);
+  });
+
+  const feature: GMFeature = { name: "Names", generators: [{ id: "n", name: "Names", steps: [] }] };
+  const body = (first: string, second: string) =>
+    ["gen: Names", `  + Name: ${ref} d100=${first} ->`, `  + Combine: @pick(1,2+3,4) d4=${second} ->`].join("\n");
+
+  it("fills the pick's result from the row above once both dice are rolled", () => {
+    const out = resolveGmBody(body("40", "3"), [feature], { tables: { [ref]: names } });
+    expect(out).toContain("  + Combine: @pick(1,2+3,4) d4=3 -> Maven");
+    // The row above reads as what it offered, not column by column.
+    expect(out).toContain(`  + Name: ${ref} d100=40 -> Briga / Ma + ven / werp`);
+  });
+
+  it("stays blank until its own die is rolled", () => {
+    const out = resolveGmBody(body("40", ""), [feature], { tables: { [ref]: names } });
+    expect(out).toContain("  + Combine: @pick(1,2+3,4) d4= -> ");
+    expect(out).toContain("-> Briga / Ma + ven / werp");
+  });
+
+  it("follows the row above when that die is rolled again", () => {
+    const again = resolveGmBody(body("77", "4"), [feature], { tables: { [ref]: names } });
+    expect(again).toContain("-> Mawerp");
+  });
+});

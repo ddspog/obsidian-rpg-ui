@@ -262,7 +262,7 @@ function RowContent({
       if (!tableRoll || !edit || !source || !formula || formula.result == null || formula.result.trim() !== "")
         return undefined;
       // The ref is hidden from `content` on a word-pair row; `source` keeps the raw line.
-      const ref = source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
+      const ref = source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0] ?? (row.pick != null ? "pick" : undefined);
       const term = editableTerms(formula).find((t) => t.kind === "dice");
       if (!ref || !term) return undefined;
       const slots = Array.from(
@@ -270,7 +270,25 @@ function RowContent({
         (_, i) => edit.dieEdits[dieEditKey(source, term.raw, i)] ?? termSlotInitial(term, i)
       );
       const n = Number(combineTermValue(term, slots));
-      return Number.isFinite(n) && n > 0 ? tableRoll(ref, n) : undefined;
+      if (!(Number.isFinite(n) && n > 0)) return undefined;
+      // A second roll reads the row above: that row's table, and what its die shows.
+      if (row.pick != null && row.pickFrom) {
+        const fromRef = row.pickFrom.source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
+        const fromFormula = parseFormulaLine(row.pickFrom.content, { vars: row.vars, refs: row.refs })?.[0];
+        const fromTerm = fromFormula && editableTerms(fromFormula).find((t) => t.kind === "dice");
+        if (!fromRef || !fromTerm) return undefined;
+        const first = Number(
+          combineTermValue(
+            fromTerm,
+            Array.from(
+              { length: termSlots(fromTerm) },
+              (_, i) => edit.dieEdits[dieEditKey(row.pickFrom!.source, fromTerm.raw, i)] ?? termSlotInitial(fromTerm, i)
+            )
+          )
+        );
+        return Number.isFinite(first) && first > 0 ? tableRoll(fromRef, first, { spec: row.pick, roll: n }) : undefined;
+      }
+      return tableRoll(ref, n, row.pickedBy != null ? { spec: row.pickedBy, roll: 0 } : undefined);
     };
     // Dice/thresholds + result become inputs only when an edit context can
     // locate the source line; otherwise FormulaView renders static glyphs.
