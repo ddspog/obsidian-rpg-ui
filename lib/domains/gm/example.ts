@@ -261,8 +261,14 @@ function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<str
 export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): string {
   const label = s.step ?? s.choice ?? "";
   if (s.tables && s.tables.length > 0) {
-    return chooseTables(s.tables, s.pick, rng)
-      .map((ref, i) => `${label} ${i + 1}: ${ref} d100= ->`)
+    const tables = s.tables;
+    return chooseTables(tables, s.pick, rng)
+      .flatMap((ref, i) => {
+        const at = tables.indexOf(ref);
+        const note = s.notes?.[at]?.trim();
+        const named = s.labels?.[at]?.trim();
+        return [...(note ? [`Note: ${note}`] : []), `${named || `${label} ${i + 1}`}: ${ref} d100= ->`];
+      })
       .join("\n");
   }
   const calc = s.calc ?? "";
@@ -390,6 +396,12 @@ function stepByLabel(stepCtx?: GMStepContext, own?: GMFeature[]): Record<string,
     }
   }
   return out;
+}
+
+/** A `+ label: @[[file]]#id d20=…` row's own table, as a step to resolve it by. */
+function selfDescribedTable(line: string, stepCtx?: GMStepContext): GMStep | undefined {
+  const ref = line.replace(/^\s*\+\s*[^:]+:\s*/, "").match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
+  return ref && stepCtx?.tables?.[ref] ? { tables: [ref] } : undefined;
 }
 
 /**
@@ -539,8 +551,11 @@ export function resolveGmBody(body: string, features: GMFeature[], stepCtx?: GMS
     // resolve against their OWN step, by the `+ `-stripped label.
     const ownStep = childLabel ? (steps[childLabel] ?? steps[childLabel.replace(/ \d+$/, "")]) : undefined;
     if (isChildLine(line)) {
-      if (ownStep && (ownStep.table || ownStep.tables || ownStep.likelihood || ownStep.interpret)) {
-        lines[i] = reResolveStepLine(line, ownStep, stepCtx, cf);
+      // A row named for its table (`Masculine name: @[[…]]#id d20=…`) has no step of
+      // that label, but it names its table itself, so it fills from it.
+      const rowStep = ownStep ?? selfDescribedTable(line, stepCtx);
+      if (rowStep && (rowStep.table || rowStep.tables || rowStep.likelihood || rowStep.interpret)) {
+        lines[i] = reResolveStepLine(line, rowStep, stepCtx, cf);
       }
       continue;
     }

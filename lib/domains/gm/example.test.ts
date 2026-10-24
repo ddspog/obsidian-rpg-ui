@@ -86,6 +86,29 @@ describe("gmStepLines — word-pair rows roll their table's own die", () => {
   });
 });
 
+describe("gmStepLines — word-pair rows named for their tables", () => {
+  const named: GMFeature = {
+    name: "Name Generator",
+    steps: [
+      {
+        choice: "Dwarven",
+        tables: ["@[[a]]#one", "@[[b]]#two", "@[[c]]#three"],
+        labels: ["Part 1", "Part 2"],
+        notes: ["Roll a Part 1 and a Part 2, then join them.", ""],
+      },
+    ],
+  };
+
+  it("labels each row for its table, falls back to the pick's name, and puts a note above its row", () => {
+    expect(gmStepLines(named).Dwarven.split("\n")).toEqual([
+      "Note: Roll a Part 1 and a Part 2, then join them.",
+      "Part 1: @[[a]]#one d100= ->",
+      "Part 2: @[[b]]#two d100= ->",
+      "Dwarven 3: @[[c]]#three d100= ->",
+    ]);
+  });
+});
+
 describe("resolveGmBody — word-pair steps", () => {
   const wordTable = (pairs: Array<[string, string]>): TableDef => ({
     name: "meaning",
@@ -128,6 +151,19 @@ describe("resolveGmBody — word-pair steps", () => {
     const out = resolveGmBody(body, [feature], stepCtx);
     expect(out).toContain("Meaning Actions 1: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
     expect(out).toContain("Meaning Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
+  });
+
+  it("fills a row named for its table, and ignores the note row", () => {
+    const body = [
+      "gen: Test Gen",
+      "  + Note: Join the start and the ending.",
+      "  + Opening syllable: @[[Actions Meaning]]#action-01 d100=13 ->",
+      "  + Ending syllable: @[[Actions Meaning]]#action-02 d100=8 ->",
+    ].join("\n");
+    const out = resolveGmBody(body, [feature], stepCtx);
+    expect(out).toContain("+ Opening syllable: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
+    expect(out).toContain("+ Ending syllable: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
+    expect(out).toContain("+ Note: Join the start and the ending.");
   });
 
   it("fills only the rolled word of a partially-rolled pair", () => {

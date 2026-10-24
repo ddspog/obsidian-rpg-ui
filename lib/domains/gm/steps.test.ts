@@ -236,6 +236,33 @@ describe("resolveTableRoll", () => {
   });
 });
 
+describe("resolveTableRoll — rows with several value columns", () => {
+  const cols = (labels: string[], rows: string[][]): TableDef => ({
+    name: "names",
+    columns: labels.map((l) => l.toLowerCase()),
+    columnLabels: labels,
+    headerRows: [],
+    rows: rows.map((r) => ({ cells: r.map((value) => ({ value })) })),
+    classes: [],
+    footer: [],
+  });
+
+  it("names each filled column, joined", () => {
+    const t = cols(["d20", "Start", "Ending"], [["4", "Hod", "dare"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Start: Hod · Ending: dare");
+  });
+
+  it("gives just the values when the columns are numbered alternatives", () => {
+    const t = cols(["d20", "1", "2", "3"], [["4", "Aafas", "Halad", "Okhtar"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Aafas · Halad · Okhtar");
+  });
+
+  it("skips an empty column", () => {
+    const t = cols(["d20", "Start", "Middle", "Ending"], [["4", "Ka", "", "dun"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Start: Ka · Ending: dun");
+  });
+});
+
 describe("chooseTables", () => {
   const els = [
     "@[[Location Descriptors]]#locations",
