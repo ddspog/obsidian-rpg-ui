@@ -351,6 +351,15 @@ describe("continuation rows — word-pair table refs are hidden", () => {
     expect(row.source).toContain("@[[Actions Meaning]]#action-01"); // ref kept for resolution
   });
 
+  it.each([
+    ["Brittonian (Welsh) 1", "Brittonian (Welsh) 1: @[[x]]#a d20= ->"],
+    ["Dharc-Metallik 2", "Dharc-Metallik 2: @[[x]]#a d20= ->"],
+  ])("keeps the label %s (parenthetical or hyphen)", (label, line) => {
+    const [row] = rowsFor(["gen: Name Generator", `  + ${line}`].join("\n"));
+    expect(row.label).toBe(label);
+    expect(row.content).toBe("d20= ->");
+  });
+
   it("keeps the label of a table named with accented letters", () => {
     const body = [
       "gen: Name Generator",
