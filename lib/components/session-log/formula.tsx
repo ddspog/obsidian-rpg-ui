@@ -132,6 +132,24 @@ function ResultView({
 
   if (edit?.onResultChange) {
     const val = edit.resultValue ?? result;
+    // A long result (a whole table row) wraps instead of being cut off.
+    if (val.length > 28) {
+      return (
+        <textarea
+          className="lonelog-formula-result lonelog-formula-result-input is-long"
+          aria-label="Result"
+          rows={1}
+          value={val}
+          spellCheck={false}
+          onClick={stopEvent}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+            stopEvent(e);
+          }}
+          onChange={(e) => edit.onResultChange!(e.target.value.replace(/\n/g, " "))}
+        />
+      );
+    }
     return (
       <input
         type="text"

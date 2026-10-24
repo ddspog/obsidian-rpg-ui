@@ -354,6 +354,7 @@ describe("continuation rows — word-pair table refs are hidden", () => {
   it.each([
     ["Brittonian (Welsh) 1", "Brittonian (Welsh) 1: @[[x]]#a d20= ->"],
     ["Dharc-Metallik 2", "Dharc-Metallik 2: @[[x]]#a d20= ->"],
+    ["Masculine name, variant", "Masculine name, variant: @[[x]]#a d20= ->"],
   ])("keeps the label %s (parenthetical or hyphen)", (label, line) => {
     const [row] = rowsFor(["gen: Name Generator", `  + ${line}`].join("\n"));
     expect(row.label).toBe(label);

@@ -627,7 +627,7 @@ const continuationRows = (extras: string[]): SidebarRow[] =>
     text = text.replace(/(:\s+)@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?\s+(?=d\d)/i, "$1");
     // Unicode letters, hyphens and a parenthetical, so a table named for its style
     // (`Nörslik 1:`, `Brittonian (Welsh) 1:`, `Dharc-Metallik 1:`) keeps its label.
-    const m = text.match(/^(\p{L}(?:[\p{L}\p{N}_ -]|\([\p{L}\p{N}_ -]*\))*?):\s+(.+)$/u);
+    const m = text.match(/^(\p{L}(?:[\p{L}\p{N}_ ,'’/-]|\([\p{L}\p{N}_ ,'’/-]*\))*?):\s+(.+)$/u);
     const row: SidebarRow = m
       ? { icon: null, content: m[2], label: m[1], detail: true, pills: [], source: raw }
       : { icon: null, content: text, detail: true, pills: [], source: raw };
