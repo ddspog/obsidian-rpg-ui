@@ -156,6 +156,18 @@ function prepareVault() {
   }
 }
 
+// First runs leave a settings modal and an "Indexing vault" toast over the note.
+async function clearOverlays(page) {
+  for (let i = 0; i < 5 && (await page.locator(".modal-container").count()) > 0; i++) {
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+  }
+  await page
+    .locator(".notice", { hasText: /Indexing vault/i })
+    .waitFor({ state: "hidden", timeout: 30000 })
+    .catch(() => {});
+}
+
 async function start() {
   const bin = ensureObsidian();
   fs.mkdirSync(work, { recursive: true });
@@ -196,7 +208,7 @@ async function start() {
     .click({ timeout: 10000 })
     .catch(() => {});
   await page.waitForFunction(() => globalThis.app?.plugins?.plugins?.["dnd-ui-toolkit"], null, { timeout: 30000 });
-  await page.keyboard.press("Escape");
+  await clearOverlays(page);
   await browser.close();
   console.log(`Obsidian ready (CDP :${CDP_PORT}, vault copy ${vaultCopy})`);
 }
@@ -211,6 +223,7 @@ async function screenshot(note, out, scrollTo) {
     return !!file;
   }, note);
   if (!found) throw new Error(`Note not found in vault: ${note}`);
+  await clearOverlays(page);
   await page.waitForTimeout(Number(process.env.WAIT_MS ?? 5000));
   if (scrollTo)
     await page.locator(".markdown-preview-view:visible").getByText(scrollTo).first().scrollIntoViewIfNeeded();
