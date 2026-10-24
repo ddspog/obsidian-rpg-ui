@@ -88,6 +88,10 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **Documentation:** VitePress documentation in `/docs` with examples and component references
 - **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
 
+## Cloud Obsidian screenshots
+
+`node scripts/cloud-obsidian.mjs start|screenshot|stop` runs real Obsidian headless (Xvfb + Electron, driven over CDP with Playwright) in cloud sessions. `start` downloads Obsidian once (cached in `~/.cache/rpg-obsidian`), copies the vault from `$RPG_VAULT_ROOT` into `~/.cache/rpg-obsidian/work/vault` (the real vault is never touched) and installs the built `main.js`/`manifest.json`/`styles.css` — run `npm run build` first. Set `THEME_DIR` to a checkout of a theme repo (e.g. `/home/user/ddspog/obsidian-ribbons-theme`, containing `manifest.json` and a built `theme.css`) to install it too; the vault's `appearance.json` selects the active theme. Then `screenshot "<note path in vault>" out.png ["heading to scroll to"]` renders the note in reading mode; view the PNG with the Read tool. The `rpg-dev` CLI below needs the desktop Obsidian CLI and does not work against this headless instance.
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.
@@ -102,6 +106,7 @@ A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and insp
 **When to use:** After CSS/component changes to verify rendering, when debugging layout or style issues, when investigating why a block doesn't render, or to create regression baselines. Use the `/rpg-dev` command for detailed guidance.
 
 **Key facts:**
+
 - Input paths are relative to plugin root (e.g., `vault/tests/03-TEST-SKILLS.md`)
 - Output goes to `tmp/rpg-dev/` (gitignored)
 - All commands auto-unfold collapsed sections before capture
