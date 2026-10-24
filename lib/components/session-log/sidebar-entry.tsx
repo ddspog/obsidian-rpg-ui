@@ -258,37 +258,41 @@ function RowContent({
     const hasChoice = !formula && !party && splitResultChoice(row.content).choice != null;
     // A table roll with no result yet reads its row as soon as the die shows a
     // value, pending or saved, so the outcome appears before the Log is saved.
+    // The die a row shows, pending or saved: what its first dice term reads.
+    const dieValue = (src: string, content: string): number | undefined => {
+      if (!edit) return undefined;
+      const f = parseFormulaLine(content, { vars: row.vars, refs: row.refs })?.[0];
+      const term = f && editableTerms(f).find((t) => t.kind === "dice");
+      if (!term) return undefined;
+      const slots = Array.from(
+        { length: termSlots(term) },
+        (_, i) => edit.dieEdits[dieEditKey(src, term.raw, i)] ?? termSlotInitial(term, i)
+      );
+      const n = Number(combineTermValue(term, slots));
+      return Number.isFinite(n) && n > 0 ? n : undefined;
+    };
+    const REF = /@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/;
+    // A name's second roll: the rows of its parts, what their dice show, and its own die.
+    const pickPreview = (): string | undefined => {
+      if (!tableRoll || row.pick == null || !row.pickFrom?.length) return undefined;
+      const ref = row.pickFrom[0].source.match(REF)?.[0];
+      const rolls = row.pickFrom.map((f) => dieValue(f.source, f.content));
+      if (!ref || rolls.some((n) => n == null)) return undefined;
+      const own = row.pickOnly || !source || !formula ? undefined : dieValue(source, row.content);
+      if (!row.pickOnly && own == null) return undefined;
+      return tableRoll(ref, 0, { spec: row.pick, rolls: rolls as number[], roll: own });
+    };
+    // A table roll with no result yet reads its row as soon as the die shows a
+    // value, pending or saved, so the outcome appears before the Log is saved.
     const rollPreview = (): string | undefined => {
       if (!tableRoll || !edit || !source || !formula || formula.result == null || formula.result.trim() !== "")
         return undefined;
+      if (row.pick != null) return pickPreview();
       // The ref is hidden from `content` on a word-pair row; `source` keeps the raw line.
-      const ref = source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0] ?? (row.pick != null ? "pick" : undefined);
-      const term = editableTerms(formula).find((t) => t.kind === "dice");
-      if (!ref || !term) return undefined;
-      const slots = Array.from(
-        { length: termSlots(term) },
-        (_, i) => edit.dieEdits[dieEditKey(source, term.raw, i)] ?? termSlotInitial(term, i)
-      );
-      const n = Number(combineTermValue(term, slots));
-      if (!(Number.isFinite(n) && n > 0)) return undefined;
-      // A second roll reads the row above: that row's table, and what its die shows.
-      if (row.pick != null && row.pickFrom) {
-        const fromRef = row.pickFrom.source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
-        const fromFormula = parseFormulaLine(row.pickFrom.content, { vars: row.vars, refs: row.refs })?.[0];
-        const fromTerm = fromFormula && editableTerms(fromFormula).find((t) => t.kind === "dice");
-        if (!fromRef || !fromTerm) return undefined;
-        const first = Number(
-          combineTermValue(
-            fromTerm,
-            Array.from(
-              { length: termSlots(fromTerm) },
-              (_, i) => edit.dieEdits[dieEditKey(row.pickFrom!.source, fromTerm.raw, i)] ?? termSlotInitial(fromTerm, i)
-            )
-          )
-        );
-        return Number.isFinite(first) && first > 0 ? tableRoll(fromRef, first, { spec: row.pick, roll: n }) : undefined;
-      }
-      return tableRoll(ref, n, row.pickedBy != null ? { spec: row.pickedBy, roll: 0 } : undefined);
+      const ref = source.match(REF)?.[0];
+      const n = ref ? dieValue(source, row.content) : undefined;
+      if (!ref || n == null) return undefined;
+      return tableRoll(ref, n, row.pickedBy ? { spec: row.pickedBy.spec, part: row.pickedBy.part } : undefined);
     };
     // Dice/thresholds + result become inputs only when an edit context can
     // locate the source line; otherwise FormulaView renders static glyphs.
@@ -329,7 +333,10 @@ function RowContent({
             onResultChange={source && edit ? (value) => edit.onResultChange(source, value) : undefined}
           />
         ) : (
-          <InlineMarkdown source={row.content} sourcePath={sourcePath} />
+          <InlineMarkdown
+            source={row.pickOnly && !row.content ? (pickPreview() ?? "") : row.content}
+            sourcePath={sourcePath}
+          />
         )}
         {row.foe && <FoeHealth foe={row.foe} />}
         {row.spawns && (

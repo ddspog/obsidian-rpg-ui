@@ -6,8 +6,9 @@ import * as React from "react";
 export type TableRoll = (
   ref: string,
   roll: number,
-  /** A second roll on the same row: the columns it chooses among, and what it rolled. */
-  pick?: { spec: string; roll: number }
+  /** A name made of rows (`@pick(…)`): read one part of a row, or the name the rows make, taken by
+   *  the second roll (none: every name there is). */
+  pick?: { spec: string; part?: number; rolls?: number[]; roll?: number }
 ) => string | undefined;
 
 export const TableRollContext = React.createContext<TableRoll | undefined>(undefined);

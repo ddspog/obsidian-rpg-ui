@@ -46,6 +46,9 @@ steps:
         labels:
           - "Name"
           - "& Ending (optional)"
+        choose:
+          - "First Part=1+Ending=2"
+          - ""
   - choice: "Arabish"
     thenLabel: "Kind of name"
     then:
@@ -96,14 +99,14 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2,3,4+5,6"
+          - "Part 1=1,2,3,4+Part 2=5,6"
       - choice: "Country name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 3. Brittonian Culture names + Countries]]#brittonnian-country-names"
         labels:
           - "Name"
         choose:
-          - "1,2,3+4,5"
+          - "Start=1,2,3+End=4,5"
   - choice: "Brittonian (Welsh)"
     thenLabel: "Kind of name"
     then:
@@ -127,7 +130,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2,3+4,5,6"
+          - "First Word=1,2,3+Second Word=4,5,6"
   - choice: "Celtigaulic"
     thenLabel: "Kind of name"
     then:
@@ -137,21 +140,21 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2,3+4,5"
+          - "Start=1,2,3+End=4,5"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/07. Celtigaulic/Celtigaulic 1. Celtigaulic Personal names]]#celtigaulic-feminine-personal-names"
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5"
+          - "Start=1,2+End=3,4,5"
       - choice: "Town name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/07. Celtigaulic/Celtigaulic 3. Celtigaulic City or Town names]]#celtigaulic-city-and-town-names"
         labels:
           - "Name"
         choose:
-          - "1,2,3+4,5"
+          - "Start=1,2,3+End=4,5"
   - choice: "Dwarven"
     thenLabel: "Kind of name"
     then:
@@ -168,7 +171,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5"
+          - "Part 1=1,2+Part 2=3,4,5"
   - choice: "East Asiantic"
     thenLabel: "Kind of name"
     then:
@@ -177,13 +180,15 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/09. East-Asiantic]]#east-asiantic-cultures-and-countries"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/09. East-Asiantic]]#east-asiantic-terrain-features"
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "First Part=1+Second Part=2,3"
   - choice: "High Elven"
     thenLabel: "Kind of name"
     then:
@@ -193,19 +198,21 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5"
+          - "Part 1=1,2+Part 2=3,4,5"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/11. Elven]]#high-elven-feminine-personal-names"
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5"
+          - "Part 1=1,2+Part 2=3,4,5"
       - choice: "Place name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/11. Elven]]#high-elven-place-names"
         labels:
           - "Name"
+        choose:
+          - "Part 1=1+Part 2=2+Part 3=3"
   - choice: "Lower Elvish"
     thenLabel: "Kind of name"
     then:
@@ -215,14 +222,14 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5,6"
+          - "Part 1=1,2+Part 2=3,4,5,6"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/11. Elven]]#lower-elvish-feminine-names-wood-elves-etc"
         labels:
           - "Name"
         choose:
-          - "1,2+3,4,5,6"
+          - "Part 1=1,2+Part 2=3,4,5,6"
   - choice: "Espannic"
     thenLabel: "Kind of name"
     then:
@@ -246,7 +253,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2+3,4"
+          - "Part 1=1,2+Ending=3,4"
   - choice: "Eurovesian"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/13. Eurovesian/Eurovesian 1. Culture Or Country 1]]#eurovesian-culture-or-country-name-table-1"
@@ -254,6 +261,9 @@ steps:
     labels:
       - "Name"
       - "Name, variant"
+    choose:
+      - "Start=1+End=2,3,4"
+      - "Start=1,2+Ending=3,4,5"
   - choice: "Hellenica"
     thenLabel: "Kind of name"
     then:
@@ -263,7 +273,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1,2,3+4,5,6"
+          - "Start=1,2,3+Ending=4,5,6"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/14. Hellenica/Hellenica 1. Personal names]]#hellenica-feminine-personal-names"
@@ -276,6 +286,8 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/14. Hellenica/Hellenica 3. Place Names 2]]#hellenica-city-names-1"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Italican"
     thenLabel: "Kind of name"
     then:
@@ -299,7 +311,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "Start=1+Ending=2,3"
   - choice: "Dharc-Metallik"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 1. Dharc-metallik 1]]#dharc-metallik-place-names-table-1"
@@ -307,6 +319,9 @@ steps:
     labels:
       - "Name"
       - "Name, quick"
+    choose:
+      - "Start=1+Middle=2+Ending=3"
+      - "Start=1+Ending=2"
   - choice: "High Metallik"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 3. High Metallik]]#high-metallik-place-names-table-1"
@@ -314,6 +329,9 @@ steps:
     labels:
       - "Name"
       - "Name, short"
+    choose:
+      - "Start=1+Middle=2+Ending=3"
+      - "Start=1+Ending=2"
   - choice: "Nanskrit"
     thenLabel: "Kind of name"
     then:
@@ -322,16 +340,22 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/17. Nanskrit/Nanskrit 1. Personal Names]]#nanskrit-masculine-personal-names"
         labels:
           - "Name"
+        choose:
+          - "First Part=1+Second Part=2"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/17. Nanskrit/Nanskrit 1. Personal Names]]#nanskrit-personal-feminine-names"
         labels:
           - "Name"
+        choose:
+          - "First Part=1+Second Part=2"
       - choice: "Settlement name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/17. Nanskrit/Nanskrit 4. City and Settlement names Nanskrit]]#nanskrit-city-and-settlement-names"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Nörslik"
     thenLabel: "Kind of name"
     then:
@@ -376,6 +400,8 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/19. Russlavik/Russlavik 2. Place names]]#short-russlavik-city-names"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Stygian-Egyptic"
     thenLabel: "Kind of name"
     then:
@@ -390,12 +416,14 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "Start=1+Ending=2,3"
       - choice: "City name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/21. Stygian, Egyptic]]#stygianegyptic-city-names"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Sub-Saharish"
     thenLabel: "Kind of name"
     then:
@@ -404,13 +432,15 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/20. Sequatorial]]#sequatorial-general-names"
         labels:
           - "Name"
+        choose:
+          - "First Part=1+Second Part=2"
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/20. Sequatorial]]#sequatorial-terrain-feature-names"
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "First Part=1+Second Part=2,3"
   - choice: "Teutonnic"
     thenLabel: "Kind of name"
     then:
@@ -432,7 +462,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "First Part=1+Second Part=2,3"
   - choice: "Trobadoric"
     thenLabel: "Kind of name"
     then:
@@ -456,7 +486,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1+2,3,4"
+          - "First Part=1+Dialect=2,3,4"
   - choice: "Colossoponderous"
     thenLabel: "Kind of name"
     then:
@@ -465,11 +495,15 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 1. Colossoponderous]]#colossoponderous-single-word-place-or-deity-names"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
       - choice: "Place name, two words"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 1. Colossoponderous]]#colossoponderous-two-word-place-names"
         labels:
           - "Name"
+        choose:
+          - "First Word=1+Second Word=2"
   - choice: "Cthonic"
     thenLabel: "Kind of name"
     then:
@@ -479,12 +513,14 @@ steps:
         labels:
           - "Name"
         choose:
-          - "1+2,3"
+          - "Part 1=1+Part 2=2,3"
       - choice: "Place name, two words"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 2. Cthonic]]#cthonic-two-word-or-hyphenated-place-names"
         labels:
           - "Name"
+        choose:
+          - "First Word=1+Second Word=2"
   - choice: "Dreamlandish"
     thenLabel: "Kind of name"
     then:
@@ -493,18 +529,22 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 3. Dreamlandish 1]]#dreamlandish-powerful-spellcasters-masculine-short-name"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
       - choice: "Spellcaster, feminine"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 3. Dreamlandish 1]]#dreamlandish-powerful-spellcasters-feminine-name"
         labels:
           - "Name"
         choose:
-          - "1,2+3"
+          - "First Part=1,2+Ending=3"
       - choice: "Settlement name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/10. Elderweirdish/Elderweirdish 5. Dreamlandish 3]]#dreamlandish-cities-and-settlements"
         labels:
           - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Primordial-Divine"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-short"
@@ -519,6 +559,8 @@ steps:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 2. Eldritch God Names]]#eldritch-god-names"
     labels:
       - "Name"
+    choose:
+      - "First Part=1+Second Part=2"
   - choice: "Angelic"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-names-1"

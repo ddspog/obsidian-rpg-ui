@@ -16,7 +16,17 @@ import type { DialDecl } from "../lonelog/dial-ops";
 import { resolveConsult } from "../lonelog/list-ops";
 import { emitGMFeature, generatorSteps } from "./emit";
 import { answerFateQuestion, resolveInterpret } from "./fate-chart";
-import { PICK_TOKEN, chooseTables, parseBranchRef, pickResult, pickSides, resolveTableRoll } from "./steps";
+import {
+  PICK_ROLL_FROM,
+  PICK_TOKEN,
+  chooseTables,
+  parseBranchRef,
+  parsePickSpec,
+  partText,
+  pickResult,
+  pickSides,
+  resolveTableRoll,
+} from "./steps";
 import { NESTED_SEP } from "../session-log/choice";
 import { parseFormula, rolledValue, setDiceValue } from "../session-log/formula";
 
@@ -272,12 +282,20 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
     return chooseTables(tables, s.pick, rng)
       .flatMap((ref, i) => {
         const at = tables.indexOf(ref);
-        const row = `${s.labels?.[at]?.trim() || `${label} ${i + 1}`}: ${ref} d100= ->`;
-        // A second roll, on its own row under the table's: which of the row's options it takes.
+        const named = s.labels?.[at]?.trim() || `${label} ${i + 1}`;
         const spec = s.choose?.[at]?.trim();
-        if (!spec) return [row];
-        const combine = spec.includes("+");
-        return [row, `${combine ? "Combine" : "Pick one"}: @pick(${spec}) d${pickSides(spec)}= ->`];
+        const parts = spec ? parsePickSpec(spec) : [];
+        if (!spec || parts.length === 0) return [`${named}: ${ref} d100= ->`];
+        // Each part of the name is rolled on its own, then one name is taken from what they offer:
+        // by a die when there are many, else shown whole (the one name, or the few to choose from).
+        const rows =
+          parts.length > 1
+            ? parts.map((p, k) => `${k > 0 ? "& " : ""}${p.name ?? `Part ${k + 1}`}: ${ref} d100= ->`)
+            : [`${named}: ${ref} d100= ->`];
+        const sides = pickSides(spec);
+        if (sides >= PICK_ROLL_FROM)
+          return [...rows, `${parts.length > 1 ? "Combine" : "Pick one"}: @pick(${spec}) d${sides}= ->`];
+        return parts.length > 1 ? [...rows, `Name: @pick(${spec}) ->`] : rows;
       })
       .join("\n");
   }
@@ -465,26 +483,35 @@ const rollOf = (line: string): { head: string; content: string } => {
 };
 
 /**
- * Fill a second roll's result from the row above it: the nearest line that rolls a table. Left
- * as it is while either die is unrolled, and blanked when its own die is cleared.
+ * Fill a second roll's result from the rows above it: one per part of its spec, the nearest ones that
+ * roll a table. Each of those reads as what its part offers (`Anca / Esu`); the name is taken from
+ * them by the pick's die, or shown whole when it has none. Blank while a die it needs is unrolled.
  */
 export function resolvePickLine(lines: string[], i: number, stepCtx?: GMStepContext): string {
   const { head, content } = rollOf(lines[i]);
   const spec = content.match(PICK_TOKEN)?.[1] ?? "";
-  const pick = rolledValue(content);
-  for (let j = i - 1; j >= 0; j--) {
+  const parts = parsePickSpec(spec);
+  const dieless = !/\bd\d+/i.test(content.replace(PICK_TOKEN, ""));
+  const pick = dieless ? undefined : rolledValue(content);
+  // The rows of the parts, in the order they were written.
+  const rows: { at: number; head: string; ref: string; n: number | null }[] = [];
+  for (let j = i - 1; j >= 0 && rows.length < parts.length; j--) {
     const above = rollOf(lines[j]);
     const ref = above.content.match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
-    if (!ref) continue;
-    const table = stepCtx?.tables?.[ref];
-    const n = rolledValue(above.content);
-    // The row above reads as what it offers (`Anca / Esu + dan / bre`), not column by column.
-    const offered = table && n != null ? pickResult(table, n, spec, 0) : undefined;
-    if (offered) lines[j] = `${above.head} -> ${offered}`;
-    const result = table && n != null && pick != null ? pickResult(table, n, spec, pick) : undefined;
-    return result ? `${head} -> ${result}` : `${head} -> `;
+    if (ref) rows.unshift({ at: j, head: above.head, ref, n: rolledValue(above.content) });
   }
-  return `${head} -> `;
+  const table = rows[0] ? stepCtx?.tables?.[rows[0].ref] : undefined;
+  if (!table || rows.length < parts.length) return `${head} -> `;
+  rows.forEach((r, k) => {
+    const offered = r.n != null ? partText(table, r.n, spec, k) : undefined;
+    if (offered) lines[r.at] = `${r.head} -> ${offered}`;
+  });
+  const rolls = rows.map((r) => r.n);
+  const result =
+    rolls.every((n): n is number => n != null) && (dieless || pick != null)
+      ? pickResult(table, rolls, spec, pick ?? undefined)
+      : undefined;
+  return result ? `${head} -> ${result}` : `${head} -> `;
 }
 
 /** Value baked into a live log body's `[<abbr>:n]` token (e.g. `[CF:5]`). */

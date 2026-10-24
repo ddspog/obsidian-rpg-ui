@@ -12,7 +12,9 @@ import {
   stepUseLinks,
   spliceStepUses,
   flattenSteps,
-  pickOptions,
+  parsePickSpec,
+  partText,
+  pickNames,
   pickResult,
   pickSides,
 } from "./steps";
@@ -258,7 +260,7 @@ describe("resolveTableRoll — rows with several value columns", () => {
 
   it("gives just the values when the columns are numbered alternatives", () => {
     const t = cols(["d20", "1", "2", "3"], [["4", "Aafas", "Halad", "Okhtar"]]);
-    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Aafas · Halad · Okhtar");
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Aafas / Halad / Okhtar");
   });
 
   it("skips an empty column", () => {
@@ -311,43 +313,54 @@ describe("flattenSteps", () => {
   });
 });
 
-describe("a second roll on a rolled row — @pick", () => {
+describe("a name made of independently rolled parts — @pick", () => {
   const row = (...v: string[]) => ({ cells: v.map((value) => ({ value })) }) as TableDef["rows"][number];
   const table = {
     columnLabels: ["d100*", "Start 1", "Start 2", "Start 3", "End 1", "End 2"],
     rows: [row("1-50", "Briga", "Ma", "Lew", "ven", "werp"), row("51-100", "Ae", "", "", "bant", "")],
   } as unknown as TableDef;
+  const spec = "Start=1,2,3+End=4,5";
 
-  it("counts the faces of the die from the columns the spec names", () => {
-    expect(pickSides("1,2")).toBe(2);
-    expect(pickSides("1,2,3+4,5")).toBe(6);
-  });
-
-  it("offers every Start joined to every End, in order", () => {
-    expect(pickOptions(table.rows[0], "1,2,3+4,5")).toEqual([
-      "Brigaven",
-      "Brigawerp",
-      "Maven",
-      "Mawerp",
-      "Lewven",
-      "Lewwerp",
+  it("reads the parts and their names out of the spec", () => {
+    expect(parsePickSpec(spec)).toEqual([
+      { name: "Start", cols: [1, 2, 3] },
+      { name: "End", cols: [4, 5] },
     ]);
+    expect(parsePickSpec("1,2")).toEqual([{ cols: [1, 2] }]);
   });
 
-  it("skips columns the row leaves empty", () => {
-    expect(pickOptions(table.rows[1], "1,2,3+4,5")).toEqual(["Aebant"]);
-    expect(pickOptions(table.rows[0], "1,2")).toEqual(["Briga", "Ma"]);
+  it("counts the names a spec can make", () => {
+    expect(pickSides("1,2")).toBe(2);
+    expect(pickSides(spec)).toBe(6);
   });
 
-  it("reads what a row offers before a pick is made", () => {
-    expect(pickResult(table, 10, "1,2,3+4,5", 0)).toBe("Briga / Ma / Lew + ven / werp");
-    expect(pickResult(table, 80, "1,2,3+4,5", 0)).toBe("Ae + bant");
-    expect(pickResult(table, 10, "1,2", 0)).toBe("Briga / Ma");
+  it("reads what one part's row offers", () => {
+    expect(partText(table, 10, spec, 0)).toBe("Briga / Ma / Lew");
+    expect(partText(table, 10, spec, 1)).toBe("ven / werp");
+    expect(partText(table, 80, spec, 0)).toBe("Ae");
   });
 
-  it("takes the option the second roll lands on, wrapping when the row offers fewer", () => {
-    expect(pickResult(table, 10, "1,2,3+4,5", 3)).toBe("Maven");
-    expect(pickResult(table, 80, "1,2,3+4,5", 5)).toBe("Aebant");
-    expect(pickResult(table, 999, "1,2", 1)).toBeUndefined();
+  it("joins every value of the first part to every value of the next, from rows rolled apart", () => {
+    expect(pickNames(table, [10, 80], spec)).toEqual(["Briga" + "bant", "Mabant", "Lewbant"]);
+    expect(pickNames(table, [80, 10], spec)).toEqual(["Aeven", "Aewerp"]);
+    expect(pickNames(table, [10], spec)).toBeUndefined();
+  });
+
+  it("takes the name the second roll lands on, wrapping when the rows offer fewer", () => {
+    expect(pickResult(table, [10, 10], spec, 3)).toBe("Maven");
+    expect(pickResult(table, [80, 80], spec, 5)).toBe("Aebant");
+  });
+
+  it("shows every name when there is no die", () => {
+    expect(pickResult(table, [80, 80], spec)).toBe("Aebant");
+    expect(pickResult(table, [10], "1,2")).toBe("Briga / Ma");
+  });
+
+  it("reads numbered alternative columns as alternatives", () => {
+    const numbers = {
+      columnLabels: ["d100*", "1", "2"],
+      rows: [row("1-100", "Norel", "Nudwin")],
+    } as unknown as TableDef;
+    expect(resolveTableRoll("d100=5 ->", numbers)).toBe("d100=5 -> Norel / Nudwin");
   });
 });
