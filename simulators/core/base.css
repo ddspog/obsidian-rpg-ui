@@ -255,3 +255,24 @@ body {
   color: var(--text-accent);
   text-decoration: none;
 }
+
+.sim-panels {
+  flex: 1;
+}
+.sim-body {
+  min-width: 0;
+}
+.sim-search {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text-normal);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+.sim-error {
+  color: var(--text-error);
+  padding: 8px 0;
+}

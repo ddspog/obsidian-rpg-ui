@@ -41,5 +41,5 @@ docs/.vitepress/dist
 tmp/
 
 
-# Lonelog simulator build
-simulator/dist
+# Simulators build output
+simulators/dist

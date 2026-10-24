@@ -1,0 +1,7 @@
+{
+  "id": "lonelog-log",
+  "title": "Lonelog Log",
+  "about": "The plugin's Log and its cards, to try lonelog, play the cards, roll and Save.",
+  "entry": "index.ts",
+  "vault": { "include": ["**/*.md"] }
+}

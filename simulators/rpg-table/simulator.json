@@ -1,0 +1,7 @@
+{
+  "id": "rpg-table",
+  "title": "RPG Table Block",
+  "about": "Edit an rpg table block and see it render; load any table from the vault.",
+  "entry": "index.ts",
+  "vault": { "include": ["**/*.md"] }
+}
