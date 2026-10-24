@@ -256,7 +256,8 @@ function RowContent({
     const rollPreview = (): string | undefined => {
       if (!tableRoll || !edit || !source || !formula || formula.result == null || formula.result.trim() !== "")
         return undefined;
-      const ref = row.content.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
+      // The ref is hidden from `content` on a word-pair row; `source` keeps the raw line.
+      const ref = source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
       const term = editableTerms(formula).find((t) => t.kind === "dice");
       if (!ref || !term) return undefined;
       const slots = Array.from(
