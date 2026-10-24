@@ -3941,6 +3941,23 @@ button.lonelog-bookkeeping-write.is-quiet {
   color: light-dark(#b3261e, #ef6a5d);
   letter-spacing: 0.04em;
 }
+.lonelog-row-joined {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.15em 1.1em;
+}
+.lonelog-row-joined > .lonelog-row-detail {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.35em;
+  max-width: 100%;
+}
+.lonelog-row-joined textarea.lonelog-formula-result-input {
+  width: 15em;
+  max-width: 100%;
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {

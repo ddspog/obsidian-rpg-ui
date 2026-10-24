@@ -466,6 +466,11 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
   // A "pills-only" row (icon + pills, no content — e.g. a dial change) has its
   // pills shown in the dateline strip; render its icon there and skip the empty
   // body row, so the icon sits beside the pill instead of orphaned below it.
+  const joinedAfter = (ri: number) => {
+    const out: SidebarRow[] = [];
+    for (let j = ri + 1; item.rows[j]?.joined && item.rows[j].detail; j++) out.push(item.rows[j]);
+    return out;
+  };
   const isPillsOnly = (row: SidebarRow) => !row.scene && !row.detail && !row.content && row.pills.length > 0;
   const headerIcon = item.rows.find(isPillsOnly)?.icon ?? null;
   // Entries that nest inputs (scene editor or editable dice) can't be a button;
@@ -504,10 +509,19 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
             </tr>
           )}
           {item.rows.map((row, ri) =>
-            isPillsOnly(row) ? null : row.detail ? (
+            isPillsOnly(row) || (row.joined && item.rows[ri - 1]?.detail) ? null : row.detail ? (
               <tr key={ri}>
                 <td className="lonelog-row-detail-cell" colSpan={2}>
-                  <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                  {joinedAfter(ri).length > 0 ? (
+                    // Rows written `& label: …` ride on this one's line, each with its own die.
+                    <div className="lonelog-row-joined">
+                      {[row, ...joinedAfter(ri)].map((part, k) => (
+                        <RowContent key={k} row={part} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                      ))}
+                    </div>
+                  ) : (
+                    <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                  )}
                 </td>
               </tr>
             ) : (

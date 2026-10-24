@@ -361,6 +361,17 @@ describe("continuation rows — word-pair table refs are hidden", () => {
     expect(row.content).toBe("d20= ->");
   });
 
+  it("marks a row written `& label:` as joined to the one above, keeping its own source", () => {
+    const rows = rowsFor(
+      ["gen: Name Generator", "  + Start: @[[x]]#a d100= ->", "  + & Ending: @[[y]]#b d20= ->"].join("\n")
+    );
+    expect(rows.map((r) => [r.label, r.joined ?? false, r.content])).toEqual([
+      ["Start", false, "d100= ->"],
+      ["Ending", true, "d20= ->"],
+    ]);
+    expect(rows[1].source).toContain("& Ending:");
+  });
+
   it("keeps the label of a table named with accented letters", () => {
     const body = [
       "gen: Name Generator",

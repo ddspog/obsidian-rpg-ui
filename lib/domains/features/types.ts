@@ -526,11 +526,9 @@ export interface GMStep {
    *  3 for Elements). Omitted → roll every entry in `tables`. */
   pick?: number;
   /** Names for the rows `tables` spawns, in the same order: what each table is for
-   *  (`Masculine name`, `Terrain ending`). Omitted → `<choice> <n>`. */
+   *  (`Name`, `Ending`). Omitted → `<choice> <n>`. A name starting `& ` puts that table's
+   *  roll on the same row as the one above it (a Start and its Ending, one name). */
   labels?: string[];
-  /** What a table is used for with the others (`Join a Start and an Ending`), in the same
-   *  order as `tables`; shown as a note row above that table's row. Empty entries add none. */
-  notes?: string[];
 }
 
 /**

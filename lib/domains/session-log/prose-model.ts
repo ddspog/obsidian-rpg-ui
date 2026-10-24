@@ -346,6 +346,9 @@ export interface SidebarRow {
   /** A composed sub-step (authored with a leading `+ `) — rendered one level
    *  deeper than its parent detail row. */
   child?: boolean;
+  /** Shown on the same line as the row above (authored `& label: …`). Each part keeps its
+   *  own source line, die and result. */
+  joined?: boolean;
   /** This step spawns the following step(s) (authored with a trailing ` ...`) —
    *  rendered with a subtle "unfolds into" indicator. */
   spawns?: boolean;
@@ -627,10 +630,12 @@ const continuationRows = (extras: string[]): SidebarRow[] =>
     text = text.replace(/(:\s+)@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?\s+(?=d\d)/i, "$1");
     // Unicode letters, hyphens and a parenthetical, so a table named for its style
     // (`Nörslik 1:`, `Brittonian (Welsh) 1:`, `Dharc-Metallik 1:`) keeps its label.
-    const m = text.match(/^(\p{L}(?:[\p{L}\p{N}_ ,'’/-]|\([\p{L}\p{N}_ ,'’/-]*\))*?):\s+(.+)$/u);
+    const m = text.match(/^(?:(&)\s+)?(\p{L}(?:[\p{L}\p{N}_ ,'’/-]|\([\p{L}\p{N}_ ,'’/-]*\))*?):\s+(.+)$/u);
     const row: SidebarRow = m
-      ? { icon: null, content: m[2], label: m[1], detail: true, pills: [], source: raw }
+      ? { icon: null, content: m[3], label: m[2], detail: true, pills: [], source: raw }
       : { icon: null, content: text, detail: true, pills: [], source: raw };
+    // `& Ending: …` — the same line as the row above (a Start and its Ending, one name).
+    if (m?.[1]) row.joined = true;
     if (child) row.child = true;
     if (spawns) row.spawns = true;
     return row;
