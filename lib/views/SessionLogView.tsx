@@ -86,7 +86,7 @@ import { buildCardStacks } from "lib/domains/session-log/extract-cards";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
-import { applyChoicePick } from "lib/domains/session-log/choice";
+import { applyChoicePick, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext } from "lib/components/session-log/table-roll-context";
@@ -215,8 +215,9 @@ class SessionLogMarkdown extends ReactMarkdown {
   private stagedSource(): string {
     if (!this.staged.text && this.staged.maps.length === 0) return this.source;
     const m = this.source.match(/^([\s\S]*?---\n)([\s\S]*)$/);
-    if (!m) return this.source + this.staged.text;
-    return `${this.staged.maps.reduce((h, map) => addHeaderMap(h, map), m[1])}${m[2]}${this.staged.text}`;
+    const join = (body: string) => (body === "" || body.endsWith("\n") ? body : `${body}\n`) + this.staged.text;
+    if (!m) return join(this.source);
+    return `${this.staged.maps.reduce((h, map) => addHeaderMap(h, map), m[1])}${join(m[2])}`;
   }
 
   constructor(
@@ -1960,10 +1961,10 @@ class SessionLogMarkdown extends ReactMarkdown {
 
   /** A GM step dropdown pick: insert the chosen step's `label: calc` line under
    *  the gen: (via applyChoicePick), re-resolve, and persist to the note. */
-  private async onChoicePick(selected: string) {
+  private async onChoicePick(selected: string, at?: ChoiceAt) {
     const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
     await this.rewriteLogBody((body) =>
-      resolveGmBody(applyChoicePick(body, selected, stepLines), this.gmFeatures, this.stepCtx)
+      resolveGmBody(applyChoicePick(body, selected, stepLines, at), this.gmFeatures, this.stepCtx)
     );
   }
 
@@ -2203,7 +2204,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           sheetDone={this.sheetDone}
           onSheetDone={this.markDone}
           onAppendText={handleAppendText}
-          onChoice={(selected) => void this.onChoicePick(selected)}
+          onChoice={(selected, at) => void this.onChoicePick(selected, at)}
           onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
           stagedCount={this.staged.text ? 1 : 0}
           onDiscardStaged={discardStaged}
@@ -2278,7 +2279,7 @@ interface SessionLogRootProps {
   onSheetDone: (ids: string[]) => void;
   onAppendText: (text: string, headerMap?: HeaderMap) => void;
   /** A GM step dropdown pick — inserts the chosen step line into the note. */
-  onChoice: (selected: string) => void;
+  onChoice: (selected: string, at?: ChoiceAt) => void;
   onSave: (edits: {
     scenes: Array<{ from: string; to: string }>;
     dice: Array<{ line: string; from: string; to: string }>;

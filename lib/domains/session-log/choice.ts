@@ -19,6 +19,12 @@ export interface ChoiceToken {
 
 const CHOICE_RE = /\[([^\][]+?)\s+-\s+([^\][]*?)\]/;
 
+/** Which line holds the dropdown being picked: its text, and which of the identical lines it is. */
+export interface ChoiceAt {
+  source: string;
+  nth: number;
+}
+
 /**
  * Split a result string into a leading text part and an optional trailing choice
  * token. `"Altered Scene [a/b/c - ]"` → `{ before: "Altered Scene", choice }`.
@@ -56,9 +62,17 @@ export function buildResultChoice(before: string, options: string[], selected: s
  * even after the reader has rolled values into those children (an exact-text
  * match would miss them and the stale lines would pile up).
  */
-export function applyChoicePick(lonelog: string, selected: string, followLines: Record<string, string>): string {
+export function applyChoicePick(
+  lonelog: string,
+  selected: string,
+  followLines: Record<string, string>,
+  at?: ChoiceAt
+): string {
   const lines = lonelog.split("\n");
-  const idx = lines.findIndex((l) => CHOICE_RE.test(l));
+  // The line the dropdown sits on, when the caller knows it: a log can hold several
+  // generators, and a pick must rewrite its own, not the first one.
+  const own = at ? lines.flatMap((l, i) => (l.trim() === at.source.trim() && CHOICE_RE.test(l) ? [i] : [])) : [];
+  const idx = own[at?.nth ?? 0] ?? lines.findIndex((l) => CHOICE_RE.test(l));
   if (idx < 0) return lonelog;
   const line = lines[idx];
   const m = line.match(CHOICE_RE);

@@ -120,3 +120,26 @@ describe("splitResultChoice — the render-branch predicate", () => {
     expect(splitResultChoice("Any Character").choice).toBeNull();
   });
 });
+
+describe("applyChoicePick — a log with several generators", () => {
+  const entry = (pick: string) =>
+    ["? Who?", "gen: Name Generator", `  Naming Style: [Anglish/Arabish - ${pick}]`].join("\n");
+  const follow = { Anglish: "Anglish 1: @[[a]]#a d100= ->", Arabish: "Arabish 1: @[[b]]#b d100= ->" };
+  const body = `${entry("Anglish")}\n  + Anglish 1: @[[a]]#a d100= ->\n${entry("Anglish")}\n  + Anglish 1: @[[a]]#a d100= ->`;
+
+  it("rewrites the entry the dropdown sits in, not the first one in the log", () => {
+    const source = "  Naming Style: [Anglish/Arabish - Anglish]";
+    const out = applyChoicePick(body, "Arabish", follow, { source, nth: 1 }).split("\n");
+    expect(out.filter((l) => l.includes("- Anglish]"))).toHaveLength(1);
+    expect(out.filter((l) => l.includes("- Arabish]"))).toHaveLength(1);
+    // The second entry now holds the Arabish row once; the first entry is untouched.
+    expect(out.slice(0, 4)).toEqual(body.split("\n").slice(0, 4));
+    expect(out.filter((l) => l.includes("Arabish 1:"))).toHaveLength(1);
+    expect(out.filter((l) => l.includes("Anglish 1:"))).toHaveLength(1);
+  });
+
+  it("still takes the first choice line when no line is given", () => {
+    const out = applyChoicePick(body, "Arabish", follow);
+    expect(out.split("\n")[2]).toContain("- Arabish]");
+  });
+});

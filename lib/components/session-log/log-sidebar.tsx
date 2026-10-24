@@ -17,6 +17,7 @@
 import * as React from "react";
 import { SidebarEntry, type SidebarEditContext, type SceneEditValue } from "./sidebar-entry";
 import type { SidebarItem } from "lib/domains/session-log/prose-model";
+import type { ChoiceAt } from "lib/domains/session-log/choice";
 
 export type { SceneEditValue };
 
@@ -36,7 +37,7 @@ export interface LogSidebarProps {
   /** Swap a token on a source line — powers the list-consult picker. */
   onTokenChange?: (source: string, from: string, to: string, nth: number) => void;
   /** A GM step dropdown pick — inserts the chosen step line into the note. */
-  onChoice?: (selected: string) => void;
+  onChoice?: (selected: string, at?: ChoiceAt) => void;
   /** Runs of entries (by id, inclusive) grouped under a sticky head. */
   sections?: SidebarSection[];
   /** The entry being read changed as the Log scrolled. */
