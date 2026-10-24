@@ -97,6 +97,14 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **Documentation:** VitePress documentation in `/docs` with examples and component references
 - **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
 
+## Vault repo (ddspog/testing-vault)
+
+The private vault repo expects this plugin at `<vault>/.obsidian/plugins/obsidian-rpg-ui` (gitignored there).
+`scripts/mount-vault.sh` clones the vault next to this repo and bind-mounts the plugin into that path, so both
+repos stay separate and pushable. Run plugin scripts (`sync`, `rpg-dev`) from the mounted path, since
+`scripts/sync-vault.mjs` finds the vault root as `../../..` from the real path. Do not run `npm run sync` on a
+fresh vault clone: every file there has a newer mtime and would overwrite `vault/` here; use `npm run sync:dry` first.
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.
