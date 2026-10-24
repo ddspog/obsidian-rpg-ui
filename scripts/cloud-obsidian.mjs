@@ -229,7 +229,8 @@ async function start() {
 async function screenshot(note, out, scrollTo) {
   if (!note || !out) throw new Error("usage: screenshot <note path in vault> <out.png> [text to scroll to]");
   const { browser, page } = await connect();
-  await page.setViewportSize({ width: 1600, height: 1400 });
+  const [vw, vh] = (process.env.VIEWPORT ?? "1600x1400").split("x").map(Number);
+  await page.setViewportSize({ width: vw, height: vh });
   // The file explorer takes a fifth of the width; screenshots are of the note.
   // KEEP_SIDEBAR=1 leaves it open.
   if (process.env.KEEP_SIDEBAR !== "1") await page.evaluate(() => globalThis.app.workspace.leftSplit?.collapse());
