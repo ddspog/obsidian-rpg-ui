@@ -91,7 +91,7 @@ import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/e
 import { resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
-import { parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
+import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
 import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
 import { expandCalledGenerator } from "lib/domains/gm/expand-gen";
 import type { CardRider, CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
@@ -1718,7 +1718,7 @@ class SessionLogMarkdown extends ReactMarkdown {
               if (!step) continue;
               const expanded = await this.expandStepUses(step);
               steps[ref.target] = expanded;
-              for (const s of expanded.steps ?? []) {
+              for (const s of flattenSteps(expanded.steps ?? [])) {
                 const refs = [...(s.table ? [s.table] : []), ...(s.tables ?? [])];
                 for (const rawRef of refs) {
                   if (tables[rawRef]) continue;
@@ -1755,7 +1755,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                       for (const sb of expanded.stepBlocks) {
                         if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
                         // A `choices` pick's word-pair tables (Actions/Descriptions).
-                        for (const bs of sb.steps ?? []) {
+                        for (const bs of flattenSteps(sb.steps ?? [])) {
                           for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
                             if (tables[rawRef]) continue;
                             const btref = parseBranchRef(rawRef);
@@ -1806,7 +1806,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     // feature declaring both a `choices` generator and what each pick spawns) —
     // load those so a picked line auto-fills when rolled.
     for (const feature of features) {
-      for (const s of feature.steps ?? []) {
+      for (const s of flattenSteps(feature.steps ?? [])) {
         for (const rawRef of [...(s.table ? [s.table] : []), ...(s.tables ?? [])]) {
           if (tables[rawRef]) continue;
           const oref = parseBranchRef(rawRef);

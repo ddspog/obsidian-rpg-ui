@@ -11,6 +11,7 @@ import {
   chooseTables,
   stepUseLinks,
   spliceStepUses,
+  flattenSteps,
 } from "./steps";
 
 describe("step composition — use:", () => {
@@ -294,5 +295,15 @@ describe("chooseTables", () => {
     const copy = [...els];
     chooseTables(els, 2, () => 0.99);
     expect(els).toEqual(copy);
+  });
+});
+
+describe("flattenSteps", () => {
+  it("lists a step's nested options after it, at any depth", () => {
+    const steps: GMStep[] = [
+      { choice: "A", then: [{ choice: "A1" }, { choice: "A2", then: [{ choice: "A2a" }] }] },
+      { choice: "B" },
+    ];
+    expect(flattenSteps(steps).map((s) => s.choice)).toEqual(["A", "A1", "A2", "A2a", "B"]);
   });
 });

@@ -19,6 +19,10 @@ export interface ChoiceToken {
 
 const CHOICE_RE = /\[([^\][]+?)\s+-\s+([^\][]*?)\]/;
 
+/** Joins a pick to the pick it was made under (`Anglish › Masculine name`), so the same option
+ *  name under two parents (every style has a `Masculine name`) means two different things. */
+export const NESTED_SEP = " › ";
+
 /** Which line holds the dropdown being picked: its text, and which of the identical lines it is. */
 export interface ChoiceAt {
   source: string;
@@ -89,7 +93,17 @@ export function applyChoicePick(
 
   out[idx] = line.slice(0, m.index) + `[${options.join("/")} - ${selected}]` + line.slice(m.index + m[0].length);
 
-  const generated = followLines[selected];
+  // A dropdown that sits under another pick (a kind of name under its style) is looked up
+  // under that pick first.
+  const parent = /^\s*\+\s/.test(line)
+    ? lines
+        .slice(0, idx)
+        .reverse()
+        .map((l) => l.match(CHOICE_RE))
+        .find(Boolean)
+    : null;
+  const generated =
+    (parent ? followLines[`${parent[2].trim()}${NESTED_SEP}${selected}`] : undefined) ?? followLines[selected];
   if (generated) {
     // Each physical line of a (possibly multi-line) generated block becomes a
     // child, so a word-pair step's two lines both attach to the pick.

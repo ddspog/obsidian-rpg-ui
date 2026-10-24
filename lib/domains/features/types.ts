@@ -525,6 +525,12 @@ export interface GMStep {
   /** WORD-PAIR: randomly choose this many of `tables` at pick time (e.g. 2 of
    *  3 for Elements). Omitted → roll every entry in `tables`. */
   pick?: number;
+  /** A second dropdown: picking this step spawns a `<thenLabel>: [a/b/c - ]` row whose options are
+   *  these steps (each with its own `choice`), and picking one of them spawns its lines. For a
+   *  style that has several kinds of name. */
+  then?: GMStep[];
+  /** The second dropdown's label. Default `Kind`. */
+  thenLabel?: string;
   /** Names for the rows `tables` spawns, in the same order: what each table is for
    *  (`Name`, `Ending`). Omitted → `<choice> <n>`. A name starting `& ` puts that table's
    *  roll on the same row as the one above it (a Start and its Ending, one name). */

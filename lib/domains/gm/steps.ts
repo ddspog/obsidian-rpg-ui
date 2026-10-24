@@ -169,3 +169,8 @@ export function chooseTables(tables: string[], pick?: number, rng: () => number 
   }
   return arr.slice(0, pick);
 }
+
+/** Every step in a list, with the steps a nested dropdown (`then`) holds, at any depth. */
+export function flattenSteps(steps: GMStep[]): GMStep[] {
+  return steps.flatMap((s) => [s, ...flattenSteps(s.then ?? [])]);
+}

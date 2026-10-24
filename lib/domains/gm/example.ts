@@ -17,6 +17,7 @@ import { resolveConsult } from "../lonelog/list-ops";
 import { emitGMFeature, generatorSteps } from "./emit";
 import { answerFateQuestion, resolveInterpret } from "./fate-chart";
 import { parseBranchRef, resolveTableRoll, chooseTables } from "./steps";
+import { NESTED_SEP } from "../session-log/choice";
 import { parseFormula, rolledValue, setDiceValue } from "../session-log/formula";
 
 const RESERVED = new Set(["rolls", "result", "narration"]);
@@ -239,14 +240,16 @@ export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record
 
 function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
   const out = gmFollowLines(feature);
+  const add = (s: GMStep) => {
+    if (!s.choice) return;
+    out[s.choice] = stepGeneratedLine(s);
+    // What a nested dropdown's option spawns, under the pick it was made below.
+    for (const t of s.then ?? []) if (t.choice) out[`${s.choice}${NESTED_SEP}${t.choice}`] = stepGeneratedLine(t);
+  };
   // The feature's OWN steps map its own `choices` generator's picks (a tool page
   // that declares both the picker and what each pick spawns, e.g. Event Meaning).
-  for (const s of feature.steps ?? []) if (s.choice) out[s.choice] = stepGeneratedLine(s);
-  for (const step of Object.values(stepCtx?.steps ?? {})) {
-    for (const s of step.steps ?? []) {
-      if (s.choice) out[s.choice] = stepGeneratedLine(s);
-    }
-  }
+  for (const s of feature.steps ?? []) add(s);
+  for (const step of Object.values(stepCtx?.steps ?? {})) for (const s of step.steps ?? []) add(s);
   return out;
 }
 
@@ -260,6 +263,10 @@ function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<str
  */
 export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): string {
   const label = s.step ?? s.choice ?? "";
+  if (s.then && s.then.length > 0) {
+    const kinds = s.then.map((t) => t.choice).filter((c): c is string => !!c);
+    return `${s.thenLabel?.trim() || "Kind"}: [${kinds.join("/")} - ]`;
+  }
   if (s.tables && s.tables.length > 0) {
     const tables = s.tables;
     return chooseTables(tables, s.pick, rng)
