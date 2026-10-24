@@ -9,7 +9,9 @@
  * `npm run build` first so the plugin's styles.css is current.
  */
 import esbuild from "esbuild";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { picks } from "./glob.mjs";
@@ -50,18 +52,49 @@ function readVault(dir, manifest, rel = "", into = {}) {
   return into;
 }
 
+/**
+ * Obsidian's app.css, which the plugin's styles lean on (buttons, icons, tabs, markdown). It is not
+ * ours to keep in the repo: it is read from the Obsidian the screenshot harness caches, else from
+ * $OBSIDIAN_APP_CSS. Run `node scripts/cloud-obsidian.mjs prepare` once to fetch it.
+ */
+function obsidianCss() {
+  if (process.env.OBSIDIAN_APP_CSS) return fs.readFileSync(process.env.OBSIDIAN_APP_CSS, "utf8");
+  const cache = path.join(os.homedir(), ".cache", "rpg-obsidian");
+  const out = path.join(cache, "app.css");
+  if (fs.existsSync(out)) return fs.readFileSync(out, "utf8");
+  const asar = fs
+    .readdirSync(cache, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name.startsWith("obsidian-"))
+    .map((d) => path.join(cache, d.name, "squashfs-root", "resources", "obsidian.asar"))
+    .find((f) => fs.existsSync(f));
+  if (!asar) {
+    console.warn("No Obsidian app.css found: the simulator will not look like Obsidian. Run `node scripts/cloud-obsidian.mjs prepare`, or set OBSIDIAN_APP_CSS.");
+    return "";
+  }
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sim-asar-"));
+  execFileSync("npx", ["--yes", "@electron/asar", "extract-file", asar, "app.css"], { cwd: tmp, stdio: "ignore" });
+  fs.copyFileSync(path.join(tmp, "app.css"), out);
+  return fs.readFileSync(out, "utf8");
+}
+
+/** The theme's CSS: $THEME_DIR (a checkout with a built theme.css), as the harness uses. */
+function themeCss() {
+  const f = process.env.THEME_DIR && path.join(process.env.THEME_DIR, "theme.css");
+  return f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+}
+
 const esc = (s) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 
 async function buildOne(sim) {
   const notes = readVault(vaultRoot, sim);
+  const file = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
   const css = [
-    path.join(here, "core", "base.css"),
-    path.join(here, sim.dir, "style.css"),
-    path.join(root, "styles.css"),
-  ]
-    .filter((f) => fs.existsSync(f))
-    .map((f) => fs.readFileSync(f, "utf8"))
-    .join("\n");
+    obsidianCss(),
+    themeCss(),
+    file(path.join(here, "core", "base.css")),
+    file(path.join(here, sim.dir, "style.css")),
+    file(path.join(root, "styles.css")),
+  ].join("\n");
   const meta = { id: sim.id, title: sim.title, about: sim.about };
   const entry = path.basename(sim.entry ?? "index.ts").replace(/\.tsx?$/, "");
 
