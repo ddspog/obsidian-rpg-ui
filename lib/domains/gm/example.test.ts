@@ -1313,4 +1313,71 @@ describe("a name made of rolled parts — choose", () => {
       expect(out).toContain(`Name: @pick(${spec}) d6=5 -> Mallgarg`);
     });
   });
+
+  describe("too many names for one die", () => {
+    const starts = "@[[Names]]#gstarts";
+    const ends = "@[[Names]]#gends";
+    const startTable = {
+      columnLabels: ["d100*", "Start 1", "Start 2", "Start 3"],
+      rows: [{ cells: [{ value: "1-100" }, { value: "Dia" }, { value: "Oi" }, { value: "Gle" }] }],
+    } as unknown as TableDef;
+    const endTable = {
+      columnLabels: ["d100*", "End 1", "End 2", "End 3", "End 4", "End 5"],
+      rows: [
+        {
+          cells: [{ value: "1-100" }, { value: "a" }, { value: "b" }, { value: "c" }, { value: "d" }, { value: "e" }],
+        },
+      ],
+    } as unknown as TableDef;
+    const ctx2 = { tables: { [starts]: startTable, [ends]: endTable } };
+    const spec = "Start=1,2,3+End=2:1,2,3,4,5";
+    const step: GMStep = { choice: "Name", tables: [starts, ends], labels: ["Name", ""], choose: [spec, ""] };
+
+    it("gives each part its own pick, then a name that joins them", () => {
+      expect(stepGeneratedLine(step)).toBe(
+        [
+          `Start: ${starts} d100= ->`,
+          "Pick Start: @pick(Start=1,2,3) d3= ->",
+          `End: ${ends} d100= ->`,
+          "Pick End: @pick(End=2:1,2,3,4,5) d5= ->",
+          `Name: @join(${spec}) ->`,
+        ].join("\n")
+      );
+    });
+
+    it("joins what each pick settled on", () => {
+      const body = gen(
+        `Start: ${starts} d100=5 ->`,
+        "Pick Start: @pick(Start=1,2,3) d3=2 ->",
+        `End: ${ends} d100=5 ->`,
+        "Pick End: @pick(End=2:1,2,3,4,5) d5=4 ->",
+        `Name: @join(${spec}) ->`
+      );
+      const out = resolveGmBody(body, [feature], ctx2);
+      expect(out).toContain("Pick Start: @pick(Start=1,2,3) d3=2 -> Oi");
+      expect(out).toContain("Pick End: @pick(End=2:1,2,3,4,5) d5=4 -> d");
+      expect(out).toContain(`Name: @join(${spec}) -> Oid`);
+    });
+
+    it("stays blank until every pick is made", () => {
+      const body = gen(
+        `Start: ${starts} d100=5 ->`,
+        "Pick Start: @pick(Start=1,2,3) d3=2 ->",
+        `End: ${ends} d100=5 ->`,
+        "Pick End: @pick(End=2:1,2,3,4,5) d5= ->",
+        `Name: @join(${spec}) ->`
+      );
+      expect(resolveGmBody(body, [feature], ctx2)).toContain(`Name: @join(${spec}) -> \n`.trimEnd());
+    });
+
+    it("rolls a part on the die its spec names", () => {
+      const river: GMStep = {
+        choice: "Name",
+        tables: [starts, ends],
+        labels: ["Name", ""],
+        choose: ["A=1+B=2:4@10", ""],
+      };
+      expect(stepGeneratedLine(river)).toContain(`& B: ${ends} d10= ->`);
+    });
+  });
 });

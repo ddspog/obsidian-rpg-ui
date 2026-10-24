@@ -74,6 +74,11 @@ export function makeSamples(vault: Record<string, string>): Sample[] {
       "Masculine name",
       "Start and ending are in two tables: each is rolled on its own, and the Name row joins them."
     ),
+    confusing(
+      "Anglish",
+      "River name",
+      "A first part and a river ending from a second table (the ending is rolled on a d10), joined on the Name row."
+    ),
     confusing("Anglish", "Masculine name", "Two alternative names in a row: both are shown, use either."),
     confusing(
       "Celtigaulic",
