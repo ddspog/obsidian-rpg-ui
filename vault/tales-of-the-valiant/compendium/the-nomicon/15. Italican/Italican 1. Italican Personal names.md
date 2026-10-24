@@ -119,7 +119,7 @@ These tables contain a mixture of historical and invented Italian-sounding names
 
 ^table-15-1
 
-**C1**: `dice: [[15. Italican^table-15-1]]|1`, **C2**: `dice: [[15. Italican^table-15-1]]|2`, **C3**: `dice: [[15. Italican^table-15-1]]|3`, **C4**: `dice: [[15. Italican^table-15-1]]|4`
+**C1**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|1`, **C2**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|2`, **C3**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|3`, **C4**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|4`
 #### Table 15-2: Italican Feminine Personal Names
 **Instructions**: Roll on any column to generate the name.
 **Sample Results**: Adelasia, Elemosina, Fiametta, Octia, Iacoba.
@@ -231,4 +231,4 @@ These tables contain a mixture of historical and invented Italian-sounding names
 
 ^table-15-2
 
-**C1**: `dice: [[15. Italican^table-15-2]]|1`, **C2**: `dice: [[15. Italican^table-15-2]]|2`, **C3**: `dice: [[15. Italican^table-15-2]]|3`
+**C1**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|1`, **C2**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|2`, **C3**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|3`

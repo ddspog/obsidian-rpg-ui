@@ -120,7 +120,7 @@ These tables use Norse phonemes, but almost all the names are invented. A warnin
 
 ^table-18-1
 
-**Base Name**: `dice: [[18. Nörslik^table-18-1]]|Base Name`, **Dialect 1**: `dice: [[18. Nörslik^table-18-1]]|Dialect 1`, **Dialect 2**: `dice: [[18. Nörslik^table-18-1]]|Dialect 2`
+**Base Name**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Base Name`, **Dialect 1**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Dialect 1`, **Dialect 2**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Dialect 2`
 #### Table 18-2: Nörslik Masculine Personal Names 2
 **Instructions**: Roll on any column for the name (the Base Name column is closer to Old Norse, or one of the Dialects, which can be pronounced more easliy). The two dialect columns give you two variant cultures or countries with a slightly different sound to the names.
 **Sample Results**: Hrothmundr, Jormundir, Kaldur, Olafr, Sigvaldur.
@@ -232,6 +232,6 @@ These tables use Norse phonemes, but almost all the names are invented. A warnin
 
 ^table-18-2
 
-**Base Name**: `dice: [[18. Nörslik^table-18-2]]|Base Name`, **Dialect 1**: `dice: [[18. Nörslik^table-18-2]]|Dialect 1`, **Dialect 2**: `dice: [[18. Nörslik^table-18-2]]|Dialect 2`
+**Base Name**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Base Name`, **Dialect 1**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Dialect 1`, **Dialect 2**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Dialect 2`
 
 ![[norslik-feminine-personal-names.webp]]

@@ -119,7 +119,7 @@ This table is mostly derived from Sanskrit phonemes, so the majority of these na
 
 ^table-17-1
 
-`dice: [[17. Nanskrit^table-17-1]]|First Part` `dice: [[17. Nanskrit^table-17-1]]|Second Part`
+`dice: [[Nanskrit 1. Personal Names^table-17-1]]|First Part` `dice: [[Nanskrit 1. Personal Names^table-17-1]]|Second Part`
 #### Table 17-2: Nanskrit Personal Feminine Names
 **Instructions**: Roll independently for a First Part and a Second Part of the name.
 **Sample Results**: Ashambeli, Chanati, Jika, Neelula, Hadhana.
@@ -181,6 +181,6 @@ This table is mostly derived from Sanskrit phonemes, so the majority of these na
 
 ^table-17-2
 
-`dice: [[17. Nanskrit^table-17-2]]|First Part` `dice: [[17. Nanskrit^table-17-2]]|Second Part`
+`dice: [[Nanskrit 1. Personal Names^table-17-2]]|First Part` `dice: [[Nanskrit 1. Personal Names^table-17-2]]|Second Part`
 
 ![[nanskrit-personal-feminine-names.webp|384]]

@@ -6,6 +6,9 @@ tab-icon: scroll-text
 tab-color: var(--color-cyan)
 tab-name: Dreamlandish · 1
 ---
+# Dreamlandish
+## Dreamlandish Personal names
+![[dreamlandish-personal-names.webp|right]]For personal names in a Dreamlandish area, most people should have names from the [[15. Italican|Italican]]], [[12. Espannic|Espannic]], and [[23. Trobadoric|Trobadoric]] naming groups. The [[19. Russlavik|Russlavik]] and [[22. Teutonnic|Teutonnic]] groups are also workable. As you go up the chain of wealth and power, names in the Dreamlandish-type fiction (Lovecraft, Vance, CA Smith) tend to get longer and more unusual, so names for the nobility can be pulled from [[Metallik 3. High Metallik#High Metallik|High Metallik]], [[Metallik 1. Dharc-metallik 1#Dharc-metallik|Dharc Metallik]], [[17. Nanskrit|Nanskrit]], and [[14. Hellenica|Hellenic]]. Names for spellcasters, who will be the most commonly encountered types of people from places like this, are treated separately.
 #### Table 10-6: Dreamlandish Powerful Spellcasters Masculine Short Name
 **Instructions**: Roll independently for a start and an ending to the name, then add epithets of various kinds.
 **Sample Results**: Chadjas, Gnojopo, Jhodrico, Kshomero, Iamajat.
@@ -117,7 +120,7 @@ tab-name: Dreamlandish · 1
 
 ^table-10-6
 
-`dice: [[10. Elderweirdish^table-10-6]]|Start` `dice: [[10. Elderweirdish^table-10-6]]|Ending`
+`dice: [[Elderweirdish 3. Dreamlandish 1^table-10-6]]|Start` `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-6]]|Ending`
 #### Table 10-7: Dreamlandish Powerful Spellcasters Feminine Name
 **Instructions**: Roll for any First Part, and for an Ending.
 **Sample Results**: Ayathine, Cychanil, Ihylunis, Bielbalys, Ysoölanthis.
@@ -229,4 +232,4 @@ tab-name: Dreamlandish · 1
 
 ^table-10-7
 
-(`dice: [[10. Elderweirdish^table-10-7]]|First Part a` or `dice: [[10. Elderweirdish^table-10-7]]|First Part b`) `dice: [[10. Elderweirdish^table-10-7]]|Ending`
+(`dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|First Part a` or `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|First Part b`) `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|Ending`

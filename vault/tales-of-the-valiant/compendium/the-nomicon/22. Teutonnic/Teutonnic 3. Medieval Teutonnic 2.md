@@ -120,7 +120,7 @@ This table generates results for countries, town names, and terrain features suc
 
 ^table-22-4
 
-`dice: [[22. Teutonnic^table-22-4]]|First Part` (`dice: [[22. Teutonnic^table-22-4]]|Second Part a` or `dice: [[22. Teutonnic^table-22-4]]|Second Part b`)
+`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|First Part` (`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|Second Part a` or `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|Second Part b`)
 #### Table 22-5: Teutonnic Countries, Terrain Features and Towns 2
 **Instructions**: Roll independently for the first and second part of the name.
 **Sample Results**: Auskalt, Eobranz, Gisgult, Jochebronz, Miergroz.
@@ -232,7 +232,7 @@ This table generates results for countries, town names, and terrain features suc
 
 ^table-22-5
 
-`dice: [[22. Teutonnic^table-22-5]]|First Part` `dice: [[22. Teutonnic^table-22-5]]|Second Part`
+`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-5]]|First Part` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-5]]|Second Part`
 #### Table 22-6: Teutonnic Countries, Terrain Features and Towns 3
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 of the name.
 **Sample Results**: Gryanz, Ilaubratz, Heogna, Traömarg, Dioste.
@@ -264,4 +264,4 @@ This table generates results for countries, town names, and terrain features suc
 
 ^table-22-6
 
-`dice: [[22. Teutonnic^table-22-6]]|Part 1` `dice: [[22. Teutonnic^table-22-6]]|Part 2` `dice: [[22. Teutonnic^table-22-6]]|Part 3`
+`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 1` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 2` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 3`

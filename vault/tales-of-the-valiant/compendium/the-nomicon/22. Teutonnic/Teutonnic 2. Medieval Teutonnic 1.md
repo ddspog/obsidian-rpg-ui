@@ -6,6 +6,7 @@ tab-icon: scroll-text
 tab-color: var(--color-cyan)
 tab-name: Medieval Teutonnic · 1
 ---
+# Medieval Teutonnic
 ## Teutonnic Personal names
 #### Table 22-2: Teutonnic Masculine Personal Names
 **Instructions**: Roll on either column for a name.
@@ -118,7 +119,7 @@ tab-name: Medieval Teutonnic · 1
 
 ^table-22-2
 
-**C1**: `dice: [[22. Teutonnic^table-22-2]]|1`, **C2**: `dice: [[22. Teutonnic^table-22-2]]|2`
+**C1**: `dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-2]]|1`, **C2**: `dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-2]]|2`
 #### Table 22-3: Teutonnic Feminine Personal Names
 **Sample Results**: Abitrude, Bertrude, Herlinde, Magdalena, Ulse.
 
@@ -229,4 +230,4 @@ tab-name: Medieval Teutonnic · 1
 
 ^table-22-3
 
-`dice: [[22. Teutonnic^table-22-3]]`
+`dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-3]]`

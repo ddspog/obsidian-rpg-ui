@@ -68,7 +68,7 @@ tab-name: Brittonian Personal names · 1
 
 ^table-6-1
 
-**C1**: `dice: [[06. Brittonnian^table-6-1]]|Start 1`, **C2**: `dice: [[06. Brittonnian^table-6-1]]|Start 2`, **C3**: `dice: [[06. Brittonnian^table-6-1]]|Start 3`
+**C1**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 1`, **C2**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 2`, **C3**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 3`
 #### Table 6-2: Brittonian Masculine Personal Names (Gaelic) Ending
 **Instructions**: Roll on any column for an ending to the name.
 
@@ -129,7 +129,7 @@ tab-name: Brittonian Personal names · 1
 
 ^table-6-2
 
-**C1**: `dice: [[06. Brittonnian^table-6-2]]|End 1`, **C2**: `dice: [[06. Brittonnian^table-6-2]]|End 2`, **C3**: `dice: [[06. Brittonnian^table-6-2]]|End 3`, **C4**: `dice: [[06. Brittonnian^table-6-2]]|End 4`, **C5**: `dice: [[06. Brittonnian^table-6-2]]|End 5`
+**C1**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 1`, **C2**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 2`, **C3**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 3`, **C4**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 4`, **C5**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 5`
 #### Table 6-3: Brittonian Feminine Personal Names (Gaelic)
 Note: the “bh” makes a “v” sound, as in modern Irish.
 
@@ -163,7 +163,7 @@ Note: the “bh” makes a “v” sound, as in modern Irish.
 
 ^table-6-3
 
-(`dice: [[06. Brittonnian^table-6-3]]|Part 1a` or `dice: [[06. Brittonnian^table-6-3]]|Part 1b` or `dice: [[06. Brittonnian^table-6-3]]|Part 1c` or `dice: [[06. Brittonnian^table-6-3]]|Part 1d`) (`dice: [[06. Brittonnian^table-6-3]]|Part 2a` or `dice: [[06. Brittonnian^table-6-3]]|Part 2b`)
+(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1c` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1d`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 2b`)
 
 >[!rules] FORCED DIALECTS
 One way to emphasize a particular culture or to differentiate between them is to hammer home a basic language difference. This works for gaming; a novelist will want to be more subtle. Here is a way to really emphasize a linguistic difference.
@@ -200,7 +200,7 @@ One way to emphasize a particular culture or to differentiate between them is to
 
 ^table-6-4
 
-(`dice: [[06. Brittonnian^table-6-4]]|Part 1a` or `dice: [[06. Brittonnian^table-6-4]]|Part 1b`) (`dice: [[06. Brittonnian^table-6-4]]|Part 2a` or `dice: [[06. Brittonnian^table-6-4]]|Part 2b` or `dice: [[06. Brittonnian^table-6-4]]|Part 2c`)
+(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 1b`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2c`)
 #### Table 6-5: Brittonian Masculine Personal Names (Welsh) 2
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Degvan, Hydfael, Gralwyd, Rhegwared, Nidwyr.
@@ -232,7 +232,7 @@ One way to emphasize a particular culture or to differentiate between them is to
 
 ^table-6-5
 
-(`dice: [[06. Brittonnian^table-6-5]]|Part 1a` or `dice: [[06. Brittonnian^table-6-5]]|Part 1b` or `dice: [[06. Brittonnian^table-6-5]]|Part 1c`) (`dice: [[06. Brittonnian^table-6-5]]|Part 2a` or `dice: [[06. Brittonnian^table-6-5]]|Part 2b` or `dice: [[06. Brittonnian^table-6-5]]|Part 2c`)
+(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1c`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2c`)
 #### Table 6-6: Brittonian Masculine Personal Names (Welsh) 3
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Cyndaran, Meinfrew, Rhussawg, Peiffith, Grawarch.
@@ -264,4 +264,4 @@ One way to emphasize a particular culture or to differentiate between them is to
 
 ^table-6-6
 
-(`dice: [[06. Brittonnian^table-6-6]]|Part 1a` or `dice: [[06. Brittonnian^table-6-6]]|Part 1b` or `dice: [[06. Brittonnian^table-6-6]]|Part 1c`) (`dice: [[06. Brittonnian^table-6-6]]|Part 2a` or `dice: [[06. Brittonnian^table-6-6]]|Part 2b` or `dice: [[06. Brittonnian^table-6-6]]|Part 2c`)
+(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1c`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2c`)

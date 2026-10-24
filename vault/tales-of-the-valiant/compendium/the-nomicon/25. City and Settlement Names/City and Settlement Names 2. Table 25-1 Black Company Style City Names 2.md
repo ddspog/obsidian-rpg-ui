@@ -117,7 +117,7 @@ tab-name: "Table 25-1: Black Company Style City Names · 2"
 
 ^table-25-3
 
-**C1**: `dice: [[25. City and Settlement Names^table-25-3]]|1`, **C2**: `dice: [[25. City and Settlement Names^table-25-3]]|2`, **C3**: `dice: [[25. City and Settlement Names^table-25-3]]|3`, **C4**: `dice: [[25. City and Settlement Names^table-25-3]]|4`
+**C1**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|1`, **C2**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|2`, **C3**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|3`, **C4**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|4`
 #### Table 25-4: City Epithets 3
 **Formula**: The \_\_\_ City
 **Instructions**: Roll on either column for an epithet such as “the Amber City” or “the Odorous City.”
@@ -230,4 +230,4 @@ tab-name: "Table 25-1: Black Company Style City Names · 2"
 
 ^table-25-4
 
-**C1**: `dice: [[25. City and Settlement Names^table-25-4]]|1`, **C2**: `dice: [[25. City and Settlement Names^table-25-4]]|2`
+**C1**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-4]]|1`, **C2**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-4]]|2`

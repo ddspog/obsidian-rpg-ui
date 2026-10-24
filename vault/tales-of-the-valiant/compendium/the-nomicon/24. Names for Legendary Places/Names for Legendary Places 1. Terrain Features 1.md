@@ -118,7 +118,7 @@ tab-name: Terrain Features · 1
 
 ^table-24-1
 
-**C1**: `dice: [[24. Names for Legendary Places^table-24-1]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-1]]|2`
+**C1**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-1]]|1`, **C2**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-1]]|2`
 #### Table 24-2: Legendary Terrain Feature Names 2
 This table and the next one contain a mixed variety of different names for terrain features such as hills and forests. Thus, you can generate the Growling Hills, Fox Mountains, Bronze Marshes, Alarood Hills, and Haumic Forest.
 
@@ -232,4 +232,4 @@ This table and the next one contain a mixed variety of different names for terra
 
 ^table-24-2
 
-**C1**: `dice: [[24. Names for Legendary Places^table-24-2]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-2]]|2`, **C3**: `dice: [[24. Names for Legendary Places^table-24-2]]|3`
+**C1**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|1`, **C2**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|2`, **C3**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|3`

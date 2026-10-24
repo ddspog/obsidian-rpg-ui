@@ -40,7 +40,7 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 
 ^table-6-13
 
-(`dice: [[06. Brittonnian^table-6-13]]|First Word a` or `dice: [[06. Brittonnian^table-6-13]]|First Word b` or `dice: [[06. Brittonnian^table-6-13]]|First Word c`) (`dice: [[06. Brittonnian^table-6-13]]|Second Word a` or `dice: [[06. Brittonnian^table-6-13]]|Second Word b` or `dice: [[06. Brittonnian^table-6-13]]|Second Word c`)
+(`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word b` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word c`) (`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word b` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word c`)
 
 ![[brittonnian-sinister.webp|384]]
 ## Brittonnian Sinister
@@ -75,7 +75,7 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 
 ^table-6-14
 
-(`dice: [[06. Brittonnian^table-6-14]]|First Word a` or `dice: [[06. Brittonnian^table-6-14]]|First Word b`) (`dice: [[06. Brittonnian^table-6-14]]|Second Word a` or `dice: [[06. Brittonnian^table-6-14]]|Second Word b`)
+(`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|First Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|First Word b`) (`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|Second Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|Second Word b`)
 #### Table 6-15: Additional Endings for Brittonnian Terrain Names
 To use this method, roll once on any of the Brittonnian Terrain Name Tables, Sinister or Bright (it doesn’t matter which column) to get a result like “Gruid” or “Trod.” Then roll for the appropriate type of terrain on the table below (forest, marsh, etc.), and add that as an ending. Thus, if you’re rolling up a marsh, you would end up with “Gruidfell” or “Trodfen.” You can add another ending as well, to get “Gruidfell Swamp or Trodfen Gwaun.”
 
@@ -106,5 +106,5 @@ To use this method, roll once on any of the Brittonnian Terrain Name Tables, Sin
 
 ^table-6-15
 
-**Forest**: `dice: [[06. Brittonnian^table-6-15]]|Forest`, **Marsh/Swamp**: `dice: [[06. Brittonnian^table-6-15]]|Marsh/Swamp`,
-**Mountains or Hills**: `dice: [[06. Brittonnian^table-6-15]]|Mountains or Hills`, **River**: `dice: [[06. Brittonnian^table-6-15]]|River`
+**Forest**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Forest`, **Marsh/Swamp**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Marsh/Swamp`,
+**Mountains or Hills**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Mountains or Hills`, **River**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|River`

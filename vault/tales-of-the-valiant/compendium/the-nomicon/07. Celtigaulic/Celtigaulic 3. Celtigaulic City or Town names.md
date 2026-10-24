@@ -70,6 +70,6 @@ These can also be generated using Trobadouric.
 
 ^table-7-6
 
-(`dice: [[07. Celtigaulic^table-7-6]]|Start 1` or `dice: [[07. Celtigaulic^table-7-6]]|Start 2` or `dice: [[07. Celtigaulic^table-7-6]]|Start 3`) (`dice: [[07. Celtigaulic^table-7-6]]|End 1` or `dice: [[07. Celtigaulic^table-7-6]]|End 2`)
+(`dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 1` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 2` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 3`) (`dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|End 1` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|End 2`)
 
 ![[celtigaulic-city-and-town-names.webp|384]]

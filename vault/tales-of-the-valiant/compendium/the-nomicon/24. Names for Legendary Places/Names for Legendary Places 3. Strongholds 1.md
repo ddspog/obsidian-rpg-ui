@@ -6,6 +6,33 @@ tab-icon: scroll-text
 tab-color: var(--color-green)
 tab-name: Strongholds · 1
 ---
+# Strongholds
+![[strongholds.webp|right|384]]There are six main formulas for the name of a stronghold:
+- **Formula 1**: \[[[24. Names for Legendary Places#Table 24-5 Type 1 Fortress Name 1|Table 24-5: Type 1 Fortress Name 1]]\] \[[[24. Names for Legendary Places#Table 24-6 Type 1 Fortress Name 2|Table 24-6: Type 1 Fortress Name 2]]\] (based on the first result, the order may be switched). This yields results such as Fortress Marzathor or Khekra Keep.
+- **Formula 2**: The \[[[24. Names for Legendary Places#Table 24-6 Type 1 Fortress Name 2|Table 24-6: Type 1 Fortress Name 2]]\]. This yields results such as The Gharachaga or The Sarambor. Alternatively, you can also use [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns#Table 29-2 General Items|Table 29-2: General Items]] for this sort of name, to get results like The Alembic or The Bracelet.
+- **Formula 3**: (The Fortress of X): The Bastion of (personal name). For this formula, roll on [[Names for Legendary Places 3. Strongholds 1#Table 24-7 Type 2 Fortress Name|Table 24-7: Type 2 Fortress Name]]. This generates names such as The Bastion of Arnaud One-Eye. The need to generate a personal name makes this one take a bit longer than the others.
+- **Formula 4**: “Fortress” of the [Group]. For this formula, use \[[[24. Names for Legendary Places#Table 24-7 Type 2 Fortress Name|Table 24-7: Fortress Name Type 2 (Column 1)]]\] \[[[24. Names for Legendary Places#Table 24-8 Type 3 Fortress Name Part 1|Table 24-8: Type 3 Fortress Name 1]]\] \[[[24. Names for Legendary Places#Table 24-9 Type 3 Fortress Name Part 2|Table 24-9: Type 3 Fortress Name 2]]\]. This generates names such as The Spires of the Ghost-Thieves.
+- **Formula 5**: Castle \[[[24. Names for Legendary Places#Table 24-10 Short Castle Name|Table 24-10: Short Castle Name]]\]. This generates shorter castle names, such as Castle Mask or Castle Spring.
+- **Formula 6**: The Fortress of \[[[24. Names for Legendary Places#Table 24-11 Mystical Fortress Name 1|Table 24-11]] or [[Names for Legendary Places 4. Strongholds 2#Table 24-12 Mystical Fortress Name 2|12]]: Mystical Fortress 1 or 2]. This yields names such as the Fortress of Ancestry, or the Fortress of Antidotes.
+
+You can also go to the Tome of Worldbuilding, starting with [[09. Legendary Locations#Table 9-16 Stronghold Type|Table 9-16: Stronghold Type]] to generate stronghold names that are somewhat different from the tables in the Nomicon.
+#### Table 24-5: Type 1 Fortress Name 1
+```rpg table.type-1-fortress-name-1
+|dice:d8|Result|
+|---|---|
+|1|Fortress (before the fortress name)|
+|2|Castle (before the fortress name)|
+|3|Caer (before the fortress name)|
+|4|Carreg (before the fortress name)|
+|5|Cair (before the fortress name)|
+|6|Keep (after fortress name)|
+|7|Castle (after fortress name)|
+|8|The Citadel of (before the fortress name)|
+```
+
+^table-24-5
+
+`dice: [[Names for Legendary Places 3. Strongholds 1^table-24-5]]`
 #### Table 24-6: Type 1 Fortress Name 2
 You can generate fortress names using any of the terrain place names for a naming group, but these are a quick set of names that work well.
 
@@ -119,17 +146,17 @@ You can generate fortress names using any of the terrain place names for a namin
 
 ^table-24-6
 
-**Western European**: `dice: [[24. Names for Legendary Places^table-24-6]]|Western European`, **Mideast/India**: `dice: [[24. Names for Legendary Places^table-24-6]]|Mideast/India`,
-**Eastern Europe**: `dice: [[24. Names for Legendary Places^table-24-6]]|Eastern Europe`, **Elderweirdish**: `dice: [[24. Names for Legendary Places^table-24-6]]|Elderweirdish`
+**Western European**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Western European`, **Mideast/India**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Mideast/India`,
+**Eastern Europe**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Eastern Europe`, **Elderweirdish**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Elderweirdish`
 #### Table 24-7: Type 2 Fortress Name
 Since this style of fortress name requires a personal name, it can take longer to generate than the other methods.
 
 **Sample Results**: Bastion of the Arcanjar, Castle of Hagalagulax, Court of the Tulathect, Fortress of the Decayer.
 **Instructions**: Roll for a start such as “Bastion of,” then add a personal name (probably with epithets or a title). If a personal name from any of the Naming Groups doesn’t sound right, you can also use any of the following tables to vary the results:
-- [[27. Titles#Table 27-1 Arcane Titles|Table 27-1: Arcane Titles]]
-- [[26. Monster Names#Table 26-6 Dragon Name/Place|Table 26-6: Dragon Name/Place]]
-- [[27. Titles#Table 27-12 General-Use Titles Part 1|Table 27-12: General-Use Titles Part 1]] and sequential
-- [[28. Personal Epithets#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]
+- [[Titles 1. Arcane Titles#Table 27-1 Arcane Titles|Table 27-1: Arcane Titles]]
+- [[Monster Names 2. Bug Monster names + Draconic Monster names#Table 26-6 Dragon Name/Place|Table 26-6: Dragon Name/Place]]
+- [[Titles 4. Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12: General-Use Titles Part 1]] and sequential
+- [[Personal Epithets 4. Arcane Epithets 3#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]
 
 ```rpg table.type-2-fortress-name
 |dice:d12|Result|
@@ -150,11 +177,11 @@ Since this style of fortress name requires a personal name, it can take longer t
 
 ^table-24-7
 
-`dice: [[24. Names for Legendary Places^table-24-7]]`
+`dice: [[Names for Legendary Places 3. Strongholds 1^table-24-7]]`
 #### Table 24-8: Type 3 Fortress Name Part 1
 The Type 3 tables are used to generate the name of a group that holds the fortress. They generate names such as The Spires of the Ghost-Thieves.
 
-**Instructions**: First roll on [[24. Names for Legendary Places#Table 24-5 Type 1 Fortress Name 1|Table 24-5]] to get something like “Spires of,” then roll on any of the four columns to get the first part of the group name. Then move on to the next table for the second part of the group name.
+**Instructions**: First roll on [[Names for Legendary Places 3. Strongholds 1#Table 24-5 Type 1 Fortress Name 1|Table 24-5]] to get something like “Spires of,” then roll on any of the four columns to get the first part of the group name. Then move on to the next table for the second part of the group name.
 **Sample Results**: Spires of the Alabaster Brotherhood, Bastion of the Lunar Knights, Spires of the Ghost-Thieves, Citadel of the Shadow Creatures.
 
 d20 1 2 3 4
@@ -208,7 +235,7 @@ d20 1 2 3 4
 
 ^table-24-9
 
-**C1**: `dice: [[24. Names for Legendary Places^table-24-9]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-9]]|2`, **C3**: `dice: [[24. Names for Legendary Places^table-24-9]]|3`, **C4**: `dice: [[24. Names for Legendary Places^table-24-9]]|4`
+**C1**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|1`, **C2**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|2`, **C3**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|3`, **C4**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|4`
 #### Table 24-10: Short Castle Name
 This table can be used for slightly-Arthurian sounding castles, and not much time is required to generate them.
 
@@ -242,37 +269,4 @@ This table can be used for slightly-Arthurian sounding castles, and not much tim
 
 ^table-24-10
 
-**C1**: `dice: [[24. Names for Legendary Places^table-24-10]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-10]]|2`, **C3**: `dice: [[24. Names for Legendary Places^table-24-10]]|3`, **C4**: `dice: [[24. Names for Legendary Places^table-24-10]]|4`, **C5**: `dice: [[24. Names for Legendary Places^table-24-10]]|5`, **C6**: `dice: [[24. Names for Legendary Places^table-24-10]]|6`, **C7**: `dice: [[24. Names for Legendary Places^table-24-10]]|7`
-#### Table 24-11: Mystical Fortress Name 1
-**Formula**: The Fortress (or Stronghold) of \_\_\_
-**Instructions**: Roll on any of the four columns.
-**Sample Results**: The Fortress of Ancestry, the Stronghold of Gardens, the Bastion of Glory, the Citadel of Courage.
-
-```rpg table.mystical-fortress-name-1
-|d20|1|2|3|4|
-|---|---|---|---|---|
-|1|Ancestry|Convocation|Fragrances|Masks|
-|2|Antidotes|Courage|Gardens|Measurement|
-|3|Ascension|Creation|Generosity|Medicines|
-|4|Autumn|Cycles|Glory|Memory|
-|5|Basins|Dances|Glyphs|Messengers|
-|6|Beneficence|Darkness|Harvests|Mind|
-|7|Birds|Dawn|Healing|Mirrors|
-|8|Borders|Destiny|History|Mirth|
-|9|Bowls|Diplomacy|Honor|Mists|
-|10|Cats|Dreams|Hope|Mushrooms|
-|11|Change|Eccentricity|Hounds|Music|
-|12|Chaos|Endurance|Humility|Musicians|
-|13|Charity|Escapes|Judgements|Night|
-|14|Charms|Eyes|Justice|Nobility|
-|15|Circles|Fastening|Knowledge|Oaths|
-|16|Clouds|Fate|Law|Orchards|
-|17|Coincidences|Fire|Life|Order|
-|18|Cold|Flowers|Light|Patience|
-|19|Concealment|Fools|Lore|Patterns|
-|20|Conjunctions|Fortune|Love|Peace|
-```
-
-^table-24-11
-
-**C1**: `dice: [[24. Names for Legendary Places^table-24-11]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-11]]|2`, **C3**: `dice: [[24. Names for Legendary Places^table-24-11]]|3`, **C4**: `dice: [[24. Names for Legendary Places^table-24-11]]|4`
+**C1**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|1`, **C2**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|2`, **C3**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|3`, **C4**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|4`, **C5**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|5`, **C6**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|6`, **C7**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|7`

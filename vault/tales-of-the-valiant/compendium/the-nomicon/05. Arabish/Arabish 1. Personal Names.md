@@ -118,7 +118,7 @@ tab-name: Personal Names
 
 ^table-5-1
 
-**C1**: `dice: [[05. Arabish^table-5-1]]|1`, **C2**: `dice: [[05. Arabish^table-5-1]]|2`, **C3**: `dice: [[05. Arabish^table-5-1]]|3`
+**C1**: `dice: [[Arabish 1. Personal Names^table-5-1]]|1`, **C2**: `dice: [[Arabish 1. Personal Names^table-5-1]]|2`, **C3**: `dice: [[Arabish 1. Personal Names^table-5-1]]|3`
 #### Table 5-2: Arabish Feminine Names
 **Instructions**: Roll on either column for a name.
 **Sample Results**: Ashra, Bihaya, Hadiya, Salarah, Katima.
@@ -230,14 +230,4 @@ tab-name: Personal Names
 
 ^table-5-2
 
-**C1**: `dice: [[05. Arabish^table-5-2]]|1`, **C2**: `dice: [[05. Arabish^table-5-2]]|2`
-# Name Of Culture
-This is for the name of a culture for which you’re going to use the Arabish Naming Group.
-
-In (real-world) Arabic, the suffix “-i” denotes a people. So it’s like “ic” for Celtic (or “ish” for English). -een is a plural (in Arabic it’s usually for a masculine noun). So it’s like “s” in Celts.
-
-The suffix “-stan,” which comes from Persian, is the equivalent of the suffix “-land,” literally meaning “where one stands,” or “place of the.” For clarity in a game world, I recommend using “-stan” for cities only.
-
-**Instructions**: Roll 1d12 to see which table to use for generating the name of the culture.
-
-These tables also work well for generating country and terrain names; just don’t add the -i or -een ending.
+**C1**: `dice: [[Arabish 1. Personal Names^table-5-2]]|1`, **C2**: `dice: [[Arabish 1. Personal Names^table-5-2]]|2`

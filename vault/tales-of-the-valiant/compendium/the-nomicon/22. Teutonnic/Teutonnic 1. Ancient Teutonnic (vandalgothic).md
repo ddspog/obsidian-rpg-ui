@@ -71,5 +71,4 @@ Countries and cultures are generated from the base tribal name. Endings can be -
 
 ^table-22-1
 
-(`dice: [[22. Teutonnic^table-22-1]]|Part 1a` or `dice: [[22. Teutonnic^table-22-1]]|Part 1b` or `dice: [[22. Teutonnic^table-22-1]]|Part 1c`) `dice: [[22. Teutonnic^table-22-1]]|Ending`
-# Medieval Teutonnic
+(`dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1a` or `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1b` or `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1c`) `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Ending`

@@ -118,7 +118,7 @@ tab-name: Italican Place names
 
 ^table-15-3
 
-`dice: [[15. Italican^table-15-3]]|Start` (`dice: [[15. Italican^table-15-3]]|Ending 1` or `dice: [[15. Italican^table-15-3]]|Ending 2`)
+`dice: [[Italican 2. Italican Place names^table-15-3]]|Start` (`dice: [[Italican 2. Italican Place names^table-15-3]]|Ending 1` or `dice: [[Italican 2. Italican Place names^table-15-3]]|Ending 2`)
 #### Table 15-4: Italican Culture, Country, and Terrain Names 2
 **Instructions**: Roll for a Start and for an Ending part of the name.
 **Sample Results**: Bialepto, Cioccara, Fraquolo, Siosa, Ghebelta.
@@ -230,4 +230,4 @@ tab-name: Italican Place names
 
 ^table-15-4
 
-`dice: [[15. Italican^table-15-4]]|Start` `dice: [[15. Italican^table-15-4]]|Ending`
+`dice: [[Italican 2. Italican Place names^table-15-4]]|Start` `dice: [[Italican 2. Italican Place names^table-15-4]]|Ending`

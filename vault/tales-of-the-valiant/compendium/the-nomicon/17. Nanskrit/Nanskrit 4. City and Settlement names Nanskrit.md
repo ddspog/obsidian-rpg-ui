@@ -118,4 +118,4 @@ tab-name: "City and Settlement names: Nanskrit"
 
 ^table-17-5
 
-`dice: [[17. Nanskrit^table-17-5]]|Start` `dice: [[17. Nanskrit^table-17-5]]|Ending`
+`dice: [[Nanskrit 4. City and Settlement names Nanskrit^table-17-5]]|Start` `dice: [[Nanskrit 4. City and Settlement names Nanskrit^table-17-5]]|Ending`

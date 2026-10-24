@@ -118,7 +118,7 @@ tab-name: Culture Or Country · 1
 
 ^table-13-1
 
-`dice: [[13. Eurovesian^table-13-1]]|Start` (`dice: [[13. Eurovesian^table-13-1]]|End 1` or `dice: [[13. Eurovesian^table-13-1]]|End 2` or `dice: [[13. Eurovesian^table-13-1]]|End 3`)
+`dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|Start` (`dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 2` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 3`)
 #### Table 13-2: Eurovesian Culture or Country Name Table 2
 **Instructions**: Roll on Start 1 or Start 2, then on Ending 1, 2, or 3.
 **Sample Results**: Aibaldia, Bylmish, Cauloon, Gragalas, Munland.
@@ -230,4 +230,4 @@ tab-name: Culture Or Country · 1
 
 ^table-13-2
 
-(`dice: [[13. Eurovesian^table-13-2]]|Start 1` or `dice: [[13. Eurovesian^table-13-2]]|Start 2`) (`dice: [[13. Eurovesian^table-13-2]]|Ending 1` or `dice: [[13. Eurovesian^table-13-2]]|Ending 2` or `dice: [[13. Eurovesian^table-13-2]]|Ending 3`)
+(`dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Start 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Start 2`) (`dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 2` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 3`)

@@ -2,10 +2,20 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: flag
+tab-icon: user
 tab-color: var(--color-red)
 tab-name: Name Of Culture · 1
 ---
+# Name Of Culture
+This is for the name of a culture for which you’re going to use the Arabish Naming Group.
+
+In (real-world) Arabic, the suffix “-i” denotes a people. So it’s like “ic” for Celtic (or “ish” for English). -een is a plural (in Arabic it’s usually for a masculine noun). So it’s like “s” in Celts.
+
+The suffix “-stan,” which comes from Persian, is the equivalent of the suffix “-land,” literally meaning “where one stands,” or “place of the.” For clarity in a game world, I recommend using “-stan” for cities only.
+
+**Instructions**: Roll 1d12 to see which table to use for generating the name of the culture.
+
+These tables also work well for generating country and terrain names; just don’t add the -i or -een ending.
 #### Table 5-3: Arabish Culture Name Table 1
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Agaraqi, Baqirali, Ishtabeen, Ubariri, Oshireen.
@@ -67,7 +77,7 @@ tab-name: Name Of Culture · 1
 
 ^table-5-3
 
-(`dice: [[05. Arabish^table-5-3]]|Start 1` or `dice: [[05. Arabish^table-5-3]]|Start 2` or `dice: [[05. Arabish^table-5-3]]|Start 3`) (`dice: [[05. Arabish^table-5-3]]|End 1` or `dice: [[05. Arabish^table-5-3]]|End 2` or `dice: [[05. Arabish^table-5-3]]|End 3`)
+(`dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 3`)
 #### Table 5-4: Arabish Culture Name Table 2
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Aghbami, Dakaraheen, Haqiridi, Iqbiruheen, Diwizi.
@@ -129,7 +139,7 @@ tab-name: Name Of Culture · 1
 
 ^table-5-4
 
-(`dice: [[05. Arabish^table-5-4]]|Start 1` or `dice: [[05. Arabish^table-5-4]]|Start 2` or `dice: [[05. Arabish^table-5-4]]|Start 3`) (`dice: [[05. Arabish^table-5-4]]|End 1` or `dice: [[05. Arabish^table-5-4]]|End 2` or `dice: [[05. Arabish^table-5-4]]|End 3`)
+(`dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 3`)
 #### Table 5-5: Arabish Culture Name Table 3
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Ghabizi, Jhadameen, Khalaruheen, Ghaiyagi, Khoshirafi.
@@ -191,7 +201,7 @@ tab-name: Name Of Culture · 1
 
 ^table-5-5
 
-(`dice: [[05. Arabish^table-5-5]]|Start 1` or `dice: [[05. Arabish^table-5-5]]|Start 2` or `dice: [[05. Arabish^table-5-5]]|Start 3`) (`dice: [[05. Arabish^table-5-5]]|End 1` or `dice: [[05. Arabish^table-5-5]]|End 2` or `dice: [[05. Arabish^table-5-5]]|End 3`)
+(`dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 3`)
 #### Table 5-6: Arabish Culture Name Table 4
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Dadragheen, Hajrasi, Ghatrazeen, Bakridi, Ghosruzi.
@@ -253,4 +263,4 @@ tab-name: Name Of Culture · 1
 
 ^table-5-6
 
-(`dice: [[05. Arabish^table-5-6]]|Start 1` or `dice: [[05. Arabish^table-5-6]]|Start 2` or `dice: [[05. Arabish^table-5-6]]|Start 3` or `dice: [[05. Arabish^table-5-6]]|Start 4`) `dice: [[05. Arabish^table-5-6]]|Ending`
+(`dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 3` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 4`) `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Ending`

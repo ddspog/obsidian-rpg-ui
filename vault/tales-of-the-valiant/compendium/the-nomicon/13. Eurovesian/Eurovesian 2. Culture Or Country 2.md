@@ -117,4 +117,4 @@ tab-name: Culture Or Country · 2
 
 ^table-13-3
 
-`dice: [[13. Eurovesian^table-13-3]]|Start` (`dice: [[13. Eurovesian^table-13-3]]|End 1` or `dice: [[13. Eurovesian^table-13-3]]|End 2` or `dice: [[13. Eurovesian^table-13-3]]|End 3` or `dice: [[13. Eurovesian^table-13-3]]|End 4` `dice: [[13. Eurovesian^table-13-3]]|End 5` `dice: [[13. Eurovesian^table-13-3]]|End 6`)
+`dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|Start` (`dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 1` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 2` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 3` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 4` `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 5` `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 6`)

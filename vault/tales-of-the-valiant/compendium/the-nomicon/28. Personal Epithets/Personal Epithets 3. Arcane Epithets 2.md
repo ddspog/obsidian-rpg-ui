@@ -6,6 +6,139 @@ tab-icon: feather
 tab-color: var(--color-cyan)
 tab-name: Arcane Epithets · 2
 ---
+#### Table 28-7: Arcane Epithet Type 3 (Evil-ish)
+**Instructions**: Roll independently on Column 1 and Column 2.
+**Sample Results**: the Blue Anvil, the Cloaked Conjurer, the Shimmering Magician, the Growling Serpent.
+
+```rpg table.arcane-epithet-type-3-evil-ish
+|d100|First Word|Second Word|
+|---|---|---|
+|1|Blue|Alchemist|
+|2|Brass|Anvil|
+|3|Bronze|Archivist|
+|4|Burning|Artisan|
+|5|Chained|Centipede|
+|6|Chanting|Cloud|
+|7|Chattering|Conjurer|
+|8|Clay|Crow|
+|9|Cloaked|Curator|
+|10|Clockwork|Enchanter|
+|11|Copper|Eye|
+|12|Cowled|Face|
+|13|Crimson|Glyph|
+|14|Crystal|Hand|
+|15|Dancing|Hawk|
+|16|Dimensional|Head|
+|17|Dour|Horror|
+|18|Dreaming|Hunter|
+|19|Drumming|Hyena|
+|20|Dun|Jackal|
+|21|Eerie|Jest|
+|22|Elder|Keeper|
+|23|Eldritch|Librarian|
+|24|Elemental|Mage|
+|25|Feathered|Magician|
+|26|Fire|Mirror|
+|27|Ghostly|Moth|
+|28|Golden|Mystic|
+|29|Green|Omen|
+|30|Grey|Oracle|
+|31|Growling|Owl|
+|32|Hidden|Raven|
+|33|Hooded|Scribe|
+|34|Horned|Scriptor|
+|35|Howling|Serpent|
+|36|Laughing|Sigil|
+|37|Lunar|Sign|
+|38|Mad|Skull|
+|39|Mantled|Snake|
+|40|Masked|Sorcerer|
+|41|Mindless|Speaker|
+|42|Mist|Spider|
+|43|Moon-|Stave|
+|44|Muttering|Summoner|
+|45|Cursed|Symbol|
+|46|Painted|Tiger|
+|47|Pale|Weaver|
+|48|Gleeful|Weird|
+|49|Planar|Witch/Warlock|
+|50|Red|Wolf|
+|51|Reptilian|Binder|
+|52|Resplendent|Breaker|
+|53|Rune| Burier|
+|54|Sapphire|Changer|
+|55|Scaly|Claw|
+|56|Scarlet|Talon|
+|57|Secret|Scourge|
+|58|Shadow|Seeker|
+|59|Shimmering|Scryer|
+|60|Shrouded|Shifter|
+|61|Sightless|Sickness|
+|62|Silent|Gazer|
+|63|Silver|Harbinger|
+|64|Singing|Haunt|
+|65|Solitary|Harrier|
+|66|Spitting|Enslaver|
+|67|Spotted|Entangler|
+|68|Stone|Intruder|
+|69|Striped|Kindler|
+|70|Vengeful|Limper|
+|71|Veiled|Marauder|
+|72|Vile|Pillager|
+|73|Water|Plunderer|
+|74|Whispering|Piercer|
+|75|Whistling|Shapeshifter|
+|76|Yellow|Slayer|
+|77|Black|Stalker|
+|78|Dark|Taker|
+|79|Evil|Tormenter|
+|80|Fell|Trapper|
+|81|Bane-|Waster|
+|82|Sinister|Usurper|
+|83|Baleful|Prince/Princess|
+|84|Cackling|Lord/Lady|
+|85|Remade|Worm|
+|86|Shriveled|Wyvern|
+|87|Shrieking|Dragon|
+|88|Ghastly|Tentacle|
+|89|Grim|Shaper|
+|90|Folding|Visage|
+|91|Circling|Phantom|
+|92|Variform|Thaumaturge|
+|93|Poisoned|Magician|
+|94|Unerring|Conjurer|
+|95|Unmade|Wizard|
+|96|Autonomous|Enchanter|
+|97|Rebel|Enchantress|
+|98|Serpentine|Thaumaturgist|
+|99|Tentacled|Shifter|
+|100|Ancient|Automaton|
+```
+
+^table-28-7
+
+`dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-7]]|First Word` `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-7]]|Second Word`
+
+![[arcane-epithet-evilish.webp]]
+#### Table 28-8: Place Names in Epithets
+These tables are generic enough to use when moving quickly through several personalities while creating a world. If the personality is already associated with a place, you might use that, but the epithet might come from an event in the person’s past, earned in another place.
+
+If you are already in a phase where you’re using names from a specific naming group, you will probably want to use that naming group instead of the ones from the table. This is for general use.
+
+```rpg table.place-names-in-epithets
+|dice:d6|Random Place Name Table|
+|---|---|
+|1|[[Elderweirdish 1. Colossoponderous#Table 10-1 Colossoponderous Hyphenated Place Names|Table 10-1: Colossoponderous Hyphenated Place Names]]. Enu- Moäth, Tsul-Tesh, Anu-Taan, etc.|
+|2|[[Elderweirdish 1. Colossoponderous#Table 10-2 Colossoponderous Two-Word Place Names|Table 10-2: Colossoponderous Two-Word Place Names]]. Az Dun, Djeng Dek, Kal Brok, etc.|
+|3|[[Elderweirdish 1. Colossoponderous#Table 10-3 Colossoponderous Single-Word Place or Deity Names|Table 10-3: Colossoponderous Single-Word Place or Deity Names]]. Kontohloon, Quanajanth, Saurikantha, etc.|
+|4|[[Trobadoric 2. Terrain Features#Table 23-6 Trobadoric Terrain Features Table 3|Table 23-6: Trobadoric Terrain Features Table 3]]. Uëboc, Yuaspo, Oualde, etc.|
+|5|[[21. Stygian, Egyptic#Table 21-3 Stygian/Egyptic City Names|Table 21-3: Stygian/Egyptic City Names]]. Hamedra, Sulfis, Mesamnon, etc.|
+|6|[[Elderweirdish 2. Cthonic#Table 10-4 Cthonic Single-Word Place Names|Table 10-4: Cthonic Single-Word Place Names]]. Bholomnoth, Groachagga, Hultramnis, etc.|
+```
+
+^table-28-8
+
+`dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-8]]`
 ## Descriptive Epithets
 #### Table 28-9: Descriptive Epithet
 **Instructions**: Roll on any of the four columns to generate a descriptive epithet such as Gandolfo the Nimble.
@@ -38,229 +171,4 @@ tab-name: Arcane Epithets · 2
 
 ^table-28-9
 
-**C1**: `dice: [[28. Personal Epithets^table-28-9]]|1`, **C2**: `dice: [[28. Personal Epithets^table-28-9]]|2`, **C3**: `dice: [[28. Personal Epithets^table-28-9]]|3`, **C4**: `dice: [[28. Personal Epithets^table-28-9]]|4`
-## General Personality Epithets
-### Table 28-10: Personality Epithets 1
-**Instructions**: Roll on either column to generate a personality epithet such as Gandolfo the Abrupt.
-**Sample Results**: the Abrupt, the Energetic, the Affable, the Ethical.
-
-```rpg table.personality-epithets-1
-|d100|1|2|
-|---|---|---|
-|1|Abrupt|Energetic|
-|2|Absentminded|Engaging|
-|3|Addict|Enigmatic|
-|4|Adventurous|Enthusiast|
-|5|Affable|Erratic|
-|6|Affected|Ethical|
-|7|Aggressive|Evasive|
-|8|Agreeable|Exacting|
-|9|Alert|Excessive|
-|10|Aloof|Extravagant|
-|11|Altruistic|Exuberant|
-|12|Tardy|Fair|
-|13|Ambiguous|Faithful|
-|14|Ambitious|Faithless|
-|15|Amiable|Fanatical|
-|16|Apathetic|Fatalistic|
-|17|Apologetic|Fearful|
-|18|Arrogant|Fearless|
-|19|Artistic|Ferocious|
-|20|Audacious|Fiery|
-|21|Austere|Flamboyant|
-|22|Awkward|Flippant|
-|23|Belligerent|Foolish|
-|24|Boastful|Forceful|
-|25|Bold|Forgetful|
-|26|Boor|Fretful|
-|27|Brash|Frugal|
-|28|Brave|Furtive|
-|29|Brilliant|Fussy|
-|30|Calculating|Garrulous|
-|31|Callous|Gaudy|
-|32|Calm|Generous|
-|33|Capricious|Genial|
-|34|Carefree|Gentle|
-|35|Careful|Gloomy|
-|36|Careless|Graceful|
-|37|Caustic|Gracious|
-|38|Cautious|Grandiose|
-|39|Charismatic|Greedy|
-|40|Chaste|Gregarious|
-|41|Cheerful|Gruff|
-|42|Chivalrous|Guarded|
-|43|Clever|Gullible|
-|44|Clumsy|Hardworking|
-|45|Coarse|Harried|
-|46|Cold|Harsh|
-|47|Compassionate|Haughty|
-|48|Competent|Heartless|
-|49|Composed|Hedonistic|
-|50|Conceited|Hesitant|
-|51|Condescending|Honest|
-|52|Confident|Honorable|
-|53|Congenial|Hospitable|
-|54|Conscientious|Hostile|
-|55|Considerate|Hothead|
-|56|Contrarian|Humble|
-|57|Courageous|Immodest|
-|58|Courteous|Impartial|
-|59|Covetous|Impatient|
-|60|Coward|Impolite|
-|61|Crafty|Impractical|
-|62|Cruel|Impulsive|
-|63|Cultured|Incoherent|
-|64|Curious|Incompetent|
-|65|Cynical|Inconsiderate|
-|66|Dainty|Inconsistent|
-|67|Daring|Indecisive|
-|68|Deceitful|Indifferent|
-|69|Decisive|Indiscrete|
-|70|Decorous|Indolent|
-|71|Defiant|Industrious|
-|72|Deliberate|Inflexible|
-|73|Delicate|Innocent|
-|74|Despondent|Inquisitive|
-|75|Determined|Insane|
-|76|Devious|Insecure|
-|77|Dignified|Insensitive|
-|78|Diligent|Insightful|
-|79|Discerning|Insincere|
-|80|Disciplined|Insipid|
-|81|Discreet|Intelligent|
-|82|Dishonest|Intense|
-|83|Disloyal|Intimidating|
-|84|Distant|Intolerant|
-|85|Distraught|Intrepid|
-|86|Distrustful|Introspective|
-|87|Dogmatic|Introverted|
-|88|Doubter|Intuitive|
-|89|Draconian|Inventive|
-|90|Dramatic|Irresolute|
-|91|Dreamer|Irresponsible|
-|92|Dubious|Irreverent|
-|93|Dull|Irritable|
-|94|Dutiful|Irritating|
-|95|Dynamic|Jaded|
-|96|Eccentric|Jealous|
-|97|Eloquent|Jolly|
-|98|Embittered|Jovial|
-|99|Eminent|Keen|
-|100|Empathetic|Kindhearted|
-```
-
-^table-28-10
-
-**C1**: `dice: [[28. Personal Epithets^table-28-10]]|1`, **C2**: `dice: [[28. Personal Epithets^table-28-10]]|2`
-#### Table 28-11: Personality Epithets 2
-**Instructions**: Roll on either column to generate a personality epithet such as Gandolfo the Knowledgeable.
-**Sample Results**: the Languid, the Liar, the Sly, the Sour.
-
-```rpg table.personality-epithets-2
-|d100|1|2|
-|---|---|---|
-|1|Knowledgeable|Sharp-Tongued|
-|2|Languid|Sharp-Witted|
-|3|Lethargic|Shifty|
-|4|Levelheaded|Shrewd|
-|5|Liar|Shy|
-|6|Lively|Sickly|
-|7|Logical|Silent|
-|8|Lordly|Sincere|
-|9|Loud|Skillful|
-|10|Lovable|Slow|
-|11|Loving|Sly|
-|12|Loyal|Sneaky|
-|13|Lunatic|Sociable|
-|14|Mad|Soft-Spoken|
-|15|Malicious|Solitary|
-|16|Manipulative|Sour|
-|17|Mannerly|Spendthrift|
-|18|Mean|Spiteful|
-|19|Meek|Spoiled|
-|20|Melancholy|Squeamish|
-|21|Merciful|Stately|
-|22|Mercurial|Steadfast|
-|23|Meticulous|Stern|
-|24|Mild|Stingy|
-|25|Mischievous|Stolid|
-|26|Miserly|Strange|
-|27|Modest|Strict|
-|28|Moody|Strident|
-|29|Mysterious|Strong Willed|
-|30|Negligent|Stubborn|
-|31|Nervous|Studious|
-|32|Neurotic|Succinct|
-|33|Noble|Sulky|
-|34|Obliging|Sullen|
-|35|Obnoxious|Superstitious|
-|36|Obsequious|Surly|
-|37|Observant|Suspicious|
-|38|Obstinate|Sweet|
-|39|Odd|Sympathetic|
-|40|Odious|Taciturn|
-|41|Ostentatious|Tactful|
-|42|Outgoing|Tactless|
-|43|Outrageous|Talented|
-|44|Outspoken|Talkative|
-|45|Overbearing|Tasteless|
-|46|Pacifist|Temperamental|
-|47|Passionate|Temperate|
-|48|Passive|Tenacious|
-|49|Patient|Tense|
-|50|Peaceful|Thorough|
-|51|Persevering|Thoughtful|
-|52|Persistent|Thoughtless|
-|53|Persuasive|Threatening|
-|54|Perverse|Thrifty|
-|55|Pessimist|Timid|
-|56|Petty|Tireless|
-|57|Petulant|Tiresome|
-|58|Philanthropist|Tolerant|
-|59|Pious|Troubled|
-|60|Placid|Truculent|
-|61|Pleasant|Trusting|
-|62|Pompous|Trustworthy|
-|63|Popular|Unappreciative|
-|64|Possessive|Unassuming|
-|65|Pretentious|Unconventional|
-|66|Profane|Uncooperative|
-|67|Proud|Uncoordinated|
-|68|Prudent|Uncouth|
-|69|Quarrelsome|Undependable|
-|70|Quick|Understanding|
-|71|Quiet|Undisciplined|
-|72|Rash|Unfeeling|
-|73|Reckless|Unfocused|
-|74|Reclusive|Unforgiving|
-|75|Refined|Unfriendly|
-|76|Reluctant|Ungrateful|
-|77|Resentful|Unhelpful|
-|78|Resolute|Uninhibited|
-|79|Resourceful|Unkind|
-|80|Respectful|Unruly|
-|81|Restless|Unscrupulous|
-|82|Righteous|Unselfish|
-|83|Rude|Unsympathetic|
-|84|Ruthless|Untrustworthy|
-|85|Sad|Unwilling|
-|86|Sage|Unwise|
-|87|Saintly|Vain|
-|88|Sanctimonious|Valiant|
-|89|Scatterbrained|Vengeful|
-|90|Scheming|Venomous|
-|91|Scornful|Verbose|
-|92|Secretive|Vindictive|
-|93|Sedate|Virtuous|
-|94|Selfish|Volatile|
-|95|Selfless|Warlike|
-|96|Sentimental|Wary|
-|97|Serene|Weary|
-|98|Serious|Whimsical|
-|99|Shallow|Wise|
-|100|Shameless|Xenophobic|
-```
-
-^table-28-11
-
-**C1**: `dice: [[28. Personal Epithets^table-28-11]]|1`, **C2**: `dice: [[28. Personal Epithets^table-28-11]]|2`
+**C1**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|1`, **C2**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|2`, **C3**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|3`, **C4**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|4`

@@ -2,9 +2,9 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: flag
+tab-icon: user
 tab-color: var(--color-red)
-tab-name: Name Of Culture · 4
+tab-name: Name Of Culture + Terrain feature names
 ---
 ## More of a Persian style than Arabic-style
 To get more of a Persian feel to the name, do the following. Roll a name on the Arabish Culture Name tables. Eliminate all but the first two syllables, with a vowel ending. So, you would change “Halawara” to just “Hala.” You don’t actually need to do this, but the names can get very long if you don’t. You can try it both ways.
@@ -26,15 +26,15 @@ If you have a double vowel, you can decide whether to use the double vowel or cu
 
 ^table-5-16
 
-`dice: [[05. Arabish^table-5-16]]|Ending`
+`dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-16]]|Ending`
 # Terrain feature names
 Note: if you are looking for a broader range of terrain names than the method below, you can also roll for a culture name. The culture names all end with -i, a suffix which works like -ish in the English language. Remove that final -i from the culture name, and you have a workable base word for a terrain feature.
 ## The Terrain name table
 This table is the base for any kind of terrain feature; hills, mountains, rivers, forests, deserts, etc.
-- **Formula 1**: Generate a name by rolling on Column 1, 2, or 3 on the [[05. Arabish#Table 5-17 Arabish Terrain Feature Name|Arabish-Persi Terrain Name Table]]. This will generate names such as “The Marshes of Aafa.”
-- **Formula 2**: As above, but add an ending to the name using [[05. Arabish#Table 5-18 Arabish Optional Terrain Feature Suffix 1|Table 5-18: Optional Terrain Feature Suffix 1]]. This can give you names such as “The Marshes of Aafadaz.”
-- **Formula 3**: For a format such as “The \_\_\_\_\_ Marshes,” add a suffix from [[05. Arabish#Table 5-19 Arabish Optional Terrain Feature Suffix 2|Table 5-19: Optional Terrain Feature Suffix 2]]. This generates names such as “The Aafan Marshes.” There are some dialect options in the Suffix 2 Table.
-- **Formula 4**: For a hyphenated name such as “The Marshes of Aafa-Bai,” “The Aafa-Bai,” or the “Marshes of the Aafa-Bai,” roll for the Terrain Name (alone) and then add a hyphenated suffix from [[05. Arabish#Table 5-20 Arabish Optional Hyphenated Suffix|Table 5-20: Optional Hyphenated Suffix]]. This can also be used to distinguish a dialect.
+- **Formula 1**: Generate a name by rolling on Column 1, 2, or 3 on the [[Arabish 5. Name Of Culture + Terrain feature names#Table 5-17 Arabish Terrain Feature Name|Arabish-Persi Terrain Name Table]]. This will generate names such as “The Marshes of Aafa.”
+- **Formula 2**: As above, but add an ending to the name using [[Arabish 5. Name Of Culture + Terrain feature names#Table 5-18 Arabish Optional Terrain Feature Suffix 1|Table 5-18: Optional Terrain Feature Suffix 1]]. This can give you names such as “The Marshes of Aafadaz.”
+- **Formula 3**: For a format such as “The \_\_\_\_\_ Marshes,” add a suffix from [[Arabish 5. Name Of Culture + Terrain feature names#Table 5-19 Arabish Optional Terrain Feature Suffix 2|Table 5-19: Optional Terrain Feature Suffix 2]]. This generates names such as “The Aafan Marshes.” There are some dialect options in the Suffix 2 Table.
+- **Formula 4**: For a hyphenated name such as “The Marshes of Aafa-Bai,” “The Aafa-Bai,” or the “Marshes of the Aafa-Bai,” roll for the Terrain Name (alone) and then add a hyphenated suffix from [[Arabish 5. Name Of Culture + Terrain feature names#Table 5-20 Arabish Optional Hyphenated Suffix|Table 5-20: Optional Hyphenated Suffix]]. This can also be used to distinguish a dialect.
 #### Table 5-17: Arabish Terrain Feature Name
 **Instructions**: Roll on any column for a terrain feature name.
 **Sample Results**: Asqam, Halawara, Qaari, Darai, Rafih.
@@ -146,7 +146,7 @@ This table is the base for any kind of terrain feature; hills, mountains, rivers
 
 ^table-5-17
 
-**C1**: `dice: [[05. Arabish^table-5-17]]|1`, **C2**: `dice: [[05. Arabish^table-5-17]]|2`, **C3**: `dice: [[05. Arabish^table-5-17]]|3`
+**C1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|1`, **C2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|2`, **C3**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|3`
 #### Table 5-18: Arabish Optional Terrain Feature Suffix 1
 These suffixes can be added to terrain feature names for more variation.
 
@@ -179,7 +179,7 @@ These suffixes can be added to terrain feature names for more variation.
 
 ^table-5-18
 
-**Ending 1**: `dice: [[05. Arabish^table-5-18]]|Ending 1`, **Ending 2**: `dice: [[05. Arabish^table-5-18]]|Ending 2`
+**Ending 1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-18]]|Ending 1`, **Ending 2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-18]]|Ending 2`
 #### Table 5-19: Arabish Optional Terrain Feature Suffix 2
 These optional suffixes can be used at the end of an Arabish terrain name. “Standard” is the default, but you can add the endings from a dialect to terrain names as a way of distinguishing one country (or culture) from another.
 
@@ -202,7 +202,7 @@ These optional suffixes can be used at the end of an Arabish terrain name. “St
 
 ^table-5-19
 
-**Standard**: `dice: [[05. Arabish^table-5-19]]|Standard`, **Dialect 1**: `dice: [[05. Arabish^table-5-19]]|Dialect 1`, **Dialect 2**: `dice: [[05. Arabish^table-5-19]]|Dialect 2`, **Dialect 3**: `dice: [[05. Arabish^table-5-19]]|Dialect 3`
+**Standard**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Standard`, **Dialect 1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 1`, **Dialect 2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 2`, **Dialect 3**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 3`
 #### Table 5-20: Arabish Optional Hyphenated Suffix
 **Sample Results (added to Terrain Feature Name)**: Gharouna-Bai, Ewara-Ghos, Musha-Kai, Daume-Na, Yaari-To.
 
@@ -223,6 +223,6 @@ These optional suffixes can be used at the end of an Arabish terrain name. “St
 
 ^table-5-20
 
-`dice: [[05. Arabish^table-5-20]]`
+`dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-20]]`
 
 ![[arabish-city-and-settlement-names.webp|384]]

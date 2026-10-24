@@ -118,7 +118,7 @@ tab-name: Dreamlandish · 3
 
 ^table-10-9
 
-`dice: [[10. Elderweirdish^table-10-9]]|Start` `dice: [[10. Elderweirdish^table-10-9]]|Ending`
+`dice: [[Elderweirdish 5. Dreamlandish 3^table-10-9]]|Start` `dice: [[Elderweirdish 5. Dreamlandish 3^table-10-9]]|Ending`
 
 ![[dreamlandish-cities-and-settlements.webp|384]]
 #### Table 10-10: Dreamlandish Cities and Settlements
@@ -232,4 +232,4 @@ tab-name: Dreamlandish · 3
 
 ^table-10-10
 
-`dice: [[10. Elderweirdish^table-10-10]]|Start` `dice: [[10. Elderweirdish^table-10-10]]|Ending`
+`dice: [[Elderweirdish 5. Dreamlandish 3^table-10-10]]|Start` `dice: [[Elderweirdish 5. Dreamlandish 3^table-10-10]]|Ending`

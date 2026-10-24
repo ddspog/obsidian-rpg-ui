@@ -13,15 +13,15 @@ here is a table to determine which table to use:
 ```rpg table.terrain-feature-tables
 |dice:d4|Table|
 |---|---|
-|1|Roll on [[23. Trobadoric#Table 23-4 Trobadoric Terrain Features Table 1|Trobadoric Terrain Features Table 1]]|
-|2|Roll on [[23. Trobadoric#Table 23-5 Trobadoric Terrain Features Table 2|Trobadoric Terrain Features Table 2]]|
-|3|Roll on [[23. Trobadoric#Table 23-6 Trobadoric Terrain Features Table 3|Trobadoric Terrain Features Table 3]]|
-|4|Roll on [[23. Trobadoric#Table 23-7 Trobadoric Terrain Features Table 4|Trobadoric Terrain Features Table 4]]|
+|1|Roll on [[Trobadoric 2. Terrain Features#Table 23-4 Trobadoric Terrain Features Table 1|Trobadoric Terrain Features Table 1]]|
+|2|Roll on [[Trobadoric 2. Terrain Features#Table 23-5 Trobadoric Terrain Features Table 2|Trobadoric Terrain Features Table 2]]|
+|3|Roll on [[Trobadoric 2. Terrain Features#Table 23-6 Trobadoric Terrain Features Table 3|Trobadoric Terrain Features Table 3]]|
+|4|Roll on [[Trobadoric 2. Terrain Features#Table 23-7 Trobadoric Terrain Features Table 4|Trobadoric Terrain Features Table 4]]|
 ```
 
 ^table-23-3
 
-`dice: [[23. Trobadoric^table-23-3]]`
+`dice: [[Trobadoric 2. Terrain Features^table-23-3]]`
 #### Table 23-4: Trobadoric Terrain Features Table 1
 These work best when the format is “The Marshes of \_\_\_\_\_,” or simply “The \_\_\_\_\_.”
 
@@ -55,7 +55,7 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 
 ^table-23-4
 
-`dice: [[23. Trobadoric^table-23-4]]|Part 1` `dice: [[23. Trobadoric^table-23-4]]|Part 2` (`dice: [[23. Trobadoric^table-23-4]]|French Ending` or `dice: [[23. Trobadoric^table-23-4]]|Teutonnic Ending`)
+`dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Part 1` `dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Part 2` (`dice: [[Trobadoric 2. Terrain Features^table-23-4]]|French Ending` or `dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Teutonnic Ending`)
 #### Table 23-5: Trobadoric Terrain Features Table 2
 **Instructions**: Roll independently for a Start, Middle, and Ending for the name.
 **Sample Results**: Stroälde, Urieut, Usiaude, Yriothe, Thiälthe.
@@ -87,7 +87,7 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 
 ^table-23-5
 
-`dice: [[23. Trobadoric^table-23-5]]|Start` `dice: [[23. Trobadoric^table-23-5]]|Middle` `dice: [[23. Trobadoric^table-23-5]]|Ending`
+`dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Start` `dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Middle` `dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Ending`
 #### Table 23-6: Trobadoric Terrain Features Table 3
 **Instructions**: Roll for a Part 1, then for any Ending.
 **Sample Results**: Oälte, Ioufre, Yseldo, Aötoc, Uäsci.
@@ -119,7 +119,7 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 
 ^table-23-6
 
-`dice: [[23. Trobadoric^table-23-6]]|Part 1` (`dice: [[23. Trobadoric^table-23-6]]|End 1` or `dice: [[23. Trobadoric^table-23-6]]|End 2` or `dice: [[23. Trobadoric^table-23-6]]|End 3`)
+`dice: [[Trobadoric 2. Terrain Features^table-23-6]]|Part 1` (`dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 1` or `dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 2` or `dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 3`)
 #### Table 23-7: Trobadoric Terrain Features Table 4
 This table generates names such as “The Alquin Peaks,” or “The Marshes of Iscalourde.”
 
@@ -233,4 +233,4 @@ This table generates names such as “The Alquin Peaks,” or “The Marshes of 
 
 ^table-23-7
 
-`dice: [[23. Trobadoric^table-23-7]]|First Part` (`dice: [[23. Trobadoric^table-23-7]]|Second Part a` or `dice: [[23. Trobadoric^table-23-7]]|Second Part b`)
+`dice: [[Trobadoric 2. Terrain Features^table-23-7]]|First Part` (`dice: [[Trobadoric 2. Terrain Features^table-23-7]]|Second Part a` or `dice: [[Trobadoric 2. Terrain Features^table-23-7]]|Second Part b`)
