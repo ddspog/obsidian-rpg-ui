@@ -121,7 +121,7 @@ export const senses: EntityBlock<SensesProps, CharacterEntity> = ({ self, blocks
     if (SENSES_SKILLS.has(name)) vantageByName.set(name, (vantageByName.get(name) ?? 0) - 1);
   }
   for (const raw of traits["Skill B."] ?? []) {
-    const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
+    const match = raw.match(/^\s*([+-]?\d+(?:\.\d+)?)\s+(.+?)\s*$/);
     if (!match) continue;
     const bonus = parseFloat(match[1]);
     const name = bareLabel(match[2]);

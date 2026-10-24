@@ -1027,7 +1027,7 @@ function applyAdditional(
   if (allRefs.length === 0) return;
 
   const ensureSource = (name: string, kind: SourceDocKind = "background"): ResolvedSource => {
-    let existing = sources.find((s) => s.source === name);
+    const existing = sources.find((s) => s.source === name);
     if (existing) return existing;
     const created: ResolvedSource = {
       source: name,

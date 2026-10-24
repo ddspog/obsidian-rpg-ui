@@ -1,4 +1,4 @@
-import { App, parseYaml, stringifyYaml, TFile } from "obsidian";
+import { App, stringifyYaml, TFile } from "obsidian";
 
 /**
  * Patches a single top-level key in a YAML code block inside a vault file.
@@ -56,14 +56,6 @@ export async function patchYamlBlock(
 
     const { openLine, closeLine } = chosen;
     const bodyLines = lines.slice(openLine + 1, closeLine);
-    const yamlSource = bodyLines.join("\n");
-
-    let parsed: Record<string, unknown> = {};
-    try {
-      parsed = (parseYaml(yamlSource) as Record<string, unknown>) ?? {};
-    } catch {
-      parsed = {};
-    }
 
     const serializeForKey = (k: string, v: unknown): string[] => {
       if (v !== null && typeof v === "object") {

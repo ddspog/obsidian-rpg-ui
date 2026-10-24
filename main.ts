@@ -2,7 +2,6 @@ import {
   App,
   Plugin,
   MarkdownPostProcessorContext,
-  MarkdownRenderer,
   MarkdownRenderChild,
   MarkdownSectionInformation,
   Notice,
@@ -73,7 +72,7 @@ import * as ReactDOM from "react-dom/client";
 try {
   (globalThis as any).React = React;
   (globalThis as any).ReactDOM = ReactDOM;
-} catch (e) {
+} catch {
   // ignore
 }
 
@@ -640,7 +639,7 @@ export default class DndUIToolkitPlugin extends Plugin {
               const block = ruleSubtype === "content" ? parseRuleContent(source) : parseRuleSide(source);
               const child = new RuleContentRenderChild(container, this.app, block, ctx.sourcePath);
               ctx.addChild(child);
-            } catch (err) {
+            } catch {
               container.innerHTML = `<div class="notice">Error rendering rpg rule.${ruleSubtype}</div>`;
             }
           } else if (ruleSubtype === "related") {
@@ -648,7 +647,7 @@ export default class DndUIToolkitPlugin extends Plugin {
               const block = parseRuleRelated(source);
               const child = new RuleRelatedRenderChild(container, this.app, block, ctx.sourcePath);
               ctx.addChild(child);
-            } catch (err) {
+            } catch {
               container.innerHTML = '<div class="notice">Error rendering rpg rule.related</div>';
             }
           } else if (ruleSubtype === "notes") {
@@ -656,7 +655,7 @@ export default class DndUIToolkitPlugin extends Plugin {
               const block = parseRuleNotes(source);
               const child = new RuleNotesRenderChild(container, this.app, block, ctx.sourcePath);
               ctx.addChild(child);
-            } catch (err) {
+            } catch {
               container.innerHTML = '<div class="notice">Error rendering rpg rule.notes</div>';
             }
           } else if (ruleSubtype === "tab") {
@@ -664,7 +663,7 @@ export default class DndUIToolkitPlugin extends Plugin {
               const block = parseRuleTab(source);
               const child = new RuleTabRenderChild(container, this.app, block, ctx.sourcePath);
               ctx.addChild(child);
-            } catch (err) {
+            } catch {
               container.innerHTML = '<div class="notice">Error rendering rpg rule.tab</div>';
             }
           }
@@ -1352,7 +1351,9 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
                 this.blockName = bname;
                 break;
               }
-            } catch {}
+            } catch {
+              // identity probe is best-effort; try the next block
+            }
           }
           if (this.entityType) break;
         }
@@ -1366,7 +1367,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       let entityData = { codeBlocks: new Map<string, string[]>() } as any;
       try {
         entityData = await this.entityResolver.resolveEntity({ file: sourcePath });
-      } catch (e) {
+      } catch {
         // ignore - leave empty map
       }
 
@@ -1482,7 +1483,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
         try {
           blocksObj = buildEntityBlocks(system, this.entityType, entityData.codeBlocks);
           lookupObj = ((system.entities as any)?.[this.entityType]?.lookup as Record<string, unknown>) ?? {};
-        } catch (e) {
+        } catch {
           // leave blocksObj empty on error
         }
 

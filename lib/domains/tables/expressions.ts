@@ -49,7 +49,7 @@ export function parseExpr(inner: string): ExprCall {
     return m[0];
   }
   function readString(): string {
-    if (src[i] !== '"') throw new Error(`expected \" at ${i}`);
+    if (src[i] !== '"') throw new Error(`expected " at ${i}`);
     i++;
     let out = "";
     while (i < src.length && src[i] !== '"') {

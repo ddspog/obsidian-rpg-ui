@@ -5,14 +5,14 @@
  * note, via the RpgBlock wrapper (no Obsidian dependency).
  */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
 
 // The system is a Promise<RPGSystem> — resolved in a Storybook loader.
 // We import the live system definition directly from the vault config folder.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
 // @ts-ignore — runtime import; types are declared via api.d.ts
 import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
 
@@ -48,7 +48,6 @@ type Story = StoryObj<HeaderArgs>;
 // ─── LowTier ─────────────────────────────────────────────────────────────────
 
 export const LowTier: Story = {
-  name: "Low Tier",
   args: {
     filename: "Aldric Ironveil",
     xp: 40,
@@ -84,7 +83,6 @@ banner: "${args.banner}"
 // ─── MidTier ───────────────────────────────────────────────────────────────
 
 export const MidTier: Story = {
-  name: "Mid Tier",
   args: {
     filename: "Seraphel Voss",
     xp: 6500,

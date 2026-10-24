@@ -1,4 +1,4 @@
-import type { ReactNode, ComponentType, FunctionComponent } from "react";
+import type { ReactNode, FunctionComponent } from "react";
 
 /**
  * RPG UI Toolkit – Public API type declarations

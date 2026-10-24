@@ -41,13 +41,7 @@ import {
 } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import {
-  matchAllCalls,
-  type ParsedCall,
-  type ChainSegment,
-  CALL_PATTERN,
-  ARGS_INNER,
-} from "lib/domains/references/parse-call";
+import { matchAllCalls, type ParsedCall, type ChainSegment, ARGS_INNER } from "lib/domains/references/parse-call";
 import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
@@ -2116,7 +2110,6 @@ function resolveFolderCall(
               const allLis = span.querySelectorAll("li.rpg-view--item");
               // Items are in order — highlighted files were tracked sequentially
               // Mark items by counting: each highlighted file produced one <li>
-              let hlIdx = 0;
               let liIdx = 0;
               for (const { file: ef } of entries) {
                 if (liIdx >= allLis.length) break;
@@ -2201,25 +2194,6 @@ function renderCellInline(doc: Document, td: HTMLElement, text: string): void {
 /** Remove the first heading (any level) from a markdown body. */
 function stripFirstHeading(body: string): string {
   return body.replace(/^\s*#{1,6}\s+[^\n]*\n?/, "");
-}
-
-function unwrapCallCodeSpans(root: HTMLElement, deps: RuleCallProcessorDeps, sourcePath: string): void {
-  const codes = Array.from(root.querySelectorAll("code"));
-  for (const code of codes) {
-    if (code.parentElement?.tagName === "PRE") continue;
-    const text = code.textContent ?? "";
-    if (!WHOLE_CALL_PATTERN.test(text)) continue;
-    // Only unwrap when the wikilink target actually resolves to a file —
-    // otherwise the user is documenting call syntax (e.g. `@[[file]].fn()`)
-    // and we'd turn their docs into broken live calls.
-    const parsed = matchAllCalls(text)[0];
-    if (!parsed) continue;
-    const targetPath = resolveLinkToPath(deps.app, parsed.target, sourcePath);
-    if (!targetPath) continue;
-    const replacement = document.createTextNode(text.trim());
-    code.parentNode?.replaceChild(replacement, code);
-  }
-  void CALL_PATTERN;
 }
 
 /**
@@ -2520,20 +2494,6 @@ function mergeAdjacentCallSpreads(root: HTMLElement): void {
       container.appendChild(group[i]);
     }
   }
-}
-
-/** Check if two sibling elements are adjacent (only whitespace text nodes between). */
-function areAdjacent(a: Element, b: Element): boolean {
-  let node: Node | null = a.nextSibling;
-  while (node) {
-    if (node === b) return true;
-    if (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()) {
-      node = node.nextSibling;
-      continue;
-    }
-    return false;
-  }
-  return false;
 }
 
 /**

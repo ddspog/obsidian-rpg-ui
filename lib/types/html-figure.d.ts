@@ -3,6 +3,7 @@
 // React.HTMLAttributes<HTMLFigureElement> to be used safely.
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- global interface merge
   interface HTMLFigureElement extends HTMLElement {}
 }
 

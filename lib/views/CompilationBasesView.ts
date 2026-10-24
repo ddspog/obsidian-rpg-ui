@@ -67,7 +67,9 @@ function getBasesViewBase(): any {
   try {
     const obsidian = require("obsidian");
     if (obsidian.BasesView) return obsidian.BasesView;
-  } catch {}
+  } catch {
+    // Bases unavailable; fall through to the stub below
+  }
   // Minimal stub so the plugin doesn't crash when Bases isn't available
   return class StubBasesView {
     app: App;

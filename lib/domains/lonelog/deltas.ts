@@ -4,7 +4,7 @@
  * Uses strategy pattern for tag processing via TagProcessorRegistry
  */
 
-import type { LonelogEntry, PersistentTag, EntityDelta, StateChange, ProgressChange, ThreadChange } from "./types";
+import type { LonelogEntry, PersistentTag, EntityDelta, ProgressChange, ThreadChange } from "./types";
 import {
   TagProcessorRegistry,
   PCTagProcessor,
@@ -12,7 +12,6 @@ import {
   DialOpTagProcessor,
   ProgressTagProcessor,
   ThreadTagProcessor,
-  parseChange,
 } from "./tagging";
 
 /**

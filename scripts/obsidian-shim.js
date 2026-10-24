@@ -1,3 +1,4 @@
+/* global document */
 import YAML from "yaml";
 /**
  * Minimal Obsidian API shim for use in Node.js bundled scripts.

@@ -3,7 +3,7 @@
  * Provides autocomplete for file paths in text inputs
  */
 
-import { App, TAbstractFile, TFile, TFolder } from "obsidian";
+import { App, TFile } from "obsidian";
 import { TextComponent } from "obsidian";
 
 export class FileSuggest {

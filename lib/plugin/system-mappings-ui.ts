@@ -7,7 +7,6 @@ import { App, Setting, Notice, Modal } from "obsidian";
 import { createSection } from "lib/plugin/settings-sections";
 import { FolderSuggest } from "lib/utils/folder-suggest";
 import { DndUIToolkitSettings } from "settings";
-import { SystemRegistry } from "lib/systems/registry";
 import { loadSystemFromTypeScript } from "lib/systems/ts-loader";
 
 export interface SystemMappingsContext {
@@ -158,7 +157,7 @@ export function renderSystemMappings(containerEl: HTMLElement, ctx: SystemMappin
 
     // 2) Folder row: add-folders input + chips
     const folderSetting = new Setting(mappingContainer).setDesc("");
-    const addInput = folderSetting.addText((text) => {
+    folderSetting.addText((text) => {
       text.setPlaceholder("Add folders (Enter to add)").setValue("");
       text.inputEl.classList.add("rpg-folder-input");
       text.inputEl.style.width = "200px";

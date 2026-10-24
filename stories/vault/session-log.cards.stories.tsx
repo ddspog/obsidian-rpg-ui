@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { CardStack } from "../../lib/components/session-log/card-stack";
 import type { CardStack as CardStackData } from "../../lib/domains/session-log/card-types";

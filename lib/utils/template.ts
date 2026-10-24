@@ -86,7 +86,7 @@ export function createTemplateContext(el: HTMLElement, fileContext: FileContext)
       wisdom: getTotalScore(abilityBlock.abilities.wisdom, "wisdom", abilityBlock.bonuses),
       charisma: getTotalScore(abilityBlock.abilities.charisma, "charisma", abilityBlock.bonuses),
     };
-  } catch (error) {
+  } catch {
     // If no ability block found, use defaults
   }
 
@@ -104,7 +104,7 @@ export function createTemplateContext(el: HTMLElement, fileContext: FileContext)
     if (skillsContent) {
       skills = parseSkillsBlock(skillsContent);
     }
-  } catch (error) {
+  } catch {
     // If no skills block found, use defaults
   }
 

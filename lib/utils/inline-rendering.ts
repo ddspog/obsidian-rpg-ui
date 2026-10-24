@@ -1,5 +1,3 @@
-import { MarkdownRenderer } from "obsidian";
-
 export interface DataRecord {
   [key: string]: unknown;
 }

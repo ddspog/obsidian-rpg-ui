@@ -5,12 +5,11 @@
  * note, via the RpgBlock wrapper (no Obsidian dependency).
  */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { RpgBlock } from "../lib/RpgBlock";
 import type { RPGSystem } from "../../lib/systems/types";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
 import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
 

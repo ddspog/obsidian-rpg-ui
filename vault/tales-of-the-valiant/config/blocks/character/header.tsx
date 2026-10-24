@@ -57,7 +57,9 @@ function CommentMarkdown({ source }: { source: string }) {
     return () => {
       try {
         comp.unload();
-      } catch {}
+      } catch {
+        // a failing child unload must not break teardown
+      }
     };
   }, [source]);
   return <span ref={ref} />;

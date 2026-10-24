@@ -1,4 +1,4 @@
-import { evalCode, openFile, command } from "./obsidian.mjs";
+import { evalCode, openFile } from "./obsidian.mjs";
 import { vaultRelative } from "./paths.mjs";
 
 function sleep(ms) {

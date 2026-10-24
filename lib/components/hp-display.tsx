@@ -3,7 +3,6 @@
  * Displays current/max HP with temporary HP indicator and progress bar
  */
 
-import type { ParsedHealthBlock } from "lib/types";
 // No additional imports needed
 
 export interface HPDisplayProps {

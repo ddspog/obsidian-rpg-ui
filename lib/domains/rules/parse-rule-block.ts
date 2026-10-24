@@ -218,8 +218,7 @@ export function parseRuleRelated(source: string): RuleRelatedBlock {
   return { kind: "related", level, view, entries };
 }
 
-const EMBED_RE = /!\[\[[^\[\]\n]+\]\]/;
-const CALL_RE = /@\[\[[^\]\n]+\]\]\.[A-Za-z_][\w-]*\([^)\n]*\)/;
+const EMBED_RE = /!\[\[[^[\]\n]+\]\]/;
 
 function coerceRelatedEntry(raw: unknown): RelatedEntry | null {
   if (typeof raw === "string") {

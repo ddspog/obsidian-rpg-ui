@@ -1,6 +1,6 @@
 import { BaseView } from "./BaseView";
 import { MarkdownPostProcessorContext, parseYaml, MarkdownRenderer, Component } from "obsidian";
-import { buildInlineCards, buildInlineTable, DataRecord } from "lib/utils/inline-rendering";
+import { buildInlineCards, buildInlineTable } from "lib/utils/inline-rendering";
 import { resolveData, resolveSystemData } from "./show-data-resolver";
 import { buildEntries } from "./show-entries-builder";
 

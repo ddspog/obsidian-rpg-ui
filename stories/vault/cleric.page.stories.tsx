@@ -9,14 +9,13 @@
  * `tx` tables) directly.
  */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { expect, within } from "storybook/test";
 import { ObsidianMarkdown } from "../lib/obsidian-md-renderer";
 import { classes } from "../lib/wiki-fixtures";
 import type { RPGSystem } from "../../lib/systems/types";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — runtime import; types are declared via api.d.ts
 import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
 

@@ -15,12 +15,10 @@ export class RpgTableRenderChild extends MarkdownRenderChild {
     super(el);
     // Use legacy synchronous render for the initial mount so the DOM is
     // populated BEFORE Obsidian's post-processors scan for @[[refs]].
-    // eslint-disable-next-line react/no-deprecated
     (ReactDOM as any).render(<RpgTable def={this.def} filePath={this.sourcePath} sourcePath={this.sourcePath} />, el);
   }
 
   onunload(): void {
-    // eslint-disable-next-line react/no-deprecated
     (ReactDOM as any).unmountComponentAtNode(this.containerEl);
   }
 }
