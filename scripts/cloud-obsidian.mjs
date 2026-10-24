@@ -8,7 +8,7 @@
 //   node scripts/cloud-obsidian.mjs stop
 //
 // `start` copies the vault ($RPG_VAULT_ROOT) into ~/.cache/rpg-obsidian/work so the
-// real vault is never touched, and installs main.js/manifest.json/styles.css
+// real vault is never touched, and installs main.js/manifest.json/styles.css/esbuild.wasm
 // from the plugin root, plus the theme in $THEME_DIR if set (the vault's
 // appearance.json picks which theme is active; open fonts stand in for the
 // theme's macOS fonts, see FONT_ROLES). Run `npm run build` first to test current code.
@@ -142,8 +142,21 @@ function prepareVault() {
   // Obsidian loads plugins by manifest id, so install under that folder name.
   const dest = path.join(vaultCopy, ".obsidian", "plugins", PLUGIN_ID);
   fs.mkdirSync(dest, { recursive: true });
-  for (const f of ["main.js", "manifest.json", "styles.css"]) {
+  // esbuild.wasm compiles the TypeScript system configs; without it rule views
+  // such as `.tab()` are "not registered".
+  for (const f of ["main.js", "manifest.json", "styles.css", "esbuild.wasm"]) {
     fs.copyFileSync(path.join(pluginRoot, f), path.join(dest, f));
+  }
+  // The real vault keeps its folder -> system mappings in the plugin's (gitignored)
+  // data.json. Seed one per top-level folder with a config/index.ts, so rule views
+  // such as `.tab()` resolve in the copy.
+  const dataJson = path.join(dest, "data.json");
+  if (!fs.existsSync(dataJson)) {
+    const systemMappings = fs
+      .readdirSync(vaultCopy, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && fs.existsSync(path.join(vaultCopy, d.name, "config", "index.ts")))
+      .map((d) => ({ folderPaths: [d.name], systemFolderPath: `${d.name}/config` }));
+    fs.writeFileSync(dataJson, JSON.stringify({ systemMappings }));
   }
   if (THEME_DIR) {
     const { name } = JSON.parse(fs.readFileSync(path.join(THEME_DIR, "manifest.json"), "utf8"));
@@ -154,6 +167,18 @@ function prepareVault() {
     }
     if (process.env.CLOUD_FONTS !== "0") installFonts();
   }
+}
+
+// First runs leave a settings modal and an "Indexing vault" toast over the note.
+async function clearOverlays(page) {
+  for (let i = 0; i < 5 && (await page.locator(".modal-container").count()) > 0; i++) {
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+  }
+  await page
+    .locator(".notice", { hasText: /Indexing vault/i })
+    .waitFor({ state: "hidden", timeout: 30000 })
+    .catch(() => {});
 }
 
 async function start() {
@@ -169,7 +194,7 @@ async function start() {
   const log = fs.openSync(path.join(work, "obsidian.log"), "w");
   const child = spawn(
     "xvfb-run",
-    ["-a", "-s", "-screen 0 1600x1000x24", bin, "--no-sandbox", "--disable-gpu", `--remote-debugging-port=${CDP_PORT}`],
+    ["-a", "-s", "-screen 0 1600x1400x24", bin, "--no-sandbox", "--disable-gpu", `--remote-debugging-port=${CDP_PORT}`],
     {
       detached: true,
       stdio: ["ignore", log, log],
@@ -196,7 +221,7 @@ async function start() {
     .click({ timeout: 10000 })
     .catch(() => {});
   await page.waitForFunction(() => globalThis.app?.plugins?.plugins?.["dnd-ui-toolkit"], null, { timeout: 30000 });
-  await page.keyboard.press("Escape");
+  await clearOverlays(page);
   await browser.close();
   console.log(`Obsidian ready (CDP :${CDP_PORT}, vault copy ${vaultCopy})`);
 }
@@ -204,13 +229,18 @@ async function start() {
 async function screenshot(note, out, scrollTo) {
   if (!note || !out) throw new Error("usage: screenshot <note path in vault> <out.png> [text to scroll to]");
   const { browser, page } = await connect();
-  await page.setViewportSize({ width: 1400, height: 1000 });
+  const [vw, vh] = (process.env.VIEWPORT ?? "1600x1400").split("x").map(Number);
+  await page.setViewportSize({ width: vw, height: vh });
+  // The file explorer takes a fifth of the width; screenshots are of the note.
+  // KEEP_SIDEBAR=1 leaves it open.
+  if (process.env.KEEP_SIDEBAR !== "1") await page.evaluate(() => globalThis.app.workspace.leftSplit?.collapse());
   const found = await page.evaluate(async (f) => {
     const file = globalThis.app.vault.getAbstractFileByPath(f);
     if (file) await globalThis.app.workspace.getLeaf(false).openFile(file, { state: { mode: "preview" } });
     return !!file;
   }, note);
   if (!found) throw new Error(`Note not found in vault: ${note}`);
+  await clearOverlays(page);
   await page.waitForTimeout(Number(process.env.WAIT_MS ?? 5000));
   if (scrollTo)
     await page.locator(".markdown-preview-view:visible").getByText(scrollTo).first().scrollIntoViewIfNeeded();

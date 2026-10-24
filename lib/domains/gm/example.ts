@@ -17,6 +17,7 @@ import { resolveConsult } from "../lonelog/list-ops";
 import { emitGMFeature, generatorSteps } from "./emit";
 import { answerFateQuestion, resolveInterpret } from "./fate-chart";
 import { parseBranchRef, resolveTableRoll, chooseTables } from "./steps";
+import { NESTED_SEP } from "../session-log/choice";
 import { parseFormula, rolledValue, setDiceValue } from "../session-log/formula";
 
 const RESERVED = new Set(["rolls", "result", "narration"]);
@@ -216,16 +217,39 @@ function resultLine(
  * step's line is the flat labeled form `"<choice>: <calc>"` (empty `calc` =
  * record the pick with no line).
  */
+/** The die a table is rolled with: its header's first column (`d20`, `d6`), else `d100`. */
+function tableDie(table: TableDef | undefined): string {
+  const label = table?.columnLabels?.[0]?.trim() ?? "";
+  return label.match(/^(\d*d\d+)\*?$/i)?.[1].toLowerCase() ?? "d100";
+}
+
+/** A word-pair line is written `<ref> d100= ->`; roll it with its own table's die instead. */
+function withTableDice(line: string, tables: GMStepContext["tables"]): string {
+  if (!tables) return line;
+  return line.replace(/(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)\s+d100(?==)/g, (m, ref: string) => {
+    const die = tableDie(tables[ref]);
+    return die === "d100" ? m : `${ref} ${die}`;
+  });
+}
+
 export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
+  const out = gmStepLinesRaw(feature, stepCtx);
+  for (const [choice, line] of Object.entries(out)) out[choice] = withTableDice(line, stepCtx?.tables);
+  return out;
+}
+
+function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
   const out = gmFollowLines(feature);
+  const add = (s: GMStep) => {
+    if (!s.choice) return;
+    out[s.choice] = stepGeneratedLine(s);
+    // What a nested dropdown's option spawns, under the pick it was made below.
+    for (const t of s.then ?? []) if (t.choice) out[`${s.choice}${NESTED_SEP}${t.choice}`] = stepGeneratedLine(t);
+  };
   // The feature's OWN steps map its own `choices` generator's picks (a tool page
   // that declares both the picker and what each pick spawns, e.g. Event Meaning).
-  for (const s of feature.steps ?? []) if (s.choice) out[s.choice] = stepGeneratedLine(s);
-  for (const step of Object.values(stepCtx?.steps ?? {})) {
-    for (const s of step.steps ?? []) {
-      if (s.choice) out[s.choice] = stepGeneratedLine(s);
-    }
-  }
+  for (const s of feature.steps ?? []) add(s);
+  for (const step of Object.values(stepCtx?.steps ?? {})) for (const s of step.steps ?? []) add(s);
   return out;
 }
 
@@ -239,9 +263,14 @@ export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record
  */
 export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): string {
   const label = s.step ?? s.choice ?? "";
+  if (s.then && s.then.length > 0) {
+    const kinds = s.then.map((t) => t.choice).filter((c): c is string => !!c);
+    return `${s.thenLabel?.trim() || "Kind"}: [${kinds.join("/")} - ]`;
+  }
   if (s.tables && s.tables.length > 0) {
-    return chooseTables(s.tables, s.pick, rng)
-      .map((ref, i) => `${label} ${i + 1}: ${ref} d100= ->`)
+    const tables = s.tables;
+    return chooseTables(tables, s.pick, rng)
+      .map((ref, i) => `${s.labels?.[tables.indexOf(ref)]?.trim() || `${label} ${i + 1}`}: ${ref} d100= ->`)
       .join("\n");
   }
   const calc = s.calc ?? "";
@@ -369,6 +398,12 @@ function stepByLabel(stepCtx?: GMStepContext, own?: GMFeature[]): Record<string,
     }
   }
   return out;
+}
+
+/** A `+ label: @[[file]]#id d20=…` row's own table, as a step to resolve it by. */
+function selfDescribedTable(line: string, stepCtx?: GMStepContext): GMStep | undefined {
+  const ref = line.replace(/^\s*\+\s*[^:]+:\s*/, "").match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
+  return ref && stepCtx?.tables?.[ref] ? { tables: [ref] } : undefined;
 }
 
 /**
@@ -518,8 +553,11 @@ export function resolveGmBody(body: string, features: GMFeature[], stepCtx?: GMS
     // resolve against their OWN step, by the `+ `-stripped label.
     const ownStep = childLabel ? (steps[childLabel] ?? steps[childLabel.replace(/ \d+$/, "")]) : undefined;
     if (isChildLine(line)) {
-      if (ownStep && (ownStep.table || ownStep.tables || ownStep.likelihood || ownStep.interpret)) {
-        lines[i] = reResolveStepLine(line, ownStep, stepCtx, cf);
+      // A row named for its table (`Masculine name: @[[…]]#id d20=…`) has no step of
+      // that label, but it names its table itself, so it fills from it.
+      const rowStep = ownStep ?? selfDescribedTable(line, stepCtx);
+      if (rowStep && (rowStep.table || rowStep.tables || rowStep.likelihood || rowStep.interpret)) {
+        lines[i] = reResolveStepLine(line, rowStep, stepCtx, cf);
       }
       continue;
     }

@@ -31,6 +31,7 @@ import { ListSheetModal } from "./list-sheet-modal";
 import { TableRollContext } from "./table-roll-context";
 import { dieEditKey, resultEditKey } from "lib/domains/session-log/prose-model";
 import type { SidebarItem, SidebarRow, RowIcon, SceneRowData, SidebarPill } from "lib/domains/session-log/prose-model";
+import type { ChoiceAt } from "lib/domains/session-log/choice";
 
 export interface SceneEditValue {
   number: string;
@@ -229,9 +230,13 @@ function RowContent({
   row: SidebarRow;
   sourcePath: string;
   edit?: SidebarEditContext;
-  onChoice?: (selected: string) => void;
+  onChoice?: (selected: string, at?: ChoiceAt) => void;
 }) {
   const tableRoll = React.useContext(TableRollContext);
+  // A pick says which line's dropdown it is, so its own generator is the one rewritten.
+  const pick = onChoice
+    ? (selected: string) => onChoice(selected, row.source ? { source: row.source, nth: row.sourceNth ?? 0 } : undefined)
+    : undefined;
   if (row.scene) {
     // Read-only: render the scene line as plain text. Editable (live sidebar):
     // inline inputs, only when an onSceneChange handler is wired.
@@ -256,7 +261,8 @@ function RowContent({
     const rollPreview = (): string | undefined => {
       if (!tableRoll || !edit || !source || !formula || formula.result == null || formula.result.trim() !== "")
         return undefined;
-      const ref = row.content.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
+      // The ref is hidden from `content` on a word-pair row; `source` keeps the raw line.
+      const ref = source.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
       const term = editableTerms(formula).find((t) => t.kind === "dice");
       if (!ref || !term) return undefined;
       const slots = Array.from(
@@ -297,11 +303,11 @@ function RowContent({
             ))}
           </span>
         ) : formula ? (
-          <FormulaView formula={formula} edit={die} onChoice={onChoice} named={!!row.combatant} />
+          <FormulaView formula={formula} edit={die} onChoice={pick} named={!!row.combatant} />
         ) : hasChoice ? (
           <ChoiceOnlyView
             text={row.content}
-            onChoice={onChoice}
+            onChoice={pick}
             onResultChange={source && edit ? (value) => edit.onResultChange(source, value) : undefined}
           />
         ) : (
@@ -448,7 +454,7 @@ export interface SidebarEntryProps {
   /** Click/keyboard selection handler (live sidebar). Omit for a static entry. */
   onSelect?: (id: number) => void;
   /** Choice-token pick override (feature example: insert the generated line). */
-  onChoice?: (selected: string) => void;
+  onChoice?: (selected: string, at?: ChoiceAt) => void;
 }
 
 /**
@@ -460,6 +466,11 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
   // A "pills-only" row (icon + pills, no content — e.g. a dial change) has its
   // pills shown in the dateline strip; render its icon there and skip the empty
   // body row, so the icon sits beside the pill instead of orphaned below it.
+  const joinedAfter = (ri: number) => {
+    const out: SidebarRow[] = [];
+    for (let j = ri + 1; item.rows[j]?.joined && item.rows[j].detail; j++) out.push(item.rows[j]);
+    return out;
+  };
   const isPillsOnly = (row: SidebarRow) => !row.scene && !row.detail && !row.content && row.pills.length > 0;
   const headerIcon = item.rows.find(isPillsOnly)?.icon ?? null;
   // Entries that nest inputs (scene editor or editable dice) can't be a button;
@@ -498,10 +509,19 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
             </tr>
           )}
           {item.rows.map((row, ri) =>
-            isPillsOnly(row) ? null : row.detail ? (
+            isPillsOnly(row) || (row.joined && item.rows[ri - 1]?.detail) ? null : row.detail ? (
               <tr key={ri}>
                 <td className="lonelog-row-detail-cell" colSpan={2}>
-                  <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                  {joinedAfter(ri).length > 0 ? (
+                    // Rows written `& label: …` ride on this one's line, each with its own die.
+                    <div className="lonelog-row-joined">
+                      {[row, ...joinedAfter(ri)].map((part, k) => (
+                        <RowContent key={k} row={part} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                      ))}
+                    </div>
+                  ) : (
+                    <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                  )}
                 </td>
               </tr>
             ) : (

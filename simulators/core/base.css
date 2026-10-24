@@ -1,0 +1,199 @@
+/* Obsidian's own app.css (and the theme's) come first in the build, so everything here is the
+   simulator's frame: it only styles .sim-* and undoes the app shell's fixed full-window layout. */
+/* ── The simulator's own frame ── */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: auto;
+  overflow: auto;
+  position: static;
+  margin: 0;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.sim {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.sim-bar {
+  position: static;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px max(12px, env(safe-area-inset-left)) 8px max(12px, env(safe-area-inset-right));
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.sim-title {
+  font-weight: 600;
+  margin-right: auto;
+}
+.sim-tabs {
+  display: flex;
+  gap: 4px;
+}
+.sim-bar button,
+.sim-actions button,
+.sim-sample button {
+  font: inherit;
+  color: var(--text-normal);
+  cursor: pointer;
+  background: var(--interactive-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-height: 36px;
+}
+.sim-bar button:hover,
+.sim-actions button:hover,
+.sim-sample button:hover {
+  background: var(--interactive-hover);
+}
+.sim-bar button[aria-pressed="true"] {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+.sim-panel {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px max(12px, env(safe-area-inset-left)) 96px max(12px, env(safe-area-inset-right));
+}
+.sim-panel[hidden] {
+  display: none;
+}
+.sim-panel {
+  overflow-x: clip;
+}
+.sim-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 12px;
+  max-width: 70ch;
+}
+.sim textarea.sim-source {
+  width: 100%;
+  min-height: 60vh;
+  resize: vertical;
+  font: 13px/1.5 var(--font-monospace);
+  color: var(--text-normal);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 10px;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+.sim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.sim-sample {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 12px 0;
+}
+.sim-sample h3 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+.sim-sample p {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  max-width: 70ch;
+}
+.sim-sample pre {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  max-height: 9em;
+  overflow: auto;
+  font: 12px/1.45 var(--font-monospace);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  white-space: pre;
+}
+.sim-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 90;
+  display: grid;
+  gap: 6px;
+  pointer-events: none;
+}
+.sim-toast {
+  background: #222;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+.sim-menu {
+  position: fixed;
+  z-index: 95;
+  display: grid;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.sim-menu button {
+  font: inherit;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.sim-panels {
+  flex: 1;
+}
+.sim-body {
+  min-width: 0;
+}
+.sim-search {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text-normal);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+.sim-error {
+  color: var(--text-error);
+  padding: 8px 0;
+}
+
+/* The Log panel is a note, not a form: no frame padding, Obsidian's own reading margins. */
+.sim-panel:has(.markdown-reading-view) {
+  max-width: none;
+  padding: 0 0 96px;
+}
+.sim .view-content,
+.sim .markdown-reading-view,
+.sim .markdown-preview-view {
+  height: auto;
+  overflow: visible;
+}
+.sim-panel:has(.markdown-reading-view) > .sim-note {
+  padding: 12px max(16px, env(safe-area-inset-left)) 0;
+}

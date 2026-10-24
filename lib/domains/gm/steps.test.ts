@@ -11,6 +11,7 @@ import {
   chooseTables,
   stepUseLinks,
   spliceStepUses,
+  flattenSteps,
 } from "./steps";
 
 describe("step composition — use:", () => {
@@ -236,6 +237,33 @@ describe("resolveTableRoll", () => {
   });
 });
 
+describe("resolveTableRoll — rows with several value columns", () => {
+  const cols = (labels: string[], rows: string[][]): TableDef => ({
+    name: "names",
+    columns: labels.map((l) => l.toLowerCase()),
+    columnLabels: labels,
+    headerRows: [],
+    rows: rows.map((r) => ({ cells: r.map((value) => ({ value })) })),
+    classes: [],
+    footer: [],
+  });
+
+  it("names each filled column, joined", () => {
+    const t = cols(["d20", "Start", "Ending"], [["4", "Hod", "dare"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Start: Hod · Ending: dare");
+  });
+
+  it("gives just the values when the columns are numbered alternatives", () => {
+    const t = cols(["d20", "1", "2", "3"], [["4", "Aafas", "Halad", "Okhtar"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Aafas · Halad · Okhtar");
+  });
+
+  it("skips an empty column", () => {
+    const t = cols(["d20", "Start", "Middle", "Ending"], [["4", "Ka", "", "dun"]]);
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Start: Ka · Ending: dun");
+  });
+});
+
 describe("chooseTables", () => {
   const els = [
     "@[[Location Descriptors]]#locations",
@@ -267,5 +295,15 @@ describe("chooseTables", () => {
     const copy = [...els];
     chooseTables(els, 2, () => 0.99);
     expect(els).toEqual(copy);
+  });
+});
+
+describe("flattenSteps", () => {
+  it("lists a step's nested options after it, at any depth", () => {
+    const steps: GMStep[] = [
+      { choice: "A", then: [{ choice: "A1" }, { choice: "A2", then: [{ choice: "A2a" }] }] },
+      { choice: "B" },
+    ];
+    expect(flattenSteps(steps).map((s) => s.choice)).toEqual(["A", "A1", "A2", "A2a", "B"]);
   });
 });

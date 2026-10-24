@@ -14,6 +14,7 @@ import { ProseView } from "./prose-view";
 import { LogSidebar } from "./log-sidebar";
 import type { ProseScene } from "lib/domains/session-log/prose-model";
 import type { SidebarItem } from "lib/domains/session-log/prose-model";
+import type { ChoiceAt } from "lib/domains/session-log/choice";
 
 export function ProseLogLayout({
   scenes,
@@ -30,7 +31,7 @@ export function ProseLogLayout({
   sidebarItems: SidebarItem[];
   sourcePath: string;
   initialSidebarOpen?: boolean;
-  onChoice?: (selected: string) => void;
+  onChoice?: (selected: string, at?: ChoiceAt) => void;
   /** When wired, the Log sidebar's dice become editable — used by a `feature.gm`
    *  body to let the reader roll and re-resolve a scratch copy of the log. */
   dieEdits?: Record<string, string>;

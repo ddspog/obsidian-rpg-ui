@@ -1,0 +1,7 @@
+{
+  "id": "__ID__",
+  "title": "__TITLE__",
+  "about": "What this simulator is for, in one line.",
+  "entry": "index.ts",
+  "vault": { "include": ["**/*.md"] }
+}

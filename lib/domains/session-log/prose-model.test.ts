@@ -351,6 +351,37 @@ describe("continuation rows — word-pair table refs are hidden", () => {
     expect(row.source).toContain("@[[Actions Meaning]]#action-01"); // ref kept for resolution
   });
 
+  it.each([
+    ["Brittonian (Welsh) 1", "Brittonian (Welsh) 1: @[[x]]#a d20= ->"],
+    ["Dharc-Metallik 2", "Dharc-Metallik 2: @[[x]]#a d20= ->"],
+    ["Masculine name, variant", "Masculine name, variant: @[[x]]#a d20= ->"],
+  ])("keeps the label %s (parenthetical or hyphen)", (label, line) => {
+    const [row] = rowsFor(["gen: Name Generator", `  + ${line}`].join("\n"));
+    expect(row.label).toBe(label);
+    expect(row.content).toBe("d20= ->");
+  });
+
+  it("marks a row written `& label:` as joined to the one above, keeping its own source", () => {
+    const rows = rowsFor(
+      ["gen: Name Generator", "  + Start: @[[x]]#a d100= ->", "  + & Ending: @[[y]]#b d20= ->"].join("\n")
+    );
+    expect(rows.map((r) => [r.label, r.joined ?? false, r.content])).toEqual([
+      ["Start", false, "d100= ->"],
+      ["Ending", true, "d20= ->"],
+    ]);
+    expect(rows[1].source).toContain("& Ending:");
+  });
+
+  it("keeps the label of a table named with accented letters", () => {
+    const body = [
+      "gen: Name Generator",
+      "  + Nörslik 1: @[[18. Nörslik]]#nrslik-masculine-personal-names-1 d100= ->",
+    ].join("\n");
+    const [row] = rowsFor(body);
+    expect(row.label).toBe("Nörslik 1");
+    expect(row.content).toBe("d100= ->");
+  });
+
   it("leaves a line that merely links (no die after the ref) untouched", () => {
     const body = ["gen: G", "  + Generate a Random Event: @[[Random Event]]#random-event (roll it)"].join("\n");
     expect(rowsFor(body)[0].content).toBe("@[[Random Event]]#random-event (roll it)");

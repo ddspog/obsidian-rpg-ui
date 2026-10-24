@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
+import { NESTED_SEP } from "../session-log/choice";
 import {
   buildGMExampleLog,
   gmFollowLines,
@@ -69,6 +70,75 @@ describe("stepGeneratedLine", () => {
   });
 });
 
+describe("gmStepLines — word-pair rows roll their table's own die", () => {
+  const table = (label: string) => ({ columnLabels: [label, "Name"], columns: ["d", "name"], rows: [] }) as never;
+  const feature: GMFeature = {
+    name: "Name Generator",
+    steps: [{ choice: "Dwarven", tables: ["@[[a]]#d20t", "@[[b]]#d100t", "@[[c]]#unknown"] }],
+  };
+  const lines = gmStepLines(feature, { tables: { "@[[a]]#d20t": table("d20"), "@[[b]]#d100t": table("d100*") } });
+
+  it("uses the die in the table's header, and d100 where it names none or isn't loaded", () => {
+    expect(lines.Dwarven.split("\n")).toEqual([
+      "Dwarven 1: @[[a]]#d20t d20= ->",
+      "Dwarven 2: @[[b]]#d100t d100= ->",
+      "Dwarven 3: @[[c]]#unknown d100= ->",
+    ]);
+  });
+});
+
+describe("gmStepLines — word-pair rows named for their tables", () => {
+  const named: GMFeature = {
+    name: "Name Generator",
+    steps: [
+      {
+        choice: "Dwarven – Place name",
+        tables: ["@[[a]]#one", "@[[b]]#two", "@[[c]]#three"],
+        labels: ["Start", "& Ending"],
+      },
+    ],
+  };
+
+  it("labels each row for its table, and falls back to the pick's name and a number", () => {
+    expect(gmStepLines(named)["Dwarven – Place name"].split("\n")).toEqual([
+      "Start: @[[a]]#one d100= ->",
+      "& Ending: @[[b]]#two d100= ->",
+      "Dwarven – Place name 3: @[[c]]#three d100= ->",
+    ]);
+  });
+});
+
+describe("gmStepLines — a step with a nested dropdown", () => {
+  const feature: GMFeature = {
+    name: "Name Generator",
+    steps: [
+      {
+        choice: "Anglish",
+        thenLabel: "Name kind",
+        then: [
+          { choice: "Masculine name", tables: ["@[[a]]#m"], labels: ["Name"] },
+          { choice: "Terrain name", tables: ["@[[a]]#t", "@[[a]]#e"], labels: ["Name", "& Ending"] },
+        ],
+      },
+      { choice: "Arabish", then: [{ choice: "Masculine name", tables: ["@[[b]]#m"] }] },
+    ],
+  };
+  const lines = gmStepLines(feature);
+
+  it("spawns the dropdown, labelled, when the step is picked", () => {
+    expect(lines.Anglish).toBe("Name kind: [Masculine name/Terrain name - ]");
+    expect(lines.Arabish).toBe("Kind: [Masculine name - ]");
+  });
+
+  it("keeps each option's lines under its parent pick", () => {
+    expect(lines[`Anglish${NESTED_SEP}Terrain name`].split("\n")).toEqual([
+      "Name: @[[a]]#t d100= ->",
+      "& Ending: @[[a]]#e d100= ->",
+    ]);
+    expect(lines[`Arabish${NESTED_SEP}Masculine name`]).toBe("Masculine name 1: @[[b]]#m d100= ->");
+  });
+});
+
 describe("resolveGmBody — word-pair steps", () => {
   const wordTable = (pairs: Array<[string, string]>): TableDef => ({
     name: "meaning",
@@ -111,6 +181,17 @@ describe("resolveGmBody — word-pair steps", () => {
     const out = resolveGmBody(body, [feature], stepCtx);
     expect(out).toContain("Meaning Actions 1: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
     expect(out).toContain("Meaning Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
+  });
+
+  it("fills a row named for its table, merged rows included", () => {
+    const body = [
+      "gen: Test Gen",
+      "  + Opening syllable: @[[Actions Meaning]]#action-01 d100=13 ->",
+      "  + & Ending syllable: @[[Actions Meaning]]#action-02 d100=8 ->",
+    ].join("\n");
+    const out = resolveGmBody(body, [feature], stepCtx);
+    expect(out).toContain("+ Opening syllable: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
+    expect(out).toContain("+ & Ending syllable: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
   });
 
   it("fills only the rolled word of a partially-rolled pair", () => {

@@ -115,6 +115,21 @@ function rangeMatches(key: string, n: number): boolean {
 }
 
 /**
+ * What a rolled row says. One value column: its text. Several (a name table's Start and
+ * Ending, a Part 1 and Part 2): every filled one, `Start: Hod · Ending: dare`, each named
+ * by its column, or just the values when the columns are numbered alternatives (`1`, `2`).
+ */
+function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
+  const values = row.cells
+    .slice(1)
+    .map((c, i) => ({ label: (table.columnLabels?.[i + 1] ?? "").trim(), text: c.value.trim() }));
+  const filled = values.filter((v) => v.text);
+  if (filled.length <= 1 || values.length <= 1) return (values[0]?.text ?? "") || filled[0]?.text || "";
+  const numbered = values.every((v) => /^\d*$/.test(v.label));
+  return filled.map((v) => (numbered || !v.label ? v.text : `${v.label}: ${v.text}`)).join(" · ");
+}
+
+/**
  * Auto-fill a table-backed calc's result from the rolled die. Given a calc like
  * `"@[[Scene Adjustment]] d10=2 ->"` and the linked `TableDef`, looks up the row
  * whose first column covers the rolled value and writes the second column after
@@ -130,7 +145,7 @@ export function resolveTableRoll(calc: string, table: TableDef): string {
   for (const row of table.rows) {
     const key = row.cells[0]?.value ?? "";
     if (rangeMatches(key, n)) {
-      const result = (row.cells[1]?.value ?? "").trim();
+      const result = rowResult(table, row);
       if (!result) return calc;
       return calc.replace(/->\s*$/, `-> ${result}`);
     }
@@ -153,4 +168,9 @@ export function chooseTables(tables: string[], pick?: number, rng: () => number 
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.slice(0, pick);
+}
+
+/** Every step in a list, with the steps a nested dropdown (`then`) holds, at any depth. */
+export function flattenSteps(steps: GMStep[]): GMStep[] {
+  return steps.flatMap((s) => [s, ...flattenSteps(s.then ?? [])]);
 }

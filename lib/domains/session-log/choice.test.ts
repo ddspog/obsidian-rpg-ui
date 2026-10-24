@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitResultChoice, buildResultChoice, applyChoicePick } from "./choice";
+import { splitResultChoice, buildResultChoice, applyChoicePick, NESTED_SEP } from "./choice";
 
 describe("splitResultChoice", () => {
   it("splits a result with a trailing choice token", () => {
@@ -118,5 +118,75 @@ describe("splitResultChoice — the render-branch predicate", () => {
     expect(splitResultChoice("Characters: Any Character").choice).toBeNull();
     expect(splitResultChoice("Elements: roll a themed table twice").choice).toBeNull();
     expect(splitResultChoice("Any Character").choice).toBeNull();
+  });
+});
+
+describe("applyChoicePick — a log with several generators", () => {
+  const entry = (pick: string) =>
+    ["? Who?", "gen: Name Generator", `  Naming Style: [Anglish/Arabish - ${pick}]`].join("\n");
+  const follow = { Anglish: "Anglish 1: @[[a]]#a d100= ->", Arabish: "Arabish 1: @[[b]]#b d100= ->" };
+  const body = `${entry("Anglish")}\n  + Anglish 1: @[[a]]#a d100= ->\n${entry("Anglish")}\n  + Anglish 1: @[[a]]#a d100= ->`;
+
+  it("rewrites the entry the dropdown sits in, not the first one in the log", () => {
+    const source = "  Naming Style: [Anglish/Arabish - Anglish]";
+    const out = applyChoicePick(body, "Arabish", follow, { source, nth: 1 }).split("\n");
+    expect(out.filter((l) => l.includes("- Anglish]"))).toHaveLength(1);
+    expect(out.filter((l) => l.includes("- Arabish]"))).toHaveLength(1);
+    // The second entry now holds the Arabish row once; the first entry is untouched.
+    expect(out.slice(0, 4)).toEqual(body.split("\n").slice(0, 4));
+    expect(out.filter((l) => l.includes("Arabish 1:"))).toHaveLength(1);
+    expect(out.filter((l) => l.includes("Anglish 1:"))).toHaveLength(1);
+  });
+
+  it("still takes the first choice line when no line is given", () => {
+    const out = applyChoicePick(body, "Arabish", follow);
+    expect(out.split("\n")[2]).toContain("- Arabish]");
+  });
+});
+
+describe("applyChoicePick — a dropdown nested under another pick", () => {
+  const kind = (pick: string) => `  + Kind: [Masculine name/Feminine name - ${pick}]`;
+  const follow = {
+    Anglish: "Kind: [Masculine name/Feminine name - ]",
+    [`Anglish${NESTED_SEP}Masculine name`]: "Name: @[[a]]#a d100= ->",
+    [`Arabish${NESTED_SEP}Masculine name`]: "Name: @[[b]]#b d100= ->",
+    "Masculine name": "Wrong: looked up without its parent",
+  };
+
+  it("spawns the style's kind dropdown when the style is picked", () => {
+    const body = "gen: Name Generator\n  Naming Style: [Anglish/Arabish - ]";
+    const out = applyChoicePick(body, "Anglish", follow).split("\n");
+    expect(out).toEqual([
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Anglish]",
+      "  + Kind: [Masculine name/Feminine name - ]",
+    ]);
+  });
+
+  it("looks the kind up under its style, so two styles' `Masculine name` differ", () => {
+    for (const [style, ref] of [
+      ["Anglish", "#a"],
+      ["Arabish", "#b"],
+    ]) {
+      const body = ["gen: Name Generator", `  Naming Style: [Anglish/Arabish - ${style}]`, kind("")].join("\n");
+      const out = applyChoicePick(body, "Masculine name", follow, { source: kind("").trim(), nth: 0 }).split("\n");
+      expect(out[2]).toContain("- Masculine name]");
+      expect(out[3]).toContain(ref);
+    }
+  });
+
+  it("re-picking the style drops the kind line and its rows together", () => {
+    const body = [
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Anglish]",
+      kind("Masculine name"),
+      "  + Name: @[[a]]#a d100=4 -> Hod",
+    ].join("\n");
+    const out = applyChoicePick(body, "Arabish", { ...follow, Arabish: "Kind: [Masculine name - ]" }).split("\n");
+    expect(out).toEqual([
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Arabish]",
+      "  + Kind: [Masculine name - ]",
+    ]);
   });
 });

@@ -1,0 +1,237 @@
+---
+source: From **The Nomicon** by **Dyson Logos**
+cssclasses:
+  - note-compendium
+tab-icon: scroll-text
+tab-color: var(--color-cyan)
+tab-name: High Metallik
+---
+# High Metallik
+#### Table 16-5: High Metallik Place Names Table 1
+**Instructions**: Roll independently for a Start, Middle, and Ending to the name.
+**Sample Results**: Bybaradar, Deokhebir, Giumbaghal, Khahaloi, Vashtaltima.
+
+```rpg table.high-metallik-place-names-table-1
+@paginate 10 pages
+|d100*|Start|Middle|Ending|
+|---|---|---|---|
+|1|A|ba|bar|
+|2|Ae|bara|bir|
+|3|Au|bi|bor|
+|4|Ba|bra|canth|
+|5|Be|bra|car|
+|6|Beo|brani|d|
+|7|Bi|ca|da|
+|8|Bo|cla|dar|
+|9|By|co|dath|
+|10|Ca|cta|dir|
+|11|Cae|cte|dyr|
+|12|Ce|cti|gal|
+|13|Ceo|dja|galta|
+|14|Co|djo|gan|
+|15|Cu|ga|gar|
+|16|Cy|gami|garth|
+|17|Da|gara|ghal|
+|18|De|ge|ghaltir|
+|19|Deo|ghi|ghar|
+|20|Do|gna|ghelt|
+|21|Dy|gra|ghil|
+|22|E|grana|ghir|
+|23|Fa|grani|ghys|
+|24|Fe|ha|gia|
+|25|Feo|ha|giar|
+|26|Fo|he|gild|
+|27|Fy|hu|gir|
+|28|Ga|ja|gral|
+|29|Ge|je|gralt|
+|30|Geo|ju|grys|
+|31|Giu|kha|gyr|
+|32|Go|khe|loi|
+|33|Gy|ko|lphir|
+|34|Ha|koa|lras|
+|35|He|kra|ltama|
+|36|Heo|kro|ltar|
+|37|Ho|kua|ltil|
+|38|Hu|la|ltima|
+|39|Hy|lba|ltis|
+|40|Ia|lbe|ltyr|
+|41|Io|lga|ltys|
+|42|Ja|lge|lyris|
+|43|Je|lma|lyros|
+|44|Jo|lra|mar|
+|45|Ka|lta|mas|
+|46|Ke|lte|math|
+|47|Keo|lti|mhas|
+|48|Kha|ma|midon|
+|49|Ko|maja|mnar|
+|50|Ku|mala|mnas|
+|51|Ky|mara|mnir|
+|52|Le|mari|myr|
+|53|Li|mba|myras|
+|54|Lo|mba|nd|
+|55|Ma|me|ndir|
+|56|Me|mna|ntha|
+|57|Mha|mne|nthe|
+|58|Mo|mno|nthir|
+|59|Mu|mo|nthyr|
+|60|My|na|ntor|
+|61|Na|ne|paros|
+|62|O|nga|r|
+|63|Oe|nga|ras|
+|64|Pha|no|rhas|
+|65|Phe|nza|rhos|
+|66|Qua|pa|riach|
+|67|Que|pha|rod|
+|68|Sa|phe|ron|
+|69|Sae|qua|rond|
+|70|Se|qua|ros|
+|71|Si|rha|roth|
+|72|So|rhi|run|
+|73|Sua|ro|ruth|
+|74|Suo|sa|ryr|
+|75|Sy|sca|shta|
+|76|Ta|sci|shtar|
+|77|Tai|sco|ste|
+|78|Te|scu|stis|
+|79|Teo|se|tar|
+|80|Tha|sha|tha|
+|81|To|shta|thai|
+|82|Tsa|si|thar|
+|83|Tso|smo|thor|
+|84|Ty|so|thoth|
+|85|U|ssa|thyr|
+|86|Ua|ta|tor|
+|87|Ue|te|tra|
+|88|Va|tha|tras|
+|89|Vae|the|trir|
+|90|Vai|to|zabal|
+|91|Ve|tsa|zal|
+|92|Vy|tsi|zal|
+|93|We|va|zar|
+|94|Wy|vi|zhal|
+|95|Xa|vra|zibal|
+|96|Xe|xa|zibol|
+|97|Xy|za|zir|
+|98|Ya|zmo|zira|
+|99|Ye|zo|zoa|
+|100|Yo|zu|zoar|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 16-5: High Metallik Place Names Table 1]
+```
+
+**Start** + **Middle** + **Ending**
+#### Table 16-6: High Metallik Place Names Table 2
+**Instructions**: Roll independently for a Start and Ending for the name.
+**Sample Results**: Ceghron, Eahril, Hyldar, Phaltimaon, Xythiar.
+
+```rpg table.high-metallik-place-names-table-2
+@paginate 10 pages
+|d100*|Start|Ending|
+|---|---|---|
+|1|A|baras|
+|2|Ae|barath|
+|3|Au|brandas|
+|4|Ba|dr|
+|5|Be|ghar|
+|6|Beo|ghron|
+|7|Bo|ghyr|
+|8|Bu|hra|
+|9|By|hrac|
+|10|Ca|hral|
+|11|Cau|hri|
+|12|Ce|hric|
+|13|Ceo|hril|
+|14|Co|hron|
+|15|Cu|hualt|
+|16|Cy|jalta|
+|17|Da|jamar|
+|18|De|jharan|
+|19|Deo|ldar|
+|20|Do|lgair|
+|21|Dy|lgal|
+|22|E|lgar|
+|23|Ea|lgard|
+|24|Ei|lghal|
+|25|Feo|lghas|
+|26|Fo|lgol|
+|27|Fy|lgra|
+|28|Ga|lgyr|
+|29|Ge|lrae|
+|30|Geo|lras|
+|31|Giu|lthar|
+|32|Go|lthor|
+|33|Gy|lthos|
+|34|Ha|lthu|
+|35|He|lthur|
+|36|Heo|ltimaon|
+|37|Ho|ltimos|
+|38|Hu|ltos|
+|39|Hy|magor|
+|40|Ia|magul|
+|41|Io|matra|
+|42|Je|mbar|
+|43|Jo|mbarath|
+|44|Ka|mbor|
+|45|Ke|mbra|
+|46|Keo|mbral|
+|47|Kha|mbraul|
+|48|Khu|mbrol|
+|49|Ko|mbros|
+|50|Ku|mgor|
+|51|Ky|mokra|
+|52|Le|mokua|
+|53|Lo|mual|
+|54|Ma|ndar|
+|55|Mau|ndarath|
+|56|Me|ndarath|
+|57|Mho|ndhar|
+|58|Mo|ndras|
+|59|Mu|ngalath|
+|60|My|ngarath|
+|61|Na|ngodar|
+|62|O|ngor|
+|63|Pha|ntar|
+|64|Phe|nthar|
+|65|Qua|nthor|
+|66|Que|ntriar|
+|67|Quo|ntrior|
+|68|Sa|rdal|
+|69|Se|rdhar|
+|70|Si|remnon|
+|71|Sia|rgal|
+|72|So|rgar|
+|73|Sue|rghal|
+|74|Suo|rghar|
+|75|Sy|rghol|
+|76|Ta|rghor|
+|77|Te|rghyl|
+|78|Teo|rghyr|
+|79|To|rgyl|
+|80|Tsa|rgyr|
+|81|Tso|rhyr|
+|82|Tsu|rja|
+|83|Tu|rthal|
+|84|Ty|rthar|
+|85|U|rthel|
+|86|Ua|rthyr|
+|87|Ue|satal|
+|88|Va|tan|
+|89|Ve|thandyr|
+|90|Vo|thantyr|
+|91|Vu|thar|
+|92|Vy|thiar|
+|93|We|this|
+|94|Wy|tr|
+|95|Xa|wadar|
+|96|Xe|wat|
+|97|Xy|wathar|
+|98|Ye|wazar|
+|99|Yo|wazir|
+|100|Yu|waziri|
+|---|---|---|
+|= {{ roll }} =|
+[Table 16-6: High Metallik Place Names Table 2]
+```
+
+**Start** + **Ending**
