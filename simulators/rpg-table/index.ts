@@ -81,7 +81,7 @@ export default defineSimulator({
         label: "Table",
         note: `A <code>rpg table.&lt;name&gt;</code> block, drawn by the plugin's own renderer. Tap the footer to roll, page through long tables.`,
         build(el) {
-          el.innerHTML = `<div class="markdown-preview-view"><div class="sim-table"></div></div>`;
+          el.innerHTML = `<div class="workspace-leaf-content" data-type="markdown"><div class="view-content"><div class="markdown-reading-view"><div class="markdown-preview-view markdown-rendered is-readable-line-width"><div class="markdown-preview-sizer markdown-preview-section"><div class="el-pre"><div class="sim-table"></div></div></div></div></div></div></div>`;
           out = el.querySelector(".sim-table")!;
         },
       },

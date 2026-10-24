@@ -182,3 +182,18 @@ body {
   color: var(--text-error);
   padding: 8px 0;
 }
+
+/* The Log panel is a note, not a form: no frame padding, Obsidian's own reading margins. */
+.sim-panel:has(.markdown-reading-view) {
+  max-width: none;
+  padding: 0 0 96px;
+}
+.sim .view-content,
+.sim .markdown-reading-view,
+.sim .markdown-preview-view {
+  height: auto;
+  overflow: visible;
+}
+.sim-panel:has(.markdown-reading-view) > .sim-note {
+  padding: 12px max(16px, env(safe-area-inset-left)) 0;
+}

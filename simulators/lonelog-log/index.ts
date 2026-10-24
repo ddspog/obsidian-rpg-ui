@@ -52,7 +52,8 @@ export default defineSimulator({
         label: "Log",
         note: `The plugin's Log, running on ${Object.keys(ctx.notes).length} notes from the vault. Play the cards at the bottom, tap a die to roll it, pick from the dropdowns, then Save. Edit the text in <b>Lonelog</b>.`,
         build(el) {
-          el.innerHTML = `<div class="markdown-preview-view"><div class="sim-log"></div></div>`;
+          // The wrappers Obsidian's reading view puts around a code block, which the theme styles by.
+          el.innerHTML = `<div class="workspace-leaf-content" data-type="markdown"><div class="view-content"><div class="markdown-reading-view"><div class="markdown-preview-view markdown-rendered is-readable-line-width"><div class="markdown-preview-sizer markdown-preview-section"><div class="el-pre"><div class="block-language-rpg sim-log"></div></div></div></div></div></div></div>`;
           host = el.querySelector(".sim-log")!;
         },
       },
