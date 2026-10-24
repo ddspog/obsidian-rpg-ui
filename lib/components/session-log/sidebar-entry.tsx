@@ -275,12 +275,13 @@ function RowContent({
     // A name's second roll: the rows of its parts, what their dice show, and its own die.
     const pickPreview = (): string | undefined => {
       if (!tableRoll || row.pick == null || !row.pickFrom?.length) return undefined;
-      const ref = row.pickFrom[0].source.match(REF)?.[0];
+      const refs = row.pickFrom.map((f) => f.source.match(REF)?.[0] ?? "");
       const rolls = row.pickFrom.map((f) => dieValue(f.source, f.content));
-      if (!ref || rolls.some((n) => n == null)) return undefined;
+      if (!refs[0] || refs.some((r) => !r) || rolls.some((n) => n == null)) return undefined;
+      const ref = refs[0];
       const own = row.pickOnly || !source || !formula ? undefined : dieValue(source, row.content);
       if (!row.pickOnly && own == null) return undefined;
-      return tableRoll(ref, 0, { spec: row.pick, rolls: rolls as number[], roll: own });
+      return tableRoll(ref, 0, { spec: row.pick, rolls: rolls as number[], refs, roll: own });
     };
     // A table roll with no result yet reads its row as soon as the die shows a
     // value, pending or saved, so the outcome appears before the Log is saved.

@@ -151,6 +151,11 @@ export interface PickPart {
   name?: string;
   /** Its 1-based value columns. */
   cols: number[];
+  /** Which of the step's tables the part is rolled on (1-based), when not the one the spec is on:
+   *  `End=2:1,2` takes the columns of the second table. */
+  table?: number;
+  /** The name may go without it (`Ending?=…`): one more name for each of the others, as it is. */
+  optional?: boolean;
   /** Words, not syllables: a space goes before it (`Part 1=1,2& Part 2=3`, parts joined by `&`). */
   spaced?: boolean;
 }
@@ -161,13 +166,18 @@ export function parsePickSpec(spec: string): PickPart[] {
   for (let k = 0; k < pieces.length; k += 2) {
     const piece = pieces[k];
     const eq = piece.indexOf("=");
-    const [name, cols] = eq >= 0 ? [piece.slice(0, eq), piece.slice(eq + 1)] : [undefined, piece];
+    const [rawName, rest] = eq >= 0 ? [piece.slice(0, eq), piece.slice(eq + 1)] : ["", piece];
+    const at = rest.match(/^\s*(\d+):(.*)$/);
+    const optional = rawName.trim().endsWith("?");
+    const name = rawName.trim().replace(/\?$/, "").trim();
     const part: PickPart = {
-      ...(name?.trim() ? { name: name.trim() } : {}),
-      cols: cols
+      ...(name ? { name } : {}),
+      cols: (at ? at[2] : rest)
         .split(",")
         .map((n) => parseInt(n.trim(), 10))
         .filter((n) => n > 0),
+      ...(at ? { table: parseInt(at[1], 10) } : {}),
+      ...(optional ? { optional: true } : {}),
       ...(k > 0 && pieces[k - 1] === "&" ? { spaced: true } : {}),
     };
     if (part.cols.length > 0) parts.push(part);
@@ -177,7 +187,7 @@ export function parsePickSpec(spec: string): PickPart[] {
 
 /** How many names the spec can make, whatever the rows fill. */
 export function pickSides(spec: string): number {
-  return parsePickSpec(spec).reduce((n, p) => n * p.cols.length, 1);
+  return parsePickSpec(spec).reduce((n, p) => n * (p.cols.length + (p.optional ? 1 : 0)), 1);
 }
 
 /** The row of `table` that roll `n` lands on. */
@@ -197,18 +207,23 @@ export function partText(table: TableDef, n: number, spec: string, part: number)
 
 /**
  * The names the parts' rolled rows make: every value of the first part joined to every value of the
- * next. `rolls` is the die each part's row was rolled with, in order. Undefined until every part has
- * a row.
+ * next. `rolls` is the die each part's row was rolled with, in order, and `tables` the table each part
+ * was rolled on (one table when they share it). Undefined until every part has a row.
  */
-export function pickNames(table: TableDef, rolls: number[], spec: string): string[] | undefined {
+export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: string): string[] | undefined {
   const parts = parsePickSpec(spec);
   if (parts.length === 0 || rolls.length < parts.length) return undefined;
-  const sets = parts.map((p, i) => partValues(rowAt(table, rolls[i]), p));
+  const sets = parts.map((p, i) => {
+    const table = Array.isArray(tables) ? tables[i] : tables;
+    const values = table ? partValues(rowAt(table, rolls[i]), p) : [];
+    return p.optional ? [...values, ""] : values;
+  });
   if (sets.some((s) => s.length === 0)) return undefined;
-  return sets.reduce<string[]>(
-    (acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced ? `${a} ${v}` : `${a}${v}`))),
-    [""]
-  );
+  return sets
+    .reduce<
+      string[]
+    >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v ? `${a} ${v}` : `${a}${v}`))), [""])
+    .filter((name) => name);
 }
 
 /**
@@ -216,9 +231,14 @@ export function pickNames(table: TableDef, rolls: number[], spec: string): strin
  * die has faces. Without a die (`pick` undefined), every name: the one name there is, or the few to
  * choose from.
  */
-export function pickResult(table: TableDef, rolls: number[], spec: string, pick?: number): string | undefined {
-  const names = pickNames(table, rolls, spec);
-  if (!names) return undefined;
+export function pickResult(
+  tables: TableDef | TableDef[],
+  rolls: number[],
+  spec: string,
+  pick?: number
+): string | undefined {
+  const names = pickNames(tables, rolls, spec);
+  if (!names || names.length === 0) return undefined;
   if (pick == null) return names.join(" / ");
   return names[(((pick - 1) % names.length) + names.length) % names.length];
 }

@@ -279,23 +279,35 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
   }
   if (s.tables && s.tables.length > 0) {
     const tables = s.tables;
+    // A spec may take parts from other tables of the step (`End=2:1,2`): their rows are written with
+    // the spec's, so those tables write none of their own.
+    const taken = new Set<number>();
+    tables.forEach((_, at) => {
+      for (const p of parsePickSpec(s.choose?.[at] ?? "")) if (p.table && p.table - 1 !== at) taken.add(p.table - 1);
+    });
     return chooseTables(tables, s.pick, rng)
       .flatMap((ref, i) => {
         const at = tables.indexOf(ref);
+        if (taken.has(at)) return [];
         const named = s.labels?.[at]?.trim() || `${label} ${i + 1}`;
         const spec = s.choose?.[at]?.trim();
         const parts = spec ? parsePickSpec(spec) : [];
         if (!spec || parts.length === 0) return [`${named}: ${ref} d100= ->`];
-        // Each part of the name is rolled on its own, then one name is taken from what they offer:
+        // Each part of the name is rolled on its own row, then one name is taken from what they offer:
         // by a die when there are many, else shown whole (the one name, or the few to choose from).
         const rows =
           parts.length > 1
-            ? parts.map((p, k) => `${k > 0 ? "& " : ""}${p.name ?? `Part ${k + 1}`}: ${ref} d100= ->`)
+            ? parts.map((p, k) => {
+                const partRef = (p.table && tables[p.table - 1]) || ref;
+                const what = `${p.name ?? `Part ${k + 1}`}${p.optional ? " (optional)" : ""}`;
+                return `${k > 0 ? "& " : ""}${what}: ${partRef} d100= ->`;
+              })
             : [`${named}: ${ref} d100= ->`];
         const sides = pickSides(spec);
+        const nameRow = s.labels?.[at]?.trim() || "Name";
         if (sides >= PICK_ROLL_FROM)
-          return [...rows, `${parts.length > 1 ? "Name" : "Pick one"}: @pick(${spec}) d${sides}= ->`];
-        return parts.length > 1 ? [...rows, `Name: @pick(${spec}) ->`] : rows;
+          return [...rows, `${parts.length > 1 ? nameRow : "Pick one"}: @pick(${spec}) d${sides}= ->`];
+        return parts.length > 1 ? [...rows, `${nameRow}: @pick(${spec}) ->`] : rows;
       })
       .join("\n");
   }
@@ -500,16 +512,16 @@ export function resolvePickLine(lines: string[], i: number, stepCtx?: GMStepCont
     const ref = above.content.match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
     if (ref) rows.unshift({ at: j, head: above.head, ref, n: rolledValue(above.content) });
   }
-  const table = rows[0] ? stepCtx?.tables?.[rows[0].ref] : undefined;
-  if (!table || rows.length < parts.length) return `${head} -> `;
+  const tables = rows.map((r) => stepCtx?.tables?.[r.ref]);
+  if (rows.length < parts.length || tables.some((t) => !t)) return `${head} -> `;
   rows.forEach((r, k) => {
-    const offered = r.n != null ? partText(table, r.n, spec, k) : undefined;
+    const offered = r.n != null ? partText(tables[k]!, r.n, spec, k) : undefined;
     if (offered) lines[r.at] = `${r.head} -> ${offered}`;
   });
   const rolls = rows.map((r) => r.n);
   const result =
     rolls.every((n): n is number => n != null) && (dieless || pick != null)
-      ? pickResult(table, rolls, spec, pick ?? undefined)
+      ? pickResult(tables as TableDef[], rolls, spec, pick ?? undefined)
       : undefined;
   return result ? `${head} -> ${result}` : `${head} -> `;
 }
