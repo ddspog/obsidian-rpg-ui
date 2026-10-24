@@ -194,7 +194,7 @@ async function start() {
   const log = fs.openSync(path.join(work, "obsidian.log"), "w");
   const child = spawn(
     "xvfb-run",
-    ["-a", "-s", "-screen 0 1600x1000x24", bin, "--no-sandbox", "--disable-gpu", `--remote-debugging-port=${CDP_PORT}`],
+    ["-a", "-s", "-screen 0 1600x1400x24", bin, "--no-sandbox", "--disable-gpu", `--remote-debugging-port=${CDP_PORT}`],
     {
       detached: true,
       stdio: ["ignore", log, log],
@@ -229,7 +229,10 @@ async function start() {
 async function screenshot(note, out, scrollTo) {
   if (!note || !out) throw new Error("usage: screenshot <note path in vault> <out.png> [text to scroll to]");
   const { browser, page } = await connect();
-  await page.setViewportSize({ width: 1400, height: 1000 });
+  await page.setViewportSize({ width: 1600, height: 1400 });
+  // The file explorer takes a fifth of the width; screenshots are of the note.
+  // KEEP_SIDEBAR=1 leaves it open.
+  if (process.env.KEEP_SIDEBAR !== "1") await page.evaluate(() => globalThis.app.workspace.leftSplit?.collapse());
   const found = await page.evaluate(async (f) => {
     const file = globalThis.app.vault.getAbstractFileByPath(f);
     if (file) await globalThis.app.workspace.getLeaf(false).openFile(file, { state: { mode: "preview" } });
