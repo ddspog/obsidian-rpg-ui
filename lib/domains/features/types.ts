@@ -525,6 +525,12 @@ export interface GMStep {
   /** WORD-PAIR: randomly choose this many of `tables` at pick time (e.g. 2 of
    *  3 for Elements). Omitted → roll every entry in `tables`. */
   pick?: number;
+  /** Names for the rows `tables` spawns, in the same order: what each table is for
+   *  (`Masculine name`, `Terrain ending`). Omitted → `<choice> <n>`. */
+  labels?: string[];
+  /** What a table is used for with the others (`Join a Start and an Ending`), in the same
+   *  order as `tables`; shown as a note row above that table's row. Empty entries add none. */
+  notes?: string[];
 }
 
 /**
