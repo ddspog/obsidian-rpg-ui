@@ -12,6 +12,9 @@ import {
   stepUseLinks,
   spliceStepUses,
   flattenSteps,
+  pickOptions,
+  pickResult,
+  pickSides,
 } from "./steps";
 
 describe("step composition — use:", () => {
@@ -305,5 +308,46 @@ describe("flattenSteps", () => {
       { choice: "B" },
     ];
     expect(flattenSteps(steps).map((s) => s.choice)).toEqual(["A", "A1", "A2", "A2a", "B"]);
+  });
+});
+
+describe("a second roll on a rolled row — @pick", () => {
+  const row = (...v: string[]) => ({ cells: v.map((value) => ({ value })) }) as TableDef["rows"][number];
+  const table = {
+    columnLabels: ["d100*", "Start 1", "Start 2", "Start 3", "End 1", "End 2"],
+    rows: [row("1-50", "Briga", "Ma", "Lew", "ven", "werp"), row("51-100", "Ae", "", "", "bant", "")],
+  } as unknown as TableDef;
+
+  it("counts the faces of the die from the columns the spec names", () => {
+    expect(pickSides("1,2")).toBe(2);
+    expect(pickSides("1,2,3+4,5")).toBe(6);
+  });
+
+  it("offers every Start joined to every End, in order", () => {
+    expect(pickOptions(table.rows[0], "1,2,3+4,5")).toEqual([
+      "Brigaven",
+      "Brigawerp",
+      "Maven",
+      "Mawerp",
+      "Lewven",
+      "Lewwerp",
+    ]);
+  });
+
+  it("skips columns the row leaves empty", () => {
+    expect(pickOptions(table.rows[1], "1,2,3+4,5")).toEqual(["Aebant"]);
+    expect(pickOptions(table.rows[0], "1,2")).toEqual(["Briga", "Ma"]);
+  });
+
+  it("reads what a row offers before a pick is made", () => {
+    expect(pickResult(table, 10, "1,2,3+4,5", 0)).toBe("Briga / Ma / Lew + ven / werp");
+    expect(pickResult(table, 80, "1,2,3+4,5", 0)).toBe("Ae + bant");
+    expect(pickResult(table, 10, "1,2", 0)).toBe("Briga / Ma");
+  });
+
+  it("takes the option the second roll lands on, wrapping when the row offers fewer", () => {
+    expect(pickResult(table, 10, "1,2,3+4,5", 3)).toBe("Maven");
+    expect(pickResult(table, 80, "1,2,3+4,5", 5)).toBe("Aebant");
+    expect(pickResult(table, 999, "1,2", 1)).toBeUndefined();
   });
 });

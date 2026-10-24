@@ -88,7 +88,7 @@ import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
-import { resolveTableRoll } from "lib/domains/gm/steps";
+import { pickResult, resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -2171,9 +2171,10 @@ class SessionLogMarkdown extends ReactMarkdown {
 
     // A table roll's row, read from the tables the GM tools load, so the Log can
     // preview a result before it is saved.
-    const tableRoll = (ref: string, roll: number): string | undefined => {
+    const tableRoll = (ref: string, roll: number, pick?: { spec: string; roll: number }): string | undefined => {
       const table = this.stepCtx.tables?.[ref];
       if (!table) return undefined;
+      if (pick) return pickResult(table, roll, pick.spec, pick.roll);
       return resolveTableRoll(`${ref} d100=${roll} ->`, table)
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();
