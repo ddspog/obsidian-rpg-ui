@@ -57,7 +57,8 @@ import url from "node:url";
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
-const vaultRoot = path.resolve(pluginRoot, "../../..");
+// RPG_VAULT_ROOT lets the plugin folder be a symlink (its real path is not under the vault).
+const vaultRoot = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../../.."));
 const manifestPath = path.join(pluginRoot, ".sync-manifest.json");
 const MANIFEST_VERSION = 1;
 

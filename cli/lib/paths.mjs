@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_ROOT = resolve(__dirname, "../..");
-export const VAULT_ROOT = resolve(PLUGIN_ROOT, "../../..");
+// RPG_VAULT_ROOT lets the plugin folder be a symlink (its real path is not under the vault).
+export const VAULT_ROOT = resolve(process.env.RPG_VAULT_ROOT ?? resolve(PLUGIN_ROOT, "../../.."));
 const PLUGIN_VAULT = join(PLUGIN_ROOT, "vault");
 
 export function vaultRelative(absPath) {
