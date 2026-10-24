@@ -2159,72 +2159,74 @@ class SessionLogMarkdown extends ReactMarkdown {
     const tableRoll = (ref: string, roll: number): string | undefined => {
       const table = this.stepCtx.tables?.[ref];
       if (!table) return undefined;
-      return resolveTableRoll(`${ref} d100=${roll} ->`, table).match(/->\s*(\S.*)$/)?.[1]?.trim();
+      return resolveTableRoll(`${ref} d100=${roll} ->`, table)
+        .match(/->\s*(\S.*)$/)?.[1]
+        ?.trim();
     };
 
     this.reactRoot.render(
       <TableRollContext.Provider value={tableRoll}>
-      <SessionLogRoot
-        logData={this.logData}
-        sourcePath={this.filePath}
-        initialSidebarOpen={this.initialSidebarOpen}
-        initialToggles={this.toggles}
-        onToggles={this.saveToggles}
-        onSidebarToggle={(open) => void this.kv.set(`${this.stateKey}:log-sidebar-open`, open)}
-        pcStacks={pcStacks}
-        foeStacks={this.foeStacks}
-        gmStacks={gmStacks}
-        entityNames={entityNames}
-        party={this.partySheets()}
-        startHp={this.startHp}
-        onApplySheet={(row) => void this.applySheetUpdate(row)}
-        onApplyAllSheets={(rows) =>
-          void (async () => {
-            for (const row of rows) await this.applySheetUpdate(row);
-          })()
-        }
-        onRecount={(who) => void this.recount(who)}
-        sheetDone={this.sheetDone}
-        onSheetDone={this.markDone}
-        onAppendText={handleAppendText}
-        onChoice={(selected) => void this.onChoicePick(selected)}
-        onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
-        resources={this.stepCtx.resources ?? {}}
-        lists={this.stepCtx.lists ?? {}}
-        resolveRef={this.resolveRef}
-        resolveCombatant={this.resolveCombatant}
-        lookupCreature={this.lookupCreature}
-        mapTools={this.mapTools}
-        tokenIcon={this.tokenIcon}
-        actorPage={this.actorPage}
-        partyName={this.partyName}
-        saveModifier={this.saveModifier}
-        speedOf={this.speedOf}
-        keepsDying={this.keepsDying}
-        xpOf={this.xpOf}
-        hitDiceOf={this.hitDiceOf}
-        lootOf={this.lootOf}
-        itemNote={this.itemNote}
-        itemNotes={this.itemNotes}
-        itemCost={this.itemCost}
-        destinations={this.destinations()}
-        iconFor={this.iconFor}
-        loadoutsFor={this.loadoutsFor}
-        heldLoadoutOf={this.heldLoadoutOf}
-        hudOf={this.hudOf}
-        openSheet={this.openSheet}
-        makePortrait={this.makePortrait}
-        onEquip={(actor, name) => void this.equip(actor, name)}
-        makeIcon={this.makeIcon}
-        makeNamedIcon={this.makeNamedIcon}
-        holdsThings={this.holdsThings}
-        conditionRules={this.conditionRules}
-        defenseOf={this.defenseOf}
-        initiativeOf={this.initiativeOf}
-        onEditBody={(edit) => void this.rewriteLogBody(edit)}
-        battleMaps={this.battleMaps}
-        sheetHas={this.sheetHas}
-      />
+        <SessionLogRoot
+          logData={this.logData}
+          sourcePath={this.filePath}
+          initialSidebarOpen={this.initialSidebarOpen}
+          initialToggles={this.toggles}
+          onToggles={this.saveToggles}
+          onSidebarToggle={(open) => void this.kv.set(`${this.stateKey}:log-sidebar-open`, open)}
+          pcStacks={pcStacks}
+          foeStacks={this.foeStacks}
+          gmStacks={gmStacks}
+          entityNames={entityNames}
+          party={this.partySheets()}
+          startHp={this.startHp}
+          onApplySheet={(row) => void this.applySheetUpdate(row)}
+          onApplyAllSheets={(rows) =>
+            void (async () => {
+              for (const row of rows) await this.applySheetUpdate(row);
+            })()
+          }
+          onRecount={(who) => void this.recount(who)}
+          sheetDone={this.sheetDone}
+          onSheetDone={this.markDone}
+          onAppendText={handleAppendText}
+          onChoice={(selected) => void this.onChoicePick(selected)}
+          onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
+          resources={this.stepCtx.resources ?? {}}
+          lists={this.stepCtx.lists ?? {}}
+          resolveRef={this.resolveRef}
+          resolveCombatant={this.resolveCombatant}
+          lookupCreature={this.lookupCreature}
+          mapTools={this.mapTools}
+          tokenIcon={this.tokenIcon}
+          actorPage={this.actorPage}
+          partyName={this.partyName}
+          saveModifier={this.saveModifier}
+          speedOf={this.speedOf}
+          keepsDying={this.keepsDying}
+          xpOf={this.xpOf}
+          hitDiceOf={this.hitDiceOf}
+          lootOf={this.lootOf}
+          itemNote={this.itemNote}
+          itemNotes={this.itemNotes}
+          itemCost={this.itemCost}
+          destinations={this.destinations()}
+          iconFor={this.iconFor}
+          loadoutsFor={this.loadoutsFor}
+          heldLoadoutOf={this.heldLoadoutOf}
+          hudOf={this.hudOf}
+          openSheet={this.openSheet}
+          makePortrait={this.makePortrait}
+          onEquip={(actor, name) => void this.equip(actor, name)}
+          makeIcon={this.makeIcon}
+          makeNamedIcon={this.makeNamedIcon}
+          holdsThings={this.holdsThings}
+          conditionRules={this.conditionRules}
+          defenseOf={this.defenseOf}
+          initiativeOf={this.initiativeOf}
+          onEditBody={(edit) => void this.rewriteLogBody(edit)}
+          battleMaps={this.battleMaps}
+          sheetHas={this.sheetHas}
+        />
       </TableRollContext.Provider>
     );
   }

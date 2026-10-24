@@ -123,16 +123,8 @@ export const DepletedCards: Story = {
 export const MultipleStacks: Story = {
   render: (args) => (
     <div style={{ display: "flex", gap: "2rem", padding: "2rem" }}>
-      <CardStack
-        stack={actionStack}
-        consumableState={mockConsumableState}
-        onCardClick={args.onCardClick}
-      />
-      <CardStack
-        stack={bonusStack}
-        consumableState={{ spent: {}, initialSpent: {} }}
-        onCardClick={args.onCardClick}
-      />
+      <CardStack stack={actionStack} consumableState={mockConsumableState} onCardClick={args.onCardClick} />
+      <CardStack stack={bonusStack} consumableState={{ spent: {}, initialSpent: {} }} onCardClick={args.onCardClick} />
     </div>
   ),
   args: {
