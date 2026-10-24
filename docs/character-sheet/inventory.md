@@ -75,7 +75,7 @@ Each item has:
 ### Encumbrance
 
 The `encumbrance` object defines carrying capacity:
-- `capacity`: Template string for calculating max weight (e.g., `"{{multiply strength 15}}"`)
+- `capacity`: Template string for calculating max weight (e.g., <code v-pre>"{{multiply strength 15}}"</code>)
 
 The capacity template has access to all frontmatter fields and ability scores.
 

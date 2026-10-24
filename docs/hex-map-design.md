@@ -1,7 +1,7 @@
 # Overworld Hex Maps — Design
 
 > **Status:** phases 0–4 BUILT (2026-10-15); phase 5 (painting, hex travel, hex battles) is unplanned. Ports the
-> [hex-map-editor](~/src/github.com/ddspog/hex-map-editor) prototype into the
+> `hex-map-editor` (`~/src/github.com/ddspog/hex-map-editor`) prototype into the
 > plugin as `rpg map` with `grid: hex`, for **overworld** maps — territory,
 > realms, regions, villages, roads and rivers — not battle maps. Supersedes the
 > hex half of `plan.md` Part 8 where they disagree (§11).
