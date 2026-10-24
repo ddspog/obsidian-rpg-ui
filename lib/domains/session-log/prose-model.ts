@@ -350,11 +350,13 @@ export interface SidebarRow {
    *  own source line, die and result. */
   joined?: boolean;
   /** The columns a second roll below this row chooses among: this row reads as what it offers. */
-  pickedBy?: string;
+  pickedBy?: { spec: string; part: number };
   /** A second roll on the row above (`@pick(1,2+3)`): the columns it chooses among. */
   pick?: string;
   /** The row a second roll reads: its raw line and its content, to find its die. */
-  pickFrom?: { source: string; content: string };
+  pickFrom?: { source: string; content: string }[];
+  /** A second roll with no die: it shows the name (or names) its rows make. */
+  pickOnly?: boolean;
   /** This step spawns the following step(s) (authored with a trailing ` ...`) —
    *  rendered with a subtle "unfolds into" indicator. */
   spawns?: boolean;
@@ -624,18 +626,23 @@ const rollRow = (r: RollEntry): SidebarRow => ({
 // ` ...` marks a step that spawns the following step(s).
 const continuationRows = (extras: string[]): SidebarRow[] => withPickSources(extras.map(continuationRow));
 
-/** A second roll (`@pick(…)`) reads the row above it: tell it which one that is. */
+/** A name's second roll (`@pick(…)`) reads the rows above it, one per part of its spec: tell it which. */
 function withPickSources(rows: SidebarRow[]): SidebarRow[] {
-  let above: SidebarRow | undefined;
+  let seen: SidebarRow[] = [];
   for (const row of rows) {
-    const spec = row.source?.match(/@pick\(([\d,+\s]*)\)/)?.[1];
-    if (spec != null) {
-      row.pick = spec;
-      if (above?.source) {
-        row.pickFrom = { source: above.source, content: above.content };
-        above.pickedBy = spec;
-      }
-    } else if (row.source && /@?\[\[[^\]\n]+\]\]/.test(row.source)) above = row;
+    const spec = row.source?.match(/@pick\(([^)\n]*)\)/)?.[1];
+    if (spec == null) {
+      if (row.source && /@?\[\[[^\]\n]+\]\]/.test(row.source)) seen.push(row);
+      continue;
+    }
+    const parts = spec.split("+").length;
+    const from = seen.slice(-parts);
+    row.pick = spec;
+    row.pickFrom = from.map((r) => ({ source: r.source ?? "", content: r.content }));
+    from.forEach((r, part) => {
+      r.pickedBy = { spec, part };
+    });
+    seen = [];
   }
   return rows;
 }
@@ -650,13 +657,18 @@ const continuationRow = (raw: string): SidebarRow => {
   // roll knows what to fill from. That ref is plumbing, not content — hide it
   // and show just the die + result. `source` keeps the raw line, so editing
   // and re-resolution still find the table.
-  text = text.replace(/(:\s+)(?:@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?|@pick\([\d,+\s]*\))\s+(?=d\d)/i, "$1");
+  text = text.replace(/(:\s+)(?:@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?|@pick\([^)\n]*\))\s+(?=d\d)/i, "$1");
   // Unicode letters, hyphens and a parenthetical, so a table named for its style
   // (`Nörslik 1:`, `Brittonian (Welsh) 1:`, `Dharc-Metallik 1:`) keeps its label.
   const m = text.match(/^(?:(&)\s+)?(\p{L}(?:[\p{L}\p{N}_ ,'’/-]|\([\p{L}\p{N}_ ,'’/-]*\))*?):\s+(.+)$/u);
   const row: SidebarRow = m
     ? { icon: null, content: m[3], label: m[2], detail: true, pills: [], source: raw }
     : { icon: null, content: text, detail: true, pills: [], source: raw };
+  // A second roll with no die is only its result: the name (or names) the rows above make.
+  if (m && /@pick\([^)\n]*\)\s*(->|→)/.test(m[3]) && !/\bd\d/.test(m[3].replace(/@pick\([^)\n]*\)/, ""))) {
+    row.content = m[3].replace(/^.*?(?:->|→)\s*/, "");
+    row.pickOnly = true;
+  }
   // `& Ending: …` — the same line as the row above (a Start and its Ending, one name).
   if (m?.[1]) row.joined = true;
   if (child) row.child = true;

@@ -88,8 +88,8 @@ import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
-import { pickResult, resolveTableRoll } from "lib/domains/gm/steps";
-import { TableRollContext } from "lib/components/session-log/table-roll-context";
+import { partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
+import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
 import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
@@ -2171,10 +2171,11 @@ class SessionLogMarkdown extends ReactMarkdown {
 
     // A table roll's row, read from the tables the GM tools load, so the Log can
     // preview a result before it is saved.
-    const tableRoll = (ref: string, roll: number, pick?: { spec: string; roll: number }): string | undefined => {
+    const tableRoll: TableRoll = (ref, roll, pick) => {
       const table = this.stepCtx.tables?.[ref];
       if (!table) return undefined;
-      if (pick) return pickResult(table, roll, pick.spec, pick.roll);
+      if (pick?.rolls) return pickResult(table, pick.rolls, pick.spec, pick.roll);
+      if (pick?.part != null) return partText(table, roll, pick.spec, pick.part);
       return resolveTableRoll(`${ref} d100=${roll} ->`, table)
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();

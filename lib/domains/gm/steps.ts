@@ -126,50 +126,50 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
   const filled = values.filter((v) => v.text);
   if (filled.length <= 1 || values.length <= 1) return (values[0]?.text ?? "") || filled[0]?.text || "";
   const numbered = values.every((v) => /^\d*$/.test(v.label));
-  return filled.map((v) => (numbered || !v.label ? v.text : `${v.label}: ${v.text}`)).join(" · ");
+  return numbered
+    ? filled.map((v) => v.text).join(" / ")
+    : filled.map((v) => (v.label ? `${v.label}: ${v.text}` : v.text)).join(" · ");
 }
 
 /**
- * A second roll on a rolled row. `@pick(1,2,3+4,5)` names the row's value columns by number:
- * the groups are separated by `+`, and one value of each group is joined to the others (Start 1-3
- * + End 1-2 → six names); a single group is a plain pick among alternatives (two names in a
- * row, use either). The die has one face per option.
+ * What a name table's rolled rows leave to choose, written `@pick(Start=1,2,3+End=4,5)`: the value
+ * columns of each part, numbered from the first, one part per `+`. Every part is rolled on its own
+ * (`Roll independently for any Start and any Ending`), and one of its columns is taken from its row,
+ * so a part with several columns offers several values. A name is one value of every part, joined.
+ * A single part (`1,2`) is a plain choice among alternative names.
  */
-export const PICK_TOKEN = /@pick\(([\d,+\s]*)\)/;
+export const PICK_TOKEN = /@pick\(([^)\n]*)\)/;
 
-/** The groups of 1-based value-column numbers a pick spec names. */
-export function parsePickSpec(spec: string): number[][] {
+/** From this many names on, a die picks one; fewer are shown whole, for the reader to take. */
+export const PICK_ROLL_FROM = 5;
+
+export interface PickPart {
+  /** What the part is (`Start`), when the spec names it. */
+  name?: string;
+  /** Its 1-based value columns. */
+  cols: number[];
+}
+
+export function parsePickSpec(spec: string): PickPart[] {
   return spec
     .split("+")
-    .map((g) =>
-      g
-        .split(",")
-        .map((n) => parseInt(n.trim(), 10))
-        .filter((n) => n > 0)
-    )
-    .filter((g) => g.length > 0);
+    .map((part) => {
+      const eq = part.indexOf("=");
+      const [name, cols] = eq >= 0 ? [part.slice(0, eq), part.slice(eq + 1)] : [undefined, part];
+      return {
+        ...(name?.trim() ? { name: name.trim() } : {}),
+        cols: cols
+          .split(",")
+          .map((n) => parseInt(n.trim(), 10))
+          .filter((n) => n > 0),
+      };
+    })
+    .filter((p) => p.cols.length > 0);
 }
 
-/** How many faces a pick's die has: the options the spec names, whatever the row fills. */
+/** How many names the spec can make, whatever the rows fill. */
 export function pickSides(spec: string): number {
-  return parsePickSpec(spec).reduce((n, g) => n * g.length, 1);
-}
-
-/** What a rolled row offers a pick: every value of the first group joined to every one of the next. */
-export function pickOptions(row: TableDef["rows"][number], spec: string): string[] {
-  const groups = parsePickSpec(spec)
-    .map((g) => g.map((i) => (row.cells[i]?.value ?? "").trim()).filter((v) => v))
-    .filter((g) => g.length > 0);
-  return groups.reduce<string[]>((acc, g) => acc.flatMap((a) => g.map((v) => `${a}${v}`)), [""]).filter((o) => o);
-}
-
-/** What the row offers a pick, at a glance: alternatives split by `/`, groups joined by `+`. */
-export function pickChoices(row: TableDef["rows"][number], spec: string): string {
-  return parsePickSpec(spec)
-    .map((g) => g.map((i) => (row.cells[i]?.value ?? "").trim()).filter((v) => v))
-    .filter((g) => g.length > 0)
-    .map((g) => g.join(" / "))
-    .join(" + ");
+  return parsePickSpec(spec).reduce((n, p) => n * p.cols.length, 1);
 }
 
 /** The row of `table` that roll `n` lands on. */
@@ -177,15 +177,39 @@ export function rowAt(table: TableDef, n: number): TableDef["rows"][number] | un
   return table.rows.find((r) => rangeMatches(r.cells[0]?.value ?? "", n));
 }
 
+/** The filled values of one part of the spec in a row. */
+const partValues = (row: TableDef["rows"][number] | undefined, part: PickPart): string[] =>
+  part.cols.map((i) => (row?.cells[i]?.value ?? "").trim()).filter((v) => v);
+
+/** What one part's row offers, at a glance: `Anca / Esu / Verbi`. */
+export function partText(table: TableDef, n: number, spec: string, part: number): string | undefined {
+  const p = parsePickSpec(spec)[part];
+  return p ? partValues(rowAt(table, n), p).join(" / ") || undefined : undefined;
+}
+
 /**
- * The option a second roll `pick` takes from the row the first roll `n` landed on. A row that
- * fills fewer columns than the spec names offers fewer options, so the roll wraps around them.
+ * The names the parts' rolled rows make: every value of the first part joined to every value of the
+ * next. `rolls` is the die each part's row was rolled with, in order. Undefined until every part has
+ * a row.
  */
-export function pickResult(table: TableDef, n: number, spec: string, pick: number): string | undefined {
-  const row = rowAt(table, n);
-  if (pick === 0) return row ? pickChoices(row, spec) || undefined : undefined; // the options, before one is taken
-  const options = row ? pickOptions(row, spec) : [];
-  return options.length > 0 ? options[(((pick - 1) % options.length) + options.length) % options.length] : undefined;
+export function pickNames(table: TableDef, rolls: number[], spec: string): string[] | undefined {
+  const parts = parsePickSpec(spec);
+  if (parts.length === 0 || rolls.length < parts.length) return undefined;
+  const sets = parts.map((p, i) => partValues(rowAt(table, rolls[i]), p));
+  if (sets.some((s) => s.length === 0)) return undefined;
+  return sets.reduce<string[]>((acc, s) => acc.flatMap((a) => s.map((v) => `${a}${v}`)), [""]);
+}
+
+/**
+ * What the second roll `pick` takes from those names, wrapping when the rows offer fewer than the
+ * die has faces. Without a die (`pick` undefined), every name: the one name there is, or the few to
+ * choose from.
+ */
+export function pickResult(table: TableDef, rolls: number[], spec: string, pick?: number): string | undefined {
+  const names = pickNames(table, rolls, spec);
+  if (!names) return undefined;
+  if (pick == null) return names.join(" / ");
+  return names[(((pick - 1) % names.length) + names.length) % names.length];
 }
 
 /**

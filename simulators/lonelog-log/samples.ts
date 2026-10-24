@@ -65,6 +65,12 @@ export function makeSamples(vault: Record<string, string>): Sample[] {
       text: `${GM}? Does the "The party start journey on their mission, but a landslide force them to take a longer path." scene occur?\ngen: Testing the Expected Scene\n  Alterations: d10=8 vs CF -> Expected Scene\n=> S01 After the Landslide\n\nThe road gives way under the cart.\n`,
     },
     confusing(
+      "East Asiantic",
+      "Culture or country name",
+      "A Start and an Ending, each rolled on its own: with one value each, the name is made for you."
+    ),
+    confusing("Anglish", "Masculine name", "Two alternative names in a row: both are shown, use either."),
+    confusing(
       "Celtigaulic",
       "Town name",
       "Roll any one Start and any one End: the row lists three Starts and two Ends, six names in all."
