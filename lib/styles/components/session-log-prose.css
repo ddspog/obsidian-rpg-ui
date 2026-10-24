@@ -109,12 +109,30 @@
   color: var(--text-muted);
 }
 
+/* Latest chip: jumps to the last block of the log; same quiet look as Undo. */
+.lonelog-log-latest {
+  border: 1px solid var(--background-modifier-border);
+  background: transparent;
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.lonelog-log-latest:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
 .lonelog-log-undo:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
 .lonelog-log-toggle:focus-visible,
+.lonelog-log-latest:focus-visible,
 .lonelog-log-undo:focus-visible,
 .lonelog-log-save:focus-visible {
   outline: none;
