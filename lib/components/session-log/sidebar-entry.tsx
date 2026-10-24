@@ -259,8 +259,9 @@ function RowContent({
       const ref = row.content.match(/@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/)?.[0];
       const term = editableTerms(formula).find((t) => t.kind === "dice");
       if (!ref || !term) return undefined;
-      const slots = Array.from({ length: termSlots(term) }, (_, i) =>
-        edit.dieEdits[dieEditKey(source, term.raw, i)] ?? termSlotInitial(term, i)
+      const slots = Array.from(
+        { length: termSlots(term) },
+        (_, i) => edit.dieEdits[dieEditKey(source, term.raw, i)] ?? termSlotInitial(term, i)
       );
       const n = Number(combineTermValue(term, slots));
       return Number.isFinite(n) && n > 0 ? tableRoll(ref, n) : undefined;

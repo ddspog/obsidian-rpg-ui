@@ -24,7 +24,7 @@ function findMdFiles(dir) {
 
 function migrateRuleSide(source) {
   const lines = source.split("\n");
-  const contentLineIdx = lines.findIndex(l => /^content:\s*\|/.test(l));
+  const contentLineIdx = lines.findIndex((l) => /^content:\s*\|/.test(l));
   if (contentLineIdx < 0) return null;
 
   const nextLine = lines[contentLineIdx + 1];
@@ -54,7 +54,7 @@ function migrateRuleSide(source) {
 
 function migrateTextField(source) {
   const lines = source.split("\n");
-  const textLineIdx = lines.findIndex(l => /^text:\s/.test(l));
+  const textLineIdx = lines.findIndex((l) => /^text:\s/.test(l));
   if (textLineIdx < 0) return null;
 
   const textLine = lines[textLineIdx];
@@ -87,7 +87,7 @@ function migrateTextField(source) {
     body = textLine.replace(/^text:\s*/, "").trim();
     // Check if there are fields after text:
     const remaining = lines.slice(textLineIdx + 1);
-    if (remaining.some(l => /^[a-zA-Z_]/.test(l))) {
+    if (remaining.some((l) => /^[a-zA-Z_]/.test(l))) {
       yamlBefore.push(...remaining);
     }
   }
