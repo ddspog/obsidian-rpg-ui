@@ -69,6 +69,11 @@ export function makeSamples(vault: Record<string, string>): Sample[] {
       "Culture or country name",
       "A Start and an Ending, each rolled on its own: with one value each, the name is made for you."
     ),
+    confusing(
+      "Brittonian (Gaelic)",
+      "Masculine name",
+      "Start and ending sit in two tables: each is its own pick, not yet joined."
+    ),
     confusing("Anglish", "Masculine name", "Two alternative names in a row: both are shown, use either."),
     confusing(
       "Celtigaulic",

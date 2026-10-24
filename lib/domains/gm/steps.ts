@@ -125,7 +125,10 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
     .map((c, i) => ({ label: (table.columnLabels?.[i + 1] ?? "").trim(), text: c.value.trim() }));
   const filled = values.filter((v) => v.text);
   if (filled.length <= 1 || values.length <= 1) return (values[0]?.text ?? "") || filled[0]?.text || "";
-  const numbered = values.every((v) => /^\d*$/.test(v.label));
+  // Numbered columns (`1`, `2`), or one kind of column told apart by a number or letter (`Start 1`,
+  // `Start 2`; `Part 1a`, `Part 1b`), are alternatives: the values alone, with a slash between.
+  const kind = (l: string) => l.replace(/\s*(\d+[a-z]?|[a-z])$/i, "");
+  const numbered = values.every((v) => /^\d*$/.test(v.label)) || new Set(values.map((v) => kind(v.label))).size === 1;
   return numbered
     ? filled.map((v) => v.text).join(" / ")
     : filled.map((v) => (v.label ? `${v.label}: ${v.text}` : v.text)).join(" · ");
@@ -148,23 +151,28 @@ export interface PickPart {
   name?: string;
   /** Its 1-based value columns. */
   cols: number[];
+  /** Words, not syllables: a space goes before it (`Part 1=1,2& Part 2=3`, parts joined by `&`). */
+  spaced?: boolean;
 }
 
 export function parsePickSpec(spec: string): PickPart[] {
-  return spec
-    .split("+")
-    .map((part) => {
-      const eq = part.indexOf("=");
-      const [name, cols] = eq >= 0 ? [part.slice(0, eq), part.slice(eq + 1)] : [undefined, part];
-      return {
-        ...(name?.trim() ? { name: name.trim() } : {}),
-        cols: cols
-          .split(",")
-          .map((n) => parseInt(n.trim(), 10))
-          .filter((n) => n > 0),
-      };
-    })
-    .filter((p) => p.cols.length > 0);
+  const pieces = spec.split(/([+&])/);
+  const parts: PickPart[] = [];
+  for (let k = 0; k < pieces.length; k += 2) {
+    const piece = pieces[k];
+    const eq = piece.indexOf("=");
+    const [name, cols] = eq >= 0 ? [piece.slice(0, eq), piece.slice(eq + 1)] : [undefined, piece];
+    const part: PickPart = {
+      ...(name?.trim() ? { name: name.trim() } : {}),
+      cols: cols
+        .split(",")
+        .map((n) => parseInt(n.trim(), 10))
+        .filter((n) => n > 0),
+      ...(k > 0 && pieces[k - 1] === "&" ? { spaced: true } : {}),
+    };
+    if (part.cols.length > 0) parts.push(part);
+  }
+  return parts;
 }
 
 /** How many names the spec can make, whatever the rows fill. */
@@ -197,7 +205,10 @@ export function pickNames(table: TableDef, rolls: number[], spec: string): strin
   if (parts.length === 0 || rolls.length < parts.length) return undefined;
   const sets = parts.map((p, i) => partValues(rowAt(table, rolls[i]), p));
   if (sets.some((s) => s.length === 0)) return undefined;
-  return sets.reduce<string[]>((acc, s) => acc.flatMap((a) => s.map((v) => `${a}${v}`)), [""]);
+  return sets.reduce<string[]>(
+    (acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced ? `${a} ${v}` : `${a}${v}`))),
+    [""]
+  );
 }
 
 /**
