@@ -263,12 +263,7 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
   if (s.tables && s.tables.length > 0) {
     const tables = s.tables;
     return chooseTables(tables, s.pick, rng)
-      .flatMap((ref, i) => {
-        const at = tables.indexOf(ref);
-        const note = s.notes?.[at]?.trim();
-        const named = s.labels?.[at]?.trim();
-        return [...(note ? [`Note: ${note}`] : []), `${named || `${label} ${i + 1}`}: ${ref} d100= ->`];
-      })
+      .map((ref, i) => `${s.labels?.[tables.indexOf(ref)]?.trim() || `${label} ${i + 1}`}: ${ref} d100= ->`)
       .join("\n");
   }
   const calc = s.calc ?? "";

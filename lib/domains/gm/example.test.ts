@@ -91,20 +91,18 @@ describe("gmStepLines — word-pair rows named for their tables", () => {
     name: "Name Generator",
     steps: [
       {
-        choice: "Dwarven",
+        choice: "Dwarven – Place name",
         tables: ["@[[a]]#one", "@[[b]]#two", "@[[c]]#three"],
-        labels: ["Part 1", "Part 2"],
-        notes: ["Roll a Part 1 and a Part 2, then join them.", ""],
+        labels: ["Start", "& Ending"],
       },
     ],
   };
 
-  it("labels each row for its table, falls back to the pick's name, and puts a note above its row", () => {
-    expect(gmStepLines(named).Dwarven.split("\n")).toEqual([
-      "Note: Roll a Part 1 and a Part 2, then join them.",
-      "Part 1: @[[a]]#one d100= ->",
-      "Part 2: @[[b]]#two d100= ->",
-      "Dwarven 3: @[[c]]#three d100= ->",
+  it("labels each row for its table, and falls back to the pick's name and a number", () => {
+    expect(gmStepLines(named)["Dwarven – Place name"].split("\n")).toEqual([
+      "Start: @[[a]]#one d100= ->",
+      "& Ending: @[[b]]#two d100= ->",
+      "Dwarven – Place name 3: @[[c]]#three d100= ->",
     ]);
   });
 });
@@ -153,17 +151,15 @@ describe("resolveGmBody — word-pair steps", () => {
     expect(out).toContain("Meaning Actions 2: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
   });
 
-  it("fills a row named for its table, and ignores the note row", () => {
+  it("fills a row named for its table, merged rows included", () => {
     const body = [
       "gen: Test Gen",
-      "  + Note: Join the start and the ending.",
       "  + Opening syllable: @[[Actions Meaning]]#action-01 d100=13 ->",
-      "  + Ending syllable: @[[Actions Meaning]]#action-02 d100=8 ->",
+      "  + & Ending syllable: @[[Actions Meaning]]#action-02 d100=8 ->",
     ].join("\n");
     const out = resolveGmBody(body, [feature], stepCtx);
     expect(out).toContain("+ Opening syllable: @[[Actions Meaning]]#action-01 d100=13 -> Betray");
-    expect(out).toContain("+ Ending syllable: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
-    expect(out).toContain("+ Note: Join the start and the ending.");
+    expect(out).toContain("+ & Ending syllable: @[[Actions Meaning]]#action-02 d100=8 -> Weapon");
   });
 
   it("fills only the rolled word of a partially-rolled pair", () => {
