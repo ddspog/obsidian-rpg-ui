@@ -3,7 +3,7 @@ import { readdirSync, statSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative, basename } from "node:path";
 import { evalCode } from "../lib/obsidian.mjs";
 import { prepareFile } from "../lib/renderer.mjs";
-import { resolveInput, outputDir, vaultRelative, inputBase, VAULT_ROOT } from "../lib/paths.mjs";
+import { resolveInput, outputDir, vaultRelative, inputBase } from "../lib/paths.mjs";
 
 function collectMdFiles(inputPath) {
   const stat = statSync(inputPath);

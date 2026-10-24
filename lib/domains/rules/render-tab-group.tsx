@@ -714,7 +714,6 @@ function scheduleMerge(tabEl: HTMLElement, retries = 8): void {
   if (!tabEl.isConnected) {
     if (retries > 0) {
       setTimeout(() => scheduleMerge(tabEl, retries - 1), 150);
-    } else {
     }
     return;
   }

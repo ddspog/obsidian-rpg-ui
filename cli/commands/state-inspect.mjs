@@ -1,9 +1,9 @@
 import { parseArgs } from "node:util";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, relative, basename, dirname } from "node:path";
+import { relative, dirname } from "node:path";
 import { evalCode } from "../lib/obsidian.mjs";
 import { prepareFile } from "../lib/renderer.mjs";
-import { resolveInput, outputDir, vaultRelative } from "../lib/paths.mjs";
+import { resolveInput, vaultRelative } from "../lib/paths.mjs";
 
 const STATE_SCRIPT = (keyFilter) => `(() => {
   const plugin = app.plugins.plugins['dnd-ui-toolkit'];

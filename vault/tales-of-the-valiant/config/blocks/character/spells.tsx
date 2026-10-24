@@ -69,7 +69,6 @@ function evalPreparedMax(expr: string | undefined, vars: Record<string, number>)
   // so we never hand unresolved identifiers to the evaluator.
   if (!/^[-+*/() \d.]+$/.test(rewritten)) return 0;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
     const value = Function(`"use strict"; return (${rewritten})`)();
     return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
   } catch {
@@ -477,7 +476,6 @@ function CasterSection({
           const circle = i + 1;
           const max = slots[i] ?? 0;
           const spent = state.spent?.[circle] ?? 0;
-          const entries = bundleForCircle(caster, state, circle, spells);
           // Every unlocked circle renders, even when empty — hiding
           // them makes the slot budget invisible and blocks the user
           // from preparing into circles they haven't touched yet.

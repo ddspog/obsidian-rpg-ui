@@ -165,7 +165,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
   // `@` followed by a path segment. Keep the match greedy enough to
   // catch multi-level paths (`items/weapons/martial`) but stop before
   // quotes / whitespace / YAML punctuation.
-  const refRe = /@([A-Za-z0-9][A-Za-z0-9/_\-]*)/g;
+  const refRe = /@([A-Za-z0-9][A-Za-z0-9/_-]*)/g;
   const scanForRefs = (text: string) => {
     if (!text) return;
     for (const m of text.matchAll(refRe)) {
@@ -471,7 +471,7 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
       for (const [k, v] of Object.entries(map)) out[k] = v.length;
       return out;
     };
-    /* eslint-disable no-console */
+
     console.log("[RPG UI] referenced @folder paths:", [...refPaths]);
     console.log("[RPG UI] parent-walk loaded paths:", [...parentPaths]);
     console.log("[RPG UI] refDocs count:", refDocs.length);
@@ -479,7 +479,6 @@ const character = CreateEntity<CharacterEntity>(async ({ wiki }) => {
     console.log("[RPG UI] tagIndex keys/counts:", sizeOf(tagIndex));
     console.log("[RPG UI] spell library size:", Object.keys(spellLibrary).length);
     console.log("[RPG UI] spell library sample:", Object.keys(spellLibrary).slice(0, 20));
-    /* eslint-enable no-console */
   }
 
   // Universal "default actions" available to every character. Each folder

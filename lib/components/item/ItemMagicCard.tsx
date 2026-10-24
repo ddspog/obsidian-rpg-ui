@@ -1,6 +1,6 @@
 import * as React from "react";
 import { variantTextUnfilled } from "lib/domains/items/magic-overlay";
-import type { ItemMagicData, ItemMagicVariant, ItemMagicVariantsConfig } from "lib/domains/items/schema";
+import type { ItemMagicData, ItemMagicVariant } from "lib/domains/items/schema";
 
 interface ItemMagicCardProps {
   data: ItemMagicData;

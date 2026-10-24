@@ -12,7 +12,7 @@ import {
 import { CurrencyRow } from "lib/components/inventory/CurrencyRow";
 import { Section } from "lib/components/inventory/Section";
 import type { ContainerResolution } from "lib/domains/items/container-overlay";
-import type { ItemContainerData, ItemElementData } from "lib/domains/items/schema";
+import type { ItemContainerData } from "lib/domains/items/schema";
 
 /**
  * Provenance pointer the container card hands back when the reader

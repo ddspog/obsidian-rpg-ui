@@ -98,26 +98,7 @@ function linkStem(raw: unknown): string | undefined {
   return stem || undefined;
 }
 
-/** Pretty-print a resource `max` — scalar passes through; per-level map picks
- *  the value whose level is highest while still ≤ the character's level. */
-function maxAtLevel(max: FeatureAspect["max"], characterLevel?: number): string {
-  if (max == null) return "—";
-  if (typeof max === "number") return String(max);
-  if (typeof max === "string") return max;
-  const entries = Object.entries(max)
-    .map(([lv, n]) => [Number(lv), n] as const)
-    .sort((a, b) => a[0] - b[0]);
-  if (entries.length === 0) return "—";
-  if (characterLevel == null) return String(entries[entries.length - 1][1]);
-  let chosen = entries[0][1];
-  for (const [lv, n] of entries) {
-    if (lv <= characterLevel) chosen = n;
-    else break;
-  }
-  return String(chosen);
-}
-
-/** Numeric-form of `maxAtLevel` — returns null when no max is declared so
+/** Numeric-form of a resource `max` — returns null when no max is declared so
  *  callers can branch cleanly on "limited uses? y/n". A string `max` (e.g.
  *  `"PB"`) is evaluated against `vars`, letting feature authors write
  *  `resource: { max: PB }` and get the character's live proficiency bonus. */
@@ -442,7 +423,6 @@ function evalBuyBudget(expr: number | string | undefined, vars: Record<string, n
   }
   if (!/^[-+*/() \d.]+$/.test(rewritten)) return 0;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
     const value = Function(`"use strict"; return (${rewritten})`)();
     return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
   } catch {

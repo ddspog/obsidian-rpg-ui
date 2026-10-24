@@ -287,8 +287,8 @@ export async function loadMarkdownSystem(mainContent: string, readFile: FileRead
   const parsed = parseMarkdownSystemFile(mainContent);
   if (!parsed) return null;
 
-  let { attributes, skills, expressions, conditions } = parsed;
-  const { refs } = parsed;
+  const { attributes, refs } = parsed;
+  let { skills, expressions, conditions } = parsed;
 
   // Resolve external skill files
   if (refs.skills) {

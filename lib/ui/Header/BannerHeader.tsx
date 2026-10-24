@@ -15,7 +15,7 @@ function parseBannerStyle(value?: string): React.CSSProperties | undefined {
       /^(data:|https?:|file:|vault:)?\/\//i.test(banner) || /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(banner);
     if (looksLikeUrl) return { backgroundImage: `url(${banner})` };
     return { backgroundColor: banner };
-  } catch (e) {
+  } catch {
     return { backgroundColor: "black" };
   }
 }

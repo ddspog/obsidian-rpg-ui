@@ -104,7 +104,6 @@ function processFile(filePath) {
   // Find all rpg fences
   // Find all rpg fences (3+ backticks)
   const fenceRe = /(`{3,})(rpg\s+\S+)\s*\n([\s\S]*?)\1/g;
-  let changed = false;
   let newContent = content;
 
   const replacements = [];

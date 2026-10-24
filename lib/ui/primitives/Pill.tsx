@@ -55,7 +55,9 @@ function Link({ link, children, className, ...rest }: PillProps) {
             // If the original parent is now empty, remove it.
             try {
               if (parent.parentElement) parent.remove();
-            } catch {}
+            } catch {
+              // best-effort cleanup
+            }
           }
         } else {
           // No anchor produced; render fallback child with content class.
@@ -76,7 +78,9 @@ function Link({ link, children, className, ...rest }: PillProps) {
     return () => {
       try {
         comp.onunload?.();
-      } catch {}
+      } catch {
+        // a failing child unload must not break teardown
+      }
     };
   }, [link, children, app]);
 

@@ -92,7 +92,7 @@ export function processUnrenderedRpgFences(
           })(el);
           parent.addChild(child);
         }
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -105,7 +105,7 @@ export function processUnrenderedRpgFences(
         const block = parseListBlock(listName, source);
         const child = new ListRenderChild(el, app, block, sourcePath);
         parent.addChild(child);
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -119,7 +119,7 @@ export function processUnrenderedRpgFences(
         const block = parseFigureBlock(source);
         const child = new FigureRenderChild(el, block, sourcePath);
         parent.addChild(child);
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -129,7 +129,7 @@ export function processUnrenderedRpgFences(
     if (meta === "map" || meta.startsWith("map.")) {
       try {
         parent.addChild(new MapRenderChild(el, app, source, sourcePath));
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -154,7 +154,7 @@ export function processUnrenderedRpgFences(
           ) => MarkdownRenderChild;
         };
         parent.addChild(new FeatureGMRenderChild(el, app, source, sourcePath));
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -180,7 +180,7 @@ export function processUnrenderedRpgFences(
           const child = new RuleTabRenderChild(el, app, block, sourcePath);
           parent.addChild(child);
         }
-      } catch (err) {
+      } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }
       continue;
@@ -234,7 +234,7 @@ export function processUnrenderedRpgFences(
             }
           })(el);
           parent.addChild(child);
-        } catch (err) {
+        } catch {
           el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
         }
         continue;

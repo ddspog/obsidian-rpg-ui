@@ -20,7 +20,6 @@ import type {
   EntityConfig,
   Component,
 } from "./types";
-import type { ReactNode } from "react";
 
 /**
  * Build a fully realized RPGSystem from a user-facing SystemConfig.
@@ -258,7 +257,7 @@ function normalizeFrontmatter(fm: any): FrontmatterFieldDef[] {
  * Attempt to extract parameter names from a function via its `toString()`.
  * Returns an empty array if parsing fails.
  */
-function getFunctionParams(fn: Function): string[] {
+function getFunctionParams(fn: (...args: any[]) => unknown): string[] {
   try {
     const src = fn.toString();
     // Arrow function: (a, b) => ... or a => ...
@@ -288,7 +287,7 @@ function parseParamList(paramStr: string): string[] {
     .filter(Boolean);
 }
 
-function buildFormulaDescription(entityName: string, fnName: string, fn: Function): string {
+function buildFormulaDescription(entityName: string, fnName: string, fn: (...args: any[]) => unknown): string {
   const params = getFunctionParams(fn);
   return `${entityName}.${fnName}(${params.join(", ")})`;
 }

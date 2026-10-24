@@ -4,7 +4,7 @@ import { join, relative, basename, dirname } from "node:path";
 import { evalCode } from "../lib/obsidian.mjs";
 import { prepareFile } from "../lib/renderer.mjs";
 import { resolveInput, outputDir, vaultRelative, inputBase, PLUGIN_ROOT } from "../lib/paths.mjs";
-import { parseSelectorsFile, shouldStripProperty, isNoiseValue, DEFAULT_STRIP } from "../lib/selectors.mjs";
+import { parseSelectorsFile } from "../lib/selectors.mjs";
 
 function collectMdFiles(inputPath) {
   const stat = statSync(inputPath);

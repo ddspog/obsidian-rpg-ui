@@ -48,7 +48,6 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
     // package which doesn't require WASM initialisation.
     if (typeof process !== "undefined" && process.versions?.node) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
         const native = require("esbuild") as typeof EsbuildWasm;
         esbuildModule = native;
         return;
@@ -120,7 +119,7 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
             // confuse vault lookups. Keep the full normalized path so that
             // Obsidian's Vault API can resolve files correctly.
             // Use POSIX normalization to keep paths consistent across platforms.
-            // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
             const pathPosix = require("path").posix;
             const normalized = pathPosix.normalize(args.path).replace(/^\.\//, "");
             return { path: normalized, namespace: "vault" };
@@ -128,7 +127,7 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
           // Resolve relative paths robustly using posix normalization
           if (args.path.startsWith(".")) {
             // Use posix path operations to avoid Windows backslash issues
-            // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
             const pathPosix = require("path").posix;
             const importerDir = pathPosix.dirname(args.importer || "");
 
@@ -153,7 +152,7 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
                 // vault is available in the outer scope; check for existence
                 const f = vault.getAbstractFileByPath(candidate);
                 if (f) return { path: candidate, namespace: "vault" };
-              } catch (e) {
+              } catch {
                 // ignore and try next
               }
             }
@@ -181,7 +180,7 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
                   const alt = args.path.slice(prefix.length + 1);
                   file = vault.getAbstractFileByPath(alt);
                 }
-              } catch (e) {
+              } catch {
                 // ignore fallback errors
               }
             }
@@ -291,57 +290,57 @@ export async function evaluateSystemBundle(
           // and PendingChoiceRow component are also bundled in so vault-root
           // system files can import them without crossing the vault boundary
           // via relative paths into the plugin's `lib/`.
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const core = require("./create-system");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const valueResolverApi = require("../domains/rules/value-resolver-api");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const imageResolverApi = require("../domains/rules/image-resolver-api");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const ruleRender = require("../domains/rules/render-rule-block");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const parseSourceDocMod = require("../domains/features/parse-source-doc");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const resolverMod = require("../domains/features/resolver");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const indexBuilderMod = require("../domains/features/index-builder");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const pendingChoiceRow = require("../components/pending-choice-row");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const markdown = require("../components/markdown");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const tableParser = require("../domains/tables/parse-table-block");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const tableExpr = require("../domains/tables/expressions");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const spellCard = require("../blocks/spell-card");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const spellcasting = require("../domains/features/spellcasting");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const inventoryDomain = require("../domains/inventory");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const inventoryComponent = require("../components/inventory/InventoryBlock");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const itemsDomain = require("../domains/items");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const itemElementCard = require("../components/item/ItemElementCard");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const itemMagicCard = require("../components/item/ItemMagicCard");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const itemPersonalCard = require("../components/item/ItemPersonalCard");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const itemContainerCard = require("../components/item/ItemContainerCard");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const statblockComponent = require("../components/statblock-vehicle");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const statblockMonsterComponent = require("../components/statblock-monster");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const statblockGroupComponent = require("../components/statblock-group");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const monsterFields = require("../domains/statblocks/monster-fields");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const statblockResolver = require("../domains/statblocks/resolve-features");
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
           const fenceSplit = require("../utils/fence-split");
           return Object.assign({}, core, UIModule, {
             parseSourceDoc: parseSourceDocMod.parseSourceDoc,
@@ -409,7 +408,7 @@ export async function evaluateSystemBundle(
         // Provide React and ReactDOM from the plugin runtime if available.
         if (name === "react") {
           // Prefer globalThis.React (set by plugin runtime), fall back to require.
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
           return (globalThis as any).React ?? require("react");
         }
         if (name === "react-dom" || name === "react-dom/client") {
@@ -425,9 +424,9 @@ export async function evaluateSystemBundle(
           );
         }
         // Fallback to normal require for other modules (may throw)
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+
         return require(name);
-      } catch (e) {
+      } catch {
         // Return an empty object for unresolved externals to avoid crashes
         return {};
       }
@@ -443,9 +442,10 @@ export async function evaluateSystemBundle(
 
     try {
       (globalThis as any).__rpg_wiki = wikiFixture;
-    } catch {}
+    } catch {
+      // globalThis may be frozen in some sandboxes; the fixture is optional
+    }
 
-    // eslint-disable-next-line no-new-func
     const factory = new Function("require", "React", "ReactDOM", wrappedBundle);
     const reactRuntime =
       (globalThis as any).React ??
@@ -474,7 +474,9 @@ export async function evaluateSystemBundle(
     // Clean up the wiki fixture after evaluation
     try {
       delete (globalThis as any).__rpg_wiki;
-    } catch {}
+    } catch {
+      // best-effort cleanup
+    }
 
     if (!mod) {
       console.error(`System bundle for ${systemFolderPath} did not export __system_module`);

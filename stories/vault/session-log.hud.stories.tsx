@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { SessionActionsPanel } from "../../lib/components/session-log/session-actions-panel";
 import type { CardStack, SessionFeatureCard } from "../../lib/domains/session-log/card-types";

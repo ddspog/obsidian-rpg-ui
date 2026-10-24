@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { readdirSync, statSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative, basename } from "node:path";
 import { evalCode, reloadPlugin, openFile } from "../lib/obsidian.mjs";
-import { prepareFile, sleep } from "../lib/renderer.mjs";
+import { sleep } from "../lib/renderer.mjs";
 import { resolveInput, outputDir, vaultRelative } from "../lib/paths.mjs";
 
 function collectMdFiles(inputPath) {

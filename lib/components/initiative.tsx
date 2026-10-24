@@ -1,11 +1,10 @@
 import type { InitiativeBlock, InitiativeConsumable, ParsedConsumableBlock } from "lib/types";
 import type { InitiativeState } from "lib/domains/initiative";
-import { getSortedInitiativeItems, itemHashKey } from "lib/domains/initiative";
+import { getSortedInitiativeItems } from "lib/domains/initiative";
 import { useInitiativeState } from "lib/hooks/useInitiativeState";
 import { InitiativeControls } from "lib/components/initiative-controls";
 import { InitiativeList } from "lib/components/initiative-list";
 import { MultiConsumableCheckboxes } from "lib/components/multi-consumable-checkboxes";
-import { ConsumableState } from "lib/domains/consumables";
 
 export type InitiativeProps = {
   static: InitiativeBlock;

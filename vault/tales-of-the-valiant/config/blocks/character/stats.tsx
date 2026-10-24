@@ -100,7 +100,7 @@ function saveBonusFromTraits(traits: Record<string, string[]>): Record<AttrCode,
     CHA: 0,
   };
   for (const raw of traits["Save B."] ?? []) {
-    const match = raw.match(/^\s*([+\-]?\d+(?:\.\d+)?)\s+([A-Za-z]+)\s*$/);
+    const match = raw.match(/^\s*([+-]?\d+(?:\.\d+)?)\s+([A-Za-z]+)\s*$/);
     if (!match) continue;
     const bonus = parseFloat(match[1]);
     const code = asAttrCode(match[2]);

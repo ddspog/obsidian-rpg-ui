@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { StatDiamond } from "../../../lib/ui/Stat/StatDiamond";
 
@@ -6,8 +6,6 @@ const meta: Meta = {
   title: "UI / Stat",
 };
 export default meta;
-
-type Story = StoryObj;
 
 export const Diamond: StoryObj = {
   render: () => (
