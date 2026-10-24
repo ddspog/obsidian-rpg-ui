@@ -80,3 +80,9 @@ export default defineSimulator({
   system, so character sheets and their cards are not available; GM-side features are.
 - Images and other non-note files: only `.md` notes are copied.
 - Dice Roller and other community plugins' blocks.
+
+## Looking like Obsidian
+
+The plugin's styles rely on Obsidian's own `app.css`, so the build puts it first in the page. It is not kept in the repo: it is read from the Obsidian that `node scripts/cloud-obsidian.mjs prepare` caches (or from `$OBSIDIAN_APP_CSS`). Set `THEME_DIR` to a theme checkout with a built `theme.css` to add the theme too; the page gets `theme-light`/`theme-dark` (by the device) and `is-mobile` on a phone, as Obsidian does. Fonts are the device's: the theme's macOS fonts exist on an iPhone.
+
+    THEME_DIR=/path/to/obsidian-ribbons-theme RPG_VAULT_ROOT=/path/to/vault npm run sim:build

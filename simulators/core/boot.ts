@@ -25,9 +25,29 @@ function makeStore(id: string): Store {
   };
 }
 
+/** Obsidian's body classes, which its CSS and themes key on: light or dark by the device, mobile on a phone. */
+function markAsObsidian(): void {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const forced = document.documentElement.dataset.theme;
+    const dark = forced ? forced === "dark" : media.matches;
+    document.body.classList.toggle("theme-dark", dark);
+    document.body.classList.toggle("theme-light", !dark);
+  };
+  apply();
+  media.addEventListener?.("change", apply);
+  const phone = window.matchMedia("(max-width: 600px)").matches;
+  document.body.classList.add(
+    "obsidian-app",
+    "mod-" + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? "macos" : "windows")
+  );
+  if (phone) document.body.classList.add("is-mobile", "is-phone");
+}
+
 export function boot(sim: Simulator, manifest: Manifest): void {
   const start = async () => {
     installDomHelpers();
+    markAsObsidian();
     const notes: Record<string, string> = JSON.parse(document.getElementById("vault-data")?.textContent ?? "{}");
     const { app, vault } = makeApp(notes);
 

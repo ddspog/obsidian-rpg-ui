@@ -1,102 +1,17 @@
-/* Obsidian's variables, as its default theme sets them, so the plugin's styles read the same here. */
-:root {
-  --font-text: "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --font-interface: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-monospace: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-ui-smaller: 12px;
-  --font-ui-small: 13px;
-  --font-small: 0.875em;
-  --font-smallest: 0.8em;
-  --size-2-1: 2px;
-  --size-2-2: 4px;
-  --size-2-3: 6px;
-  --size-4-1: 4px;
-  --size-4-2: 8px;
-  --size-4-3: 12px;
-  --size-4-4: 16px;
-  --size-4-5: 20px;
-  --radius-s: 4px;
-  --radius-m: 8px;
-  --layer-popover: 30;
-  --p-spacing: 1rem;
-
-  --color-red: #e93147;
-  --color-orange: #e0771f;
-  --color-yellow: #d4a017;
-  --color-green: #2f9e44;
-  --color-cyan: #0f9fb5;
-  --color-blue: #2f6fe0;
-  --color-purple: #8a5cf5;
-  --color-pink: #d6409f;
-
-  --background-primary: #ffffff;
-  --background-primary-alt: #f6f6f6;
-  --background-secondary: #f2f3f5;
-  --background-modifier-border: #d8dade;
-  --background-modifier-hover: rgba(0, 0, 0, 0.06);
-  --background-modifier-form-field: #ffffff;
-  --text-normal: #222222;
-  --text-muted: #5c5c5c;
-  --text-faint: #8a8a8a;
-  --text-accent: #7d54e6;
-  --text-error: #c0242f;
-  --text-on-accent: #ffffff;
-  --text-title: #222222;
-  --interactive-accent: #8a5cf5;
-  --interactive-normal: #f2f3f5;
-  --interactive-hover: #e9eaed;
-  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.1);
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --background-primary: #1e1e1e;
-    --background-primary-alt: #242424;
-    --background-secondary: #262626;
-    --background-modifier-border: #3a3a3a;
-    --background-modifier-hover: rgba(255, 255, 255, 0.08);
-    --background-modifier-form-field: #2b2b2b;
-    --text-normal: #dcddde;
-    --text-muted: #a8a8a8;
-    --text-faint: #7a7a7a;
-    --text-accent: #a68af9;
-    --text-error: #ff6b74;
-    --text-title: #ecedee;
-    --interactive-normal: #2f2f2f;
-    --interactive-hover: #3a3a3a;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --background-primary: #1e1e1e;
-  --background-primary-alt: #242424;
-  --background-secondary: #262626;
-  --background-modifier-border: #3a3a3a;
-  --background-modifier-hover: rgba(255, 255, 255, 0.08);
-  --background-modifier-form-field: #2b2b2b;
-  --text-normal: #dcddde;
-  --text-muted: #a8a8a8;
-  --text-faint: #7a7a7a;
-  --text-accent: #a68af9;
-  --text-error: #ff6b74;
-  --text-title: #ecedee;
-  --interactive-normal: #2f2f2f;
-  --interactive-hover: #3a3a3a;
-  color-scheme: dark;
-}
-
+/* Obsidian's own app.css (and the theme's) come first in the build, so everything here is the
+   simulator's frame: it only styles .sim-* and undoes the app shell's fixed full-window layout. */
 /* ── The simulator's own frame ── */
 * {
   box-sizing: border-box;
 }
+html,
 body {
+  height: auto;
+  overflow: auto;
+  position: static;
   margin: 0;
   background: var(--background-primary);
   color: var(--text-normal);
-  font-family: var(--font-interface);
-  font-size: 15px;
-  line-height: 1.5;
 }
 .sim {
   min-height: 100vh;
@@ -245,15 +160,6 @@ body {
   min-height: 36px;
   cursor: pointer;
   color: var(--text-normal);
-}
-.markdown-preview-view {
-  font-family: var(--font-text);
-  font-size: 16px;
-  line-height: 1.6;
-}
-.markdown-preview-view a.internal-link {
-  color: var(--text-accent);
-  text-decoration: none;
 }
 
 .sim-panels {
