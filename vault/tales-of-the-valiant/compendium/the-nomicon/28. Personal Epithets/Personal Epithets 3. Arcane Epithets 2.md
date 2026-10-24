@@ -11,7 +11,8 @@ tab-name: Arcane Epithets · 2
 **Sample Results**: the Blue Anvil, the Cloaked Conjurer, the Shimmering Magician, the Growling Serpent.
 
 ```rpg table.arcane-epithet-type-3-evil-ish
-|d100|First Word|Second Word|
+@paginate 10 pages
+|d100*|First Word|Second Word|
 |---|---|---|
 |1|Blue|Alchemist|
 |2|Brass|Anvil|
@@ -113,11 +114,12 @@ tab-name: Arcane Epithets · 2
 |98|Serpentine|Thaumaturgist|
 |99|Tentacled|Shifter|
 |100|Ancient|Automaton|
+|---|---|---|
+|= {{ roll }} =|
+[Table 28-7: Arcane Epithet Type 3 (Evil-ish)]
 ```
 
-^table-28-7
-
-`dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-7]]|First Word` `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-7]]|Second Word`
+**First Word** + **Second Word**
 
 ![[arcane-epithet-evilish.webp]]
 #### Table 28-8: Place Names in Epithets
@@ -126,7 +128,7 @@ These tables are generic enough to use when moving quickly through several perso
 If you are already in a phase where you’re using names from a specific naming group, you will probably want to use that naming group instead of the ones from the table. This is for general use.
 
 ```rpg table.place-names-in-epithets
-|dice:d6|Random Place Name Table|
+|d6*|Random Place Name Table|
 |---|---|
 |1|[[Elderweirdish 1. Colossoponderous#Table 10-1 Colossoponderous Hyphenated Place Names|Table 10-1: Colossoponderous Hyphenated Place Names]]. Enu- Moäth, Tsul-Tesh, Anu-Taan, etc.|
 |2|[[Elderweirdish 1. Colossoponderous#Table 10-2 Colossoponderous Two-Word Place Names|Table 10-2: Colossoponderous Two-Word Place Names]]. Az Dun, Djeng Dek, Kal Brok, etc.|
@@ -134,18 +136,19 @@ If you are already in a phase where you’re using names from a specific naming 
 |4|[[Trobadoric 2. Terrain Features#Table 23-6 Trobadoric Terrain Features Table 3|Table 23-6: Trobadoric Terrain Features Table 3]]. Uëboc, Yuaspo, Oualde, etc.|
 |5|[[21. Stygian, Egyptic#Table 21-3 Stygian/Egyptic City Names|Table 21-3: Stygian/Egyptic City Names]]. Hamedra, Sulfis, Mesamnon, etc.|
 |6|[[Elderweirdish 2. Cthonic#Table 10-4 Cthonic Single-Word Place Names|Table 10-4: Cthonic Single-Word Place Names]]. Bholomnoth, Groachagga, Hultramnis, etc.|
+|---|---|
+|= {{ roll }} =|
+[Table 28-8: Place Names in Epithets]
 ```
 
-^table-28-8
-
-`dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-8]]`
 ## Descriptive Epithets
 #### Table 28-9: Descriptive Epithet
 **Instructions**: Roll on any of the four columns to generate a descriptive epithet such as Gandolfo the Nimble.
 **Sample Results**: Brokenbeak, the Hungry, the Cautious, the Tall.
 
 ```rpg table.descriptive-epithet
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Brokenbeak|The Beak|The Hale|The Scarred|
 |2|Brownhair|The Bear|The Handsome|The Short|
@@ -167,8 +170,7 @@ If you are already in a phase where you’re using names from a specific naming 
 |18|Poxmarked|The Feeble|The Reckless|The Wrinkled|
 |19|Stoneface|The Fool|The Red|The Young|
 |20|The Bald|The Gaunt|The Robust|Toadface|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 28-9: Descriptive Epithet]
 ```
-
-^table-28-9
-
-**C1**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|1`, **C2**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|2`, **C3**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|3`, **C4**: `dice: [[Personal Epithets 3. Arcane Epithets 2^table-28-9]]|4`

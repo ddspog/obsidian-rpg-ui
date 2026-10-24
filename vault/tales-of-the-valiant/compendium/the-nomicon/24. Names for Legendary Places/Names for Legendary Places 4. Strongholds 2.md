@@ -12,7 +12,8 @@ tab-name: Strongholds · 2
 **Sample Results**: The Fortress of Ancestry, the Stronghold of Gardens, the Bastion of Glory, the Citadel of Courage.
 
 ```rpg table.mystical-fortress-name-1
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Ancestry|Convocation|Fragrances|Masks|
 |2|Antidotes|Courage|Gardens|Measurement|
@@ -34,18 +35,19 @@ tab-name: Strongholds · 2
 |18|Cold|Flowers|Light|Patience|
 |19|Concealment|Fools|Lore|Patterns|
 |20|Conjunctions|Fortune|Love|Peace|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-11: Mystical Fortress Name 1]
 ```
 
-^table-24-11
-
-**C1**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|1`, **C2**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|2`, **C3**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|3`, **C4**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|4`
 #### Table 24-12: Mystical Fortress Name 2
 **Formula**: The Fortress (or Stronghold) of \_\_\_
 **Instructions**: Roll on any of the four columns.
 **Sample Results**: The Fortress of Preservation, the Stronghold of the Palfrey, the Fortress of Variations, the Stronghold of Stars.
 
 ```rpg table.mystical-fortress-name-2
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Perseverance|Shadows|The Hunt|Tradition|
 |2|Poetry|Sight|The Hunted|Trees|
@@ -67,10 +69,9 @@ tab-name: Strongholds · 2
 |18|Seasons|The Frogs|Tides|Winter|
 |19|Secrets|The Gelding|Time|Wisdom|
 |20|Seeds|The Hearth|Toads|Wolves|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-12: Mystical Fortress Name 2]
 ```
-
-^table-24-12
-
-**C1**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|1`, **C2**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|2`, **C3**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|3`, **C4**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|4`
 
 ![[mystical-fortress-name-2.webp]]

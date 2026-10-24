@@ -10,7 +10,8 @@ tab-name: Taverns · 3
 **Sample Results**: Ape, Beaver, Goat, Hart.
 
 ```rpg table.short-tavern-animal
-|dice:d100|Animal|
+@paginate 10 pages
+|d100*|Animal|
 |---|---|
 |1|Ape|
 |2|Badger|
@@ -112,16 +113,17 @@ tab-name: Taverns · 3
 |98|Bat|
 |99|Stirge|
 |100|Dragon|
+|---|---|
+|= {{ roll }} =|
+[Table 29-9: Short Tavern Animal]
 ```
 
-^table-29-9
-
-`dice: [[Miscellaneous Tables 4. Taverns 3^table-29-9]]`
 #### Table 29-10: All Tavern Animal
 **Sample Results**: Antelope, Bear, Butterfly, Cow, Goshawk.
 
 ```rpg table.all-tavern-animal
-|dice:d100|Animal|
+@paginate 10 pages
+|d100*|Animal|
 |---|---|
 |1|Antelope|
 |2|Ape|
@@ -223,8 +225,7 @@ tab-name: Taverns · 3
 |98|Walrus|
 |99|Warhorse|
 |100|Wolf|
+|---|---|
+|= {{ roll }} =|
+[Table 29-10: All Tavern Animal]
 ```
-
-^table-29-10
-
-`dice: [[Miscellaneous Tables 4. Taverns 3^table-29-10]]`

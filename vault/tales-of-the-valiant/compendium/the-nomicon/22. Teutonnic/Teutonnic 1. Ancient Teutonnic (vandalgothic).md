@@ -15,7 +15,8 @@ Countries and cultures are generated from the base tribal name. Endings can be -
 **Sample Results**: Adralgoths, Evabarae, Quemagni, Bruhemians, Sweolvar.
 
 ```rpg table.vandalgothic-tribal-names
-|d100|Part 1a|Part 1b|Part 1c|Ending|
+@paginate 10 pages
+|d100*|Part 1a|Part 1b|Part 1c|Ending|
 |---|---|---|---|---|
 |01-02|A|Duo|My|barae (or -bars)|
 |03-04|Ado|E|Na|chians (or -chi)|
@@ -67,8 +68,9 @@ Countries and cultures are generated from the base tribal name. Endings can be -
 |95-96|Do|Mi|Y|vi|
 |97-98|Doe|Mo|Yo (or Io)|wargs (or -wargi)|
 |99-00|Du|Mu|Ysi|xons|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 22-1: Vandalgothic Tribal Names]
 ```
 
-^table-22-1
-
-(`dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1a` or `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1b` or `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Part 1c`) `dice: [[Teutonnic 1. Ancient Teutonnic (vandalgothic)^table-22-1]]|Ending`
+(**Part 1a** or **Part 1b** or **Part 1c**) **Ending**

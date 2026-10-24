@@ -18,7 +18,7 @@ tab-name: Strongholds · 1
 You can also go to the Tome of Worldbuilding, starting with [[09. Legendary Locations#Table 9-16 Stronghold Type|Table 9-16: Stronghold Type]] to generate stronghold names that are somewhat different from the tables in the Nomicon.
 #### Table 24-5: Type 1 Fortress Name 1
 ```rpg table.type-1-fortress-name-1
-|dice:d8|Result|
+|d8*|Result|
 |---|---|
 |1|Fortress (before the fortress name)|
 |2|Castle (before the fortress name)|
@@ -28,11 +28,11 @@ You can also go to the Tome of Worldbuilding, starting with [[09. Legendary Loca
 |6|Keep (after fortress name)|
 |7|Castle (after fortress name)|
 |8|The Citadel of (before the fortress name)|
+|---|---|
+|= {{ roll }} =|
+[Table 24-5: Type 1 Fortress Name 1]
 ```
 
-^table-24-5
-
-`dice: [[Names for Legendary Places 3. Strongholds 1^table-24-5]]`
 #### Table 24-6: Type 1 Fortress Name 2
 You can generate fortress names using any of the terrain place names for a naming group, but these are a quick set of names that work well.
 
@@ -40,7 +40,8 @@ You can generate fortress names using any of the terrain place names for a namin
 **Sample Results**: Fortress Rhulcar, The Citadel of Hamajatha, Grobotna Keep, Castle Golamormu.
 
 ```rpg table.type-1-fortress-name-2
-|d100|Western European|Mideast/India|Eastern Europe|Elderweirdish|
+@paginate 10 pages
+|d100*|Western European|Mideast/India|Eastern Europe|Elderweirdish|
 |---|---|---|---|---|
 |1|Ancazar|Bahachandra|Grobotna|Aultrababor|
 |2|Marzathor|Basadhan|Zalagabol|Bholombra|
@@ -142,12 +143,11 @@ You can generate fortress names using any of the terrain place names for a namin
 |98|Yetraban|Zahafar|Kronorg|Zolomar|
 |99|Balathur|Zameroth|Lubol|Zorognar|
 |100|Batraban|Zajagor|Zulbrosh|Zulavor|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-6: Type 1 Fortress Name 2]
 ```
 
-^table-24-6
-
-**Western European**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Western European`, **Mideast/India**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Mideast/India`,
-**Eastern Europe**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Eastern Europe`, **Elderweirdish**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-6]]|Elderweirdish`
 #### Table 24-7: Type 2 Fortress Name
 Since this style of fortress name requires a personal name, it can take longer to generate than the other methods.
 
@@ -155,11 +155,11 @@ Since this style of fortress name requires a personal name, it can take longer t
 **Instructions**: Roll for a start such as “Bastion of,” then add a personal name (probably with epithets or a title). If a personal name from any of the Naming Groups doesn’t sound right, you can also use any of the following tables to vary the results:
 - [[Titles 1. Arcane Titles#Table 27-1 Arcane Titles|Table 27-1: Arcane Titles]]
 - [[Monster Names 2. Bug Monster names + Draconic Monster names#Table 26-6 Dragon Name/Place|Table 26-6: Dragon Name/Place]]
-- [[Titles 4. Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12: General-Use Titles Part 1]] and sequential
-- [[Personal Epithets 4. Arcane Epithets 3#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]
+- [[Titles 4. Modes of Address + Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12: General-Use Titles Part 1]] and sequential
+- [[Personal Epithets 5. Arcane Epithets 4#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]
 
 ```rpg table.type-2-fortress-name
-|dice:d12|Result|
+|d12*|Result|
 |---|---|
 |1|Bastion of|
 |2|Castle of|
@@ -173,11 +173,11 @@ Since this style of fortress name requires a personal name, it can take longer t
 |10|Stronghold of|
 |11|Tower of|
 |12|Spires of|
+|---|---|
+|= {{ roll }} =|
+[Table 24-7: Type 2 Fortress Name]
 ```
 
-^table-24-7
-
-`dice: [[Names for Legendary Places 3. Strongholds 1^table-24-7]]`
 #### Table 24-8: Type 3 Fortress Name Part 1
 The Type 3 tables are used to generate the name of a group that holds the fortress. They generate names such as The Spires of the Ghost-Thieves.
 
@@ -209,7 +209,8 @@ d20 1 2 3 4
 **Instructions**: Roll on any of the four columns to generate the second part of the group name.
 
 ```rpg table.type-3-fortress-name-part-2
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Alchemists|Cultists|Magicians|Sorcerers|
 |2|Artificers|Demons|Magisters|Spawn|
@@ -231,11 +232,11 @@ d20 1 2 3 4
 |18|Crafters|Lizards|Serpents|Wolves|
 |19|Crawlers|Machines|Sisterhood|Women|
 |20|Creatures|Mages|Society|Wyrms|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-9: Type 3 Fortress Name Part 2]
 ```
 
-^table-24-9
-
-**C1**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|1`, **C2**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|2`, **C3**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|3`, **C4**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-9]]|4`
 #### Table 24-10: Short Castle Name
 This table can be used for slightly-Arthurian sounding castles, and not much time is required to generate them.
 
@@ -243,7 +244,8 @@ This table can be used for slightly-Arthurian sounding castles, and not much tim
 **Sample Results**: Castle Destiny, Caer Mirth, Castle Star, Caer Wilde, Castle Sear.
 
 ```rpg table.short-castle-name
-|d20|1|2|3|4|5|6|7|
+@paginate 10 pages
+|d20*|1|2|3|4|5|6|7|
 |---|---|---|---|---|---|---|---|
 |1|Ages|Destiny|Hearth|Mirror|Perseverance|Sigil|Truce|
 |2|Ancestry|Dream|Helm|Mirth|Portal|Silence|Twilight|
@@ -265,8 +267,7 @@ This table can be used for slightly-Arthurian sounding castles, and not much tim
 |18|Dance|Guard|Measure|Patience|Shade|Toad|Wolf|
 |19|Darkness|Harbinger|Memory|Pattern|Shadow|Toadstool|Wraith|
 |20|Dawn|Harvest|Mind|Peace|Sight|Tradition|Wreath|
+|---|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-10: Short Castle Name]
 ```
-
-^table-24-10
-
-**C1**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|1`, **C2**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|2`, **C3**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|3`, **C4**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|4`, **C5**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|5`, **C6**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|6`, **C7**: `dice: [[Names for Legendary Places 3. Strongholds 1^table-24-10]]|7`

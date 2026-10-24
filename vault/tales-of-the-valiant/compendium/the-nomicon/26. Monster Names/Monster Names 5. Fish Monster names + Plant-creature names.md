@@ -15,7 +15,8 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 **Sample Results**: Ulloos, Guboloon, Shuaboolbaloa, Thoshuloom.
 
 ```rpg table.fish-placeperson-name
-|d20|Part 1|Part 2a|Part 2b|
+@paginate 10 pages
+|d20*|Part 1|Part 2a|Part 2b|
 |---|---|---|---|
 |1|Bu|sharbaloo|looah|
 |2|Bua|lastoa|lantis|
@@ -37,11 +38,12 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 |18|Uhe|hoalosh|palutoa|
 |19|Ul|ndubaoth|loothoa|
 |20|Yu|baotha|hoomnis|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-12: Fish Place/Person Name]
 ```
 
-^table-26-12
-
-`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 1` (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 2a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 2b`)
+**Part 1** (**Part 2a** or **Part 2b**)
 # Plant-creature names
 ![[plant-creature-names.webp|right|236]]
 #### Table 26-13: Tree-Type Plant Creature Names
@@ -50,7 +52,8 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 **Sample Results**: The Black Tree of Ghephras, The Emperor Tree of Mhamb, The Unhallowed Tree of Gollmag.
 
 ```rpg table.tree-type-plant-creature-names
-|d100|Tree Adjective|Part 1|Part 2|
+@paginate 10 pages
+|d100*|Tree Adjective|Part 1|Part 2|
 |---|---|---|---|
 |01-02|Black|Ba|bad|
 |03-04|Bronze|Bya|gar|
@@ -102,17 +105,19 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 |95-96|Wizened|Yr|thi|
 |97-98|Wrath-|Zoa|vais|
 |99-00|Zigguractic|Zua|vord|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-13: Tree-Type Plant Creature Names]
 ```
 
-^table-26-13
-
-`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Tree Adjective` `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Part 1` `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Part 2`
+**Tree Adjective** + **Part 1** + **Part 2**
 #### Table 26-14: Other Plant Creature Names
 **Instructions**: Roll for a Start, then roll on either of the Part 1 columns, and on either of the Part 2 columns.
 **Sample Results**: the Tree of Oangra, the Blossom of Mhaulge, the Fungus of Bnoltu, the Ooze of Shaungru.
 
 ```rpg table.other-plant-creature-names
-|d20|Start|Part 1a|Part 1b|Part 2a|Part 2b|
+@paginate 10 pages
+|d20*|Start|Part 1a|Part 1b|Part 2a|Part 2b|
 |---|---|---|---|---|---|
 |1|Tree of|Bna|Oa|chak|lthe|
 |2|Vines of|Bno|Oho|chang|ltu|
@@ -134,8 +139,9 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 |18|Bulb of|My|Yu|logga|voc|
 |19|Efflorescence of|Nua|Yuä|lta|x|
 |20|Shambler of|Nuo|Zoë|lth|xai|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-14: Other Plant Creature Names]
 ```
 
-^table-26-14
-
-`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Start` (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 1a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 1b`) (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 2a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 2b`)
+**Start** (**Part 1a** or **Part 1b**) (**Part 2a** or **Part 2b**)

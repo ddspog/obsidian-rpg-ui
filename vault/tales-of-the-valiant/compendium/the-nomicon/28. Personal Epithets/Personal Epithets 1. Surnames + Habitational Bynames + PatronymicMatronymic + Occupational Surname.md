@@ -19,7 +19,7 @@ A patronymic is identifying a person as the “son of ” or “daughter of ” 
 **Sample Results**: -ssen, -zen, -tzan, -fri
 
 ```rpg table.patronymic-added-to-end-of-name
-|d6|Eurovesian|Alternates|
+|d6*|Eurovesian|Alternates|
 |---|---|---|
 |1|-ssen (-sdottir)|-tzan (-tzine)
 |2|-son (-cia or -tia)|-ri (-ri)
@@ -27,11 +27,10 @@ A patronymic is identifying a person as the “son of ” or “daughter of ” 
 |4|-zen (-zwen)|-dri (-dri)
 |5|-sten (-stine)|-fri (-fri)
 |6|-sin (-sin)|-lm (-lme)
+|---|---|---|
+|= {{ roll }} =|
+[Table 28-1: Patronymic Added to End of Name]
 ```
-
-^table-28-1
-
-**Eurovesian**: `dice: [[Personal Epithets 1. Surnames + Habitational Bynames + PatronymicMatronymic + Occupational Surname^table-28-1]]|Eurovesian`, **Alternates**: `dice: [[Personal Epithets 1. Surnames + Habitational Bynames + PatronymicMatronymic + Occupational Surname^table-28-1]]|Alternates`
 
 - **Formula 3**: [Child’s Name] + identifier such as -ibn or -ben [Parent Name]. An example would be “Thor ibn Odin or Thor Ap Odin.”
 #### Table 28-2: Patronymic as Separate Words
@@ -39,7 +38,7 @@ A patronymic is identifying a person as the “son of ” or “daughter of ” 
 **Sample Results**: ibn, ben, al, nan, ap, av
 
 ```rpg table.patronymic-as-separate-words
-|d6|Arabish|Brittonian|
+|d6*|Arabish|Brittonian|
 |---|---|---|
 |1|ibn (historically accurate for Arabic)|nan (sort of accurate for Celtic)|
 |2|ben (historically accurate for Hebrew)|Ap (male) merch (female) – Old Welsh|
@@ -47,11 +46,10 @@ A patronymic is identifying a person as the “son of ” or “daughter of ” 
 |4|ibr|nai|
 |5|abr|bri|
 |6|az|bai|
+|---|---|---|
+|= {{ roll }} =|
+[Table 28-2: Patronymic as Separate Words]
 ```
-
-^table-28-2
-
-**Arabish**: `dice: [[Personal Epithets 1. Surnames + Habitational Bynames + PatronymicMatronymic + Occupational Surname^table-28-2]]|Arabish`, **Brittonian**: `dice: [[Personal Epithets 1. Surnames + Habitational Bynames + PatronymicMatronymic + Occupational Surname^table-28-2]]|Brittonian`
 
 These generate names such as Bahkhtar abr Razid (which would probably work out to be Bahkhtar ab Razid or Bahkhtar Ab’razid) for Arabish.
 # Occupational Surname
@@ -60,7 +58,8 @@ Avoid using these for important NPCs or if the NPC’s profession is clearly som
 **Sample Results**: the Alchemist, the Assassin, the Barber, the Fletcher.
 
 ```rpg table.occupational-surnames
-|dice:d100|“the” Surname|
+@paginate 10 pages
+|d100*|“the” Surname|
 |---|---|
 |1|Alchemist|
 |2|Apothecary|
@@ -162,8 +161,7 @@ Avoid using these for important NPCs or if the NPC’s profession is clearly som
 |98|Stablekeeper|
 |99|Priest|
 |100|Preacher|
+|---|---|
+|= {{ roll }} =|
+[Table 28-3: Occupational Surnames]
 ```
-
-^table-28-3
-
-`dice: [[Personal Epithets 1. Surnames + Habitational Bynames + PatronymicMatronymic + Occupational Surname^table-28-3]]`

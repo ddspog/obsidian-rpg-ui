@@ -12,7 +12,8 @@ tab-name: Celtigaulic Personal names
 **Sample Results**: Ancabiros, Inocchus, Winderix, Helcurio, Causcincos.
 
 ```rpg table.celtigaulic-masculine-personal-names
-|d100|Start 1|Start 2|Start 3|End 1|End 2|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|
 |---|---|---|---|---|---|
 |01-02|Abri|Do|Torna|bagni|nno|
 |03-04|Ae|Dumno|Tou|belinos|nnus|
@@ -64,17 +65,19 @@ tab-name: Celtigaulic Personal names
 |95-96|Deca|Tigu|Wenno|netlus|wonicus|
 |97-98|Decea|Toli|Wo|ninus|xcingillus|
 |99-00|Di|Tolisto|Wa|nnadu|xsomnus|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 7-1: Celtigaulic Masculine Personal Names]
 ```
 
-^table-7-1
-
-(`dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-1]]|Start 1` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-1]]|Start 2` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-1]]|Start 3`) (`dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-1]]|End 1` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-1]]|End 2`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2**)
 #### Table 7-2: Celtigaulic Feminine Personal Names
 **Instructions**: Roll for any Start and any Ending.
 **Sample Results**: Aebronia, Boulicina, Caranta, Matalpina, Talimmiola.
 
 ```rpg table.celtigaulic-feminine-personal-names
-|d100|Start 1|Start 2|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|End 1|End 2|End 3|
 |---|---|---|---|---|---|
 |01-02|A|Mata|billa|lbina|novinda|
 |03-04|Abre|Me|bna|leseton|nta|
@@ -126,8 +129,9 @@ tab-name: Celtigaulic Personal names
 |95-96|Litu|Wro|golia|noarda|weca|
 |97-98|Lou|Yra|illa|nona|xapia|
 |99-00|Ma|Ys|lavica|nonia|xcinga|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 7-2: Celtigaulic Feminine Personal Names]
 ```
 
-^table-7-2
-
-(`dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-2]]|Start 1` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-2]]|Start 2`) (`dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-2]]|End 1` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-2]]|End 2` or `dice: [[Celtigaulic 1. Celtigaulic Personal names^table-7-2]]|End 3`)
+(**Start 1** or **Start 2**) (**End 1** or **End 2** or **End 3**)

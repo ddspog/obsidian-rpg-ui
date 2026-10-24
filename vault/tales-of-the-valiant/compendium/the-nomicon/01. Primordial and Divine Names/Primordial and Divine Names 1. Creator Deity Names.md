@@ -23,9 +23,12 @@ This table also works well for a Metal feel, just a short name for a creator-dei
 |8|Jha|tha|
 |9|Ola|to|
 |10|Ulu|tuan|
+|---|---|---|
+|= {{ roll }} =|
 [Creator Deity Name (Short)]
 ```
 ```rpg table.creator-deity-hyphenated
+@paginate 10 pages
 |d20*|Part 1|Part 2|
 |---|---|---|
 |1|Ko-|Atun|
@@ -48,9 +51,12 @@ This table also works well for a Metal feel, just a short name for a creator-dei
 |18|Ge-|Oon|
 |19|Che-|Koa|
 |20|Cho-|Moa|
+|---|---|---|
+|= {{ roll }} =|
 [Creator Deity Name (Hyphenated)]
 ```
 ```rpg table.creator-deity-epithet
+@paginate 10 pages
 |d20*|Title|
 |---|---|
 |1|The Shaper|
@@ -73,5 +79,7 @@ This table also works well for a Metal feel, just a short name for a creator-dei
 |18|The Seed|
 |19|The Weaver|
 |20|The World-Smith|
+|---|---|
+|= {{ roll }} =|
 [Creator Deity Epithet]
 ```

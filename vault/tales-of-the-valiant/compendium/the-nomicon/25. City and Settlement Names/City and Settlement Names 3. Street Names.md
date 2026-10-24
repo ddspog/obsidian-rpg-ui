@@ -17,7 +17,7 @@ A shorter list than above, but these all work with the tables below. Check with 
 **Sample Results**: Alley, Avenue, Boulevard.
 
 ```rpg table.selected-street-types
-|dice:d10|Street Type|
+|d10*|Street Type|
 |---|---|
 |1|Alley|
 |2|Avenue|
@@ -29,17 +29,18 @@ A shorter list than above, but these all work with the tables below. Check with 
 |8|Street|
 |9|Walk|
 |10|Way|
+|---|---|
+|= {{ roll }} =|
+[Table 25-5: Selected Street Types]
 ```
 
-^table-25-5
-
-`dice: [[City and Settlement Names 3. Street Names^table-25-5]]`
 #### Table 25-6: Streets Named for Professions
 **Instructions**: Roll on any column for a Street of \_\_\_\_\_\_\_, using street types from [[City and Settlement Names 3. Street Names#Table 25-5 Selected Street Types|Table 25-5]]. Try switching the format to \_\_\_\_ Street (you may have to change the plural to singular for this).
 **Sample Results**: Street of Acrobats, Street of Goatherds, Poet Street, Antiquarian Avenue, Boulevard of Poisoners.
 
 ```rpg table.streets-named-for-professions
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Accountants|Gamblers|Pirates|
 |2|Acrobats|Gem dealers|Poachers|
@@ -141,8 +142,7 @@ A shorter list than above, but these all work with the tables below. Check with 
 |98|Forgers|Physicians|Wizards|
 |99|Fortune tellers|Pikemen|Woodcarvers|
 |100|Furriers|Pilgrims|Woodworkers|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 25-6: Streets Named for Professions]
 ```
-
-^table-25-6
-
-**C1**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|1`, **C2**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|2`, **C3**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|3`

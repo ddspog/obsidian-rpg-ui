@@ -12,7 +12,8 @@ Arcane titles are useful for general epithets for a powerful mage, or can be the
 **Sample Results**: The Arcanjat, the Eruditar, the Scrythe, the Uncannacht.
 
 ```rpg table.arcane-titles
-|dice:d100|Title|
+@paginate 10 pages
+|d100*|Title|
 |---|---|
 |01-02|Arcanjat|
 |03-04|Arcanjai|
@@ -64,8 +65,7 @@ Arcane titles are useful for general epithets for a powerful mage, or can be the
 |95-96|Soothuar|
 |97-98|Ulrachne|
 |99-100|Amphomir|
+|---|---|
+|= {{ roll }} =|
+[Table 27-1: Arcane Titles]
 ```
-
-^table-27-1
-
-`dice: [[Titles 1. Arcane Titles^table-27-1]]`

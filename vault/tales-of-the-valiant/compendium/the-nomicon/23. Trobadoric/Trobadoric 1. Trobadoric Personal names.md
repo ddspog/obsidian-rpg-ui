@@ -12,7 +12,8 @@ tab-name: Trobadoric Personal names
 **Sample Results**: Godefroy, Olibarc, Ansalm, Rhelf, Trisauld.
 
 ```rpg table.trobadoric-masculine-personal-names
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Abelard|Lanselm|
 |2|Ailand|Lauf|
@@ -114,17 +115,18 @@ tab-name: Trobadoric Personal names
 |98|Joffroi|Yselm|
 |99|Joralde|Yulbair|
 |100|Joralt|Yurth|
+|---|---|---|
+|= {{ roll }} =|
+[Table 23-1: Trobadoric Masculine Personal Names]
 ```
 
-^table-23-1
-
-**C1**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-1]]|1`, **C2**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-1]]|2`
 #### Table 23-2: Trobadoric Feminine Personal Names
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Aliénor, Iogénie, Ysolde, Madeleine, Genivere.
 
 ```rpg table.trobadoric-feminine-personal-names
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Adela|Guirande|
 |2|Adelaide|Guirintina|
@@ -226,8 +228,7 @@ tab-name: Trobadoric Personal names
 |98|Guilhemeta|Ystela|
 |99|Guinevere|Ystine|
 |100|Guinhés|Yvonne|
+|---|---|---|
+|= {{ roll }} =|
+[Table 23-2: Trobadoric Feminine Personal Names]
 ```
-
-^table-23-2
-
-**C1**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-2]]|1`, **C2**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-2]]|2`

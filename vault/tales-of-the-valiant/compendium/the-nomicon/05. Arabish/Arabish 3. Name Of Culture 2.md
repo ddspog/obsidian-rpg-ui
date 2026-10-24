@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: user
+tab-icon: flag
 tab-color: var(--color-red)
 tab-name: Name Of Culture · 2
 ---
@@ -11,7 +11,8 @@ tab-name: Name Of Culture · 2
 **Sample Results**: Jhabragi, Jhawbafi, Laiyruwi, Lambwameen, Lhosrifi.
 
 ```rpg table.arabish-culture-name-table-5
-|d100|Start 1|Start 2|Start 3|Start 4|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Ending|
 |---|---|---|---|---|---|
 |01-02|Jhabr|Jhab|Labr|Labh|ab|
 |03-04|Jhadr|Jhadb|Ladr|Ladb|aw|
@@ -63,17 +64,19 @@ tab-name: Name Of Culture · 2
 |95-96|Jhishr|Jhishb|Lhoshr|Lhoshb|ut|
 |97-98|Jhanr|Jhanb|Lashr|Lashb|h|
 |99-00|Jhulr|Jhulb|Lishr|Lishb|uz|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-7: Arabish Culture Name Table 5]
 ```
 
-^table-5-7
-
-(`dice: [[Arabish 3. Name Of Culture 2^table-5-7]]|Start 1` or `dice: [[Arabish 3. Name Of Culture 2^table-5-7]]|Start 2` or `dice: [[Arabish 3. Name Of Culture 2^table-5-7]]|Start 3` or `dice: [[Arabish 3. Name Of Culture 2^table-5-7]]|Start 4`) `dice: [[Arabish 3. Name Of Culture 2^table-5-7]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4**) **Ending**
 #### Table 5-8: Arabish Culture Name Table 6
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Labaraheen, Magirami, Namirifi, Lijabi, Mawarizi.
 
 ```rpg table.arabish-culture-name-table-6
-|d100|Start 1|Start 2|Start 3|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|End 3|
 |----|---|---|---|---|---|---|
 |01-02|Lab|Mab|Nab|ab|arab|irab|
 |03-04|Lad|Mad|Nad|aw|araw|iraw|
@@ -125,17 +128,19 @@ tab-name: Name Of Culture · 2
 |95-96|Lhosh|Mhosh|Nhosh|ut|arut|irut|
 |97-98|Lash|Mash|Nash|h|arh|irh|
 |99-00|Lish|Mish|Nish|uz|aruz|iruz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-8: Arabish Culture Name Table 6]
 ```
 
-^table-5-8
-
-(`dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|Start 1` or `dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|Start 2` or `dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|Start 3`) (`dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|End 1` or `dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|End 2` or `dice: [[Arabish 3. Name Of Culture 2^table-5-8]]|End 3`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2** or **End 3**)
 #### Table 5-9: Arabish Culture Name Table 7
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Labdakeen, Makdiri, Naqdali, Ghibdimi, Jharduqxi.
 
 ```rpg table.arabish-culture-name-table-7
-|d100|Start 1|Start 2|Start 3|Start 4|Start 5|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Start 5|Ending|
 |---|---|---|---|---|---|---|
 |01-02|Labd|Mabd|Nabd|Ghabd|Jhabd|ab
 |03-04|Ladd|Madd|Nadd|Ghadd|Jhadd|aw
@@ -187,17 +192,19 @@ tab-name: Name Of Culture · 2
 |95-96|Lhoshd|Mhoshd|Nhoshd|Ghishd|Jhishd|ut|
 |97-98|Lashd|Mashd|Nashd|Ghand|Jhand|h|
 |99-00|Lishd|Mishd|Nishd|Ghuld|Jhuld|uz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-9: Arabish Culture Name Table 7]
 ```
 
-^table-5-9
-
-(`dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Start 1` or `dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Start 2` or `dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Start 3` or `dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Start 4` or `dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Start 5`) `dice: [[Arabish 3. Name Of Culture 2^table-5-9]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4** or **Start 5**) **Ending**
 #### Table 5-10: Arabish Culture Name Table 8
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Majrami, Mabbaji, Nahrazi, Mhobrifi, Nunbili.
 
 ```rpg table.arabish-culture-name-table-8
-|d100|Start 1|Start 2|Start 3|Start 4|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Ending|
 |---|---|---|---|---|---|
 |01-02|Mabr|Mabb|Nabr|Nabb|ab|
 |03-04|Madr|Madb|Nadr|Nadab|aw|
@@ -249,8 +256,9 @@ tab-name: Name Of Culture · 2
 |95-96|Mhoshr|Mhoshab|Nhoshr|Nhoshb|ut|
 |97-98|Mashr|Mashb|Nashr|Nashb|h|
 |99-00|Mishr|Mishb|Nishr|Nishb|uz|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-10: Arabish Culture Name Table 8]
 ```
 
-^table-5-10
-
-(`dice: [[Arabish 3. Name Of Culture 2^table-5-10]]|Start 1` or `dice: [[Arabish 3. Name Of Culture 2^table-5-10]]|Start 2` or `dice: [[Arabish 3. Name Of Culture 2^table-5-10]]|Start 3` or `dice: [[Arabish 3. Name Of Culture 2^table-5-10]]|Start 4`) `dice: [[Arabish 3. Name Of Culture 2^table-5-10]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4**) **Ending**

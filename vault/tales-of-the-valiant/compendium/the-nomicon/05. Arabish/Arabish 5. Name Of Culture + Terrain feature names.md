@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: user
+tab-icon: flag
 tab-color: var(--color-red)
 tab-name: Name Of Culture + Terrain feature names
 ---
@@ -14,7 +14,7 @@ If you have a double vowel, you can decide whether to use the double vowel or cu
 **Sample Results**: Haraaman, Osumenid, Sabrimite, Yeghamnid
 
 ```rpg table.persian-styled-culture-name
-|d6|Ending|Examples|
+|d6*|Ending|Examples|
 |---|---|---|
 |1|-man|Add “-man,” with “-manic” or “-manid” to get the adjective for the culture. So, starting with Haraatha gives you results of Haraaman Empire, Haraamanid Empire, Haraamanic Culture, or the Haraamanid Culture, whatever sounds the best. Osupha would result in an Osuman or Osumanid Empire, Osumanic Culture, or an Osumanic Empire. Again, whichever one seems to ring the bell properly.|
 |2|-menid|Add “menid” to get the adjective for the culture. So, starting with Haraatha, you get results like the Haraamenid Empire or Culture or People. Starting with Osupha generates the Osumenid Empire, Culture, or People.|
@@ -22,11 +22,12 @@ If you have a double vowel, you can decide whether to use the double vowel or cu
 |4|-mite|Add “mite” or “mitic” to get the adjective for the culture. So, starting with Haraatha, you get results like the Haraamite or Haramitic Empire or Culture or People. Starting with Osupha generates the Osumite or Osumitic Empire, Culture, or People.|
 |5|-mnid|Add “mnid” or “mnidian” to get the adjective for the culture. So, starting with Haraatha, you get results like the Haraamnid or Haramnidian Empire or Culture or People. Starting with Osupha generates the Osumnid or Osumnidian Empire, Culture, or People.|
 |6|-ssid|Add “ssid” or “ssidic” to get the adjective for the culture. So, starting with Haraatha, you get results like the Haraassid or Haraassidic Empire or Culture or People. Starting with Osupha generates the Osussid or Osussidic Empire, Culture, or People.|
+|---|---|---|
+|= {{ roll }} =|
+[Table 5-16: Persian-Styled Culture Name]
 ```
 
-^table-5-16
-
-`dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-16]]|Ending`
+**Ending**
 # Terrain feature names
 Note: if you are looking for a broader range of terrain names than the method below, you can also roll for a culture name. The culture names all end with -i, a suffix which works like -ish in the English language. Remove that final -i from the culture name, and you have a workable base word for a terrain feature.
 ## The Terrain name table
@@ -40,7 +41,8 @@ This table is the base for any kind of terrain feature; hills, mountains, rivers
 **Sample Results**: Asqam, Halawara, Qaari, Darai, Rafih.
 
 ```rpg table.arabish-terrain-feature-name
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Aafa|Halada|Okta|
 |2|Aba|Halafa|Omza|
@@ -142,18 +144,19 @@ This table is the base for any kind of terrain feature; hills, mountains, rivers
 |98|Hajouna|Nawaki|Zari|
 |99|Haku|Nazafa|Zora|
 |100|Fatha|Nu|Zaja|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-17: Arabish Terrain Feature Name]
 ```
 
-^table-5-17
-
-**C1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|1`, **C2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|2`, **C3**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-17]]|3`
 #### Table 5-18: Arabish Optional Terrain Feature Suffix 1
 These suffixes can be added to terrain feature names for more variation.
 
 **Sample Results (added to Terrain Feature Name)**: Gabashaga, Nashiki, Fazussa, Jafikisht, Sudamaghu.
 
 ```rpg table.arabish-optional-terrain-feature-suffix-1
-|d20|Ending 1|Ending 2|
+@paginate 10 pages
+|d20*|Ending 1|Ending 2|
 |---|---|---|
 |1|ba|shi|
 |2|d|bu|
@@ -175,18 +178,18 @@ These suffixes can be added to terrain feature names for more variation.
 |18|sa|daz|
 |19|sh|kaz|
 |20|t|ghu|
+|---|---|---|
+|= {{ roll }} =|
+[Table 5-18: Arabish Optional Terrain Feature Suffix 1]
 ```
 
-^table-5-18
-
-**Ending 1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-18]]|Ending 1`, **Ending 2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-18]]|Ending 2`
 #### Table 5-19: Arabish Optional Terrain Feature Suffix 2
 These optional suffixes can be used at the end of an Arabish terrain name. “Standard” is the default, but you can add the endings from a dialect to terrain names as a way of distinguishing one country (or culture) from another.
 
 **Sample Results (added to Terrain Feature Name)**: Hajounad, Fawrish, Jabunto, Dhammak, Harugho.
 
 ```rpg table.arabish-optional-terrain-feature-suffix-2
-|d10|Standard|Dialect 1|Dialect 2|Dialect 3|
+|d10*|Standard|Dialect 1|Dialect 2|Dialect 3|
 |---|---|---|---|---|
 |1|n|fa|bh|tha|
 |2|d|m|ki|thu|
@@ -198,16 +201,16 @@ These optional suffixes can be used at the end of an Arabish terrain name. “St
 |8|s|fi|m|gho|
 |9|f|g|t|so|
 |10|q|ghi|b|ud|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-19: Arabish Optional Terrain Feature Suffix 2]
 ```
 
-^table-5-19
-
-**Standard**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Standard`, **Dialect 1**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 1`, **Dialect 2**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 2`, **Dialect 3**: `dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-19]]|Dialect 3`
 #### Table 5-20: Arabish Optional Hyphenated Suffix
 **Sample Results (added to Terrain Feature Name)**: Gharouna-Bai, Ewara-Ghos, Musha-Kai, Daume-Na, Yaari-To.
 
 ```rpg table.arabish-optional-hyphenated-suffix
-|dice:d10|Hyphenated Ending|
+|d10*|Hyphenated Ending|
 |---|---|
 |1|-Bai|
 |2|-Ghal|
@@ -219,10 +222,9 @@ These optional suffixes can be used at the end of an Arabish terrain name. “St
 |8|-Sha|
 |9|-Ta|
 |10|-To|
+|---|---|
+|= {{ roll }} =|
+[Table 5-20: Arabish Optional Hyphenated Suffix]
 ```
-
-^table-5-20
-
-`dice: [[Arabish 5. Name Of Culture + Terrain feature names^table-5-20]]`
 
 ![[arabish-city-and-settlement-names.webp|384]]

@@ -12,7 +12,8 @@ tab-name: Personal Names
 **Sample Results**: Anastazy, Cyryl, Kazimier, Nikita, Pyodor.
 
 ```rpg table.russlavik-masculine-personal-names-1
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Alandrei|Brunon|Florjan|Jakub|
 |2|Aleksandr|Buyak|Foma|Jan|
@@ -34,17 +35,18 @@ tab-name: Personal Names
 |18|Boris|Eleksei|Iov|Kuritsa|
 |19|Boroda|Fedor|Ivan|Kuzima|
 |20|Bronislav|Filofei|Jacek|Ludwik|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 19-1: Russlavik Masculine Personal Names 1]
 ```
 
-^table-19-2
-
-**C1**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|4`
 #### Table 19-2: Russlavik Masculine Personal Names 2
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Lukasz, Semeon, Valdyslav, Sbyslav, Vsevolod.
 
 ```rpg table.russlavik-masculine-personal-names-2
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Lukasz|Nezhek|Semeon|Tvorimir|
 |2|Maciej|Nicodem|Schuka|Uleksandr|
@@ -66,17 +68,18 @@ tab-name: Personal Names
 |18|Mil|Radoslav|Toroda|Zaiats|
 |19|Miloslav|Rafael|Tretiak|Zavid|
 |20|Mixail|Sbyslav|Tsuiak|Zygmunt|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 19-2: Russlavik Masculine Personal Names 2]
 ```
 
-^table-19-2
-
-**C1**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|4`
 #### Table 19-3: Russlavik Feminine Personal Names 1
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Akulina, Ekaterina, Gostiata, Arisha, Fedosia.
 
 ```rpg table.russlavik-feminine-personal-names-1
-|d20|1|2|3|4|
+@paginate 10 pages
+|d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|Afimiia|Ania|Diana|Feodora|
 |2|Agafia|Anisia|Dina|Feodosiia|
@@ -98,17 +101,18 @@ tab-name: Personal Names
 |18|Anastasia|Daria|Fedirka|Karina|
 |19|Anastasiia|Dedenia|Fedosia|Katerina|
 |20|Anfisa|Deretka|Fekla|Katerinka|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 19-3: Russlavik Feminine Personal Names 1]
 ```
 
-^table-19-3
-
-**C1**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|4`
 #### Table 19-4: Russlavik Feminine Personal Names 2
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Roksana, Klavdiya, Stepanida, Yekaterina, Larissa.
 
 ```rpg table.russlavik-feminine-personal-names-2
-|d20|1|2|3|4|5|
+@paginate 10 pages
+|d20*|1|2|3|4|5|
 |---|---|---|---|---|---|
 |1|Katya|Makrina|Nedelika|Roksana|Valeriya|
 |2|Kira|Malania|Negoshka|Roza|Varvara|
@@ -130,8 +134,7 @@ tab-name: Personal Names
 |18|Lukeria|Nadezhda|Raisa|Uliiana|Zhenya|
 |19|Lyuba|Nastasya|Rakhila|Ustinya|Zina|
 |20|Lyudmila|Nataliya|Raya|Valentina|Zinaida|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 19-4: Russlavik Feminine Personal Names 2]
 ```
-
-^table-19-4
-
-**C1**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|4`, **C5**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|5`

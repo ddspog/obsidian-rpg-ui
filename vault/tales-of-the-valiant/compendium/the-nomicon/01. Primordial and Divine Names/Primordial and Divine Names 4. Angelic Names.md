@@ -8,6 +8,7 @@ tab-name: Angelic Names
 ---
 # Angelic Names
 ```rpg table.angelic-names-1
+@paginate 10 pages
 |d20*|Part 1|Part 2|Part 3|Part 4|
 |---|---|---|---|---|
 |1|A|b|a|ziel|
@@ -30,9 +31,12 @@ tab-name: Angelic Names
 |18|E|sh|a|giel|
 |19|E|sht|e|bial|
 |20|U|ld|e|biel|
+|---|---|---|---|---|
+|= {{ roll }} =|
 [Angelic-Sounding Names 1]
 ```
 ```rpg table.angelic-names-2
+@paginate 10 pages
 |d20*|Part 1|Part 2|Part 3|Part 4|
 |---|---|---|---|---|
 |1|Ba|b|a|ziel|
@@ -55,9 +59,12 @@ tab-name: Angelic Names
 |18|Ze|sh|a|giel|
 |19|Ke|sht|e|bial|
 |20|Su|ld|e|biel|
+|---|---|---|---|---|
+|= {{ roll }} =|
 [Angelic-Sounding Names 2]
 ```
 ```rpg table.angelic-epithets
+@paginate 10 pages
 |d20*|1|2|
 |---|---|---|
 |1|The Defender|The Sapphire|
@@ -80,5 +87,7 @@ tab-name: Angelic Names
 |18|The Hand|The Counselor|
 |19|The Face|The Mystic|
 |20|The Shield|The Redeemer|
+|---|---|---|
+|= {{ roll }} =|
 [Angelic Epithets]
 ```

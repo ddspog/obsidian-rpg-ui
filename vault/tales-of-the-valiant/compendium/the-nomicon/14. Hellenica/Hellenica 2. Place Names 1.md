@@ -15,7 +15,8 @@ This table generates names for marshes, forests, hills, and other terrain featur
 **Sample Results**: Bimnai, Aiabor, Palacaean, Sabyloos.
 
 ```rpg table.hellenica-country-and-terrain-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|baroon|
 |2|Ai|bo|
@@ -117,8 +118,9 @@ This table generates names for marshes, forests, hills, and other terrain featur
 |98|Zia|zolthai|
 |99|Zy|zoros|
 |100|Zya|zoun|
+|---|---|---|
+|= {{ roll }} =|
+[Table 14-3: Hellenica Country and Terrain Names]
 ```
 
-^table-14-3
-
-`dice: [[Hellenica 2. Place Names 1^table-14-3]]|Start` `dice: [[Hellenica 2. Place Names 1^table-14-3]]|Ending`
+**Start** + **Ending**

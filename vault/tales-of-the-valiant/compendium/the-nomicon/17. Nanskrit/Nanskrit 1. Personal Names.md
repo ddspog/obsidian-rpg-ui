@@ -13,7 +13,8 @@ This table is mostly derived from Sanskrit phonemes, so the majority of these na
 **Sample Results**: Abhiha, Chadayesh, Harakaj, Jayamal, Pridhatri.
 
 ```rpg table.nanskrit-masculine-personal-names
-|d100|First Part|Second Part|
+@paginate 10 pages
+|d100*|First Part|Second Part|
 |---|---|---|
 |1|A|chandra|
 |2|Abhi|charan|
@@ -115,17 +116,19 @@ This table is mostly derived from Sanskrit phonemes, so the majority of these na
 |98|Ulha|yana|
 |99|Uta|yandra|
 |100|Vani|yendra|
+|---|---|---|
+|= {{ roll }} =|
+[Table 17-1: Nanskrit Masculine Personal Names]
 ```
 
-^table-17-1
-
-`dice: [[Nanskrit 1. Personal Names^table-17-1]]|First Part` `dice: [[Nanskrit 1. Personal Names^table-17-1]]|Second Part`
+**First Part** + **Second Part**
 #### Table 17-2: Nanskrit Personal Feminine Names
 **Instructions**: Roll independently for a First Part and a Second Part of the name.
 **Sample Results**: Ashambeli, Chanati, Jika, Neelula, Hadhana.
 
 ```rpg table.nanskrit-personal-feminine-names
-|d100|First Part|Second Part|
+@paginate 10 pages
+|d100*|First Part|Second Part|
 |---|---|---|
 |01-02|Aj|adha|
 |03-04|Am|adhana|
@@ -177,10 +180,11 @@ This table is mostly derived from Sanskrit phonemes, so the majority of these na
 |95-96|T|uma|
 |97-98|Ush|una|
 |99-00|Y|unjal|
+|---|---|---|
+|= {{ roll }} =|
+[Table 17-2: Nanskrit Personal Feminine Names]
 ```
 
-^table-17-2
-
-`dice: [[Nanskrit 1. Personal Names^table-17-2]]|First Part` `dice: [[Nanskrit 1. Personal Names^table-17-2]]|Second Part`
+**First Part** + **Second Part**
 
 ![[nanskrit-personal-feminine-names.webp|384]]

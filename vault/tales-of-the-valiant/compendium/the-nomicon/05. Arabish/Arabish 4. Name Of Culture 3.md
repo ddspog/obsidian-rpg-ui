@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: user
+tab-icon: flag
 tab-color: var(--color-red)
 tab-name: Name Of Culture · 3
 ---
@@ -11,7 +11,8 @@ tab-name: Name Of Culture · 3
 **Sample Results**: Rabakeen, Sakirateen, Taqiriki, Rifaruwi, Tasharuzeen.
 
 ```rpg table.arabish-culture-name-table-9
-|d100|Start 1|Start 2|Start 3|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|End 3|
 |---|---|---|---|---|---|---|
 |01-02|Rab|Sab|Tab|ab|arab|irab|
 |03-04|Rad|Sad|Tad|aw|araw|iraw|
@@ -63,17 +64,19 @@ tab-name: Name Of Culture · 3
 |95-96|Rhosh|Shosh|Thosh|ut|arut|irut|
 |97-98|Rash|Sash|Tash|h|arh|irh|
 |99-00|Rish|Sish|Tish|uz|aruz|iruz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-11: Arabish Culture Name Table 9]
 ```
 
-^table-5-11
-
-(`dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 3`) (`dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 3`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2** or **End 3**)
 #### Table 5-12: Arabish Culture Name Table 10
 **Instructions:** Roll independently for any Start and for an Ending.
 **Sample Results**: Raghrani, Rakbireen, Tambifi, Rusraki, Tulbadi.
 
 ```rpg table.arabish-culture-name-table-10
-|d100|Start 1|Start 2|Start 3|Start 4|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Ending|
 |---|---|---|---|---|---|
 |01-02|Rabr|Rabb|Rabd|Tabb|ab|
 |03-04|Radr|Radb|Rad|Tadb|aw|
@@ -125,17 +128,19 @@ tab-name: Name Of Culture · 3
 |95-96|Rhoshr|Rhoshb|Rhoshd|Thoshb|ut|
 |97-98|Rashr|Rashb|Rashd|Tashb|h|
 |99-00|Rishr|Rishb|Rishd|Tishb|uz|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-12: Arabish Culture Name Table 10]
 ```
 
-^table-5-12
-
-(`dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 3` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 4`) `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4**) **Ending**
 #### Table 5-13: Arabish Culture Name Table 11
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Sabrib, Sihrid, Tajrud, Sahduq, Tamdab.
 
 ```rpg table.arabish-culture-name-table-11
-|d100|Start 1|Start 2|Start 3|Start 4|Start 5|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Start 5|Ending|
 |---|---|---|---|---|---|---|
 |01-02|Sabr|Sabb|Sabd|Tabd|Tabr|ab|
 |03-04|Sadr|Sadb|Sadd|Tadd|Tadr|aw|
@@ -187,17 +192,19 @@ tab-name: Name Of Culture · 3
 |95-96|Shoshr|Shoshb|Shoshd|Thoshd|Toshr|ut|
 |97-98|Sashr|Sashb|Sashd|Tashd|Tashr|h|
 |99-00|Sishr|Sishb|Sishd|Tishd|Tishr|uz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-13: Arabish Culture Name Table 11]
 ```
 
-^table-5-13
-
-(`dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 3` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 4` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 5`) `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4** or **Start 5**) **Ending**
 #### Table 5-14: Arabish Culture Name Table 12
 **Instructions**: Roll independently for either Start and any Ending.
 **Sample Results**: Wabayeen, Yagarafi, Zagariki, Zimiribeen, Yeghariji.
 
 ```rpg table.arabish-culture-name-table-12
-|d100|Start 1|Start 2|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|End 1|End 2|End 3|
 |---|---|---|---|---|---|
 |01-02|Wab|Zab|ab|arab|irab|
 |03-04|Wad|Zad|aw|araw|iraw|
@@ -249,11 +256,12 @@ tab-name: Name Of Culture · 3
 |95-96|Yez|Zhosh|ut|arut|irut|
 |97-98|Yir|Zash|h|arh|irh|
 |99-00|Yiz|Zish|uz|aruz|iruz|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-14: Arabish Culture Name Table 12]
 ```
 
-^table-5-14
-
-(`dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|Start 2`) (`dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 3`)
+(**Start 1** or **Start 2**) (**End 1** or **End 2** or **End 3**)
 ## Modifying a terrain feature name into a Cultural name
 ![[modifying-a-terrain-feature-name-into-a-cultural-name.webp|right|64]]You can also modify a terrain feature into the name of a culture.
 
@@ -263,7 +271,7 @@ If the result says to remove any final vowel, “Barada” becomes “Barad,” 
 
 #### Table 5-15: Modifying a Terrain Feature Name into a Cultural Name
 ```rpg table.modifying-a-terrain-feature-name-into-a-cultural-name
-|dice:d6|Modification|
+|d6*|Modification|
 |---|---|
 |1|Remove any final vowel. Add -iti to get the name of the region, such as “The Baraditi” or “The Barathiti”|
 |2|Remove any final vowel. Add -aj to get the name of the region, such as the Baradaj or the Barathaj. Add -aji to the base word for the name of the people, who would be the Baradaji or the Barathaji.|
@@ -271,8 +279,7 @@ If the result says to remove any final vowel, “Barada” becomes “Barad,” 
 |4|Remove any final vowel. Add -ibi. The region name is the Baradibi or the Barathibi. Dialect: add -een for the name of the people, who would be the Baradeen or the Baratheen.|
 |5|Remove any final vowel. Add -iri. The region is the Baradiri or the Barathiri. The same ending is used for the people, who are the Baradiri or the Barathiri.|
 |6|DO NOT remove the final vowel. The generated word is the name of the Region, so Barada, Baratha. Add an “i” at the end for the people, so the people would be the Baradai or Barathai. If the final vowel is already an “i,” add “’i,” so “Quaari” would become “Quaari’i.” Dialect: for the people, add -keen or -hin or -din. Thus, Baradakeen, Baradahin or Baradadin, and Barathakeen, Barathahin, or Barathadin.|
+|---|---|
+|= {{ roll }} =|
+[Table 5-15: Modifying a Terrain Feature Name into a Cultural Name]
 ```
-
-^table-5-15
-
-`dice: [[Arabish 4. Name Of Culture 3^table-5-15]]`

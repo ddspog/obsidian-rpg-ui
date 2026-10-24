@@ -13,7 +13,8 @@ These tables contain a mixture of historical and invented Italian-sounding names
 **Sample Results**: Adzo, Dionagio, Ilario, Rinaldo, Jarastio.
 
 ```rpg table.italican-masculine-personal-names
-|d100|1|2|3|4|
+@paginate 10 pages
+|d100*|1|2|3|4|
 |---|---|---|---|---|
 |1|Adamo|Cosimo|Guilio|Primo|
 |2|Adriano|Cospo|Iachimo|Prospero|
@@ -115,17 +116,18 @@ These tables contain a mixture of historical and invented Italian-sounding names
 |98|Coppo|Guilbartho|Peppe|Yadrigo|
 |99|Corfino|Guilbarto|Pietro|Yedrigo|
 |100|Corrado|Guilberto|Ponzio|Yodrigo|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 15-1: Italican Masculine Personal Names]
 ```
 
-^table-15-1
-
-**C1**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|1`, **C2**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|2`, **C3**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|3`, **C4**: `dice: [[Italican 1. Italican Personal names^table-15-1]]|4`
 #### Table 15-2: Italican Feminine Personal Names
 **Instructions**: Roll on any column to generate the name.
 **Sample Results**: Adelasia, Elemosina, Fiametta, Octia, Iacoba.
 
 ```rpg table.italican-feminine-personal-names
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Abalia|Elemosina|Nicola|
 |2|Abathea|Elinesa|Nicolosa|
@@ -227,8 +229,7 @@ These tables contain a mixture of historical and invented Italian-sounding names
 |98|Druda|Niassa|Ysabella|
 |99|Drudola|Niathea|Ysania|
 |100|Egidia|Niatina|Ystessa|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 15-2: Italican Feminine Personal Names]
 ```
-
-^table-15-2
-
-**C1**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|1`, **C2**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|2`, **C3**: `dice: [[Italican 1. Italican Personal names^table-15-2]]|3`

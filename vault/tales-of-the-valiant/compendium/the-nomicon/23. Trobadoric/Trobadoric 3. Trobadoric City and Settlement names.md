@@ -9,23 +9,24 @@ tab-name: Trobadoric City and Settlement names
 # Trobadoric City and Settlement names
 #### Table 23-8: Formula for Trobadoric Cities and Settlements
 ```rpg table.formula-for-trobadoric-cities-and-settlements
-|dice:d6|Table|
+|d6*|Table|
 |---|---|
 |1|Use Trobadoric Terrain Features [[Trobadoric 2. Terrain Features#Table 23-4 Trobadoric Terrain Features Table 1|Table 1]]|
 |2|Use Trobadoric Terrain Features [[Trobadoric 2. Terrain Features#Table 23-5 Trobadoric Terrain Features Table 2|Table 2]]|
 |3|Use Trobadoric Terrain Features [[Trobadoric 2. Terrain Features#Table 23-6 Trobadoric Terrain Features Table 3|Table 3]]|
 |4-6|Use [[Trobadoric 3. Trobadoric City and Settlement names#Table 23-9 Trobadoric Cities and Towns|Table 23-9: Trobadoric Cities and Towns]]|
+|---|---|
+|= {{ roll }} =|
+[Table 23-8: Formula for Trobadoric Cities and Settlements]
 ```
 
-^table-23-8
-
-`dice: [[Trobadoric 3. Trobadoric City and Settlement names^table-23-8]]`
 #### Table 23-9: Trobadoric Cities and Towns
 **Instructions**: Roll for a first part, then for any of the three dialects. By sticking with a particular dialect in an area, you can create variation by switching to a different dialect for a different area.
 **Sample Results**: Berbajos, Cruhalt, Izekur, Raouberan, Ycazin.
 
 ```rpg table.trobadoric-cities-and-towns
-|d100|First Part|Dialect 1|Dialect 2|Dialect 3|
+@paginate 10 pages
+|d100*|First Part|Dialect 1|Dialect 2|Dialect 3|
 |---|---|---|---|---|
 |1|Al|bajos|baj|bajo|
 |2|Am|bant|bont|banth|
@@ -127,8 +128,9 @@ tab-name: Trobadoric City and Settlement names
 |98|Yo|zigne|gazin|gazeen|
 |99|Yor|zin|zan|zain|
 |100|Yra|zine|zun|zune|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 23-9: Trobadoric Cities and Towns]
 ```
 
-^table-23-9
-
-`dice: [[Trobadoric 3. Trobadoric City and Settlement names^table-23-9]]|First Part` (`dice: [[Trobadoric 3. Trobadoric City and Settlement names^table-23-9]]|Dialect 1` or `dice: [[Trobadoric 3. Trobadoric City and Settlement names^table-23-9]]|Dialect 2` or `dice: [[Trobadoric 3. Trobadoric City and Settlement names^table-23-9]]|Dialect 3`)
+**First Part** (**Dialect 1** or **Dialect 2** or **Dialect 3**)

@@ -11,7 +11,8 @@ tab-name: Taverns · 2
 **Sample Results**: Angry, Bashful, One-Eyed, Proud.
 
 ```rpg table.short-tavern-living-adjective
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Amber|Moody|
 |2|Ancient|Mottled|
@@ -113,16 +114,17 @@ tab-name: Taverns · 2
 |98|Marbled|Wounded|
 |99|Merry|Wrathful|
 |100|Moaning|Yellow|
+|---|---|---|
+|= {{ roll }} =|
+[Table 29-7: Short Tavern Living Adjective]
 ```
 
-^table-29-7
-
-**C1**: `dice: [[Miscellaneous Tables 3. Taverns 2^table-29-7]]|1`, **C2**: `dice: [[Miscellaneous Tables 3. Taverns 2^table-29-7]]|2`
 #### Table 29-8: Short Tavern Item Adjective
 **Sample Results**: Ancient, Battered, Iron, Fragrant.
 
 ```rpg table.short-tavern-item-adjective
-|dice:d100|Adjective|
+@paginate 10 pages
+|d100*|Adjective|
 |---|---|
 |1|Amber|
 |2|Ancient|
@@ -224,8 +226,7 @@ tab-name: Taverns · 2
 |98|Wooden|
 |99|Wyvern’s|
 |100|Yellow|
+|---|---|
+|= {{ roll }} =|
+[Table 29-8: Short Tavern Item Adjective]
 ```
-
-^table-29-8
-
-`dice: [[Miscellaneous Tables 3. Taverns 2^table-29-8]]`

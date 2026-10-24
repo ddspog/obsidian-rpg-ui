@@ -15,7 +15,8 @@ On Part One, roll on either column 1 or 2 (First Part) and then on Column 3 (End
 **Sample Results**: Gann, Hraldyr, Njadsyr, Skafn, Heodr.
 
 ```rpg table.culture-or-country-nrslik-part-one
-|d100|First Part a|First Part b|Ending|
+@paginate 10 pages
+|d100*|First Part a|First Part b|Ending|
 |---|---|---|---|
 |01-02|Bjo|Ska|d|
 |03-04|A|Sko|g|
@@ -67,11 +68,12 @@ On Part One, roll on either column 1 or 2 (First Part) and then on Column 3 (End
 |95-96|Rja|Ny|nde|
 |97-98|Sa|Mi|rme|
 |99-00|Se|My|t|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 18-4: Culture or Country: Nörslik Part One]
 ```
 
-^table-18-4
-
-(`dice: [[Nörslik 3. Nörslik Culture and Country names^table-18-4]]|First Part a` or `dice: [[Nörslik 3. Nörslik Culture and Country names^table-18-4]]|First Part b`) `dice: [[Nörslik 3. Nörslik Culture and Country names^table-18-4]]|Ending`
+(**First Part a** or **First Part b**) **Ending**
 
 ![[nörslik-culture-and-country-names.webp]]
 #### Table 18-5: Culture or Country: Nörslik Part Two
@@ -81,7 +83,8 @@ This table lets you modify Part One names into countries and cultures, by adding
 **Sample Results**: Gannmark, Hraldyrheim, Njadsyrden, Skafnr, Heodrun.
 
 ```rpg table.culture-or-country-nrslik-part-two
-|d20|Standard|Alternate|
+@paginate 10 pages
+|d20*|Standard|Alternate|
 |---|---|---|
 |1|mark|marg|
 |2|land|lan|
@@ -103,11 +106,11 @@ This table lets you modify Part One names into countries and cultures, by adding
 |18|heim|hulta|
 |19|halt|helm|
 |20|hjolm|dar|
+|---|---|---|
+|= {{ roll }} =|
+[Table 18-5: Culture or Country: Nörslik Part Two]
 ```
 
-^table-18-5
-
-**Standard**: `dice: [[Nörslik 3. Nörslik Culture and Country names^table-18-5]]|Standard`, **Alternate**: `dice: [[Nörslik 3. Nörslik Culture and Country names^table-18-5]]|Alternate`
 ## Dialectal changes to Nörslik Country or Culture names
 You can reflect a dialect in any of the following ways for Nörslik:
 - Change all (or most) of the “y” letters to “i.” Geadsyr becomes Geadsir.

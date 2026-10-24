@@ -12,7 +12,8 @@ tab-name: Personal Names
 **Sample Results**: Abahoor, Halawar, Ossad, Ishraf, Tafik.
 
 ```rpg table.arabish-masculine-names
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Aafas|Halad|Okhtar|
 |2|Abahoor|Halafa|Omaath|
@@ -114,17 +115,18 @@ tab-name: Personal Names
 |98|Hafik|Nawakil|Zarif|
 |99|Hajoun|Nazafa|Zarim|
 |100|Hakub|Nustafa|Zustafa|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-1: Arabish Masculine Names]
 ```
 
-^table-5-1
-
-**C1**: `dice: [[Arabish 1. Personal Names^table-5-1]]|1`, **C2**: `dice: [[Arabish 1. Personal Names^table-5-1]]|2`, **C3**: `dice: [[Arabish 1. Personal Names^table-5-1]]|3`
 #### Table 5-2: Arabish Feminine Names
 **Instructions**: Roll on either column for a name.
 **Sample Results**: Ashra, Bihaya, Hadiya, Salarah, Katima.
 
 ```rpg table.arabish-feminine-names
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Abdayya|Ahaya|
 |2|Abiya|Ailya|
@@ -226,8 +228,7 @@ tab-name: Personal Names
 |98|Shirayna|Zofiya|
 |99|Tasiya|Zoraya|
 |100|Zaiya|Zulikah|
+|---|---|---|
+|= {{ roll }} =|
+[Table 5-2: Arabish Feminine Names]
 ```
-
-^table-5-2
-
-**C1**: `dice: [[Arabish 1. Personal Names^table-5-2]]|1`, **C2**: `dice: [[Arabish 1. Personal Names^table-5-2]]|2`

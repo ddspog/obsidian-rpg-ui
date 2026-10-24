@@ -15,7 +15,8 @@ This table generates names such as “The Forest of Achandra,” or “The Abhin
 **Sample Results**: Achydi, Daruchandra, Gajahesh, Ikesh, Movaraj.
 
 ```rpg table.nanskrit-terrain-feature-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|chandra|
 |2|Abhi|charan|
@@ -117,8 +118,9 @@ This table generates names such as “The Forest of Achandra,” or “The Abhin
 |98|Ulha|yana|
 |99|Uta|yandra|
 |100|Vani|yendra|
+|---|---|---|
+|= {{ roll }} =|
+[Table 17-4: Nanskrit Terrain Feature Names]
 ```
 
-^table-17-4
-
-`dice: [[Nanskrit 3. Nanskrit Terrain Feature names^table-17-4]]|Start` `dice: [[Nanskrit 3. Nanskrit Terrain Feature names^table-17-4]]|Ending`
+**Start** + **Ending**

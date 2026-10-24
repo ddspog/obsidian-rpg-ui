@@ -10,6 +10,7 @@ tab-name: Eldritch God Names
 **Instructions**: Roll twice, once for a First Part and once for a Second Part.
 **Sample Results**: Achymros, Choraghu, Gualosangu, Nguche, Yethoag.
 ```rpg table.eldritch-god-names
+@paginate 10 pages
 |d100*|First Part|Second Part|
 |---|---|---|
 |1|Abhe|bultu|
@@ -112,5 +113,7 @@ tab-name: Eldritch God Names
 |98|Ya|zul|
 |99|Ye|zzu|
 |100|Yi|zzua|
+|---|---|---|
+|= {{ roll }} =|
 [Eldritch God Names]
 ```

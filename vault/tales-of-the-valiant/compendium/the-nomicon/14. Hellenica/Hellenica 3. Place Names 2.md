@@ -13,7 +13,8 @@ These tables can be used for countries, but they are designed primarily for citi
 **Sample Results**: Ataboros, Badiphon, Erelaphon, Oiomnis, Rhophnos.
 
 ```rpg table.hellenica-city-names-1
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|bais|
 |2|Ai|baros|
@@ -115,17 +116,19 @@ These tables can be used for countries, but they are designed primarily for citi
 |98|Zia|stris|
 |99|Zy|stros|
 |100|Zya|stralos|
+|---|---|---|
+|= {{ roll }} =|
+[Table 14-4: Hellenica City Names 1]
 ```
 
-^table-14-4
-
-`dice: [[Hellenica 3. Place Names 2^table-14-4]]|Start` `dice: [[Hellenica 3. Place Names 2^table-14-4]]|Ending`
+**Start** + **Ending**
 #### Table 14-5: Hellenica City Names 2
 **Instructions**: Roll independently for the start and ending of the city name.
 **Sample Results**: Athadopolis, Kepykrion, Pharabos, Siolbion, Zenisthiros.
 
 ```rpg table.hellenica-city-names-2
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|bais|
 |2|Ai|baros|
@@ -227,10 +230,11 @@ These tables can be used for countries, but they are designed primarily for citi
 |98|Zia|thris|
 |99|Zy|thros|
 |100|Zya|thros|
+|---|---|---|
+|= {{ roll }} =|
+[Table 14-5: Hellenica City Names 2]
 ```
 
-^table-14-5
-
-`dice: [[Hellenica 3. Place Names 2^table-14-5]]|Start` `dice: [[Hellenica 3. Place Names 2^table-14-5]]|Ending`
+**Start** + **Ending**
 
 ![[hellenica-city-names.webp|384]]

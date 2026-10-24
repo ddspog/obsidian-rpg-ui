@@ -11,7 +11,8 @@ tab-name: Taverns · 1
 **Sample Results**: Acorn, Book, Claw, Heart, Glove.
 
 ```rpg table.short-tavern-items-1
-|d20|1|2|3|
+@paginate 10 pages
+|d20*|1|2|3|
 |---|---|---|---|
 |1|Acorn|Cask|Forge|
 |2|Anchor|Cauldron|Glove|
@@ -33,17 +34,18 @@ tab-name: Taverns · 1
 |18|Buckle|Finger|Kettle|
 |19|Button|Flail|Key|
 |20|Cap|Flask|Knife|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 29-3: Short Tavern Items 1]
 ```
 
-^table-29-3
-
-**C1**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-3]]|1`, **C2**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-3]]|2`, **C3**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-3]]|3`
 #### Table 29-4: Short Tavern Items 2
 **Instructions**: Roll on any of the three columns.
 **Sample Results**: Knot, Mace, Rake, Skull, Statue.
 
 ```rpg table.short-tavern-items-2
-|d20|1|2|3|
+@paginate 10 pages
+|d20*|1|2|3|
 |---|---|---|---|
 |1|Knot|Pitcher|Sickle|
 |2|Lantern|Plow|Skull|
@@ -65,17 +67,18 @@ tab-name: Taverns · 1
 |18|Pearl|Shield|Vial|
 |19|Pickaxe|Shoe|Walnut|
 |20|Pincers|Shovel|Web|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 29-4: Short Tavern Items 2]
 ```
 
-^table-29-4
-
-**C1**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-4]]|1`, **C2**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-4]]|2`, **C3**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-4]]|3`
 #### Table 29-5: Long Tavern Items
 **Instructions**: Roll on either column.
 **Sample Results**: Alembic, Bracelet, Gonfalon, Mandolin.
 
 ```rpg table.long-tavern-items
-|d20|1|2|
+@paginate 10 pages
+|d20*|1|2|
 |---|---|---|
 |1|Acorn|Gauntlet|
 |2|Alembic|Gonfalon|
@@ -97,17 +100,18 @@ tab-name: Taverns · 1
 |18|Falchion|Tapestry|
 |19|Figurine|Tinderbox|
 |20|Galleon|Torch|
+|---|---|---|
+|= {{ roll }} =|
+[Table 29-5: Long Tavern Items]
 ```
 
-^table-29-5
-
-**C1**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-5]]|1`, **C2**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-5]]|2`
 #### Table 29-6: All Tavern Adjective
 **Instructions**: Roll on either column.
 **Sample Results**: Amber, Angry, Battered, Peculiar.
 
 ```rpg table.all-tavern-adjective
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Amber|Odd|
 |2|Amorous|Odorous|
@@ -209,8 +213,7 @@ tab-name: Taverns · 1
 |98|Mysterious|Wounded|
 |99|Mystic|Wrathful|
 |100|Noble|Yellow|
+|---|---|---|
+|= {{ roll }} =|
+[Table 29-6: All Tavern Adjective]
 ```
-
-^table-29-6
-
-**C1**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-6]]|1`, **C2**: `dice: [[Miscellaneous Tables 2. Taverns 1^table-29-6]]|2`

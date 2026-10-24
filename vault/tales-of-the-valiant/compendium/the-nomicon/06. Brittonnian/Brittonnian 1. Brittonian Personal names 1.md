@@ -12,7 +12,8 @@ tab-name: Brittonian Personal names · 1
 **Sample Results**: Báetric, Crucbethad, Triarthic, Featán, Ruaicc.
 
 ```rpg table.brittonian-masculine-personal-names-gaelic-start
-|d100|Start 1|Start 2|Start 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|
 |---|---|---|---|
 |01-02|Ado|Fa|Sui|
 |03-04|Áe|Fla|Ta|
@@ -64,16 +65,17 @@ tab-name: Brittonian Personal names · 1
 |95-96|Fhea|Se|He|
 |97-98|Fia|Sei|Hew|
 |99-00|Fi|Si|Hu|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-1: Brittonian Masculine Personal Names (Gaelic) Start]
 ```
 
-^table-6-1
-
-**C1**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 1`, **C2**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 2`, **C3**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-1]]|Start 3`
 #### Table 6-2: Brittonian Masculine Personal Names (Gaelic) Ending
 **Instructions**: Roll on any column for an ending to the name.
 
 ```rpg table.brittonian-masculine-personal-names-gaelic-ending
-|d100|End 1|End 2|End 3|End 4|End 5|
+@paginate 10 pages
+|d100*|End 1|End 2|End 3|End 4|End 5|
 |---|---|---|---|---|---|
 |01-02|ar|gde|mthann|radach|ssíd|
 |03-04|ath|gernach|más|ralt|ssíne|
@@ -125,11 +127,11 @@ tab-name: Brittonian Personal names · 1
 |95-96|gan|mmán|náed|ssal|gan|
 |97-98|gartach|mnall|nán|ssán|gbard|
 |99-00|gbarddán|mnán|praite|sséne|bert|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-2: Brittonian Masculine Personal Names (Gaelic) Ending]
 ```
 
-^table-6-2
-
-**C1**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 1`, **C2**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 2`, **C3**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 3`, **C4**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 4`, **C5**: `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-2]]|End 5`
 #### Table 6-3: Brittonian Feminine Personal Names (Gaelic)
 Note: the “bh” makes a “v” sound, as in modern Irish.
 
@@ -137,7 +139,8 @@ Note: the “bh” makes a “v” sound, as in modern Irish.
 **Sample Results**: Aobinn, Draimhnait, Liagain, Sáegit, Dainnait.
 
 ```rpg table.brittonian-feminine-personal-names-gaelic
-|d20|Part 1a|Part 1b|Part 1c|Part 1d|Part 2a|Part 2b|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 1c|Part 1d|Part 2a|Part 2b|
 |---|---|---|---|---|---|---|
 |1|A|Doi|Lia|Sáe|blach|blaith|
 |2|Áe|Dra|Lui|Sca|binn|chrann|
@@ -159,11 +162,12 @@ Note: the “bh” makes a “v” sound, as in modern Irish.
 |18|Dei|La|Ró|Ua|git|ngit|
 |19|Dia|Le|Roa|Uai|tan|dra|
 |20|Do|Li|Sa|Y|nnait|vion|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-3: Brittonian Feminine Personal Names (Gaelic)]
 ```
 
-^table-6-3
-
-(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1c` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 1d`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-3]]|Part 2b`)
+(**Part 1a** or **Part 1b** or **Part 1c** or **Part 1d**) (**Part 2a** or **Part 2b**)
 
 >[!rules] FORCED DIALECTS
 One way to emphasize a particular culture or to differentiate between them is to hammer home a basic language difference. This works for gaming; a novelist will want to be more subtle. Here is a way to really emphasize a linguistic difference.
@@ -174,7 +178,8 @@ One way to emphasize a particular culture or to differentiate between them is to
 **Sample Results**: Owdern, Twfa, Oalygog, Yerthawd, Llavyonydd.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-1
-|d20|Part 1a|Part 1b|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|
 |1|Ae|Ue|chdryd|lfodd|nwas|
 |2|A|Ua|dd|lhaearn|nwyl|
@@ -196,17 +201,19 @@ One way to emphasize a particular culture or to differentiate between them is to
 |18|U|Lla|fon|nian|vnissyen|
 |19|Y|Ffa|gawyn|nion|vrei|
 |20|Wa|Oe|lfed|nllwyn|vyonydd|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-4: Brittonian Masculine Personal Names (Welsh) 1]
 ```
 
-^table-6-4
-
-(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 1b`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-4]]|Part 2c`)
+(**Part 1a** or **Part 1b**) (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 6-5: Brittonian Masculine Personal Names (Welsh) 2
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Degvan, Hydfael, Gralwyd, Rhegwared, Nidwyr.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-2
-|d20|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|---|
 |1|Ba|Hei|Rhe|bon|dwei|lan|
 |2|Be|Hy|Rhi|bsant|dwgawn|ldas|
@@ -228,17 +235,19 @@ One way to emphasize a particular culture or to differentiate between them is to
 |18|Gi|Pe|Gru|dwal|hel|lydd|
 |19|Go|Re|Va|dwaladr|i|lyf|
 |20|Gu|Rhai|Mha|dwallon|l|lyn|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-5: Brittonian Masculine Personal Names (Welsh) 2]
 ```
 
-^table-6-5
-
-(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 1c`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-5]]|Part 2c`)
+(**Part 1a** or **Part 1b** or **Part 1c**) (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 6-6: Brittonian Masculine Personal Names (Welsh) 3
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Cyndaran, Meinfrew, Rhussawg, Peiffith, Grawarch.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-3
-|d20|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|---|
 |1|Ba|Hei|Rhe|lyr|nwyl|war|
 |2|Be|Hy|Rhi|nan|nwyn|lto|
@@ -260,8 +269,9 @@ One way to emphasize a particular culture or to differentiate between them is to
 |18|Gi|Pe|Gru|non|wyth|wyd|
 |19|Go|Re|Va|nrain|wl|fach|
 |20|Gu|Rhai|Mha|nwal|wn|drigog|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-6: Brittonian Masculine Personal Names (Welsh) 3]
 ```
 
-^table-6-6
-
-(`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 1c`) (`dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2a` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2b` or `dice: [[Brittonnian 1. Brittonian Personal names 1^table-6-6]]|Part 2c`)
+(**Part 1a** or **Part 1b** or **Part 1c**) (**Part 2a** or **Part 2b** or **Part 2c**)

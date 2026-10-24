@@ -12,7 +12,8 @@ tab-name: "City and Settlement names: Nanskrit"
 **Sample Results**: Anuhabai, Bulawar, Guwajabat, Junangrapur, Sribatur.
 
 ```rpg table.nanskrit-city-and-settlement-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|Aba|balpoor|
 |2|Aga|batur|
@@ -114,8 +115,9 @@ tab-name: "City and Settlement names: Nanskrit"
 |98|Za|war|
 |99|Zi|wariel|
 |100|Zu|yur|
+|---|---|---|
+|= {{ roll }} =|
+[Table 17-5: Nanskrit City and Settlement Names]
 ```
 
-^table-17-5
-
-`dice: [[Nanskrit 4. City and Settlement names Nanskrit^table-17-5]]|Start` `dice: [[Nanskrit 4. City and Settlement names Nanskrit^table-17-5]]|Ending`
+**Start** + **Ending**
