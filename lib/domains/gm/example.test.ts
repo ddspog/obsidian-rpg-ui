@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
+import { NESTED_SEP } from "../session-log/choice";
 import {
   buildGMExampleLog,
   gmFollowLines,
@@ -104,6 +105,37 @@ describe("gmStepLines — word-pair rows named for their tables", () => {
       "& Ending: @[[b]]#two d100= ->",
       "Dwarven – Place name 3: @[[c]]#three d100= ->",
     ]);
+  });
+});
+
+describe("gmStepLines — a step with a nested dropdown", () => {
+  const feature: GMFeature = {
+    name: "Name Generator",
+    steps: [
+      {
+        choice: "Anglish",
+        thenLabel: "Name kind",
+        then: [
+          { choice: "Masculine name", tables: ["@[[a]]#m"], labels: ["Name"] },
+          { choice: "Terrain name", tables: ["@[[a]]#t", "@[[a]]#e"], labels: ["Name", "& Ending"] },
+        ],
+      },
+      { choice: "Arabish", then: [{ choice: "Masculine name", tables: ["@[[b]]#m"] }] },
+    ],
+  };
+  const lines = gmStepLines(feature);
+
+  it("spawns the dropdown, labelled, when the step is picked", () => {
+    expect(lines.Anglish).toBe("Name kind: [Masculine name/Terrain name - ]");
+    expect(lines.Arabish).toBe("Kind: [Masculine name - ]");
+  });
+
+  it("keeps each option's lines under its parent pick", () => {
+    expect(lines[`Anglish${NESTED_SEP}Terrain name`].split("\n")).toEqual([
+      "Name: @[[a]]#t d100= ->",
+      "& Ending: @[[a]]#e d100= ->",
+    ]);
+    expect(lines[`Arabish${NESTED_SEP}Masculine name`]).toBe("Masculine name 1: @[[b]]#m d100= ->");
   });
 });
 

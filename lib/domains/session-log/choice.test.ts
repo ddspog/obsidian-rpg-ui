@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitResultChoice, buildResultChoice, applyChoicePick } from "./choice";
+import { splitResultChoice, buildResultChoice, applyChoicePick, NESTED_SEP } from "./choice";
 
 describe("splitResultChoice", () => {
   it("splits a result with a trailing choice token", () => {
@@ -141,5 +141,52 @@ describe("applyChoicePick — a log with several generators", () => {
   it("still takes the first choice line when no line is given", () => {
     const out = applyChoicePick(body, "Arabish", follow);
     expect(out.split("\n")[2]).toContain("- Arabish]");
+  });
+});
+
+describe("applyChoicePick — a dropdown nested under another pick", () => {
+  const kind = (pick: string) => `  + Kind: [Masculine name/Feminine name - ${pick}]`;
+  const follow = {
+    Anglish: "Kind: [Masculine name/Feminine name - ]",
+    [`Anglish${NESTED_SEP}Masculine name`]: "Name: @[[a]]#a d100= ->",
+    [`Arabish${NESTED_SEP}Masculine name`]: "Name: @[[b]]#b d100= ->",
+    "Masculine name": "Wrong: looked up without its parent",
+  };
+
+  it("spawns the style's kind dropdown when the style is picked", () => {
+    const body = "gen: Name Generator\n  Naming Style: [Anglish/Arabish - ]";
+    const out = applyChoicePick(body, "Anglish", follow).split("\n");
+    expect(out).toEqual([
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Anglish]",
+      "  + Kind: [Masculine name/Feminine name - ]",
+    ]);
+  });
+
+  it("looks the kind up under its style, so two styles' `Masculine name` differ", () => {
+    for (const [style, ref] of [
+      ["Anglish", "#a"],
+      ["Arabish", "#b"],
+    ]) {
+      const body = ["gen: Name Generator", `  Naming Style: [Anglish/Arabish - ${style}]`, kind("")].join("\n");
+      const out = applyChoicePick(body, "Masculine name", follow, { source: kind("").trim(), nth: 0 }).split("\n");
+      expect(out[2]).toContain("- Masculine name]");
+      expect(out[3]).toContain(ref);
+    }
+  });
+
+  it("re-picking the style drops the kind line and its rows together", () => {
+    const body = [
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Anglish]",
+      kind("Masculine name"),
+      "  + Name: @[[a]]#a d100=4 -> Hod",
+    ].join("\n");
+    const out = applyChoicePick(body, "Arabish", { ...follow, Arabish: "Kind: [Masculine name - ]" }).split("\n");
+    expect(out).toEqual([
+      "gen: Name Generator",
+      "  Naming Style: [Anglish/Arabish - Arabish]",
+      "  + Kind: [Masculine name - ]",
+    ]);
   });
 });
