@@ -79,9 +79,9 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/05. Arabish/Arabish 6. Arabish city and settlement names]]#arabish-city-and-settlement-names-ending"
         labels:
           - "Name"
-          - "& Ending (optional)"
+          - ""
         choose:
-          - "1,2,3"
+          - "Start=1,2,3+Ending?=2:1"
           - ""
   - choice: "Brittonian (Gaelic)"
     thenLabel: "Kind of name"
@@ -91,11 +91,11 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-masculine-personal-names-gaelic-start"
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-masculine-personal-names-gaelic-ending"
         labels:
-          - "Start"
-          - "& Ending"
+          - "Name"
+          - ""
         choose:
-          - "1,2,3"
-          - "1,2,3,4,5"
+          - "Start=1,2,3+End=2:1,2,3,4,5"
+          - ""
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-feminine-personal-names-gaelic"
@@ -128,11 +128,11 @@ steps:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 2. Brittonian Personal names 2]]#brittonian-feminine-personal-names-welsh-part-1"
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 2. Brittonian Personal names 2]]#brittonian-feminine-personal-names-welsh-part-2"
         labels:
-          - "First part"
-          - "& Ending"
+          - "Name"
+          - ""
         choose:
-          - "1,2,3,4,5,6"
-          - "1,2,3,4,5"
+          - "First Part=1,2,3,4,5,6+Ending=2:1,2,3,4,5"
+          - ""
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 4. Brittonnian Terrain feature names]]#brittonnian-bright-terrain-feature"
@@ -167,13 +167,26 @@ steps:
   - choice: "Dwarven"
     thenLabel: "Kind of name"
     then:
-      - choice: "Personal name"
+      - choice: "Masculine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-1"
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-2"
         labels:
           - "Name"
           - "Name, variant"
+        choose:
+          - "Start=1+Ending=2"
+          - "Start=1+Ending=2"
+      - choice: "Feminine name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-1"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-2"
+        labels:
+          - "Name"
+          - "Name, variant"
+        choose:
+          - "Start=1+Ending=3"
+          - "Start=1+Ending=3"
       - choice: "Place name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-place-names-table-1"
@@ -414,11 +427,20 @@ steps:
   - choice: "Stygian-Egyptic"
     thenLabel: "Kind of name"
     then:
-      - choice: "Personal name"
+      - choice: "Masculine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/21. Stygian, Egyptic]]#stygianegyptic-personal-names-masculine-and-feminine"
         labels:
           - "Name"
+        choose:
+          - "First Part=1+Ending=2"
+      - choice: "Feminine name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/21. Stygian, Egyptic]]#stygianegyptic-personal-names-masculine-and-feminine"
+        labels:
+          - "Name"
+        choose:
+          - "First Part=1+Ending=3"
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/21. Stygian, Egyptic]]#stygianegyptic-terrain-names"
@@ -593,13 +615,13 @@ steps:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 5. Demonic Names + Arch-Demonic or Evil God Epithets]]#demonic-name-part-2"
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 5. Demonic Names + Arch-Demonic or Evil God Epithets]]#evil-god-epithets"
     labels:
-      - "First part"
-      - "& Second part"
-      - "& Epithet (optional)"
+      - "Name"
+      - ""
+      - "Epithet (optional)"
     choose:
-      - "1,2,3"
-      - "1,2,3,4"
-      - "Part 1=1,2,3& Part 2=4"
+      - "First Part=1,2,3+Second Part=2:1,2,3,4"
+      - ""
+      - "Epithet=1,2,3& Domain=4"
 cards:
   - name: Name Generator
     stack: generator

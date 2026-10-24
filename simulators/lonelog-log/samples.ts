@@ -72,7 +72,7 @@ export function makeSamples(vault: Record<string, string>): Sample[] {
     confusing(
       "Brittonian (Gaelic)",
       "Masculine name",
-      "Start and ending sit in two tables: each is its own pick, not yet joined."
+      "Start and ending are in two tables: each is rolled on its own, and the Name row joins them."
     ),
     confusing("Anglish", "Masculine name", "Two alternative names in a row: both are shown, use either."),
     confusing(
@@ -83,13 +83,18 @@ export function makeSamples(vault: Record<string, string>): Sample[] {
     confusing(
       "Brittonian (Welsh)",
       "Feminine name",
-      "Two tables labelled only 1, 2, 3 and so on: which numbers are beginnings and which are endings?"
+      "A first part and an ending from two tables, joined on the Name row."
     ),
     confusing("Brittonian (Welsh)", "Masculine name", "Two tables, each with a/b/c parts that you combine yourself."),
     confusing(
       "Dwarven",
-      "Personal name",
-      "One Start with a masculine and a feminine ending: the kind of name is already picked, yet both endings print."
+      "Masculine name",
+      "The kind picks the ending: a Start, its masculine ending, the name. Feminine name takes the other ending."
+    ),
+    confusing(
+      "Arabish",
+      "Settlement name",
+      "A starting syllable plus an optional ending from a second table: six names, one picked by the die."
     ),
     confusing("Nörslik", "Masculine name", "A base name and two dialect spellings of it."),
     confusing("Trobadoric", "City or town name", "A first part with three dialect endings."),

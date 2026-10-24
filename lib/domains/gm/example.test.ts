@@ -1284,4 +1284,33 @@ describe("a name made of rolled parts — choose", () => {
     const body = gen(`Start: ${ref} d100=80 ->`, `& End: ${ref} d100=80 ->`, `Name: @pick(${spec}) ->`);
     expect(resolveGmBody(body, [feature], ctx)).toContain(`+ Name: @pick(${spec}) -> Aebant`);
   });
+
+  describe("parts rolled on different tables", () => {
+    const starts = "@[[Names]]#starts";
+    const ends = "@[[Names]]#ends";
+    const startTable = {
+      columnLabels: ["d100*", "1", "2"],
+      rows: [{ cells: [{ value: "1-100" }, { value: "Cai" }, { value: "Ma" }] }],
+    } as unknown as TableDef;
+    const endTable = {
+      columnLabels: ["d100*", "1", "2", "3"],
+      rows: [{ cells: [{ value: "1-100" }, { value: "d" }, { value: "llgarg" }, { value: "nlang" }] }],
+    } as unknown as TableDef;
+    const both = { tables: { [starts]: startTable, [ends]: endTable } };
+    const spec = "Start=1,2+End=2:1,2,3";
+    const step: GMStep = { choice: "Name", tables: [starts, ends], labels: ["Name", ""], choose: [spec, ""] };
+
+    it("writes every part's row from its own table, and none for the table it took parts from", () => {
+      expect(stepGeneratedLine(step)).toBe(
+        [`Start: ${starts} d100= ->`, `& End: ${ends} d100= ->`, `Name: @pick(${spec}) d6= ->`].join("\n")
+      );
+    });
+
+    it("joins the parts from their own tables", () => {
+      const body = gen(`Start: ${starts} d100=5 ->`, `& End: ${ends} d100=5 ->`, `Name: @pick(${spec}) d6=5 ->`);
+      const out = resolveGmBody(body, [feature], both);
+      expect(out).toContain("Start: " + starts + " d100=5 -> Cai / Ma");
+      expect(out).toContain(`Name: @pick(${spec}) d6=5 -> Mallgarg`);
+    });
+  });
 });

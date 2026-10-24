@@ -2174,7 +2174,13 @@ class SessionLogMarkdown extends ReactMarkdown {
     const tableRoll: TableRoll = (ref, roll, pick) => {
       const table = this.stepCtx.tables?.[ref];
       if (!table) return undefined;
-      if (pick?.rolls) return pickResult(table, pick.rolls, pick.spec, pick.roll);
+      if (pick?.rolls) {
+        // Each part may be rolled on its own table.
+        const tables = (pick.refs ?? [ref]).map((r) => this.stepCtx.tables?.[r]);
+        return tables.every((t): t is TableDef => !!t)
+          ? pickResult(tables, pick.rolls, pick.spec, pick.roll)
+          : undefined;
+      }
       if (pick?.part != null) return partText(table, roll, pick.spec, pick.part);
       return resolveTableRoll(`${ref} d100=${roll} ->`, table)
         .match(/->\s*(\S.*)$/)?.[1]
