@@ -61,9 +61,15 @@ export function boot(sim: Simulator, manifest: Manifest): void {
       window.setTimeout(() => el.remove(), 2500);
     };
 
+    // Not the body itself: a host page puts our <style> and <script> inside it, and the shell
+    // replaces everything in its root.
+    const root = document.createElement("div");
+    root.id = "sim-root";
+    document.body.appendChild(root);
+
     const ctx: SimulatorContext = {
       ...manifest,
-      root: document.body,
+      root,
       app: app as unknown as App,
       vault,
       notes,
@@ -89,7 +95,7 @@ export function boot(sim: Simulator, manifest: Manifest): void {
       await sim.start(ctx);
       (window as unknown as { __simulatorReady?: boolean }).__simulatorReady = true;
     } catch (e) {
-      document.body.innerHTML = `<pre style="padding:16px;white-space:pre-wrap">The simulator did not start.\n\n${String(
+      root.innerHTML = `<pre style="padding:16px;white-space:pre-wrap">The simulator did not start.\n\n${String(
         (e as Error)?.stack ?? e
       )}</pre>`;
       throw e;
