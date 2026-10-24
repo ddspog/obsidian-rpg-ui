@@ -207,6 +207,18 @@ class SessionLogMarkdown extends ReactMarkdown {
   /** Whether a PC's sheet already lists an item (undefined: not a PC). */
   private sheetHas: (owner: string | undefined, item: string) => boolean | undefined = () => undefined;
 
+  /** Lines a card has added that the note doesn't hold yet. They show in the Log
+   *  like any entry and are written with the other edits when Save is clicked. */
+  private staged: { text: string; maps: HeaderMap[] } = { text: "", maps: [] };
+
+  /** The block as the Log reads it: the note's, with what is staged appended. */
+  private stagedSource(): string {
+    if (!this.staged.text && this.staged.maps.length === 0) return this.source;
+    const m = this.source.match(/^([\s\S]*?---\n)([\s\S]*)$/);
+    if (!m) return this.source + this.staged.text;
+    return `${this.staged.maps.reduce((h, map) => addHeaderMap(h, map), m[1])}${m[2]}${this.staged.text}`;
+  }
+
   constructor(
     el: HTMLElement,
     source: string,
@@ -239,9 +251,9 @@ class SessionLogMarkdown extends ReactMarkdown {
     );
   }
 
-  private async processAndRender() {
+  private async processAndRender(keepState = false) {
     try {
-      const block = parseSessionLogBlock(this.source);
+      const block = parseSessionLogBlock(this.stagedSource());
       this.logData = processSessionLog(block);
       this.stateKey = block.state_key;
       this.initialSidebarOpen = (await this.kv.get<boolean>(`${block.state_key}:log-sidebar-open`)) === true;
@@ -295,7 +307,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         }
       }
 
-      this.renderSessionLog();
+      this.renderSessionLog(keepState);
     } catch (error) {
       console.error("Error processing session log:", error);
       this.containerEl.innerHTML = `<div class="notice notice-error">Error processing session log: ${error instanceof Error ? error.message : String(error)}</div>`;
@@ -1916,7 +1928,7 @@ class SessionLogMarkdown extends ReactMarkdown {
   }
 
   /** Rewrite the `rpg log` block body via a transform, then persist. The
-   *  generalized form of {@link appendToLogBody} used for GM step picks. */
+   *  form used for GM step picks. */
   private async rewriteLogBody(transform: (body: string) => string) {
     const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
     if (!(file instanceof TFile)) return;
@@ -1925,12 +1937,24 @@ class SessionLogMarkdown extends ReactMarkdown {
     const match = content.match(codeBlockRegex);
     if (!match) return;
     const [, header, body, closing] = match;
-    const updatedBody = transform(body);
-    if (updatedBody === body) return;
+    // The Log reads the note plus what a card staged, so a pick on a staged
+    // entry finds its line. A change confined to the staged tail stays staged.
+    const updatedBody = transform(body + this.staged.text);
+    if (updatedBody === body + this.staged.text) return;
+    if (this.staged.text && updatedBody.startsWith(body)) {
+      this.staged.text = updatedBody.slice(body.length);
+      await this.processAndRender(true);
+      return;
+    }
+    const staged = this.staged;
+    this.staged = { text: "", maps: [] };
     // Splice the block back into the note — not the block alone over the note.
     await this.baseView.app.vault.modify(
       file as any,
-      content.replace(codeBlockRegex, () => `${header}${updatedBody}${closing}`)
+      content.replace(
+        codeBlockRegex,
+        () => `${staged.maps.reduce((h, map) => addHeaderMap(h, map), header)}${updatedBody}${closing}`
+      )
     );
   }
 
@@ -1943,36 +1967,6 @@ class SessionLogMarkdown extends ReactMarkdown {
     );
   }
 
-  /** Append to the log — and, for a fight on a new picture map, keep that map
-   *  in the block's header (`maps:`), in the same write. */
-  private async appendToLogBody(newText: string, headerMap?: HeaderMap) {
-    try {
-      const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
-      if (!file || !(file instanceof TFile)) {
-        console.error("File not found:", this.filePath);
-        return;
-      }
-
-      const content = await this.baseView.app.vault.read(file);
-      const codeBlockRegex = /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/;
-      const match = content.match(codeBlockRegex);
-
-      if (!match) {
-        console.error("Could not find rpg log code block in file");
-        return;
-      }
-
-      const [, header, body, closing] = match;
-      const updatedBody = body + newText;
-      const updatedBlock = `${headerMap ? addHeaderMap(header, headerMap) : header}${updatedBody}${closing}`;
-      const updatedContent = content.replace(codeBlockRegex, () => updatedBlock);
-
-      await this.baseView.app.vault.modify(file as any, updatedContent);
-    } catch (error) {
-      console.error("Error appending to log:", error);
-    }
-  }
-
   /**
    * Rewrite the code-block body for sidebar edits: scene `=> …` lines (matched
    * by text after `=>`) and inline die values (a token swap on a matched line).
@@ -1982,7 +1976,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     sceneReplacements: Array<{ from: string; to: string }>,
     dieReplacements: Array<{ line: string; from: string; to: string }>
   ) {
-    if (sceneReplacements.length === 0 && dieReplacements.length === 0) return;
+    if (sceneReplacements.length === 0 && dieReplacements.length === 0 && !this.staged.text) return;
     try {
       const file = this.baseView.app.vault.getAbstractFileByPath(this.filePath);
       if (!file || !(file instanceof TFile)) {
@@ -1990,7 +1984,15 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
 
-      const content = await this.baseView.app.vault.read(file);
+      let content = await this.baseView.app.vault.read(file);
+      // What a card staged is written first, so the edits below find its lines.
+      const staged = this.staged;
+      if (staged.text || staged.maps.length > 0) {
+        content = content.replace(
+          /(```rpg log\n[\s\S]*?---\n)([\s\S]*?)(```)/,
+          (_m, h, b, c) => `${staged.maps.reduce((acc, map) => addHeaderMap(acc, map), h)}${b}${staged.text}${c}`
+        );
+      }
       let updatedContent = applySceneEdits(content, sceneReplacements);
       updatedContent = applyTokenEdits(updatedContent, dieReplacements);
       // Re-resolve GM-feature lines from their now-edited dice so a rolled
@@ -2006,6 +2008,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
       await this.baseView.app.vault.modify(file as any, updatedContent);
+      this.staged = { text: "", maps: [] };
     } catch (error) {
       console.error("Error editing log:", error);
     }
@@ -2130,16 +2133,19 @@ class SessionLogMarkdown extends ReactMarkdown {
     return { pcStacks, gmStacks };
   }
 
-  private renderSessionLog() {
+  private renderSessionLog(keepState = false) {
     if (!this.logData) {
       this.containerEl.innerHTML = '<div class="notice">No log data available</div>';
       return;
     }
 
     // Reuse the instance's React root so it is unmounted on unload (see
-    // ReactMarkdown.onunload) and never double-created on re-render.
-    if (this.reactRoot) this.reactRoot.unmount();
-    this.reactRoot = ReactDOM.createRoot(this.containerEl);
+    // ReactMarkdown.onunload) and never double-created on re-render. Staging a
+    // card keeps the root, so the edits still waiting for Save survive it.
+    if (!(keepState && this.reactRoot)) {
+      if (this.reactRoot) this.reactRoot.unmount();
+      this.reactRoot = ReactDOM.createRoot(this.containerEl);
+    }
     const { pcStacks, gmStacks } = this.buildActionCards();
     // Targets are named as the log names them (`Talon`, not `Talon Pallton`).
     const logName = logNames(this.entities.map((e) => e.name));
@@ -2151,7 +2157,15 @@ class SessionLogMarkdown extends ReactMarkdown {
       const picked = text.match(/\[[^\][]+?\s+-\s+([^\][]+?)\]/)?.[1]?.trim();
       const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
       const spawned = picked && stepLines[picked] ? applyChoicePick(text, picked, stepLines) : text;
-      await this.appendToLogBody(spawned, headerMap);
+      // Staged, not written: it joins the Log as an unsaved entry until Save.
+      this.staged.text += spawned;
+      if (headerMap) this.staged.maps.push(headerMap);
+      await this.processAndRender(true);
+    };
+
+    const discardStaged = () => {
+      this.staged = { text: "", maps: [] };
+      void this.processAndRender();
     };
 
     // A table roll's row, read from the tables the GM tools load, so the Log can
@@ -2191,6 +2205,8 @@ class SessionLogMarkdown extends ReactMarkdown {
           onAppendText={handleAppendText}
           onChoice={(selected) => void this.onChoicePick(selected)}
           onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
+          stagedCount={this.staged.text ? 1 : 0}
+          onDiscardStaged={discardStaged}
           resources={this.stepCtx.resources ?? {}}
           lists={this.stepCtx.lists ?? {}}
           resolveRef={this.resolveRef}
@@ -2267,6 +2283,10 @@ interface SessionLogRootProps {
     scenes: Array<{ from: string; to: string }>;
     dice: Array<{ line: string; from: string; to: string }>;
   }) => void | Promise<void>;
+  /** Whether a card's lines wait, unsaved, in the Log. */
+  stagedCount: number;
+  /** Drop the lines a card staged. */
+  onDiscardStaged: () => void;
   /** Declared resources (session by abbr, PC by name) for resolving
    *  `[<abbr>±n]` / `[<PC>/<name>±n]` ops to running values. */
   resources: Record<string, DialDecl>;
@@ -2360,6 +2380,8 @@ function SessionLogRoot({
   onAppendText,
   onChoice,
   onSave,
+  stagedCount,
+  onDiscardStaged,
   resources,
   lists,
   resolveRef,
@@ -3443,6 +3465,12 @@ function SessionLogRoot({
     clickTick.current += 1;
     setSelection({ id, side: "sidebar", n: clickTick.current });
   };
+  /** Bring the end of the log into view: its last passage, and last entry in the Log. */
+  const goToLastBlock = () => {
+    const lastOf = (anchors: Map<number, HTMLElement>) => [...anchors.entries()].sort((a, b) => a[0] - b[0]).pop()?.[1];
+    lastOf(proseAnchors.current)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    lastOf(sidebarAnchors.current)?.scrollIntoView({ block: "end", behavior: "smooth" });
+  };
   const handleSidebarClick = (id: number) => {
     clickTick.current += 1;
     setSelection({ id, side: "prose", n: clickTick.current });
@@ -3511,7 +3539,7 @@ function SessionLogRoot({
     return out;
   }, [sidebarItems, editResults, dieEdits]);
 
-  const isDirty = pendingScenes.length > 0 || dieReplacements.length > 0 || tokenEdits.length > 0;
+  const isDirty = pendingScenes.length > 0 || dieReplacements.length > 0 || tokenEdits.length > 0 || stagedCount > 0;
 
   const handleSceneChange = (original: string, next: SceneEditValue) => {
     setSceneEdits((prev) => ({ ...prev, [original]: next }));
@@ -3550,6 +3578,7 @@ function SessionLogRoot({
     setSceneEdits({});
     setDieEdits({});
     setTokenEdits([]);
+    if (stagedCount > 0) onDiscardStaged();
   };
 
   const hasActions = pcStacks.size > 0 || foeStacks.size > 0 || gmStacks.length > 0;
@@ -3583,6 +3612,15 @@ function SessionLogRoot({
               // closes from its own header, which sticks with it.)
               <div className="lonelog-log-rail">
                 <div className="lonelog-log-controls">
+                  <button
+                    type="button"
+                    className="lonelog-log-latest"
+                    aria-label="Scroll to the last block of the log"
+                    title="Scroll to the last block"
+                    onClick={goToLastBlock}
+                  >
+                    ↓ Latest
+                  </button>
                   {isDirty && (
                     <button
                       type="button"
