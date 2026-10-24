@@ -216,7 +216,28 @@ function resultLine(
  * step's line is the flat labeled form `"<choice>: <calc>"` (empty `calc` =
  * record the pick with no line).
  */
+/** The die a table is rolled with: its header's first column (`d20`, `d6`), else `d100`. */
+function tableDie(table: TableDef | undefined): string {
+  const label = table?.columnLabels?.[0]?.trim() ?? "";
+  return label.match(/^(\d*d\d+)\*?$/i)?.[1].toLowerCase() ?? "d100";
+}
+
+/** A word-pair line is written `<ref> d100= ->`; roll it with its own table's die instead. */
+function withTableDice(line: string, tables: GMStepContext["tables"]): string {
+  if (!tables) return line;
+  return line.replace(/(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)\s+d100(?==)/g, (m, ref: string) => {
+    const die = tableDie(tables[ref]);
+    return die === "d100" ? m : `${ref} ${die}`;
+  });
+}
+
 export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
+  const out = gmStepLinesRaw(feature, stepCtx);
+  for (const [choice, line] of Object.entries(out)) out[choice] = withTableDice(line, stepCtx?.tables);
+  return out;
+}
+
+function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
   const out = gmFollowLines(feature);
   // The feature's OWN steps map its own `choices` generator's picks (a tool page
   // that declares both the picker and what each pick spawns, e.g. Event Meaning).

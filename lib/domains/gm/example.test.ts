@@ -69,6 +69,23 @@ describe("stepGeneratedLine", () => {
   });
 });
 
+describe("gmStepLines — word-pair rows roll their table's own die", () => {
+  const table = (label: string) => ({ columnLabels: [label, "Name"], columns: ["d", "name"], rows: [] }) as never;
+  const feature: GMFeature = {
+    name: "Name Generator",
+    steps: [{ choice: "Dwarven", tables: ["@[[a]]#d20t", "@[[b]]#d100t", "@[[c]]#unknown"] }],
+  };
+  const lines = gmStepLines(feature, { tables: { "@[[a]]#d20t": table("d20"), "@[[b]]#d100t": table("d100*") } });
+
+  it("uses the die in the table's header, and d100 where it names none or isn't loaded", () => {
+    expect(lines.Dwarven.split("\n")).toEqual([
+      "Dwarven 1: @[[a]]#d20t d20= ->",
+      "Dwarven 2: @[[b]]#d100t d100= ->",
+      "Dwarven 3: @[[c]]#unknown d100= ->",
+    ]);
+  });
+});
+
 describe("resolveGmBody — word-pair steps", () => {
   const wordTable = (pairs: Array<[string, string]>): TableDef => ({
     name: "meaning",

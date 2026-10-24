@@ -625,8 +625,9 @@ const continuationRows = (extras: string[]): SidebarRow[] =>
     // and show just the die + result. `source` keeps the raw line, so editing
     // and re-resolution still find the table.
     text = text.replace(/(:\s+)@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?\s+(?=d\d)/i, "$1");
-    // Unicode letters, so a table named for an accented style (`Nörslik 1:`) keeps its label.
-    const m = text.match(/^(\p{L}[\p{L}\p{N}_ ]*?):\s+(.+)$/u);
+    // Unicode letters, hyphens and a parenthetical, so a table named for its style
+    // (`Nörslik 1:`, `Brittonian (Welsh) 1:`, `Dharc-Metallik 1:`) keeps its label.
+    const m = text.match(/^(\p{L}(?:[\p{L}\p{N}_ -]|\([\p{L}\p{N}_ -]*\))*?):\s+(.+)$/u);
     const row: SidebarRow = m
       ? { icon: null, content: m[2], label: m[1], detail: true, pills: [], source: raw }
       : { icon: null, content: text, detail: true, pills: [], source: raw };
