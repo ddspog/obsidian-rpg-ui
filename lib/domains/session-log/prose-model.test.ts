@@ -351,6 +351,16 @@ describe("continuation rows — word-pair table refs are hidden", () => {
     expect(row.source).toContain("@[[Actions Meaning]]#action-01"); // ref kept for resolution
   });
 
+  it("keeps the label of a table named with accented letters", () => {
+    const body = [
+      "gen: Name Generator",
+      "  + Nörslik 1: @[[18. Nörslik]]#nrslik-masculine-personal-names-1 d100= ->",
+    ].join("\n");
+    const [row] = rowsFor(body);
+    expect(row.label).toBe("Nörslik 1");
+    expect(row.content).toBe("d100= ->");
+  });
+
   it("leaves a line that merely links (no die after the ref) untouched", () => {
     const body = ["gen: G", "  + Generate a Random Event: @[[Random Event]]#random-event (roll it)"].join("\n");
     expect(rowsFor(body)[0].content).toBe("@[[Random Event]]#random-event (roll it)");
