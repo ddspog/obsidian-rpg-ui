@@ -40,3 +40,6 @@ docs/.vitepress/dist
 # Local debug scratch (screenshots, temp dumps)
 tmp/
 
+
+# Lonelog simulator build
+simulator/dist
