@@ -8,7 +8,7 @@
 //   node scripts/cloud-obsidian.mjs stop
 //
 // `start` copies the vault ($RPG_VAULT_ROOT) into ~/.cache/rpg-obsidian/work so the
-// real vault is never touched, and installs main.js/manifest.json/styles.css
+// real vault is never touched, and installs main.js/manifest.json/styles.css/esbuild.wasm
 // from the plugin root, plus the theme in $THEME_DIR if set (the vault's
 // appearance.json picks which theme is active; open fonts stand in for the
 // theme's macOS fonts, see FONT_ROLES). Run `npm run build` first to test current code.
@@ -142,8 +142,21 @@ function prepareVault() {
   // Obsidian loads plugins by manifest id, so install under that folder name.
   const dest = path.join(vaultCopy, ".obsidian", "plugins", PLUGIN_ID);
   fs.mkdirSync(dest, { recursive: true });
-  for (const f of ["main.js", "manifest.json", "styles.css"]) {
+  // esbuild.wasm compiles the TypeScript system configs; without it rule views
+  // such as `.tab()` are "not registered".
+  for (const f of ["main.js", "manifest.json", "styles.css", "esbuild.wasm"]) {
     fs.copyFileSync(path.join(pluginRoot, f), path.join(dest, f));
+  }
+  // The real vault keeps its folder -> system mappings in the plugin's (gitignored)
+  // data.json. Seed one per top-level folder with a config/index.ts, so rule views
+  // such as `.tab()` resolve in the copy.
+  const dataJson = path.join(dest, "data.json");
+  if (!fs.existsSync(dataJson)) {
+    const systemMappings = fs
+      .readdirSync(vaultCopy, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && fs.existsSync(path.join(vaultCopy, d.name, "config", "index.ts")))
+      .map((d) => ({ folderPaths: [d.name], systemFolderPath: `${d.name}/config` }));
+    fs.writeFileSync(dataJson, JSON.stringify({ systemMappings }));
   }
   if (THEME_DIR) {
     const { name } = JSON.parse(fs.readFileSync(path.join(THEME_DIR, "manifest.json"), "utf8"));
