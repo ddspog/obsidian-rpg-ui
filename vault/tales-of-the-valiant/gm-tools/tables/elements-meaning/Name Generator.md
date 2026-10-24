@@ -42,12 +42,49 @@ steps:
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-1"
+        labels:
+          - "Name"
+        choose:
+          - "First Part=1+Ending=2"
+      - choice: "Forest name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-1"
           - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-3-endings"
         labels:
           - "Name"
-          - "& Ending (optional)"
+          - ""
         choose:
-          - "First Part=1+Ending=2"
+          - "First Part=1+Ending=2:1"
+          - ""
+      - choice: "Marsh or swamp name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-1"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-3-endings"
+        labels:
+          - "Name"
+          - ""
+        choose:
+          - "First Part=1+Ending=2:2"
+          - ""
+      - choice: "Mountain or hill name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-1"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-3-endings"
+        labels:
+          - "Name"
+          - ""
+        choose:
+          - "First Part=1+Ending=2:3"
+          - ""
+      - choice: "River name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-1"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/03. Anglish/Anglish 2. Anglish Terrain Names]]#anglish-terrain-3-endings"
+        labels:
+          - "Name"
+          - ""
+        choose:
+          - "First Part=1+Ending=2:4@10"
           - ""
   - choice: "Arabish"
     thenLabel: "Kind of name"

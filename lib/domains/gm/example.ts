@@ -17,9 +17,12 @@ import { resolveConsult } from "../lonelog/list-ops";
 import { emitGMFeature, generatorSteps } from "./emit";
 import { answerFateQuestion, resolveInterpret } from "./fate-chart";
 import {
+  JOIN_TOKEN,
   PICK_ROLL_FROM,
+  PICK_SPLIT_ABOVE,
   PICK_TOKEN,
   chooseTables,
+  joinParts,
   parseBranchRef,
   parsePickSpec,
   partText,
@@ -295,16 +298,29 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
         if (!spec || parts.length === 0) return [`${named}: ${ref} d100= ->`];
         // Each part of the name is rolled on its own row, then one name is taken from what they offer:
         // by a die when there are many, else shown whole (the one name, or the few to choose from).
-        const rows =
-          parts.length > 1
-            ? parts.map((p, k) => {
-                const partRef = (p.table && tables[p.table - 1]) || ref;
-                const what = `${p.name ?? `Part ${k + 1}`}${p.optional ? " (optional)" : ""}`;
-                return `${k > 0 ? "& " : ""}${what}: ${partRef} d100= ->`;
-              })
-            : [`${named}: ${ref} d100= ->`];
+        const rowOf = (p: (typeof parts)[number], k: number, joined: boolean) => {
+          const partRef = (p.table && tables[p.table - 1]) || ref;
+          const what = `${p.name ?? `Part ${k + 1}`}${p.optional ? " (optional)" : ""}`;
+          return `${joined && k > 0 ? "& " : ""}${what}: ${partRef} ${p.die ? `d${p.die}` : "d100"}= ->`;
+        };
         const sides = pickSides(spec);
         const nameRow = s.labels?.[at]?.trim() || "Name";
+        if (parts.length > 1 && sides > PICK_SPLIT_ABOVE) {
+          // Too many names for one die: each part with a choice gets its own pick, and the name joins them.
+          return [
+            ...parts.flatMap((p, k) => {
+              const own = `${p.name ? `${p.name}=` : ""}${p.table ? `${p.table}:` : ""}${p.cols.join(",")}`;
+              return [
+                rowOf(p, k, false),
+                ...(p.cols.length > 1
+                  ? [`Pick ${p.name ?? `part ${k + 1}`}: @pick(${own}) d${p.cols.length}= ->`]
+                  : []),
+              ];
+            }),
+            `${nameRow}: @join(${spec}) ->`,
+          ];
+        }
+        const rows = parts.length > 1 ? parts.map((p, k) => rowOf(p, k, true)) : [`${named}: ${ref} d100= ->`];
         if (sides >= PICK_ROLL_FROM)
           return [...rows, `${parts.length > 1 ? nameRow : "Pick one"}: @pick(${spec}) d${sides}= ->`];
         return parts.length > 1 ? [...rows, `${nameRow}: @pick(${spec}) ->`] : rows;
@@ -526,6 +542,35 @@ export function resolvePickLine(lines: string[], i: number, stepCtx?: GMStepCont
   return result ? `${head} -> ${result}` : `${head} -> `;
 }
 
+/**
+ * Fill a name that joins what the rows above it settled: each part's pick row (the line after its
+ * table row that is a pick), or its row's one value. Blank until every part has one.
+ */
+export function resolveJoinLine(lines: string[], i: number, stepCtx?: GMStepContext): string {
+  const { head, content } = rollOf(lines[i]);
+  const spec = content.match(JOIN_TOKEN)?.[1] ?? "";
+  const parts = parsePickSpec(spec);
+  const refOf = (line: string) => rollOf(line).content.match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/)?.[1];
+  // The table rows of the parts, in the order written: the nearest ones above that roll a table.
+  const rowsAt: number[] = [];
+  for (let j = i - 1; j >= 0 && rowsAt.length < parts.length; j--) if (refOf(lines[j])) rowsAt.unshift(j);
+  if (rowsAt.length < parts.length) return `${head} -> `;
+  const values = rowsAt.map((at, k) => {
+    // A pick between this row and the next row (or this line) is what the part settled on.
+    const stop = rowsAt[k + 1] ?? i;
+    for (let j = at + 1; j < stop; j++) {
+      if (!PICK_TOKEN.test(lines[j])) continue;
+      return lines[j].match(/(?:->|→)\s*(.*)$/)?.[1]?.trim() ?? "";
+    }
+    const ref = refOf(lines[at]);
+    const table = ref ? stepCtx?.tables?.[ref] : undefined;
+    const n = rolledValue(rollOf(lines[at]).content);
+    const offered = table && n != null ? partText(table, n, spec, k) : undefined;
+    return offered && !offered.includes(" / ") ? offered : "";
+  });
+  return values.every((v) => v) ? `${head} -> ${joinParts(values, spec)}` : `${head} -> `;
+}
+
 /** Value baked into a live log body's `[<abbr>:n]` token (e.g. `[CF:5]`). */
 function bodyDial(body: string, abbr: string): number | undefined {
   const esc = abbr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -599,6 +644,10 @@ export function resolveGmBody(body: string, features: GMFeature[], stepCtx?: GMS
     // A second roll (`@pick(1,2+3)`): which of the rolled row above's options it takes.
     if (PICK_TOKEN.test(line)) {
       lines[i] = resolvePickLine(lines, i, stepCtx);
+      continue;
+    }
+    if (JOIN_TOKEN.test(line)) {
+      lines[i] = resolveJoinLine(lines, i, stepCtx);
       continue;
     }
     const label = line.match(/^\s*([^:]+):\s/)?.[1]?.trim();

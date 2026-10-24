@@ -143,6 +143,13 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
  */
 export const PICK_TOKEN = /@pick\(([^)\n]*)\)/;
 
+/** A name made of the choices the rows above it settled: `@join(Start=1,2+End=2:1,2)` reads each
+ *  part's pick (or its single value) and joins them. */
+export const JOIN_TOKEN = /@join\(([^)\n]*)\)/;
+
+/** Over this many names, one die is too big: each part gets its own pick row, and the name joins them. */
+export const PICK_SPLIT_ABOVE = 12;
+
 /** From this many names on, a die picks one; fewer are shown whole, for the reader to take. */
 export const PICK_ROLL_FROM = 5;
 
@@ -154,6 +161,8 @@ export interface PickPart {
   /** Which of the step's tables the part is rolled on (1-based), when not the one the spec is on:
    *  `End=2:1,2` takes the columns of the second table. */
   table?: number;
+  /** The die its row is rolled with, when the table's own is wrong for the column (`River=2:4@10`). */
+  die?: number;
   /** The name may go without it (`Ending?=…`): one more name for each of the others, as it is. */
   optional?: boolean;
   /** Words, not syllables: a space goes before it (`Part 1=1,2& Part 2=3`, parts joined by `&`). */
@@ -167,16 +176,18 @@ export function parsePickSpec(spec: string): PickPart[] {
     const piece = pieces[k];
     const eq = piece.indexOf("=");
     const [rawName, rest] = eq >= 0 ? [piece.slice(0, eq), piece.slice(eq + 1)] : ["", piece];
-    const at = rest.match(/^\s*(\d+):(.*)$/);
+    const dieAt = rest.match(/^(.*)@(\d+)\s*$/);
+    const at = (dieAt ? dieAt[1] : rest).match(/^\s*(\d+):(.*)$/);
     const optional = rawName.trim().endsWith("?");
     const name = rawName.trim().replace(/\?$/, "").trim();
     const part: PickPart = {
       ...(name ? { name } : {}),
-      cols: (at ? at[2] : rest)
+      cols: (at ? at[2] : dieAt ? dieAt[1] : rest)
         .split(",")
         .map((n) => parseInt(n.trim(), 10))
         .filter((n) => n > 0),
       ...(at ? { table: parseInt(at[1], 10) } : {}),
+      ...(dieAt ? { die: parseInt(dieAt[2], 10) } : {}),
       ...(optional ? { optional: true } : {}),
       ...(k > 0 && pieces[k - 1] === "&" ? { spaced: true } : {}),
     };
@@ -224,6 +235,12 @@ export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: 
       string[]
     >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v ? `${a} ${v}` : `${a}${v}`))), [""])
     .filter((name) => name);
+}
+
+/** A name from its parts' values, in order: a space goes before a part the spec joins with `&`. */
+export function joinParts(values: string[], spec: string): string {
+  const parts = parsePickSpec(spec);
+  return values.reduce((name, v, k) => (k > 0 && parts[k]?.spaced && v ? `${name} ${v}` : `${name}${v}`), "");
 }
 
 /**

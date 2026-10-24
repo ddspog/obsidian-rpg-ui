@@ -357,6 +357,10 @@ export interface SidebarRow {
   pickFrom?: { source: string; content: string }[];
   /** A second roll with no die: it shows the name (or names) its rows make. */
   pickOnly?: boolean;
+  /** A name joining the parts' choices (`@join(…)`): its spec, and the rows (with the pick made
+   *  under each) it reads. */
+  join?: string;
+  joinFrom?: { source: string; content: string; pick?: SidebarRow }[];
   /** This step spawns the following step(s) (authored with a trailing ` ...`) —
    *  rendered with a subtle "unfolds into" indicator. */
   spawns?: boolean;
@@ -626,23 +630,32 @@ const rollRow = (r: RollEntry): SidebarRow => ({
 // ` ...` marks a step that spawns the following step(s).
 const continuationRows = (extras: string[]): SidebarRow[] => withPickSources(extras.map(continuationRow));
 
-/** A name's second roll (`@pick(…)`) reads the rows above it, one per part of its spec: tell it which. */
+/**
+ * A name's second roll (`@pick(…)`) reads the rows above it, one per part of its spec; a name that
+ * joins the parts' choices (`@join(…)`) reads those rows and the picks made under them. Tell each which.
+ */
 function withPickSources(rows: SidebarRow[]): SidebarRow[] {
-  let seen: SidebarRow[] = [];
+  const seen: SidebarRow[] = [];
+  const pickOf = new Map<SidebarRow, SidebarRow>();
   for (const row of rows) {
     const spec = row.source?.match(/@pick\(([^)\n]*)\)/)?.[1];
-    if (spec == null) {
+    const join = row.source?.match(/@join\(([^)\n]*)\)/)?.[1];
+    if (spec == null && join == null) {
       if (row.source && /@?\[\[[^\]\n]+\]\]/.test(row.source)) seen.push(row);
       continue;
     }
-    const parts = spec.split(/[+&]/).length;
-    const from = seen.slice(-parts);
+    const from = seen.slice(-(spec ?? join ?? "").split(/[+&]/).length);
+    if (join != null) {
+      row.join = join;
+      row.joinFrom = from.map((r) => ({ source: r.source ?? "", content: r.content, pick: pickOf.get(r) }));
+      continue;
+    }
     row.pick = spec;
     row.pickFrom = from.map((r) => ({ source: r.source ?? "", content: r.content }));
     from.forEach((r, part) => {
-      r.pickedBy = { spec, part };
+      r.pickedBy = { spec: spec!, part };
+      pickOf.set(r, row);
     });
-    seen = [];
   }
   return rows;
 }
@@ -665,7 +678,11 @@ const continuationRow = (raw: string): SidebarRow => {
     ? { icon: null, content: m[3], label: m[2], detail: true, pills: [], source: raw }
     : { icon: null, content: text, detail: true, pills: [], source: raw };
   // A second roll with no die is only its result: the name (or names) the rows above make.
-  if (m && /@pick\([^)\n]*\)\s*(->|→)/.test(m[3]) && !/\bd\d/.test(m[3].replace(/@pick\([^)\n]*\)/, ""))) {
+  if (
+    m &&
+    /@(?:pick|join)\([^)\n]*\)\s*(->|→)/.test(m[3]) &&
+    !/\bd\d/.test(m[3].replace(/@(?:pick|join)\([^)\n]*\)/, ""))
+  ) {
     row.content = m[3].replace(/^.*?(?:->|→)\s*/, "");
     row.pickOnly = true;
   }

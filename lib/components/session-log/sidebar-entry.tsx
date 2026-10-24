@@ -24,6 +24,7 @@ import {
   termSlotInitial,
   termSlots,
 } from "lib/domains/session-log/formula";
+import { joinParts } from "lib/domains/gm/steps";
 import { splitResultChoice } from "lib/domains/session-log/choice";
 import type { ConditionChange } from "lib/domains/session-log/conditions";
 import type { RoundEconomy } from "lib/domains/session-log/round-economy";
@@ -273,15 +274,27 @@ function RowContent({
     };
     const REF = /@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?/;
     // A name's second roll: the rows of its parts, what their dice show, and its own die.
-    const pickPreview = (): string | undefined => {
-      if (!tableRoll || row.pick == null || !row.pickFrom?.length) return undefined;
-      const refs = row.pickFrom.map((f) => f.source.match(REF)?.[0] ?? "");
-      const rolls = row.pickFrom.map((f) => dieValue(f.source, f.content));
-      if (!refs[0] || refs.some((r) => !r) || rolls.some((n) => n == null)) return undefined;
-      const ref = refs[0];
-      const own = row.pickOnly || !source || !formula ? undefined : dieValue(source, row.content);
-      if (!row.pickOnly && own == null) return undefined;
-      return tableRoll(ref, 0, { spec: row.pick, rolls: rolls as number[], refs, roll: own });
+    const previewPick = (r: SidebarRow): string | undefined => {
+      if (!tableRoll || r.pick == null || !r.pickFrom?.length) return undefined;
+      const refs = r.pickFrom.map((f) => f.source.match(REF)?.[0] ?? "");
+      const rolls = r.pickFrom.map((f) => dieValue(f.source, f.content));
+      if (!refs[0] || refs.some((x) => !x) || rolls.some((n) => n == null)) return undefined;
+      const own = r.pickOnly || !r.source ? undefined : dieValue(r.source, r.content);
+      if (!r.pickOnly && own == null) return undefined;
+      return tableRoll(refs[0], 0, { spec: r.pick, rolls: rolls as number[], refs, roll: own });
+    };
+    const pickPreview = (): string | undefined => previewPick(row);
+    // A name joining what each part settled on: its pick, or the one value its row offers.
+    const joinPreview = (): string | undefined => {
+      if (!tableRoll || row.join == null || !row.joinFrom?.length) return undefined;
+      const values = row.joinFrom.map((f, part) => {
+        if (f.pick) return previewPick(f.pick);
+        const ref = f.source.match(REF)?.[0];
+        const n = dieValue(f.source, f.content);
+        const text = ref && n != null ? tableRoll(ref, n, { spec: row.join!, part }) : undefined;
+        return text && !text.includes(" / ") ? text : undefined;
+      });
+      return values.every((v) => v) ? joinParts(values as string[], row.join) : undefined;
     };
     // A table roll with no result yet reads its row as soon as the die shows a
     // value, pending or saved, so the outcome appears before the Log is saved.
@@ -335,7 +348,7 @@ function RowContent({
           />
         ) : (
           <InlineMarkdown
-            source={row.pickOnly && !row.content ? (pickPreview() ?? "") : row.content}
+            source={row.pickOnly && !row.content ? (pickPreview() ?? joinPreview() ?? "") : row.content}
             sourcePath={sourcePath}
           />
         )}

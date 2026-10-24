@@ -12,6 +12,7 @@ import {
   stepUseLinks,
   spliceStepUses,
   flattenSteps,
+  joinParts,
   parsePickSpec,
   partText,
   pickNames,
@@ -339,6 +340,18 @@ describe("a name made of independently rolled parts — @pick", () => {
       rows: [row("1-20", "Constrictor", "of Moons")],
     } as unknown as TableDef;
     expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Constrictor of Moons"]);
+  });
+
+  it("reads the table, die and optional marks of a part", () => {
+    expect(parsePickSpec("First=1+End?=2:4@10")).toEqual([
+      { name: "First", cols: [1] },
+      { name: "End", cols: [4], table: 2, die: 10, optional: true },
+    ]);
+  });
+
+  it("joins parts' values, with a space only before a part joined by &", () => {
+    expect(joinParts(["Con", "of Moons"], "A=1&B=2")).toBe("Con of Moons");
+    expect(joinParts(["Dia", "bertach"], "A=1+B=2")).toBe("Diabertach");
   });
 
   it("counts the names a spec can make", () => {
