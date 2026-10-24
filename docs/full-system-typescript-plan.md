@@ -193,7 +193,7 @@ Support as first-class entities:
      - Multi-class character walkthrough
      - Feature/spell/statblock authoring
 
-4. **Update [CLAUDE.md](CLAUDE.md#L1-L100)**  
+4. **Update `CLAUDE.md`**  
    - Document `lib/ui/` directory
    - Entity block registration flow
    - casterTypes + progression table examples
