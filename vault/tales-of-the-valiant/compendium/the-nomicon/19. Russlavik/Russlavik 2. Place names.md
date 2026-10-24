@@ -15,7 +15,8 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 **Sample Results**: Grutyava, Tsadvol, Orzno, Kyekrana, Svacha.
 
 ```rpg table.russlavik-terrain-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |01-02|Bla|bog|
 |03-04|Bo|bol|
@@ -67,18 +68,20 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 |95-96|Zlo|zno|
 |97-98|Zlo|zor|
 |99-00|Zly|zuk|
+|---|---|---|
+|= {{ roll }} =|
+[Table 19-5: Russlavik Terrain Names]
 ```
 
-^table-19-5
-
-`dice: [[Russlavik 2. Place names^table-19-5]]|Start` `dice: [[Russlavik 2. Place names^table-19-5]]|Ending`
+**Start** + **Ending**
 ## Russlavik City/settlement names
 #### Table 19-6: Short Russlavik City Names
 **Instructions**: Roll independently for a Start and an Ending to the city name.
 **Sample Results**: Gradny, Brogvod, Zekov, Chusna, Lotzuk.
 
 ```rpg table.short-russlavik-city-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |01-02|Bla|bog|
 |03-04|Bo|bol|
@@ -130,17 +133,19 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 |95-96|Zlo|zny|
 |97-98|Zlo|zod|
 |99-00|Zly|zuk|
+|---|---|---|
+|= {{ roll }} =|
+[Table 19-6: Short Russlavik City Names]
 ```
 
-^table-19-6
-
-`dice: [[Russlavik 2. Place names^table-19-6]]|Start` `dice: [[Russlavik 2. Place names^table-19-6]]|Ending`
+**Start** + **Ending**
 #### Table 19-7: Longer Russlavic City Names
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 of the city name.
 **Sample Results**: Molgavosh, Chamalodny, Tzechakh, Khusbagrod, Zlorgabor.
 
 ```rpg table.longer-russlavic-city-names
-|d100|Part 1|Part 2|Part 3|
+@paginate 10 pages
+|d100*|Part 1|Part 2|Part 3|
 |---|---|---|---|
 |01-02|A|ba|bal|
 |03-04|Bo|bo|bod|
@@ -192,8 +197,9 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 |95-96|Zi|zelo|zya|
 |97-98|Zlo|zya|zyad|
 |99-00|Zy|zyo|zyev|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 19-7: Longer Russlavic City Names]
 ```
 
-^table-19-7
-
-`dice: [[Russlavik 2. Place names^table-19-7]]|Part 1` `dice: [[Russlavik 2. Place names^table-19-7]]|Part 2` `dice: [[Russlavik 2. Place names^table-19-7]]|Part 3`
+**Part 1** + **Part 2** + **Part 3**

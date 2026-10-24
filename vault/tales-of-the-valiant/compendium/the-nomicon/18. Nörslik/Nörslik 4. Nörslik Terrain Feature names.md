@@ -10,24 +10,25 @@ tab-name: Nörslik Terrain Feature names
 For Nörslik terrain features, use the Masculine or Feminine Personal Names Tables, or a Core Terrain Name.
 #### Table 18-6: Choosing a Table for Terrain Features
 ```rpg table.choosing-a-table-for-terrain-features
-|dice:1d6|Table|
+|1d6*|Table|
 |---|---|
 |1-2|[[Nörslik 1. Personal names Nörslik 1#Table 18-1 Nörslik Masculine Personal Names 1|Table 18-1]]: Nörslik Masculine Personal Names 1|
 |3-4|[[Nörslik 1. Personal names Nörslik 1#Table 18-2 Nörslik Masculine Personal Names 2|Table 18-2]]: Nörslik Masculine Personal Names 2|
 |5-6|[[Nörslik 2. Personal names Nörslik 2#Table 18-3 Nörslik Feminine Personal Names|Table 18-3]]: Nörslik Feminine Personal Names|
 |7-10|[[Nörslik 4. Nörslik Terrain Feature names#Table 18-7 Nörslik Core Terrain Names|Table 18-7]]: Nörslik Core Terrain Names|
+|---|---|
+|= {{ roll }} =|
+[Table 18-6: Choosing a Table for Terrain Features]
 ```
 
-^table-18-6
-
-`dice: [[Nörslik 4. Nörslik Terrain Feature names^table-18-6]]`
 #### Table 18-7: Nörslik Core Terrain Names
 Core Terrain names can be used directly in formulas such as “The Forest of \_\_\_\_\_” or “\_\_\_\_\_ Wood, \_\_\_ Wold,” etc. Thus, you can create the Forest of Ael, the Ael Forest, or the Aelwood.
 
 **Sample Results**: Jorn, Ael, Grivun, Morvang, Ulvar.
 
 ```rpg table.nrslik-core-terrain-names
-|dice:d100|Core Name|
+@paginate 10 pages
+|d100*|Core Name|
 |---|---|
 |1|Ael|
 |2|Alfir|
@@ -129,8 +130,7 @@ Core Terrain names can be used directly in formulas such as “The Forest of \_\
 |98|Vald|
 |99|Valdir|
 |100|Yngar|
+|---|---|
+|= {{ roll }} =|
+[Table 18-7: Nörslik Core Terrain Names]
 ```
-
-^table-18-7
-
-`dice: [[Nörslik 4. Nörslik Terrain Feature names^table-18-7]]`

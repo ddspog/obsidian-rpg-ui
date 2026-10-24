@@ -11,7 +11,8 @@ tab-name: Terrain Features · 2
 **Sample Results**: Veiled (Hills), Twain (Mountains), Sinder (River), Uadric (Coast), Shrouded (Forest).
 
 ```rpg table.legendary-terrain-feature-names-3
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Rhauds|Twindle|Veiled|
 |2|Rhealic|Twain|Cloaked|
@@ -113,18 +114,19 @@ tab-name: Terrain Features · 2
 |98|Ysp|Chiss|Mad|
 |99|Zale|Zoad|Moody|
 |100|Zallin|Zile|Dour|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-3: Legendary Terrain Feature Names 3]
 ```
 
-^table-24-3
-
-**C1**: `dice: [[Names for Legendary Places 2. Terrain Features 2^table-24-3]]|1`, **C2**: `dice: [[Names for Legendary Places 2. Terrain Features 2^table-24-3]]|2`, **C3**: `dice: [[Names for Legendary Places 2. Terrain Features 2^table-24-3]]|3`
 #### Table 24-4: Legendary Terrain Feature Names 4
 Some terrain features are named for a resemblance to an item. For example, a mountain might be called “The Anvil” either because of a flat top or because it is used as an anvil by a deity in the local mythology. These don’t work across the board in all situations, so you may want to use this more as a list of options than as a random generation table — because when they do work, they can add quite a bit of variety to the naming of places.
 
 **Sample Results**: The Alembic, the Anvil, the Bottle, the Goblet.
 
 ```rpg table.legendary-terrain-feature-names-4
-|dice:d100|Terrain Feature Name|
+@paginate 10 pages
+|d100*|Terrain Feature Name|
 |---|---|
 |1|Alembic|
 |2|Amphora|
@@ -226,8 +228,7 @@ Some terrain features are named for a resemblance to an item. For example, a mou
 |98|Vise|
 |99|Whetstone|
 |100|Wineskin|
+|---|---|
+|= {{ roll }} =|
+[Table 24-4: Legendary Terrain Feature Names 4]
 ```
-
-^table-24-4
-
-`dice: [[Names for Legendary Places 2. Terrain Features 2^table-24-4]]`

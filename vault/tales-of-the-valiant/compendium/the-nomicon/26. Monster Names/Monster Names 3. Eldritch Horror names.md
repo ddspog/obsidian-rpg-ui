@@ -13,7 +13,8 @@ These tables work for generating names for an eldritch horror that lives in the 
 **Sample Results**: Ata-Bhantu, Choa-Shagu, Ghachoag, Na Mhaloc, Ce-Cholag.
 
 ```rpg table.eldritch-horror-name-option-1
-|d100|Part 1|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d100*|Part 1|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|
 |1|Ata|Bhagga|Bhan|Cholag|
 |2|Bha|Bhagu|Bhok|Choloc|
@@ -115,17 +116,19 @@ These tables work for generating names for an eldritch horror that lives in the 
 |98|Zo|Zhagu|Zhoon|Yuru|
 |99|Zoa|Zhagua|Zoag|Zhuru|
 |100|Zu|Zhantu|Zoon|Zuroa|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-7: Eldritch Horror Name Option 1]
 ```
 
-^table-26-7
-
-`dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 1` (`dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2a` or `dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2b` or `dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2c`)
+**Part 1** (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 26-8: Eldritch Horror Name Option 2
 **Instructions**: Roll each column separately, and use the words in whichever order sounds best, hyphenating them if you wish.
 **Sample Results**: Itha-Hantu, Atha Bhantu, Shaba-Yug, Yuug Suang, Galgua Kulantoa.
 
 ```rpg table.eldritch-horror-name-option-2
-|d100|Part 1|Part 2|
+@paginate 10 pages
+|d100*|Part 1|Part 2|
 |---|---|---|
 |1|Aatha|Bhantoa|
 |2|Aga|Bhantu|
@@ -227,8 +230,9 @@ These tables work for generating names for an eldritch horror that lives in the 
 |98|Zhalgua|Zhanthu|
 |99|Zholga|Zhantu|
 |100|Zolga|Zuathu|
+|---|---|---|
+|= {{ roll }} =|
+[Table 26-8: Eldritch Horror Name Option 2]
 ```
 
-^table-26-8
-
-`dice: [[Monster Names 3. Eldritch Horror names^table-26-8]]|Part 1` `dice: [[Monster Names 3. Eldritch Horror names^table-26-8]]|Part 2`
+**Part 1** + **Part 2**

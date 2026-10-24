@@ -18,7 +18,7 @@ Any naming group can be used to generate the place name for a legendary hag, but
 **Sample Results**: the Hag of Gluim Og, the Witch of Ysequo, the Crone of Gherlonte, the Ogress of Chelza.
 
 ```rpg table.name-titles-for-a-hag
-|dice:d10|Name-Title|
+|d10*|Name-Title|
 |---|---|
 |1|Crone|
 |2|Giantess|
@@ -30,11 +30,11 @@ Any naming group can be used to generate the place name for a legendary hag, but
 |8|Sorceress|
 |9|Termagant|
 |10|Witch|
+|---|---|
+|= {{ roll }} =|
+[Table 26-9: Name-Titles for a Hag]
 ```
 
-^table-26-9
-
-`dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-9]]`
 # Lizard Monster names
 ![[lizard-monster-names.webp|right|208]]
 This table works for place names in areas dominated by lizard creatures as well as for the personal name of a lizard-like monster.
@@ -43,7 +43,8 @@ This table works for place names in areas dominated by lizard creatures as well 
 **Sample Results**: Hisshoa, Iatsua, Hemeth, Shualtu.
 
 ```rpg table.lizard-placeperson-name
-|d20|Part 1|Part 2a|Part 2b|
+@paginate 10 pages
+|d20*|Part 1|Part 2a|Part 2b|
 |---|---|---|---|
 |1|He|se|soa|
 |2|His|so|So|
@@ -65,18 +66,20 @@ This table works for place names in areas dominated by lizard creatures as well 
 |18|Tu|tsuo|ltoo|
 |19|Ye|huo|loo|
 |20|Yhi|sua|ltoa|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-10: Lizard Place/Person Name]
 ```
 
-^table-26-10
-
-`dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-10]]|Part 1` (`dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-10]]|Part 2a` or `dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-10]]|Part 2b`)
+**Part 1** (**Part 2a** or **Part 2b**)
 #### Table 26-11: Reptilian Titles
 **Formula**: (Title generated) of the [name of the Group or Place the Reptilian holds title to, for example “The Lizardfolk of the Reptile Coast”].
 **Instructions**: Roll separately for a Part 1 and Part 2 of the title.
 **Sample Results**: Bazosc of the Lizard Coast, Sasakjar of the Lizard Coast, Tsalashe of the Lizard Coast, Nahact of the Lizard Coast.
 
 ```rpg table.reptilian-titles
-|d100|Part 1|Part 2|
+@paginate 10 pages
+|d100*|Part 1|Part 2|
 |---|---|---|
 |01-02|Bazo|halisk|
 |03-04|Hetho|lesk|
@@ -128,10 +131,11 @@ This table works for place names in areas dominated by lizard creatures as well 
 |95-96|Tsee|zard|
 |97-98|Jee|zar|
 |99-00|Zee|zarc|
+|---|---|---|
+|= {{ roll }} =|
+[Table 26-11: Reptilian Titles]
 ```
 
-^table-26-11
-
-`dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-11]]|Part 1` `dice: [[Monster Names 4. Hags + Lizard Monster names^table-26-11]]|Part 2`
+**Part 1** + **Part 2**
 
 ![[fish-monster-name.webp]]

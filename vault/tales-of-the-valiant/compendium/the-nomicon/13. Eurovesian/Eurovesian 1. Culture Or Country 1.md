@@ -12,7 +12,8 @@ tab-name: Culture Or Country · 1
 **Sample Results**: Beraboth, Firithi, Hocrandy, Parebos, Vyriula.
 
 ```rpg table.eurovesian-culture-or-country-name-table-1
-|d100|Start|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start|End 1|End 2|End 3|
 |---|---|---|---|---|
 |1|A|rab|risk|rabola|
 |2|Ba|rabin|riski|rabosa|
@@ -114,17 +115,19 @@ tab-name: Culture Or Country · 1
 |98|Ye|riult|rombia|rethia|
 |99|Yeo|riund|rembia|rangia|
 |100|Yo|riun|rambis|rathia|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 13-1: Eurovesian Culture or Country Name Table 1]
 ```
 
-^table-13-1
-
-`dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|Start` (`dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 2` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-1]]|End 3`)
+**Start** (**End 1** or **End 2** or **End 3**)
 #### Table 13-2: Eurovesian Culture or Country Name Table 2
 **Instructions**: Roll on Start 1 or Start 2, then on Ending 1, 2, or 3.
 **Sample Results**: Aibaldia, Bylmish, Cauloon, Gragalas, Munland.
 
 ```rpg table.eurovesian-culture-or-country-name-table-2
-|d100|Start 1|Start 2|Ending 1|Ending 2|Ending 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Ending 1|Ending 2|Ending 3|
 |---|---|---|---|---|---|
 |1|Ai|A|baldia|lizia|bant|
 |2|Al|Bha|balia|lmia|lion|
@@ -226,8 +229,9 @@ tab-name: Culture Or Country · 1
 |98|Ze|Ya|lioth|zorca|snia|
 |99|Zo|Ye|lisi|zoria|stria|
 |100|Zoa|Yeo|lisia|zulia|sua|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 13-2: Eurovesian Culture or Country Name Table 2]
 ```
 
-^table-13-2
-
-(`dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Start 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Start 2`) (`dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 1` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 2` or `dice: [[Eurovesian 1. Culture Or Country 1^table-13-2]]|Ending 3`)
+(**Start 1** or **Start 2**) (**Ending 1** or **Ending 2** or **Ending 3**)

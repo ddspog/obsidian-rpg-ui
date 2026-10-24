@@ -12,7 +12,8 @@ tab-name: Arcane Epithets · 3
 **Sample Results**: the Abrupt, the Energetic, the Affable, the Ethical.
 
 ```rpg table.personality-epithets-1
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Abrupt|Energetic|
 |2|Absentminded|Engaging|
@@ -114,17 +115,18 @@ tab-name: Arcane Epithets · 3
 |98|Embittered|Jovial|
 |99|Eminent|Keen|
 |100|Empathetic|Kindhearted|
+|---|---|---|
+|= {{ roll }} =|
+[Table 28-10: Personality Epithets 1]
 ```
 
-^table-28-10
-
-**C1**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-10]]|1`, **C2**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-10]]|2`
 #### Table 28-11: Personality Epithets 2
 **Instructions**: Roll on either column to generate a personality epithet such as Gandolfo the Knowledgeable.
 **Sample Results**: the Languid, the Liar, the Sly, the Sour.
 
 ```rpg table.personality-epithets-2
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Knowledgeable|Sharp-Tongued|
 |2|Languid|Sharp-Witted|
@@ -226,71 +228,7 @@ tab-name: Arcane Epithets · 3
 |98|Serious|Whimsical|
 |99|Shallow|Wise|
 |100|Shameless|Xenophobic|
+|---|---|---|
+|= {{ roll }} =|
+[Table 28-11: Personality Epithets 2]
 ```
-
-^table-28-11
-
-**C1**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-11]]|1`, **C2**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-11]]|2`
-## Demonic Epithets
-#### Table 28-12: Demonic Epithets
-**Instructions**: Roll on any of the three columns to generate an epithet for a relatively powerful evil person, such as Gandolfo the Ghastly.
-**Sample Results**: the Adapter, the Binder, the Fetcher, the Restrainer, the Shadow.
-
-```rpg table.demonic-epithets
-|d100|1|2|3|
-|---|---|---|---|
-|01-02|Adapter|Famine-Bringer|Remaker|
-|03-04|Armored One|Fetcher|Restrainer|
-|05-06|Assailer|Finder|Robber|
-|07-08|Binder|Follower|Scorcher|
-|09-10|Biter|Forager|Scourge|
-|11-12|Bombarder|Gazer|Scourger|
-|13-14|Breaker|Ghastly|Scratcher|
-|15-16|Breeder|Grim|Scrutinizer|
-|17-18|Burier|Harbinger|Scrutinizer|
-|19-20|Burner|Harrier|Scryer|
-|21-22|Cackler|Haunter|Seeker|
-|23-24|Cajoler|Horrific|Seizer|
-|25-26|Capturer|Horror|Shadow|
-|27-28|Cauterizer|Howler|Shapeshifter|
-|29-30|Changer|Hunter|Shatterer|
-|31-32|Claw|Igniter|Shifter|
-|33-34|Coaxer|Implanter|Shrieker|
-|35-36|Coercer|Inciter|Shriveler|
-|37-38|Collapser|Indenturer|Sickness-Bringer|
-|39-40|Combuster|Inevitable|Sin-Bringer|
-|41-42|Constrainer|Influencer|Slayer|
-|43-44|Constricter|Inimical|Spined One|
-|45-46|Curse-Bringer|Interloper|Stalker|
-|47-48|Cursed|Interposer|Taker|
-|49-50|Curse-Maker|Intruder|Talon|
-|51-52|Curse-Weaver|Invader|Tamperer|
-|53-54|Dark|Jangler|Tangler|
-|55-56|Dark-Bringer|Kindler|Tempter|
-|57-58|Death-Bringer|Laugher|Tormenter|
-|59-60|Decayer|Limper|Trapper|
-|61-62|Deceiver|List Maker|Trapper|
-|63-64|Delayer|Looter|Traveler|
-|65-66|Delver|Mad|Twister|
-|67-68|Demon|Marauder|Unearther|
-|69-70|Descender|Meddler|Unerring|
-|71-72|Despoiler|Melter|Unhealthy|
-|73-74|Destroyer|Minder|Unmaker|
-|75-76|Discerner|Observer|Unminder|
-|77-78|Disease-Bringer|Persuader|Unraveler|
-|79-80|Disenchanter|Piercer|Wanderer|
-|81-82|Displacer|Pillager|War-Bringer|
-|83-84|Dissuader|Plunderer|War-Maker|
-|85-86|Drummer|Poisoned|Warper|
-|87-88|Enchanter|Poisoner|War-Weaver|
-|89-90|Enkindler|Polymorpher|Waster|
-|91-92|Enslaver|Prowler|Waylayer|
-|93-94|Entangler|Pursuer|Web-Weaver|
-|95-96|Enticer|Questioner|Winnower|
-|97-98|Enticer|Raider|Witherer|
-|99-00|Examiner|Ransacker|Worm|
-```
-
-^table-28-12
-
-**C1**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-12]]|1`, **C2**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-12]]|2`, **C3**: `dice: [[Personal Epithets 4. Arcane Epithets 3^table-28-12]]|3`

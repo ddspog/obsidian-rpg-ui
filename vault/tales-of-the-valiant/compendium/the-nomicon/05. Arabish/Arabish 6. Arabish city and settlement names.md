@@ -12,7 +12,8 @@ tab-name: Arabish city and settlement names
 **Sample Results**: Ajarubad, Harkeedapura, Qasmid, Jibwarakka, Uzirioch.
 
 ```rpg table.arabish-city-and-settlement-names-starting-syllables
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Aafa|Halada|Okta|
 |2|Aba|Halafa|Omza|
@@ -114,14 +115,15 @@ tab-name: Arabish city and settlement names
 |98|Hajouna|Nawaki|Zari|
 |99|Haku|Nazafa|Zora|
 |100|Fatha|Nu|Zaja|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-21: Arabish City and Settlement Names (Starting Syllables)]
 ```
 
-^table-5-21
-
-**C1**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|1`, **C2**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|2`, **C3**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|3`
 #### Table 5-22: Arabish City and Settlement Names (Ending)
 ```rpg table.arabish-city-and-settlement-names-ending
-|dice:d100|Ending|
+@paginate 10 pages
+|d100*|Ending|
 |---|---|
 |01-02|bad|
 |03-04|stan|
@@ -173,8 +175,7 @@ tab-name: Arabish city and settlement names
 |95-96|mid|
 |97-98|man|
 |99-100|pan|
+|---|---|
+|= {{ roll }} =|
+[Table 5-22: Arabish City and Settlement Names (Ending)]
 ```
-
-^table-5-22
-
-`dice: [[Arabish 6. Arabish city and settlement names^table-5-22]]`

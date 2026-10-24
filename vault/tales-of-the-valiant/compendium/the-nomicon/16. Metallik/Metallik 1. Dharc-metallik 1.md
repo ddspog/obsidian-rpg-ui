@@ -13,7 +13,8 @@ Dharc Metallik place names work well for generating evil places. Dharc Metallik 
 **Sample Results**: Babrucor, Cadjoltor, Phejaghol, Mhokhanthar, Xalbor.
 
 ```rpg table.dharc-metallik-place-names-table-1
-|d100|Start|Middle|Ending|
+@paginate 10 pages
+|d100*|Start|Middle|Ending|
 |---|---|---|---|
 |1|A|ba|bar|
 |2|Ae|bo|bor|
@@ -115,17 +116,19 @@ Dharc Metallik place names work well for generating evil places. Dharc Metallik 
 |98|Ye|brono|zor|
 |99|Yo|maja|zubal|
 |100|Yu|mara|zul|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 16-1: Dharc-Metallik Place Names Table 1]
 ```
 
-^table-16-1
-
-`dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Start` `dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Middle` `dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Ending`
+**Start** + **Middle** + **Ending**
 #### Table 16-2: Dharc-Metallik Place Names Table 2
 **Instructions**: Roll for a Start, a Middle, and an Ending for a three-part name.
 **Sample Results**: Rhobarioch, Croghalurus, Tractegri, Talbaghal, Icticazubal.
 
 ```rpg table.dharc-metallik-place-names-table-2
-|d100|Start|Middle|Ending|
+@paginate 10 pages
+|d100*|Start|Middle|Ending|
 |---|---|---|---|
 |1|Gro|ba|bar|
 |2|Thu|bha|bor|
@@ -227,8 +230,9 @@ Dharc Metallik place names work well for generating evil places. Dharc Metallik 
 |98|Ctha|zmo|zor|
 |99|Ctho|zo|zubal|
 |100|Ktho|zu|zul|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 16-2: Dharc-Metallik Place Names Table 2]
 ```
 
-^table-16-2
-
-`dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Start` `dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Middle` `dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Ending`
+**Start** + **Middle** + **Ending**

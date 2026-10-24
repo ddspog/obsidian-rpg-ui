@@ -13,7 +13,8 @@ I’ve done a fair amount of violence to this list, to get names that sound good
 **Sample Results**: Alfhild, Heirga, Berilya, Jodleif, Nithrun.
 
 ```rpg table.nrslik-feminine-personal-names
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Aasilt|Heithyr|
 |2|Adis|Helmbera|
@@ -115,8 +116,7 @@ I’ve done a fair amount of violence to this list, to get names that sound good
 |98|Heimkatla|Yrr|
 |99|Heirga|Ysthyr|
 |100|Heith|Ysvil|
+|---|---|---|
+|= {{ roll }} =|
+[Table 18-3: Nörslik Feminine Personal Names]
 ```
-
-^table-18-3
-
-**C1**: `dice: [[Nörslik 2. Personal names Nörslik 2^table-18-3]]|1`, **C2**: `dice: [[Nörslik 2. Personal names Nörslik 2^table-18-3]]|2`

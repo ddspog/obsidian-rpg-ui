@@ -14,7 +14,8 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 **Sample Results**: Os Bala, Mael Tac, Tirac Dal, Adu Gyr, Braca Nyr.
 
 ```rpg table.brittonnian-bright-terrain-feature
-|d20|First Word a|First Word b|First Word c|Second Word a|Second Word b|Second Word c|
+@paginate 10 pages
+|d20*|First Word a|First Word b|First Word c|Second Word a|Second Word b|Second Word c|
 |---|---|---|---|---|---|---|
 |1|Gwyr|Cyris|Deara|Bala|Frin|Wys|
 |2|Aren|Cyral|Meara|Nan|Meri|Wis|
@@ -36,11 +37,12 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 |18|Ael|Fian|Aradh|Flara|Nod|Tir|
 |19|Aern|Lian|Arac|Wain|Dri|Teal|
 |20|Cynrain|Liam|Ullran|Weth|Tar|Lean|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-13: Brittonnian Bright Terrain Feature]
 ```
 
-^table-6-13
-
-(`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word b` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|First Word c`) (`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word b` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-13]]|Second Word c`)
+(**First Word a** or **First Word b** or **First Word c**) (**Second Word a** or **Second Word b** or **Second Word c**)
 
 ![[brittonnian-sinister.webp|384]]
 ## Brittonnian Sinister
@@ -49,7 +51,8 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 **Sample Results**: Amren Kar, Drych Dun, Kor Dro, Skirn Muir, Heul Nog.
 
 ```rpg table.brittonnian-sinister-terrain-names-2-words
-|d20|First Word a|First Word b|Second Word a|Second Word b|
+@paginate 10 pages
+|d20*|First Word a|First Word b|Second Word a|Second Word b|
 |---|---|---|---|---|
 |1|Amren|Kor|Baru|Guaun|
 |2|Ang|Moal|Bhan|Gwyr|
@@ -71,16 +74,18 @@ Use these for non-sinister enchanted forests and so forth. If you want a more th
 |18|Ioru|Yrm|Gog|Wen|
 |19|Ispen|Ys|Gra|Wyn|
 |20|Iun|Yun|Gres|Yor|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-14: Brittonnian Sinister Terrain Names (2 words)]
 ```
 
-^table-6-14
-
-(`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|First Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|First Word b`) (`dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|Second Word a` or `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-14]]|Second Word b`)
+(**First Word a** or **First Word b**) (**Second Word a** or **Second Word b**)
 #### Table 6-15: Additional Endings for Brittonnian Terrain Names
 To use this method, roll once on any of the Brittonnian Terrain Name Tables, Sinister or Bright (it doesn’t matter which column) to get a result like “Gruid” or “Trod.” Then roll for the appropriate type of terrain on the table below (forest, marsh, etc.), and add that as an ending. Thus, if you’re rolling up a marsh, you would end up with “Gruidfell” or “Trodfen.” You can add another ending as well, to get “Gruidfell Swamp or Trodfen Gwaun.”
 
 ```rpg table.additional-endings-for-brittonnian-terrain-names
-|d20|Forest|Marsh/Swamp|Mountains or Hills|River|
+@paginate 10 pages
+|d20*|Forest|Marsh/Swamp|Mountains or Hills|River|
 |---|---|---|---|---|
 |1|coed|fell|cairn|bourne|
 |2|coil|fen|cliff|brook|
@@ -102,9 +107,7 @@ To use this method, roll once on any of the Brittonnian Terrain Name Tables, Sin
 |18|woad|quag|stone| |
 |19|wold|reed|top| |
 |20|wood|water|tor| |
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-15: Additional Endings for Brittonnian Terrain Names]
 ```
-
-^table-6-15
-
-**Forest**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Forest`, **Marsh/Swamp**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Marsh/Swamp`,
-**Mountains or Hills**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|Mountains or Hills`, **River**: `dice: [[Brittonnian 4. Brittonnian Terrain feature names^table-6-15]]|River`

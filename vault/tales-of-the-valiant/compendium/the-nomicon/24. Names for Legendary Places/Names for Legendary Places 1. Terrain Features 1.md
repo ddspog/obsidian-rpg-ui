@@ -12,7 +12,8 @@ tab-name: Terrain Features · 1
 **Sample Results**: The Forest of Anger, the Marshes of Stones, the Hills of Ruins, the River of Night.
 
 ```rpg table.legendary-terrain-feature-names-1
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Anger|Secrets|
 |2|Awe|Stones|
@@ -114,11 +115,11 @@ tab-name: Terrain Features · 1
 |98|Witches|Doors|
 |99|Woe|Deceit|
 |100|Wyrms|Treason|
+|---|---|---|
+|= {{ roll }} =|
+[Table 24-1: Legendary Terrain Feature Names 1]
 ```
 
-^table-24-1
-
-**C1**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-1]]|1`, **C2**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-1]]|2`
 #### Table 24-2: Legendary Terrain Feature Names 2
 This table and the next one contain a mixed variety of different names for terrain features such as hills and forests. Thus, you can generate the Growling Hills, Fox Mountains, Bronze Marshes, Alarood Hills, and Haumic Forest.
 
@@ -126,7 +127,8 @@ This table and the next one contain a mixed variety of different names for terra
 **Sample Results**: Alarood (Hills), Haumic (Forest), Growling (Marshes), Fox (Hills), Bronze (River).
 
 ```rpg table.legendary-terrain-feature-names-2
-|d100|1|2|3|
+@paginate 10 pages
+|d100*|1|2|3|
 |---|---|---|---|
 |1|Alarood|Aramuid|Blue|
 |2|Alaruid|Amarood|Sapphire|
@@ -228,8 +230,7 @@ This table and the next one contain a mixed variety of different names for terra
 |98|Quilling|Arquel|Vaulted|
 |99|Raffin|Reffin|Shadowed|
 |100|Rhas|Rhaun|Deep|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 24-2: Legendary Terrain Feature Names 2]
 ```
-
-^table-24-2
-
-**C1**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|1`, **C2**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|2`, **C3**: `dice: [[Names for Legendary Places 1. Terrain Features 1^table-24-2]]|3`

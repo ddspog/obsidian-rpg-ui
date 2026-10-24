@@ -13,7 +13,8 @@ tab-name: Personal names
 **Sample Results**: Achebiades, Cephinder, Mnasitheus, Damanekes, Scodotus.
 
 ```rpg table.hellenica-masculine-personal-names
-|d100|Start a|Start b|Start c|Ending a|Ending b|Ending c|
+@paginate 10 pages
+|d100*|Start a|Start b|Start c|Ending a|Ending b|Ending c|
 |---|---|---|---|---|---|---|
 |1|Abro|Cephi|Mna|as|mpedocles|sibios|
 |2|Aca|Cerci|Mne|bes|mos|sidas|
@@ -115,17 +116,19 @@ tab-name: Personal names
 |98|Carnea|Mela|Thury|mophon|sebios|cato|
 |99|Cassa|Mi|Thala|mosthenes|secilas|dylos|
 |100|Ce|Mimne|Thalu|moxenus|siadas|magoras|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 14-1: Hellenica Masculine Personal Names]
 ```
 
-^table-14-1
-
-(`dice: [[Hellenica 1. Personal names^table-14-1]]|Start a` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Start b` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Start c`) (`dice: [[Hellenica 1. Personal names^table-14-1]]|Ending a` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Ending b` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Ending c`)
+(**Start a** or **Start b** or **Start c**) (**Ending a** or **Ending b** or **Ending c**)
 #### Table 14-2: Hellenica Feminine Personal Names
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Althaea, Glaphyra, Laonike, Phylonome, Semele.
 
 ```rpg table.hellenica-feminine-personal-names
-|d100|1|2|3|4|
+@paginate 10 pages
+|d100*|1|2|3|4|
 |---|---|---|---|---|
 |1|Adastrea|Gaiala|Laodaeia|Philoxena|
 |2|Adea|Galanthis|Laodameia|Philyra|
@@ -227,8 +230,7 @@ tab-name: Personal names
 |98|Eurykleia|Lampedo|Philonoe|Zopura|
 |99|Eurynome|Lampetia|Philora|Zosima|
 |100|Eurythoe|Lampito|Philotera|Zosime|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 14-2: Hellenica Feminine Personal Names]
 ```
-
-^table-14-2
-
-**C1**: `dice: [[Hellenica 1. Personal names^table-14-2]]|1`, **C2**: `dice: [[Hellenica 1. Personal names^table-14-2]]|2`, **C3**: `dice: [[Hellenica 1. Personal names^table-14-2]]|3`, **C4**: `dice: [[Hellenica 1. Personal names^table-14-2]]|4`

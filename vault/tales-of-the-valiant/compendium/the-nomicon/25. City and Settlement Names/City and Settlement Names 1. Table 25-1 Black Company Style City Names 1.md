@@ -8,7 +8,8 @@ tab-name: "Table 25-1: Black Company Style City Names · 1"
 ---
 #### Table 25-1: Black Company Style City Names
 ```rpg table.black-company-style-city-names
-|d100|1|2|3|4|
+@paginate 10 pages
+|d100*|1|2|3|4|
 |---|---|---|---|---|
 |1|Alembic|Earrings|Lockets|Sack|
 |2|Alligator|Eclipse|Locks|Salamander|
@@ -110,18 +111,19 @@ tab-name: "Table 25-1: Black Company Style City Names · 1"
 |98|Druids|Lions|Ruffians|Woodworkers|
 |99|Ducks|Lizards|Ruins|Yaks|
 |100|Eagles|Llamas|Runes|Zebras|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 25-1: Black Company Style City Names]
 ```
 
-^table-25-1
-
-**C1**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-1]]|1`, **C2**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-1]]|2`, **C3**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-1]]|3`, **C4**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-1]]|4`
 #### Table 25-2: City Epithets 1
 **Formula**: City of the \_\_\_ \_\_\_.
 **Instructions**: Roll either for a group (roll on both Column 1 and Column 2) for something like “City of the Blue Witches” or for a thing (roll on both Column 3 and Column 4) for something like “City of the Blue Citadel.”
 **Sample Results**: City of the Amber Automaton, City of the Baneful Bridge, City of the Chanting Boatmen, City of the Horned Heralds.
 
 ```rpg table.city-epithets-1
-|d100|Group Adj.|Groups|Thing Adj.|Thing|
+@paginate 10 pages
+|d100*|Group Adj.|Groups|Thing Adj.|Thing|
 |---|---|---|---|---|
 |1|Amber|Alchemists|Amber|Academy|
 |2|Ancestral|Archmage|Ancestral|Amphitheater|
@@ -223,9 +225,7 @@ tab-name: "Table 25-1: Black Company Style City Names · 1"
 |98|Whistling|Weavers|Warbling|Well|
 |99|Wooden|Witches|Whistling|Workshops|
 |100|Yellow|Wizards|Yellow|Ziggurat|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 25-2: City Epithets 1]
 ```
-
-^table-25-2
-
-**Group Adj.**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-2]]|Group Adj.`, **Groups**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-2]]|Groups`
-**Thing Adj.**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-2]]|Thing Adj.`, **Thing**: `dice: [[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1^table-25-2]]|Thing`

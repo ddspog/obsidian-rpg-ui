@@ -9,6 +9,7 @@ tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
 # Demonic Names
 ![[demonic-names.webp|right|64]]
 ```rpg table.demonic-name-part-1
+@paginate 10 pages
 |d20*|1|2|3|
 |---|---|---|---|
 |1|Aa|Hue|Ucto|
@@ -31,9 +32,12 @@ tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
 |18|Gu|Tzu|Yuthu|
 |19|Gua|Ua|Zo|
 |20|Guga|Uaga|Zu|
+|---|---|---|---|
+|= {{ roll }} =|
 [Demonic Name Part 1]
 ```
 ```rpg table.demonic-name-part-2
+@paginate 10 pages
 |d20*|1|2|3|4|
 |---|---|---|---|---|
 |1|ach|gog|malk|riog|
@@ -56,6 +60,8 @@ tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
 |18|gnalth|lchor|ranag|xool|
 |19|gobah|lmaal|rilthu|xua|
 |20|gobb|luri|rioch|zmoaz|
+|---|---|---|---|---|
+|= {{ roll }} =|
 [Demonic Name Part 2]
 ```
 # Arch-Demonic or Evil God Epithets
@@ -63,6 +69,7 @@ tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
 **Instructions**: Roll for any Part 1, and then for a Part 2. This table can also be used just with one of the Part 1 Columns, for results such as "The Binder," "The Destroyer," or "The Piercer."
 **Sample Results**: The Breaker of Empires, The Marauder of Forests, The Scourge of Kings, The Tormenter of Stars, The Poisoner of Worlds.
 ```rpg table.evil-god-epithets
+@paginate 10 pages
 |d20*|Part 1a|Part 1b|Part 1c|Part 2|
 |---|---|---|---|---|
 |1|Binder|Forager|Scourge|of Cities|
@@ -85,5 +92,7 @@ tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
 |18|Enkindler|Ransacker|Waster|of the Spheres|
 |19|Enslaver|Remaker|Winnower|of Wizards|
 |20|Entangler|Scorcher|Witherer|of Worlds|
+|---|---|---|---|---|
+|= {{ roll }} =|
 [Arch-Demonic or Evil God Epithets]
 ```

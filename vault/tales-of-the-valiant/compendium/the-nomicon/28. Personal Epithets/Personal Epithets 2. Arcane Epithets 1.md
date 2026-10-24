@@ -13,16 +13,17 @@ Powerful spellcasters might have:
 - An Arcane Epithet Type 1 ([[Personal Epithets 2. Arcane Epithets 1#Table 28-4 Arcane Epithet Type 1|Table 28-4]]), such as Gandolfo the Esoteric.
 - An Arcane Epithet Type 2 (a or b) ([[Personal Epithets 2. Arcane Epithets 1#Table 28-5 Arcane Epithet Type 2a (Evil Type)|Table 28-5]] or [[Personal Epithets 2. Arcane Epithets 1#Table 28-6 Arcane Epithet Type 2b (Good Type)|28-6]]) such as Gandolfo, the Hawk of Tzul-Tesh.
 - A Physical Epithet ([[Personal Epithets 3. Arcane Epithets 2#Table 28-9 Descriptive Epithet|Table 28-9]]) such as Gandolfo the Gaunt.
-- A Demonic Epithet (if evil) ([[Personal Epithets 4. Arcane Epithets 3#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]) such as Gandolfo the Entangler.
+- A Demonic Epithet (if evil) ([[Personal Epithets 5. Arcane Epithets 4#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]) such as Gandolfo the Entangler.
 - An Evil Dominion Epithet ([[Personal Epithets 5. Arcane Epithets 4#Table 28-15 Evil Dominion Epithets|Table 28-15]]) such as Gandolfo, Master of Crows.
-- An Animal Epithet (with negative or positive connotation, depending on the nature of the spellcaster) ([[Personal Epithets 5. Arcane Epithets 4#Table 28-16 Animal Epithet - Negative Connotation|Table 28-16]] or [[Personal Epithets 5. Arcane Epithets 4#Table 28-17 Animal Epithet Broad Possibilities- Generally Positive Connotation|28-17]]) such as Gandolfo the Leopard.
+- An Animal Epithet (with negative or positive connotation, depending on the nature of the spellcaster) ([[Personal Epithets 6. Arcane Epithets 5#Table 28-16 Animal Epithet - Negative Connotation|Table 28-16]] or [[Personal Epithets 6. Arcane Epithets 5#Table 28-17 Animal Epithet Broad Possibilities- Generally Positive Connotation|28-17]]) such as Gandolfo the Leopard.
 - An Arcane Title ([[Titles 1. Arcane Titles#Table 27-1 Arcane Titles|Table 27-1: Arcane Titles]]) such as Gandolfo the Ombrathar.
-- An Alternative Title ([[Titles 4. Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12]] and [[Titles 4. Alternative Titles of Nobility or Office#Table 27-13 General-Use Titles Part 2|27-13]]: General-Use Titles Part 1 and 2) such as Gandolfo the Lutriasept.
+- An Alternative Title ([[Titles 4. Modes of Address + Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12]] and [[Titles 4. Modes of Address + Alternative Titles of Nobility or Office#Table 27-13 General-Use Titles Part 2|27-13]]: General-Use Titles Part 1 and 2) such as Gandolfo the Lutriasept.
 #### Table 28-4: Arcane Epithet Type 1
 **Sample Results**: The Abstruse, the Alchemistic, the Enigmatical, the Occult.
 
 ```rpg table.arcane-epithet-type-1
-|dice:d100|Epithet|
+@paginate 10 pages
+|d100*|Epithet|
 |---|---|
 |1|the Abstruse|
 |2|the Academic|
@@ -124,18 +125,19 @@ Powerful spellcasters might have:
 |98|the Sigil-Crafter|
 |99|the Magnus|
 |100|the Orb|
+|---|---|
+|= {{ roll }} =|
+[Table 28-4: Arcane Epithet Type 1]
 ```
 
-^table-28-4
-
-`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-4]]`
 #### Table 28-5: Arcane Epithet Type 2a (Evil Type)
 These can be used without a place name (Gandolfo the Flame) or if you have the time to add a place name, you can get something like, “Gandolfo the Flame of Tirac Nan.”
 
 **Sample Results**: the Wolf of Granwys, the Owl of Dourshell, the Curse of Hajoun, the Wolf, the Owl, the Curse.
 
 ```rpg table.arcane-epithet-type-2a-evil-type
-|dice:d100|Epithet|
+@paginate 10 pages
+|d100*|Epithet|
 |---|---|
 |01-02|the Flame of [Place Name]|
 |03-04|the Shadow of [Place Name]|
@@ -187,18 +189,19 @@ These can be used without a place name (Gandolfo the Flame) or if you have the t
 |95-96|The Claws of [Place Name]|
 |97-98|The Mouth of [Place Name]|
 |99-100|The Eye of [Place Name]|
+|---|---|
+|= {{ roll }} =|
+[Table 28-5: Arcane Epithet Type 2a (Evil Type)]
 ```
 
-^table-28-5
-
-`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-5]]`
 #### Table 28-6: Arcane Epithet Type 2b (Good Type)
 These can be used without a place name (Gandolfo the Defender) or with a place name, “Gandolfo, the Defender of Tirac Nan.”
 
 **Sample Results**: the Defender, the Orb, the Canle of Tirac Nan, the Face of Azmalak.
 
 ```rpg table.arcane-epithet-type-2b-good-type
-|dice:d100|Epithet|
+@paginate 10 pages
+|d100*|Epithet|
 |---|---|
 |01-02|The Defender of [Place Name]|
 |03-04|The Protector of [Place Name]|
@@ -250,8 +253,7 @@ These can be used without a place name (Gandolfo the Defender) or with a place n
 |95-96|The Mystic of [Place Name]|
 |97-98|The Magician of [Place Name]|
 |99-100|The Redeemer of [Place Name]|
+|---|---|
+|= {{ roll }} =|
+[Table 28-6: Arcane Epithet Type 2b (Good Type)]
 ```
-
-^table-28-6
-
-`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-6]]`

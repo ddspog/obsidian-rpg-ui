@@ -10,7 +10,7 @@ tab-name: "Table 29-1: Name of a Game + Items + Taverns"
 **Sample Results**: Butterfly, Borders, Shoes, Green Heralds, Aumbronne, Rabat.
 
 ```rpg table.name-of-a-game
-|dice:d6|How to Generate the Game’s Name|
+|d6*|How to Generate the Game’s Name|
 |---|---|
 |1|[[Miscellaneous Tables 4. Taverns 3#Table 29-10 All Tavern Animal|Table 29-10: All Tavern Animal]]. The name of the game is just “Butterfly” or “Mouse” or similar.|
 |2|[[Names for Legendary Places 4. Strongholds 2#Table 24-11 Mystical Fortress Name 1|Table 24-11]] or [[Names for Legendary Places 4. Strongholds 2#Table 24-12 Mystical Fortress Name 2|24-12]]: Mystical Fortress Name 1 or 2. The name of the game is something like “Borders” or “Justice.”|
@@ -18,18 +18,19 @@ tab-name: "Table 29-1: Name of a Game + Items + Taverns"
 |4|[[City and Settlement Names 1. Table 25-1 Black Company Style City Names 1#Table 25-2: City Epithets 1|Table 25-2: City Epithets 1]]. The name of the game is something like “Green Heralds” or “Demon Statues.”|
 |5|[[Trobadoric 2. Terrain Features#Table 23-7 Trobadoric Terrain Features Table 4|Table 23-7: Trobadoric Terrain Features Table 4]]. The name of the game is something like “Aumbronne” or “Bourcassin.”|
 |6|Any Arabish Culture Name ([[Arabish 2. Name Of Culture 1#Table 5-3 Arabish Culture Name Table 1|Tables 5-3]] through [[Arabish 4. Name Of Culture 3#Table 5-14 Arabish Culture Name Table 12|5-14]]). Focus on the simpler ending syllables. The name of the game is something like “Rabat” or “Makrak.”|
+|---|---|
+|= {{ roll }} =|
+[Table 29-1: Name of a Game]
 ```
 
-^table-29-1
-
-`dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-1]]`
 # Items
 #### Table 29-2: General Items
 **Instructions**: Roll on any column of the table.
 **Sample Results**: Alembic, Chisel, Grindstone, Pearl, Seed.
 
 ```rpg table.general-items
-|d20|1|2|3|4|5|
+@paginate 10 pages
+|d20*|1|2|3|4|5|
 |---|---|---|---|---|---|
 |1|Alembic|Chime|Glove|Medallion|Scythe|
 |2|Amber|Chisel|Glyph|Mural|Secret|
@@ -51,11 +52,11 @@ tab-name: "Table 29-1: Name of a Game + Items + Taverns"
 |18|Cabinet|Finger|Mantle|Sarcophagus|Tooth|
 |19|Cauldron|Flask|Map|Scissor|Vial|
 |20|Chain|Forge|Mask|Scroll|Vise|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 29-2: General Items]
 ```
 
-^table-29-2
-
-**C1**: `dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-2]]|1`, **C2**: `dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-2]]|2`, **C3**: `dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-2]]|3`, **C4**: `dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-2]]|4`, **C5**: `dice: [[Miscellaneous Tables 1. Table 29-1 Name of a Game + Items + Taverns^table-29-2]]|5`
 # Taverns
 When naming taverns, it is important to vary the formula, or the names will sound repetitious.
 - **Formula 1**: The \[[[29. Miscellaneous Tables#Table 29-3 Short Tavern Items 1|Table 29-3]] or [[Miscellaneous Tables 2. Taverns 1#Table 29-4 Short Tavern Items 2|29-4]]: Short Tavern Items] or the \[[[29. Miscellaneous Tables#Table 29-5: Long Tavern Items|Table 29-5: Long Tavern Items]]\]. Examples: “The Chime” or “The Medallion.”

@@ -11,7 +11,8 @@ tab-name: "Table 25-1: Black Company Style City Names · 2"
 **Sample Results**: The City of Assassins, The City of Doves, The City of Mirrors, The City of Mystery, The City of Scrolls.
 
 ```rpg table.city-epithets-2
-|d100|1|2|3|4|
+@paginate 10 pages
+|d100*|1|2|3|4|
 |---|---|---|---|---|
 |1|Adventurers|Doves|Lockets|Sacks|
 |2|Alembics|Dreaming|Locks|Salamanders|
@@ -113,18 +114,19 @@ tab-name: "Table 25-1: Black Company Style City Names · 2"
 |98|Dooms|Lions|Ruffians|Woodworkers|
 |99|Doors|Lizards|Ruins|Yaks|
 |100|Doublets|Llamas|Runes|Zebras|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 25-3: City Epithets 2]
 ```
 
-^table-25-3
-
-**C1**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|1`, **C2**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|2`, **C3**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|3`, **C4**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-3]]|4`
 #### Table 25-4: City Epithets 3
 **Formula**: The \_\_\_ City
 **Instructions**: Roll on either column for an epithet such as “the Amber City” or “the Odorous City.”
 **Sample Results**: The Amber City, The Oozing City, The Broken City, The Quarrelsome City, the Red City.
 
 ```rpg table.city-epithets-3
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Amber|Odorous|
 |2|Amorous|Oozing|
@@ -226,8 +228,7 @@ tab-name: "Table 25-1: Black Company Style City Names · 2"
 |98|Mystic|Wounded|
 |99|Noble|Wrathful|
 |100|Odd|Yellow|
+|---|---|---|
+|= {{ roll }} =|
+[Table 25-4: City Epithets 3]
 ```
-
-^table-25-4
-
-**C1**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-4]]|1`, **C2**: `dice: [[City and Settlement Names 2. Table 25-1 Black Company Style City Names 2^table-25-4]]|2`

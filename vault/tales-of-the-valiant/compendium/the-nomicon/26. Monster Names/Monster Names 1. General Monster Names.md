@@ -12,7 +12,8 @@ tab-name: General Monster Names
 **Sample Results**: Mhashog, Krasataur, Ubuth-Toad, Shaglocond.
 
 ```rpg table.name-for-a-monster-type-option-1
-|d20|Part 1a|Part 1b|Part 2a|Part 2b|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 2a|Part 2b|
 |---|---|---|---|---|
 |1|Mho|Sha|rnak|thacore|
 |2|Mha|She|rgul|thacor|
@@ -34,14 +35,16 @@ tab-name: General Monster Names
 |18|Ghu|Ulsa|tchaag|mbic [Beast]
 |19|Oa|Alta|tchak|ndic [Beast]
 |20|Io|Ulta|ggoth|ss-[Beast]
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-1: Name for a Monster Type (Option 1)]
 ```
 
-^table-26-1
-
-(`dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 1a` or `dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 1b`) (`dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 2a` or `dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 2b`)
+(**Part 1a** or **Part 1b**) (**Part 2a** or **Part 2b**)
 #### Table 26-2: Beast Ending
 ```rpg table.beast-ending
-|dice:d20|Ending|
+@paginate 10 pages
+|d20*|Ending|
 |---|---|
 |1|Bat|
 |2|Beast|
@@ -63,17 +66,18 @@ tab-name: General Monster Names
 |18|Tree|
 |19|Turtle|
 |20|Yog|
+|---|---|
+|= {{ roll }} =|
+[Table 26-2: Beast Ending]
 ```
 
-^table-26-2
-
-`dice: [[Monster Names 1. General Monster Names^table-26-2]]`
 #### Table 26-3: Name for a Monster Type (Option 2)
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 (Parts 2 and 3 are a combined word).
 **Sample Results**: Serpent of Kuar, Raiders of Omath, Ghoul of Uabad, Horror out of Tsuguoth, Vines of Cyagor.
 
 ```rpg table.name-for-a-monster-type-option-2
-|d100|Part 1|Part 2|Part 3|
+@paginate 10 pages
+|d100*|Part 1|Part 2|Part 3|
 |---|---|---|---|
 |01-02|Beast of|Ba|bad|
 |03-04|Hawk of|Bya|gar|
@@ -125,17 +129,19 @@ tab-name: General Monster Names
 |95-96|Gatherers of|Yr|thi|
 |97-98|Reaper of|Zoa|vais|
 |99-00|Children of|Zua|vord|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-3: Name for a Monster Type (Option 2)]
 ```
 
-^table-26-3
-
-`dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 1` `dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 2` `dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 3`
+**Part 1** + **Part 2** + **Part 3**
 #### Table 26-4: Name for a Monster Type (Option 3)
 **Instructions**: Roll Part 1 and Part 2 independently to get the first word, then on Part 3.
 **Sample Results**: Orosulic Fungus, Tsestik Bat, Naverese Spawn, Uzothoic Mold, Iuvoolian Polyps.
 
 ```rpg table.name-for-a-monster-type-option-3
-|d20|Part 1|Part 2|Part 3|
+@paginate 10 pages
+|d20*|Part 1|Part 2|Part 3|
 |---|---|---|---|
 |1|Na|kotic|Polyps|
 |2|Me|koric|Pods|
@@ -157,8 +163,9 @@ tab-name: General Monster Names
 |18|Tse|stuan|Seeker|
 |19|Tua|verese|Cat|
 |20|Oa|varzic|Hound|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-4: Name for a Monster Type (Option 3)]
 ```
 
-^table-26-4
-
-`dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 1` `dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 2` `dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 3`
+**Part 1** + **Part 2** + **Part 3**

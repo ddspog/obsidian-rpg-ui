@@ -26,7 +26,8 @@ The following historically-accurate endings can be added for additional variatio
 **Sample Results**: Indiolch, Powystir, Lianfroch, Rhifeyn, Tuathwy.
 
 ```rpg table.brittonnian-country-names
-|d100|Start 1|Start 2|Start 3|End 1|End 2|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|
 |---|---|---|---|---|---|
 |01-02|Aber|Cyri|Crae|bion|ban|
 |03-04|Llan|Cyral|Craga|cair|byr|
@@ -78,8 +79,9 @@ The following historically-accurate endings can be added for additional variatio
 |95-96|Gwys|Aba|Nial|ws|moch|
 |97-98|Durn|Padra|Uil|wth|riod|
 |99-00|Lla|Dolga|Ui|wyr|rhys|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-12: Brittonnian Country Names]
 ```
 
-^table-6-12
-
-(`dice: [[Brittonnian 3. Brittonian Culture names + Countries^table-6-12]]|Start 1` or `dice: [[Brittonnian 3. Brittonian Culture names + Countries^table-6-12]]|Start 2` or `dice: [[Brittonnian 3. Brittonian Culture names + Countries^table-6-12]]|Start 3`) (`dice: [[Brittonnian 3. Brittonian Culture names + Countries^table-6-12]]|End 1` or `dice: [[Brittonnian 3. Brittonian Culture names + Countries^table-6-12]]|End 2`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2**)

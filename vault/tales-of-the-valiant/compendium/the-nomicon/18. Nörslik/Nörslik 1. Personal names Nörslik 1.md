@@ -14,7 +14,8 @@ These tables use Norse phonemes, but almost all the names are invented. A warnin
 **Sample Results**: Dagskaldr, Armundir, Elmundur, Gauthyr, Herivur.
 
 ```rpg table.nrslik-masculine-personal-names-1
-|d100|Base Name|Dialect 1|Dialect 2|
+@paginate 10 pages
+|d100*|Base Name|Dialect 1|Dialect 2|
 |---|---|---|---|
 |1|Anbjorn|Anbjarn|Anbeorn|
 |2|Armundr|Armundir|Armundur|
@@ -116,17 +117,18 @@ These tables use Norse phonemes, but almost all the names are invented. A warnin
 |98|Hjarbjorn|Harbeorn|Harborn|
 |99|Hjoldr|Hjoldir|Hjodur|
 |100|Hjovaldr|Heovaldir|Hjovaldur|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 18-1: Nörslik Masculine Personal Names 1]
 ```
 
-^table-18-1
-
-**Base Name**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Base Name`, **Dialect 1**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Dialect 1`, **Dialect 2**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-1]]|Dialect 2`
 #### Table 18-2: Nörslik Masculine Personal Names 2
 **Instructions**: Roll on any column for the name (the Base Name column is closer to Old Norse, or one of the Dialects, which can be pronounced more easliy). The two dialect columns give you two variant cultures or countries with a slightly different sound to the names.
 **Sample Results**: Hrothmundr, Jormundir, Kaldur, Olafr, Sigvaldur.
 
 ```rpg table.nrslik-masculine-personal-names-2
-|d100|Base Name|Dialect 1|Dialect 2|
+@paginate 10 pages
+|d100*|Base Name|Dialect 1|Dialect 2|
 |---|---|---|---|
 |1|Horthmundr|Horthmundir|Horthmundur|
 |2|Hrafmarr|Hrafmar|Hrafmarg|
@@ -228,10 +230,9 @@ These tables use Norse phonemes, but almost all the names are invented. A warnin
 |98|Vemnarr|Vemnar|Vemnarth|
 |99|Yngr|Yngir|Yngirth|
 |100|Yngthr|Yngthir|Yngthir|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 18-2: Nörslik Masculine Personal Names 2]
 ```
-
-^table-18-2
-
-**Base Name**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Base Name`, **Dialect 1**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Dialect 1`, **Dialect 2**: `dice: [[Nörslik 1. Personal names Nörslik 1^table-18-2]]|Dialect 2`
 
 ![[norslik-feminine-personal-names.webp]]

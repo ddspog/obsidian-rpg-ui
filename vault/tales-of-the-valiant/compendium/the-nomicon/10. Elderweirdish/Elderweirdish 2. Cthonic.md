@@ -12,7 +12,8 @@ tab-name: Cthonic
 **Sample Results**: Aultrabhos, Golomemnor, Jehamnos, Tsaragharoc, Uombra.
 
 ```rpg table.cthonic-single-word-place-names
-|d100|Part 1|Part 2a|Part 2b|
+@paginate 10 pages
+|d100*|Part 1|Part 2a|Part 2b|
 |---|---|---|---|
 |1|Aultra|babor|mboro|
 |2|Bholo|balon|mborod|
@@ -114,11 +115,12 @@ tab-name: Cthonic
 |98|Zolo|marmor|zor|
 |99|Zoro|mbor|zord|
 |100|Zula|mbora|zul|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 10-4: Cthonic Single-Word Place Names]
 ```
 
-^table-10-4
-
-`dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 1` (`dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 2a` or `dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 2b`)
+**Part 1** (**Part 2a** or **Part 2b**)
 #### Table 10-5: Cthonic Two-Word or Hyphenated Place Names
 This table generates names such as Amu-Anka and Ghul- Chaxu (or Amu Anka and Ghul Chaxu).
 
@@ -126,7 +128,8 @@ This table generates names such as Amu-Anka and Ghul- Chaxu (or Amu Anka and Ghu
 **Sample Results**: Choon Chaxu, Amu Ghoa, Ioum Koptis, Khur Patra, Yal Pyak.
 
 ```rpg table.cthonic-two-word-or-hyphenated-place-names
-|d100|First Word|Second Word|
+@paginate 10 pages
+|d100*|First Word|Second Word|
 |---|---|---|
 |1|Amu|Anka|
 |2|Anu|Athut|
@@ -228,8 +231,9 @@ This table generates names such as Amu-Anka and Ghul- Chaxu (or Amu Anka and Ghu
 |98|Zo|Yarai|
 |99|Zoa|Yarak|
 |100|Zul|Yatan|
+|---|---|---|
+|= {{ roll }} =|
+[Table 10-5: Cthonic Two-Word or Hyphenated Place Names]
 ```
 
-^table-10-5
-
-`dice: [[Elderweirdish 2. Cthonic^table-10-5]]|First Word` `dice: [[Elderweirdish 2. Cthonic^table-10-5]]|Second Word`
+**First Word** + **Second Word**

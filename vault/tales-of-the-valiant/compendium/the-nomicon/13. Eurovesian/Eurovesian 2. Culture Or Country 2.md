@@ -11,7 +11,8 @@ tab-name: Culture Or Country · 2
 **Sample Results**: Aöbanthar, Iaubalzia, Yeriol, Ysardia, Uevroni.
 
 ```rpg table.eurovesian-culture-or-country-name-table-3
-|d100|Start|End 1|End 2|End 3|End 4|End 5|End 6|
+@paginate 10 pages
+|d100*|Start|End 1|End 2|End 3|End 4|End 5|End 6|
 |---|---|---|---|---|---|---|
 |1|A|balia|baldia|tia|rini|rba|vrondi|
 |2|Ai|banthar|balzia|stia|riny|rda|vrion|
@@ -113,8 +114,9 @@ tab-name: Culture Or Country · 2
 |98|Uo|zaris|zarzia|rinde|rundy|falco|sriond|
 |99|Aou|zland|zorca|rindi|rus|valco|srior|
 |100|Aie|zulia|zoria|rindy|rusc|var|stagar|
+|---|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 13-3: Eurovesian Culture or Country Name Table 3]
 ```
 
-^table-13-3
-
-`dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|Start` (`dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 1` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 2` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 3` or `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 4` `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 5` `dice: [[Eurovesian 2. Culture Or Country 2^table-13-3]]|End 6`)
+**Start** (**End 1** or **End 2** or **End 3** or **End 4** + **End 5** + **End 6**)

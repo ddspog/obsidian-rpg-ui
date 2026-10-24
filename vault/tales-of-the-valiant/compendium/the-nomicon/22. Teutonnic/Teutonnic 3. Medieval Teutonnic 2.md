@@ -14,7 +14,8 @@ This table generates results for countries, town names, and terrain features suc
 **Sample Results**: Aumdaut, Gherbanz, Ocliotz, Groeharg, Uezal.
 
 ```rpg table.teutonnic-countries-terrain-features-and-towns-1
-|d100|First Part|Second Part a|Second Part b|
+@paginate 10 pages
+|d100*|First Part|Second Part a|Second Part b|
 |---|---|---|---|
 |1|Ae|balte|banz|
 |2|Al|ban|barz|
@@ -116,17 +117,19 @@ This table generates results for countries, town names, and terrain features suc
 |98|Y|zel|zot|
 |99|Yo|zian|zul|
 |100|Yor|zind|zun|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 22-4: Teutonnic Countries, Terrain Features and Towns 1]
 ```
 
-^table-22-4
-
-`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|First Part` (`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|Second Part a` or `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-4]]|Second Part b`)
+**First Part** (**Second Part a** or **Second Part b**)
 #### Table 22-5: Teutonnic Countries, Terrain Features and Towns 2
 **Instructions**: Roll independently for the first and second part of the name.
 **Sample Results**: Auskalt, Eobranz, Gisgult, Jochebronz, Miergroz.
 
 ```rpg table.teutonnic-countries-terrain-features-and-towns-2
-|d100|First Part|Second Part|
+@paginate 10 pages
+|d100*|First Part|Second Part|
 |---|---|---|
 |1|A|ban|
 |2|Ache|brand|
@@ -228,17 +231,19 @@ This table generates results for countries, town names, and terrain features suc
 |98|Y|zot|
 |99|Yo|zul|
 |100|Yor|zun|
+|---|---|---|
+|= {{ roll }} =|
+[Table 22-5: Teutonnic Countries, Terrain Features and Towns 2]
 ```
 
-^table-22-5
-
-`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-5]]|First Part` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-5]]|Second Part`
+**First Part** + **Second Part**
 #### Table 22-6: Teutonnic Countries, Terrain Features and Towns 3
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 of the name.
 **Sample Results**: Gryanz, Ilaubratz, Heogna, Traömarg, Dioste.
 
 ```rpg table.teutonnic-countries-terrain-features-and-towns-3
-|d20|Part 1|Part 2|Part 3|
+@paginate 10 pages
+|d20*|Part 1|Part 2|Part 3|
 |---|---|---|---|
 |1|Gr|aö|tz|
 |2|R|oä|dz|
@@ -260,8 +265,9 @@ This table generates results for countries, town names, and terrain features suc
 |18|T|ya|nar|
 |19|Y|uë|nt|
 |20|Z|ui|ste|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 22-6: Teutonnic Countries, Terrain Features and Towns 3]
 ```
 
-^table-22-6
-
-`dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 1` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 2` `dice: [[Teutonnic 3. Medieval Teutonnic 2^table-22-6]]|Part 3`
+**Part 1** + **Part 2** + **Part 3**

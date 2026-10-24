@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: user
+tab-icon: flag
 tab-color: var(--color-red)
 tab-name: Name Of Culture Â· 1
 ---
@@ -21,7 +21,8 @@ These tables also work well for generating country and terrain names; just donâ€
 **Sample Results**: Agaraqi, Baqirali, Ishtabeen, Ubariri, Oshireen.
 
 ```rpg table.arabish-culture-name-table-1
-|d100|Start 1|Start 2|Start 3|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|End 3|
 |---|---|---|---|---|---|---|
 |01-02|Ab|Abh|Abt|ab|arab|irab|
 |03-04|Aw|Ash|Awt|aw|araw|iraw|
@@ -73,17 +74,19 @@ These tables also work well for generating country and terrain names; just donâ€
 |95-96|Ut|Os|Utt|ut|arut|irut|
 |97-98|Uy|Oz|Uyat|h|arh|irh|
 |99-00|Uz|Ush|Uzt|uz|aruz|iruz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-3: Arabish Culture Name Table 1]
 ```
 
-^table-5-3
-
-(`dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-3]]|End 3`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2** or **End 3**)
 #### Table 5-4: Arabish Culture Name Table 2
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Aghbami, Dakaraheen, Haqiridi, Iqbiruheen, Diwizi.
 
 ```rpg table.arabish-culture-name-table-2
-|d100|Start 1|Start 2|Start 3|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|End 3|
 |---|---|---|---|---|---|---|
 |01-02|Abb|Dab|Hab|ab|arab|irab|
 |03-04|Awb|Dad|Had|aw|araw|iraw|
@@ -135,17 +138,19 @@ These tables also work well for generating country and terrain names; just donâ€
 |95-96|Azub|Dhosh|Habh|ut|arut|irut|
 |97-98|Azab|Dash|Haf|h|arh|irh|
 |99-00|Uzub|Dish|Huf|uz|aruz|iruz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-4: Arabish Culture Name Table 2]
 ```
 
-^table-5-4
-
-(`dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-4]]|End 3`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2** or **End 3**)
 #### Table 5-5: Arabish Culture Name Table 3
 **Instructions**: Roll independently for any Start and any Ending.
 **Sample Results**: Ghabizi, Jhadameen, Khalaruheen, Ghaiyagi, Khoshirafi.
 
 ```rpg table.arabish-culture-name-table-3
-|d100|Start 1|Start 2|Start 3|End 1|End 2|End 3|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|End 3|
 |---|---|---|---|---|---|---|
 |01-02|Ghab|Jhab|Khab|ab|arab|irab|
 |03-04|Ghad|Jhad|Khad|aw|araw|iraw|
@@ -197,17 +202,19 @@ These tables also work well for generating country and terrain names; just donâ€
 |95-96|Ghish|Jhish|Khish|ut|arut|irut|
 |97-98|Ghan|Jhan|Khan|h|arh|irh|
 |99-00|Ghul|Jhul|Khul|uz|aruz|iruz|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-5: Arabish Culture Name Table 3]
 ```
 
-^table-5-5
-
-(`dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|Start 3`) (`dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-5]]|End 3`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2** or **End 3**)
 #### Table 5-6: Arabish Culture Name Table 4
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Dadragheen, Hajrasi, Ghatrazeen, Bakridi, Ghosruzi.
 
 ```rpg table.arabish-culture-name-table-4
-|d100|Start 1|Start 2|Start 3|Start 4|Ending|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|Start 4|Ending|
 |---|---|---|----|---|---|
 |01-02|Dabr|Habr|Ghabr|Abhr|ab|
 |03-04|Dadr|Hadr|Ghadr|Ashr|aw|
@@ -259,8 +266,9 @@ These tables also work well for generating country and terrain names; just donâ€
 |95-96|Dhoshr|Habhr|Ghishr|Osr|ut|
 |97-98|Dashr|Hafr|Ghanr|Ozr|h|
 |99-00|Dishr|Hufr|Ghulr|Ushr|uz|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 5-6: Arabish Culture Name Table 4]
 ```
 
-^table-5-6
-
-(`dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 1` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 2` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 3` or `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Start 4`) `dice: [[Arabish 2. Name Of Culture 1^table-5-6]]|Ending`
+(**Start 1** or **Start 2** or **Start 3** or **Start 4**) **Ending**

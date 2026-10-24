@@ -12,7 +12,8 @@ tab-name: Dreamlandish · 3
 **Sample Results**: Aiabantis, Caladath, Laniphai, Ocothoris, Trinimemnis.
 
 ```rpg table.dreamlandish-single-word-place-names
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|bai|
 |2|Aba|bantis|
@@ -114,11 +115,12 @@ tab-name: Dreamlandish · 3
 |98|Ultra|toa|
 |99|Ulu|vhoa|
 |100|Via|vhos|
+|---|---|---|
+|= {{ roll }} =|
+[Table 10-9: Dreamlandish Single Word Place Names]
 ```
 
-^table-10-9
-
-`dice: [[Elderweirdish 5. Dreamlandish 3^table-10-9]]|Start` `dice: [[Elderweirdish 5. Dreamlandish 3^table-10-9]]|Ending`
+**Start** + **Ending**
 
 ![[dreamlandish-cities-and-settlements.webp|384]]
 #### Table 10-10: Dreamlandish Cities and Settlements
@@ -126,7 +128,8 @@ tab-name: Dreamlandish · 3
 **Sample Results**: Csaarth, Laidathe, Mholanthe, Ophoquai, Yothuxe.
 
 ```rpg table.dreamlandish-cities-and-settlements
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|Ahu|ara|
 |2|Amu|bai|
@@ -228,8 +231,9 @@ tab-name: Dreamlandish · 3
 |98|Vo|xe|
 |99|Yothu|xool|
 |100|Ru|yai|
+|---|---|---|
+|= {{ roll }} =|
+[Table 10-10: Dreamlandish Cities and Settlements]
 ```
 
-^table-10-10
-
-`dice: [[Elderweirdish 5. Dreamlandish 3^table-10-10]]|Start` `dice: [[Elderweirdish 5. Dreamlandish 3^table-10-10]]|Ending`
+**Start** + **Ending**

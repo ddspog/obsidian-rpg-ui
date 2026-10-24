@@ -15,7 +15,8 @@ the hyphens).
 **Sample Results**: Chaka-ch-ak (Chakachak), Kik-ksak-ta (Kiksakta), Ika-naka-kut (Ikanakakut).
 
 ```rpg table.bug-placeperson-name
-|d20|Part 1|Part 2|Part 3|
+@paginate 10 pages
+|d20*|Part 1|Part 2|Part 3|
 |---|---|---|---|
 |1|Chaka|ch|ak|
 |2|Chi|cha|akt|
@@ -37,18 +38,20 @@ the hyphens).
 |18|Tokka|tenku|tat|
 |19|Tsi|tika|teh|
 |20|Tsiki|tza|tia|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 26-5: Bug Place/Person Name]
 ```
 
-^table-26-5
-
-`dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 1` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 2` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 3`
+**Part 1** + **Part 2** + **Part 3**
 # Draconic Monster names
 #### Table 26-6: Dragon Name/Place
 **Instructions**: Roll a Part 1 and then make a second roll for a Part 2.
 **Sample Results**: Andraalaz, Hragormis, Hagalagulax, Rhodomaugh, Tzorzaul.
 
 ```rpg table.dragon-nameplace
-|d100|Part 1|Part 2|
+@paginate 10 pages
+|d100*|Part 1|Part 2|
 |---|---|---|
 |1|Abra or Abre|alax|
 |2|Acra or Acru|alaz|
@@ -150,8 +153,9 @@ the hyphens).
 |98|Zerul|zrakar|
 |99|Zor|zrakas|
 |100|Zorga|zrax|
+|---|---|---|
+|= {{ roll }} =|
+[Table 26-6: Dragon Name/Place]
 ```
 
-^table-26-6
-
-`dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-6]]|Part 1` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-6]]|Part 2`
+**Part 1** + **Part 2**

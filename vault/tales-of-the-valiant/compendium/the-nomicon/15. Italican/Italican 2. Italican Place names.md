@@ -12,7 +12,8 @@ tab-name: Italican Place names
 **Sample Results**: Carathio, Deccolo, Erialo, Nafolo, Quivolo.
 
 ```rpg table.italican-culture-country-and-terrain-names-1
-|d100|Start|Ending 1|Ending 2|
+@paginate 10 pages
+|d100*|Start|Ending 1|Ending 2|
 |---|---|---|---|
 |1|Ba|riso|rieltio|
 |2|A|rthagio|riltio|
@@ -114,17 +115,19 @@ tab-name: Italican Place names
 |98|Vy|riolio|boli|
 |99|Za|riulio|voli|
 |100|Ze|rialtio|dalto|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 15-3: Italican Culture, Country, and Terrain Names 1]
 ```
 
-^table-15-3
-
-`dice: [[Italican 2. Italican Place names^table-15-3]]|Start` (`dice: [[Italican 2. Italican Place names^table-15-3]]|Ending 1` or `dice: [[Italican 2. Italican Place names^table-15-3]]|Ending 2`)
+**Start** (**Ending 1** or **Ending 2**)
 #### Table 15-4: Italican Culture, Country, and Terrain Names 2
 **Instructions**: Roll for a Start and for an Ending part of the name.
 **Sample Results**: Bialepto, Cioccara, Fraquolo, Siosa, Ghebelta.
 
 ```rpg table.italican-culture-country-and-terrain-names-2
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|Ba|balo|
 |2|Be|balta|
@@ -226,8 +229,9 @@ tab-name: Italican Place names
 |98|Ze|zolo|
 |99|Zia|zza|
 |100|Zio|zzaria|
+|---|---|---|
+|= {{ roll }} =|
+[Table 15-4: Italican Culture, Country, and Terrain Names 2]
 ```
 
-^table-15-4
-
-`dice: [[Italican 2. Italican Place names^table-15-4]]|Start` `dice: [[Italican 2. Italican Place names^table-15-4]]|Ending`
+**Start** + **Ending**

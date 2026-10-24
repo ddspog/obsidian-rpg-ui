@@ -10,7 +10,8 @@ tab-name: Taverns · 4
 **Sample Results**: Alchemist, Baron, Fool, Sculptor.
 
 ```rpg table.tavern-person
-|dice:d100|Person|
+@paginate 10 pages
+|d100*|Person|
 |---|---|
 |1|Alchemist|
 |2|Almoner|
@@ -112,16 +113,17 @@ tab-name: Taverns · 4
 |98|Witch|
 |99|Wizard|
 |100|Woodcarver|
+|---|---|
+|= {{ roll }} =|
+[Table 29-11: Tavern Person]
 ```
 
-^table-29-12
-
-`dice: [[Miscellaneous Tables 5. Taverns 4^table-29-12]]`
 #### Table 29-12: Tavern Abstract Item
 **Sample Results**: Arms, Head, Dream, Mark.
 
 ```rpg table.tavern-abstract-item
-|dice:d100|Item|
+@paginate 10 pages
+|d100*|Item|
 |---|---|
 |1|Arms|
 |2|Head|
@@ -223,17 +225,18 @@ tab-name: Taverns · 4
 |98|Field|
 |99|Garden|
 |100|Post|
+|---|---|
+|= {{ roll }} =|
+[Table 29-12: Tavern Abstract Item]
 ```
 
-^table-29-12
-
-`dice: [[Miscellaneous Tables 5. Taverns 4^table-29-12]]`
 #### Table 29-13: Adjectives of Awesomeness
 **Instructions**: Roll on either column for an adjective of awesomeness.
 **Sample Results**: Brilliant, Impeccable, Rich, Supreme.
 
 ```rpg table.adjectives-of-awesomeness
-|d20|1|2|
+@paginate 10 pages
+|d20*|1|2|
 |---|---|---|
 |1|Admirable|Marvelous|
 |2|Baroque|Matchless|
@@ -255,16 +258,17 @@ tab-name: Taverns · 4
 |18|Lavish|Unparalleled|
 |19|Lustrous|Unsurpassed|
 |20|Magnificent|Wondrous|
+|---|---|---|
+|= {{ roll }} =|
+[Table 29-13: Adjectives of Awesomeness]
 ```
 
-^table-29-13
-
-**C1**: `dice: [[Miscellaneous Tables 5. Taverns 4^table-29-13]]|1`, **C2**: `dice: [[Miscellaneous Tables 5. Taverns 4^table-29-13]]|2`
 #### Table 29-14: Adjectives of Luminosity
 **Sample Results**: Amber, Bright, Holy, Luminous.
 
 ```rpg table.adjectives-of-luminosity
-|dice:d20|Adjective|
+@paginate 10 pages
+|d20*|Adjective|
 |---|---|
 |1|Amber|
 |2|Blue|
@@ -286,8 +290,7 @@ tab-name: Taverns · 4
 |18|Shadowy|
 |19|Shining|
 |20|Vivid|
+|---|---|
+|= {{ roll }} =|
+[Table 29-14: Adjectives of Luminosity]
 ```
-
-^table-29-14
-
-`dice: [[Miscellaneous Tables 5. Taverns 4^table-29-14]]`

@@ -117,6 +117,8 @@ This is a general formula for naming anything from a country to a city to a fore
 |98|Wor|corem|
 |99|Wort|carg|
 |100|Wyr|cairn|
+|---|---|---|
+|= {{ roll }} =|
 [Anglish Terrain Names 1]
 ```
 #### Anglish Terrain Names 2 (Sinister-Sounding)
@@ -226,6 +228,8 @@ This is a general formula for naming anything from a country to a city to a fore
 |98|Wight|fern|
 |99|Vulture|mold|
 |100|Venom|weald|
+|---|---|---|
+|= {{ roll }} =|
 [Anglish Terrain Names 2 (Sinister)]
 ```
 #### Anglish Terrain Names 3 (Optional Endings)
@@ -236,6 +240,7 @@ This is a general formula for naming anything from a country to a city to a fore
 - **Formula 2**: [Column 1 of Anglish Terrain Names 2 (Sinister)] + [Anglish Terrain Names 3 (Optional Endings)]
 - **Formula 3**: [Anglish Terrain Names 1] + [Anglish Terrain Names 3 (Optional Endings)], but as a separate word.
 ```rpg table.anglish-terrain-3-endings
+@paginate 10 pages
 |d20*|Forest|Marsh/Swamp|Mountains/Hills|River (d10)|
 |---|---|---|---|---|
 |1|coed|fell|cairn|bourne|
@@ -258,5 +263,7 @@ This is a general formula for naming anything from a country to a city to a fore
 |18|woad|reed|top| |
 |19|wold|water|tor| |
 |20|wood|wess|carg| |
+|---|---|---|---|---|
+|= {{ roll }} =|
 [Anglish Terrain Names 3 (Optional Endings)]
 ```

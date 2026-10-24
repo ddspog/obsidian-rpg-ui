@@ -11,7 +11,8 @@ tab-name: Dreamlandish · 2
 **Sample Results**: Gheltazar, Hunysios, Iudombo, Nhaphrodas, Xothambu.
 
 ```rpg table.dreamlandish-powerful-spellcasters-long-name
-|d100|Start|Ending 1|Ending 2|Ending 3|
+@paginate 10 pages
+|d100*|Start|Ending 1|Ending 2|Ending 3|
 |---|---|---|---|---|
 |1|A|lthazar|nexiras|bangatha|
 |2|Bha|ltazar|dniar|barang|
@@ -113,10 +114,11 @@ tab-name: Dreamlandish · 2
 |98|Zo|mos|hippor|rioch|
 |99|Zoa|nethos|lcidar|rior|
 |100|Zu|nander|lehar|ltroch|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 10-8: Dreamlandish Powerful Spellcasters Long Name]
 ```
 
-^table-10-8
-
-`dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Start` (`dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 1` or `dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 2` or `dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 3`)
+**Start** (**Ending 1** or **Ending 2** or **Ending 3**)
 
 ![[dreamlandish-single-word-place-names.webp]]

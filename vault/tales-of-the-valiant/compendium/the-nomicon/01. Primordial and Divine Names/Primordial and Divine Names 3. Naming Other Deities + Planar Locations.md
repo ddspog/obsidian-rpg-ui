@@ -19,6 +19,7 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 # Planar Locations
 ## Quick-Generation Tables for Planar Locations
 ```rpg table.planar-location-1
+@paginate 10 pages
 |d20*|Part 1|Part 2|
 |---|---|---|
 |1|Om|Hara|
@@ -41,9 +42,12 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 |18|Ye|Ghatu|
 |19|Ya|Yendra|
 |20|Mul|Yantu|
+|---|---|---|
+|= {{ roll }} =|
 [Planar Location Type 1]
 ```
 ```rpg table.planar-location-2
+@paginate 10 pages
 |d20*|Part 1|Part 2|
 |---|---|---|
 |1|Oaz|Yaz|
@@ -66,9 +70,12 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 |18|Tsor|Shuun|
 |19|Tsal|Yamdu|
 |20|Ialta|Rajan|
+|---|---|---|
+|= {{ roll }} =|
 [Planar Location Type 2]
 ```
 ```rpg table.planar-location-3
+@paginate 10 pages
 |d20*|Part 1|Part 2|
 |---|---|---|
 |1|Bashoun|Rafik|
@@ -91,5 +98,7 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 |18|Rav|Zufi|
 |19|Zaa|Zad|
 |20|Dhazar|Ziltah|
+|---|---|---|
+|= {{ roll }} =|
 [Planar Location Type 3]
 ```

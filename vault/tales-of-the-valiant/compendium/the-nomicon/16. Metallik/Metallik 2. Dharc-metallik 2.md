@@ -11,7 +11,8 @@ tab-name: Dharc-metallik · 2
 **Sample Results**: Beodr, Kaghur, Momokra, Phewathar, Xyhrog.
 
 ```rpg table.dharc-metallik-place-names-table-3
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|boros|
 |2|Ae|boroth|
@@ -113,17 +114,19 @@ tab-name: Dharc-metallik · 2
 |98|Ye|wazir|
 |99|Yo|waziri|
 |100|Yu|zlor|
+|---|---|---|
+|= {{ roll }} =|
+[Table 16-3: Dharc-Metallik Place Names Table 3]
 ```
 
-^table-16-3
-
-`dice: [[Metallik 2. Dharc-metallik 2^table-16-3]]|Start` `dice: [[Metallik 2. Dharc-metallik 2^table-16-3]]|Ending`
+**Start** + **Ending**
 #### Table 16-4: Dharc-Metallik Place Names Quick Table
 **Instructions**: Roll for a start and for an ending.
 **Sample Results**: Kultamodoth, Sheothamog, Oarhondu, Nhajathor, Yhejar.
 
 ```rpg table.dharc-metallik-place-names-quick-table
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|Amu|baskor|
 |2|Azu|boria|
@@ -225,8 +228,9 @@ tab-name: Dharc-metallik · 2
 |98|Yothu|zor|
 |99|Zho|zorn|
 |100|Zo|zultua|
+|---|---|---|
+|= {{ roll }} =|
+[Table 16-4: Dharc-Metallik Place Names Quick Table]
 ```
 
-^table-16-4
-
-`dice: [[Metallik 2. Dharc-metallik 2^table-16-4]]|Start` `dice: [[Metallik 2. Dharc-metallik 2^table-16-4]]|Ending`
+**Start** + **Ending**

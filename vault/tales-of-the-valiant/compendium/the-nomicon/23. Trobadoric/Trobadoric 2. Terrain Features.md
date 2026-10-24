@@ -11,17 +11,17 @@ Any of these tables can be used to generate names. If you like,
 here is a table to determine which table to use:
 #### Table 23-3: Terrain Feature Tables
 ```rpg table.terrain-feature-tables
-|dice:d4|Table|
+|d4*|Table|
 |---|---|
 |1|Roll on [[Trobadoric 2. Terrain Features#Table 23-4 Trobadoric Terrain Features Table 1|Trobadoric Terrain Features Table 1]]|
 |2|Roll on [[Trobadoric 2. Terrain Features#Table 23-5 Trobadoric Terrain Features Table 2|Trobadoric Terrain Features Table 2]]|
 |3|Roll on [[Trobadoric 2. Terrain Features#Table 23-6 Trobadoric Terrain Features Table 3|Trobadoric Terrain Features Table 3]]|
 |4|Roll on [[Trobadoric 2. Terrain Features#Table 23-7 Trobadoric Terrain Features Table 4|Trobadoric Terrain Features Table 4]]|
+|---|---|
+|= {{ roll }} =|
+[Table 23-3: Terrain Feature Tables]
 ```
 
-^table-23-3
-
-`dice: [[Trobadoric 2. Terrain Features^table-23-3]]`
 #### Table 23-4: Trobadoric Terrain Features Table 1
 These work best when the format is “The Marshes of \_\_\_\_\_,” or simply “The \_\_\_\_\_.”
 
@@ -29,7 +29,8 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 **Sample Results**: French Ending: Gryat, Rhoäl, Baubante, Saöss, Iluathe. Teutonnic Ending: Neälg, Triogr, Haötz, Taulatch, Yuëmarg.
 
 ```rpg table.trobadoric-terrain-features-table-1
-|d20|Part 1|Part 2|French Ending|Teutonnic Ending|
+@paginate 10 pages
+|d20*|Part 1|Part 2|French Ending|Teutonnic Ending|
 |---|---|---|---|---|
 |1|B|aö|t|tz|
 |2|C|oä|d|dz|
@@ -51,17 +52,19 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 |18|V|ya|the|nar|
 |19|Y|uë|lth|nt|
 |20|Z|ui|lthe|ste|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 23-4: Trobadoric Terrain Features Table 1]
 ```
 
-^table-23-4
-
-`dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Part 1` `dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Part 2` (`dice: [[Trobadoric 2. Terrain Features^table-23-4]]|French Ending` or `dice: [[Trobadoric 2. Terrain Features^table-23-4]]|Teutonnic Ending`)
+**Part 1** + **Part 2** (**French Ending** or **Teutonnic Ending**)
 #### Table 23-5: Trobadoric Terrain Features Table 2
 **Instructions**: Roll independently for a Start, Middle, and Ending for the name.
 **Sample Results**: Stroälde, Urieut, Usiaude, Yriothe, Thiälthe.
 
 ```rpg table.trobadoric-terrain-features-table-2
-|d20|Start|Middle|Ending|
+@paginate 10 pages
+|d20*|Start|Middle|Ending|
 |---|---|---|---|
 |1|Ar|aö|d|
 |2|Chr|oä|de|
@@ -83,17 +86,19 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 |18|Us|io|the|
 |19|Yr|uë|tir|
 |20|Ys|ui|toc|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 23-5: Trobadoric Terrain Features Table 2]
 ```
 
-^table-23-5
-
-`dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Start` `dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Middle` `dice: [[Trobadoric 2. Terrain Features^table-23-5]]|Ending`
+**Start** + **Middle** + **Ending**
 #### Table 23-6: Trobadoric Terrain Features Table 3
 **Instructions**: Roll for a Part 1, then for any Ending.
 **Sample Results**: Oälte, Ioufre, Yseldo, Aötoc, Uäsci.
 
 ```rpg table.trobadoric-terrain-features-table-3
-|d20|Part 1|End 1|End 2|End 3|
+@paginate 10 pages
+|d20*|Part 1|End 1|End 2|End 3|
 |---|---|---|---|---|
 |1|Uä|lte|tre|maz|
 |2|Uö|te|re|bas|
@@ -115,11 +120,12 @@ These work best when the format is “The Marshes of \_\_\_\_\_,” or simply �
 |18|Ië|th|sci|lfo|
 |19|Aö|the|tze|lon|
 |20|Ey|des|jo|llo|
+|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 23-6: Trobadoric Terrain Features Table 3]
 ```
 
-^table-23-6
-
-`dice: [[Trobadoric 2. Terrain Features^table-23-6]]|Part 1` (`dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 1` or `dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 2` or `dice: [[Trobadoric 2. Terrain Features^table-23-6]]|End 3`)
+**Part 1** (**End 1** or **End 2** or **End 3**)
 #### Table 23-7: Trobadoric Terrain Features Table 4
 This table generates names such as “The Alquin Peaks,” or “The Marshes of Iscalourde.”
 
@@ -127,7 +133,8 @@ This table generates names such as “The Alquin Peaks,” or “The Marshes of 
 **Sample Results**: Aumbronne, Bourcassin, Gherlonte, Ocmazant, Ursembaut.
 
 ```rpg table.trobadoric-terrain-features-table-4
-|d100|First Part|Second Part a|Second Part b|
+@paginate 10 pages
+|d100*|First Part|Second Part a|Second Part b|
 |---|---|---|---|
 |1|Al|baja|baj|
 |2|Am|bant|ban|
@@ -229,8 +236,9 @@ This table generates names such as “The Alquin Peaks,” or “The Marshes of 
 |98|Yo|zigne|zind|
 |99|Yor|zin|zan|
 |100|Yra|zine|zian|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 23-7: Trobadoric Terrain Features Table 4]
 ```
 
-^table-23-7
-
-`dice: [[Trobadoric 2. Terrain Features^table-23-7]]|First Part` (`dice: [[Trobadoric 2. Terrain Features^table-23-7]]|Second Part a` or `dice: [[Trobadoric 2. Terrain Features^table-23-7]]|Second Part b`)
+**First Part** (**Second Part a** or **Second Part b**)

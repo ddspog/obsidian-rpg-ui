@@ -14,7 +14,8 @@ tab-name: Dreamlandish · 1
 **Sample Results**: Chadjas, Gnojopo, Jhodrico, Kshomero, Iamajat.
 
 ```rpg table.dreamlandish-powerful-spellcasters-masculine-short-name
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|ralto|
 |2|Bha|as|
@@ -116,17 +117,19 @@ tab-name: Dreamlandish · 1
 |98|Zo|ltan|
 |99|Zoa|modo|
 |100|Zul|phor|
+|---|---|---|
+|= {{ roll }} =|
+[Table 10-6: Dreamlandish Powerful Spellcasters Masculine Short Name]
 ```
 
-^table-10-6
-
-`dice: [[Elderweirdish 3. Dreamlandish 1^table-10-6]]|Start` `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-6]]|Ending`
+**Start** + **Ending**
 #### Table 10-7: Dreamlandish Powerful Spellcasters Feminine Name
 **Instructions**: Roll for any First Part, and for an Ending.
 **Sample Results**: Ayathine, Cychanil, Ihylunis, Bielbalys, Ysoölanthis.
 
 ```rpg table.dreamlandish-powerful-spellcasters-feminine-name
-|d100|First Part a|First Part b|Ending|
+@paginate 10 pages
+|d100*|First Part a|First Part b|Ending|
 |---|---|---|---|
 |1|A|Aya|ä|
 |2|Ai|Ali|älys|
@@ -228,8 +231,9 @@ tab-name: Dreamlandish · 1
 |98|Zia|Zil|xanda|
 |99|Zo|Zi|xantha|
 |100|Zoa|Tal|xiria|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 10-7: Dreamlandish Powerful Spellcasters Feminine Name]
 ```
 
-^table-10-7
-
-(`dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|First Part a` or `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|First Part b`) `dice: [[Elderweirdish 3. Dreamlandish 1^table-10-7]]|Ending`
+(**First Part a** or **First Part b**) **Ending**

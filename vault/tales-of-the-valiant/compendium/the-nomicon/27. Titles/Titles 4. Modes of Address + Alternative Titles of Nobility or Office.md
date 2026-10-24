@@ -4,8 +4,43 @@ cssclasses:
   - note-compendium
 tab-icon: feather
 tab-color: var(--color-yellow)
-tab-name: Alternative Titles of Nobility or Office
+tab-name: Modes of Address + Alternative Titles of Nobility or Office
 ---
+## Yes, your Wickedness
+The format is a Title Adjective ([[Titles 3. Modes of Address#Table 27-2 Title Adjective|Table 27-2]]) or a Tyrannical Title Adjective ([[Titles 3. Modes of Address#Table 27-10 Tyrannical Title Adjective|Table 27-10]]) plus a Noun of Wickedness. Keep in mind that villains with these titles just aren’t going to be taken seriously by players, with the possible exception of fey villains. This table generates such titles as “His Inexorable Severity,” or “Her Ferocious Harmfulness,” so this only works for absolutely over-the-top villains (fey villains can fit this category) or unusual situations such as a title for a demonic entity that has gotten into the feudal system somehow.
+#### Table 27-11: Noun of Wickedness
+**Instructions**: Roll on either column for a substitute for the word “Majesty” in a ruler’s title. And keep in mind that addressing a tyrant as “Your Ferocious Profanity” is going to cause giggles in all but the most serious of situations.
+**Sample Results**: His Inexorable Severity, Her Ferocious Harmfulness, Your Ferocious Profanity.
+
+```rpg table.noun-of-wickedness
+@paginate 10 pages
+|d20*|1|2|
+|---|---|---|
+|1|Abomination|Malignity|
+|2|Amorality|Nefariousness|
+|3|Atrociousness|Offensiveness|
+|4|Atrocity|Perilousness|
+|5|Awfulness|Profanity|
+|6|Baseness|Scandalousness|
+|7|Degeneracy|Severity|
+|8|Depravity|Shame|
+|9|Dreadfulness|Shamefulness|
+|10|Egregiousness|Shamelessness|
+|11|Fiendishness|Sinfulness|
+|12|Foulness|Treacherousness|
+|13|Harmfulness|Unpleasantness|
+|14|Heartlessness|Unrighteousness|
+|15|Heinousness|Viciousness|
+|16|Immorality|Viciousness|
+|17|Impiety|Vileness|
+|18|Impiousness|Villainousness|
+|19|Indecency|Waywardness|
+|20|Iniquity|Wickedness|
+|---|---|---|
+|= {{ roll }} =|
+[Table 27-11: Noun of Wickedness]
+```
+
 # Alternative Titles of Nobility or Office
 You may also wish to generate alternate words for “king,” queen,” “prince,” “duke,” etc. The following tables can be used to generate alternate titles, some of which will come out sounding like a possible alternative for “king,” whereas others might sound religious in nature, and a third group are clearly for self-important functionaries.
 ## General Fantasy, Eurovesian, and Hellenic
@@ -15,7 +50,8 @@ These titles draw heavily from Latin and Greek, which makes them work in any Eur
 **Sample Results**: Ambafect, Emphact, Jauriald, Phaemax, Quariphant
 
 ```rpg table.general-use-titles-part-1
-|d20|1|2|3|4|5|
+@paginate 10 pages
+|d20*|1|2|3|4|5|
 |---|---|---|---|---|---|
 |1|Amb|Emph|Jaur|Phaem|Proct|
 |2|Amn|Epict|Lith|Pham|Proln|
@@ -37,16 +73,17 @@ These titles draw heavily from Latin and Greek, which makes them work in any Eur
 |18|Ecphan|Ios|Par|Pons|Umb|
 |19|Eiph|Isc|Parm|Porsp|Zor|
 |20|Emn|Ithy|Per|Pract|Zorn|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 27-12: General-Use Titles Part 1]
 ```
 
-^table-27-12
-
-**C1**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-12]]|1`, **C2**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-12]]|2`, **C3**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-12]]|3`, **C4**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-12]]|4`, **C5**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-12]]|5`
 #### Table 27-13: General-Use Titles Part 2
 **Instructions**: If you’re rolling the title for a mere official, use the first column of the table (d20). If you’re generating a title of nobility, use the second column (d10).
 
 ```rpg table.general-use-titles-part-2
-|d20|Officials (d20)|Nobles (d10)|
+@paginate 10 pages
+|d20*|Officials (d20)|Nobles (d10)|
 |---|---|---|
 |1|afect|act|
 |2|afex|or|
@@ -68,11 +105,10 @@ These titles draw heavily from Latin and Greek, which makes them work in any Eur
 |18|ipher| |
 |19|ithect| |
 |20|itor| |
+|---|---|---|
+|= {{ roll }} =|
+[Table 27-13: General-Use Titles Part 2]
 ```
-
-^table-27-13
-
-**Officials**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-13]]|Officials (d20)`, **Nobles**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-13]]|Nobles (d10)`
 
 Most noble titles are short words: king, duke, prince, and baron. If you’re generating noble titles to replace these words, you’ll get better-sounding results with this table than if you use the General-Use Titles Part 1 Table. On the other hand, shorter words tend to create a number of terrible results, so you may have to discard a lot of the results from this table
 #### Table 27-14: Shorter Noble Titles
@@ -80,7 +116,8 @@ Most noble titles are short words: king, duke, prince, and baron. If you’re ge
 **Sample Results**: Ioct, Sultar, Rhame, Heorc. These words would be a substitute for “baron,” duke,” “king,” etc.
 
 ```rpg table.shorter-noble-titles
-|d20|Part 1|Part 2|
+@paginate 10 pages
+|d20*|Part 1|Part 2|
 |---|---|---|
 |1|Io|ct|
 |2|La|rd|
@@ -102,11 +139,12 @@ Most noble titles are short words: king, duke, prince, and baron. If you’re ge
 |18|U|dun|
 |19|Ua|dnar|
 |20|Heo|tan|
+|---|---|---|
+|= {{ roll }} =|
+[Table 27-14: Shorter Noble Titles]
 ```
 
-^table-27-14
-
-`dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-14]]|Part 1` `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-14]]|Part 2`
+**Part 1** + **Part 2**
 ## Trobadoric, Brittonian Titles
 These titles still draw heavily from Latin, but include more Germanic and Celtic sounds than the [[13. Eurovesian|Eurovesian]] tables.
 #### Table 27-15: Eurovesian, Trobadoric, Brittonian, and Celtigaulic Titles, First Part
@@ -114,7 +152,8 @@ These titles still draw heavily from Latin, but include more Germanic and Celtic
 **Sample Results** (with the second table): Asagiog, Celibonsular, Kronomance, Luspithect.
 
 ```rpg table.eurovesian-trobadoric-brittonian-and-celtigaulic-titles-first-part
-|d20|1|2|3|4|5|
+@paginate 10 pages
+|d20*|1|2|3|4|5|
 |---|---|---|---|---|---|
 |1|Alti|Eormi|Iulca|Ospi|Squa|
 |2|Arbo|Erma|Iustra|Ospo|Sulci|
@@ -136,16 +175,17 @@ These titles still draw heavily from Latin, but include more Germanic and Celtic
 |18|Eilio|Ispe|Olane|Sco|Vio|
 |19|Embi|Isu|Oo|Scou|Yeobri|
 |20|Embio|Iu|Osco|Scu|Ystra|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 27-15: Eurovesian, Trobadoric, Brittonian, and Celtigaulic Titles, First Part]
 ```
 
-^table-27-15
-
-**C1**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-15]]|1`, **C2**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-15]]|2`, **C3**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-15]]|3`, **C4**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-15]]|4`, **C5**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-15]]|5`
 #### Table 27-16: Trobadoric, Brittonian Titles, Second Part
 **Instructions**: Roll on any of the three columns to generate the second part of the title.
 
 ```rpg table.trobadoric-brittonian-titles-second-part
-|d20|1|2|3|
+@paginate 10 pages
+|d20*|1|2|3|
 |---|---|---|---|
 |1|riarch|narch|riarch|
 |2|triarch|siarch|phant|
@@ -167,11 +207,11 @@ These titles still draw heavily from Latin, but include more Germanic and Celtic
 |18|scept|r|dact|
 |19|scar|gran|thome|
 |20|sact|gral|thar|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 27-16: Trobadoric, Brittonian Titles, Second Part]
 ```
 
-^table-27-16
-
-**C1**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-16]]|1`, **C2**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-16]]|2`, **C3**: `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-16]]|3`
 ## Nanskrit and Arabish
 These titles don’t draw on Latin, instead pulling sounds from Arabic, Sanskrit/Hindu, Persian, and Turkic languages.
 
@@ -183,7 +223,8 @@ For lesser titles, or to completely escape real-world languages, use the second 
 **Sample Results**: Mahasa, Thukur, Bhagadhi, Bahishar.
 
 ```rpg table.nanskrit-and-arabish-titles
-|d100|First Part|Second Part|
+@paginate 10 pages
+|d100*|First Part|Second Part|
 |---|---|---|
 |01-02|Dja|bashar|
 |03-04|Jama|bei|
@@ -235,8 +276,9 @@ For lesser titles, or to completely escape real-world languages, use the second 
 |95-96|Ha|vata|
 |97-98|Dha|wab|
 |99-00|Dhe|warat|
+|---|---|---|
+|= {{ roll }} =|
+[Table 27-17: Nanskrit and Arabish Titles]
 ```
 
-^table-27-17
-
-`dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-17]]|First Part` `dice: [[Titles 4. Alternative Titles of Nobility or Office^table-27-17]]|Second Part`
+**First Part** + **Second Part**

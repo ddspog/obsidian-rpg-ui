@@ -13,7 +13,8 @@ tab-name: Medieval Teutonnic · 1
 **Sample Results**: Adlar, Jirolt, Berchtold, Lorencz, Krail.
 
 ```rpg table.teutonnic-masculine-personal-names
-|d100|1|2|
+@paginate 10 pages
+|d100*|1|2|
 |---|---|---|
 |1|Adal|Jekel|
 |2|Adam|Jirolt|
@@ -115,16 +116,17 @@ tab-name: Medieval Teutonnic · 1
 |98|Hertwig|Wolfgang|
 |99|Hovalt|Wolfhart|
 |100|Jaralt|Wolfram|
+|---|---|---|
+|= {{ roll }} =|
+[Table 22-2: Teutonnic Masculine Personal Names]
 ```
 
-^table-22-2
-
-**C1**: `dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-2]]|1`, **C2**: `dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-2]]|2`
 #### Table 22-3: Teutonnic Feminine Personal Names
 **Sample Results**: Abitrude, Bertrude, Herlinde, Magdalena, Ulse.
 
 ```rpg table.teutonnic-feminine-personal-names
-|dice:d100|Name|
+@paginate 10 pages
+|d100*|Name|
 |---|---|
 |1|Abitrude|
 |2|Acarina|
@@ -226,8 +228,7 @@ tab-name: Medieval Teutonnic · 1
 |98|Ute|
 |99|Veronica|
 |100|Ysentrude|
+|---|---|
+|= {{ roll }} =|
+[Table 22-3: Teutonnic Feminine Personal Names]
 ```
-
-^table-22-3
-
-`dice: [[Teutonnic 2. Medieval Teutonnic 1^table-22-3]]`

@@ -13,7 +13,8 @@ For a Celtic cultural name, the following table offers variations that will stil
 **Sample Results**: Celdish, Galdan, Keoldanic, Khalthic (all are derivatives of Gaul and Celt).
 
 ```rpg table.celtigaulic-culture-names
-|d20|Start|Ending|
+@paginate 10 pages
+|d20*|Start|Ending|
 |---|---|---|
 |1|Cel|tic|
 |2|Ceol|dic|
@@ -35,11 +36,12 @@ For a Celtic cultural name, the following table offers variations that will stil
 |18|Kaul|delic|
 |19|Ghel|telic|
 |20|Keel|talic|
+|---|---|---|
+|= {{ roll }} =|
+[Table 7-3: Celtigaulic Culture Names]
 ```
 
-^table-7-3
-
-`dice: [[Celtigaulic 2. Cultures + Tribes^table-7-3]]|Start` `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-3]]|Ending`
+**Start** + **Ending**
 # Tribes
 #### Table 7-4: Celtigaulic Tribal Names
 For a land instead of a tribal name, add -dowinis (proto-Celtic) instead of the final ending. This can credibly (but not historically) be shortened to -win, -winis, -dwin, or -dwinis.
@@ -48,7 +50,8 @@ For a land instead of a tribal name, add -dowinis (proto-Celtic) instead of the 
 **Sample Results**: Agenibrasi, Epilgowi, Tulibroci, Camboconni, Verbinnanes.
 
 ```rpg table.celtigaulic-tribal-names
-|d100|Start 1|Start 2|Start 3|End 1|End 2|Final|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|Final|
 |---|---|---|---|---|---|---|
 |01-02|Abri|Do|Torna|ban|bali|-i|
 |03-04|Ae|Dumno|Tou|bat|blin|-des|
@@ -100,11 +103,12 @@ For a land instead of a tribal name, add -dowinis (proto-Celtic) instead of the 
 |95-96|Deca|Tigu|Wenno|war|wer|-si|
 |97-98|Decea|Toli|Wo|werd|wic|-i|
 |99-00|Di|Tolisto|Wa|wi|ws|-i|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 7-4: Celtigaulic Tribal Names]
 ```
 
-^table-7-4
-
-(`dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|Start 1` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|Start 2` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|Start 3`) (`dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|End 1` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|End 2`) `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-4]]|Final`
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2**) **Final**
 
 ![[celtigaulic-tribe-names.webp]]
 #### Table 7-5: Celtigaulic Country Names
@@ -112,7 +116,8 @@ For a land instead of a tribal name, add -dowinis (proto-Celtic) instead of the 
 **Sample Results**: Anaborica, Boiconovia, Cambobrancia, Latoctannus, Bellognia.
 
 ```rpg table.celtigaulic-country-names
-|d100|Start 1|Start 2|Start 3|End 1|End 2|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|
 |---|---|---|---|---|---|
 |01-02|Abri|Do|Torna|borica|banica|
 |03-04|Ae|Dumno|Tou|morica|bragia|
@@ -164,8 +169,9 @@ For a land instead of a tribal name, add -dowinis (proto-Celtic) instead of the 
 |95-96|Deca|Tigu|Wenno|porica|mboria|
 |97-98|Decea|Toli|Wo|rhica|rus|
 |99-00|Di|Tolisto|Wa|nunnia|nunnica|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 7-5: Celtigaulic Country Names]
 ```
 
-^table-7-5
-
-(`dice: [[Celtigaulic 2. Cultures + Tribes^table-7-5]]|Start 1` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-5]]|Start 2` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-5]]|Start 3`) (`dice: [[Celtigaulic 2. Cultures + Tribes^table-7-5]]|End 1` or `dice: [[Celtigaulic 2. Cultures + Tribes^table-7-5]]|End 2`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2**)

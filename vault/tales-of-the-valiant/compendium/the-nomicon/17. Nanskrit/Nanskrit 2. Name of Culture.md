@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: user
+tab-icon: flag
 tab-color: var(--color-red)
 tab-name: Name of Culture
 ---
@@ -21,7 +21,8 @@ If it ends in a consonant other than “t,” (e.g., Amaganar), the adjectival f
 **Sample Results**: Amagantu, Bhajandu, Chiragatta, Kwajathi, Utamitra.
 
 ```rpg table.nanskrit-culture-names
-|d100|First Part|Dialect 1|Dialect 2|
+@paginate 10 pages
+|d100*|First Part|Dialect 1|Dialect 2|
 |---|---|---|---|
 |1|Acha|banthu|banthoo|
 |2|Abhi|bha|bhat|
@@ -123,8 +124,7 @@ If it ends in a consonant other than “t,” (e.g., Amaganar), the adjectival f
 |98|Ulha|yad|toum|
 |99|Uta|yan|vurta|
 |100|Vani|yat|vurtha|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 17-3: Nanskrit Culture Names]
 ```
-
-^table-17-3
-
-**First Part**: `dice: [[Nanskrit 2. Name of Culture^table-17-3]]|First Part`, **Dialect 1**: `dice: [[Nanskrit 2. Name of Culture^table-17-3]]|Dialect 1`, **Dialect 2**: `dice: [[Nanskrit 2. Name of Culture^table-17-3]]|Dialect 2`

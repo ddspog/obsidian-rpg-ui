@@ -11,7 +11,8 @@ tab-name: Brittonian Personal names · 2
 **Sample Results**: Fflenbel, Blaenfor, Dybsant, Maennoc, Tudwaladr.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-4
-|d20|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|---|
 |1|Ba|Ffle|Ma|bon|dwei|nbel|
 |2|Be|Ffo|Mae|bsant|dwgawn|ndaran|
@@ -33,17 +34,19 @@ tab-name: Brittonian Personal names · 2
 |18|Dy|Lloy|Te|dwal|i|nwyl|
 |19|Ffe|Llu|Tu|dwaladr|nan|nwyn|
 |20|Ffla|Lly|Tua|dwallon|nand|nyllt|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-7: Brittonian Masculine Personal Names (Welsh) 4]
 ```
 
-^table-6-7
-
-(`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 1a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 1b` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 1c`) (`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 2a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 2b` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-7]]|Part 2c`)
+(**Part 1a** or **Part 1b** or **Part 1c**) (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 6-8: Brittonian Masculine Personal Names (Welsh) 5
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Bleradoc, Hywallan, Mywdric, Seiryth, Gwethin.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-5
-|d20|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 1c|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|---|
 |1|Ba|Ffle|Ma|radoc|rnedyr|wr|
 |2|Be|Ffo|Mae|radog|rnfael|ddo|
@@ -65,17 +68,19 @@ tab-name: Brittonian Personal names · 2
 |18|Dy|Lloy|Te|rhyr|vwlch|wyd|
 |19|Ffe|Llu|Tu|ri|wan|fach|
 |20|Ffla|Lly|Tua|riawn|wel|rgog|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-8: Brittonian Masculine Personal Names (Welsh) 5]
 ```
 
-^table-6-8
-
-(`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 1a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 1b` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 1c`) (`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 2a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 2b` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-8]]|Part 2c`)
+(**Part 1a** or **Part 1b** or **Part 1c**) (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 6-9: Brittonian Masculine Personal Names (Welsh) 6
 **Instructions**: Roll for any Part 1 and any Part 2.
 **Sample Results**: Gwedd, Trygoned, Mawrig, Galathach, Cedefer.
 
 ```rpg table.brittonian-masculine-personal-names-welsh-6
-|d20|Part 1a|Part 1b|Part 2a|Part 2b|Part 2c|
+@paginate 10 pages
+|d20*|Part 1a|Part 1b|Part 2a|Part 2b|Part 2c|
 |---|---|---|---|---|---|
 |1|Cia|Pry|ch|ffydd|s|
 |2|Coe|Pwy|chan|gad|sog|
@@ -97,17 +102,19 @@ tab-name: Brittonian Personal names · 2
 |18|Llywe|Cara|fer|nw|gnion|
 |19|Maw|Cada|ffin|nwen|ddig|
 |20|Owei|Oda|ffudd|r|ddeg|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-9: Brittonian Masculine Personal Names (Welsh) 6]
 ```
 
-^table-6-9
-
-(`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-9]]|Part 1a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-9]]|Part 1b`) (`dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-9]]|Part 2a` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-9]]|Part 2b` or `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-9]]|Part 2c`)
+(**Part 1a** or **Part 1b**) (**Part 2a** or **Part 2b** or **Part 2c**)
 #### Table 6-10: Brittonian Feminine Personal Names (Welsh) Part 1
 **Instructions**: Roll on any column for the first part of the name.
 **Sample Results**: Almedawy, Caigharat, Elwynogen, Gwethonwy, Meleseult.
 
 ```rpg table.brittonian-feminine-personal-names-welsh-part-1
-|d20|1|2|3|4|5|6|
+@paginate 10 pages
+|d20*|1|2|3|4|5|6|
 |---|---|---|---|---|---|---|
 |1|A|Bris|Eiri|Ewa|Ha|Ola|
 |2|Aa|Ca|Eiria|Ey|Heu|Ra|
@@ -129,16 +136,17 @@ tab-name: Brittonian Personal names · 2
 |18|Bri|Eid|Eu|Gwle|Morga|Yseu|
 |19|Bria|Eir|Eur|Gwli|Nime|Iseu|
 |20|Brio|Eira|Ery|Gwy|O|Yli|
+|---|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-10: Brittonian Feminine Personal Names (Welsh) Part 1]
 ```
 
-^table-6-10
-
-**C1**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|1`, **C2**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|2`, **C3**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|3`, **C4**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|4`, **C5**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|5`, **C6**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-10]]|6`
 #### Table 6-11: Brittonian Feminine Personal Names (Welsh) Part 2
 **Instructions**: Roll on any column for the ending of the name.
 
 ```rpg table.brittonian-feminine-personal-names-welsh-part-2
-|d20|1|2|3|4|5|
+@paginate 10 pages
+|d20*|1|2|3|4|5|
 |---|---|---|---|---|---|
 |1|byn|gen|liun|nid|rwen|
 |2|coystl|gerna|llian|nieda|rwenna|
@@ -160,8 +168,7 @@ tab-name: Brittonian Personal names · 2
 |18|fwen|lfaur|ndwen|ri|wenna|
 |19|gaine|lin|ngwen|rian|win|
 |20|gan|lithyn|nifar|rved|wyl|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 6-11: Brittonian Feminine Personal Names (Welsh) Part 2]
 ```
-
-^table-6-11
-
-**C1**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-11]]|1`, **C2**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-11]]|2`, **C3**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-11]]|3`, **C4**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-11]]|4`, **C5**: `dice: [[Brittonnian 2. Brittonian Personal names 2^table-6-11]]|5`

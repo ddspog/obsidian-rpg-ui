@@ -14,7 +14,8 @@ These can also be generated using Trobadouric.
 **Sample Results**: Abribant, Elycobras, Wenibrugh, Cawcassan, Rigoscia.
 
 ```rpg table.celtigaulic-city-and-town-names
-|d100|Start 1|Start 2|Start 3|End 1|End 2|
+@paginate 10 pages
+|d100*|Start 1|Start 2|Start 3|End 1|End 2|
 |---|---|---|---|---|---|
 |01-02|Abri|Do|Torna|bant|balt|
 |03-04|Ae|Dumno|Tou|nt|balte|
@@ -66,10 +67,11 @@ These can also be generated using Trobadouric.
 |95-96|Deca|Tigu|Wenno|lugh|gurnica|
 |97-98|Decea|Toli|Wo|werdh|gurnia|
 |99-00|Di|Tolisto|Wa|lurgh|guar|
+|---|---|---|---|---|---|
+|= {{ roll }} =|
+[Table 7-6: Celtigaulic City and Town Names]
 ```
 
-^table-7-6
-
-(`dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 1` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 2` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|Start 3`) (`dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|End 1` or `dice: [[Celtigaulic 3. Celtigaulic City or Town names^table-7-6]]|End 2`)
+(**Start 1** or **Start 2** or **Start 3**) (**End 1** or **End 2**)
 
 ![[celtigaulic-city-and-town-names.webp|384]]

@@ -12,7 +12,8 @@ tab-name: High Metallik
 **Sample Results**: Bybaradar, Deokhebir, Giumbaghal, Khahaloi, Vashtaltima.
 
 ```rpg table.high-metallik-place-names-table-1
-|d100|Start|Middle|Ending|
+@paginate 10 pages
+|d100*|Start|Middle|Ending|
 |---|---|---|---|
 |1|A|ba|bar|
 |2|Ae|bara|bir|
@@ -114,17 +115,19 @@ tab-name: High Metallik
 |98|Ya|zmo|zira|
 |99|Ye|zo|zoa|
 |100|Yo|zu|zoar|
+|---|---|---|---|
+|= {{ roll }} =|
+[Table 16-5: High Metallik Place Names Table 1]
 ```
 
-^table-16-5
-
-`dice: [[Metallik 3. High Metallik^table-16-5]]|Start` `dice: [[Metallik 3. High Metallik^table-16-5]]|Middle` `dice: [[Metallik 3. High Metallik^table-16-5]]|Ending`
+**Start** + **Middle** + **Ending**
 #### Table 16-6: High Metallik Place Names Table 2
 **Instructions**: Roll independently for a Start and Ending for the name.
 **Sample Results**: Ceghron, Eahril, Hyldar, Phaltimaon, Xythiar.
 
 ```rpg table.high-metallik-place-names-table-2
-|d100|Start|Ending|
+@paginate 10 pages
+|d100*|Start|Ending|
 |---|---|---|
 |1|A|baras|
 |2|Ae|barath|
@@ -226,8 +229,9 @@ tab-name: High Metallik
 |98|Ye|wazar|
 |99|Yo|wazir|
 |100|Yu|waziri|
+|---|---|---|
+|= {{ roll }} =|
+[Table 16-6: High Metallik Place Names Table 2]
 ```
 
-^table-16-6
-
-`dice: [[Metallik 3. High Metallik^table-16-6]]|Start` `dice: [[Metallik 3. High Metallik^table-16-6]]|Ending`
+**Start** + **Ending**
