@@ -294,7 +294,7 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
             : [`${named}: ${ref} d100= ->`];
         const sides = pickSides(spec);
         if (sides >= PICK_ROLL_FROM)
-          return [...rows, `${parts.length > 1 ? "Combine" : "Pick one"}: @pick(${spec}) d${sides}= ->`];
+          return [...rows, `${parts.length > 1 ? "Name" : "Pick one"}: @pick(${spec}) d${sides}= ->`];
         return parts.length > 1 ? [...rows, `Name: @pick(${spec}) ->`] : rows;
       })
       .join("\n");

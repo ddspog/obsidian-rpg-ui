@@ -1234,7 +1234,7 @@ describe("a name made of rolled parts — choose", () => {
   it("rolls each part on its own row, then picks a name by die when there are many", () => {
     const step: GMStep = { choice: "Town", tables: [ref], choose: ["Start=1,2+End=3,4"] };
     expect(stepGeneratedLine({ ...step, choose: ["Start=1,2,3+End=4,5"] })).toBe(
-      [`Start: ${ref} d100= ->`, `& End: ${ref} d100= ->`, "Combine: @pick(Start=1,2,3+End=4,5) d6= ->"].join("\n")
+      [`Start: ${ref} d100= ->`, `& End: ${ref} d100= ->`, "Name: @pick(Start=1,2,3+End=4,5) d6= ->"].join("\n")
     );
   });
 
@@ -1262,7 +1262,7 @@ describe("a name made of rolled parts — choose", () => {
 
   const spec = "Start=1,2+End=3,4";
   const rolled = (a: string, b: string, pick = "") =>
-    gen(`Start: ${ref} d100=${a} ->`, `& End: ${ref} d100=${b} ->`, `Combine: @pick(${spec}) d4=${pick} ->`);
+    gen(`Start: ${ref} d100=${a} ->`, `& End: ${ref} d100=${b} ->`, `Name: @pick(${spec}) d4=${pick} ->`);
 
   it("rolls the parts independently and fills each row with what its part offers", () => {
     const out = resolveGmBody(rolled("10", "80"), [feature], ctx);
@@ -1272,7 +1272,7 @@ describe("a name made of rolled parts — choose", () => {
 
   it("takes the name the pick's die lands on, from the two rows", () => {
     const out = resolveGmBody(rolled("10", "10", "3"), [feature], ctx);
-    expect(out).toContain(`Combine: @pick(${spec}) d4=3 -> Maven`);
+    expect(out).toContain(`Name: @pick(${spec}) d4=3 -> Maven`);
   });
 
   it("stays blank until every die it needs is rolled", () => {

@@ -635,7 +635,7 @@ function withPickSources(rows: SidebarRow[]): SidebarRow[] {
       if (row.source && /@?\[\[[^\]\n]+\]\]/.test(row.source)) seen.push(row);
       continue;
     }
-    const parts = spec.split("+").length;
+    const parts = spec.split(/[+&]/).length;
     const from = seen.slice(-parts);
     row.pick = spec;
     row.pickFrom = from.map((r) => ({ source: r.source ?? "", content: r.content }));

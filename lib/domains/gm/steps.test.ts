@@ -329,6 +329,18 @@ describe("a name made of independently rolled parts — @pick", () => {
     expect(parsePickSpec("1,2")).toEqual([{ cols: [1, 2] }]);
   });
 
+  it("puts a space before a part joined by &, for words rather than syllables", () => {
+    expect(parsePickSpec("Part 1=1,2& Part 2=3")).toEqual([
+      { name: "Part 1", cols: [1, 2] },
+      { name: "Part 2", cols: [3], spaced: true },
+    ]);
+    const words = {
+      columnLabels: ["d20*", "A", "B"],
+      rows: [row("1-20", "Constrictor", "of Moons")],
+    } as unknown as TableDef;
+    expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Constrictor of Moons"]);
+  });
+
   it("counts the names a spec can make", () => {
     expect(pickSides("1,2")).toBe(2);
     expect(pickSides(spec)).toBe(6);
@@ -354,6 +366,17 @@ describe("a name made of independently rolled parts — @pick", () => {
   it("shows every name when there is no die", () => {
     expect(pickResult(table, [80, 80], spec)).toBe("Aebant");
     expect(pickResult(table, [10], "1,2")).toBe("Briga / Ma");
+  });
+
+  it("reads columns of one kind (Start 1, Start 2) as alternatives, but different kinds with their names", () => {
+    const starts = {
+      columnLabels: ["d100*", "Start 1", "Start 2"],
+      rows: [row("1-100", "Cai", "Ma")],
+    } as unknown as TableDef;
+    expect(resolveTableRoll("d100=5 ->", starts)).toBe("d100=5 -> Cai / Ma");
+    expect(resolveTableRoll("d100=5 ->", table)).toBe(
+      "d100=5 -> Start 1: Briga · Start 2: Ma · Start 3: Lew · End 1: ven · End 2: werp"
+    );
   });
 
   it("reads numbered alternative columns as alternatives", () => {

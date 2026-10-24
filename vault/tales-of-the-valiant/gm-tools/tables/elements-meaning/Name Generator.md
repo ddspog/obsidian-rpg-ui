@@ -93,6 +93,9 @@ steps:
         labels:
           - "Start"
           - "& Ending"
+        choose:
+          - "1,2,3"
+          - "1,2,3,4,5"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-feminine-personal-names-gaelic"
@@ -117,6 +120,9 @@ steps:
         labels:
           - "Name"
           - "Name, variant"
+        choose:
+          - "Part 1=1,2+Part 2=3,4,5"
+          - "Part 1=1,2,3+Part 2=4,5,6"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 2. Brittonian Personal names 2]]#brittonian-feminine-personal-names-welsh-part-1"
@@ -124,13 +130,16 @@ steps:
         labels:
           - "First part"
           - "& Ending"
+        choose:
+          - "1,2,3,4,5,6"
+          - "1,2,3,4,5"
       - choice: "Terrain name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 4. Brittonnian Terrain feature names]]#brittonnian-bright-terrain-feature"
         labels:
           - "Name"
         choose:
-          - "First Word=1,2,3+Second Word=4,5,6"
+          - "First Word=1,2,3&Second Word=4,5,6"
   - choice: "Celtigaulic"
     thenLabel: "Kind of name"
     then:
@@ -503,7 +512,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "First Word=1+Second Word=2"
+          - "First Word=1&Second Word=2"
   - choice: "Cthonic"
     thenLabel: "Kind of name"
     then:
@@ -520,7 +529,7 @@ steps:
         labels:
           - "Name"
         choose:
-          - "First Word=1+Second Word=2"
+          - "First Word=1&Second Word=2"
   - choice: "Dreamlandish"
     thenLabel: "Kind of name"
     then:
@@ -554,6 +563,10 @@ steps:
       - "Short name"
       - "Hyphenated name"
       - "& Epithet (optional)"
+    choose:
+      - "1,2"
+      - "Part 1=1+Part 2=2"
+      - ""
   - choice: "Eldritch God"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 2. Eldritch God Names]]#eldritch-god-names"
@@ -570,6 +583,10 @@ steps:
       - "Name"
       - "Name, variant"
       - "& Epithet (optional)"
+    choose:
+      - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
+      - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
+      - "1,2"
   - choice: "Demonic"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 5. Demonic Names + Arch-Demonic or Evil God Epithets]]#demonic-name-part-1"
@@ -579,6 +596,10 @@ steps:
       - "First part"
       - "& Second part"
       - "& Epithet (optional)"
+    choose:
+      - "1,2,3"
+      - "1,2,3,4"
+      - "Part 1=1,2,3& Part 2=4"
 cards:
   - name: Name Generator
     stack: generator
