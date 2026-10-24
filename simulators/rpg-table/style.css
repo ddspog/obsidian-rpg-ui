@@ -1,0 +1,27 @@
+/* The plugin leaves a table's look to the vault's theme; this is a plain one so it reads here. */
+.sim-table table.rpg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-interface);
+  font-size: 14px;
+}
+.sim-table table.rpg-table caption {
+  font-weight: 600;
+  padding: 4px 0 8px;
+  text-align: left;
+}
+.sim-table table.rpg-table th {
+  text-align: left;
+  background: var(--background-secondary);
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+.sim-table table.rpg-table th,
+.sim-table table.rpg-table td {
+  padding: 5px 8px;
+}
+.sim-table table.rpg-table td {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.sim-table table.rpg-table tfoot td {
+  background: var(--background-primary-alt);
+}
