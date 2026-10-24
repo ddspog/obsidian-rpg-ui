@@ -6,6 +6,129 @@ tab-icon: feather
 tab-color: var(--color-cyan)
 tab-name: Arcane Epithets · 1
 ---
+# Arcane Epithets
+If you have a lot of wizardly NPCs in your world, varying the formula for their names is important to avoid a repetitive sound.
+
+Powerful spellcasters might have:
+- An Arcane Epithet Type 1 ([[Personal Epithets 2. Arcane Epithets 1#Table 28-4 Arcane Epithet Type 1|Table 28-4]]), such as Gandolfo the Esoteric.
+- An Arcane Epithet Type 2 (a or b) ([[Personal Epithets 2. Arcane Epithets 1#Table 28-5 Arcane Epithet Type 2a (Evil Type)|Table 28-5]] or [[Personal Epithets 2. Arcane Epithets 1#Table 28-6 Arcane Epithet Type 2b (Good Type)|28-6]]) such as Gandolfo, the Hawk of Tzul-Tesh.
+- A Physical Epithet ([[Personal Epithets 3. Arcane Epithets 2#Table 28-9 Descriptive Epithet|Table 28-9]]) such as Gandolfo the Gaunt.
+- A Demonic Epithet (if evil) ([[Personal Epithets 4. Arcane Epithets 3#Table 28-12 Demonic Epithets|Table 28-12: Demonic Epithets]]) such as Gandolfo the Entangler.
+- An Evil Dominion Epithet ([[Personal Epithets 5. Arcane Epithets 4#Table 28-15 Evil Dominion Epithets|Table 28-15]]) such as Gandolfo, Master of Crows.
+- An Animal Epithet (with negative or positive connotation, depending on the nature of the spellcaster) ([[Personal Epithets 5. Arcane Epithets 4#Table 28-16 Animal Epithet - Negative Connotation|Table 28-16]] or [[Personal Epithets 5. Arcane Epithets 4#Table 28-17 Animal Epithet Broad Possibilities- Generally Positive Connotation|28-17]]) such as Gandolfo the Leopard.
+- An Arcane Title ([[Titles 1. Arcane Titles#Table 27-1 Arcane Titles|Table 27-1: Arcane Titles]]) such as Gandolfo the Ombrathar.
+- An Alternative Title ([[Titles 4. Alternative Titles of Nobility or Office#Table 27-12 General-Use Titles Part 1|Table 27-12]] and [[Titles 4. Alternative Titles of Nobility or Office#Table 27-13 General-Use Titles Part 2|27-13]]: General-Use Titles Part 1 and 2) such as Gandolfo the Lutriasept.
+#### Table 28-4: Arcane Epithet Type 1
+**Sample Results**: The Abstruse, the Alchemistic, the Enigmatical, the Occult.
+
+```rpg table.arcane-epithet-type-1
+|dice:d100|Epithet|
+|---|---|
+|1|the Abstruse|
+|2|the Academic|
+|3|the Alchemist|
+|4|the Alchemistic|
+|5|the Arcane|
+|6|the Archmage|
+|7|the Astrologer|
+|8|the Astrological|
+|9|the Augur|
+|10|the Bizarre|
+|11|the Cabalistic|
+|12|the Conjurer|
+|13|the Cryptic|
+|14|the Curious|
+|15|the Eccentric|
+|16|the Enchanter/Enchantress|
+|17|the Enigma|
+|18|the Enigmatic|
+|19|the Enigmatical|
+|20|the Esoteric|
+|21|the Hidden|
+|22|the Idiosyncratic|
+|23|the Inexplicable|
+|24|the Inscrutable|
+|25|the Insoluble|
+|26|the Invoker|
+|27|the Mage|
+|28|the Medium|
+|29|the Mysterious|
+|30|the Mystic|
+|31|the Mystical|
+|32|the Mystifying|
+|33|the Obscure|
+|34|the Occult|
+|35|the Occultist|
+|36|the Odd|
+|37|the Oracular|
+|38|the Peculiar|
+|39|the Perplexing|
+|40|the Phantast|
+|41|the Practitioner|
+|42|the Sage|
+|43|the Scholar|
+|44|the Secretive|
+|45|the Seer|
+|46|the Oracle/Sibyl|
+|47|the Soothsayer|
+|48|the Sorcerer/Sorceress|
+|49|the Spellcaster|
+|50|the Strange|
+|51|the Uncanny|
+|52|the Unfathomable|
+|53|the Unique|
+|54|the Unknown|
+|55|the Unnatural|
+|56|the Veiled|
+|57|the Wanderer|
+|58|the Warlock/Witch|
+|59|the Weirdling|
+|60|the Wise|
+|61|the Necromancer|
+|62|the Necromantic|
+|63|the Dark|
+|64|the Shadowed|
+|65|the Dragonspeaker|
+|66|the Spell-speaker|
+|67|the Deep|
+|68|the Athanor|
+|69|the Obelisk|
+|70|the Alembic|
+|71|the Thaumaturge|
+|72|the Astrolabe|
+|73|the Mirror|
+|74|the Hooded|
+|75|the Astute|
+|76|the Shrewd|
+|77|of the Scroll|
+|78|of the Grimoire|
+|79|of the Mists|
+|80|the Archaeologist|
+|81|the Knowledge-Seeker|
+|82|the Pattern-Crafter|
+|83|the Lens|
+|84|the Eldritch|
+|85|the Owl|
+|86|The Levitator|
+|87|the Moon-Mage|
+|88|the Mage of Spheres|
+|89|the Storm-Caller|
+|90|the Summoner|
+|91|of the Sigil|
+|92|of the Glyph|
+|93|the Demon-Speaker|
+|94|the Mad|
+|95|the Erudite|
+|96|the Spell-Weaver|
+|97|the Unseen|
+|98|the Sigil-Crafter|
+|99|the Magnus|
+|100|the Orb|
+```
+
+^table-28-4
+
+`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-4]]`
 #### Table 28-5: Arcane Epithet Type 2a (Evil Type)
 These can be used without a place name (Gandolfo the Flame) or if you have the time to add a place name, you can get something like, “Gandolfo the Flame of Tirac Nan.”
 
@@ -68,7 +191,7 @@ These can be used without a place name (Gandolfo the Flame) or if you have the t
 
 ^table-28-5
 
-`dice: [[28. Personal Epithets^table-28-5]]`
+`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-5]]`
 #### Table 28-6: Arcane Epithet Type 2b (Good Type)
 These can be used without a place name (Gandolfo the Defender) or with a place name, “Gandolfo, the Defender of Tirac Nan.”
 
@@ -131,137 +254,4 @@ These can be used without a place name (Gandolfo the Defender) or with a place n
 
 ^table-28-6
 
-`dice: [[28. Personal Epithets^table-28-6]]`
-#### Table 28-7: Arcane Epithet Type 3 (Evil-ish)
-**Instructions**: Roll independently on Column 1 and Column 2.
-**Sample Results**: the Blue Anvil, the Cloaked Conjurer, the Shimmering Magician, the Growling Serpent.
-
-```rpg table.arcane-epithet-type-3-evil-ish
-|d100|First Word|Second Word|
-|---|---|---|
-|1|Blue|Alchemist|
-|2|Brass|Anvil|
-|3|Bronze|Archivist|
-|4|Burning|Artisan|
-|5|Chained|Centipede|
-|6|Chanting|Cloud|
-|7|Chattering|Conjurer|
-|8|Clay|Crow|
-|9|Cloaked|Curator|
-|10|Clockwork|Enchanter|
-|11|Copper|Eye|
-|12|Cowled|Face|
-|13|Crimson|Glyph|
-|14|Crystal|Hand|
-|15|Dancing|Hawk|
-|16|Dimensional|Head|
-|17|Dour|Horror|
-|18|Dreaming|Hunter|
-|19|Drumming|Hyena|
-|20|Dun|Jackal|
-|21|Eerie|Jest|
-|22|Elder|Keeper|
-|23|Eldritch|Librarian|
-|24|Elemental|Mage|
-|25|Feathered|Magician|
-|26|Fire|Mirror|
-|27|Ghostly|Moth|
-|28|Golden|Mystic|
-|29|Green|Omen|
-|30|Grey|Oracle|
-|31|Growling|Owl|
-|32|Hidden|Raven|
-|33|Hooded|Scribe|
-|34|Horned|Scriptor|
-|35|Howling|Serpent|
-|36|Laughing|Sigil|
-|37|Lunar|Sign|
-|38|Mad|Skull|
-|39|Mantled|Snake|
-|40|Masked|Sorcerer|
-|41|Mindless|Speaker|
-|42|Mist|Spider|
-|43|Moon-|Stave|
-|44|Muttering|Summoner|
-|45|Cursed|Symbol|
-|46|Painted|Tiger|
-|47|Pale|Weaver|
-|48|Gleeful|Weird|
-|49|Planar|Witch/Warlock|
-|50|Red|Wolf|
-|51|Reptilian|Binder|
-|52|Resplendent|Breaker|
-|53|Rune| Burier|
-|54|Sapphire|Changer|
-|55|Scaly|Claw|
-|56|Scarlet|Talon|
-|57|Secret|Scourge|
-|58|Shadow|Seeker|
-|59|Shimmering|Scryer|
-|60|Shrouded|Shifter|
-|61|Sightless|Sickness|
-|62|Silent|Gazer|
-|63|Silver|Harbinger|
-|64|Singing|Haunt|
-|65|Solitary|Harrier|
-|66|Spitting|Enslaver|
-|67|Spotted|Entangler|
-|68|Stone|Intruder|
-|69|Striped|Kindler|
-|70|Vengeful|Limper|
-|71|Veiled|Marauder|
-|72|Vile|Pillager|
-|73|Water|Plunderer|
-|74|Whispering|Piercer|
-|75|Whistling|Shapeshifter|
-|76|Yellow|Slayer|
-|77|Black|Stalker|
-|78|Dark|Taker|
-|79|Evil|Tormenter|
-|80|Fell|Trapper|
-|81|Bane-|Waster|
-|82|Sinister|Usurper|
-|83|Baleful|Prince/Princess|
-|84|Cackling|Lord/Lady|
-|85|Remade|Worm|
-|86|Shriveled|Wyvern|
-|87|Shrieking|Dragon|
-|88|Ghastly|Tentacle|
-|89|Grim|Shaper|
-|90|Folding|Visage|
-|91|Circling|Phantom|
-|92|Variform|Thaumaturge|
-|93|Poisoned|Magician|
-|94|Unerring|Conjurer|
-|95|Unmade|Wizard|
-|96|Autonomous|Enchanter|
-|97|Rebel|Enchantress|
-|98|Serpentine|Thaumaturgist|
-|99|Tentacled|Shifter|
-|100|Ancient|Automaton|
-```
-
-^table-28-7
-
-`dice: [[28. Personal Epithets^table-28-7]]|First Word` `dice: [[28. Personal Epithets^table-28-7]]|Second Word`
-
-![[arcane-epithet-evilish.webp]]
-#### Table 28-8: Place Names in Epithets
-These tables are generic enough to use when moving quickly through several personalities while creating a world. If the personality is already associated with a place, you might use that, but the epithet might come from an event in the person’s past, earned in another place.
-
-If you are already in a phase where you’re using names from a specific naming group, you will probably want to use that naming group instead of the ones from the table. This is for general use.
-
-```rpg table.place-names-in-epithets
-|dice:d6|Random Place Name Table|
-|---|---|
-|1|[[10. Elderweirdish#Table 10-1 Colossoponderous Hyphenated Place Names|Table 10-1: Colossoponderous Hyphenated Place Names]]. Enu- Moäth, Tsul-Tesh, Anu-Taan, etc.|
-|2|[[10. Elderweirdish#Table 10-2 Colossoponderous Two-Word Place Names|Table 10-2: Colossoponderous Two-Word Place Names]]. Az Dun, Djeng Dek, Kal Brok, etc.|
-|3|[[10. Elderweirdish#Table 10-3 Colossoponderous Single-Word Place or Deity Names|Table 10-3: Colossoponderous Single-Word Place or Deity Names]]. Kontohloon, Quanajanth, Saurikantha, etc.|
-|4|[[23. Trobadoric#Table 23-6 Trobadoric Terrain Features Table 3|Table 23-6: Trobadoric Terrain Features Table 3]]. Uëboc, Yuaspo, Oualde, etc.|
-|5|[[21. Stygian, Egyptic#Table 21-3 Stygian/Egyptic City Names|Table 21-3: Stygian/Egyptic City Names]]. Hamedra, Sulfis, Mesamnon, etc.|
-|6|[[10. Elderweirdish#Table 10-4 Cthonic Single-Word Place Names|Table 10-4: Cthonic Single-Word Place Names]]. Bholomnoth, Groachagga, Hultramnis, etc.|
-```
-
-^table-28-8
-
-`dice: [[28. Personal Epithets^table-28-8]]`
+`dice: [[Personal Epithets 2. Arcane Epithets 1^table-28-6]]`

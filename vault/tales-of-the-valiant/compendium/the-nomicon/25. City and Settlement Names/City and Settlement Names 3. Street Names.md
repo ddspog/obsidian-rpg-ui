@@ -33,9 +33,9 @@ A shorter list than above, but these all work with the tables below. Check with 
 
 ^table-25-5
 
-`dice: [[25. City and Settlement Names^table-25-5]]`
+`dice: [[City and Settlement Names 3. Street Names^table-25-5]]`
 #### Table 25-6: Streets Named for Professions
-**Instructions**: Roll on any column for a Street of \_\_\_\_\_\_\_, using street types from [[25. City and Settlement Names#Table 25-5 Selected Street Types|Table 25-5]]. Try switching the format to \_\_\_\_ Street (you may have to change the plural to singular for this).
+**Instructions**: Roll on any column for a Street of \_\_\_\_\_\_\_, using street types from [[City and Settlement Names 3. Street Names#Table 25-5 Selected Street Types|Table 25-5]]. Try switching the format to \_\_\_\_ Street (you may have to change the plural to singular for this).
 **Sample Results**: Street of Acrobats, Street of Goatherds, Poet Street, Antiquarian Avenue, Boulevard of Poisoners.
 
 ```rpg table.streets-named-for-professions
@@ -145,4 +145,4 @@ A shorter list than above, but these all work with the tables below. Check with 
 
 ^table-25-6
 
-**C1**: `dice: [[25. City and Settlement Names^table-25-6]]|1`, **C2**: `dice: [[25. City and Settlement Names^table-25-6]]|2`, **C3**: `dice: [[25. City and Settlement Names^table-25-6]]|3`
+**C1**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|1`, **C2**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|2`, **C3**: `dice: [[City and Settlement Names 3. Street Names^table-25-6]]|3`

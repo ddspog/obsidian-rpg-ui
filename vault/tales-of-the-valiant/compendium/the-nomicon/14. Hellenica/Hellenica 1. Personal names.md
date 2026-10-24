@@ -119,7 +119,7 @@ tab-name: Personal names
 
 ^table-14-1
 
-(`dice: [[14. Hellenica^table-14-1]]|Start a` or `dice: [[14. Hellenica^table-14-1]]|Start b` or `dice: [[14. Hellenica^table-14-1]]|Start c`) (`dice: [[14. Hellenica^table-14-1]]|Ending a` or `dice: [[14. Hellenica^table-14-1]]|Ending b` or `dice: [[14. Hellenica^table-14-1]]|Ending c`)
+(`dice: [[Hellenica 1. Personal names^table-14-1]]|Start a` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Start b` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Start c`) (`dice: [[Hellenica 1. Personal names^table-14-1]]|Ending a` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Ending b` or `dice: [[Hellenica 1. Personal names^table-14-1]]|Ending c`)
 #### Table 14-2: Hellenica Feminine Personal Names
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Althaea, Glaphyra, Laonike, Phylonome, Semele.
@@ -231,5 +231,4 @@ tab-name: Personal names
 
 ^table-14-2
 
-**C1**: `dice: [[14. Hellenica^table-14-2]]|1`, **C2**: `dice: [[14. Hellenica^table-14-2]]|2`, **C3**: `dice: [[14. Hellenica^table-14-2]]|3`, **C4**: `dice: [[14. Hellenica^table-14-2]]|4`
-# Place Names
+**C1**: `dice: [[Hellenica 1. Personal names^table-14-2]]|1`, **C2**: `dice: [[Hellenica 1. Personal names^table-14-2]]|2`, **C3**: `dice: [[Hellenica 1. Personal names^table-14-2]]|3`, **C4**: `dice: [[Hellenica 1. Personal names^table-14-2]]|4`

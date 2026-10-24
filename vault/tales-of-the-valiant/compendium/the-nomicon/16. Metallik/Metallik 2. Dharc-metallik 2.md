@@ -117,7 +117,7 @@ tab-name: Dharc-metallik · 2
 
 ^table-16-3
 
-`dice: [[16. Metallik^table-16-3]]|Start` `dice: [[16. Metallik^table-16-3]]|Ending`
+`dice: [[Metallik 2. Dharc-metallik 2^table-16-3]]|Start` `dice: [[Metallik 2. Dharc-metallik 2^table-16-3]]|Ending`
 #### Table 16-4: Dharc-Metallik Place Names Quick Table
 **Instructions**: Roll for a start and for an ending.
 **Sample Results**: Kultamodoth, Sheothamog, Oarhondu, Nhajathor, Yhejar.
@@ -229,4 +229,4 @@ tab-name: Dharc-metallik · 2
 
 ^table-16-4
 
-`dice: [[16. Metallik^table-16-4]]|Start` `dice: [[16. Metallik^table-16-4]]|Ending`
+`dice: [[Metallik 2. Dharc-metallik 2^table-16-4]]|Start` `dice: [[Metallik 2. Dharc-metallik 2^table-16-4]]|Ending`

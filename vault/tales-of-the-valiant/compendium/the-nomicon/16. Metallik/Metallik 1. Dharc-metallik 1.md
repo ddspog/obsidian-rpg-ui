@@ -119,7 +119,7 @@ Dharc Metallik place names work well for generating evil places. Dharc Metallik 
 
 ^table-16-1
 
-`dice: [[16. Metallik^table-16-1]]|Start` `dice: [[16. Metallik^table-16-1]]|Middle` `dice: [[16. Metallik^table-16-1]]|Ending`
+`dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Start` `dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Middle` `dice: [[Metallik 1. Dharc-metallik 1^table-16-1]]|Ending`
 #### Table 16-2: Dharc-Metallik Place Names Table 2
 **Instructions**: Roll for a Start, a Middle, and an Ending for a three-part name.
 **Sample Results**: Rhobarioch, Croghalurus, Tractegri, Talbaghal, Icticazubal.
@@ -231,4 +231,4 @@ Dharc Metallik place names work well for generating evil places. Dharc Metallik 
 
 ^table-16-2
 
-`dice: [[16. Metallik^table-16-2]]|Start` `dice: [[16. Metallik^table-16-2]]|Middle` `dice: [[16. Metallik^table-16-2]]|Ending`
+`dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Start` `dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Middle` `dice: [[Metallik 1. Dharc-metallik 1^table-16-2]]|Ending`

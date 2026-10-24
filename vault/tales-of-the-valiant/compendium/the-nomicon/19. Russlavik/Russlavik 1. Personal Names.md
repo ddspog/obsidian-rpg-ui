@@ -38,7 +38,7 @@ tab-name: Personal Names
 
 ^table-19-2
 
-**C1**: `dice: [[19. Russlavik^table-19-2]]|1`, **C2**: `dice: [[19. Russlavik^table-19-2]]|2`, **C3**: `dice: [[19. Russlavik^table-19-2]]|3`, **C4**: `dice: [[19. Russlavik^table-19-2]]|4`
+**C1**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|4`
 #### Table 19-2: Russlavik Masculine Personal Names 2
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Lukasz, Semeon, Valdyslav, Sbyslav, Vsevolod.
@@ -70,7 +70,7 @@ tab-name: Personal Names
 
 ^table-19-2
 
-**C1**: `dice: [[19. Russlavik^table-19-2]]|1`, **C2**: `dice: [[19. Russlavik^table-19-2]]|2`, **C3**: `dice: [[19. Russlavik^table-19-2]]|3`, **C4**: `dice: [[19. Russlavik^table-19-2]]|4`
+**C1**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-2]]|4`
 #### Table 19-3: Russlavik Feminine Personal Names 1
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Akulina, Ekaterina, Gostiata, Arisha, Fedosia.
@@ -102,7 +102,7 @@ tab-name: Personal Names
 
 ^table-19-3
 
-**C1**: `dice: [[19. Russlavik^table-19-3]]|1`, **C2**: `dice: [[19. Russlavik^table-19-3]]|2`, **C3**: `dice: [[19. Russlavik^table-19-3]]|3`, **C4**: `dice: [[19. Russlavik^table-19-3]]|4`
+**C1**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-3]]|4`
 #### Table 19-4: Russlavik Feminine Personal Names 2
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Roksana, Klavdiya, Stepanida, Yekaterina, Larissa.
@@ -134,4 +134,4 @@ tab-name: Personal Names
 
 ^table-19-4
 
-**C1**: `dice: [[19. Russlavik^table-19-4]]|1`, **C2**: `dice: [[19. Russlavik^table-19-4]]|2`, **C3**: `dice: [[19. Russlavik^table-19-4]]|3`, **C4**: `dice: [[19. Russlavik^table-19-4]]|4`, **C5**: `dice: [[19. Russlavik^table-19-4]]|5`
+**C1**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|1`, **C2**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|2`, **C3**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|3`, **C4**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|4`, **C5**: `dice: [[Russlavik 1. Personal Names^table-19-4]]|5`

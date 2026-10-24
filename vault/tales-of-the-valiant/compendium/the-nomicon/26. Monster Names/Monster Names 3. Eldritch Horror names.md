@@ -119,7 +119,7 @@ These tables work for generating names for an eldritch horror that lives in the 
 
 ^table-26-7
 
-`dice: [[26. Monster Names^table-26-7]]|Part 1` (`dice: [[26. Monster Names^table-26-7]]|Part 2a` or `dice: [[26. Monster Names^table-26-7]]|Part 2b` or `dice: [[26. Monster Names^table-26-7]]|Part 2c`)
+`dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 1` (`dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2a` or `dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2b` or `dice: [[Monster Names 3. Eldritch Horror names^table-26-7]]|Part 2c`)
 #### Table 26-8: Eldritch Horror Name Option 2
 **Instructions**: Roll each column separately, and use the words in whichever order sounds best, hyphenating them if you wish.
 **Sample Results**: Itha-Hantu, Atha Bhantu, Shaba-Yug, Yuug Suang, Galgua Kulantoa.
@@ -231,33 +231,4 @@ These tables work for generating names for an eldritch horror that lives in the 
 
 ^table-26-8
 
-`dice: [[26. Monster Names^table-26-8]]|Part 1` `dice: [[26. Monster Names^table-26-8]]|Part 2`
-# Hags
-Most hags are named by their locations, so if you have already generated the name of the place controlled by the hag, she is probably known as the [Name-Title for a Hag] of [Place Name for a Hag].
-
-Any naming group can be used to generate the place name for a legendary hag, but some are better than others. Recommended tables:
-- [[06. Brittonnian#Table 6-14 Brittonnian Sinister Terrain Names (2 words)|Table 6-14: Brittonnian Sinister Terrain Names]] (the Hag of Gluim Og)
-- [[23. Trobadoric#Table 23-6 Trobadoric Terrain Features Table 3|Table 23-6: Trobadoric Terrain Features Table 3]] (the Witch of Ysequo)
-- [[23. Trobadoric#Table 23-7 Trobadoric Terrain Features Table 4|Table 23-7: Trobadoric Terrain Features Table 4]] (the Crone of Gherlonte)
-- [[19. Russlavik#Table 19-5 Russlavik Terrain Names|Table 19-5: Russlavik Terrain Names]] (the Ogress of Chelza)
-#### Table 26-9: Name-Titles for a Hag
-**Sample Results**: the Hag of Gluim Og, the Witch of Ysequo, the Crone of Gherlonte, the Ogress of Chelza.
-
-```rpg table.name-titles-for-a-hag
-|dice:d10|Name-Title|
-|---|---|
-|1|Crone|
-|2|Giantess|
-|3|Gorgon|
-|4|Hag|
-|5|Harpy|
-|6|Ogress|
-|7|Old Woman|
-|8|Sorceress|
-|9|Termagant|
-|10|Witch|
-```
-
-^table-26-9
-
-`dice: [[26. Monster Names^table-26-9]]`
+`dice: [[Monster Names 3. Eldritch Horror names^table-26-8]]|Part 1` `dice: [[Monster Names 3. Eldritch Horror names^table-26-8]]|Part 2`

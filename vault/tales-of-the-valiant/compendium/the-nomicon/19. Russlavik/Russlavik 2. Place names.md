@@ -71,7 +71,7 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 
 ^table-19-5
 
-`dice: [[19. Russlavik^table-19-5]]|Start` `dice: [[19. Russlavik^table-19-5]]|Ending`
+`dice: [[Russlavik 2. Place names^table-19-5]]|Start` `dice: [[Russlavik 2. Place names^table-19-5]]|Ending`
 ## Russlavik City/settlement names
 #### Table 19-6: Short Russlavik City Names
 **Instructions**: Roll independently for a Start and an Ending to the city name.
@@ -134,7 +134,7 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 
 ^table-19-6
 
-`dice: [[19. Russlavik^table-19-6]]|Start` `dice: [[19. Russlavik^table-19-6]]|Ending`
+`dice: [[Russlavik 2. Place names^table-19-6]]|Start` `dice: [[Russlavik 2. Place names^table-19-6]]|Ending`
 #### Table 19-7: Longer Russlavic City Names
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 of the city name.
 **Sample Results**: Molgavosh, Chamalodny, Tzechakh, Khusbagrod, Zlorgabor.
@@ -196,4 +196,4 @@ For terrain names such as “The \_\_\_ Forest,” “The \_\_\_ Hills,” etc.
 
 ^table-19-7
 
-`dice: [[19. Russlavik^table-19-7]]|Part 1` `dice: [[19. Russlavik^table-19-7]]|Part 2` `dice: [[19. Russlavik^table-19-7]]|Part 3`
+`dice: [[Russlavik 2. Place names^table-19-7]]|Part 1` `dice: [[Russlavik 2. Place names^table-19-7]]|Part 2` `dice: [[Russlavik 2. Place names^table-19-7]]|Part 3`

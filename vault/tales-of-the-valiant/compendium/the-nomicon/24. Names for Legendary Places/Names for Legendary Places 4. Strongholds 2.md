@@ -6,6 +6,39 @@ tab-icon: scroll-text
 tab-color: var(--color-green)
 tab-name: Strongholds · 2
 ---
+#### Table 24-11: Mystical Fortress Name 1
+**Formula**: The Fortress (or Stronghold) of \_\_\_
+**Instructions**: Roll on any of the four columns.
+**Sample Results**: The Fortress of Ancestry, the Stronghold of Gardens, the Bastion of Glory, the Citadel of Courage.
+
+```rpg table.mystical-fortress-name-1
+|d20|1|2|3|4|
+|---|---|---|---|---|
+|1|Ancestry|Convocation|Fragrances|Masks|
+|2|Antidotes|Courage|Gardens|Measurement|
+|3|Ascension|Creation|Generosity|Medicines|
+|4|Autumn|Cycles|Glory|Memory|
+|5|Basins|Dances|Glyphs|Messengers|
+|6|Beneficence|Darkness|Harvests|Mind|
+|7|Birds|Dawn|Healing|Mirrors|
+|8|Borders|Destiny|History|Mirth|
+|9|Bowls|Diplomacy|Honor|Mists|
+|10|Cats|Dreams|Hope|Mushrooms|
+|11|Change|Eccentricity|Hounds|Music|
+|12|Chaos|Endurance|Humility|Musicians|
+|13|Charity|Escapes|Judgements|Night|
+|14|Charms|Eyes|Justice|Nobility|
+|15|Circles|Fastening|Knowledge|Oaths|
+|16|Clouds|Fate|Law|Orchards|
+|17|Coincidences|Fire|Life|Order|
+|18|Cold|Flowers|Light|Patience|
+|19|Concealment|Fools|Lore|Patterns|
+|20|Conjunctions|Fortune|Love|Peace|
+```
+
+^table-24-11
+
+**C1**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|1`, **C2**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|2`, **C3**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|3`, **C4**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-11]]|4`
 #### Table 24-12: Mystical Fortress Name 2
 **Formula**: The Fortress (or Stronghold) of \_\_\_
 **Instructions**: Roll on any of the four columns.
@@ -38,6 +71,6 @@ tab-name: Strongholds · 2
 
 ^table-24-12
 
-**C1**: `dice: [[24. Names for Legendary Places^table-24-12]]|1`, **C2**: `dice: [[24. Names for Legendary Places^table-24-12]]|2`, **C3**: `dice: [[24. Names for Legendary Places^table-24-12]]|3`, **C4**: `dice: [[24. Names for Legendary Places^table-24-12]]|4`
+**C1**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|1`, **C2**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|2`, **C3**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|3`, **C4**: `dice: [[Names for Legendary Places 4. Strongholds 2^table-24-12]]|4`
 
 ![[mystical-fortress-name-2.webp]]

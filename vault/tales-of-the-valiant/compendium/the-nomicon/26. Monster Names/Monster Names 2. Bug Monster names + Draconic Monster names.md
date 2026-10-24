@@ -4,8 +4,44 @@ cssclasses:
   - note-compendium
 tab-icon: skull
 tab-color: var(--color-red)
-tab-name: Draconic Monster names
+tab-name: Bug Monster names + Draconic Monster names
 ---
+# Bug Monster names
+#### Table 26-5: Bug Place/Person Name
+(You will usually want to hyphenate these even if you are using them as a single word, because they are hard to distinguish without
+the hyphens).
+
+**Instructions**: Roll independently for a Part 1, Part 2, and Part 3.
+**Sample Results**: Chaka-ch-ak (Chakachak), Kik-ksak-ta (Kiksakta), Ika-naka-kut (Ikanakakut).
+
+```rpg table.bug-placeperson-name
+|d20|Part 1|Part 2|Part 3|
+|---|---|---|---|
+|1|Chaka|ch|ak|
+|2|Chi|cha|akt|
+|3|Chika|chaku|at|
+|4|Ik|chika|i|
+|5|Ika|chok|ija|
+|6|Ki|chuak|ikt|
+|7|Kik|jia|ka|
+|8|Kiki|jik|keh|
+|9|Kiku|ka|ki|
+|10|Kita|ksak|kia|
+|11|Ktia|ksi|Ko|
+|12|Ta|ku|kt|
+|13|Ti|naka|kta|
+|14|Tik|sarki|ku|
+|15|Tika|ska|kuo|
+|16|Tikta|tak|kut|
+|17|Tok|tako|ta|
+|18|Tokka|tenku|tat|
+|19|Tsi|tika|teh|
+|20|Tsiki|tza|tia|
+```
+
+^table-26-5
+
+`dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 1` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 2` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-5]]|Part 3`
 # Draconic Monster names
 #### Table 26-6: Dragon Name/Place
 **Instructions**: Roll a Part 1 and then make a second roll for a Part 2.
@@ -118,4 +154,4 @@ tab-name: Draconic Monster names
 
 ^table-26-6
 
-`dice: [[26. Monster Names^table-26-6]]|Part 1` `dice: [[26. Monster Names^table-26-6]]|Part 2`
+`dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-6]]|Part 1` `dice: [[Monster Names 2. Bug Monster names + Draconic Monster names^table-26-6]]|Part 2`

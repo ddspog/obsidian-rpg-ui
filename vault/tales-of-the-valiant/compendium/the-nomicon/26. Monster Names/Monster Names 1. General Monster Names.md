@@ -38,7 +38,7 @@ tab-name: General Monster Names
 
 ^table-26-1
 
-(`dice: [[26. Monster Names^table-26-1]]|Part 1a` or `dice: [[26. Monster Names^table-26-1]]|Part 1b`) (`dice: [[26. Monster Names^table-26-1]]|Part 2a` or `dice: [[26. Monster Names^table-26-1]]|Part 2b`)
+(`dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 1a` or `dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 1b`) (`dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 2a` or `dice: [[Monster Names 1. General Monster Names^table-26-1]]|Part 2b`)
 #### Table 26-2: Beast Ending
 ```rpg table.beast-ending
 |dice:d20|Ending|
@@ -67,7 +67,7 @@ tab-name: General Monster Names
 
 ^table-26-2
 
-`dice: [[26. Monster Names^table-26-2]]`
+`dice: [[Monster Names 1. General Monster Names^table-26-2]]`
 #### Table 26-3: Name for a Monster Type (Option 2)
 **Instructions**: Roll independently for a Part 1, Part 2, and Part 3 (Parts 2 and 3 are a combined word).
 **Sample Results**: Serpent of Kuar, Raiders of Omath, Ghoul of Uabad, Horror out of Tsuguoth, Vines of Cyagor.
@@ -129,7 +129,7 @@ tab-name: General Monster Names
 
 ^table-26-3
 
-`dice: [[26. Monster Names^table-26-3]]|Part 1` `dice: [[26. Monster Names^table-26-3]]|Part 2` `dice: [[26. Monster Names^table-26-3]]|Part 3`
+`dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 1` `dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 2` `dice: [[Monster Names 1. General Monster Names^table-26-3]]|Part 3`
 #### Table 26-4: Name for a Monster Type (Option 3)
 **Instructions**: Roll Part 1 and Part 2 independently to get the first word, then on Part 3.
 **Sample Results**: Orosulic Fungus, Tsestik Bat, Naverese Spawn, Uzothoic Mold, Iuvoolian Polyps.
@@ -161,40 +161,4 @@ tab-name: General Monster Names
 
 ^table-26-4
 
-`dice: [[26. Monster Names^table-26-4]]|Part 1` `dice: [[26. Monster Names^table-26-4]]|Part 2` `dice: [[26. Monster Names^table-26-4]]|Part 3`
-# Bug Monster names
-#### Table 26-5: Bug Place/Person Name
-(You will usually want to hyphenate these even if you are using them as a single word, because they are hard to distinguish without
-the hyphens).
-
-**Instructions**: Roll independently for a Part 1, Part 2, and Part 3.
-**Sample Results**: Chaka-ch-ak (Chakachak), Kik-ksak-ta (Kiksakta), Ika-naka-kut (Ikanakakut).
-
-```rpg table.bug-placeperson-name
-|d20|Part 1|Part 2|Part 3|
-|---|---|---|---|
-|1|Chaka|ch|ak|
-|2|Chi|cha|akt|
-|3|Chika|chaku|at|
-|4|Ik|chika|i|
-|5|Ika|chok|ija|
-|6|Ki|chuak|ikt|
-|7|Kik|jia|ka|
-|8|Kiki|jik|keh|
-|9|Kiku|ka|ki|
-|10|Kita|ksak|kia|
-|11|Ktia|ksi|Ko|
-|12|Ta|ku|kt|
-|13|Ti|naka|kta|
-|14|Tik|sarki|ku|
-|15|Tika|ska|kuo|
-|16|Tikta|tak|kut|
-|17|Tok|tako|ta|
-|18|Tokka|tenku|tat|
-|19|Tsi|tika|teh|
-|20|Tsiki|tza|tia|
-```
-
-^table-26-5
-
-`dice: [[26. Monster Names^table-26-5]]|Part 1` `dice: [[26. Monster Names^table-26-5]]|Part 2` `dice: [[26. Monster Names^table-26-5]]|Part 3`
+`dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 1` `dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 2` `dice: [[Monster Names 1. General Monster Names^table-26-4]]|Part 3`

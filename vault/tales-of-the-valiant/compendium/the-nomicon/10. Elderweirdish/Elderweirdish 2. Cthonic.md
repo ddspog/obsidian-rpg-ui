@@ -118,7 +118,7 @@ tab-name: Cthonic
 
 ^table-10-4
 
-`dice: [[10. Elderweirdish^table-10-4]]|Part 1` (`dice: [[10. Elderweirdish^table-10-4]]|Part 2a` or `dice: [[10. Elderweirdish^table-10-4]]|Part 2b`)
+`dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 1` (`dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 2a` or `dice: [[Elderweirdish 2. Cthonic^table-10-4]]|Part 2b`)
 #### Table 10-5: Cthonic Two-Word or Hyphenated Place Names
 This table generates names such as Amu-Anka and Ghul- Chaxu (or Amu Anka and Ghul Chaxu).
 
@@ -232,7 +232,4 @@ This table generates names such as Amu-Anka and Ghul- Chaxu (or Amu Anka and Ghu
 
 ^table-10-5
 
-`dice: [[10. Elderweirdish^table-10-5]]|First Word` `dice: [[10. Elderweirdish^table-10-5]]|Second Word`
-# Dreamlandish
-## Dreamlandish Personal names
-![[dreamlandish-personal-names.webp|right]]For personal names in a Dreamlandish area, most people should have names from the [[15. Italican|Italican]]], [[12. Espannic|Espannic]], and [[23. Trobadoric|Trobadoric]] naming groups. The [[19. Russlavik|Russlavik]] and [[22. Teutonnic|Teutonnic]] groups are also workable. As you go up the chain of wealth and power, names in the Dreamlandish-type fiction (Lovecraft, Vance, CA Smith) tend to get longer and more unusual, so names for the nobility can be pulled from [[16. Metallik#High Metallik|High Metallik]], [[16. Metallik#Dharc-metallik|Dharc Metallik]], [[17. Nanskrit|Nanskrit]], and [[14. Hellenica|Hellenic]]. Names for spellcasters, who will be the most commonly encountered types of people from places like this, are treated separately.
+`dice: [[Elderweirdish 2. Cthonic^table-10-5]]|First Word` `dice: [[Elderweirdish 2. Cthonic^table-10-5]]|Second Word`

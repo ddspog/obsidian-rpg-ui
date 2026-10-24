@@ -6,6 +6,7 @@ tab-icon: scroll-text
 tab-color: var(--color-purple)
 tab-name: Place Names · 1
 ---
+# Place Names
 ## Countries and Terrain features
 #### Table 14-3: Hellenica Country and Terrain Names
 This table generates names for marshes, forests, hills, and other terrain features. It can also be used for country names.
@@ -120,4 +121,4 @@ This table generates names for marshes, forests, hills, and other terrain featur
 
 ^table-14-3
 
-`dice: [[14. Hellenica^table-14-3]]|Start` `dice: [[14. Hellenica^table-14-3]]|Ending`
+`dice: [[Hellenica 2. Place Names 1^table-14-3]]|Start` `dice: [[Hellenica 2. Place Names 1^table-14-3]]|Ending`

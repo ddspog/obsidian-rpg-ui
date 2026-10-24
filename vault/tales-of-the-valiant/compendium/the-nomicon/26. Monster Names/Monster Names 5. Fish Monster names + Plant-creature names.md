@@ -4,108 +4,8 @@ cssclasses:
   - note-compendium
 tab-icon: skull
 tab-color: var(--color-red)
-tab-name: Lizard Monster names
+tab-name: Fish Monster names + Plant-creature names
 ---
-# Lizard Monster names
-![[lizard-monster-names.webp|right|208]]
-This table works for place names in areas dominated by lizard creatures as well as for the personal name of a lizard-like monster.
-#### Table 26-10: Lizard Place/Person Name
-**Instructions**: Roll for a Part 1, and then for either Part 2.
-**Sample Results**: Hisshoa, Iatsua, Hemeth, Shualtu.
-
-```rpg table.lizard-placeperson-name
-|d20|Part 1|Part 2a|Part 2b|
-|---|---|---|---|
-|1|He|se|soa|
-|2|His|so|So|
-|3|Hsa|soo|i|
-|4|Ia|she|soo|
-|5|Is|shee|sua|
-|6|Issa|shoa|tua|
-|7|Oa|lias|too|
-|8|Oo|ssa|tu|
-|9|Ose|tsa|t|
-|10|Sa|las|lsoa|
-|11|Saa|lisa|lso|
-|12|Sahu|loa|lsoo|
-|13|Shua|slee|ltua|
-|14|Soa|slaa|ltu|
-|15|Sua|shaa|leeth|
-|16|Tso|hu|meeth|
-|17|Tsua|tsua|meth|
-|18|Tu|tsuo|ltoo|
-|19|Ye|huo|loo|
-|20|Yhi|sua|ltoa|
-```
-
-^table-26-10
-
-`dice: [[26. Monster Names^table-26-10]]|Part 1` (`dice: [[26. Monster Names^table-26-10]]|Part 2a` or `dice: [[26. Monster Names^table-26-10]]|Part 2b`)
-#### Table 26-11: Reptilian Titles
-**Formula**: (Title generated) of the [name of the Group or Place the Reptilian holds title to, for example “The Lizardfolk of the Reptile Coast”].
-**Instructions**: Roll separately for a Part 1 and Part 2 of the title.
-**Sample Results**: Bazosc of the Lizard Coast, Sasakjar of the Lizard Coast, Tsalashe of the Lizard Coast, Nahact of the Lizard Coast.
-
-```rpg table.reptilian-titles
-|d100|Part 1|Part 2|
-|---|---|---|
-|01-02|Bazo|halisk|
-|03-04|Hetho|lesk|
-|05-06|Hetha|tarc|
-|07-08|Sasa|rioch|
-|09-10|Heso|khun|
-|11-12|Hesha|khar|
-|13-14|Ssa|sc|
-|15-16|Sua|jar|
-|17-18|Sasa|djar|
-|19-20|Hetha|tan|
-|21-22|Ksaza|kret|
-|23-24|Hsa|pep|
-|25-26|Iu|tar|
-|27-28|Ye|riarch|
-|29-30|Yaza|triarch|
-|31-32|Tsia|khan|
-|33-34|Ssia|rakhan|
-|35-36|Sha|ssan|
-|37-38|His|she|
-|39-40|Ssala|shar|
-|41-42|Tsala|hun|
-|43-44|Salu|jh|
-|45-46|Ksau|jha|
-|47-48|Sau|az|
-|49-50|Yezu|hazin|
-|51-52|Tssia|hassa|
-|53-54|Yissha|ct|
-|55-56|Yi|ctan|
-|57-58|Tsa|ctor|
-|59-60|Hepa|ron|
-|61-62|Tsua|raash|
-|63-64|Cro|rasht|
-|65-66|Kha|sud|
-|67-68|Naha|saj|
-|69-70|Nia|sai|
-|71-72|Nisu|shai|
-|73-74|Nehe|both|
-|75-76|Hethi|rahk|
-|77-78|Hesi|lahk|
-|79-80|Hesa|thaar|
-|81-82|Psa|thisp|
-|83-84|Psala|thasp|
-|85-86|Pselu|ssep|
-|87-88|Satha|senah|
-|89-90|Sena|snah|
-|91-92|Sela|sneh|
-|93-94|Seela|hept|
-|95-96|Tsee|zard|
-|97-98|Jee|zar|
-|99-00|Zee|zarc|
-```
-
-^table-26-11
-
-`dice: [[26. Monster Names^table-26-11]]|Part 1` `dice: [[26. Monster Names^table-26-11]]|Part 2`
-
-![[fish-monster-name.webp]]
 # Fish Monster names
 This table works for place names in areas dominated by fish creatures as well as for the personal name of a fish monster. Most of these are long names for effect rather than for repeated use. If you’re going to use one of these for a place the characters will visit often, figure out a shortened version ahead of time, because that’s what the players will use.
 #### Table 26-12: Fish Place/Person Name
@@ -141,11 +41,11 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 
 ^table-26-12
 
-`dice: [[26. Monster Names^table-26-12]]|Part 1` (`dice: [[26. Monster Names^table-26-12]]|Part 2a` or `dice: [[26. Monster Names^table-26-12]]|Part 2b`)
+`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 1` (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 2a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-12]]|Part 2b`)
 # Plant-creature names
 ![[plant-creature-names.webp|right|236]]
 #### Table 26-13: Tree-Type Plant Creature Names
-**Formula**: The [Tree Adjective] Tree of _______ [Place Name]. A place name can be rolled on this table for speed (roll independently for Part 1 and Part 2), or you can use any place name from the book. Suggested possibilities include [[21. Stygian, Egyptic|Stygian/Egyptic]], Sub-Saharish, [[10. Elderweirdish#Cthonic|Cthonic]], [[16. Metallik#Dharc-metallik|Dharc-Metallic]], [[06. Brittonnian#Brittonnian Sinister|Brittonian Sinister]], and [[05. Arabish#Table 5-3 Arabish Culture Name Table 1|Arabish]] (use any Arabish Culture table with the shorter endings column).
+**Formula**: The [Tree Adjective] Tree of _______ [Place Name]. A place name can be rolled on this table for speed (roll independently for Part 1 and Part 2), or you can use any place name from the book. Suggested possibilities include [[21. Stygian, Egyptic|Stygian/Egyptic]], Sub-Saharish, [[Elderweirdish 2. Cthonic#Cthonic|Cthonic]], [[Metallik 1. Dharc-metallik 1#Dharc-metallik|Dharc-Metallic]], [[Brittonnian 4. Brittonnian Terrain feature names#Brittonnian Sinister|Brittonian Sinister]], and [[Arabish 2. Name Of Culture 1#Table 5-3 Arabish Culture Name Table 1|Arabish]] (use any Arabish Culture table with the shorter endings column).
 **Instructions**: Roll for the Tree Adjective, then (unless you want to use a different source for the place name), roll independently for a Part 1 and Part 2 for the place name.
 **Sample Results**: The Black Tree of Ghephras, The Emperor Tree of Mhamb, The Unhallowed Tree of Gollmag.
 
@@ -206,7 +106,7 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 
 ^table-26-13
 
-`dice: [[26. Monster Names^table-26-13]]|Tree Adjective` `dice: [[26. Monster Names^table-26-13]]|Part 1` `dice: [[26. Monster Names^table-26-13]]|Part 2`
+`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Tree Adjective` `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Part 1` `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-13]]|Part 2`
 #### Table 26-14: Other Plant Creature Names
 **Instructions**: Roll for a Start, then roll on either of the Part 1 columns, and on either of the Part 2 columns.
 **Sample Results**: the Tree of Oangra, the Blossom of Mhaulge, the Fungus of Bnoltu, the Ooze of Shaungru.
@@ -238,4 +138,4 @@ Only one of these has dolphin-clicks in it, but you can add them in. This table 
 
 ^table-26-14
 
-`dice: [[26. Monster Names^table-26-14]]|Start` (`dice: [[26. Monster Names^table-26-14]]|Part 1a` or `dice: [[26. Monster Names^table-26-14]]|Part 1b`) (`dice: [[26. Monster Names^table-26-14]]|Part 2a` or `dice: [[26. Monster Names^table-26-14]]|Part 2b`)
+`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Start` (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 1a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 1b`) (`dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 2a` or `dice: [[Monster Names 5. Fish Monster names + Plant-creature names^table-26-14]]|Part 2b`)

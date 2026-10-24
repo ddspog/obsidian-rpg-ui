@@ -118,7 +118,7 @@ tab-name: High Metallik
 
 ^table-16-5
 
-`dice: [[16. Metallik^table-16-5]]|Start` `dice: [[16. Metallik^table-16-5]]|Middle` `dice: [[16. Metallik^table-16-5]]|Ending`
+`dice: [[Metallik 3. High Metallik^table-16-5]]|Start` `dice: [[Metallik 3. High Metallik^table-16-5]]|Middle` `dice: [[Metallik 3. High Metallik^table-16-5]]|Ending`
 #### Table 16-6: High Metallik Place Names Table 2
 **Instructions**: Roll independently for a Start and Ending for the name.
 **Sample Results**: Ceghron, Eahril, Hyldar, Phaltimaon, Xythiar.
@@ -230,4 +230,4 @@ tab-name: High Metallik
 
 ^table-16-6
 
-`dice: [[16. Metallik^table-16-6]]|Start` `dice: [[16. Metallik^table-16-6]]|Ending`
+`dice: [[Metallik 3. High Metallik^table-16-6]]|Start` `dice: [[Metallik 3. High Metallik^table-16-6]]|Ending`

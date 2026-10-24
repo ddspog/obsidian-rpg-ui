@@ -118,7 +118,7 @@ tab-name: Trobadoric Personal names
 
 ^table-23-1
 
-**C1**: `dice: [[23. Trobadoric^table-23-1]]|1`, **C2**: `dice: [[23. Trobadoric^table-23-1]]|2`
+**C1**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-1]]|1`, **C2**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-1]]|2`
 #### Table 23-2: Trobadoric Feminine Personal Names
 **Instructions**: Roll on any column for a name.
 **Sample Results**: Aliénor, Iogénie, Ysolde, Madeleine, Genivere.
@@ -230,4 +230,4 @@ tab-name: Trobadoric Personal names
 
 ^table-23-2
 
-**C1**: `dice: [[23. Trobadoric^table-23-2]]|1`, **C2**: `dice: [[23. Trobadoric^table-23-2]]|2`
+**C1**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-2]]|1`, **C2**: `dice: [[Trobadoric 1. Trobadoric Personal names^table-23-2]]|2`

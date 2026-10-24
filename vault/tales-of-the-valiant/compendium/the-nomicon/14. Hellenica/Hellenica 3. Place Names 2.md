@@ -119,7 +119,7 @@ These tables can be used for countries, but they are designed primarily for citi
 
 ^table-14-4
 
-`dice: [[14. Hellenica^table-14-4]]|Start` `dice: [[14. Hellenica^table-14-4]]|Ending`
+`dice: [[Hellenica 3. Place Names 2^table-14-4]]|Start` `dice: [[Hellenica 3. Place Names 2^table-14-4]]|Ending`
 #### Table 14-5: Hellenica City Names 2
 **Instructions**: Roll independently for the start and ending of the city name.
 **Sample Results**: Athadopolis, Kepykrion, Pharabos, Siolbion, Zenisthiros.
@@ -231,6 +231,6 @@ These tables can be used for countries, but they are designed primarily for citi
 
 ^table-14-5
 
-`dice: [[14. Hellenica^table-14-5]]|Start` `dice: [[14. Hellenica^table-14-5]]|Ending`
+`dice: [[Hellenica 3. Place Names 2^table-14-5]]|Start` `dice: [[Hellenica 3. Place Names 2^table-14-5]]|Ending`
 
 ![[hellenica-city-names.webp|384]]

@@ -117,6 +117,6 @@ tab-name: Dreamlandish · 2
 
 ^table-10-8
 
-`dice: [[10. Elderweirdish^table-10-8]]|Start` (`dice: [[10. Elderweirdish^table-10-8]]|Ending 1` or `dice: [[10. Elderweirdish^table-10-8]]|Ending 2` or `dice: [[10. Elderweirdish^table-10-8]]|Ending 3`)
+`dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Start` (`dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 1` or `dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 2` or `dice: [[Elderweirdish 4. Dreamlandish 2^table-10-8]]|Ending 3`)
 
 ![[dreamlandish-single-word-place-names.webp]]

@@ -118,7 +118,7 @@ tab-name: Arabish city and settlement names
 
 ^table-5-21
 
-**C1**: `dice: [[05. Arabish^table-5-21]]|1`, **C2**: `dice: [[05. Arabish^table-5-21]]|2`, **C3**: `dice: [[05. Arabish^table-5-21]]|3`
+**C1**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|1`, **C2**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|2`, **C3**: `dice: [[Arabish 6. Arabish city and settlement names^table-5-21]]|3`
 #### Table 5-22: Arabish City and Settlement Names (Ending)
 ```rpg table.arabish-city-and-settlement-names-ending
 |dice:d100|Ending|
@@ -177,4 +177,4 @@ tab-name: Arabish city and settlement names
 
 ^table-5-22
 
-`dice: [[05. Arabish^table-5-22]]`
+`dice: [[Arabish 6. Arabish city and settlement names^table-5-22]]`

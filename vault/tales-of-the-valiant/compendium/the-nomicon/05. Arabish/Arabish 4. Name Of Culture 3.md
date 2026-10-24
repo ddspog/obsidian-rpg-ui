@@ -2,7 +2,7 @@
 source: From **The Nomicon** by **Dyson Logos**
 cssclasses:
   - note-compendium
-tab-icon: flag
+tab-icon: user
 tab-color: var(--color-red)
 tab-name: Name Of Culture · 3
 ---
@@ -67,7 +67,7 @@ tab-name: Name Of Culture · 3
 
 ^table-5-11
 
-(`dice: [[05. Arabish^table-5-11]]|Start 1` or `dice: [[05. Arabish^table-5-11]]|Start 2` or `dice: [[05. Arabish^table-5-11]]|Start 3`) (`dice: [[05. Arabish^table-5-11]]|End 1` or `dice: [[05. Arabish^table-5-11]]|End 2` or `dice: [[05. Arabish^table-5-11]]|End 3`)
+(`dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|Start 3`) (`dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-11]]|End 3`)
 #### Table 5-12: Arabish Culture Name Table 10
 **Instructions:** Roll independently for any Start and for an Ending.
 **Sample Results**: Raghrani, Rakbireen, Tambifi, Rusraki, Tulbadi.
@@ -129,7 +129,7 @@ tab-name: Name Of Culture · 3
 
 ^table-5-12
 
-(`dice: [[05. Arabish^table-5-12]]|Start 1` or `dice: [[05. Arabish^table-5-12]]|Start 2` or `dice: [[05. Arabish^table-5-12]]|Start 3` or `dice: [[05. Arabish^table-5-12]]|Start 4`) `dice: [[05. Arabish^table-5-12]]|Ending`
+(`dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 3` or `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Start 4`) `dice: [[Arabish 4. Name Of Culture 3^table-5-12]]|Ending`
 #### Table 5-13: Arabish Culture Name Table 11
 **Instructions**: Roll independently for any Start and for an Ending.
 **Sample Results**: Sabrib, Sihrid, Tajrud, Sahduq, Tamdab.
@@ -191,7 +191,7 @@ tab-name: Name Of Culture · 3
 
 ^table-5-13
 
-(`dice: [[05. Arabish^table-5-13]]|Start 1` or `dice: [[05. Arabish^table-5-13]]|Start 2` or `dice: [[05. Arabish^table-5-13]]|Start 3` or `dice: [[05. Arabish^table-5-13]]|Start 4` or `dice: [[05. Arabish^table-5-13]]|Start 5`) `dice: [[05. Arabish^table-5-13]]|Ending`
+(`dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 3` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 4` or `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Start 5`) `dice: [[Arabish 4. Name Of Culture 3^table-5-13]]|Ending`
 #### Table 5-14: Arabish Culture Name Table 12
 **Instructions**: Roll independently for either Start and any Ending.
 **Sample Results**: Wabayeen, Yagarafi, Zagariki, Zimiribeen, Yeghariji.
@@ -253,7 +253,7 @@ tab-name: Name Of Culture · 3
 
 ^table-5-14
 
-(`dice: [[05. Arabish^table-5-14]]|Start 1` or `dice: [[05. Arabish^table-5-14]]|Start 2`) (`dice: [[05. Arabish^table-5-14]]|End 1` or `dice: [[05. Arabish^table-5-14]]|End 2` or `dice: [[05. Arabish^table-5-14]]|End 3`)
+(`dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|Start 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|Start 2`) (`dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 1` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 2` or `dice: [[Arabish 4. Name Of Culture 3^table-5-14]]|End 3`)
 ## Modifying a terrain feature name into a Cultural name
 ![[modifying-a-terrain-feature-name-into-a-cultural-name.webp|right|64]]You can also modify a terrain feature into the name of a culture.
 
@@ -275,4 +275,4 @@ If the result says to remove any final vowel, “Barada” becomes “Barad,” 
 
 ^table-5-15
 
-`dice: [[05. Arabish^table-5-15]]`
+`dice: [[Arabish 4. Name Of Culture 3^table-5-15]]`
