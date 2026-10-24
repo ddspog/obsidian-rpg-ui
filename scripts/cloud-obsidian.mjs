@@ -2,6 +2,7 @@
 // Runs real Obsidian headless (Xvfb + Electron) so the built plugin can be
 // screenshotted in cloud sessions where no desktop Obsidian exists.
 //
+//   node scripts/cloud-obsidian.mjs prepare   (optional: pre-download Obsidian + fonts)
 //   node scripts/cloud-obsidian.mjs start
 //   node scripts/cloud-obsidian.mjs screenshot "Sandbox/Tests/03-TEST-SKILLS.md" out.png ["Heading to scroll to"]
 //   node scripts/cloud-obsidian.mjs stop
@@ -9,7 +10,8 @@
 // `start` copies the vault ($RPG_VAULT_ROOT) into ~/.cache/rpg-obsidian/work so the
 // real vault is never touched, and installs main.js/manifest.json/styles.css
 // from the plugin root, plus the theme in $THEME_DIR if set (the vault's
-// appearance.json picks which theme is active). Run `npm run build` first to test current code.
+// appearance.json picks which theme is active; open fonts stand in for the
+// theme's macOS fonts, see FONT_ROLES). Run `npm run build` first to test current code.
 import { spawn, execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -22,6 +24,19 @@ const CDP_PORT = process.env.CDP_PORT ?? "9222";
 const PLUGIN_ID = "dnd-ui-toolkit";
 // Optional checkout of an Obsidian theme repo (needs manifest.json + theme.css).
 const THEME_DIR = process.env.THEME_DIR;
+// The cloud has none of the macOS fonts the theme asks for (New York, SF Compact).
+// The theme tries "My <role> font" first, so those names are mapped to open fonts
+// from @fontsource (npm). Override with FONT_SERIF / FONT_SANS / FONT_ROUNDED.
+const FONT_ROLES = [
+  {
+    id: process.env.FONT_SERIF ?? "source-serif-4",
+    names: ["Text", "Headings", "Letter", "Quote"],
+    weights: [400, 600, 700],
+    italic: [400, 700],
+  },
+  { id: process.env.FONT_SANS ?? "inter", names: ["Title"], weights: [400, 500, 600, 700], italic: [] },
+  { id: process.env.FONT_ROUNDED ?? "nunito", names: ["Table"], weights: [400, 600, 700], italic: [400] },
+];
 
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const vaultRoot = process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../..");
@@ -62,6 +77,55 @@ function ensureObsidian() {
   return bin;
 }
 
+// Downloads the font packages once (cached under ~/.cache/rpg-obsidian/fonts).
+function ensureFonts() {
+  const fontsDir = path.join(cache, "fonts");
+  fs.mkdirSync(fontsDir, { recursive: true });
+  const pkgs = FONT_ROLES.map((r) => `@fontsource/${r.id}`);
+  const missing = pkgs.filter((p) => !fs.existsSync(path.join(fontsDir, "node_modules", p)));
+  if (missing.length) {
+    console.log(`Installing fonts: ${missing.join(", ")}`);
+    execFileSync("npm", ["install", "--prefix", fontsDir, "--no-audit", "--no-fund", "--no-save", ...missing], {
+      stdio: "inherit",
+    });
+  }
+  return fontsDir;
+}
+
+// Writes a CSS snippet (fonts embedded as data URIs) into the vault copy and enables it.
+function installFonts() {
+  const fontsDir = ensureFonts();
+  let css = "";
+  for (const { id, names, weights, italic } of FONT_ROLES) {
+    const faces = [...weights.map((w) => [w, "normal"]), ...italic.map((w) => [w, "italic"])];
+    for (const [weight, style] of faces) {
+      const file = path.join(
+        fontsDir,
+        "node_modules",
+        "@fontsource",
+        id,
+        "files",
+        `${id}-latin-${weight}-${style}.woff2`
+      );
+      if (!fs.existsSync(file)) {
+        console.warn(`Font file missing, skipped: ${path.basename(file)}`);
+        continue;
+      }
+      const data = fs.readFileSync(file).toString("base64");
+      for (const name of names) {
+        css += `@font-face{font-family:"My ${name} font";font-weight:${weight};font-style:${style};src:url(data:font/woff2;base64,${data}) format("woff2");}\n`;
+      }
+    }
+  }
+  const obsidianDir = path.join(vaultCopy, ".obsidian");
+  fs.mkdirSync(path.join(obsidianDir, "snippets"), { recursive: true });
+  fs.writeFileSync(path.join(obsidianDir, "snippets", "cloud-fonts.css"), css);
+  const appearanceFile = path.join(obsidianDir, "appearance.json");
+  const appearance = fs.existsSync(appearanceFile) ? JSON.parse(fs.readFileSync(appearanceFile, "utf8")) : {};
+  appearance.enabledCssSnippets = [...new Set([...(appearance.enabledCssSnippets ?? []), "cloud-fonts"])];
+  fs.writeFileSync(appearanceFile, JSON.stringify(appearance, null, 2));
+}
+
 function prepareVault() {
   fs.rmSync(vaultCopy, { recursive: true, force: true });
   fs.mkdirSync(vaultCopy, { recursive: true });
@@ -88,6 +152,7 @@ function prepareVault() {
     for (const f of ["manifest.json", "theme.css"]) {
       fs.copyFileSync(path.join(THEME_DIR, f), path.join(themeDest, f));
     }
+    if (process.env.CLOUD_FONTS !== "0") installFonts();
   }
 }
 
@@ -166,9 +231,16 @@ function stop() {
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
-const commands = { start, screenshot: () => screenshot(...rest), stop };
+// Downloads everything `start` needs, without launching Obsidian.
+function prepare() {
+  ensureObsidian();
+  if (THEME_DIR && process.env.CLOUD_FONTS !== "0") ensureFonts();
+  console.log("cloud-obsidian ready: run `start`");
+}
+
+const commands = { prepare, start, screenshot: () => screenshot(...rest), stop };
 if (!commands[cmd]) {
-  console.log("usage: cloud-obsidian.mjs <start | screenshot <note> <out.png> | stop>");
+  console.log("usage: cloud-obsidian.mjs <prepare | start | screenshot <note> <out.png> | stop>");
   process.exit(cmd ? 1 : 0);
 }
 await commands[cmd]();
