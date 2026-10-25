@@ -103,3 +103,6 @@
  * defaults without affecting Storybook (the selectors are scoped to
  * .markdown-rendered / .markdown-source-view). */
 @import "./obsidian-overrides.css";
+
+/* Phone / narrow-pane overrides — keep last */
+@import "./mobile.css";
