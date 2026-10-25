@@ -264,7 +264,8 @@ class SessionLogMarkdown extends ReactMarkdown {
       // plays and `gm:` the GM Screen, so a log needs no header to know either.
       // The block header still wins for `gm:` and adds to the PCs.
       const noteFm = this.baseView.app.metadataCache.getCache(this.filePath)?.frontmatter as
-        Record<string, unknown> | undefined;
+        | Record<string, unknown>
+        | undefined;
       const entityRefs = [...(block.entities ?? [])];
       for (const pc of linkList(noteFm?.pcs)) {
         if (!entityRefs.some((r) => linkKey(r.file) === linkKey(pc))) entityRefs.push({ file: pc });
@@ -770,7 +771,8 @@ class SessionLogMarkdown extends ReactMarkdown {
   private conditionRules = (condition: string): { name: string; rules: string[] } | undefined => {
     const system = SystemRegistry.getInstance().getSystemForFile(this.filePath);
     const library = (system.entities?.character?.lookup as Record<string, unknown> | undefined)?.$conditions as
-      Record<string, { name: string; rules: string[] }> | undefined;
+      | Record<string, { name: string; rules: string[] }>
+      | undefined;
     return library?.[condition.trim().toLowerCase()];
   };
 
