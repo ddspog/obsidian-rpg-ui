@@ -144,7 +144,8 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
  * columns of each part, numbered from the first, one part per `+`. Every part is rolled on its own
  * (`Roll independently for any Start and any Ending`), and one of its columns is taken from its row,
  * so a part with several columns offers several values. A name is one value of every part, joined.
- * A single part (`1,2`) is a plain choice among alternative names.
+ * A single part (`1,2`) is a plain choice among alternative names. Quoted words (`"The "+Item=1`) are
+ * fixed text put in front of (or after) the part's values.
  */
 export const PICK_TOKEN = /@pick\(([^)\n]*)\)/;
 
@@ -165,13 +166,30 @@ export interface PickPart {
   optional?: boolean;
   /** Words, not syllables: a space goes before it (`Part 1=1,2& Part 2=3`, parts joined by `&`). */
   spaced?: boolean;
+  /** Quoted words written before it in the spec (`"The "+Item=1`), put in front of each value. */
+  prefix?: string;
+  /** Quoted words after the last part (`Item=1+" Inn"`), put after each value. */
+  suffix?: string;
 }
 
 export function parsePickSpec(spec: string): PickPart[] {
-  const pieces = spec.split(/([+&])/);
+  // Quoted pieces are fixed words (`"The "`); they may hold a `+` or `&`.
+  const pieces = spec.match(/"[^"\n]*"|[+&]|[^+&"]+/g) ?? [];
   const parts: PickPart[] = [];
-  for (let k = 0; k < pieces.length; k += 2) {
-    const piece = pieces[k];
+  let before = "";
+  let glue = "";
+  for (const piece of pieces) {
+    if (piece === "+" || piece === "&") {
+      glue = piece;
+      continue;
+    }
+    if (piece.startsWith('"')) {
+      const text = piece.slice(1, -1);
+      if (parts.length > 0 && glue === "")
+        parts[parts.length - 1].suffix = (parts[parts.length - 1].suffix ?? "") + text;
+      else before += text;
+      continue;
+    }
     const eq = piece.indexOf("=");
     const [rawName, rest] = eq >= 0 ? [piece.slice(0, eq), piece.slice(eq + 1)] : ["", piece];
     const dieAt = rest.match(/^(.*)@(\d+)\s*$/);
@@ -187,10 +205,14 @@ export function parsePickSpec(spec: string): PickPart[] {
       ...(at ? { table: parseInt(at[1], 10) } : {}),
       ...(dieAt ? { die: parseInt(dieAt[2], 10) } : {}),
       ...(optional ? { optional: true } : {}),
-      ...(k > 0 && pieces[k - 1] === "&" ? { spaced: true } : {}),
+      ...(glue === "&" ? { spaced: true } : {}),
+      ...(before ? { prefix: before } : {}),
     };
+    glue = "";
+    before = "";
     if (part.cols.length > 0) parts.push(part);
   }
+  if (before && parts.length > 0) parts[parts.length - 1].suffix = (parts[parts.length - 1].suffix ?? "") + before;
   return parts;
 }
 
@@ -225,7 +247,8 @@ export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: 
   const sets = parts.map((p, i) => {
     const table = Array.isArray(tables) ? tables[i] : tables;
     const values = table ? partValues(rowAt(table, rolls[i]), p) : [];
-    return p.optional ? [...values, ""] : values;
+    const worded = values.map((v) => `${p.prefix ?? ""}${v}${p.suffix ?? ""}`);
+    return p.optional ? [...worded, ""] : worded;
   });
   if (sets.some((s) => s.length === 0)) return undefined;
   return sets
@@ -258,7 +281,7 @@ export function pickResult(
  */
 function alternativesOf(row: TableDef["rows"][number], spec: string): string | undefined {
   const part = parsePickSpec(spec)[0];
-  const values = part ? partValues(row, part) : [];
+  const values = part ? partValues(row, part).map((v) => `${part.prefix ?? ""}${v}${part.suffix ?? ""}`) : [];
   return values.length > 1 ? pickerToken(values) : (values[0] ?? undefined);
 }
 

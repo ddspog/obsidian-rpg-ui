@@ -349,6 +349,25 @@ describe("a name made of independently rolled parts — @pick", () => {
     ]);
   });
 
+  it("puts quoted words before and after the values of a part", () => {
+    expect(parsePickSpec('"The "+Item=1+" & Co"')).toEqual([
+      { name: "Item", cols: [1], prefix: "The ", suffix: " & Co" },
+    ]);
+    const inns = {
+      columnLabels: ["d20*", "A", "B"],
+      rows: [row("1-20", "Boar", "Stag")],
+    } as unknown as TableDef;
+    expect(pickNames(inns, [5], '"The "+Item=1,2')).toEqual(["The Boar", "The Stag"]);
+    expect(pickNames(inns, [5, 5], '"The "+A=1+"\'s "+B=2')).toEqual(["The Boar's Stag"]);
+  });
+
+  it("keeps the quoted words on a single part read as alternatives", () => {
+    const inns = { columnLabels: ["d20*", "A", "B"], rows: [row("1-20", "Boar", "Stag")] } as unknown as TableDef;
+    expect(resolveTableRoll("@[[Inns]] d20=5 ->", inns, '"The "+Item=1,2')).toBe(
+      "@[[Inns]] d20=5 -> {The Boar/The Stag - }"
+    );
+  });
+
   it("counts the names a spec can make", () => {
     expect(pickSides("1,2")).toBe(2);
     expect(pickSides(spec)).toBe(6);
