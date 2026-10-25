@@ -1365,12 +1365,15 @@ button.hud-rest-btn > span {
 }
 
 @container (max-width: 34rem) {
+  /* The character keeps its own width (a wider 1fr column let the portrait
+     grow to the drawer's whole width); the turn column sits at the far end. */
   .lonelog-actions-panel:not(.is-in-margin) .hud-main {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 6rem minmax(0, 1fr);
   }
 
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
     grid-column: 2;
+    justify-self: end;
   }
 
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {

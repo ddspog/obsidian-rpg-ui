@@ -529,10 +529,53 @@
     height: 2rem;
   }
 
+  /* Five tab labels do not fit one row at phone width and overprint each
+     other; they keep their natural width and the row scrolls. */
+  .rpg-description-tablist {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .rpg-description-tablist::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rpg-description-tab-item {
+    flex: 0 0 auto;
+  }
+
+  .rpg-description-tab {
+    min-height: 40px;
+    padding-inline: calc(var(--_cut) + 4px);
+  }
+
+  /* Append and Cancel stay in reach however long the card's form runs inside
+     the drawer's scroll area. */
+  .placeholder-buttons {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding-block: 0.5rem;
+    background: var(--background-primary);
+    box-shadow: 0 -0.5rem 0.5rem -0.25rem var(--background-primary);
+  }
+
+  .placeholder-submit,
+  .placeholder-cancel {
+    min-height: 2.5rem;
+  }
+
   /* iOS zooms into inputs under 16px. */
   .markdown-preview-view [class*="rpg-"] input:not([type="checkbox"]),
   .markdown-preview-view [class*="rpg-"] select,
   .markdown-preview-view [class*="rpg-"] textarea {
     font-size: 16px;
   }
+}
+
+/* Obsidian's phone UI opens an image viewer when any <img> in reading view is
+   tapped, on top of the button the image sits in. Taps go to the button. */
+body.is-mobile .markdown-rendered button img,
+body.is-mobile .markdown-rendered [role="button"] img {
+  pointer-events: none;
 }

@@ -4721,8 +4721,15 @@ fieldset.placeholder-strikes > legend {
 }
 .placeholder-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.25rem;
+}
+.placeholder-needs {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
 }
 .placeholder-submit {
   flex: 1;
@@ -6668,10 +6675,11 @@ button.hud-rest-btn > span {
 }
 @container (max-width: 34rem) {
   .lonelog-actions-panel:not(.is-in-margin) .hud-main {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 6rem minmax(0, 1fr);
   }
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
     grid-column: 2;
+    justify-self: end;
   }
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
     grid-column: 1 / -1;
@@ -13861,6 +13869,8 @@ nav[aria-details="Play Toggle"] {
     grid-template-columns: 1fr 1fr;
     gap: 0;
     margin-block-start: calc(-1 * var(--p-spacing, 1em));
+    padding-block-start: var(--p-spacing, 1em);
+    position: relative;
     background: var(--rpg-section-bg, #1a1816);
   }
   nav[aria-details="Play Toggle"] ~ section[aria-details*=" Row"] {
@@ -17067,11 +17077,41 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     width: 2rem;
     height: 2rem;
   }
+  .rpg-description-tablist {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rpg-description-tablist::-webkit-scrollbar {
+    display: none;
+  }
+  .rpg-description-tab-item {
+    flex: 0 0 auto;
+  }
+  .rpg-description-tab {
+    min-height: 40px;
+    padding-inline: calc(var(--_cut) + 4px);
+  }
+  .placeholder-buttons {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding-block: 0.5rem;
+    background: var(--background-primary);
+    box-shadow: 0 -0.5rem 0.5rem -0.25rem var(--background-primary);
+  }
+  .placeholder-submit,
+  .placeholder-cancel {
+    min-height: 2.5rem;
+  }
   .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
   .markdown-preview-view [class*=rpg-] select,
   .markdown-preview-view [class*=rpg-] textarea {
     font-size: 16px;
   }
+}
+body.is-mobile .markdown-rendered button img,
+body.is-mobile .markdown-rendered [role=button] img {
+  pointer-events: none;
 }
 
 /* lib/styles/index.css */

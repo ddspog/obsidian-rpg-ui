@@ -11,6 +11,10 @@ nav[aria-details="Play Toggle"] {
     grid-template-columns: 1fr 1fr;
     gap: 0;
     margin-block-start: calc(-1 * var(--p-spacing, 1em));
+    /* A theme may leave less gap under the banner than the glue pulls back;
+       the padding keeps the buttons clear of the banner either way. */
+    padding-block-start: var(--p-spacing, 1em);
+    position: relative;
     background: var(--rpg-section-bg, #1a1816);
   }
 
