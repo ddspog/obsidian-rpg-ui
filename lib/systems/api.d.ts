@@ -556,7 +556,7 @@ export { DiceRollModal } from "../ui";
 export type { DiceRollModalProps } from "../ui";
 export { RollPopover, formatModifier, parseDice, rollD20, rollDamage } from "../ui";
 export type { RollPopoverProps, Vantage } from "../ui";
-export { VitalsStrip } from "../ui";
+export { VitalsStrip, SheetLegend, PlayToggle } from "../ui";
 export type { VitalsStripProps } from "../ui";
 export { PortraitThumb } from "../ui";
 export type { PortraitThumbProps } from "../ui";

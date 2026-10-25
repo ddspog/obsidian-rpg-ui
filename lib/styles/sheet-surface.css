@@ -1,3 +1,10 @@
+/* Type scale for the sheet's data and labels; components read these instead of stacking em multipliers. */
+body {
+  --rpg-fs-label: 0.75rem;
+  --rpg-fs-data: 0.8125rem;
+  --rpg-fs-row: 1.1em;
+}
+
 /* Sheet surfaces, all widths. The dark status slab and the panels under it share one warm
  * parchment family; links inside them use a violet ink that passes AA. (This began as a
  * phone-only layer in mobile.css and moved here so desktop and phone match.) */
@@ -52,7 +59,7 @@ section[aria-details="Character Stats"]::before {
 /* Skills: a readable size, one line per skill ("Animal Handling" no longer wraps), a visible
  * hover and focus state on the row that rolls, and an info link big enough to hit. */
 section[aria-details="Character Skills"] > menu > li {
-  font-size: 1.1em;
+  font-size: var(--rpg-fs-row);
   padding-inline: 12px;
 }
 
@@ -104,4 +111,21 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty {
 section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] ~ article[aria-details*=" Column"],
 section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ article[aria-details*=" Column"] {
   flex: 1 1 100% !important;
+}
+
+/* Choice chips: flat parchment buttons, not the theme's bevelled ones, at the label floor. */
+.rpg-feature-pending-list .rpg-feature-pending menu button {
+  box-shadow: none;
+  min-height: 28px;
+  font-size: var(--rpg-fs-label);
+  background: light-dark(#f6f0e2, #2e2923);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+
+.rpg-feature-pending-list .rpg-feature-pending menu button:hover:not(:disabled) {
+  background: light-dark(#ece4d3, #3a342c);
+}
+
+.rpg-feature-pending-list .rpg-feature-pending menu button[aria-pressed="true"] {
+  background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }

@@ -13,6 +13,8 @@ import {
   PortraitThumb,
   ConditionPill,
   VitalsStrip,
+  SheetLegend,
+  PlayToggle,
 } from "rpg-ui-toolkit";
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
@@ -108,6 +110,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
 
   return (
     <>
+      <PlayToggle />
       <VitalsStrip
         hp={self.current_hp ?? 0}
         maxHp={self.max_hp ?? 0}
@@ -117,6 +120,7 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
         conditions={conditions.map((c) => parseCondition(c).label)}
       />
       <Section.Row label="Health Management" distribution="1 2">
+        <SheetLegend />
         <PortraitThumb
           src={self.portrait}
           framed={(self as { framed?: unknown }).framed}

@@ -51,6 +51,7 @@ export default withMermaid(
 						{ text: "Skills", link: "/character-sheet/skills" },
 						{ text: "Health Points", link: "/character-sheet/healthpoints" },
 						{ text: "Event Buttons", link: "/character-sheet/event-buttons" },
+						{ text: "Phone, Rolling and Legend", link: "/character-sheet/phone-and-rolling" },
 					],
 				},
 				{

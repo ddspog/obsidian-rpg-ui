@@ -86,6 +86,8 @@ export { RollPopover } from "./dice/RollPopover";
 export type { RollPopoverProps } from "./dice/RollPopover";
 export { formatModifier, parseDice, rollD20, rollDamage } from "./dice/roll";
 export type { Vantage } from "./dice/roll";
+export { SheetLegend } from "./character/SheetLegend";
+export { PlayToggle } from "./character/PlayToggle";
 export { VitalsStrip } from "./character/VitalsStrip";
 export type { VitalsStripProps } from "./character/VitalsStrip";
 export { PortraitThumb } from "./character/PortraitThumb";

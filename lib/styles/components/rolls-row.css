@@ -140,7 +140,7 @@ section[aria-details="Character Rolls"] thead.rpg-rolls__head-band {
 }
 
 section[aria-details="Character Rolls"] thead th {
-  font-size: 0.75rem !important;
+  font-size: var(--rpg-fs-label) !important;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -164,7 +164,7 @@ section[aria-details="Character Rolls"] tbody td {
   /* Force font-size at the cell level — theme-injected `td { font-size:
    * var(--font-text-size); }` rules out-specificity any inherited size
    * declared on the wrapping `table`. */
-  font-size: 0.8125rem !important;
+  font-size: var(--rpg-fs-data) !important;
   color: light-dark(#1a1208, #e3dcce);
   vertical-align: middle;
   white-space: nowrap;
@@ -339,7 +339,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__dc {
   /* Hit/DC are short tokens that read fine at a tighter size — keeps
    * the table compact and lets longer columns (Name / Damage / Range)
    * dominate the row width. */
-  font-size: 0.8125rem !important;
+  font-size: var(--rpg-fs-data) !important;
 }
 
 section[aria-details="Character Rolls"] .rpg-rolls__range {
