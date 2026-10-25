@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: feather
 tab-color: var(--color-yellow)
-tab-name: Demonic Names + Arch-Demonic or Evil God Epithets
+tab-name: Demons and Evil Gods
 ---
 # Demonic Names
 ![[demonic-names.webp|right|64]]

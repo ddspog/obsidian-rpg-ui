@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: flag
 tab-color: var(--color-red)
-tab-name: Name Of Culture + Terrain feature names
+tab-name: Culture and Terrain Names
 ---
 ## More of a Persian style than Arabic-style
 To get more of a Persian feel to the name, do the following. Roll a name on the Arabish Culture Name tables. Eliminate all but the first two syllables, with a vowel ending. So, you would change “Halawara” to just “Hala.” You don’t actually need to do this, but the names can get very long if you don’t. You can try it both ways.

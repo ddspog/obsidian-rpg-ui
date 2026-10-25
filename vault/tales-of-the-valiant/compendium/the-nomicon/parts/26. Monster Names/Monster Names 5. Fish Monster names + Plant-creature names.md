@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: skull
 tab-color: var(--color-red)
-tab-name: Fish Monster names + Plant-creature names
+tab-name: Fish and Plant Monsters
 ---
 # Fish Monster names
 This table works for place names in areas dominated by fish creatures as well as for the personal name of a fish monster. Most of these are long names for effect rather than for repeated use. If you’re going to use one of these for a place the characters will visit often, figure out a shortened version ahead of time, because that’s what the players will use.

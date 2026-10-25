@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: flag
 tab-color: var(--color-green)
-tab-name: Cultures + Tribes
+tab-name: Cultures and Tribes
 ---
 # Cultures
 For a Celtic cultural name, the following table offers variations that will still be recognizable as leading back to the words “Celt” or “Gaul.”

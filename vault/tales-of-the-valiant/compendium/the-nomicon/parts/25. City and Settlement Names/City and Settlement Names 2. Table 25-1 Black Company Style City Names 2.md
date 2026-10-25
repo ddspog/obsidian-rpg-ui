@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: castle
 tab-color: var(--color-orange)
-tab-name: "Table 25-1: Black Company Style City Names · 2"
+tab-name: Black Company City Names · 2
 ---
 #### Table 25-3: City Epithets 2
 **Instructions**: Roll on any of the four columns for a city epithet such as “The City of Lyrics.”

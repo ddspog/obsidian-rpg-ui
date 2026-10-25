@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: scroll-text
 tab-color: var(--color-cyan)
-tab-name: Surnames + Habitational Bynames + Patronymic/Matronymic + Occupational Surname
+tab-name: Surnames and Bynames
 ---
 # Surnames
 A surname is usually a family name, although there are also “habitational bynames” which are derived from a person’s place of origin, such as “Chretien de Troyes” or “John of Gaunt.” A third type of surname is a patronymic like “Smithson” or “Smithsdottir,” which only carries for one generation. A fourth type is the occupational surname, or aptonym, which identifies the person by profession. For the most part, family names were used more by the nobility than by commoners, who identified by nicknames, habitational bynames, and epithets.

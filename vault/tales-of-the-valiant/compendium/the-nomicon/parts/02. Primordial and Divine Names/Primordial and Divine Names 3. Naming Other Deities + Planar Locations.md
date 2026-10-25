@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: scroll-text
 tab-color: var(--color-yellow)
-tab-name: Naming Other Deities + Planar Locations
+tab-name: Other Deities and Planes
 ---
 # Naming Other Deities
 Other than the cosmic eldritch horror deities, naming deities is a wide-open and highly subjective process. The names of the deities ought to sound similar in tone, but it's also important to make the names different enough for the players to remember them.

@@ -93,11 +93,39 @@ function BodyRow({ cells }: { cells: RenderCell[] }) {
   );
 }
 
+/** A result's `[[Note|label]]` links as anchors Obsidian follows; the rest stays text. */
+function withLinks(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const re = /\[\[([^\]\n]+)\]\]/g;
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > cursor) parts.push(text.slice(cursor, m.index));
+    const pipe = m[1].indexOf("|");
+    const target = (pipe >= 0 ? m[1].slice(0, pipe) : m[1]).trim();
+    const label = (pipe >= 0 ? m[1].slice(pipe + 1) : m[1]).split("/").pop()!.trim();
+    parts.push(
+      <a key={m.index} className="internal-link" href={target} data-href={target}>
+        {label}
+      </a>
+    );
+    cursor = m.index + m[0].length;
+  }
+  if (cursor === 0) return text;
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return parts;
+}
+
 function RollCell({ cell, storeKey, def }: { cell: FooterCell; storeKey: string; def: TableDef }) {
   const interactive = cell.segments.some((s) => s.kind === "roll");
   const { values, reroll } = useRollResult(storeKey, def, cell);
 
-  const handleClick = interactive ? reroll : undefined;
+  const handleClick = interactive
+    ? (ev: React.MouseEvent) => {
+        if ((ev.target as HTMLElement).closest("a")) return; // a link in the result is followed
+        reroll();
+      }
+    : undefined;
   const handleKeyDown = interactive
     ? (ev: React.KeyboardEvent) => {
         if (ev.key === "Enter" || ev.key === " ") {
@@ -116,7 +144,7 @@ function RollCell({ cell, storeKey, def }: { cell: FooterCell; storeKey: string;
     rollIdx++;
     return (
       <span key={i} className="dice-roller-result">
-        {result}
+        {withLinks(result)}
       </span>
     );
   });
