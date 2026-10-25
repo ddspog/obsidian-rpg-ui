@@ -106,5 +106,6 @@
  * .markdown-rendered / .markdown-source-view). */
 @import "./obsidian-overrides.css";
 
-/* Phone / narrow-pane overrides — keep last */
+/* Shared sheet surface, then phone / narrow-pane overrides — keep last */
+@import "./sheet-surface.css";
 @import "./mobile.css";
