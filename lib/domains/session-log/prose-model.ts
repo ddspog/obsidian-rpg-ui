@@ -16,6 +16,7 @@
 import { actionTarget, leadingActionCall } from "./action-call";
 import { parseSceneMarker } from "lib/domains/lonelog/parser";
 import { answerFateCheck, answerFateQuestion, fateCheckModifier, fateThreshold } from "lib/domains/gm/fate-chart";
+import { parsePickSpec } from "lib/domains/gm/steps";
 import { parseFormula, refStem, rolledDice, rolledValue, type FormulaContext, type FormulaVars } from "./formula";
 import { combatantKey, foldInitiative } from "./initiative";
 import { matchActor } from "./actors";
@@ -635,7 +636,7 @@ function withPickSources(rows: SidebarRow[]): SidebarRow[] {
       if (row.source && /@?\[\[[^\]\n]+\]\]/.test(row.source)) seen.push(row);
       continue;
     }
-    const from = seen.slice(-spec.split(/[+&]/).length);
+    const from = seen.slice(-parsePickSpec(spec).length);
     row.pick = spec;
     row.pickFrom = from.map((r) => ({ source: r.source ?? "", content: r.content }));
     from.forEach((r, part) => {
