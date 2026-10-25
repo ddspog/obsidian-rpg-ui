@@ -153,3 +153,35 @@
   padding: var(--size-4-1, 4px) 0;
   border-top: none;
 }
+
+/* Phone: the tabs are one scrolling row (five wrapped onto three and squeezed
+ * the expand/collapse buttons to dots), and a control with a button beside it
+ * wraps instead of shrinking its field. */
+@media (max-width: 600px) {
+  .rpg-settings-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .rpg-settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rpg-settings-tabs > li {
+    flex: none;
+  }
+
+  .rpg-settings-bar-actions {
+    flex: none;
+  }
+
+  .rpg-settings-panel .setting-item-control {
+    flex-wrap: wrap;
+  }
+
+  .rpg-settings-panel .setting-item-control input[type="text"] {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+}

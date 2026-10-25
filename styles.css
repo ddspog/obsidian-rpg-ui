@@ -14080,6 +14080,29 @@ nav[aria-details="Play Toggle"] {
   padding: var(--size-4-1, 4px) 0;
   border-top: none;
 }
+@media (max-width: 600px) {
+  .rpg-settings-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rpg-settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .rpg-settings-tabs > li {
+    flex: none;
+  }
+  .rpg-settings-bar-actions {
+    flex: none;
+  }
+  .rpg-settings-panel .setting-item-control {
+    flex-wrap: wrap;
+  }
+  .rpg-settings-panel .setting-item-control input[type=text] {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+}
 
 /* lib/styles/components/page-footer.css */
 .rpg-page-footer {
