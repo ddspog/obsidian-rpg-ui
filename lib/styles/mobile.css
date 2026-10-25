@@ -367,8 +367,17 @@
     background-color: var(--interactive-accent);
   }
 
-  .lonelog-prose-scene-head {
+  /* Room for the drawer toggle, which the bottom bar replaces. */
+  .session-log-container:not(.has-bar) .lonelog-prose-scene-head {
     padding-inline-end: 7rem;
+  }
+
+  .lonelog-prose-scene-head {
+    text-align: start;
+  }
+
+  .lonelog-prose-scene-head .lonelog-prose-scene-id {
+    align-self: baseline;
   }
 
   /* Hover-only and superscript-sized controls: no hover on a touchscreen, and
@@ -508,6 +517,16 @@
     padding-right: 1.75rem;
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+  }
+
+  /* Replay buttons beside a fight's map: a thumb-sized target each. */
+  .lonelog-battle-pane .lonelog-battle-controls {
+    gap: 0;
+  }
+
+  .lonelog-battle-pane .lonelog-battle-controls button {
+    width: 2rem;
+    height: 2rem;
   }
 
   /* iOS zooms into inputs under 16px. */
