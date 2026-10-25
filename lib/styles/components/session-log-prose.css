@@ -205,6 +205,11 @@
   line-height: 1.3;
 }
 
+/* Themes indent h4 (Ribbons: text-indent); the heading here is a flex row that starts at the margin. */
+.markdown-rendered .lonelog-prose-doc h4.lonelog-prose-scene-head {
+  text-indent: 0;
+}
+
 .lonelog-prose-scene:first-child .lonelog-prose-scene-head {
   margin-top: 0;
 }

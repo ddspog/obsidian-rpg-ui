@@ -2337,6 +2337,9 @@ p.rpg-item-magic-card__subtitle {
   font-weight: 400;
   line-height: 1.3;
 }
+.markdown-rendered .lonelog-prose-doc h4.lonelog-prose-scene-head {
+  text-indent: 0;
+}
 .lonelog-prose-scene:first-child .lonelog-prose-scene-head {
   margin-top: 0;
 }
@@ -16928,8 +16931,14 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
   .lonelog-log-save {
     background-color: var(--interactive-accent);
   }
-  .lonelog-prose-scene-head {
+  .session-log-container:not(.has-bar) .lonelog-prose-scene-head {
     padding-inline-end: 7rem;
+  }
+  .lonelog-prose-scene-head {
+    text-align: start;
+  }
+  .lonelog-prose-scene-head .lonelog-prose-scene-id {
+    align-self: baseline;
   }
   .markdown-rendered .rpg-feature-bucket-entry-collapse {
     opacity: 0.6;
@@ -17050,6 +17059,13 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
         to right,
         #000 calc(100% - 1.75rem),
         transparent);
+  }
+  .lonelog-battle-pane .lonelog-battle-controls {
+    gap: 0;
+  }
+  .lonelog-battle-pane .lonelog-battle-controls button {
+    width: 2rem;
+    height: 2rem;
   }
   .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
   .markdown-preview-view [class*=rpg-] select,
