@@ -111,14 +111,14 @@ steps:
     labels:
       - "Name"
     choose:
-      - "\"City of the \"+Group Adj.=1& Groups=2"
+      - "\"City of the \"+Group Adjective=1& Groups=2"
   - choice: "City epithet: a thing"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#city-epithets-1"
     labels:
       - "Name"
     choose:
-      - "\"City of the \"+Thing Adj.=3& Thing=4"
+      - "\"City of the \"+Thing Adjective=3& Thing=4"
   - choice: "City epithet: \"The City of…\""
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 2. Table 25-1 Black Company Style City Names 2]]#city-epithets-2"
