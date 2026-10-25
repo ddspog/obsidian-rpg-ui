@@ -42,6 +42,8 @@ const RESERVED = new Set(["rolls", "result", "narration"]);
 export interface GMStepContext {
   steps?: Record<string, GMFeature>;
   tables?: Record<string, TableDef>;
+  /** Tables a step offers alternatives from only, by ref → their single-part `choose` spec. */
+  alternatives?: Record<string, string>;
   /**
    * The CF dial (keyed "CF"), for `effectiveCf`'s generator `vs CF` fallback.
    * Populated from a feature's own `dial` / `reads:` links.
@@ -474,7 +476,11 @@ function reResolveStepLine(
     const refM = content.match(/^(@?\[\[[^\]\n]+\]\](?:#[\w./-]+)?)/);
     const table = refM ? stepCtx?.tables?.[refM[1]] : undefined;
     if (table) {
-      const filled = resolveTableRoll(`${content} ->`, table).match(/->\s*(\S.*)$/);
+      const filled = resolveTableRoll(
+        `${content} ->`,
+        table,
+        refM ? stepCtx?.alternatives?.[refM[1]] : undefined
+      ).match(/->\s*(\S.*)$/);
       result = filled ? filled[1].trim() : null;
     }
   } else if (step.likelihood && cf != null) {

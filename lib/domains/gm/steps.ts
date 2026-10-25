@@ -253,6 +253,31 @@ export function pickResult(
 }
 
 /**
+ * A row read as alternative names by the one part a step's `choose` spec gives it (`1,2,3`): the
+ * words alone, to pick from, however the columns are named (a base name and its dialects).
+ */
+function alternativesOf(row: TableDef["rows"][number], spec: string): string | undefined {
+  const part = parsePickSpec(spec)[0];
+  const values = part ? partValues(row, part) : [];
+  return values.length > 1 ? pickerToken(values) : (values[0] ?? undefined);
+}
+
+/**
+ * The tables a step offers only alternatives from, by ref: a single-part spec with fewer names than
+ * a die is rolled for (more get a Pick one row). Their rows read as the words to pick from.
+ */
+export function alternativesByRef(steps: GMStep[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const s of flattenSteps(steps)) {
+    s.tables?.forEach((ref, at) => {
+      const spec = s.choose?.[at]?.trim();
+      if (spec && parsePickSpec(spec).length === 1 && pickSides(spec) < PICK_ROLL_FROM) out[ref] = spec;
+    });
+  }
+  return out;
+}
+
+/**
  * Auto-fill a table-backed calc's result from the rolled die. Given a calc like
  * `"@[[Scene Adjustment]] d10=2 ->"` and the linked `TableDef`, looks up the row
  * whose first column covers the rolled value and writes the second column after
@@ -260,7 +285,7 @@ export function pickResult(
  * isn't rolled, no row matches, or the line already carries a result. The filled
  * value stays editable (it's plain text in the line).
  */
-export function resolveTableRoll(calc: string, table: TableDef): string {
+export function resolveTableRoll(calc: string, table: TableDef, alternatives?: string): string {
   const arrow = calc.match(/->\s*(\S.*)?$/);
   if (arrow && arrow[1]) return calc; // already has a result after `->`
   const n = rolledValue(calc);
@@ -268,7 +293,9 @@ export function resolveTableRoll(calc: string, table: TableDef): string {
   for (const row of table.rows) {
     const key = row.cells[0]?.value ?? "";
     if (rangeMatches(key, n)) {
-      const result = rowResult(table, row);
+      const result = alternatives
+        ? (alternativesOf(row, alternatives) ?? rowResult(table, row))
+        : rowResult(table, row);
       if (!result) return calc;
       return calc.replace(/->\s*$/, `-> ${result}`);
     }
