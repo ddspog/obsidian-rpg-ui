@@ -16150,6 +16150,7 @@ p.rpg-statblock-subtitle {
 }
 .rpg-statblock-abilities {
   width: 100%;
+  table-layout: fixed;
   margin: 12px 0;
   border-collapse: collapse;
   text-align: center;
@@ -16159,12 +16160,12 @@ p.rpg-statblock-subtitle {
 .rpg-statblock-abilities th {
   font-weight: 700;
   font-size: 0.85em;
-  padding: 4px 8px;
+  padding: 4px 2px;
   color: var(--statblock-title);
   text-align: center;
 }
 .rpg-statblock-abilities td {
-  padding: 2px 8px 4px;
+  padding: 2px 2px 4px;
   font-size: 0.95em;
   text-align: center;
 }
@@ -17032,6 +17033,23 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+  .rpg-inventory-block__encumbrance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, max-content));
+    gap: 0.25rem 1.25rem;
+  }
+  .rpg-rule-tab-group__tabs-scroll {
+    padding-right: 1.75rem;
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.75rem),
+        transparent);
+    mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.75rem),
+        transparent);
   }
   .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
   .markdown-preview-view [class*=rpg-] select,
