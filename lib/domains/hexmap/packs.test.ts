@@ -121,3 +121,78 @@ describe("displayFor", () => {
     expect(parsePackConfig(null, "x").name).toBe("x");
   });
 });
+
+describe("base layer", () => {
+  it("indexes base tiles and reads step, hides and the pack's base", () => {
+    const cfg = parsePackConfig(
+      "defaults: { hexWidth: 477, step: 35 }\nbase: basic[level]\nterrains:\n  hills: { hides: true }",
+      "p"
+    );
+    expect(cfg.defaults.step).toBe(35);
+    expect(cfg.base).toBe("basic[level]");
+    expect(displayFor(cfg, "terrain", "hills/a").hides).toBe(true);
+    const pack = buildPack(
+      "p",
+      [
+        { path: "base/level.webp", url: "u:level" },
+        { path: "base/rocky-0.webp", url: "u:r0" },
+        { path: "base/rocky-1.webp", url: "u:r1" },
+        { path: "terrain/stray.webp", url: "u:stray" },
+      ],
+      cfg
+    );
+    // Bases sit in the layer folder itself and are named by file; `rocky` takes its `rocky-…` variants.
+    expect(selectTile(pack, "base", "level", "s")?.file.path).toBe("level");
+    expect(selectTile(pack, "base", "rocky[1]", "s")?.file.path).toBe("rocky-1");
+    expect(selectTile(pack, "base", "rock", "s")).toBeNull();
+    // Other layers still want a folder.
+    expect(pack.layers.terrain.files).toHaveLength(0);
+  });
+});
+
+describe("selectTile: an exact name", () => {
+  it("wins over names that contain it", () => {
+    const pack = buildPack(
+      "basic",
+      ["deciduous", "deciduous-sparse", "deciduous-clearing", "conifer-0", "conifer-1"].map((n) => ({
+        path: `terrain/land/forest/lush/${n}.webp`,
+        url: n,
+      })),
+      parsePackConfig("", "basic")
+    );
+    for (const seed of ["a", "b", "c", "d", "e"])
+      expect(selectTile(pack, "terrain", "forest[lush][deciduous]", seed)?.file.name).toBe("deciduous");
+    // `*` picks among every name it fits, at random.
+    const deciduous = new Set(
+      ["a", "b", "c", "d", "e", "f", "g", "h"].map(
+        (x) => selectTile(pack, "terrain", "forest[lush][deciduous*]", x)?.file.name
+      )
+    );
+    expect([...deciduous].sort()).toEqual(["deciduous", "deciduous-clearing", "deciduous-sparse"]);
+    expect(selectTile(pack, "terrain", "forest[lush][*sparse]", "a")?.file.name).toBe("deciduous-sparse");
+    expect(selectTile(pack, "terrain", "forest[lush][*clear*]", "a")?.file.name).toBe("deciduous-clearing");
+    const conifers = new Set(
+      ["a", "b", "c", "d", "e", "f"].map((s) => selectTile(pack, "terrain", "forest[lush][conifer]", s)?.file.name)
+    );
+    expect([...conifers].every((n) => n?.startsWith("conifer-"))).toBe(true);
+  });
+});
+
+describe("terrain sections at the pack's top", () => {
+  it("reads land/ and water/ beside the other layers as the terrain layer, the paths unchanged", () => {
+    const top = buildPack(
+      "p",
+      ["land/forest/lush/a.webp", "water/ocean/still-0.webp", "stack/foliage/tree.webp"].map((path) => ({ path, url: `u:${path}` })),
+      parsePackConfig(null, "p")
+    );
+    const under = buildPack(
+      "p",
+      ["terrain/land/forest/lush/a.webp", "terrain/water/ocean/still-0.webp"].map((path) => ({ path, url: `u:${path}` })),
+      parsePackConfig(null, "p")
+    );
+    expect([...top.byPath.terrain.keys()].sort()).toEqual([...under.byPath.terrain.keys()].sort());
+    expect(selectTile(top, "terrain", "forest[lush]", "s")?.file.path).toBe("land/forest/lush/a");
+    expect(selectTile(top, "terrain", "ocean", "s")?.file.path).toBe("water/ocean/still-0");
+    expect(top.byPath.stack.size).toBe(1);
+  });
+});

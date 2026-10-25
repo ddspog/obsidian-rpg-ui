@@ -88,6 +88,16 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 - **Documentation:** VitePress documentation in `/docs` with examples and component references
 - **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
 
+## rpg CLI (the vault as the plugin calculates it)
+
+`node cli/dist/rpg.cjs` (build with `npm run build:cli`) runs the plugin's own calculations headless and read-only: `character <note>` (the calculated sheet), `log <note>` (session state: party HP, conditions, foes, combat, travel, clocks), `map <note> --level N --around q,r`, `lookup <note>`, `search <words>`.
+
+**Use it before and after changing a character sheet, a compendium note or a session log**, and whenever a computed value is needed instead of reading raw Markdown. See the `rpg-cli` skill (`.claude/skills/rpg-cli/SKILL.md`) and `docs/rpg-cli.md`.
+
+## rpg map block (hex and square maps)
+
+Before changing a map note, the map code (`lib/domains/hexmap`, `lib/domains/battlemap`, `lib/components/hexmap`, `lib/components/battlemap`) or a texture pack's `pack.yml`, use the `rpg-map` skill (`.claude/skills/rpg-map/SKILL.md`). It has the block grammar, a code map, and how to check a change (`rpg map` CLI, Sandbox test notes, `tmp/harness`). Design docs: `docs/hex-map-design.md`, `docs/battle-map-design.md`.
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.
@@ -102,7 +112,7 @@ A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and insp
 **When to use:** After CSS/component changes to verify rendering, when debugging layout or style issues, when investigating why a block doesn't render, or to create regression baselines. Use the `/rpg-dev` command for detailed guidance.
 
 **Key facts:**
-- Input paths are relative to plugin root (e.g., `vault/tests/03-TEST-SKILLS.md`)
+- Input paths are relative to plugin root (e.g., `vault/Sandbox/Tests/03-TEST-SKILLS.md`)
 - Output goes to `tmp/rpg-dev/` (gitignored)
 - All commands auto-unfold collapsed sections before capture
 - Obsidian virtualizes DOM sections — extracted HTML is viewport-limited

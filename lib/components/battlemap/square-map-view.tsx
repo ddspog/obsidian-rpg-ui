@@ -30,6 +30,8 @@ export interface MapToken {
   icon?: string;
   /** Knocked out — at 0 HP — on the turn shown. */
   ko?: boolean;
+  /** A picture drawn in the disc (`token_image:` in its note), as a URL. */
+  image?: string;
 }
 
 export interface MapArrow {
@@ -68,6 +70,8 @@ interface SquareMapViewProps {
   onSquareClick?: (square: Square) => void;
   /** The picked token, drawn picked. */
   selected?: string;
+  /** Right-click on a token: called with its name and the click. */
+  onTokenContextMenu?: (name: string, event: MouseEvent) => void;
 }
 
 interface Box {
@@ -160,7 +164,9 @@ export function SquareMapView({
   onTokenClick,
   onSquareClick,
   selected,
+  onTokenContextMenu,
 }: SquareMapViewProps) {
+  const uid = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
   const picture = written.image?.url ? written.image : undefined;
   const natural = useImageSize(picture?.url);
   const map = picture && natural ? fitToImage(written, natural.width, natural.height) : written;
@@ -301,7 +307,7 @@ export function SquareMapView({
 
       {/* Tokens */}
       <g className="rpg-battlemap-tokens">
-        {tokens.map((t) => {
+        {tokens.map((t, ti) => {
           const { x, y } = center(t.at);
           const r = cell * 0.4;
           const frac = t.hp != null && t.max ? Math.max(0, Math.min(1, t.hp / t.max)) : null;
@@ -313,6 +319,15 @@ export function SquareMapView({
                 selected === t.name ? " is-selected" : ""
               }${onTokenClick ? " is-pickable" : ""}`}
               transform={`translate(${x} ${y})`}
+              {...(onTokenContextMenu
+                ? {
+                    onContextMenu: (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTokenContextMenu(t.name, e.nativeEvent);
+                    },
+                  }
+                : {})}
               {...(onTokenClick
                 ? {
                     role: "button",
@@ -350,7 +365,24 @@ export function SquareMapView({
                   transform="rotate(-90)"
                 />
               )}
-              {t.icon ? (
+              {t.image ? (
+                <>
+                  <clipPath id={`rpg-bm-token-${uid}-${ti}`}>
+                    <circle r={r - 0.6} />
+                  </clipPath>
+                  <image
+                    className="rpg-battlemap-token-image"
+                    href={t.image}
+                    x={-r}
+                    y={-r}
+                    width={r * 2}
+                    height={r * 2}
+                    preserveAspectRatio="xMidYMid slice"
+                    clipPath={`url(#rpg-bm-token-${uid}-${ti})`}
+                  />
+                  <circle r={r} className="rpg-battlemap-token-rim" />
+                </>
+              ) : t.icon ? (
                 <>
                   <text className="rpg-battlemap-token-icon" y={-r * 0.16} style={{ fontSize: `${r * 1.05}px` }}>
                     {t.icon}

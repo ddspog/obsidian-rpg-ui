@@ -17,12 +17,14 @@ import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_IMAGE_STUDIO, DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { ImageStudioModal, setImageStudioSettings } from "lib/plugin/image-studio-modal";
-import { setCardFrameSource } from "lib/services/card-frame-config";
+import { relinkFrames, retargetFrames, setCardFrameSource } from "lib/services/card-frame-config";
+import { applyFrameCss, removeFrameCss } from "lib/services/frame-css";
 import { msgbus } from "lib/services/event-bus";
 import * as Fm from "lib/domains/frontmatter";
 import { extractMeta, detectMetaFromSource } from "lib/utils/meta-extractor";
 import { SystemRegistry } from "lib/systems/registry";
 import { EntityResolver } from "lib/services/entity-resolver";
+import { hexAtlas } from "lib/services/hex-atlas";
 import { hexPackIndex, hexPacksKey, hexSettingsKey } from "lib/services/hex-pack-index";
 import { settingsStore } from "lib/services/settings-store";
 import { getEntityBus } from "lib/services/entity-event-bus";
@@ -147,6 +149,15 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.registerEvent(this.app.vault.on("delete", (f) => onHexPackChange(f)));
     this.registerEvent(this.app.vault.on("modify", (f) => onHexPackChange(f)));
     this.registerEvent(this.app.vault.on("rename", (f, oldPath) => onHexPackChange(f, oldPath)));
+
+    // Hex detail maps (`of: [[Parent]]`): found once, kept up to date per note.
+    hexAtlas.init(this.app);
+    const onAtlasChange = (file: TAbstractFile | null, oldPath?: string) =>
+      void hexAtlas.update(file instanceof TFile ? file : null, oldPath);
+    this.registerEvent(this.app.vault.on("modify", (f) => onAtlasChange(f)));
+    this.registerEvent(this.app.vault.on("create", (f) => onAtlasChange(f)));
+    this.registerEvent(this.app.vault.on("delete", (f) => onAtlasChange(null, f.path)));
+    this.registerEvent(this.app.vault.on("rename", (f, oldPath) => onAtlasChange(f, oldPath)));
 
     // Initialize esbuild-wasm early, using the bundled WASM file if available
     const pluginDir = (this.manifest as any).dir ?? `.obsidian/plugins/${this.manifest.id}`;
@@ -819,6 +830,18 @@ export default class DndUIToolkitPlugin extends Plugin {
     setImageStudioSettings(() => this.settings.imageStudio);
     // The card frame framed pictures are drawn in: CSS, or the generated one.
     setCardFrameSource(() => this.settings.cardFrames);
+    applyFrameCss(this.settings.cardFrames);
+    // Frame files moved in the vault stay in use; ones moved while it was closed are found in the frames folder.
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        if (retargetFrames(this.settings.cardFrames, oldPath, file.path)) void this.saveSettings();
+      })
+    );
+    this.app.workspace.onLayoutReady(() => {
+      const exists = (p: string) => !!this.app.vault.getAbstractFileByPath(p);
+      if (relinkFrames(this.settings.cardFrames, this.settings.cardFramesFolder || "Frames", exists))
+        void this.saveSettings();
+    });
     // The image studio, on the note that's open.
     this.addCommand({
       id: "rpg-ui-image-studio",
@@ -912,6 +935,7 @@ export default class DndUIToolkitPlugin extends Plugin {
   }
 
   onunload() {
+    removeFrameCss();
     this.refRegistry?.dispose();
     this.refRegistry = null;
     this.refCache?.clear();
@@ -968,6 +992,7 @@ export default class DndUIToolkitPlugin extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
     settingsStore.setSettings(this.settings);
+    applyFrameCss(this.settings.cardFrames);
     // State-file path change: rebuild the data store and swap it into
     // the long-lived KV instance. Views that captured the KV at plugin
     // load stay valid — `setStore` clears the in-memory cache so the

@@ -105,6 +105,39 @@
   pointer-events: none;
 }
 
+/* With a picture: it fills the disc, ringed in its side's colour. */
+.rpg-battlemap-token-image {
+  pointer-events: none;
+}
+
+.rpg-battlemap-token-rim {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.4;
+  pointer-events: none;
+}
+
+.rpg-battlemap-token.is-pc .rpg-battlemap-token-rim {
+  stroke: var(--interactive-accent);
+}
+
+.rpg-battlemap-token.is-foe .rpg-battlemap-token-rim {
+  stroke: light-dark(#c0524f, #b04a47);
+}
+
+.rpg-battlemap-token.is-npc .rpg-battlemap-token-rim {
+  stroke: light-dark(#8a7038, #a09880);
+}
+
+.rpg-battlemap-token.is-down .rpg-battlemap-token-image {
+  filter: grayscale(1);
+}
+
+.rpg-battlemap-token.is-active .rpg-battlemap-token-rim {
+  stroke: light-dark(#d9a42b, #e6c34d);
+  stroke-width: 2.4;
+}
+
 /* With an emoji: the emoji large, the initials small below it. */
 .rpg-battlemap-token-icon {
   text-anchor: middle;
@@ -390,7 +423,9 @@
 }
 
 .rpg-battlemap-token.is-pickable:focus-visible .rpg-battlemap-token-disc,
-.rpg-battlemap-token.is-selected .rpg-battlemap-token-disc {
+.rpg-battlemap-token.is-pickable:focus-visible .rpg-battlemap-token-rim,
+.rpg-battlemap-token.is-selected .rpg-battlemap-token-disc,
+.rpg-battlemap-token.is-selected .rpg-battlemap-token-rim {
   stroke: var(--text-accent);
   stroke-width: 2.6;
 }
@@ -631,4 +666,325 @@
 .lonelog-battle-tick:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 1px;
+}
+
+/* ── Journeys on an overworld hex map (hex-map-design §14.2) ──
+ * The map stays in view while the journey's entries scroll under it, like a
+ * fight's map; its arrival closes it as a card. */
+
+/* The minimap: a circle in the top corner, riding a rail of no height that sticks
+ * to the page's top (under the Log controls), with or without the Log open. */
+.lonelog-minimap-rail {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 4;
+}
+
+.lonelog-minimap {
+  --minimap: 9.5rem;
+  position: absolute;
+  top: 3rem;
+  right: 0.25rem;
+  width: var(--minimap);
+  margin: 0;
+  font-family: var(--font-interface, system-ui, sans-serif);
+}
+
+.lonelog-minimap-disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--minimap);
+  height: var(--minimap);
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid color-mix(in srgb, var(--text-faint) 60%, var(--background-primary));
+  border-radius: 50%;
+  background: var(--background-secondary);
+  box-shadow:
+    0 0 0 1px var(--background-modifier-border),
+    0 0.3rem 1rem rgba(0, 0, 0, 0.35),
+    inset 0 0 1.2rem rgba(0, 0, 0, 0.45);
+  color: var(--text-faint);
+  cursor: zoom-in;
+}
+
+.lonelog-minimap.is-arrived .lonelog-minimap-disc {
+  filter: saturate(0.6);
+}
+
+.lonelog-minimap-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.lonelog-minimap-north {
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--background-primary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.lonelog-minimap-caption {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-size: 0.64rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.lonelog-minimap-tools {
+  position: absolute;
+  top: 0;
+  right: -0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.lonelog-minimap:hover .lonelog-minimap-tools,
+.lonelog-minimap:focus-within .lonelog-minimap-tools {
+  opacity: 1;
+}
+
+.lonelog-minimap-tools .rpg-hexpaint-button {
+  padding: 0.15rem;
+  border-radius: 50%;
+}
+
+.lonelog-minimap.is-small {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 50%;
+  background: var(--background-primary);
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.25);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* The whole map over the page. */
+.lonelog-travel-full {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 3vh 3vw;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.lonelog-travel-full .lonelog-travel-pane {
+  width: min(84rem, 94vw);
+  max-height: 94vh;
+  overflow: auto;
+  background: var(--background-primary);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.45);
+}
+
+.lonelog-travel-pane {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--font-interface, system-ui, sans-serif);
+}
+
+.lonelog-travel-pane .rpg-hexmap {
+  margin: 0;
+}
+
+.lonelog-travel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.lonelog-travel-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.lonelog-travel-where {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.lonelog-travel-controls {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.lonelog-travel-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0.35rem 0.6rem 0.45rem;
+  border-top: 1px solid var(--background-modifier-border);
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.lonelog-travel-groups li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.lonelog-travel-groups li::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.2rem;
+  border-radius: 1px;
+  background: var(--trail);
+  align-self: center;
+}
+
+.lonelog-travel-groups strong {
+  color: var(--text-normal);
+}
+
+.lonelog-travel-at {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.lonelog-travel-missing {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.lonelog-travel-arrival {
+  margin: 0.8rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border));
+  border-radius: 6px;
+  background: var(--background-primary);
+  font-family: var(--font-interface, system-ui, sans-serif);
+  font-size: var(--font-ui-smaller);
+}
+
+.lonelog-travel-arrival header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.lonelog-travel-arrival-key {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lonelog-travel-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lonelog-travel-stats li {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lonelog-travel-outcome {
+  margin-top: 0.35rem;
+  font-family: var(--font-text);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+/* Too small to read in the circle: names and labels show in the full map. */
+.lonelog-minimap-svg text,
+.lonelog-minimap-svg .rpg-hexmap-banners {
+  display: none;
+}
+
+/* Full screen, the map takes the room (a small map's own size limit aside). */
+.lonelog-travel-full .rpg-hexmap-viewport {
+  width: 100% !important;
+  max-width: none !important;
+  height: 74vh !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+}
+
+/* Special moves (`[Mv: … | teleport]`, `| ship`): not walked, so not a trail —
+ * a teleport arcs from where it vanished to where it appears, a ship or a
+ * flight follows its waypoints in a dash of its own. */
+.rpg-hexmap-jump path,
+.rpg-hexmap-jump polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rpg-hexmap-jump.via-teleport path {
+  stroke-dasharray: 2 7;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.rpg-hexmap-jump circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.85;
+}
+
+.rpg-hexmap-jump.via-teleport circle {
+  fill: color-mix(in srgb, currentColor 22%, transparent);
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.rpg-hexmap-jump:not(.via-teleport) polyline,
+.rpg-hexmap-jump:not(.via-teleport) path {
+  stroke-dasharray: 14 5 2 5;
+}
+
+/* The minimap's map dimmed under the party, so its pin stands out when the hexes are small. */
+.lonelog-minimap-veil {
+  fill: var(--background-primary);
+  opacity: 0.5;
+  pointer-events: none;
 }

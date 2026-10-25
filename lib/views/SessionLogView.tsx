@@ -11,6 +11,8 @@ import type { IconTone } from "lib/domains/image-studio/kinds";
 import { imageLink } from "lib/domains/image-studio/targets";
 import { readItemFacts, type HeldThing, type ItemFacts } from "lib/domains/session-log/casting";
 import { frameSpec } from "lib/services/card-frame-config";
+import { buildIconIndex } from "lib/services/icon-index";
+import { openTokenImageMenu, tokenImageFile } from "lib/services/token-image";
 import { KeyValueStore } from "lib/services/kv/kv";
 import { ReactMarkdown } from "./ReactMarkdown";
 import { addHeaderMap, parseSessionLogBlock, processSessionLog, type HeaderMap } from "lib/domains/session-log";
@@ -22,7 +24,8 @@ import { SystemRegistry } from "lib/systems/registry";
 import { logNames, matchActor } from "lib/domains/session-log/actors";
 import { foesInPlay } from "lib/domains/session-log/foes";
 import { foldBattles } from "lib/domains/battlemap/battle";
-import { BattlePane } from "lib/components/battlemap/battle-pane";
+import { BattlePane, type TokenPictures } from "lib/components/battlemap/battle-pane";
+import { shownName } from "lib/components/battlemap/square-map-view";
 import { foldFoes, isDown, type FoeAt } from "lib/domains/session-log/foes";
 import { combatantKey } from "lib/domains/session-log/initiative";
 import { combatClock } from "lib/domains/session-log/turns";
@@ -34,6 +37,10 @@ import type { MapChoice, MapTools } from "lib/domains/battlemap/map-tools";
 import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
+import { firstHexMap } from "lib/domains/hexmap/detail";
+import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
+import { TravelFullscreen, TravelMinimap } from "lib/components/hexmap/travel-pane";
+import { foldTravels, foldTravelTrack, type Journey } from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -49,16 +56,11 @@ import { splitFenceBody } from "lib/utils/fence-split";
 import { parse as parseYaml } from "yaml";
 import { ProseView } from "lib/components/session-log/prose-view";
 import { LogSidebar } from "lib/components/session-log/log-sidebar";
+import { useSidebarRoom } from "lib/components/session-log/use-sidebar-room";
 import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
-import {
-  resolveDialOps,
-  collectResources,
-  foldResources,
-  resourceDefaults,
-  type DialDecl,
-} from "lib/domains/lonelog/dial-ops";
-import { collectLists, resolveListOps, type ListDecl } from "lib/domains/lonelog/list-ops";
+import { resolveDialOps, foldResources, resourceDefaults, type DialDecl } from "lib/domains/lonelog/dial-ops";
+import { resolveListOps, type ListDecl } from "lib/domains/lonelog/list-ops";
 import {
   assembleProse,
   buildSidebarItems,
@@ -83,17 +85,12 @@ import { SessionActionsPanel } from "lib/components/session-log/session-actions-
 import { extractCardsFromEntity, extractResourcesFromEntity } from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
-import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
-import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
-import type { TableDef } from "lib/domains/tables/types";
+import type { GMFeature } from "lib/domains/features/types";
 import { applyChoicePick } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext } from "lib/components/session-log/table-roll-context";
-import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
-import { parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
-import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
-import { expandCalledGenerator } from "lib/domains/gm/expand-gen";
+import { GMLoader, type NoteRef } from "lib/services/gm-loader";
 import type { CardRider, CardStack, SessionFeatureCard } from "lib/domains/session-log/card-types";
 import { DEFAULT_LOG_TEMPLATE } from "lib/domains/session-log/card-types";
 import { actionCall, findActionCalls, leadingActionCall } from "lib/domains/session-log/action-call";
@@ -148,6 +145,11 @@ import {
 } from "lib/domains/session-log/round-economy";
 import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
 
+/** A vault note as the GM loader reads it. */
+interface VaultNote extends NoteRef {
+  file: TFile;
+}
+
 export class SessionLogView extends BaseView {
   public codeblock = "log";
   private kv: KeyValueStore;
@@ -194,6 +196,8 @@ class SessionLogMarkdown extends ReactMarkdown {
   private foeStacks = new Map<string, CardStack[]>();
   /** The battle maps the log's fights are bound to, by the link as written. */
   private battleMaps: Record<string, SquareMap> = {};
+  /** The hex maps the log's journeys are on, by `travelKey` (a level made a map of its own). */
+  private travelMaps: Record<string, string> = {};
   /** A combatant's value for a roll term in an `[Init:]` entry. */
   private resolveCombatant: (combatant: string, name: string) => number | undefined = () => undefined;
   /** Each party member's sheet as the log first read it — what its bookkeeping
@@ -273,6 +277,7 @@ class SessionLogMarkdown extends ReactMarkdown {
       this.foeStacks = await this.loadFoeStacks(this.logData.entries);
       this.inlineMaps = block.maps ?? {};
       this.battleMaps = await this.loadBattleMaps(this.logData.entries);
+      this.travelMaps = await this.loadTravelMaps(this.logData.entries);
 
       const gmRef = block.gm ?? linkList(noteFm?.gm)[0];
       if (gmRef) {
@@ -637,24 +642,73 @@ class SessionLogMarkdown extends ReactMarkdown {
   }
 
   /**
-   * A combatant's token emoji: `token:` in the frontmatter of their note — the
-   * linked one (`[[Talon Pallton]]`, `Fat [[Kobold, A]]`), or the party member a
-   * plain name is (`Talon`). Read from Obsidian's cache, so it costs nothing.
+   * The hex map each journey is on (`[TRAVEL: [[Caulkin coast]] (1,0)]`): the
+   * first hex map block in the linked note, at the level named. A link that
+   * leads nowhere is left out (the pane says so).
+   */
+  private async loadTravelMaps(entries: SessionLogData["entries"]): Promise<Record<string, string>> {
+    const out: Record<string, string> = {};
+    for (const journey of foldTravels(groupIntoProse(entries))) {
+      const key = travelKey(journey);
+      if (!journey.map || key in out) continue;
+      const file = this.resolveLink(journey.map.replace(/^\[\[|\]\]$/g, "").split("|")[0]);
+      if (!file) continue;
+      const body = firstHexMap(await this.baseView.app.vault.read(file));
+      // The level named: one hex down a level per step (a level's coordinates are global).
+      if (body) out[key] = levelView(migrateDetails(body), journey.level?.length ?? 0);
+    }
+    return out;
+  }
+
+  /**
+   * A combatant's note: the linked one (`[[Talon Pallton]]`, `Fat [[Kobold, A]]`),
+   * or the sheet of the party member a plain name is (`Talon`).
+   */
+  private tokenNote(name: string): TFile | undefined {
+    const link = name.match(/\[\[([^\]|#]+)/)?.[1];
+    let file: TFile | null | undefined;
+    if (link) file = this.resolveLink(link);
+    else {
+      const key = combatantKey(name);
+      const names = logNames(this.entities.map((e) => e.name));
+      const pc = this.entities.find(
+        (e) => combatantKey(e.name) === key || combatantKey(names.get(e.name) ?? "") === key
+      );
+      const f = pc ? this.baseView.app.vault.getAbstractFileByPath(pc.filePath) : null;
+      file = f instanceof TFile ? f : null;
+    }
+    if (file) this.tokenNotes.add(file.path);
+    return file ?? undefined;
+  }
+
+  /** The notes tokens were looked up in — a change to one may change a picture. */
+  private tokenNotes = new Set<string>();
+
+  /**
+   * A combatant's token emoji: `token:` in the frontmatter of their note.
+   * Read from Obsidian's cache, so it costs nothing.
    */
   private tokenIcon = (name: string): string | undefined => {
-    const fmToken = (fm: Record<string, unknown> | undefined) => {
-      const t = fm?.token;
-      return typeof t === "string" && t.trim() ? t.trim() : undefined;
-    };
-    const link = name.match(/\[\[([^\]|#]+)/)?.[1];
-    if (link) {
-      const file = this.resolveLink(link);
-      return file ? fmToken(this.baseView.app.metadataCache.getFileCache(file)?.frontmatter) : undefined;
-    }
-    const key = combatantKey(name);
-    const names = logNames(this.entities.map((e) => e.name));
-    const pc = this.entities.find((e) => combatantKey(e.name) === key || combatantKey(names.get(e.name) ?? "") === key);
-    return pc ? fmToken(pc.frontmatter as Record<string, unknown>) : undefined;
+    const note = this.tokenNote(name);
+    const t = note ? this.baseView.app.metadataCache.getFileCache(note)?.frontmatter?.token : undefined;
+    return typeof t === "string" && t.trim() ? t.trim() : undefined;
+  };
+
+  /** Tokens' pictures: `token_image:` in their notes, changed by right-clicking a token. */
+  private tokenPictures: TokenPictures = {
+    imageOf: (name) => {
+      const note = this.tokenNote(name);
+      const f = note ? tokenImageFile(this.baseView.app, note) : undefined;
+      return f ? this.baseView.app.vault.getResourcePath(f) : undefined;
+    },
+    menu: (name, event) => openTokenImageMenu(this.baseView.app, event, shownName(name), this.tokenNote(name)),
+    watch: (changed) => {
+      const { metadataCache } = this.baseView.app;
+      const ref = metadataCache.on("changed", (file) => {
+        if (this.tokenNotes.has(file.path)) changed();
+      });
+      return () => metadataCache.offref(ref);
+    },
   };
 
   /**
@@ -1271,23 +1325,10 @@ class SessionLogMarkdown extends ReactMarkdown {
    * `Mystic Mark.png`) in any folder called `Icons` — matched without its
    * source mark (`Douse Light ᴷ` → `Douse Light`) or case.
    */
-  private iconIndex: Map<string, string> | null = null;
+  private iconIndex: ((name: string) => string | undefined) | null = null;
   private iconFor = (name: string): string | undefined => {
-    const key = (n: string) =>
-      n
-        .replace(/[ᴬᴮᴰᴴᴷᴺº]/gu, "")
-        .trim()
-        .toLowerCase();
-    if (!this.iconIndex) {
-      this.iconIndex = new Map();
-      const vault = this.baseView.app.vault;
-      for (const f of vault.getFiles()) {
-        if (!/^(png|webp|jpe?g|svg|gif)$/i.test(f.extension)) continue;
-        if (!/(^|\/)icons\//i.test(f.path)) continue;
-        this.iconIndex.set(key(f.basename), vault.getResourcePath(f));
-      }
-    }
-    return this.iconIndex.get(key(name));
+    this.iconIndex ??= buildIconIndex(this.baseView.app.vault);
+    return this.iconIndex(name);
   };
 
   /** The loadouts a party member's sheet declares (`loadouts:` on its inventory). */
@@ -1583,336 +1624,27 @@ class SessionLogMarkdown extends ReactMarkdown {
     return f instanceof TFile ? f : null;
   }
 
-  /** Parse a file's `rpg feature.gm` blocks into GMFeatures. */
-  private async loadGMFeatures(file: TFile): Promise<GMFeature[]> {
-    const content = await this.baseView.app.vault.read(file);
-    return parseSourceDoc({ $name: file.basename, $contents: content }, "class").gmFeatures ?? [];
-  }
-
-  /**
-   * Load a linked GM Screen: its own `rpg feature.gm` blocks plus every tool it
-   * assigns via the `gm-tools:` frontmatter (each a `[[wikilink]]` to a tool page
-   * under gm-tools/<type>/). All become GM card stacks. The wikilink is resolved
-   * relative to this note via Obsidian's metadata cache.
-   */
-  private async loadGMScreen(ref: string): Promise<GMFeature[]> {
-    try {
-      const file = this.resolveLink(ref);
-      if (!file) {
-        console.warn(`rpg log: GM screen "${ref}" not found`);
-        return [];
-      }
-      const features = await this.loadGMFeatures(file);
-
-      const fm = this.baseView.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
-      const assigned = fm?.["gm-tools"];
-      const refs = Array.isArray(assigned) ? assigned : assigned != null ? [assigned] : [];
-      for (const toolRef of refs) {
-        const toolFile = this.resolveLink(String(toolRef));
-        if (toolFile) features.push(...(await this.loadGMFeatures(toolFile)));
-      }
-      // Resolve each feature's cross-file card `@ref`s (`@[[File]]#id`) into
-      // inlined `generators:` entries so the emitter sees them as local refs.
-      const resolved: GMFeature[] = [];
-      for (const f of features) resolved.push(await this.resolveCardRefs(f));
-      return resolved;
-    } catch (error) {
-      console.error("Error loading GM screen:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Resolve a feature's cross-file card refs (`@[[File]]#id`) by reading each
-   * target page, selecting the addressed generator (a `generators:` entry or a
-   * feature.gm whose `id:` matches), and inlining it — after which `emitCard`
-   * treats the ref as a local `@id`. Unresolved refs are left for the emitter
-   * to drop.
-   */
-  private async resolveCardRefs(feature: GMFeature): Promise<GMFeature> {
-    const refs = cardXFileRefs(feature);
-    if (refs.length === 0) return feature;
-    const resolved: Record<string, GMGeneratorAspect> = {};
-    for (const ref of refs) {
-      const bref = parseBranchRef(ref);
-      if (!bref) continue;
-      const file = this.resolveLink(bref.target);
-      if (!file) continue;
-      try {
-        const doc = parseSourceDoc(
-          { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
-          "class"
-        );
-        const gen = selectGenerator(doc.gmFeatures ?? [], bref.block);
-        if (gen) resolved[ref] = gen;
-      } catch {
-        /* unreadable target — leave unresolved; emitCard drops the ref */
-      }
-    }
-    return inlineCardXFileRefs(feature, resolved);
-  }
-
-  /**
-   * Resolve the GM features' `interpret` branch links to step blocks (and any
-   * tables those steps roll against), plus the dials they `reads:`, so the live
-   * sidebar can surface the branch dropdown, auto-fill table/fate results, and
-   * fall back to a dial's `default` when the log omits its `[<abbr>:n]` token.
-   * Mirrors FeatureGMView.
-   */
-  private async loadStepCtx(features: GMFeature[]): Promise<GMStepContext> {
-    const steps: Record<string, GMFeature> = {};
-    const tables: Record<string, TableDef> = {};
-    const calls: Record<string, string[]> = {};
-    const stepTables: Record<string, string> = {};
-    const stepFollows: Record<string, import("lib/domains/features/types").GMInterpret> = {};
-    const lists: Record<string, ListDecl> = {};
-    const dials: NonNullable<GMStepContext["dials"]> = {};
-    const resFeatures: GMFeature[] = [...features];
-    for (const feature of features) {
-      // A dial declaration imported onto the GM Screen (via `gm-tools:`) is
-      // itself a loaded feature — register its dial so the whole log can read
-      // its current value / `default` (the session-wide path).
-      if (feature.dial?.abbr && !dials[feature.dial.abbr])
-        dials[feature.dial.abbr] = { ...feature.dial, name: feature.name };
-      // A feature may also DECLARE a dial dependency via `reads:` (e.g. used
-      // standalone, off-screen) — resolve those links too.
-      for (const ref of feature.reads ?? []) {
+  /** The GM Screen loader, reading notes relative to this one. */
+  private get gmLoader(): GMLoader<VaultNote> {
+    const app = this.baseView.app;
+    return new GMLoader<VaultNote>({
+      resolve: (ref) => {
         const file = this.resolveLink(ref);
-        if (!file) continue;
-        try {
-          const loaded = await this.loadGMFeatures(file);
-          resFeatures.push(...loaded);
-          for (const f of loaded) {
-            if (f.dial?.abbr && !dials[f.dial.abbr]) dials[f.dial.abbr] = { ...f.dial, name: f.name };
-          }
-        } catch {
-          /* unreadable dial — skip; CF resolution falls back to its legacy path */
-        }
-      }
-      for (const gen of [feature.generator, ...(feature.generators ?? [])]) {
-        for (const genStep of gen ? generatorSteps(gen) : []) {
-          for (const value of Object.values(genStep.interpret ?? {})) {
-            const ref = parseBranchRef(value);
-            if (!ref || steps[ref.target]) continue;
-            const file = this.resolveLink(ref.target);
-            if (!file) continue;
-            try {
-              const doc = parseSourceDoc(
-                { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
-                "class"
-              );
-              const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
-              if (!step) continue;
-              const expanded = await this.expandStepUses(step);
-              steps[ref.target] = expanded;
-              for (const s of expanded.steps ?? []) {
-                const refs = [...(s.table ? [s.table] : []), ...(s.tables ?? [])];
-                for (const rawRef of refs) {
-                  if (tables[rawRef]) continue;
-                  const tref = parseBranchRef(rawRef);
-                  const tf = this.resolveLink(tref?.target ?? rawRef);
-                  if (!tf) continue;
-                  const tdoc = parseSourceDoc(
-                    { $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) },
-                    "class"
-                  );
-                  const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
-                  if (table) tables[rawRef] = table;
-                }
-                // A step that `calls:` a sub-procedure → resolve its generator's
-                // steps into the child lines laid out as `+ ` children (expanding
-                // any cross-file `emits:` sub-generators), and load any TABLE
-                // those steps roll (so children auto-fill).
-                if (s.calls && !calls[s.calls.trim()]) {
-                  const cref = parseBranchRef(s.calls);
-                  const cfile = this.resolveLink(cref?.target ?? s.calls);
-                  if (cfile) {
-                    const cdoc = parseSourceDoc(
-                      { $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) },
-                      "class"
-                    );
-                    const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
-                    if (gen) {
-                      // Lists the called file (and sub-generator files) `reads:`
-                      // travel with the call; step blocks a `choices` step needs
-                      // feed the pick map.
-                      await this.loadReadsLists(cdoc.gmFeatures ?? [], lists);
-                      const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
-                      await this.loadReadsLists(expanded.readsFeatures, lists);
-                      for (const sb of expanded.stepBlocks) {
-                        if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
-                        // A `choices` pick's word-pair tables (Actions/Descriptions).
-                        for (const bs of sb.steps ?? []) {
-                          for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
-                            if (tables[rawRef]) continue;
-                            const btref = parseBranchRef(rawRef);
-                            const btf = this.resolveLink(btref?.target ?? rawRef);
-                            if (!btf) continue;
-                            const btdoc = parseSourceDoc(
-                              { $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) },
-                              "class"
-                            );
-                            const bt =
-                              (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
-                            if (bt) tables[rawRef] = bt;
-                          }
-                        }
-                      }
-                      const gsteps = expanded.steps;
-                      calls[s.calls.trim()] = gsteps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
-                      for (const gs of gsteps) {
-                        if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
-                        if (!gs.table || !gs.work) continue;
-                        stepTables[gs.work] = gs.table;
-                        if (tables[gs.table]) continue;
-                        const gtref = parseBranchRef(gs.table);
-                        const gtf = this.resolveLink(gtref?.target ?? gs.table);
-                        if (!gtf) continue;
-                        const gtdoc = parseSourceDoc(
-                          { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
-                          "class"
-                        );
-                        const gtable =
-                          (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
-                        if (gtable) tables[gs.table] = gtable;
-                      }
-                    }
-                  }
-                }
-              }
-            } catch {
-              /* unreadable target — skip; that branch just has no dropdown/auto-fill */
-            }
-          }
-        }
-      }
-    }
-    // Lists the GM-screen features THEMSELVES `reads:` (their declared imports).
-    await this.loadReadsLists(features, lists);
-    // A GM feature's OWN steps may be a pick map whose choices roll tables (a
-    // feature declaring both a `choices` generator and what each pick spawns) —
-    // load those so a picked line auto-fills when rolled.
-    for (const feature of features) {
-      for (const s of feature.steps ?? []) {
-        for (const rawRef of [...(s.table ? [s.table] : []), ...(s.tables ?? [])]) {
-          if (tables[rawRef]) continue;
-          const oref = parseBranchRef(rawRef);
-          const of = this.resolveLink(oref?.target ?? rawRef);
-          if (!of) continue;
-          try {
-            const odoc = parseSourceDoc(
-              { $name: of.basename, $contents: await this.baseView.app.vault.read(of) },
-              "class"
-            );
-            const ot = (oref?.block && odoc.tables.find((t) => t.name === oref.block)) || odoc.tables[0];
-            if (ot) tables[rawRef] = ot;
-          } catch {
-            /* skip an unreadable table — that pick just won't auto-fill */
-          }
-        }
-      }
-    }
-    // A GM feature's own generator → its working lines (its own `steps:`, plus
-    // any cross-file `emits:` sub-gens composed in), so a log's empty
-    // `gen: <name>` block is populated from them.
-    const genLines: Record<string, string[]> = {};
-    for (const feature of features) {
-      for (const gen of [feature.generator, ...(feature.generators ?? [])]) {
-        if (!gen || genLines[gen.name]) continue;
-        const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
-        await this.loadReadsLists(expanded.readsFeatures, lists);
-        for (const sb of expanded.stepBlocks) if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
-        for (const gs of expanded.steps) {
-          if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
-          if (!gs.table || !gs.work) continue;
-          stepTables[gs.work] = gs.table;
-          if (tables[gs.table]) continue;
-          const gtref = parseBranchRef(gs.table);
-          const gtf = this.resolveLink(gtref?.target ?? gs.table);
-          if (!gtf) continue;
-          const gtdoc = parseSourceDoc(
-            { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
-            "class"
-          );
-          const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
-          if (gtable) tables[gs.table] = gtable;
-        }
-        genLines[gen.name] = expanded.steps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
-      }
-    }
-    Object.assign(lists, { ...collectLists(resFeatures), ...lists });
-    return {
-      steps,
-      tables,
-      dials,
-      calls,
-      stepTables,
-      stepFollows,
-      lists,
-      genLines,
-      resources: collectResources(resFeatures),
-    };
+        return file ? { name: file.basename, file } : null;
+      },
+      read: (n) => app.vault.read(n.file),
+      frontmatter: (n) => app.metadataCache.getFileCache(n.file)?.frontmatter as Record<string, unknown> | undefined,
+    });
   }
 
-  /** Read a linked file's GM features by wikilink target (for the composition
-   *  expander), or null when unresolved / unparseable. */
-  private async readGMFeatures(target: string): Promise<GMFeature[] | null> {
-    const file = this.resolveLink(target);
-    if (!file) return null;
-    try {
-      return (
-        parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class")
-          .gmFeatures ?? null
-      );
-    } catch {
-      return null;
-    }
+  /** Load a linked GM Screen and its `gm-tools:` (see GMLoader). */
+  private loadGMScreen(ref: string): Promise<GMFeature[]> {
+    return this.gmLoader.loadGMScreen(ref);
   }
 
-  /** Load the `list:` feature each of `features`' `reads:` links points at into
-   *  the registry, so a consult (`[Characters?]`) resolves to its default. Only
-   *  EXPLICITLY imported lists load — a bare consult token never triggers a
-   *  load, so lists don't leak onto features that didn't ask for them. */
-  private async loadReadsLists(features: GMFeature[], lists: Record<string, ListDecl>): Promise<void> {
-    for (const feature of features) {
-      for (const ref of feature.reads ?? []) {
-        const file = this.resolveLink(parseBranchRef(ref)?.target ?? ref);
-        if (!file) continue;
-        try {
-          const doc = parseSourceDoc(
-            { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
-            "class"
-          );
-          Object.assign(lists, collectLists(doc.gmFeatures ?? []));
-        } catch {
-          /* unreadable list — the consult falls back to the raw `[Name?]` ref */
-        }
-      }
-    }
-  }
-
-  /** Splice a step-block's `use: @[[…]]` steps with the imported block's steps
-   *  (composition), so a shared step-set is defined once and reused. */
-  private async expandStepUses(step: GMFeature): Promise<GMFeature> {
-    const links = stepUseLinks(step.steps ?? []);
-    if (links.length === 0) return step;
-    const resolved: Record<string, GMStep[]> = {};
-    for (const link of links) {
-      const tref = parseBranchRef(link);
-      const file = this.resolveLink(tref?.target ?? link);
-      if (!file) continue;
-      try {
-        const doc = parseSourceDoc(
-          { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
-          "class"
-        );
-        const target = selectStepBlock(doc.gmFeatures ?? [], tref?.block);
-        if (target?.steps) resolved[link] = target.steps;
-      } catch {
-        /* unresolved use: → that splice step drops out */
-      }
-    }
-    return { ...step, steps: spliceStepUses(step.steps ?? [], resolved) };
+  /** The step context the GM features' generators roll against (see GMLoader). */
+  private loadStepCtx(features: GMFeature[]): Promise<GMStepContext> {
+    return this.gmLoader.loadStepCtx(features);
   }
 
   /** Rewrite the `rpg log` block body via a transform, then persist. The
@@ -2196,6 +1928,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         lookupCreature={this.lookupCreature}
         mapTools={this.mapTools}
         tokenIcon={this.tokenIcon}
+        tokenPictures={this.tokenPictures}
         actorPage={this.actorPage}
         partyName={this.partyName}
         saveModifier={this.saveModifier}
@@ -2223,6 +1956,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         initiativeOf={this.initiativeOf}
         onEditBody={(edit) => void this.rewriteLogBody(edit)}
         battleMaps={this.battleMaps}
+        travelMaps={this.travelMaps}
         sheetHas={this.sheetHas}
       />
       </TableRollContext.Provider>
@@ -2279,10 +2013,14 @@ interface SessionLogRootProps {
   lookupCreature: (link: string) => Promise<CreatureInfo>;
   /** The battle maps the log's fights are bound to, by link. */
   battleMaps: Record<string, SquareMap>;
+  /** The hex maps the log's journeys are on, by `travelKey`. */
+  travelMaps: Record<string, string>;
   /** Look up a battle map by its note — for the Start Combat card. */
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
   tokenIcon: (name: string) => string | undefined;
+  /** Tokens' pictures, from their notes — and the right-click menu changing them. */
+  tokenPictures: TokenPictures;
   /** The page an action's actor links to (`Talon` → `Talon Pallton`). */
   actorPage: (name: string) => string | undefined;
   /** A party member's short name (`Talon Pallton` → `Talon`). */
@@ -2364,8 +2102,10 @@ function SessionLogRoot({
   resolveCombatant,
   lookupCreature,
   battleMaps,
+  travelMaps,
   mapTools,
   tokenIcon,
+  tokenPictures,
   actorPage,
   partyName,
   saveModifier,
@@ -2415,6 +2155,8 @@ function SessionLogRoot({
   // Fights bound to a map, replayed entry by entry, and the foes' health along
   // the way — what the map pane draws.
   const battles = React.useMemo(() => foldBattles(segments), [segments]);
+  const travelTrack = React.useMemo(() => foldTravelTrack(segments), [segments]);
+  const journeys = travelTrack.journeys;
   const foesAt = React.useMemo(() => foldFoes(segments), [segments]);
   // Everyone's hit points through the log, from their sheets and statblocks:
   // what each hit leaves its target with.
@@ -3235,51 +2977,8 @@ function SessionLogRoot({
   const layoutRef = React.useRef<HTMLDivElement>(null);
   const [railHost, setRailHost] = React.useState<HTMLElement | null>(null);
 
-  // The sidebar invades the page margin. Measure how much free margin the
-  // surrounding Obsidian column actually has and size the invasion to fit
-  // (up to the desired width); when there's too little room, stack the panel
-  // below the prose instead of clipping it off the edge.
-  const [sidebarPx, setSidebarPx] = React.useState<number | null>(null);
-  const [stacked, setStacked] = React.useState(false);
-
-  React.useEffect(() => {
-    const layout = layoutRef.current;
-    const container = layout?.parentElement;
-    if (!layout || !container) return;
-
-    const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const desiredPx = 24 * remPx;
-    const minSidebarPx = 13 * remPx;
-    const view = layout.closest(".markdown-preview-view, .markdown-source-view, .cm-sizer") as HTMLElement | null;
-
-    const measure = () => {
-      const c = container.getBoundingClientRect();
-      let room: number;
-      if (view) {
-        const v = view.getBoundingClientRect();
-        const vs = getComputedStyle(view);
-        const leftRoom = c.left - (v.left + (parseFloat(vs.paddingLeft) || 0));
-        const rightRoom = v.right - (parseFloat(vs.paddingRight) || 0) - c.right;
-        room = Math.max(0, Math.min(leftRoom, rightRoom));
-      } else {
-        room = Math.max(0, (window.innerWidth - c.width) / 2 - remPx);
-      }
-      const fits = Math.min(desiredPx, room * 2); // invasion spends `room` on each side
-      if (fits < minSidebarPx) {
-        setStacked(true);
-        setSidebarPx(null);
-      } else {
-        setStacked(false);
-        setSidebarPx(Math.round(fits));
-      }
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(container);
-    if (view) ro.observe(view);
-    return () => ro.disconnect();
-  }, []);
+  // The sidebar invades the page margin, as far as there's room (else it stacks under the prose).
+  const { sidebarPx, stacked } = useSidebarRoom(layoutRef);
 
   const registerAnchor =
     (map: React.MutableRefObject<Map<number, HTMLElement>>) => (id: number, el: HTMLElement | null) => {
@@ -3291,8 +2990,10 @@ function SessionLogRoot({
 
   // Follow the reader: each narrated entry reports when it crosses a band near
   // the top of the screen, and the latest one there is the entry being read.
+  // A fight's map or a journey's minimap follows it.
+  const followsReading = hasBattle || journeys.length > 0;
   React.useEffect(() => {
-    if (!hasBattle) return;
+    if (!followsReading) return;
     const visible = new Set<number>();
     const observer = new IntersectionObserver(
       (records) => {
@@ -3311,21 +3012,45 @@ function SessionLogRoot({
       observer.observe(el);
     }
     return () => observer.disconnect();
-  }, [hasBattle, scenes]);
+  }, [followsReading, scenes]);
 
+  // The turn an entry falls in (`turnOf`, below), for the jumps made before it's defined.
+  const turnOfRef = React.useRef<(id: number) => number | undefined>(() => undefined);
   // A request for the Log to bring an entry up under its map (the timeline).
   const [follow, setFollow] = React.useState<{ id: number; n: number } | null>(null);
 
-  /** Go to an entry from the map's timeline: the pane moves, the prose follows
-   *  — and the Log, when it's open. */
+  /** Go to an entry from the map's timeline: the pane moves, the Log follows
+   *  when it's open — and the text keeps the map in view. */
   const seekEntry = React.useCallback((id: number) => {
     // The jump stands while the prose and the Log scroll to it: what passes
     // under the reading line on the way isn't where the reader is.
     seekHold.current = Date.now() + 1000;
     setReadingId(id);
     setFollow((f) => ({ id, n: (f?.n ?? 0) + 1 }));
-    // The nearest narrated entry at or before it (a purely mechanical one has
-    // no prose of its own to scroll to).
+    // In the text, the map being stepped through stays where it is while it's
+    // whole on screen; a step into another turn brings that turn's map up.
+    const turnMap = turnMapAnchors.current.get(turnOfRef.current(id) ?? -1);
+    if (turnMap) {
+      const view = turnMap.closest<HTMLElement>(".markdown-preview-view, .cm-scroller");
+      const whole = () => {
+        if (!view) return false;
+        const v = view.getBoundingClientRect();
+        const r = turnMap.getBoundingClientRect();
+        return r.top >= v.top - 1 && r.bottom <= v.bottom + 1;
+      };
+      if (whole()) return;
+      turnMap.scrollIntoView({ block: "start", behavior: "smooth" });
+      // A long smooth scroll is cut short when the note draws its sections on
+      // the way: once it should have arrived, land it exactly.
+      window.setTimeout(() => {
+        if (!view) return;
+        const off = turnMap.getBoundingClientRect().top - view.getBoundingClientRect().top;
+        if (Math.abs(off) > 48) turnMap.scrollIntoView({ block: "start" });
+      }, 700);
+      return;
+    }
+    // No map in the text: the nearest narrated entry at or before it (a purely
+    // mechanical one has no prose of its own to scroll to).
     const ids = [...proseAnchors.current.keys()].filter((k) => k <= id).sort((a, b) => b - a);
     proseAnchors.current.get(ids[0])?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, []);
@@ -3396,6 +3121,21 @@ function SessionLogRoot({
     },
     [battleAt, turnsOf]
   );
+  turnOfRef.current = turnOf;
+  // The travel map over the page, from the minimap.
+  const [fullMap, setFullMap] = React.useState(false);
+  /** A journey's start in the prose: no line of its own (the minimap shows it), only where it is. */
+  const renderTravelMap = () => null;
+  // The minimap shows from the scene a map is first set out in, and from then on.
+  const firstId = segments[0]?.sourceIndex ?? 0;
+  const showsMinimap = travelTrack.from !== undefined && (readingId ?? firstId) >= travelTrack.from;
+  /** The hex map a frame is on (its level a map of its own). */
+  const travelBodyOf = React.useCallback(
+    (frame: { map?: string; level?: Array<[number, number]> }) =>
+      travelMaps[`${frame.map ?? ""}|${frame.level?.length ?? 0}`],
+    [travelMaps]
+  );
+
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {
     const b = battleAt(turnId);
     if (!b) return null;
@@ -3423,6 +3163,7 @@ function SessionLogRoot({
           onSeek={seekEntry}
           foesAt={foesAt}
           iconOf={tokenIcon}
+          pictures={tokenPictures}
           healthAt={health.at}
           hitAt={(id: number) => health.hits.get(id)}
           zoom
@@ -3616,6 +3357,26 @@ function SessionLogRoot({
                 </div>
               </div>
             )}
+            {showsMinimap && (
+              // The travel minimap: a rail of no height that sticks to the page's top, as the Log controls do.
+              <div className="lonelog-minimap-rail">
+                <TravelMinimap
+                  track={travelTrack}
+                  bodyOf={travelBodyOf}
+                  readingId={readingId}
+                  onExpand={() => setFullMap(true)}
+                />
+              </div>
+            )}
+            {fullMap && (
+              <TravelFullscreen
+                track={travelTrack}
+                bodyOf={travelBodyOf}
+                readingId={readingId}
+                onSeek={seekEntry}
+                onClose={() => setFullMap(false)}
+              />
+            )}
             <div className="lonelog-prose-body">
               <ProseView
                 scenes={scenes}
@@ -3624,6 +3385,7 @@ function SessionLogRoot({
                 onSelectSource={handleDotClick}
                 registerAnchor={registerProse}
                 {...(hasBattle ? { renderTurnMap, onSelectStep: goToStep } : {})}
+                renderTravelMap={renderTravelMap}
                 partyName={partyName}
               />
             </div>
@@ -3746,4 +3508,9 @@ function foeName(name: string): string {
 function ordinalCircle(n: number): string {
   const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
   return `${n}${suffix}-circle`;
+}
+
+/** A journey's map and level, as `travelMaps` keys them. */
+function travelKey(journey: Journey): string {
+  return `${journey.map ?? ""}|${journey.level?.length ?? 0}`;
 }

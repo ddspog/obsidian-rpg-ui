@@ -1,6 +1,7 @@
 ---
-token: "⚙️"
+token: ⚙️
 source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+token_image: "![[Kobold, Tinkerer token 1.webp]]"
 ---
 ```rpg stat.monster
 name: "Kobold, Tinkerer"

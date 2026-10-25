@@ -2,8 +2,8 @@ import * as React from "react";
 import {
   EntityBlock,
   InventoryBlock as InventoryBlockComponent,
+  LoadoutCards,
   applyLoadout,
-  describeLoadout,
   readLoadouts,
   resolveContainer,
   resolveInventory,
@@ -149,25 +149,13 @@ export const inventory: EntityBlock<InventoryProps, CharacterEntity> = ({ self, 
 
   return (
     <>
-      {loadouts.length > 0 && (
-        <nav className="rpg-loadouts" aria-label="Loadouts">
-          <span className="rpg-loadouts-label">In hand</span>
-          {loadouts.map((l) => (
-            <button
-              key={l.name}
-              type="button"
-              className={`rpg-loadout${isHeld(l) ? " is-held" : ""}`}
-              aria-pressed={isHeld(l)}
-              title={describeLoadout(l)}
-              disabled={!setItems || isHeld(l)}
-              onClick={() => setItems?.(applyLoadout(items, l).items as InventoryItemEntry[])}
-            >
-              <b>{l.name}</b>
-              <small>{describeLoadout(l)}</small>
-            </button>
-          ))}
-        </nav>
-      )}
+      <LoadoutCards
+        loadouts={loadouts}
+        isHeld={isHeld}
+        {...(setItems
+          ? { onEquip: (l: Loadout) => setItems(applyLoadout(items, l).items as InventoryItemEntry[]) }
+          : {})}
+      />
       <InventoryBlockComponent data={data} onToggleEquip={handleToggleEquip} onToggleForSale={handleToggleForSale} />
     </>
   );

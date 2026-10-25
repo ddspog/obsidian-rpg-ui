@@ -40,3 +40,6 @@ docs/.vitepress/dist
 # Local debug scratch (screenshots, temp dumps)
 tmp/
 
+
+# Built by `npm run build:cli`
+cli/dist/

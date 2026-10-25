@@ -1,6 +1,7 @@
 ---
-token: "✨"
+token: ✨
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+token_image: "![[Jacqui Ilitul token.webp]]"
 ---
 ```rpg character.sheet
 # Header
@@ -19,7 +20,7 @@ xp: 88
 luck: 0
 banner: "#ac8080"
 # Health
-portrait: "[[Jacqui Ilitul 1.webp]]"
+portrait: "[[Jacqui Ilitul.webp]]"
 framed: true
 max_hp: 9
 current_hp: 9

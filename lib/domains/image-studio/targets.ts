@@ -5,6 +5,9 @@
  * names (an image named for it in the icons folder).
  */
 
+/** The frontmatter key holding a battle map token's picture (a PC's sheet, a foe's statblock). */
+export const TOKEN_IMAGE_KEY = "token_image";
+
 /** Frontmatter keys that hold a picture. */
 const FRONTMATTER_IMAGE_KEYS = /^(image|banner|cover|art|portrait|picture|reference_img|token_image|thumbnail)$/i;
 /** Keys inside a block that hold a picture. */
@@ -51,8 +54,9 @@ function headRange(lines: string[], f: Fence): [number, number] {
 
 const unquote = (v: string) => v.trim().replace(/^["']|["']$/g, "");
 
-/** Every image the note keeps, and the ones it could add. */
-export function imageTargets(text: string, basename: string): ImageTarget[] {
+/** Every image the note keeps, and the ones it could add — `add`, a frontmatter
+ *  picture key asked for (`token_image`), among them when it isn't there yet. */
+export function imageTargets(text: string, basename: string, add?: string): ImageTarget[] {
   const lines = text.split("\n");
   const out: ImageTarget[] = [];
   // Frontmatter: its picture keys.
@@ -63,6 +67,8 @@ export function imageTargets(text: string, basename: string): ImageTarget[] {
         out.push({ kind: "frontmatter", key: m[1], value: unquote(m[2]), label: `Frontmatter · ${m[1]}` });
     }
   }
+  if (add && FRONTMATTER_IMAGE_KEYS.test(add) && !out.some((t) => t.kind === "frontmatter" && t.key === add))
+    out.push({ kind: "frontmatter", key: add, label: `Frontmatter · add ${add}` });
   const names = new Set<string>();
   rpgFences(text).forEach((f, fence) => {
     const [from, to] = headRange(lines, f);

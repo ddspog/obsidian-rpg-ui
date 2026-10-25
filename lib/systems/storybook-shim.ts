@@ -22,6 +22,7 @@ export { extractSpellBlocks, SpellCard } from "../blocks/spell-card";
 export { classifySpellCircle, stripWikilinkToName } from "../domains/features/spellcasting";
 export { resolveInventory } from "../domains/inventory";
 export { InventoryBlock } from "../components/inventory/InventoryBlock";
+export { LoadoutCards } from "../components/inventory/LoadoutCards";
 export {
   extractItemElementBlocks,
   parseItemElement,

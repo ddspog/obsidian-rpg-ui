@@ -4093,20 +4093,14 @@ Use CHA for checks to influence or entertain, make an impression, tell a convinc
     );
     const current = heldNow(items);
     const isHeld = (l) => heldNow((0, import_rpg_ui_toolkit9.applyLoadout)(items, l).items) === current;
-    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, loadouts.length > 0 && /* @__PURE__ */ React10.createElement("nav", { className: "rpg-loadouts", "aria-label": "Loadouts" }, /* @__PURE__ */ React10.createElement("span", { className: "rpg-loadouts-label" }, "In hand"), loadouts.map((l) => /* @__PURE__ */ React10.createElement(
-      "button",
+    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, /* @__PURE__ */ React10.createElement(
+      import_rpg_ui_toolkit9.LoadoutCards,
       {
-        key: l.name,
-        type: "button",
-        className: `rpg-loadout${isHeld(l) ? " is-held" : ""}`,
-        "aria-pressed": isHeld(l),
-        title: (0, import_rpg_ui_toolkit9.describeLoadout)(l),
-        disabled: !setItems || isHeld(l),
-        onClick: () => setItems == null ? void 0 : setItems((0, import_rpg_ui_toolkit9.applyLoadout)(items, l).items)
-      },
-      /* @__PURE__ */ React10.createElement("b", null, l.name),
-      /* @__PURE__ */ React10.createElement("small", null, (0, import_rpg_ui_toolkit9.describeLoadout)(l))
-    ))), /* @__PURE__ */ React10.createElement(import_rpg_ui_toolkit9.InventoryBlock, { data, onToggleEquip: handleToggleEquip, onToggleForSale: handleToggleForSale }));
+        loadouts,
+        isHeld,
+        ...setItems ? { onEquip: (l) => setItems((0, import_rpg_ui_toolkit9.applyLoadout)(items, l).items) } : {}
+      }
+    ), /* @__PURE__ */ React10.createElement(import_rpg_ui_toolkit9.InventoryBlock, { data, onToggleEquip: handleToggleEquip, onToggleForSale: handleToggleForSale }));
   };
   function expandContainerEntry(entry, lookups) {
     var _a;

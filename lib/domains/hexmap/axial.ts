@@ -56,10 +56,14 @@ export function neighbour(h: Axial, side: Side): Axial {
   return { q: h.q + s.q, r: h.r + s.r };
 }
 
+/** A point in axial units, not rounded to a hex (markers and labels stand anywhere). */
+export function pixelToAxial(x: number, y: number, R: number): Axial {
+  return { q: ((2 / 3) * x) / R, r: ((-1 / 3) * x + (SQRT3 / 3) * y) / R };
+}
+
 /** The hex under a point (cube rounding). */
 export function pixelToHex(x: number, y: number, R: number): Axial {
-  const q = ((2 / 3) * x) / R;
-  const r = ((-1 / 3) * x + (SQRT3 / 3) * y) / R;
+  const { q, r } = pixelToAxial(x, y, R);
   return cubeRound(q, r);
 }
 

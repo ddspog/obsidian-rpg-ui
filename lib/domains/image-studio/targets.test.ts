@@ -76,3 +76,15 @@ describe("a character's portrait", () => {
     expect(labels.some((l) => /add portrait/.test(l))).toBe(false);
   });
 });
+
+describe("a battle map token's picture", () => {
+  it("is offered when asked for (from a token's menu), and found once there", () => {
+    const bare = ["---", "level: 2", "---", "# Kobold"].join("\n");
+    expect(imageTargets(bare, "Kobold").map((t) => t.label)).not.toContain("Frontmatter · add token_image");
+    expect(imageTargets(bare, "Kobold", "token_image").map((t) => t.label)).toContain("Frontmatter · add token_image");
+    const has = ["---", 'token_image: "[[Kobold token.webp]]"', "---"].join("\n");
+    const labels = imageTargets(has, "Kobold", "token_image").map((t) => t.label);
+    expect(labels).toContain("Frontmatter · token_image");
+    expect(labels).not.toContain("Frontmatter · add token_image");
+  });
+});

@@ -53,7 +53,11 @@ export type ProseNode =
   /** A turn of the fight (`T2`) — a pass through the initiative order. */
   | { kind: "turn"; number: number; sourceId: number }
   /** In a fight, what one creature's action came to — told beside its name. */
-  | { kind: "beat"; actor: string; fragments: ProseFragment[] };
+  | { kind: "beat"; actor: string; fragments: ProseFragment[] }
+  /** A journey starts (`[TRAVEL: [[Map]]]`): its map goes here. */
+  | { kind: "travel"; sourceId: number }
+  /** A journey ends (`[/TRAVEL: arrive … | … | outcome …]`): when, its numbers, what came of it. */
+  | { kind: "arrival"; sourceId: number; arrive?: string; stats: string[]; outcome?: string };
 
 /**
  * A creature's name as the prose margin shows it, short: a statblock's `Kobold,
@@ -196,6 +200,22 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
 
       case "combat-start":
         pendingCombat = seg.sourceIndex;
+        break;
+
+      case "travel-start":
+        breakFlow();
+        into().push({ kind: "travel", sourceId: seg.sourceIndex });
+        break;
+
+      case "travel-end":
+        breakFlow();
+        into().push({
+          kind: "arrival",
+          sourceId: seg.sourceIndex,
+          ...(seg.entry.end?.arrive ? { arrive: seg.entry.end.arrive } : {}),
+          stats: seg.entry.end?.stats ?? [],
+          ...(seg.entry.end?.outcome ? { outcome: seg.entry.end.outcome } : {}),
+        });
         break;
 
       case "combat-end":
@@ -543,6 +563,22 @@ function tagPill(tag: PersistentTag): SidebarPill {
       return { name: "Time", value: tag.raw, kind: "time" };
     case "weather":
       return { name: "Weather", value: tag.parts.join(" · "), kind: "weather" };
+    case "group": {
+      const who = tag.members?.join(", ");
+      const value =
+        tag.op === "define"
+          ? who
+          : tag.op === "split"
+            ? `${who} → ${tag.to}`
+            : tag.op === "merge"
+              ? `→ ${tag.to}`
+              : tag.op === "rename"
+                ? `now ${tag.to}`
+                : `${tag.op === "add" ? "+" : "−"} ${who}`;
+      return { name: tag.group, value, kind: "group" };
+    }
+    case "mark":
+      return { name: tag.name, value: tag.end ? "ends" : tag.until ? `until ${tag.until}` : tag.spec, kind: "mark" };
   }
 }
 

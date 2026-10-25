@@ -740,53 +740,6 @@ button.placeholder-party-flag {
   text-decoration: underline dotted;
 }
 
-/* A sheet's loadouts: what's in hand, and a click to switch. */
-.rpg-loadouts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 0.6rem;
-}
-
-.rpg-loadouts-label {
-  font-size: var(--font-ui-smaller);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-button.rpg-loadout {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.05rem;
-  height: auto;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  background: var(--background-secondary);
-  box-shadow: none;
-  text-align: left;
-  cursor: pointer;
-}
-
-button.rpg-loadout small {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
-}
-
-button.rpg-loadout.is-held {
-  border-color: var(--interactive-accent);
-  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
-  cursor: default;
-}
-
-button.rpg-loadout:disabled:not(.is-held) {
-  opacity: 0.5;
-}
-
 /* What other features change on a card. */
 .placeholder-modified {
   display: flex;

@@ -1,6 +1,7 @@
 ---
-token: "⚔️"
+token: ⚔️
 source: From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.
+token_image: "![[Lilith token.webp]]"
 ---
 ```rpg character.header
 classes:
@@ -18,7 +19,7 @@ luck: 0
 banner: "#ac8080"
 ```
 ```rpg character.health
-portrait: "[[Lilith 1.webp]]"
+portrait: "[[Lilith.webp]]"
 framed: true
 max_hp: 12
 current_hp: 12

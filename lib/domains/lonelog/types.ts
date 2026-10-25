@@ -20,6 +20,7 @@ export type LonelogEntry =
   | MetaNoteEntry
   | NarrativeEntry
   | CombatMarkerEntry
+  | TravelMarkerEntry
   | RoundMarkerEntry
   | TurnMarkerEntry
   | ResourceMarkerEntry
@@ -164,6 +165,30 @@ export interface CombatMarkerEntry {
 }
 
 /**
+ * A journey on an overworld hex map (hex-map-design §14.2):
+ * `[TRAVEL: [[Caulkin coast]]]` (a finer level: `[TRAVEL: [[Caulkin coast]] level 1]`)
+ * opens it; `[/TRAVEL: arrive Day 4, 18:00 | 92 mi | 3 days | outcome Reached
+ * Featherbark]` closes it with when it ended, its numbers and what came of it.
+ */
+export interface TravelMarkerEntry {
+  type: "travel_marker";
+  state: "open" | "close";
+  /** The hex map, as written (`[[Caulkin coast]]`). */
+  map?: string;
+  /** A finer level of that map: its length is the depth (`level 2`, or the older path `(1,0) (0,0)`). */
+  level?: Array<[number, number]>;
+  /** The close's fields. */
+  end?: {
+    /** `arrive Day 4, 18:00` — sets the log's clock, as `[Time:]` does. */
+    arrive?: string;
+    /** `outcome …` */
+    outcome?: string;
+    /** Everything else, in order (`92 mi`, `3 days`, `rations -6`). */
+    stats: string[];
+  };
+}
+
+/**
  * A pass through the initiative order — written `T2` (the table calls it a
  * TURN; Lonelog's `R2` reads the same). Internally the rules' "round".
  */
@@ -227,11 +252,46 @@ export type PersistentTag =
   | PositionTag
   | MoveTag
   | TimeTag
-  | WeatherTag;
+  | WeatherTag
+  | GroupTag
+  | MarkTag;
+
+/**
+ * Who travels together (hex-map-design §14.2). One tag, a small verb each:
+ *   `[Group: Party = Elara, Thorne]`           define
+ *   `[Group: Party > Scouts = Talon, Lilith]`  split those off into a new group
+ *   `[Group: Scouts > Party]`                  merge back (Scouts is gone)
+ *   `[Group: Scouts as Wolfpack]`              rename
+ *   `[Group: Wolfpack + Kowyn]` / `- Lilith`   add / remove (removed: goes solo)
+ */
+export interface GroupTag {
+  kind: "group";
+  op: "define" | "split" | "merge" | "rename" | "add" | "remove";
+  group: string;
+  /** split / merge / rename: the other group. */
+  to?: string;
+  members?: string[];
+}
+
+/**
+ * A marker for a while on a travel map: `[Mark: Ambush|here-red[skull]@(4,-1)]`
+ * starts it (`|until long rest` says when it ends), `[Mark: Ambush|@(5,-1)]`
+ * moves it, `[Mark: -Ambush]` ends it.
+ */
+export interface MarkTag {
+  kind: "mark";
+  name: string;
+  end?: boolean;
+  spec?: string;
+  /** `(q,r)`, fractions allowed. */
+  at?: [number, number];
+  until?: string;
+}
 
 /**
  * Where combatants stand on the battle map — `[Pos: Talon C4; [[Kobold, Elite]] H2]`.
- * Squares are named like a chessboard (columns A…, rows 1…).
+ * Squares are named like a chessboard (columns A…, rows 1…); on a travel's hex
+ * map, hexes are axial in parentheses (`[Pos: Party (2,0)]`, written `(2,0)`).
  */
 export interface PositionTag {
   kind: "position";
@@ -251,6 +311,9 @@ export interface MoveTag {
   after?: boolean;
   /** The squares passed through, ending where it stops (`["G4", "F4", "E4"]`). */
   path: string[];
+  /** How, when not on foot: `[Mv: Party (5,-2) | teleport]`, `| ship`. On a travel map
+   *  it's drawn as a jump of that kind, and needs no `[TRAVEL]` around it. */
+  via?: string;
 }
 
 /** One combatant in an `[Init: …]` tag: a name and, when written, its value. */

@@ -25,7 +25,7 @@ traits:
   Speed: "30 ft."
   Senses: 
     - "[[Darkvision]] 60ft."
-    - "[[Far Sight]] 30ft."
+    - "[[Far Sight ᴺ]] 30ft."
   Resistance:
     - Necrotic Damage
 pick: 1

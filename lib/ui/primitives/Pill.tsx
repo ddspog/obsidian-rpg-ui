@@ -32,11 +32,22 @@ function Link({ link, children, className, ...rest }: PillProps) {
       return;
     }
 
+    const sourcePath = app.workspace.getActiveFile()?.path ?? "";
+
+    // A target with no note behind it (e.g. "Necrotic Damage") would render
+    // as Obsidian's unresolved-link style — show it as plain text instead.
+    const linkpath = String(link).split("|")[0].split("#")[0];
+    if (!app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath)) {
+      const child = document.createElement("span");
+      child.textContent = children != null ? String(children) : String(link);
+      el.appendChild(child);
+      return;
+    }
+
     const comp = new Component();
     // If children is a simple string, use it as an alias (wiki link alias)
     const alias = typeof children === "string" && children.trim().length > 0 ? `|${children}` : "";
     const md = `[[${String(link)}${alias}]]`;
-    const sourcePath = app.workspace.getActiveFile()?.path ?? "";
 
     // Render the wikilink via Obsidian's MarkdownRenderer so the produced
     // anchor gets Obsidian's internal-link behavior (hover preview, etc).

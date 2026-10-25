@@ -58,6 +58,44 @@ export function parseLonelog(body: string): LonelogEntry[] {
   return entries;
 }
 
+/** `[TRAVEL: [[Map]] level 2]` (or the older `(1,0) (0,0)`) and `[/TRAVEL]` / `[/TRAVEL: arrive … | stats … | outcome …]`. */
+function parseTravelMarker(line: string): LonelogEntry | null {
+  const open = line.match(/^\[TRAVEL(?::\s*(.+))?\]$/);
+  if (open) {
+    const body = (open[1] ?? "").trim();
+    const map = body.match(/^\[\[[^\]]+\]\]|^[^(]+/)?.[0].trim();
+    const rest = body.slice(map?.length ?? 0);
+    // `level 2` names the map's level by depth; the older `(1,0) (0,0)` path counts its steps.
+    const depth = rest.match(/\blevel\s+(\d+)\b/i);
+    const level = depth
+      ? Array.from({ length: parseInt(depth[1], 10) }, () => [0, 0] as [number, number])
+      : [...rest.matchAll(/\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/g)].map(
+          (m) => [parseInt(m[1], 10), parseInt(m[2], 10)] as [number, number]
+        );
+    return {
+      type: "travel_marker",
+      state: "open",
+      ...(map ? { map } : {}),
+      ...(level.length ? { level } : {}),
+    };
+  }
+  const close = line.match(/^\[\/TRAVEL(?::\s*(.+))?\]$/);
+  if (!close) return null;
+  if (!close[1]) return { type: "travel_marker", state: "close" };
+  const end: NonNullable<Extract<LonelogEntry, { type: "travel_marker" }>["end"]> = { stats: [] };
+  for (const field of close[1]
+    .split("|")
+    .map((f) => f.trim())
+    .filter(Boolean)) {
+    const arrive = field.match(/^arrive\s+(.+)$/i);
+    const outcome = field.match(/^outcome\s+(.+)$/i);
+    if (arrive) end.arrive = arrive[1].trim();
+    else if (outcome) end.outcome = outcome[1].trim();
+    else end.stats.push(field);
+  }
+  return { type: "travel_marker", state: "close", end };
+}
+
 function parseLine(line: string): LonelogEntry | null {
   // Scene marker: S1, S1a, T1-S1, S1.1, etc.
   const scene = parseSceneMarker(line);
@@ -70,6 +108,10 @@ function parseLine(line: string): LonelogEntry | null {
   if (combatOpen)
     return { type: "combat_marker", state: "open", ...(combatOpen[1] ? { map: combatOpen[1].trim() } : {}) };
   if (line === "[/COMBAT]") return { type: "combat_marker", state: "close" };
+
+  // Travel markers: [TRAVEL: [[Map]] (1,0)] / [/TRAVEL: arrive … | 92 mi | outcome …]
+  const travel = parseTravelMarker(line);
+  if (travel) return travel;
 
   // Resource markers: [RESOURCES] / [/RESOURCES]
   if (line === "[RESOURCES]") return { type: "resource_marker", state: "open" };
@@ -224,7 +266,8 @@ function parseLine(line: string): LonelogEntry | null {
   // ([Talon/Mystic Mark-1]) — so it becomes a mechanical entry (its conclusion
   // strips to "", so it never reaches prose).
   if (line.startsWith("[")) {
-    const isKnownTagLine = /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L|Init|Pos|Mv):/.test(line);
+    const isKnownTagLine =
+      /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L|Init|Pos|Mv|Group|Mark):/.test(line);
     const isDialOpLine = /^\[[A-Z][A-Z0-9]*(?:[:=+-]\s*\d+|\?)\]/.test(line);
     const isPcOpLine = /^\[[^\]|/:]+\/[^\]|/:]+?\s*(?:[=+-]\s*\d+|\?)\]$/.test(line);
     if (isKnownTagLine || isDialOpLine || isPcOpLine) {

@@ -115,6 +115,9 @@ export function detectMetaFromSource(source: string): string | null {
   // declaration is unambiguous and appears in no other block type's body.
   if (looksLikeMermaidFigure(source)) return "figure.mermaid";
 
+  // `rpg draft` — its head always starts with `draft:` (its title).
+  if (/^\s*draft\s*:/.test(source.split("\n").find((l) => l.trim()) ?? "")) return "draft";
+
   // Parse only the top-level keys by scanning for "key:" at the start of lines
   // (no YAML library needed — avoids circular dependency and is fast)
   const topLevelKeys = new Set<string>();

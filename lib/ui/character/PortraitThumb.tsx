@@ -104,7 +104,7 @@ export function PortraitThumb({
   if (frame && linkpath) {
     const name = ((globalThis as any).app as App | undefined)?.workspace.getActiveFile()?.basename;
     return (
-      <div style={{ ...style, alignSelf: "center" }} onContextMenu={onContextMenu}>
+      <div className="rpg-portrait-frame" style={{ ...style, alignSelf: "center" }} onContextMenu={onContextMenu}>
         {/* The sheet's heading already says the name: none unless the block asks for one. */}
         <CardFrame
           kind={frame.kind}

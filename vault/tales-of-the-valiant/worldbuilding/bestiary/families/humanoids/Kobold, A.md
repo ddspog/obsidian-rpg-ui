@@ -1,6 +1,7 @@
 ---
-token: "🦎"
-source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**. 
+token: 🦎
+source: From **Tales of the Valiant** "Monster Vault" by **Kobold Press**.
+token_image: "![[Kobold, A token.webp]]"
 ---
 ```rpg stat.monster
 name: "Kobold, A"

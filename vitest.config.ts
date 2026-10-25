@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    exclude: ["node_modules", "dist", "inspiration"],
+    exclude: ["node_modules", "dist", "inspiration", "tmp"],
     coverage: {
       reporter: ["text", "json", "html"],
       exclude: [

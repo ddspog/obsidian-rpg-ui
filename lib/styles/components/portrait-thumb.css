@@ -47,6 +47,21 @@ figure[aria-details="Portrait Thumb"][data-empty] {
   aspect-ratio: 3 / 4;
 }
 
+/* In a card frame the slot sizes the frame, not the art in it: the CSS frame
+   and an image one take the same room (the sheet's 160px headshot). */
+.markdown-rendered .rpg-portrait-frame,
+.markdown-source-view.mod-cm6 .rpg-portrait-frame {
+  width: 160px;
+}
+
+.rpg-description-appearance-art .rpg-portrait-frame {
+  width: 100%;
+}
+
+.rpg-portrait-frame .rpg-card-frame figure[aria-details="Portrait Thumb"] {
+  width: 100%;
+}
+
 /* In a card frame the frame stays put; hovering zooms the picture into the
    face — the upper middle of a portrait — clipped by the frame's window. */
 .rpg-card-frame figure[aria-details="Portrait Thumb"] {

@@ -127,6 +127,24 @@ The pane always shows the battle **as of the entry you're reading**: scrolling
 moves it through the fight. Clicking a token jumps to that creature's latest
 entry; clicking an entry jumps the map to it.
 
+### Token pictures
+
+A token shows a picture when its creature's note has one: `token_image:` in
+the frontmatter of the PC's sheet or the foe's statblock (the note a name links,
+`Fat [[Kobold, A]]` → `Kobold, A`). It fills the disc, ringed in the side's
+colour, under the HP ring, condition dot and KO badge; without one the token
+falls back on its emoji (`token:`), then its initials.
+
+Right-click a token on any of a fight's maps to change it — **Generate token
+image…** (the image studio, on the creature's note, set to its *Battle map
+token* kind: a head-and-shoulders bust filling a 512 px square, its prompt filled
+from the PC's sheet or the foe's statblock), **Upload token
+image…** (saved to *Settings → Maps → Battle map tokens → Token image folder*,
+named `<note> token.<ext>`; a generated one too, as WebP), **Choose token image from vault…**, or **Remove
+token image** (the file stays). Every token linked to the same note shares the
+picture, and every map redraws when it changes. A name that links to no note has
+nowhere to keep one; the menu says so.
+
 ## 6. The timeline — tactical replay
 
 Under the map: the fight's rounds (`R1 … R6`) with a tick per turn. Drag or step

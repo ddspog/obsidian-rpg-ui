@@ -1,7 +1,8 @@
 /**
  * Texture packs: the tile tree, `pack.yml`, and which tile a spec picks.
  *
- * A pack is one vault folder: `<pack>/{terrain,path,stack}/<folder>/…/<file>`
+ * A pack is one vault folder: `<pack>/{base,terrain,edge,path,stack,marker,label,far}/<folder>/…/<file>`,
+ * terrain's land and water sections either under `terrain/` or at the pack's top (`<pack>/land/…`)
  * plus `pack.yml`. Specs are the hex-map-editor's, with one addition:
  *
  *   forest                  files directly in `forest/` (all below it if none)
@@ -11,14 +12,35 @@
  *   plains[2]               the third match
  *   plains(dry)             names containing "(dry)" — the pack's biome names
  *   dry-plains              a `catalog:` name from pack.yml
+ *   rocky                   with no such folder: files in the layer itself
+ *                           named `rocky` or `rocky-…` (bases live there)
  *
  * A random pick is seeded by the hex, so a hex keeps its variant.
  */
 
 import { parse as parseYaml } from "yaml";
+import { type FarCompose, readCompose } from "./far-compose";
+import { shapeKey } from "./path-shapes";
 
-export type Layer = "terrain" | "path" | "stack";
-export const LAYERS: Layer[] = ["terrain", "path", "stack"];
+/** In drawing order: the ground with its base (the slab under the face, drawn
+ *  over the terrain art's own), edges along its sides (coasts), paths, then
+ *  stacks (props: buildings, trees) on top. Markers (pins, flags, pedestals
+ *  standing on a point, see markers.ts) go over the map, and labels (title
+ *  banners put together to fit their text, see labels.ts) over them. `far` is
+ *  never painted: it's how a level's hexes look from the level above (far.ts). */
+export type Layer = "base" | "terrain" | "edge" | "path" | "stack" | "marker" | "label" | "far";
+export const LAYERS: Layer[] = ["base", "terrain", "edge", "path", "stack", "marker", "label", "far"];
+
+/** What a terrain hex is, by the section its tile sits in (`terrain/land/…`,
+ *  `terrain/water/…`): coasts, rivers' mouths and regions' coastlines ask this. */
+export type Ground = "land" | "water";
+export const GROUNDS: Ground[] = ["land", "water"];
+
+/** The section a terrain tile's path (`land/forest/lush/x`) sits in, or null for a pack without sections. */
+export function groundOf(path: string): Ground | null {
+  const top = path.split("/")[0].toLowerCase();
+  return (GROUNDS as string[]).includes(top) ? (top as Ground) : null;
+}
 
 export interface TileDisplay {
   /** Image pixels the hex face spans (tiles and sprites share a scale);
@@ -31,7 +53,18 @@ export interface TileDisplay {
   borderWidth: number;
   /** Clip the image to the hex (flat textures) instead of letting it overhang. */
   clip?: boolean;
+  /** Image pixels of slab per height step. At pack or base-layer level it sets
+   *  how high a step lifts a hex; on a base tile, how far apart its repeated
+   *  slabs sit. Absent: `DEFAULT_STEP` of the hex width. */
+  step?: number;
+  /** A terrain tile whose art has a base baked in: where the hex gets a base,
+   *  the tile is cropped to its face so the two don't both show. */
+  hides?: boolean;
 }
+
+/** A height step as a share of the hex width, when the pack doesn't say:
+ *  `basic`'s slabs measure 7–9 % (35 px under a 477 px face, 10 under 115). */
+export const DEFAULT_STEP = 0.08;
 
 export interface CatalogEntry {
   spec: string;
@@ -50,16 +83,94 @@ export interface PackConfig {
    *  optionally prefixed with the layer. */
   files: Record<string, Partial<TileDisplay>>;
   catalog: Record<string, CatalogEntry>;
+  /** The base every hex gets unless its map says otherwise (`base: level`). */
+  base?: string;
   /** Paths that join up, by family (`roads`, `rivers`): see autotile.ts. */
   autotile: Record<string, AutotileFamily>;
+  /** Edges laid along terrain's sides, by family (`coast`): see edges.ts. */
+  edges: Record<string, EdgeFamily>;
+  /** Label families' text box and seams, by family folder (`title-1`): see labels.ts. */
+  labels: Record<string, LabelTuning>;
+  /** Marker styles' anchor and size, by style folder (`pedestal-gold`): see markers.ts. */
+  markers: Record<string, MarkerTuning>;
+  /** Custom tiles: named groups of map lines, relative to (0,0) (`custom:`): see stamps.ts. */
+  stamps: Record<string, string[]>;
+  /** How terrains look from the level above (zoomed out), by family: see far.ts. */
+  far: Record<string, FarFamily>;
+}
+
+/** A terrain's far (zoomed-out) art: one autotile set, picked by which of the six neighbours
+ *  are of the same family (a forest's trees join into one wood). */
+export interface FarFamily {
+  /** Shape (`alone-0`, `straight-0`, `star-0`: see path-shapes.ts) → tile paths in the far layer, without extension. */
+  tiles: Record<string, string[]>;
+  /** The terrains it stands for, by folder, base name or ground (`forest`, `jungle`), lower-cased; none: its own name. */
+  of: string[];
+  /** Hexes it doesn't stand for though they match `of`. */
+  except: string[];
+  /** How big its tiles are drawn, as a share of their hex (1: as wide as the hex). */
+  size?: number;
+  /** The recipe its tiles are baked from in the pack studio (far-compose.ts). */
+  compose?: FarCompose;
+  unknownKeys: string[];
+}
+
+/** Where a marker style stands on its picture, and how big it is drawn. */
+export interface MarkerTuning {
+  /** The point that sits on the marker's spot, as shares of the image (x, y). */
+  anchor?: [number, number];
+  /** Height multiplier (1: the default marker height). */
+  size?: number;
+}
+
+/** Where a label's text sits on its banner, in the banner's own pixels. */
+export interface LabelTuning {
+  /** From the banner's edges: top, right, bottom, left. */
+  inset?: [number, number, number, number];
+  /** Text height as a share of the banner's height. */
+  size?: number;
+  /** Pixels each piece overlaps the one before it, hiding hand-drawn seams. */
+  overlap?: number;
+  color?: string;
+  font?: string;
+  /** Lettering: just the text, in its font, with no banner art (a style named in `labels:` with no folder). */
+  lettering?: boolean;
+  /** CSS font weight (400 regular, 700 bold, 900 black). */
+  weight?: number;
+  italic?: boolean;
+  /** A colour drawn round the letters so they read over the map. */
+  halo?: string;
+  /** Letter spacing, in ems. */
+  spacing?: number;
+}
+
+export interface EdgeFamily {
+  /** Run (`run3-0`: see path-shapes.ts) → tile paths in the edge layer, without extension. */
+  tiles: Record<string, string[]>;
+  /** Terrain bases the edge runs along (`water`, `sea`), lower-cased. */
+  meets: string[];
+  /** Hexes that don't count as `meets` though they match it (`except: [swamp]`: no beach round a swamp). */
+  except: string[];
+  /** Drawn on the `meets` hexes themselves, along their sides facing the rest
+   *  (`inside`, the default: a coast on the water), or on the hexes facing them
+   *  (`outside`: a coast on the land). */
+  on: "outside" | "inside";
+  /** Keys that name no run: ignored. */
+  unknownKeys: string[];
 }
 
 export interface AutotileFamily {
-  /** Side combination (`N,SE`, sides in N,NE,SE,S,SW,NW order) → tile paths
-   *  in the path layer, without extension. */
+  /** Shape (`straight-0`, `start-4-hub`: see path-shapes.ts) → tile paths in the
+   *  path layer, without extension. Older side-mask keys (`N,S`) read as their type. */
   tiles: Record<string, string[]>;
+  /** Keys still written as side masks (rewritten as shape names on the next edit). */
+  sideKeys: number;
+  /** Keys that name no shape: ignored. */
+  unknownKeys: string[];
   /** Terrain folders a path also runs into (a river into `water`). */
   connectsTo: string[];
+  /** Hexes it doesn't run into though they match `connectsTo` (`except: [swamp]`: no mouth into a swamp). */
+  except?: string[];
 }
 
 export interface TileFile {
@@ -86,7 +197,17 @@ export interface HexPack {
 
 export const DEFAULT_DISPLAY: TileDisplay = { zoom: 1, offsetX: 0, offsetY: 0, borderWidth: 0.5 };
 
-const DISPLAY_KEYS: Array<keyof TileDisplay> = ["hexWidth", "zoom", "offsetX", "offsetY", "borderWidth", "clip"];
+const DISPLAY_KEYS: Array<keyof TileDisplay> = [
+  "hexWidth",
+  "zoom",
+  "offsetX",
+  "offsetY",
+  "borderWidth",
+  "clip",
+  "step",
+  "hides",
+];
+const FLAGS = new Set<keyof TileDisplay>(["clip", "hides"]);
 
 function pickDisplay(raw: unknown): Partial<TileDisplay> {
   if (!raw || typeof raw !== "object") return {};
@@ -94,10 +215,10 @@ function pickDisplay(raw: unknown): Partial<TileDisplay> {
   const out: Partial<TileDisplay> = {};
   for (const key of DISPLAY_KEYS) {
     const v = src[key];
-    if (key === "clip") {
-      if (typeof v === "boolean") out.clip = v;
+    if (FLAGS.has(key)) {
+      if (typeof v === "boolean") (out as Record<string, unknown>)[key] = v;
     } else if (typeof v === "number" && Number.isFinite(v)) {
-      out[key] = v;
+      (out as Record<string, unknown>)[key] = v;
     }
   }
   return out;
@@ -125,18 +246,164 @@ function readAutotile(raw: unknown): Record<string, AutotileFamily> {
   if (!raw || typeof raw !== "object") return out;
   for (const [family, v] of Object.entries(raw as Record<string, unknown>)) {
     if (!v || typeof v !== "object") continue;
-    const o = v as { tiles?: unknown; connectsTo?: unknown };
-    const tiles: Record<string, string[]> = {};
-    if (o.tiles && typeof o.tiles === "object") {
-      for (const [mask, t] of Object.entries(o.tiles as Record<string, unknown>)) {
-        const list = (Array.isArray(t) ? t : [t]).filter((x): x is string => typeof x === "string");
-        if (list.length) tiles[canonicalMask(mask)] = list;
+    const o = v as { tiles?: unknown; connectsTo?: unknown; except?: unknown };
+    const { tiles, sideKeys, unknownKeys } = readTiles(o.tiles, "path");
+    const connectsTo = strings(o.connectsTo);
+    const except = strings(o.except).map((m) => m.toLowerCase());
+    out[family] = { tiles, connectsTo, ...(except.length ? { except } : {}), sideKeys, unknownKeys };
+  }
+  return out;
+}
+
+/** A table's keys read as shape names (`kind` picks paths' shapes or edges' runs). */
+function readTiles(raw: unknown, kind: "path" | "edge" | "far") {
+  const tiles: Record<string, string[]> = {};
+  let sideKeys = 0;
+  const unknownKeys: string[] = [];
+  if (raw && typeof raw === "object") {
+    for (const [key, t] of Object.entries(raw as Record<string, unknown>)) {
+      const shape = shapeKey(key, kind);
+      if (!shape) {
+        unknownKeys.push(key);
+        continue;
       }
+      if (shape !== key) sideKeys++;
+      const list = (Array.isArray(t) ? t : [t]).filter((x): x is string => typeof x === "string");
+      if (list.length) tiles[shape] = [...(tiles[shape] ?? []), ...list];
     }
-    const connectsTo = (Array.isArray(o.connectsTo) ? o.connectsTo : []).filter(
-      (x): x is string => typeof x === "string"
-    );
-    out[family] = { tiles, connectsTo };
+  }
+  return { tiles, sideKeys, unknownKeys };
+}
+
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v : []).filter((x): x is string => typeof x === "string");
+
+function readFar(raw: unknown): Record<string, FarFamily> {
+  const out: Record<string, FarFamily> = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const [family, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const o = v as { tiles?: unknown; of?: unknown; except?: unknown; size?: unknown; compose?: unknown };
+    const { tiles, unknownKeys } = readTiles(o.tiles, "far");
+    const of = (typeof o.of === "string" ? [o.of] : strings(o.of)).map((m) => m.toLowerCase());
+    const except = strings(o.except).map((m) => m.toLowerCase());
+    const size = num(o.size);
+    const compose = readCompose(o.compose);
+    out[family] = {
+      tiles,
+      of: of.length ? of : [family.toLowerCase()],
+      except,
+      unknownKeys,
+      ...(size ? { size } : {}),
+      ...(compose ? { compose } : {}),
+    };
+  }
+  return out;
+}
+
+function readEdges(raw: unknown): Record<string, EdgeFamily> {
+  const out: Record<string, EdgeFamily> = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const [family, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const o = v as { tiles?: unknown; meets?: unknown; except?: unknown; on?: unknown };
+    const { tiles, unknownKeys } = readTiles(o.tiles, "edge");
+    const meets = strings(o.meets).map((m) => m.toLowerCase());
+    const except = strings(o.except).map((m) => m.toLowerCase());
+    out[family] = { tiles, meets, except, on: o.on === "outside" ? "outside" : "inside", unknownKeys };
+  }
+  return out;
+}
+
+const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
+/** `custom: { town: ["t(0,0): city", …] }` (once `stamps:`) — or one block of text per tile. */
+function readStamps(raw: unknown): Record<string, string[]> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, string[]> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    // An unquoted `- t(0,0): city` reads as a one-key map, and `- 100m:` as one with no value.
+    const line = (item: unknown): string =>
+      item && typeof item === "object"
+        ? Object.entries(item as Record<string, unknown>)
+            .map(([k, val]) => `${k}:${val === null || val === undefined ? "" : ` ${String(val)}`}`)
+            .join(" ")
+        : String(item);
+    const lines = Array.isArray(v) ? v.map(line) : typeof v === "string" ? v.split("\n") : [];
+    const kept = lines.map((l) => l.trim()).filter(Boolean);
+    if (kept.length) out[name] = kept;
+  }
+  return out;
+}
+
+function readMarkers(raw: unknown): Record<string, MarkerTuning> {
+  const out: Record<string, MarkerTuning> = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const [style, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const o = v as Record<string, unknown>;
+    const t: MarkerTuning = {};
+    const anchor = Array.isArray(o.anchor) ? o.anchor.map(num) : [];
+    if (anchor.length === 2 && anchor.every((n) => n !== undefined)) t.anchor = anchor as [number, number];
+    if (num(o.size) !== undefined) t.size = num(o.size);
+    out[style] = t;
+  }
+  return out;
+}
+
+/** Weight names as fonts write them (`Bookmania-Semibold`), lower-cased with no spaces. */
+export const FONT_WEIGHTS: Record<string, number> = {
+  thin: 100,
+  hairline: 100,
+  extralight: 200,
+  ultralight: 200,
+  light: 300,
+  regular: 400,
+  normal: 400,
+  book: 400,
+  roman: 400,
+  medium: 500,
+  semibold: 600,
+  demibold: 600,
+  bold: 700,
+  extrabold: 800,
+  ultrabold: 800,
+  heavy: 900,
+  black: 900,
+};
+
+/** A font file in a pack's `fonts/` folder, read from its name: `Bookmania-Black Italic.ttf` →
+ *  Bookmania, 900, italic. Null when it isn't a font. */
+export function fontFaceOf(path: string): { family: string; weight: number; italic: boolean } | null {
+  const m = path.match(/(?:^|\/)fonts\/(?:.*\/)?([^/]+)\.(ttf|otf|woff2?)$/i);
+  if (!m) return null;
+  const [family, ...rest] = m[1].split("-");
+  const style = rest.join(" ").toLowerCase();
+  const italic = /\b(italic|oblique)\b/.test(style);
+  const name = style.replace(/\b(italic|oblique)\b/, "").replace(/\s+/g, "");
+  return { family: family.trim(), weight: FONT_WEIGHTS[name] ?? 400, italic };
+}
+
+function readLabels(raw: unknown): Record<string, LabelTuning> {
+  const out: Record<string, LabelTuning> = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const [family, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const o = v as Record<string, unknown>;
+    const t: LabelTuning = {};
+    const inset = Array.isArray(o.inset) ? o.inset.map(num) : [];
+    if (inset.length === 4 && inset.every((n) => n !== undefined)) t.inset = inset as LabelTuning["inset"];
+    if (num(o.size) !== undefined) t.size = num(o.size);
+    if (num(o.overlap) !== undefined) t.overlap = num(o.overlap);
+    if (typeof o.color === "string") t.color = o.color;
+    if (typeof o.font === "string") t.font = o.font;
+    if (o.lettering === true) t.lettering = true;
+    const weight =
+      typeof o.weight === "string" ? FONT_WEIGHTS[o.weight.toLowerCase().replace(/[\s-]/g, "")] : num(o.weight);
+    if (weight !== undefined) t.weight = weight;
+    if (o.italic === true) t.italic = true;
+    if (typeof o.halo === "string") t.halo = o.halo;
+    if (num(o.spacing) !== undefined) t.spacing = num(o.spacing);
+    out[family] = t;
   }
   return out;
 }
@@ -176,13 +443,21 @@ export function parsePackConfig(text: string | null, packName: string): PackConf
     terrains: pickDisplayMap(raw.terrains),
     files: pickDisplayMap(raw.files),
     catalog,
+    base: typeof raw.base === "string" && raw.base.trim() ? raw.base.trim() : undefined,
     autotile: readAutotile(raw.autotile),
+    edges: readEdges(raw.edges),
+    labels: readLabels(raw.labels),
+    markers: readMarkers(raw.markers),
+    stamps: { ...readStamps(raw.stamps), ...readStamps(raw.custom) },
+    far: readFar(raw.far),
   };
 }
 
-/** The display for one tile: defaults → layer → folder → file. */
+/** The display for one tile: defaults → layer → folder → file. A terrain
+ *  folder's key (`forest`) is the one below its section (`land/forest`). */
 export function displayFor(config: PackConfig, layer: Layer, path: string): TileDisplay {
-  const top = path.split("/")[0];
+  const parts = path.split("/");
+  const top = layer === "terrain" && parts.length > 2 && groundOf(path) ? parts[1] : parts[0];
   return {
     ...config.defaults,
     ...config.layers[layer],
@@ -208,8 +483,12 @@ export function buildPack(name: string, files: Array<{ path: string; url: string
   for (const { path, url } of files) {
     if (!IMAGE.test(path)) continue;
     const parts = path.split("/");
+    // Terrain's sections may sit at the pack's top (`land/forest/…`, `water/ocean/…`) instead of
+    // under `terrain/`: the same tiles, with the same paths below the layer.
+    if (groundOf(parts[0] ?? "") && parts.length > 1) parts.unshift("terrain");
     const layer = parts.shift() as Layer;
-    if (!LAYERS.includes(layer) || parts.length < 2) continue;
+    // Bases sit in their layer folder itself; other tiles one folder down at least.
+    if (!LAYERS.includes(layer) || parts.length < (layer === "base" ? 1 : 2)) continue;
     const fileName = parts.pop() as string;
     let folder = layers[layer];
     for (const part of parts) {
@@ -275,6 +554,29 @@ function findFolder(f: TileFolder, name: string): TileFolder | undefined {
   return undefined;
 }
 
+/**
+ * A spec's top folder in a layer. Terrain's sections are seen through, so
+ * specs don't name them: `forest` is `land/forest`, a section is itself
+ * (`water[ocean]`), and folders of one name in both (`basic`) read as one.
+ */
+function topFolder(root: TileFolder, name: string): TileFolder | undefined {
+  const sections = [...root.folders.values()].filter((f) => groundOf(f.name));
+  const direct = findFolder(root, name);
+  if (sections.length === 0) return direct;
+  const found = [direct, ...sections.map((s) => findFolder(s, name))].filter((f): f is TileFolder => !!f);
+  return found.length > 1 ? mergeFolders(found) : found[0];
+}
+
+/** Several folders read as one: their files, and their subfolders merged by name. */
+function mergeFolders(list: TileFolder[]): TileFolder {
+  const folders = new Map<string, TileFolder>();
+  const byName = new Map<string, TileFolder[]>();
+  for (const f of list)
+    for (const [k, v] of f.folders) byName.set(k.toLowerCase(), [...(byName.get(k.toLowerCase()) ?? []), v]);
+  for (const subs of byName.values()) folders.set(subs[0].name, subs.length > 1 ? mergeFolders(subs) : subs[0]);
+  return { name: list[0].name, files: list.flatMap((f) => f.files), folders };
+}
+
 /** Stable 32-bit FNV-1a hash. */
 export function hashSeed(seed: string): number {
   let h = 0x811c9dc5;
@@ -300,8 +602,16 @@ export function resolveCatalog(pack: HexPack | undefined, spec: string): Catalog
 export function selectTile(pack: HexPack, layer: Layer, spec: string, seed: string): PickedTile | null {
   const { base, parts } = parseTileSpec(resolveCatalog(pack, spec).spec);
   if (!base) return null;
-  const root = findFolder(pack.layers[layer], base);
-  if (!root) return null;
+  let root = topFolder(pack.layers[layer], base);
+  if (!root) {
+    // No folder of that name: the layer's own files of that name (`rocky`, `rocky-1`).
+    const needle = base.toLowerCase();
+    const own = pack.layers[layer].files.filter(
+      (f) => f.name.toLowerCase() === needle || f.name.toLowerCase().startsWith(`${needle}-`)
+    );
+    if (own.length === 0) return null;
+    root = { name: base, files: own, folders: new Map() };
+  }
   let current: TileFolder | null = root;
   let candidates: TileFile[] = root.files.length > 0 || root.folders.size === 0 ? root.files : allFiles(root);
   let index: number | null = null;
@@ -325,6 +635,19 @@ export function selectTile(pack: HexPack, layer: Layer, spec: string, seed: stri
       index = parseInt(v, 10);
       continue;
     }
+    // A pattern (`deciduous*`, `*sparse`): any file whose whole name fits it, picked at random.
+    if (v.includes("*")) {
+      const pattern = new RegExp(
+        `^${v
+          .toLowerCase()
+          .split("*")
+          .map((p) => p.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+          .join(".*")}$`
+      );
+      candidates = candidates.filter((f) => pattern.test(f.name.toLowerCase()));
+      filtered = true;
+      continue;
+    }
     const sub: TileFolder | undefined = !filtered && current ? findFolder(current, v) : undefined;
     if (sub) {
       current = sub;
@@ -332,7 +655,9 @@ export function selectTile(pack: HexPack, layer: Layer, spec: string, seed: stri
       continue;
     }
     const needle = v.toLowerCase();
-    candidates = candidates.filter((f) => f.name.toLowerCase().includes(needle));
+    // A file named exactly so wins (`[deciduous]` isn't also `deciduous-sparse`); else any name containing it.
+    const exact = candidates.filter((f) => f.name.toLowerCase() === needle);
+    candidates = exact.length ? exact : candidates.filter((f) => f.name.toLowerCase().includes(needle));
     filtered = true;
   }
   if (candidates.length === 0) return null;

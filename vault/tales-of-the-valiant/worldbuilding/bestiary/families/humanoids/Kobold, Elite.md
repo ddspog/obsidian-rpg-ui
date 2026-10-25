@@ -1,5 +1,5 @@
 ---
-token: "⛏️"
+token: ⛏️
 source: From **D&D 5e** "Creature Codex" by **Kobold Press**.
 aliases:
   - elite kobold
@@ -8,6 +8,7 @@ aliases:
   - elite kobolds
   - Elite kobolds
   - Elite Kobolds
+token_image: "![[Kobold, Elite token 1.webp]]"
 ---
 ```rpg stat.monster
 name: "Kobold, Elite"
