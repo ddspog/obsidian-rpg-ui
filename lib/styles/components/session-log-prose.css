@@ -2477,32 +2477,42 @@ button.lonelog-bookkeeping-write.is-quiet {
   letter-spacing: 0.04em;
 }
 
-/* A row written `& label: …` rides on the line above: the parts sit side by side and wrap
- * as a whole, each with its own label, die and (wrapped) result. */
+/* A row written `& label: …` rides on the line above: the parts run on as text, each with its own
+ * label, die and result, and a part that is too long carries on under the first one's `+`, using the
+ * whole width. */
 .lonelog-row-joined {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.15em 0.8em;
-}
-
-.lonelog-row-joined > .lonelog-row-detail {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  /* The bullet and label already space themselves (margins): a gap on top left the first
-   * label further from its `+` than the same label on a row of its own. */
-  gap: 0;
-  max-width: 100%;
-}
-
-/* The indent belongs to the line, so parts that wrap start where the first one did. */
-.lonelog-row-joined {
+  display: block;
   padding-left: 1.4em;
 }
 
 .lonelog-row-joined > .lonelog-row-detail {
+  display: inline;
   padding-left: 0;
+  margin-right: 0.8em;
+}
+
+/* The button that rolls every die of the line at once. */
+.lonelog-sidebar button.lonelog-roll-both {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  height: auto;
+  min-height: 0;
+  padding: 0.05em 0.5em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 0.82em;
+  font-weight: 600;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.lonelog-sidebar button.lonelog-roll-both:hover {
+  color: var(--text-accent);
+  border-color: var(--text-accent);
 }
 
 .lonelog-row-joined textarea.lonelog-formula-result-input {
@@ -2537,12 +2547,10 @@ button.lonelog-bookkeeping-write.is-quiet {
   transition: background-color 120ms ease;
 }
 
-.lonelog-picker-word + .lonelog-picker-word::before {
-  content: "/";
-  margin-right: 0.55em;
-  margin-left: -0.3em;
+.lonelog-picker-sep {
   color: var(--text-faint);
   font-weight: 400;
+  user-select: none;
 }
 
 .lonelog-picker.has-pick .lonelog-picker-word:not(.is-picked) {
