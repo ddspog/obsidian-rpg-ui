@@ -10,7 +10,6 @@ import {
   withActorRefs,
   withActorPages,
   withCombatantRolls,
-  laneForSpeaker,
   reconstructScene,
   applySceneEdits,
   applyTokenEdits,
@@ -117,21 +116,6 @@ PC(Kael): A word between.
 => Second.`);
     const kinds = scenes[0].nodes.map((n) => n.kind);
     expect(kinds).toEqual(["paragraph", "dialogue", "paragraph"]);
-  });
-});
-
-describe("laneForSpeaker", () => {
-  it("is deterministic per speaker", () => {
-    expect(laneForSpeaker("Lilith")).toBe(laneForSpeaker("Lilith"));
-    expect(laneForSpeaker("Talon")).not.toBe(laneForSpeaker("Lilith"));
-  });
-
-  it("stays within the usable lane range", () => {
-    for (const name of ["Lilith", "Talon", "Kobold", "Jacqui", "A", ""]) {
-      const lane = laneForSpeaker(name);
-      expect(lane).toBeGreaterThanOrEqual(0.08);
-      expect(lane).toBeLessThan(0.92);
-    }
   });
 });
 

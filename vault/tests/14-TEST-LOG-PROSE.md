@@ -6,10 +6,12 @@ Verify the `rpg log` block's **prose mode** (the new default reading view):
 
 - Only `=>` conclusions surface as prose; the `@` / `d:` / `?` / `gen:` machinery is hidden.
 - `[[wikilinks]]` inside narration and dialogue render as real links.
-- A `=> S## Title` consequence opens a scene whose title carries a provenance dot.
-- `PC()` / `N()` dialogue renders as chat balloons, one per row, each speaker in a stable lane.
-- `++` joins consecutive conclusions into one paragraph, each keeping its own dot.
-- A **Prose / Mechanical** toggle sits at the top-right; **Actions** opens the read-only sidebar.
+- A `=> S## Title` consequence opens a scene whose title carries a provenance dot, in the left margin.
+- `PC()` / `N()` dialogue renders as chat balloons that fit their words: player characters on the left, everyone else on the right.
+- `++` joins consecutive conclusions into one paragraph, each keeping its own margin dot.
+- The **Log** fold at the top-right (on a phone, **Log** in the bottom bar) opens the read-only sidebar; **↓ Latest** jumps to the last block.
+- The **Actions** drawer starts folded to a slim bar showing who is acting; press **A** (or tap the bar) to open it.
+- **Write** in the bookkeeping first shows what will change and asks you to confirm; **Esc** cancels.
 - Clicking a dot opens + highlights the matching sidebar card; clicking a card scrolls to the passage.
 
 Open this file in **Reading View**.

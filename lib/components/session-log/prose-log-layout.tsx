@@ -15,6 +15,7 @@ import { LogSidebar } from "./log-sidebar";
 import type { ProseScene } from "lib/domains/session-log/prose-model";
 import type { SidebarItem } from "lib/domains/session-log/prose-model";
 import type { ChoiceAt } from "lib/domains/session-log/choice";
+import { scrollBehavior } from "lib/utils/scroll-behavior";
 
 export function ProseLogLayout({
   scenes,
@@ -102,7 +103,7 @@ export function ProseLogLayout({
   React.useEffect(() => {
     if (!selection) return;
     const map = selection.side === "sidebar" ? sidebarAnchors.current : proseAnchors.current;
-    map.get(selection.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    map.get(selection.id)?.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
   }, [selection]);
 
   const handleDotClick = (id: number) => {

@@ -25,3 +25,12 @@ The **?** in the corner of the status panel opens a short list of what the sheet
 ## Styling
 
 The panels under the status panel (senses, skills, proficiencies, rolls) share one warm parchment surface at every width, in light and dark themes. Link colour inside them is a violet ink chosen to pass WCAG AA. The CSS lives in `lib/styles/sheet-surface.css` (all widths) and `lib/styles/mobile.css` (phones only).
+
+## The session log on a phone
+
+- **Bottom bar.** In a log with actions, the bar at the foot of the screen has **Actions**, **Log** and **↓ Latest**. **Log** opens the Log under the prose and scrolls to it. When there are unsaved edits, a pill above the bar offers **Save** and **Undo**. The floating chips are gone on a phone.
+- **Drawer.** The Actions drawer starts folded everywhere. On a desktop the folded bar shows who is acting and "Press A to open"; **A** opens and folds the drawer of the log you are looking at, unless you are typing.
+- **Margin dots.** A dot and a hairline in the left margin mark the passage an action produced, on the line where its sentence ends. Tap or click one to open its card in the Log.
+- **Dialogue.** Player characters speak on the left and everyone else on the right, in bubbles that fit their words.
+- **Bookkeeping.** **Write**, **Rewrite** and **Write all** show a short list of what will change, with a **Write** button and **Cancel**. Nothing is written until you confirm.
+- **Look.** The Log sidebar, the Actions drawer and the bookkeeping use the sheet's parchment and link colour. The prose keeps Obsidian's own background.

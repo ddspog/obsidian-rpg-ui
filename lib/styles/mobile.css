@@ -398,6 +398,85 @@
     min-height: 2.25rem;
   }
 
+  /* The drawer's bar carries Log, Latest and Save here; the floating chips and the top-right fold step aside. */
+  .session-log-container.has-bar .lonelog-log-rail {
+    display: none;
+  }
+
+  .session-log-container.has-bar .drawer-toggle-btn,
+  .session-log-container.has-bar .drawer-collapsed-bar {
+    display: none;
+  }
+
+  .session-log-container.has-bar .lonelog-bottom-drawer.is-collapsed {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .session-log-container.has-bar .lonelog-bottom-drawer:not(.is-collapsed) {
+    padding-bottom: 0;
+  }
+
+  .lonelog-bar-wrap {
+    position: sticky;
+    bottom: 0;
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: inherit;
+  }
+
+  .lonelog-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  }
+
+  .lonelog-bar > button {
+    min-height: 48px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .lonelog-bar > button[aria-pressed="true"] {
+    color: light-dark(#4b2f9a, #cdbfff);
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+
+  .lonelog-bar-dirty {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.4rem 0.6rem;
+    padding: 0.15rem 0.35rem 0.15rem 0.9rem;
+    border-radius: 999px;
+    background: #1d1b2b;
+    color: #fff;
+    font-size: 0.8rem;
+  }
+
+  .lonelog-bar-dirty > span {
+    flex: 1;
+  }
+
+  .lonelog-bar-dirty > button {
+    min-height: 40px;
+    padding: 0 0.8rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: #cdbfff;
+    font-weight: 700;
+  }
+
   .drawer-toggle-btn {
     width: 2.5rem;
     height: 2.5rem;
