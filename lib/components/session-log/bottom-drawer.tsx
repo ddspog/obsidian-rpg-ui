@@ -18,10 +18,13 @@ const KEY = "rpg-ui:drawer-collapsed";
  */
 export function BottomDrawer({ actionsPanel }: BottomDrawerProps) {
   const [collapsed, setCollapsed] = React.useState(() => {
+    // No saved choice: start folded on a phone, where the open drawer fills the screen.
+    const phone = window.matchMedia?.("(max-width: 600px)").matches ?? false;
     try {
-      return window.localStorage.getItem(KEY) === "1";
+      const saved = window.localStorage.getItem(KEY);
+      return saved === null ? phone : saved === "1";
     } catch {
-      return false;
+      return phone;
     }
   });
   const set = React.useCallback((on: boolean) => {

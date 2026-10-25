@@ -822,7 +822,7 @@
 }
 .initiative-group-hp {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 0.3rem;
   width: 100%;
 }
@@ -7825,7 +7825,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .system-skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -8147,7 +8147,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .attributes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 16px;
 }
 .attribute-card {
@@ -8219,7 +8219,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .rpg-inline-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin: 16px 0;
 }
@@ -10012,6 +10012,8 @@ section[aria-details="Character Senses"] > dl > dd > a.internal-link {
   }
   section[aria-details="Character Senses"] > dl {
     grid-column: 1 / -1;
+    grid-row: auto;
+    padding-bottom: 1.4em;
     border-left: none;
     border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
   }
@@ -15907,6 +15909,226 @@ p.rpg-statblock-subtitle {
 .markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc li {
   padding-inline-start: 0;
   margin: 0;
+}
+
+/* lib/styles/mobile.css */
+@media (max-width: 600px) {
+  .markdown-preview-view [class*=rpg-],
+  .markdown-preview-view [data-rpg-rule] {
+    max-width: 100%;
+  }
+  .el-table.rpg-table-wrapper,
+  .rpg-item-magic-card .el-table,
+  .rpg-rolls {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rpg-table th,
+  .rpg-table td {
+    padding-inline: 0.5rem;
+    font-size: 0.9em;
+  }
+  .rpg-rolls__table {
+    min-width: 0;
+  }
+  .rpg-rule-side,
+  .rpg-rule-side--dir-left,
+  .rpg-rule-side--dir-right,
+  .rpg-rule-side--gutter,
+  .rpg-rule-side--commentary {
+    float: none;
+    clear: both;
+    width: auto;
+    max-width: 100%;
+    margin-inline: 0;
+    padding-inline: var(--rpg-side-padding-inline, 1rem);
+  }
+  .rpg-rule-side-spread-group > .el-pre,
+  .rpg-rule-side-spread-group > [class*=block-language-],
+  .rpg-rule-side-spread-group > .rpg-call,
+  .rpg-rule-side-spread-group > .rpg-rule-side--spread,
+  .rpg-rule-side-spread-group > .rpg-call-highlight,
+  .rpg-call:has(.rpg-rule-side-spread-item) > *,
+  .rpg-rule-side__body:has(.rpg-rule-side-spread-item) .rpg-rule-side--spread {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .rpg-rule-side__title,
+  .rpg-rule-side__body {
+    overflow-wrap: anywhere;
+  }
+  figure[class*=rpg-figure],
+  .rpg-figure {
+    float: none;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  img,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .rpg-skill-li {
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] fieldset,
+  .rpg-banner-header__leveling > figure[aria-details="Progress Bar"] {
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+  header[aria-details*=" Banner"] hgroup,
+  header[aria-details*=" Banner"] fieldset {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] fieldset {
+    align-items: stretch;
+  }
+  [aria-details="Line Control"] {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  [aria-details="Line Stats"] {
+    gap: 6px;
+  }
+  figure[aria-details="Stat Diamond"] {
+    --hex-w: 82px;
+    --hex-h: 48px;
+  }
+  figure[aria-details="Stat Diamond"][data-size=lg] {
+    --hex-w: 96px;
+    --hex-h: 58px;
+  }
+  section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"] {
+    flex: 0 0 44px !important;
+    width: 44px;
+  }
+  section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] {
+    display: none;
+  }
+  section[aria-details*=" Row"] {
+    flex-wrap: wrap;
+  }
+  section[aria-details*=" Row"] > div:has(> .rpg-card-frame) {
+    flex: 0 0 100% !important;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  section[aria-details*=" Row"] > div > .rpg-card-frame {
+    width: min(100%, 11rem);
+  }
+  section[aria-details*=" Row"] > article[aria-details*=" Column"] {
+    flex: 1 1 100% !important;
+  }
+  section[aria-details*=" Row"] {
+    padding: 10px;
+    gap: 8px;
+  }
+  p[aria-details="Health Management Row"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  p[aria-details="Health Management Row"] dl {
+    flex: 1 1 auto !important;
+    width: 100%;
+  }
+  section[aria-details="Character Stats"] {
+    row-gap: 22px;
+    padding-bottom: 28px;
+  }
+  section[aria-details="Character Skills"] > menu {
+    column-count: 1;
+    padding: 6px 8px;
+  }
+  section[aria-details="Character Skills"] > menu > li {
+    padding: 4px 8px;
+    font-size: 1.1em;
+    min-height: 36px;
+  }
+  section[aria-details="Character Proficiencies"] > dl {
+    column-count: 1;
+    padding: 6px 8px;
+  }
+  section[aria-details="Character Proficiencies"] > dl dt {
+    padding-inline: 8px;
+  }
+  section[aria-details="Character Proficiencies"] > dl dd {
+    margin-inline-start: 12px;
+    padding-inline-end: 8px;
+  }
+  section[aria-details="Character Rolls"] {
+    margin-inline: 0;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lonelog-bottom-drawer {
+    margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    padding: 0.5rem 0.75rem;
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+  .lonelog-log-latest,
+  .lonelog-log-undo,
+  .lonelog-log-save {
+    background-color: var(--background-primary);
+    min-height: 2rem;
+    padding-inline: 0.7rem;
+  }
+  .lonelog-log-save {
+    background-color: var(--interactive-accent);
+  }
+  .lonelog-prose-scene-head {
+    padding-inline-end: 7rem;
+  }
+  .markdown-rendered .rpg-feature-bucket-entry-collapse {
+    opacity: 0.6;
+    padding: 10px 12px;
+    margin-block: -10px;
+  }
+  .markdown-rendered .rpg-feature-decisions-undo {
+    padding: 10px 12px;
+    margin: -10px -12px;
+  }
+  .rpg-feature-decisions-entry {
+    white-space: normal;
+  }
+  .lonelog-bookkeeping {
+    margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    padding-inline: 0.75rem;
+  }
+  .lonelog-log-toggle[aria-pressed=true] {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
+  .drawer-toggle-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    top: 0.25rem;
+    right: 0.25rem;
+  }
+  .rpg-inventory-block__sell-btn,
+  .rpg-inventory-block__equip-btn,
+  .rpg-description-copy-prompt,
+  .rpg-rolls__cost-btn {
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
+  .markdown-preview-view [class*=rpg-] select,
+  .markdown-preview-view [class*=rpg-] textarea {
+    font-size: 16px;
+  }
 }
 
 /* lib/styles/index.css */
