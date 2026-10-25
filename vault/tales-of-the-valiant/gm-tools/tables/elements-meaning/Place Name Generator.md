@@ -24,36 +24,36 @@ generators:
 steps:
   - choice: "Terrain: \"…of ___\""
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 1. Terrain Features 1]]#legendary-terrain-feature-names-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 1. Terrain Features 1]]#legendary-terrain-feature-names-1"
     labels:
       - "Feature"
     choose:
       - "Feature=1,2"
   - choice: "Terrain: mixed names"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 1. Terrain Features 1]]#legendary-terrain-feature-names-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 1. Terrain Features 1]]#legendary-terrain-feature-names-2"
     labels:
       - "Name"
     choose:
       - "Name=1,2,3"
   - choice: "Terrain: more mixed names"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 2. Terrain Features 2]]#legendary-terrain-feature-names-3"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 2. Terrain Features 2]]#legendary-terrain-feature-names-3"
     labels:
       - "Name"
     choose:
       - "Name=1,2,3"
   - choice: "Terrain: shaped like an item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 2. Terrain Features 2]]#legendary-terrain-feature-names-4"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 2. Terrain Features 2]]#legendary-terrain-feature-names-4"
     labels:
       - "Name"
     choose:
       - "\"The \"+Item=1"
   - choice: "Fortress (type 1)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-1-fortress-name-2"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-1-fortress-name-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-1-fortress-name-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-1-fortress-name-1"
     labels:
       - "Name"
       - ""
@@ -62,15 +62,15 @@ steps:
       - ""
   - choice: "Fortress (type 2): Bastion of…"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-2-fortress-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-2-fortress-name"
     labels:
       - "Start"
     choose:
       - "Start=1"
   - choice: "Fortress (type 3): …of the Group"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-2-fortress-name"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-3-fortress-name-part-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-2-fortress-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#type-3-fortress-name-part-2"
     labels:
       - "Name"
       - ""
@@ -79,64 +79,64 @@ steps:
       - ""
   - choice: "Short castle name"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#short-castle-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 3. Strongholds 1]]#short-castle-name"
     labels:
       - "Name"
     choose:
       - "\"Castle \"+Name=1,2,3,4,5,6,7"
   - choice: "Mystical fortress (table 1)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 4. Strongholds 2]]#mystical-fortress-name-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 4. Strongholds 2]]#mystical-fortress-name-1"
     labels:
       - "Name"
     choose:
       - "\"The Fortress of \"+Name=1,2,3,4"
   - choice: "Mystical fortress (table 2)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/24. Names for Legendary Places/Names for Legendary Places 4. Strongholds 2]]#mystical-fortress-name-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/24. Names for Legendary Places/Names for Legendary Places 4. Strongholds 2]]#mystical-fortress-name-2"
     labels:
       - "Name"
     choose:
       - "\"The Fortress of \"+Name=1,2,3,4"
   - choice: "City (Black Company style)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#black-company-style-city-names"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#black-company-style-city-names"
     labels:
       - "Name"
     choose:
       - "Name=1,2,3,4"
   - choice: "City epithet: a group"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#city-epithets-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#city-epithets-1"
     labels:
       - "Name"
     choose:
       - "\"City of the \"+Group Adjective=1& Groups=2"
   - choice: "City epithet: a thing"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#city-epithets-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 1. Table 25-1 Black Company Style City Names 1]]#city-epithets-1"
     labels:
       - "Name"
     choose:
       - "\"City of the \"+Thing Adjective=3& Thing=4"
   - choice: "City epithet: \"The City of…\""
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 2. Table 25-1 Black Company Style City Names 2]]#city-epithets-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 2. Table 25-1 Black Company Style City Names 2]]#city-epithets-2"
     labels:
       - "Name"
     choose:
       - "\"The City of \"+Name=1,2,3,4"
   - choice: "City epithet: \"The ___ City\""
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 2. Table 25-1 Black Company Style City Names 2]]#city-epithets-3"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 2. Table 25-1 Black Company Style City Names 2]]#city-epithets-3"
     labels:
       - "Name"
     choose:
       - "\"The \"+Adjective=1,2+\" City\""
   - choice: "Street named for a profession"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 3. Street Names]]#streets-named-for-professions"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/25. City and Settlement Names/City and Settlement Names 3. Street Names]]#selected-street-types"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 3. Street Names]]#streets-named-for-professions"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/25. City and Settlement Names/City and Settlement Names 3. Street Names]]#selected-street-types"
     labels:
       - "Name"
       - ""

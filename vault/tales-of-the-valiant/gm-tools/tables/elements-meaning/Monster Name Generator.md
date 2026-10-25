@@ -24,15 +24,15 @@ generators:
 steps:
   - choice: "Monster type (option 1)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-1"
     labels:
       - "Name"
     choose:
       - "Part 1=1,2+Part 2=3,4"
   - choice: "Monster type, with a beast ending"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 1. General Monster Names]]#beast-ending"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 1. General Monster Names]]#beast-ending"
     labels:
       - "Name"
       - ""
@@ -41,84 +41,84 @@ steps:
       - ""
   - choice: "Monster type (option 2)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-2"
     labels:
       - "Name"
     choose:
       - "Part 1=1& Part 2=2+Part 3=3"
   - choice: "Monster type (option 3)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-3"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 1. General Monster Names]]#name-for-a-monster-type-option-3"
     labels:
       - "Name"
     choose:
       - "Part 1=1+Part 2=2& Part 3=3"
   - choice: "Bug monster"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 2. Bug Monster names + Draconic Monster names]]#bug-placeperson-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 2. Bug Monster names + Draconic Monster names]]#bug-placeperson-name"
     labels:
       - "Name"
     choose:
       - "Part 1=1+\"-\"+Part 2=2+\"-\"+Part 3=3"
   - choice: "Dragon"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 2. Bug Monster names + Draconic Monster names]]#dragon-nameplace"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 2. Bug Monster names + Draconic Monster names]]#dragon-nameplace"
     labels:
       - "Name"
     choose:
       - "Part 1=1+Part 2=2"
   - choice: "Eldritch horror (option 1)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 3. Eldritch Horror names]]#eldritch-horror-name-option-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 3. Eldritch Horror names]]#eldritch-horror-name-option-1"
     labels:
       - "Name"
     choose:
       - "Part 1=1& Part 2=2,3,4"
   - choice: "Eldritch horror (option 2)"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 3. Eldritch Horror names]]#eldritch-horror-name-option-2"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 3. Eldritch Horror names]]#eldritch-horror-name-option-2"
     labels:
       - "Name"
     choose:
       - "Part 1=1& Part 2=2"
   - choice: "Hag title"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#name-titles-for-a-hag"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#name-titles-for-a-hag"
     labels:
       - "Title"
     choose:
       - "Title=1"
   - choice: "Lizard monster"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#lizard-placeperson-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#lizard-placeperson-name"
     labels:
       - "Name"
     choose:
       - "Part 1=1+Part 2=2,3"
   - choice: "Reptilian title"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#reptilian-titles"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 4. Hags + Lizard Monster names]]#reptilian-titles"
     labels:
       - "Name"
     choose:
       - "Part 1=1+Part 2=2"
   - choice: "Fish monster"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#fish-placeperson-name"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#fish-placeperson-name"
     labels:
       - "Name"
     choose:
       - "Part 1=1+Part 2=2,3"
   - choice: "Tree-type plant creature"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#tree-type-plant-creature-names"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#tree-type-plant-creature-names"
     labels:
       - "Name"
     choose:
       - "\"The \"+Tree Adjective=1+\" Tree of \"+Part 1=2+Part 2=3"
   - choice: "Other plant creature"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#other-plant-creature-names"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/26. Monster Names/Monster Names 5. Fish Monster names + Plant-creature names]]#other-plant-creature-names"
     labels:
       - "Name"
     choose:

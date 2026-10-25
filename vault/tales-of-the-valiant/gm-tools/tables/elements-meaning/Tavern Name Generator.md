@@ -24,15 +24,15 @@ generators:
 steps:
   - choice: "The Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
     labels:
       - "Name"
     choose:
       - "\"The \"+Item=1,2,3"
   - choice: "The Adjective Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 3. Taverns 2]]#short-tavern-item-adjective"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 3. Taverns 2]]#short-tavern-item-adjective"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
     labels:
       - "Name"
       - ""
@@ -41,8 +41,8 @@ steps:
       - ""
   - choice: "The Living Adjective Animal"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 3. Taverns 2]]#short-tavern-living-adjective"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 3. Taverns 2]]#short-tavern-living-adjective"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
     labels:
       - "Name"
       - ""
@@ -51,8 +51,8 @@ steps:
       - ""
   - choice: "The Person's Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
     labels:
       - "Name"
       - ""
@@ -61,8 +61,8 @@ steps:
       - ""
   - choice: "The Person's Animal"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
     labels:
       - "Name"
       - ""
@@ -71,8 +71,8 @@ steps:
       - ""
   - choice: "The Person's Abstract Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-abstract-item"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-abstract-item"
     labels:
       - "Name"
       - ""
@@ -81,8 +81,8 @@ steps:
       - ""
   - choice: "The Animal's Abstract Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-abstract-item"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-abstract-item"
     labels:
       - "Name"
       - ""
@@ -91,8 +91,8 @@ steps:
       - ""
   - choice: "The Item and Animal"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#short-tavern-items-1"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
     labels:
       - "Name"
       - ""
@@ -101,8 +101,8 @@ steps:
       - ""
   - choice: "The Person and Animal"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 4. Taverns 3]]#short-tavern-animal"
     labels:
       - "Name"
       - ""
@@ -111,14 +111,14 @@ steps:
       - ""
   - choice: "The Person and Person"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 5. Taverns 4]]#tavern-person"
     labels:
       - "Name"
     choose:
       - "\"The \"+Person=1+\" and \"+Second Person=1"
   - choice: "The Long Item"
     tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/parts/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#long-tavern-items"
+      - "@[[tales-of-the-valiant/gm-tools/tables/the-nomicon/29. Miscellaneous Tables/Miscellaneous Tables 2. Taverns 1]]#long-tavern-items"
     labels:
       - "Name"
     choose:
