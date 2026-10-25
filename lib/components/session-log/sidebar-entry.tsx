@@ -223,6 +223,34 @@ function SceneEditor({
   );
 }
 
+/**
+ * One button for the rolls of rows that share a line (a Start and its Ending): it rolls them all at
+ * once, while each die still rolls on its own. Shown only where there is more than one die.
+ */
+function RollBoth({ rows, edit }: { rows: SidebarRow[]; edit: SidebarEditContext }) {
+  const dice = rows.flatMap((r) => {
+    if (!r.source) return [];
+    const f = parseFormulaLine(r.content, { vars: r.vars, refs: r.refs })?.[0];
+    return (f ? editableTerms(f) : []).flatMap((term) => (term.kind === "dice" ? [{ source: r.source!, term }] : []));
+  });
+  if (dice.length < 2) return null;
+  return (
+    <button
+      type="button"
+      className="lonelog-roll-both"
+      title={`Roll ${dice.map((d) => d.term.spec).join(" and ")}`}
+      aria-label="Roll both"
+      onClick={(e) => {
+        e.stopPropagation();
+        for (const d of dice) edit.onDieChange(d.source, d.term.raw, 0, formatDiceValue(d.term, rollDiceFaces(d.term)));
+      }}
+    >
+      <Lucide.Dices size={14} />
+      <span>Roll both</span>
+    </button>
+  );
+}
+
 /** A name made without a die: one name as text, or several as a picker for the reader to take one. */
 function PickedName({
   text,
@@ -259,14 +287,11 @@ function RowContent({
   sourcePath,
   edit,
   onChoice,
-  group,
 }: {
   row: SidebarRow;
   sourcePath: string;
   edit?: SidebarEditContext;
   onChoice?: (selected: string, at?: ChoiceAt) => void;
-  /** The rows that ride on one line with this one (a Start and its Ending): a roll rolls them all. */
-  group?: SidebarRow[];
 }) {
   const tableRoll = React.useContext(TableRollContext);
   // A pick says which line's dropdown it is, so its own generator is the one rewritten.
@@ -345,21 +370,8 @@ function RowContent({
                 ? (edit.dieEdits[resultEditKey(source)] ?? rollPreview() ?? formula.result)
                 : undefined,
             onResultChange: (value) => edit.onResultChange(source, value),
-            // Rows that share a line are one roll: rolling a die rolls the others too.
-            ...(group && group.length > 1
-              ? {
-                  rollTogether: () => {
-                    for (const other of group) {
-                      if (other === row || !other.source) continue;
-                      const f = parseFormulaLine(other.content, { vars: other.vars, refs: other.refs })?.[0];
-                      for (const term of f ? editableTerms(f) : []) {
-                        if (term.kind !== "dice") continue;
-                        edit.onDieChange(other.source, term.raw, 0, formatDiceValue(term, rollDiceFaces(term)));
-                      }
-                    }
-                  },
-                }
-              : {}),
+            // What a part of a name offers is worked out from its die, not typed over.
+            ...(row.pickedBy ? { resultReadOnly: true } : {}),
             // A sum's stored total is expression text, not a term — swap it directly.
             onTokenSwap: edit.onTokenChange
               ? (from, to) => edit.onTokenChange!(source, from, to, row.sourceNth ?? 0)
@@ -610,16 +622,10 @@ export function SidebarEntry({
                   {joinedAfter(ri).length > 0 ? (
                     // Rows written `& label: …` ride on this one's line, each with its own die.
                     <div className="lonelog-row-joined">
-                      {[row, ...joinedAfter(ri)].map((part, k, all) => (
-                        <RowContent
-                          key={k}
-                          row={part}
-                          sourcePath={sourcePath}
-                          edit={edit}
-                          onChoice={onChoice}
-                          group={all}
-                        />
+                      {[row, ...joinedAfter(ri)].map((part, k) => (
+                        <RowContent key={k} row={part} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
                       ))}
+                      {edit && <RollBoth rows={[row, ...joinedAfter(ri)]} edit={edit} />}
                     </div>
                   ) : (
                     <RowContent row={row} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />

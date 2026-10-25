@@ -66,8 +66,8 @@ export interface DieEditContext {
    * which lives in the expression text rather than in one of its terms.
    */
   onTokenSwap?: (from: string, to: string) => void;
-  /** Rolling this die also rolls the others that belong with it (a Start and its Ending). */
-  rollTogether?: () => void;
+  /** The result is worked out from the dice and is not typed over: shown as text that wraps. */
+  resultReadOnly?: boolean;
 }
 
 export function FormulaView({
@@ -159,6 +159,8 @@ function ResultView({
     );
   }
 
+  if (edit?.resultReadOnly) return <span className="lonelog-formula-result">{edit.resultValue ?? result}</span>;
+
   if (edit?.onResultChange) {
     const val = edit.resultValue ?? result;
     // A long result (a whole table row) wraps instead of being cut off.
@@ -210,21 +212,27 @@ export function WordPicker({ picker, onPick }: { picker: PickerToken; onPick?: (
   };
   return (
     <span className={`lonelog-picker${value ? " has-pick" : ""}`} role="radiogroup" aria-label="Pick one">
-      {picker.options.map((word) => (
-        <button
-          key={word}
-          type="button"
-          role="radio"
-          aria-checked={word === value}
-          className={`lonelog-picker-word${word === value ? " is-picked" : ""}`}
-          onClick={(e) => {
-            stopEvent(e);
-            take(word);
-          }}
-          onKeyDown={stopEvent}
-        >
-          {word}
-        </button>
+      {picker.options.map((word, k) => (
+        <React.Fragment key={word}>
+          {k > 0 && (
+            <span className="lonelog-picker-sep" aria-hidden="true">
+              /
+            </span>
+          )}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={word === value}
+            className={`lonelog-picker-word${word === value ? " is-picked" : ""}`}
+            onClick={(e) => {
+              stopEvent(e);
+              take(word);
+            }}
+            onKeyDown={stopEvent}
+          >
+            {word}
+          </button>
+        </React.Fragment>
       ))}
     </span>
   );
@@ -908,12 +916,7 @@ function Die({
   const slotEdit = edit ? { onChange: (v: string) => edit.onChange(term, 0, v), max: diceMax(term) } : undefined;
   // Rollable only where an edit can be written back: a `gen:` working line has a
   // source line; a read-only showcase row does not.
-  const onRoll = edit
-    ? () => {
-        edit.onChange(term, 0, formatDiceValue(term, rollDiceFaces(term)));
-        edit.rollTogether?.();
-      }
-    : undefined;
+  const onRoll = edit ? () => edit.onChange(term, 0, formatDiceValue(term, rollDiceFaces(term))) : undefined;
   return (
     <span className="lonelog-die">
       <DieChip
