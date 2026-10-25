@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: user
 tab-color: var(--color-blue)
-tab-name: "Personal names: Nörslik · 2"
+tab-name: Personal Names · 2
 ---
 ## Nörslik Feminine Personal names
 I’ve done a fair amount of violence to this list, to get names that sound good for an English-speaking audience. Feminine Norse names often don’t sound like feminine names in English. So I have added some endings from Finnish into this mix. I have also dropped the ending “r,” which I kept for the masculine names so it can be modified into other dialects. It was probably pronounced a long time ago, but even Icelandic, which is believed to be very close to Norse, the ending “r” is only pronounced (sometimes) when it follows a vowel. So I’ve taken it out of the feminine name endings to differentiate them more from the masculine endings. In other words, this table is even more “imagined” than the rest.

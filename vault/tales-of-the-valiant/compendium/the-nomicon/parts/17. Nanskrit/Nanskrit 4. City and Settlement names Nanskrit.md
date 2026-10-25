@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: castle
 tab-color: var(--color-red)
-tab-name: "City and Settlement names: Nanskrit"
+tab-name: City and Settlement Names
 ---
 # City and Settlement names: Nanskrit
 #### Table 17-5: Nanskrit City and Settlement Names

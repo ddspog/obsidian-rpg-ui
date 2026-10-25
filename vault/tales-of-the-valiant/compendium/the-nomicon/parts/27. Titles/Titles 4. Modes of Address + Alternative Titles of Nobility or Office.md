@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: feather
 tab-color: var(--color-yellow)
-tab-name: Modes of Address + Alternative Titles of Nobility or Office
+tab-name: Offices and Alternative Titles
 ---
 ## Yes, your Wickedness
 The format is a Title Adjective ([[Titles 3. Modes of Address#Table 27-2 Title Adjective|Table 27-2]]) or a Tyrannical Title Adjective ([[Titles 3. Modes of Address#Table 27-10 Tyrannical Title Adjective|Table 27-10]]) plus a Noun of Wickedness. Keep in mind that villains with these titles just aren’t going to be taken seriously by players, with the possible exception of fey villains. This table generates such titles as “His Inexorable Severity,” or “Her Ferocious Harmfulness,” so this only works for absolutely over-the-top villains (fey villains can fit this category) or unusual situations such as a title for a demonic entity that has gotten into the feudal system somehow.

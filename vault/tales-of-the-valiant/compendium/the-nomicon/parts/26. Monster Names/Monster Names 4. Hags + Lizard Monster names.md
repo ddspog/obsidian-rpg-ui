@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: skull
 tab-color: var(--color-red)
-tab-name: Hags + Lizard Monster names
+tab-name: Hags and Lizard Monsters
 ---
 # Hags
 Most hags are named by their locations, so if you have already generated the name of the place controlled by the hag, she is probably known as the [Name-Title for a Hag] of [Place Name for a Hag].

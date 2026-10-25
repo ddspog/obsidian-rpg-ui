@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: skull
 tab-color: var(--color-red)
-tab-name: Bug Monster names + Draconic Monster names
+tab-name: Bug and Draconic Monsters
 ---
 # Bug Monster names
 #### Table 26-5: Bug Place/Person Name

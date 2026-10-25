@@ -518,7 +518,8 @@ function renderCellContents(doc: Document, cell: FooterCell, root: HTMLElement, 
     }
     const result = doc.createElement("span");
     result.classList.add("dice-roller-result");
-    result.textContent = values?.[rollIdx] ?? "";
+    // A rolled row keeps its links, emphasis and math, as the cell it came from does.
+    appendRichText(result, values?.[rollIdx] ?? "");
     root.appendChild(result);
     rollIdx++;
   }
@@ -914,7 +915,11 @@ export function renderTableBlock(
         paint();
         if (interactive) {
           const roll = () => setRollResult(key, rollCell(def, cell));
-          span.addEventListener("click", roll);
+          // A link in the result is followed, not a reason to roll again.
+          span.addEventListener("click", (ev) => {
+            if ((ev.target as HTMLElement | null)?.closest?.("a")) return;
+            roll();
+          });
           span.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter" || ev.key === " ") {
               ev.preventDefault();

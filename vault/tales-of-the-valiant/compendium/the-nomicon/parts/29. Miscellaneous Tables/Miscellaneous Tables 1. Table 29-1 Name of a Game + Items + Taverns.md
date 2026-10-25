@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: user
 tab-color: var(--color-orange)
-tab-name: "Table 29-1: Name of a Game + Items + Taverns"
+tab-name: Games, Items and Taverns
 ---
 #### Table 29-1: Name of a Game
 **Sample Results**: Butterfly, Borders, Shoes, Green Heralds, Aumbronne, Rabat.

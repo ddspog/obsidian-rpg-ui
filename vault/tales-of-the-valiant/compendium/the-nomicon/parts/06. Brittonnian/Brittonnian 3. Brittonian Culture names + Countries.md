@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: flag
 tab-color: var(--color-blue)
-tab-name: Brittonian Culture names + Countries
+tab-name: Cultures and Countries
 ---
 # Brittonian Culture names
 ![[brittonian-culture-names.webp]]

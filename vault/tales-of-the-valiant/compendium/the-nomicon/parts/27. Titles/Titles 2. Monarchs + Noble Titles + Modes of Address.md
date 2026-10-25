@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: feather
 tab-color: var(--color-yellow)
-tab-name: Monarchs + Noble Titles + Modes of Address
+tab-name: Rulers and Nobility
 ---
 # Monarchs
 First of all, let’s sweep through the actual historical titles of monarchs in the real world. Keep in mind that a “monarch” is any person with sovereign power who rules until their death, so kings and queens aren’t the only sort.

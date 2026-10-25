@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: user
 tab-color: var(--color-blue)
-tab-name: "Personal names: Nörslik · 1"
+tab-name: Personal Names · 1
 ---
 # Personal names: Nörslik
 These tables use Norse phonemes, but almost all the names are invented. A warning: if you’re writing for publication, some of these might have unexpected meanings!

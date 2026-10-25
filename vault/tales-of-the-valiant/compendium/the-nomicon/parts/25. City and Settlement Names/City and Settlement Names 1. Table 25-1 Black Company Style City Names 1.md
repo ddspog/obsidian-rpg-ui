@@ -4,7 +4,7 @@ cssclasses:
   - note-compendium
 tab-icon: castle
 tab-color: var(--color-orange)
-tab-name: "Table 25-1: Black Company Style City Names · 1"
+tab-name: Black Company City Names · 1
 ---
 #### Table 25-1: Black Company Style City Names
 ```rpg table.black-company-style-city-names
