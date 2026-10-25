@@ -1,0 +1,55 @@
+/* ── Play / Sheet toggle ──────────────────────────────────────────────────── */
+/* Phones only. "Play" keeps the banner, vitals, hexes and attacks; everything else waits under "Sheet". */
+
+nav[aria-details="Play Toggle"] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  nav[aria-details="Play Toggle"] {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-block-start: calc(-1 * var(--p-spacing, 1em));
+    background: var(--rpg-section-bg, #1a1816);
+  }
+
+  /* The toggle now carries the glue to the banner; the slab sits flush under it. */
+  nav[aria-details="Play Toggle"] ~ section[aria-details*=" Row"] {
+    margin-block-start: 0;
+  }
+
+  nav[aria-details="Play Toggle"] > button {
+    min-height: 44px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--rpg-hex-label, #b0a890);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  nav[aria-details="Play Toggle"] > button[aria-pressed="true"] {
+    color: var(--color-yellow, #ffd400);
+    border-bottom-color: var(--color-yellow, #ffd400);
+  }
+
+  /* Play view: only the blocks a fight needs stay in the page. */
+  .rpg-play-mode
+    .markdown-preview-section
+    > div:not(
+      :has(
+        header[aria-details*=" Banner"],
+        section[aria-details="Health Management Row"],
+        nav[aria-details="Play Toggle"],
+        section[aria-details="Character Stats"],
+        section[aria-details="Character Rolls"]
+      )
+    ) {
+    display: none;
+  }
+}

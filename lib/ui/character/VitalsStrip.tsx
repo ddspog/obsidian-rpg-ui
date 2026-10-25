@@ -27,7 +27,10 @@ export function VitalsStrip({ hp, maxHp, tempHp = 0, ac, exhaustion = 0, conditi
   React.useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
-    const pane = el.closest<HTMLElement>(".markdown-preview-view, .markdown-rendered") ?? document.body;
+    const pane =
+      el.closest<HTMLElement>(".markdown-preview-view") ??
+      el.closest<HTMLElement>(".markdown-rendered") ??
+      document.body;
     const phone = window.matchMedia?.("(max-width: 600px)");
     const sizer = el.closest<HTMLElement>(".markdown-preview-sizer");
     let raf = 0;

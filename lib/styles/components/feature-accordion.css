@@ -284,7 +284,8 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   line-height: 1;
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
-  opacity: 0;
+  /* Resting, not hidden: a touchscreen has no hover to reveal it. */
+  opacity: 0.45;
   transition: opacity 120ms ease;
 }
 

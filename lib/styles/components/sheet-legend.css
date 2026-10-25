@@ -1,0 +1,193 @@
+/* ── Sheet legend ─────────────────────────────────────────────────────────── */
+/* The "?" in the status slab and the sheet of marks it opens. */
+
+section[aria-details*=" Row"] {
+  position: relative;
+}
+
+button[aria-details="Legend Button"] {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rpg-diamond-border, #5a5450);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rpg-hex-label, #b0a890);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button[aria-details="Legend Button"]:hover,
+button[aria-details="Legend Button"]:focus-visible {
+  color: var(--color-yellow, #ffd400);
+  border-color: var(--color-yellow, #ffd400);
+}
+
+dialog[aria-details="Sheet Legend"] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+dialog[aria-details="Sheet Legend"] > article {
+  width: 100%;
+  max-width: 30rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  background: var(--rpg-modal-bg, #1e1c18);
+  color: var(--rpg-hex-value, #e3dcce);
+}
+
+dialog[aria-details="Sheet Legend"] header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+dialog[aria-details="Sheet Legend"] h4 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+dialog[aria-details="Sheet Legend"] header > button {
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: -10px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rpg-modal-close-color, #a09880);
+}
+
+dialog[aria-details="Sheet Legend"] dl {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+
+dialog[aria-details="Sheet Legend"] dl > div {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+dialog[aria-details="Sheet Legend"] dd {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+dialog[aria-details="Sheet Legend"] dd span {
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 0.875rem;
+}
+
+dialog[aria-details="Sheet Legend"] dt {
+  display: flex;
+  justify-content: center;
+}
+
+dialog[aria-details="Sheet Legend"] dt > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="ring"] {
+  border: 2px solid #d4a840;
+  border-radius: 8px;
+  color: #d4a840;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="adv"] {
+  background: #2d6a2e;
+  color: #fff;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="dis"] {
+  background: #a02020;
+  color: #fff;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="dot-full"],
+dialog[aria-details="Sheet Legend"] [data-mark="dot-empty"],
+dialog[aria-details="Sheet Legend"] [data-mark="death-fail"],
+dialog[aria-details="Sheet Legend"] [data-mark="death-ok"] {
+  min-width: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #a09880;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="dot-full"] {
+  background: #e3dcce;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="death-fail"] {
+  background: var(--rpg-death-failure-color, #c0392b);
+  border-color: var(--rpg-death-failure-color, #c0392b);
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="death-ok"] {
+  background: var(--rpg-death-success-color, #27ae60);
+  border-color: var(--rpg-death-success-color, #27ae60);
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="roll"] {
+  background: #5a37b8;
+  color: #fff;
+}
+
+dialog[aria-details="Sheet Legend"] [data-mark="info"] {
+  color: #cdbfff;
+  font-size: 1.1rem;
+}
+
+@media (min-width: 601px) {
+  dialog[aria-details="Sheet Legend"] {
+    align-items: center;
+  }
+
+  dialog[aria-details="Sheet Legend"] > article {
+    border-radius: 12px;
+  }
+}
+
+/* On a phone the top-right of the slab is the armor medallion; the corner under the conditions is free. */
+@media (max-width: 600px) {
+  button[aria-details="Legend Button"] {
+    top: auto;
+    bottom: 12px;
+  }
+}

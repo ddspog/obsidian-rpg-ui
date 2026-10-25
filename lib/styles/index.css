@@ -88,6 +88,8 @@
 @import "./components/dice-roll-modal.css";
 @import "./components/roll-popover.css";
 @import "./components/vitals-strip.css";
+@import "./components/sheet-legend.css";
+@import "./components/play-toggle.css";
 @import "./components/references.css";
 @import "./components/folder-link-styles.css";
 @import "./components/settings-tab.css";
