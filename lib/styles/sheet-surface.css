@@ -1,0 +1,107 @@
+/* Sheet surfaces, all widths. The dark status slab and the panels under it share one warm
+ * parchment family; links inside them use a violet ink that passes AA. (This began as a
+ * phone-only layer in mobile.css and moved here so desktop and phone match.) */
+
+/* ── Sheet surfaces: one warm parchment family ───────────────────── */
+/* The slab stays dark; the panels under it share its warmth instead of a cool grey glass. */
+
+section[aria-details="Character Senses"],
+section[aria-details="Character Skills"],
+section[aria-details="Character Proficiencies"],
+section[aria-details="Character Rolls"] {
+  --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
+  --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
+  --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
+  background: light-dark(#ece4d3, #24201c);
+  color: light-dark(#231a0c, #e3dcce);
+  border-color: light-dark(#cdbf9f, #4a4238);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+section[aria-details="Character Senses"] a.internal-link,
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link,
+section[aria-details="Character Rolls"] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+section[aria-details="Character Senses"] > output + output,
+section[aria-details="Character Senses"] > dl {
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+
+/* The dotted grid behind the hexes and the ridge rollers on Features are ornament, not information. */
+section[aria-details="Character Stats"]::before {
+  display: none;
+}
+
+.rpg-feature-accordion,
+[class*="rpg-feature-accordion"] {
+  border-top-style: solid;
+  border-bottom-style: solid;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}
+
+/* Skills: a readable size, one line per skill ("Animal Handling" no longer wraps), a visible
+ * hover and focus state on the row that rolls, and an info link big enough to hit. */
+section[aria-details="Character Skills"] > menu > li {
+  font-size: 1.1em;
+  padding-inline: 12px;
+}
+
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:hover {
+  background: light-dark(rgba(75, 47, 154, 0.08), rgba(205, 191, 255, 0.1));
+}
+
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  font-size: 1em;
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
+  font-size: 1em;
+}
+
+/* Secondary text that sat at 2-3.5:1. */
+section[aria-details="Character Senses"] > dl::after {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+
+.rpg-feature-bucket-count,
+.rpg-spell-circle-count,
+.rpg-feature-pending-count {
+  color: light-dark(#5a4220, #d4c9a8);
+}
+
+/* An empty portrait slot is a hole, not a design: let the stats have the width. */
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty {
+  display: none;
+}
+
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] ~ article[aria-details*=" Column"],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ article[aria-details*=" Column"] {
+  flex: 1 1 100% !important;
+}

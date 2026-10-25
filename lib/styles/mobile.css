@@ -204,53 +204,6 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* ── Sheet surfaces: one warm parchment family ───────────────────── */
-  /* The slab stays dark; the panels under it share its warmth instead of a cool grey glass. */
-
-  section[aria-details="Character Senses"],
-  section[aria-details="Character Skills"],
-  section[aria-details="Character Proficiencies"],
-  section[aria-details="Character Rolls"] {
-    --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
-    --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
-    --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
-    --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
-    --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
-    background: light-dark(#ece4d3, #24201c);
-    color: light-dark(#231a0c, #e3dcce);
-    border-color: light-dark(#cdbf9f, #4a4238);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
-  }
-
-  section[aria-details="Character Senses"] a.internal-link,
-  section[aria-details="Character Skills"] a.internal-link,
-  section[aria-details="Character Proficiencies"] a.internal-link,
-  section[aria-details="Character Rolls"] a.internal-link {
-    color: light-dark(#4b2f9a, #cdbfff);
-    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
-
-  section[aria-details="Character Senses"] > output + output,
-  section[aria-details="Character Senses"] > dl {
-    border-color: light-dark(#cdbf9f, #4a4238);
-  }
-
-  /* The dotted grid behind the hexes and the ridge rollers on Features are ornament, not information. */
-  section[aria-details="Character Stats"]::before {
-    display: none;
-  }
-
-  .rpg-feature-accordion,
-  [class*="rpg-feature-accordion"] {
-    border-top-style: solid;
-    border-bottom-style: solid;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-  }
-
   /* ── Skills: the row is a button ──────────────────────────────────── */
 
   section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {

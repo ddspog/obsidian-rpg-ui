@@ -136,8 +136,8 @@ dialog[aria-details="Roll Popover"] section[aria-details="Roll Damage"] {
 }
 
 dialog[aria-details="Roll Popover"] button[data-primary="true"] {
-  background: #6b3fd0;
-  border-color: #6b3fd0;
+  background: #5a37b8;
+  border-color: #5a37b8;
   color: #fff;
 }
 

@@ -10185,7 +10185,7 @@ div:has(> section[aria-details="Character Senses"]) + div > section[aria-details
 section[aria-details="Character Rolls"] {
   position: relative;
   padding: 0;
-  margin-inline: 16px;
+  margin-inline: 0;
   margin-block: 0;
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-right: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
@@ -10251,7 +10251,7 @@ section[aria-details="Character Rolls"] table {
   border-collapse: collapse;
   border-spacing: 0;
   border: none !important;
-  font-size: 0.72em;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
 section[aria-details="Character Rolls"] thead th:not(:last-child),
@@ -10268,7 +10268,7 @@ section[aria-details="Character Rolls"] thead.rpg-rolls__head-band {
   background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.22));
 }
 section[aria-details="Character Rolls"] thead th {
-  font-size: 0.9em !important;
+  font-size: 0.75rem !important;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -10285,7 +10285,7 @@ section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label {
 }
 section[aria-details="Character Rolls"] tbody td {
   padding: 3px 6px;
-  font-size: 0.97em !important;
+  font-size: 0.8125rem !important;
   color: light-dark(#1a1208, #e3dcce);
   vertical-align: middle;
   white-space: nowrap;
@@ -10410,7 +10410,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__hit,
 section[aria-details="Character Rolls"] .rpg-rolls__dc {
   font-weight: 700;
   color: light-dark(#1a1208, #f0e8d0);
-  font-size: 0.75em !important;
+  font-size: 0.8125rem !important;
 }
 section[aria-details="Character Rolls"] .rpg-rolls__range {
   color: light-dark(#5a5040, #a09880);
@@ -10499,14 +10499,18 @@ section[aria-details="Character Rolls"] td.rpg-rolls__roll {
   white-space: nowrap;
 }
 section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
-  padding: 1px 10px;
-  border: 1px solid #6b3fd0;
+  padding: 3px 12px;
+  border: 1px solid #5a37b8;
   border-radius: 4px;
-  background: #6b3fd0;
+  background: #5a37b8;
   color: #fff;
-  font-size: 0.85em;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
+}
+section[aria-details="Character Rolls"] td.rpg-rolls__hit {
+  color: light-dark(#2c6b34, #8fd19b);
+  font-weight: 700;
 }
 
 /* lib/styles/components/proficiencies-row.css */
@@ -13530,8 +13534,8 @@ dialog[aria-details="Roll Popover"] section[aria-details="Roll Damage"] {
   gap: 8px;
 }
 dialog[aria-details="Roll Popover"] button[data-primary=true] {
-  background: #6b3fd0;
-  border-color: #6b3fd0;
+  background: #5a37b8;
+  border-color: #5a37b8;
   color: #fff;
 }
 dialog[aria-details="Roll Popover"] button[data-primary=true] span {
@@ -13553,74 +13557,70 @@ dialog[aria-details="Roll Popover"] button[data-primary=true] span {
 
 /* lib/styles/components/vitals-strip.css */
 aside[aria-details="Vitals Strip"] {
-  display: none;
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--rpg-section-bg, #1a1816);
+  color: var(--rpg-hex-value, #e3dcce);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border-radius: 0 0 6px 6px;
 }
-@media (max-width: 600px) {
-  aside[aria-details="Vitals Strip"] {
-    position: fixed;
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 6px 12px;
-    background: var(--rpg-section-bg, #1a1816);
-    color: var(--rpg-hex-value, #e3dcce);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  }
-  aside[aria-details="Vitals Strip"] > div {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 10px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: #fff;
-  }
-  aside[aria-details="Vitals Strip"] > div > i {
-    position: absolute;
-    inset: 0 auto 0 0;
-    background: var(--rpg-hp-bar-color, #4a8c3f);
-  }
-  aside[aria-details="Vitals Strip"] > div[data-state=mid] > i {
-    background: #b8860b;
-  }
-  aside[aria-details="Vitals Strip"] > div[data-state=low] > i {
-    background: var(--rpg-death-failure-color, #c0392b);
-  }
-  aside[aria-details="Vitals Strip"] > div > b,
-  aside[aria-details="Vitals Strip"] > div > em {
-    position: relative;
-    font-style: normal;
-    font-size: 0.9rem;
-  }
-  aside[aria-details="Vitals Strip"] > div > em {
-    padding: 0 6px;
-    border-radius: 3px;
-    background: var(--rpg-temp-hp-color, #3a7abd);
-    font-size: 0.8rem;
-  }
-  aside[aria-details="Vitals Strip"] > span {
-    flex: none;
-    padding: 5px 8px;
-    border: 1px solid var(--rpg-diamond-border, #5a5450);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  aside[aria-details="Vitals Strip"] > span[data-active=true] {
-    border-color: var(--color-yellow, #ffd400);
-    color: var(--color-yellow, #ffd400);
-  }
+aside[aria-details="Vitals Strip"] > div {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+aside[aria-details="Vitals Strip"] > div > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--rpg-hp-bar-color, #4a8c3f);
+}
+aside[aria-details="Vitals Strip"] > div[data-state=mid] > i {
+  background: #b8860b;
+}
+aside[aria-details="Vitals Strip"] > div[data-state=low] > i {
+  background: var(--rpg-death-failure-color, #c0392b);
+}
+aside[aria-details="Vitals Strip"] > div > b,
+aside[aria-details="Vitals Strip"] > div > em {
+  position: relative;
+  font-style: normal;
+  font-size: 0.9rem;
+}
+aside[aria-details="Vitals Strip"] > div > em {
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--rpg-temp-hp-color, #3a7abd);
+  font-size: 0.8rem;
+}
+aside[aria-details="Vitals Strip"] > span {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid var(--rpg-diamond-border, #5a5450);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+aside[aria-details="Vitals Strip"] > span[data-active=true] {
+  border-color: var(--color-yellow, #ffd400);
+  color: var(--color-yellow, #ffd400);
 }
 
 /* lib/styles/components/references.css */
@@ -16170,6 +16170,89 @@ p.rpg-statblock-subtitle {
   margin: 0;
 }
 
+/* lib/styles/sheet-surface.css */
+section[aria-details="Character Senses"],
+section[aria-details="Character Skills"],
+section[aria-details="Character Proficiencies"],
+section[aria-details="Character Rolls"] {
+  --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
+  --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
+  --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
+  background: light-dark(#ece4d3, #24201c);
+  color: light-dark(#231a0c, #e3dcce);
+  border-color: light-dark(#cdbf9f, #4a4238);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+section[aria-details="Character Senses"] a.internal-link,
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link,
+section[aria-details="Character Rolls"] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+}
+section[aria-details="Character Senses"] > output + output,
+section[aria-details="Character Senses"] > dl {
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+section[aria-details="Character Stats"]::before {
+  display: none;
+}
+.rpg-feature-accordion,
+[class*=rpg-feature-accordion] {
+  border-top-style: solid;
+  border-bottom-style: solid;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}
+section[aria-details="Character Skills"] > menu > li {
+  font-size: 1.1em;
+  padding-inline: 12px;
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:hover {
+  background: light-dark(rgba(75, 47, 154, 0.08), rgba(205, 191, 255, 0.1));
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  font-size: 1em;
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
+  font-size: 1em;
+}
+section[aria-details="Character Senses"] > dl::after {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+.rpg-feature-bucket-count,
+.rpg-spell-circle-count,
+.rpg-feature-pending-count {
+  color: light-dark(#5a4220, #d4c9a8);
+}
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty {
+  display: none;
+}
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] ~ article[aria-details*=" Column"],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ article[aria-details*=" Column"] {
+  flex: 1 1 100% !important;
+}
+
 /* lib/styles/mobile.css */
 @media (max-width: 600px) {
   .markdown-preview-view [class*=rpg-],
@@ -16327,44 +16410,6 @@ p.rpg-statblock-subtitle {
   section[aria-details="Character Rolls"] .rpg-rolls__scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-  }
-  section[aria-details="Character Senses"],
-  section[aria-details="Character Skills"],
-  section[aria-details="Character Proficiencies"],
-  section[aria-details="Character Rolls"] {
-    --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
-    --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
-    --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
-    --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
-    --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
-    background: light-dark(#ece4d3, #24201c);
-    color: light-dark(#231a0c, #e3dcce);
-    border-color: light-dark(#cdbf9f, #4a4238);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
-  }
-  section[aria-details="Character Senses"] a.internal-link,
-  section[aria-details="Character Skills"] a.internal-link,
-  section[aria-details="Character Proficiencies"] a.internal-link,
-  section[aria-details="Character Rolls"] a.internal-link {
-    color: light-dark(#4b2f9a, #cdbfff);
-    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
-  section[aria-details="Character Senses"] > output + output,
-  section[aria-details="Character Senses"] > dl {
-    border-color: light-dark(#cdbf9f, #4a4238);
-  }
-  section[aria-details="Character Stats"]::before {
-    display: none;
-  }
-  .rpg-feature-accordion,
-  [class*=rpg-feature-accordion] {
-    border-top-style: solid;
-    border-bottom-style: solid;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
   }
   section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {
     min-height: 44px;

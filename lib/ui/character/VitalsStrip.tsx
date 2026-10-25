@@ -14,8 +14,8 @@ export interface VitalsStripProps {
 /**
  * HP, AC and conditions pinned under the page header once the health block has
  * scrolled out of view, so the numbers a player needs mid-combat never leave
- * the screen. A phone-only helper: it renders nothing above 600px, where the
- * block is still on screen at a glance.
+ * the screen. On a phone it spans the reading pane; on a wide window it sits
+ * over the sheet's own column.
  *
  * The block renders a zero-height sentinel in place; the strip itself is
  * portalled to the body and positioned over the reading pane.
@@ -29,14 +29,16 @@ export function VitalsStrip({ hp, maxHp, tempHp = 0, ac, exhaustion = 0, conditi
     if (!el) return;
     const pane = el.closest<HTMLElement>(".markdown-preview-view, .markdown-rendered") ?? document.body;
     const phone = window.matchMedia?.("(max-width: 600px)");
+    const sizer = el.closest<HTMLElement>(".markdown-preview-sizer");
     let raf = 0;
     const update = () => {
       raf = 0;
-      if (!phone?.matches) return setFrame(null);
       const paneRect = pane.getBoundingClientRect();
+      // On a phone the strip spans the pane; on a wide window, the sheet column.
+      const box = !phone?.matches && sizer ? sizer.getBoundingClientRect() : paneRect;
       // Past the top of the pane, and the pane is still the one on screen.
       const passed = el.getBoundingClientRect().top < paneRect.top - 8;
-      setFrame(passed ? { top: paneRect.top, left: paneRect.left, width: paneRect.width } : null);
+      setFrame(passed ? { top: paneRect.top, left: box.left, width: box.width } : null);
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(update);
