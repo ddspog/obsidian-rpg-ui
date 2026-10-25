@@ -153,12 +153,16 @@ steps:
       - choice: "Masculine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-masculine-personal-names-welsh-1"
+        labels:
+          - "Name"
+        choose:
+          - "Part 1=1,2+Part 2=3,4,5"
+      - choice: "Masculine name (variant)"
+        tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/06. Brittonnian/Brittonnian 1. Brittonian Personal names 1]]#brittonian-masculine-personal-names-welsh-2"
         labels:
           - "Name"
-          - "Name, variant"
         choose:
-          - "Part 1=1,2+Part 2=3,4,5"
           - "Part 1=1,2,3+Part 2=4,5,6"
       - choice: "Feminine name"
         tables:
@@ -207,22 +211,30 @@ steps:
       - choice: "Masculine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-1"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Ending=2"
+      - choice: "Masculine name (variant)"
+        tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-2"
         labels:
           - "Name"
-          - "Name, variant"
         choose:
-          - "Start=1+Ending=2"
           - "Start=1+Ending=2"
       - choice: "Feminine name"
         tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-1"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Ending=3"
+      - choice: "Feminine name (variant)"
+        tables:
           - "@[[tales-of-the-valiant/compendium/the-nomicon/08. Dwarven]]#dwarven-personal-names-table-2"
         labels:
           - "Name"
-          - "Name, variant"
         choose:
-          - "Start=1+Ending=3"
           - "Start=1+Ending=3"
       - choice: "Place name"
         tables:
@@ -314,15 +326,22 @@ steps:
         choose:
           - "Part 1=1,2+Ending=3,4"
   - choice: "Eurovesian"
-    tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/13. Eurovesian/Eurovesian 1. Culture Or Country 1]]#eurovesian-culture-or-country-name-table-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/13. Eurovesian/Eurovesian 1. Culture Or Country 1]]#eurovesian-culture-or-country-name-table-2"
-    labels:
-      - "Name"
-      - "Name, variant"
-    choose:
-      - "Start=1+End=2,3,4"
-      - "Start=1,2+Ending=3,4,5"
+    thenLabel: "Kind of name"
+    then:
+      - choice: "Name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/13. Eurovesian/Eurovesian 1. Culture Or Country 1]]#eurovesian-culture-or-country-name-table-1"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+End=2,3,4"
+      - choice: "Name (variant)"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/13. Eurovesian/Eurovesian 1. Culture Or Country 1]]#eurovesian-culture-or-country-name-table-2"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1,2+Ending=3,4,5"
   - choice: "Hellenica"
     thenLabel: "Kind of name"
     then:
@@ -372,25 +391,39 @@ steps:
         choose:
           - "Start=1+Ending=2,3"
   - choice: "Dharc-Metallik"
-    tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 1. Dharc-metallik 1]]#dharc-metallik-place-names-table-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 2. Dharc-metallik 2]]#dharc-metallik-place-names-quick-table"
-    labels:
-      - "Name"
-      - "Name, quick"
-    choose:
-      - "Start=1+Middle=2+Ending=3"
-      - "Start=1+Ending=2"
+    thenLabel: "Kind of name"
+    then:
+      - choice: "Name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 1. Dharc-metallik 1]]#dharc-metallik-place-names-table-1"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Middle=2+Ending=3"
+      - choice: "Quick name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 2. Dharc-metallik 2]]#dharc-metallik-place-names-quick-table"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "High Metallik"
-    tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 3. High Metallik]]#high-metallik-place-names-table-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 3. High Metallik]]#high-metallik-place-names-table-2"
-    labels:
-      - "Name"
-      - "Name, short"
-    choose:
-      - "Start=1+Middle=2+Ending=3"
-      - "Start=1+Ending=2"
+    thenLabel: "Kind of name"
+    then:
+      - choice: "Name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 3. High Metallik]]#high-metallik-place-names-table-1"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Middle=2+Ending=3"
+      - choice: "Short name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/16. Metallik/Metallik 3. High Metallik]]#high-metallik-place-names-table-2"
+        labels:
+          - "Name"
+        choose:
+          - "Start=1+Ending=2"
   - choice: "Nanskrit"
     thenLabel: "Kind of name"
     then:
@@ -614,18 +647,25 @@ steps:
         choose:
           - "Start=1+Ending=2"
   - choice: "Primordial-Divine"
-    tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-short"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-hyphenated"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-epithet"
-    labels:
-      - "Short name"
-      - "Hyphenated name"
-      - "& Epithet (optional)"
-    choose:
-      - "1,2"
-      - "Part 1=1+Part 2=2"
-      - ""
+    thenLabel: "Kind of name"
+    then:
+      - choice: "Short name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-short"
+        labels:
+          - "Name"
+        choose:
+          - "1,2"
+      - choice: "Hyphenated name with epithet"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-hyphenated"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 1. Creator Deity Names]]#creator-deity-epithet"
+        labels:
+          - "Name"
+          - "& Epithet (optional)"
+        choose:
+          - "Part 1=1+Part 2=2"
+          - ""
   - choice: "Eldritch God"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 2. Eldritch God Names]]#eldritch-god-names"
@@ -634,18 +674,28 @@ steps:
     choose:
       - "First Part=1+Second Part=2"
   - choice: "Angelic"
-    tables:
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-names-1"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-names-2"
-      - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-epithets"
-    labels:
-      - "Name"
-      - "Name, variant"
-      - "& Epithet (optional)"
-    choose:
-      - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
-      - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
-      - "1,2"
+    thenLabel: "Kind of name"
+    then:
+      - choice: "Name"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-names-1"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-epithets"
+        labels:
+          - "Name"
+          - "& Epithet (optional)"
+        choose:
+          - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
+          - "1,2"
+      - choice: "Name (variant)"
+        tables:
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-names-2"
+          - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 4. Angelic Names]]#angelic-epithets"
+        labels:
+          - "Name"
+          - "& Epithet (optional)"
+        choose:
+          - "Part 1=1+Part 2=2+Part 3=3+Part 4=4"
+          - "1,2"
   - choice: "Demonic"
     tables:
       - "@[[tales-of-the-valiant/compendium/the-nomicon/01. Primordial and Divine Names/Primordial and Divine Names 5. Demonic Names + Arch-Demonic or Evil God Epithets]]#demonic-name-part-1"
@@ -668,7 +718,7 @@ cards:
     emits:
       - { oracle: { question: "What is {{subject}} called?" } }
       - "@name-generator"
-      - { scene: { consequence: "{{subject}} is named {{result}}" } }
+      - { scene: { consequence: "{{subject}} is named {{result?}}" } }
 ---
 Pick a **naming style**. Where the style has several kinds of name (masculine, feminine, settlement, terrain or place), a second dropdown in the Log picks the kind, and only those Nomicon tables are rolled. A name made from a start and an ending shares one row, with a die for each part.
 ```

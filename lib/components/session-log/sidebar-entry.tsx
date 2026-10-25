@@ -15,17 +15,18 @@ import * as React from "react";
 import { Lucide } from "lib/ui/primitives/Lucide";
 import { ActorPill } from "./action-call";
 import { InlineMarkdown } from "./inline-markdown";
-import { ChoiceOnlyView, ChoiceSelect, DieChip, FormulaView, type DieEditContext } from "./formula";
+import { ChoiceOnlyView, ChoiceSelect, DieChip, FormulaView, WordPicker, type DieEditContext } from "./formula";
 import {
   combineTermValue,
   editableTerms,
+  formatDiceValue,
   parseFormulaLine,
+  rollDiceFaces,
   rollDie,
   termSlotInitial,
   termSlots,
 } from "lib/domains/session-log/formula";
-import { joinParts } from "lib/domains/gm/steps";
-import { splitResultChoice } from "lib/domains/session-log/choice";
+import { buildResultPicker, splitResultChoice, splitResultPicker } from "lib/domains/session-log/choice";
 import type { ConditionChange } from "lib/domains/session-log/conditions";
 import type { RoundEconomy } from "lib/domains/session-log/round-economy";
 import { ListSheetModal } from "./list-sheet-modal";
@@ -222,16 +223,50 @@ function SceneEditor({
   );
 }
 
+/** A name made without a die: one name as text, or several as a picker for the reader to take one. */
+function PickedName({
+  text,
+  sourcePath,
+  onChange,
+}: {
+  text: string;
+  sourcePath: string;
+  onChange?: (value: string) => void;
+}) {
+  const words = splitResultPicker(text);
+  if (!words.picker)
+    return (
+      <span className="lonelog-name-made">
+        <InlineMarkdown source={text} sourcePath={sourcePath} />
+      </span>
+    );
+  const picker = words.picker;
+  return (
+    <WordPicker
+      picker={picker}
+      {...(onChange
+        ? {
+            onPick: (selected: string) =>
+              onChange(buildResultPicker(words.before, picker.options, selected, words.after)),
+          }
+        : {})}
+    />
+  );
+}
+
 function RowContent({
   row,
   sourcePath,
   edit,
   onChoice,
+  group,
 }: {
   row: SidebarRow;
   sourcePath: string;
   edit?: SidebarEditContext;
   onChoice?: (selected: string, at?: ChoiceAt) => void;
+  /** The rows that ride on one line with this one (a Start and its Ending): a roll rolls them all. */
+  group?: SidebarRow[];
 }) {
   const tableRoll = React.useContext(TableRollContext);
   // A pick says which line's dropdown it is, so its own generator is the one rewritten.
@@ -284,18 +319,8 @@ function RowContent({
       return tableRoll(refs[0], 0, { spec: r.pick, rolls: rolls as number[], refs, roll: own });
     };
     const pickPreview = (): string | undefined => previewPick(row);
-    // A name joining what each part settled on: its pick, or the one value its row offers.
-    const joinPreview = (): string | undefined => {
-      if (!tableRoll || row.join == null || !row.joinFrom?.length) return undefined;
-      const values = row.joinFrom.map((f, part) => {
-        if (f.pick) return previewPick(f.pick);
-        const ref = f.source.match(REF)?.[0];
-        const n = dieValue(f.source, f.content);
-        const text = ref && n != null ? tableRoll(ref, n, { spec: row.join!, part }) : undefined;
-        return text && !text.includes(" / ") ? text : undefined;
-      });
-      return values.every((v) => v) ? joinParts(values as string[], row.join) : undefined;
-    };
+    // A name row with no die: what it holds, else what the rows above make of it so far.
+    const pickedText = row.pickOnly && !row.content ? (pickPreview() ?? "") : row.content;
     // A table roll with no result yet reads its row as soon as the die shows a
     // value, pending or saved, so the outcome appears before the Log is saved.
     const rollPreview = (): string | undefined => {
@@ -320,6 +345,21 @@ function RowContent({
                 ? (edit.dieEdits[resultEditKey(source)] ?? rollPreview() ?? formula.result)
                 : undefined,
             onResultChange: (value) => edit.onResultChange(source, value),
+            // Rows that share a line are one roll: rolling a die rolls the others too.
+            ...(group && group.length > 1
+              ? {
+                  rollTogether: () => {
+                    for (const other of group) {
+                      if (other === row || !other.source) continue;
+                      const f = parseFormulaLine(other.content, { vars: other.vars, refs: other.refs })?.[0];
+                      for (const term of f ? editableTerms(f) : []) {
+                        if (term.kind !== "dice") continue;
+                        edit.onDieChange(other.source, term.raw, 0, formatDiceValue(term, rollDiceFaces(term)));
+                      }
+                    }
+                  },
+                }
+              : {}),
             // A sum's stored total is expression text, not a term — swap it directly.
             onTokenSwap: edit.onTokenChange
               ? (from, to) => edit.onTokenChange!(source, from, to, row.sourceNth ?? 0)
@@ -346,11 +386,14 @@ function RowContent({
             onChoice={pick}
             onResultChange={source && edit ? (value) => edit.onResultChange(source, value) : undefined}
           />
-        ) : (
-          <InlineMarkdown
-            source={row.pickOnly && !row.content ? (pickPreview() ?? joinPreview() ?? "") : row.content}
+        ) : row.pickOnly ? (
+          <PickedName
+            text={edit && source ? (edit.dieEdits[resultEditKey(source)] ?? pickedText) : pickedText}
             sourcePath={sourcePath}
+            {...(edit && source ? { onChange: (value: string) => edit.onResultChange(source, value) } : {})}
           />
+        ) : (
+          <InlineMarkdown source={row.content} sourcePath={sourcePath} />
         )}
         {row.foe && <FoeHealth foe={row.foe} />}
         {row.spawns && (
@@ -492,6 +535,8 @@ export interface SidebarEntryProps {
   anchorRef?: (el: HTMLElement | null) => void;
   /** Click/keyboard selection handler (live sidebar). Omit for a static entry. */
   onSelect?: (id: number) => void;
+  /** Something inside the entry was touched (a die, a pick): it stays open while it is worked on. */
+  onInteract?: (id: number) => void;
   /** Choice-token pick override (feature example: insert the generated line). */
   onChoice?: (selected: string, at?: ChoiceAt) => void;
 }
@@ -500,7 +545,16 @@ export interface SidebarEntryProps {
  * One mechanical entry as a small `icon | content | dateline` table. Shared by
  * the live Log sidebar and the read-only feature Example showcase.
  */
-export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSelect, onChoice }: SidebarEntryProps) {
+export function SidebarEntry({
+  item,
+  sourcePath,
+  edit,
+  selected,
+  anchorRef,
+  onSelect,
+  onInteract,
+  onChoice,
+}: SidebarEntryProps) {
   const tags = item.rows.flatMap((row) => row.pills);
   // A "pills-only" row (icon + pills, no content — e.g. a dial change) has its
   // pills shown in the dateline strip; render its icon there and skip the empty
@@ -536,6 +590,8 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
       ref={anchorRef}
       className={`lonelog-sidebar-item kind-${item.kind}${item.group ? ` in-multiattack is-${item.group}` : ""} ${selected ? "is-selected" : ""}`}
       {...interaction}
+      // Captured, because the controls inside stop their clicks from reaching the entry.
+      {...(onInteract ? { onClickCapture: () => onInteract(item.id), onFocusCapture: () => onInteract(item.id) } : {})}
     >
       <table className="lonelog-sidebar-table">
         <tbody>
@@ -554,8 +610,15 @@ export function SidebarEntry({ item, sourcePath, edit, selected, anchorRef, onSe
                   {joinedAfter(ri).length > 0 ? (
                     // Rows written `& label: …` ride on this one's line, each with its own die.
                     <div className="lonelog-row-joined">
-                      {[row, ...joinedAfter(ri)].map((part, k) => (
-                        <RowContent key={k} row={part} sourcePath={sourcePath} edit={edit} onChoice={onChoice} />
+                      {[row, ...joinedAfter(ri)].map((part, k, all) => (
+                        <RowContent
+                          key={k}
+                          row={part}
+                          sourcePath={sourcePath}
+                          edit={edit}
+                          onChoice={onChoice}
+                          group={all}
+                        />
                       ))}
                     </div>
                   ) : (

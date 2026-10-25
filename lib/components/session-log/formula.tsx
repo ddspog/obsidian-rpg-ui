@@ -36,7 +36,14 @@ import {
   sumTotal,
   type SelectorNote,
 } from "lib/domains/session-log/formula";
-import { splitResultChoice, buildResultChoice, type ChoiceToken } from "lib/domains/session-log/choice";
+import {
+  splitResultChoice,
+  buildResultChoice,
+  buildResultPicker,
+  splitResultPicker,
+  type ChoiceToken,
+  type PickerToken,
+} from "lib/domains/session-log/choice";
 
 /** Keep clicks/keys inside an input from triggering the row's scroll/select. */
 const stopEvent = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -59,6 +66,8 @@ export interface DieEditContext {
    * which lives in the expression text rather than in one of its terms.
    */
   onTokenSwap?: (from: string, to: string) => void;
+  /** Rolling this die also rolls the others that belong with it (a Start and its Ending). */
+  rollTogether?: () => void;
 }
 
 export function FormulaView({
@@ -116,6 +125,26 @@ function ResultView({
   const text = edit?.resultValue ?? result;
   const { before, choice } = splitResultChoice(text);
 
+  const words = splitResultPicker(text);
+  if (words.picker) {
+    const picker = words.picker;
+    return (
+      <>
+        {words.before && <span className="lonelog-formula-result">{words.before}</span>}
+        <WordPicker
+          picker={picker}
+          {...(edit?.onResultChange
+            ? {
+                onPick: (selected: string) =>
+                  edit.onResultChange!(buildResultPicker(words.before, picker.options, selected, words.after)),
+              }
+            : {})}
+        />
+        {words.after && <span className="lonelog-formula-result">{words.after}</span>}
+      </>
+    );
+  }
+
   if (choice) {
     const onPick = onChoice
       ? onChoice
@@ -165,6 +194,40 @@ function ResultView({
     );
   }
   return <span className="lonelog-formula-result">{result}</span>;
+}
+
+/**
+ * A `{a/b/c - sel}` word picker: the options as plain words, one taken at a time (tapping the taken
+ * one again lets it go). It only records the pick; nothing else in the log changes with it.
+ */
+export function WordPicker({ picker, onPick }: { picker: PickerToken; onPick?: (selected: string) => void }) {
+  const [local, setLocal] = React.useState(picker.selected);
+  const value = onPick ? picker.selected : local;
+  const take = (word: string) => {
+    const next = word === value ? "" : word;
+    if (onPick) onPick(next);
+    else setLocal(next);
+  };
+  return (
+    <span className={`lonelog-picker${value ? " has-pick" : ""}`} role="radiogroup" aria-label="Pick one">
+      {picker.options.map((word) => (
+        <button
+          key={word}
+          type="button"
+          role="radio"
+          aria-checked={word === value}
+          className={`lonelog-picker-word${word === value ? " is-picked" : ""}`}
+          onClick={(e) => {
+            stopEvent(e);
+            take(word);
+          }}
+          onKeyDown={stopEvent}
+        >
+          {word}
+        </button>
+      ))}
+    </span>
+  );
 }
 
 /**
@@ -845,7 +908,12 @@ function Die({
   const slotEdit = edit ? { onChange: (v: string) => edit.onChange(term, 0, v), max: diceMax(term) } : undefined;
   // Rollable only where an edit can be written back: a `gen:` working line has a
   // source line; a read-only showcase row does not.
-  const onRoll = edit ? () => edit.onChange(term, 0, formatDiceValue(term, rollDiceFaces(term))) : undefined;
+  const onRoll = edit
+    ? () => {
+        edit.onChange(term, 0, formatDiceValue(term, rollDiceFaces(term)));
+        edit.rollTogether?.();
+      }
+    : undefined;
   return (
     <span className="lonelog-die">
       <DieChip

@@ -174,3 +174,43 @@ describe("a slot used twice is asked once", () => {
     );
   });
 });
+
+describe("a slot whose options depend on another — {{kind?@style:A>x|y;B>z}}", () => {
+  const template = [
+    "gen: Names",
+    "  Naming Style: [A/B/C - {{style:A|B|C}}]",
+    "  + Kind of name: {{kind?@style:A>Masculine name|Feminine name;B>Place name}}",
+    "=> {{subject}} is named {{result?}}",
+  ].join("\n");
+
+  it("reads the style it depends on and the options each pick has", () => {
+    const kind = parseLogTemplate(template).find((p) => (p.kind as string) === "kind");
+    expect(kind).toMatchObject({
+      optional: true,
+      dependsOn: "style",
+      optionsBy: { A: ["Masculine name", "Feminine name"], B: ["Place name"] },
+    });
+    expect(kind?.options).toBeUndefined();
+  });
+
+  it("writes the kind's whole choice token, under the style it belongs to", () => {
+    const out = resolveLogTemplate(template, { style: "A", kind: "Feminine name", subject: "the inn" });
+    expect(out).toContain("  + Kind of name: [Masculine name/Feminine name - Feminine name]");
+    expect(out).toContain("=> the inn is named");
+  });
+
+  it("writes it with nothing picked when only the style was", () => {
+    expect(resolveLogTemplate(template, { style: "B", subject: "x" })).toContain("[Place name - ]");
+  });
+
+  it("drops the kind's line for a style that has none", () => {
+    const out = resolveLogTemplate(template, { style: "C", subject: "x" });
+    expect(out).not.toContain("Kind of name");
+    expect(out).toContain("Naming Style: [A/B/C - C]");
+  });
+
+  it("leaves the result optional: blank, the line keeps what it says", () => {
+    const out = resolveLogTemplate(template, { style: "C", subject: "the inn" });
+    expect(out).toContain("=> the inn is named");
+  });
+});

@@ -196,7 +196,7 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
         add({
           name: card.name,
           stack,
-          logTemplate: emitCard(card, feature.generators),
+          logTemplate: emitCard(card, feature.generators, feature.steps),
           text: card.text,
           summary: card.summary,
           icon: card.icon,

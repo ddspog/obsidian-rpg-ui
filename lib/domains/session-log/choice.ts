@@ -19,6 +19,56 @@ export interface ChoiceToken {
 
 const CHOICE_RE = /\[([^\][]+?)\s+-\s+([^\][]*?)\]/;
 
+/**
+ * Word picker — `{opt1/opt2/opt3 - selected}`: the options as words to pick one of in place, not a
+ * dropdown, and nothing else follows from the pick; it only records which was taken. The selection is
+ * empty until picked. Like the choice token it needs ` - `, which a `{{placeholder}}` never has.
+ */
+export interface PickerToken {
+  options: string[];
+  selected: string;
+  /** The full matched token text, e.g. `{a/b/c - b}`. */
+  raw: string;
+}
+
+const PICKER_RE = /\{([^{}]+?)\s+-\s+([^{}]*?)\}/;
+
+/** A result's text around its word picker, if it has one. */
+export function splitResultPicker(result: string): { before: string; after: string; picker: PickerToken | null } {
+  const m = result.match(PICKER_RE);
+  if (!m) return { before: result, after: "", picker: null };
+  const options = m[1]
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (options.length === 0) return { before: result, after: "", picker: null };
+  return {
+    before: result.slice(0, m.index).trim(),
+    after: result.slice((m.index ?? 0) + m[0].length).trim(),
+    picker: { options, selected: m[2].trim(), raw: m[0] },
+  };
+}
+
+/** A result text with its word picker (re)built around `selected`. */
+export function buildResultPicker(before: string, options: string[], selected: string, after = ""): string {
+  return [before, `{${options.join("/")} - ${selected}}`, after].filter(Boolean).join(" ");
+}
+
+/** The picker `options` as a token with nothing picked: `{a/b - }`. */
+export const pickerToken = (options: string[]): string => `{${options.join("/")} - }`;
+
+/**
+ * A freshly worked-out result, keeping the pick made in the result it replaces when it offers the
+ * same words (a roll read again does not undo the choice).
+ */
+export function keepPicked(next: string, previous: string): string {
+  const now = splitResultPicker(next);
+  const was = splitResultPicker(previous);
+  if (!now.picker || !was.picker || !was.picker.selected) return next;
+  if (now.picker.options.join("/") !== was.picker.options.join("/")) return next;
+  return buildResultPicker(now.before, now.picker.options, was.picker.selected, now.after);
+}
+
 /** Joins a pick to the pick it was made under (`Anglish › Masculine name`), so the same option
  *  name under two parents (every style has a `Masculine name`) means two different things. */
 export const NESTED_SEP = " › ";

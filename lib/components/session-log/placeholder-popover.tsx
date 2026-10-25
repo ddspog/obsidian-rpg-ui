@@ -265,7 +265,12 @@ export function PlaceholderPopover({
   };
 
   const handleChange = (kind: string, value: string) => {
-    setValues((prev) => ({ ...prev, [kind]: value }));
+    setValues((prev) => {
+      const next = { ...prev, [kind]: value };
+      // What depends on this pick (a style's kind of name) starts over.
+      for (const p of userInputs) if (p.dependsOn === kind) next[p.kind] = "";
+      return next;
+    });
   };
 
   const allFilled =
@@ -498,17 +503,25 @@ export function PlaceholderPopover({
             ))}
           </fieldset>
         )}
-        {userInputs.map((placeholder) => (
-          <PlaceholderField
-            key={placeholder.kind}
-            placeholder={placeholder}
-            value={values[placeholder.kind]}
-            {...(hints[placeholder.kind] ? { hint: hints[placeholder.kind] } : {})}
-            entities={entities}
-            {...(placeholder.kind === "target" && aim ? { describe: describeTarget } : {})}
-            onChange={(v) => handleChange(placeholder.kind, v)}
-          />
-        ))}
+        {userInputs.map((placeholder) => {
+          // A pick that depends on another (a style's kinds of name) offers that pick's options,
+          // and waits until there are some.
+          const options = placeholder.dependsOn
+            ? (placeholder.optionsBy?.[values[placeholder.dependsOn] ?? ""] ?? [])
+            : undefined;
+          if (options && options.length === 0) return null;
+          return (
+            <PlaceholderField
+              key={placeholder.kind}
+              placeholder={options ? { ...placeholder, options } : placeholder}
+              value={values[placeholder.kind]}
+              {...(hints[placeholder.kind] ? { hint: hints[placeholder.kind] } : {})}
+              entities={entities}
+              {...(placeholder.kind === "target" && aim ? { describe: describeTarget } : {})}
+              onChange={(v) => handleChange(placeholder.kind, v)}
+            />
+          );
+        })}
         {targetVerdict && (
           <p
             className={
@@ -702,7 +715,7 @@ export function PlaceholderPopover({
 }
 
 /** Fields whose name doesn't read well as written. */
-const FIELD_LABELS: Record<string, string> = { target_ac: "Target AC" };
+const FIELD_LABELS: Record<string, string> = { target_ac: "Target AC", kind: "Kind of name" };
 
 interface PlaceholderFieldProps {
   placeholder: ParsedPlaceholder;

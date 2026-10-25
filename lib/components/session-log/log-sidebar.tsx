@@ -76,6 +76,15 @@ export function LogSidebar({
   follow,
   onClose,
 }: LogSidebarProps) {
+  // The entry last worked on stays open (entries are clamped until selected): the one a card has
+  // just added, and whichever one a die, pick or word was last touched in.
+  const lastId = items[items.length - 1]?.id ?? null;
+  const [active, setActive] = React.useState<number | null>(lastId);
+  const seenLast = React.useRef(lastId);
+  React.useEffect(() => {
+    if (lastId !== seenLast.current) setActive(lastId);
+    seenLast.current = lastId;
+  }, [lastId]);
   const asideRef = React.useRef<HTMLElement>(null);
   const headerRef = React.useRef<HTMLDivElement>(null);
   const entries = React.useRef(new Map<number, HTMLElement>());
@@ -194,7 +203,8 @@ export function LogSidebar({
               item={item}
               sourcePath={sourcePath}
               edit={edit}
-              selected={selectedId === item.id}
+              selected={selectedId === item.id || active === item.id}
+              onInteract={setActive}
               onSelect={onSelect}
               anchorRef={entryRef(item.id)}
               onChoice={onChoice}

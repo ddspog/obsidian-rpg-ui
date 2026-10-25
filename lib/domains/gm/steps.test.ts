@@ -12,7 +12,6 @@ import {
   stepUseLinks,
   spliceStepUses,
   flattenSteps,
-  joinParts,
   parsePickSpec,
   partText,
   pickNames,
@@ -261,7 +260,7 @@ describe("resolveTableRoll — rows with several value columns", () => {
 
   it("gives just the values when the columns are numbered alternatives", () => {
     const t = cols(["d20", "1", "2", "3"], [["4", "Aafas", "Halad", "Okhtar"]]);
-    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> Aafas / Halad / Okhtar");
+    expect(resolveTableRoll("d20=4 ->", t)).toBe("d20=4 -> {Aafas/Halad/Okhtar - }");
   });
 
   it("skips an empty column", () => {
@@ -349,11 +348,6 @@ describe("a name made of independently rolled parts — @pick", () => {
     ]);
   });
 
-  it("joins parts' values, with a space only before a part joined by &", () => {
-    expect(joinParts(["Con", "of Moons"], "A=1&B=2")).toBe("Con of Moons");
-    expect(joinParts(["Dia", "bertach"], "A=1+B=2")).toBe("Diabertach");
-  });
-
   it("counts the names a spec can make", () => {
     expect(pickSides("1,2")).toBe(2);
     expect(pickSides(spec)).toBe(6);
@@ -376,9 +370,9 @@ describe("a name made of independently rolled parts — @pick", () => {
     expect(pickResult(table, [80, 80], spec, 5)).toBe("Aebant");
   });
 
-  it("shows every name when there is no die", () => {
+  it("offers every name as a word picker when there is no die", () => {
     expect(pickResult(table, [80, 80], spec)).toBe("Aebant");
-    expect(pickResult(table, [10], "1,2")).toBe("Briga / Ma");
+    expect(pickResult(table, [10], "1,2")).toBe("{Briga/Ma - }");
   });
 
   it("reads columns of one kind (Start 1, Start 2) as alternatives, but different kinds with their names", () => {
@@ -386,10 +380,19 @@ describe("a name made of independently rolled parts — @pick", () => {
       columnLabels: ["d100*", "Start 1", "Start 2"],
       rows: [row("1-100", "Cai", "Ma")],
     } as unknown as TableDef;
-    expect(resolveTableRoll("d100=5 ->", starts)).toBe("d100=5 -> Cai / Ma");
+    expect(resolveTableRoll("d100=5 ->", starts)).toBe("d100=5 -> {Cai/Ma - }");
     expect(resolveTableRoll("d100=5 ->", table)).toBe(
       "d100=5 -> Start 1: Briga · Start 2: Ma · Start 3: Lew · End 1: ven · End 2: werp"
     );
+  });
+
+  it("reads 00 at the end of a d100 range as 100", () => {
+    const last = {
+      columnLabels: ["d100*", "Start", "Ending"],
+      rows: [row("1-98", "Hu", "kuo"), row("99-00", "Zu", "yuan")],
+    } as unknown as TableDef;
+    expect(resolveTableRoll("d100=100 ->", last)).toBe("d100=100 -> Start: Zu · Ending: yuan");
+    expect(resolveTableRoll("d100=99 ->", last)).toBe("d100=99 -> Start: Zu · Ending: yuan");
   });
 
   it("reads numbered alternative columns as alternatives", () => {
@@ -397,6 +400,6 @@ describe("a name made of independently rolled parts — @pick", () => {
       columnLabels: ["d100*", "1", "2"],
       rows: [row("1-100", "Norel", "Nudwin")],
     } as unknown as TableDef;
-    expect(resolveTableRoll("d100=5 ->", numbers)).toBe("d100=5 -> Norel / Nudwin");
+    expect(resolveTableRoll("d100=5 ->", numbers)).toBe("d100=5 -> {Norel/Nudwin - }");
   });
 });
