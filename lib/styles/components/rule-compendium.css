@@ -15,6 +15,13 @@
   margin-top: 0;
 }
 
+/* The strip is a flex box, so it would sit beside a picture floated right above it, squeezed to
+ * what is left of the line: a long tab name then leaves the other tabs as bare icons. */
+.rpg-rule-tab-group,
+section[data-rpg-rule="tab"] {
+  clear: both;
+}
+
 /* ── Sticky bar ────────────────────────────────────────────────────── */
 
 .rpg-rule-tab-group__sentinel {
