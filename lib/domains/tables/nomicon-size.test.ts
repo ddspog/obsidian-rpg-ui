@@ -3,9 +3,10 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /** A Nomicon page stays short enough to read and edit; a longer chapter is split into
- *  part files (in the `parts` folder, one per chapter) that the chapter imports as tabs. */
+ *  part files (in `gm-tools/tables/the-nomicon`, one folder per chapter) that the chapter imports as tabs. */
 const MAX_LINES = 300;
-const ROOT = path.resolve(__dirname, "../../../vault/tales-of-the-valiant/compendium/the-nomicon");
+const VAULT = path.resolve(__dirname, "../../../vault/tales-of-the-valiant");
+const ROOTS = [VAULT + "/compendium/the-nomicon", VAULT + "/gm-tools/tables/the-nomicon"];
 
 function pages(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -16,8 +17,8 @@ function pages(dir: string): string[] {
 
 describe("the Nomicon's pages", () => {
   it(`are at most ${MAX_LINES} lines`, () => {
-    const tooLong = pages(ROOT)
-      .map((p) => ({ page: path.relative(ROOT, p), lines: fs.readFileSync(p, "utf8").split("\n").length }))
+    const tooLong = ROOTS.flatMap((root) => pages(root))
+      .map((p) => ({ page: path.relative(VAULT, p), lines: fs.readFileSync(p, "utf8").split("\n").length }))
       .filter((p) => p.lines > MAX_LINES);
     expect(tooLong).toEqual([]);
   });
