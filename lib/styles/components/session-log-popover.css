@@ -305,8 +305,16 @@ fieldset.placeholder-strikes > legend {
 
 .placeholder-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.25rem;
+}
+
+.placeholder-needs {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
 }
 
 .placeholder-submit {
