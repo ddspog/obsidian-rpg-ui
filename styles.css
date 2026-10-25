@@ -14811,6 +14811,10 @@ li.rpg-item-highlight .rpg-call-highlight__badge {
   margin-block: var(--size-4-4, 1rem);
   margin-top: 0;
 }
+.rpg-rule-tab-group,
+section[data-rpg-rule=tab] {
+  clear: both;
+}
 .rpg-rule-tab-group__sentinel {
   height: 0;
   overflow: hidden;
