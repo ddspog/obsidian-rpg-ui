@@ -496,6 +496,20 @@
     justify-content: center;
   }
 
+  /* Encumbrance readouts wrap instead of clipping at the right edge. */
+  .rpg-inventory-block__encumbrance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, max-content));
+    gap: 0.25rem 1.25rem;
+  }
+
+  /* A tab strip that scrolls fades out at its right edge, so a half-seen
+     tab reads as "more this way" rather than as a mistake. */
+  .rpg-rule-tab-group__tabs-scroll {
+    padding-right: 1.75rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+  }
+
   /* iOS zooms into inputs under 16px. */
   .markdown-preview-view [class*="rpg-"] input:not([type="checkbox"]),
   .markdown-preview-view [class*="rpg-"] select,
