@@ -7,6 +7,9 @@ tab-color: var(--color-yellow)
 tab-name: Angelic Names
 ---
 # Angelic Names
+#### Angelic-Sounding Names 1
+**Instructions**: Roll all four parts of the name independently (4 die rolls).
+**Sample Results**: Abezioth, Eliziel, Inamiel, Osokiel, Ushtabial.
 ```rpg table.angelic-names-1
 @paginate 10 pages
 |d20*|Part 1|Part 2|Part 3|Part 4|
@@ -16,7 +19,7 @@ tab-name: Angelic Names
 |3|E|d|e|thior|
 |4|O|ph|o|zioth|
 |5|U|f|u|zior|
-|6|A|g|a|za'el|
+|6|A|g|a|za’el|
 |7|I|h|i|tiel|
 |8|E|j|e|zor|
 |9|O|k|o|riel|
@@ -24,7 +27,7 @@ tab-name: Angelic Names
 |11|A|m|a|rioth|
 |12|I|n|i|mioth|
 |13|E|p|e|zal|
-|14|O|r|o|orial|
+|14|O|r|o|rial|
 |15|U|s|u|kiel|
 |16|A|t|a|roth|
 |17|A|z|a|ral|
@@ -35,6 +38,9 @@ tab-name: Angelic Names
 |= {{ roll }} =|
 [Angelic-Sounding Names 1]
 ```
+#### Angelic-Sounding Names 2
+**Instructions**: Roll all four parts of the name independently (4 die rolls).
+**Sample Results**: Balazioth, Raphithior, Mefutiel, Zegomioth, Kemagiel.
 ```rpg table.angelic-names-2
 @paginate 10 pages
 |d20*|Part 1|Part 2|Part 3|Part 4|
@@ -44,7 +50,7 @@ tab-name: Angelic Names
 |3|Ga|d|e|thior|
 |4|Ha|ph|o|zioth|
 |5|Ka|f|u|zior|
-|6|La|g|a|za'el|
+|6|La|g|a|za’el|
 |7|Ma|h|i|tiel|
 |8|Na|j|e|zor|
 |9|Ra|k|o|riel|
@@ -63,6 +69,9 @@ tab-name: Angelic Names
 |= {{ roll }} =|
 [Angelic-Sounding Names 2]
 ```
+#### Angelic Epithets
+**Instructions**: Roll on either column to generate an epithet for an angelic name.
+**Sample Results**: The Lantern, The Scepter, The Rescuer, The Messenger, The Protector.
 ```rpg table.angelic-epithets
 @paginate 10 pages
 |d20*|1|2|

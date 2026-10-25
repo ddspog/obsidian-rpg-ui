@@ -18,6 +18,9 @@ Nanskrit is a good naming group for general deities. The Nanskrit Masculine Pers
 For more Celtic-sounding deities, the Brittonian Personal Names tables work well, just as Norse-sounding deities should use the Nörslik Tables and Greek-type deities should use Hellenica.
 # Planar Locations
 ## Quick-Generation Tables for Planar Locations
+#### Planar Location Type 1
+**Instructions**: Roll independently for part 1 and part 2 of the name. This table is designed to produce two-word names.
+**Sample Results**: Bha Dhan, Om Chantu, Mho Hotar, An Shai, Mul Yendra.
 ```rpg table.planar-location-1
 @paginate 10 pages
 |d20*|Part 1|Part 2|
@@ -46,6 +49,9 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 |= {{ roll }} =|
 [Planar Location Type 1]
 ```
+#### Planar Location Type 2
+**Instructions**: Roll independently for part 1 and part 2 of the name. This table is designed to produce two-word names.
+**Sample Results**: Abas Otun, Ulta Simaar, Pnang Parthu, Ulua Baranth, Brodh Phain, Ialta Rajan.
 ```rpg table.planar-location-2
 @paginate 10 pages
 |d20*|Part 1|Part 2|
@@ -74,6 +80,9 @@ For more Celtic-sounding deities, the Brittonian Personal Names tables work well
 |= {{ roll }} =|
 [Planar Location Type 2]
 ```
+#### Planar Location Type 3
+**Instructions**: Roll independently for part 1 and part 2 of the name. This table is designed to produce two-word names.
+**Sample Results**: Mouk Dama, Haqam Jaath, Turan Talwar, Aada Qas, Zaa Bajai.
 ```rpg table.planar-location-3
 @paginate 10 pages
 |d20*|Part 1|Part 2|
