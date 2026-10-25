@@ -1,5 +1,5 @@
 import * as React from "react";
-import { EntityBlock, Markdown } from "rpg-ui-toolkit";
+import { EntityBlock, Markdown, RollPopover } from "rpg-ui-toolkit";
 import { SkillsProps } from "./skills.types";
 import { CharacterEntity } from "../../entities/character.types";
 import { SKILLS, skillResolver } from "../../entities/character.skills";
@@ -51,6 +51,56 @@ function VantageBadge({ kind }: { kind: "adv" | "dis" }) {
   );
 }
 
+/**
+ * One skill. The row itself is the roll button (a transparent button laid over
+ * it, so the list keeps its semantics); the ⓘ at the end opens the skill's
+ * note, which used to be what tapping the name did.
+ */
+function SkillRow({
+  name,
+  attr,
+  level,
+  mod,
+  vantage,
+}: {
+  name: string;
+  attr: string;
+  level: number;
+  mod: number;
+  vantage: number;
+}) {
+  const [rolling, setRolling] = React.useState(false);
+  return (
+    <li data-vantage={vantage > 0 ? "adv" : vantage < 0 ? "dis" : undefined}>
+      <ProfDot level={level} />
+      <abbr aria-details="Skill Attribute">{attr}</abbr>
+      <span aria-details="Skill Name">{name}</span>
+      <data value={mod}>
+        {vantage > 0 && <VantageBadge kind="adv" />}
+        {vantage < 0 && <VantageBadge kind="dis" />}
+        {formatMod(mod)}
+      </data>
+      <span aria-details="Skill Note" aria-label={`Open the ${name} note`}>
+        <Markdown source={`[[${name}|\u24D8]]`} className="rpg-inline-md" />
+      </span>
+      <button
+        type="button"
+        className="rpg-skill-roll"
+        aria-label={`Roll ${name}, ${formatMod(mod)}`}
+        onClick={() => setRolling(true)}
+      />
+      {rolling && (
+        <RollPopover
+          label={name}
+          modifier={mod}
+          vantage={vantage > 0 ? "adv" : vantage < 0 ? "dis" : "normal"}
+          onClose={() => setRolling(false)}
+        />
+      )}
+    </li>
+  );
+}
+
 export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({ self, blocks, lookup, expressions }) => {
   const header = (blocks as any).header;
   const features = (blocks as any).features as FeaturesBlockData | undefined;
@@ -75,20 +125,8 @@ export const skills: EntityBlock<SkillsProps, CharacterEntity> = ({ self, blocks
             proficiency: skill.proficiency,
             bonus: skill.bonus,
           });
-          const vantage = skill.vantage;
           return (
-            <li key={name} data-vantage={vantage > 0 ? "adv" : vantage < 0 ? "dis" : undefined}>
-              <ProfDot level={skill.proficiency} />
-              <abbr aria-details="Skill Attribute">{attr}</abbr>
-              <span aria-details="Skill Name">
-                <Markdown source={`[[${name}]]`} className="rpg-inline-md" />
-              </span>
-              <data value={mod}>
-                {vantage > 0 && <VantageBadge kind="adv" />}
-                {vantage < 0 && <VantageBadge kind="dis" />}
-                {formatMod(mod)}
-              </data>
-            </li>
+            <SkillRow key={name} name={name} attr={attr} level={skill.proficiency} mod={mod} vantage={skill.vantage} />
           );
         })}
       </menu>

@@ -204,6 +204,193 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* ── Sheet surfaces: one warm parchment family ───────────────────── */
+  /* The slab stays dark; the panels under it share its warmth instead of a cool grey glass. */
+
+  section[aria-details="Character Senses"],
+  section[aria-details="Character Skills"],
+  section[aria-details="Character Proficiencies"],
+  section[aria-details="Character Rolls"] {
+    --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
+    --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
+    --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
+    --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
+    --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
+    background: light-dark(#ece4d3, #24201c);
+    color: light-dark(#231a0c, #e3dcce);
+    border-color: light-dark(#cdbf9f, #4a4238);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  section[aria-details="Character Senses"] a.internal-link,
+  section[aria-details="Character Skills"] a.internal-link,
+  section[aria-details="Character Proficiencies"] a.internal-link,
+  section[aria-details="Character Rolls"] a.internal-link {
+    color: light-dark(#4b2f9a, #cdbfff);
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  section[aria-details="Character Senses"] > output + output,
+  section[aria-details="Character Senses"] > dl {
+    border-color: light-dark(#cdbf9f, #4a4238);
+  }
+
+  /* The dotted grid behind the hexes and the ridge rollers on Features are ornament, not information. */
+  section[aria-details="Character Stats"]::before {
+    display: none;
+  }
+
+  .rpg-feature-accordion,
+  [class*="rpg-feature-accordion"] {
+    border-top-style: solid;
+    border-bottom-style: solid;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+  }
+
+  /* ── Skills: the row is a button ──────────────────────────────────── */
+
+  section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {
+    min-height: 44px;
+  }
+
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+    opacity: 1;
+    color: light-dark(#6d6048, #a8a08a);
+  }
+
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+    min-width: 44px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-end: -10px;
+    font-size: 1.15rem;
+  }
+
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
+    font-size: 1em;
+  }
+
+  /* ── Attacks: cards, not a 534px table ────────────────────────────── */
+
+  section[aria-details="Character Rolls"] .rpg-rolls__scroll {
+    overflow: visible;
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__table,
+  section[aria-details="Character Rolls"] .rpg-rolls__table > tbody,
+  section[aria-details="Character Rolls"] .rpg-rolls__table > thead,
+  section[aria-details="Character Rolls"] .rpg-rolls__table tr,
+  section[aria-details="Character Rolls"] .rpg-rolls__table td,
+  section[aria-details="Character Rolls"] .rpg-rolls__table th {
+    display: block;
+    min-width: 0;
+    width: auto;
+    white-space: normal;
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__head-band th:not(.rpg-rolls__head-label) {
+    display: none;
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__table .rpg-rolls__head-label {
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    font-size: 0.85rem;
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 56px;
+    grid-template-areas:
+      "name hit roll"
+      "dmg range roll"
+      "dc cost cost"
+      "fx fx fx";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 2px;
+    padding: 8px 8px 8px 12px;
+    border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
+    padding: 0;
+    border: none;
+  }
+
+  section[aria-details="Character Rolls"] td:empty {
+    display: none;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__name {
+    grid-area: name;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__hit {
+    grid-area: hit;
+    justify-self: end;
+    padding: 0 6px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: light-dark(#2c6b34, #8fd19b);
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__dc {
+    grid-area: dc;
+    font-size: 0.85rem !important;
+    font-weight: 700;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__damage {
+    grid-area: dmg;
+    font-size: 0.95rem;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__range {
+    grid-area: range;
+    justify-self: end;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    color: light-dark(#6d6048, #a8a08a);
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__cost {
+    grid-area: cost;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__effects {
+    grid-area: fx;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__roll {
+    grid-area: roll;
+    align-self: center;
+    text-align: center;
+  }
+
+  section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
+    width: 52px;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+
   /* ── Session log ─────────────────────────────────────────────────── */
 
   .lonelog-bottom-drawer {
