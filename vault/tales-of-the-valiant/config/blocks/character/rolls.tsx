@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
   EntityBlock,
+  RollPopover,
+  parseDice,
   deriveWeaponRolls,
   resolvePersonalItem,
   signed,
@@ -199,6 +201,7 @@ export const rolls: EntityBlock<RollsProps, CharacterEntity> = ({ self, blocks, 
                 <th>Damage</th>
                 <th>Cost</th>
                 <th>Effects</th>
+                <th aria-label="Roll" className="rpg-rolls__head-roll" />
               </tr>
             </thead>
             <tbody>
@@ -304,6 +307,7 @@ function RollRowUI({
   characterLevel: number;
 }) {
   const noteKey = useNoteKey();
+  const [rolling, setRolling] = React.useState(false);
   const baseRoll = row.roll;
 
   // Declared circles = base circle plus every key on `upcast`. The
@@ -421,6 +425,20 @@ function RollRowUI({
     setCostAmount(next);
   };
 
+  // What the Roll button rolls: the attack's d20 (its to-hit, read off the text
+  // `+5 (STR)`) and each damage expression; a save spell has damage only.
+  const hitMatch = String(hitText).match(/([+\u2212-])\s*(\d+)/);
+  const hitModifier = hitMatch ? (hitMatch[1] === "+" ? 1 : -1) * parseInt(hitMatch[2], 10) : null;
+  const damageList = (Array.isArray(roll.damage) ? roll.damage : roll.damage ? [roll.damage] : [])
+    .filter((d) => typeof d.roll === "string")
+    .flatMap((d) =>
+      compactDie(d.roll, d.bonus)
+        .split("/")
+        .filter((expr) => parseDice(expr))
+        .map((expr) => ({ expr, type: d.type }))
+    );
+  const canRoll = available && (hitModifier !== null || damageList.length > 0);
+
   return (
     <tr data-form={roll.form} data-available={available ? "true" : "false"} aria-description={unavailReason}>
       <td className="rpg-rolls__name">
@@ -455,6 +473,16 @@ function RollRowUI({
       </td>
       <td className="rpg-rolls__effects">
         <EffectsCell roll={roll} />
+      </td>
+      <td className="rpg-rolls__roll">
+        {canRoll && (
+          <button type="button" aria-label={`Roll ${name}`} onClick={() => setRolling(true)}>
+            Roll
+          </button>
+        )}
+        {rolling && (
+          <RollPopover label={name} modifier={hitModifier} damage={damageList} onClose={() => setRolling(false)} />
+        )}
       </td>
     </tr>
   );
