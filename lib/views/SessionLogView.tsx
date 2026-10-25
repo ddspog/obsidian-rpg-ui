@@ -88,7 +88,7 @@ import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
-import { partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
+import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -1857,6 +1857,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     return {
       steps,
       tables,
+      alternatives: alternativesByRef([...resFeatures, ...Object.values(steps)].flatMap((f) => f.steps ?? [])),
       dials,
       calls,
       stepTables,
@@ -2194,7 +2195,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           : undefined;
       }
       if (pick?.part != null) return partText(table, roll, pick.spec, pick.part);
-      return resolveTableRoll(`${ref} d100=${roll} ->`, table)
+      return resolveTableRoll(`${ref} d100=${roll} ->`, table, this.stepCtx.alternatives?.[ref])
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();
     };

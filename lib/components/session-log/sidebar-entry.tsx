@@ -238,15 +238,15 @@ function RollBoth({ rows, edit }: { rows: SidebarRow[]; edit: SidebarEditContext
     <button
       type="button"
       className="lonelog-roll-both"
-      title={`Roll ${dice.map((d) => d.term.spec).join(" and ")}`}
-      aria-label="Roll both"
+      title={`Roll ${dice.map((d) => d.term.spec).join(" and ")} together`}
+      aria-label="Roll all the dice on this line"
       onClick={(e) => {
         e.stopPropagation();
         for (const d of dice) edit.onDieChange(d.source, d.term.raw, 0, formatDiceValue(d.term, rollDiceFaces(d.term)));
       }}
     >
       <Lucide.Dices size={14} />
-      <span>Roll both</span>
+      <span>Roll</span>
     </button>
   );
 }

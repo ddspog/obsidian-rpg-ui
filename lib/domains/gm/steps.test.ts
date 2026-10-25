@@ -12,6 +12,7 @@ import {
   stepUseLinks,
   spliceStepUses,
   flattenSteps,
+  alternativesByRef,
   parsePickSpec,
   partText,
   pickNames,
@@ -393,6 +394,23 @@ describe("a name made of independently rolled parts — @pick", () => {
     } as unknown as TableDef;
     expect(resolveTableRoll("d100=100 ->", last)).toBe("d100=100 -> Start: Zu · Ending: yuan");
     expect(resolveTableRoll("d100=99 ->", last)).toBe("d100=99 -> Start: Zu · Ending: yuan");
+  });
+
+  it("reads differently named columns as alternatives when the step says they are (a name and its dialects)", () => {
+    const dialects = {
+      columnLabels: ["d100*", "Base Name", "Dialect 1", "Dialect 2"],
+      rows: [row("1-100", "Hakbjorn", "Hakbeorn", "Hakburn")],
+    } as unknown as TableDef;
+    expect(resolveTableRoll("d100=5 ->", dialects)).toContain("Base Name: Hakbjorn");
+    expect(resolveTableRoll("d100=5 ->", dialects, "1,2,3")).toBe("d100=5 -> {Hakbjorn/Hakbeorn/Hakburn - }");
+  });
+
+  it("finds the tables a step offers only alternatives from", () => {
+    const steps: GMStep[] = [
+      { choice: "A", tables: ["@[[x]]#a", "@[[x]]#b"], choose: ["1,2,3", "Start=1+End=2"] },
+      { choice: "B", tables: ["@[[x]]#c"], choose: ["1,2,3,4,5"] },
+    ];
+    expect(alternativesByRef(steps)).toEqual({ "@[[x]]#a": "1,2,3" });
   });
 
   it("reads numbered alternative columns as alternatives", () => {
