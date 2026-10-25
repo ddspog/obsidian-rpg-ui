@@ -125,6 +125,54 @@ function Progress({ row }: { row: BookkeepingRow }) {
   );
 }
 
+/** What a write will change, per character, with a Write and a Cancel. */
+const ReviewPanel = React.forwardRef<
+  HTMLElement,
+  { rows: BookkeepingRow[]; onConfirm: () => void; onCancel: () => void }
+>(function ReviewPanel({ rows, onConfirm, onCancel }, ref) {
+  const byWho = new Map<string, BookkeepingRow[]>();
+  for (const row of rows) byWho.set(row.who ?? "Party", [...(byWho.get(row.who ?? "Party") ?? []), row]);
+  const headingId = React.useId();
+  return (
+    <section
+      ref={ref}
+      className="lonelog-bookkeeping-review"
+      aria-labelledby={headingId}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onCancel();
+      }}
+    >
+      <h4 id={headingId}>
+        Write {rows.length} {rows.length === 1 ? "change" : "changes"} to{" "}
+        {byWho.size === 1 ? "the sheet" : "the sheets"}?
+      </h4>
+      <dl>
+        {[...byWho].map(([who, list]) => (
+          <div key={who}>
+            <dt>{who}</dt>
+            {list.map((row) => (
+              <dd key={rowId(row)}>
+                <span className="lonelog-row-label">{row.label}</span>
+                <span className="lonelog-bookkeeping-value">
+                  <Progress row={row} />
+                </span>
+              </dd>
+            ))}
+          </div>
+        ))}
+      </dl>
+      <div className="lonelog-bookkeeping-review-actions">
+        <button type="button" className="is-primary" data-confirm onClick={onConfirm}>
+          Write {rows.length} {rows.length === 1 ? "change" : "changes"}
+        </button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </section>
+  );
+});
+
 export function SessionBookkeeping({
   rows,
   inventory,
@@ -139,6 +187,9 @@ export function SessionBookkeeping({
   onSelectSource,
 }: SessionBookkeepingProps) {
   const [showWritten, setShowWritten] = React.useState(false);
+  // The changes waiting on a confirmation, and whether they're the whole set ("Write all").
+  const [review, setReview] = React.useState<{ rows: BookkeepingRow[]; all: boolean } | null>(null);
+  const reviewRef = React.useRef<HTMLElement>(null);
   // Named by its heading — an `aria-label` would show as Obsidian's tooltip.
   const headingId = React.useId();
 
@@ -167,6 +218,13 @@ export function SessionBookkeeping({
   React.useEffect(() => {
     if (seen.length > 0) onSeen?.(seen);
   }, [seenKey]);
+  // Bring the review into view and put the keyboard on its Write button.
+  React.useEffect(() => {
+    if (!review) return;
+    const el = reviewRef.current;
+    el?.scrollIntoView?.({ block: "nearest" });
+    el?.querySelector<HTMLButtonElement>("button[data-confirm]")?.focus({ preventScroll: true });
+  }, [review]);
   if (people.length === 0) return null;
 
   // Written once, but the sheet has moved since (set back by hand): not done —
@@ -242,7 +300,7 @@ export function SessionBookkeeping({
             type="button"
             className="lonelog-bookkeeping-write is-quiet"
             title={`The sheet shows ${sheetNow} now — write this log's ${row.label} to ${row.who}'s sheet again`}
-            onClick={() => onApply(row)}
+            onClick={() => setReview({ rows: [row], all: false })}
           >
             rewrite
           </button>
@@ -252,8 +310,8 @@ export function SessionBookkeeping({
           <button
             type="button"
             className="lonelog-bookkeeping-write"
-            title={`Write ${row.label} to ${row.who}'s sheet`}
-            onClick={() => onApply(row)}
+            title={`Review, then write ${row.label} to ${row.who}'s sheet`}
+            onClick={() => setReview({ rows: [row], all: false })}
           >
             write
           </button>
@@ -272,7 +330,11 @@ export function SessionBookkeeping({
         <menu>
           {writable.length > 1 && onApplyAll && (
             <li>
-              <button type="button" className="lonelog-bookkeeping-tool" onClick={() => onApplyAll(writable)}>
+              <button
+                type="button"
+                className="lonelog-bookkeeping-tool"
+                onClick={() => setReview({ rows: writable, all: true })}
+              >
                 Write all
               </button>
             </li>
@@ -291,6 +353,18 @@ export function SessionBookkeeping({
           )}
         </menu>
       </hgroup>
+      {review && (
+        <ReviewPanel
+          ref={reviewRef}
+          rows={review.rows}
+          onCancel={() => setReview(null)}
+          onConfirm={() => {
+            if (review.all || review.rows.length > 1) onApplyAll?.(review.rows);
+            else onApply?.(review.rows[0]);
+            setReview(null);
+          }}
+        />
+      )}
       <div className="lonelog-bookkeeping-sheets">
         {people.map((who) => {
           const list = entries.get(who)!.filter((e) => showWritten || !isDone(e));

@@ -2372,69 +2372,101 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-prose-narration p {
   margin: 0 0 0.8rem;
 }
-.lonelog-dot {
+.lonelog-conclusion,
+.lonelog-prose-scene-head {
   position: relative;
+}
+.lonelog-prose-doc button.lonelog-dot {
+  appearance: none;
+  position: absolute;
+  left: -1.4rem;
   display: inline-block;
-  width: 0.42em;
-  height: 0.42em;
+  width: 0.6rem;
+  height: 0.6rem;
+  min-height: 0;
   padding: 0;
-  margin-left: 0.18em;
+  margin: 0.55em 0 0;
   border: none;
   border-radius: 50%;
   background: var(--interactive-accent);
   cursor: pointer;
-  vertical-align: super;
   box-shadow: none;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.lonelog-dot::after {
+.lonelog-prose-doc button.lonelog-dot::before {
   content: "";
   position: absolute;
-  inset: -9px;
+  top: 100%;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  height: 1.1em;
+  background: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  pointer-events: none;
 }
-.lonelog-dot:hover {
-  transform: scale(1.3);
+.lonelog-prose-doc button.lonelog-dot::after {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
 }
-.lonelog-dot:focus-visible {
+.lonelog-prose-doc button.lonelog-dot:hover {
+  transform: scale(1.25);
+}
+.lonelog-prose-doc button.lonelog-dot:focus-visible {
   outline: none;
-  transform: scale(1.3);
+  transform: scale(1.25);
   box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
 }
-.lonelog-dot.is-selected {
+.lonelog-prose-doc button.lonelog-dot.is-selected {
   box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+.lonelog-prose-beats button.lonelog-dot {
+  position: relative;
+  left: auto;
+  margin: 0 0 0 0.3em;
+  vertical-align: super;
+  width: 0.5em;
+  height: 0.5em;
+}
+.lonelog-prose-beats button.lonelog-dot::before {
+  display: none;
 }
 .lonelog-balloon {
-  --balloon-width: 56%;
-  width: var(--balloon-width);
+  width: fit-content;
+  max-width: min(84%, 34rem);
   box-sizing: border-box;
   margin-block: 0.45rem;
-  margin-inline-start: calc((100% - var(--balloon-width)) * var(--lane, 0.5));
+  margin-inline: 0 auto;
   padding: 0.5rem 0.8rem;
   border-radius: 0.9rem;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
+  line-height: 1.45;
+}
+.lonelog-balloon-npc {
+  margin-inline: auto 0;
 }
 .lonelog-balloon-pc {
+  border-end-start-radius: 0.2rem;
   background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
   border-color: light-dark(rgba(109, 124, 186, 0.32), rgba(160, 160, 208, 0.34));
 }
 .lonelog-balloon-npc {
+  border-end-end-radius: 0.2rem;
   background: light-dark(rgba(179, 157, 219, 0.16), rgba(179, 157, 219, 0.2));
   border-color: light-dark(rgba(179, 157, 219, 0.36), rgba(179, 157, 219, 0.42));
 }
 .lonelog-balloon-speaker {
   display: block;
   font-weight: 600;
-  font-size: 0.78em;
+  font-size: 0.82em;
   letter-spacing: 0.02em;
   margin-bottom: 0.15rem;
-  opacity: 0.85;
 }
 .lonelog-balloon-pc .lonelog-balloon-speaker {
-  color: light-dark(#4d5aa0, #a0a0d0);
+  color: light-dark(#3b4687, #a0a0d0);
 }
 .lonelog-balloon-npc .lonelog-balloon-speaker {
-  color: light-dark(#6a4ea8, #b39ddb);
+  color: light-dark(#5b3f96, #b39ddb);
 }
 .lonelog-balloon-text p {
   display: inline;
@@ -6928,8 +6960,17 @@ figure.rpg-card-frame.is-mini .rpg-card-frame-art {
 .lonelog-bottom-drawer.is-collapsed {
   display: flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: 2.25rem;
   padding-block: 0.3rem;
+}
+.drawer-collapsed-bar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-right: 2.25rem;
+  cursor: pointer;
 }
 .drawer-collapsed-label {
   font-size: var(--font-ui-smaller);
@@ -6937,6 +6978,24 @@ figure.rpg-card-frame.is-mini .rpg-card-frame-art {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+.drawer-collapsed-actor {
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  color: light-dark(#4b2f9a, #cdbfff);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.drawer-collapsed-hint {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.lonelog-bar-wrap {
+  display: none;
 }
 .drawer-toggle-btn {
   position: absolute;
@@ -16474,6 +16533,114 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
   background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 
+/* lib/styles/log-surface.css */
+.lonelog-sidebar,
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping,
+.lonelog-roster-sticky {
+  --text-faint: light-dark(#6d6048, #a8a08a);
+  --text-muted: light-dark(#4a3f2c, #cfc7b2);
+  color: light-dark(#231a0c, #e3dcce);
+}
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-sidebar {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-prose-layout:not(.is-stacked) .lonelog-sidebar {
+  padding: 0.75rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+}
+.lonelog-sidebar-header,
+.lonelog-bookkeeping-head h3 {
+  color: light-dark(#6a4e2a, #d4a840);
+}
+.lonelog-sidebar a.internal-link,
+.lonelog-bottom-drawer a.internal-link,
+.lonelog-bookkeeping a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-underline-offset: 3px;
+}
+.lonelog-bottom-drawer {
+  box-shadow: none;
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-bookkeeping-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0.9rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: light-dark(#f6f0e2, #2e2923);
+}
+.lonelog-bookkeeping-review h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.lonelog-bookkeeping-review dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+.lonelog-bookkeeping-review dt {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+.lonelog-bookkeeping-review dd {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+.lonelog-bookkeeping-review-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.lonelog-bookkeeping-review-actions button {
+  min-height: 36px;
+  padding: 0 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 600;
+}
+.lonelog-bookkeeping-review-actions button.is-primary {
+  border-color: light-dark(#4b2f9a, #cdbfff);
+  background: light-dark(#4b2f9a, #cdbfff);
+  color: light-dark(#fff, #1a1030);
+}
+.lonelog-bottom-drawer :is(button, [role=button], label.actions-side, a):focus-visible,
+.lonelog-bookkeeping :is(button, a):focus-visible,
+.lonelog-sidebar :is(button, a):focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-log-container *,
+  .session-log-container *::before,
+  .session-log-container *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  button.hud-opportunity {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+  }
+}
+
 /* lib/styles/mobile.css */
 @media (max-width: 600px) {
   .markdown-preview-view [class*=rpg-],
@@ -16782,6 +16949,73 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
   .lonelog-log-toggle[aria-pressed=true] {
     min-width: 2.25rem;
     min-height: 2.25rem;
+  }
+  .session-log-container.has-bar .lonelog-log-rail {
+    display: none;
+  }
+  .session-log-container.has-bar .drawer-toggle-btn,
+  .session-log-container.has-bar .drawer-collapsed-bar {
+    display: none;
+  }
+  .session-log-container.has-bar .lonelog-bottom-drawer.is-collapsed {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    min-height: 0;
+  }
+  .session-log-container.has-bar .lonelog-bottom-drawer:not(.is-collapsed) {
+    padding-bottom: 0;
+  }
+  .lonelog-bar-wrap {
+    position: sticky;
+    bottom: 0;
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: inherit;
+  }
+  .lonelog-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  }
+  .lonelog-bar > button {
+    min-height: 48px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .lonelog-bar > button[aria-pressed=true] {
+    color: light-dark(#4b2f9a, #cdbfff);
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+  .lonelog-bar-dirty {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.4rem 0.6rem;
+    padding: 0.15rem 0.35rem 0.15rem 0.9rem;
+    border-radius: 999px;
+    background: #1d1b2b;
+    color: #fff;
+    font-size: 0.8rem;
+  }
+  .lonelog-bar-dirty > span {
+    flex: 1;
+  }
+  .lonelog-bar-dirty > button {
+    min-height: 40px;
+    padding: 0 0.8rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: #cdbfff;
+    font-weight: 700;
   }
   .drawer-toggle-btn {
     width: 2.5rem;
