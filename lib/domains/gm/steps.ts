@@ -12,6 +12,7 @@
  * branch ref to an actual step `GMFeature` (cross-file) and hands it in.
  */
 
+import { pickerToken } from "../session-log/choice";
 import { rolledValue } from "../session-log/formula";
 import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
@@ -106,7 +107,11 @@ export function appendStepLine(log: string, genName: string, choice: string, cal
 function rangeMatches(key: string, n: number): boolean {
   const k = key.trim();
   let m = k.match(/^(\d+)\s*[-–]\s*(\d+)$/);
-  if (m) return n >= +m[1] && n <= +m[2];
+  if (m) {
+    // A d100's last row is `99-00`: 00 stands for 100.
+    const hi = /^0+$/.test(m[2]) ? 10 ** m[2].length : +m[2];
+    return n >= +m[1] && n <= hi;
+  }
   m = k.match(/^(\d+)\s*\+$/);
   if (m) return n >= +m[1];
   m = k.match(/^(\d+)$/);
@@ -130,7 +135,7 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
   const kind = (l: string) => l.replace(/\s*(\d+[a-z]?|[a-z])$/i, "");
   const numbered = values.every((v) => /^\d*$/.test(v.label)) || new Set(values.map((v) => kind(v.label))).size === 1;
   return numbered
-    ? filled.map((v) => v.text).join(" / ")
+    ? pickerToken(filled.map((v) => v.text))
     : filled.map((v) => (v.label ? `${v.label}: ${v.text}` : v.text)).join(" · ");
 }
 
@@ -142,13 +147,6 @@ function rowResult(table: TableDef, row: TableDef["rows"][number]): string {
  * A single part (`1,2`) is a plain choice among alternative names.
  */
 export const PICK_TOKEN = /@pick\(([^)\n]*)\)/;
-
-/** A name made of the choices the rows above it settled: `@join(Start=1,2+End=2:1,2)` reads each
- *  part's pick (or its single value) and joins them. */
-export const JOIN_TOKEN = /@join\(([^)\n]*)\)/;
-
-/** Over this many names, one die is too big: each part gets its own pick row, and the name joins them. */
-export const PICK_SPLIT_ABOVE = 12;
 
 /** From this many names on, a die picks one; fewer are shown whole, for the reader to take. */
 export const PICK_ROLL_FROM = 5;
@@ -237,12 +235,6 @@ export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: 
     .filter((name) => name);
 }
 
-/** A name from its parts' values, in order: a space goes before a part the spec joins with `&`. */
-export function joinParts(values: string[], spec: string): string {
-  const parts = parsePickSpec(spec);
-  return values.reduce((name, v, k) => (k > 0 && parts[k]?.spaced && v ? `${name} ${v}` : `${name}${v}`), "");
-}
-
 /**
  * What the second roll `pick` takes from those names, wrapping when the rows offer fewer than the
  * die has faces. Without a die (`pick` undefined), every name: the one name there is, or the few to
@@ -256,7 +248,7 @@ export function pickResult(
 ): string | undefined {
   const names = pickNames(tables, rolls, spec);
   if (!names || names.length === 0) return undefined;
-  if (pick == null) return names.join(" / ");
+  if (pick == null) return names.length > 1 ? pickerToken(names) : names[0];
   return names[(((pick - 1) % names.length) + names.length) % names.length];
 }
 

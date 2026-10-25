@@ -3945,18 +3945,76 @@ button.lonelog-bookkeeping-write.is-quiet {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.15em 1.1em;
+  gap: 0.15em 0.8em;
 }
 .lonelog-row-joined > .lonelog-row-detail {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0 0.35em;
+  gap: 0;
   max-width: 100%;
+}
+.lonelog-row-joined {
+  padding-left: 1.4em;
+}
+.lonelog-row-joined > .lonelog-row-detail {
+  padding-left: 0;
 }
 .lonelog-row-joined textarea.lonelog-formula-result-input {
   width: 15em;
   max-width: 100%;
+}
+.lonelog-picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.25em;
+}
+.lonelog-sidebar button.lonelog-picker-word,
+.lonelog-picker-word {
+  appearance: none;
+  margin: 0;
+  padding: 0 0.3em;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 500;
+  color: var(--text-normal);
+  cursor: pointer;
+  height: auto;
+  min-height: 0;
+  transition: background-color 120ms ease;
+}
+.lonelog-picker-word + .lonelog-picker-word::before {
+  content: "/";
+  margin-right: 0.55em;
+  margin-left: -0.3em;
+  color: var(--text-faint);
+  font-weight: 400;
+}
+.lonelog-picker.has-pick .lonelog-picker-word:not(.is-picked) {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+.lonelog-picker-word:hover {
+  background-color: var(--background-modifier-hover);
+}
+.lonelog-picker-word.is-picked {
+  color: var(--text-accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.lonelog-picker-word:focus-visible {
+  outline: 2px solid var(--text-accent);
+  outline-offset: 1px;
+}
+.lonelog-name-made {
+  color: var(--text-normal);
+  font-weight: 600;
 }
 
 /* lib/styles/components/session-log-tags.css */

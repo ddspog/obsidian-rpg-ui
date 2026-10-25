@@ -22,6 +22,7 @@ import type {
   GMRollAspect,
   GMSceneAspect,
   GMStack,
+  GMStep,
   GMTableAspect,
   NamedGenerator,
 } from "../features/types";
@@ -161,11 +162,27 @@ export function generatorSteps(g: GMGeneratorAspect): GMGenStep[] {
   return [];
 }
 
-function emitGenerator(g: GMGeneratorAspect, cf: string | null): string[] {
+/**
+ * What a style's second pick offers: the steps a pick can `then:` open a nested dropdown from, by
+ * the pick's name — `{{kind?@style:A>x|y;B>z}}`, the kind of name the picked style has.
+ */
+function kindsMap(steps: GMStep[] | undefined): { label: string; map: string } | null {
+  const withKinds = (steps ?? []).filter((s) => s.choice && s.then?.some((t) => t.choice));
+  if (withKinds.length === 0) return null;
+  return {
+    label: withKinds[0].thenLabel?.trim() || "Kind",
+    map: withKinds.map((s) => `${s.choice}>${s.then!.map((t) => t.choice).join("|")}`).join(";"),
+  };
+}
+
+function emitGenerator(g: GMGeneratorAspect, cf: string | null, steps?: GMStep[]): string[] {
   const lines = [`gen: ${g.name}`];
+  const kinds = kindsMap(steps);
   for (const s of generatorSteps(g)) {
     const line = genStepLine(s, cf);
     if (line) lines.push(`  ${line}`);
+    // A style asked for up front also asks for its kind of name, when it has several.
+    if (line && s.ask && s.choices?.length && kinds) lines.push(`  + ${kinds.label}: {{kind?@${s.ask}:${kinds.map}}}`);
   }
   return lines;
 }
@@ -203,13 +220,14 @@ function emitGeneratorDeep(
   cf: string | null,
   generators: NamedGenerator[] | undefined,
   seen: Set<GMGeneratorAspect>,
-  depth: number
+  depth: number,
+  steps?: GMStep[]
 ): string[] {
-  const lines = emitGenerator(g, cf);
+  const lines = emitGenerator(g, cf, steps);
   if (!g.emits || depth >= MAX_GEN_DEPTH || seen.has(g)) return lines;
   const nextSeen = new Set(seen).add(g);
   for (const piece of resolveEmits(g.emits, generators)) {
-    lines.push(...emitPiece(piece, cf, generators, nextSeen, depth + 1));
+    lines.push(...emitPiece(piece, cf, generators, nextSeen, depth + 1, steps));
   }
   return lines;
 }
@@ -233,12 +251,13 @@ function emitPiece(
   cf: string | null,
   generators: NamedGenerator[] | undefined,
   seen: Set<GMGeneratorAspect>,
-  depth: number
+  depth: number,
+  steps?: GMStep[]
 ): string[] {
   if ("oracle" in p) return emitOracle(p.oracle);
   if ("roll" in p) return emitRoll(p.roll, cf);
   if ("table" in p) return emitTable(p.table);
-  if ("generator" in p) return emitGeneratorDeep(p.generator, cf, generators, seen, depth);
+  if ("generator" in p) return emitGeneratorDeep(p.generator, cf, generators, seen, depth, steps);
   if ("event" in p) return emitEvent(p.event);
   if ("scene" in p) return emitScene(p.scene);
   return [];
@@ -310,12 +329,12 @@ function cardCfToken(pieces: InlinePiece[]): string | null {
  * Unlike a feature's fixed aspect order, a card emits its pieces in the order
  * written; `@ref` strings resolve against the feature's `generators:`.
  */
-export function emitCard(card: GMCardDef, generators?: NamedGenerator[]): string {
+export function emitCard(card: GMCardDef, generators?: NamedGenerator[], steps?: GMStep[]): string {
   const pieces = resolveEmits(card.emits, generators);
   const cf = cardCfToken(pieces);
   const seen = new Set<GMGeneratorAspect>();
   const lines: string[] = [];
-  for (const p of pieces) lines.push(...emitPiece(p, cf, generators, seen, 0));
+  for (const p of pieces) lines.push(...emitPiece(p, cf, generators, seen, 0, steps));
   return lines.join("\n");
 }
 

@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { splitResultChoice, buildResultChoice, applyChoicePick, NESTED_SEP } from "./choice";
+import {
+  splitResultChoice,
+  buildResultChoice,
+  applyChoicePick,
+  NESTED_SEP,
+  splitResultPicker,
+  buildResultPicker,
+  keepPicked,
+  pickerToken,
+} from "./choice";
 
 describe("splitResultChoice", () => {
   it("splits a result with a trailing choice token", () => {
@@ -188,5 +197,33 @@ describe("applyChoicePick — a dropdown nested under another pick", () => {
       "  Naming Style: [Anglish/Arabish - Arabish]",
       "  + Kind: [Masculine name - ]",
     ]);
+  });
+});
+
+describe("word picker — {a/b/c - selected}", () => {
+  it("reads the options, the pick and the text around it", () => {
+    expect(splitResultPicker("Name {Norel/Nudwin - Nudwin} (either)")).toEqual({
+      before: "Name",
+      after: "(either)",
+      picker: { options: ["Norel", "Nudwin"], selected: "Nudwin", raw: "{Norel/Nudwin - Nudwin}" },
+    });
+  });
+
+  it("has no picker without the ' - ' that sets it apart, nor in a {{placeholder}}", () => {
+    expect(splitResultPicker("{a/b}").picker).toBeNull();
+    expect(splitResultPicker("{{kind?@style:A>x|y}}").picker).toBeNull();
+    expect(splitResultPicker("Jaianfai").picker).toBeNull();
+  });
+
+  it("rebuilds a result around a new pick, and an empty one lets it go", () => {
+    expect(buildResultPicker("", ["a", "b"], "b")).toBe("{a/b - b}");
+    expect(buildResultPicker("Name", ["a", "b"], "", "x")).toBe("Name {a/b - } x");
+    expect(pickerToken(["a", "b"])).toBe("{a/b - }");
+  });
+
+  it("keeps the pick made in the result it replaces when the words are the same", () => {
+    expect(keepPicked("{a/b - }", "{a/b - b}")).toBe("{a/b - b}");
+    expect(keepPicked("{a/c - }", "{a/b - b}")).toBe("{a/c - }");
+    expect(keepPicked("Jaianfai", "{a/b - b}")).toBe("Jaianfai");
   });
 });

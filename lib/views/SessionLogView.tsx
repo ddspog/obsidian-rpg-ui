@@ -86,7 +86,7 @@ import { buildCardStacks } from "lib/domains/session-log/extract-cards";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
-import { applyChoicePick, type ChoiceAt } from "lib/domains/session-log/choice";
+import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
@@ -2155,9 +2155,21 @@ class SessionLogMarkdown extends ReactMarkdown {
     const handleAppendText = async (text: string, headerMap?: HeaderMap) => {
       // A card that asked for its pick up front arrives with the option selected
       // (`[a/b - a]`): spawn that option's lines, as picking it in the Log would.
-      const picked = text.match(/\[[^\][]+?\s+-\s+([^\][]+?)\]/)?.[1]?.trim();
       const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
-      const spawned = picked && stepLines[picked] ? applyChoicePick(text, picked, stepLines) : text;
+      const picks = [...text.matchAll(/^(\s*\+?\s*[^\n:]+:\s*)?\[[^\][]+?\s+-\s+([^\][]*?)\]/gm)];
+      const kindLine = picks.length > 1 && /^\s*\+/.test(picks[1][0]) ? picks[1] : undefined;
+      let spawned = text;
+      if (kindLine) {
+        // The style also asked for its kind of name: the kind row is already there, so only the
+        // kind's lines are spawned, under the pick it was made below.
+        const kind = kindLine[2]?.trim();
+        if (kind && stepLines[`${picks[0][2]?.trim()}${NESTED_SEP}${kind}`] != null) {
+          spawned = applyChoicePick(text, kind, stepLines, { source: kindLine[0].trim(), nth: 0 });
+        }
+      } else {
+        const picked = picks[0]?.[2]?.trim();
+        if (picked && stepLines[picked]) spawned = applyChoicePick(text, picked, stepLines);
+      }
       // Staged, not written: it joins the Log as an unsaved entry until Save.
       this.staged.text += spawned;
       if (headerMap) this.staged.maps.push(headerMap);
@@ -3526,6 +3538,8 @@ function SessionLogRoot({
         if (!row.detail || !row.source) continue;
         const formula = parseFormula(row.content);
         if (formula?.result != null) list.push({ source: row.source, original: formula.result });
+        // A name made without a die holds its result alone: a word picked in it is written back too.
+        else if (row.pickOnly) list.push({ source: row.source, original: row.content });
       }
     }
     return list;

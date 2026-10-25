@@ -22,6 +22,11 @@ export interface ParsedPlaceholder {
   options?: string[];
   /** `{{name?}}` — may be left blank, which drops the line holding it. */
   optional?: boolean;
+  /** `{{kind?@style:A>x|y;B>z}}` — a choice whose options depend on another slot's pick (`style`):
+   *  the options of that pick (`A` → `x`, `y`). It writes the whole `[x/y - picked]` token, and
+   *  its line is dropped when the pick has no options. */
+  dependsOn?: string;
+  optionsBy?: Record<string, string[]>;
 }
 
 export interface ResolutionContext {
@@ -34,7 +39,22 @@ const AUTO_RESOLVE_KINDS: Set<PlaceholderKind> = new Set(["actor", "name"]);
 
 /** `{{name}}` — typed in — or `{{name:a|b}}` — one of the listed options. A `?`
  *  after the name (`{{name?}}`, `{{name?:a|b}}`) makes it optional. */
-const PLACEHOLDER_RE = /\{\{(\w+)(\?)?(?::([^{}]*))?\}\}/g;
+const PLACEHOLDER_RE = /\{\{(\w+)(\?)?(?:@(\w+))?(?::([^{}]*))?\}\}/g;
+
+/** `A>x|y;B>z` → `{ A: [x, y], B: [z] }`. */
+function parseOptionsBy(map: string): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const entry of map.split(";")) {
+    const at = entry.indexOf(">");
+    if (at < 0) continue;
+    out[entry.slice(0, at).trim()] = entry
+      .slice(at + 1)
+      .split("|")
+      .map((o) => o.trim())
+      .filter(Boolean);
+  }
+  return out;
+}
 
 /**
  * The slots a template asks for, in order of first appearance. A name used
@@ -50,10 +70,13 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
   while ((match = PLACEHOLDER_RE.exec(template)) !== null) {
     const raw = match[0];
     const kind = match[1] as PlaceholderKind;
-    const options = match[3]
-      ?.split("|")
-      .map((o) => o.trim())
-      .filter(Boolean);
+    const dependsOn = match[3];
+    const options = dependsOn
+      ? undefined
+      : match[4]
+          ?.split("|")
+          .map((o) => o.trim())
+          .filter(Boolean);
     const known = byKind.get(kind);
     if (known) {
       if (!known.options && options && options.length > 0) known.options = options;
@@ -65,6 +88,7 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
       autoResolvable: AUTO_RESOLVE_KINDS.has(kind),
       ...(options && options.length > 0 ? { options } : {}),
       ...(match[2] ? { optional: true } : {}),
+      ...(dependsOn ? { dependsOn, optionsBy: parseOptionsBy(match[4] ?? "") } : {}),
     };
     byKind.set(kind, placeholder);
     placeholders.push(placeholder);
@@ -86,7 +110,7 @@ export function requiredFilled(placeholders: ParsedPlaceholder[], values: Record
 
 /** A template with each blank inferred slot (and the space before it) taken out. */
 function withoutBlankInferred(template: string, values: Record<string, string>): string {
-  return template.replace(/[ \t]*\{\{(\w+)\??(?::[^{}]*)?\}\}/g, (m, key: string) =>
+  return template.replace(/[ \t]*\{\{(\w+)\??(?:@\w+)?(?::[^{}]*)?\}\}/g, (m, key: string) =>
     INFERRED.has(key) && !values[key]?.trim() ? "" : m
   );
 }
@@ -95,7 +119,22 @@ export function needsUserInput(placeholders: ParsedPlaceholder[]): ParsedPlaceho
   return placeholders.filter((p) => !p.autoResolvable);
 }
 
-export function resolveLogTemplate(template: string, values: Record<string, string>): string {
+export function resolveLogTemplate(template: string, picked: Record<string, string>): string {
+  // A slot that depends on another writes its `[x/y - picked]` token; with nothing to choose from,
+  // the line holding it is dropped.
+  const values = { ...picked };
+  const none = new Set<string>();
+  for (const p of parseLogTemplate(template)) {
+    if (!p.dependsOn) continue;
+    const options = p.optionsBy?.[picked[p.dependsOn] ?? ""] ?? [];
+    if (options.length === 0) none.add(p.kind);
+    else values[p.kind] = `[${options.join("/")} - ${picked[p.kind] ?? ""}]`;
+  }
+  if (none.size > 0)
+    template = template
+      .split("\n")
+      .filter((line) => ![...line.matchAll(PLACEHOLDER_RE)].some((m) => none.has(m[1])))
+      .join("\n");
   // A line whose optional slot was left blank is dropped whole when that slot
   // was the point of it — inside a tag (`[Threads+ ]` with nothing to add says
   // nothing), or all the line held (`=> {{outcome?}}`). Beside other things —
