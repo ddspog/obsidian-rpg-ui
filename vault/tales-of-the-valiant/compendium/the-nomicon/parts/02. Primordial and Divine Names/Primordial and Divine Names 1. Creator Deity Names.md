@@ -7,8 +7,10 @@ tab-color: var(--color-yellow)
 tab-name: Creator Deity Names
 ---
 # Creator Deity Names
-![[disclaimer.webp|right|384]]Creator Deities usually have very short names, which gives them a primordial and cross-cultural feel. If you want to use a longer name, you might try experimenting with the Nanskrit naming group or with one of the Elderweirdish groups.
-
+![[creator-deity-names.webp|right|384]]Creator Deities usually have very short names, which gives them a primordial and cross-cultural feel. If you want to use a longer name, you might try experimenting with the Nanskrit naming group or with one of the Elderweirdish groups.
+#### Creator Deity Name (Short)
+**Instructions**: Roll independently on each column.
+**Sample Results**: Ato, Ota, Umur, Tsalm, Jhaka, Olato
 This table also works well for a Metal feel, just a short name for a creator-deity (who is already gone from the world). Rolling a 1, 1 would generate the name "Aka," and a 7, 8 would generate "Tsatha."
 ```rpg table.creator-deity-short
 |d10*|1|2|
@@ -27,6 +29,9 @@ This table also works well for a Metal feel, just a short name for a creator-dei
 |= {{ roll }} =|
 [Creator Deity Name (Short)]
 ```
+#### Creator Deity Name (Hyphenated)
+**Instructions**: Roll independently for a Part 1 and Part 2 of the name.
+**Sample Results**: Ko-Aman, Azo-Maresh, Enu-Toa, Te-Kora, Che-Ultan, Ge-Taan, Cho-Amna
 ```rpg table.creator-deity-hyphenated
 @paginate 10 pages
 |d20*|Part 1|Part 2|
@@ -55,6 +60,8 @@ This table also works well for a Metal feel, just a short name for a creator-dei
 |= {{ roll }} =|
 [Creator Deity Name (Hyphenated)]
 ```
+#### Creator Deity Epithet
+Adding a title to the name of the Creator Deity can add a little flavor and possibly give an idea for the way in which the universe was created.
 ```rpg table.creator-deity-epithet
 @paginate 10 pages
 |d20*|Title|

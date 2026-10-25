@@ -8,6 +8,9 @@ tab-name: Demons and Evil Gods
 ---
 # Demonic Names
 ![[demonic-names.webp|right|64]]
+#### Demonic Name Part 1
+**Instructions**: Roll on any column for the first part of the demonic name.
+**Sample Results**: Aagrax, Ixumuz, Villmaal, Glariog, Zokarg.
 ```rpg table.demonic-name-part-1
 @paginate 10 pages
 |d20*|1|2|3|
@@ -36,6 +39,8 @@ tab-name: Demons and Evil Gods
 |= {{ roll }} =|
 [Demonic Name Part 1]
 ```
+#### Demonic Name Part 2
+Roll on any column for the second part of the demonic name.
 ```rpg table.demonic-name-part-2
 @paginate 10 pages
 |d20*|1|2|3|4|
@@ -68,6 +73,7 @@ tab-name: Demons and Evil Gods
 ![[evil-god-epithets.webp|384]]
 **Instructions**: Roll for any Part 1, and then for a Part 2. This table can also be used just with one of the Part 1 Columns, for results such as "The Binder," "The Destroyer," or "The Piercer."
 **Sample Results**: The Breaker of Empires, The Marauder of Forests, The Scourge of Kings, The Tormenter of Stars, The Poisoner of Worlds.
+#### Arch-Demonic or Evil God Epithets
 ```rpg table.evil-god-epithets
 @paginate 10 pages
 |d20*|Part 1a|Part 1b|Part 1c|Part 2|
