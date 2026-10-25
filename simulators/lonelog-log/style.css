@@ -1,6 +1,9 @@
-/* On a phone the Log sits below the text, in a box of its own that scrolls: a finger that lands on it
- * scrolls it instead of the page, which is most of the screen. Here the page is the only scroller. */
-.lonelog-prose-layout.is-stacked .lonelog-sidebar {
+/* The Log is a box of its own that scrolls beside the text (or below it on a phone): the wheel or a
+ * finger over it scrolls it instead of the page, and it is a big part of the screen. In this demo the
+ * page is the only thing that scrolls. */
+.sim .lonelog-sidebar,
+.sim .lonelog-prose-layout.is-stacked .lonelog-sidebar {
+  position: static;
   max-height: none;
   overflow-y: visible;
 }
