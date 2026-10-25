@@ -6,6 +6,11 @@
 }
 html,
 body {
+  /* Obsidian's app shell pins the window: no page scroll, no overscroll. A wheel over a page that
+   * keeps `overscroll-behavior: none` does not scroll it, so the shell's rules are undone, and
+   * with `!important` because its own selectors are the more specific. */
+  overscroll-behavior: auto !important;
+  overflow-y: auto !important;
   height: auto;
   overflow: auto;
   position: static;
