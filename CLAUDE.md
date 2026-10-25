@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - Build production version (with TypeScript checks)
 - `npm version patch|minor|major` - Bump version
 - `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting with Prettier
+- `npm run format:check` - Check code formatting with Prettier (CI pins Prettier 3.6.2; if `npx prettier --version` differs, use `npx prettier@3.6.2` so a local `--write` doesn't reformat unrelated lines)
 - `npm run lint` - Lint code with ESLint
 - `npm run lint:fix` - Lint and fix code with ESLint
 - `npm run typecheck` - Run TypeScript type checking
