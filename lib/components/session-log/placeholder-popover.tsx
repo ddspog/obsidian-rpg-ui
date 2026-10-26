@@ -707,14 +707,13 @@ export function PlaceholderPopover({
         )}
         {preview.text.trim() && (
           <section className="placeholder-preview" aria-label="Preview">
-            <span className="placeholder-preview-label">
-              Adds to the log{hasDice ? " — click a die to roll it, or type what you rolled" : ""}
-            </span>
+            <span className="placeholder-preview-label">Adds to the log</span>
             <div className="lonelog-entries placeholder-preview-entries">
               {preview.items.map((item) => (
                 <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />
               ))}
             </div>
+            {hasDice && <p className="placeholder-preview-hint">Click a die to roll it, or type what you rolled.</p>}
             <details className="placeholder-preview-raw">
               <summary>Lonelog</summary>
               <pre>{preview.text}</pre>
