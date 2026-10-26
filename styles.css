@@ -7735,6 +7735,9 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover [aria-details="Line Stats"]::after {
   display: none;
 }
+.hover-popover header[aria-details*=" Banner"] {
+  padding-right: 20px;
+}
 
 /* lib/styles/components/pills.css */
 span[aria-details="Link Pill"] {

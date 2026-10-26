@@ -246,3 +246,8 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover [aria-details="Line Stats"]::after {
   display: none;
 }
+
+/* The level medallion's points reach past its box: room for them on the right of a preview. */
+.hover-popover header[aria-details*=" Banner"] {
+  padding-right: 20px;
+}
