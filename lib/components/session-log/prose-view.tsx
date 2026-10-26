@@ -15,7 +15,7 @@ import * as React from "react";
 import { Markdown } from "lib/components/markdown";
 import { InlineMarkdown } from "./inline-markdown";
 import { Swords } from "lucide-react";
-import { actorLabel, laneForSpeaker } from "lib/domains/session-log/prose-model";
+import { actorLabel } from "lib/domains/session-log/prose-model";
 import type { ProseFragment, ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
 
 export interface ProseViewProps {
@@ -66,6 +66,7 @@ export function ProseView({
               {scene.head.fromConsequence && scene.head.sourceId != null && (
                 <ProseDot
                   id={scene.head.sourceId}
+                  label={`Show the source of scene ${scene.head.number}: ${scene.head.context}`}
                   selected={selectedId === scene.head.sourceId}
                   onClick={onSelectSource}
                 />
@@ -118,7 +119,12 @@ function Fragments({
           {i > 0 && " "}
           <span className="lonelog-fragment" ref={(el) => registerAnchor(frag.sourceId, el)}>
             <InlineMarkdown source={frag.text} sourcePath={sourcePath} className="lonelog-md-inline" />
-            <ProseDot id={frag.sourceId} selected={selectedId === frag.sourceId} onClick={onSelectSource} />
+            <ProseDot
+              id={frag.sourceId}
+              label={`Show the source behind: ${snippet(frag.text)}`}
+              selected={selectedId === frag.sourceId}
+              onClick={onSelectSource}
+            />
           </span>
         </React.Fragment>
       ))}
@@ -255,12 +261,32 @@ function ProseNodeView({ node, ...props }: NodeViewProps & { node: ProseNode }) 
   }
 }
 
-function ProseDot({ id, selected, onClick }: { id: number; selected: boolean; onClick: (id: number) => void }) {
+/** The first few words of a passage, for a dot's label (markup stripped). */
+function snippet(text: string): string {
+  const words = text
+    .replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2")
+    .replace(/[*_`~]/g, "")
+    .trim()
+    .split(/\s+/);
+  return words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "");
+}
+
+function ProseDot({
+  id,
+  label,
+  selected,
+  onClick,
+}: {
+  id: number;
+  label: string;
+  selected: boolean;
+  onClick: (id: number) => void;
+}) {
   return (
     <button
       type="button"
       className={`lonelog-dot ${selected ? "is-selected" : ""}`}
-      aria-label="Show the source action for this passage"
+      aria-label={label}
       onClick={(e) => {
         e.preventDefault();
         onClick(id);
@@ -280,9 +306,8 @@ function DialogueBalloon({
   text: string;
   sourcePath: string;
 }) {
-  const lane = laneForSpeaker(speaker);
   return (
-    <div className={`lonelog-balloon lonelog-balloon-${speakerType}`} style={{ "--lane": lane } as React.CSSProperties}>
+    <div className={`lonelog-balloon lonelog-balloon-${speakerType}`}>
       <span className="lonelog-balloon-speaker">{speaker}</span>
       <InlineMarkdown source={text} sourcePath={sourcePath} className="lonelog-balloon-text" />
     </div>

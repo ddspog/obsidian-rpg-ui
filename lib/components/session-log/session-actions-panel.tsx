@@ -377,6 +377,10 @@ export function SessionActionsPanel({
   const side = sides.find((s) => s.id === sideId) ?? sides[0];
   // Likewise an actor who left the side: fall back to its first actor.
   const actor = side && side.actors.includes(picked[side.id]) ? picked[side.id] : side?.actors[0];
+  // The folded drawer names who is acting.
+  useEffect(() => {
+    drawer?.reportActor?.(actor);
+  }, [actor, drawer]);
   const currentStacks = side && actor ? side.stacksFor(actor) : [];
 
   // Who a card can target: a foe aims at the PCs; anyone else at the foes in

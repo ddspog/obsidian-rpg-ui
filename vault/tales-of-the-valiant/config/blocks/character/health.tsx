@@ -12,6 +12,9 @@ import {
   DiceTray,
   PortraitThumb,
   ConditionPill,
+  VitalsStrip,
+  SheetLegend,
+  PlayToggle,
 } from "rpg-ui-toolkit";
 import { HealthProps } from "./health.types";
 import { CharacterEntity } from "../../entities/character.types";
@@ -106,73 +109,85 @@ export const health: EntityBlock<HealthProps, CharacterEntity> = ({ self, blocks
   const equippedAc = characterArmorClass(blocks, lookup, traits, self.natural_ac);
 
   return (
-    <Section.Row label="Health Management" distribution="1 2">
-      <PortraitThumb
-        src={self.portrait}
-        framed={(self as { framed?: unknown }).framed}
-        frameName={(self as { "frame-name"?: unknown })["frame-name"]}
+    <>
+      <PlayToggle />
+      <VitalsStrip
+        hp={self.current_hp ?? 0}
+        maxHp={self.max_hp ?? 0}
+        tempHp={self.temp_hp ?? 0}
+        ac={equippedAc.armor + equippedAc.bonus}
+        exhaustion={exhaustion}
+        conditions={conditions.map((c) => parseCondition(c).label)}
       />
-      <Article.Column label="Content">
-        <HGroup.Row label="Defense Stats">
-          <Line.Control>
-            <DeathSaveDots
-              side="failures"
-              count={3}
-              filled={deathSaves.failures}
-              onChange={(v) => self.setDeath_saves({ ...deathSaves, failures: v })}
-            />
-            <Badge.Shield value={equippedAc.armor + equippedAc.bonus} label="Armor" />
-            {equippedAc.shieldBonus > 0 && (
-              <Badge.Shield value={equippedAc.armor + equippedAc.bonus + equippedAc.shieldBonus} label="Shield" />
-            )}
-            <DeathSaveDots
-              side="successes"
-              count={3}
-              filled={deathSaves.successes}
-              onChange={(v) => self.setDeath_saves({ ...deathSaves, successes: v })}
-            />
-          </Line.Control>
-          <Line.Stats>
-            <Stat.Diamond label="Initiative" value={initiativeTotal} format="bonus" vantage={initVantage} />
-            {speeds.map((s, i) => (
-              <Stat.Diamond key={i} label={s.type ?? "Walk"} value={s.value ?? 30} format="unit" size="lg" />
-            ))}
-            <Stat.Diamond label="Proficiency" value={expressions.ProficiencyBonus()} format="bonus" />
-          </Line.Stats>
-        </HGroup.Row>
-
-        <p aria-details="Health Management Row" style={{ alignItems: "stretch" }}>
-          <dl aria-label="Health Controller" style={{ flex: 3 }}>
-            <dt>HIT POINTS</dt>
-            <dd aria-label="Progress Health">
-              <Progress.Health value={self.current_hp ?? 0} max={self.max_hp ?? 0} secondary={self.temp_hp ?? 0} />
-            </dd>
-            <dt>Hit Dice</dt>
-            <dd aria-label="Dice Tray">
-              <DiceTray dice={hitDice} onSpend={handleSpendDie} />
-            </dd>
-          </dl>
-
-          <dl aria-label="Character Status" style={{ flex: 2 }}>
-            <dt>Exhaustion</dt>
-            <dd aria-label="Progress Numbered">
-              <Progress.Numbered value={exhaustion} max={6} />
-            </dd>
-            <dt>Conditions</dt>
-            <dd aria-label="Conditions List">
-              {conditions.length === 0 ? (
-                <span aria-details="No Conditions">—</span>
-              ) : (
-                conditions.map((raw, i) => {
-                  const { label, linkpath } = parseCondition(raw);
-                  return <ConditionPill key={i} value={raw} label={label} linkpath={linkpath} />;
-                })
+      <Section.Row label="Health Management" distribution="1 2">
+        <SheetLegend />
+        <PortraitThumb
+          src={self.portrait}
+          framed={(self as { framed?: unknown }).framed}
+          frameName={(self as { "frame-name"?: unknown })["frame-name"]}
+        />
+        <Article.Column label="Content">
+          <HGroup.Row label="Defense Stats">
+            <Line.Control>
+              <DeathSaveDots
+                side="failures"
+                count={3}
+                filled={deathSaves.failures}
+                onChange={(v) => self.setDeath_saves({ ...deathSaves, failures: v })}
+              />
+              <Badge.Shield value={equippedAc.armor + equippedAc.bonus} label="Armor" />
+              {equippedAc.shieldBonus > 0 && (
+                <Badge.Shield value={equippedAc.armor + equippedAc.bonus + equippedAc.shieldBonus} label="Shield" />
               )}
-            </dd>
-          </dl>
-        </p>
-      </Article.Column>
-    </Section.Row>
+              <DeathSaveDots
+                side="successes"
+                count={3}
+                filled={deathSaves.successes}
+                onChange={(v) => self.setDeath_saves({ ...deathSaves, successes: v })}
+              />
+            </Line.Control>
+            <Line.Stats>
+              <Stat.Diamond label="Initiative" value={initiativeTotal} format="bonus" vantage={initVantage} />
+              {speeds.map((s, i) => (
+                <Stat.Diamond key={i} label={s.type ?? "Walk"} value={s.value ?? 30} format="unit" size="lg" />
+              ))}
+              <Stat.Diamond label="Proficiency" value={expressions.ProficiencyBonus()} format="bonus" />
+            </Line.Stats>
+          </HGroup.Row>
+
+          <p aria-details="Health Management Row" style={{ alignItems: "stretch" }}>
+            <dl aria-label="Health Controller" style={{ flex: 3 }}>
+              <dt>HIT POINTS</dt>
+              <dd aria-label="Progress Health">
+                <Progress.Health value={self.current_hp ?? 0} max={self.max_hp ?? 0} secondary={self.temp_hp ?? 0} />
+              </dd>
+              <dt>Hit Dice</dt>
+              <dd aria-label="Dice Tray">
+                <DiceTray dice={hitDice} onSpend={handleSpendDie} />
+              </dd>
+            </dl>
+
+            <dl aria-label="Character Status" style={{ flex: 2 }}>
+              <dt>Exhaustion</dt>
+              <dd aria-label="Progress Numbered">
+                <Progress.Numbered value={exhaustion} max={6} />
+              </dd>
+              <dt>Conditions</dt>
+              <dd aria-label="Conditions List">
+                {conditions.length === 0 ? (
+                  <span aria-details="No Conditions">—</span>
+                ) : (
+                  conditions.map((raw, i) => {
+                    const { label, linkpath } = parseCondition(raw);
+                    return <ConditionPill key={i} value={raw} label={label} linkpath={linkpath} />;
+                  })
+                )}
+              </dd>
+            </dl>
+          </p>
+        </Article.Column>
+      </Section.Row>
+    </>
   );
 };
 

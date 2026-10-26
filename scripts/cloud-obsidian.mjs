@@ -228,9 +228,20 @@ async function start() {
 
 async function screenshot(note, out, scrollTo) {
   if (!note || !out) throw new Error("usage: screenshot <note path in vault> <out.png> [text to scroll to]");
-  const { browser, page } = await connect();
+  let { browser, page } = await connect();
   const [vw, vh] = (process.env.VIEWPORT ?? "1600x1400").split("x").map(Number);
   await page.setViewportSize({ width: vw, height: vh });
+  // MOBILE=1 switches Obsidian to its phone UI (`is-mobile`), as on a device.
+  // The switch reloads the app, so reconnect afterwards; it sticks across runs.
+  const wantMobile = process.env.MOBILE === "1";
+  if (wantMobile !== (await page.evaluate(() => globalThis.document.body.classList.contains("is-mobile")))) {
+    await page.evaluate((on) => setTimeout(() => globalThis.app.emulateMobile(on), 0), wantMobile);
+    await page.waitForTimeout(1000);
+    await browser.close();
+    ({ browser, page } = await connect());
+    await page.waitForFunction(() => globalThis.app?.plugins?.plugins?.["dnd-ui-toolkit"], null, { timeout: 30000 });
+    await page.setViewportSize({ width: vw, height: vh });
+  }
   // The file explorer takes a fifth of the width; screenshots are of the note.
   // KEEP_SIDEBAR=1 leaves it open.
   if (process.env.KEEP_SIDEBAR !== "1") await page.evaluate(() => globalThis.app.workspace.leftSplit?.collapse());

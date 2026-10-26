@@ -1,0 +1,162 @@
+/* ── Roll Popover ─────────────────────────────────────────────────────────── */
+/* A bottom sheet on a phone, a centred card elsewhere; opened by a skill row or an attack's Roll button. */
+
+dialog[aria-details="Roll Popover"] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+dialog[aria-details="Roll Popover"] > article {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  background: var(--rpg-modal-bg, #1e1c18);
+  color: var(--rpg-hex-value, #e3dcce);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+
+dialog[aria-details="Roll Popover"] > article > i {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rpg-modal-border, #5a5450);
+}
+
+dialog[aria-details="Roll Popover"] > article > header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+dialog[aria-details="Roll Popover"] h4 {
+  margin: 0;
+  flex: 1;
+  font-size: 1.1rem;
+}
+
+dialog[aria-details="Roll Popover"] output[aria-details="Roll Modifier"] {
+  font-size: 0.85rem;
+  color: var(--rpg-dice-label-color, #c8a84b);
+}
+
+dialog[aria-details="Roll Popover"] header > button {
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -10px -8px 0;
+  border: none;
+  background: transparent;
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 1rem;
+}
+
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Result"] {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px 0;
+}
+
+dialog[aria-details="Roll Popover"] output[aria-details="Roll Total"] {
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+dialog[aria-details="Roll Popover"] section[data-outcome="crit"] output {
+  color: var(--rpg-death-success-color, #27ae60);
+}
+
+dialog[aria-details="Roll Popover"] section[data-outcome="fumble"] output {
+  color: var(--rpg-death-failure-color, #c0392b);
+}
+
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Result"] small {
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 0.85rem;
+}
+
+dialog[aria-details="Roll Popover"] small [data-kept="false"] {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+dialog[aria-details="Roll Popover"] small [data-kept="true"] {
+  font-weight: 700;
+  color: var(--rpg-hex-value, #e3dcce);
+}
+
+dialog[aria-details="Roll Popover"] small span + span::before {
+  content: " · ";
+  text-decoration: none;
+}
+
+dialog[aria-details="Roll Popover"] [aria-details="Roll Vantage"] {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+dialog[aria-details="Roll Popover"] button:not(header > button) {
+  min-height: 44px;
+  border: 1.5px solid var(--rpg-modal-border, #5a5450);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+dialog[aria-details="Roll Popover"] button[aria-pressed="true"] {
+  border-color: var(--rpg-dice-label-color, #c8a84b);
+  color: var(--rpg-dice-label-color, #c8a84b);
+}
+
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Damage"] {
+  display: grid;
+  gap: 8px;
+}
+
+dialog[aria-details="Roll Popover"] button[data-primary="true"] {
+  background: #5a37b8;
+  border-color: #5a37b8;
+  color: #fff;
+}
+
+dialog[aria-details="Roll Popover"] button[data-primary="true"] span {
+  font-weight: 400;
+  opacity: 0.85;
+  margin-inline-start: 0.4em;
+}
+
+@media (min-width: 601px) {
+  dialog[aria-details="Roll Popover"] {
+    align-items: center;
+  }
+
+  dialog[aria-details="Roll Popover"] > article {
+    border-radius: 12px;
+  }
+
+  dialog[aria-details="Roll Popover"] > article > i {
+    display: none;
+  }
+}

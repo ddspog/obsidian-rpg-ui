@@ -143,6 +143,9 @@ export class DndSettingsTab extends PluginSettingTab {
         this.display();
       });
     }
+    // On a phone the tabs scroll; keep the open one in view.
+    const active = tabs.querySelector<HTMLElement>(".is-active");
+    if (active) window.requestAnimationFrame(() => active.scrollIntoView({ inline: "center", block: "nearest" }));
 
     const actions = bar.createDiv({ cls: "rpg-settings-bar-actions" });
     new ExtraButtonComponent(actions)

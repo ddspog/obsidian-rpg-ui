@@ -41,6 +41,7 @@ section[aria-details="Character Skills"] > menu {
 /* ── Skill row ──────────────────────────────────────────────────────────── */
 
 section[aria-details="Character Skills"] > menu > li {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -84,6 +85,43 @@ section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name
   display: inline;
   margin: 0;
   padding: 0;
+}
+
+/* The row is the roll button: a transparent button laid over it. */
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:hover,
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:active {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+/* ⓘ: opens the skill's note, above the roll button so a tap on it doesn't roll. */
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: center;
+}
+
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md,
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md > p {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8em;
 }
 
 /* Modifier value */

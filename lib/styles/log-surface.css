@@ -1,0 +1,136 @@
+/* The session log's tools: the sidebar, the Actions drawer and the bookkeeping share the character sheet's
+ * warm parchment and violet link ink. The prose itself stays on Obsidian's own background, so it follows
+ * whichever theme the reader has. Also here: what keyboard focus and reduced motion look like in the log. */
+
+.lonelog-sidebar,
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping,
+.lonelog-roster-sticky {
+  /* Captions that used `--text-faint` (about 2.3:1) read at AA on parchment. */
+  --text-faint: light-dark(#6d6048, #a8a08a);
+  --text-muted: light-dark(#4a3f2c, #cfc7b2);
+  color: light-dark(#231a0c, #e3dcce);
+}
+
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+
+.lonelog-sidebar {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+
+.lonelog-prose-layout:not(.is-stacked) .lonelog-sidebar {
+  padding: 0.75rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+}
+
+.lonelog-sidebar-header,
+.lonelog-bookkeeping-head h3 {
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+.lonelog-sidebar a.internal-link,
+.lonelog-bottom-drawer a.internal-link,
+.lonelog-bookkeeping a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-underline-offset: 3px;
+}
+
+/* Elevation is the border; the drawer needs no lift shadow. */
+.lonelog-bottom-drawer {
+  box-shadow: none;
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+}
+
+/* ── Bookkeeping: review before writing ── */
+
+.lonelog-bookkeeping-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0.9rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: light-dark(#f6f0e2, #2e2923);
+}
+
+.lonelog-bookkeeping-review h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.lonelog-bookkeeping-review dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.lonelog-bookkeeping-review dt {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+.lonelog-bookkeeping-review dd {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+
+.lonelog-bookkeeping-review-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lonelog-bookkeeping-review-actions button {
+  min-height: 36px;
+  padding: 0 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 600;
+}
+
+.lonelog-bookkeeping-review-actions button.is-primary {
+  border-color: light-dark(#4b2f9a, #cdbfff);
+  background: light-dark(#4b2f9a, #cdbfff);
+  color: light-dark(#fff, #1a1030);
+}
+
+/* ── Keyboard focus: one visible ring for the log's controls ── */
+
+.lonelog-bottom-drawer :is(button, [role="button"], label.actions-side, a):focus-visible,
+.lonelog-bookkeeping :is(button, a):focus-visible,
+.lonelog-sidebar :is(button, a):focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: 2px;
+}
+
+/* ── Reduced motion: state changes still happen, they just don't animate or loop ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .session-log-container *,
+  .session-log-container *::before,
+  .session-log-container *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* The pulse on an opportunity is a cue, not a flourish: keep it as a steady ring. */
+  button.hud-opportunity {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+  }
+}

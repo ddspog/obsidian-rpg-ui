@@ -33,8 +33,18 @@
 .lonelog-bottom-drawer.is-collapsed {
   display: flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: 2.25rem;
   padding-block: 0.3rem;
+}
+
+.drawer-collapsed-bar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-right: 2.25rem;
+  cursor: pointer;
 }
 
 .drawer-collapsed-label {
@@ -43,6 +53,29 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+
+/* Who the drawer is set to act as, so a folded drawer still says something. */
+.drawer-collapsed-actor {
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  color: light-dark(#4b2f9a, #cdbfff);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.drawer-collapsed-hint {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* The phone's bar (Actions, Log, Latest, and Save/Undo when there are edits): hidden until mobile.css wants it. */
+.lonelog-bar-wrap {
+  display: none;
 }
 
 /* The minimise button — top right corner */

@@ -147,6 +147,7 @@ import {
   type MultiattackOf,
 } from "lib/domains/session-log/round-economy";
 import type { SessionConsumableState } from "lib/domains/session-log/consumable-state";
+import { scrollBehavior } from "lib/utils/scroll-behavior";
 
 export class SessionLogView extends BaseView {
   public codeblock = "log";
@@ -3367,7 +3368,7 @@ function SessionLogRoot({
     // The nearest narrated entry at or before it (a purely mechanical one has
     // no prose of its own to scroll to).
     const ids = [...proseAnchors.current.keys()].filter((k) => k <= id).sort((a, b) => b - a);
-    proseAnchors.current.get(ids[0])?.scrollIntoView({ block: "center", behavior: "smooth" });
+    proseAnchors.current.get(ids[0])?.scrollIntoView({ block: "center", behavior: scrollBehavior() });
   }, []);
 
   // Going to an entry's passage (or a passage's entry): brought to the middle
@@ -3383,7 +3384,7 @@ function SessionLogRoot({
     const target = turnMap ?? el;
     if (!target) return;
     const block: ScrollLogicalPosition = turnMap ? "start" : "center";
-    target.scrollIntoView({ block, behavior: "smooth" });
+    target.scrollIntoView({ block, behavior: scrollBehavior() });
     // A long smooth scroll is cut short when the note draws its sections on the
     // way (the target moves): once it should have arrived, land it exactly.
     const settle = window.setTimeout(() => {
@@ -3485,8 +3486,8 @@ function SessionLogRoot({
   /** Bring the end of the log into view: its last passage, and last entry in the Log. */
   const goToLastBlock = () => {
     const lastOf = (anchors: Map<number, HTMLElement>) => [...anchors.entries()].sort((a, b) => a[0] - b[0]).pop()?.[1];
-    lastOf(proseAnchors.current)?.scrollIntoView({ block: "center", behavior: "smooth" });
-    lastOf(sidebarAnchors.current)?.scrollIntoView({ block: "end", behavior: "smooth" });
+    lastOf(proseAnchors.current)?.scrollIntoView({ block: "center", behavior: scrollBehavior() });
+    lastOf(sidebarAnchors.current)?.scrollIntoView({ block: "end", behavior: scrollBehavior() });
   };
   const handleSidebarClick = (id: number) => {
     clickTick.current += 1;
@@ -3601,10 +3602,22 @@ function SessionLogRoot({
   };
 
   const hasActions = pcStacks.size > 0 || foeStacks.size > 0 || gmStacks.length > 0;
+  // The bar's Log: opens or closes it, and on a phone, where it stacks under the prose, brings it into view.
+  const toggleLogFromBar = () => {
+    const opening = !sidebarOpen;
+    setSidebarOpen(opening);
+    if (opening && window.matchMedia?.("(max-width: 600px)").matches) {
+      window.setTimeout(() => {
+        layoutRef.current
+          ?.querySelector(".lonelog-sidebar")
+          ?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
+      }, 60);
+    }
+  };
   const selectedId = selection?.id ?? null;
 
   return (
-    <div className="session-log-container">
+    <div className={`session-log-container${hasActions ? " has-bar" : ""}`}>
       {/* The prose and the drawer under it: the drawer follows the text column, and stays in view along it. */}
       <div
         className={`lonelog-dock-zone ${sidebarOpen ? "with-sidebar" : ""} ${stacked ? "is-stacked" : ""}`}
@@ -3710,6 +3723,15 @@ function SessionLogRoot({
 
         {hasActions ? (
           <BottomDrawer
+            bar={{
+              hasLog: sidebarItems.length > 0,
+              logOpen: sidebarOpen,
+              onToggleLog: toggleLogFromBar,
+              onLatest: goToLastBlock,
+              dirty: isDirty,
+              onSave: () => void handleSave(),
+              onUndo: handleUndo,
+            }}
             actionsPanel={
               <SessionActionsPanel
                 pcStacks={pcStacksNow}

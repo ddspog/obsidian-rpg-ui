@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
 import {
@@ -114,6 +115,15 @@ export function PlaceholderPopover({
   onResolve,
   onCancel,
 }: PlaceholderPopoverProps) {
+  const sheet = useIsPhone();
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheet, onCancel]);
   // The riders this attack can carry (Mystic Mark): on when picked — or, on a
   // target that already bears a rider's mark, on by itself, riding free.
   const [riderPicks, setRiderPicks] = useState<Record<string, boolean>>({});
@@ -273,6 +283,11 @@ export function PlaceholderPopover({
     });
   };
 
+  // What the disabled button is waiting for, so it never just looks broken.
+  const missing = userInputs
+    .filter((p) => !p.optional && !p.options?.length && !(values[p.kind] ?? "").trim())
+    .map((p) => fieldLabel(p.kind));
+
   const allFilled =
     requiredFilled(userInputs, values) &&
     route !== null &&
@@ -405,11 +420,21 @@ export function PlaceholderPopover({
     onResultChange: () => {},
   };
 
-  return (
-    <div className="lonelog-placeholder-popover" role="dialog" aria-label={`Play ${card.name}`}>
+  const popover = (
+    <div
+      className={`lonelog-placeholder-popover${sheet ? " is-sheet" : ""}`}
+      role="dialog"
+      aria-modal={sheet || undefined}
+      aria-label={`Play ${card.name}`}
+    >
       <form onSubmit={handleSubmit} className="placeholder-form">
         <header className="placeholder-head">
           <strong className="placeholder-title">{card.name}</strong>
+          {sheet && (
+            <button type="button" className="placeholder-close" aria-label="Close" onClick={onCancel}>
+              ×
+            </button>
+          )}
           {summary && <p className="placeholder-summary">{summary}</p>}
           {/* What other features change on this card — Rage's +2, Archery's +2 to hit. */}
           {card.modifiedBy && card.modifiedBy.length > 0 && (
@@ -682,14 +707,13 @@ export function PlaceholderPopover({
         )}
         {preview.text.trim() && (
           <section className="placeholder-preview" aria-label="Preview">
-            <span className="placeholder-preview-label">
-              Adds to the log{hasDice ? " — click a die to roll it, or type what you rolled" : ""}
-            </span>
+            <span className="placeholder-preview-label">Adds to the log</span>
             <div className="lonelog-entries placeholder-preview-entries">
               {preview.items.map((item) => (
                 <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />
               ))}
             </div>
+            {hasDice && <p className="placeholder-preview-hint">Click a die to roll it, or type what you rolled.</p>}
             <details className="placeholder-preview-raw">
               <summary>Lonelog</summary>
               <pre>{preview.text}</pre>
@@ -697,6 +721,11 @@ export function PlaceholderPopover({
           </section>
         )}
         <div className="placeholder-buttons">
+          {!allFilled && missing.length > 0 && (
+            <p className="placeholder-needs" role="status">
+              Still needed: {missing.join(", ")}
+            </p>
+          )}
           <button
             type="submit"
             disabled={!allFilled}
@@ -712,10 +741,30 @@ export function PlaceholderPopover({
       </form>
     </div>
   );
+  // On a phone the card is a sheet over the story, outside the drawer's own scrolling and clipping.
+  return sheet ? createPortal(popover, document.body) : popover;
+}
+
+/** Whether the window is phone-width (the layout the sheet is for). */
+function useIsPhone(): boolean {
+  const query = "(max-width: 600px)";
+  const [phone, setPhone] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setPhone(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return phone;
 }
 
 /** Fields whose name doesn't read well as written. */
 const FIELD_LABELS: Record<string, string> = { target_ac: "Target AC", kind: "Kind of name" };
+
+function fieldLabel(kind: string): string {
+  const label = FIELD_LABELS[kind] ?? kind.replace(/_/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 interface PlaceholderFieldProps {
   placeholder: ParsedPlaceholder;
@@ -753,7 +802,7 @@ function PlaceholderField({ placeholder, value, hint, entities, describe, onChan
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={hint ?? `Enter ${placeholder.kind}...`}
+          placeholder={hint ?? `Enter ${fieldLabel(placeholder.kind)}…`}
           className="placeholder-input"
         />
       )}

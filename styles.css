@@ -822,7 +822,7 @@
 }
 .initiative-group-hp {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 0.3rem;
   width: 100%;
 }
@@ -1406,8 +1406,8 @@
   border: none;
   padding: 0;
   margin: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1434,8 +1434,8 @@
   border: none;
   padding: 0 2px;
   margin: 0 2px 0 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1445,7 +1445,7 @@
   font-size: 0.85rem;
   font-weight: 700;
   line-height: 1;
-  opacity: 0;
+  opacity: 0.4;
   transition:
     opacity 80ms ease,
     background-color 80ms ease,
@@ -2337,6 +2337,9 @@ p.rpg-item-magic-card__subtitle {
   font-weight: 400;
   line-height: 1.3;
 }
+.markdown-rendered .lonelog-prose-doc h4.lonelog-prose-scene-head {
+  text-indent: 0;
+}
 .lonelog-prose-scene:first-child .lonelog-prose-scene-head {
   margin-top: 0;
 }
@@ -2372,69 +2375,101 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-prose-narration p {
   margin: 0 0 0.8rem;
 }
-.lonelog-dot {
+.lonelog-conclusion,
+.lonelog-prose-scene-head {
   position: relative;
+}
+.lonelog-prose-doc button.lonelog-dot {
+  appearance: none;
+  position: absolute;
+  left: -1.4rem;
   display: inline-block;
-  width: 0.42em;
-  height: 0.42em;
+  width: 0.6rem;
+  height: 0.6rem;
+  min-height: 0;
   padding: 0;
-  margin-left: 0.18em;
+  margin: 0.55em 0 0;
   border: none;
   border-radius: 50%;
   background: var(--interactive-accent);
   cursor: pointer;
-  vertical-align: super;
   box-shadow: none;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.lonelog-dot::after {
+.lonelog-prose-doc button.lonelog-dot::before {
   content: "";
   position: absolute;
-  inset: -9px;
+  top: 100%;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  height: 1.1em;
+  background: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  pointer-events: none;
 }
-.lonelog-dot:hover {
-  transform: scale(1.3);
+.lonelog-prose-doc button.lonelog-dot::after {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
 }
-.lonelog-dot:focus-visible {
+.lonelog-prose-doc button.lonelog-dot:hover {
+  transform: scale(1.25);
+}
+.lonelog-prose-doc button.lonelog-dot:focus-visible {
   outline: none;
-  transform: scale(1.3);
+  transform: scale(1.25);
   box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
 }
-.lonelog-dot.is-selected {
+.lonelog-prose-doc button.lonelog-dot.is-selected {
   box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+.lonelog-prose-beats button.lonelog-dot {
+  position: relative;
+  left: auto;
+  margin: 0 0 0 0.3em;
+  vertical-align: super;
+  width: 0.5em;
+  height: 0.5em;
+}
+.lonelog-prose-beats button.lonelog-dot::before {
+  display: none;
 }
 .lonelog-balloon {
-  --balloon-width: 56%;
-  width: var(--balloon-width);
+  width: fit-content;
+  max-width: min(84%, 34rem);
   box-sizing: border-box;
   margin-block: 0.45rem;
-  margin-inline-start: calc((100% - var(--balloon-width)) * var(--lane, 0.5));
+  margin-inline: 0 auto;
   padding: 0.5rem 0.8rem;
   border-radius: 0.9rem;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
+  line-height: 1.45;
+}
+.lonelog-balloon-npc {
+  margin-inline: auto 0;
 }
 .lonelog-balloon-pc {
+  border-end-start-radius: 0.2rem;
   background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
   border-color: light-dark(rgba(109, 124, 186, 0.32), rgba(160, 160, 208, 0.34));
 }
 .lonelog-balloon-npc {
+  border-end-end-radius: 0.2rem;
   background: light-dark(rgba(179, 157, 219, 0.16), rgba(179, 157, 219, 0.2));
   border-color: light-dark(rgba(179, 157, 219, 0.36), rgba(179, 157, 219, 0.42));
 }
 .lonelog-balloon-speaker {
   display: block;
   font-weight: 600;
-  font-size: 0.78em;
+  font-size: 0.82em;
   letter-spacing: 0.02em;
   margin-bottom: 0.15rem;
-  opacity: 0.85;
 }
 .lonelog-balloon-pc .lonelog-balloon-speaker {
-  color: light-dark(#4d5aa0, #a0a0d0);
+  color: light-dark(#3b4687, #a0a0d0);
 }
 .lonelog-balloon-npc .lonelog-balloon-speaker {
-  color: light-dark(#6a4ea8, #b39ddb);
+  color: light-dark(#5b3f96, #b39ddb);
 }
 .lonelog-balloon-text p {
   display: inline;
@@ -4686,8 +4721,15 @@ fieldset.placeholder-strikes > legend {
 }
 .placeholder-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.25rem;
+}
+.placeholder-needs {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
 }
 .placeholder-submit {
   flex: 1;
@@ -5057,6 +5099,95 @@ button.placeholder-party-flag {
 .placeholder-modified b {
   font-weight: 600;
   color: var(--text-normal);
+}
+.placeholder-head {
+  gap: 0.2rem;
+  padding-bottom: 0.6rem;
+}
+.placeholder-title {
+  font-family: var(--font-heading, var(--font-interface));
+  font-size: var(--font-ui-large);
+  font-weight: 650;
+  line-height: 1.25;
+}
+.placeholder-summary {
+  font-size: var(--font-ui-small);
+}
+.placeholder-field {
+  gap: 0.25rem;
+}
+.placeholder-label {
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.placeholder-input,
+.placeholder-select {
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+.placeholder-input:focus,
+.placeholder-select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+.placeholder-rider {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+.placeholder-rider-name {
+  font-size: var(--font-ui-small);
+}
+.placeholder-preview-label {
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.placeholder-preview-entries {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+  font-size: 1em;
+}
+.placeholder-preview-hint {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.placeholder-submit {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 650;
+}
+.placeholder-cancel {
+  padding: 0.55rem 0.9rem;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+}
+.placeholder-cancel:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.lonelog-placeholder-popover button.placeholder-submit {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.lonelog-placeholder-popover button.placeholder-submit:hover:not(:disabled) {
+  background: var(--interactive-accent-hover);
+}
+.lonelog-placeholder-popover button.placeholder-cancel {
+  background: transparent;
+  box-shadow: none;
+}
+.lonelog-placeholder-popover .placeholder-rider {
+  font-size: var(--font-ui-small);
 }
 
 /* lib/styles/components/loadout-cards.css */
@@ -6711,15 +6842,43 @@ button.hud-rest-btn > span {
   order: 0;
 }
 @container (max-width: 34rem) {
-  .lonelog-actions-panel:not(.is-in-margin) .hud-main {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.4rem;
   }
-  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
-    grid-column: 2;
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head > * {
+    width: auto;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main {
+    grid-template-columns: 5.4rem minmax(0, 1fr);
+    column-gap: 0.5rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+    grid-column: 1;
+    grid-row: 1;
   }
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
     grid-column: 1 / -1;
     grid-row: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    justify-self: stretch;
+    width: auto;
   }
 }
 
@@ -7061,8 +7220,17 @@ figure.rpg-card-frame.is-mini .rpg-card-frame-art {
 .lonelog-bottom-drawer.is-collapsed {
   display: flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: 2.25rem;
   padding-block: 0.3rem;
+}
+.drawer-collapsed-bar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-right: 2.25rem;
+  cursor: pointer;
 }
 .drawer-collapsed-label {
   font-size: var(--font-ui-smaller);
@@ -7070,6 +7238,24 @@ figure.rpg-card-frame.is-mini .rpg-card-frame-art {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+.drawer-collapsed-actor {
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  color: light-dark(#4b2f9a, #cdbfff);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.drawer-collapsed-hint {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.lonelog-bar-wrap {
+  display: none;
 }
 .drawer-toggle-btn {
   position: absolute;
@@ -7958,7 +8144,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .system-skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -8280,7 +8466,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .attributes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 16px;
 }
 .attribute-card {
@@ -8352,7 +8538,7 @@ header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-deta
 }
 .rpg-inline-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin: 16px 0;
 }
@@ -13014,6 +13200,8 @@ section[aria-details="Character Senses"] > dl > dd > a.internal-link {
   }
   section[aria-details="Character Senses"] > dl {
     grid-column: 1 / -1;
+    grid-row: auto;
+    padding-bottom: 1.4em;
     border-left: none;
     border-top: 2px solid light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.2));
   }
@@ -13051,6 +13239,7 @@ section[aria-details="Character Skills"] > menu {
   column-gap: 24px;
 }
 section[aria-details="Character Skills"] > menu > li {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -13081,6 +13270,37 @@ section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Name
   display: inline;
   margin: 0;
   padding: 0;
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:hover,
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:active {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: center;
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md,
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md > p {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8em;
 }
 section[aria-details="Character Skills"] > menu > li > data {
   display: flex;
@@ -13153,7 +13373,7 @@ div:has(> section[aria-details="Character Senses"]) + div > section[aria-details
 section[aria-details="Character Rolls"] {
   position: relative;
   padding: 0;
-  margin-inline: 16px;
+  margin-inline: 0;
   margin-block: 0;
   border-left: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   border-right: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
@@ -13220,7 +13440,7 @@ section[aria-details="Character Rolls"] table {
   border-collapse: collapse;
   border-spacing: 0;
   border: none !important;
-  font-size: 0.72em;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
 section[aria-details="Character Rolls"] thead th:not(:last-child),
@@ -13237,7 +13457,7 @@ section[aria-details="Character Rolls"] thead.rpg-rolls__head-band {
   background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.22));
 }
 section[aria-details="Character Rolls"] thead th {
-  font-size: 0.9em !important;
+  font-size: var(--rpg-fs-label) !important;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13256,7 +13476,7 @@ section[aria-details="Character Rolls"] tbody td {
   height: 1.9em;
   box-sizing: border-box;
   padding: 3px 6px;
-  font-size: 0.97em !important;
+  font-size: var(--rpg-fs-data) !important;
   color: light-dark(#1a1208, #e3dcce);
   vertical-align: middle;
   white-space: nowrap;
@@ -13386,7 +13606,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__hit,
 section[aria-details="Character Rolls"] .rpg-rolls__dc {
   font-weight: 700;
   color: light-dark(#1a1208, #f0e8d0);
-  font-size: 0.75em !important;
+  font-size: var(--rpg-fs-data) !important;
 }
 section[aria-details="Character Rolls"] .rpg-rolls__range {
   color: light-dark(#5a5040, #a09880);
@@ -13466,6 +13686,27 @@ section[aria-details="Character Rolls"] .rpg-rolls__empty {
   color: var(--text-muted);
   padding: 0.5rem 6px;
   margin: 0;
+}
+section[aria-details="Character Rolls"] .rpg-rolls__head-roll {
+  width: 1%;
+}
+section[aria-details="Character Rolls"] td.rpg-rolls__roll {
+  text-align: right;
+  white-space: nowrap;
+}
+section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
+  padding: 3px 12px;
+  border: 1px solid #5a37b8;
+  border-radius: 4px;
+  background: #5a37b8;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+section[aria-details="Character Rolls"] td.rpg-rolls__hit {
+  color: light-dark(#2c6b34, #8fd19b);
+  font-weight: 700;
 }
 
 /* lib/styles/components/proficiencies-row.css */
@@ -14934,7 +15175,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   line-height: 1;
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
-  opacity: 0;
+  opacity: 0.45;
   transition: opacity 120ms ease;
 }
 .rpg-feature-bucket-entry-collapse:hover,
@@ -15881,6 +16122,76 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
+.rpg-spell-entry:not([data-open]) {
+  padding-block: 10px;
+}
+.rpg-spell-entry:not([data-open]):first-child {
+  padding-top: 2px;
+}
+.rpg-spell-entry-casting,
+.rpg-spell-entry-style,
+.rpg-spell-entry-group {
+  white-space: nowrap;
+}
+button.rpg-spell-entry-toggle {
+  display: inline-block;
+  vertical-align: baseline;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 0.15rem 0 -0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  top: 0.3rem;
+}
+button.rpg-spell-entry-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-1px) rotate(-45deg);
+  transition: transform 120ms ease;
+}
+button.rpg-spell-entry-toggle[aria-expanded=true]::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+button.rpg-spell-entry-toggle:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.rpg-spell-entry-toggle:focus-visible,
+button.rpg-caster-text-toggle:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+button.rpg-caster-text-toggle {
+  display: block;
+  margin: 4px auto 0;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 99px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+}
+button.rpg-caster-text-toggle[aria-pressed=true] {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
 
 /* lib/styles/components/spell-card.css */
 .rpg-spell-card {
@@ -16372,6 +16683,421 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
   color: #1a1816;
 }
 
+/* lib/styles/components/roll-popover.css */
+dialog[aria-details="Roll Popover"] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+dialog[aria-details="Roll Popover"] > article {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  background: var(--rpg-modal-bg, #1e1c18);
+  color: var(--rpg-hex-value, #e3dcce);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+dialog[aria-details="Roll Popover"] > article > i {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rpg-modal-border, #5a5450);
+}
+dialog[aria-details="Roll Popover"] > article > header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+dialog[aria-details="Roll Popover"] h4 {
+  margin: 0;
+  flex: 1;
+  font-size: 1.1rem;
+}
+dialog[aria-details="Roll Popover"] output[aria-details="Roll Modifier"] {
+  font-size: 0.85rem;
+  color: var(--rpg-dice-label-color, #c8a84b);
+}
+dialog[aria-details="Roll Popover"] header > button {
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -10px -8px 0;
+  border: none;
+  background: transparent;
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 1rem;
+}
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Result"] {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px 0;
+}
+dialog[aria-details="Roll Popover"] output[aria-details="Roll Total"] {
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+dialog[aria-details="Roll Popover"] section[data-outcome=crit] output {
+  color: var(--rpg-death-success-color, #27ae60);
+}
+dialog[aria-details="Roll Popover"] section[data-outcome=fumble] output {
+  color: var(--rpg-death-failure-color, #c0392b);
+}
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Result"] small {
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 0.85rem;
+}
+dialog[aria-details="Roll Popover"] small [data-kept=false] {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+dialog[aria-details="Roll Popover"] small [data-kept=true] {
+  font-weight: 700;
+  color: var(--rpg-hex-value, #e3dcce);
+}
+dialog[aria-details="Roll Popover"] small span + span::before {
+  content: " \b7  ";
+  text-decoration: none;
+}
+dialog[aria-details="Roll Popover"] [aria-details="Roll Vantage"] {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+dialog[aria-details="Roll Popover"] button:not(header > button) {
+  min-height: 44px;
+  border: 1.5px solid var(--rpg-modal-border, #5a5450);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+dialog[aria-details="Roll Popover"] button[aria-pressed=true] {
+  border-color: var(--rpg-dice-label-color, #c8a84b);
+  color: var(--rpg-dice-label-color, #c8a84b);
+}
+dialog[aria-details="Roll Popover"] section[aria-details="Roll Damage"] {
+  display: grid;
+  gap: 8px;
+}
+dialog[aria-details="Roll Popover"] button[data-primary=true] {
+  background: #5a37b8;
+  border-color: #5a37b8;
+  color: #fff;
+}
+dialog[aria-details="Roll Popover"] button[data-primary=true] span {
+  font-weight: 400;
+  opacity: 0.85;
+  margin-inline-start: 0.4em;
+}
+@media (min-width: 601px) {
+  dialog[aria-details="Roll Popover"] {
+    align-items: center;
+  }
+  dialog[aria-details="Roll Popover"] > article {
+    border-radius: 12px;
+  }
+  dialog[aria-details="Roll Popover"] > article > i {
+    display: none;
+  }
+}
+
+/* lib/styles/components/vitals-strip.css */
+aside[aria-details="Vitals Strip"] {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--rpg-section-bg, #1a1816);
+  color: var(--rpg-hex-value, #e3dcce);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border-radius: 0 0 6px 6px;
+}
+aside[aria-details="Vitals Strip"] > div {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+aside[aria-details="Vitals Strip"] > div > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--rpg-hp-bar-color, #4a8c3f);
+}
+aside[aria-details="Vitals Strip"] > div[data-state=mid] > i {
+  background: #b8860b;
+}
+aside[aria-details="Vitals Strip"] > div[data-state=low] > i {
+  background: var(--rpg-death-failure-color, #c0392b);
+}
+aside[aria-details="Vitals Strip"] > div > b,
+aside[aria-details="Vitals Strip"] > div > em {
+  position: relative;
+  font-style: normal;
+  font-size: 0.9rem;
+}
+aside[aria-details="Vitals Strip"] > div > em {
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--rpg-temp-hp-color, #3a7abd);
+  font-size: 0.8rem;
+}
+aside[aria-details="Vitals Strip"] > span {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid var(--rpg-diamond-border, #5a5450);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+aside[aria-details="Vitals Strip"] > span[data-active=true] {
+  border-color: var(--color-yellow, #ffd400);
+  color: var(--color-yellow, #ffd400);
+}
+
+/* lib/styles/components/sheet-legend.css */
+section[aria-details*=" Row"] {
+  position: relative;
+}
+button[aria-details="Legend Button"] {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rpg-diamond-border, #5a5450);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rpg-hex-label, #b0a890);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+button[aria-details="Legend Button"]:hover,
+button[aria-details="Legend Button"]:focus-visible {
+  color: var(--color-yellow, #ffd400);
+  border-color: var(--color-yellow, #ffd400);
+}
+dialog[aria-details="Sheet Legend"] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+dialog[aria-details="Sheet Legend"] > article {
+  width: 100%;
+  max-width: 30rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  background: var(--rpg-modal-bg, #1e1c18);
+  color: var(--rpg-hex-value, #e3dcce);
+}
+dialog[aria-details="Sheet Legend"] header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+dialog[aria-details="Sheet Legend"] h4 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+}
+dialog[aria-details="Sheet Legend"] header > button {
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: -10px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rpg-modal-close-color, #a09880);
+}
+dialog[aria-details="Sheet Legend"] dl {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+dialog[aria-details="Sheet Legend"] dl > div {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+dialog[aria-details="Sheet Legend"] dd {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+dialog[aria-details="Sheet Legend"] dd span {
+  color: var(--rpg-modal-close-color, #a09880);
+  font-size: 0.875rem;
+}
+dialog[aria-details="Sheet Legend"] dt {
+  display: flex;
+  justify-content: center;
+}
+dialog[aria-details="Sheet Legend"] dt > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=ring] {
+  border: 2px solid #d4a840;
+  border-radius: 8px;
+  color: #d4a840;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=adv] {
+  background: #2d6a2e;
+  color: #fff;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=dis] {
+  background: #a02020;
+  color: #fff;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=dot-full],
+dialog[aria-details="Sheet Legend"] [data-mark=dot-empty],
+dialog[aria-details="Sheet Legend"] [data-mark=death-fail],
+dialog[aria-details="Sheet Legend"] [data-mark=death-ok] {
+  min-width: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #a09880;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=dot-full] {
+  background: #e3dcce;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=death-fail] {
+  background: var(--rpg-death-failure-color, #c0392b);
+  border-color: var(--rpg-death-failure-color, #c0392b);
+}
+dialog[aria-details="Sheet Legend"] [data-mark=death-ok] {
+  background: var(--rpg-death-success-color, #27ae60);
+  border-color: var(--rpg-death-success-color, #27ae60);
+}
+dialog[aria-details="Sheet Legend"] [data-mark=roll] {
+  background: #5a37b8;
+  color: #fff;
+}
+dialog[aria-details="Sheet Legend"] [data-mark=info] {
+  color: #cdbfff;
+  font-size: 1.1rem;
+}
+@media (min-width: 601px) {
+  dialog[aria-details="Sheet Legend"] {
+    align-items: center;
+  }
+  dialog[aria-details="Sheet Legend"] > article {
+    border-radius: 12px;
+  }
+}
+@media (max-width: 600px) {
+  button[aria-details="Legend Button"] {
+    top: auto;
+    bottom: 12px;
+  }
+}
+
+/* lib/styles/components/play-toggle.css */
+nav[aria-details="Play Toggle"] {
+  display: none;
+}
+@media (max-width: 600px) {
+  nav[aria-details="Play Toggle"] {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-block-start: calc(-1 * var(--p-spacing, 1em));
+    padding-block-start: var(--p-spacing, 1em);
+    position: relative;
+    background: var(--rpg-section-bg, #1a1816);
+  }
+  nav[aria-details="Play Toggle"] ~ section[aria-details*=" Row"] {
+    margin-block-start: 0;
+  }
+  nav[aria-details="Play Toggle"] {
+    gap: 4px;
+    padding: var(--p-spacing, 1em) 10px 8px;
+  }
+  nav[aria-details="Play Toggle"] > button {
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+    color: var(--rpg-hex-label, #b0a890);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  nav[aria-details="Play Toggle"] > button[aria-pressed=true] {
+    background: color-mix(in srgb, var(--color-yellow, #ffd400) 18%, transparent);
+    border-color: color-mix(in srgb, var(--color-yellow, #ffd400) 60%, transparent);
+    color: var(--color-yellow, #ffd400);
+  }
+  .rpg-play-mode .markdown-preview-section > div:not(:has(header[aria-details*=" Banner"], section[aria-details="Health Management Row"], nav[aria-details="Play Toggle"], section[aria-details="Character Stats"], section[aria-details="Character Rolls"])) {
+    display: none;
+  }
+}
+
 /* lib/styles/components/references.css */
 .rpg-ref {
   display: inline;
@@ -16553,6 +17279,41 @@ dialog[aria-details="Dice Roll Modal"] > article > footer > button:last-child {
 .rpg-settings-color-grid > .setting-item {
   padding: var(--size-4-1, 4px) 0;
   border-top: none;
+}
+@media (max-width: 600px) {
+  .rpg-settings-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rpg-settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .rpg-settings-tabs > li {
+    flex: none;
+  }
+  .rpg-settings-bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .rpg-settings-tabs {
+    flex: 1 1 100%;
+  }
+  .rpg-settings-bar-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    margin-left: 0;
+    padding-block: 0.25rem;
+    opacity: 0.7;
+  }
+  .rpg-settings-panel .setting-item-control {
+    flex-wrap: wrap;
+  }
+  .rpg-settings-panel .setting-item-control input[type=text] {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
 }
 
 /* lib/styles/components/page-footer.css */
@@ -18509,6 +19270,27 @@ button.rpg-list__page-arrow:disabled {
 .rpg-list__heading--cont :is(h1, h2, h3, h4, h5, h6) {
   opacity: 0.75;
 }
+.rpg-list__chips {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+@media (max-width: 600px) {
+  .rpg-list__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-inline-end: 1.5rem;
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.5rem),
+        transparent);
+    mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.5rem),
+        transparent);
+  }
+}
 
 /* lib/styles/components/statblock.css */
 .rpg-statblock {
@@ -18637,6 +19419,7 @@ p.rpg-statblock-subtitle {
 }
 .rpg-statblock-abilities {
   width: 100%;
+  table-layout: fixed;
   margin: 12px 0;
   border-collapse: collapse;
   text-align: center;
@@ -18646,12 +19429,12 @@ p.rpg-statblock-subtitle {
 .rpg-statblock-abilities th {
   font-weight: 700;
   font-size: 0.85em;
-  padding: 4px 8px;
+  padding: 4px 2px;
   color: var(--statblock-title);
   text-align: center;
 }
 .rpg-statblock-abilities td {
-  padding: 2px 8px 4px;
+  padding: 2px 2px 4px;
   font-size: 0.95em;
   text-align: center;
 }
@@ -18917,6 +19700,764 @@ p.rpg-statblock-subtitle {
 .markdown-source-view.mod-cm6 .rpg-feature-bucket-entry-desc li {
   padding-inline-start: 0;
   margin: 0;
+}
+
+/* lib/styles/sheet-surface.css */
+body {
+  --rpg-fs-label: 0.75rem;
+  --rpg-fs-data: 0.8125rem;
+  --rpg-fs-row: 1.1em;
+}
+section[aria-details="Character Senses"],
+section[aria-details="Character Skills"],
+section[aria-details="Character Proficiencies"],
+section[aria-details="Character Rolls"] {
+  --rpg-tag-bg: light-dark(#d9ccb0, #332d26);
+  --rpg-tag-border: light-dark(#cdbf9f, #4a4238);
+  --rpg-senses-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-skills-header: light-dark(#6a4e2a, #d4a840);
+  --rpg-proficiencies-header: light-dark(#6a4e2a, #d4a840);
+  background: light-dark(#ece4d3, #24201c);
+  color: light-dark(#231a0c, #e3dcce);
+  border-color: light-dark(#cdbf9f, #4a4238);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+section[aria-details="Character Senses"] a.internal-link,
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link,
+section[aria-details="Character Rolls"] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+}
+section[aria-details="Character Senses"] > output + output,
+section[aria-details="Character Senses"] > dl {
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+section[aria-details="Character Stats"]::before {
+  display: none;
+}
+.rpg-feature-accordion,
+[class*=rpg-feature-accordion] {
+  border-top-style: solid;
+  border-bottom-style: solid;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}
+section[aria-details="Character Skills"] > menu > li {
+  font-size: var(--rpg-fs-row);
+  padding-inline: 12px;
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:hover {
+  background: light-dark(rgba(75, 47, 154, 0.08), rgba(205, 191, 255, 0.1));
+}
+section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  font-size: 1em;
+}
+section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
+  font-size: 1em;
+}
+section[aria-details="Character Senses"] > dl::after {
+  opacity: 1;
+  color: light-dark(#6d6048, #a8a08a);
+}
+.rpg-feature-bucket-count,
+.rpg-spell-circle-count,
+.rpg-feature-pending-count {
+  color: light-dark(#5a4220, #d4c9a8);
+}
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty {
+  display: none;
+}
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] ~ article[aria-details*=" Column"],
+section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ article[aria-details*=" Column"] {
+  flex: 1 1 100% !important;
+}
+.rpg-feature-pending-list .rpg-feature-pending menu button {
+  box-shadow: none;
+  min-height: 28px;
+  font-size: var(--rpg-fs-label);
+  background: light-dark(#f6f0e2, #2e2923);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+.rpg-feature-pending-list .rpg-feature-pending menu button:hover:not(:disabled) {
+  background: light-dark(#ece4d3, #3a342c);
+}
+.rpg-feature-pending-list .rpg-feature-pending menu button[aria-pressed=true] {
+  background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* lib/styles/log-surface.css */
+.lonelog-sidebar,
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping,
+.lonelog-roster-sticky {
+  --text-faint: light-dark(#6d6048, #a8a08a);
+  --text-muted: light-dark(#4a3f2c, #cfc7b2);
+  color: light-dark(#231a0c, #e3dcce);
+}
+.lonelog-bottom-drawer,
+.lonelog-bookkeeping {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-sidebar {
+  background: light-dark(#ece4d3, #24201c);
+  border-color: light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-prose-layout:not(.is-stacked) .lonelog-sidebar {
+  padding: 0.75rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+}
+.lonelog-sidebar-header,
+.lonelog-bookkeeping-head h3 {
+  color: light-dark(#6a4e2a, #d4a840);
+}
+.lonelog-sidebar a.internal-link,
+.lonelog-bottom-drawer a.internal-link,
+.lonelog-bookkeeping a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-underline-offset: 3px;
+}
+.lonelog-bottom-drawer {
+  box-shadow: none;
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+}
+.lonelog-bookkeeping-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0.9rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: light-dark(#f6f0e2, #2e2923);
+}
+.lonelog-bookkeeping-review h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.lonelog-bookkeeping-review dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+.lonelog-bookkeeping-review dt {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+.lonelog-bookkeeping-review dd {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+.lonelog-bookkeeping-review-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.lonelog-bookkeeping-review-actions button {
+  min-height: 36px;
+  padding: 0 1rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 600;
+}
+.lonelog-bookkeeping-review-actions button.is-primary {
+  border-color: light-dark(#4b2f9a, #cdbfff);
+  background: light-dark(#4b2f9a, #cdbfff);
+  color: light-dark(#fff, #1a1030);
+}
+.lonelog-bottom-drawer :is(button, [role=button], label.actions-side, a):focus-visible,
+.lonelog-bookkeeping :is(button, a):focus-visible,
+.lonelog-sidebar :is(button, a):focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-log-container *,
+  .session-log-container *::before,
+  .session-log-container *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  button.hud-opportunity {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+  }
+}
+
+/* lib/styles/mobile.css */
+@media (max-width: 600px) {
+  .markdown-preview-view [class*=rpg-],
+  .markdown-preview-view [data-rpg-rule] {
+    max-width: 100%;
+  }
+  .el-table.rpg-table-wrapper,
+  .rpg-item-magic-card .el-table,
+  .rpg-rolls {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rpg-table th,
+  .rpg-table td {
+    padding-inline: 0.5rem;
+    font-size: 0.9em;
+  }
+  .rpg-rolls__table {
+    min-width: 0;
+  }
+  .rpg-rule-side,
+  .rpg-rule-side--dir-left,
+  .rpg-rule-side--dir-right,
+  .rpg-rule-side--gutter,
+  .rpg-rule-side--commentary {
+    float: none;
+    clear: both;
+    width: auto;
+    max-width: 100%;
+    margin-inline: 0;
+    padding-inline: var(--rpg-side-padding-inline, 1rem);
+  }
+  .rpg-rule-side-spread-group > .el-pre,
+  .rpg-rule-side-spread-group > [class*=block-language-],
+  .rpg-rule-side-spread-group > .rpg-call,
+  .rpg-rule-side-spread-group > .rpg-rule-side--spread,
+  .rpg-rule-side-spread-group > .rpg-call-highlight,
+  .rpg-call:has(.rpg-rule-side-spread-item) > *,
+  .rpg-rule-side__body:has(.rpg-rule-side-spread-item) .rpg-rule-side--spread {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .rpg-rule-side__title,
+  .rpg-rule-side__body {
+    overflow-wrap: anywhere;
+  }
+  figure[class*=rpg-figure],
+  .rpg-figure {
+    float: none;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  img,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .rpg-skill-li {
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] fieldset,
+  .rpg-banner-header__leveling > figure[aria-details="Progress Bar"] {
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+  header[aria-details*=" Banner"] hgroup,
+  header[aria-details*=" Banner"] fieldset {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  header[aria-details*=" Banner"] fieldset {
+    align-items: stretch;
+  }
+  [aria-details="Line Control"] {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  [aria-details="Line Stats"] {
+    gap: 6px;
+  }
+  figure[aria-details="Stat Diamond"] {
+    --hex-w: 82px;
+    --hex-h: 48px;
+  }
+  figure[aria-details="Stat Diamond"][data-size=lg] {
+    --hex-w: 96px;
+    --hex-h: 58px;
+  }
+  section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"] {
+    flex: 0 0 44px !important;
+    width: 44px;
+  }
+  section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"][data-empty] {
+    display: none;
+  }
+  section[aria-details*=" Row"] {
+    flex-wrap: wrap;
+  }
+  section[aria-details*=" Row"] > div:has(> .rpg-card-frame) {
+    flex: 0 0 100% !important;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  section[aria-details*=" Row"] > div > .rpg-card-frame {
+    width: min(100%, 11rem);
+  }
+  section[aria-details*=" Row"] > article[aria-details*=" Column"] {
+    flex: 1 1 100% !important;
+  }
+  section[aria-details*=" Row"] {
+    padding: 10px;
+    gap: 8px;
+  }
+  p[aria-details="Health Management Row"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  p[aria-details="Health Management Row"] dl {
+    flex: 1 1 auto !important;
+    width: 100%;
+  }
+  section[aria-details="Character Stats"] {
+    row-gap: 22px;
+    padding-bottom: 28px;
+  }
+  section[aria-details="Character Skills"] > menu {
+    column-count: 2;
+    column-gap: 10px;
+    padding: 4px 6px;
+  }
+  section[aria-details="Character Skills"] > menu > li {
+    gap: 3px;
+    padding: 3px 2px;
+    font-size: 0.82em;
+    min-height: 34px;
+  }
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+    min-width: 2.2em;
+  }
+  section[aria-details="Character Skills"] > menu > li > data {
+    min-width: 1.6em;
+    padding-inline-end: 2px;
+  }
+  section[aria-details="Character Proficiencies"] > dl {
+    column-count: 1;
+    padding: 6px 8px;
+  }
+  section[aria-details="Character Proficiencies"] > dl dt {
+    padding-inline: 8px;
+  }
+  section[aria-details="Character Proficiencies"] > dl dd {
+    margin-inline-start: 12px;
+    padding-inline-end: 8px;
+  }
+  section[aria-details="Character Rolls"] {
+    margin-inline: 0;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  section[aria-details="Character Skills"] > menu > li > .rpg-skill-roll {
+    min-height: 44px;
+  }
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+    opacity: 1;
+    color: light-dark(#6d6048, #a8a08a);
+  }
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
+    min-width: 28px;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-end: -4px;
+    font-size: 1.05rem;
+  }
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
+    font-size: 1em;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__scroll {
+    overflow: visible;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__table,
+  section[aria-details="Character Rolls"] .rpg-rolls__table > tbody,
+  section[aria-details="Character Rolls"] .rpg-rolls__table > thead,
+  section[aria-details="Character Rolls"] .rpg-rolls__table tr,
+  section[aria-details="Character Rolls"] .rpg-rolls__table td,
+  section[aria-details="Character Rolls"] .rpg-rolls__table th {
+    display: block;
+    min-width: 0;
+    width: auto;
+    white-space: normal;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__head-band th:not(.rpg-rolls__head-label) {
+    display: none;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__table .rpg-rolls__head-label {
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    font-size: 0.85rem;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 56px;
+    grid-template-areas: "name hit roll" "dmg range roll" "dc cost cost" "fx fx fx";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 2px;
+    padding: 8px 8px 8px 12px;
+    border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
+    padding: 0;
+    border: none;
+  }
+  section[aria-details="Character Rolls"] td:empty {
+    display: none;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__name {
+    grid-area: name;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__hit {
+    grid-area: hit;
+    justify-self: end;
+    padding: 0 6px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: light-dark(#2c6b34, #8fd19b);
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__dc {
+    grid-area: dc;
+    font-size: 0.85rem !important;
+    font-weight: 700;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__damage {
+    grid-area: dmg;
+    font-size: 0.95rem;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__range {
+    grid-area: range;
+    justify-self: end;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    color: light-dark(#6d6048, #a8a08a);
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__cost {
+    grid-area: cost;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__effects {
+    grid-area: fx;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__roll {
+    grid-area: roll;
+    align-self: center;
+    text-align: center;
+  }
+  section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
+    width: 52px;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+  .lonelog-bottom-drawer {
+    margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    padding: 0.5rem 0.75rem;
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+  .lonelog-log-latest,
+  .lonelog-log-undo,
+  .lonelog-log-save {
+    background-color: var(--background-primary);
+    min-height: 2rem;
+    padding-inline: 0.7rem;
+  }
+  .lonelog-log-save {
+    background-color: var(--interactive-accent);
+  }
+  .session-log-container:not(.has-bar) .lonelog-prose-scene-head {
+    padding-inline-end: 7rem;
+  }
+  .lonelog-prose-scene-head {
+    text-align: start;
+  }
+  .lonelog-prose-scene-head .lonelog-prose-scene-id {
+    align-self: baseline;
+  }
+  .markdown-rendered .rpg-feature-bucket-entry-collapse {
+    opacity: 0.6;
+    padding: 10px 12px;
+    margin-block: -10px;
+  }
+  .markdown-rendered .rpg-feature-decisions-undo {
+    padding: 10px 12px;
+    margin: -10px -12px;
+  }
+  .rpg-feature-decisions-entry {
+    white-space: normal;
+  }
+  .lonelog-bookkeeping {
+    margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    padding-inline: 0.75rem;
+  }
+  .lonelog-log-toggle[aria-pressed=true] {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
+  .session-log-container.has-bar .lonelog-log-rail {
+    display: none;
+  }
+  .session-log-container.has-bar .drawer-toggle-btn,
+  .session-log-container.has-bar .drawer-collapsed-bar {
+    display: none;
+  }
+  .session-log-container.has-bar .lonelog-bottom-drawer.is-collapsed {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    min-height: 0;
+  }
+  .session-log-container.has-bar .lonelog-bottom-drawer:not(.is-collapsed) {
+    padding-bottom: 0;
+  }
+  .lonelog-bar-wrap {
+    position: sticky;
+    bottom: 0;
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: inherit;
+  }
+  .lonelog-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  }
+  .lonelog-bar > button {
+    min-height: 48px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .lonelog-bar > button[aria-pressed=true] {
+    color: light-dark(#4b2f9a, #cdbfff);
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+  .lonelog-bar-dirty {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.4rem 0.6rem;
+    padding: 0.15rem 0.35rem 0.15rem 0.9rem;
+    border-radius: 999px;
+    background: #1d1b2b;
+    color: #fff;
+    font-size: 0.8rem;
+  }
+  .lonelog-bar-dirty > span {
+    flex: 1;
+  }
+  .lonelog-bar-dirty > button {
+    min-height: 40px;
+    padding: 0 0.8rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: #cdbfff;
+    font-weight: 700;
+  }
+  .drawer-toggle-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    top: 0.25rem;
+    right: 0.25rem;
+  }
+  .rpg-inventory-block__sell-btn,
+  .rpg-inventory-block__equip-btn,
+  .rpg-description-copy-prompt,
+  .rpg-rolls__cost-btn {
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rpg-inventory-block__encumbrance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, max-content));
+    gap: 0.25rem 1.25rem;
+  }
+  .rpg-rule-tab-group__tabs-scroll {
+    padding-right: 1.75rem;
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.75rem),
+        transparent);
+    mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.75rem),
+        transparent);
+  }
+  .lonelog-battle-pane .lonelog-battle-controls {
+    gap: 0;
+  }
+  .lonelog-battle-pane .lonelog-battle-controls button {
+    width: 2rem;
+    height: 2rem;
+  }
+  .rpg-description-tablist {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rpg-description-tablist::-webkit-scrollbar {
+    display: none;
+  }
+  .rpg-description-tab-item {
+    flex: 0 0 auto;
+  }
+  .rpg-description-tab {
+    min-height: 40px;
+    padding-inline: calc(var(--_cut) + 4px);
+  }
+  .lonelog-placeholder-popover.is-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 100dvh;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    background: var(--background-primary);
+    font-size: var(--font-ui-small);
+  }
+  .is-sheet .placeholder-form {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: env(safe-area-inset-top, 0px) 1rem 0;
+  }
+  .is-sheet .placeholder-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-block: 0.75rem 0.5rem;
+    background: var(--background-primary);
+  }
+  .is-sheet .placeholder-title {
+    flex: 1 1 auto;
+    font-size: var(--font-ui-medium);
+  }
+  .is-sheet .placeholder-rider-name {
+    font-size: var(--font-ui-small);
+  }
+  .is-sheet .placeholder-summary {
+    flex-basis: 100%;
+  }
+  .is-sheet button.placeholder-close {
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-inline-end: -0.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  .is-sheet .placeholder-buttons {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-inline: -1rem;
+    padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    box-shadow: none;
+  }
+  .placeholder-submit,
+  .placeholder-cancel {
+    min-height: 2.5rem;
+  }
+  button.rpg-spell-entry-toggle {
+    width: 2rem;
+    height: 2rem;
+    top: 0.5rem;
+  }
+  button.rpg-caster-text-toggle {
+    min-height: 2.25rem;
+    padding-inline: 1rem;
+  }
+  .rpg-description-panel {
+    min-height: 0;
+    max-height: none;
+    overflow-y: visible;
+    padding: 12px;
+  }
+  .rpg-description-appearance-art {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+    max-height: 13rem;
+  }
+  .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
+  .markdown-preview-view [class*=rpg-] select,
+  .markdown-preview-view [class*=rpg-] textarea {
+    font-size: 16px;
+  }
+}
+body.is-mobile .markdown-rendered button img,
+body.is-mobile .markdown-rendered [role=button] img {
+  pointer-events: none;
 }
 
 /* lib/styles/index.css */

@@ -205,6 +205,11 @@
   line-height: 1.3;
 }
 
+/* Themes indent h4 (Ribbons: text-indent); the heading here is a flex row that starts at the margin. */
+.markdown-rendered .lonelog-prose-doc h4.lonelog-prose-scene-head {
+  text-indent: 0;
+}
+
 .lonelog-prose-scene:first-child .lonelog-prose-scene-head {
   margin-top: 0;
 }
@@ -250,72 +255,116 @@
 }
 
 /* ── Provenance dot (the "*") ── */
+/* A margin tick: a dot and a hairline in the gutter beside the passage the action produced, on the line
+ * where its sentence ends. The gutter is the page margin, so no text width is lost. In a combat beat
+ * (an actor column and the sentence) it stays inline. `button.lonelog-dot` under `.lonelog-prose-doc`
+ * out-ranks Obsidian's own `button:not(.clickable-icon)` fill, which used to paint the dot white. */
 
-.lonelog-dot {
+.lonelog-conclusion,
+.lonelog-prose-scene-head {
   position: relative;
+}
+
+.lonelog-prose-doc button.lonelog-dot {
+  appearance: none;
+  position: absolute;
+  left: -1.4rem;
   display: inline-block;
-  width: 0.42em;
-  height: 0.42em;
+  width: 0.6rem;
+  height: 0.6rem;
+  min-height: 0;
   padding: 0;
-  margin-left: 0.18em;
+  margin: 0.55em 0 0;
   border: none;
   border-radius: 50%;
   background: var(--interactive-accent);
   cursor: pointer;
-  vertical-align: super;
   box-shadow: none;
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
 }
 
-/* Keep the 6px visual, but give it a ~24px hit target for mouse and touch. */
-.lonelog-dot::after {
+/* The hairline under the dot: how far the passage runs. */
+.lonelog-prose-doc button.lonelog-dot::before {
   content: "";
   position: absolute;
-  inset: -9px;
+  top: 100%;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  height: 1.1em;
+  background: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  pointer-events: none;
 }
 
-.lonelog-dot:hover {
-  transform: scale(1.3);
+/* A ~24px hit target for mouse and touch. */
+.lonelog-prose-doc button.lonelog-dot::after {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
 }
 
-.lonelog-dot:focus-visible {
+.lonelog-prose-doc button.lonelog-dot:hover {
+  transform: scale(1.25);
+}
+
+.lonelog-prose-doc button.lonelog-dot:focus-visible {
   outline: none;
-  transform: scale(1.3);
+  transform: scale(1.25);
   box-shadow:
     0 0 0 2px var(--background-primary),
     0 0 0 4px var(--interactive-accent);
 }
 
-.lonelog-dot.is-selected {
+.lonelog-prose-doc button.lonelog-dot.is-selected {
   box-shadow:
     0 0 0 2px var(--background-primary),
     0 0 0 4px var(--interactive-accent);
+}
+
+.lonelog-prose-beats button.lonelog-dot {
+  position: relative;
+  left: auto;
+  margin: 0 0 0 0.3em;
+  vertical-align: super;
+  width: 0.5em;
+  height: 0.5em;
+}
+
+.lonelog-prose-beats button.lonelog-dot::before {
+  display: none;
 }
 
 /* ── Chat balloons ── */
+/* Player characters sit on the left, everyone else on the right; a bubble fits its words, and a small
+ * square corner on the speaker's side is the tail. */
 
 .lonelog-balloon {
-  --balloon-width: 56%;
-  width: var(--balloon-width);
+  width: fit-content;
+  max-width: min(84%, 34rem);
   box-sizing: border-box;
   margin-block: 0.45rem;
-  /* Centre the balloon on its speaker's lane: lane 0 → flush left, 1 → flush right. */
-  margin-inline-start: calc((100% - var(--balloon-width)) * var(--lane, 0.5));
+  margin-inline: 0 auto;
   padding: 0.5rem 0.8rem;
   border-radius: 0.9rem;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
+  line-height: 1.45;
+}
+
+.lonelog-balloon-npc {
+  margin-inline: auto 0;
 }
 
 /* PC = periwinkle (the structural chroma); NPC = soft-amethyst (arcane). Per DESIGN.md palette. */
 .lonelog-balloon-pc {
+  border-end-start-radius: 0.2rem;
   background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
   border-color: light-dark(rgba(109, 124, 186, 0.32), rgba(160, 160, 208, 0.34));
 }
 
 .lonelog-balloon-npc {
+  border-end-end-radius: 0.2rem;
   background: light-dark(rgba(179, 157, 219, 0.16), rgba(179, 157, 219, 0.2));
   border-color: light-dark(rgba(179, 157, 219, 0.36), rgba(179, 157, 219, 0.42));
 }
@@ -323,18 +372,17 @@
 .lonelog-balloon-speaker {
   display: block;
   font-weight: 600;
-  font-size: 0.78em;
+  font-size: 0.82em;
   letter-spacing: 0.02em;
   margin-bottom: 0.15rem;
-  opacity: 0.85;
 }
 
 .lonelog-balloon-pc .lonelog-balloon-speaker {
-  color: light-dark(#4d5aa0, #a0a0d0);
+  color: light-dark(#3b4687, #a0a0d0);
 }
 
 .lonelog-balloon-npc .lonelog-balloon-speaker {
-  color: light-dark(#6a4ea8, #b39ddb);
+  color: light-dark(#5b3f96, #b39ddb);
 }
 
 .lonelog-balloon-text p {

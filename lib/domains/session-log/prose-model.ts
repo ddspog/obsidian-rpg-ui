@@ -6,7 +6,6 @@
  *   - `assembleProse` → scenes of narration / dialogue / joined conclusions,
  *     hiding the mechanical machinery (rolls, oracles, tables, markers).
  *   - `buildSidebarItems` → the mechanical entries surfaced in the right rail.
- *   - `laneForSpeaker` → a deterministic horizontal lane per chat interlocutor.
  *
  * Provenance: every conclusion fragment, dialogue node and sidebar item carries
  * the same `sourceId` (the segment's `sourceIndex`), so the prose dot, the
@@ -274,20 +273,6 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
 
   flushScene();
   return scenes;
-}
-
-/**
- * Deterministic horizontal lane (0–1) for a chat interlocutor, derived from
- * the speaker name so a given character always sits in the same lane within a
- * block. Kept clear of the extreme edges.
- */
-export function laneForSpeaker(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) {
-    h = (h * 31 + name.charCodeAt(i)) % 100000;
-  }
-  const t = h / 100000; // [0, 1)
-  return 0.08 + t * 0.84; // [0.08, 0.92)
 }
 
 export type SidebarItemKind =

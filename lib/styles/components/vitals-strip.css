@@ -1,0 +1,77 @@
+/* ── Vitals Strip ─────────────────────────────────────────────────────────── */
+/* HP, AC and conditions pinned over the top of the reading pane once the health block has scrolled away. */
+
+aside[aria-details="Vitals Strip"] {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--rpg-section-bg, #1a1816);
+  color: var(--rpg-hex-value, #e3dcce);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border-radius: 0 0 6px 6px;
+}
+
+aside[aria-details="Vitals Strip"] > div {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+aside[aria-details="Vitals Strip"] > div > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--rpg-hp-bar-color, #4a8c3f);
+}
+
+aside[aria-details="Vitals Strip"] > div[data-state="mid"] > i {
+  background: #b8860b;
+}
+
+aside[aria-details="Vitals Strip"] > div[data-state="low"] > i {
+  background: var(--rpg-death-failure-color, #c0392b);
+}
+
+aside[aria-details="Vitals Strip"] > div > b,
+aside[aria-details="Vitals Strip"] > div > em {
+  position: relative;
+  font-style: normal;
+  font-size: 0.9rem;
+}
+
+aside[aria-details="Vitals Strip"] > div > em {
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--rpg-temp-hp-color, #3a7abd);
+  font-size: 0.8rem;
+}
+
+aside[aria-details="Vitals Strip"] > span {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid var(--rpg-diamond-border, #5a5450);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+aside[aria-details="Vitals Strip"] > span[data-active="true"] {
+  border-color: var(--color-yellow, #ffd400);
+  color: var(--color-yellow, #ffd400);
+}

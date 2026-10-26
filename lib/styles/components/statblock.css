@@ -186,6 +186,7 @@ p.rpg-statblock-subtitle {
 
 .rpg-statblock-abilities {
   width: 100%;
+  table-layout: fixed;
   margin: 12px 0;
   border-collapse: collapse;
   text-align: center;
@@ -196,13 +197,13 @@ p.rpg-statblock-subtitle {
 .rpg-statblock-abilities th {
   font-weight: 700;
   font-size: 0.85em;
-  padding: 4px 8px;
+  padding: 4px 2px;
   color: var(--statblock-title);
   text-align: center;
 }
 
 .rpg-statblock-abilities td {
-  padding: 2px 8px 4px;
+  padding: 2px 2px 4px;
   font-size: 0.95em;
   text-align: center;
 }
