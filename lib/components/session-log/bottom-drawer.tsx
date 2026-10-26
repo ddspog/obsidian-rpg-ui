@@ -73,6 +73,40 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
   }, []);
   const context = React.useMemo(() => ({ expand: () => set(false), reportActor: setActor }), [set]);
 
+  // On a phone the bar rests on the app's buttons across the pane's full width. The note's side margin differs
+  // from device to device, so measure how far the drawer sits from the pane's edges rather than assuming it.
+  const hasBar = bar !== undefined;
+  React.useLayoutEffect(() => {
+    const el = root.current;
+    const view = el?.closest<HTMLElement>(".markdown-preview-view");
+    if (!el || !view || !hasBar) return;
+    const phone = window.matchMedia("(max-width: 600px)");
+    const reset = () => {
+      el.style.marginLeft = "";
+      el.style.marginRight = "";
+      el.style.width = "";
+    };
+    const fit = () => {
+      reset();
+      const zone = el.parentElement;
+      if (!phone.matches || !zone) return;
+      // The pane's whole width, under the scrollbar's column too, like the app's buttons below it.
+      const pane = view.getBoundingClientRect();
+      el.style.marginLeft = `${pane.left - zone.getBoundingClientRect().left}px`;
+      el.style.marginRight = "0";
+      el.style.width = `${pane.width}px`;
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(view);
+    phone.addEventListener("change", fit);
+    return () => {
+      observer.disconnect();
+      phone.removeEventListener("change", fit);
+      reset();
+    };
+  }, [hasBar]);
+
   // "A" opens and folds the drawer of the log you're reading.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

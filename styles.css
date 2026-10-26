@@ -7738,6 +7738,22 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover header[aria-details*=" Banner"] {
   padding-right: 20px;
 }
+.hover-popover .rpg-stat-label-short {
+  display: inline;
+}
+.hover-popover .rpg-stat-label-short ~ *,
+.hover-popover figcaption:has(.rpg-stat-label-short) > .rpg-stat-label-full {
+  display: none;
+}
+@media (min-width: 601px) {
+  .markdown-rendered header[aria-details*=" Banner"] > fieldset[aria-details=Leveling] {
+    flex: 0 0 19rem !important;
+  }
+  .markdown-rendered header[aria-details*=" Banner"] > hgroup {
+    flex: 1 1 0 !important;
+    min-width: 0;
+  }
+}
 
 /* lib/styles/components/pills.css */
 span[aria-details="Link Pill"] {
@@ -9424,11 +9440,13 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
   max-width: 100%;
   max-height: 30vh;
   margin: 0;
+  justify-self: center;
   clip-path: inset(0 round 4px);
 }
 .lonelog-prose-layout.is-stacked .lonelog-battle-pane .rpg-battlemap {
-  width: auto;
-  max-height: 15rem;
+  width: 100%;
+  height: auto;
+  max-height: 26rem;
 }
 .lonelog-battle-pane .lonelog-battle-where.is-setup {
   min-width: 0;
@@ -13059,6 +13077,9 @@ figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage {
 }
 figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage[data-vantage=dis] {
   background: light-dark(#a02020, #c94040);
+}
+.rpg-stat-label-short {
+  display: none;
 }
 
 /* lib/styles/components/stat-hex-pair.css */
@@ -19939,17 +19960,23 @@ span[aria-details="Armor Badges"] {
 }
 section[aria-details="Character Skills"] > header[role=button] {
   position: relative;
+  display: flex;
+  align-items: stretch;
   min-height: 36px;
   cursor: pointer;
+}
+section[aria-details="Character Skills"] > header[role=button] > span {
+  flex: 1 1 auto;
+  align-items: center;
 }
 section[aria-details="Character Skills"] > header[role=button]::after {
   content: "";
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-end: 14px;
+  inset-inline-end: 16px;
   width: 8px;
   height: 8px;
-  margin-block-start: -6px;
+  margin-block-start: -7px;
   border-right: 2px solid light-dark(#6a4e2a, #d4a840);
   border-bottom: 2px solid light-dark(#6a4e2a, #d4a840);
   transform: rotate(45deg);

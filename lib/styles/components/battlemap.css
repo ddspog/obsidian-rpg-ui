@@ -370,13 +370,16 @@
   max-width: 100%;
   max-height: 30vh;
   margin: 0;
+  /* If the map is height-limited it is narrower than its column: centre it there. */
+  justify-self: center;
   clip-path: inset(0 round 4px);
 }
 
 .lonelog-prose-layout.is-stacked .lonelog-battle-pane .rpg-battlemap {
-  width: auto;
-  /* Tall enough that the grid labels and tokens stay readable; 10rem left a postage stamp. */
-  max-height: 15rem;
+  /* As wide as its column; if it is height-limited it is centred in the column. */
+  width: 100%;
+  height: auto;
+  max-height: 26rem;
 }
 
 /* Setup in the pane's own slots: who's picked (or what to do) on the header's

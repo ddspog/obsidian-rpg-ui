@@ -251,3 +251,26 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover header[aria-details*=" Banner"] {
   padding-right: 20px;
 }
+
+/* Hover preview: "INI" and "PB" in place of "Initiative" and "Proficiency". */
+.hover-popover .rpg-stat-label-short {
+  display: inline;
+}
+
+.hover-popover .rpg-stat-label-short ~ *,
+.hover-popover figcaption:has(.rpg-stat-label-short) > .rpg-stat-label-full {
+  display: none;
+}
+
+/* On a wide pane the XP and level area has a fixed width, and the pills under the name may run to two lines. */
+@media (min-width: 601px) {
+  /* The column weights are set inline by the block (`distribution="2 1"`), so these need !important. */
+  .markdown-rendered header[aria-details*=" Banner"] > fieldset[aria-details="Leveling"] {
+    flex: 0 0 19rem !important;
+  }
+
+  .markdown-rendered header[aria-details*=" Banner"] > hgroup {
+    flex: 1 1 0 !important;
+    min-width: 0;
+  }
+}

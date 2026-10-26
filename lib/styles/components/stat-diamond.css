@@ -100,3 +100,8 @@ figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage {
 figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage[data-vantage="dis"] {
   background: light-dark(#a02020, #c94040);
 }
+
+/* The short label ("INI", "PB") is for tight places: hidden until a hover preview asks for it. */
+.rpg-stat-label-short {
+  display: none;
+}
