@@ -20696,6 +20696,9 @@ body.is-mobile .markdown-rendered [role=button] img {
   section[aria-details*=" Row"] {
     padding-top: 24px;
   }
+  section[aria-details="Character Rolls"] [data-tip]::after {
+    display: none;
+  }
 }
 
 /* lib/styles/index.css */

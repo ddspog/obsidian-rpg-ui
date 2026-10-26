@@ -807,4 +807,9 @@ body.is-mobile .markdown-rendered [role="button"] img {
   section[aria-details*=" Row"] {
     padding-top: 24px;
   }
+
+  /* No hover on a phone, and the hidden tooltip's width pushed the page sideways at the card's right edge. */
+  section[aria-details="Character Rolls"] [data-tip]::after {
+    display: none;
+  }
 }
