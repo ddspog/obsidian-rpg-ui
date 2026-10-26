@@ -758,4 +758,17 @@ body.is-mobile .markdown-rendered [role="button"] img {
     grid-column: 3 / -1;
     grid-row: 2;
   }
+
+  /* The bookkeeping cards fit the pane: one column, and a card's columns may shrink. */
+  .lonelog-bookkeeping-sheets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  dl.lonelog-bookkeeping-sheet {
+    grid-template-columns: 1.25em minmax(0, max-content) minmax(0, 1fr) auto;
+  }
+
+  .lonelog-bookkeeping-change .lonelog-row-label {
+    white-space: normal;
+  }
 }
