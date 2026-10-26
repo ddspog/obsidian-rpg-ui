@@ -36,3 +36,67 @@ fieldset[aria-details="Death Save Successes"] button[aria-pressed="true"] {
   background-color: var(--rpg-death-success-color, #27ae60);
   border-color: var(--rpg-death-success-color, #27ae60);
 }
+
+/* ── Death saves in the health area ───────────────────────────────────────── */
+/* A chip until they matter (0 HP or a pip marked), then one labelled Pass / Fail row. */
+
+div[aria-details="Death Saves"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+div[aria-details="Death Saves"] > button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--rpg-slab-label, #d4c9a8);
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rpg-slab-label, #d4c9a8);
+  font-size: var(--rpg-fs-label, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+div[aria-details="Death Saves"] > button[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--rpg-slab-label, #d4c9a8) 14%, transparent);
+}
+
+div[aria-details="Death Saves"] > [role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+div[aria-details="Death Saves"] [aria-details="Death Saves Label"] {
+  flex: 1 0 100%;
+  color: var(--rpg-slab-label, #d4c9a8);
+  font-size: var(--rpg-fs-label, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+div[aria-details="Death Saves"] [aria-details="Death Saves Side"] {
+  color: var(--rpg-slab-label, #d4c9a8);
+  font-size: var(--rpg-fs-label, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Smaller pips than the old ring around Armor: three each fit beside their label on a phone. */
+div[aria-details="Death Saves"] fieldset[aria-details^="Death Save "] {
+  gap: 6px;
+}
+
+div[aria-details="Death Saves"] fieldset[aria-details^="Death Save "] button {
+  width: 28px;
+  height: 28px;
+}

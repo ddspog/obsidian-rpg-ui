@@ -112,3 +112,54 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
   width: 100%;
   min-width: 140px;
 }
+
+/* ---- Hover preview: a slim banner ---------------------------------
+   A preview is about 420px wide. The name and the level share one line, the
+   class / lineage pills sit under the name, and the icons, XP bar and inspiration
+   are left for the full sheet. */
+.hover-popover header[aria-details*=" Banner"] {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+}
+
+.hover-popover header[aria-details*=" Banner"] hgroup {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hover-popover header[aria-details*=" Banner"] figure[aria-details="Page Title"] {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hover-popover header[aria-details*=" Banner"] [aria-details="Line of Pills"] {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.hover-popover header[aria-details*=" Banner"] fieldset {
+  flex: 0 0 auto;
+  min-width: 0;
+  align-items: center;
+}
+
+.hover-popover header[aria-details*=" Banner"] [aria-details="Line of Buttons"],
+.hover-popover header[aria-details*=" Banner"] [aria-details="Inspiration Points"],
+.hover-popover header[aria-details*=" Banner"] small[aria-details="Pill Comment"],
+.hover-popover header[aria-details*=" Banner"] .rpg-banner-header__actions,
+.hover-popover header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] {
+  display: none;
+}
+
+.hover-popover header[aria-details*=" Banner"] [aria-details="Character Level"] {
+  zoom: 0.6;
+}
