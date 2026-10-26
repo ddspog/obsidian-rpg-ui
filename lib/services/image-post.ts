@@ -381,3 +381,58 @@ export async function finishFrame(data: ArrayBuffer, mime: string): Promise<Fini
     aspect: out.width / out.height,
   };
 }
+
+/**
+ * Where a finished frame's window is, as percentages of it: the clear pixels
+ * a flood from its edges can't reach (the outside is clear too). Undefined
+ * when there's no such hole.
+ */
+export function frameWindow(d: Uint8ClampedArray, w: number, h: number): FinishedFrame["window"] | undefined {
+  const clear = (i: number) => d[i * 4 + 3] < 16;
+  const outside = new Uint8Array(w * h);
+  const stack: number[] = [];
+  for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+  while (stack.length) {
+    const i = stack.pop()!;
+    if (outside[i] || !clear(i)) continue;
+    outside[i] = 1;
+    const x = i % w;
+    if (x > 0) stack.push(i - 1);
+    if (x < w - 1) stack.push(i + 1);
+    if (i >= w) stack.push(i - w);
+    if (i < w * (h - 1)) stack.push(i + w);
+  }
+  let x0 = w,
+    y0 = h,
+    x1 = -1,
+    y1 = -1;
+  for (let i = 0; i < w * h; i++) {
+    if (outside[i] || !clear(i)) continue;
+    const x = i % w,
+      y = (i - x) / w;
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  if (x1 < 0) return undefined;
+  const pct = (n: number, of: number) => Math.round((n / of) * 1000) / 10;
+  return { top: pct(y0, h), left: pct(x0, w), right: pct(w - 1 - x1, w), bottom: pct(h - 1 - y1, h) };
+}
+
+/** A frame file already finished (one saved before, or brought in): its window and shape, measured again. */
+export async function measureFrame(
+  data: ArrayBuffer,
+  mime: string
+): Promise<Pick<FinishedFrame, "window" | "aspect"> | undefined> {
+  const bitmap = await createImageBitmap(new Blob([data], { type: mime }));
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const g = canvas.getContext("2d", { willReadFrequently: true })!;
+  g.drawImage(bitmap, 0, 0);
+  const img = g.getImageData(0, 0, canvas.width, canvas.height);
+  const window = frameWindow(img.data, img.width, img.height);
+  return window && { window, aspect: img.width / img.height };
+}

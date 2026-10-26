@@ -179,3 +179,46 @@ describe("targetSize", () => {
     expect(targetSize({}, "1:1")).toBeUndefined();
   });
 });
+
+describe("token prompts", () => {
+  it("is the kind of a note's token_image", () => {
+    expect(kindOf({ kind: "frontmatter", key: "token_image", label: "" }, "Bestiary/Kobold.md")).toBe("token");
+  });
+
+  it("makes a foe's bust from its statblock, framed for a disc", () => {
+    const p = promptFor(
+      "token",
+      ctx({
+        name: "Kobold, A",
+        blocks: [
+          {
+            meta: "stat.monster",
+            data: { type: "Small Humanoid", habitat: "[[Underground]]" },
+            body: "A scaly little trapper.",
+          },
+        ],
+      }),
+      ""
+    );
+    expect(p).toMatch(/token art of Kobold, A, a small humanoid of the underground/);
+    expect(p).toMatch(/scaly little trapper/);
+    expect(p).toMatch(/head and shoulders only/);
+    // The map cuts the disc: none painted, and nothing written on it.
+    expect(p).toMatch(/no vignette, no medallion/);
+    expect(p).toMatch(/no labels/);
+    // Gemini blocks a prompt saying "no watermark" (as asking to remove one).
+    expect(p).not.toMatch(/watermark/i);
+  });
+
+  it("makes a PC's from their sheet", () => {
+    const p = promptFor(
+      "token",
+      ctx({
+        name: "Talon",
+        blocks: [{ meta: "character.header", data: { lineage: { file: "[[Kobold]]" } }, body: "" }],
+      }),
+      ""
+    );
+    expect(p).toMatch(/token art of Talon, Kobold/);
+  });
+});

@@ -35,7 +35,8 @@
  *
  * Scope: syncs specific subdirectories (config, worldbuilding, glossary,
  *        adventuring, compendium, concepts, atlas, binder) within each
- *        registered system. Files outside those prefixes are ignored.
+ *        registered system, and the whole of `Sandbox/` (Tests/ and the
+ *        Artifacts/ they use). Files outside those are ignored.
  *
  * Usage:
  *   npm run sync                # sync (apply changes, confirm deletions)
@@ -77,13 +78,20 @@ if (PUSH_ONLY && PULL_ONLY) {
 
 const SYNC_SUBDIRS = ["config", "worldbuilding", "glossary", "adventuring", "compendium", "concepts", "atlas", "binder", "gm-tools"];
 
-// Each entry maps a system name to its plugin-mirror and vault-root directories.
-// Systems at the vault root (no `systems/` prefix) list their paths directly.
+// Each entry maps a name to its plugin-mirror and vault-root directories, and
+// the subdirectories synced in it (SYNC_SUBDIRS unless it names its own; "."
+// is the whole folder).
 const SYSTEM_ENTRIES = [
   {
     name: "tales-of-the-valiant",
     pluginDir: path.join(pluginRoot, "vault", "tales-of-the-valiant"),
     vaultDir: path.join(vaultRoot, "tales-of-the-valiant"),
+  },
+  {
+    name: "Sandbox",
+    pluginDir: path.join(pluginRoot, "vault", "Sandbox"),
+    vaultDir: path.join(vaultRoot, "Sandbox"),
+    subdirs: ["."],
   },
 ];
 
@@ -352,7 +360,7 @@ async function main() {
       continue;
     }
 
-    for (const sub of SYNC_SUBDIRS) {
+    for (const sub of entry.subdirs ?? SYNC_SUBDIRS) {
       const pluginDir = path.join(entry.pluginDir, sub);
       const vaultDir = path.join(entry.vaultDir, sub);
       if (!(await exists(pluginDir)) && !(await exists(vaultDir))) continue;

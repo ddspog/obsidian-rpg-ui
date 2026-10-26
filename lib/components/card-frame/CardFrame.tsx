@@ -7,7 +7,15 @@
 
 import * as React from "react";
 import { TFile } from "obsidian";
-import { cardFrameSettings, FRAME_KINDS, type FrameKind, type FrameNameMode } from "lib/services/card-frame-config";
+import {
+  activeFrameSource,
+  cardFrameSettings,
+  FRAME_KINDS,
+  type FrameKind,
+  type FrameNameMode,
+  type FrameSource,
+} from "lib/services/card-frame-config";
+import { generatedClass } from "lib/services/frame-css";
 
 /** A vault path as a URL, through the app the plugin runs in. */
 function vaultUrl(path: string): string | undefined {
@@ -31,31 +39,57 @@ interface CardFrameProps {
   aspect?: number;
   /** Resolves a vault path to a URL (the generated frame's picture); the vault's, by default. */
   resolveUrl?: (path: string) => string | undefined;
+  /** Draw this one, over the one the settings chose (the settings' previews show both). */
+  source?: FrameSource;
   className?: string;
 }
 
-export function CardFrame({ children, title, kind = "portrait", name, aspect, resolveUrl, className }: CardFrameProps) {
+export function CardFrame({
+  children,
+  title,
+  kind = "portrait",
+  name,
+  aspect,
+  resolveUrl,
+  source,
+  className,
+}: CardFrameProps) {
   const settings = cardFrameSettings(kind);
-  const image = settings?.image;
+  const from = source ?? activeFrameSource(settings);
+  const image = from === "image" ? settings?.image : undefined;
   const mode = name ?? settings?.name ?? FRAME_KINDS[kind].name;
   // A character's card is tall unless the art says otherwise.
   const artAspect = aspect ?? (kind === "portrait" ? 0.75 : undefined);
   const shown = mode === "none" ? undefined : title;
   const url = image ? (resolveUrl ?? vaultUrl)(image.path) : undefined;
   if (image && url) {
-    const w = image.window;
+    // The card takes the art's shape, as the CSS frame does; the painted frame is stretched over it by
+    // its edges alone (a nine-slice border image), so its corners keep theirs and its border its thickness.
+    const shape = artAspect ?? image.aspect;
+    const k = shape / image.aspect;
+    const src = image.window;
+    const w = { top: src.top * k, right: src.right, bottom: src.bottom * k, left: src.left };
     return (
       <figure
         className={`rpg-card-frame is-image is-${kind} ${className ?? ""}`}
-        style={{ aspectRatio: String(image.aspect) }}
+        style={{ aspectRatio: String(shape) }}
       >
+        {/* The art fills the frame, as in the CSS one (so it sizes it the same), cut to the window. */}
         <div
           className="rpg-card-frame-window"
-          style={{ top: `${w.top}%`, right: `${w.right}%`, bottom: `${w.bottom}%`, left: `${w.left}%` }}
+          style={{ clipPath: `inset(${w.top}% ${w.right}% ${w.bottom}% ${w.left}%)` }}
         >
           {children}
         </div>
-        <img className="rpg-card-frame-overlay" src={url} alt="" draggable={false} />
+        <div
+          className="rpg-card-frame-overlay"
+          aria-hidden="true"
+          style={{
+            borderImageSource: `url("${url}")`,
+            borderImageSlice: `${src.top}% ${src.right}% ${src.bottom}% ${src.left}%`,
+            borderImageWidth: `${w.top}% ${w.right}% ${w.bottom}% ${w.left}%`,
+          }}
+        />
         {shown && mode === "band" && (
           // On a generated frame the name sits in the middle of its bottom band.
           <figcaption className="rpg-card-frame-plaque is-on-frame" style={{ bottom: `${w.bottom / 2}%` }}>
@@ -79,7 +113,9 @@ export function CardFrame({ children, title, kind = "portrait", name, aspect, re
     );
   }
   return (
-    <figure className={`rpg-card-frame is-${kind} ${className ?? ""}`}>
+    <figure
+      className={`rpg-card-frame is-${kind} ${from === "generated" && settings?.css ? generatedClass(kind) : ""} ${className ?? ""}`}
+    >
       <div className="rpg-card-frame-inner">
         <div className="rpg-card-frame-art" style={artAspect ? { aspectRatio: String(artAspect) } : undefined}>
           {children}

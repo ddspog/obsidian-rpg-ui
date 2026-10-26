@@ -38,6 +38,16 @@ interface AttackOutcome {
   damage: number;
 }
 
+/** Tokens' pictures: what each shows, and the right-click menu changing it. */
+export interface TokenPictures {
+  /** A combatant's picture (`token_image:` in their note), as a URL. */
+  imageOf: (name: string) => string | undefined;
+  /** Right-click on a combatant's token: the menu to change its picture. */
+  menu: (name: string, event: MouseEvent) => void;
+  /** Called whenever a token's picture may have changed; gives back the unsubscribe. */
+  watch: (changed: () => void) => () => void;
+}
+
 interface BattlePaneProps {
   battles: Battle[];
   maps: Record<string, SquareMap>;
@@ -59,6 +69,8 @@ interface BattlePaneProps {
   zoom?: boolean;
   /** A combatant's token emoji (`token:` in its note), if it has one. */
   iconOf?: (name: string) => string | undefined;
+  /** Tokens' pictures — given, a token can be right-clicked to change its own. */
+  pictures?: TokenPictures;
   /**
    * Change the fight's setup — given, the Setup frame's tokens can be clicked
    * to move where they start, roll their initiative, or give them an emoji.
@@ -111,7 +123,8 @@ function drawFrame(
   opening: BattlePlacement[] = [],
   iconOf?: (name: string) => string | undefined,
   hpOf?: (name: string) => { current: number; max: number } | undefined,
-  hitOf?: (id: number) => AttackOutcome | undefined
+  hitOf?: (id: number) => AttackOutcome | undefined,
+  imageOf?: (name: string) => string | undefined
 ): { tokens: MapToken[]; arrows: MapArrow[] } {
   // Before anything happens: where the initiative list put everyone, else the
   // map's own default spots.
@@ -135,6 +148,7 @@ function drawFrame(
   const tokens: MapToken[] = placements.map((p, i) => {
     const foe = foes.get(combatantKey(p.name));
     const icon = iconOf?.(p.name);
+    const image = imageOf?.(p.name);
     const hp = hpOf?.(p.name);
     // PCs' and foes' conditions alike, as the fight tracks them.
     const conditions = frame?.conditions[combatantKey(p.name)] ?? foe?.conditions ?? [];
@@ -143,6 +157,7 @@ function drawFrame(
       at: p.at,
       side: foe || (foes.size === 0 && p.name.includes("[[")) ? "foe" : "pc",
       ...(icon ? { icon } : {}),
+      ...(image ? { image } : {}),
       // Health as the log follows it (hits taken), else the foe tag's.
       ...((hp?.current ?? foe?.current) != null ? { hp: (hp?.current ?? foe?.current)! } : {}),
       ...((hp?.max ?? foe?.max) != null ? { max: (hp?.max ?? foe?.max)! } : {}),
@@ -231,6 +246,7 @@ export function BattlePane({
   battleStart,
   zoom = false,
   iconOf,
+  pictures,
   onSetup,
   initiativeOf,
   healthAt,
@@ -248,6 +264,9 @@ export function BattlePane({
   const [picked, setPicked] = React.useState<string | null>(null);
   const [mode, setMode] = React.useState<"menu" | "move" | "emoji">("menu");
   const [emoji, setEmoji] = React.useState("");
+  // A token's picture changed (in its note): draw the map again.
+  const [, redraw] = React.useReducer((n: number) => n + 1, 0);
+  React.useEffect(() => pictures?.watch(redraw), [pictures]);
 
   // The fight's steps, opening with its Setup: everyone where the initiative
   // list (or a `[Pos:]` before the first turn) puts them, at the `[COMBAT]`.
@@ -346,7 +365,8 @@ export function BattlePane({
     (name) => battle.icons[combatantKey(name)] ?? iconOf?.(name),
     // Health as the step leaves it — after every action it holds.
     healthAt ? (name) => healthAt(stepEnd, name) : undefined,
-    hitAt
+    hitAt,
+    pictures?.imageOf
   );
   // ── Setup editing ──
   const token = editing && picked ? tokens.find((t) => t.name === picked) : undefined;
@@ -574,6 +594,7 @@ export function BattlePane({
         tokens={tokens}
         arrows={arrows}
         cell={24}
+        {...(pictures ? { onTokenContextMenu: pictures.menu } : {})}
         // Choosing where to start, the whole map — anywhere can be picked.
         {...(zoom && !(token && mode === "move") ? { view: actionView(map, tokens, arrows) } : {})}
         {...(editing

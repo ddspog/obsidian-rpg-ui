@@ -358,6 +358,7 @@ export async function evaluateSystemBundle(
             stripWikilinkToName: spellcasting.stripWikilinkToName,
             resolveInventory: inventoryDomain.resolveInventory,
             InventoryBlock: inventoryComponent.InventoryBlock,
+            LoadoutCards: require("../components/inventory/LoadoutCards").LoadoutCards,
             extractItemElementBlocks: itemsDomain.extractItemElementBlocks,
             parseItemElement: itemsDomain.parseItemElement,
             parseItemWeight: itemsDomain.parseItemWeight,

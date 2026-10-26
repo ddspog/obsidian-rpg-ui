@@ -15,6 +15,8 @@
  *              portrait, framed by the plugin (`character.description` art)
  *   banner     a chapter's wide opening scene (frontmatter `banner`)
  *   map        a top-down battle map (`map` / `log` image)
+ *   token      a battle map token: a bust filling the square, drawn in a disc
+ *              (frontmatter `token_image`, on a PC's sheet or a foe's statblock)
  *   icon       a hotbar icon, Baldur's Gate 3's (an image in `Icons/`)
  *
  * A cut-out is made on flat magenta and keyed out after — the image models
@@ -23,7 +25,7 @@
 
 import type { ImageTarget } from "./targets";
 
-export type ImageKindId = "item" | "spell" | "portrait" | "creature" | "art" | "banner" | "map" | "icon";
+export type ImageKindId = "item" | "spell" | "portrait" | "creature" | "art" | "banner" | "map" | "token" | "icon";
 
 export interface ImageKind {
   id: ImageKindId;
@@ -89,6 +91,16 @@ export const IMAGE_KINDS: Record<ImageKindId, ImageKind> = {
     size: { w: 1600, h: 900 },
   },
   map: { id: "map", label: "Battle map", aspect: "1:1", cutout: false, trim: false, size: { w: 1536, h: 1536 } },
+  // Drawn in a disc on the map: the square filled to its edges, the face at its centre.
+  token: {
+    id: "token",
+    label: "Battle map token",
+    aspect: "1:1",
+    cutout: false,
+    trim: false,
+    size: { w: 512, h: 512 },
+    fill: true,
+  },
   icon: {
     id: "icon",
     label: "Hotbar icon",
@@ -128,6 +140,7 @@ export function kindOf(target: ImageTarget, notePath = ""): ImageKindId {
   if (target.kind === "icon") return "icon";
   if (target.kind === "frontmatter") {
     if (/banner|cover/i.test(target.key)) return "banner";
+    if (/^token/i.test(target.key)) return "token";
     if (/portrait/i.test(target.key)) return "portrait";
     // A note's reference image is what the note is: a person's portrait, a creature, else a thing.
     if (/\b(npcs?|characters?|people|persons?)\//i.test(notePath)) return "portrait";
@@ -354,9 +367,10 @@ export function characterFacts(ctx: PromptContext): { who: string; lines: string
 
 // ── The prompts ──────────────────────────────────────────────────────────────
 
+// (Never "no watermark": Gemini blocks a prompt saying it as one asking to remove a watermark.)
 const CUTOUT =
   "Isolated on a perfectly flat, solid pure magenta (#FF00FF) background — no gradient, no floor, no cast shadow on the background, " +
-  "no other objects, no text, no letters, no watermark.";
+  "no other objects, no text, no letters.";
 
 /**
  * A card's picture is the art alone, filling the whole canvas: the frame and the
@@ -365,7 +379,7 @@ const CUTOUT =
  */
 const ART_ONLY =
   "Full-bleed: the painting fills the whole canvas edge to edge, nothing around it — no border, no frame, no vignette frame, " +
-  "no plaque, no caption, no text, no letters, no watermark.";
+  "no plaque, no caption, no text, no letters.";
 
 /** A long thing reads best wide: a bow, a polearm, a sword. */
 const LONG =
@@ -497,6 +511,36 @@ export function promptFor(kind: ImageKindId, ctx: PromptContext, iconStyle: stri
       );
       const desc = firstSentences(ctx.prose);
       if (desc) lines.push(`The place: ${desc}`);
+      break;
+    }
+    case "token": {
+      // A party member from their sheet; anyone else (a foe) from their statblock.
+      const sheet = ctx.blocks.some((b) => /^character\./.test(b.meta));
+      const stat = ctx.blocks.find((b) => /^stat\./.test(b.meta));
+      if (sheet) {
+        const c = characterFacts(ctx);
+        lines.push(`Battle map token art of ${name}${c.who ? `, ${c.who}` : ""}.`);
+        lines.push(...c.lines.filter((l) => !/^Their story/.test(l)));
+      } else {
+        const type = words(stat?.data.type ?? ctx.frontmatter.type);
+        const habitat = words(stat?.data.habitat);
+        lines.push(
+          `Battle map token art of ${name}${type ? `, a ${type.toLowerCase()}` : ""}${habitat ? ` of the ${habitat.toLowerCase()}` : ""}.`
+        );
+        const desc = firstSentences(stat?.body || ctx.prose);
+        if (desc) lines.push(`What it is: ${desc}`);
+      }
+      lines.push(
+        "A close-up portrait of this one character alone: head and shoulders only (nothing below the chest), facing the viewer " +
+          "at a slight three-quarter angle, the face large at the very centre of the square. " +
+          "It reads clearly at 40 pixels — bold silhouette, strong contrast — against a plain, softly lit, out-of-focus background " +
+          "in one colour that suits them. Painterly fantasy art."
+      );
+      // (The map cuts the disc itself: a painted one — a vignette, a medallion — would show as a second ring.)
+      lines.push(
+        "The painting fills the whole square edge to edge, background reaching every corner — no vignette, no medallion, " +
+          "no border, no frame, no labels, no captions, no text, no letters."
+      );
       break;
     }
     case "icon": {

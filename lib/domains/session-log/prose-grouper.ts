@@ -14,6 +14,7 @@ import type {
   TableRollEntry,
   GeneratorEntry,
   CombatMarkerEntry,
+  TravelMarkerEntry,
   ResourceMarkerEntry,
   DungeonStatusMarkerEntry,
 } from "lib/domains/lonelog/types";
@@ -44,6 +45,8 @@ export type ProseSegmentKind =
   | { type: "concat" }
   | { type: "combat-start"; entry: CombatMarkerEntry }
   | { type: "combat-end"; entry: CombatMarkerEntry }
+  | { type: "travel-start"; entry: TravelMarkerEntry }
+  | { type: "travel-end"; entry: TravelMarkerEntry }
   | { type: "round"; round: number }
   | { type: "turn"; actor: string }
   | { type: "resource-start"; entry: ResourceMarkerEntry }
@@ -97,6 +100,10 @@ export function groupIntoProse(entries: LonelogEntry[]): ProseSegment[] {
 
       case "combat_marker":
         push({ type: entry.state === "open" ? "combat-start" : "combat-end", entry }, start);
+        i++;
+        break;
+      case "travel_marker":
+        push({ type: entry.state === "open" ? "travel-start" : "travel-end", entry }, start);
         i++;
         break;
 

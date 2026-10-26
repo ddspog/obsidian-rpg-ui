@@ -27,15 +27,15 @@ div:has(> section[aria-details="Character Rolls"]) {
   margin-block: 0 !important;
 }
 
-/* Horizontal scroll wrapper — `overflow-x: auto` would force the
- * browser to clip the vertical axis too (spec: if one axis is
- * non-visible, the other becomes auto), which hides the last table
- * row whenever the parent doesn't have enough intrinsic height. Leave
- * the wrapper as plain `overflow: visible` so every row stays visible;
- * hover-expanded effects cells now simply overflow the section
- * normally, which is acceptable for a small-row table. */
+/* Horizontal scroll wrapper — when the columns (or a hover-revealed
+ * effects note) outgrow the sheet width, the table scrolls sideways
+ * instead of spilling past the section's borders. `overflow-x: auto`
+ * turns the vertical axis into `auto` too, so tooltips that rise above
+ * the first body row get clipped; the thead band above it leaves them
+ * enough room to stay readable. */
 section[aria-details="Character Rolls"] .rpg-rolls__scroll {
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* Restore left padding on body cells so text doesn't hug the section
@@ -160,6 +160,11 @@ section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label {
 }
 
 section[aria-details="Character Rolls"] tbody td {
+  /* Every row shares one height — inline buttons (cost / upcast /
+   * swap) are stripped down to text size below, and the fixed height
+   * keeps a glyph or link from nudging one row taller than the rest. */
+  height: 1.9em;
+  box-sizing: border-box;
   padding: 3px 6px;
   /* Force font-size at the cell level — theme-injected `td { font-size:
    * var(--font-text-size); }` rules out-specificity any inherited size
@@ -210,16 +215,18 @@ section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
  * Strips Obsidian's default button chrome (border / background /
  * box-shadow — those get re-asserted by the theme on any raw
  * `button` and show up as a visible frame around the glyph) with
- * `!important` so the icon reads as an in-table glyph. A small
- * vertical padding gives the clickable target some breathing room
- * above and below the numeral without lifting the row height. */
+ * `!important` so the icon reads as an in-table glyph. Padding and
+ * Obsidian's button `min-height` are zeroed so the button stays text
+ * height and doesn't lift its row above the others. */
 section[aria-details="Character Rolls"] button.rpg-rolls__form-icon--upcast {
   position: relative;
   background: transparent !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  padding: 4px 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
   cursor: pointer;
   font: inherit;
   line-height: 1;
@@ -286,8 +293,11 @@ section[aria-details="Character Rolls"] button.rpg-rolls__cost-btn {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  padding: 4px 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
   font: inherit;
+  line-height: inherit;
   color: inherit;
   cursor: pointer;
 }

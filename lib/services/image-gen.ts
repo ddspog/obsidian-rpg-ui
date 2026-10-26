@@ -37,6 +37,51 @@ export async function generateImage(
   return geminiImage(settings, prompt, aspect);
 }
 
+/** Gemini image models to offer when the endpoint can't be asked for its list. */
+export const GEMINI_IMAGE_MODELS = [
+  "gemini-3.1-flash-image",
+  "gemini-3-pro-image",
+  "gemini-nano-banana-2.1",
+  "gemini-3.1-flash-lite-image",
+  "gemini-2.5-flash-image",
+];
+
+/** True for a model name that makes images by `generateContent` (not Imagen, which predicts). */
+export function isGeminiImageModel(name: string): boolean {
+  return /image|banana/i.test(name) && !/imagen|embedding/i.test(name);
+}
+
+/**
+ * The image models the Gemini endpoint lists, by name (`models/` dropped).
+ * Lists don't say which models make images, so names decide; empty when the
+ * endpoint can't be reached.
+ */
+export async function listGeminiImageModels(s: ImageStudioSettings): Promise<string[]> {
+  if (!s.geminiUrl.trim()) return [];
+  try {
+    const res = await requestUrl({
+      url: `${trim(s.geminiUrl)}/v1beta/models`,
+      headers: s.geminiKey ? { "x-goog-api-key": s.geminiKey } : {},
+      throw: false,
+    });
+    if (res.status >= 400) return [];
+    const models = (res.json?.models ?? []) as Array<{
+      name?: string;
+      supportedActions?: string[];
+      supportedGenerationMethods?: string[];
+    }>;
+    return models
+      .filter((m) => {
+        const actions = m.supportedActions ?? m.supportedGenerationMethods;
+        return !actions || actions.includes("generateContent");
+      })
+      .map((m) => (m.name ?? "").replace(/^models\//, ""))
+      .filter(isGeminiImageModel);
+  } catch {
+    return [];
+  }
+}
+
 async function geminiImage(s: ImageStudioSettings, prompt: string, aspect: Aspect): Promise<GeneratedImage> {
   if (!s.geminiUrl.trim()) throw new Error("No Gemini link set — add one in the plugin's settings.");
   const res = await requestUrl({
@@ -57,10 +102,19 @@ async function geminiImage(s: ImageStudioSettings, prompt: string, aspect: Aspec
   }>;
   const image = parts.find((p) => p.inlineData?.data);
   if (!image?.inlineData?.data) {
-    const said = parts
-      .map((p) => p.text)
-      .filter(Boolean)
-      .join(" ");
+    // Why not: its words, else the prompt refused (`blockReason`), else why it stopped (`IMAGE_SAFETY`).
+    const feedback = res.json?.promptFeedback as { blockReason?: string; blockReasonMessage?: string } | undefined;
+    const finish = res.json?.candidates?.[0]?.finishReason as string | undefined;
+    const said =
+      parts
+        .map((p) => p.text)
+        .filter(Boolean)
+        .join(" ") ||
+      (feedback?.blockReason
+        ? `the prompt was blocked (${feedback.blockReason})${feedback.blockReasonMessage ? ` — ${feedback.blockReasonMessage}` : ""}`
+        : finish && finish !== "STOP"
+          ? `it stopped (${finish})`
+          : "");
     throw new Error(`No image came back${said ? `: ${said.slice(0, 300)}` : "."}`);
   }
   return { data: fromBase64(image.inlineData.data), mime: image.inlineData.mimeType ?? "image/png" };

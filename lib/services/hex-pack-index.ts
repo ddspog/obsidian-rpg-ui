@@ -5,11 +5,13 @@
  * Built lazily on first use and rebuilt after any vault change under the
  * folder (a tile added, `pack.yml` edited), or when the folder setting
  * changes; open hex maps subscribe and redraw. Also remembers each tile's
- * natural size, which placing a sprite needs.
+ * natural size, which placing a sprite needs, and registers the fonts in each
+ * pack's `fonts/` folder (`Bookmania-Black.ttf`: Bookmania at 900), which
+ * lettering labels are drawn in.
  */
 
 import { type App, TFile } from "obsidian";
-import { buildPack, type HexPack, parsePackConfig } from "lib/domains/hexmap/packs";
+import { buildPack, fontFaceOf, type HexPack, parsePackConfig } from "lib/domains/hexmap/packs";
 import type { ImageSize } from "lib/domains/hexmap/layout";
 import { settingsStore } from "lib/services/settings-store";
 import type { DndUIToolkitSettings } from "settings";
@@ -37,6 +39,8 @@ class HexPackIndex {
   private builtFor = "";
   private listeners = new Set<() => void>();
   private sizes = new Map<string, Promise<ImageSize | null>>();
+  /** Font files registered, by URL. */
+  private fonts = new Set<string>();
 
   /** Called once from the plugin's onload. */
   init(app: App): void {
@@ -121,8 +125,32 @@ class HexPackIndex {
     for (const [name, { files, yml }] of byPack) {
       const text = yml ? await app.vault.cachedRead(yml).catch(() => null) : null;
       packs.set(name, buildPack(name, files, parsePackConfig(text, name)));
+      this.loadFonts(files);
     }
     return packs;
+  }
+
+  /** Each pack font not yet registered, loaded; open maps redraw once they're in, measured in the real letters. */
+  private loadFonts(files: Array<{ path: string; url: string }>): void {
+    if (typeof FontFace === "undefined" || typeof document === "undefined") return;
+    const loading: Array<Promise<unknown>> = [];
+    for (const f of files) {
+      const face = fontFaceOf(f.path);
+      if (!face || this.fonts.has(f.url)) continue;
+      this.fonts.add(f.url);
+      const font = new FontFace(face.family, `url("${f.url}")`, {
+        weight: String(face.weight),
+        style: face.italic ? "italic" : "normal",
+      });
+      loading.push(
+        font
+          .load()
+          // The DOM typings here predate FontFaceSet.add.
+          .then((loaded) => (document.fonts as unknown as { add(face: FontFace): void }).add(loaded))
+          .catch((err) => console.warn(`Hex maps: couldn't load the font ${f.path}`, err))
+      );
+    }
+    if (loading.length) void Promise.all(loading).then(() => this.notify());
   }
 }
 

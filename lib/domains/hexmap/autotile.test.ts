@@ -13,9 +13,11 @@ const pack = buildPack(
     "path/roads/clean/start-0.webp",
     "path/roads/clean/start-3.webp",
     "path/roads/clean/yfork-0.webp",
+    "path/roads/clean/start-4-hub.webp",
     "path/rivers/River 2 N.webp",
     "path/rivers/River 9 N.webp",
     "path/rivers/River 1 N.webp",
+    "path/rivers/River 2 N Mouth.webp",
   ].map((path) => ({ path, url: `u:${path}` })),
   parsePackConfig(
     `autotile:
@@ -26,11 +28,14 @@ const pack = buildPack(
       "S,N": roads/clean/straight-0
       "N,NE": roads/clean/turn60-0
       "N,S,SW": roads/clean/yfork-0
+      culdesac-4: roads/clean/start-4-hub
+      "N,Q": roads/clean/start-0
   rivers:
     connectsTo: [water]
     tiles:
       "N": "rivers/River 1 N"
-      "N,S": ["rivers/River 2 N", "rivers/River 9 N"]`,
+      "N,S": ["rivers/River 2 N", "rivers/River 9 N"]
+      straight-0-mouth0: "rivers/River 2 N Mouth"`,
     "basic"
   )
 );
@@ -62,6 +67,19 @@ describe("autotiled paths", () => {
     expect(tileOf(src, 0, 1)).toMatchObject({ file: "roads/clean/yfork-0", mask: "N,S,SW" });
   });
 
+  it("draws a hub when the plain shape has no tile", () => {
+    // (0,0) has one neighbour, SW (-1,1): start-4 has no tile, start-4-hub does (written as the older culdesac-4).
+    expect(tileOf("p(0,0): roads\np(-1,1): roads", 0, 0)).toMatchObject({
+      file: "roads/clean/start-4-hub",
+      mask: "SW",
+    });
+  });
+
+  it("keys tables by shape, older side masks read as their type", () => {
+    expect(pack.config.autotile.roads.tiles["straight-0"]).toEqual(["roads/clean/straight-0"]);
+    expect(pack.config.autotile.roads.unknownKeys).toEqual(["N,Q"]);
+  });
+
   it("doesn't join different families", () => {
     expect(tileOf("p(0,0): roads\np(0,1): rivers", 0, 0)).toMatchObject({ mask: "" });
   });
@@ -70,20 +88,36 @@ describe("autotiled paths", () => {
     expect(tileOf("t(0,-1): water\np(0,0): rivers\np(0,1): rivers", 0, 0)).toMatchObject({ mask: "N,S" });
   });
 
-  it("varies between listed tiles by the seed, the same way each time", () => {
-    const a = tileOf("t(0,-1): water\np(0,0): rivers\np(0,1): rivers", 0, 0)?.file;
-    expect(["rivers/River 2 N", "rivers/River 9 N"]).toContain(a);
-    expect(tileOf("t(0,-1): water\np(0,0): rivers\np(0,1): rivers", 0, 0)?.file).toBe(a);
+  it("opens a river into the sea with a mouth tile, plain where it doesn't meet water", () => {
+    expect(tileOf("t(0,-1): water\np(0,0): rivers\np(0,1): rivers", 0, 0)).toMatchObject({
+      file: "rivers/River 2 N Mouth",
+      mask: "N,S",
+    });
+    expect(tileOf("p(0,-1): rivers\np(0,0): rivers\np(0,1): rivers", 0, 0)?.file).not.toBe("rivers/River 2 N Mouth");
   });
 
-  it("draws a stroke when no tile has those sides", () => {
-    const pick = tileOf("p(0,0): roads\np(1,0): roads", 0, 0);
-    expect(pick).toMatchObject({ mask: "SE", stroke: { sides: ["SE"], family: "roads" } });
-    const layout = layoutHexMap(
-      resolveHexMap(parseHexMap("grid: hex\n---\np(0,0): roads\np(1,0): roads"), packs, "basic"),
-      new Map()
-    );
-    expect(layout.items.map((i) => i.kind)).toEqual(["stroke", "stroke"]);
+  it("varies between listed tiles by the seed, the same way each time", () => {
+    const river = "p(0,-1): rivers\np(0,0): rivers\np(0,1): rivers";
+    const a = tileOf(river, 0, 0)?.file;
+    expect(["rivers/River 2 N", "rivers/River 9 N"]).toContain(a);
+    expect(tileOf(river, 0, 0)?.file).toBe(a);
+  });
+
+  it("turns a tile of the shape into place when its own slot has none", () => {
+    // SE is start-2: start-0 turned two sides.
+    expect(tileOf("p(0,0): roads\np(1,0): roads", 0, 0)).toMatchObject({
+      mask: "SE",
+      file: "roads/clean/start-0",
+      turn: 2,
+    });
+  });
+
+  it("draws a stroke when no tile has the shape at any turn", () => {
+    // N,SE is a turn120: the pack has none.
+    const lines = "p(0,-1): roads\np(0,0): roads\np(1,0): roads";
+    expect(tileOf(lines, 0, 0)).toMatchObject({ mask: "N,SE", stroke: { sides: ["N", "SE"], family: "roads" } });
+    const layout = layoutHexMap(resolveHexMap(parseHexMap(`grid: hex\n---\n${lines}`), packs, "basic"), new Map());
+    expect(layout.items.map((i) => i.kind)).toContain("stroke");
   });
 
   it("leaves a full spec as written", () => {

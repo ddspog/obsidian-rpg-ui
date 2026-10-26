@@ -3,6 +3,10 @@ import { LucideIcon } from "./lucide-icon";
 
 interface BottomDrawerProps {
   actionsPanel: React.ReactNode;
+  /** A class of its own for the host (the draft block's compact drawer). */
+  className?: string;
+  /** What the folded bar reads; "Actions" if not given. */
+  label?: string;
 }
 
 /** What the panel inside can ask of its drawer: open up (when someone is picked). */
@@ -16,7 +20,7 @@ const KEY = "rpg-ui:drawer-collapsed";
  * in its corner; picking someone in the roster opens it again. (What the
  * session changed is the bookkeeping below it, apart.)
  */
-export function BottomDrawer({ actionsPanel }: BottomDrawerProps) {
+export function BottomDrawer({ actionsPanel, className, label = "Actions" }: BottomDrawerProps) {
   const [collapsed, setCollapsed] = React.useState(() => {
     try {
       return window.localStorage.getItem(KEY) === "1";
@@ -35,18 +39,18 @@ export function BottomDrawer({ actionsPanel }: BottomDrawerProps) {
   const context = React.useMemo(() => ({ expand: () => set(false) }), [set]);
 
   return (
-    <div className={`lonelog-bottom-drawer${collapsed ? " is-collapsed" : ""}`}>
+    <div className={`lonelog-bottom-drawer${collapsed ? " is-collapsed" : ""}${className ? ` ${className}` : ""}`}>
       <button
         type="button"
         className="drawer-toggle-btn"
         onClick={() => set(!collapsed)}
         aria-expanded={!collapsed}
-        aria-label={collapsed ? "Open the actions" : "Minimise the actions"}
-        title={collapsed ? "Open the actions" : "Minimise"}
+        aria-label={collapsed ? `Open the ${label.toLowerCase()}` : `Minimise the ${label.toLowerCase()}`}
+        title={collapsed ? `Open the ${label.toLowerCase()}` : "Minimise"}
       >
         <LucideIcon name={collapsed ? "ChevronUp" : "ChevronDown"} size="0.9rem" strokeWidth={1.8} />
       </button>
-      {collapsed && <span className="drawer-collapsed-label">Actions</span>}
+      {collapsed && <span className="drawer-collapsed-label">{label}</span>}
       {/* Mounted either way: the roster lives in the page's margin, and its choices with it. */}
       <div className="drawer-content" hidden={collapsed}>
         <DrawerContext.Provider value={context}>{actionsPanel}</DrawerContext.Provider>
