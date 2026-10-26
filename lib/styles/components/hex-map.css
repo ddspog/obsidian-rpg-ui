@@ -2666,3 +2666,37 @@
     margin-left: 0;
   }
 }
+
+/* A selected tool reads as selected without losing its words: a tint and an accent edge, the label in full ink. */
+.rpg-hexmap-hud .rpg-hexpaint-button.is-on,
+.rpg-hexmap-hud .rpg-hexpaint-button.is-on:hover {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary));
+  color: var(--text-normal);
+}
+
+@media (max-width: 600px) {
+  /* Modes (Play, Mark, Build, layers): thumb-sized segments with the open one filled. */
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented {
+    gap: 0;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--background-primary);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label,
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented button {
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding-inline: 0.65rem;
+    border: 0;
+    border-radius: 999px;
+    font-size: var(--font-ui-small);
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label.is-checked {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }
+}

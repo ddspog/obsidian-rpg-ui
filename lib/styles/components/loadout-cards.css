@@ -4,8 +4,9 @@
 
 .rpg-loadouts {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
   margin: 0 0 0.6rem;
   /* Lines the "In hand" label up with the inventory's "Attunement" chip
    * (the block's 0.5rem padding + the chip's own 0.5rem). */
