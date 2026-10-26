@@ -16,6 +16,7 @@ import { KeyValueStore } from "lib/services/kv/kv";
 import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_IMAGE_STUDIO, DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { ImageStudioModal, setImageStudioSettings } from "lib/plugin/image-studio-modal";
+import { NewMapModal } from "lib/plugin/new-map-modal";
 import { relinkFrames, retargetFrames, setCardFrameSource } from "lib/services/card-frame-config";
 import { applyFrameCss, removeFrameCss } from "lib/services/frame-css";
 import { msgbus } from "lib/services/event-bus";
@@ -851,6 +852,13 @@ export default class DndUIToolkitPlugin extends Plugin {
           this.settings.imageStudio,
           this.app.workspace.getActiveFile() ?? undefined
         ).open(),
+    });
+
+    // A battle map in a note of its own, from a picture: the library entry logs and hex maps link to.
+    this.addCommand({
+      id: "rpg-ui-new-battle-map",
+      name: "New battle map note",
+      callback: () => new NewMapModal(this.app).open(),
     });
 
     this.addCommand({

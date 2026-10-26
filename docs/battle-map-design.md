@@ -204,3 +204,11 @@ A map kept in its own note is the one place a place's battle board is defined:
   A map written in the log's own `maps:` has no note, so its title stays plain text.
 - **From a hex map:** a place that links a note holding a square battle map (`t(2,1): plains [[Kowyn Encounter]]`)
   says "Has a battle map. Click to open it." in its hover, and a click opens the note.
+
+## The library: a map note per place
+
+The command **New battle map note** asks for a title, a picture and a folder (a `maps` folder if the vault has one),
+finds the picture's grid, and writes a note: the map block, then sections for starting positions, cover and terrain,
+hazards, loot and notes for the GM. Without a picture it writes a small painted board to edit by hand. Open the note
+and press **Place tokens** to put the sides where they start; a log's `[COMBAT: [[Title]]]` and a hex map's
+`[[Title]]` place then lead to it.
