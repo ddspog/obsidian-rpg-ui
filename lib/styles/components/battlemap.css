@@ -375,7 +375,8 @@
 
 .lonelog-prose-layout.is-stacked .lonelog-battle-pane .rpg-battlemap {
   width: auto;
-  max-height: 10rem;
+  /* Tall enough that the grid labels and tokens stay readable; 10rem left a postage stamp. */
+  max-height: 15rem;
 }
 
 /* Setup in the pane's own slots: who's picked (or what to do) on the header's

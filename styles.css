@@ -1370,6 +1370,9 @@
   font-style: italic;
   font-size: 0.85em;
 }
+.rpg-inventory-block__item-stat-notes {
+  display: none;
+}
 .rpg-inventory-block__item-stat {
   color: var(--text-muted);
   font-size: 0.85rem;
@@ -1379,13 +1382,13 @@
 .rpg-inventory-block__container-summary .rpg-inventory-block__item-stat {
   text-align: right;
 }
-.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) {
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
   grid-template-columns: 1.5rem 2.5rem 1fr 6.5rem 2rem;
 }
-.rpg-inventory-block__item[data-nested=true]:has(> .rpg-inventory-block__item-stat:empty) {
+.rpg-inventory-block__item[data-nested=true]:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
   grid-template-columns: 1.5rem 2rem 1fr 6.5rem 2rem;
 }
-.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) > .rpg-inventory-block__item-stat {
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) > .rpg-inventory-block__item-stat {
   display: none;
 }
 .rpg-inventory-block__item-meta {
@@ -7664,8 +7667,7 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
   white-space: nowrap;
 }
 .hover-popover header[aria-details*=" Banner"] [aria-details="Line of Pills"] {
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 .hover-popover header[aria-details*=" Banner"] fieldset {
   flex: 0 0 auto;
@@ -7679,8 +7681,8 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] {
   display: none;
 }
-.hover-popover header[aria-details*=" Banner"] [aria-details="Character Level"] {
-  zoom: 0.6;
+.hover-popover.hover-popover header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-details="Inspirational Level"] {
+  zoom: 0.85;
 }
 .hover-popover span[aria-details="Link Pill"] {
   white-space: nowrap;
@@ -7700,6 +7702,38 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 }
 .hover-popover figure[aria-details="Portrait Thumb"] {
   flex: 0 0 96px !important;
+}
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "buttons level" "xp level";
+  align-items: center;
+  align-content: center;
+  gap: 10px 14px;
+}
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] > menu[aria-details="Line of Big Elements"] {
+  display: contents;
+}
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] menu[aria-details="Line of Buttons"] {
+  grid-area: buttons;
+  justify-self: start;
+}
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-details="Inspirational Level"] {
+  grid-area: level;
+  justify-self: end;
+  zoom: 1.4;
+}
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-details="Progress Bar"] {
+  grid-area: xp;
+  align-self: end;
+}
+.hover-popover [aria-details="Line Stats"] {
+  gap: 12px;
+  justify-content: center;
+}
+.hover-popover [aria-details="Line Stats"]::before,
+.hover-popover [aria-details="Line Stats"]::after {
+  display: none;
 }
 
 /* lib/styles/components/pills.css */
@@ -9391,7 +9425,7 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
 }
 .lonelog-prose-layout.is-stacked .lonelog-battle-pane .rpg-battlemap {
   width: auto;
-  max-height: 10rem;
+  max-height: 15rem;
 }
 .lonelog-battle-pane .lonelog-battle-where.is-setup {
   min-width: 0;
@@ -12866,7 +12900,7 @@ svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
 svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
   font-size: 0.8em;
   font-weight: 700;
-  fill: var(--rpg-progress-numbered-tick-inactive, rgba(255, 255, 255, 0.45));
+  fill: var(--rpg-progress-numbered-tick-inactive, #a8a08a);
 }
 svg[aria-details="Progress Numbered"] .rpg-numbered-tick[data-active=true] {
   fill: var(--rpg-progress-numbered-tick-active, rgba(255, 255, 255, 0.95));
@@ -13029,13 +13063,16 @@ svg[aria-details="Stat Hex Pair"] {
   width: 110px;
   height: 110px;
   overflow: visible;
-  filter: drop-shadow(0 0 6px rgba(150, 120, 255, 0.4));
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 .rpg-hex-border {
   fill: var(--rpg-hex-border, #6a6258);
 }
 .rpg-hex-fill {
   fill: var(--rpg-hex-bg, #4a4440);
+}
+.rpg-hex-halo-dot {
+  fill: light-dark(rgba(106, 78, 42, 0.5), rgba(212, 168, 64, 0.5));
 }
 .rpg-hex-prof-ring {
   fill: var(--rpg-hex-prof-ring, #d4a840);
@@ -13080,8 +13117,7 @@ svg[aria-details="Stat Hex Pair"] {
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--rpg-hex-score, #efe6d2);
-  filter: drop-shadow(0 0 5px rgba(190, 160, 255, 0.7));
+  fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
 }
 section[aria-details="Character Stats"] {
   container-type: inline-size;
@@ -13092,17 +13128,8 @@ section[aria-details="Character Stats"] {
   row-gap: 8px;
   padding: var(--spacing-3, 12px);
   position: relative;
-  background:
-    radial-gradient(
-      ellipse at 50% 0%,
-      rgba(150, 120, 255, 0.2),
-      transparent 70%),
-    radial-gradient(
-      circle,
-      rgba(212, 168, 64, 0.22) 1px,
-      transparent 1.4px) 0 0 / 14px 14px,
-    #1a1816;
-  border: 1px solid #2d2823;
+  background: light-dark(#f2ead9, #2a251e);
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
   border-top: none;
 }
 @container (max-width: 680px) {
@@ -13512,6 +13539,27 @@ section[aria-details="Character Rolls"] thead th:last-child,
 section[aria-details="Character Rolls"] tbody td:last-child {
   width: auto;
   white-space: nowrap;
+}
+@media (min-width: 601px) {
+  section[aria-details="Character Rolls"] :is(thead th, tbody td).rpg-rolls__name,
+  section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label {
+    min-width: 10.5rem;
+  }
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__hit {
+    min-width: 4.75rem;
+  }
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__dc {
+    min-width: 4.25rem;
+  }
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__range {
+    min-width: 6.25rem;
+  }
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__damage {
+    min-width: 7.5rem;
+  }
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__cost {
+    min-width: 2.75rem;
+  }
 }
 section[aria-details="Character Rolls"] thead.rpg-rolls__head-band {
   background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.22));
@@ -16583,9 +16631,9 @@ dd[aria-label="Dice Tray"] > button {
   height: 40px;
   padding: 0;
   border: none;
-  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.25));
-  color: var(--rpg-die-health-text, #f0d8d0);
-  font-size: 0.7em;
+  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.5));
+  color: var(--rpg-die-health-text, #fff3ea);
+  font-size: var(--rpg-fs-label, 0.75rem);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.15s, opacity 0.15s;
@@ -19887,23 +19935,25 @@ span[aria-details="Armor Badges"] {
   gap: 6px;
 }
 section[aria-details="Character Skills"] > header[role=button] {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
   min-height: 36px;
   cursor: pointer;
 }
 section[aria-details="Character Skills"] > header[role=button]::after {
   content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 14px;
   width: 8px;
   height: 8px;
-  margin-inline-end: 12px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  margin-block-start: -6px;
+  border-right: 2px solid light-dark(#6a4e2a, #d4a840);
+  border-bottom: 2px solid light-dark(#6a4e2a, #d4a840);
   transform: rotate(45deg);
   transition: transform 0.15s;
 }
 section[aria-details="Character Skills"][data-collapsed=true] > header[role=button]::after {
+  margin-block-start: -4px;
   transform: rotate(-45deg);
 }
 section[aria-details="Character Skills"] > header[role=button]:focus-visible {
@@ -19912,6 +19962,18 @@ section[aria-details="Character Skills"] > header[role=button]:focus-visible {
 }
 section[aria-details="Character Skills"] > menu[hidden] {
   display: none;
+}
+dd[aria-label="Dice Tray"] > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+figure[aria-details="Inspirational Level"] button {
+  position: absolute;
+}
+figure[aria-details="Inspirational Level"] button::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
 }
 
 /* lib/styles/log-surface.css */
@@ -20239,13 +20301,11 @@ section[aria-details="Character Skills"] > menu[hidden] {
     font-size: 0.85rem;
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name hit" "dmg range" "dc cost" "fx fx";
-    align-items: center;
-    column-gap: 8px;
-    row-gap: 4px;
-    padding: 10px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
@@ -20260,13 +20320,18 @@ section[aria-details="Character Skills"] > menu[hidden] {
     display: none;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__name {
-    grid-area: name;
+    flex: 1 0 100%;
+    order: 0;
     font-size: 1rem;
     font-weight: 600;
   }
+  section[aria-details="Character Rolls"] tr:has(td.rpg-rolls__hit:not(:empty)) td.rpg-rolls__name {
+    flex-basis: calc(100% - 7.5rem);
+    min-width: 0;
+  }
   section[aria-details="Character Rolls"] td.rpg-rolls__hit {
-    grid-area: hit;
-    justify-self: end;
+    order: 1;
+    margin-left: auto;
     padding: 0 6px;
     border: 1px solid currentColor;
     border-radius: 6px;
@@ -20276,26 +20341,26 @@ section[aria-details="Character Skills"] > menu[hidden] {
     white-space: nowrap;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__dc {
-    grid-area: dc;
+    order: 4;
     font-size: 0.85rem !important;
     font-weight: 700;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__damage {
-    grid-area: dmg;
+    order: 2;
     font-size: 0.95rem;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__range {
-    grid-area: range;
-    justify-self: end;
+    order: 3;
     font-size: 0.9rem;
     white-space: nowrap;
     color: light-dark(#6d6048, #a8a08a);
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__cost {
-    grid-area: cost;
+    order: 5;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__effects {
-    grid-area: fx;
+    order: 6;
+    margin-left: auto;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__roll {
     grid-area: roll;
@@ -20600,9 +20665,18 @@ body.is-mobile .markdown-rendered [role=button] img {
     min-height: 44px;
   }
   .rpg-inventory-block__currency-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     justify-content: stretch;
     column-gap: 0.4rem;
+  }
+  .rpg-inventory-block__currency-grid > [data-coin=pp],
+  .rpg-inventory-block__currency-grid > [data-coin=gp] {
+    grid-column: span 3;
+  }
+  .rpg-inventory-block__currency-grid > [data-coin=ep],
+  .rpg-inventory-block__currency-grid > [data-coin=sp],
+  .rpg-inventory-block__currency-grid > [data-coin=cp] {
+    grid-column: span 2;
   }
   .rpg-inventory-block__currency-grid > span:empty {
     display: none;
@@ -20632,6 +20706,20 @@ body.is-mobile .markdown-rendered [role=button] img {
     grid-column: 3 / -1;
     grid-row: 2;
   }
+  .rpg-inventory-block__item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rpg-inventory-block__item-name .rpg-inventory-block__item-notes {
+    display: none;
+  }
+  .rpg-inventory-block__item-stat-notes {
+    display: inline;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-style: italic;
+  }
   .lonelog-bookkeeping-sheets {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -20650,13 +20738,42 @@ body.is-mobile .markdown-rendered [role=button] img {
     border-inline: none;
     border-bottom: none;
     margin-bottom: 0;
-    margin-right: -36px;
+    margin-left: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    margin-right: 0;
+    width: 100vw;
+    max-width: none;
   }
   section[aria-details*=" Row"] {
     padding-top: 24px;
   }
   section[aria-details="Character Rolls"] [data-tip]::after {
     display: none;
+  }
+  .markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details=Leveling] figure[aria-details="Inspirational Level"] {
+    zoom: 1.15;
+  }
+  header[aria-details*=" Banner"] {
+    padding-bottom: 20px;
+  }
+  .rpg-inventory-block__item[data-nested=true]:has(> .rpg-inventory-block__item-stat[data-no-stat]),
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
+    grid-template-columns: 1.5rem 1.75rem minmax(0, 1fr) 3.75rem 2rem;
+  }
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) > .rpg-inventory-block__item-stat {
+    display: none;
+  }
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat] > .rpg-inventory-block__item-stat-notes) > .rpg-inventory-block__item-stat {
+    display: block;
+  }
+  section[aria-details^="Character "] a.internal-link,
+  .rpg-spell-entry a.internal-link,
+  .rpg-feature-bucket-entry a.internal-link {
+    padding-block: 10px;
+    margin-block: -10px;
+  }
+  .rpg-spell-slot {
+    min-width: 32px;
+    min-height: 32px;
   }
 }
 

@@ -130,6 +130,35 @@ section[aria-details="Character Rolls"] tbody td:last-child {
   white-space: nowrap;
 }
 
+/* Minimum column widths on a wide pane, so a column lands in the same place on every sheet: an empty
+ * DC or Range column no longer collapses and pulls its neighbours left. */
+@media (min-width: 601px) {
+  section[aria-details="Character Rolls"] :is(thead th, tbody td).rpg-rolls__name,
+  section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label {
+    min-width: 10.5rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__hit {
+    min-width: 4.75rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__dc {
+    min-width: 4.25rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__range {
+    min-width: 6.25rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__damage {
+    min-width: 7.5rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__cost {
+    min-width: 2.75rem;
+  }
+}
+
 /* Head band — one continuous strip spanning the full table width,
  * mirroring the Proficiencies block's `> header` band. All column
  * labels (Rolls / Hit / DC / Range / Damage / Effects) sit inside

@@ -21,7 +21,7 @@ svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
 svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
   font-size: 0.8em;
   font-weight: 700;
-  fill: var(--rpg-progress-numbered-tick-inactive, rgba(255, 255, 255, 0.45));
+  fill: var(--rpg-progress-numbered-tick-inactive, #a8a08a);
 }
 
 svg[aria-details="Progress Numbered"] .rpg-numbered-tick[data-active="true"] {

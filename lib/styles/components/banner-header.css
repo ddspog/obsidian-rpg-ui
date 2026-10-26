@@ -142,8 +142,7 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 }
 
 .hover-popover header[aria-details*=" Banner"] [aria-details="Line of Pills"] {
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .hover-popover header[aria-details*=" Banner"] fieldset {
@@ -160,8 +159,8 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
   display: none;
 }
 
-.hover-popover header[aria-details*=" Banner"] [aria-details="Character Level"] {
-  zoom: 0.6;
+.hover-popover.hover-popover header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] figure[aria-details="Inspirational Level"] {
+  zoom: 0.85;
 }
 
 /* ---- Hover preview: the glance --------------------------------------
@@ -189,4 +188,61 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 
 .hover-popover figure[aria-details="Portrait Thumb"] {
   flex: 0 0 96px !important;
+}
+
+/* ---- Leveling: buttons over the XP bar, the level beside them ------------
+   One column holds the rest and long-rest buttons with the XP bar under them; the level medallion
+   takes the full height beside it and is larger. */
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "buttons level"
+    "xp level";
+  align-items: center;
+  align-content: center;
+  gap: 10px 14px;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  > menu[aria-details="Line of Big Elements"] {
+  display: contents;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  menu[aria-details="Line of Buttons"] {
+  grid-area: buttons;
+  justify-self: start;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  figure[aria-details="Inspirational Level"] {
+  grid-area: level;
+  justify-self: end;
+  zoom: 1.4;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  figure[aria-details="Progress Bar"] {
+  grid-area: xp;
+  align-self: end;
+}
+
+/* Hover preview: the stat diamonds get room, without the side rules that squeezed them. */
+.hover-popover [aria-details="Line Stats"] {
+  gap: 12px;
+  justify-content: center;
+}
+
+.hover-popover [aria-details="Line Stats"]::before,
+.hover-popover [aria-details="Line Stats"]::after {
+  display: none;
 }

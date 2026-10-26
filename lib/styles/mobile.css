@@ -283,18 +283,14 @@
     font-size: 0.85rem;
   }
 
+  /* A roll is a short card: name and to-hit on the first line, then whatever the roll has (damage, range,
+   * DC, cost, effects) running on and wrapping as one line of facts. Nothing is reserved for what is absent. */
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "name hit"
-      "dmg range"
-      "dc cost"
-      "fx fx";
-    align-items: center;
-    column-gap: 8px;
-    row-gap: 4px;
-    padding: 10px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
   }
 
@@ -312,14 +308,21 @@
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__name {
-    grid-area: name;
+    flex: 1 0 100%;
+    order: 0;
     font-size: 1rem;
     font-weight: 600;
   }
 
+  /* With a to-hit badge the name leaves it room on the same line. */
+  section[aria-details="Character Rolls"] tr:has(td.rpg-rolls__hit:not(:empty)) td.rpg-rolls__name {
+    flex-basis: calc(100% - 7.5rem);
+    min-width: 0;
+  }
+
   section[aria-details="Character Rolls"] td.rpg-rolls__hit {
-    grid-area: hit;
-    justify-self: end;
+    order: 1;
+    margin-left: auto;
     padding: 0 6px;
     border: 1px solid currentColor;
     border-radius: 6px;
@@ -330,30 +333,30 @@
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__dc {
-    grid-area: dc;
+    order: 4;
     font-size: 0.85rem !important;
     font-weight: 700;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__damage {
-    grid-area: dmg;
+    order: 2;
     font-size: 0.95rem;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__range {
-    grid-area: range;
-    justify-self: end;
+    order: 3;
     font-size: 0.9rem;
     white-space: nowrap;
     color: light-dark(#6d6048, #a8a08a);
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__cost {
-    grid-area: cost;
+    order: 5;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__effects {
-    grid-area: fx;
+    order: 6;
+    margin-left: auto;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__roll {
@@ -732,11 +735,23 @@ body.is-mobile .markdown-rendered [role="button"] img {
     min-height: 44px;
   }
 
-  /* Five coins in two rows: nothing starts left of the gutter. */
+  /* Five coins in two rows, nothing starting left of the gutter: PP and GP split the first row in half,
+   * EP, SP and CP share the second in thirds. */
   .rpg-inventory-block__currency-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     justify-content: stretch;
     column-gap: 0.4rem;
+  }
+
+  .rpg-inventory-block__currency-grid > [data-coin="pp"],
+  .rpg-inventory-block__currency-grid > [data-coin="gp"] {
+    grid-column: span 3;
+  }
+
+  .rpg-inventory-block__currency-grid > [data-coin="ep"],
+  .rpg-inventory-block__currency-grid > [data-coin="sp"],
+  .rpg-inventory-block__currency-grid > [data-coin="cp"] {
+    grid-column: span 2;
   }
 
   /* The empty label cell that lines up the desktop's To Sell row would leave a hole in the first row. */
@@ -777,6 +792,24 @@ body.is-mobile .markdown-rendered [role="button"] img {
     grid-row: 2;
   }
 
+  /* The name stays on one line; "Main Weapon", "Ranged" and the rest ride the stat line under it. */
+  .rpg-inventory-block__item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rpg-inventory-block__item-name .rpg-inventory-block__item-notes {
+    display: none;
+  }
+
+  .rpg-inventory-block__item-stat-notes {
+    display: inline;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-style: italic;
+  }
+
   /* The bookkeeping cards fit the pane: one column, and a card's columns may shrink. */
   .lonelog-bookkeeping-sheets {
     grid-template-columns: minmax(0, 1fr);
@@ -804,8 +837,11 @@ body.is-mobile .markdown-rendered [role="button"] img {
     border-inline: none;
     border-bottom: none;
     margin-bottom: 0;
-    /* Out to the pane's right edge: 24px of Obsidian's margin and the scrollbar's 12px. */
-    margin-right: -36px;
+    /* The pane's full width, whatever the scrollbar or margins: out to the left edge, then a screen wide. */
+    margin-left: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    margin-right: 0;
+    width: 100vw;
+    max-width: none;
   }
 
   /* Room above the portrait for the banner's overlap. */
@@ -816,5 +852,49 @@ body.is-mobile .markdown-rendered [role="button"] img {
   /* No hover on a phone, and the hidden tooltip's width pushed the page sideways at the card's right edge. */
   section[aria-details="Character Rolls"] [data-tip]::after {
     display: none;
+  }
+
+  /* The larger level medallion, a little smaller on a phone so its points stay inside the banner. */
+  .markdown-rendered
+    header[aria-details*=" Banner"]
+    fieldset[aria-details="Leveling"]
+    figure[aria-details="Inspirational Level"] {
+    zoom: 1.15;
+  }
+
+  header[aria-details*=" Banner"] {
+    padding-bottom: 20px;
+  }
+
+  /* Rows with no damage or AC (clothes, gear) use their own template; give them the phone's too, so
+   * the name keeps the room and the tags, if any, sit on the line under it. */
+  .rpg-inventory-block__item[data-nested="true"]:has(> .rpg-inventory-block__item-stat[data-no-stat]),
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
+    grid-template-columns: 1.5rem 1.75rem minmax(0, 1fr) 3.75rem 2rem;
+  }
+
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) > .rpg-inventory-block__item-stat {
+    display: none;
+  }
+
+  .rpg-inventory-block__item:has(
+      > .rpg-inventory-block__item-stat[data-no-stat] > .rpg-inventory-block__item-stat-notes
+    )
+    > .rpg-inventory-block__item-stat {
+    display: block;
+  }
+
+  /* Links and slot toggles in the sheet are inline text: padding with a matching negative margin grows
+   * the thumb's target without moving a line. */
+  section[aria-details^="Character "] a.internal-link,
+  .rpg-spell-entry a.internal-link,
+  .rpg-feature-bucket-entry a.internal-link {
+    padding-block: 10px;
+    margin-block: -10px;
+  }
+
+  .rpg-spell-slot {
+    min-width: 32px;
+    min-height: 32px;
   }
 }

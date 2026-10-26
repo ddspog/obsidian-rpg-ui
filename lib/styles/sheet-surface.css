@@ -207,27 +207,29 @@ span[aria-details="Armor Badges"] {
   gap: 6px;
 }
 
-/* Skills fold up from their header. */
+/* Skills fold up from their header; the tan band stays as it was, the chevron rides on it. */
 section[aria-details="Character Skills"] > header[role="button"] {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
   min-height: 36px;
   cursor: pointer;
 }
 
 section[aria-details="Character Skills"] > header[role="button"]::after {
   content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 14px;
   width: 8px;
   height: 8px;
-  margin-inline-end: 12px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  margin-block-start: -6px;
+  border-right: 2px solid light-dark(#6a4e2a, #d4a840);
+  border-bottom: 2px solid light-dark(#6a4e2a, #d4a840);
   transform: rotate(45deg);
   transition: transform 0.15s;
 }
 
 section[aria-details="Character Skills"][data-collapsed="true"] > header[role="button"]::after {
+  margin-block-start: -4px;
   transform: rotate(-45deg);
 }
 
@@ -238,4 +240,21 @@ section[aria-details="Character Skills"] > header[role="button"]:focus-visible {
 
 section[aria-details="Character Skills"] > menu[hidden] {
   display: none;
+}
+
+/* Hit dice: the 40px die is a 44px target. */
+dd[aria-label="Dice Tray"] > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Inspiration points are 22px stars; the hit area is 44px without moving them. */
+figure[aria-details="Inspirational Level"] button {
+  position: absolute;
+}
+
+figure[aria-details="Inspirational Level"] button::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
 }
