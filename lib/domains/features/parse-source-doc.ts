@@ -135,6 +135,34 @@ function extractTableBlocks(body: string): TableDef[] {
   return out;
 }
 
+/**
+ * Parsed docs by their text. A session log resolves the same few compendium
+ * notes (steps, tables, called generators) on every open, and one note several
+ * times within an open; parsing their YAML is most of that cost.
+ */
+const PARSED_LIMIT = 512;
+const parsedDocs = new Map<string, SourceDoc>();
+
+/**
+ * `parseSourceDoc` for a doc given by name and text alone, the parse kept for
+ * the next ask. What it returns is shared: read it, don't change it.
+ */
+export function parseSourceDocShared(raw: SourceDocInput, kind: SourceDocKind): SourceDoc {
+  const plain = Object.keys(raw).every((k) => k === "$name" || k === "$contents");
+  if (!plain || typeof raw.$contents !== "string") return parseSourceDoc(raw, kind);
+  const key = `${kind}\u0000${raw.$name}\u0000${raw.$contents}`;
+  const hit = parsedDocs.get(key);
+  if (hit) {
+    parsedDocs.delete(key);
+    parsedDocs.set(key, hit);
+    return hit;
+  }
+  const doc = parseSourceDoc(raw, kind);
+  parsedDocs.set(key, doc);
+  if (parsedDocs.size > PARSED_LIMIT) parsedDocs.delete(parsedDocs.keys().next().value as string);
+  return doc;
+}
+
 export function parseSourceDoc(raw: SourceDocInput, kind: SourceDocKind): SourceDoc {
   const body = (raw.$contents as string | undefined) ?? "";
   const metaKey = META_KEYS[kind];

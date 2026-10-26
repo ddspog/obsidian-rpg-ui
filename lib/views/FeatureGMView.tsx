@@ -18,7 +18,7 @@ import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { BaseView } from "./BaseView";
 import { ReactMarkdown } from "./ReactMarkdown";
-import { parseGMFeatureBlock, parseSourceDoc } from "lib/domains/features/parse-source-doc";
+import { parseGMFeatureBlock, parseSourceDocShared } from "lib/domains/features/parse-source-doc";
 import { GMFeatureCard } from "lib/components/session-log/gm-feature-card";
 import type { GMFeature, GMStep } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
@@ -93,7 +93,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
       );
       if (!(file instanceof TFile)) continue;
       try {
-        const doc = parseSourceDoc({ $name: file.basename, $contents: await this.app.vault.read(file) }, "class");
+        const doc = parseSourceDocShared({ $name: file.basename, $contents: await this.app.vault.read(file) }, "class");
         resFeatures.push(...(doc.gmFeatures ?? []));
         for (const f of doc.gmFeatures ?? []) {
           if (f.dial?.abbr && !dials[f.dial.abbr]) dials[f.dial.abbr] = { ...f.dial, name: f.name };
@@ -111,7 +111,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
           if (!(file instanceof TFile)) continue;
           try {
             const content = await this.app.vault.read(file);
-            const doc = parseSourceDoc({ $name: file.basename, $contents: content }, "class");
+            const doc = parseSourceDocShared({ $name: file.basename, $contents: content }, "class");
             const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
             if (step) {
               const expanded = await this.expandStepUses(step);
@@ -165,7 +165,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
       const file = this.app.metadataCache.getFirstLinkpathDest(tref?.target ?? link, this.sourcePath);
       if (!(file instanceof TFile)) continue;
       try {
-        const doc = parseSourceDoc({ $name: file.basename, $contents: await this.app.vault.read(file) }, "class");
+        const doc = parseSourceDocShared({ $name: file.basename, $contents: await this.app.vault.read(file) }, "class");
         const target = selectStepBlock(doc.gmFeatures ?? [], tref?.block);
         if (target?.steps) resolved[link] = target.steps;
       } catch {
@@ -188,7 +188,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
         if (!(file instanceof TFile)) continue;
         try {
           const content = await this.app.vault.read(file);
-          const doc = parseSourceDoc({ $name: file.basename, $contents: content }, "class");
+          const doc = parseSourceDocShared({ $name: file.basename, $contents: content }, "class");
           const table = (ref?.block && doc.tables.find((t) => t.name === ref.block)) || doc.tables[0];
           if (table) into[rawRef] = table;
         } catch {
@@ -285,7 +285,7 @@ export class FeatureGMRenderChild extends ReactMarkdown {
       const tf = this.app.metadataCache.getFirstLinkpathDest(tref?.target ?? gs.table, this.sourcePath);
       if (!(tf instanceof TFile)) continue;
       try {
-        const tdoc = parseSourceDoc({ $name: tf.basename, $contents: await this.app.vault.read(tf) }, "class");
+        const tdoc = parseSourceDocShared({ $name: tf.basename, $contents: await this.app.vault.read(tf) }, "class");
         const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
         if (table) tables[gs.table] = table;
       } catch {
@@ -300,7 +300,9 @@ export class FeatureGMRenderChild extends ReactMarkdown {
     const f = this.app.metadataCache.getFirstLinkpathDest(target, this.sourcePath);
     if (!(f instanceof TFile)) return null;
     try {
-      return parseSourceDoc({ $name: f.basename, $contents: await this.app.vault.read(f) }, "class").gmFeatures ?? null;
+      return (
+        parseSourceDocShared({ $name: f.basename, $contents: await this.app.vault.read(f) }, "class").gmFeatures ?? null
+      );
     } catch {
       return null;
     }
@@ -317,7 +319,10 @@ export class FeatureGMRenderChild extends ReactMarkdown {
         const file = this.app.metadataCache.getFirstLinkpathDest(target, this.sourcePath);
         if (!(file instanceof TFile)) continue;
         try {
-          const doc = parseSourceDoc({ $name: file.basename, $contents: await this.app.vault.read(file) }, "class");
+          const doc = parseSourceDocShared(
+            { $name: file.basename, $contents: await this.app.vault.read(file) },
+            "class"
+          );
           Object.assign(lists, collectLists(doc.gmFeatures ?? []));
         } catch {
           /* unreadable list — the consult falls back to the raw `[Name?]` ref */

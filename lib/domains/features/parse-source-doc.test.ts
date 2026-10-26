@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { parseSourceDoc, parseSourceDocs, parseGMFeatureBlock } from "./parse-source-doc";
+import { parseSourceDoc, parseSourceDocs, parseSourceDocShared, parseGMFeatureBlock } from "./parse-source-doc";
 
 const CLERIC_BODY = `
 # Cleric
@@ -464,5 +464,28 @@ describe("parseGMFeatureBlock", () => {
 
   it("returns null for an empty body", () => {
     expect(parseGMFeatureBlock("")).toBeNull();
+  });
+});
+
+describe("parseSourceDocShared", () => {
+  const text = "```rpg table.Loot\n| d4 | Result |\n|----|--------|\n| 1 | Coin |\n| 2 | Gem |\n```\n";
+
+  it("hands back the same parse for the same text", () => {
+    const a = parseSourceDocShared({ $name: "Loot", $contents: text }, "class");
+    const b = parseSourceDocShared({ $name: "Loot", $contents: text }, "class");
+    expect(b).toBe(a);
+    expect(a.tables).toEqual(parseSourceDoc({ $name: "Loot", $contents: text }, "class").tables);
+  });
+
+  it("parses again when the text, the name or the kind differs", () => {
+    const a = parseSourceDocShared({ $name: "Loot", $contents: text }, "class");
+    expect(parseSourceDocShared({ $name: "Loot", $contents: text + "\n" }, "class")).not.toBe(a);
+    expect(parseSourceDocShared({ $name: "Other", $contents: text }, "class")).not.toBe(a);
+    expect(parseSourceDocShared({ $name: "Loot", $contents: text }, "background")).not.toBe(a);
+  });
+
+  it("leaves a doc with frontmatter to be parsed afresh", () => {
+    const raw = { $name: "Loot", $contents: text, level: 3 };
+    expect(parseSourceDocShared(raw, "class")).not.toBe(parseSourceDocShared(raw, "class"));
   });
 });
