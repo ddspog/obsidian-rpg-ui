@@ -1251,6 +1251,13 @@ export interface Loadout {
 export declare function readLoadouts(raw: unknown): Loadout[];
 export declare function describeLoadout(l: Loadout): string;
 export declare function applyLoadout(items: unknown[], loadout: Loadout): { items: unknown[]; missing: string[] };
+/** A sheet's loadouts as cards — hotbar icon on the left, name and hands on the right. */
+export declare const LoadoutCards: React.FC<{
+  loadouts: Loadout[];
+  isHeld: (loadout: Loadout) => boolean;
+  onEquip?: (loadout: Loadout) => void;
+  iconFor?: (name: string) => string | undefined;
+}>;
 
 export declare function resolvePersonalItem(
   personal: ItemPersonalData,

@@ -1,0 +1,408 @@
+/* `rpg draft`: a GM's drafting block (lib/components/draft/draft-block.tsx).
+ * Its ideas read as a log block does (the prose, the Log and the drawer come
+ * from the log's own styles). Its head and sources take the Log's voice: faint
+ * uppercase labels, hairlines, no fills. Quiet at rest; the controls surface
+ * on hover. */
+
+.rpg-draft {
+  display: grid;
+  gap: 0;
+}
+
+/* With the Log open beside the prose, the head and the sources widen with them: one frame. */
+.rpg-draft.is-wide > :is(.rpg-draft-head, .rpg-draft-sources, .rpg-draft-map, .rpg-draft-preview, .rpg-draft-bar) {
+  margin-inline: calc(var(--log-sidebar-width, 24rem) / -2);
+}
+
+/* Labels everywhere in the block: the Log heading's voice. */
+.rpg-draft-kicker,
+.rpg-draft-source dt,
+.rpg-draft-bar-label {
+  margin: 0;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+/* ---- the head: what the draft is for, what it asks, the prompt ---- */
+
+.rpg-draft-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+  padding-bottom: 0.6rem;
+}
+
+.rpg-draft-heading {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.rpg-draft .rpg-draft-title {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  font-family: var(--font-text);
+  font-size: 1.45em;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rpg-draft .rpg-draft-title:hover {
+  box-shadow: 0 1px 0 var(--background-modifier-border);
+}
+
+.rpg-draft .rpg-draft-title:focus-visible {
+  box-shadow: 0 1px 0 var(--interactive-accent);
+}
+
+.rpg-draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-draft-actions li {
+  margin: 0;
+}
+
+.rpg-draft-ask {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.rpg-draft-ask select {
+  font-size: var(--font-ui-smaller);
+  height: auto;
+  padding-block: 0.2rem;
+}
+
+.rpg-draft .rpg-draft-quiet,
+.rpg-draft .rpg-draft-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: auto;
+  padding: 0.25rem 0.6rem;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-draft .rpg-draft-quiet {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.rpg-draft .rpg-draft-quiet:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-draft .rpg-draft-quiet[aria-pressed="true"] {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+/* ---- the sources: four columns, hairlines between, nothing filled ---- */
+
+.rpg-draft-sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  margin: 0;
+  padding: 0.6rem 0;
+  border-block: 1px solid var(--background-modifier-border);
+}
+
+.rpg-draft-source {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.1rem 0.9rem;
+}
+
+.rpg-draft-source + .rpg-draft-source {
+  border-inline-start: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+
+.rpg-draft-source:first-child {
+  padding-inline-start: 0;
+}
+
+.rpg-draft-source dt {
+  margin-bottom: 0.1rem;
+}
+
+.rpg-draft-source dd {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  margin: 0;
+  font-size: var(--font-ui-small);
+}
+
+/* A chosen note: plain text that turns into a control on hover. */
+.rpg-draft .rpg-draft-link {
+  max-width: 100%;
+  height: auto;
+  margin-inline-start: -0.3rem;
+  padding: 0.1rem 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: var(--radius-s);
+}
+
+.rpg-draft .rpg-draft-link:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Adding something: muted, a plus before it. */
+.rpg-draft .rpg-draft-add,
+.rpg-draft .rpg-draft-roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: auto;
+  padding: 0.1rem 0.35rem;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: var(--radius-s);
+}
+
+.rpg-draft .rpg-draft-add {
+  margin-inline-start: -0.35rem;
+}
+
+.rpg-draft .rpg-draft-add:hover,
+.rpg-draft .rpg-draft-roll:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-draft .rpg-draft-add[aria-pressed="true"] {
+  color: var(--text-accent);
+}
+
+.rpg-draft .rpg-draft-roll {
+  border: 1px solid var(--background-modifier-border);
+}
+
+.rpg-draft-count {
+  min-width: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.rpg-draft .rpg-draft-level {
+  height: auto;
+  padding: 0.05rem 1.4rem 0.05rem 0.35rem;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background-color: transparent;
+  box-shadow: none;
+  border: 1px solid transparent;
+}
+
+.rpg-draft .rpg-draft-level:hover {
+  border-color: var(--background-modifier-border);
+}
+
+.rpg-draft-note {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+
+.rpg-draft-bucket {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.rpg-draft .rpg-draft-x {
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+  padding: 0.1rem;
+  color: var(--text-faint);
+  background: none;
+  box-shadow: none;
+  border: none;
+}
+
+.rpg-draft .rpg-draft-x:hover {
+  color: var(--text-error);
+}
+
+.rpg-draft-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-draft-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0.05rem 0.15rem 0.05rem 0.45rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-normal);
+}
+
+.rpg-draft-chips li::before {
+  display: none;
+}
+
+/* ---- the map and the prompt, opened under the sources ---- */
+
+.rpg-draft-map,
+.rpg-draft-preview {
+  margin-top: 0.6rem;
+}
+
+.rpg-draft-map {
+  display: grid;
+  gap: 0.3rem;
+}
+.rpg-draft-picked polygon {
+  fill: color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+  stroke: var(--interactive-accent);
+  pointer-events: none;
+}
+.rpg-draft-preview {
+  max-height: 24em;
+  overflow: auto;
+  margin: 0;
+  padding: 0.6em 0.8em;
+  white-space: pre-wrap;
+  font-size: var(--font-ui-smaller);
+  background: var(--background-secondary);
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+}
+
+/* ---- the ideas: Prose (as a log) or Code ---- */
+
+.rpg-draft-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+  padding-bottom: 0.2rem;
+}
+
+.rpg-draft-views {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+}
+
+.rpg-draft-views button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: auto;
+  padding: 0.15rem 0.6rem;
+  font-size: var(--font-ui-smaller);
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  color: var(--text-muted);
+}
+
+.rpg-draft-views button[aria-checked="true"] {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 15%, transparent);
+}
+
+.rpg-draft .lonelog-dock-zone {
+  margin-bottom: 0;
+}
+
+.rpg-draft .rpg-draft-code {
+  display: block;
+  width: 100%;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.rpg-draft-empty {
+  margin: 1rem 0;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.rpg-draft-drawer-empty {
+  padding: 0.6rem 0.8rem;
+}
+
+/* ---- the drawer: the GM's cards only, as tight as they go ---- */
+
+.rpg-draft .rpg-draft-drawer {
+  padding: 0.4rem 2.6rem 0.5rem 0.9rem;
+}
+
+.rpg-draft .lonelog-actions-panel.is-gm-only {
+  display: block;
+  min-height: 0;
+}
+
+.rpg-draft .is-gm-only .rpg-hotbar-pills {
+  padding-top: 0;
+}
+
+/* One actor, never switched: no need to hold three rows of room. */
+.rpg-draft .is-gm-only .rpg-hotbar-strip {
+  min-height: 0;
+}

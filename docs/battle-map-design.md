@@ -127,6 +127,24 @@ The pane always shows the battle **as of the entry you're reading**: scrolling
 moves it through the fight. Clicking a token jumps to that creature's latest
 entry; clicking an entry jumps the map to it.
 
+### Token pictures
+
+A token shows a picture when its creature's note has one: `token_image:` in
+the frontmatter of the PC's sheet or the foe's statblock (the note a name links,
+`Fat [[Kobold, A]]` → `Kobold, A`). It fills the disc, ringed in the side's
+colour, under the HP ring, condition dot and KO badge; without one the token
+falls back on its emoji (`token:`), then its initials.
+
+Right-click a token on any of a fight's maps to change it — **Generate token
+image…** (the image studio, on the creature's note, set to its *Battle map
+token* kind: a head-and-shoulders bust filling a 512 px square, its prompt filled
+from the PC's sheet or the foe's statblock), **Upload token
+image…** (saved to *Settings → Maps → Battle map tokens → Token image folder*,
+named `<note> token.<ext>`; a generated one too, as WebP), **Choose token image from vault…**, or **Remove
+token image** (the file stays). Every token linked to the same note shares the
+picture, and every map redraws when it changes. A name that links to no note has
+nowhere to keep one; the menu says so.
+
 ## 6. The timeline — tactical replay
 
 Under the map: the fight's rounds (`R1 … R6`) with a tick per turn. Drag or step
@@ -162,3 +180,35 @@ timeline only read it. Nothing is stored outside the note.
   per log).
 - **Map source** — its own note, an `rpg map` block, bound with
   `[COMBAT: [[Map]]]`.
+
+
+## Placing tokens on a map in a note
+
+A map block in a note has a **Place tokens** button. It opens the map for editing: drag a token to a square (or tap
+it, then tap a square; the arrow keys move the picked one and Delete removes it), add the party or a creature from
+its note, remove one. A row per token lists its square as text (`J14`) to type into. **Done** writes the result into
+the block's `tokens:` (the rest of the block is left as written); **Cancel** drops the changes. Two tokens on one
+square are allowed and marked. The log's own setup frame is unchanged: this edits where a map starts, so a combat that
+binds the map starts from it.
+
+**Expand** opens the map full screen: drag it to pan, pinch, scroll the wheel or use the buttons to zoom, and the fit
+button to see all of it. The same Place tokens editing works there, with the token list in a panel under the map.
+Esc (or the ×) closes it.
+
+## Linking maps to the rest of the vault
+
+A map kept in its own note is the one place a place's battle board is defined:
+
+- **From a log:** `[COMBAT: [[Kowyn Encounter]]]` binds the fight to the note's first `rpg map` square block (Start
+  Combat lists such notes). The fight's map title is then a link that opens that note, where its tokens are placed.
+  A map written in the log's own `maps:` has no note, so its title stays plain text.
+- **From a hex map:** a place that links a note holding a square battle map (`t(2,1): plains [[Kowyn Encounter]]`)
+  says "Has a battle map. Click to open it." in its hover, and a click opens the note.
+
+## The library: a map note per place
+
+The command **New battle map note** asks for a title, a picture and a folder (a `maps` folder if the vault has one),
+finds the picture's grid, and writes a note: the map block, then sections for starting positions, cover and terrain,
+hazards, loot and notes for the GM. Without a picture it writes a small painted board to edit by hand. Open the note
+and press **Place tokens** to put the sides where they start; a log's `[COMBAT: [[Title]]]` and a hex map's
+`[[Title]]` place then lead to it.

@@ -30,11 +30,13 @@ import {
   rpgFences,
   setFenceFlag,
   setFenceKey,
+  TOKEN_IMAGE_KEY,
   type ImageTarget,
 } from "lib/domains/image-studio/targets";
 import { ASPECTS, draftSubject, generateImage, type Aspect } from "lib/services/image-gen";
 import { finishImage, type FinishedImage } from "lib/services/image-post";
 import { NoteCombobox, type NoteOption } from "lib/components/session-log/note-combobox";
+import { settingsStore } from "lib/services/settings-store";
 
 interface ImageStudioProps {
   app: App;
@@ -95,6 +97,17 @@ const plainText = (text: string) =>
     .replace(/!?\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, "$1")
     .trim();
 
+/** The kinds that are a character's picture, saved in the portrait folder when one is set. */
+const PORTRAIT_KINDS = new Set<ImageKindId>(["portrait", "art"]);
+
+/** A name in `folder` no file has yet, as Obsidian numbers them: `Kowyn.webp`, then `Kowyn 1.webp`… */
+function freePath(app: App, folder: string, base: string, ext: string): string {
+  const at = (n: number) => `${folder}/${base}${n ? ` ${n}` : ""}.${ext}`;
+  let n = 0;
+  while (app.vault.getAbstractFileByPath(at(n))) n++;
+  return at(n);
+}
+
 export function ImageStudio({ app, settings, initial, card, onSaved, focus, onClose }: ImageStudioProps) {
   const notes = useMemo<NoteOption[]>(
     () => app.vault.getMarkdownFiles().map((f) => ({ name: f.basename, folder: f.parent?.path ?? "" })),
@@ -138,9 +151,10 @@ export function ImageStudio({ app, settings, initial, card, onSaved, focus, onCl
       card
         ? [{ kind: "icon", name: card.name, label: `Hotbar icon · ${card.name}` }]
         : file
-          ? imageTargets(text, file.basename)
+          ? // Opened from a map's token: its picture, even before the note has one.
+            imageTargets(text, file.basename, focus === TOKEN_IMAGE_KEY ? focus : undefined)
           : [],
-    [text, file, card]
+    [text, file, card, focus]
   );
   // A note opened for one picture (a character's portrait) starts on it.
   useEffect(() => {
@@ -347,10 +361,24 @@ export function ImageStudio({ app, settings, initial, card, onSaved, focus, onCl
         if (existing instanceof TFile) await app.vault.modifyBinary(existing, made.data);
         else await app.vault.createBinary(path, made.data);
       } else if (file) {
-        // A new file where the vault keeps attachments; the old one stays (other notes may use it).
-        const name = `${imageFileName(what, target.key === "icon" ? "icon" : undefined)}.${ext}`;
+        // A new file — in the portrait folder for a character's picture, where the vault keeps
+        // attachments otherwise; the old one stays (other notes may use it).
+        const name = `${imageFileName(what, target.key === "icon" ? "icon" : kindId === "token" ? "token" : undefined)}.${ext}`;
         // (Always WebP, best quality — the vault's art is.)
-        const path = await app.fileManager.getAvailablePathForAttachment(name, file.path);
+        // (A token's picture goes to the battle map token folder.)
+        const portraits = (
+          kindId === "token"
+            ? (settingsStore.getSettings()?.battleTokenFolder ?? "")
+            : PORTRAIT_KINDS.has(kindId)
+              ? settings.portraitFolder
+              : ""
+        )
+          .trim()
+          .replace(/^\/+|\/+$/g, "");
+        if (portraits && !app.vault.getAbstractFileByPath(portraits)) await app.vault.createFolder(portraits);
+        const path = portraits
+          ? freePath(app, portraits, name.replace(/\.webp$/, ""), ext)
+          : await app.fileManager.getAvailablePathForAttachment(name, file.path);
         const saved = await app.vault.createBinary(path, made.data);
         const value = imageValue(saved.name, target.value);
         if (target.kind === "frontmatter") {

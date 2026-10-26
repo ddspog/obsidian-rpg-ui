@@ -10,11 +10,13 @@ import type {
 } from "./types";
 
 /** Kinds recognized by the tag grammar — shared by extraction and stripping. */
-const TAG_KINDS = "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R|Init|Pos|Mv|Time|Weather";
+const TAG_KINDS =
+  "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R|Init|Pos|Mv|Time|Weather|Group|Mark";
 
 /** A tag's body: anything up to its closing `]`, where a `[[wikilink]]` counts
- *  as one piece so its own brackets don't end the tag (`[Inv:[[Rope]]+1]`). */
-const TAG_BODY = String.raw`((?:\[\[[^\]\n]*\]\]|[^\]])+)`;
+ *  as one piece so its own brackets don't end the tag (`[Inv:[[Rope]]+1]`), and
+ *  so does a single `[…]` (a hex map spec: `[Mark: Camp|pin[red]@(2,0)]`). */
+const TAG_BODY = String.raw`((?:\[\[[^\]\n]*\]\]|\[[^\[\]\n]*\]|[^\]])+)`;
 
 /**
  * A SESSION resource op, addressed by abbr: `[CF+1]`/`[CF-2]` (inc/dec),
@@ -293,6 +295,16 @@ export function extractTags(text: string): PersistentTag[] {
         tags.push(...parseWealthTag(content));
         break;
       }
+      case "Group": {
+        const group = parseGroupTag(content);
+        if (group) tags.push(group);
+        break;
+      }
+      case "Mark": {
+        const mark = parseMarkTag(content);
+        if (mark) tags.push(mark);
+        break;
+      }
       case "Faction":
       case "Party":
         break;
@@ -338,14 +350,17 @@ function parseFoeTag(content: string, isRef: boolean): PersistentTag {
   return tag;
 }
 
-/** A square named like a chessboard: `C4`, `AA10`. */
-const SQUARE = "[A-Za-z]{1,2}\\d{1,3}";
+/** A square named like a chessboard (`C4`, `AA10`), or a hex in parentheses (`(2,-1)`). */
+const SQUARE = "(?:[A-Za-z]{1,2}\\d{1,3}|\\(\\s*-?\\d+\\s*,\\s*-?\\d+\\s*\\))";
+
+/** A place as the map code reads it: squares upper-cased, hexes closed up (`(2,-1)`). */
+const place = (s: string) => (s.startsWith("(") ? s.replace(/\s+/g, "") : s.toUpperCase());
 
 /** `[Pos: Talon C4; [[Kobold, Elite]] H2]` — each entry a name, then its square. */
 function parsePositionTag(content: string): PersistentTag {
   const entries = splitEntries(content).flatMap((part) => {
     const m = part.match(new RegExp(`^(.+?)\\s+(${SQUARE})$`));
-    return m ? [{ name: m[1].trim(), at: m[2].toUpperCase() }] : [];
+    return m ? [{ name: m[1].trim(), at: place(m[2]) }] : [];
   });
   return { kind: "position", entries };
 }
@@ -355,12 +370,63 @@ function parsePositionTag(content: string): PersistentTag {
  * route to where it stops. Null when no square ends it.
  */
 function parseMoveTag(content: string): PersistentTag | null {
+  // `… | teleport`: how it goes, when not on foot (a travel map draws it apart).
+  const [main, ...mods] = content.split("|");
+  const via = mods[0]?.trim().toLowerCase();
   // A route may be spaced (`G4 > F4`); close it up so it can't read as a name.
-  const text = content.trim().replace(/\s*>\s*/g, ">");
+  const text = main
+    .trim()
+    .replace(/\s*>\s*/g, ">")
+    .replace(/\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/g, "($1,$2)");
   const m = text.match(new RegExp(`^(?:(.+?)\\s+)?(${SQUARE}(?:>${SQUARE})*)$`));
   if (!m) return null;
-  const path = m[2].split(">").map((s) => s.toUpperCase());
-  return { kind: "move", ...(m[1] ? { who: m[1].trim() } : {}), path };
+  const path = m[2].split(">").map(place);
+  return { kind: "move", ...(m[1] ? { who: m[1].trim() } : {}), path, ...(via ? { via } : {}) };
+}
+
+/** Names in a group tag: split on `,` or `;`. */
+function memberList(text: string): string[] {
+  return text
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** `[Group: …]` — see `GroupTag`. Null when it reads as none of its verbs. */
+function parseGroupTag(content: string): PersistentTag | null {
+  const t = content.trim();
+  let m = t.match(/^(.+?)\s*>\s*(.+?)\s*=\s*(.+)$/);
+  if (m) return { kind: "group", op: "split", group: m[1], to: m[2], members: memberList(m[3]) };
+  m = t.match(/^(.+?)\s*=\s*(.+)$/);
+  if (m) return { kind: "group", op: "define", group: m[1], members: memberList(m[2]) };
+  m = t.match(/^(.+?)\s*>\s*(.+)$/);
+  if (m) return { kind: "group", op: "merge", group: m[1], to: m[2] };
+  m = t.match(/^(.+?)\s+as\s+(.+)$/i);
+  if (m) return { kind: "group", op: "rename", group: m[1], to: m[2] };
+  m = t.match(/^(.+?)\s+([+-])\s*(.+)$/);
+  if (m) return { kind: "group", op: m[2] === "+" ? "add" : "remove", group: m[1], members: memberList(m[3]) };
+  return null;
+}
+
+/** `[Mark: Name|spec@(q,r)|until …]`, `[Mark: Name|@(q,r)]`, `[Mark: -Name]`. */
+function parseMarkTag(content: string): PersistentTag | null {
+  const [head, ...rest] = content.split("|").map((s) => s.trim());
+  if (!head) return null;
+  if (head.startsWith("-")) return { kind: "mark", name: head.slice(1).trim(), end: true };
+  const mark: Extract<PersistentTag, { kind: "mark" }> = { kind: "mark", name: head };
+  for (const part of rest) {
+    const until = part.match(/^until\s+(.+)$/i);
+    if (until) {
+      mark.until = until[1].trim();
+      continue;
+    }
+    const at = part.match(/^(.*?)@\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)$/);
+    if (at) {
+      if (at[1].trim()) mark.spec = at[1].trim();
+      mark.at = [parseFloat(at[2]), parseFloat(at[3])];
+    } else if (!mark.spec) mark.spec = part;
+  }
+  return mark;
 }
 
 /** Split on `;` outside a `[[wikilink]]`. */

@@ -1,0 +1,144 @@
+/* ── Loadout cards (inventory: what's in hand, a click to switch) ─────────
+ * Each card is a hotbar tile turned sideways: its icon big on the left,
+ * the loadout's name above what each hand holds on the right. */
+
+.rpg-loadouts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0 0 0.6rem;
+  /* Lines the "In hand" label up with the inventory's "Attunement" chip
+   * (the block's 0.5rem padding + the chip's own 0.5rem). */
+  padding-inline-start: 1rem;
+}
+
+/* Same lettering as the inventory's "Attunement" label. */
+.rpg-loadouts-label {
+  flex: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: light-dark(#6a4e2a, #d4a840);
+}
+
+.rpg-loadouts > menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-loadouts > menu > li {
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-loadouts > menu > li::before {
+  content: none;
+}
+
+/* Parchment chips, tinted like the inventory's coin row. */
+button.rpg-loadout {
+  --tile: light-dark(#6a4e2a, #d4a840);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: auto;
+  min-height: 0;
+  min-width: 9.5rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.3rem;
+  border: 1px solid light-dark(rgba(106, 78, 42, 0.22), rgba(212, 168, 64, 0.28));
+  border-radius: 6px;
+  background: light-dark(rgba(106, 78, 42, 0.05), rgba(212, 168, 64, 0.08));
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+button.rpg-loadout:hover:not(:disabled) {
+  border-color: light-dark(rgba(106, 78, 42, 0.5), rgba(212, 168, 64, 0.55));
+  background: light-dark(rgba(106, 78, 42, 0.1), rgba(212, 168, 64, 0.14));
+}
+
+/* The icon — the hotbar tile's stone and rim, art filling it. */
+.rpg-loadout-icon {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tile) 55%, var(--background-modifier-border));
+  border-radius: 4px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--tile) 10%, var(--background-primary)),
+    var(--background-primary)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile) 12%, transparent);
+  color: var(--tile);
+}
+
+.rpg-loadout-icon > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-loadout-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.rpg-loadout-name {
+  margin-bottom: 0.1rem;
+  font-size: var(--font-ui-small);
+  font-weight: 700;
+  line-height: 1.2;
+  color: light-dark(#1a1208, #f0e8d0);
+}
+
+.rpg-loadout-hand {
+  font-size: var(--font-ui-smaller);
+  line-height: 1.25;
+  white-space: nowrap;
+  color: light-dark(#1a1208, #e3dcce);
+}
+
+.rpg-loadout-hand > small {
+  font-size: 0.85em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: light-dark(#6a4e2a, #d4a840);
+  opacity: 0.75;
+}
+
+/* In hand: the gold coin's rim and tint, the icon glowing as a lit tile. */
+button.rpg-loadout.is-held {
+  --tile: light-dark(#8a6a22, #e8c45a);
+  border-color: light-dark(rgba(138, 106, 34, 0.55), rgba(232, 196, 90, 0.6));
+  background: light-dark(rgba(212, 168, 64, 0.18), rgba(232, 196, 90, 0.2));
+  cursor: default;
+}
+
+button.rpg-loadout.is-held .rpg-loadout-icon {
+  box-shadow: 0 0 6px light-dark(rgba(138, 106, 34, 0.45), rgba(232, 196, 90, 0.45));
+}
+
+/* Obsidian dims a disabled button; the one in hand stays at full strength. */
+button.rpg-loadout.is-held:disabled {
+  opacity: 1;
+}
+
+button.rpg-loadout:disabled:not(.is-held) {
+  opacity: 0.5;
+}

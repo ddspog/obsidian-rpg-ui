@@ -27,6 +27,7 @@
 @import "./components/session-log-overview.css";
 @import "./components/session-log-cards.css";
 @import "./components/session-log-popover.css";
+@import "./components/loadout-cards.css";
 @import "./components/session-log-hotbar.css";
 @import "./components/session-log-hud-bar.css";
 @import "./components/card-frame.css";
@@ -64,6 +65,7 @@
 @import "./components/figure-block.css";
 @import "./components/battlemap.css";
 @import "./components/hex-map.css";
+@import "./components/draft.css";
 @import "./components/line-control-stats.css";
 @import "./components/fieldset-health.css";
 @import "./components/progress-numbered.css";

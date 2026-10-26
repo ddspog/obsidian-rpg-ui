@@ -109,3 +109,87 @@ s(1,1): buildings[City Building 1 (blue)] x3`);
     expect(map.errors[0].line).toBe(4);
   });
 });
+
+describe("parseHexMap — bases and steps", () => {
+  it("reads b(q,r) lines, a group's base= and the step header", () => {
+    const map = parseHexMap(`grid: hex
+step: 330 ft
+---
+0m:
+  * t(0,0): plains
+  * b(0,0): level
+  * b(0,0): rocky
+100m: base=rocky
+  * t(1,0): hills`);
+    expect(map.errors).toEqual([]);
+    expect(map.step).toBeCloseTo(100.584);
+    const bases = map.cells.filter((c) => c.layer === "base");
+    // One base per hex: the later line wins.
+    expect(bases.map((c) => [c.q, c.r, c.spec])).toEqual([[0, 0, "rocky"]]);
+    expect(map.cells.find((c) => c.q === 1)?.groupBase).toBe("rocky");
+    expect(map.cells.find((c) => c.q === 0 && c.layer === "terrain")?.groupBase).toBeUndefined();
+  });
+});
+
+describe("labels", () => {
+  it("reads l(q,r) lines with fractional coordinates and options", () => {
+    const map = parseHexMap(`grid: hex
+---
+l(1.5,-0.25): (The Sunken Coast) title-1 size=1.2 rot=-4 #3a2410
+l(0,2): [[Holy City of Featherbark]] title-3
+l(3,3): (Plain)`);
+    expect(map.errors).toEqual([]);
+    expect(map.cells).toEqual([]);
+    expect(map.labels).toMatchObject([
+      { q: 1.5, r: -0.25, text: "The Sunken Coast", family: "title-1", size: 1.2, rot: -4, color: "#3a2410", line: 3 },
+      { q: 0, r: 2, link: "Holy City of Featherbark", family: "title-3" },
+      { q: 3, r: 3, text: "Plain" },
+    ]);
+  });
+
+  it("wants a text or a note", () => {
+    const map = parseHexMap(`grid: hex\n---\nl(0,0): title-1`);
+    expect(map.labels).toEqual([]);
+    expect(map.errors[0]).toMatchObject({ line: 3 });
+  });
+});
+
+describe("label families", () => {
+  it("takes a family by its folder name only", () => {
+    const map = parseHexMap(`grid: hex\n---\nl(0,0): (Ford) title-3(small)`);
+    expect(map.errors[0].message).toMatch(/isn't a label family/);
+  });
+});
+
+describe("markers", () => {
+  it("reads m(q,r) lines, in any order", () => {
+    const map = parseHexMap(`grid: hex
+---
+m(3,1): pedestal-gold[tower] (Featherbark) [[Holy City of Featherbark]]
+m(5.2,0.4): (The party) here-red[party-1] size=1.5`);
+    expect(map.errors).toEqual([]);
+    expect(map.markers).toMatchObject([
+      { q: 3, r: 1, spec: "pedestal-gold[tower]", text: "Featherbark", link: "Holy City of Featherbark", size: 1 },
+      { q: 5.2, r: 0.4, spec: "here-red[party-1]", text: "The party", size: 1.5, line: 4 },
+    ]);
+  });
+
+  it("wants a style", () => {
+    const map = parseHexMap(`grid: hex\n---\nm(0,0): (Nobody)`);
+    expect(map.markers).toEqual([]);
+    expect(map.errors[0].message).toMatch(/needs its style/);
+  });
+});
+
+describe("view:", () => {
+  it("reads where the block opens", () => {
+    const map = parseHexMap(`grid: hex\nview: { level: 2, at: [41.7, -54.6], zoom: 5 }\n---\nt(0,0): grass`);
+    expect(map.view).toEqual({ level: 2, at: [41.7, -54.6], zoom: 5 });
+  });
+
+  it("defaults to the fit, and keeps zoom in range", () => {
+    expect(parseHexMap(`grid: hex\nview: { level: 1 }\n---\n`).view).toEqual({ level: 1, at: undefined, zoom: 1 });
+    expect(parseHexMap(`grid: hex\nview: { zoom: 99 }\n---\n`).view?.zoom).toBe(12);
+    expect(parseHexMap(`grid: hex\n---\n`).view).toBeUndefined();
+  });
+});

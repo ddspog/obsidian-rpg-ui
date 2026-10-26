@@ -43,3 +43,6 @@ tmp/
 
 # Simulators build output
 simulators/dist
+# Built by `npm run build:cli`
+
+cli/dist/

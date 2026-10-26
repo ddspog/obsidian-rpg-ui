@@ -49,6 +49,8 @@ interface SessionActionsPanelProps {
    *  once a foe is marked down. */
   foeStacks?: Map<string, CardStackData[]>;
   gmStacks: CardStackData[];
+  /** Only the GM's cards (the draft block): no roster to pick from, no Rest. */
+  gmOnly?: boolean;
   consumableState: SessionConsumableState;
   entities: string[];
   /** Append to the log — with a new map for its header, from Start Combat. */
@@ -232,6 +234,7 @@ export function SessionActionsPanel({
   pcStacks,
   foeStacks = new Map(),
   gmStacks,
+  gmOnly = false,
   consumableState,
   entities,
   onAppendText,
@@ -628,8 +631,11 @@ export function SessionActionsPanel({
     ) : null;
 
   return (
-    <div ref={panelRef} className={`lonelog-actions-panel${inMargin ? " is-in-margin" : ""}`}>
-      {inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : rosterNode}
+    <div
+      ref={panelRef}
+      className={`lonelog-actions-panel${inMargin ? " is-in-margin" : ""}${gmOnly ? " is-gm-only" : ""}`}
+    >
+      {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : rosterNode}
       <div className="hud-main">
         {showCharacter && (
           <HudCharacter
@@ -655,26 +661,28 @@ export function SessionActionsPanel({
           onPlay={handleCardClick}
           {...(!showCharacter && switches ? { extras: switches } : {})}
         />
-        <HudTurn
-          inCombat={!!combat}
-          canRest={!side?.foe}
-          {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
-          onRest={(kind) => {
-            const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
-            if (rest) handleCardClick(rest);
-          }}
-          provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
-          {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
-          warn={warnOA}
-          onWarn={(on) => {
-            setWarnOA(on);
-            try {
-              window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
-            } catch {
-              // Nowhere to keep it: back on next time.
-            }
-          }}
-        />
+        {!gmOnly && (
+          <HudTurn
+            inCombat={!!combat}
+            canRest={!side?.foe}
+            {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
+            onRest={(kind) => {
+              const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
+              if (rest) handleCardClick(rest);
+            }}
+            provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
+            {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
+            warn={warnOA}
+            onWarn={(on) => {
+              setWarnOA(on);
+              try {
+                window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
+              } catch {
+                // Nowhere to keep it: back on next time.
+              }
+            }}
+          />
+        )}
       </div>
       {readCard && (
         <PassivePopover

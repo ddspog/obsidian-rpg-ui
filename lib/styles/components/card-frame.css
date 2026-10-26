@@ -1,37 +1,15 @@
-/* The card frame: gold filigree on deep violet, a name plaque — drawn here,
-   so the art inside can be the picture alone. */
+/* The card frame's layout. Its look (gold filigree on deep violet, the name
+   plaque's colours) is CSS each kind can edit in the settings — the default
+   is DEFAULT_FRAME_CSS in lib/services/frame-css.ts, put on the page there. */
 
 figure.rpg-card-frame {
-  --frame-gold-light: #f6dd92;
-  --frame-gold: #a67c1d;
-  --frame-gold-dark: #6f4f12;
-  --frame-violet: #3b1650;
-  --frame-plaque: #14183a;
   position: relative;
   display: block;
   margin: 0;
-  padding: 0.16rem;
-  border-radius: 0.45rem;
-  background: linear-gradient(
-    135deg,
-    var(--frame-gold-light),
-    var(--frame-gold) 35%,
-    var(--frame-gold-light) 55%,
-    var(--frame-gold-dark)
-  );
-  box-shadow: 0 0.2rem 0.7rem rgba(0, 0, 0, 0.4);
-}
-
-.rpg-card-frame-inner {
-  padding: 0.1rem;
-  border-radius: 0.3rem;
-  background: var(--frame-violet);
-  box-shadow: inset 0 0 0 1px rgba(246, 221, 146, 0.45);
 }
 
 .rpg-card-frame-art {
   overflow: hidden;
-  border-radius: 0.22rem;
   line-height: 0;
 }
 
@@ -45,23 +23,18 @@ figure.rpg-card-frame {
 
 figcaption.rpg-card-frame-plaque {
   position: absolute;
-  bottom: 0.45rem;
   left: 50%;
   max-width: 85%;
-  padding: 0 0.6rem;
   overflow: hidden;
   transform: translateX(-50%);
-  border: 1px solid var(--frame-gold);
-  border-radius: 999px;
-  background: var(--frame-plaque);
-  box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.6);
-  font-family: var(--font-text);
-  font-size: 0.7em;
-  font-weight: 700;
-  letter-spacing: 0.03em;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--frame-gold-light);
+}
+
+/* Generated CSS frames: ornaments the model misplaces are cut just past the frame's edge, not left hanging over the page. */
+figure.rpg-card-frame[class*="is-gen-"] {
+  overflow: clip;
+  overflow-clip-margin: 0.4rem;
 }
 
 /* A generated frame: the art in its window, the frame's picture over it. */
@@ -72,16 +45,20 @@ figure.rpg-card-frame.is-image {
   box-shadow: none;
 }
 
+/* The art fills the frame and sizes it, as in the CSS frame; its clip-path is the window. */
 .rpg-card-frame-window {
-  position: absolute;
-  overflow: hidden;
-}
-
-img.rpg-card-frame-overlay {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+/* The painted frame, laid over the art by its edges (CardFrame sets the slices). */
+.rpg-card-frame-overlay {
+  position: absolute;
+  inset: 0;
+  border: 0 solid transparent;
+  border-image-repeat: stretch;
   pointer-events: none;
 }
 
@@ -130,6 +107,102 @@ figcaption.rpg-card-frame-plaque.is-on-frame {
 /* The settings' preview: stand-in art. */
 .rpg-card-frame-preview {
   margin: 0.5rem 0 0.75rem;
+}
+
+/* The settings' choice: the CSS frame and the image one side by side. */
+.rpg-card-frame-uses p {
+  margin: 0 0 0.35rem;
+}
+
+fieldset.rpg-card-frame-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0;
+  border: none;
+}
+
+fieldset.rpg-card-frame-choice > legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+label.rpg-card-frame-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 12rem;
+  padding: 0.5rem;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+
+label.rpg-card-frame-option:has(input:checked) {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+label.rpg-card-frame-option.is-empty {
+  cursor: default;
+  opacity: 0.7;
+}
+
+label.rpg-card-frame-option > input[type="radio"] {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  margin: 0;
+  z-index: 1;
+}
+
+label.rpg-card-frame-option > div {
+  width: 100%;
+}
+
+label.rpg-card-frame-option .rpg-card-frame-preview {
+  margin: 0 auto;
+}
+
+.rpg-card-frame-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  padding: 0.5rem;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.rpg-card-frame-option-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+details.rpg-card-frame-css {
+  margin: 0 0 0.75rem;
+}
+
+details.rpg-card-frame-css > summary {
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+textarea.rpg-card-frame-css-input {
+  width: 100%;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  tab-size: 2;
 }
 
 .rpg-card-frame-sample {

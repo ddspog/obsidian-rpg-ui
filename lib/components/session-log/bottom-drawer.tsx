@@ -17,6 +17,10 @@ export interface DrawerBar {
 interface BottomDrawerProps {
   actionsPanel: React.ReactNode;
   bar?: DrawerBar;
+  /** A class of its own for the host (the draft block's compact drawer). */
+  className?: string;
+  /** What the folded bar reads; "Actions" if not given. */
+  label?: string;
 }
 
 /** What the panel inside can ask of its drawer: open up (when someone is picked), and say who is acting. */
@@ -47,7 +51,7 @@ function isTyping(target: EventTarget | null): boolean {
  * On a phone the bar is also where Log, Latest and Save live, at the thumb.
  * (What the session changed is the bookkeeping below it, apart.)
  */
-export function BottomDrawer({ actionsPanel, bar }: BottomDrawerProps) {
+export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }: BottomDrawerProps) {
   const root = React.useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = React.useState(() => {
     // No saved choice: folded, so the story has the whole window until the player reaches for the actions.
@@ -90,21 +94,24 @@ export function BottomDrawer({ actionsPanel, bar }: BottomDrawerProps) {
   const acting = actor === "Game Master" ? "GM" : actor;
 
   return (
-    <div ref={root} className={`lonelog-bottom-drawer${collapsed ? " is-collapsed" : ""}`}>
+    <div
+      ref={root}
+      className={`lonelog-bottom-drawer${collapsed ? " is-collapsed" : ""}${className ? ` ${className}` : ""}`}
+    >
       <button
         type="button"
         className="drawer-toggle-btn"
         onClick={() => set(!collapsed)}
         aria-expanded={!collapsed}
         aria-keyshortcuts={HOTKEY.toUpperCase()}
-        aria-label={collapsed ? "Open the actions" : "Minimise the actions"}
-        title={collapsed ? "Open the actions" : "Minimise"}
+        aria-label={collapsed ? `Open the ${label.toLowerCase()}` : `Minimise the ${label.toLowerCase()}`}
+        title={collapsed ? `Open the ${label.toLowerCase()}` : "Minimise"}
       >
         <LucideIcon name={collapsed ? "ChevronUp" : "ChevronDown"} size="0.9rem" strokeWidth={1.8} />
       </button>
       {collapsed && (
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
-          <span className="drawer-collapsed-label">Actions</span>
+          <span className="drawer-collapsed-label">{label}</span>
           {acting && <span className="drawer-collapsed-actor">{acting} acting</span>}
           <span className="drawer-collapsed-hint">Press {HOTKEY.toUpperCase()} to open</span>
         </div>
@@ -128,7 +135,7 @@ export function BottomDrawer({ actionsPanel, bar }: BottomDrawerProps) {
           )}
           <div className="lonelog-bar" role="group" aria-label="Log controls">
             <button type="button" aria-pressed={!collapsed} onClick={() => set(!collapsed)}>
-              Actions
+              {label}
             </button>
             {bar.hasLog && (
               <button type="button" aria-pressed={bar.logOpen} onClick={bar.onToggleLog}>

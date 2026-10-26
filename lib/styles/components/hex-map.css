@@ -94,6 +94,58 @@
   opacity: 0.85;
 }
 
+/* Zoom: one joined column under the corner controls, as map apps have it. */
+.rpg-hexmap-zoom {
+  position: absolute;
+  top: 2.9em;
+  right: 0.5em;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-ui-small);
+  background: color-mix(in srgb, var(--background-primary) 90%, transparent);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.rpg-hexmap-zoom li + li {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Fit stands a little apart from the two zooms. */
+.rpg-hexmap-zoom li:last-child {
+  border-top-width: 3px;
+  border-top-color: color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+}
+
+.rpg-hexmap-zoom button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rpg-hexmap-zoom button:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.rpg-hexmap-zoom button:active {
+  background: var(--background-modifier-active-hover);
+}
+
 .rpg-hexmap-tooltip {
   position: absolute;
   z-index: 2;
@@ -189,6 +241,51 @@
 
 .rpg-hexmap-region:not(.depth-0) .rpg-hexmap-region-edge {
   stroke-dasharray: 4 3;
+}
+
+/* Edit panel: a checkbox at its own size, and a small heading between groups of fields. */
+.rpg-hexpaint-check input[type="checkbox"] {
+  width: auto;
+  flex: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-hexpaint-subhead {
+  margin: 0.7rem 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-colour {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.rpg-hexpaint-colour input[type="color"] {
+  flex: none;
+  width: 1.8rem;
+  height: 1.6rem;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* A marker caption in a lettering style (`text=place`): its own letters, halo under them. */
+.rpg-hexmap-label.is-styled {
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+}
+
+/* `labelAt: border`: a small name tucked under the region's top border. */
+.rpg-hexmap-region-label.is-border {
+  stroke-width: 2px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .rpg-hexmap-region-label {
@@ -349,6 +446,31 @@
   gap: 0.3em;
 }
 
+/* A far family (how a terrain looks from the level above): its join, what it stands for, its size. */
+.rpg-hexstudio-far {
+  display: grid;
+  gap: 0.4em;
+  margin: 0.6em 0;
+}
+
+.rpg-hexstudio-far label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-far input[type="text"] {
+  flex: 1;
+}
+
+.rpg-hexstudio-far-hexes polygon {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-dasharray: 3 3;
+}
+
 .rpg-hexstudio-tune label {
   display: flex;
   align-items: center;
@@ -361,6 +483,23 @@
   width: 6em;
 }
 
+.rpg-hexstudio-tune select {
+  max-width: 12em;
+}
+
+/* The preview's raised middle hex: how many steps up. */
+.rpg-hexstudio-raise {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  margin-top: 0.3em;
+}
+
+.rpg-hexstudio-raise input {
+  width: 8em;
+}
+
 .rpg-hexstudio-name {
   display: flex;
   gap: 0.4em;
@@ -370,6 +509,45 @@
 .rpg-hexstudio-name input {
   flex: 1;
   min-width: 0;
+}
+
+/* The selected tile's file: its size, rename, convert — across the whole panel. */
+.rpg-hexstudio-file {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.4em;
+  justify-items: start;
+}
+
+.rpg-hexstudio-file p {
+  margin: 0;
+}
+
+.rpg-hexstudio-file-row {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  width: 100%;
+}
+
+.rpg-hexstudio-file-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rpg-hexstudio-file-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-warn {
+  padding: 0.4em 0.6em;
+  border-left: 3px solid var(--color-orange);
+  border-radius: var(--radius-s);
+  background: rgba(var(--color-orange-rgb), 0.1);
+  font-size: var(--font-ui-small);
 }
 
 .rpg-hexstudio-catalog table {
@@ -392,4 +570,2139 @@
   height: 1em;
   border-radius: 50%;
   vertical-align: middle;
+}
+
+/* Pack browser → path layer → Classify: tile shapes (lib/domains/hexmap/path-shapes). */
+.rpg-hexstudio-glyph {
+  width: 1.6em;
+  height: auto;
+  flex: none;
+  overflow: visible;
+}
+
+.rpg-hexstudio-glyph polygon {
+  fill: var(--background-modifier-hover);
+  stroke: var(--text-faint);
+  stroke-width: 0.06;
+}
+
+.rpg-hexstudio-glyph line {
+  stroke: var(--text-accent);
+  stroke-width: 0.2;
+  stroke-linecap: round;
+}
+
+.rpg-hexstudio-glyph circle {
+  fill: var(--text-accent);
+}
+
+.rpg-hexstudio-glyph rect.is-stub,
+.rpg-hexstudio-spokes rect.is-stub,
+.rpg-hexstudio-glyph circle.is-hub,
+.rpg-hexstudio-spokes circle.is-hub {
+  fill: rgba(var(--color-accent-rgb, 124, 92, 255), 0.25);
+  stroke: var(--text-accent);
+  stroke-width: 0.08;
+}
+
+.rpg-hexstudio-fitted {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rpg-hexstudio-spokes {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.rpg-hexstudio-spokes polygon {
+  fill: none;
+  stroke: var(--text-accent);
+  stroke-width: 0.025;
+  stroke-dasharray: 0.06 0.05;
+}
+
+.rpg-hexstudio-spokes line {
+  stroke: var(--text-accent);
+  stroke-width: 0.05;
+  stroke-linecap: round;
+}
+
+.rpg-hexstudio-spokes circle {
+  fill: var(--text-accent);
+  r: 0.05;
+}
+
+.rpg-hexstudio-spokes circle.is-hub {
+  r: 0.32;
+  stroke-width: 0.03;
+}
+
+.rpg-hexstudio-glyph line.is-mouth,
+.rpg-hexstudio-spokes line.is-mouth {
+  stroke-width: 0.22;
+  stroke-linecap: butt;
+}
+
+.rpg-hexstudio-spokes line.is-mouth {
+  stroke-width: 0.1;
+}
+
+.rpg-hexstudio-shape-marks {
+  align-items: center;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-shape {
+  display: grid;
+  grid-template-columns: minmax(10em, 16em) 1fr;
+  gap: 0.75em;
+  align-items: start;
+}
+
+.rpg-hexstudio-shape > legend,
+.rpg-hexstudio-shape > p,
+.rpg-hexstudio-shape > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.rpg-hexstudio-shape figure {
+  margin: 0;
+}
+
+.rpg-hexstudio-shape figcaption {
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexstudio-shape-tile {
+  position: relative;
+  padding: 0.15em;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+}
+
+.rpg-hexstudio-shape-tile .rpg-hexstudio-fitted {
+  aspect-ratio: 2 / 1.732;
+  height: auto;
+}
+
+.rpg-hexstudio-shape-pick {
+  display: grid;
+  gap: 0.5em;
+  justify-items: start;
+}
+
+.rpg-hexstudio-shape-pick p {
+  margin: 0;
+}
+
+.rpg-hexstudio-shape-pick menu button {
+  gap: 0.35em;
+}
+
+.rpg-hexstudio-coverage table {
+  border-collapse: collapse;
+}
+
+.rpg-hexstudio-coverage th {
+  padding-right: 0.75em;
+  font-size: var(--font-ui-small);
+  font-weight: normal;
+  text-align: left;
+}
+
+.rpg-hexstudio-coverage td {
+  padding: 0.15em 0.3em;
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+}
+
+.rpg-hexstudio-coverage td span {
+  display: inline-block;
+  min-width: 1ch;
+  margin-left: 0.15em;
+}
+
+.rpg-hexstudio-coverage td.is-missing .rpg-hexstudio-glyph,
+.rpg-hexstudio-coverage td.is-empty .rpg-hexstudio-glyph {
+  opacity: 0.35;
+}
+
+.rpg-hexstudio-coverage td.is-missing .rpg-hexstudio-glyph line {
+  stroke: var(--text-error);
+}
+
+/* Labels: title banners fitted to their text (l(q,r) lines). */
+.rpg-hexmap-banner {
+  pointer-events: none;
+}
+
+.rpg-hexmap-banner.is-place {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.rpg-hexmap-banner.is-place:hover {
+  filter: brightness(1.08);
+}
+
+.rpg-hexmap-banner-text {
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-weight: 600;
+  fill: #2b2118;
+}
+
+/* Lettering: a style's letters with no banner (labels: { realm: { lettering: true } }). */
+.rpg-hexmap-banner.is-lettering .rpg-hexmap-banner-text {
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+}
+
+.rpg-hexmap-lettering-hit {
+  fill: transparent;
+}
+
+.rpg-hexmap-banner-plain {
+  fill: #efe6cf;
+  stroke: #3a2a18;
+  stroke-width: 1.5;
+}
+
+/* Pack browser → label layer → Classify: banner roles (lib/domains/hexmap/labels). */
+.rpg-hexstudio-roleglyph {
+  width: 2.6em;
+  height: auto;
+  flex: none;
+}
+
+.rpg-hexstudio-roleglyph rect {
+  fill: var(--background-modifier-hover);
+  stroke: var(--text-faint);
+  stroke-width: 0.6;
+}
+
+.rpg-hexstudio-roleglyph rect.is-on {
+  fill: var(--text-accent);
+  stroke: var(--text-accent);
+}
+
+.rpg-hexstudio-roleglyph-mark {
+  font-size: 8px;
+  text-anchor: middle;
+  fill: var(--text-on-accent);
+}
+
+.rpg-hexstudio button.is-selected .rpg-hexstudio-roleglyph rect.is-on {
+  fill: var(--text-on-accent);
+  stroke: var(--text-on-accent);
+}
+
+.rpg-hexstudio button.is-selected .rpg-hexstudio-roleglyph-mark {
+  fill: var(--interactive-accent);
+}
+
+.rpg-hexstudio button.is-suggested {
+  outline: 1px dashed var(--interactive-accent);
+}
+
+.rpg-hexstudio-tiles button:has(.rpg-hexstudio-role) {
+  position: relative;
+}
+
+.rpg-hexstudio-role {
+  position: absolute;
+  right: 0.15em;
+  bottom: 0.15em;
+  padding: 0 0.3em;
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
+.rpg-hexstudio-role.is-missing {
+  color: var(--text-error);
+}
+
+.rpg-hexstudio-label-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 8em;
+}
+
+.rpg-hexstudio-label-tile img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.rpg-hexstudio-coverage td.is-missing .rpg-hexstudio-roleglyph rect,
+.rpg-hexstudio-coverage td.is-empty .rpg-hexstudio-roleglyph rect {
+  opacity: 0.35;
+}
+
+.rpg-hexstudio-coverage td.is-missing span {
+  color: var(--text-error);
+}
+
+.rpg-hexstudio-coverage td .rpg-hexstudio-roleglyph {
+  display: block;
+  margin-inline: auto;
+}
+
+/* Markers: pins, flags and pedestals standing on a point (m(q,r) lines), under labels. */
+.rpg-hexmap-marker {
+  pointer-events: none;
+}
+
+.rpg-hexmap-marker.is-place {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.rpg-hexmap-marker.is-place:hover {
+  filter: brightness(1.1) drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+}
+
+.rpg-hexmap-marker-plain {
+  fill: #c0392b;
+  stroke: #3a1a12;
+  stroke-width: 1;
+}
+
+.rpg-hexmap-marker-anchor {
+  fill: var(--interactive-accent);
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+/* ---- Paint mode (design §13.1) ----
+ * In the session log's look: flat surfaces on hairlines, small-caps faint
+ * headings, segmented radio groups (options joined, the chosen one filled),
+ * quiet bordered buttons, and a sidebar with a rule down its side. */
+
+/* Mark and Build: linked places are things to edit, not links (no hand, no glow). */
+.rpg-hexmap.is-editing .is-place,
+.rpg-hexmap.is-editing .is-place:hover {
+  cursor: inherit;
+  filter: none;
+}
+
+/* A map in a window of its own over the page (the corner's window button). */
+.rpg-hexmap-float {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 3vh 3vw;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.rpg-hexmap-float-pane {
+  /* Inside the overlay's padding. */
+  box-sizing: border-box;
+  width: min(110rem, 100%);
+  max-height: 94vh;
+  overflow: auto;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: var(--background-primary);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.45);
+}
+
+.rpg-hexmap-float-pane .rpg-hexmap {
+  margin: 0;
+}
+
+.rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport {
+  width: 100% !important;
+  max-width: none !important;
+  height: 86vh !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+}
+
+.rpg-hexmap-float-spot {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+
+.rpg-hexmap-float-spot .rpg-hexpaint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rpg-hexmap-controls .is-on {
+  color: var(--text-accent);
+}
+
+.rpg-hexmap.is-editing {
+  container-type: inline-size;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.rpg-hexmap.is-editing .rpg-hexmap-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: none;
+  border-radius: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.rpg-hexmap.is-editing .rpg-hexmap-viewport.is-panning {
+  cursor: grab;
+}
+
+.rpg-hexmap-ghost {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 3;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rpg-hexmap-hover.is-empty {
+  fill: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  stroke-dasharray: 4 3;
+}
+
+.rpg-hexpaint-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The toolbar: one quiet line over the map. */
+.rpg-hexpaint-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-hexpaint-segmented {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.rpg-hexpaint-segmented label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.rpg-hexpaint-segmented label + label {
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+.rpg-hexpaint-segmented label:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-hexpaint-segmented label.is-checked {
+  background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary));
+  color: var(--text-accent);
+}
+
+.rpg-hexpaint-segmented label:focus-within {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: -2px;
+}
+
+.rpg-hexpaint-segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rpg-hexpaint-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexpaint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: auto;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rpg-hexpaint-button:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-hexpaint-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rpg-hexpaint-button.is-done {
+  border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+  color: var(--text-accent);
+}
+
+/* Map and sidebar side by side; stacked when the note is narrow. */
+.rpg-hexpaint-body {
+  display: flex;
+  align-items: stretch;
+}
+
+.rpg-hexpaint-sidebar {
+  flex: 0 0 15.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: calc(var(--rpg-hexpaint-h, 64vh));
+  overflow-y: auto;
+  padding: 0.6rem 0.7rem 0.8rem;
+  border-left: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+}
+
+@container (max-width: 40rem) {
+  .rpg-hexpaint-body {
+    flex-direction: column;
+  }
+
+  .rpg-hexpaint-sidebar {
+    flex-basis: auto;
+    max-height: 18rem;
+    border-left: none;
+    border-top: 1px solid var(--background-modifier-border);
+  }
+
+  .rpg-hexpaint-tool-name {
+    display: none;
+  }
+}
+
+/* The brush: what's in hand, and what the tool needs. */
+.rpg-hexpaint-brush {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-hexpaint-brush-thumb {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3rem;
+  color: var(--text-faint);
+}
+
+.rpg-hexpaint-brush-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.rpg-hexpaint-fields {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.3rem 0.5rem;
+  align-items: center;
+  margin: 0;
+}
+
+.rpg-hexpaint-fields dt,
+.rpg-hexpaint-section-head {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rpg-hexpaint-fields dd {
+  margin: 0;
+}
+
+.rpg-hexpaint-fields input,
+.rpg-hexpaint-filter {
+  width: 100%;
+  height: auto;
+  padding: 0.15rem 0.4rem;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexpaint-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rpg-hexpaint-stepper button {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-stepper output {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-hexpaint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rpg-hexpaint-section-head {
+  position: sticky;
+  top: -0.6rem;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.2rem 0;
+  background: var(--background-primary);
+}
+
+.rpg-hexpaint-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.1rem;
+  min-width: 0;
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.rpg-hexpaint-crumbs button {
+  height: auto;
+  padding: 0 0.15rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: 0.68rem;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+/* Swatches: the art itself, its name under it — no boxes. */
+.rpg-hexpaint-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.5rem, 1fr));
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexpaint-swatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  width: 100%;
+  height: auto;
+  padding: 0.2rem 0.1rem 0.15rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rpg-hexpaint-swatch:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-hexpaint-swatch.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+  color: var(--text-accent);
+}
+
+.rpg-hexpaint-swatch img,
+.rpg-hexpaint-swatch-none {
+  width: 2.8rem;
+  height: 2.4rem;
+  object-fit: contain;
+}
+
+.rpg-hexpaint-swatch-none {
+  display: block;
+  border: 1px dashed var(--text-faint);
+  border-radius: 4px;
+}
+
+.rpg-hexpaint-swatch-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.6rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-hexpaint-swatch.is-family .rpg-hexpaint-swatch-name {
+  font-weight: 700;
+}
+
+.rpg-hexpaint-swatch-open {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.15rem;
+  color: var(--text-faint);
+}
+
+.rpg-hexpaint-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* The status line, as the drawer's collapsed label. */
+.rpg-hexpaint-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0.7rem;
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: 0.64rem;
+  letter-spacing: 0.03em;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-hexpaint-under {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-hexpaint-status output {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+/* Tools show their names only when chosen, so ten fit one line. */
+.rpg-hexpaint-toolbar .rpg-hexpaint-segmented label:not(.is-checked) .rpg-hexpaint-tool-name {
+  display: none;
+}
+
+/* ---- Over the map: selection, lasso, the picked hex ---- */
+
+.rpg-hexmap-selected {
+  fill: color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+  stroke: var(--interactive-accent);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.rpg-hexmap-picked {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-dasharray: 6 3;
+  pointer-events: none;
+}
+
+.rpg-hexmap-lasso {
+  fill: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  stroke: var(--interactive-accent);
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
+.rpg-hexmap-underlay {
+  pointer-events: none;
+}
+
+/* ---- Detail maps (design §13.7) ---- */
+
+.rpg-hexmap-parent {
+  opacity: 0.35;
+  filter: saturate(0.6);
+  pointer-events: none;
+}
+
+.rpg-hexmap-parent-grid {
+  pointer-events: none;
+}
+
+/* Neighbours imported with `show: faint` (design §15) are drawn with the map, dimmed by an SVG
+   filter in its defs (`-faint`), opaque so overlapping tiles don't show through each other.
+   Their names, labels and markers come along, faded. */
+.rpg-hexmap-marker.is-faint,
+.rpg-hexmap-banner.is-faint,
+.rpg-hexmap-label.is-faint,
+.rpg-hexmap-region-label.is-faint {
+  opacity: 0.6;
+}
+
+.rpg-hexmap-parent-grid polygon {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-opacity: 0.55;
+  stroke-dasharray: 10 6;
+}
+
+.rpg-hexmap-parent-grid text {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 3;
+}
+
+/* A hex with detail below it, under the pointer: a quiet magnifier in its corner that zooms in. */
+.rpg-hexmap-detail-mark {
+  cursor: zoom-in;
+}
+
+.rpg-hexmap-detail-mark circle:first-of-type {
+  fill: color-mix(in srgb, var(--background-primary) 78%, transparent);
+  stroke: color-mix(in srgb, var(--text-normal) 35%, transparent);
+  stroke-width: 0.8;
+  transition:
+    fill 120ms ease-out,
+    stroke 120ms ease-out;
+}
+
+.rpg-hexmap-detail-mark circle + circle,
+.rpg-hexmap-detail-mark path {
+  stroke: var(--text-muted);
+  stroke-linecap: round;
+  transition: stroke 120ms ease-out;
+}
+
+.rpg-hexmap-detail-mark:hover circle:first-of-type {
+  fill: var(--background-primary);
+  stroke: var(--interactive-accent);
+}
+
+.rpg-hexmap-detail-mark:hover circle + circle,
+.rpg-hexmap-detail-mark:hover path {
+  stroke: var(--interactive-accent);
+}
+
+/* ---- Levels (design §13.9) ---- */
+
+/* A level's empty hexes all over the level above, as one tiled pattern. */
+.rpg-hexmap-fine-grid {
+  pointer-events: none;
+}
+
+.rpg-hexmap-fine-grid polygon {
+  stroke: var(--text-faint);
+  stroke-opacity: 0.45;
+}
+
+/* Hexes a new detail filled with the coarse tile, staged until Done: dimmed in Build. */
+.rpg-hexmap-staged polygon {
+  fill: color-mix(in srgb, var(--background-primary) 45%, transparent);
+  stroke: var(--text-faint);
+  stroke-dasharray: 3 3;
+  stroke-opacity: 0.6;
+  pointer-events: none;
+}
+
+/* The coarse hex under the pointer, while working a level below it. */
+.rpg-hexmap-parent-grid polygon.is-focus {
+  stroke: var(--interactive-accent);
+  stroke-opacity: 0.9;
+  stroke-dasharray: none;
+}
+
+/* ---- Sidebar panels ---- */
+
+.rpg-hexpaint-note {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.rpg-hexpaint-look dd {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rpg-hexpaint-look input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+
+.rpg-hexpaint-look output {
+  min-width: 2.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-look-where {
+  overflow: hidden;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.rpg-hexpaint-row-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexpaint-inline-form {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.rpg-hexpaint-inline-form input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto;
+  padding: 0.15rem 0.4rem;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexpaint-check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.rpg-hexpaint-turn output {
+  min-width: 2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-hexpaint-turn .rpg-hexpaint-button {
+  padding: 0.1rem 0.25rem;
+}
+
+.rpg-hexpaint-here {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-here > span {
+  flex: 1 1 auto;
+}
+
+.rpg-hexpaint-stamps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexpaint-stamps li {
+  position: relative;
+}
+
+.rpg-hexpaint-stamps li > .rpg-hexpaint-button {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  padding: 0.1rem;
+  opacity: 0;
+}
+
+.rpg-hexpaint-stamps li:hover > .rpg-hexpaint-button {
+  opacity: 0.85;
+}
+
+.rpg-hexpaint-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 100%;
+  height: auto;
+  padding: 0.25rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rpg-hexpaint-stamp:hover {
+  background: var(--background-modifier-hover);
+}
+
+.rpg-hexpaint-stamp.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+  color: var(--text-accent);
+}
+
+.rpg-hexpaint-stamp-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 3.6rem;
+}
+
+.rpg-hexpaint-stamp-art svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.rpg-hexpaint-sidebar input[type="text"],
+.rpg-hexpaint-sidebar input[type="search"] {
+  box-sizing: border-box;
+  height: 1.7rem;
+}
+
+.rpg-hexpaint-inline-form .rpg-hexpaint-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---- Custom tiles & the tile builder (design §13.3) ---- */
+
+.rpg-hexpaint-more {
+  height: auto;
+  padding: 0 0.2rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.rpg-hexpaint-stamp-tools {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  display: flex;
+  gap: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.rpg-hexpaint-stamps li:hover > .rpg-hexpaint-stamp-tools,
+.rpg-hexpaint-stamp-tools:focus-within {
+  opacity: 1;
+}
+
+.rpg-hexpaint-stamp-tools .rpg-hexpaint-button {
+  padding: 0.1rem;
+}
+
+.rpg-hexpaint-brush.is-custom {
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+}
+
+.rpg-hexpaint-brush.is-custom .rpg-hexpaint-here {
+  grid-column: 1 / -1;
+}
+
+.rpg-hexpaint-brush-thumb svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.rpg-hexpaint-custom-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.rpg-hexmap-origin {
+  fill: none;
+  stroke: var(--text-accent);
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+.modal.rpg-tile-builder-modal {
+  width: min(78rem, 94vw);
+  max-width: none;
+}
+
+.rpg-tile-builder-modal .rpg-hexmap {
+  margin: 0;
+}
+
+.rpg-custom-tiles-settings {
+  max-height: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+}
+
+/* Paint mode is interface, not prose: the UI face, whatever the note is set in. */
+.rpg-hexpaint-toolbar,
+.rpg-hexpaint-sidebar,
+.rpg-hexpaint-status {
+  font-family: var(--font-interface, system-ui, sans-serif);
+}
+
+/* ---- Detail levels kept in the block (design §13.8) ---- */
+
+.rpg-hexmap-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.6rem;
+  font-family: var(--font-interface, system-ui, sans-serif);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.rpg-hexmap.is-editing > .rpg-hexmap-crumbs {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rpg-hexmap-crumbs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: auto;
+  padding: 0.1rem 0.35rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  box-shadow: none;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.rpg-hexmap-crumbs button:hover {
+  background: var(--background-modifier-hover);
+}
+
+.rpg-hexmap-crumbs button[aria-current="page"] {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.rpg-hexmap-crumbs-up {
+  margin-left: auto;
+}
+
+.rpg-hexmap-crumbs-up button {
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+/* ---- Modes and Play (design §14) ---- */
+
+/* The mode switch in the corner, as small as the zoom buttons. */
+.rpg-hexmap-controls .rpg-hexmap-mode-switch .rpg-hexpaint-segmented {
+  background: var(--background-primary);
+  opacity: 0.92;
+}
+
+.rpg-hexmap-controls .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label {
+  padding: 0.18rem 0.45rem;
+  font-family: var(--font-interface, system-ui, sans-serif);
+}
+
+.rpg-hexmap-controls .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label:not(.is-checked) span {
+  display: none;
+}
+
+/* Play's controls: a quiet strip along the map's foot. */
+.rpg-hexmap-hud {
+  position: absolute;
+  left: 0.5em;
+  bottom: 0.5em;
+  right: 0.5em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+  font-family: var(--font-interface, system-ui, sans-serif);
+}
+
+.rpg-hexmap-hud > * {
+  pointer-events: auto;
+}
+
+.rpg-hexmap-hud .rpg-hexpaint-segmented,
+.rpg-hexmap-hud .rpg-hexpaint-button {
+  background: var(--background-primary);
+  opacity: 0.94;
+}
+
+.rpg-hexmap-hud .rpg-hexpaint-button.is-on {
+  border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+  color: var(--text-accent);
+}
+
+.rpg-hexmap-hud-readout {
+  margin-left: auto;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-hexmap-play {
+  pointer-events: none;
+}
+
+.rpg-hexmap-fog polygon {
+  fill: var(--background-primary);
+  fill-opacity: 0.78;
+  stroke: none;
+}
+
+.rpg-hexmap-trail {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 6;
+  opacity: 0.9;
+}
+
+.rpg-hexmap-measure polygon {
+  fill: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  stroke: var(--interactive-accent);
+  stroke-width: 1;
+}
+
+.rpg-hexmap-measure polyline {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-linecap: round;
+}
+
+.rpg-hexmap-measure text {
+  text-anchor: middle;
+  font-family: var(--font-interface, system-ui, sans-serif);
+  font-weight: 600;
+  fill: var(--text-normal);
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 4;
+}
+
+/* A choice inside a sidebar field: as wide as the field, its options shrinking to fit. */
+.rpg-hexpaint-fields dd > .rpg-hexpaint-segmented {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.rpg-hexpaint-fields dd > .rpg-hexpaint-segmented > label {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: var(--font-ui-smaller);
+  justify-content: center;
+  padding-inline: 0.2rem;
+}
+
+/* A choice gets a row of its own under its name, so its options fit. */
+.rpg-hexpaint-fields dd:has(> .rpg-hexpaint-segmented) {
+  grid-column: 1 / -1;
+}
+
+/* A slider's number, typed: any value, past the slider's ends too. */
+.rpg-hexpaint-number {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.rpg-hexpaint-fields .rpg-hexpaint-number input[type="number"] {
+  width: 3rem;
+  min-width: 0;
+  padding: 0.05rem 0.15rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+/* No spinner arrows: the slider is beside it. */
+.rpg-hexpaint-number input[type="number"]::-webkit-inner-spin-button,
+.rpg-hexpaint-number input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* The slider takes the room the number leaves. */
+.rpg-hexpaint-look dd > input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 2.5rem;
+  width: auto;
+}
+
+/* The Region panel's "On hex": where its name is pinned, and the buttons to pick or clear it. */
+.rpg-hexpaint-onhex {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.rpg-hexpaint-onhex > span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+  margin-inline-end: auto;
+}
+
+.rpg-hexpaint-onhex > .rpg-hexpaint-button {
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+/* A text field fills its row beside its name. */
+.rpg-hexpaint-look dd > input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rpg-hexpaint-button.is-on {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+/* Changes waiting to be written: Done stands out. */
+.rpg-hexpaint-actions .is-done.is-unsaved {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* The Regions mode's list: every region on the map, the one it's of first. */
+.rpg-hexpaint-regions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.rpg-hexpaint-regions button {
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  box-shadow: none;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  text-align: start;
+  height: auto;
+}
+
+.rpg-hexpaint-regions button:hover {
+  background: var(--background-modifier-hover);
+}
+
+.rpg-hexpaint-regions button.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-hexpaint-regions-dot {
+  flex: none;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.rpg-hexpaint-regions-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-hexpaint-regions small {
+  flex: none;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexpaint-regions button.is-selected small {
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* Stack list panel: all stack elements on a hex, with reorder controls. */
+.rpg-hexpaint-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexpaint-stack-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+}
+
+.rpg-hexpaint-stack-item.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+}
+
+.rpg-hexpaint-stack-item-btn {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.rpg-hexpaint-stack-item-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.rpg-hexpaint-stack-item.is-selected .rpg-hexpaint-stack-item-btn:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, var(--background-primary));
+}
+
+.rpg-hexpaint-stack-item-info {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.rpg-hexpaint-stack-order {
+  flex: 0 0 1.4rem;
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--background-modifier-hover);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-stack-spec {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-normal);
+}
+
+.rpg-hexpaint-stack-count {
+  flex: 0 0 auto;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rpg-hexpaint-stack-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.15rem;
+}
+
+.rpg-hexpaint-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.rpg-hexpaint-icon-btn:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-hexpaint-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.rpg-hexpaint-icon-btn-danger:hover:not(:disabled) {
+  background: var(--background-modifier-danger-hover);
+  color: var(--text-error);
+}
+
+.rpg-hexpaint-regions-new {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.rpg-hexpaint-regions-new input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Where an imported region comes from, and the way back to it. */
+.rpg-hexpaint-region-from {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.rpg-hexpaint-region-from .rpg-hexpaint-button {
+  padding: 0.1rem 0.45rem;
+}
+
+/* A region's fields: locked (dimmed) while it's shown as its own map has it. */
+.rpg-hexpaint-region-fields {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.rpg-hexpaint-region-fields:disabled {
+  opacity: 0.55;
+}
+
+.rpg-hexpaint-region-remove {
+  margin-top: 0.75rem;
+  color: var(--text-error);
+}
+
+/* ---- Far art composer (design §13.11) ---- */
+
+.rpg-farcomp {
+  display: grid;
+  gap: 0.6em;
+  margin: 0.8em 0;
+}
+
+.rpg-farcomp header h4 {
+  margin: 0;
+}
+
+.rpg-farcomp-work {
+  display: grid;
+  grid-template-columns: minmax(10em, 15em) 1fr;
+  gap: 0.8em;
+  align-items: start;
+}
+
+.rpg-farcomp-palette {
+  display: grid;
+  gap: 0.4em;
+}
+
+.rpg-farcomp-palette select,
+.rpg-farcomp-palette input {
+  width: 100%;
+}
+
+.rpg-farcomp-palette ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.6em, 1fr));
+  gap: 0.25em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 28em;
+  overflow-y: auto;
+}
+
+.rpg-farcomp-palette button {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0.15em;
+  display: grid;
+  place-items: center;
+}
+
+.rpg-farcomp-palette button.is-selected {
+  outline: 2px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+}
+
+.rpg-farcomp-palette img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.rpg-farcomp-stage {
+  display: grid;
+  gap: 0.4em;
+}
+
+.rpg-farcomp-target {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-farcomp-target button.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-farcomp-target.is-sides button {
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-farcomp-editor {
+  width: 100%;
+  max-height: 30em;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.rpg-farcomp-hex {
+  stroke-width: 0.012;
+}
+
+.rpg-farcomp-hex.is-centre {
+  fill: color-mix(in srgb, var(--text-faint) 14%, transparent);
+  stroke: var(--text-muted);
+}
+
+.rpg-farcomp-hex.is-joined {
+  fill: color-mix(in srgb, var(--text-faint) 8%, transparent);
+  stroke: var(--text-faint);
+}
+
+.rpg-farcomp-hex.is-open {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-dasharray: 0.04 0.03;
+  opacity: 0.7;
+}
+
+.rpg-farcomp-zone {
+  fill: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  stroke: var(--interactive-accent);
+  stroke-width: 0.01;
+  pointer-events: none;
+}
+
+.rpg-farcomp-sprite {
+  cursor: grab;
+}
+
+.rpg-farcomp-sprite.is-dim {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.rpg-farcomp-sprite rect {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 0.01;
+  stroke-dasharray: 0.02 0.015;
+}
+
+.rpg-farcomp-selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.rpg-farcomp-selected label {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-farcomp-bake {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+  margin: 0;
+}
+
+.rpg-farcomp-bake label {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-farcomp-bake input {
+  width: 4.5em;
+}
+
+/* Every variation with its neighbours: a row per type, a cell per slot. */
+.rpg-farcomp-showcase {
+  border-collapse: collapse;
+}
+
+.rpg-farcomp-showcase th {
+  text-align: start;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding-inline-end: 0.5em;
+}
+
+.rpg-farcomp-showcase td {
+  padding: 0.1em;
+}
+
+.rpg-farcomp-showcase button {
+  width: 6.5em;
+  height: 6.3em;
+  padding: 0;
+  display: block;
+  position: relative;
+}
+
+.rpg-farcomp-showcase button svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rpg-farcomp-showcase button.is-selected {
+  outline: 2px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+
+.rpg-farcomp-showcase button.is-own::after {
+  content: "✎";
+  position: absolute;
+  top: 0.1em;
+  right: 0.25em;
+  font-size: 0.8em;
+  color: var(--text-accent);
+}
+
+.rpg-farcomp-new input {
+  width: 10em;
+}
+
+.rpg-farcomp-under {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Sprites of other zones: greyed, so what's being edited stands out. */
+.rpg-farcomp-sprite.is-dim {
+  opacity: 0.3;
+  filter: grayscale(0.8);
+}
+
+.rpg-farcomp-hex.is-coarse {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 0.01;
+}
+
+.rpg-farcomp-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8em;
+  margin: 0;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-farcomp-view label {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.rpg-farcomp-hint {
+  color: var(--text-faint);
+}
+
+.rpg-farcomp-land {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-farcomp-land button {
+  width: 3.4em;
+  height: 3.4em;
+  padding: 0.1em;
+}
+
+.rpg-farcomp-land button.is-selected {
+  outline: 2px solid var(--interactive-accent);
+}
+
+.rpg-farcomp-land img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.rpg-farcomp-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-farcomp-list li {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+}
+
+.rpg-farcomp-list li.is-selected {
+  border-color: var(--interactive-accent);
+}
+
+.rpg-farcomp-list button {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.1em 0.35em;
+  border: none;
+  background: none;
+  font-size: var(--font-ui-smaller);
+  box-shadow: none;
+}
+
+.rpg-farcomp-list img {
+  width: 1.4em;
+  height: 1.4em;
+  object-fit: contain;
+}
+
+.rpg-farcomp-onmap {
+  display: grid;
+  gap: 0.4em;
+}
+
+.rpg-farcomp-onmap header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+}
+
+.rpg-farcomp-onmap h5 {
+  margin: 0;
+}
+
+.rpg-farcomp-map {
+  width: 100%;
+  max-height: 34em;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+.rpg-farcomp-new {
+  display: grid;
+  gap: 0.4em;
+  margin: 0.6em 0;
+}
+
+.rpg-farcomp-new p {
+  margin: 0;
+}
+
+.rpg-farcomp-new menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-farcomp-new-head {
+  min-width: 4em;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rpg-farcomp-new button.is-selected {
+  outline: 2px solid var(--interactive-accent);
+}
+
+/* ---- Phone: a small map in the note, the whole screen on Expand ----
+ * In the note the map shows only its zoom pair and an Expand button, so it keeps its width and
+ * its labels clear of buttons. Expand takes the whole screen; there the modes, layers and the
+ * Play tools are along the foot, a thumb away. */
+@media (max-width: 600px) {
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls > li:not(:has(button[aria-label^="Open the map"])),
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-hud {
+    display: none;
+  }
+
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button {
+    width: 2.5rem;
+    height: 2.5rem;
+    opacity: 0.95;
+  }
+
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-zoom {
+    top: 3.6rem;
+  }
+
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-zoom button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  /* Expanded: the screen is the map's, and its tools are back. */
+  .rpg-hexmap-float.rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls > li {
+    display: list-item;
+  }
+
+  .rpg-hexmap-float.rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-hud {
+    display: flex;
+  }
+
+  .rpg-hexmap-float {
+    padding: 0;
+    background: var(--background-primary);
+  }
+
+  .rpg-hexmap-float-pane {
+    width: 100%;
+    max-height: none;
+    height: 100dvh;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .rpg-hexmap-float figcaption {
+    display: none;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport {
+    flex: 1 1 0;
+    height: auto !important;
+    min-height: 0;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-controls {
+    top: calc(0.5rem + env(safe-area-inset-top, 0px));
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100% - 4rem);
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-controls button,
+  .rpg-hexmap-float .rpg-hexmap-zoom button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-zoom {
+    top: calc(3.6rem + env(safe-area-inset-top, 0px));
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-hud {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--background-primary) 94%, transparent);
+    border-top: 1px solid var(--background-modifier-border);
+    scrollbar-width: none;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-hud > * {
+    flex: none;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-hud .rpg-hexpaint-button,
+  .rpg-hexmap-float .rpg-hexmap-hud .rpg-hexpaint-segmented button {
+    min-height: 2.5rem;
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-hud-readout {
+    margin-left: 0;
+  }
+}
+
+/* A selected tool reads as selected without losing its words: a tint and an accent edge, the label in full ink. */
+.rpg-hexmap-hud .rpg-hexpaint-button.is-on,
+.rpg-hexmap-hud .rpg-hexpaint-button.is-on:hover {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary));
+  color: var(--text-normal);
+}
+
+@media (max-width: 600px) {
+  /* Modes (Play, Mark, Build, layers): thumb-sized segments with the open one filled. */
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented {
+    gap: 0;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--background-primary);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label,
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented button {
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding-inline: 0.65rem;
+    border: 0;
+    border-radius: 999px;
+    font-size: var(--font-ui-small);
+  }
+
+  .rpg-hexmap-float .rpg-hexmap-mode-switch .rpg-hexpaint-segmented label.is-checked {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }
+}
+
+.rpg-hexmap-tooltip-battle {
+  margin-top: 0.15rem;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
 }

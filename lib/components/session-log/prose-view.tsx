@@ -33,6 +33,8 @@ export interface ProseViewProps {
   onSelectStep?: (id: number) => void;
   /** A party member's name as the log knows them (`Talon Pallton` → `Talon`). */
   partyName?: (actor: string) => string | undefined;
+  /** A journey's map, drawn where it starts (`startId`: its `[TRAVEL]`). */
+  renderTravelMap?: (startId: number) => React.ReactNode;
 }
 
 export function ProseView({
@@ -44,6 +46,7 @@ export function ProseView({
   renderTurnMap,
   onSelectStep,
   partyName,
+  renderTravelMap,
 }: ProseViewProps) {
   if (scenes.length === 0) {
     return <div className="lonelog-prose-empty">Nothing to narrate yet.</div>;
@@ -81,6 +84,7 @@ export function ProseView({
               {...(renderTurnMap ? { renderTurnMap } : {})}
               {...(onSelectStep ? { onSelectStep } : {})}
               {...(partyName ? { partyName } : {})}
+              {...(renderTravelMap ? { renderTravelMap } : {})}
             />
           ))}
         </section>
@@ -97,6 +101,7 @@ interface NodeViewProps {
   renderTurnMap?: (turnId: number, headInto?: HTMLElement | null) => React.ReactNode;
   onSelectStep?: (id: number) => void;
   partyName?: (actor: string) => string | undefined;
+  renderTravelMap?: (startId: number) => React.ReactNode;
 }
 
 /** A run of conclusions, each with its provenance dot. */
@@ -213,6 +218,33 @@ function ProseNodeView({ node, ...props }: NodeViewProps & { node: ProseNode }) 
 
     case "narration":
       return <Markdown source={node.text} sourcePath={sourcePath} className="lonelog-prose-narration" />;
+
+    case "travel":
+      return (
+        // No line of its own: the minimap shows the journey. Only where it starts, for the reading position.
+        <span className="lonelog-travel-anchor" ref={(el) => registerAnchor(node.sourceId, el)} />
+      );
+
+    case "arrival":
+      // A journey's end: when, how far and long, what came of it.
+      return (
+        <aside className="lonelog-travel-arrival" ref={(el) => registerAnchor(node.sourceId, el)}>
+          <header>
+            <span className="lonelog-travel-arrival-key">Arrived</span>
+            {node.arrive && <strong>{node.arrive}</strong>}
+          </header>
+          {node.stats.length > 0 && (
+            <ul className="lonelog-travel-stats">
+              {node.stats.map((st, i) => (
+                <li key={i}>{st}</li>
+              ))}
+            </ul>
+          )}
+          {node.outcome && (
+            <Markdown source={node.outcome} sourcePath={sourcePath} className="lonelog-travel-outcome" />
+          )}
+        </aside>
+      );
 
     case "dialogue":
       return (

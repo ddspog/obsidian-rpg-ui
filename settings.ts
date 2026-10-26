@@ -71,6 +71,8 @@ export interface ImageStudioSettings {
   stylePrompt: string;
   /** Where hotbar icons are saved (a folder named `Icons` is where the hotbar looks). */
   iconFolder: string;
+  /** Where portraits and character art are saved; empty: where the vault keeps attachments. */
+  portraitFolder: string;
 }
 
 export const DEFAULT_IMAGE_STUDIO: ImageStudioSettings = {
@@ -92,6 +94,7 @@ export const DEFAULT_IMAGE_STUDIO: ImageStudioSettings = {
     "a soft outer glow. One single symbol, not several stacked. Not a realistic object, not a 3D render, not a scene. " +
     "No text, no letters, no numbers, no words, no frame, no border, no UI.",
   iconFolder: "Icons",
+  portraitFolder: "",
 };
 
 export interface DndUIToolkitSettings {
@@ -100,6 +103,8 @@ export interface DndUIToolkitSettings {
   imageStudio: ImageStudioSettings;
   /** Card frames by kind (spell, portrait, item…): a generated image replacing the CSS one, how the name shows, the prompt style. */
   cardFrames?: Partial<Record<FrameKind, CardFrameSettings>>;
+  /** Vault folder generated card frames are saved to. */
+  cardFramesFolder: string;
 
   // System mappings: folder path → system definition folder path
   // Empty folder path ("") represents the root/default for the entire vault
@@ -138,6 +143,8 @@ export interface DndUIToolkitSettings {
   /** Vault folder holding hex map texture packs, one subfolder per pack
    *  (`<folder>/<pack>/{terrain,path,stack}/…` plus `pack.yml`). */
   hexPacksFolder: string;
+  /** Vault folder battle map token pictures are saved to (right-click a token). */
+  battleTokenFolder: string;
   /** Pack a hex map uses when its head names none (`flat` = plain colours). */
   hexDefaultPack: string;
   /** Outline every hex on hex maps. */
@@ -185,6 +192,8 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   bannerField: "banner",
   bannerHeight: 200,
   hexPacksFolder: "z52. Hex Packs",
+  cardFramesFolder: "Frames",
+  battleTokenFolder: "z54. Tokens",
   hexDefaultPack: "basic",
   hexGridLines: false,
   hexCoords: "hover",

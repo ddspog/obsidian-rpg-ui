@@ -1,9 +1,11 @@
 /**
  * The day's clock, as the log moves it: `[Time: +8h]` on (a rest, a stage on
- * the road), `[Time: Day 2, 08:00]` set. It starts at the morning of Day 1
+ * the road), `[Time: Day 2, 08:00]` set — and a journey's arrival
+ * (`[/TRAVEL: arrive Day 4, 18:00 | …]`) sets it too. It starts at the morning of Day 1
  * unless a tag says otherwise. What a long rest's once-a-day is read against.
  */
 
+import { extractTags } from "lib/domains/lonelog/tag-extractor";
 import { segmentTags } from "./initiative";
 import type { ProseSegment } from "./prose-grouper";
 
@@ -33,6 +35,9 @@ export function foldClock(
   for (const seg of segments) {
     // Its tags — those on an action's own line too (`@(Party) Long rest [Time: +8h]`).
     const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    // A journey's end sets the clock to when it arrived (`[/TRAVEL: arrive Day 4, 18:00 | …]`).
+    if (seg.type === "travel-end" && seg.entry.end?.arrive)
+      tags.push(...extractTags(`[Time: ${seg.entry.end.arrive}]`));
     for (const tag of tags) {
       if (tag.kind !== "time") continue;
       if (tag.advance != null) {

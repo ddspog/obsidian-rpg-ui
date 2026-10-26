@@ -3,6 +3,7 @@
  * Renders Lonelog session logs with interactive action cards and delta tracking
  */
 
+import { detectPictureGrid } from "lib/services/map-picture-grid";
 import { BaseView } from "./BaseView";
 import { App, MarkdownPostProcessorContext, Notice, TFile } from "obsidian";
 import * as React from "react";
@@ -29,7 +30,6 @@ import { combatClock } from "lib/domains/session-log/turns";
 import { conditionsNow, resourcesSpent } from "lib/domains/session-log/conditions";
 import { statusCard } from "lib/domains/session-log/spellcasting";
 import { foldHealth, withTargetAc, withTargetHealth, type Health } from "lib/domains/session-log/health";
-import { brightnessProfiles, gridFromProfiles } from "lib/domains/battlemap/detect-grid";
 import type { MapChoice, MapTools } from "lib/domains/battlemap/map-tools";
 import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
@@ -650,6 +650,13 @@ class SessionLogMarkdown extends ReactMarkdown {
     return out;
   }
 
+  /** Open a fight's map note (`[COMBAT: [[Kobold Ambush]]]`) — not a map written in this log, which has no note. */
+  private openMapNote = (ref: string): void => {
+    const link = ref.match(/\[\[([^\]|#]+)/)?.[1]?.trim();
+    if (!link || !this.resolveLink(link)) return;
+    void this.baseView.app.workspace.openLinkText(link, this.filePath, false);
+  };
+
   /**
    * A combatant's token emoji: `token:` in the frontmatter of their note — the
    * linked one (`[[Talon Pallton]]`, `Fat [[Kobold, A]]`), or the party member a
@@ -721,23 +728,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     },
     detect: async (picture) => {
       const file = this.resolveLink(picture);
-      if (!file) return null;
-      const img = new Image();
-      img.src = this.baseView.app.vault.getResourcePath(file);
-      try {
-        await img.decode();
-      } catch {
-        return null;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return null;
-      ctx.drawImage(img, 0, 0);
-      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const p = brightnessProfiles(data, canvas.width, canvas.height);
-      return gridFromProfiles(p.columns, p.rows);
+      return file ? detectPictureGrid(this.baseView.app, file) : null;
     },
     picture: async (picture, cell, offsetX, offsetY) => {
       const source = `grid: square\nimage: "${picture}"\ncell: ${cell}\noffset: ${offsetX}, ${offsetY}\n---\n`;
@@ -2237,6 +2228,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           lookupCreature={this.lookupCreature}
           mapTools={this.mapTools}
           tokenIcon={this.tokenIcon}
+          openMapNote={this.openMapNote}
           actorPage={this.actorPage}
           partyName={this.partyName}
           saveModifier={this.saveModifier}
@@ -2328,6 +2320,7 @@ interface SessionLogRootProps {
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
   tokenIcon: (name: string) => string | undefined;
+  openMapNote: (ref: string) => void;
   /** The page an action's actor links to (`Talon` → `Talon Pallton`). */
   actorPage: (name: string) => string | undefined;
   /** A party member's short name (`Talon Pallton` → `Talon`). */
@@ -2413,6 +2406,7 @@ function SessionLogRoot({
   battleMaps,
   mapTools,
   tokenIcon,
+  openMapNote,
   actorPage,
   partyName,
   saveModifier,
@@ -3470,6 +3464,7 @@ function SessionLogRoot({
           onSeek={seekEntry}
           foesAt={foesAt}
           iconOf={tokenIcon}
+          onOpenMap={openMapNote}
           healthAt={health.at}
           hitAt={(id: number) => health.hits.get(id)}
           zoom
