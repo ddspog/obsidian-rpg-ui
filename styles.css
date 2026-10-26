@@ -1368,9 +1368,7 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .rpg-inventory-block__container-summary .rpg-inventory-block__item-stat {
   text-align: right;
@@ -14982,9 +14980,8 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-accordion {
   display: flex;
   flex-direction: column;
-  border-top: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  border-bottom: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  box-shadow: inset 0 1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35)), inset 0 -1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35));
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
 }
 .rpg-feature-bucket {
   background: transparent;
@@ -14994,45 +14991,6 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 .rpg-feature-bucket:first-of-type {
   border-top: none;
-}
-.rpg-feature-bucket:first-of-type,
-.rpg-feature-bucket:last-of-type {
-  position: relative;
-}
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:first-of-type::after,
-.rpg-feature-bucket:last-of-type::before,
-.rpg-feature-bucket:last-of-type::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-}
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:last-of-type::before {
-  left: -6px;
-}
-.rpg-feature-bucket:first-of-type::after,
-.rpg-feature-bucket:last-of-type::after {
-  right: -6px;
-}
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:first-of-type::after {
-  background:
-    linear-gradient(
-      to bottom,
-      light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)),
-      transparent);
-}
-.rpg-feature-bucket:last-of-type::before,
-.rpg-feature-bucket:last-of-type::after {
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 .rpg-feature-bucket summary {
   padding: 6px 12px;
@@ -15337,13 +15295,8 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   flex-direction: column;
   gap: 2px;
   padding: 8px 16px 10px;
-  border-top: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-right: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-left: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-bottom: 2px solid light-dark(rgba(106, 78, 42, 0.35), rgba(212, 168, 64, 0.35));
-  background: light-dark(rgba(106, 78, 42, 0.1), rgba(212, 168, 64, 0.09));
-  backdrop-filter: blur(2px) saturate(1.05);
-  -webkit-backdrop-filter: blur(2px) saturate(1.05);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
+  background: light-dark(#f2ead9, #2a251e);
 }
 .rpg-feature-pending-list > h3 {
   margin: 0;
@@ -19823,6 +19776,31 @@ header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption s
 section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
   color: light-dark(#4b2f9a, #cdbfff);
 }
+section[aria-details^="Character "] a.internal-link,
+[class*=rpg-feature] a.internal-link,
+[class*=rpg-spell] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link {
+  color: inherit;
+  text-decoration-line: none;
+  text-transform: none;
+}
+section[aria-details="Character Skills"] a.internal-link:hover,
+section[aria-details="Character Skills"] a.internal-link:focus-visible,
+section[aria-details="Character Proficiencies"] a.internal-link:hover,
+section[aria-details="Character Proficiencies"] a.internal-link:focus-visible {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-line: underline;
+}
+section[aria-details="Character Senses"] > dl:has(> dd[aria-details="No Senses"]) {
+  display: none;
+}
+p[aria-details="No Casters"] {
+  font-size: var(--rpg-fs-label);
+  color: light-dark(#6d6048, #a8a08a);
+}
 
 /* lib/styles/log-surface.css */
 .lonelog-sidebar,
@@ -20146,8 +20124,8 @@ section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
     grid-template-areas: "name hit roll" "dmg range roll" "dc cost cost" "fx fx fx";
     align-items: center;
     column-gap: 8px;
-    row-gap: 2px;
-    padding: 8px 8px 8px 12px;
+    row-gap: 6px;
+    padding: 10px 8px 10px 12px;
     border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
@@ -20478,6 +20456,59 @@ section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
 body.is-mobile .markdown-rendered button img,
 body.is-mobile .markdown-rendered [role=button] img {
   pointer-events: none;
+}
+@media (max-width: 600px) {
+  section[aria-details="Character Rolls"] td.rpg-rolls__name {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
+    border: none !important;
+  }
+  .rpg-spell-entry-enabler {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
+  }
+  .rpg-spell-entry-subline {
+    grid-row: 3;
+  }
+  .rpg-spell-entry-text {
+    grid-row: 4;
+  }
+  .rpg-feature-bucket summary {
+    min-height: 44px;
+  }
+  .rpg-inventory-block__currency-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+    column-gap: 0.4rem;
+  }
+  .rpg-inventory-block__currency-coin {
+    justify-content: space-between;
+  }
+  .rpg-inventory-block__currency-coin[data-empty=true] {
+    opacity: 0.6;
+  }
+  .rpg-inventory-block__item,
+  .rpg-inventory-block__item[data-nested=true],
+  .rpg-inventory-block__container-summary {
+    grid-template-columns: 1.5rem 1.75rem minmax(0, 1fr) 3.75rem 2rem;
+    column-gap: 0.4rem;
+  }
+  .rpg-inventory-block__item-weight {
+    grid-column: 4;
+    grid-row: 1;
+    text-align: right;
+  }
+  .rpg-inventory-block__item-action {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .rpg-inventory-block__item-stat {
+    grid-column: 3 / -1;
+    grid-row: 2;
+  }
 }
 
 /* lib/styles/index.css */

@@ -160,3 +160,36 @@ header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption s
 section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
   color: light-dark(#4b2f9a, #cdbfff);
 }
+
+/* Links in the sheet: one violet ink that holds 4.5:1 on the page and on the panels.
+ * Skill and proficiency names are body text; the underline comes back on hover and focus. */
+section[aria-details^="Character "] a.internal-link,
+[class*="rpg-feature"] a.internal-link,
+[class*="rpg-spell"] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link {
+  color: inherit;
+  text-decoration-line: none;
+  text-transform: none;
+}
+
+section[aria-details="Character Skills"] a.internal-link:hover,
+section[aria-details="Character Skills"] a.internal-link:focus-visible,
+section[aria-details="Character Proficiencies"] a.internal-link:hover,
+section[aria-details="Character Proficiencies"] a.internal-link:focus-visible {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-line: underline;
+}
+
+/* A character with nothing to list does not need a panel for it. */
+section[aria-details="Character Senses"] > dl:has(> dd[aria-details="No Senses"]) {
+  display: none;
+}
+
+p[aria-details="No Casters"] {
+  font-size: var(--rpg-fs-label);
+  color: light-dark(#6d6048, #a8a08a);
+}
