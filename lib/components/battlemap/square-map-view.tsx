@@ -72,6 +72,8 @@ interface SquareMapViewProps {
   selected?: string;
   /** Right-click on a token: called with its name and the click. */
   onTokenContextMenu?: (name: string, event: MouseEvent) => void;
+  /** Tokens can be dragged to a square (editing a map's start): called with the token's name and where it was dropped. */
+  onTokenMove?: (name: string, to: Square) => void;
 }
 
 interface Box {
@@ -165,6 +167,7 @@ export function SquareMapView({
   onSquareClick,
   selected,
   onTokenContextMenu,
+  onTokenMove,
 }: SquareMapViewProps) {
   const uid = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
   const picture = written.image?.url ? written.image : undefined;
@@ -182,6 +185,10 @@ export function SquareMapView({
   // Zoomed, the labels are sized from the map's width on screen, so they read
   // the same however close the view is (and however small the pane).
   const svgRef = React.useRef<SVGSVGElement>(null);
+  // Dragging a token (editing a map's start): what is held, and where it is now.
+  const press = React.useRef<{ name: string; id: number; x: number; y: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = React.useState<{ name: string; x: number; y: number } | null>(null);
+  const suppressClick = React.useRef(false);
   const [screenW, setScreenW] = React.useState(0);
   React.useEffect(() => {
     const el = svgRef.current;
@@ -202,11 +209,55 @@ export function SquareMapView({
   const height = GUTTER + map.rows * cell;
   const center = (sq: Square) => ({ x: GUTTER + sq.col * cell + cell / 2, y: GUTTER + sq.row * cell + cell / 2 });
 
+  // Dragging a token: it follows the pointer, and a square under it shows where it will land.
+  const toMap = (e: { clientX: number; clientY: number }) => {
+    const svg = svgRef.current;
+    const m = svg?.getScreenCTM();
+    if (!svg || !m) return null;
+    return new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+  };
+  const squareAt = (pt: { x: number; y: number }): Square => ({
+    col: Math.max(0, Math.min(map.cols - 1, Math.floor((pt.x - GUTTER) / cell))),
+    row: Math.max(0, Math.min(map.rows - 1, Math.floor((pt.y - GUTTER) / cell))),
+  });
+  const dropSquare = drag ? squareAt(drag) : null;
+  const endDrag = (e: React.PointerEvent, commit: boolean) => {
+    const p = press.current;
+    press.current = null;
+    if (!p) return;
+    if (svgRef.current?.hasPointerCapture(p.id)) svgRef.current.releasePointerCapture(p.id);
+    if (p.moved) {
+      const pt = toMap(e);
+      if (commit && pt) onTokenMove?.(p.name, squareAt(pt));
+      // The click that follows a drag is not a pick.
+      suppressClick.current = true;
+      window.setTimeout(() => (suppressClick.current = false), 0);
+    }
+    setDrag(null);
+  };
+
   return (
     <svg
       ref={svgRef}
-      className={`rpg-battlemap${picture ? " has-image" : ""}${onSquareClick ? " is-placing" : ""}${className ? ` ${className}` : ""}`}
+      className={`rpg-battlemap${picture ? " has-image" : ""}${onSquareClick ? " is-placing" : ""}${onTokenMove ? " is-editing" : ""}${className ? ` ${className}` : ""}`}
       viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`}
+      {...(onTokenMove
+        ? {
+            onPointerMove: (e: React.PointerEvent) => {
+              const p = press.current;
+              if (!p || e.pointerId !== p.id) return;
+              if (!p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 5) return;
+              if (!p.moved) {
+                p.moved = true;
+                svgRef.current?.setPointerCapture(e.pointerId);
+              }
+              const pt = toMap(e);
+              if (pt) setDrag({ name: p.name, x: pt.x, y: pt.y });
+            },
+            onPointerUp: (e: React.PointerEvent) => endDrag(e, true),
+            onPointerCancel: (e: React.PointerEvent) => endDrag(e, false),
+          }
+        : {})}
       role="img"
       aria-label={map.title ? `Battle map: ${map.title}` : "Battle map"}
     >
@@ -305,20 +356,40 @@ export function SquareMapView({
         ))}
       </g>
 
+      {/* Where a dragged token will land */}
+      {dropSquare && (
+        <rect
+          className="rpg-battlemap-drop"
+          x={GUTTER + dropSquare.col * cell}
+          y={GUTTER + dropSquare.row * cell}
+          width={cell}
+          height={cell}
+        />
+      )}
+
       {/* Tokens */}
       <g className="rpg-battlemap-tokens">
         {tokens.map((t, ti) => {
-          const { x, y } = center(t.at);
+          const dragging = drag?.name === t.name;
+          const { x, y } = dragging && drag ? drag : center(t.at);
           const r = cell * 0.4;
           const frac = t.hp != null && t.max ? Math.max(0, Math.min(1, t.hp / t.max)) : null;
           const ring = 2 * Math.PI * (r + 1.5);
           return (
             <g
               key={t.name}
-              className={`rpg-battlemap-token is-${t.side}${t.down ? " is-down" : ""}${t.active ? " is-active" : ""}${t.ko ? " is-ko" : ""}${
+              className={`rpg-battlemap-token is-${t.side}${dragging ? " is-dragging" : ""}${t.down ? " is-down" : ""}${t.active ? " is-active" : ""}${t.ko ? " is-ko" : ""}${
                 selected === t.name ? " is-selected" : ""
               }${onTokenClick ? " is-pickable" : ""}`}
               transform={`translate(${x} ${y})`}
+              {...(onTokenMove
+                ? {
+                    onPointerDown: (e: React.PointerEvent) => {
+                      if (e.button !== 0) return;
+                      press.current = { name: t.name, id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+                    },
+                  }
+                : {})}
               {...(onTokenContextMenu
                 ? {
                     onContextMenu: (e: React.MouseEvent) => {
@@ -336,6 +407,7 @@ export function SquareMapView({
                     "aria-pressed": selected === t.name,
                     onClick: (e: React.MouseEvent) => {
                       e.stopPropagation();
+                      if (suppressClick.current) return;
                       onTokenClick(t.name);
                     },
                     onKeyDown: (e: React.KeyboardEvent) => {
@@ -356,6 +428,7 @@ export function SquareMapView({
                   .filter(Boolean)
                   .join(" · ")}
               </title>
+              {onTokenMove && <circle r={cell * 0.75} className="rpg-battlemap-token-hit" />}
               <circle r={r} className="rpg-battlemap-token-disc" />
               {frac != null && (
                 <circle

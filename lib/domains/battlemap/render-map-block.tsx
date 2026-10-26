@@ -10,7 +10,8 @@
 import { type App, MarkdownRenderChild, TFile } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { SquareMapView, type MapToken } from "lib/components/battlemap/square-map-view";
+import { MapTokenEditor } from "lib/components/battlemap/map-token-editor";
+import type { MapToken } from "lib/components/battlemap/square-map-view";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
 import { HexMapBlock } from "lib/domains/hexmap/render-hex-map-block";
 import { fitToImage, parseSquareMap, type SquareMap } from "./square-map";
@@ -52,19 +53,14 @@ export function defaultTokens(map: SquareMap): MapToken[] {
   }));
 }
 
-function MapBlock({ map }: { map: SquareMap }) {
+function MapBlock({ map, source, sourcePath, app }: { map: SquareMap; source: string; sourcePath: string; app: App }) {
   if (map.image && !map.image.url) {
     return <div className="notice">rpg map: picture not found — {map.image.link}</div>;
   }
   if (!map.image && (map.rows === 0 || map.cols === 0)) {
     return <div className="notice">rpg map: draw the grid below the `---`</div>;
   }
-  return (
-    <figure className="rpg-map-block">
-      <SquareMapView map={map} tokens={defaultTokens(map)} />
-      {map.title && <figcaption>{map.title}</figcaption>}
-    </figure>
-  );
+  return <MapTokenEditor map={map} source={source} sourcePath={sourcePath} app={app} />;
 }
 
 export class MapRenderChild extends MarkdownRenderChild {
@@ -88,7 +84,14 @@ export class MapRenderChild extends MarkdownRenderChild {
       );
       return;
     }
-    this.root.render(<MapBlock map={resolveMapImage(parseSquareMap(this.source), this.app, this.sourcePath)} />);
+    this.root.render(
+      <MapBlock
+        map={resolveMapImage(parseSquareMap(this.source), this.app, this.sourcePath)}
+        source={this.source}
+        sourcePath={this.sourcePath}
+        app={this.app}
+      />
+    );
   }
 
   onunload() {

@@ -988,3 +988,266 @@
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* ── Placing tokens on a map in a note ───────────────────────────────────── */
+
+.rpg-map-stage {
+  position: relative;
+}
+
+button.rpg-map-edit {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  font-size: var(--font-ui-small);
+  background: var(--background-primary);
+  opacity: 0.92;
+}
+
+.rpg-battlemap.is-editing {
+  cursor: default;
+  touch-action: none;
+}
+
+.rpg-battlemap.is-editing .rpg-battlemap-token,
+.rpg-battlemap.is-placing.is-editing .rpg-battlemap-token {
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.rpg-battlemap-token.is-dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+}
+
+.rpg-battlemap-drop {
+  fill: color-mix(in srgb, var(--interactive-accent) 28%, transparent);
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.rpg-map-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small);
+}
+
+.rpg-map-panel > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+}
+
+.rpg-map-panel h4 {
+  margin: 0;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-medium);
+  font-style: normal;
+  font-variant: normal;
+  text-indent: 0;
+  color: var(--text-normal);
+}
+
+.rpg-map-tokens > li.is-shared input.rpg-map-square {
+  border-color: var(--text-warning);
+}
+
+.rpg-map-panel > header p {
+  flex: 1 1 14rem;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.rpg-map-panel-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.rpg-map-panel button {
+  min-height: 2rem;
+  border-radius: 8px;
+}
+
+.rpg-map-panel button.is-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-map-tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-map-tokens > li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.2rem 0.3rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.rpg-map-tokens > li::before {
+  content: none;
+}
+
+.rpg-map-tokens > li.is-selected {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+}
+
+button.rpg-map-token-name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  min-width: 0;
+  text-align: start;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rpg-map-dot {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+}
+
+li.is-foe .rpg-map-dot {
+  background: var(--color-red, #c0392b);
+}
+
+input.rpg-map-square {
+  flex: none;
+  width: 3.4rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+input.rpg-map-square[aria-invalid="true"] {
+  border-color: var(--text-error);
+}
+
+button.rpg-map-remove {
+  flex: none;
+  width: 2rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+}
+
+.rpg-map-none {
+  color: var(--text-muted);
+}
+
+.rpg-map-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.rpg-map-side {
+  display: flex;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-primary);
+}
+
+.rpg-map-side label {
+  position: relative;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rpg-map-side label.is-on {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.rpg-map-side input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+}
+
+.rpg-map-combobox {
+  flex: 1 1 12rem;
+}
+
+.rpg-map-status {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  button.rpg-map-edit,
+  .rpg-map-panel button {
+    min-height: 2.5rem;
+  }
+
+  input.rpg-map-square {
+    min-height: 2.5rem;
+  }
+}
+
+/* A bigger target round a token being edited, so a thumb finds it on a small map. */
+.rpg-battlemap-token-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.rpg-map-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rpg-map-tokens > li {
+  min-width: 0;
+}
+
+.rpg-map-panel button.rpg-map-token-name {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+input.rpg-map-square {
+  color: var(--text-normal);
+}
+
+/* Obsidian's phone UI stretches text fields to their row; a square is four characters wide. */
+.rpg-map-panel input.rpg-map-square {
+  flex: 0 0 4.2rem;
+  width: 4.2rem;
+  max-width: 4.2rem;
+}

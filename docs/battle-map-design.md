@@ -180,3 +180,13 @@ timeline only read it. Nothing is stored outside the note.
   per log).
 - **Map source** — its own note, an `rpg map` block, bound with
   `[COMBAT: [[Map]]]`.
+
+
+## Placing tokens on a map in a note
+
+A map block in a note has a **Place tokens** button. It opens the map for editing: drag a token to a square (or tap
+it, then tap a square; the arrow keys move the picked one and Delete removes it), add the party or a creature from
+its note, remove one. A row per token lists its square as text (`J14`) to type into. **Done** writes the result into
+the block's `tokens:` (the rest of the block is left as written); **Cancel** drops the changes. Two tokens on one
+square are allowed and marked. The log's own setup frame is unchanged: this edits where a map starts, so a combat that
+binds the map starts from it.
