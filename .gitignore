@@ -18,8 +18,6 @@ main.js
 # obsidian
 data.json
 
-# sync-vault snapshot (per-machine state, never committed)
-.sync-manifest.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store

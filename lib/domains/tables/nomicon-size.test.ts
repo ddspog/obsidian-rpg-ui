@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 /** A Nomicon page stays short enough to read and edit; a longer chapter is split into
  *  part files (in `gm-tools/tables/the-nomicon`, one folder per chapter) that the chapter imports as tabs. */
 const MAX_LINES = 300;
-const VAULT = path.resolve(__dirname, "../../../vault/tales-of-the-valiant");
+const VAULT = path.resolve(__dirname, "../../../../testing-vault/tales-of-the-valiant");
 const ROOTS = [VAULT + "/compendium/the-nomicon", VAULT + "/gm-tools/tables/the-nomicon"];
 
 function pages(dir: string): string[] {

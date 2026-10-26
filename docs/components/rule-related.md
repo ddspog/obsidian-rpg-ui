@@ -45,7 +45,7 @@ entries:
 ```
 ````
 
-That second form — `view: footer` with `@[[...]].highlight()....` call tokens — is the dominant pattern across the rule files in the vault (for example, the language and item pages under `vault/tales-of-the-valiant/worldbuilding/`).
+That second form — `view: footer` with `@[[...]].highlight()....` call tokens — is the dominant pattern across the rule files in the vault (for example, the language and item pages under `tales-of-the-valiant/worldbuilding/`).
 
 ## Entry forms
 

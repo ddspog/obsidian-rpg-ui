@@ -6,7 +6,7 @@
  *
  *   node scripts/block-census.mjs [--vault <dir>]... [--json out.json] [--md out.md]
  *
- * Vaults default to the repo's own `vault/` plus `$RPG_VAULT_ROOT` when set. A
+ * Vaults default to $RPG_VAULT_ROOT, else the testing-vault checkout beside this repo. A
  * note counts as "real" content when it is not under a tests / examples /
  * sandbox folder.
  */
@@ -24,8 +24,7 @@ const flag = (name) => {
 };
 const vaults = [...flag("--vault")];
 if (vaults.length === 0) {
-  vaults.push(path.join(root, "vault"));
-  if (process.env.RPG_VAULT_ROOT) vaults.push(process.env.RPG_VAULT_ROOT);
+  vaults.push(process.env.RPG_VAULT_ROOT ?? path.join(root, "../testing-vault"));
 }
 const [jsonOut] = flag("--json");
 const [mdOut] = flag("--md");
@@ -88,9 +87,11 @@ const KNOWN = {
 for (const [k, v] of Object.entries(KNOWN)) if (!definitions.has(k)) definitions.set(k, v);
 
 /** Entity blocks a system defines in its config (`config/blocks/<family>/<name>.tsx`). */
-for (const f of walk(path.join(root, "vault"))) {
-  const m = rel(f).match(/\/config\/blocks\/([^/]+)\/([^/]+)\.tsx$/);
-  if (m) definitions.set(`${m[1]}.${m[2]}`, { source: rel(f), kind: "system block" });
+for (const v of vaults) {
+  for (const f of walk(v)) {
+    const m = f.slice(v.length).match(/\/config\/blocks\/([^/]+)\/([^/]+)\.tsx$/);
+    if (m) definitions.set(`${m[1]}.${m[2]}`, { source: `<vault>${f.slice(v.length)}`, kind: "system block" });
+  }
 }
 
 // Built into main.ts's dispatch by prefix.
@@ -226,8 +227,7 @@ function examples(fence, limit = 3) {
     (n.real ? 100 : 0) +
     (n.count >= 1 && n.count <= 4 ? 20 : n.count <= 10 ? 8 : 0) +
     Math.min(n.types.size, 8) * 3 -
-    Math.min(n.count, 40) * 0.5 -
-    (n.vault === "vault" ? 5 : 0);
+    Math.min(n.count, 40) * 0.5;
   return [...u.notes].sort((a, b) => score(b) - score(a) || a.path.localeCompare(b.path)).slice(0, limit);
 }
 

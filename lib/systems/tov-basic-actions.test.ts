@@ -3,7 +3,7 @@ import {
   basicSessionActions,
   loadBasicActions,
   noteIcon,
-} from "../../vault/tales-of-the-valiant/config/entities/basic-actions";
+} from "../../../testing-vault/tales-of-the-valiant/config/entities/basic-actions";
 
 describe("basic actions — what any creature can do", () => {
   it("reads each concepts/ folder as its action type", async () => {

@@ -38,7 +38,6 @@ export default tsEslint.config({
         "lib/plugin/rule-call-processor.tsx",
         "lib/plugin/process-rpg-fences.ts",
         "lib/views/CompilationBasesView.ts",
-        "vault/**",
     ],
     rules: {
         "@typescript-eslint/no-require-imports": "off",

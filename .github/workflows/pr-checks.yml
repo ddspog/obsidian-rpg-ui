@@ -23,6 +23,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tests and typecheck import the Tales of the Valiant system config from the vault.
+      - name: Check out testing-vault beside the plugin
+        run: git clone --depth 1 https://github.com/ddspog/testing-vault ../testing-vault
+
       - name: Check formatting
         run: pnpm run format:check
 

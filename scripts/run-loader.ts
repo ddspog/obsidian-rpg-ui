@@ -5,7 +5,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, relative } from "path";
 
-const vaultRoot = join(process.cwd(), "vault");
+const vaultRoot = process.env.RPG_VAULT_ROOT ?? join(process.cwd(), "../testing-vault");
 
 function walkFiles(dir: string, out: any[] = []) {
   for (const name of readdirSync(dir)) {

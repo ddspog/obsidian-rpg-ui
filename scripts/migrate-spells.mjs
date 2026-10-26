@@ -4,9 +4,8 @@
  * `worldbuilding/spells/` from the frontmatter + `tx`-blocks authoring
  * shape to a single `rpg spell` fence with the fields as YAML body.
  *
- * Runs against both the plugin's `vault/tales-of-the-valiant/worldbuilding/spells`
- * and the real vault root's `tales-of-the-valiant/worldbuilding/spells` so the
- * on-disk canonical copy and the plugin-bundled copy stay in sync.
+ * Runs against `tales-of-the-valiant/worldbuilding/spells` in the vault
+ * ($RPG_VAULT_ROOT, else the testing-vault checkout beside this repo).
  *
  * Idempotent: files already migrated (no `.spell:` frontmatter section
  * present) are left alone.
@@ -20,13 +19,10 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
-const vaultRoot = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../../.."));
+const vaultRoot = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../testing-vault"));
 
 const SPELL_REL = "tales-of-the-valiant/worldbuilding/spells";
-const ROOTS = [
-  path.join(pluginRoot, "vault", SPELL_REL),
-  path.join(vaultRoot, SPELL_REL),
-];
+const ROOTS = [path.join(vaultRoot, SPELL_REL)];
 
 // ── Frontmatter parsing ─────────────────────────────────────────────────
 

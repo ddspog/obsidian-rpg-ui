@@ -20,10 +20,8 @@ import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const ITEM_DIR = resolve(
-  ROOT,
-  "vault/tales-of-the-valiant/worldbuilding/items",
-);
+const VAULT = process.env.RPG_VAULT_ROOT ?? resolve(ROOT, "../testing-vault");
+const ITEM_DIR = resolve(VAULT, "tales-of-the-valiant/worldbuilding/items");
 const WRITE = process.argv.includes("--write");
 
 const FENCE_RE = /```rpg item\.element\n([\s\S]*?)```/;
