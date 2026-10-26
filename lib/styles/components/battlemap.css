@@ -43,7 +43,7 @@
 /* Labels keep their size on screen as a view zooms (the group's size is set
    inline, scaled to the view); the strip behind them only shows when zoomed. */
 .rpg-battlemap-coords {
-  font-size: 7px;
+  font-size: 9px;
 }
 
 .rpg-battlemap-gutter {
@@ -732,7 +732,7 @@
   padding: 0 0.3rem;
   border-radius: 999px;
   background: var(--background-primary);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
 }
@@ -740,7 +740,7 @@
 .lonelog-minimap-caption {
   margin-top: 0.25rem;
   overflow: hidden;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;

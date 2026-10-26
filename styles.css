@@ -2328,6 +2328,8 @@ p.rpg-item-magic-card__subtitle {
 }
 .lonelog-prose-scene {
   margin-bottom: 1rem;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40rem;
 }
 .lonelog-prose-scene-head {
   display: flex;
@@ -9077,7 +9079,7 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
   fill: rgba(255, 255, 255, 0.12);
 }
 .rpg-battlemap-coords {
-  font-size: 7px;
+  font-size: 9px;
 }
 .rpg-battlemap-gutter {
   fill: var(--background-primary);
@@ -9618,14 +9620,14 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
   padding: 0 0.3rem;
   border-radius: 999px;
   background: var(--background-primary);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 .lonelog-minimap-caption {
   margin-top: 0.25rem;
   overflow: hidden;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -20270,7 +20272,7 @@ p[aria-details="No Casters"] {
     border-top: 1px solid light-dark(#cdbf9f, #4a4238);
   }
   .lonelog-bar > button {
-    min-height: 48px;
+    min-height: 44px;
     border: none;
     border-radius: 0;
     background: transparent;
