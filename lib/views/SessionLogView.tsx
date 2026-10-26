@@ -649,6 +649,13 @@ class SessionLogMarkdown extends ReactMarkdown {
     return out;
   }
 
+  /** Open a fight's map note (`[COMBAT: [[Kobold Ambush]]]`) — not a map written in this log, which has no note. */
+  private openMapNote = (ref: string): void => {
+    const link = ref.match(/\[\[([^\]|#]+)/)?.[1]?.trim();
+    if (!link || !this.resolveLink(link)) return;
+    void this.baseView.app.workspace.openLinkText(link, this.filePath, false);
+  };
+
   /**
    * A combatant's token emoji: `token:` in the frontmatter of their note — the
    * linked one (`[[Talon Pallton]]`, `Fat [[Kobold, A]]`), or the party member a
@@ -2236,6 +2243,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           lookupCreature={this.lookupCreature}
           mapTools={this.mapTools}
           tokenIcon={this.tokenIcon}
+          openMapNote={this.openMapNote}
           actorPage={this.actorPage}
           partyName={this.partyName}
           saveModifier={this.saveModifier}
@@ -2327,6 +2335,7 @@ interface SessionLogRootProps {
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
   tokenIcon: (name: string) => string | undefined;
+  openMapNote: (ref: string) => void;
   /** The page an action's actor links to (`Talon` → `Talon Pallton`). */
   actorPage: (name: string) => string | undefined;
   /** A party member's short name (`Talon Pallton` → `Talon`). */
@@ -2412,6 +2421,7 @@ function SessionLogRoot({
   battleMaps,
   mapTools,
   tokenIcon,
+  openMapNote,
   actorPage,
   partyName,
   saveModifier,
@@ -3469,6 +3479,7 @@ function SessionLogRoot({
           onSeek={seekEntry}
           foesAt={foesAt}
           iconOf={tokenIcon}
+          onOpenMap={openMapNote}
           healthAt={health.at}
           hitAt={(id: number) => health.hits.get(id)}
           zoom

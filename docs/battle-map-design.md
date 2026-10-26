@@ -194,3 +194,13 @@ binds the map starts from it.
 **Expand** opens the map full screen: drag it to pan, pinch, scroll the wheel or use the buttons to zoom, and the fit
 button to see all of it. The same Place tokens editing works there, with the token list in a panel under the map.
 Esc (or the ×) closes it.
+
+## Linking maps to the rest of the vault
+
+A map kept in its own note is the one place a place's battle board is defined:
+
+- **From a log:** `[COMBAT: [[Kowyn Encounter]]]` binds the fight to the note's first `rpg map` square block (Start
+  Combat lists such notes). The fight's map title is then a link that opens that note, where its tokens are placed.
+  A map written in the log's own `maps:` has no note, so its title stays plain text.
+- **From a hex map:** a place that links a note holding a square battle map (`t(2,1): plains [[Kowyn Encounter]]`)
+  says "Has a battle map. Click to open it." in its hover, and a click opens the note.

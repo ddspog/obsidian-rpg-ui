@@ -71,6 +71,8 @@ interface BattlePaneProps {
   iconOf?: (name: string) => string | undefined;
   /** Tokens' pictures — given, a token can be right-clicked to change its own. */
   pictures?: TokenPictures;
+  /** Open the map's own note, when it has one (the title becomes a link to it). */
+  onOpenMap?: (map: string) => void;
   /**
    * Change the fight's setup — given, the Setup frame's tokens can be clicked
    * to move where they start, roll their initiative, or give them an emoji.
@@ -247,6 +249,7 @@ export function BattlePane({
   zoom = false,
   iconOf,
   pictures,
+  onOpenMap,
   onSetup,
   initiativeOf,
   healthAt,
@@ -562,7 +565,18 @@ export function BattlePane({
     <>
       {headInto !== undefined && <MapIcon size={14} aria-hidden="true" className="lonelog-battle-head-icon" />}
       <span className="lonelog-battle-key">Map</span>
-      <span className="lonelog-battle-title">{map.title ?? shownName(battle.map)}</span>
+      {onOpenMap && /\[\[/.test(battle.map) ? (
+        <button
+          type="button"
+          className="lonelog-battle-title lonelog-battle-title-link"
+          title="Open the map's note"
+          onClick={() => onOpenMap(battle.map)}
+        >
+          {map.title ?? shownName(battle.map)}
+        </button>
+      ) : (
+        <span className="lonelog-battle-title">{map.title ?? shownName(battle.map)}</span>
+      )}
       {setupWhere ?? (where && <span className="lonelog-battle-where">{where}</span>)}
     </>
   );

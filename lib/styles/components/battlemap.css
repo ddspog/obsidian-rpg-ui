@@ -1366,3 +1366,24 @@ button.rpg-map-close {
   padding: 0 0.6rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--background-modifier-border);
 }
+
+/* A fight's map title that opens the map's note: reads as a link, not a button. */
+button.lonelog-battle-title-link {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-accent);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-accent) 40%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+button.lonelog-battle-title-link:hover {
+  text-decoration-color: currentColor;
+}

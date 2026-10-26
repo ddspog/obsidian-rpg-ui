@@ -2700,3 +2700,9 @@
     color: var(--text-on-accent);
   }
 }
+
+.rpg-hexmap-tooltip-battle {
+  margin-top: 0.15rem;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+}

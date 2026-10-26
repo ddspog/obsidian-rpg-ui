@@ -9960,6 +9960,24 @@ button.rpg-map-close {
   padding: 0 0.6rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--background-modifier-border);
 }
+button.lonelog-battle-title-link {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-accent);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-accent) 40%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+button.lonelog-battle-title-link:hover {
+  text-decoration-color: currentColor;
+}
 
 /* lib/styles/components/hex-map.css */
 .rpg-hexmap {
@@ -12176,6 +12194,11 @@ button.rpg-map-close {
     background: var(--interactive-accent);
     color: var(--text-on-accent);
   }
+}
+.rpg-hexmap-tooltip-battle {
+  margin-top: 0.15rem;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
 }
 
 /* lib/styles/components/draft.css */

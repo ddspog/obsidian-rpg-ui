@@ -39,6 +39,8 @@ export interface HexMapViewProps {
   /** Tallest the map gets, in % of the window height. */
   maxHeight?: number;
   onOpenLink?: (link: string, evt: MouseEvent) => void;
+  /** Places (by link text) whose note holds a battle map: the hover says so. */
+  battleMaps?: ReadonlySet<string>;
   onHoverLink?: (link: string, evt: MouseEvent, targetEl: HTMLElement) => void;
   /** Paint mode. */
   editing?: HexMapEditing;
@@ -552,13 +554,26 @@ function Banners({ layout }: { layout: HexLayout }) {
   );
 }
 
-function Tooltip({ hex, scale, regions }: { hex: HexInfo; scale?: string; regions: DrawRegion[] }) {
+function Tooltip({
+  hex,
+  scale,
+  regions,
+  battleMaps,
+}: {
+  hex: HexInfo;
+  scale?: string;
+  regions: DrawRegion[];
+  battleMaps?: ReadonlySet<string> | undefined;
+}) {
   return (
     <>
       <strong>
         ({hex.q}, {hex.r}){hex.height ? ` · ${hex.height} m` : ""}
       </strong>
       {(hex.label || hex.link) && <div className="rpg-hexmap-tooltip-place">{hex.label ?? hex.link}</div>}
+      {hex.link && battleMaps?.has(hex.link) && (
+        <div className="rpg-hexmap-tooltip-battle">Has a battle map. Click to open it.</div>
+      )}
       <dl>
         {hex.specs
           .filter((s) => s.spec)
@@ -739,6 +754,7 @@ export function HexMapView({
   labelScale = 1,
   maxHeight = 75,
   onOpenLink,
+  battleMaps,
   onHoverLink,
   editing,
   toolbar,
@@ -1247,7 +1263,7 @@ export function HexMapView({
       {hud}
       {hovered && tip && coords !== "off" && !editing && (
         <div className="rpg-hexmap-tooltip" style={{ left: tip.x + 14, top: tip.y + 14 }}>
-          <Tooltip hex={hovered} scale={scale} regions={layout.regions} />
+          <Tooltip hex={hovered} scale={scale} regions={layout.regions} battleMaps={battleMaps} />
         </div>
       )}
     </div>

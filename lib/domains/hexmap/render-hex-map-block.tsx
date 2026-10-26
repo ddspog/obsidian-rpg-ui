@@ -98,6 +98,7 @@ import {
   type HexLook,
   type HexUnderlay,
   type ParentMode,
+  isHexMapSource,
   parseHexMap,
   type ParsedHexMap,
 } from "./parse-hex-map";
@@ -314,6 +315,29 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
   const [drawnLevel, setDrawnLevel] = React.useState(session.level);
   const view = React.useMemo(() => levelView(draft, level), [draft, level]);
   const parsed = React.useMemo(() => parseHexMap(view), [view]);
+  // The places whose note holds a battle map: the hover says so, and a click goes there.
+  const [battleMaps, setBattleMaps] = React.useState<ReadonlySet<string>>(new Set());
+  const placeLinks = React.useMemo(
+    () => [...new Set(parsed.cells.map((c) => c.link).filter((l): l is string => !!l))],
+    [parsed]
+  );
+  React.useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const found = new Set<string>();
+      for (const link of placeLinks) {
+        const file = app.metadataCache.getFirstLinkpathDest(link.split("|")[0].split("#")[0], sourcePath);
+        if (!(file instanceof TFile) || file.extension !== "md") continue;
+        const text = await app.vault.cachedRead(file);
+        const block = text.match(/```rpg map[^\n]*\n([\s\S]*?)\n```/);
+        if (block && !isHexMapSource(block[1])) found.add(link);
+      }
+      if (alive) setBattleMaps(found);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [placeLinks, app, sourcePath]);
   const top = React.useMemo(() => (level ? parseHexMap(draft) : parsed), [draft, level, parsed]);
   const levelRef = React.useRef(level);
   levelRef.current = level;
@@ -2103,6 +2127,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
           />
         )
       }
+      battleMaps={battleMaps}
       onOpenLink={(link, evt) =>
         openDetail(link) || void app.workspace.openLinkText(link, sourcePath, evt.metaKey || evt.ctrlKey)
       }
