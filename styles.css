@@ -11745,6 +11745,91 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
 .rpg-farcomp-new button.is-selected {
   outline: 2px solid var(--interactive-accent);
 }
+@media (max-width: 600px) {
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls > li:not(:has(button[aria-label^="Open the map"])),
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-hud {
+    display: none;
+  }
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button {
+    width: 2.5rem;
+    height: 2.5rem;
+    opacity: 0.95;
+  }
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-zoom {
+    top: 3.6rem;
+  }
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-zoom button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .rpg-hexmap-float.rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls > li {
+    display: list-item;
+  }
+  .rpg-hexmap-float.rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-hud {
+    display: flex;
+  }
+  .rpg-hexmap-float {
+    padding: 0;
+    background: var(--background-primary);
+  }
+  .rpg-hexmap-float-pane {
+    width: 100%;
+    max-height: none;
+    height: 100dvh;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  .rpg-hexmap-float figcaption {
+    display: none;
+  }
+  .rpg-hexmap-float .rpg-hexmap {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+  .rpg-hexmap-float .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport {
+    flex: 1 1 0;
+    height: auto !important;
+    min-height: 0;
+  }
+  .rpg-hexmap-float .rpg-hexmap-controls {
+    top: calc(0.5rem + env(safe-area-inset-top, 0px));
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100% - 4rem);
+  }
+  .rpg-hexmap-float .rpg-hexmap-controls button,
+  .rpg-hexmap-float .rpg-hexmap-zoom button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .rpg-hexmap-float .rpg-hexmap-zoom {
+    top: calc(3.6rem + env(safe-area-inset-top, 0px));
+  }
+  .rpg-hexmap-float .rpg-hexmap-hud {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--background-primary) 94%, transparent);
+    border-top: 1px solid var(--background-modifier-border);
+    scrollbar-width: none;
+  }
+  .rpg-hexmap-float .rpg-hexmap-hud > * {
+    flex: none;
+  }
+  .rpg-hexmap-float .rpg-hexmap-hud .rpg-hexpaint-button,
+  .rpg-hexmap-float .rpg-hexmap-hud .rpg-hexpaint-segmented button {
+    min-height: 2.5rem;
+  }
+  .rpg-hexmap-float .rpg-hexmap-hud-readout {
+    margin-left: 0;
+  }
+}
 
 /* lib/styles/components/draft.css */
 .rpg-draft {
