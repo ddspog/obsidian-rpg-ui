@@ -739,6 +739,11 @@ body.is-mobile .markdown-rendered [role="button"] img {
     column-gap: 0.4rem;
   }
 
+  /* The empty label cell that lines up the desktop's To Sell row would leave a hole in the first row. */
+  .rpg-inventory-block__currency-grid > span:empty {
+    display: none;
+  }
+
   .rpg-inventory-block__currency-coin {
     justify-content: space-between;
   }

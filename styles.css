@@ -15872,9 +15872,8 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   display: flex;
   flex-direction: column;
   background: transparent;
-  border-top: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  border-bottom: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  box-shadow: inset 0 1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35)), inset 0 -1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35));
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
 }
 .rpg-caster > header {
   filter: none;
@@ -15893,26 +15892,6 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   display: inline;
   padding: 0;
   background: transparent;
-}
-.rpg-caster > header::before,
-.rpg-caster > header::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      to bottom,
-      light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)),
-      transparent);
-}
-.rpg-caster > header::before {
-  left: -6px;
-}
-.rpg-caster > header::after {
-  right: -6px;
 }
 .rpg-caster-meta {
   font-size: 0.85em;
@@ -15934,29 +15913,6 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 .rpg-spell-circle:first-of-type {
   border-top: none;
-}
-.rpg-spell-circle:last-of-type::before,
-.rpg-spell-circle:last-of-type::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-}
-.rpg-spell-circle:last-of-type::before {
-  left: -6px;
-}
-.rpg-spell-circle:last-of-type::after {
-  right: -6px;
-}
-.rpg-spell-circle:last-of-type::before,
-.rpg-spell-circle:last-of-type::after {
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 .rpg-spell-circle > summary {
   list-style: none;
@@ -20647,6 +20603,9 @@ body.is-mobile .markdown-rendered [role=button] img {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: stretch;
     column-gap: 0.4rem;
+  }
+  .rpg-inventory-block__currency-grid > span:empty {
+    display: none;
   }
   .rpg-inventory-block__currency-coin {
     justify-content: space-between;
