@@ -2,6 +2,7 @@
  * Texture packs: the tile tree, `pack.yml`, and which tile a spec picks.
  *
  * A pack is one vault folder: `<pack>/{terrain,path,stack}/<folder>/…/<file>`
+ * (terrain may instead sit in `land/` and `water/` at the top)
  * plus `pack.yml`. Specs are the hex-map-editor's, with one addition:
  *
  *   forest                  files directly in `forest/` (all below it if none)
@@ -208,7 +209,18 @@ export function buildPack(name: string, files: Array<{ path: string; url: string
   for (const { path, url } of files) {
     if (!IMAGE.test(path)) continue;
     const parts = path.split("/");
-    const layer = parts.shift() as Layer;
+    let layer = parts.shift() as Layer;
+    // A pack may keep its terrain in two sections at the top, `land/` and
+    // `water/`, in place of `terrain/`. Land's folders (`forest`, `hills`) sit
+    // at the terrain's root, as they do under `terrain/`; water keeps its own
+    // name as the folder (`water[ocean]`), and `pack.yml` still names a tile
+    // by its section (`land/mountain/rocky/peak`).
+    let tilePath: string | null = null;
+    if ((layer as string) === "land" || (layer as string) === "water") {
+      if (layer === ("water" as Layer)) parts.unshift("water");
+      else tilePath = path;
+      layer = "terrain";
+    }
     if (!LAYERS.includes(layer) || parts.length < 2) continue;
     const fileName = parts.pop() as string;
     let folder = layers[layer];
@@ -221,7 +233,7 @@ export function buildPack(name: string, files: Array<{ path: string; url: string
       folder = next;
     }
     const base = fileName.replace(IMAGE, "");
-    folder.files.push({ name: base, path: [...parts, base].join("/"), url });
+    folder.files.push({ name: base, path: tilePath ? tilePath.replace(IMAGE, "") : [...parts, base].join("/"), url });
   }
   const sortTree = (f: TileFolder) => {
     f.files.sort((a, b) => collator.compare(a.name, b.name));

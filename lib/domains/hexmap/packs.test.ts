@@ -121,3 +121,44 @@ describe("displayFor", () => {
     expect(parsePackConfig(null, "x").name).toBe("x");
   });
 });
+
+describe("a pack with land/ and water/ sections", () => {
+  const sectioned = buildPack(
+    "basic",
+    [
+      "land/forest/lush/conifer-0.webp",
+      "land/forest/lush/conifer-1.webp",
+      "land/mountain/rocky/peak.webp",
+      "water/ocean/still/ocean-0.webp",
+      "water/swamp/swamp-0.webp",
+      "path/roads/clean/straight.webp",
+    ].map((path) => ({ path, url: `app://${path}` })),
+    parsePackConfig(
+      `files:
+  "land/mountain/rocky/peak": { offsetX: 49 }
+catalog:
+  forest: forest[lush]
+  ocean: water[ocean][still]`,
+      "basic"
+    )
+  );
+  const pick = (spec: string) => selectTile(sectioned, "terrain", spec, "s")?.file.path;
+
+  it("finds land tiles by their folder, as under terrain/", () => {
+    expect(pick("forest[lush][conifer]")).toMatch(/^land\/forest\/lush\/conifer-[01]$/);
+    expect(pick("forest")).toMatch(/^land\/forest\/lush\/conifer-/);
+  });
+
+  it("finds water tiles under the water folder", () => {
+    expect(pick("water[ocean][still]")).toBe("water/ocean/still/ocean-0");
+    expect(pick("ocean")).toBe("water/ocean/still/ocean-0");
+  });
+
+  it("reads pack.yml's section-prefixed tile names", () => {
+    expect(selectTile(sectioned, "terrain", "mountain[rocky][peak]", "s")?.display.offsetX).toBe(49);
+  });
+
+  it("leaves the other layers alone", () => {
+    expect(selectTile(sectioned, "path", "roads", "s")?.file.path).toBe("roads/clean/straight");
+  });
+});
