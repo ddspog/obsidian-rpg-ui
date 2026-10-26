@@ -633,6 +633,18 @@
     min-height: 2.5rem;
   }
 
+  /* Spell rows: a thumb-sized chevron and header button. */
+  button.rpg-spell-entry-toggle {
+    width: 2rem;
+    height: 2rem;
+    top: 0.5rem;
+  }
+
+  button.rpg-caster-text-toggle {
+    min-height: 2.25rem;
+    padding-inline: 1rem;
+  }
+
   /* iOS zooms into inputs under 16px. */
   .markdown-preview-view [class*="rpg-"] input:not([type="checkbox"]),
   .markdown-preview-view [class*="rpg-"] select,

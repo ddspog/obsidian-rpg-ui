@@ -152,6 +152,9 @@ interface SpellDoc {
   text?: string;
 }
 
+/** Whether every spell in a caster shows its full text (the header's "Show all text"). */
+const SpellTextContext = React.createContext(false);
+
 function SpellEntry({
   spellName,
   group,
@@ -164,6 +167,10 @@ function SpellEntry({
   enablerSource: string;
 }) {
   const stem = bareStem(spellName);
+  // A spell is one row until it is opened: its text is a tap away, not a screenful in the way.
+  const showAll = React.useContext(SpellTextContext);
+  const [open, setOpen] = React.useState(false);
+  const showText = showAll || open;
   // Three-row layout:
   //   row 1: [name] [casting to cast] [style] · [group]           [enabler]
   //   row 2: [range] · [components] · [duration]
@@ -175,28 +182,39 @@ function SpellEntry({
   if (componentsLabel) subParts.push({ key: "components", label: "Components", value: componentsLabel });
   if (doc?.duration) subParts.push({ key: "duration", label: "Duration", value: doc.duration });
   return (
-    <li className="rpg-spell-entry" data-group={group}>
+    <li className="rpg-spell-entry" data-group={group} data-open={showText || undefined}>
       <span className="rpg-spell-entry-header">
+        {doc?.text && (
+          <button
+            type="button"
+            className="rpg-spell-entry-toggle"
+            aria-expanded={showText}
+            aria-label={`${showText ? "Hide" : "Show"} the text of ${stem}`}
+            onClick={() => setOpen(!open)}
+            disabled={showAll}
+          />
+        )}
         <a className="internal-link rpg-spell-entry-name" href={stem} data-href={stem}>
           {stem}
         </a>
+        {/* The dots trail what they follow, and cannot start a wrapped line. */}
+        <span className="rpg-spell-entry-sep">{"\u00a0· "}</span>
         {doc?.casting && (
           <>
-            <span className="rpg-spell-entry-sep">{" · "}</span>
             <small className="rpg-spell-entry-casting" aria-details="Casting Time">
               {doc.casting} to cast
             </small>
+            <span className="rpg-spell-entry-sep">{"\u00a0· "}</span>
           </>
         )}
         {styleLabel && (
           <>
-            <span className="rpg-spell-entry-sep">{" · "}</span>
             <small className="rpg-spell-entry-style" aria-details="Style">
               {styleLabel}
             </small>
+            <span className="rpg-spell-entry-sep">{"\u00a0· "}</span>
           </>
         )}
-        <span className="rpg-spell-entry-sep">{" · "}</span>
         <small className="rpg-spell-entry-group" aria-details="Spell Group">
           <em>{GROUP_LABEL[group]}</em>
         </small>
@@ -219,7 +237,7 @@ function SpellEntry({
           ))}
         </span>
       )}
-      {doc?.text && <Markdown source={doc.text} className="rpg-spell-entry-text" />}
+      {doc?.text && showText && <Markdown source={doc.text} className="rpg-spell-entry-text" />}
     </li>
   );
 }
@@ -423,6 +441,7 @@ function CasterSection({
   const highest = slots.reduce((max, n, i) => (n > 0 ? i + 1 : max), 0);
   // Spell save DC = 8 + proficiency bonus + spellcasting ability modifier.
   const saveDc = 8 + proficiencyBonus + abilityMod;
+  const [allText, setAllText] = React.useState(false);
   return (
     <article aria-label={`Spellcasting · ${caster.source}`} className="rpg-caster">
       <header className="rpg-caster-header">
@@ -444,56 +463,66 @@ function CasterSection({
             {caster.tier !== "none" && <> · {caster.tier}-caster</>}
           </small>
         </span>
+        <button
+          type="button"
+          className="rpg-caster-text-toggle"
+          aria-pressed={allText}
+          onClick={() => setAllText(!allText)}
+        >
+          {allText ? "Fold spells" : "Show all text"}
+        </button>
       </header>
-      <div className="rpg-caster-body">
-        {(() => {
-          const cantripEntries = bundleForCircle(caster, state, 0, spells);
-          // Always render the Cantrips drawer when the caster has any
-          // cantrip budget — even empty, so the user sees the slot
-          // count and can pick into it via the pending drawer.
-          if (
-            caster.cantrips === 0 &&
-            cantripEntries.prepared.length === 0 &&
-            cantripEntries.granted.length === 0 &&
-            cantripEntries.ritual.length === 0 &&
-            cantripEntries.known.length === 0
-          ) {
-            return null;
-          }
-          return (
-            <CircleDrawer
-              caster={caster}
-              circle={0}
-              slotsMax={0}
-              spent={0}
-              entries={cantripEntries}
-              spells={spells}
-              noteKey={noteKey}
-            />
-          );
-        })()}
-        {Array.from({ length: highest }, (_, i) => {
-          const circle = i + 1;
-          const max = slots[i] ?? 0;
-          const spent = state.spent?.[circle] ?? 0;
-          // Every unlocked circle renders, even when empty — hiding
-          // them makes the slot budget invisible and blocks the user
-          // from preparing into circles they haven't touched yet.
-          return (
-            <CircleDrawer
-              key={circle}
-              caster={caster}
-              circle={circle}
-              slotsMax={max}
-              spent={spent}
-              onSpentChange={(n) => onSpentChange?.(circle, n)}
-              entries={bundleForCircle(caster, state, circle, spells)}
-              spells={spells}
-              noteKey={noteKey}
-            />
-          );
-        })}
-      </div>
+      <SpellTextContext.Provider value={allText}>
+        <div className="rpg-caster-body">
+          {(() => {
+            const cantripEntries = bundleForCircle(caster, state, 0, spells);
+            // Always render the Cantrips drawer when the caster has any
+            // cantrip budget — even empty, so the user sees the slot
+            // count and can pick into it via the pending drawer.
+            if (
+              caster.cantrips === 0 &&
+              cantripEntries.prepared.length === 0 &&
+              cantripEntries.granted.length === 0 &&
+              cantripEntries.ritual.length === 0 &&
+              cantripEntries.known.length === 0
+            ) {
+              return null;
+            }
+            return (
+              <CircleDrawer
+                caster={caster}
+                circle={0}
+                slotsMax={0}
+                spent={0}
+                entries={cantripEntries}
+                spells={spells}
+                noteKey={noteKey}
+              />
+            );
+          })()}
+          {Array.from({ length: highest }, (_, i) => {
+            const circle = i + 1;
+            const max = slots[i] ?? 0;
+            const spent = state.spent?.[circle] ?? 0;
+            // Every unlocked circle renders, even when empty — hiding
+            // them makes the slot budget invisible and blocks the user
+            // from preparing into circles they haven't touched yet.
+            return (
+              <CircleDrawer
+                key={circle}
+                caster={caster}
+                circle={circle}
+                slotsMax={max}
+                spent={spent}
+                onSpentChange={(n) => onSpentChange?.(circle, n)}
+                entries={bundleForCircle(caster, state, circle, spells)}
+                spells={spells}
+                noteKey={noteKey}
+              />
+            );
+          })}
+        </div>
+      </SpellTextContext.Provider>
     </article>
   );
 }
