@@ -400,10 +400,19 @@ button.rpg-list__page-arrow:disabled {
   opacity: 0.75;
 }
 
-/* The circle tabs scroll sideways when they don't all fit: the strip fades out at its right edge so a half-seen
- * tab reads as "more this way". */
+/* The circle tabs wrap onto a second line where there is room, so none is cut off; on a phone they stay one
+ * scrolling row that fades at its right edge, so a half-seen tab reads as "more this way". */
 .rpg-list__chips {
-  padding-inline-end: 1.5rem;
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+@media (max-width: 600px) {
+  .rpg-list__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-inline-end: 1.5rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  }
 }
