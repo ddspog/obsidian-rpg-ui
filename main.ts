@@ -69,6 +69,7 @@ import { bindExpressions, buildEntityBlocks } from "lib/services/entity-context"
 import * as React from "react";
 import type { ReactNode } from "react";
 import * as ReactDOM from "react-dom/client";
+import { SourcePathContext } from "lib/ui/source-file";
 
 // Expose React & ReactDOM on globalThis so evaluated system bundles can
 // resolve 'react' and 'react-dom/client' via the require shim at runtime.
@@ -1567,7 +1568,13 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
       };
 
       this.reactRoot = ReactDOM.createRoot(this.containerEl);
-      this.reactRoot.render(React.createElement(EntityBlockWrapper, null));
+      this.reactRoot.render(
+        React.createElement(
+          SourcePathContext.Provider,
+          { value: sourcePath },
+          React.createElement(EntityBlockWrapper, null)
+        )
+      );
     } catch (err) {
       console.error("DnD UI Toolkit: Error rendering entity block:", err);
       this.containerEl.innerHTML = `<div class="notice">Error rendering block: ${err}</div>`;
