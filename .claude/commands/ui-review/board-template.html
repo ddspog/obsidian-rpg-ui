@@ -1,0 +1,143 @@
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,650&display=swap">
+<style>
+/* Layout: one card per finding or change, before and after side by side; a verdict, a star rating and a note under each; a bar at the foot copies it all. */
+:root{--bg:#f6f2ea;--surface:#fffdf8;--fg:#2a2420;--muted:#6b5f55;--rule:#ddd2c0;--accent:#4b2f9a;--accent-bg:#ece6fa;--bad:#a22a2a;--warn:#9a5b12;--star:#c47d0e;--star-off:#d8cdb9;--shadow:rgba(40,30,20,.14);
+--display:"Newsreader",Georgia,serif;--body:"Inter",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1816;--surface:#26211e;--fg:#ece5da;--muted:#a89c8f;--rule:#40372f;--accent:#b9a4ff;--accent-bg:#2f2850;--bad:#ee8c8c;--warn:#e0a85a;--star:#f0b44c;--star-off:#4a4036;--shadow:rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1816;--surface:#26211e;--fg:#ece5da;--muted:#a89c8f;--rule:#40372f;--accent:#b9a4ff;--accent-bg:#2f2850;--bad:#ee8c8c;--warn:#e0a85a;--star:#f0b44c;--star-off:#4a4036;--shadow:rgba(0,0,0,.45);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);padding-block:32px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);font-weight:650;line-height:1.2;margin:0;text-wrap:balance}
+h1{font-size:2.1rem}h2{font-size:1.45rem}h3{font-size:1.15rem}
+.lede{color:var(--muted);max-width:64ch;margin:8px 0 0}
+section{display:flex;flex-direction:column;gap:16px}
+.list{display:flex;flex-direction:column;gap:20px}
+.item{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.item header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.pr{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--accent);background:var(--accent-bg);padding:1px 8px;border-radius:99px}
+.desc{margin:0;color:var(--muted);max-width:74ch}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.lens{font-size:11px;font-weight:600;letter-spacing:.04em;padding:1px 8px;border-radius:99px;border:1px solid var(--rule);color:var(--muted)}
+.sev{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;color:var(--bg)}
+.sev.p0{background:var(--bad)}.sev.p1{background:var(--warn)}.sev.p2{background:var(--accent)}.sev.p3{background:var(--muted)}
+.fix{margin:0;padding:8px 12px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:0 8px 8px 0;font-size:14px}
+.verdict{display:flex;gap:4px;border:0;margin:0;padding:0}
+.verdict legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.verdict label{position:relative;cursor:pointer}
+.verdict input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.verdict span{display:block;padding:8px 12px;min-height:40px;border:1px solid var(--rule);border-radius:99px;font-size:13px;font-weight:600;color:var(--muted)}
+.verdict label:has(input:checked) span{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.verdict label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px;border-radius:99px}
+.pair{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:flex-start}
+.side{display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 auto;max-width:100%}
+.side.wide{flex:1 1 100%}
+.lab{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.figs{display:flex;gap:12px;flex-wrap:wrap}
+.figs figure{flex:0 1 270px;min-width:0;max-width:100%}
+.figs figure.wide{flex:1 1 100%;max-width:760px}
+figure{margin:0;display:flex;flex-direction:column;gap:5px}
+figure img{width:100%;max-width:100%;height:auto;border:1px solid var(--rule);border-radius:8px;display:block;background:var(--bg)}
+figcaption{font-size:12.5px;color:var(--muted)}
+.side.none p{margin:0;padding:18px;border:1px dashed var(--rule);border-radius:8px;color:var(--muted);font-size:13.5px}
+.fb{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;border-top:1px solid var(--rule);padding-top:12px}
+.stars{border:0;margin:0;padding:0;display:flex;align-items:center;gap:2px}
+.stars legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.stars label{position:relative;cursor:pointer;display:block}
+.stars input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.stars label span[aria-hidden]{display:block;font-size:30px;line-height:1;color:var(--star-off);padding:2px 3px;min-width:36px;min-height:40px;text-align:center}
+.stars label.on span[aria-hidden]{color:var(--star)}
+.stars label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.clear{font:500 12.5px var(--body);background:none;border:0;color:var(--muted);cursor:pointer;text-decoration:underline;padding:8px;margin-left:4px}
+.cm{display:flex;flex-direction:column;gap:3px;flex:1 1 260px;min-width:0}
+.cm span{font-size:12px;font-weight:600;color:var(--muted)}
+textarea{font:14px/1.45 var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;resize:vertical;width:100%;min-height:44px}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.overall{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--rule);box-shadow:0 -6px 18px var(--shadow);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar>div{max-width:1040px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.count{color:var(--muted);font-size:13.5px;flex:1 1 180px}
+button.copy{font:600 14px var(--body);background:var(--accent);color:var(--bg);border:0;border-radius:8px;padding:10px 18px;min-height:42px;cursor:pointer}
+button.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:13px;color:var(--muted)}
+pre#out{margin:0;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:10px;max-height:220px;overflow:auto}
+</style>
+
+<main>
+<header>
+  <h1>{{TITLE}}</h1>
+  <p class="lede">{{INTRO}}</p>
+</header>
+
+{{GROUPS}}
+
+<section>
+  <h2>Overall</h2>
+  <div class="overall">
+    <label class="cm"><span>Anything else: what to do next, what feels off, what is missing</span><textarea id="overall" rows="3" placeholder="What to do next, what is missing, what to drop"></textarea></label>
+  </div>
+</section>
+</main>
+
+<div class="bar" role="region" aria-label="Feedback summary">
+  <div>
+    <span class="count" id="count">0 of {{COUNT}} answered</span>
+    <span class="status" id="status" role="status"></span>
+    <button type="button" class="copy" id="copy">Copy feedback</button>
+  </div>
+</div>
+<section style="margin-top:24px"><div class="overall"><span class="lab" style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">What will be copied</span><pre id="out" aria-live="polite"></pre></div></section>
+
+<script>
+(function(){
+  var items=[].slice.call(document.querySelectorAll(".item"));
+  var KEY="ui-review-board:"+document.title;
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){state={}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+  function paint(it){
+    var id=it.dataset.id,r=(state[id]||{}).r||0;
+    [].forEach.call(it.querySelectorAll(".stars label"),function(l,i){l.classList.toggle("on",i<r);var inp=l.querySelector("input");inp.checked=(i+1===r)});
+  }
+  items.forEach(function(it){
+    var id=it.dataset.id;state[id]=state[id]||{};
+    var ta=it.querySelector("textarea");ta.value=state[id].c||"";
+    paint(it);
+    it.addEventListener("change",function(e){
+      if(e.target.type==="radio"&&e.target.name.indexOf("r-")===0){state[id].r=parseInt(e.target.value,10);paint(it);update()}
+      if(e.target.type==="radio"&&e.target.name.indexOf("v-")===0){state[id].v=e.target.value;update()}
+    });
+    ta.addEventListener("input",function(){state[id].c=ta.value;update()});
+    it.querySelector(".clear").addEventListener("click",function(){state[id].r=0;paint(it);update()});
+  });
+  var ov=document.getElementById("overall");ov.value=(state.__overall||"");
+  ov.addEventListener("input",function(){state.__overall=ov.value;update()});
+  var out=document.getElementById("out"),count=document.getElementById("count"),st=document.getElementById("status");
+  function stars(n){return n?"★".repeat(n)+"☆".repeat(5-n)+" ("+n+"/5)":"not rated"}
+  function text(){
+    var lines=["Feedback on the UI review: "+document.title,"(verdict · rating · note)",""];
+    items.forEach(function(it,i){
+      var s=state[it.dataset.id]||{};
+      lines.push((i+1)+". "+it.dataset.title+" — "+(s.v?s.v+" · ":"")+stars(s.r||0)+(s.c&&s.c.trim()?" — "+s.c.trim().replace(/\s*\n\s*/g," / "):""));
+    });
+    if(state.__overall&&state.__overall.trim()){lines.push("");lines.push("Overall: "+state.__overall.trim().replace(/\s*\n\s*/g," / "))}
+    return lines.join("\n");
+  }
+  function update(){
+    var rated=items.filter(function(it){return (state[it.dataset.id]||{}).r}).length;
+    var judged=items.filter(function(it){var q=state[it.dataset.id]||{};return q.r||q.v}).length;
+    count.textContent=judged+" of "+items.length+" answered";
+    out.textContent=text();save();
+  }
+  update();
+  document.getElementById("copy").addEventListener("click",function(){
+    var t=text();
+    var ok=function(){st.textContent="Copied. Paste it into the chat."};
+    var fail=function(){var r=document.createRange();r.selectNodeContents(out);var s=getSelection();s.removeAllRanges();s.addRange(r);st.textContent="Select the text below and copy it."};
+    try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}
+  });
+})();
+</script>
