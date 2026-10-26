@@ -190,3 +190,7 @@ its note, remove one. A row per token lists its square as text (`J14`) to type i
 the block's `tokens:` (the rest of the block is left as written); **Cancel** drops the changes. Two tokens on one
 square are allowed and marked. The log's own setup frame is unchanged: this edits where a map starts, so a combat that
 binds the map starts from it.
+
+**Expand** opens the map full screen: drag it to pan, pinch, scroll the wheel or use the buttons to zoom, and the fit
+button to see all of it. The same Place tokens editing works there, with the token list in a panel under the map.
+Esc (or the ×) closes it.

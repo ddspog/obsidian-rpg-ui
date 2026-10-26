@@ -53,6 +53,8 @@ export interface MapView {
   row: number;
   cols: number;
   rows: number;
+  /** Follow the view at once, with no glide (a hand panning or zooming it). */
+  instant?: boolean;
 }
 
 interface SquareMapViewProps {
@@ -84,14 +86,14 @@ interface Box {
 }
 
 /** Glide from one box to the next (straight there if motion is unwanted). */
-function useEasedBox(target: Box): Box {
+function useEasedBox(target: Box, instant = false): Box {
   const [box, setBox] = React.useState(target);
   const current = React.useRef(target);
   const key = `${target.x},${target.y},${target.w},${target.h}`;
   React.useEffect(() => {
     const from = current.current;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
+    if (reduce || instant) {
       current.current = target;
       setBox(target);
       return;
@@ -113,7 +115,7 @@ function useEasedBox(target: Box): Box {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [key]);
+  }, [key, instant]);
   return box;
 }
 
@@ -180,7 +182,8 @@ export function SquareMapView({
   const box = useEasedBox(
     view && map.cols > 0
       ? { x: GUTTER + view.col * cell, y: GUTTER + view.row * cell, w: view.cols * cell, h: view.rows * cell }
-      : { x: 0, y: 0, w: fullW, h: fullH }
+      : { x: 0, y: 0, w: fullW, h: fullH },
+    view?.instant
   );
   // Zoomed, the labels are sized from the map's width on screen, so they read
   // the same however close the view is (and however small the pane).

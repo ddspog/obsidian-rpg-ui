@@ -9645,10 +9645,15 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
 .rpg-map-stage {
   position: relative;
 }
-button.rpg-map-edit {
+.rpg-map-stage-tools {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+}
+button.rpg-map-edit,
+button.rpg-map-expand {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -9860,6 +9865,100 @@ input.rpg-map-square {
   flex: 0 0 4.2rem;
   width: 4.2rem;
   max-width: 4.2rem;
+}
+.rpg-map-full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-primary);
+  font-size: var(--font-ui-small);
+}
+.rpg-map-full > header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: calc(0.4rem + env(safe-area-inset-top, 0px)) 0.75rem 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.rpg-map-full > header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpg-map-full-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+button.rpg-map-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.rpg-map-pz {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  background: var(--background-secondary);
+}
+.rpg-map-pz > svg.rpg-battlemap {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+.rpg-map-pz-controls {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-primary);
+  overflow: hidden;
+}
+.rpg-map-pz-controls li {
+  margin: 0;
+}
+.rpg-map-pz-controls li::before {
+  content: none;
+}
+.rpg-map-pz-controls button {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.rpg-map-pz-controls li + li button {
+  border-top: 1px solid var(--background-modifier-border);
+}
+.rpg-map-full-panel {
+  flex: none;
+  max-height: 42dvh;
+  overflow-y: auto;
+  padding: 0 0.6rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 /* lib/styles/components/hex-map.css */
