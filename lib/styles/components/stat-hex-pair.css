@@ -4,6 +4,8 @@ svg[aria-details="Stat Hex Pair"] {
   width: 110px;
   height: 110px;
   overflow: visible;
+  /* A faint arcane glow round each hex. */
+  filter: drop-shadow(0 0 6px rgba(150, 120, 255, 0.4));
 }
 
 /* ── Hex shape fills ─────────────────────────────────────────────────────── */
@@ -75,7 +77,8 @@ svg[aria-details="Stat Hex Pair"] {
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
+  fill: var(--rpg-hex-score, #efe6d2);
+  filter: drop-shadow(0 0 5px rgba(190, 160, 255, 0.7));
 }
 
 /* ── Stats grid container ────────────────────────────────────────────────── */
@@ -83,14 +86,19 @@ svg[aria-details="Stat Hex Pair"] {
 section[aria-details="Character Stats"] {
   container-type: inline-size;
   margin-block-start: 0;
-  background: light-dark(#ece4d3, #24201c);
-  border: 1px solid light-dark(#cdbf9f, #4a4238);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   justify-items: center;
   row-gap: 8px;
   padding: var(--spacing-3, 12px);
   position: relative;
+  /* The slab's dark, with a violet glow rising from the top and a dust of gold runes. */
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(150, 120, 255, 0.2), transparent 70%),
+    radial-gradient(circle, rgba(212, 168, 64, 0.22) 1px, transparent 1.4px) 0 0 / 14px 14px,
+    #1a1816;
+  border: 1px solid #2d2823;
+  border-top: none;
 }
 
 /* Narrow container: 3 stats per row via child span */
@@ -98,16 +106,6 @@ section[aria-details="Character Stats"] {
   svg[aria-details="Stat Hex Pair"] {
     grid-column: span 2;
   }
-}
-
-/* Dotted background via pseudo-element */
-section[aria-details="Character Stats"]::before {
-  content: "";
-  position: absolute;
-  inset: 24px;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.25) 1px, transparent 1px);
-  background-size: 8px 8px;
-  pointer-events: none;
 }
 
 /* Hex pairs overflow above the dotted background padding */

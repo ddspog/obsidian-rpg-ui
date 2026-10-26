@@ -7682,6 +7682,25 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover header[aria-details*=" Banner"] [aria-details="Character Level"] {
   zoom: 0.6;
 }
+.hover-popover span[aria-details="Link Pill"] {
+  white-space: nowrap;
+}
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Character Status"],
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dt:nth-of-type(n+2),
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dd[aria-label="Dice Tray"],
+.hover-popover div[aria-details="Death Saves"][data-active=false] {
+  display: none;
+}
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] {
+  flex: 1 1 100% !important;
+}
+.hover-popover section[aria-details*=" Row"] {
+  gap: 14px;
+  padding: 14px;
+}
+.hover-popover figure[aria-details="Portrait Thumb"] {
+  flex: 0 0 96px !important;
+}
 
 /* lib/styles/components/pills.css */
 span[aria-details="Link Pill"] {
@@ -13010,6 +13029,7 @@ svg[aria-details="Stat Hex Pair"] {
   width: 110px;
   height: 110px;
   overflow: visible;
+  filter: drop-shadow(0 0 6px rgba(150, 120, 255, 0.4));
 }
 .rpg-hex-border {
   fill: var(--rpg-hex-border, #6a6258);
@@ -13060,36 +13080,35 @@ svg[aria-details="Stat Hex Pair"] {
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
+  fill: var(--rpg-hex-score, #efe6d2);
+  filter: drop-shadow(0 0 5px rgba(190, 160, 255, 0.7));
 }
 section[aria-details="Character Stats"] {
   container-type: inline-size;
   margin-block-start: 0;
-  background: light-dark(#ece4d3, #24201c);
-  border: 1px solid light-dark(#cdbf9f, #4a4238);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   justify-items: center;
   row-gap: 8px;
   padding: var(--spacing-3, 12px);
   position: relative;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(150, 120, 255, 0.2),
+      transparent 70%),
+    radial-gradient(
+      circle,
+      rgba(212, 168, 64, 0.22) 1px,
+      transparent 1.4px) 0 0 / 14px 14px,
+    #1a1816;
+  border: 1px solid #2d2823;
+  border-top: none;
 }
 @container (max-width: 680px) {
   svg[aria-details="Stat Hex Pair"] {
     grid-column: span 2;
   }
-}
-section[aria-details="Character Stats"]::before {
-  content: "";
-  position: absolute;
-  inset: 24px;
-  background-image:
-    radial-gradient(
-      circle,
-      rgba(0, 0, 0, 0.25) 1px,
-      transparent 1px);
-  background-size: 8px 8px;
-  pointer-events: none;
 }
 section[aria-details="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
   position: relative;
@@ -13542,7 +13561,7 @@ section[aria-details="Character Rolls"] tbody tr[data-available=false] td.rpg-ro
 section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
   display: inline-block;
   width: 1.1em;
-  margin-right: 4px;
+  margin-right: 8px;
   text-align: center;
   color: light-dark(#6a4e2a, #d4a840);
   font-size: 1.05em;
@@ -19790,9 +19809,6 @@ section[aria-details="Character Senses"] > output + output,
 section[aria-details="Character Senses"] > dl {
   border-color: light-dark(#cdbf9f, #4a4238);
 }
-section[aria-details="Character Stats"]::before {
-  display: none;
-}
 .rpg-feature-accordion,
 [class*=rpg-feature-accordion] {
   border-top-style: solid;
@@ -19899,6 +19915,47 @@ section[aria-details="Character Senses"] > dl:has(> dd[aria-details="No Senses"]
 p[aria-details="No Casters"] {
   font-size: var(--rpg-fs-label);
   color: light-dark(#6d6048, #a8a08a);
+}
+div[aria-details="HP And Armor"] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+div[aria-details="HP And Armor"] > figure[aria-details="Progress Health"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+span[aria-details="Armor Badges"] {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+section[aria-details="Character Skills"] > header[role=button] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  cursor: pointer;
+}
+section[aria-details="Character Skills"] > header[role=button]::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 12px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+section[aria-details="Character Skills"][data-collapsed=true] > header[role=button]::after {
+  transform: rotate(-45deg);
+}
+section[aria-details="Character Skills"] > header[role=button]:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+section[aria-details="Character Skills"] > menu[hidden] {
+  display: none;
 }
 
 /* lib/styles/log-surface.css */
@@ -20077,7 +20134,14 @@ p[aria-details="No Casters"] {
   header[aria-details*=" Banner"] {
     flex-wrap: wrap;
     gap: 12px;
+    min-height: 0;
     padding: 14px;
+  }
+  header[aria-details*=" Banner"] hgroup {
+    justify-content: flex-start;
+  }
+  header[aria-details*=" Banner"] figure[aria-details="Page Title"] {
+    min-height: 0;
   }
   header[aria-details*=" Banner"] hgroup,
   header[aria-details*=" Banner"] fieldset {
@@ -20137,8 +20201,9 @@ p[aria-details="No Casters"] {
     width: 100%;
   }
   section[aria-details="Character Stats"] {
-    row-gap: 8px;
-    padding-bottom: 12px;
+    row-gap: 22px;
+    column-gap: 4px;
+    padding: 20px 6px 24px;
   }
   section[aria-details="Character Skills"] > menu {
     column-count: 1;
@@ -20219,12 +20284,12 @@ p[aria-details="No Casters"] {
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto 56px;
-    grid-template-areas: "name hit roll" "dmg range roll" "dc cost cost" "fx fx fx";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name hit" "dmg range" "dc cost" "fx fx";
     align-items: center;
     column-gap: 8px;
-    row-gap: 6px;
-    padding: 10px 8px 10px 12px;
+    row-gap: 4px;
+    padding: 10px 12px;
     border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
@@ -20616,6 +20681,20 @@ body.is-mobile .markdown-rendered [role=button] img {
   }
   .lonelog-bookkeeping-change .lonelog-row-label {
     white-space: normal;
+  }
+  .markdown-preview-view:has(.session-log-container) {
+    overflow-x: hidden;
+    padding-bottom: 0;
+  }
+  .session-log-container.has-bar .lonelog-bottom-drawer {
+    border-radius: 0;
+    border-inline: none;
+    border-bottom: none;
+    margin-bottom: 0;
+    margin-right: -36px;
+  }
+  section[aria-details*=" Row"] {
+    padding-top: 24px;
   }
 }
 

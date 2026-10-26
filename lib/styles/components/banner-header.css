@@ -163,3 +163,30 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
 .hover-popover header[aria-details*=" Banner"] [aria-details="Character Level"] {
   zoom: 0.6;
 }
+
+/* ---- Hover preview: the glance --------------------------------------
+   The preview shows who they are and how they stand: the portrait, HP with Armor, the three
+   stat diamonds. Exhaustion, conditions, hit dice and the death saves chip belong to the sheet. */
+.hover-popover span[aria-details="Link Pill"] {
+  white-space: nowrap;
+}
+
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Character Status"],
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dt:nth-of-type(n + 2),
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dd[aria-label="Dice Tray"],
+.hover-popover div[aria-details="Death Saves"][data-active="false"] {
+  display: none;
+}
+
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] {
+  flex: 1 1 100% !important;
+}
+
+.hover-popover section[aria-details*=" Row"] {
+  gap: 14px;
+  padding: 14px;
+}
+
+.hover-popover figure[aria-details="Portrait Thumb"] {
+  flex: 0 0 96px !important;
+}

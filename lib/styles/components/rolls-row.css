@@ -203,7 +203,7 @@ section[aria-details="Character Rolls"] tbody tr[data-available="false"] td.rpg-
 section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
   display: inline-block;
   width: 1.1em;
-  margin-right: 4px;
+  margin-right: 8px;
   text-align: center;
   color: light-dark(#6a4e2a, #d4a840);
   font-size: 1.05em;

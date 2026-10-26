@@ -47,11 +47,6 @@ section[aria-details="Character Senses"] > dl {
   border-color: light-dark(#cdbf9f, #4a4238);
 }
 
-/* The dotted grid behind the hexes and the ridge rollers on Features are ornament, not information. */
-section[aria-details="Character Stats"]::before {
-  display: none;
-}
-
 .rpg-feature-accordion,
 [class*="rpg-feature-accordion"] {
   border-top-style: solid;
@@ -192,4 +187,55 @@ section[aria-details="Character Senses"] > dl:has(> dd[aria-details="No Senses"]
 p[aria-details="No Casters"] {
   font-size: var(--rpg-fs-label);
   color: light-dark(#6d6048, #a8a08a);
+}
+
+/* HP bar and Armor share one line: the bar takes the width, the shield sits at its end. */
+div[aria-details="HP And Armor"] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+div[aria-details="HP And Armor"] > figure[aria-details="Progress Health"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+span[aria-details="Armor Badges"] {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+/* Skills fold up from their header. */
+section[aria-details="Character Skills"] > header[role="button"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+section[aria-details="Character Skills"] > header[role="button"]::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 12px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+section[aria-details="Character Skills"][data-collapsed="true"] > header[role="button"]::after {
+  transform: rotate(-45deg);
+}
+
+section[aria-details="Character Skills"] > header[role="button"]:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+
+section[aria-details="Character Skills"] > menu[hidden] {
+  display: none;
 }
