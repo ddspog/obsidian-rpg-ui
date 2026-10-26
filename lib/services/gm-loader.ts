@@ -6,7 +6,7 @@
  * Obsidian API itself.
  */
 
-import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
+import { parseSourceDocShared } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMGeneratorAspect, GMInterpret, GMStep } from "lib/domains/features/types";
 import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains/gm/card-refs";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
@@ -36,7 +36,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
   /** Parse a file's `rpg feature.gm` blocks into GMFeatures. */
   async loadGMFeatures(file: N): Promise<GMFeature[]> {
     const content = await this.reader.read(file);
-    return parseSourceDoc({ $name: file.name, $contents: content }, "class").gmFeatures ?? [];
+    return parseSourceDocShared({ $name: file.name, $contents: content }, "class").gmFeatures ?? [];
   }
 
   /**
@@ -89,7 +89,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
       const file = this.reader.resolve(bref.target);
       if (!file) continue;
       try {
-        const doc = parseSourceDoc({ $name: file.name, $contents: await this.reader.read(file) }, "class");
+        const doc = parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class");
         const gen = selectGenerator(doc.gmFeatures ?? [], bref.block);
         if (gen) resolved[ref] = gen;
       } catch {
@@ -144,7 +144,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
             const file = this.reader.resolve(ref.target);
             if (!file) continue;
             try {
-              const doc = parseSourceDoc({ $name: file.name, $contents: await this.reader.read(file) }, "class");
+              const doc = parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class");
               const step = selectStepBlock(doc.gmFeatures ?? [], ref.block);
               if (!step) continue;
               const expanded = await this.expandStepUses(step);
@@ -156,7 +156,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
                   const tref = parseBranchRef(rawRef);
                   const tf = this.reader.resolve(tref?.target ?? rawRef);
                   if (!tf) continue;
-                  const tdoc = parseSourceDoc({ $name: tf.name, $contents: await this.reader.read(tf) }, "class");
+                  const tdoc = parseSourceDocShared({ $name: tf.name, $contents: await this.reader.read(tf) }, "class");
                   const table = (tref?.block && tdoc.tables.find((t) => t.name === tref.block)) || tdoc.tables[0];
                   if (table) tables[rawRef] = table;
                 }
@@ -168,7 +168,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
                   const cref = parseBranchRef(s.calls);
                   const cfile = this.reader.resolve(cref?.target ?? s.calls);
                   if (cfile) {
-                    const cdoc = parseSourceDoc(
+                    const cdoc = parseSourceDocShared(
                       { $name: cfile.name, $contents: await this.reader.read(cfile) },
                       "class"
                     );
@@ -189,7 +189,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
                             const btref = parseBranchRef(rawRef);
                             const btf = this.reader.resolve(btref?.target ?? rawRef);
                             if (!btf) continue;
-                            const btdoc = parseSourceDoc(
+                            const btdoc = parseSourceDocShared(
                               { $name: btf.name, $contents: await this.reader.read(btf) },
                               "class"
                             );
@@ -209,7 +209,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
                         const gtref = parseBranchRef(gs.table);
                         const gtf = this.reader.resolve(gtref?.target ?? gs.table);
                         if (!gtf) continue;
-                        const gtdoc = parseSourceDoc(
+                        const gtdoc = parseSourceDocShared(
                           { $name: gtf.name, $contents: await this.reader.read(gtf) },
                           "class"
                         );
@@ -241,7 +241,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
           const of = this.reader.resolve(oref?.target ?? rawRef);
           if (!of) continue;
           try {
-            const odoc = parseSourceDoc({ $name: of.name, $contents: await this.reader.read(of) }, "class");
+            const odoc = parseSourceDocShared({ $name: of.name, $contents: await this.reader.read(of) }, "class");
             const ot = (oref?.block && odoc.tables.find((t) => t.name === oref.block)) || odoc.tables[0];
             if (ot) tables[rawRef] = ot;
           } catch {
@@ -268,7 +268,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
           const gtref = parseBranchRef(gs.table);
           const gtf = this.reader.resolve(gtref?.target ?? gs.table);
           if (!gtf) continue;
-          const gtdoc = parseSourceDoc({ $name: gtf.name, $contents: await this.reader.read(gtf) }, "class");
+          const gtdoc = parseSourceDocShared({ $name: gtf.name, $contents: await this.reader.read(gtf) }, "class");
           const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
           if (gtable) tables[gs.table] = gtable;
         }
@@ -295,7 +295,9 @@ export class GMLoader<N extends NoteRef = NoteRef> {
     const file = this.reader.resolve(target);
     if (!file) return null;
     try {
-      return parseSourceDoc({ $name: file.name, $contents: await this.reader.read(file) }, "class").gmFeatures ?? null;
+      return (
+        parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class").gmFeatures ?? null
+      );
     } catch {
       return null;
     }
@@ -311,7 +313,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
         const file = this.reader.resolve(parseBranchRef(ref)?.target ?? ref);
         if (!file) continue;
         try {
-          const doc = parseSourceDoc({ $name: file.name, $contents: await this.reader.read(file) }, "class");
+          const doc = parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class");
           Object.assign(lists, collectLists(doc.gmFeatures ?? []));
         } catch {
           /* unreadable list — the consult falls back to the raw `[Name?]` ref */
@@ -331,7 +333,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
       const file = this.reader.resolve(tref?.target ?? link);
       if (!file) continue;
       try {
-        const doc = parseSourceDoc({ $name: file.name, $contents: await this.reader.read(file) }, "class");
+        const doc = parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class");
         const target = selectStepBlock(doc.gmFeatures ?? [], tref?.block);
         if (target?.steps) resolved[link] = target.steps;
       } catch {

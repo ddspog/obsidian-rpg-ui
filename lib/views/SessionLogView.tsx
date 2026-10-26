@@ -47,6 +47,7 @@ import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { StatFeatureRef } from "lib/domains/statblocks/types";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { parse as parseYaml } from "yaml";
+import { LazyMount } from "lib/components/session-log/lazy-mount";
 import { ProseView } from "lib/components/session-log/prose-view";
 import { LogSidebar } from "lib/components/session-log/log-sidebar";
 import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
@@ -83,7 +84,7 @@ import { SessionActionsPanel } from "lib/components/session-log/session-actions-
 import { extractCardsFromEntity, extractResourcesFromEntity } from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
-import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
+import { parseSourceDocShared } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
@@ -773,12 +774,20 @@ class SessionLogMarkdown extends ReactMarkdown {
   private sheetBlock(e: EntityData, block: string): Record<string, unknown> {
     const raw = e.codeBlocks.get(block)?.[0];
     if (!raw) return {};
+    // Asked for on every render of every HUD, card and bookkeeping row — parsed
+    // once per text. Callers that change what they read copy it first.
+    const known = this.sheetBlocks.get(raw);
+    if (known) return known;
+    let parsed: Record<string, unknown> = {};
     try {
-      return (parseYaml(raw) as Record<string, unknown>) ?? {};
+      parsed = (parseYaml(raw) as Record<string, unknown>) ?? {};
     } catch {
-      return {};
+      parsed = {};
     }
+    this.sheetBlocks.set(raw, parsed);
+    return parsed;
   }
+  private sheetBlocks = new Map<string, Record<string, unknown>>();
 
   /** What a party member's sheet holds now that a session changes. */
   private sheetSnapshot(e: EntityData): SheetSnapshot {
@@ -1591,7 +1600,8 @@ class SessionLogMarkdown extends ReactMarkdown {
   /** Parse a file's `rpg feature.gm` blocks into GMFeatures. */
   private async loadGMFeatures(file: TFile): Promise<GMFeature[]> {
     const content = await this.baseView.app.vault.read(file);
-    return parseSourceDoc({ $name: file.basename, $contents: content }, "class").gmFeatures ?? [];
+    // A copy of the list: the doc is shared, and the caller adds the tools' features to it.
+    return [...(parseSourceDocShared({ $name: file.basename, $contents: content }, "class").gmFeatures ?? [])];
   }
 
   /**
@@ -1644,7 +1654,7 @@ class SessionLogMarkdown extends ReactMarkdown {
       const file = this.resolveLink(bref.target);
       if (!file) continue;
       try {
-        const doc = parseSourceDoc(
+        const doc = parseSourceDocShared(
           { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
           "class"
         );
@@ -1702,7 +1712,7 @@ class SessionLogMarkdown extends ReactMarkdown {
             const file = this.resolveLink(ref.target);
             if (!file) continue;
             try {
-              const doc = parseSourceDoc(
+              const doc = parseSourceDocShared(
                 { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
                 "class"
               );
@@ -1717,7 +1727,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                   const tref = parseBranchRef(rawRef);
                   const tf = this.resolveLink(tref?.target ?? rawRef);
                   if (!tf) continue;
-                  const tdoc = parseSourceDoc(
+                  const tdoc = parseSourceDocShared(
                     { $name: tf.basename, $contents: await this.baseView.app.vault.read(tf) },
                     "class"
                   );
@@ -1732,7 +1742,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                   const cref = parseBranchRef(s.calls);
                   const cfile = this.resolveLink(cref?.target ?? s.calls);
                   if (cfile) {
-                    const cdoc = parseSourceDoc(
+                    const cdoc = parseSourceDocShared(
                       { $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) },
                       "class"
                     );
@@ -1753,7 +1763,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                             const btref = parseBranchRef(rawRef);
                             const btf = this.resolveLink(btref?.target ?? rawRef);
                             if (!btf) continue;
-                            const btdoc = parseSourceDoc(
+                            const btdoc = parseSourceDocShared(
                               { $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) },
                               "class"
                             );
@@ -1773,7 +1783,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                         const gtref = parseBranchRef(gs.table);
                         const gtf = this.resolveLink(gtref?.target ?? gs.table);
                         if (!gtf) continue;
-                        const gtdoc = parseSourceDoc(
+                        const gtdoc = parseSourceDocShared(
                           { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
                           "class"
                         );
@@ -1805,7 +1815,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           const of = this.resolveLink(oref?.target ?? rawRef);
           if (!of) continue;
           try {
-            const odoc = parseSourceDoc(
+            const odoc = parseSourceDocShared(
               { $name: of.basename, $contents: await this.baseView.app.vault.read(of) },
               "class"
             );
@@ -1835,7 +1845,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           const gtref = parseBranchRef(gs.table);
           const gtf = this.resolveLink(gtref?.target ?? gs.table);
           if (!gtf) continue;
-          const gtdoc = parseSourceDoc(
+          const gtdoc = parseSourceDocShared(
             { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
             "class"
           );
@@ -1867,7 +1877,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     if (!file) return null;
     try {
       return (
-        parseSourceDoc({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class")
+        parseSourceDocShared({ $name: file.basename, $contents: await this.baseView.app.vault.read(file) }, "class")
           .gmFeatures ?? null
       );
     } catch {
@@ -1885,7 +1895,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         const file = this.resolveLink(parseBranchRef(ref)?.target ?? ref);
         if (!file) continue;
         try {
-          const doc = parseSourceDoc(
+          const doc = parseSourceDocShared(
             { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
             "class"
           );
@@ -1908,7 +1918,7 @@ class SessionLogMarkdown extends ReactMarkdown {
       const file = this.resolveLink(tref?.target ?? link);
       if (!file) continue;
       try {
-        const doc = parseSourceDoc(
+        const doc = parseSourceDocShared(
           { $name: file.basename, $contents: await this.baseView.app.vault.read(file) },
           "class"
         );
@@ -2784,20 +2794,26 @@ function SessionLogRoot({
   // How each entry's action is taken — by the card it plays, its actor's: a
   // bonus action, a reaction, else an action (narration and moves, none).
   // The card an entry plays: the one its call names, or its text begins with.
-  const cardFor = React.useCallback(
-    (actor: string, name: string | undefined, text: string): SessionFeatureCard | undefined => {
-      const cards = [...pcStacks.values(), ...foeStacks.values()]
-        .flat()
-        .flatMap((s) => s.cards)
-        .filter((c) => combatantKey(c.actor) === combatantKey(actor) || matchActor(actor, [{ name: c.actor }]) >= 0);
+  const cardFor = React.useMemo(() => {
+    const everyCard = [...pcStacks.values(), ...foeStacks.values()].flat().flatMap((s) => s.cards);
+    // Each actor's cards, found once: a long log asks for the same few actors
+    // hundreds of times (every entry, every move check).
+    const ofActor = new Map<string, SessionFeatureCard[]>();
+    return (actor: string, name: string | undefined, text: string): SessionFeatureCard | undefined => {
+      let cards = ofActor.get(actor);
+      if (!cards) {
+        cards = everyCard.filter(
+          (c) => combatantKey(c.actor) === combatantKey(actor) || matchActor(actor, [{ name: c.actor }]) >= 0
+        );
+        ofActor.set(actor, cards);
+      }
       const lower = text.trim().toLowerCase();
       return (
         (name ? cards.find((c) => c.name.toLowerCase() === name.toLowerCase()) : undefined) ??
         cards.filter((c) => lower.startsWith(c.name.toLowerCase())).sort((a, b) => b.name.length - a.name.length)[0]
       );
-    },
-    [pcStacks, foeStacks]
-  );
+    };
+  }, [pcStacks, foeStacks]);
   // The cards that hold attacks: a Multiattack (its statblock's count), an
   // Opportunity Attack (one melee attack, as a reaction).
   const multiattackOf: MultiattackOf = React.useCallback(
@@ -2837,17 +2853,21 @@ function SessionLogRoot({
       matchActor(shownName(b), [{ name: shownName(a) }]) >= 0;
     // A creature's melee reach: its longest — a statblock's `reach 10 ft.`, a
     // reach weapon's 10 ft — else 5 ft.
+    const everyCard = [...pcStacks.values(), ...foeStacks.values()].flat().flatMap((st) => st.cards);
+    const reaches = new Map<string, number>();
     const reachOf = (name: string) => {
-      const cards = [...pcStacks.values(), ...foeStacks.values()]
-        .flat()
-        .flatMap((st) => st.cards)
-        .filter((c) => sameName(c.actor, name));
-      const feet = cards.flatMap((c) => {
-        const r = c.range ?? "";
-        const m = r.match(/reach\s*(\d+)/i) ?? (c.attackForm === "melee" ? r.match(/^\s*(\d+)\s*ft/i) : null);
-        return m ? [parseInt(m[1], 10)] : [];
-      });
-      return Math.max(5, ...feet);
+      const known = reaches.get(name);
+      if (known != null) return known;
+      const feet = everyCard
+        .filter((c) => sameName(c.actor, name))
+        .flatMap((c) => {
+          const r = c.range ?? "";
+          const m = r.match(/reach\s*(\d+)/i) ?? (c.attackForm === "melee" ? r.match(/^\s*(\d+)\s*ft/i) : null);
+          return m ? [parseInt(m[1], 10)] : [];
+        });
+      const reach = Math.max(5, ...feet);
+      reaches.set(name, reach);
+      return reach;
     };
     const info = (name: string): MoverInfo => {
       const speed = speedOf(name);
@@ -3453,22 +3473,24 @@ function SessionLogRoot({
           else turnMapAnchors.current.delete(turnId);
         }}
       >
-        <BattlePane
-          battles={battles}
-          battleStart={b.start}
-          within={{ from, ...(to != null ? { to } : {}) }}
-          {...(headInto !== undefined ? { headInto } : {})}
-          {...(i <= 0 ? { onSetup: onEditBody, initiativeOf } : {})}
-          maps={battleMaps}
-          readingId={readingId}
-          onSeek={seekEntry}
-          foesAt={foesAt}
-          iconOf={tokenIcon}
-          onOpenMap={openMapNote}
-          healthAt={health.at}
-          hitAt={(id: number) => health.hits.get(id)}
-          zoom
-        />
+        <LazyMount kind="turn-map" height="22rem">
+          <BattlePane
+            battles={battles}
+            battleStart={b.start}
+            within={{ from, ...(to != null ? { to } : {}) }}
+            {...(headInto !== undefined ? { headInto } : {})}
+            {...(i <= 0 ? { onSetup: onEditBody, initiativeOf } : {})}
+            maps={battleMaps}
+            readingId={readingId}
+            onSeek={seekEntry}
+            foesAt={foesAt}
+            iconOf={tokenIcon}
+            onOpenMap={openMapNote}
+            healthAt={health.at}
+            hitAt={(id: number) => health.hits.get(id)}
+            zoom
+          />
+        </LazyMount>
       </div>
     );
   };

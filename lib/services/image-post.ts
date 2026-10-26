@@ -280,7 +280,10 @@ export async function finishImage(
       const cropped = document.createElement("canvas");
       cropped.width = box.w;
       cropped.height = box.h;
-      cropped.getContext("2d")!.drawImage(canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+      // Read back again below: the flag has to be on the first getContext, or it is ignored.
+      cropped
+        .getContext("2d", { willReadFrequently: true })!
+        .drawImage(canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
       out = cropped;
     }
   }
@@ -292,7 +295,9 @@ export async function finishImage(
       const square = document.createElement("canvas");
       square.width = box.size;
       square.height = box.size;
-      square.getContext("2d")!.drawImage(out, box.x, box.y, box.size, box.size, 0, 0, box.size, box.size);
+      square
+        .getContext("2d", { willReadFrequently: true })!
+        .drawImage(out, box.x, box.y, box.size, box.size, 0, 0, box.size, box.size);
       out = square;
     }
     // What's left of the margin in its corners (a rounded tile's), made transparent.

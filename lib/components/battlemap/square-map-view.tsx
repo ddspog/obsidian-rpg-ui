@@ -158,6 +158,102 @@ function useImageSize(url: string | undefined): { width: number; height: number 
   return size;
 }
 
+interface LayerProps {
+  map: SquareMap;
+  cell: number;
+}
+
+/**
+ * The map's squares: the terrain's names and rules (and its paint, when no
+ * picture is under it). A square each, so drawn only when the map, its size or
+ * its click handler change — not on every frame of a view easing across it.
+ */
+const TerrainLayer = React.memo(function TerrainLayer({
+  map,
+  cell,
+  painted,
+  onSquareClick,
+}: LayerProps & { painted: boolean; onSquareClick: SquareMapViewProps["onSquareClick"] }) {
+  return (
+    <g className="rpg-battlemap-terrain">
+      {map.cells.map((row, r) =>
+        row.map((key, c) => {
+          const t = map.legend[key];
+          return (
+            <rect
+              key={`${c}-${r}`}
+              x={GUTTER + c * cell}
+              y={GUTTER + r * cell}
+              width={cell}
+              height={cell}
+              fill={painted ? terrainColor(t, key) : "transparent"}
+              {...(onSquareClick ? { onClick: () => onSquareClick({ col: c, row: r }) } : {})}
+              className={[t?.blocks && "is-blocking", t?.difficult && "is-difficult", t?.cover && "has-cover"]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <title>{`${squareName({ col: c, row: r })}${t?.terrain ? ` — ${t.terrain}` : ""}${t?.cover ? `, ${t.cover} cover` : ""}${t?.difficult ? ", difficult" : ""}`}</title>
+            </rect>
+          );
+        })
+      )}
+    </g>
+  );
+});
+
+/** Difficult ground and cover, marked on the square. */
+const MarksLayer = React.memo(function MarksLayer({ map, cell }: LayerProps) {
+  return (
+    <g className="rpg-battlemap-marks" aria-hidden="true">
+      {map.cells.map((row, r) =>
+        row.map((key, c) => {
+          const t = map.legend[key];
+          const x = GUTTER + c * cell;
+          const y = GUTTER + r * cell;
+          return (
+            <React.Fragment key={`m${c}-${r}`}>
+              {t?.difficult && (
+                <path d={`M${x + 4} ${y + cell - 4} L${x + cell - 4} ${y + 4}`} className="rpg-battlemap-difficult" />
+              )}
+              {t?.cover && <circle cx={x + cell - 6} cy={y + 6} r={2.5} className="rpg-battlemap-cover" />}
+              {t?.label && (
+                <text x={x + cell / 2} y={y + cell / 2} className="rpg-battlemap-label">
+                  {t.label}
+                </text>
+              )}
+            </React.Fragment>
+          );
+        })
+      )}
+    </g>
+  );
+});
+
+const GridLayer = React.memo(function GridLayer({
+  cols,
+  rows,
+  cell,
+  width,
+  height,
+}: {
+  cols: number;
+  rows: number;
+  cell: number;
+  width: number;
+  height: number;
+}) {
+  return (
+    <g className="rpg-battlemap-grid" aria-hidden="true">
+      {Array.from({ length: cols + 1 }, (_, c) => (
+        <line key={`v${c}`} x1={GUTTER + c * cell} y1={GUTTER} x2={GUTTER + c * cell} y2={height} />
+      ))}
+      {Array.from({ length: rows + 1 }, (_, r) => (
+        <line key={`h${r}`} x1={GUTTER} y1={GUTTER + r * cell} x2={width} y2={GUTTER + r * cell} />
+      ))}
+    </g>
+  );
+});
+
 export function SquareMapView({
   map: written,
   tokens = [],
@@ -174,7 +270,10 @@ export function SquareMapView({
   const uid = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
   const picture = written.image?.url ? written.image : undefined;
   const natural = useImageSize(picture?.url);
-  const map = picture && natural ? fitToImage(written, natural.width, natural.height) : written;
+  const map = React.useMemo(
+    () => (written.image?.url && natural ? fitToImage(written, natural.width, natural.height) : written),
+    [written, natural]
+  );
   // The window shown: the whole map with its labels' gutter, or the view (its
   // labels then drawn over its edges).
   const fullW = GUTTER + map.cols * cell;
@@ -300,64 +399,9 @@ export function SquareMapView({
         </>
       )}
 
-      {/* Terrain (over a picture, only the squares' names and rules — no paint) */}
-      <g className="rpg-battlemap-terrain">
-        {map.cells.map((row, r) =>
-          row.map((key, c) => {
-            const t = map.legend[key];
-            return (
-              <rect
-                key={`${c}-${r}`}
-                x={GUTTER + c * cell}
-                y={GUTTER + r * cell}
-                width={cell}
-                height={cell}
-                fill={picture ? "transparent" : terrainColor(t, key)}
-                {...(onSquareClick ? { onClick: () => onSquareClick({ col: c, row: r }) } : {})}
-                className={[t?.blocks && "is-blocking", t?.difficult && "is-difficult", t?.cover && "has-cover"]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <title>{`${squareName({ col: c, row: r })}${t?.terrain ? ` — ${t.terrain}` : ""}${t?.cover ? `, ${t.cover} cover` : ""}${t?.difficult ? ", difficult" : ""}`}</title>
-              </rect>
-            );
-          })
-        )}
-      </g>
-
-      {/* Difficult ground and cover, marked on the square */}
-      <g className="rpg-battlemap-marks" aria-hidden="true">
-        {map.cells.map((row, r) =>
-          row.map((key, c) => {
-            const t = map.legend[key];
-            const x = GUTTER + c * cell;
-            const y = GUTTER + r * cell;
-            return (
-              <React.Fragment key={`m${c}-${r}`}>
-                {t?.difficult && (
-                  <path d={`M${x + 4} ${y + cell - 4} L${x + cell - 4} ${y + 4}`} className="rpg-battlemap-difficult" />
-                )}
-                {t?.cover && <circle cx={x + cell - 6} cy={y + 6} r={2.5} className="rpg-battlemap-cover" />}
-                {t?.label && (
-                  <text x={x + cell / 2} y={y + cell / 2} className="rpg-battlemap-label">
-                    {t.label}
-                  </text>
-                )}
-              </React.Fragment>
-            );
-          })
-        )}
-      </g>
-
-      {/* Grid lines and chessboard labels */}
-      <g className="rpg-battlemap-grid" aria-hidden="true">
-        {Array.from({ length: map.cols + 1 }, (_, c) => (
-          <line key={`v${c}`} x1={GUTTER + c * cell} y1={GUTTER} x2={GUTTER + c * cell} y2={height} />
-        ))}
-        {Array.from({ length: map.rows + 1 }, (_, r) => (
-          <line key={`h${r}`} x1={GUTTER} y1={GUTTER + r * cell} x2={width} y2={GUTTER + r * cell} />
-        ))}
-      </g>
+      <TerrainLayer map={map} cell={cell} painted={!picture} onSquareClick={onSquareClick} />
+      <MarksLayer map={map} cell={cell} />
+      <GridLayer cols={map.cols} rows={map.rows} cell={cell} width={width} height={height} />
 
       {/* Where a dragged token will land */}
       {dropSquare && (
