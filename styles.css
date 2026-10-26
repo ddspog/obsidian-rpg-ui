@@ -19806,6 +19806,7 @@ body {
   --rpg-fs-data: 0.8125rem;
   --rpg-fs-row: 1.1em;
   --rpg-fs-micro: 0.6875rem;
+  --rpg-panel-head-h: 32px;
   --rpg-slab-ink: #efe6d2;
   --rpg-slab-label: #d4c9a8;
 }
@@ -19962,7 +19963,7 @@ section[aria-details="Character Skills"] > header[role=button] {
   position: relative;
   display: flex;
   align-items: stretch;
-  min-height: 36px;
+  min-height: var(--rpg-panel-head-h);
   cursor: pointer;
 }
 section[aria-details="Character Skills"] > header[role=button] > span {
@@ -20004,6 +20005,24 @@ figure[aria-details="Inspirational Level"] button::after {
   content: "";
   position: absolute;
   inset: -11px;
+}
+section[aria-details="Character Skills"] > header > span,
+section[aria-details="Character Proficiencies"] > header > span {
+  box-sizing: border-box;
+  align-items: center;
+  min-height: var(--rpg-panel-head-h);
+}
+section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label,
+section[aria-details="Character Rolls"] thead th {
+  box-sizing: border-box;
+  height: var(--rpg-panel-head-h);
+  padding-block: 0;
+  vertical-align: middle;
+}
+section[aria-details="Character Rolls"] > header > span {
+  box-sizing: border-box;
+  align-items: center;
+  min-height: var(--rpg-panel-head-h);
 }
 
 /* lib/styles/log-surface.css */
@@ -20804,6 +20823,12 @@ body.is-mobile .markdown-rendered [role=button] img {
   .rpg-spell-slot {
     min-width: 32px;
     min-height: 32px;
+  }
+  .markdown-preview-view {
+    scrollbar-width: none;
+  }
+  .markdown-preview-view::-webkit-scrollbar {
+    display: none;
   }
 }
 

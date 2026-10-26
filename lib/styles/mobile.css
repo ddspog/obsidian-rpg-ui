@@ -897,4 +897,14 @@ body.is-mobile .markdown-rendered [role="button"] img {
     min-width: 32px;
     min-height: 32px;
   }
+
+  /* A phone has no scrollbar track. The emulated one showed a 12px strip beside the log's bottom bar, which cannot
+   * draw over it, so the bar looked short of the screen's edge. */
+  .markdown-preview-view {
+    scrollbar-width: none;
+  }
+
+  .markdown-preview-view::-webkit-scrollbar {
+    display: none;
+  }
 }
