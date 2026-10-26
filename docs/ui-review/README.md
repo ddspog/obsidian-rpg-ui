@@ -2,12 +2,12 @@
 
 How the plugin's interface gets reviewed, and the real notes to review it on.
 
-- **[Block census](./block-census.md)**: every `rpg` block type, where the plugin defines it, which stylesheet draws it, how many notes use it, and the best real examples. Generated; refresh it with `node scripts/block-census.mjs --vault vault --vault "$RPG_VAULT_ROOT" --md docs/ui-review/block-census.md`.
+- **[Block census](./block-census.md)**: every `rpg` block type, where the plugin defines it, which stylesheet draws it, how many notes use it, and the best real examples. Generated; refresh it with `node scripts/block-census.mjs --md docs/ui-review/block-census.md`.
 - **`/ui-review <goal> [scope]`**: the Claude command (`.claude/commands/ui-review.md`) that runs the review with the Impeccable skill, on a phone and on a desktop, and writes a board of findings with before and after pictures to rate and answer.
 
 ## The example set
 
-One real note per thing worth looking at, in `testing-vault` (the owner's vault, read only; the cloud harness copies it). Where the repo's own `vault/` has a copy, it is the same note.
+One real note per thing worth looking at, in `testing-vault` (the owner's vault, read only; the cloud harness copies it). The plugin repo holds no copy; scripts read the `testing-vault` checkout beside it (or `$RPG_VAULT_ROOT`).
 
 | What                               | Note                                                                                                                      | Shows                                                                             |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -32,7 +32,7 @@ One real note per thing worth looking at, in `testing-vault` (the owner's vault,
 | Tables, figures                    | `…/gm-tools/oracle/Fate Chart.md`, `…/glossary/topics/solo-scenes/Generating NPC Behavior.md`                             | `table.*`, `figure.mermaid`                                                       |
 | Standalone inventory               | `Sandbox/Tests/11-TEST-INVENTORY.md`                                                                                      | the `inventory` block                                                             |
 | Legacy blocks                      | `Sandbox/Tests/10-TEST-ALL-BLOCKS.md`                                                                                     | `attributes`, `skills`, `stats`, `badges`, `consumable`, `healthpoints`, `events` |
-| System definitions                 | `vault/systems/inline-system/DnD5e-System.md` (in the repo)                                                               | `system.*`, `expression`                                                          |
+| System definitions                 | `tales-of-the-valiant/config/index.ts` (in `testing-vault`)                                                               | `system.*`, `expression`                                                          |
 | Draft                              | `Sandbox/Tests/47-TEST-DRAFT.md`                                                                                          | the draft block                                                                   |
 
 Surfaces that have no fence of their own (settings, the card form, the drawer, the modals) are listed at the end of the [block census](./block-census.md#surfaces-that-are-not-blocks).

@@ -4,8 +4,8 @@ const { writeFileSync } = require("fs");
   try {
     const mod = require("./tmp-ts-loader");
     const loadSystemFromTypeScript = mod.loadSystemFromTypeScript;
-    const requested = process.argv[2] || process.env.SYSTEM_PATH || "systems/tales-of-the-valiant";
-    const vaultRoot = require("path").join(process.cwd(), "vault");
+    const requested = process.argv[2] || process.env.SYSTEM_PATH || "tales-of-the-valiant";
+    const vaultRoot = process.env.RPG_VAULT_ROOT ?? require("path").join(process.cwd(), "../testing-vault");
     const vaultShim = {
       getAbstractFileByPath(path) {
         const clean = path.replace(/^\/+/, "");

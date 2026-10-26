@@ -5,7 +5,7 @@
  *
  *   node simulators/build.mjs [id ...] [--watch] [--vault <dir>]      → simulators/dist/<id>.html
  *
- * With no id, every simulator is built. The vault is `--vault`, else $RPG_VAULT_ROOT. Run
+ * With no id, every simulator is built. The vault is `--vault`, else $RPG_VAULT_ROOT, else the testing-vault checkout beside this repo. Run
  * `npm run build` first so the plugin's styles.css is current.
  */
 import esbuild from "esbuild";
@@ -24,7 +24,7 @@ const args = process.argv.slice(2);
 const watch = args.includes("--watch");
 const vaultFlag = args.indexOf("--vault");
 const vaultRoot = path.resolve(
-  vaultFlag >= 0 ? args[vaultFlag + 1] : (process.env.RPG_VAULT_ROOT ?? path.join(root, "../.."))
+  vaultFlag >= 0 ? args[vaultFlag + 1] : (process.env.RPG_VAULT_ROOT ?? path.join(root, "../testing-vault"))
 );
 const wanted = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--vault");
 

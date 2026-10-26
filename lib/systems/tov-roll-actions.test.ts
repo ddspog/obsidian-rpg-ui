@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollBucket, rollInflicts } from "../../vault/tales-of-the-valiant/config/entities/roll-card";
+import { rollBucket, rollInflicts } from "../../../testing-vault/tales-of-the-valiant/config/entities/roll-card";
 
 const conditions = { blinded: { name: "Blinded", rules: [] }, restrained: { name: "Restrained", rules: [] } };
 

@@ -3,7 +3,7 @@
  * migrate-items.mjs
  *
  * One-shot migration: rewrites every `.md` under
- * `vault/tales-of-the-valiant/worldbuilding/items/**` from the
+ * `tales-of-the-valiant/worldbuilding/items/**` in the vault from the
  * old dot-keyed frontmatter shape (`.item:` / `.weapon:` / `.container:`
  * / `.shop:` / `.metadata:`) into a single `rpg item.element` fence
  * body. Drops the trailing `tx` / `dataviewjs` rendering blocks — the
@@ -20,10 +20,8 @@ import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const ITEM_DIR = resolve(
-  ROOT,
-  "vault/tales-of-the-valiant/worldbuilding/items",
-);
+const VAULT = process.env.RPG_VAULT_ROOT ?? resolve(ROOT, "../testing-vault");
+const ITEM_DIR = resolve(VAULT, "tales-of-the-valiant/worldbuilding/items");
 
 const WRITE = process.argv.includes("--write");
 

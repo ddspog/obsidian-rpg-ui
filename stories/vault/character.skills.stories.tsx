@@ -13,7 +13,7 @@ import type { RPGSystem } from "../../lib/systems/types";
 import { buildSkillsYaml, buildStatsYaml, type AbilityScores } from "../lib/character-yaml";
 
 // @ts-ignore — runtime import; types are declared via api.d.ts
-import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
+import { system as systemPromise } from "../../../testing-vault/tales-of-the-valiant/config/index";
 
 // ─── Args type ────────────────────────────────────────────────────────────────
 

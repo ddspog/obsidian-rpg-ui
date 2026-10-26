@@ -25,13 +25,10 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
-const vaultRoot = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../../.."));
+const vaultRoot = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../testing-vault"));
 
 const SPELL_REL = "tales-of-the-valiant/worldbuilding/spells";
-const ROOTS = [
-  path.join(pluginRoot, "vault", SPELL_REL),
-  path.join(vaultRoot, SPELL_REL),
-];
+const ROOTS = [path.join(vaultRoot, SPELL_REL)];
 
 // ── Fence extraction ────────────────────────────────────────────────────
 

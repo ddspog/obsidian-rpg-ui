@@ -16,7 +16,7 @@ import type { RPGSystem } from "../../lib/systems/types";
 import { buildHeaderYaml, buildFeaturesYaml, type HeaderFixture } from "../lib/feature-fixtures";
 
 // @ts-ignore — runtime import; types are declared via api.d.ts
-import { system as systemPromise } from "../../vault/tales-of-the-valiant/config/index";
+import { system as systemPromise } from "../../../testing-vault/tales-of-the-valiant/config/index";
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 

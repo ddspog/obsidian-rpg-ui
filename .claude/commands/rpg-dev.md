@@ -31,7 +31,7 @@ node cli/rpg-dev.mjs compile-html --input <path> [--output <path>] [--live-previ
 
 Use when you need to see exactly what HTML Obsidian produces for a markdown file. Good for regression testing — diff old vs new output.
 
-**Input**: single .md file or directory (relative to plugin root, e.g. `vault/Sandbox/Tests/03-TEST-SKILLS.md`)
+**Input**: single .md file or directory (relative to plugin root, e.g. `../testing-vault/Sandbox/Tests/03-TEST-SKILLS.md`)
 **Output**: `tmp/rpg-dev/html/<filename>.html` (HTML fragments, no wrapping page)
 
 ### capture-logs — Console output after render
@@ -90,27 +90,27 @@ Use when debugging state persistence, frontmatter sync, or data flow issues.
 ### After a CSS change
 ```bash
 npm run build
-node cli/rpg-dev.mjs css-report -i vault/Sandbox/Tests --verbose
+node cli/rpg-dev.mjs css-report -i ../testing-vault/Sandbox/Tests --verbose
 # Check tmp/rpg-dev/css/ for style changes
 ```
 
 ### Verify a component renders correctly
 ```bash
 npm run build
-node cli/rpg-dev.mjs compile-html -i vault/Sandbox/Tests/05-TEST-STATS.md --verbose
-node cli/rpg-dev.mjs dom-snapshot -i vault/Sandbox/Tests/05-TEST-STATS.md --verbose
+node cli/rpg-dev.mjs compile-html -i ../testing-vault/Sandbox/Tests/05-TEST-STATS.md --verbose
+node cli/rpg-dev.mjs dom-snapshot -i ../testing-vault/Sandbox/Tests/05-TEST-STATS.md --verbose
 # Read the .html and .dom.yml output
 ```
 
 ### Debug why a block isn't rendering
 ```bash
-node cli/rpg-dev.mjs capture-logs -i vault/Sandbox/Tests/10-TEST-ALL-BLOCKS.md --duration 5000 --verbose
+node cli/rpg-dev.mjs capture-logs -i ../testing-vault/Sandbox/Tests/10-TEST-ALL-BLOCKS.md --duration 5000 --verbose
 # Check tmp/rpg-dev/logs/ for errors or missing lifecycle events
 ```
 
 ### Regression check across all test files
 ```bash
-node cli/rpg-dev.mjs compile-html -i vault/Sandbox/Tests --verbose
+node cli/rpg-dev.mjs compile-html -i ../testing-vault/Sandbox/Tests --verbose
 # Diff tmp/rpg-dev/html/ against a known-good baseline
 ```
 
@@ -136,5 +136,5 @@ Falls back to `cli/default.selectors` if no companion file exists.
 
 - **Obsidian virtualization**: Only viewport-visible sections exist in the DOM. Extracted HTML captures what's currently rendered, not the full page.
 - **Wait time**: Default 3000ms wait for post-processors. Increase with `--wait 5000` for slow-rendering pages.
-- **File paths**: Input paths are relative to the plugin root. `vault/Sandbox/Tests/foo.md` maps to Obsidian path `Sandbox/Tests/foo.md`.
+- **File paths**: Input paths are relative to the plugin root. `../testing-vault/Sandbox/Tests/foo.md` maps to Obsidian path `Sandbox/Tests/foo.md`.
 - **All output goes to** `tmp/rpg-dev/` which is gitignored.
