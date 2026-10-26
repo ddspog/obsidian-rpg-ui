@@ -399,3 +399,11 @@ button.rpg-list__page-arrow:disabled {
 .rpg-list__heading--cont :is(h1, h2, h3, h4, h5, h6) {
   opacity: 0.75;
 }
+
+/* The circle tabs scroll sideways when they don't all fit: the strip fades out at its right edge so a half-seen
+ * tab reads as "more this way". */
+.rpg-list__chips {
+  padding-inline-end: 1.5rem;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}

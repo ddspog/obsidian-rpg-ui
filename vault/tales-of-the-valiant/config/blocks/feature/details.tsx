@@ -252,7 +252,7 @@ export const details: EntityBlock<
   if (isHomebrew) cls.push("rpg-feature-homebrew");
 
   return (
-    <article className={cls.join(" ")} aria-label={`Feature ${self.name}`}>
+    <article className={cls.join(" ")} aria-label={self.name ? `Feature ${self.name}` : undefined}>
       {isHomebrew && <HomebrewBadge source={self.source ?? ""} />}
       {isParagraphMode ? (
         <>
