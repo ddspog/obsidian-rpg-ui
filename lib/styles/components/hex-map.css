@@ -544,7 +544,7 @@
 
 .rpg-hexstudio-warn {
   padding: 0.4em 0.6em;
-  border-left: 3px solid var(--color-orange);
+  border: 1px solid rgba(var(--color-orange-rgb), 0.5);
   border-radius: var(--radius-s);
   background: rgba(var(--color-orange-rgb), 0.1);
   font-size: var(--font-ui-small);

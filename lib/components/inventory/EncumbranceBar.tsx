@@ -19,7 +19,7 @@ export function EncumbranceBar({ total, bands, load }: EncumbranceBarProps) {
 
   return (
     <section className="rpg-inventory-block__encumbrance" data-load={load}>
-      <h5 className="rpg-inventory-block__section-title">Encumbrance</h5>
+      <h3 className="rpg-inventory-block__section-title">Encumbrance</h3>
       <div className="rpg-inventory-block__encumbrance-grid">
         <div className="rpg-inventory-block__encumbrance-cell">
           <span className="rpg-inventory-block__encumbrance-label">Total Wht.</span>

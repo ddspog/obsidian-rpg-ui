@@ -54,12 +54,12 @@
   padding: 0.75rem;
   background: var(--background-secondary);
   border-radius: 6px;
-  border-left: 3px solid var(--interactive-accent);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, transparent);
 }
 
 .rpg-feature-item.rpg-feature-unmet {
   opacity: 0.5;
-  border-left-color: var(--text-muted);
+  border-color: var(--background-modifier-border);
 }
 
 .rpg-feature-header {
@@ -125,7 +125,7 @@
   padding: 0.75rem;
   background: var(--background-secondary);
   border-radius: 6px;
-  border-left: 3px solid var(--text-accent);
+  border: 1px solid color-mix(in srgb, var(--text-accent) 35%, transparent);
 }
 
 .rpg-choice-header {

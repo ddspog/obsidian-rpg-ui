@@ -36,14 +36,20 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  /* The theme styles h3 (colour, indent, font); this label keeps the sheet's subhead look. */
+  text-indent: 0;
+  font-family: inherit;
 }
 
-/* Hairline rule occupying the space before the label — "─── WEAPONS" /
- *  "─── FOR JACQUI". Keeps section labels visually tied to the rule
- *  beneath them and aligns every section header to the right across
- *  the character inventory AND the container card (both use
- *  `.rpg-inventory-block__section-title`). */
-.rpg-inventory-block__section-title::before {
+.markdown-rendered .rpg-inventory-block__section-title {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  text-indent: 0;
+}
+
+/* Hairline rule after the label — "WEAPONS ───" / "FOR JACQUI ───" — so the label reads
+ * first, like the subheads in the Proficiencies panel. Both the character inventory and the
+ * container card use `.rpg-inventory-block__section-title`. */
+.rpg-inventory-block__section-title::after {
   content: "";
   flex: 1;
   height: 0;
