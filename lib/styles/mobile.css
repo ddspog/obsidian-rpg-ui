@@ -549,15 +549,83 @@
     padding-inline: calc(var(--_cut) + 4px);
   }
 
-  /* Append and Cancel stay in reach however long the card's form runs inside
-     the drawer's scroll area. */
-  .placeholder-buttons {
+  /* A card's form is a sheet over the story (the popover is portalled to the body):
+     header with its name and a close, the fields and preview scroll, Append and Cancel stay at the foot. */
+  .lonelog-placeholder-popover.is-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 100dvh;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    background: var(--background-primary);
+    font-size: var(--font-ui-small);
+  }
+
+  .is-sheet .placeholder-form {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: env(safe-area-inset-top, 0px) 1rem 0;
+  }
+
+  .is-sheet .placeholder-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-block: 0.75rem 0.5rem;
+    background: var(--background-primary);
+  }
+
+  .is-sheet .placeholder-title {
+    flex: 1 1 auto;
+    font-size: var(--font-ui-medium);
+  }
+
+  .is-sheet .placeholder-rider-name {
+    font-size: var(--font-ui-small);
+  }
+
+  .is-sheet .placeholder-summary {
+    flex-basis: 100%;
+  }
+
+  .is-sheet button.placeholder-close {
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-inline-end: -0.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .is-sheet .placeholder-buttons {
+    margin-top: auto;
     position: sticky;
     bottom: 0;
     z-index: 1;
-    padding-block: 0.5rem;
+    margin-inline: -1rem;
+    padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--background-modifier-border);
     background: var(--background-primary);
-    box-shadow: 0 -0.5rem 0.5rem -0.25rem var(--background-primary);
+    box-shadow: none;
   }
 
   .placeholder-submit,
