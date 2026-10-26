@@ -5140,6 +5140,95 @@ button.rpg-loadout:disabled:not(.is-held) {
   font-weight: 600;
   color: var(--text-normal);
 }
+.placeholder-head {
+  gap: 0.2rem;
+  padding-bottom: 0.6rem;
+}
+.placeholder-title {
+  font-family: var(--font-heading, var(--font-interface));
+  font-size: var(--font-ui-large);
+  font-weight: 650;
+  line-height: 1.25;
+}
+.placeholder-summary {
+  font-size: var(--font-ui-small);
+}
+.placeholder-field {
+  gap: 0.25rem;
+}
+.placeholder-label {
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.placeholder-input,
+.placeholder-select {
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+.placeholder-input:focus,
+.placeholder-select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+.placeholder-rider {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+.placeholder-rider-name {
+  font-size: var(--font-ui-small);
+}
+.placeholder-preview-label {
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.placeholder-preview-entries {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+  font-size: 1em;
+}
+.placeholder-preview-hint {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.placeholder-submit {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 650;
+}
+.placeholder-cancel {
+  padding: 0.55rem 0.9rem;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+}
+.placeholder-cancel:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.lonelog-placeholder-popover button.placeholder-submit {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.lonelog-placeholder-popover button.placeholder-submit:hover:not(:disabled) {
+  background: var(--interactive-accent-hover);
+}
+.lonelog-placeholder-popover button.placeholder-cancel {
+  background: transparent;
+  box-shadow: none;
+}
+.lonelog-placeholder-popover .placeholder-rider {
+  font-size: var(--font-ui-small);
+}
 
 /* lib/styles/components/session-log-hotbar.css */
 .rpg-hotbar {
