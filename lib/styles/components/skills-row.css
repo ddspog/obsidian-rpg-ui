@@ -60,7 +60,7 @@ section[aria-details="Character Skills"] > menu > li > svg {
 /* Skill attribute abbreviation */
 section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
   flex-shrink: 0;
-  font-size: 0.6em;
+  font-size: max(var(--rpg-fs-micro), 0.6em);
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;

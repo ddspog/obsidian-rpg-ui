@@ -3,6 +3,10 @@ body {
   --rpg-fs-label: 0.75rem;
   --rpg-fs-data: 0.8125rem;
   --rpg-fs-row: 1.1em;
+  --rpg-fs-micro: 0.6875rem;
+  /* Ink on the dark banner and slab: holds 4.5:1 whatever colour or image the banner uses. */
+  --rpg-slab-ink: #efe6d2;
+  --rpg-slab-label: #d4c9a8;
 }
 
 /* Sheet surfaces, all widths. The dark status slab and the panels under it share one warm
@@ -128,4 +132,31 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
 
 .rpg-feature-pending-list .rpg-feature-pending menu button[aria-pressed="true"] {
   background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* ── Banner and slab ─────────────────────────────────────────────── */
+/* Flat: the slab is already a darker step, so the banner needs no shadow over the portrait. */
+header[aria-details*=" Banner"] {
+  box-shadow: none;
+}
+
+header[aria-details*=" Banner"] span[aria-details="Link Pill"] a.internal-link {
+  color: var(--rpg-slab-ink);
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+header[aria-details*=" Banner"] small[aria-details="Pill Comment"] {
+  color: var(--rpg-slab-label);
+  font-size: var(--rpg-fs-label);
+  opacity: 1;
+}
+
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption,
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption span {
+  color: var(--rpg-slab-label);
+}
+
+/* Resistances and the like in a panel take the panel's ink, not the pill gold. */
+section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
+  color: light-dark(#4b2f9a, #cdbfff);
 }

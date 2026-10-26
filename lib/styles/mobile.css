@@ -106,16 +106,17 @@
   }
 
   [aria-details="Line Stats"] {
-    gap: 6px;
+    gap: 4px;
   }
 
+  /* Wide enough for "PROFICIENCY" at the 11px label floor. */
   figure[aria-details="Stat Diamond"] {
-    --hex-w: 82px;
-    --hex-h: 48px;
+    --hex-w: 96px;
+    --hex-h: 50px;
   }
 
   figure[aria-details="Stat Diamond"][data-size="lg"] {
-    --hex-w: 96px;
+    --hex-w: 108px;
     --hex-h: 58px;
   }
 
@@ -166,22 +167,21 @@
 
   /* Hex stats poke above their row; leave room so they don't hit the next block. */
   section[aria-details="Character Stats"] {
-    row-gap: 22px;
-    padding-bottom: 28px;
+    row-gap: 8px;
+    padding-bottom: 12px;
   }
 
-  /* Two columns at a smaller size: 18 skills in half the height. */
+  /* One column: two do not fit "Animal Handling" and its bonus at a readable size. */
   section[aria-details="Character Skills"] > menu {
-    column-count: 2;
-    column-gap: 10px;
+    column-count: 1;
     padding: 4px 6px;
   }
 
   section[aria-details="Character Skills"] > menu > li {
     gap: 3px;
-    padding: 3px 2px;
-    font-size: 0.82em;
-    min-height: 34px;
+    padding: 3px 6px;
+    font-size: var(--rpg-fs-row);
+    min-height: 44px;
   }
 
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {

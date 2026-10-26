@@ -8924,7 +8924,7 @@ p[aria-details="Health Management Row"] dl {
 p[aria-details="Health Management Row"] dt {
   font-size: 0.7rem !important;
   font-weight: 600 !important;
-  color: var(--color-yellow, #ffd400) !important;
+  color: var(--rpg-slab-label, #d4c9a8) !important;
   text-transform: uppercase;
   letter-spacing: 0.04em !important;
   line-height: 1.2;
@@ -12839,7 +12839,7 @@ dd[aria-label="Conditions List"] {
 }
 [aria-details="No Conditions"] {
   font-size: 0.75em;
-  color: var(--rpg-no-conditions-color, rgba(255, 255, 255, 0.25));
+  color: var(--rpg-no-conditions-color, #8c8474);
   line-height: 20px;
 }
 button[aria-details="Condition Pill"] {
@@ -12925,15 +12925,15 @@ figure[aria-details="Stat Diamond"][data-size=lg] output[aria-details="Stat Valu
 figure[aria-details="Stat Diamond"] figcaption {
   position: relative;
   z-index: 1;
-  font-size: 0.5em;
+  font-size: max(var(--rpg-fs-micro), 0.5em);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--rpg-diamond-label, #a09880);
   line-height: 1.1;
   margin-top: 1px;
   text-align: center;
-  max-width: calc(var(--hex-w) * 0.75);
+  max-width: calc(var(--hex-w) * 0.88);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -12965,7 +12965,6 @@ svg[aria-details="Stat Hex Pair"] {
   width: 110px;
   height: 110px;
   overflow: visible;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 .rpg-hex-border {
   fill: var(--rpg-hex-border, #6a6258);
@@ -12998,7 +12997,7 @@ svg[aria-details="Stat Hex Pair"] {
   font-size: 14px;
 }
 .rpg-hex-label--back {
-  font-size: 9px;
+  font-size: 11px;
 }
 .rpg-hex-vantage-badge {
   fill: light-dark(#2d6a2e, #3d9140);
@@ -13009,22 +13008,20 @@ svg[aria-details="Stat Hex Pair"] {
   fill: light-dark(#a02020, #c94040);
 }
 .rpg-hex-vantage-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   fill: #fff;
 }
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--rpg-hex-score, #e3dcce);
-  stroke: rgba(0, 0, 0, 0.4);
-  stroke-width: 3;
-  paint-order: stroke fill;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
+  fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
 }
 section[aria-details="Character Stats"] {
   container-type: inline-size;
-  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  margin-block-start: 0;
+  background: light-dark(#ece4d3, #24201c);
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   justify-items: center;
@@ -13050,7 +13047,6 @@ section[aria-details="Character Stats"]::before {
   pointer-events: none;
 }
 section[aria-details="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
-  margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
   position: relative;
   z-index: 1;
 }
@@ -13254,7 +13250,7 @@ section[aria-details="Character Skills"] > menu > li > svg {
 }
 section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
   flex-shrink: 0;
-  font-size: 0.6em;
+  font-size: max(var(--rpg-fs-micro), 0.6em);
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
@@ -15528,11 +15524,14 @@ h3.rpg-feature-decisions-group-label {
   margin: 0;
   padding: 0;
   font: inherit;
-  font-size: 0.6em;
+  font-size: 0.9em;
   line-height: 1;
-  vertical-align: super;
+  min-width: 24px;
+  min-height: 24px;
+  margin-inline: -4px;
+  vertical-align: baseline;
   background: transparent;
-  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+  color: light-dark(rgba(0, 0, 0, 0.6), rgba(255, 255, 255, 0.6));
   border: none;
   cursor: pointer;
 }
@@ -19707,6 +19706,9 @@ body {
   --rpg-fs-label: 0.75rem;
   --rpg-fs-data: 0.8125rem;
   --rpg-fs-row: 1.1em;
+  --rpg-fs-micro: 0.6875rem;
+  --rpg-slab-ink: #efe6d2;
+  --rpg-slab-label: #d4c9a8;
 }
 section[aria-details="Character Senses"],
 section[aria-details="Character Skills"],
@@ -19801,6 +19803,25 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
 }
 .rpg-feature-pending-list .rpg-feature-pending menu button[aria-pressed=true] {
   background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+header[aria-details*=" Banner"] {
+  box-shadow: none;
+}
+header[aria-details*=" Banner"] span[aria-details="Link Pill"] a.internal-link {
+  color: var(--rpg-slab-ink);
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+header[aria-details*=" Banner"] small[aria-details="Pill Comment"] {
+  color: var(--rpg-slab-label);
+  font-size: var(--rpg-fs-label);
+  opacity: 1;
+}
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption,
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption span {
+  color: var(--rpg-slab-label);
+}
+section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
+  color: light-dark(#4b2f9a, #cdbfff);
 }
 
 /* lib/styles/log-surface.css */
@@ -19994,14 +20015,14 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     gap: 6px;
   }
   [aria-details="Line Stats"] {
-    gap: 6px;
+    gap: 4px;
   }
   figure[aria-details="Stat Diamond"] {
-    --hex-w: 82px;
-    --hex-h: 48px;
+    --hex-w: 96px;
+    --hex-h: 50px;
   }
   figure[aria-details="Stat Diamond"][data-size=lg] {
-    --hex-w: 96px;
+    --hex-w: 108px;
     --hex-h: 58px;
   }
   section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"] {
@@ -20039,19 +20060,18 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     width: 100%;
   }
   section[aria-details="Character Stats"] {
-    row-gap: 22px;
-    padding-bottom: 28px;
+    row-gap: 8px;
+    padding-bottom: 12px;
   }
   section[aria-details="Character Skills"] > menu {
-    column-count: 2;
-    column-gap: 10px;
+    column-count: 1;
     padding: 4px 6px;
   }
   section[aria-details="Character Skills"] > menu > li {
     gap: 3px;
-    padding: 3px 2px;
-    font-size: 0.82em;
-    min-height: 34px;
+    padding: 3px 6px;
+    font-size: var(--rpg-fs-row);
+    min-height: 44px;
   }
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
     min-width: 2.2em;

@@ -783,11 +783,14 @@ h3.rpg-feature-decisions-group-label {
   font: inherit;
   /* Superscript-sized glyph sitting tight against the preceding value —
    * no padding or margin so the undo doesn't inflate the line. */
-  font-size: 0.6em;
+  font-size: 0.9em;
   line-height: 1;
-  vertical-align: super;
+  min-width: 24px;
+  min-height: 24px;
+  margin-inline: -4px;
+  vertical-align: baseline;
   background: transparent;
-  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+  color: light-dark(rgba(0, 0, 0, 0.6), rgba(255, 255, 255, 0.6));
   border: none;
   cursor: pointer;
 }
