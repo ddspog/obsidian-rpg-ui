@@ -170,15 +170,27 @@
     padding-bottom: 28px;
   }
 
+  /* Two columns at a smaller size: 18 skills in half the height. */
   section[aria-details="Character Skills"] > menu {
-    column-count: 1;
-    padding: 6px 8px;
+    column-count: 2;
+    column-gap: 10px;
+    padding: 4px 6px;
   }
 
   section[aria-details="Character Skills"] > menu > li {
-    padding: 4px 8px;
-    font-size: 1.1em;
-    min-height: 36px;
+    gap: 3px;
+    padding: 3px 2px;
+    font-size: 0.82em;
+    min-height: 34px;
+  }
+
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+    min-width: 2.2em;
+  }
+
+  section[aria-details="Character Skills"] > menu > li > data {
+    min-width: 1.6em;
+    padding-inline-end: 2px;
   }
 
   section[aria-details="Character Proficiencies"] > dl {
@@ -216,13 +228,13 @@
   }
 
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
-    min-width: 44px;
-    min-height: 36px;
+    min-width: 28px;
+    min-height: 34px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-end: -10px;
-    font-size: 1.15rem;
+    margin-inline-end: -4px;
+    font-size: 1.05rem;
   }
 
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
@@ -643,6 +655,21 @@
   button.rpg-caster-text-toggle {
     min-height: 2.25rem;
     padding-inline: 1rem;
+  }
+
+  /* The description is part of the page on a phone: no scroll box inside the scroll,
+     a shorter picture, and tighter padding. */
+  .rpg-description-panel {
+    min-height: 0;
+    max-height: none;
+    overflow-y: visible;
+    padding: 12px;
+  }
+
+  .rpg-description-appearance-art {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+    max-height: 13rem;
   }
 
   /* iOS zooms into inputs under 16px. */

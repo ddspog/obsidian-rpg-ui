@@ -6674,16 +6674,43 @@ button.hud-rest-btn > span {
   order: 0;
 }
 @container (max-width: 34rem) {
-  .lonelog-actions-panel:not(.is-in-margin) .hud-main {
-    grid-template-columns: 6rem minmax(0, 1fr);
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.4rem;
   }
-  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
-    grid-column: 2;
-    justify-self: end;
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head > * {
+    width: auto;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main {
+    grid-template-columns: 5.4rem minmax(0, 1fr);
+    column-gap: 0.5rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+    grid-column: 1;
+    grid-row: 1;
   }
   .lonelog-actions-panel:not(.is-in-margin) .hud-main > .rpg-hotbar {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-turn {
     grid-column: 1 / -1;
     grid-row: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    justify-self: stretch;
+    width: auto;
   }
 }
 
@@ -13946,22 +13973,26 @@ nav[aria-details="Play Toggle"] {
   nav[aria-details="Play Toggle"] ~ section[aria-details*=" Row"] {
     margin-block-start: 0;
   }
+  nav[aria-details="Play Toggle"] {
+    gap: 4px;
+    padding: var(--p-spacing, 1em) 10px 8px;
+  }
   nav[aria-details="Play Toggle"] > button {
-    min-height: 44px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: transparent;
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
     box-shadow: none;
     color: var(--rpg-hex-label, #b0a890);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   nav[aria-details="Play Toggle"] > button[aria-pressed=true] {
+    background: color-mix(in srgb, var(--color-yellow, #ffd400) 18%, transparent);
+    border-color: color-mix(in srgb, var(--color-yellow, #ffd400) 60%, transparent);
     color: var(--color-yellow, #ffd400);
-    border-bottom-color: var(--color-yellow, #ffd400);
   }
   .rpg-play-mode .markdown-preview-section > div:not(:has(header[aria-details*=" Banner"], section[aria-details="Health Management Row"], nav[aria-details="Play Toggle"], section[aria-details="Character Stats"], section[aria-details="Character Rolls"])) {
     display: none;
@@ -14162,8 +14193,20 @@ nav[aria-details="Play Toggle"] {
   .rpg-settings-tabs > li {
     flex: none;
   }
+  .rpg-settings-bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .rpg-settings-tabs {
+    flex: 1 1 100%;
+  }
   .rpg-settings-bar-actions {
-    flex: none;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    margin-left: 0;
+    padding-block: 0.25rem;
+    opacity: 0.7;
   }
   .rpg-settings-panel .setting-item-control {
     flex-wrap: wrap;
@@ -16129,17 +16172,25 @@ button.rpg-list__page-arrow:disabled {
   opacity: 0.75;
 }
 .rpg-list__chips {
-  padding-inline-end: 1.5rem;
-  -webkit-mask-image:
-    linear-gradient(
-      to right,
-      #000 calc(100% - 1.5rem),
-      transparent);
-  mask-image:
-    linear-gradient(
-      to right,
-      #000 calc(100% - 1.5rem),
-      transparent);
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+@media (max-width: 600px) {
+  .rpg-list__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-inline-end: 1.5rem;
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.5rem),
+        transparent);
+    mask-image:
+      linear-gradient(
+        to right,
+        #000 calc(100% - 1.5rem),
+        transparent);
+  }
 }
 
 /* lib/styles/components/statblock.css */
@@ -16893,13 +16944,22 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     padding-bottom: 28px;
   }
   section[aria-details="Character Skills"] > menu {
-    column-count: 1;
-    padding: 6px 8px;
+    column-count: 2;
+    column-gap: 10px;
+    padding: 4px 6px;
   }
   section[aria-details="Character Skills"] > menu > li {
-    padding: 4px 8px;
-    font-size: 1.1em;
-    min-height: 36px;
+    gap: 3px;
+    padding: 3px 2px;
+    font-size: 0.82em;
+    min-height: 34px;
+  }
+  section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
+    min-width: 2.2em;
+  }
+  section[aria-details="Character Skills"] > menu > li > data {
+    min-width: 1.6em;
+    padding-inline-end: 2px;
   }
   section[aria-details="Character Proficiencies"] > dl {
     column-count: 1;
@@ -16927,13 +16987,13 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
     color: light-dark(#6d6048, #a8a08a);
   }
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] {
-    min-width: 44px;
-    min-height: 36px;
+    min-width: 28px;
+    min-height: 34px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-end: -10px;
-    font-size: 1.15rem;
+    margin-inline-end: -4px;
+    font-size: 1.05rem;
   }
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
     font-size: 1em;
@@ -17278,6 +17338,17 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
   button.rpg-caster-text-toggle {
     min-height: 2.25rem;
     padding-inline: 1rem;
+  }
+  .rpg-description-panel {
+    min-height: 0;
+    max-height: none;
+    overflow-y: visible;
+    padding: 12px;
+  }
+  .rpg-description-appearance-art {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+    max-height: 13rem;
   }
   .markdown-preview-view [class*=rpg-] input:not([type=checkbox]),
   .markdown-preview-view [class*=rpg-] select,

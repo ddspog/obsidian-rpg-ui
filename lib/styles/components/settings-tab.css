@@ -172,8 +172,23 @@
     flex: none;
   }
 
+  /* Collapse / expand all: their own quiet row under the tabs, not squeezed in beside them. */
+  .rpg-settings-bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .rpg-settings-tabs {
+    flex: 1 1 100%;
+  }
+
   .rpg-settings-bar-actions {
-    flex: none;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    margin-left: 0;
+    padding-block: 0.25rem;
+    opacity: 0.7;
   }
 
   .rpg-settings-panel .setting-item-control {
