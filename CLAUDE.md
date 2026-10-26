@@ -95,6 +95,7 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 ## Working with the repository owner
 
 - **Questions as artifacts.** When a question comes down to a choice that is visual or behavioural (a layout, a default, a flow), do not ask it in prose. Publish an artifact with the problem shown on real screenshots and the options as mockups to choose between, mark a recommendation, and end with a "Copy picks" summary to paste back. The owner liked this far better than text questions.
+- **`/ui-review <goal> [scope]`** (`.claude/commands/ui-review.md`) runs a whole review: picks real example notes from `docs/ui-review/` (the curated set and the generated `block-census.md`), captures them on a phone and a desktop (`scripts/ui-review-capture.mjs`), runs the Impeccable analyses, and builds a before/after board to rate (`scripts/ui-review-board.mjs`). With no goal it shows every analysis Impeccable can run and lets the owner choose.
 - **Design reviews.** For UI reviews the owner uses Impeccable (`npx skills add pbakaus/impeccable -g -a claude-code -s '*' -y --copy`): a design-review agent and a detector-and-measurement agent run independently, on phone then desktop, and their findings are merged. Verify any headline claim in the live app before reporting it.
 
 ## Simulators
