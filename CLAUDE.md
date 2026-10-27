@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run docs:dev` - Start VitePress documentation server
 - `npm run docs:build` - Build documentation
 - `task build` - Build and optionally copy to plugin directory (if PLUGIN_DIR is set)
+- `task sync` - Pull the vault, plugin and theme repos, rebuild, and install plugin + theme into the vault's `.obsidian` (defaults: repos beside this one; override with `VAULT_REPO`, `THEME_REPO`, or `VAULT_DIR` for a vault elsewhere)
 - `task pr` - Prepare for PR (format, lint, type check, and test)
 - `task release` - Release a new minor version (includes format, lint, type check, and test)
 

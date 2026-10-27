@@ -33,6 +33,25 @@ tasks:
       - "main.js"
       - "styles.css"
 
+  sync:
+    desc: Pull vault, plugin and theme, rebuild, and install both into the vault (VAULT_DIR, THEME_REPO, VAULT_REPO optional)
+    cmds:
+      - |
+        set -euo pipefail
+        VAULT_REPO="${VAULT_REPO:-../testing-vault}"
+        THEME_REPO="${THEME_REPO:-../obsidian-ribbons-theme}"
+        VAULT_DIR="${VAULT_DIR:-$VAULT_REPO}"
+        THEME_NAME=$(node -p "require('$THEME_REPO/manifest.json').name")
+        PLUGIN_ID=$(node -p "require('./manifest.json').id")
+        for repo in "$VAULT_REPO" "$THEME_REPO" .; do
+          git -C "$repo" pull --ff-only
+        done
+        npm ci
+        PLUGIN_DIR="$VAULT_DIR/.obsidian/plugins/$PLUGIN_ID" task build
+        mkdir -p "$VAULT_DIR/.obsidian/themes/$THEME_NAME"
+        cp -f "$THEME_REPO/manifest.json" "$THEME_REPO/theme.css" "$VAULT_DIR/.obsidian/themes/$THEME_NAME/"
+        echo "Synced into $VAULT_DIR. In Obsidian run 'Reload app without saving'."
+
   pr:
     desc: Prepare for PR - format code, lint, and type check
     cmds:
