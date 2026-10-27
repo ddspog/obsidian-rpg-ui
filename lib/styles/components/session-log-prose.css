@@ -2627,9 +2627,6 @@ button.lonelog-bookkeeping-write.is-quiet {
 
 .lonelog-sidebar-item {
   font-size: 0.82em;
-  /* Off-screen entries cost nothing until they scroll near. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 5rem;
 }
 
 .lonelog-sidebar .lonelog-sidebar-item {
