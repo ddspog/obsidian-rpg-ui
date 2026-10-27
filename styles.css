@@ -4068,6 +4068,12 @@ button.lonelog-bookkeeping-write.is-quiet {
   color: var(--text-normal);
   font-weight: 600;
 }
+.session-log-container.has-bar .lonelog-log-rail {
+  display: none;
+}
+.session-log-container.has-bar .lonelog-log-notch {
+  display: none;
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {
@@ -7491,6 +7497,56 @@ button.actions-gear-option.is-held {
   padding: 0.25rem 0.5rem 0.1rem;
   border-top: 1px solid var(--background-modifier-border);
   color: var(--text-faint);
+}
+.lonelog-drawer-tools {
+  position: absolute;
+  top: 50%;
+  right: 2.75rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transform: translateY(-50%);
+}
+.lonelog-bottom-drawer:not(.is-collapsed) .lonelog-drawer-tools {
+  top: 0.5rem;
+  transform: none;
+}
+.lonelog-drawer-tools button.lonelog-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 28px;
+  padding: 0 0.65rem;
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-radius: 8px;
+  background: light-dark(#f6f0e2, #2e2923);
+  box-shadow: none;
+  color: light-dark(#6a4e2a, #d4a840);
+  font-size: var(--rpg-fs-label, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.lonelog-drawer-tools button.lonelog-tool:hover {
+  background: light-dark(#ece4d3, #3a342c);
+}
+.lonelog-drawer-tools button.lonelog-tool[aria-pressed=true] {
+  border-color: var(--interactive-accent);
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+.lonelog-drawer-tools button.lonelog-tool.is-primary {
+  border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.lonelog-drawer-tools button.lonelog-tool:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.lonelog-bottom-drawer.is-collapsed .drawer-collapsed-bar {
+  padding-right: 13rem;
 }
 
 /* lib/styles/components/system-info.css */
@@ -20828,6 +20884,9 @@ body.is-mobile .markdown-rendered [role=button] img {
     scrollbar-width: none;
   }
   .markdown-preview-view::-webkit-scrollbar {
+    display: none;
+  }
+  .lonelog-drawer-tools {
     display: none;
   }
 }

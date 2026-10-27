@@ -143,6 +143,46 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
       >
         <LucideIcon name={collapsed ? "ChevronUp" : "ChevronDown"} size="0.9rem" strokeWidth={1.8} />
       </button>
+      {bar && (
+        // On a wide pane the log's own controls live here, in the bar at the foot, not floating over the prose:
+        // Save and Undo when there are edits, then Log and Latest. (A phone has the same controls in its own bar below.)
+        <div className="lonelog-drawer-tools" role="group" aria-label="Log controls">
+          {bar.dirty && (
+            <>
+              <button type="button" className="lonelog-tool" onClick={bar.onUndo} title="Undo unsaved edits">
+                Undo
+              </button>
+              <button type="button" className="lonelog-tool is-primary" onClick={bar.onSave}>
+                Save
+              </button>
+            </>
+          )}
+          {bar.hasLog && (
+            <button
+              type="button"
+              className="lonelog-tool"
+              aria-pressed={bar.logOpen}
+              onClick={bar.onToggleLog}
+              title={bar.logOpen ? "Close the log" : "Open the log"}
+            >
+              <LucideIcon name="AlignLeft" size="0.9rem" strokeWidth={2} />
+              Log
+            </button>
+          )}
+          {bar.hasLog && (
+            <button
+              type="button"
+              className="lonelog-tool"
+              onClick={bar.onLatest}
+              title="Scroll to the last block"
+              aria-label="Scroll to the last block of the log"
+            >
+              <LucideIcon name="ChevronsDown" size="0.9rem" strokeWidth={2} />
+              Latest
+            </button>
+          )}
+        </div>
+      )}
       {collapsed && (
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
           <span className="drawer-collapsed-label">{label}</span>

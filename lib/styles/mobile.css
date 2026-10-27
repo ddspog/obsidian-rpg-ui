@@ -907,4 +907,9 @@ body.is-mobile .markdown-rendered [role="button"] img {
   .markdown-preview-view::-webkit-scrollbar {
     display: none;
   }
+
+  /* A phone has the same controls in the bar below; the drawer's own tools stay out. */
+  .lonelog-drawer-tools {
+    display: none;
+  }
 }
