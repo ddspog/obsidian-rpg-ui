@@ -110,7 +110,8 @@ for (const mode of modes) {
             (i) => document.querySelector(`[data-fs-block="${i}"]`)?.scrollIntoView({ block: "start" }),
             b.i
           );
-          await sleep(350);
+          await page.mouse.move(2, 2); // no hover popover over the block
+          await sleep(450);
           await loc.screenshot({ path: path.join(dir, file), timeout: 8000 });
         } catch {
           continue; // virtualised away while scrolling: the next stop lists it again

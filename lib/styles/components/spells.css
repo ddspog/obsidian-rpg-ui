@@ -41,7 +41,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 
 .rpg-caster > header {
   filter: none;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -60,7 +60,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 
 .rpg-caster-meta {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 500;
   opacity: 0.75;
   letter-spacing: 0.04em;
@@ -112,7 +112,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   content: "▸";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   transition: transform 120ms ease;
 }
@@ -124,14 +124,14 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-circle-label {
   flex: 1;
   font-weight: 700;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 
 .rpg-spell-circle-count {
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -204,7 +204,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   padding: 24px 0 16px;
   border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
   color: light-dark(#2a2018, #c9c2b4);
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-spell-entry:first-child {
@@ -229,7 +229,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-entry-casting,
 .rpg-spell-entry-style,
 .rpg-spell-entry-group {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   color: light-dark(#5a5040, #a09880);
   font-style: italic;
 }
@@ -261,7 +261,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   grid-row: 1;
   text-transform: none;
   letter-spacing: 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-label);
   white-space: nowrap;
 }
 
@@ -273,7 +273,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 6px;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   color: light-dark(#5a5040, #a09880);
 }
 
@@ -303,7 +303,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-pending-empty {
   margin: 4px 0 0;
   padding: 4px 0;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   opacity: 0.65;
 }
 
@@ -330,7 +330,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-pending-circle-label {
   margin: 0;
   padding: 0;
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -408,7 +408,7 @@ button.rpg-caster-text-toggle {
   background: transparent;
   box-shadow: none;
   color: var(--text-muted);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: none;

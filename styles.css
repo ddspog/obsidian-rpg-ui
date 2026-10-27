@@ -1228,7 +1228,7 @@
 .rpg-inventory-block__title {
   margin: 0 0 0.75rem 0;
   padding-bottom: 0.25rem;
-  font-size: 1rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1241,7 +1241,7 @@
   align-items: center;
   gap: 0.75rem;
   margin: 0.75rem 0 0.25rem 0;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1250,6 +1250,7 @@
   font-family: inherit;
 }
 .markdown-rendered .rpg-inventory-block__section-title {
+  font-size: var(--rpg-fs-stat);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   text-indent: 0;
 }
@@ -1284,7 +1285,7 @@
 }
 .rpg-inventory-block__currency-label {
   padding: 4px 8px;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1293,7 +1294,7 @@
 }
 .rpg-inventory-block__currency-value {
   padding: 4px 10px;
-  font-size: 0.95rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   color: light-dark(#1a1208, #f0e8d0);
 }
@@ -1331,7 +1332,7 @@
   padding: 0.35rem 0.5rem;
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-inventory-block__item {
   display: grid;
@@ -1340,7 +1341,7 @@
   gap: 0.5rem;
   padding: 0.3rem 0.25rem;
   border-bottom: 1px solid var(--background-modifier-border);
-  font-size: 0.9rem;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-inventory-block__item:last-child {
   border-bottom-color: var(--rpg-features-header, light-dark(#d4a840, #6a4e2a));
@@ -1368,14 +1369,14 @@
 .rpg-inventory-block__item-notes {
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-inventory-block__item-stat-notes {
   display: none;
 }
 .rpg-inventory-block__item-stat {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -1393,7 +1394,7 @@
 }
 .rpg-inventory-block__item-meta {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-inventory-block__item-weight {
   color: var(--text-muted);
@@ -1421,7 +1422,7 @@
   color: light-dark(#6a4e2a, #d4a840);
   cursor: pointer;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--rpg-fs-row);
   line-height: 1;
   opacity: 0.5;
   transition: opacity 80ms ease;
@@ -1449,7 +1450,7 @@
   color: light-dark(#6a4e2a, #d4a840);
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   line-height: 1;
   opacity: 0.4;
@@ -1482,7 +1483,7 @@
 }
 .rpg-inventory-block__sell-label {
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: light-dark(#6a4e2a, #d4a840);
@@ -1493,7 +1494,7 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#1a1208, #f0e8d0);
 }
 .rpg-inventory-block__sell-cell[data-empty=true] {
@@ -1506,7 +1507,7 @@
   padding: 0.15rem 0.5rem 0.25rem;
   margin-left: auto;
   justify-self: flex-end;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   color: light-dark(#6a4e2a, #d4a840);
 }
 .rpg-inventory-block__attunement-label {
@@ -1565,7 +1566,7 @@
 }
 .rpg-inventory-block__container-weight {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -1608,7 +1609,7 @@
   padding: 0.35rem 0 0.35rem 2rem;
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-inventory-block__encumbrance-grid {
   display: grid;
@@ -1625,7 +1626,7 @@
   white-space: nowrap;
 }
 .rpg-inventory-block__encumbrance-label {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1635,7 +1636,7 @@
 .rpg-inventory-block__encumbrance-value {
   color: var(--text-normal);
   font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
+  font-size: var(--rpg-fs-body);
   white-space: nowrap;
 }
 .rpg-inventory-block__encumbrance-bar {
@@ -2054,7 +2055,7 @@ p.rpg-item-magic-card__subtitle {
 }
 .rpg-features-class {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   color: var(--text-accent);
 }
@@ -2066,7 +2067,7 @@ p.rpg-item-magic-card__subtitle {
   padding: 0.5rem 0.75rem;
   background: var(--background-secondary);
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 600;
   color: var(--text-normal);
   display: flex;
@@ -2074,7 +2075,7 @@ p.rpg-item-magic-card__subtitle {
   gap: 0.5rem;
 }
 .rpg-category-icon {
-  font-size: 1.25rem;
+  font-size: var(--rpg-fs-stat);
 }
 .rpg-features-list {
   display: flex;
@@ -2103,7 +2104,7 @@ p.rpg-item-magic-card__subtitle {
   color: var(--text-normal);
 }
 .rpg-feature-type {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   padding: 0.125rem 0.5rem;
   background: var(--background-modifier-border);
   color: var(--text-muted);
@@ -2114,10 +2115,10 @@ p.rpg-item-magic-card__subtitle {
   font-weight: 500;
 }
 .rpg-feature-type-icon {
-  font-size: 0.875rem;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-feature-level {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   padding: 0.125rem 0.5rem;
   background: var(--interactive-accent);
   color: var(--text-on-accent);
@@ -2125,19 +2126,19 @@ p.rpg-item-magic-card__subtitle {
   font-weight: 600;
 }
 .rpg-feature-uses {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   padding: 0.125rem 0.5rem;
   background: var(--background-modifier-border);
   color: var(--text-muted);
   border-radius: 12px;
 }
 .rpg-feature-description {
-  font-size: 0.875rem;
+  font-size: var(--rpg-fs-body);
   color: var(--text-muted);
   line-height: 1.4;
 }
 .rpg-feature-requirement {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   color: var(--text-error);
   margin-top: 0.5rem;
   font-style: italic;
@@ -2160,7 +2161,7 @@ p.rpg-item-magic-card__subtitle {
   color: var(--text-normal);
 }
 .rpg-choice-pick {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   padding: 0.125rem 0.5rem;
   background: var(--text-accent);
   color: var(--text-on-accent);
@@ -2176,7 +2177,7 @@ p.rpg-item-magic-card__subtitle {
   padding: 0.5rem;
   background: var(--background-primary);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: var(--rpg-fs-body);
   color: var(--text-normal);
   border: 1px solid var(--background-modifier-border);
 }
@@ -5216,7 +5217,7 @@ button.placeholder-party-flag {
 }
 .rpg-loadouts-label {
   flex: none;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5290,19 +5291,19 @@ button.rpg-loadout:hover:not(:disabled) {
 }
 .rpg-loadout-name {
   margin-bottom: 0.1rem;
-  font-size: var(--font-ui-small);
+  font-size: var(--rpg-fs-data);
   font-weight: 700;
   line-height: 1.2;
   color: light-dark(#1a1208, #f0e8d0);
 }
 .rpg-loadout-hand {
-  font-size: var(--font-ui-smaller);
+  font-size: var(--rpg-fs-label);
   line-height: 1.25;
   white-space: nowrap;
   color: light-dark(#1a1208, #e3dcce);
 }
 .rpg-loadout-hand > small {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-micro);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: light-dark(#6a4e2a, #d4a840);
@@ -7821,7 +7822,7 @@ span[aria-details="Link Pill"] {
   border: none;
   border-radius: 0;
   color: var(--rpg-slab-label, #d4c9a8);
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   font-family: var(--inline-title-font, "SF Compact Display", "SF Pro Display", system-ui, sans-serif);
   font-weight: 500;
   text-transform: uppercase;
@@ -7845,7 +7846,7 @@ span[aria-details="Pill Reference"] {
   white-space: normal;
 }
 small[aria-details="Pill Comment"] {
-  font-size: 0.7rem;
+  font-size: var(--rpg-fs-micro);
   font-style: italic;
   font-weight: 400;
   text-transform: none;
@@ -7860,7 +7861,7 @@ figure[aria-details="Page Title"] {
   flex: 1 1 auto;
   margin: 0;
   padding: 0;
-  font-size: 2rem;
+  font-size: var(--rpg-fs-title);
   font-weight: 700;
   font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   letter-spacing: 0.04em;
@@ -7871,7 +7872,7 @@ figure[aria-details="Page Title"] {
   min-height: 2.4em;
 }
 .rpg-title-banner {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   opacity: 0.85;
   margin-left: 12px;
   color: rgba(255, 255, 255, 0.9);
@@ -7884,7 +7885,7 @@ figure[aria-details="Progress Bar"] {
   gap: 4px;
   margin: 0;
   figcaption {
-    font-size: 0.82rem;
+    font-size: var(--rpg-fs-data);
     font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
     color: var(--rpg-slab-label, #d4c9a8);
     text-align: left;
@@ -7953,7 +7954,7 @@ svg[aria-details="Progress Health"] output {
   gap: 4px;
   width: 100%;
   height: 100%;
-  font-size: 0.95rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   color: var(--rpg-hp-bar-text, #ffffff);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -7962,7 +7963,7 @@ svg[aria-details="Progress Health"] output {
 }
 svg[aria-details="Progress Health"] [aria-details="Secondary Value"] {
   color: var(--rpg-hp-bar-text, #ffffff);
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-data);
   margin-left: auto;
 }
 
@@ -9048,7 +9049,7 @@ figure[aria-details="Badge Shield"] svg {
 figure[aria-details="Badge Shield"] output[aria-details="Armor Class"] {
   position: relative;
   z-index: 1;
-  font-size: 1.4em;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   color: var(--rpg-badge-text, #e3dcce);
   line-height: 56px;
@@ -9056,7 +9057,7 @@ figure[aria-details="Badge Shield"] output[aria-details="Armor Class"] {
   height: 56px;
 }
 figure[aria-details="Badge Shield"] figcaption {
-  font-size: 0.55em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -9096,7 +9097,7 @@ p[aria-details="Health Management Row"] dl {
   min-width: 0;
 }
 p[aria-details="Health Management Row"] dt {
-  font-size: 0.7rem !important;
+  font-size: var(--rpg-fs-micro) !important;
   font-weight: 600 !important;
   color: var(--rpg-slab-label, #d4c9a8) !important;
   text-transform: uppercase;
@@ -12975,7 +12976,7 @@ svg[aria-details="Progress Numbered"] .rpg-numbered-fill {
   transition: width 0.2s ease;
 }
 svg[aria-details="Progress Numbered"] .rpg-numbered-tick {
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 700;
   fill: var(--rpg-progress-numbered-tick-inactive, #a8a08a);
 }
@@ -13084,23 +13085,26 @@ figure[aria-details="Stat Diamond"] output[aria-details="Stat Value"] {
   display: flex;
   align-items: baseline;
   gap: 1px;
-  font-size: 1.3em;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   color: var(--rpg-diamond-value, #e3dcce);
   line-height: 1;
 }
 figure[aria-details="Stat Diamond"] output [aria-details="Stat Extra"] {
-  font-size: 0.65em;
+  font-size: var(--rpg-fs-body);
   font-weight: 600;
   color: var(--rpg-diamond-label, #a09880);
 }
 figure[aria-details="Stat Diamond"][data-size=lg] output[aria-details="Stat Value"] {
-  font-size: 1.6em;
+  font-size: var(--rpg-fs-display);
+}
+figure[aria-details="Stat Diamond"][data-size=lg] output [aria-details="Stat Extra"] {
+  font-size: var(--rpg-fs-row);
 }
 figure[aria-details="Stat Diamond"] figcaption {
   position: relative;
   z-index: 1;
-  font-size: max(var(--rpg-fs-micro), 0.5em);
+  font-size: var(--rpg-fs-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -13124,7 +13128,7 @@ figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  font-size: 9px;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   line-height: 1;
   color: #fff;
@@ -13164,22 +13168,22 @@ svg[aria-details="Stat Hex Pair"] {
   stroke-dasharray: 7.35 7.35;
 }
 .rpg-hex-label {
-  font-size: 13px;
+  font-size: var(--rpg-fs-data);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   fill: var(--rpg-hex-label, #b0a890);
 }
 .rpg-hex-value {
-  font-size: 22px;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   fill: var(--rpg-hex-value, #e3dcce);
 }
 .rpg-hex-value--back {
-  font-size: 14px;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-hex-label--back {
-  font-size: 11px;
+  font-size: var(--rpg-fs-micro);
 }
 .rpg-hex-vantage-badge {
   fill: light-dark(#2d6a2e, #3d9140);
@@ -13190,12 +13194,12 @@ svg[aria-details="Stat Hex Pair"] {
   fill: light-dark(#a02020, #c94040);
 }
 .rpg-hex-vantage-label {
-  font-size: 10px;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   fill: #fff;
 }
 .rpg-hex-score {
-  font-size: 20px;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
 }
@@ -13264,7 +13268,7 @@ section[aria-details="Character Senses"] > header {
   grid-row: 1;
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13285,13 +13289,13 @@ section[aria-details="Character Senses"] > output {
   padding: 12px 8px 22px;
 }
 section[aria-details="Character Senses"] > output > data {
-  font-size: 1.6em;
+  font-size: var(--rpg-fs-display);
   font-weight: 700;
   color: var(--rpg-senses-value, light-dark(#1a1208, #ffffff));
   line-height: 1;
 }
 section[aria-details="Character Senses"] > output > small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -13315,7 +13319,7 @@ section[aria-details="Character Senses"] > dl > dt {
   grid-row: 1;
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13335,7 +13339,7 @@ section[aria-details="Character Senses"] > dl::after {
   align-self: center;
   justify-self: end;
   padding-right: 8px;
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   opacity: 0.4;
   line-height: 1.4;
 }
@@ -13346,7 +13350,7 @@ section[aria-details="Character Senses"] > dl > dd {
   align-items: baseline;
   margin: 0;
   padding: 2px 8px 2px var(--_gutter);
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   color: var(--rpg-senses-text, light-dark(#1a1208, #e3dcce));
   line-height: 1.4;
@@ -13388,7 +13392,7 @@ section[aria-details="Character Skills"] {
 section[aria-details="Character Skills"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13412,7 +13416,7 @@ section[aria-details="Character Skills"] > menu > li {
   gap: 6px;
   padding: 2px 20px;
   break-inside: avoid;
-  font-size: 1.3em;
+  font-size: var(--rpg-fs-row);
   color: light-dark(#1a1208, #e3dcce);
 }
 section[aria-details="Character Skills"] > menu > li > svg {
@@ -13421,7 +13425,7 @@ section[aria-details="Character Skills"] > menu > li > svg {
 }
 section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
   flex-shrink: 0;
-  font-size: max(var(--rpg-fs-micro), 0.6em);
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
@@ -13467,7 +13471,7 @@ section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note
   display: inline;
   margin: 0;
   padding: 0;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
 }
 section[aria-details="Character Skills"] > menu > li > data {
   display: flex;
@@ -13485,7 +13489,7 @@ section[aria-details="Character Skills"] > menu > li[data-vantage=dis] > data {
   color: light-dark(#a02020, #d9534f);
 }
 section[aria-details="Character Skills"] > menu > li > data > [aria-details=Vantage] {
-  font-size: 0.6em;
+  font-size: var(--rpg-fs-micro);
   line-height: 1;
 }
 .rpg-vantage-badge {
@@ -13505,7 +13509,7 @@ section[aria-details="Character Skills"] > menu > li > data > [aria-details=Vant
   background: light-dark(#a02020, #c94040);
 }
 .rpg-vantage-badge sup {
-  font-size: 0.65em;
+  font-size: var(--rpg-fs-micro);
   line-height: 1;
   top: 0;
 }
@@ -13592,7 +13596,7 @@ section[aria-details="Character Rolls"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
   margin: 0 -12px 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13607,7 +13611,7 @@ section[aria-details="Character Rolls"] table {
   border-collapse: collapse;
   border-spacing: 0;
   border: none !important;
-  font-size: 0.8125rem;
+  font-size: var(--rpg-fs-data);
   font-variant-numeric: tabular-nums;
 }
 section[aria-details="Character Rolls"] thead th:not(:last-child),
@@ -13692,7 +13696,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
   margin-right: 8px;
   text-align: center;
   color: light-dark(#6a4e2a, #d4a840);
-  font-size: 1.05em;
+  font-size: var(--rpg-fs-data);
   line-height: 1;
   user-select: none;
 }
@@ -13773,7 +13777,7 @@ section[aria-details="Character Rolls"] button[data-tip]::after {
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   white-space: nowrap;
@@ -13813,7 +13817,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__damage-sep {
 }
 section[aria-details="Character Rolls"] .rpg-rolls__effects {
   color: var(--text-muted);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-data);
 }
 section[aria-details="Character Rolls"] .rpg-rolls__icon {
   position: relative;
@@ -13842,7 +13846,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__icon[data-tip]::after {
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   white-space: nowrap;
@@ -13863,6 +13867,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__notes-text {
   margin-left: 4px;
   color: var(--text-muted);
   font-style: italic;
+  font-size: var(--rpg-fs-micro);
   white-space: nowrap;
   display: none;
 }
@@ -13888,7 +13893,7 @@ section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
   border-radius: 4px;
   background: #5a37b8;
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   cursor: pointer;
 }
@@ -13910,7 +13915,7 @@ section[aria-details="Character Proficiencies"] {
 section[aria-details="Character Proficiencies"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -13959,7 +13964,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin-left: 4px;
   color: light-dark(#6a4e2a, #d4a840);
   font-weight: 900;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   line-height: 1;
   vertical-align: super;
 }
@@ -14031,7 +14036,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   align-items: center;
   justify-content: center;
   padding: 7px calc(var(--_cut) + 8px);
-  font-size: 0.68em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -14098,10 +14103,10 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin: 2rem auto;
   text-align: center;
   color: light-dark(#6a6a6a, #a0a0a0);
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-description-meta-label {
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -14109,7 +14114,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin-right: 8px;
 }
 .rpg-description-meta-value {
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   font-weight: 600;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -14165,7 +14170,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.4));
@@ -14182,7 +14187,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 .rpg-description-appearance-body > section > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -14195,7 +14200,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 }
 .rpg-description-appearance-body > section p {
   margin: 4px 0 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -14228,7 +14233,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 }
 .rpg-description-sideprops-row th {
   display: table-cell;
-  font-size: 0.6em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-align: center;
   text-transform: uppercase;
@@ -14242,7 +14247,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 }
 .rpg-description-sideprops-row td {
   display: table-cell;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-align: center;
   color: light-dark(#1a1208, #e3dcce);
@@ -14298,7 +14303,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   text-transform: none;
@@ -14345,7 +14350,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   top: 0;
   left: 0;
   z-index: 2;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.25;
@@ -14361,7 +14366,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 .rpg-description-story-ribbon small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -14378,7 +14383,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   scrollbar-width: thin;
   padding: 36px 16px 12px;
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1.6;
   color: light-dark(#2a1f10, #e3dcce);
 }
@@ -14412,7 +14417,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 }
 .rpg-description-highlight > dt {
   align-self: start;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -14425,7 +14430,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   align-self: start;
   margin: 0;
   padding: 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.45;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -14442,7 +14447,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   padding: 4px 0 0;
   text-align: center;
   font-style: italic;
-  font-size: 0.88em;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#6a5a3a, #b0a888);
 }
 .rpg-description-ribbon-list {
@@ -14524,7 +14529,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 1.2rem;
+  font-size: var(--rpg-fs-stat);
   line-height: 1;
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
 }
@@ -14548,7 +14553,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 .rpg-description-ribbon-name {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -14560,7 +14565,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   display: inline-flex;
   align-items: center;
   padding: 0 calc(var(--_cut) + 8px) 0 10px;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   letter-spacing: 0.05em;
   line-height: 2.2rem;
   height: 2.2rem;
@@ -14584,7 +14589,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   padding: 0;
 }
 .rpg-description-ribbon-role {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -14597,7 +14602,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   align-items: center;
   margin-left: calc(-1 * var(--_cut));
   padding: 0 10px 0 calc(var(--_cut) + 4px);
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   letter-spacing: 0.05em;
   line-height: 2.2rem;
   height: 2.2rem;
@@ -14609,7 +14614,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
 }
 .rpg-description-ribbon-body {
   min-width: 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -14633,7 +14638,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   min-height: 10rem;
 }
 .rpg-description-ribbon-large .rpg-description-ribbon-name {
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
 }
 .rpg-description-side-by-side {
   display: flex;
@@ -14657,7 +14662,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  font-size: 0.88em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -14711,7 +14716,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin: 0;
   padding: 10px;
   text-align: center;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-style: italic;
   color: light-dark(#6a5a3a, #8a8070);
   border: 1px dashed light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
@@ -14749,7 +14754,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   margin: 10px 0 0;
   padding: 6px 12px;
   border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.18));
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-description-org-position .rpg-description-meta-value {
   font-style: italic;
@@ -14784,7 +14789,7 @@ section[aria-details="Character Proficiencies"] .rpg-prof-in-use {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), 0 6px 14px rgba(0, 0, 0, 0.18);
   position: relative;
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1.55;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
@@ -15204,7 +15209,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   content: "\25b8";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   transition: transform 120ms ease;
 }
@@ -15213,14 +15218,14 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 .rpg-feature-bucket-label {
   flex: 1;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 .rpg-feature-bucket-count {
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -15233,7 +15238,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 .rpg-feature-bucket-trivials {
   padding: 4px 20px 10px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(rgba(26, 18, 8, 0.75), rgba(227, 220, 206, 0.75));
 }
@@ -15267,7 +15272,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   box-shadow: none;
   padding: 0 2px;
   margin-left: 1px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
   opacity: 0.55;
@@ -15319,7 +15324,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   border: none;
   box-shadow: none;
   padding: 0 4px;
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1;
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
@@ -15345,7 +15350,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-name {
   align-self: baseline;
   font-weight: 700;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.2;
   white-space: nowrap;
   color: light-dark(#1a1208, #e3dcce);
@@ -15386,14 +15391,14 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   gap: 6px 10px;
 }
 .rpg-feature-bucket-entry-meta small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
 }
 .rpg-feature-bucket-entry-title > small {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 400;
   font-style: italic;
   text-transform: none;
@@ -15403,7 +15408,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-meta .rpg-feature-bucket-source {
   text-transform: none;
   letter-spacing: 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-feature-bucket-entry-image {
   display: none;
@@ -15411,7 +15416,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-desc {
   grid-column: 1 / -1;
   grid-row: 2;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.45;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15439,7 +15444,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 .rpg-feature-traits-source > p {
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15467,7 +15472,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-traits-leveled > li {
   position: relative;
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15495,7 +15500,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-pending-list > h3 {
   margin: 0;
   padding: 6px 0 4px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -15523,7 +15528,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   content: "\25b8";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
   transition: transform 120ms ease;
 }
@@ -15532,14 +15537,14 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 .rpg-feature-pending-label {
   flex: 1;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
 }
 .rpg-feature-pending-count {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -15560,7 +15565,7 @@ h3.rpg-feature-decisions-group-label {
   margin: 6px 0 2px;
   padding-left: 2px;
   font-family: inherit;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-style: normal;
   font-weight: 700;
   line-height: 1.3;
@@ -15596,7 +15601,7 @@ h3.rpg-feature-decisions-group-label {
   content: "\25b8";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
   transition: transform 120ms ease;
 }
@@ -15605,14 +15610,14 @@ h3.rpg-feature-decisions-group-label {
 }
 .rpg-feature-decisions-label {
   flex: 1;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: light-dark(rgba(26, 18, 8, 0.6), rgba(227, 220, 206, 0.6));
 }
 .rpg-feature-decisions-count {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -15629,7 +15634,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-line {
   margin: 2px 0;
   padding: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15643,7 +15648,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-source-line {
   margin: 6px 0 2px;
   padding: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15653,7 +15658,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-category-line {
   margin: 2px 0;
   padding-left: 16px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -15671,7 +15676,7 @@ h3.rpg-feature-decisions-group-label {
   margin: 0;
   padding: 0;
   font: inherit;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1;
   min-width: 24px;
   min-height: 24px;
@@ -15701,7 +15706,7 @@ h3.rpg-feature-decisions-group-label {
 }
 .rpg-feature-pending-list .rpg-feature-pending > p {
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#1a1208, #e3dcce);
 }
 .rpg-feature-pending-list .rpg-feature-pending > p strong {
@@ -15723,7 +15728,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-pending-list .rpg-feature-pending menu button {
   appearance: none;
   font: inherit;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -15763,7 +15768,7 @@ h3.rpg-feature-decisions-group-label {
   border: 1px dashed light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.45));
 }
 .rpg-feature-pending-list .rpg-feature-pending-buy menu button > small.rpg-feature-pending-buy-cost {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 500;
   opacity: 0.7;
   letter-spacing: 0;
@@ -15778,7 +15783,7 @@ h3.rpg-feature-decisions-group-label {
   gap: 4px;
 }
 .rpg-feature-pending-list .rpg-feature-pending-asi-row .rpg-feature-pending-asi-label {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -15791,7 +15796,7 @@ h3.rpg-feature-decisions-group-label {
 }
 .rpg-feature-pending-list .rpg-feature-pending-asi-row button {
   padding: 0 8px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1;
   min-width: 1.6em;
 }
@@ -16005,7 +16010,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 }
 .rpg-caster > header {
   filter: none;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -16022,7 +16027,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   background: transparent;
 }
 .rpg-caster-meta {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 500;
   opacity: 0.75;
   letter-spacing: 0.04em;
@@ -16062,7 +16067,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   content: "\25b8";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   transition: transform 120ms ease;
 }
@@ -16072,13 +16077,13 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-circle-label {
   flex: 1;
   font-weight: 700;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 .rpg-spell-circle-count {
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -16128,7 +16133,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   padding: 24px 0 16px;
   border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
   color: light-dark(#2a2018, #c9c2b4);
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
 }
 .rpg-spell-entry:first-child {
   border-top: none;
@@ -16146,7 +16151,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-entry-casting,
 .rpg-spell-entry-style,
 .rpg-spell-entry-group {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   color: light-dark(#5a5040, #a09880);
   font-style: italic;
 }
@@ -16169,7 +16174,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   grid-row: 1;
   text-transform: none;
   letter-spacing: 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-label);
   white-space: nowrap;
 }
 .rpg-spell-entry-subline {
@@ -16179,7 +16184,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 6px;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   color: light-dark(#5a5040, #a09880);
 }
 .rpg-spell-entry-subline small {
@@ -16201,7 +16206,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-pending-empty {
   margin: 4px 0 0;
   padding: 4px 0;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   opacity: 0.65;
 }
 .rpg-spell-pending-circles {
@@ -16218,7 +16223,7 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 .rpg-spell-pending-circle-label {
   margin: 0;
   padding: 0;
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -16284,7 +16289,7 @@ button.rpg-caster-text-toggle {
   background: transparent;
   box-shadow: none;
   color: var(--text-muted);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: none;
@@ -19747,10 +19752,14 @@ p.rpg-statblock-subtitle {
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
 }
 .markdown-rendered a.rpg-feature-bucket-source,
-.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source,
+.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source {
+  font-size: var(--rpg-fs-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
 .markdown-rendered a.rpg-spell-entry-enabler,
 .markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-label);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -19858,10 +19867,14 @@ p.rpg-statblock-subtitle {
 
 /* lib/styles/sheet-surface.css */
 body {
+  --rpg-fs-micro: 0.6875rem;
   --rpg-fs-label: 0.75rem;
   --rpg-fs-data: 0.8125rem;
-  --rpg-fs-row: 1.1em;
-  --rpg-fs-micro: 0.6875rem;
+  --rpg-fs-body: 0.875rem;
+  --rpg-fs-row: 1rem;
+  --rpg-fs-stat: 1.25rem;
+  --rpg-fs-display: 1.625rem;
+  --rpg-fs-title: 2rem;
   --rpg-panel-head-h: 32px;
   --rpg-slab-ink: #efe6d2;
   --rpg-slab-label: #d4c9a8;
@@ -20377,7 +20390,7 @@ section[aria-details="Character Rolls"] > header > span {
     align-items: center;
     justify-content: center;
     margin-inline-end: -4px;
-    font-size: 1.05rem;
+    font-size: var(--rpg-fs-row);
   }
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
     font-size: 1em;
@@ -20403,7 +20416,7 @@ section[aria-details="Character Rolls"] > header > span {
     width: auto;
     max-width: none;
     overflow: visible;
-    font-size: 0.85rem;
+    font-size: var(--rpg-fs-data);
   }
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
     display: flex;
@@ -20427,7 +20440,7 @@ section[aria-details="Character Rolls"] > header > span {
   section[aria-details="Character Rolls"] td.rpg-rolls__name {
     flex: 1 0 100%;
     order: 0;
-    font-size: 1rem;
+    font-size: var(--rpg-fs-row);
     font-weight: 600;
   }
   section[aria-details="Character Rolls"] tr:has(td.rpg-rolls__hit:not(:empty)) td.rpg-rolls__name {
@@ -20441,22 +20454,22 @@ section[aria-details="Character Rolls"] > header > span {
     border: 1px solid currentColor;
     border-radius: 6px;
     color: light-dark(#2c6b34, #8fd19b);
-    font-size: 0.85rem !important;
+    font-size: var(--rpg-fs-data) !important;
     font-weight: 700;
     white-space: nowrap;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__dc {
     order: 4;
-    font-size: 0.85rem !important;
+    font-size: var(--rpg-fs-data) !important;
     font-weight: 700;
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__damage {
     order: 2;
-    font-size: 0.95rem;
+    font-size: var(--rpg-fs-row);
   }
   section[aria-details="Character Rolls"] td.rpg-rolls__range {
     order: 3;
-    font-size: 0.9rem;
+    font-size: var(--rpg-fs-body);
     white-space: nowrap;
     color: light-dark(#6d6048, #a8a08a);
   }
@@ -20476,7 +20489,7 @@ section[aria-details="Character Rolls"] > header > span {
     width: 52px;
     min-height: 44px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: var(--rpg-fs-data);
   }
   .lonelog-bottom-drawer {
     margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
@@ -20822,7 +20835,7 @@ body.is-mobile .markdown-rendered [role=button] img {
   .rpg-inventory-block__item-stat-notes {
     display: inline;
     color: var(--text-muted);
-    font-size: 0.85em;
+    font-size: var(--rpg-fs-micro);
     font-style: italic;
   }
   .lonelog-bookkeeping-sheets {

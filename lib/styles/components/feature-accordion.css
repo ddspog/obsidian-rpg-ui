@@ -69,7 +69,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   content: "▸";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   transition: transform 120ms ease;
 }
@@ -79,7 +79,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 
 .rpg-feature-bucket-label {
   flex: 1;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -87,7 +87,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 
 .rpg-feature-bucket-count {
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -108,7 +108,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
  * internal-link anchor with hover-preview + click-to-open hooked up. */
 .rpg-feature-bucket-trivials {
   padding: 4px 20px 10px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(rgba(26, 18, 8, 0.75), rgba(227, 220, 206, 0.75));
 }
@@ -151,7 +151,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   box-shadow: none;
   padding: 0 2px;
   margin-left: 1px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
   opacity: 0.55;
@@ -228,7 +228,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   border: none;
   box-shadow: none;
   padding: 0 4px;
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1;
   cursor: pointer;
   color: light-dark(#8a6f3a, #d4a840);
@@ -262,7 +262,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-name {
   align-self: baseline;
   font-weight: 700;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.2;
   white-space: nowrap;
   color: light-dark(#1a1208, #e3dcce);
@@ -315,7 +315,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 
 .rpg-feature-bucket-entry-meta small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -323,7 +323,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 
 .rpg-feature-bucket-entry-title > small {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 400;
   font-style: italic;
   text-transform: none;
@@ -338,7 +338,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-meta .rpg-feature-bucket-source {
   text-transform: none;
   letter-spacing: 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 
 /* Card image slot — hidden for now; the grid drops its column width
@@ -352,7 +352,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-bucket-entry-desc {
   grid-column: 1 / -1;
   grid-row: 2;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.45;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -388,7 +388,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 
 .rpg-feature-traits-source > p {
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -424,7 +424,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-traits-leveled > li {
   position: relative;
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -470,7 +470,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-pending-list > h3 {
   margin: 0;
   padding: 6px 0 4px;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -505,7 +505,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   content: "▸";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
   transition: transform 120ms ease;
 }
@@ -516,7 +516,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 
 .rpg-feature-pending-label {
   flex: 1;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -524,7 +524,7 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 }
 
 .rpg-feature-pending-count {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -560,7 +560,7 @@ h3.rpg-feature-decisions-group-label {
   margin: 6px 0 2px;
   padding-left: 2px;
   font-family: inherit;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-style: normal;
   font-weight: 700;
   line-height: 1.3;
@@ -610,7 +610,7 @@ h3.rpg-feature-decisions-group-label {
   content: "▸";
   display: inline-block;
   width: 0.8em;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   color: light-dark(rgba(26, 18, 8, 0.5), rgba(227, 220, 206, 0.5));
   transition: transform 120ms ease;
 }
@@ -621,7 +621,7 @@ h3.rpg-feature-decisions-group-label {
 
 .rpg-feature-decisions-label {
   flex: 1;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -629,7 +629,7 @@ h3.rpg-feature-decisions-group-label {
 }
 
 .rpg-feature-decisions-count {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: light-dark(rgba(106, 78, 42, 0.7), rgba(212, 168, 64, 0.7));
@@ -652,7 +652,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-line {
   margin: 2px 0;
   padding: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -681,7 +681,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-source-line {
   margin: 6px 0 2px;
   padding: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -693,7 +693,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-decisions-category-line {
   margin: 2px 0;
   padding-left: 16px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#2a2018, #c9c2b4);
 }
@@ -720,7 +720,7 @@ h3.rpg-feature-decisions-group-label {
   font: inherit;
   /* Superscript-sized glyph sitting tight against the preceding value —
    * no padding or margin so the undo doesn't inflate the line. */
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1;
   min-width: 24px;
   min-height: 24px;
@@ -754,7 +754,7 @@ h3.rpg-feature-decisions-group-label {
 
 .rpg-feature-pending-list .rpg-feature-pending > p {
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#1a1208, #e3dcce);
 }
 
@@ -781,7 +781,7 @@ h3.rpg-feature-decisions-group-label {
 .rpg-feature-pending-list .rpg-feature-pending menu button {
   appearance: none;
   font: inherit;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -839,7 +839,7 @@ h3.rpg-feature-decisions-group-label {
  * continuation of the label, picking up the button's text color at a
  * slightly muted weight. */
 .rpg-feature-pending-list .rpg-feature-pending-buy menu button > small.rpg-feature-pending-buy-cost {
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 500;
   opacity: 0.7;
   letter-spacing: 0;
@@ -858,7 +858,7 @@ h3.rpg-feature-decisions-group-label {
 }
 
 .rpg-feature-pending-list .rpg-feature-pending-asi-row .rpg-feature-pending-asi-label {
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -873,7 +873,7 @@ h3.rpg-feature-decisions-group-label {
 
 .rpg-feature-pending-list .rpg-feature-pending-asi-row button {
   padding: 0 8px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
   line-height: 1;
   min-width: 1.6em;
 }

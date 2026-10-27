@@ -103,7 +103,7 @@
   align-items: center;
   justify-content: center;
   padding: 7px calc(var(--_cut) + 8px);
-  font-size: 0.68em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -195,13 +195,13 @@
   margin: 2rem auto;
   text-align: center;
   color: light-dark(#6a6a6a, #a0a0a0);
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-body);
 }
 
 /* ── Shared meta pills (Homeland, Position, …) ─────────────────────────── */
 
 .rpg-description-meta-label {
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -210,7 +210,7 @@
 }
 
 .rpg-description-meta-value {
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   font-weight: 600;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -305,7 +305,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.4));
@@ -325,7 +325,7 @@
 .rpg-description-appearance-body > section > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.75em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -340,7 +340,7 @@
 
 .rpg-description-appearance-body > section p {
   margin: 4px 0 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.55;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -404,7 +404,7 @@
 
 .rpg-description-sideprops-row th {
   display: table-cell;
-  font-size: 0.6em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-align: center;
   text-transform: uppercase;
@@ -419,7 +419,7 @@
 
 .rpg-description-sideprops-row td {
   display: table-cell;
-  font-size: 0.82em;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   text-align: center;
   color: light-dark(#1a1208, #e3dcce);
@@ -491,7 +491,7 @@
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   text-transform: none;
@@ -555,7 +555,7 @@
   top: 0;
   left: 0;
   z-index: 2;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.25;
@@ -581,7 +581,7 @@
 }
 
 .rpg-description-story-ribbon small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -609,7 +609,7 @@
   padding: 36px 16px 12px;
   /* Serif body for the narrative — leans into the "read this" framing. */
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1.6;
   color: light-dark(#2a1f10, #e3dcce);
 }
@@ -661,7 +661,7 @@
 
 .rpg-description-highlight > dt {
   align-self: start;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -675,7 +675,7 @@
   align-self: start;
   margin: 0;
   padding: 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.45;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -698,7 +698,7 @@
   padding: 4px 0 0;
   text-align: center;
   font-style: italic;
-  font-size: 0.88em;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#6a5a3a, #b0a888);
 }
 
@@ -818,7 +818,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 1.2rem;
+  font-size: var(--rpg-fs-stat);
   line-height: 1;
   color: var(--rpg-description-flourish, light-dark(#6a4e2a, #d4a840));
 }
@@ -846,7 +846,7 @@
 .rpg-description-ribbon-name {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -862,7 +862,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0 calc(var(--_cut) + 8px) 0 10px;
-  font-size: 0.78em;
+  font-size: var(--rpg-fs-label);
   letter-spacing: 0.05em;
   line-height: 2.2rem;
   height: 2.2rem;
@@ -897,7 +897,7 @@
 /* Ribbon-name internal-link appearance owned by Folder Link Styles. */
 
 .rpg-description-ribbon-role {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -915,7 +915,7 @@
   align-items: center;
   margin-left: calc(-1 * var(--_cut));
   padding: 0 10px 0 calc(var(--_cut) + 4px);
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   letter-spacing: 0.05em;
   line-height: 2.2rem;
   height: 2.2rem;
@@ -928,7 +928,7 @@
 
 .rpg-description-ribbon-body {
   min-width: 0;
-  font-size: 0.92em;
+  font-size: var(--rpg-fs-body);
   line-height: 1.5;
   color: light-dark(#1a1208, #e3dcce);
 }
@@ -964,7 +964,7 @@
 }
 
 .rpg-description-ribbon-large .rpg-description-ribbon-name {
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
 }
 
 /* ── Allies & Enemies tab (stacked — allies on top, enemies below) ────── */
@@ -1002,7 +1002,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  font-size: 0.88em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -1062,7 +1062,7 @@
   margin: 0;
   padding: 10px;
   text-align: center;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-style: italic;
   color: light-dark(#6a5a3a, #8a8070);
   border: 1px dashed light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
@@ -1117,7 +1117,7 @@
   margin: 10px 0 0;
   padding: 6px 12px;
   border-top: 1px dashed light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.18));
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-description-org-position .rpg-description-meta-value {
@@ -1159,7 +1159,7 @@
     0 6px 14px rgba(0, 0, 0, 0.18);
   position: relative;
   font-family: var(--rpg-description-serif, "Palatino Linotype", Georgia, serif);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-row);
   line-height: 1.55;
   transition:
     transform 160ms ease,

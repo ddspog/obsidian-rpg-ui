@@ -39,7 +39,7 @@ section[aria-details="Character Senses"] > header {
   filter: none;
   /* Match the senses dl's `dt` (0.7em + line-height 1.2) so the two
    * heading bars top-align as a single ribbon across all four cells. */
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -67,14 +67,14 @@ section[aria-details="Character Senses"] > output {
 }
 
 section[aria-details="Character Senses"] > output > data {
-  font-size: 1.6em;
+  font-size: var(--rpg-fs-display);
   font-weight: 700;
   color: var(--rpg-senses-value, light-dark(#1a1208, #ffffff));
   line-height: 1;
 }
 
 section[aria-details="Character Senses"] > output > small {
-  font-size: 0.72em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -105,7 +105,7 @@ section[aria-details="Character Senses"] > dl > dt {
   grid-row: 1;
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -131,7 +131,7 @@ section[aria-details="Character Senses"] > dl::after {
   align-self: center;
   justify-self: end;
   padding-right: 8px;
-  font-size: 0.7em;
+  font-size: var(--rpg-fs-micro);
   opacity: 0.4;
   line-height: 1.4;
 }
@@ -143,7 +143,7 @@ section[aria-details="Character Senses"] > dl > dd {
   align-items: baseline;
   margin: 0;
   padding: 2px 8px 2px var(--_gutter);
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   color: var(--rpg-senses-text, light-dark(#1a1208, #e3dcce));
   line-height: 1.4;

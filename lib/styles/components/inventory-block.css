@@ -17,7 +17,7 @@
 .rpg-inventory-block__title {
   margin: 0 0 0.75rem 0;
   padding-bottom: 0.25rem;
-  font-size: 1rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -31,7 +31,7 @@
   align-items: center;
   gap: 0.75rem;
   margin: 0.75rem 0 0.25rem 0;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -41,7 +41,9 @@
   font-family: inherit;
 }
 
+/* The theme sizes h3; the sheet's section title keeps the scale's stat step. */
 .markdown-rendered .rpg-inventory-block__section-title {
+  font-size: var(--rpg-fs-stat);
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
   text-indent: 0;
 }
@@ -94,7 +96,7 @@
 
 .rpg-inventory-block__currency-label {
   padding: 4px 8px;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -104,7 +106,7 @@
 
 .rpg-inventory-block__currency-value {
   padding: 4px 10px;
-  font-size: 0.95rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   color: light-dark(#1a1208, #f0e8d0);
 }
@@ -153,7 +155,7 @@
   padding: 0.35rem 0.5rem;
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-inventory-block__item {
@@ -168,7 +170,7 @@
   gap: 0.5rem;
   padding: 0.3rem 0.25rem;
   border-bottom: 1px solid var(--background-modifier-border);
-  font-size: 0.9rem;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-inventory-block__item:last-child {
@@ -207,7 +209,7 @@
 .rpg-inventory-block__item-notes {
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-inventory-block__item-stat-notes {
@@ -216,7 +218,7 @@
 
 .rpg-inventory-block__item-stat {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-variant-numeric: tabular-nums;
   /* Wrap instead of clipping with room to spare. */
   overflow-wrap: anywhere;
@@ -249,7 +251,7 @@
 
 .rpg-inventory-block__item-meta {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-inventory-block__item-weight {
@@ -284,7 +286,7 @@
   color: light-dark(#6a4e2a, #d4a840);
   cursor: pointer;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--rpg-fs-row);
   line-height: 1;
   opacity: 0.5;
   transition: opacity 80ms ease;
@@ -322,7 +324,7 @@
   color: light-dark(#6a4e2a, #d4a840);
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   line-height: 1;
   /* Resting, not hidden: a touchscreen has no hover to reveal it. */
@@ -369,7 +371,7 @@
 
 .rpg-inventory-block__sell-label {
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: light-dark(#6a4e2a, #d4a840);
@@ -386,7 +388,7 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   color: light-dark(#1a1208, #f0e8d0);
 }
 
@@ -409,7 +411,7 @@
   padding: 0.15rem 0.5rem 0.25rem;
   margin-left: auto;
   justify-self: flex-end;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   color: light-dark(#6a4e2a, #d4a840);
 }
 
@@ -491,7 +493,7 @@
 
 .rpg-inventory-block__container-weight {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -575,7 +577,7 @@
   padding: 0.35rem 0 0.35rem 2rem;
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: var(--rpg-fs-body);
 }
 
 /* ── Encumbrance ───────────────────────────────────────────────────────────── */
@@ -597,7 +599,7 @@
 }
 
 .rpg-inventory-block__encumbrance-label {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -608,7 +610,7 @@
 .rpg-inventory-block__encumbrance-value {
   color: var(--text-normal);
   font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
+  font-size: var(--rpg-fs-body);
   white-space: nowrap;
 }
 

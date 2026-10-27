@@ -18,7 +18,7 @@ section[aria-details="Character Skills"] {
 section[aria-details="Character Skills"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -47,7 +47,7 @@ section[aria-details="Character Skills"] > menu > li {
   gap: 6px;
   padding: 2px 20px;
   break-inside: avoid;
-  font-size: 1.3em;
+  font-size: var(--rpg-fs-row);
   color: light-dark(#1a1208, #e3dcce);
 }
 
@@ -60,7 +60,7 @@ section[aria-details="Character Skills"] > menu > li > svg {
 /* Skill attribute abbreviation */
 section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
   flex-shrink: 0;
-  font-size: max(var(--rpg-fs-micro), 0.6em);
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
@@ -121,7 +121,7 @@ section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note
   display: inline;
   margin: 0;
   padding: 0;
-  font-size: 0.8em;
+  font-size: var(--rpg-fs-data);
 }
 
 /* Modifier value */
@@ -146,7 +146,7 @@ section[aria-details="Character Skills"] > menu > li[data-vantage="dis"] > data 
 }
 
 section[aria-details="Character Skills"] > menu > li > data > [aria-details="Vantage"] {
-  font-size: 0.6em;
+  font-size: var(--rpg-fs-micro);
   line-height: 1;
 }
 
@@ -171,7 +171,7 @@ section[aria-details="Character Skills"] > menu > li > data > [aria-details="Van
 }
 
 .rpg-vantage-badge sup {
-  font-size: 0.65em;
+  font-size: var(--rpg-fs-micro);
   line-height: 1;
   top: 0;
 }

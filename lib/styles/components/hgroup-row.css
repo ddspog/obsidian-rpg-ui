@@ -26,7 +26,7 @@ p[aria-details="Health Management Row"] dl {
 }
 
 p[aria-details="Health Management Row"] dt {
-  font-size: 0.7rem !important;
+  font-size: var(--rpg-fs-micro) !important;
   font-weight: 600 !important;
   color: var(--rpg-slab-label, #d4c9a8) !important;
   text-transform: uppercase;

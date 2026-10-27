@@ -40,7 +40,7 @@ svg[aria-details="Stat Hex Pair"] {
 /* ── Text labels ─────────────────────────────────────────────────────────── */
 
 .rpg-hex-label {
-  font-size: 13px;
+  font-size: var(--rpg-fs-data);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -48,17 +48,17 @@ svg[aria-details="Stat Hex Pair"] {
 }
 
 .rpg-hex-value {
-  font-size: 22px;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   fill: var(--rpg-hex-value, #e3dcce);
 }
 
 .rpg-hex-value--back {
-  font-size: 14px;
+  font-size: var(--rpg-fs-body);
 }
 
 .rpg-hex-label--back {
-  font-size: 11px;
+  font-size: var(--rpg-fs-micro);
 }
 
 /* ── Save vantage badge (green A / red D sitting on the back hex) ──────── */
@@ -74,13 +74,13 @@ svg[aria-details="Stat Hex Pair"] {
 }
 
 .rpg-hex-vantage-label {
-  font-size: 10px;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   fill: #fff;
 }
 
 .rpg-hex-score {
-  font-size: 20px;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
 }

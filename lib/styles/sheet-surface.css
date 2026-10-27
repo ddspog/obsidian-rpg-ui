@@ -1,9 +1,14 @@
-/* Type scale for the sheet's data and labels; components read these instead of stacking em multipliers. */
+/* One font-size scale for the character sheet: components read these instead of stacking em
+ * multipliers. Nothing on the sheet is smaller than micro. Headings from the theme are not ours. */
 body {
-  --rpg-fs-label: 0.75rem;
-  --rpg-fs-data: 0.8125rem;
-  --rpg-fs-row: 1.1em;
-  --rpg-fs-micro: 0.6875rem;
+  --rpg-fs-micro: 0.6875rem; /* 11px: captions, abbreviations, table heads */
+  --rpg-fs-label: 0.75rem; /* 12px: labels, notes, pills */
+  --rpg-fs-data: 0.8125rem; /* 13px: values, table cells, counts */
+  --rpg-fs-body: 0.875rem; /* 14px: names, prose, buttons */
+  --rpg-fs-row: 1rem; /* 16px: skill rows, terms, currency */
+  --rpg-fs-stat: 1.25rem; /* 20px: stat values, section titles */
+  --rpg-fs-display: 1.625rem; /* 26px: the big numbers */
+  --rpg-fs-title: 2rem; /* 32px: the page title only */
   /* The tan band over Skills, Rolls and Proficiencies: one height, the label centred in it. */
   --rpg-panel-head-h: 32px;
   /* Ink on the dark banner and slab: holds 4.5:1 whatever colour or image the banner uses. */
