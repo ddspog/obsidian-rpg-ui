@@ -4075,6 +4075,34 @@ button.lonelog-bookkeeping-write.is-quiet {
   opacity: 1;
   color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
 }
+.lonelog-sidebar .lonelog-sidebar-header {
+  background: inherit;
+  padding: 0.35rem 0.1rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.lonelog-sidebar .lonelog-sidebar-item {
+  padding-block: 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+.lonelog-sidebar .lonelog-sidebar-item:last-child {
+  border-bottom: none;
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {
@@ -6984,6 +7012,30 @@ button.hud-face.is-foe.is-active .hud-face-frame {
 .hud-roster .hud-face-frame .rpg-card-frame,
 .hud-roster .hud-face-frame .rpg-card-frame-inner {
   background: transparent;
+}
+@container (max-width: 34rem) {
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: max-content;
+    gap: 0.3rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head > * {
+    width: 100%;
+  }
+}
+.lonelog-dock-zone.with-sidebar:not(.is-stacked) .lonelog-actions-panel.is-in-margin .hud-main > .hud-turn {
+  top: auto;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  left: auto;
 }
 
 /* lib/styles/components/card-frame.css */
@@ -10019,9 +10071,12 @@ body.is-mobile .lonelog-travel-controls {
   justify-content: space-between;
   margin: 0;
 }
+body.is-mobile .lonelog-travel-controls li {
+  flex: 1 1 0;
+}
 body.is-mobile .lonelog-travel-controls .rpg-hexpaint-button {
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  width: 100%;
+  min-height: 2.75rem;
 }
 .lonelog-travel-controls {
   display: flex;
@@ -20632,6 +20687,30 @@ section[aria-details="Character Rolls"] > header > span {
   }
   .lonelog-bottom-drawer .rpg-hotbar-strip {
     min-height: 0;
+  }
+  .lonelog-bottom-drawer .rpg-hotbar-tiles {
+    --rows: 2 !important;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces {
+    justify-content: flex-start;
+    gap: 0.2rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card {
+    flex: 0 0 3.1rem;
+    width: 3.1rem;
+  }
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card:first-child {
+    margin-left: 0;
+  }
+  .hud-roster-card .hud-face-frame {
+    width: 2.6rem;
+  }
+  .hud-roster-card .actions-side {
+    padding-inline: 0.3rem;
   }
   .lonelog-log-latest,
   .lonelog-log-undo,

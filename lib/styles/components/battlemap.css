@@ -912,9 +912,14 @@ body.is-mobile .lonelog-travel-controls {
   margin: 0;
 }
 
+body.is-mobile .lonelog-travel-controls li {
+  flex: 1 1 0;
+}
+
+/* Five equal buttons that fill the row. */
 body.is-mobile .lonelog-travel-controls .rpg-hexpaint-button {
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  width: 100%;
+  min-height: 2.75rem;
 }
 
 .lonelog-travel-controls {

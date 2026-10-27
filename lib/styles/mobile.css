@@ -386,6 +386,39 @@
     min-height: 0;
   }
 
+  /* Never more than two rows of tiles: a third row was a band of empty drawer under every other group. */
+  .lonelog-bottom-drawer .rpg-hotbar-tiles {
+    --rows: 2 !important;
+  }
+
+  /* The acting chip and side switch sit beside the faces, not above them: one row, not two. */
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces {
+    justify-content: flex-start;
+    gap: 0.2rem;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card {
+    flex: 0 0 3.1rem;
+    width: 3.1rem;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) ul.hud-faces > li.hud-card:first-child {
+    margin-left: 0;
+  }
+
+  .hud-roster-card .hud-face-frame {
+    width: 2.6rem;
+  }
+
+  .hud-roster-card .actions-side {
+    padding-inline: 0.3rem;
+  }
+
   /* The floating controls sit over the text: give the chips a solid ground and
      keep the scene title clear of them. */
   .lonelog-log-latest,

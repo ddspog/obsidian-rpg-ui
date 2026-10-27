@@ -2642,3 +2642,41 @@ button.lonelog-bookkeeping-write.is-quiet {
   opacity: 1;
   color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
 }
+
+/* ═══ UI review, round two: a header that belongs to its panel, entries set apart by a line ═══ */
+
+/* The header takes the panel's own colour (it was the page's, a pale bar on the tan panel) and
+   sits over a hairline; the close button is a plain ✕, not a boxed chip. */
+.lonelog-sidebar .lonelog-sidebar-header {
+  background: inherit;
+  padding: 0.35rem 0.1rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Every entry is set off by a visible line, with room above and below it. */
+.lonelog-sidebar .lonelog-sidebar-item {
+  padding-block: 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.lonelog-sidebar .lonelog-sidebar-item:last-child {
+  border-bottom: none;
+}

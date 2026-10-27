@@ -1532,3 +1532,35 @@ button.hud-face.is-foe.is-active .hud-face-frame {
 .hud-roster .hud-face-frame .rpg-card-frame-inner {
   background: transparent;
 }
+
+/* A narrow drawer: the chip over the switch, at the left of the faces — one row for the whole roster,
+   not a row of chips and a row of faces. */
+@container (max-width: 34rem) {
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: max-content;
+    gap: 0.3rem;
+  }
+
+  .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card > .hud-roster-head > * {
+    width: 100%;
+  }
+}
+
+/* The turn button stands in the page's right margin; with the Log open that is the Log's own column, so it
+   comes inside the drawer, at its foot. */
+.lonelog-dock-zone.with-sidebar:not(.is-stacked) .lonelog-actions-panel.is-in-margin .hud-main > .hud-turn {
+  top: auto;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  left: auto;
+}
