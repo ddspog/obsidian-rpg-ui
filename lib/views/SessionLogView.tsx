@@ -33,7 +33,11 @@ import { foldHealth, withTargetAc, withTargetHealth, type Health } from "lib/dom
 import type { MapChoice, MapTools } from "lib/domains/battlemap/map-tools";
 import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
+import { TravelFullscreen, TravelMinimap } from "lib/components/hexmap/travel-pane";
+import { firstHexMap } from "lib/domains/hexmap/detail";
+import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
+import { foldTravels, foldTravelTrack, type Journey } from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -196,6 +200,8 @@ class SessionLogMarkdown extends ReactMarkdown {
   private foeStacks = new Map<string, CardStack[]>();
   /** The battle maps the log's fights are bound to, by the link as written. */
   private battleMaps: Record<string, SquareMap> = {};
+  /** The hex maps the log's journeys are on, by `travelKey` (a level made a map of its own). */
+  private travelMaps: Record<string, string> = {};
   /** A combatant's value for a roll term in an `[Init:]` entry. */
   private resolveCombatant: (combatant: string, name: string) => number | undefined = () => undefined;
   /** Each party member's sheet as the log first read it — what its bookkeeping
@@ -288,6 +294,7 @@ class SessionLogMarkdown extends ReactMarkdown {
       this.foeStacks = await this.loadFoeStacks(this.logData.entries);
       this.inlineMaps = block.maps ?? {};
       this.battleMaps = await this.loadBattleMaps(this.logData.entries);
+      this.travelMaps = await this.loadTravelMaps(this.logData.entries);
 
       const gmRef = block.gm ?? linkList(noteFm?.gm)[0];
       if (gmRef) {
@@ -647,6 +654,25 @@ class SessionLogMarkdown extends ReactMarkdown {
         out[battle.map] = await measureMapImage(
           resolveMapImage(parseSquareMap(block[1]), this.baseView.app, file.path)
         );
+    }
+    return out;
+  }
+
+  /**
+   * The hex map each journey is on (`[TRAVEL: [[Caulkin coast]] (1,0)]`): the
+   * first hex map block in the linked note, at the level named. A link that
+   * leads nowhere is left out (the pane says so).
+   */
+  private async loadTravelMaps(entries: SessionLogData["entries"]): Promise<Record<string, string>> {
+    const out: Record<string, string> = {};
+    for (const journey of foldTravels(groupIntoProse(entries))) {
+      const key = travelKey(journey);
+      if (!journey.map || key in out) continue;
+      const file = this.resolveLink(journey.map.replace(/^\[\[|\]\]$/g, "").split("|")[0]);
+      if (!file) continue;
+      const body = firstHexMap(await this.baseView.app.vault.read(file));
+      // The level named: one hex down a level per step (a level's coordinates are global).
+      if (body) out[key] = levelView(migrateDetails(body), journey.level?.length ?? 0);
     }
     return out;
   }
@@ -2266,6 +2292,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           initiativeOf={this.initiativeOf}
           onEditBody={(edit) => void this.rewriteLogBody(edit)}
           battleMaps={this.battleMaps}
+          travelMaps={this.travelMaps}
           sheetHas={this.sheetHas}
         />
       </TableRollContext.Provider>
@@ -2326,6 +2353,8 @@ interface SessionLogRootProps {
   lookupCreature: (link: string) => Promise<CreatureInfo>;
   /** The battle maps the log's fights are bound to, by link. */
   battleMaps: Record<string, SquareMap>;
+  /** The hex maps the log's journeys are on, by `travelKey`. */
+  travelMaps: Record<string, string>;
   /** Look up a battle map by its note — for the Start Combat card. */
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
@@ -2414,6 +2443,7 @@ function SessionLogRoot({
   resolveCombatant,
   lookupCreature,
   battleMaps,
+  travelMaps,
   mapTools,
   tokenIcon,
   openMapNote,
@@ -2466,6 +2496,7 @@ function SessionLogRoot({
   // Fights bound to a map, replayed entry by entry, and the foes' health along
   // the way — what the map pane draws.
   const battles = React.useMemo(() => foldBattles(segments), [segments]);
+  const travelTrack = React.useMemo(() => foldTravelTrack(segments), [segments]);
   const foesAt = React.useMemo(() => foldFoes(segments), [segments]);
   // Everyone's hit points through the log, from their sheets and statblocks:
   // what each hit leaves its target with.
@@ -3352,8 +3383,10 @@ function SessionLogRoot({
 
   // Follow the reader: each narrated entry reports when it crosses a band near
   // the top of the screen, and the latest one there is the entry being read.
+  // A fight's map or a journey's minimap follows it.
+  const followsReading = hasBattle || travelTrack.journeys.length > 0;
   React.useEffect(() => {
-    if (!hasBattle) return;
+    if (!followsReading) return;
     const visible = new Set<number>();
     const observer = new IntersectionObserver(
       (records) => {
@@ -3372,7 +3405,7 @@ function SessionLogRoot({
       observer.observe(el);
     }
     return () => observer.disconnect();
-  }, [hasBattle, scenes]);
+  }, [followsReading, scenes]);
 
   // A request for the Log to bring an entry up under its map (the timeline).
   const [follow, setFollow] = React.useState<{ id: number; n: number } | null>(null);
@@ -3457,6 +3490,18 @@ function SessionLogRoot({
     },
     [battleAt, turnsOf]
   );
+  // The travel map over the page, from the minimap.
+  const [fullMap, setFullMap] = React.useState(false);
+  // The minimap shows from the scene a map is first set out in, and from then on.
+  const firstId = segments[0]?.sourceIndex ?? 0;
+  const showsMinimap = travelTrack.from !== undefined && (readingId ?? firstId) >= travelTrack.from;
+  /** The hex map a frame is on (its level a map of its own). */
+  const travelBodyOf = React.useCallback(
+    (frame: { map?: string; level?: Array<[number, number]> }) =>
+      travelMaps[`${frame.map ?? ""}|${frame.level?.length ?? 0}`],
+    [travelMaps]
+  );
+
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {
     const b = battleAt(turnId);
     if (!b) return null;
@@ -3710,6 +3755,26 @@ function SessionLogRoot({
                 </div>
               </div>
             )}
+            {showsMinimap && (
+              // The travel minimap: a rail of no height that sticks to the page's top, as the Log controls do.
+              <div className="lonelog-minimap-rail">
+                <TravelMinimap
+                  track={travelTrack}
+                  bodyOf={travelBodyOf}
+                  readingId={readingId}
+                  onExpand={() => setFullMap(true)}
+                />
+              </div>
+            )}
+            {fullMap && (
+              <TravelFullscreen
+                track={travelTrack}
+                bodyOf={travelBodyOf}
+                readingId={readingId}
+                onSeek={seekEntry}
+                onClose={() => setFullMap(false)}
+              />
+            )}
             <div className="lonelog-prose-body">
               <ProseView
                 scenes={scenes}
@@ -3849,4 +3914,9 @@ function foeName(name: string): string {
 function ordinalCircle(n: number): string {
   const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
   return `${n}${suffix}-circle`;
+}
+
+/** A journey's map and level, as `travelMaps` keys them. */
+function travelKey(journey: Journey): string {
+  return `${journey.map ?? ""}|${journey.level?.length ?? 0}`;
 }
