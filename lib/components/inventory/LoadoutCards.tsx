@@ -93,15 +93,18 @@ export function LoadoutCards({ loadouts, isHeld, onEquip, iconFor }: LoadoutCard
                 </span>
                 <span className="rpg-loadout-body">
                   <span className="rpg-loadout-name">{l.name}</span>
-                  {HANDS.flatMap((h) =>
-                    l.hands[h]
-                      ? [
-                          <span key={h} className="rpg-loadout-hand">
-                            <small>{HAND_LABELS[h]}</small> {shown(l.hands[h]!)}
-                          </span>,
-                        ]
-                      : []
-                  )}
+                  {HANDS.flatMap((h) => {
+                    const held = l.hands[h];
+                    if (!held) return [];
+                    // A loadout named for the one thing it holds ("Glaive" holding the Glaive) says the hand only.
+                    const same = shown(held).toLowerCase() === l.name.trim().toLowerCase();
+                    return [
+                      <span key={h} className="rpg-loadout-hand">
+                        <small>{HAND_LABELS[h]}</small>
+                        {same ? "" : ` ${shown(held)}`}
+                      </span>,
+                    ];
+                  })}
                 </span>
               </button>
             </li>

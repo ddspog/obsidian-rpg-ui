@@ -63,6 +63,9 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 button.copy{font:600 14px var(--body);background:var(--accent);color:var(--bg);border:0;border-radius:8px;padding:10px 18px;min-height:42px;cursor:pointer}
 button.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .status{font-size:13px;color:var(--muted)}
+.hide5{display:inline-flex;align-items:center;gap:8px;min-height:40px;font-size:13px;color:var(--muted);cursor:pointer}
+.hide5 input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+.hide5:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 pre#out{margin:0;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:10px;max-height:220px;overflow:auto}
 </style>
 
@@ -86,6 +89,7 @@ pre#out{margin:0;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospa
   <div>
     <span class="count" id="count">0 of {{COUNT}} answered</span>
     <span class="status" id="status" role="status"></span>
+    <label class="hide5"><input type="checkbox" id="hide5"> Hide 5-star items with no note <span id="hidden-count"></span></label>
     <button type="button" class="copy" id="copy">Copy feedback</button>
   </div>
 </div>
@@ -133,6 +137,25 @@ pre#out{margin:0;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospa
     out.textContent=text();save();
   }
   update();
+  // The filter hides what needs no answer: five stars and no note. It is applied when it is switched on and when the
+  // page loads, not while rating, so a card does not vanish under the cursor. Hidden cards are still in the copy.
+  var hide5=document.getElementById("hide5"),hiddenCount=document.getElementById("hidden-count");
+  function applyFilter(){
+    var on=hide5.checked,n=0;
+    items.forEach(function(it){
+      var q=state[it.dataset.id]||{};
+      var quiet=q.r===5&&!(q.c&&q.c.trim());
+      it.hidden=on&&quiet;if(it.hidden)n++;
+    });
+    [].forEach.call(document.querySelectorAll(".list"),function(l){
+      var sec=l.closest("section");if(sec)sec.hidden=on&&[].every.call(l.querySelectorAll(".item"),function(it){return it.hidden});
+    });
+    hiddenCount.textContent=on&&n?"("+n+" hidden)":"";
+    state.__hide5=on;save();
+  }
+  hide5.checked=!!state.__hide5;
+  hide5.addEventListener("change",applyFilter);
+  applyFilter();
   document.getElementById("copy").addEventListener("click",function(){
     var t=text();
     var ok=function(){st.textContent="Copied. Paste it into the chat."};

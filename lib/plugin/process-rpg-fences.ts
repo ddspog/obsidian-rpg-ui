@@ -13,6 +13,7 @@
 import { App, Component, MarkdownRenderChild, parseYaml } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
+import { SourcePathContext } from "lib/ui/source-file";
 import {
   subtypeFromMeta,
   parseRuleContent,
@@ -215,14 +216,18 @@ export function processUnrenderedRpgFences(
           };
           const root = ReactDOM.createRoot(el);
           root.render(
-            React.createElement(Comp, {
-              self,
-              sourcePath,
-              app,
-              system: systemCtx,
-              trigger: () => {},
-              blocks: { codeBlocks: new Map() },
-            })
+            React.createElement(
+              SourcePathContext.Provider,
+              { value: sourcePath },
+              React.createElement(Comp, {
+                self,
+                sourcePath,
+                app,
+                system: systemCtx,
+                trigger: () => {},
+                blocks: { codeBlocks: new Map() },
+              })
+            )
           );
           const child = new (class extends MarkdownRenderChild {
             onunload(): void {

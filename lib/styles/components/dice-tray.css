@@ -16,9 +16,9 @@ dd[aria-label="Dice Tray"] > button {
   height: 40px;
   padding: 0;
   border: none;
-  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.25));
-  color: var(--rpg-die-health-text, #f0d8d0);
-  font-size: 0.7em;
+  background-color: var(--rpg-die-health-bg, rgba(122, 40, 40, 0.5));
+  color: var(--rpg-die-health-text, #fff3ea);
+  font-size: var(--rpg-fs-label, 0.75rem);
   font-weight: 700;
   cursor: pointer;
   transition:

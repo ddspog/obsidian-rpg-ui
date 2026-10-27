@@ -3,6 +3,12 @@ body {
   --rpg-fs-label: 0.75rem;
   --rpg-fs-data: 0.8125rem;
   --rpg-fs-row: 1.1em;
+  --rpg-fs-micro: 0.6875rem;
+  /* The tan band over Skills, Rolls and Proficiencies: one height, the label centred in it. */
+  --rpg-panel-head-h: 32px;
+  /* Ink on the dark banner and slab: holds 4.5:1 whatever colour or image the banner uses. */
+  --rpg-slab-ink: #efe6d2;
+  --rpg-slab-label: #d4c9a8;
 }
 
 /* Sheet surfaces, all widths. The dark status slab and the panels under it share one warm
@@ -41,11 +47,6 @@ section[aria-details="Character Rolls"] a.internal-link {
 section[aria-details="Character Senses"] > output + output,
 section[aria-details="Character Senses"] > dl {
   border-color: light-dark(#cdbf9f, #4a4238);
-}
-
-/* The dotted grid behind the hexes and the ridge rollers on Features are ornament, not information. */
-section[aria-details="Character Stats"]::before {
-  display: none;
 }
 
 .rpg-feature-accordion,
@@ -128,4 +129,164 @@ section[aria-details*=" Row"] > figure[aria-details="Portrait Thumb"]:empty ~ ar
 
 .rpg-feature-pending-list .rpg-feature-pending menu button[aria-pressed="true"] {
   background: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+}
+
+/* ── Banner and slab ─────────────────────────────────────────────── */
+/* Flat: the slab is already a darker step, so the banner needs no shadow over the portrait. */
+header[aria-details*=" Banner"] {
+  box-shadow: none;
+}
+
+header[aria-details*=" Banner"] span[aria-details="Link Pill"] a.internal-link {
+  color: var(--rpg-slab-ink);
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+header[aria-details*=" Banner"] small[aria-details="Pill Comment"] {
+  color: var(--rpg-slab-label);
+  font-size: var(--rpg-fs-label);
+  opacity: 1;
+}
+
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption,
+header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] figcaption span {
+  color: var(--rpg-slab-label);
+}
+
+/* Resistances and the like in a panel take the panel's ink, not the pill gold. */
+section[aria-details="Character Proficiencies"] span[aria-details="Link Pill"] {
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+
+/* Links in the sheet: one violet ink that holds 4.5:1 on the page and on the panels.
+ * Skill and proficiency names are body text; the underline comes back on hover and focus. */
+section[aria-details^="Character "] a.internal-link,
+[class*="rpg-feature"] a.internal-link,
+[class*="rpg-spell"] a.internal-link {
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+
+section[aria-details="Character Skills"] a.internal-link,
+section[aria-details="Character Proficiencies"] a.internal-link {
+  color: inherit;
+  text-decoration-line: none;
+  text-transform: none;
+}
+
+section[aria-details="Character Skills"] a.internal-link:hover,
+section[aria-details="Character Skills"] a.internal-link:focus-visible,
+section[aria-details="Character Proficiencies"] a.internal-link:hover,
+section[aria-details="Character Proficiencies"] a.internal-link:focus-visible {
+  color: light-dark(#4b2f9a, #cdbfff);
+  text-decoration-line: underline;
+}
+
+/* A character with nothing to list does not need a panel for it. */
+section[aria-details="Character Senses"] > dl:has(> dd[aria-details="No Senses"]) {
+  display: none;
+}
+
+p[aria-details="No Casters"] {
+  font-size: var(--rpg-fs-label);
+  color: light-dark(#6d6048, #a8a08a);
+}
+
+/* HP bar and Armor share one line: the bar takes the width, the shield sits at its end. */
+div[aria-details="HP And Armor"] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+div[aria-details="HP And Armor"] > figure[aria-details="Progress Health"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+span[aria-details="Armor Badges"] {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+/* Skills fold up from their header; the tan band stays as it was and fills the header, the chevron is
+ * centred on it. */
+section[aria-details="Character Skills"] > header[role="button"] {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: var(--rpg-panel-head-h);
+  cursor: pointer;
+}
+
+section[aria-details="Character Skills"] > header[role="button"] > span {
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+section[aria-details="Character Skills"] > header[role="button"]::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 16px;
+  width: 8px;
+  height: 8px;
+  margin-block-start: -7px;
+  border-right: 2px solid light-dark(#6a4e2a, #d4a840);
+  border-bottom: 2px solid light-dark(#6a4e2a, #d4a840);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+section[aria-details="Character Skills"][data-collapsed="true"] > header[role="button"]::after {
+  margin-block-start: -4px;
+  transform: rotate(-45deg);
+}
+
+section[aria-details="Character Skills"] > header[role="button"]:focus-visible {
+  outline: 2px solid light-dark(#4b2f9a, #cdbfff);
+  outline-offset: -2px;
+}
+
+section[aria-details="Character Skills"] > menu[hidden] {
+  display: none;
+}
+
+/* Hit dice: the 40px die is a 44px target. */
+dd[aria-label="Dice Tray"] > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Inspiration points are 22px stars; the hit area is 44px without moving them. */
+figure[aria-details="Inspirational Level"] button {
+  position: absolute;
+}
+
+figure[aria-details="Inspirational Level"] button::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+
+/* Skills, Rolls and Proficiencies: bands of the same height with the label centred. */
+section[aria-details="Character Skills"] > header > span,
+section[aria-details="Character Proficiencies"] > header > span {
+  box-sizing: border-box;
+  align-items: center;
+  min-height: var(--rpg-panel-head-h);
+}
+
+section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label,
+section[aria-details="Character Rolls"] thead th {
+  box-sizing: border-box;
+  height: var(--rpg-panel-head-h);
+  padding-block: 0;
+  vertical-align: middle;
+}
+
+section[aria-details="Character Rolls"] > header > span {
+  box-sizing: border-box;
+  align-items: center;
+  min-height: var(--rpg-panel-head-h);
 }

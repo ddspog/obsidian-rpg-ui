@@ -23,7 +23,7 @@ export function Section({ section, hideWhenEmpty = true, onToggleEquip, onToggle
 
   return (
     <section className="rpg-inventory-block__section" data-section={section.id}>
-      <h5 className="rpg-inventory-block__section-title">{label}</h5>
+      <h3 className="rpg-inventory-block__section-title">{label}</h3>
       <div className="rpg-inventory-block__section-body">
         {section.items.length === 0 ? (
           <div className="rpg-inventory-block__section-empty">—</div>

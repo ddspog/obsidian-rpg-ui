@@ -58,11 +58,33 @@ export function Stat({ value, modifier, saveBonus, proficiency = 0, saveVantage,
   return (
     <svg aria-details="Stat Hex Pair" aria-label={`${children}: ${value} (${modText})`} viewBox="0 0 110 110">
       <defs>
+        <pattern id={`hex-dots-${id}`} width="8" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="0.9" className="rpg-hex-halo-dot" />
+        </pattern>
+        <radialGradient id={`hex-fade-${id}`}>
+          <stop offset="0%" stopColor="white" stopOpacity="1" />
+          <stop offset="62%" stopColor="white" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </radialGradient>
+        <mask id={`hex-halo-${id}`}>
+          <circle cx="55" cy="57" r="66" fill={`url(#hex-fade-${id})`} />
+        </mask>
         <radialGradient id={`hex-glow-${id}`} cx="0.4" cy="0.3" r="0.6">
           <stop offset="0%" stopColor="white" stopOpacity="0.06" />
           <stop offset="100%" stopColor="white" stopOpacity="0" />
         </radialGradient>
       </defs>
+
+      {/* A dust of runes just behind the hexes, fading out: the only decoration, and only here. */}
+      <circle
+        aria-hidden="true"
+        cx="55"
+        cy="57"
+        r="66"
+        fill={`url(#hex-dots-${id})`}
+        mask={`url(#hex-halo-${id})`}
+        pointerEvents="none"
+      />
 
       {/* Back hex — save modifier (drawn first, behind) */}
       <g aria-details="Hex Back">

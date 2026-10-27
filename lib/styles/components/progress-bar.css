@@ -8,13 +8,13 @@ figure[aria-details="Progress Bar"] {
   figcaption {
     font-size: 0.82rem;
     font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
-    color: var(--color-yellow, #e0ac00);
+    color: var(--rpg-slab-label, #d4c9a8);
     text-align: left;
     order: -1;
 
     span {
       font-weight: 600;
-      color: #ffd400;
+      color: var(--rpg-slab-label, #d4c9a8);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-right: 0.25em;

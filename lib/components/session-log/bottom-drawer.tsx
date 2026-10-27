@@ -73,6 +73,40 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
   }, []);
   const context = React.useMemo(() => ({ expand: () => set(false), reportActor: setActor }), [set]);
 
+  // On a phone the bar rests on the app's buttons across the pane's full width. The note's side margin differs
+  // from device to device, so measure how far the drawer sits from the pane's edges rather than assuming it.
+  const hasBar = bar !== undefined;
+  React.useLayoutEffect(() => {
+    const el = root.current;
+    const view = el?.closest<HTMLElement>(".markdown-preview-view");
+    if (!el || !view || !hasBar) return;
+    const phone = window.matchMedia("(max-width: 600px)");
+    const reset = () => {
+      el.style.marginLeft = "";
+      el.style.marginRight = "";
+      el.style.width = "";
+    };
+    const fit = () => {
+      reset();
+      const zone = el.parentElement;
+      if (!phone.matches || !zone) return;
+      // The pane's whole width, under the scrollbar's column too, like the app's buttons below it.
+      const pane = view.getBoundingClientRect();
+      el.style.marginLeft = `${pane.left - zone.getBoundingClientRect().left}px`;
+      el.style.marginRight = "0";
+      el.style.width = `${pane.width}px`;
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(view);
+    phone.addEventListener("change", fit);
+    return () => {
+      observer.disconnect();
+      phone.removeEventListener("change", fit);
+      reset();
+    };
+  }, [hasBar]);
+
   // "A" opens and folds the drawer of the log you're reading.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -109,6 +143,46 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
       >
         <LucideIcon name={collapsed ? "ChevronUp" : "ChevronDown"} size="0.9rem" strokeWidth={1.8} />
       </button>
+      {bar && (
+        // On a wide pane the log's own controls live here, in the bar at the foot, not floating over the prose:
+        // Save and Undo when there are edits, then Log and Latest. (A phone has the same controls in its own bar below.)
+        <div className="lonelog-drawer-tools" role="group" aria-label="Log controls">
+          {bar.dirty && (
+            <>
+              <button type="button" className="lonelog-tool" onClick={bar.onUndo} title="Undo unsaved edits">
+                Undo
+              </button>
+              <button type="button" className="lonelog-tool is-primary" onClick={bar.onSave}>
+                Save
+              </button>
+            </>
+          )}
+          {bar.hasLog && (
+            <button
+              type="button"
+              className="lonelog-tool"
+              aria-pressed={bar.logOpen}
+              onClick={bar.onToggleLog}
+              title={bar.logOpen ? "Close the log" : "Open the log"}
+            >
+              <LucideIcon name="AlignLeft" size="0.9rem" strokeWidth={2} />
+              Log
+            </button>
+          )}
+          {bar.hasLog && (
+            <button
+              type="button"
+              className="lonelog-tool"
+              onClick={bar.onLatest}
+              title="Scroll to the last block"
+              aria-label="Scroll to the last block of the log"
+            >
+              <LucideIcon name="ChevronsDown" size="0.9rem" strokeWidth={2} />
+              Latest
+            </button>
+          )}
+        </div>
+      )}
       {collapsed && (
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
           <span className="drawer-collapsed-label">{label}</span>

@@ -17,8 +17,7 @@ section[aria-details="Character Features"] {
   gap: 0;
 }
 
-/* No pending compartment → the accordion's own 6px bottom roller is the
- * closure, and a 2px hairline cap mirrors the section's top border. */
+/* No pending compartment: a 2px hairline cap closes the section. */
 section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) {
   border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
 }
@@ -28,16 +27,9 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 .rpg-feature-accordion {
   display: flex;
   flex-direction: column;
-  /* Thick ridge rollers at top and bottom simulate the ends of a scroll
-   * with a subtle 3D rim — browsers derive the light + dark half-tones
-   * from the border-color so the roller reads as raised above the
-   * parchment between them. The inset box-shadow adds a hairline just
-   * inside the ridge for crispness in flat themes. */
-  border-top: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  border-bottom: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  box-shadow:
-    inset 0 1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35)),
-    inset 0 -1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35));
+  /* Flat parchment panel: a hairline top and bottom, like the Skills and Rolls panels. */
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
 }
 
 /* Each bucket is a <details>; horizontal margin on the details itself gives
@@ -52,50 +44,6 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
 
 .rpg-feature-bucket:first-of-type {
   border-top: none;
-}
-
-/* ── Scroll-edge bars on the first and last buckets ──────────────────────
- *
- * The first and last <details> carry a thick vertical bar on their left and
- * right edges that fades toward the centre of the accordion, so the open
- * "parchment" sides of the middle buckets feel like a natural continuation
- * of the scroll ends. The bars sit exactly in the 16px margin gutter. */
-.rpg-feature-bucket:first-of-type,
-.rpg-feature-bucket:last-of-type {
-  position: relative;
-}
-
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:first-of-type::after,
-.rpg-feature-bucket:last-of-type::before,
-.rpg-feature-bucket:last-of-type::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-}
-
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:last-of-type::before {
-  left: -6px;
-}
-.rpg-feature-bucket:first-of-type::after,
-.rpg-feature-bucket:last-of-type::after {
-  right: -6px;
-}
-
-/* First bucket: opaque at top, fading to transparent at the bottom. */
-.rpg-feature-bucket:first-of-type::before,
-.rpg-feature-bucket:first-of-type::after {
-  background: linear-gradient(to bottom, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)), transparent);
-}
-
-/* Last bucket: transparent at top, solidifying to opaque at the bottom. */
-.rpg-feature-bucket:last-of-type::before,
-.rpg-feature-bucket:last-of-type::after {
-  background: linear-gradient(to bottom, transparent, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 
 /* ── Bucket summary (the clickable accordion header) ─────────────────────── */
@@ -515,19 +463,8 @@ section[aria-details="Character Features"]:not(:has(.rpg-feature-pending-list)) 
   flex-direction: column;
   gap: 2px;
   padding: 8px 16px 10px;
-  /* Compartment reads as a closed box glued to the scroll above: all
-   * four borders inset (browser renders a light-top-left + dark-
-   * bottom-right pair so the box feels carved into the sheet), with
-   * the bottom solid so the compartment has a firm floor. */
-  border-top: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-right: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-left: 3px inset light-dark(rgba(120, 84, 48, 0.45), rgba(212, 168, 64, 0.4));
-  border-bottom: 2px solid light-dark(rgba(106, 78, 42, 0.35), rgba(212, 168, 64, 0.35));
-  /* Parchment-gold tint — denser than the transparent scroll so the
-   * compartment reads as a separate container, still semi-glassy. */
-  background: light-dark(rgba(106, 78, 42, 0.1), rgba(212, 168, 64, 0.09));
-  backdrop-filter: blur(2px) saturate(1.05);
-  -webkit-backdrop-filter: blur(2px) saturate(1.05);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
+  background: light-dark(#f2ead9, #2a251e);
 }
 
 .rpg-feature-pending-list > h3 {
@@ -783,11 +720,14 @@ h3.rpg-feature-decisions-group-label {
   font: inherit;
   /* Superscript-sized glyph sitting tight against the preceding value —
    * no padding or margin so the undo doesn't inflate the line. */
-  font-size: 0.6em;
+  font-size: 0.9em;
   line-height: 1;
-  vertical-align: super;
+  min-width: 24px;
+  min-height: 24px;
+  margin-inline: -4px;
+  vertical-align: baseline;
   background: transparent;
-  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+  color: light-dark(rgba(0, 0, 0, 0.6), rgba(255, 255, 255, 0.6));
   border: none;
   cursor: pointer;
 }

@@ -112,3 +112,165 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
   width: 100%;
   min-width: 140px;
 }
+
+/* ---- Hover preview: a slim banner ---------------------------------
+   A preview is about 420px wide. The name and the level share one line, the
+   class / lineage pills sit under the name, and the icons, XP bar and inspiration
+   are left for the full sheet. */
+.hover-popover header[aria-details*=" Banner"] {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+}
+
+.hover-popover header[aria-details*=" Banner"] hgroup {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hover-popover header[aria-details*=" Banner"] figure[aria-details="Page Title"] {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hover-popover header[aria-details*=" Banner"] [aria-details="Line of Pills"] {
+  flex-wrap: wrap;
+}
+
+.hover-popover header[aria-details*=" Banner"] fieldset {
+  flex: 0 0 auto;
+  min-width: 0;
+  align-items: center;
+}
+
+.hover-popover header[aria-details*=" Banner"] [aria-details="Line of Buttons"],
+.hover-popover header[aria-details*=" Banner"] [aria-details="Inspiration Points"],
+.hover-popover header[aria-details*=" Banner"] small[aria-details="Pill Comment"],
+.hover-popover header[aria-details*=" Banner"] .rpg-banner-header__actions,
+.hover-popover header[aria-details*=" Banner"] figure[aria-details="Progress Bar"] {
+  display: none;
+}
+
+.hover-popover.hover-popover header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] figure[aria-details="Inspirational Level"] {
+  zoom: 0.85;
+}
+
+/* ---- Hover preview: the glance --------------------------------------
+   The preview shows who they are and how they stand: the portrait, HP with Armor, the three
+   stat diamonds. Exhaustion, conditions, hit dice and the death saves chip belong to the sheet. */
+.hover-popover span[aria-details="Link Pill"] {
+  white-space: nowrap;
+}
+
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Character Status"],
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dt:nth-of-type(n + 2),
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] > dd[aria-label="Dice Tray"],
+.hover-popover div[aria-details="Death Saves"][data-active="false"] {
+  display: none;
+}
+
+.hover-popover p[aria-details="Health Management Row"] dl[aria-label="Health Controller"] {
+  flex: 1 1 100% !important;
+}
+
+.hover-popover section[aria-details*=" Row"] {
+  gap: 14px;
+  padding: 14px;
+}
+
+.hover-popover figure[aria-details="Portrait Thumb"] {
+  flex: 0 0 96px !important;
+}
+
+/* ---- Leveling: buttons over the XP bar, the level beside them ------------
+   One column holds the rest and long-rest buttons with the XP bar under them; the level medallion
+   takes the full height beside it and is larger. */
+.markdown-rendered header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "buttons level"
+    "xp level";
+  align-items: center;
+  align-content: center;
+  gap: 10px 14px;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  > menu[aria-details="Line of Big Elements"] {
+  display: contents;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  menu[aria-details="Line of Buttons"] {
+  grid-area: buttons;
+  justify-self: start;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  figure[aria-details="Inspirational Level"] {
+  grid-area: level;
+  justify-self: end;
+  zoom: 1.4;
+}
+
+.markdown-rendered
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  figure[aria-details="Progress Bar"] {
+  grid-area: xp;
+  align-self: end;
+}
+
+/* Hover preview: the stat diamonds get room, without the side rules that squeezed them. */
+.hover-popover [aria-details="Line Stats"] {
+  gap: 12px;
+  justify-content: center;
+}
+
+.hover-popover [aria-details="Line Stats"]::before,
+.hover-popover [aria-details="Line Stats"]::after {
+  display: none;
+}
+
+/* The level medallion's points reach past its box: room for them on the right of a preview. */
+.hover-popover header[aria-details*=" Banner"] {
+  padding-right: 20px;
+}
+
+/* Hover preview: "INI" and "PB" in place of "Initiative" and "Proficiency". */
+.hover-popover .rpg-stat-label-short {
+  display: inline;
+}
+
+.hover-popover .rpg-stat-label-short ~ *,
+.hover-popover figcaption:has(.rpg-stat-label-short) > .rpg-stat-label-full {
+  display: none;
+}
+
+/* On a wide pane the XP and level area has a fixed width, and the pills under the name may run to two lines. */
+@media (min-width: 601px) {
+  /* The column weights are set inline by the block (`distribution="2 1"`), so these need !important. */
+  .markdown-rendered header[aria-details*=" Banner"] > fieldset[aria-details="Leveling"] {
+    flex: 0 0 19rem !important;
+  }
+
+  .markdown-rendered header[aria-details*=" Banner"] > hgroup {
+    flex: 1 1 0 !important;
+    min-width: 0;
+  }
+}

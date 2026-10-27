@@ -37,7 +37,7 @@ figure[aria-details="Stat Shield"] figcaption {
   position: relative;
   z-index: 1;
   margin-top: 16px;
-  font-size: 0.55em;
+  font-size: max(var(--rpg-fs-micro), 0.55em);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;

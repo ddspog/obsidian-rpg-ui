@@ -4,7 +4,7 @@ svg[aria-details="Stat Hex Pair"] {
   width: 110px;
   height: 110px;
   overflow: visible;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
 /* ── Hex shape fills ─────────────────────────────────────────────────────── */
@@ -15,6 +15,12 @@ svg[aria-details="Stat Hex Pair"] {
 
 .rpg-hex-fill {
   fill: var(--rpg-hex-bg, #4a4440);
+}
+
+/* ── Rune dust behind each hex pair ───────────────────────────────────────── */
+
+.rpg-hex-halo-dot {
+  fill: light-dark(rgba(106, 78, 42, 0.5), rgba(212, 168, 64, 0.5));
 }
 
 /* ── Proficiency rings ───────────────────────────────────────────────────── */
@@ -52,7 +58,7 @@ svg[aria-details="Stat Hex Pair"] {
 }
 
 .rpg-hex-label--back {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 /* ── Save vantage badge (green A / red D sitting on the back hex) ──────── */
@@ -68,7 +74,7 @@ svg[aria-details="Stat Hex Pair"] {
 }
 
 .rpg-hex-vantage-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   fill: #fff;
 }
@@ -76,24 +82,24 @@ svg[aria-details="Stat Hex Pair"] {
 .rpg-hex-score {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--rpg-hex-score, #e3dcce);
-  stroke: rgba(0, 0, 0, 0.4);
-  stroke-width: 3;
-  paint-order: stroke fill;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
+  fill: var(--rpg-hex-score, light-dark(#231a0c, #e3dcce));
 }
 
 /* ── Stats grid container ────────────────────────────────────────────────── */
 
 section[aria-details="Character Stats"] {
   container-type: inline-size;
-  margin-block-start: calc(-1 * var(--p-spacing, 1em));
+  margin-block-start: 0;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   justify-items: center;
   row-gap: 8px;
   padding: var(--spacing-3, 12px);
   position: relative;
+  /* Warm parchment, a step lighter than the panels under it. */
+  background: light-dark(#f2ead9, #2a251e);
+  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-top: none;
 }
 
 /* Narrow container: 3 stats per row via child span */
@@ -103,19 +109,8 @@ section[aria-details="Character Stats"] {
   }
 }
 
-/* Dotted background via pseudo-element */
-section[aria-details="Character Stats"]::before {
-  content: "";
-  position: absolute;
-  inset: 24px;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.25) 1px, transparent 1px);
-  background-size: 8px 8px;
-  pointer-events: none;
-}
-
 /* Hex pairs overflow above the dotted background padding */
 section[aria-details="Character Stats"] > svg[aria-details="Stat Hex Pair"] {
-  margin-top: calc(-1 * var(--rpg-stats-dot-padding, 24px));
   position: relative;
   z-index: 1;
 }

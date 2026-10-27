@@ -20,7 +20,7 @@
   padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
   background: var(--background-secondary);
   border-radius: var(--radius-m, 6px);
-  border-left: 3px solid var(--interactive-accent);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, transparent);
 }
 
 .rpg-feature-source-header {
@@ -46,21 +46,21 @@
   letter-spacing: 0.04em;
 }
 
-/* per-kind accent stripe — let users tell class/lineage/background apart */
+/* per-kind outline colour — let users tell class/lineage/background apart */
 .rpg-feature-source:has(.rpg-feature-source-class) {
-  border-left-color: var(--interactive-accent);
+  border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent);
 }
 .rpg-feature-source:has(.rpg-feature-source-subclass) {
-  border-left-color: var(--color-purple, #8957e5);
+  border-color: color-mix(in srgb, var(--color-purple, #8957e5) 40%, transparent);
 }
 .rpg-feature-source:has(.rpg-feature-source-lineage) {
-  border-left-color: var(--color-green, #2ea043);
+  border-color: color-mix(in srgb, var(--color-green, #2ea043) 40%, transparent);
 }
 .rpg-feature-source:has(.rpg-feature-source-heritage) {
-  border-left-color: var(--color-orange, #d29922);
+  border-color: color-mix(in srgb, var(--color-orange, #d29922) 40%, transparent);
 }
 .rpg-feature-source:has(.rpg-feature-source-background) {
-  border-left-color: var(--color-cyan, #1f6feb);
+  border-color: color-mix(in srgb, var(--color-cyan, #1f6feb) 40%, transparent);
 }
 
 /* Inline tagged grants list: "Skill P. (+Medicine, +Insight)" */
@@ -184,7 +184,7 @@
   padding: var(--size-4-2, 0.5rem) var(--size-4-3, 0.75rem);
   background: var(--background-modifier-hover);
   border-radius: var(--radius-s, 4px);
-  border-left: 3px solid var(--color-yellow, #e0ac00);
+  border: 1px solid color-mix(in srgb, var(--color-yellow, #e0ac00) 45%, transparent);
 }
 
 .rpg-feature-pending p {
