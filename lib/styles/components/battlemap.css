@@ -686,7 +686,7 @@
 }
 
 .lonelog-minimap {
-  --minimap: 9.5rem;
+  --minimap: 8.5rem;
   position: absolute;
   top: 3rem;
   right: 0.25rem;
@@ -709,14 +709,42 @@
   background: var(--background-secondary);
   box-shadow:
     0 0 0 1px var(--background-modifier-border),
-    0 0.3rem 1rem rgba(0, 0, 0, 0.35),
-    inset 0 0 1.2rem rgba(0, 0, 0, 0.45);
+    0 0.2rem 0.6rem rgba(0, 0, 0, 0.25);
   color: var(--text-faint);
   cursor: zoom-in;
 }
 
+.lonelog-minimap-disc:focus-visible,
+.lonelog-minimap-tools .rpg-hexpaint-button:focus-visible,
+.lonelog-minimap.is-small:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* Arriving: the rim takes the accent and rings once; the map itself quietens. */
 .lonelog-minimap.is-arrived .lonelog-minimap-disc {
-  filter: saturate(0.6);
+  border-color: var(--interactive-accent);
+  filter: saturate(0.7);
+  animation: lonelog-minimap-arrive 1.2s ease-out 1;
+}
+
+@keyframes lonelog-minimap-arrive {
+  from {
+    box-shadow:
+      0 0 0 1px var(--background-modifier-border),
+      0 0 0 0 var(--interactive-accent);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px var(--background-modifier-border),
+      0 0 0 1rem transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lonelog-minimap.is-arrived .lonelog-minimap-disc {
+    animation: none;
+  }
 }
 
 .lonelog-minimap-svg {
@@ -743,11 +771,13 @@
 
 .lonelog-minimap-caption {
   margin-top: 0.25rem;
-  overflow: hidden;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
   font-size: 0.75rem;
+  line-height: 1.25;
   text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: balance;
   color: var(--text-muted);
 }
 
@@ -768,6 +798,28 @@
 .lonelog-minimap:hover .lonelog-minimap-tools,
 .lonelog-minimap:focus-within .lonelog-minimap-tools {
   opacity: 1;
+}
+
+/* No hover on a touchscreen: the tools stay in view, and big enough to press. */
+@media (hover: none) {
+  .lonelog-minimap-tools {
+    opacity: 1;
+  }
+}
+
+body.is-mobile .lonelog-minimap-tools {
+  opacity: 1;
+}
+
+body.is-mobile .lonelog-minimap-tools .rpg-hexpaint-button,
+body.is-mobile .lonelog-minimap.is-small {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+/* Under the Log's ✕ and heading, not on them. */
+body.is-mobile .lonelog-minimap.is-small {
+  top: 4rem;
 }
 
 .lonelog-minimap-tools .rpg-hexpaint-button {
@@ -830,13 +882,39 @@
 }
 
 .lonelog-travel-title {
+  min-width: 0;
+  overflow: hidden;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-normal);
 }
 
 .lonelog-travel-where {
+  flex: none;
   font-variant-numeric: tabular-nums;
-  color: var(--text-faint);
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.lonelog-travel-pane:focus {
+  outline: none;
+}
+
+/* A phone: the controls take a row of their own, each big enough to press. */
+body.is-mobile .lonelog-travel-head {
+  flex-wrap: wrap;
+}
+
+body.is-mobile .lonelog-travel-controls {
+  flex: 1 0 100%;
+  justify-content: space-between;
+  margin: 0;
+}
+
+body.is-mobile .lonelog-travel-controls .rpg-hexpaint-button {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
 }
 
 .lonelog-travel-controls {
@@ -988,7 +1066,7 @@
 /* The minimap's map dimmed under the party, so its pin stands out when the hexes are small. */
 .lonelog-minimap-veil {
   fill: var(--background-primary);
-  opacity: 0.5;
+  opacity: 0.28;
   pointer-events: none;
 }
 

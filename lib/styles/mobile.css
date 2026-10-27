@@ -377,8 +377,13 @@
   .lonelog-bottom-drawer {
     margin-inline: calc(-1 * var(--rpg-file-margins-clean, 24px));
     padding: 0.5rem 0.75rem;
-    max-height: 55vh;
+    max-height: 46vh;
     overflow-y: auto;
+  }
+
+  /* The desktop strip keeps room for three rows of tiles; on a phone that was empty bands. */
+  .lonelog-bottom-drawer .rpg-hotbar-strip {
+    min-height: 0;
   }
 
   /* The floating controls sit over the text: give the chips a solid ground and

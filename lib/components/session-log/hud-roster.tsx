@@ -57,11 +57,12 @@ export function Face({ info, name }: { info?: HudInfo | undefined; name: string 
     // The art alone: framed here, in a slim version of the card frame.
     return (
       <CardFrame kind="portrait" name="none" className="is-mini">
-        <img className="hud-face-img" src={info.portrait} alt="" draggable={false} />
+        <img className="hud-face-img" src={info.portrait} alt="" draggable={false} decoding="async" />
       </CardFrame>
     );
   }
-  if (info?.portrait) return <img className="hud-face-img" src={info.portrait} alt="" draggable={false} />;
+  if (info?.portrait)
+    return <img className="hud-face-img" src={info.portrait} alt="" draggable={false} decoding="async" />;
   return <span className="hud-face-token">{info?.token ?? initial(name)}</span>;
 }
 

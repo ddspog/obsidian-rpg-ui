@@ -900,6 +900,11 @@ export function HexMapView({
   const glideTo = React.useCallback(
     (to: ViewBox) => {
       stopGlide();
+      // Asked for less motion: arrive, don't glide.
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        setView(to);
+        return;
+      }
       const from = viewRef.current;
       const start = performance.now();
       const step = (now: number) => {

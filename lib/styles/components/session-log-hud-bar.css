@@ -1415,3 +1415,53 @@ button.hud-rest-btn > span {
     width: auto;
   }
 }
+
+/* ═══ UI review: legible type, reachable targets, one loud control at a time ═══ */
+
+/* Nothing in the roster under about 11px; names wrap to their two lines instead of being cut
+   (the portrait is a button, which would keep them on one line). */
+.hud-roster .hud-specials .actor-chip,
+.hud-roster-card .actions-side,
+.hud-roster .hud-face-hp small,
+.hud-roster-card .hud-face-hp small {
+  font-size: 0.72rem;
+}
+
+.hud-roster .hud-face-name {
+  font-size: 0.7rem;
+  white-space: normal;
+}
+
+button.rpg-hotbar-tab {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+/* The side switch is the roster's one filled control, dark enough for white text (6.5:1). The
+   acting chip above it is outlined and tinted, so the two accents no longer compete. */
+.hud-roster-card .actions-side.is-active:not(.is-foe) {
+  background: color-mix(in srgb, var(--interactive-accent) 68%, #000);
+}
+
+.hud-roster .hud-specials .actor-chip.is-active:not(.is-foe) {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary));
+  color: var(--text-normal);
+}
+
+/* A touchscreen has no hover: the picture buttons show, and every control is big enough to press. */
+body.is-mobile button.hud-card-studio {
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.9;
+}
+
+body.is-mobile .hud-roster .hud-specials .actor-chip,
+body.is-mobile .hud-roster-card .actions-side {
+  min-height: 2.25rem;
+}
+
+body.is-mobile button.rpg-hotbar-tab {
+  min-height: 2rem;
+  padding-inline: 0.8rem;
+}
