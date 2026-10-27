@@ -78,6 +78,8 @@ export { BadgeShield } from "./Badge/BadgeShield";
 export type { BadgeShieldProps } from "./Badge/BadgeShield";
 export { DeathSaveDots } from "./character/DeathSaveDots";
 export type { DeathSaveDotsProps } from "./character/DeathSaveDots";
+export { DeathSaves } from "./character/DeathSaves";
+export type { DeathSavesProps } from "./character/DeathSaves";
 export { DiceTray } from "./dice/DiceTray";
 export type { DiceTrayProps } from "./dice/DiceTray";
 export { DiceRollModal } from "./dice/DiceRollModal";

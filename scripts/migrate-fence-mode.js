@@ -6,7 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const VAULT = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(__dirname, "../../../.."));
+const VAULT = path.resolve(process.env.RPG_VAULT_ROOT ?? path.resolve(__dirname, "../../testing-vault"));
 const DRY_RUN = !process.argv.includes("--apply");
 
 let totalChanges = 0;

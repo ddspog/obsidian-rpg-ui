@@ -135,7 +135,17 @@ export function ItemRow({ item, sectionId, nested = false, onToggleEquip, onTogg
           </small>
         )}
       </span>
-      <span className="rpg-inventory-block__item-stat">{stat}</span>
+      <span className="rpg-inventory-block__item-stat" data-no-stat={stat ? undefined : "true"}>
+        {stat}
+        {item.notes && (
+          // A plain-text copy for the phone, where the tags move under the name; hidden from screen readers
+          // because the name cell already carries them.
+          <span className="rpg-inventory-block__item-stat-notes" aria-hidden="true">
+            {stat ? " · " : ""}
+            {plainNotes(item.notes)}
+          </span>
+        )}
+      </span>
       <span className="rpg-inventory-block__item-weight">{weight}</span>
       <span className="rpg-inventory-block__item-action">
         {canEquip && (
@@ -153,6 +163,11 @@ export function ItemRow({ item, sectionId, nested = false, onToggleEquip, onTogg
       </span>
     </div>
   );
+}
+
+/** Wikilinks as their label: `[[Noisy]]` → `Noisy`, `[[a|b]]` → `b`. */
+function plainNotes(raw: string): string {
+  return raw.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target: string, label?: string) => label ?? target);
 }
 
 export function formatWeight(n: number): string {

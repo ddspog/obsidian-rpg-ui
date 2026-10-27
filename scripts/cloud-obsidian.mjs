@@ -39,7 +39,7 @@ const FONT_ROLES = [
 ];
 
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const vaultRoot = process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../..");
+const vaultRoot = process.env.RPG_VAULT_ROOT ?? path.resolve(pluginRoot, "../testing-vault");
 const cache = path.join(os.homedir(), ".cache", "rpg-obsidian");
 const work = path.join(cache, "work");
 const appDir = path.join(cache, `obsidian-${OBSIDIAN_VERSION}`);

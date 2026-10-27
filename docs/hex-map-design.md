@@ -22,8 +22,7 @@
   `lib/styles/components/hex-map.css`. It is dispatched from `MapRenderChild`
   on `grid: hex`, and session-log battle lookups skip hex maps. Settings have
   "Packs folder" (with Rescan and a list of found packs) and "Default pack".
-  The test note is `vault/Sandbox/Tests/23-TEST-HEXMAP.md`, copied to `Sandbox/Tests/` at the
-  vault root by `npm run sync`.
+  The test note is `Sandbox/Tests/23-TEST-HEXMAP.md` in `testing-vault`.
 - **Differences from the plan, found while building:**
   - **Tuning uses `hexWidth`**: the image pixels the hex face spans. For
     `basic` that's 477 px of the 932 px image, measured; the face is centred,
@@ -744,7 +743,7 @@ position), as part of phase 5's hex travel.
   screenshots.
 - **Visual:** a static SVG from a vitest probe, rasterised with `qlmanage -t`;
   then live with `rpg-dev compile-html` / `css-report` on
-  `vault/Sandbox/Tests/NN-TEST-HEXMAP.md`, with Obsidian frontmost.
+  `Sandbox/Tests/NN-TEST-HEXMAP.md` in `testing-vault`, with Obsidian frontmost.
 - **Detector sweep:** `grid: hex` blocks detect as `map`, with no new false
   positives.
 

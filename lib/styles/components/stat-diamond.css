@@ -62,15 +62,15 @@ figure[aria-details="Stat Diamond"][data-size="lg"] output[aria-details="Stat Va
 figure[aria-details="Stat Diamond"] figcaption {
   position: relative;
   z-index: 1;
-  font-size: 0.5em;
+  font-size: max(var(--rpg-fs-micro), 0.5em);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--rpg-diamond-label, #a09880);
   line-height: 1.1;
   margin-top: 1px;
   text-align: center;
-  max-width: calc(var(--hex-w) * 0.75);
+  max-width: calc(var(--hex-w) * 0.88);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -99,4 +99,9 @@ figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage {
 
 figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage[data-vantage="dis"] {
   background: light-dark(#a02020, #c94040);
+}
+
+/* The short label ("INI", "PB") is for tight places: hidden until a hover preview asks for it. */
+.rpg-stat-label-short {
+  display: none;
 }

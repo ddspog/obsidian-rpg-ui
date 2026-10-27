@@ -151,22 +151,24 @@ for (const mode of order) {
       await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(f), { state: { mode: "preview" } });
     }, note);
     await sleep(wait);
-    // Walk the note once so lazily rendered blocks exist before measuring.
-    const total = await page.evaluate(async () => {
+    // Walk the note once so lazily rendered blocks exist before measuring. With --find the walk stops at
+    // the first match, while it is rendered: Obsidian unloads sections that are far off the screen.
+    const total = await page.evaluate(async (sel) => {
       const v = document.querySelector(".workspace-leaf.mod-active .markdown-preview-view");
       for (let y = 0; y < v.scrollHeight; y += 300) {
         v.scrollTop = y;
         await new Promise((r) => setTimeout(r, 120));
+        const e = sel && document.querySelector(".workspace-leaf.mod-active " + sel);
+        if (e) {
+          v.scrollTop += e.getBoundingClientRect().top - v.getBoundingClientRect().top - 50;
+          return [v.scrollHeight, v.clientHeight, true];
+        }
       }
       v.scrollTop = 0;
-      return [v.scrollHeight, v.clientHeight];
-    });
+      return [v.scrollHeight, v.clientHeight, false];
+    }, find);
     if (find) {
-      await page.evaluate((sel) => {
-        const e = document.querySelector(".workspace-leaf.mod-active " + sel);
-        const v = document.querySelector(".workspace-leaf.mod-active .markdown-preview-view");
-        if (e) v.scrollTop += e.getBoundingClientRect().top - v.getBoundingClientRect().top - 50;
-      }, find);
+      if (!total[2]) console.error(`  not found: ${find}`);
       await sleep(600);
     }
     const step = total[1] - 80;

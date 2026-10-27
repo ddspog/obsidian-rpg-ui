@@ -36,14 +36,20 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  /* The theme styles h3 (colour, indent, font); this label keeps the sheet's subhead look. */
+  text-indent: 0;
+  font-family: inherit;
 }
 
-/* Hairline rule occupying the space before the label — "─── WEAPONS" /
- *  "─── FOR JACQUI". Keeps section labels visually tied to the rule
- *  beneath them and aligns every section header to the right across
- *  the character inventory AND the container card (both use
- *  `.rpg-inventory-block__section-title`). */
-.rpg-inventory-block__section-title::before {
+.markdown-rendered .rpg-inventory-block__section-title {
+  color: var(--rpg-features-header, light-dark(#6a4e2a, #d4a840));
+  text-indent: 0;
+}
+
+/* Hairline rule after the label — "WEAPONS ───" / "FOR JACQUI ───" — so the label reads
+ * first, like the subheads in the Proficiencies panel. Both the character inventory and the
+ * container card use `.rpg-inventory-block__section-title`. */
+.rpg-inventory-block__section-title::after {
   content: "";
   flex: 1;
   height: 0;
@@ -204,13 +210,16 @@
   font-size: 0.85em;
 }
 
+.rpg-inventory-block__item-stat-notes {
+  display: none;
+}
+
 .rpg-inventory-block__item-stat {
   color: var(--text-muted);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Wrap instead of clipping with room to spare. */
+  overflow-wrap: anywhere;
 }
 
 /* Container rows carry a `(carried / cap)` readout in the stat column
@@ -228,13 +237,13 @@
  * fits on a single line instead of wrapping under the qty cell. The
  * empty stat span is hidden via `display: none` so grid auto-flow
  * doesn't slot it back into the weight or equip column. */
-.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) {
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
   grid-template-columns: 1.5rem 2.5rem 1fr 6.5rem 2rem;
 }
-.rpg-inventory-block__item[data-nested="true"]:has(> .rpg-inventory-block__item-stat:empty) {
+.rpg-inventory-block__item[data-nested="true"]:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
   grid-template-columns: 1.5rem 2rem 1fr 6.5rem 2rem;
 }
-.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat:empty) > .rpg-inventory-block__item-stat {
+.rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) > .rpg-inventory-block__item-stat {
   display: none;
 }
 

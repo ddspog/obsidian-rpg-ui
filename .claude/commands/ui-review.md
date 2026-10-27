@@ -36,7 +36,7 @@ The first word of the arguments is the **goal**; the rest is the **scope**.
 ## 1. Find real examples
 
 - Read `docs/ui-review/README.md` (the curated example notes, and which areas are reviewed on which size) and `docs/ui-review/block-census.md` (every block type, its source, its stylesheet, and its best real examples).
-- Refresh the census when the vault or the plugin changed: `node scripts/block-census.mjs --vault vault --vault "$RPG_VAULT_ROOT" --md docs/ui-review/block-census.md`.
+- Refresh the census when the vault or the plugin changed: `node scripts/block-census.mjs --md docs/ui-review/block-census.md`.
 - Pick the notes for the scope: **real content over test notes**, a note with the family in company, and the **hard cases** (a long note, a note with nothing in a block, a note with an image that is missing). Aim for 3 to 8 notes. Say which and why.
 - The surfaces with no fence (settings, the card form, the drawer, modals, the map editors) are at the end of the census. Include them when the goal touches them.
 

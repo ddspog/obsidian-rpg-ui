@@ -4,6 +4,7 @@ import { Menu, TFile } from "obsidian";
 import { CardFrame } from "lib/components/card-frame/CardFrame";
 import { openImageStudio } from "lib/plugin/image-studio-modal";
 import { frameSpec } from "lib/services/card-frame-config";
+import { useSourceFile } from "lib/ui/source-file";
 
 export interface PortraitThumbProps {
   /** Vault file reference — plain filename, wikilink syntax, or path */
@@ -65,6 +66,7 @@ export function PortraitThumb({
   const frame = frameSpec(framed, frameName, "portrait");
   const containerRef = React.useRef<HTMLElement | null>(null);
   const linkpath = extractLinkpath(src);
+  const sourceFile = useSourceFile();
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -74,7 +76,7 @@ export function PortraitThumb({
     const app = (globalThis as any).app as App | undefined;
     if (!app) return;
 
-    const sourcePath = app.workspace.getActiveFile()?.path ?? "";
+    const sourcePath = sourceFile?.path ?? "";
     const file = app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
     if (!(file instanceof TFile)) return;
 
@@ -83,12 +85,12 @@ export function PortraitThumb({
     img.src = resourcePath;
     img.alt = alt;
     el.appendChild(img);
-  }, [linkpath, alt]);
+  }, [linkpath, alt, sourceFile]);
 
   /** Right-click: make the picture again in the image studio. */
   const onContextMenu = (ev: React.MouseEvent) => {
     const app = (globalThis as any).app as App | undefined;
-    const file = app?.workspace.getActiveFile();
+    const file = sourceFile;
     if (!app || !file) return;
     ev.preventDefault();
     const menu = new Menu();
@@ -102,7 +104,7 @@ export function PortraitThumb({
   };
 
   if (frame && linkpath) {
-    const name = ((globalThis as any).app as App | undefined)?.workspace.getActiveFile()?.basename;
+    const name = sourceFile?.basename;
     return (
       <div className="rpg-portrait-frame" style={{ ...style, alignSelf: "center" }} onContextMenu={onContextMenu}>
         {/* The sheet's heading already says the name: none unless the block asks for one. */}

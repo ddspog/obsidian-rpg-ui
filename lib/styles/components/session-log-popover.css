@@ -40,8 +40,9 @@
 /* A status card's condition rules — or the note that it's only its source's effect. */
 .placeholder-rules {
   margin: 0;
-  padding-left: 0.5em;
-  border-left: 2px solid rgb(201 138 26 / 0.6);
+  padding: 0.15em 0.5em;
+  border: 1px solid rgb(201 138 26 / 0.45);
+  border-radius: 4px;
   font-size: var(--font-ui-smaller);
   line-height: 1.4;
   font-style: italic;
@@ -661,12 +662,12 @@ textarea.combat-foes {
 
 /* Where a found thing goes — its own line under the row. */
 /* One find: its count and name, where it came from, where it goes — framed
-   together so each reads as one, an accent edge down its side. */
+   together so each reads as one. */
 .placeholder-party-find {
   box-sizing: border-box;
   padding: 0.4rem 0.5rem;
-  border-left: 2px solid color-mix(in srgb, var(--text-accent) 45%, transparent);
-  border-radius: 0 4px 4px 0;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
+  border-radius: 4px;
   background-color: color-mix(in srgb, var(--text-accent) 5%, transparent);
 }
 

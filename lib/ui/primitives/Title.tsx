@@ -1,6 +1,5 @@
 import * as React from "react";
-import type { App } from "obsidian";
-import { getFileTitle } from "../../utils/getFileTitle";
+import { useSourceFile } from "../source-file";
 
 // aria-label or other attributes may be passed through
 export type TitleProps = React.HTMLAttributes<HTMLFigureElement>;
@@ -8,13 +7,12 @@ export type TitleProps = React.HTMLAttributes<HTMLFigureElement>;
 /**
  * Title
  * Small helper component that reserves a prominent heading area and
- * displays the current file's title (vault basename) when available.
+ * displays the title (vault basename) of the note the block is rendered from, when available.
  */
 export function Title(props: TitleProps) {
   const { children, ...rest } = props;
 
-  const app = (globalThis as any).app as App | undefined;
-  const title = getFileTitle(app) || "";
+  const title = useSourceFile()?.basename ?? "";
 
   return (
     <figure {...rest} aria-details="Page Title">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { characterArmorClass } from "../../../vault/tales-of-the-valiant/config/entities/character.defense";
+import { characterArmorClass } from "../../../../testing-vault/tales-of-the-valiant/config/entities/character.defense";
 
 const lookup = {
   $items: {

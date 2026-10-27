@@ -14,7 +14,8 @@
     "lib": ["DOM", "ES5", "ES6", "ES7"],
     "jsx": "react-jsx",
     "paths": {
-      "rpg-ui-toolkit": ["./lib/systems/api.d.ts"]
+      "rpg-ui-toolkit": ["./lib/systems/api.d.ts"],
+      "tslib": ["./node_modules/tslib/tslib.d.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

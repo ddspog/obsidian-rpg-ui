@@ -23,6 +23,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tests and typecheck import the Tales of the Valiant system config from the vault.
+      # testing-vault is private: TESTING_VAULT_TOKEN needs read access to its contents.
+      - name: Check out testing-vault
+        uses: actions/checkout@v4
+        with:
+          repository: ddspog/testing-vault
+          token: ${{ secrets.TESTING_VAULT_TOKEN }}
+          path: testing-vault-checkout
+          fetch-depth: 1
+
+      - name: Move testing-vault beside the plugin
+        run: mv testing-vault-checkout ../testing-vault
+
       - name: Check formatting
         run: pnpm run format:check
 

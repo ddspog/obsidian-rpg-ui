@@ -9,7 +9,10 @@ try {
     getAbstractFileByPath(name) {
       const { join } = require("path");
       const { existsSync } = require("fs");
-      const full = join(process.cwd(), "vault", name.replace(/^\/+/, ""));
+      const full = join(
+        process.env.RPG_VAULT_ROOT ?? join(process.cwd(), "../testing-vault"),
+        name.replace(/^\/+/, "")
+      );
       if (existsSync(full)) return { path: name, fullPath: full, name: full.split("/").pop() };
       return null;
     },
@@ -22,7 +25,7 @@ try {
     },
   };
   (async () => {
-    const sys = await loadSystemFromTypeScript(vaultShim, process.argv[2] || "systems/tales-of-the-valiant/config");
+    const sys = await loadSystemFromTypeScript(vaultShim, process.argv[2] || "tales-of-the-valiant/config");
     console.log("[debug-run] load returned", !!sys);
     if (sys) console.log(JSON.stringify(sys, null, 2));
   })();

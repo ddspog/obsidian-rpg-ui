@@ -2,11 +2,9 @@
 /*
  * Visual twin of `.rpg-feature-accordion`: transparent outer section
  * with top/bottom hairline rule, then one `.rpg-caster` article per
- * caster framed by thick inset "rollers" at top/bottom that simulate
- * the ends of a scroll. Circle drawers sit inside with a 16px
- * horizontal gutter (the parchment margin); scroll-edge gradient bars
- * bridge the first/last drawer back to the roller edges. Multiclass
- * stacks several scrolls vertically.
+ * caster in a flat panel with a hairline top and bottom. Circle drawers sit
+ * inside with a 16px horizontal gutter (the parchment margin). Multiclass
+ * stacks several panels vertically.
  */
 
 section[aria-details="Character Spells"] {
@@ -36,14 +34,9 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   display: flex;
   flex-direction: column;
   background: transparent;
-  /* Ridge rollers at top + bottom match the features-accordion scroll,
-   * giving each caster its own raised scroll look above the compartment
-   * that follows. */
-  border-top: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  border-bottom: 6px ridge light-dark(rgba(120, 84, 48, 0.4), rgba(212, 168, 64, 0.32));
-  box-shadow:
-    inset 0 1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35)),
-    inset 0 -1px 0 light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.35));
+  /* Flat parchment panel, like the Features accordion: a hairline top and bottom. */
+  border-top: 1px solid light-dark(#cdbf9f, #4a4238);
+  border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
 }
 
 .rpg-caster > header {
@@ -64,27 +57,6 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
   display: inline;
   padding: 0;
   background: transparent;
-}
-
-/* Scroll-edge bars anchor on the header (the first row inside the scroll),
- * fading toward the accordion centre so the open parchment sides of the
- * circle drawers feel like a natural continuation of the roller above. */
-.rpg-caster > header::before,
-.rpg-caster > header::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)), transparent);
-}
-
-.rpg-caster > header::before {
-  left: -6px;
-}
-.rpg-caster > header::after {
-  right: -6px;
 }
 
 .rpg-caster-meta {
@@ -112,31 +84,6 @@ section[aria-details="Character Spells"] > .rpg-feature-pending-list {
 
 .rpg-spell-circle:first-of-type {
   border-top: none;
-}
-
-/* Scroll-edge bars on the LAST circle drawer only: the top bars live
- * on the caster header (see `.rpg-caster > header::before/::after`),
- * since the header is the first element inside the scroll. */
-.rpg-spell-circle:last-of-type::before,
-.rpg-spell-circle:last-of-type::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-}
-
-.rpg-spell-circle:last-of-type::before {
-  left: -6px;
-}
-.rpg-spell-circle:last-of-type::after {
-  right: -6px;
-}
-
-.rpg-spell-circle:last-of-type::before,
-.rpg-spell-circle:last-of-type::after {
-  background: linear-gradient(to bottom, transparent, light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.22)));
 }
 
 .rpg-spell-circle > summary {

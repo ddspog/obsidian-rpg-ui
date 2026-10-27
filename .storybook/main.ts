@@ -49,7 +49,7 @@ const config: StorybookConfig = {
       return {
         ...p,
         transform(code: string, id: string, options?: any) {
-          if (id.includes("/vault/") || id.includes("api.d.ts")) return null;
+          if (id.includes("/testing-vault/") || id.includes("api.d.ts")) return null;
           return orig(code, id, options);
         },
       };

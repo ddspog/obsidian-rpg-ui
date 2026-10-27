@@ -87,7 +87,18 @@
   header[aria-details*=" Banner"] {
     flex-wrap: wrap;
     gap: 12px;
+    min-height: 0;
     padding: 14px;
+  }
+
+  /* The identity block starts at the top: the banner's desktop height left a blank band above the name. */
+  header[aria-details*=" Banner"] hgroup {
+    justify-content: flex-start;
+  }
+
+  /* The title reserved 2.4em of height, which left a blank band above the name. */
+  header[aria-details*=" Banner"] figure[aria-details="Page Title"] {
+    min-height: 0;
   }
 
   header[aria-details*=" Banner"] hgroup,
@@ -106,16 +117,17 @@
   }
 
   [aria-details="Line Stats"] {
-    gap: 6px;
+    gap: 4px;
   }
 
+  /* Wide enough for "PROFICIENCY" at the 11px label floor. */
   figure[aria-details="Stat Diamond"] {
-    --hex-w: 82px;
-    --hex-h: 48px;
+    --hex-w: 96px;
+    --hex-h: 50px;
   }
 
   figure[aria-details="Stat Diamond"][data-size="lg"] {
-    --hex-w: 96px;
+    --hex-w: 108px;
     --hex-h: 58px;
   }
 
@@ -165,23 +177,24 @@
   }
 
   /* Hex stats poke above their row; leave room so they don't hit the next block. */
+  /* Three hexes a row with room between them: the scores sit beside each hex, not under the next one. */
   section[aria-details="Character Stats"] {
     row-gap: 22px;
-    padding-bottom: 28px;
+    column-gap: 4px;
+    padding: 20px 6px 24px;
   }
 
-  /* Two columns at a smaller size: 18 skills in half the height. */
+  /* One column: two do not fit "Animal Handling" and its bonus at a readable size. */
   section[aria-details="Character Skills"] > menu {
-    column-count: 2;
-    column-gap: 10px;
+    column-count: 1;
     padding: 4px 6px;
   }
 
   section[aria-details="Character Skills"] > menu > li {
     gap: 3px;
-    padding: 3px 2px;
-    font-size: 0.82em;
-    min-height: 34px;
+    padding: 3px 6px;
+    font-size: var(--rpg-fs-row);
+    min-height: 44px;
   }
 
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Attribute"] {
@@ -270,18 +283,14 @@
     font-size: 0.85rem;
   }
 
+  /* A roll is a short card: name and to-hit on the first line, then whatever the roll has (damage, range,
+   * DC, cost, effects) running on and wrapping as one line of facts. Nothing is reserved for what is absent. */
   section[aria-details="Character Rolls"] .rpg-rolls__table tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto 56px;
-    grid-template-areas:
-      "name hit roll"
-      "dmg range roll"
-      "dc cost cost"
-      "fx fx fx";
-    align-items: center;
-    column-gap: 8px;
-    row-gap: 2px;
-    padding: 8px 8px 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid light-dark(#cdbf9f, #4a4238);
   }
 
@@ -299,14 +308,21 @@
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__name {
-    grid-area: name;
+    flex: 1 0 100%;
+    order: 0;
     font-size: 1rem;
     font-weight: 600;
   }
 
+  /* With a to-hit badge the name leaves it room on the same line. */
+  section[aria-details="Character Rolls"] tr:has(td.rpg-rolls__hit:not(:empty)) td.rpg-rolls__name {
+    flex-basis: calc(100% - 7.5rem);
+    min-width: 0;
+  }
+
   section[aria-details="Character Rolls"] td.rpg-rolls__hit {
-    grid-area: hit;
-    justify-self: end;
+    order: 1;
+    margin-left: auto;
     padding: 0 6px;
     border: 1px solid currentColor;
     border-radius: 6px;
@@ -317,30 +333,30 @@
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__dc {
-    grid-area: dc;
+    order: 4;
     font-size: 0.85rem !important;
     font-weight: 700;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__damage {
-    grid-area: dmg;
+    order: 2;
     font-size: 0.95rem;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__range {
-    grid-area: range;
-    justify-self: end;
+    order: 3;
     font-size: 0.9rem;
     white-space: nowrap;
     color: light-dark(#6d6048, #a8a08a);
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__cost {
-    grid-area: cost;
+    order: 5;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__effects {
-    grid-area: fx;
+    order: 6;
+    margin-left: auto;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__roll {
@@ -456,7 +472,7 @@
   }
 
   .lonelog-bar > button {
-    min-height: 48px;
+    min-height: 44px;
     border: none;
     border-radius: 0;
     background: transparent;
@@ -685,4 +701,215 @@
 body.is-mobile .markdown-rendered button img,
 body.is-mobile .markdown-rendered [role="button"] img {
   pointer-events: none;
+}
+
+/* ── Review pass: phone fixes for the sheet ────────────────────────── */
+@media (max-width: 600px) {
+  /* A struck-through two-handed row wraps without touching its damage line. */
+  section[aria-details="Character Rolls"] td.rpg-rolls__name {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  section[aria-details="Character Rolls"] .rpg-rolls__table tbody td {
+    border: none !important;
+  }
+
+  /* The spell's source link drops under the name instead of running off the frame. */
+  .rpg-spell-entry-enabler {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
+  }
+
+  .rpg-spell-entry-subline {
+    grid-row: 3;
+  }
+
+  .rpg-spell-entry-text {
+    grid-row: 4;
+  }
+
+  /* Accordion headers are a full-width thumb target. */
+  .rpg-feature-bucket summary {
+    min-height: 44px;
+  }
+
+  /* Five coins in two rows, nothing starting left of the gutter: PP and GP split the first row in half,
+   * EP, SP and CP share the second in thirds. */
+  .rpg-inventory-block__currency-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    justify-content: stretch;
+    column-gap: 0.4rem;
+  }
+
+  .rpg-inventory-block__currency-grid > [data-coin="pp"],
+  .rpg-inventory-block__currency-grid > [data-coin="gp"] {
+    grid-column: span 3;
+  }
+
+  .rpg-inventory-block__currency-grid > [data-coin="ep"],
+  .rpg-inventory-block__currency-grid > [data-coin="sp"],
+  .rpg-inventory-block__currency-grid > [data-coin="cp"] {
+    grid-column: span 2;
+  }
+
+  /* The empty label cell that lines up the desktop's To Sell row would leave a hole in the first row. */
+  .rpg-inventory-block__currency-grid > span:empty {
+    display: none;
+  }
+
+  .rpg-inventory-block__currency-coin {
+    justify-content: space-between;
+  }
+
+  .rpg-inventory-block__currency-coin[data-empty="true"] {
+    opacity: 0.6;
+  }
+
+  /* Inventory rows: weight and equip stay on the first line; the stat (damage, AC) drops
+   * under the name. Six fixed columns were 100px wider than the pane. */
+  .rpg-inventory-block__item,
+  .rpg-inventory-block__item[data-nested="true"],
+  .rpg-inventory-block__container-summary {
+    grid-template-columns: 1.5rem 1.75rem minmax(0, 1fr) 3.75rem 2rem;
+    column-gap: 0.4rem;
+  }
+
+  .rpg-inventory-block__item-weight {
+    grid-column: 4;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .rpg-inventory-block__item-action {
+    grid-column: 5;
+    grid-row: 1;
+  }
+
+  .rpg-inventory-block__item-stat {
+    grid-column: 3 / -1;
+    grid-row: 2;
+  }
+
+  /* The name stays on one line; "Main Weapon", "Ranged" and the rest ride the stat line under it. */
+  .rpg-inventory-block__item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rpg-inventory-block__item-name .rpg-inventory-block__item-notes {
+    display: none;
+  }
+
+  .rpg-inventory-block__item-stat-notes {
+    display: inline;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-style: italic;
+  }
+
+  /* The bookkeeping cards fit the pane: one column, and a card's columns may shrink. */
+  .lonelog-bookkeeping-sheets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  dl.lonelog-bookkeeping-sheet {
+    grid-template-columns: 1.25em minmax(0, max-content) minmax(0, 1fr) auto;
+  }
+
+  .lonelog-bookkeeping-change .lonelog-row-label {
+    white-space: normal;
+  }
+
+  /* The log's margin dots and their hairlines reach 24px past the text column. That made the page scroll
+   * sideways, whose scrollbar held the bottom bar 8px above the phone's own buttons. */
+  .markdown-preview-view:has(.session-log-container) {
+    overflow-x: hidden;
+    /* Obsidian pads the scroller by 8px at the foot, which held the sticky bar that far above the phone's buttons. */
+    padding-bottom: 0;
+  }
+
+  /* The bar is the foot of the screen: full width, square, resting on the phone's own buttons. */
+  .session-log-container.has-bar .lonelog-bottom-drawer {
+    border-radius: 0;
+    border-inline: none;
+    border-bottom: none;
+    margin-bottom: 0;
+    /* The pane's full width, whatever the scrollbar or margins: out to the left edge, then a screen wide. */
+    margin-left: calc(-1 * var(--rpg-file-margins-clean, 24px));
+    margin-right: 0;
+    width: 100vw;
+    max-width: none;
+  }
+
+  /* Room above the portrait for the banner's overlap. */
+  section[aria-details*=" Row"] {
+    padding-top: 24px;
+  }
+
+  /* No hover on a phone, and the hidden tooltip's width pushed the page sideways at the card's right edge. */
+  section[aria-details="Character Rolls"] [data-tip]::after {
+    display: none;
+  }
+
+  /* The larger level medallion, a little smaller on a phone so its points stay inside the banner. */
+  .markdown-rendered
+    header[aria-details*=" Banner"]
+    fieldset[aria-details="Leveling"]
+    figure[aria-details="Inspirational Level"] {
+    zoom: 1.15;
+  }
+
+  header[aria-details*=" Banner"] {
+    padding-bottom: 20px;
+  }
+
+  /* Rows with no damage or AC (clothes, gear) use their own template; give them the phone's too, so
+   * the name keeps the room and the tags, if any, sit on the line under it. */
+  .rpg-inventory-block__item[data-nested="true"]:has(> .rpg-inventory-block__item-stat[data-no-stat]),
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) {
+    grid-template-columns: 1.5rem 1.75rem minmax(0, 1fr) 3.75rem 2rem;
+  }
+
+  .rpg-inventory-block__item:has(> .rpg-inventory-block__item-stat[data-no-stat]) > .rpg-inventory-block__item-stat {
+    display: none;
+  }
+
+  .rpg-inventory-block__item:has(
+      > .rpg-inventory-block__item-stat[data-no-stat] > .rpg-inventory-block__item-stat-notes
+    )
+    > .rpg-inventory-block__item-stat {
+    display: block;
+  }
+
+  /* Links and slot toggles in the sheet are inline text: padding with a matching negative margin grows
+   * the thumb's target without moving a line. */
+  section[aria-details^="Character "] a.internal-link,
+  .rpg-spell-entry a.internal-link,
+  .rpg-feature-bucket-entry a.internal-link {
+    padding-block: 10px;
+    margin-block: -10px;
+  }
+
+  .rpg-spell-slot {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* A phone has no scrollbar track. The emulated one showed a 12px strip beside the log's bottom bar, which cannot
+   * draw over it, so the bar looked short of the screen's edge. */
+  .markdown-preview-view {
+    scrollbar-width: none;
+  }
+
+  .markdown-preview-view::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* A phone has the same controls in the bar below; the drawer's own tools stay out. */
+  .lonelog-drawer-tools {
+    display: none;
+  }
 }

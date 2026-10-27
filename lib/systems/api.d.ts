@@ -550,6 +550,8 @@ export { Badge } from "../ui";
 export type { BadgeType, BadgeShieldProps } from "../ui";
 export { DeathSaveDots } from "../ui";
 export type { DeathSaveDotsProps } from "../ui";
+export { DeathSaves } from "../ui";
+export type { DeathSavesProps } from "../ui";
 export { DiceTray } from "../ui";
 export type { DiceTrayProps } from "../ui";
 export { DiceRollModal } from "../ui";

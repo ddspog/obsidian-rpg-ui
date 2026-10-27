@@ -109,6 +109,7 @@ This system explicitly rejects SaaS blandness (white/blue corporate neutrality, 
 The system is designed to blend seamlessly with Obsidian's native UI and the companion Ribbons theme. It defers to Obsidian's theming conventions (dark/light, font stacks, spacing variables) while carrying its own identity through color temperature, density, and interaction design.
 
 **Key Characteristics:**
+
 - Information density managed through typographic hierarchy, not separators
 - Flat surfaces with tonal layering instead of shadows
 - Warm amber/earth tones for game-world content; cool indigo-slate for structural UI
@@ -122,7 +123,7 @@ The palette splits between a cool structural layer (indigo-slates for background
 ### Primary
 
 - **Arcane Teal** (#64d8cb): Primary success state and positive accent. Proficiency indicators, healing, advantage markers. Used sparingly as text and border color for semantic emphasis.
-- **Signal Gold** (#FFD400): Progress and XP. The only saturated fill color in the system; used exclusively in progress bars against a black track. Its rarity is its power.
+- **Signal Gold** (#FFD400): Progress and XP, and the ring round trigger buttons. The only saturated fill color in the system; progress bars sit on a black track. Gold is never used for text or labels: those use Faded Amber or the slab label ink. Its rarity is its power.
 
 ### Secondary
 
@@ -145,7 +146,7 @@ The palette splits between a cool structural layer (indigo-slates for background
 
 **The Dual Temperature Rule.** Structural UI (backgrounds, borders, generic text) lives in cool indigo-slate. Game-world content (stats, spells, rules, lore) lives in warm amber-earth. The temperature shift tells the reader whether they're looking at interface or content without any other signal.
 
-**The Gold Scarcity Rule.** Signal Gold (#FFD400) appears only in progress bars and trigger button rings. It is never used for text, backgrounds, or generic accent. Its visual weight comes from being the single saturated fill in an otherwise muted system.
+**The Gold Scarcity Rule.** Signal Gold (#FFD400) appears in progress bars, trigger button rings and the on-state of trigger controls (play toggle, legend, vitals strip). It is not used for labels, body text, backgrounds or generic accent. Its visual weight comes from being the single saturated fill in an otherwise muted system.
 
 ## 3. Typography
 
@@ -236,6 +237,26 @@ The signature component. A hexagonal clip-path shape that holds stat values.
 - **Shape:** Slate-mid background, 1px deep-border, 0.25rem radius. Inline-flex with 0.3rem gap.
 - **Dense variant:** Tighter padding (0.15rem 0.3rem), smaller text (0.7rem).
 - **Function:** Status indicators, proficiency tags, condition markers.
+
+### Character sheet surfaces
+
+The character sheet and the session log use a warm layer of their own, defined in `lib/styles/sheet-surface.css`, not the indigo-slate cards above. The indigo-slate palette still applies to the generic components (buttons, inputs, badges, plain cards).
+
+- **Status slab:** warm near-black (`#1a1816`), the banner above it on a per-note colour or image under a dark scrim. Ink on the banner and slab is `--rpg-slab-ink` (#efe6d2) for links and values and `--rpg-slab-label` (#d4c9a8) for labels and captions, so text holds 4.5:1 whatever the banner colour is. The banner has no shadow; the slab is a darker tonal step.
+- **Panels** (Stats, Senses, Skills, Rolls, Proficiencies, Features): parchment `light-dark(#ece4d3, #24201c)`, 1px border `light-dark(#cdbf9f, #4a4238)`, tan header band, headers in `light-dark(#6a4e2a, #d4a840)`. Links in a panel use `light-dark(#4b2f9a, #cdbfff)`. Skill and proficiency names are body ink; the underline appears on hover and focus. No ridge frames, no glass, no boxes inside boxes.
+- **Hex pair:** two overlapping pointy-top hexagons (110px, ability and save), on the Stats panel. Hex fill `#4a4440` with border `#6a6258`; the score sits beside it in parchment-dark ink.
+- **Label floor:** nothing in the sheet is under `--rpg-fs-micro` (0.6875rem, 11px); labels are `--rpg-fs-label` (0.75rem), data `--rpg-fs-data`, rows `--rpg-fs-row`.
+- **Heading roles:** block heading (the note's h2, from the theme), panel header (tan band, tracked capitals), subhead (bronze small capitals with a rule after it, as in Inventory and Proficiencies). Slab labels use `--rpg-slab-label`.
+- **On a phone** (`lib/styles/mobile.css`): skills in one column at 44px rows, accordion headers 44px, the stat diamonds 96px and 108px wide, inventory rows with the stat under the name.
+
+### Session log surfaces
+
+- **Dialogue:** game-world content, so warm. PC lines are parchment (`light-dark(#efe6d2, ...)`), NPC lines one step deeper (clay, `light-dark(#e8d5c2, ...)`); speaker names in the bronze and clay inks. No cool lavender.
+- **Dog-ear and chips:** the Log dog-ear is 2.75rem with 11px text; the Latest, Undo and Save chips have a solid ground because they float over prose.
+- **Scene head:** h4 scene title, the scene id at the label floor in the panel violet, a margin dot and hairline for the provenance mark.
+- **Combat card:** parchment-pink panel, turn table with the speaker column, map left.
+- **Phone bar:** Actions, Log and Latest in one bar, 44px high.
+- **Edges:** callouts use a 1px outline and a tonal fill. No side stripe above 1px.
 
 ## 6. Do's and Don'ts
 

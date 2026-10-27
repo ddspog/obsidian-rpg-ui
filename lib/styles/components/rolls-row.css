@@ -130,6 +130,35 @@ section[aria-details="Character Rolls"] tbody td:last-child {
   white-space: nowrap;
 }
 
+/* Minimum column widths on a wide pane, so a column lands in the same place on every sheet: an empty
+ * DC or Range column no longer collapses and pulls its neighbours left. */
+@media (min-width: 601px) {
+  section[aria-details="Character Rolls"] :is(thead th, tbody td).rpg-rolls__name,
+  section[aria-details="Character Rolls"] thead th.rpg-rolls__head-label {
+    min-width: 10.5rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__hit {
+    min-width: 4.75rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__dc {
+    min-width: 4.25rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__range {
+    min-width: 6.25rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__damage {
+    min-width: 7.5rem;
+  }
+
+  section[aria-details="Character Rolls"] tbody td.rpg-rolls__cost {
+    min-width: 2.75rem;
+  }
+}
+
 /* Head band — one continuous strip spanning the full table width,
  * mirroring the Proficiencies block's `> header` band. All column
  * labels (Rolls / Hit / DC / Range / Damage / Effects) sit inside
@@ -203,7 +232,7 @@ section[aria-details="Character Rolls"] tbody tr[data-available="false"] td.rpg-
 section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
   display: inline-block;
   width: 1.1em;
-  margin-right: 4px;
+  margin-right: 8px;
   text-align: center;
   color: light-dark(#6a4e2a, #d4a840);
   font-size: 1.05em;
@@ -382,8 +411,11 @@ section[aria-details="Character Rolls"] .rpg-rolls__effects {
  * just labels the glyph. */
 section[aria-details="Character Rolls"] .rpg-rolls__icon {
   position: relative;
-  display: inline-block;
-  min-width: 1.1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  min-height: 1.5em;
   padding: 0 3px;
   margin-right: 3px;
   text-align: center;
@@ -423,11 +455,9 @@ section[aria-details="Character Rolls"] .rpg-rolls__icon[data-tip]:focus-visible
   opacity: 1;
 }
 
-section[aria-details="Character Rolls"] .rpg-rolls__icon--save-half {
-  background: light-dark(rgba(220, 165, 50, 0.25), rgba(220, 165, 50, 0.28));
-}
-section[aria-details="Character Rolls"] .rpg-rolls__icon--save-none {
-  background: light-dark(rgba(120, 180, 120, 0.25), rgba(120, 180, 120, 0.28));
+/* One neutral chip for every effect: the icon carries the meaning. */
+section[aria-details="Character Rolls"] .rpg-rolls__icon > svg {
+  display: block;
 }
 
 section[aria-details="Character Rolls"] .rpg-rolls__notes-text {

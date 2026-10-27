@@ -85,6 +85,7 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 ## Development Workflow
 
 - **Plugin Development:** Set PLUGIN_DIR environment variable to auto-copy built files to Obsidian plugin directory
+- **Vault:** The plugin repo holds no vault. Tests, stories, scripts, the simulators and the cloud Obsidian use the `testing-vault` repo, cloned beside this one (`../testing-vault`) or wherever `RPG_VAULT_ROOT` points. CI clones it the same way.
 - **Documentation:** VitePress documentation in `/docs` with examples and component references
 - **State File:** Plugin creates `.dnd-ui-toolkit-state.json` (configurable) for persistent component state
 
@@ -119,7 +120,7 @@ A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and insp
 
 **Key facts:**
 
-- Input paths are relative to plugin root (e.g., `vault/tests/03-TEST-SKILLS.md`)
+- Input paths are relative to plugin root (e.g., `../testing-vault/Sandbox/Tests/03-TEST-SKILLS.md`)
 - Output goes to `tmp/rpg-dev/` (gitignored)
 - All commands auto-unfold collapsed sections before capture
 - Obsidian virtualizes DOM sections — extracted HTML is viewport-limited
