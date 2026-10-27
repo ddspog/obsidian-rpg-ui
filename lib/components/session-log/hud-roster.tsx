@@ -44,6 +44,12 @@ interface HudRosterProps {
   onStudio?: (name: string) => void;
 }
 
+/** The party by first name (`Jacqui`), unless two share one; foes keep the whole name. */
+function shortName(name: string, all: RosterActor[]): string {
+  const first = name.split(/\s+/)[0];
+  return all.filter((o) => o.name.split(/\s+/)[0] === first).length > 1 ? name : first;
+}
+
 const initial = (name: string) =>
   name
     .replace(/\[\[|\]\]/g, "")
@@ -57,12 +63,11 @@ export function Face({ info, name }: { info?: HudInfo | undefined; name: string 
     // The art alone: framed here, in a slim version of the card frame.
     return (
       <CardFrame kind="portrait" name="none" className="is-mini">
-        <img className="hud-face-img" src={info.portrait} alt="" draggable={false} decoding="async" />
+        <img className="hud-face-img" src={info.portrait} alt="" draggable={false} />
       </CardFrame>
     );
   }
-  if (info?.portrait)
-    return <img className="hud-face-img" src={info.portrait} alt="" draggable={false} decoding="async" />;
+  if (info?.portrait) return <img className="hud-face-img" src={info.portrait} alt="" draggable={false} />;
   return <span className="hud-face-token">{info?.token ?? initial(name)}</span>;
 }
 
@@ -141,15 +146,16 @@ export function HudRoster({
                 type="button"
                 className={`hud-face${a.name === active ? " is-active" : ""}${foe ? " is-foe" : ""}${next ? " is-next" : ""}`}
                 aria-pressed={a.name === active}
+                title={hp ? `${a.name}: ${hp.current}/${hp.max} hit points` : a.name}
                 aria-label={`${a.name}${hp ? `, ${hp.current} of ${hp.max} hit points` : ""}${next ? ", up next" : ""}`}
                 onClick={() => onPick(a.name)}
               >
                 <span className="hud-face-frame">
                   <Face info={info} name={a.name} />
                   {next && <span className="hud-face-next" aria-hidden="true" />}
-                  <span className="hud-face-name" title={a.name}>
-                    {a.name}
-                  </span>
+                </span>
+                <span className="hud-face-name" title={a.name}>
+                  {foe ? a.name : shortName(a.name, shown)}
                 </span>
                 {hp && (
                   <span className="hud-face-hp">

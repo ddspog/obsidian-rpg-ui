@@ -527,28 +527,6 @@
   box-shadow: inset 0 0 0 2px var(--interactive-accent);
 }
 
-/* Clamp long entries until selected, with a soft fade where they are cut.
- * Sidebar-only — the read-only example shows entries in full.
- *
- * The fade is a PAINTED gradient, not `mask-image`: a mask clips everything inside
- * the element, including out-of-flow descendants whose containing block is the
- * viewport. That silently cut off a roll chip's expanded layer even though
- * `position: fixed` had escaped both `overflow: hidden` and the scroll container.
- * Measured — the mask was the only ancestor still clipping. */
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
-  position: relative;
-  max-height: 6rem;
-  overflow: hidden;
-}
-
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent 4rem, var(--background-primary));
-}
-
 /* ── Entry table: icon | content | pills ── */
 
 .lonelog-sidebar-table {
@@ -877,7 +855,6 @@
 .lonelog-term.is-winner .lonelog-threshold-value {
   font-weight: 700;
   color: light-dark(#7a5d0c, #f0d066);
-  text-shadow: 0 0 6px light-dark(rgba(180, 140, 20, 0.32), rgba(230, 195, 77, 0.45));
 }
 
 /* Dice: the value is real text on the baseline; the die silhouette is an SVG
@@ -1080,7 +1057,6 @@
 .lonelog-tag-key--sheet:focus-visible {
   outline: none;
   opacity: 1;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--lonelog-tag-hue) 45%, transparent);
 }
 
 /* ── List sheet modal: the printed list page ── */
@@ -2665,21 +2641,4 @@ button.lonelog-bookkeeping-write.is-quiet {
 .lonelog-tag-key {
   opacity: 1;
   color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
-}
-
-/* Entries are cut at nine lines of room, the fade only over the last two; the one in focus opens. */
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
-  max-height: 9rem;
-}
-
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
-  background: linear-gradient(to bottom, transparent 6.5rem, var(--background-primary));
-}
-
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected):focus-within {
-  max-height: none;
-}
-
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected):focus-within::after {
-  display: none;
 }

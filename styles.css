@@ -2587,22 +2587,6 @@ p.rpg-item-magic-card__subtitle {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--interactive-accent);
 }
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
-  position: relative;
-  max-height: 6rem;
-  overflow: hidden;
-}
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 4rem,
-      var(--background-primary));
-}
 .lonelog-sidebar-table {
   width: 100%;
   border-collapse: collapse;
@@ -2847,7 +2831,6 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-term.is-winner .lonelog-threshold-value {
   font-weight: 700;
   color: light-dark(#7a5d0c, #f0d066);
-  text-shadow: 0 0 6px light-dark(rgba(180, 140, 20, 0.32), rgba(230, 195, 77, 0.45));
 }
 .lonelog-die {
   white-space: nowrap;
@@ -2992,7 +2975,6 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-tag-key--sheet:focus-visible {
   outline: none;
   opacity: 1;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--lonelog-tag-hue) 45%, transparent);
 }
 .rpg-list-sheet-modal h3 {
   margin: 0 0 0.15rem;
@@ -4092,22 +4074,6 @@ button.lonelog-bookkeeping-write.is-quiet {
 .lonelog-tag-key {
   opacity: 1;
   color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
-}
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
-  max-height: 9rem;
-}
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 6.5rem,
-      var(--background-primary));
-}
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected):focus-within {
-  max-height: none;
-}
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected):focus-within::after {
-  display: none;
 }
 
 /* lib/styles/components/session-log-tags.css */
@@ -6954,9 +6920,18 @@ button.rpg-hotbar-tab {
   color: var(--text-normal);
 }
 body.is-mobile button.hud-card-studio {
+  top: auto;
+  bottom: 1.1rem;
+  left: auto;
+  right: -0.1rem;
   width: 2rem;
   height: 2rem;
-  opacity: 0.9;
+  opacity: 0;
+  pointer-events: none;
+}
+body.is-mobile li.hud-card:has(button.hud-face.is-active) button.hud-card-studio {
+  opacity: 0.95;
+  pointer-events: auto;
 }
 body.is-mobile .hud-roster .hud-specials .actor-chip,
 body.is-mobile .hud-roster-card .actions-side {
@@ -6965,6 +6940,50 @@ body.is-mobile .hud-roster-card .actions-side {
 body.is-mobile button.rpg-hotbar-tab {
   min-height: 2rem;
   padding-inline: 0.8rem;
+}
+.hud-roster-card .hud-face-frame {
+  width: 2.9rem;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 50%;
+}
+.hud-roster .hud-face-name {
+  position: static;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--text-normal);
+}
+.hud-roster .hud-face-hp small,
+.hud-roster-card .hud-face-hp small {
+  display: none;
+}
+.hud-roster-card .hud-face-hp .hud-hpbar {
+  width: 2.4rem;
+  margin-inline: auto;
+}
+button.hud-face.is-active .hud-face-frame,
+button.hud-face.is-foe.is-active .hud-face-frame {
+  box-shadow: none;
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+button.hud-face.is-foe.is-active .hud-face-frame {
+  outline-color: var(--text-error);
+}
+.hud-face-next {
+  box-shadow: none;
+}
+.hud-roster .hud-face-frame .rpg-card-frame,
+.hud-roster .hud-face-frame .rpg-card-frame-inner {
+  background: transparent;
 }
 
 /* lib/styles/components/card-frame.css */

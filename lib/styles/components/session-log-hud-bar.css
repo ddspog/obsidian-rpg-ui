@@ -1451,9 +1451,20 @@ button.rpg-hotbar-tab {
 
 /* A touchscreen has no hover: the picture buttons show, and every control is big enough to press. */
 body.is-mobile button.hud-card-studio {
+  top: auto;
+  bottom: 1.1rem;
+  left: auto;
+  right: -0.1rem;
   width: 2rem;
   height: 2rem;
-  opacity: 0.9;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Only the picked character's picture button shows, below-right of the face, not over it. */
+body.is-mobile li.hud-card:has(button.hud-face.is-active) button.hud-card-studio {
+  opacity: 0.95;
+  pointer-events: auto;
 }
 
 body.is-mobile .hud-roster .hud-specials .actor-chip,
@@ -1464,4 +1475,60 @@ body.is-mobile .hud-roster-card .actions-side {
 body.is-mobile button.rpg-hotbar-tab {
   min-height: 2rem;
   padding-inline: 0.8rem;
+}
+
+/* ═══ Compact roster: a round face, the first name, a thin hit point bar ═══
+   The portraits stood as tall cards and took most of the drawer and the margin. */
+.hud-roster-card .hud-face-frame {
+  width: 2.9rem;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 50%;
+}
+
+.hud-roster .hud-face-name {
+  position: static;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--text-normal);
+}
+
+.hud-roster .hud-face-hp small,
+.hud-roster-card .hud-face-hp small {
+  display: none;
+}
+
+.hud-roster-card .hud-face-hp .hud-hpbar {
+  width: 2.4rem;
+  margin-inline: auto;
+}
+
+/* Whoever is picked is ringed, not glowing. */
+button.hud-face.is-active .hud-face-frame,
+button.hud-face.is-foe.is-active .hud-face-frame {
+  box-shadow: none;
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+button.hud-face.is-foe.is-active .hud-face-frame {
+  outline-color: var(--text-error);
+}
+
+.hud-face-next {
+  box-shadow: none;
+}
+
+/* The card frame's own backing shows as a sliver at a round face's edge; the picture fills it. */
+.hud-roster .hud-face-frame .rpg-card-frame,
+.hud-roster .hud-face-frame .rpg-card-frame-inner {
+  background: transparent;
 }
