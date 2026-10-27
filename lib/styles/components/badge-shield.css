@@ -21,7 +21,7 @@ figure[aria-details="Badge Shield"] svg {
 figure[aria-details="Badge Shield"] output[aria-details="Armor Class"] {
   position: relative;
   z-index: 1;
-  font-size: 1.4em;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   color: var(--rpg-badge-text, #e3dcce);
   line-height: 56px;
@@ -30,7 +30,7 @@ figure[aria-details="Badge Shield"] output[aria-details="Armor Class"] {
 }
 
 figure[aria-details="Badge Shield"] figcaption {
-  font-size: 0.55em;
+  font-size: var(--rpg-fs-micro);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;

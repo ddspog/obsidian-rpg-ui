@@ -34,7 +34,7 @@ svg[aria-details="Progress Health"] output {
   gap: 4px;
   width: 100%;
   height: 100%;
-  font-size: 0.95rem;
+  font-size: var(--rpg-fs-row);
   font-weight: 700;
   color: var(--rpg-hp-bar-text, #ffffff);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -44,6 +44,6 @@ svg[aria-details="Progress Health"] output {
 
 svg[aria-details="Progress Health"] [aria-details="Secondary Value"] {
   color: var(--rpg-hp-bar-text, #ffffff);
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-data);
   margin-left: auto;
 }

@@ -247,7 +247,7 @@
     align-items: center;
     justify-content: center;
     margin-inline-end: -4px;
-    font-size: 1.05rem;
+    font-size: var(--rpg-fs-row);
   }
 
   section[aria-details="Character Skills"] > menu > li > [aria-details="Skill Note"] .rpg-inline-md {
@@ -280,7 +280,7 @@
     width: auto;
     max-width: none;
     overflow: visible;
-    font-size: 0.85rem;
+    font-size: var(--rpg-fs-data);
   }
 
   /* A roll is a short card: name and to-hit on the first line, then whatever the roll has (damage, range,
@@ -310,7 +310,7 @@
   section[aria-details="Character Rolls"] td.rpg-rolls__name {
     flex: 1 0 100%;
     order: 0;
-    font-size: 1rem;
+    font-size: var(--rpg-fs-row);
     font-weight: 600;
   }
 
@@ -327,25 +327,25 @@
     border: 1px solid currentColor;
     border-radius: 6px;
     color: light-dark(#2c6b34, #8fd19b);
-    font-size: 0.85rem !important;
+    font-size: var(--rpg-fs-data) !important;
     font-weight: 700;
     white-space: nowrap;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__dc {
     order: 4;
-    font-size: 0.85rem !important;
+    font-size: var(--rpg-fs-data) !important;
     font-weight: 700;
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__damage {
     order: 2;
-    font-size: 0.95rem;
+    font-size: var(--rpg-fs-row);
   }
 
   section[aria-details="Character Rolls"] td.rpg-rolls__range {
     order: 3;
-    font-size: 0.9rem;
+    font-size: var(--rpg-fs-body);
     white-space: nowrap;
     color: light-dark(#6d6048, #a8a08a);
   }
@@ -369,7 +369,7 @@
     width: 52px;
     min-height: 44px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: var(--rpg-fs-data);
   }
 
   /* ── Session log ─────────────────────────────────────────────────── */
@@ -806,7 +806,7 @@ body.is-mobile .markdown-rendered [role="button"] img {
   .rpg-inventory-block__item-stat-notes {
     display: inline;
     color: var(--text-muted);
-    font-size: 0.85em;
+    font-size: var(--rpg-fs-micro);
     font-style: italic;
   }
 

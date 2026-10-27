@@ -43,26 +43,30 @@ figure[aria-details="Stat Diamond"] output[aria-details="Stat Value"] {
   display: flex;
   align-items: baseline;
   gap: 1px;
-  font-size: 1.3em;
+  font-size: var(--rpg-fs-stat);
   font-weight: 700;
   color: var(--rpg-diamond-value, #e3dcce);
   line-height: 1;
 }
 
 figure[aria-details="Stat Diamond"] output [aria-details="Stat Extra"] {
-  font-size: 0.65em;
+  font-size: var(--rpg-fs-body);
   font-weight: 600;
   color: var(--rpg-diamond-label, #a09880);
 }
 
 figure[aria-details="Stat Diamond"][data-size="lg"] output[aria-details="Stat Value"] {
-  font-size: 1.6em;
+  font-size: var(--rpg-fs-display);
+}
+
+figure[aria-details="Stat Diamond"][data-size="lg"] output [aria-details="Stat Extra"] {
+  font-size: var(--rpg-fs-row);
 }
 
 figure[aria-details="Stat Diamond"] figcaption {
   position: relative;
   z-index: 1;
-  font-size: max(var(--rpg-fs-micro), 0.5em);
+  font-size: var(--rpg-fs-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -89,7 +93,7 @@ figure[aria-details="Stat Diamond"] .rpg-stat-diamond-vantage {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  font-size: 9px;
+  font-size: var(--rpg-fs-micro);
   font-weight: 700;
   line-height: 1;
   color: #fff;

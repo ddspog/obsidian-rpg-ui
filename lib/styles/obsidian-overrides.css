@@ -152,10 +152,15 @@
  * letter-spacing, text-transform) stay here so the attribution line
  * keeps its visual rhythm relative to the surrounding row. */
 .markdown-rendered a.rpg-feature-bucket-source,
-.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source,
+.markdown-source-view.mod-cm6 a.rpg-feature-bucket-source {
+  font-size: var(--rpg-fs-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .markdown-rendered a.rpg-spell-entry-enabler,
 .markdown-source-view.mod-cm6 a.rpg-spell-entry-enabler {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-label);
   text-transform: none;
   letter-spacing: 0;
 }

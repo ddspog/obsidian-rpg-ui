@@ -4,7 +4,7 @@ figure[aria-details="Page Title"] {
   flex: 1 1 auto;
   margin: 0;
   padding: 0;
-  font-size: 2rem;
+  font-size: var(--rpg-fs-title);
   font-weight: 700;
   font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
   letter-spacing: 0.04em;
@@ -16,7 +16,7 @@ figure[aria-details="Page Title"] {
 }
 
 .rpg-title-banner {
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   opacity: 0.85;
   margin-left: 12px;
   color: rgba(255, 255, 255, 0.9);

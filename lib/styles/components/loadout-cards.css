@@ -16,7 +16,7 @@
 /* Same lettering as the inventory's "Attunement" label. */
 .rpg-loadouts-label {
   flex: none;
-  font-size: 0.78rem;
+  font-size: var(--rpg-fs-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -101,21 +101,21 @@ button.rpg-loadout:hover:not(:disabled) {
 
 .rpg-loadout-name {
   margin-bottom: 0.1rem;
-  font-size: var(--font-ui-small);
+  font-size: var(--rpg-fs-data);
   font-weight: 700;
   line-height: 1.2;
   color: light-dark(#1a1208, #f0e8d0);
 }
 
 .rpg-loadout-hand {
-  font-size: var(--font-ui-smaller);
+  font-size: var(--rpg-fs-label);
   line-height: 1.25;
   white-space: nowrap;
   color: light-dark(#1a1208, #e3dcce);
 }
 
 .rpg-loadout-hand > small {
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-micro);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: light-dark(#6a4e2a, #d4a840);

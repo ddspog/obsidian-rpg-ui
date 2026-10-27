@@ -6,7 +6,7 @@ figure[aria-details="Progress Bar"] {
 
   /* Values row rendered ABOVE the bar */
   figcaption {
-    font-size: 0.82rem;
+    font-size: var(--rpg-fs-data);
     font-family: var(--font-text, "New York", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif);
     color: var(--rpg-slab-label, #d4c9a8);
     text-align: left;

@@ -90,7 +90,7 @@ section[aria-details="Character Rolls"] > header {
   --rpg-tag-cut: 8px;
   filter: none;
   margin: 0 -12px 0;
-  font-size: 0.85em;
+  font-size: var(--rpg-fs-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -111,7 +111,7 @@ section[aria-details="Character Rolls"] table {
   border-collapse: collapse;
   border-spacing: 0;
   border: none !important;
-  font-size: 0.8125rem;
+  font-size: var(--rpg-fs-data);
   font-variant-numeric: tabular-nums;
 }
 
@@ -235,7 +235,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__form-icon {
   margin-right: 8px;
   text-align: center;
   color: light-dark(#6a4e2a, #d4a840);
-  font-size: 1.05em;
+  font-size: var(--rpg-fs-data);
   line-height: 1;
   user-select: none;
 }
@@ -349,7 +349,7 @@ section[aria-details="Character Rolls"] button[data-tip]::after {
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.9em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   white-space: nowrap;
@@ -402,7 +402,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__damage-sep {
 
 section[aria-details="Character Rolls"] .rpg-rolls__effects {
   color: var(--text-muted);
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-data);
 }
 
 /* Effect glyphs — small uniform pill of colour with an instant CSS
@@ -439,7 +439,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__icon[data-tip]::after {
   background: light-dark(#1a1208, #f0e8d0);
   color: light-dark(#f0e8d0, #1a1208);
   border-radius: 3px;
-  font-size: 0.95em;
+  font-size: var(--rpg-fs-label);
   font-weight: 500;
   font-style: normal;
   white-space: nowrap;
@@ -464,6 +464,7 @@ section[aria-details="Character Rolls"] .rpg-rolls__notes-text {
   margin-left: 4px;
   color: var(--text-muted);
   font-style: italic;
+  font-size: var(--rpg-fs-micro);
   /* Single-line reveal so the Effects cell grows sideways (not down) —
    * the section's horizontal scroll handles the overflow. */
   white-space: nowrap;
@@ -498,7 +499,7 @@ section[aria-details="Character Rolls"] td.rpg-rolls__roll > button {
   border-radius: 4px;
   background: #5a37b8;
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: var(--rpg-fs-data);
   font-weight: 600;
   cursor: pointer;
 }

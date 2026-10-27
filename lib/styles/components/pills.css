@@ -9,7 +9,7 @@ span[aria-details="Link Pill"] {
   border: none;
   border-radius: 0;
   color: var(--rpg-slab-label, #d4c9a8);
-  font-size: 0.75rem;
+  font-size: var(--rpg-fs-label);
   font-family: var(--inline-title-font, "SF Compact Display", "SF Pro Display", system-ui, sans-serif);
 
   font-weight: 500;
@@ -48,7 +48,7 @@ span[aria-details="Pill Reference"] {
  * have an optional `comment:` field). Sits as a sibling of the pill so the
  * link text stays clean while letting the note contextualize the pick. */
 small[aria-details="Pill Comment"] {
-  font-size: 0.7rem;
+  font-size: var(--rpg-fs-micro);
   font-style: italic;
   font-weight: 400;
   text-transform: none;
