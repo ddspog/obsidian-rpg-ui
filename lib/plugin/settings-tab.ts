@@ -10,6 +10,7 @@ import { renderSystemMappings } from "lib/plugin/system-mappings-ui";
 import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 import { ImageStudioModal } from "lib/plugin/image-studio-modal";
 import { createSection, setSectionsOpen } from "lib/plugin/settings-sections";
+import { exportSettings } from "lib/plugin/settings-export";
 import {
   activeFrameSource,
   FRAME_KINDS,
@@ -218,6 +219,17 @@ export class DndSettingsTab extends PluginSettingTab {
             this.plugin.settings.scrollRestoreDelayMs = Number.isFinite(parsed) && parsed >= 0 ? parsed : 600;
             await this.plugin.saveSettings();
           })
+      );
+
+    const share = createSection(panel, "general:share", "Share settings", { open: false }).body;
+    new Setting(share)
+      .setName("Copy settings")
+      .setDesc("Copies these settings as JSON (API keys left out), to paste into a chat or an issue.")
+      .addButton((button) =>
+        button.setButtonText("Copy").onClick(async () => {
+          await navigator.clipboard.writeText(exportSettings(this.plugin.settings));
+          new Notice("Settings copied");
+        })
       );
 
     const footer = createSection(panel, "general:footer", "Page footer fields", {
