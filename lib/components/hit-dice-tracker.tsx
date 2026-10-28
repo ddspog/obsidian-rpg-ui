@@ -39,6 +39,7 @@ export function HitDiceTracker(props: HitDiceTrackerProps) {
                 key={`${hd.dice}-${i}`}
                 checked={i < used}
                 id={`hit-dice-${hd.dice}-${i}`}
+                label={`Hit die ${hd.dice}, ${i + 1} of ${hd.value}`}
                 onChange={() => props.onToggle(props.hasSingleHitDice ? null : hd.dice, i)}
               />
             );

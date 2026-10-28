@@ -23,6 +23,7 @@ export function DeathSaves(props: DeathSavesProps) {
           key={`failure-${i}`}
           checked={i < props.failures}
           id={`death-save-failure-${i}`}
+          label={`Death save failure ${i + 1} of 3`}
           onChange={() => props.onToggle("failure", i)}
           className="death-save-failure"
         />
@@ -36,6 +37,7 @@ export function DeathSaves(props: DeathSavesProps) {
           key={`success-${i}`}
           checked={i < props.successes}
           id={`death-save-success-${i}`}
+          label={`Death save success ${i + 1} of 3`}
           onChange={() => props.onToggle("success", i)}
           className="death-save-success"
         />
