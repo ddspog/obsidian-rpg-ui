@@ -4,14 +4,8 @@
  */
 
 import { App } from "obsidian";
-import { AbilityScoreView } from "lib/views/AbilityScoreView";
 import { BaseView } from "lib/views/BaseView";
-import { SkillsView } from "lib/views/SkillsView";
-import { HealthView } from "lib/views/HealthView";
-import { ConsumableView } from "lib/views/ConsumableView";
-import { BadgesView, StatsView } from "lib/views/BadgesView";
 import { InitiativeView } from "lib/views/InitiativeView";
-import { EventButtonsView } from "lib/views/EventButtonsView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { DraftView } from "lib/views/DraftView";
@@ -27,31 +21,15 @@ import {
 } from "lib/views/SystemViews";
 import { KeyValueStore } from "lib/services/kv/kv";
 
-/** Legacy block type → rpg meta key mappings for backward compatibility. */
+/** Plain (non-`rpg`) fence names → rpg meta key, so an old ```initiative block still renders. */
 export const LEGACY_MAPPINGS: Record<string, string> = {
-  ability: "attributes",
-  skills: "skills",
-  healthpoints: "healthpoints",
-  stats: "stats",
-  badges: "badges",
-  consumable: "consumable",
   initiative: "initiative",
-  "event-btns": "events",
 };
 
 /** Instantiate all views. */
 export function createViews(app: App, kv: KeyValueStore): BaseView[] {
   return [
-    // Static
-    new StatsView(app),
-    new AbilityScoreView(app),
-    new SkillsView(app),
-    new BadgesView(app),
-    new EventButtonsView(app),
-
     // Dynamic/Stateful
-    new HealthView(app, kv),
-    new ConsumableView(app, kv),
     new InitiativeView(app, kv),
     new SessionLogView(app, kv),
 

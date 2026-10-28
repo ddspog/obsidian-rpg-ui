@@ -2,10 +2,9 @@
  * Inventory view.
  *
  * Dispatches between two renderers based on YAML shape:
- *   - New schema (`items:` + wikilink-resolved frontmatter) → `InventoryBlock`
- *   - Legacy schema (`sections:` + inline item data)        → `Inventory`
+ *   `items:` + wikilink-resolved frontmatter → `InventoryBlock`
  *
- * The new renderer resolves each item's compendium note frontmatter
+ * The renderer resolves each item's compendium note frontmatter
  * synchronously via `app.metadataCache`, routes items into fixed sections
  * (Weapons / Armor / Visible / Main & Other Containers), and auto-computes
  * encumbrance bands from the character's STR (via the template pipeline).
@@ -15,15 +14,12 @@ import { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 
-import * as Tmpl from "lib/html-templates";
 import { BaseView } from "./BaseView";
 import { ReactMarkdown } from "./ReactMarkdown";
 import { useFileContext } from "./filecontext";
-import { createTemplateContext, hasTemplateVariables, processTemplate } from "lib/utils/template";
+import { createTemplateContext, processTemplate } from "lib/utils/template";
 import { parseNewInventoryBlock, resolveInventory, type LookupFn, type NewInventoryBlock } from "lib/domains/inventory";
-import { legacy as LegacyInventoryDomain } from "lib/domains/inventory";
 import { InventoryBlock as InventoryBlockComponent } from "lib/components/inventory/InventoryBlock";
-import { Inventory as LegacyInventoryComponent } from "lib/components/inventory/Legacy";
 
 export class InventoryView extends BaseView {
   public codeblock = "inventory";
@@ -35,38 +31,11 @@ export class InventoryView extends BaseView {
       ctx.addChild(child);
       return;
     }
-    return this.renderLegacy(source, el, ctx);
-  }
-
-  private renderLegacy(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): string {
-    const block = LegacyInventoryDomain.parseInventoryBlock(source);
-    const totalWeight = LegacyInventoryDomain.calculateTotalWeight(block.sections || []);
-
-    let capacity: number | undefined;
-    if (block.encumbrance?.capacity) {
-      const fc = useFileContext(this.app, ctx);
-      try {
-        if (hasTemplateVariables(block.encumbrance.capacity)) {
-          const tctx = createTemplateContext(el, fc);
-          const result = processTemplate(block.encumbrance.capacity, tctx);
-          const n = Number(result);
-          if (!Number.isNaN(n)) capacity = n;
-        } else {
-          const n = Number(block.encumbrance.capacity);
-          if (!Number.isNaN(n)) capacity = n;
-        }
-      } catch (e) {
-        console.error("DnD UI Toolkit: Error evaluating encumbrance capacity:", e);
-      }
-    }
-
-    return Tmpl.Render(
-      LegacyInventoryComponent({
-        data: block,
-        totalWeight,
-        capacity,
-      })
-    );
+    // Not the `items:` schema (the old `sections:` shape is no longer drawn): say so.
+    el.createDiv({
+      cls: "notice",
+      text: "rpg inventory: needs an `items:` list (the old `sections:` shape is no longer supported).",
+    });
   }
 }
 
