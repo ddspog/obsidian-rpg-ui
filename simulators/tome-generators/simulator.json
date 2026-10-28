@@ -1,0 +1,14 @@
+{
+  "id": "tome-generators",
+  "title": "Tome Generators",
+  "about": "The Tome of Worldbuilding's generator cards on the plugin's Log: pick a card, pick a kind, roll its tables.",
+  "entry": "index.ts",
+  "vault": {
+    "include": [
+      "tales-of-the-valiant/binder/00. GM Screen.md",
+      "tales-of-the-valiant/gm-tools/**",
+      "tales-of-the-valiant/compendium/the-tome-of-worldbuilding/**",
+      "tales-of-the-valiant/compendium/the-nomicon/**"
+    ]
+  }
+}
