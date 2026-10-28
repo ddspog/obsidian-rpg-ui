@@ -881,3 +881,61 @@ button.placeholder-party-flag {
 .lonelog-placeholder-popover .placeholder-rider {
   font-size: var(--font-ui-small);
 }
+
+/* ═══ UI review: a form that reads as ready or not, with targets you can hit ═══ */
+
+/* Not yet filled: the preview is a faint outline of what is coming, not a sample. */
+.placeholder-preview.is-empty .placeholder-preview-entries {
+  opacity: 0.55;
+}
+
+/* Append is a quiet outlined button until the form is done (it was a lilac that failed contrast),
+   and Cancel is an outlined button too. */
+.lonelog-placeholder-popover button.placeholder-submit:disabled {
+  opacity: 1;
+  border: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.lonelog-placeholder-popover button.placeholder-cancel {
+  border: 1px solid var(--background-modifier-border);
+}
+
+.placeholder-needs {
+  color: var(--text-muted);
+}
+
+/* One height for fields, a readable placeholder, and a roll die you can press. */
+.lonelog-placeholder-popover .placeholder-input,
+.lonelog-placeholder-popover .placeholder-select {
+  min-height: 2.25rem;
+  box-sizing: border-box;
+}
+
+.lonelog-placeholder-popover .placeholder-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.lonelog-placeholder-popover .lonelog-entries button.lonelog-roll-expr--btn {
+  /* An inline button ignores min-height: it has to be a box to get one. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.25rem;
+}
+
+.lonelog-placeholder-popover .lonelog-entries input.lonelog-roll-value--input {
+  min-width: 5.5ch;
+  height: 2rem;
+}
+
+.lonelog-placeholder-popover
+  :is(.lonelog-roll-expr--btn, .lonelog-roll-value--input, .placeholder-submit, .placeholder-cancel):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}

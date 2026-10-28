@@ -37,6 +37,13 @@ export interface ProseViewProps {
   renderTravelMap?: (startId: number) => React.ReactNode;
 }
 
+/** A stable hue (0-359) for a speaker's name, so each voice keeps its own colour through the log. */
+function speakerHue(name: string): number {
+  let h = 0;
+  for (const ch of name.trim().toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return h;
+}
+
 export function ProseView({
   scenes,
   sourcePath,
@@ -308,7 +315,9 @@ function DialogueBalloon({
 }) {
   return (
     <div className={`lonelog-balloon lonelog-balloon-${speakerType}`}>
-      <span className="lonelog-balloon-speaker">{speaker}</span>
+      <span className="lonelog-balloon-speaker" style={{ "--speaker-hue": speakerHue(speaker) } as React.CSSProperties}>
+        {speaker}
+      </span>
       <InlineMarkdown source={text} sourcePath={sourcePath} className="lonelog-balloon-text" />
     </div>
   );

@@ -13,7 +13,8 @@
 
 .lonelog-dock-zone.with-sidebar:not(.is-stacked) > .lonelog-bottom-drawer {
   margin-inline-start: calc(-2rem - var(--log-sidebar-width) / 2);
-  margin-inline-end: calc(-2rem + var(--log-sidebar-width) / 2);
+  /* A rem of air between the drawer and the Log it sits beside. */
+  margin-inline-end: calc(-1rem + var(--log-sidebar-width) / 2);
 }
 
 .lonelog-bottom-drawer {

@@ -171,6 +171,16 @@ function prepareVault() {
       .map((d) => ({ folderPaths: [d.name], systemFolderPath: `${d.name}/config` }));
     fs.writeFileSync(dataJson, JSON.stringify({ systemMappings }));
   }
+  // PLUGIN_SETTINGS_B64 (what the plugin's Copy settings button writes) or PLUGIN_SETTINGS: settings to lay over
+  // data.json in the copy. PLUGIN_SETTINGS is a JSON file's path, or JSON itself, e.g.
+  // PLUGIN_SETTINGS='{"hexPacksFolder":"z52. UI Elements/Hex Packs","hexDefaultPack":"basic"}'
+  const raw = process.env.PLUGIN_SETTINGS_B64
+    ? Buffer.from(process.env.PLUGIN_SETTINGS_B64, "base64").toString("utf8")
+    : process.env.PLUGIN_SETTINGS;
+  if (raw) {
+    const extra = JSON.parse(fs.existsSync(raw) ? fs.readFileSync(raw, "utf8") : raw);
+    fs.writeFileSync(dataJson, JSON.stringify({ ...JSON.parse(fs.readFileSync(dataJson, "utf8")), ...extra }));
+  }
   if (THEME_DIR) {
     const { name } = JSON.parse(fs.readFileSync(path.join(THEME_DIR, "manifest.json"), "utf8"));
     const themeDest = path.join(vaultCopy, ".obsidian", "themes", name);

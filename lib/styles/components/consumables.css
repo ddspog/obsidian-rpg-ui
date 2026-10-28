@@ -15,7 +15,8 @@
 .consumable-label {
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-primary);
+  /* Sits on the page, not on a palette card: the palette's light-on-dark text was 1.25:1 here. */
+  color: var(--text-normal);
   display: inline-block;
   width: var(--consumable-label-width, 3.5rem);
   text-align: left;

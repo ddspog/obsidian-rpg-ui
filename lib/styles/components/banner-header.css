@@ -159,7 +159,10 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
   display: none;
 }
 
-.hover-popover.hover-popover header[aria-details*=" Banner"] fieldset[aria-details="Leveling"] figure[aria-details="Inspirational Level"] {
+.hover-popover.hover-popover
+  header[aria-details*=" Banner"]
+  fieldset[aria-details="Leveling"]
+  figure[aria-details="Inspirational Level"] {
   zoom: 0.85;
 }
 
@@ -273,4 +276,13 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
     flex: 1 1 0 !important;
     min-width: 0;
   }
+}
+
+/* Links in the sheet's header (house, patron) sit on the brown banner: a light tint, not the page's accent. */
+header[aria-details*=" Banner"] a.internal-link {
+  color: #e9dcff;
+}
+
+header[aria-details*=" Banner"] a.internal-link:hover {
+  color: #fff;
 }

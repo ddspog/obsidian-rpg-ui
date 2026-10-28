@@ -10,6 +10,7 @@ import { renderSystemMappings } from "lib/plugin/system-mappings-ui";
 import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 import { ImageStudioModal } from "lib/plugin/image-studio-modal";
 import { createSection, setSectionsOpen } from "lib/plugin/settings-sections";
+import { exportSettingsEnv } from "lib/plugin/settings-export";
 import {
   activeFrameSource,
   FRAME_KINDS,
@@ -39,6 +40,29 @@ interface PluginWithSettings {
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
+}
+
+/**
+ * Give every control in the panel a name a screen reader can say: the setting's own name (most fields had
+ * only a placeholder). A control that already has a label keeps it.
+ */
+function nameControls(panel: HTMLElement): void {
+  for (const item of Array.from(panel.querySelectorAll<HTMLElement>(".setting-item"))) {
+    const name = item.querySelector(".setting-item-name")?.textContent?.trim();
+    if (!name) continue;
+    const controls = Array.from(
+      item.querySelectorAll<HTMLElement>(
+        ".setting-item-control input, .setting-item-control select, .setting-item-control textarea"
+      )
+    );
+    controls.forEach((el, i) => {
+      if (el.getAttribute("aria-label") || el.id) return;
+      el.setAttribute("aria-label", controls.length > 1 ? `${name} ${i + 1}` : name);
+    });
+    for (const btn of Array.from(item.querySelectorAll<HTMLElement>(".setting-item-control .extra-setting-button"))) {
+      if (!btn.getAttribute("aria-label")) btn.setAttribute("aria-label", name);
+    }
+  }
 }
 
 /** What a kind's section says it draws with. */
@@ -177,6 +201,7 @@ export class DndSettingsTab extends PluginSettingTab {
         this.renderHexMaps(panel);
         break;
     }
+    nameControls(panel);
   }
 
   /** The state file, scroll restore and the page footer. */
@@ -218,6 +243,19 @@ export class DndSettingsTab extends PluginSettingTab {
             this.plugin.settings.scrollRestoreDelayMs = Number.isFinite(parsed) && parsed >= 0 ? parsed : 600;
             await this.plugin.saveSettings();
           })
+      );
+
+    const share = createSection(panel, "general:share", "Share settings", { open: false }).body;
+    new Setting(share)
+      .setName("Copy settings")
+      .setDesc(
+        "Copies these settings as one PLUGIN_SETTINGS_B64=… line (API keys left out) to paste into a cloud environment's variables, so cloud sessions run with the same settings."
+      )
+      .addButton((button) =>
+        button.setButtonText("Copy").onClick(async () => {
+          await navigator.clipboard.writeText(exportSettingsEnv(this.plugin.settings));
+          new Notice("Settings copied");
+        })
       );
 
     const footer = createSection(panel, "general:footer", "Page footer fields", {

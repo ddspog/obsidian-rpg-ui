@@ -42,4 +42,4 @@ BRAT will automatically check for updates. You can also manually update:
 ## Next Steps
 
 - Follow the [Quick Start Guide](./quick-start.md) to create your first character sheet
-- Explore the [Components](../character-sheet/ability-scores.md) to see what you can build
+- Explore the [Components](../character-sheet/features.md) to see what you can build

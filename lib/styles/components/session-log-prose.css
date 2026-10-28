@@ -377,7 +377,6 @@
   margin-bottom: 0.15rem;
 }
 
-
 .lonelog-balloon-pc .lonelog-balloon-speaker {
   color: light-dark(#6a4e2a, #d4a840);
 }
@@ -526,28 +525,6 @@
 .lonelog-sidebar .lonelog-sidebar-item:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--interactive-accent);
-}
-
-/* Clamp long entries until selected, with a soft fade where they are cut.
- * Sidebar-only — the read-only example shows entries in full.
- *
- * The fade is a PAINTED gradient, not `mask-image`: a mask clips everything inside
- * the element, including out-of-flow descendants whose containing block is the
- * viewport. That silently cut off a roll chip's expanded layer even though
- * `position: fixed` had escaped both `overflow: hidden` and the scroll container.
- * Measured — the mask was the only ancestor still clipping. */
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected) {
-  position: relative;
-  max-height: 6rem;
-  overflow: hidden;
-}
-
-.lonelog-sidebar .lonelog-sidebar-item:not(.is-selected)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent 4rem, var(--background-primary));
 }
 
 /* ── Entry table: icon | content | pills ── */
@@ -878,7 +855,6 @@
 .lonelog-term.is-winner .lonelog-threshold-value {
   font-weight: 700;
   color: light-dark(#7a5d0c, #f0d066);
-  text-shadow: 0 0 6px light-dark(rgba(180, 140, 20, 0.32), rgba(230, 195, 77, 0.45));
 }
 
 /* Dice: the value is real text on the baseline; the die silhouette is an SVG
@@ -1081,7 +1057,6 @@
 .lonelog-tag-key--sheet:focus-visible {
   outline: none;
   opacity: 1;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--lonelog-tag-hue) 45%, transparent);
 }
 
 /* ── List sheet modal: the printed list page ── */
@@ -2640,4 +2615,182 @@ button.lonelog-bookkeeping-write.is-quiet {
 /* ...and the notch that kept the first line clear of the corner tab has nothing to keep clear of. */
 .session-log-container.has-bar .lonelog-log-notch {
   display: none;
+}
+
+/* ═══ UI review: a Log you can read ═══ */
+
+.lonelog-sidebar-header {
+  font-size: 0.8em;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar-item {
+  font-size: 0.82em;
+}
+
+.lonelog-sidebar .lonelog-sidebar-item {
+  min-width: 0;
+  overflow-x: clip;
+  overflow-wrap: anywhere;
+}
+
+.lonelog-tag-key {
+  opacity: 1;
+  color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
+}
+
+/* ═══ UI review, round two: a header that belongs to its panel, entries set apart by a line ═══ */
+
+/* The header takes the panel's own colour (it was the page's, a pale bar on the tan panel) and
+   sits over a hairline; the close button is a plain ✕, not a boxed chip. */
+.lonelog-sidebar .lonelog-sidebar-header {
+  background: inherit;
+  padding: 0.35rem 0.1rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Every entry is set off by a visible line, with room above and below it. */
+.lonelog-sidebar .lonelog-sidebar-item {
+  padding-block: 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.lonelog-sidebar .lonelog-sidebar-item:last-child {
+  border-bottom: none;
+}
+
+/* ═══ UI review: bookkeeping rows that do not collide ═══ */
+
+button.lonelog-bookkeeping-write,
+button.lonelog-bookkeeping-recount,
+button.lonelog-bookkeeping-tool {
+  min-height: 1.75rem;
+  padding-inline: 0.6rem;
+  font-size: max(0.75rem, 0.8em);
+}
+
+button.lonelog-bookkeeping-recount {
+  color: var(--text-muted);
+}
+
+button.lonelog-bookkeeping-write.is-quiet {
+  color: var(--text-muted);
+}
+
+.lonelog-bookkeeping-change .lonelog-row-label {
+  color: var(--text-muted);
+}
+
+/* On a phone the "sheet now" note takes its own line under the row instead of sitting on "rewrite". */
+body.is-mobile .lonelog-bookkeeping-sheet dd.lonelog-bookkeeping-change {
+  row-gap: 0.1rem;
+}
+
+body.is-mobile .lonelog-bookkeeping-status {
+  display: block;
+  grid-column: 1 / -1;
+  margin-left: 0;
+  white-space: normal;
+}
+
+body.is-mobile button.lonelog-bookkeeping-write,
+body.is-mobile button.lonelog-bookkeeping-recount,
+body.is-mobile button.lonelog-bookkeeping-tool {
+  min-height: 2.25rem;
+  min-width: 2.75rem;
+}
+
+/* ═══ UI review: prose you can read and press ═══ */
+
+/* Nothing in the log under 11px (the working lines and labels were 8-10px), and the faint greys that
+   failed contrast take a muted text colour instead. */
+.lonelog-row-label,
+.lonelog-threshold-label,
+.lonelog-roll-mod,
+.lonelog-roll-mod-name,
+.lonelog-roll-mod-value,
+.lonelog-economy-slot,
+.lonelog-contest-vs,
+.lonelog-tag-key {
+  font-size: max(11px, 0.82em);
+}
+
+.lonelog-row-label,
+.lonelog-roll-mod,
+.lonelog-contest-vs {
+  color: color-mix(in srgb, var(--text-normal) 62%, var(--background-primary));
+}
+
+/* The scene number is a real label, and the rule under the title shows. */
+.lonelog-prose-scene-id {
+  font-size: 0.8rem;
+}
+
+.lonelog-prose-scene-head {
+  border-bottom-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+
+/* The two sides of a dialogue differ by more than a shade: the clay of the NPC is deeper, and the
+   speaker's name is heavier. */
+.lonelog-balloon-npc {
+  background: light-dark(#e2c7ae, rgba(190, 140, 110, 0.22));
+  border-color: light-dark(#c9a98c, rgba(190, 140, 110, 0.45));
+}
+
+.lonelog-balloon-speaker {
+  font-weight: 700;
+}
+
+/* A phone: bubbles use the width, each stepped in from the side its speaker is on. */
+@media (max-width: 600px) {
+  .lonelog-balloon {
+    max-width: calc(100% - 1.25rem);
+  }
+
+  .lonelog-balloon-pc {
+    margin-inline: 0 1.25rem;
+  }
+
+  .lonelog-balloon-npc {
+    margin-inline: 1.25rem 0;
+  }
+}
+
+/* The source dots are 44px to press on a touchscreen, without growing on the page. */
+body.is-mobile .lonelog-prose-doc button.lonelog-dot::after {
+  inset: -1.1rem;
+}
+
+/* With the Log open the prose keeps a gutter beside it: bubbles no longer end on the Log's own edge. */
+.lonelog-prose-layout.with-sidebar:not(.is-stacked) .lonelog-prose-main {
+  padding-inline-end: 1rem;
+}
+
+/* Each speaker's name has a colour of its own (the same every time), dark enough on the parchment. */
+.lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
+
+.lonelog-balloon-pc .lonelog-balloon-speaker,
+.lonelog-balloon-npc .lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
 }

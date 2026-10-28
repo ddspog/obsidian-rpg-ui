@@ -195,14 +195,21 @@ export function TravelMinimap({
   bodyOf,
   readingId,
   onExpand,
+  compact,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onExpand: () => void;
+  /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
+  compact?: boolean;
 }) {
   const { frame, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
-  const [small, setSmall] = React.useState(false);
+  // On a phone the disc starts as its small button: it would cover a third of the reading column.
+  const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
+  React.useEffect(() => {
+    if (compact) setSmall(true);
+  }, [compact]);
   if (!frame) return null;
   if (small) {
     return (
@@ -300,6 +307,31 @@ export function TravelFullscreen({
 }) {
   const { frame, body, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
   const [fog, setFog] = React.useState(false);
+  const paneRef = React.useRef<HTMLElement>(null);
+  const open = !!frame;
+  // A dialog takes focus, keeps it while open, and gives it back to what opened it.
+  React.useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    paneRef.current?.focus();
+    return () => opener?.focus?.();
+  }, [open]);
+  const trapTab = (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !paneRef.current) return;
+    const stops = Array.from(
+      paneRef.current.querySelectorAll<HTMLElement>("button:not(:disabled), [href], [tabindex='0']")
+    );
+    if (stops.length === 0) return;
+    const [first, last] = [stops[0], stops[stops.length - 1]];
+    const at = document.activeElement;
+    if (e.shiftKey && (at === first || at === paneRef.current)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && at === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -316,9 +348,26 @@ export function TravelFullscreen({
   if (!frame) return null;
   const tokens = Object.keys(frame.positions);
   const layout = drawn?.layout;
+  // On a phone the whole map is too small to read: open on the party, a few hexes across.
+  const onPhone = document.body.classList.contains("is-mobile");
+  const phoneView = (() => {
+    if (!layout || !onPhone) return undefined;
+    const at = frame.positions[frame.moved[0]] ?? Object.values(frame.positions)[0] ?? frame.marks[0]?.at;
+    if (!at) return undefined;
+    const c = hexCenter(at[0], at[1], layout.R);
+    const [w, h] = [layout.R * 14, layout.R * 18];
+    return { x: c.x - w / 2, y: c.y - h / 2, w, h };
+  })();
   return ReactDOM.createPortal(
-    <div className="lonelog-travel-full" role="dialog" aria-label={`Map: ${title}`} onClick={onClose}>
-      <section className="lonelog-travel-pane" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="lonelog-travel-full"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Map: ${title}`}
+      onClick={onClose}
+      onKeyDown={trapTab}
+    >
+      <section ref={paneRef} tabIndex={-1} className="lonelog-travel-pane" onClick={(e) => e.stopPropagation()}>
         <header className="lonelog-travel-head">
           <LucideIcon name="footprints" size={13} />
           <span className="lonelog-travel-title">{title}</span>
@@ -361,6 +410,12 @@ export function TravelFullscreen({
             layout={layout}
             coords="hover"
             errors={[]}
+            {...(phoneView
+              ? { initialView: phoneView }
+              : onPhone
+                ? // Nobody on the map yet: open zoomed in on its middle, not the whole of it at 2px a label.
+                  { startZoom: { zoom: 2.5 } }
+                : {})}
             overlay={<JourneyOverlay frame={frame} layout={layout} colourOf={colourOf} fog={fog} />}
             maxHeight={78}
           />

@@ -38,7 +38,12 @@ function FigureView({ block, sourcePath }: { block: FigureBlock; sourcePath: str
   const fenced = "```mermaid\n" + block.source + "\n```";
 
   return (
-    <figure className={cls.join(" ")} data-rpg-figure={block.engine} style={style}>
+    <figure
+      className={cls.join(" ")}
+      data-rpg-figure={block.engine}
+      style={style}
+      {...(block.caption ? {} : { "aria-label": "Diagram" })}
+    >
       <Markdown source={fenced} sourcePath={sourcePath} className="rpg-figure__diagram" />
       {block.caption ? (
         <figcaption className="rpg-figure__caption">

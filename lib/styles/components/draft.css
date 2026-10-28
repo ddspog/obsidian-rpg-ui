@@ -406,3 +406,46 @@
 .rpg-draft .is-gm-only .rpg-hotbar-strip {
   min-height: 0;
 }
+
+/* ═══ UI review: a draft you can use on a phone ═══ */
+@media (max-width: 600px) {
+  .rpg-draft-sources {
+    grid-template-columns: 1fr;
+  }
+
+  .rpg-draft-source,
+  .rpg-draft-source:first-child {
+    padding-inline: 0;
+    padding-block: 0.5rem;
+  }
+
+  .rpg-draft-source + .rpg-draft-source {
+    border-inline-start: none;
+    border-top: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  }
+}
+
+.rpg-draft-note,
+.rpg-draft-source dt {
+  color: var(--text-muted);
+}
+
+.rpg-draft :is(button, select, input, a):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.rpg-draft :is(.rpg-draft-add, .rpg-draft-link, .rpg-draft-quiet, .rpg-draft-level) {
+  min-height: 1.75rem;
+}
+
+.rpg-draft .rpg-draft-x {
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  justify-content: center;
+}
+
+body.is-mobile .rpg-draft :is(.rpg-draft-add, .rpg-draft-link, .rpg-draft-quiet, .rpg-draft-level, .rpg-draft-x) {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+}
