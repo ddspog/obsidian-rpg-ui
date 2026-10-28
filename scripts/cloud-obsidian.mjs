@@ -24,7 +24,12 @@ const CDP_PORT = process.env.CDP_PORT ?? "9222";
 const PLUGIN_ID = "dnd-ui-toolkit";
 // Optional checkout of an Obsidian theme repo (needs manifest.json + theme.css).
 const THEME_DIR = process.env.THEME_DIR;
-const PLUGIN_DATA = process.env.PLUGIN_DATA;
+// Plugin settings for the cloud copy: the committed scripts/cloud-obsidian.data.json
+// unless PLUGIN_DATA names another file; PLUGIN_DATA=none seeds guessed mappings.
+const PLUGIN_DATA =
+  process.env.PLUGIN_DATA === "none"
+    ? undefined
+    : (process.env.PLUGIN_DATA ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "cloud-obsidian.data.json"));
 // The cloud has none of the macOS fonts the theme asks for (New York, SF Compact).
 // The theme tries "My <role> font" first, so those names are mapped to open fonts
 // from @fontsource (npm). Override with FONT_SERIF / FONT_SANS / FONT_ROUNDED.
@@ -152,7 +157,7 @@ function prepareVault() {
   // data.json. Seed one per top-level folder with a config/index.ts, so rule views
   // such as `.tab()` resolve in the copy.
   const dataJson = path.join(dest, "data.json");
-  // PLUGIN_DATA points at the data.json copied from the real vault
+  // PLUGIN_DATA is a copy of the real vault's data.json
   // (.obsidian/plugins/obsidian-rpg-ui/data.json), so the cloud plugin runs with
   // the same settings; it is used as is, with no guessed mappings.
   if (PLUGIN_DATA) {

@@ -1,0 +1,190 @@
+{
+  "statePath": ".dnd-ui-toolkit-state.json",
+  "selectedTheme": "default",
+  "imageStudio": {
+    "anthropicUrl": "http://localhost:11211/api/anthropic",
+    "anthropicModel": "claude-sonnet-5",
+    "geminiUrl": "http://localhost:11211/api/gemini",
+    "geminiImageModel": "gemini-3-pro-image",
+    "ollamaUrl": "http://localhost:11211",
+    "ollamaImageModel": "",
+    "imageProvider": "gemini",
+    "stylePrompt": "Baldur's Gate 3 ability icon. A square tile of rough, weathered, cracked stone, clearly tinted {tint} — a medium-dark, visibly coloured stone with darker corners — filling the whole image to all four edges, with sharp square corners: no rounded tile, no margin, nothing around it. On it, ONE bold symbolic pictogram drawn as thick, slightly hand-drawn glowing neon line-art strokes in luminous {glow}, like light etched into the stone, filling about 80% of the tile: flat, 2D, minimal, centred, readable at 32 pixels — outlines only, a few strong strokes, a soft outer glow. One single symbol, not several stacked. Not a realistic object, not a 3D render, not a scene. No text, no letters, no numbers, no words, no frame, no border, no UI.",
+    "iconFolder": "z52. UI Elements/Icons",
+    "portraitFolder": "z52. UI Elements/Portraits"
+  },
+  "systemMappings": [
+    {
+      "folderPaths": ["Sandbox", "010. Compendium", "tales-of-the-valiant"],
+      "systemFolderPath": "tales-of-the-valiant/config",
+      "officialSources": [
+        "From **Tales of the Valiant** \"%\" by **Kobold Press**.",
+        "From **System Neutral** \"%\" by **Word Mill**"
+      ]
+    }
+  ],
+  "folderLinkStyles": [
+    {
+      "id": "systems-tales-of-the-valiant-worldbuilding-spells",
+      "label": "Spells",
+      "borderStyle": "none",
+      "color": "var(--color-purple)",
+      "bold": true,
+      "italic": true,
+      "folderPaths": ["tales-of-the-valiant/worldbuilding/spells"]
+    },
+    {
+      "id": "systems-tales-of-the-valiant-glossary-conditions",
+      "borderStyle": "none",
+      "label": "Common Rules",
+      "color": "var(--color-green)",
+      "bold": true,
+      "folderPaths": ["tales-of-the-valiant/concepts"]
+    },
+    {
+      "id": "systems-tales-of-the-valiant-glossary-actions",
+      "borderStyle": "none",
+      "label": "Rules to Consult",
+      "folderPaths": ["tales-of-the-valiant/glossary"],
+      "color": "var(--color-yellow)",
+      "bold": true
+    },
+    {
+      "id": "style-4-mp2w0s9m",
+      "folderPaths": ["tales-of-the-valiant/worldbuilding/traits", "tales-of-the-valiant/gm-tools"],
+      "borderStyle": "none",
+      "label": "Traits",
+      "color": "var(--color-cyan)",
+      "bold": true
+    },
+    {
+      "id": "style-5-mp2w38ez",
+      "folderPaths": ["tales-of-the-valiant/worldbuilding/items"],
+      "borderStyle": "none",
+      "label": "Items",
+      "color": "var(--color-orange)",
+      "bold": true
+    },
+    {
+      "id": "style-6-mp2w81bh",
+      "folderPaths": [
+        "tales-of-the-valiant/worldbuilding/enchantments",
+        "magic",
+        "tales-of-the-valiant/adventuring/collected/magic"
+      ],
+      "borderStyle": "none",
+      "label": "Enchanted",
+      "color": "var(--color-blue)",
+      "bold": true,
+      "italic": true
+    },
+    {
+      "id": "style-7-mp2wbvle",
+      "folderPaths": ["tales-of-the-valiant/worldbuilding/bestiary", "tales-of-the-valiant/adventuring/characters"],
+      "borderStyle": "none",
+      "label": "Statblocks",
+      "color": "var(--color-red)",
+      "bold": true
+    },
+    {
+      "id": "style-8-mp2wfo89",
+      "folderPaths": ["tales-of-the-valiant/adventuring/collected/personal"],
+      "borderStyle": "none",
+      "color": "#8a804c",
+      "bold": true,
+      "label": "Personal"
+    },
+    {
+      "id": "style-9-mpl6yyr1",
+      "folderPaths": ["tales-of-the-valiant/atlas/planes"],
+      "borderStyle": "solid",
+      "label": "Planes",
+      "color": "var(--text-faint)",
+      "borderColor": "var(--color-purple)"
+    },
+    {
+      "id": "style-10-mplmvaao",
+      "folderPaths": ["tales-of-the-valiant/compendium"],
+      "borderStyle": "none",
+      "label": "Compendium",
+      "italic": true,
+      "color": "var(--color-green)"
+    },
+    {
+      "id": "style-11-mpr2hz8a",
+      "folderPaths": ["tales-of-the-valiant/worldbuilding/dangers"],
+      "borderStyle": "none",
+      "label": "Effects",
+      "color": "var(--color-red)",
+      "italic": true
+    }
+  ],
+  "pageFooterFields": [
+    {
+      "key": "source"
+    }
+  ],
+  "scrollRestoreDelayMs": 600,
+  "bannerField": "banner",
+  "bannerHeight": 200,
+  "hexPacksFolder": "z52. UI Elements/Hex Packs",
+  "cardFramesFolder": "z52. UI Elements/Frames",
+  "battleTokenFolder": "z52. UI Elements/Tokens",
+  "hexDefaultPack": "basic",
+  "hexGridLines": false,
+  "hexCoords": "hover",
+  "hexLabelScale": 1,
+  "hexMapMaxHeight": 75,
+  "colorBgPrimary": "#262a36",
+  "colorBgSecondary": "#323748",
+  "colorBgTertiary": "#3a4055",
+  "colorBgHover": "#363b4a",
+  "colorBgDarker": "#303440",
+  "colorBgGroup": "#2d334a",
+  "colorBgProficient": "#2d3343",
+  "colorTextPrimary": "#e0e0e0",
+  "colorTextSecondary": "#a0a0d0",
+  "colorTextSublabel": "#a0c7d0",
+  "colorTextBright": "#ffffff",
+  "colorTextMuted": "#b8b8d0",
+  "colorTextGroup": "#b8c4ff",
+  "colorBorderPrimary": "#383e54",
+  "colorBorderActive": "#6d7cba",
+  "colorBorderFocus": "rgba(109, 124, 186, 0.5)",
+  "colorAccentTeal": "#64d8cb",
+  "colorAccentRed": "#e57373",
+  "colorAccentPurple": "#b39ddb",
+  "cardFrames": {
+    "spell": {
+      "image": {
+        "path": "z52. UI Elements/Frames/Spell card frame.webp",
+        "window": {
+          "top": 1.9,
+          "left": 2.7,
+          "right": 3,
+          "bottom": 2.1
+        },
+        "aspect": 0.729375
+      },
+      "name": "plaque"
+    },
+    "portrait": {
+      "name": "plaque",
+      "image": {
+        "path": "z52. UI Elements/Frames/Character portrait frame.webp",
+        "window": {
+          "top": 4,
+          "left": 2.4,
+          "right": 2.4,
+          "bottom": 2
+        },
+        "aspect": 0.825
+      },
+      "use": "css",
+      "css": ".frame {\n  --frame-gold-light: #f3dca0;\n  --frame-gold: #a9801f;\n  --frame-gold-dark: #5c3f12;\n  --frame-wood: #2b1b12;\n  --frame-wood-dark: #180f0a;\n  --frame-plaque: #14100c;\n\n  position: relative;\n  padding: 0.18rem;\n  border-radius: 0.2rem;\n  background: linear-gradient(\n    135deg,\n    var(--frame-gold-light),\n    var(--frame-gold) 30%,\n    var(--frame-wood) 55%,\n    var(--frame-gold-dark) 80%,\n    var(--frame-gold-light)\n  );\n  box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.45);\n}\n\n/* thin inner wood line */\n.frame .inner {\n  position: relative;\n  padding: 0.08rem;\n  border-radius: 0.12rem;\n  background: linear-gradient(\n    to bottom,\n    var(--frame-wood-dark),\n    var(--frame-wood) 50%,\n    var(--frame-wood-dark)\n  );\n  box-shadow:\n    inset 0 0 0 1px rgba(243, 220, 160, 0.5),\n    inset 0 0 0.25rem rgba(0, 0, 0, 0.6);\n}\n\n.frame .art {\n  border-radius: 0.06rem;\n  overflow: hidden;\n}\n\n/* --- laurel sprig corners --- */\n.frame::before,\n.frame::after,\n.frame .inner::before,\n.frame .inner::after {\n  content: \"\";\n  position: absolute;\n  width: 1.15rem;\n  height: 1.15rem;\n  background-repeat: no-repeat;\n  background-size: contain;\n  pointer-events: none;\n  opacity: 0.92;\n  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='%23a9801f'%3E%3Cpath d='M4 36 Q2 20 10 4 Q14 14 10 24 Q8 30 4 36Z'/%3E%3Cpath d='M8 34 Q10 18 20 6 Q20 16 14 26 Q12 30 8 34Z'/%3E%3Cpath d='M14 30 Q18 16 30 8 Q26 18 18 26 Q16 28 14 30Z'/%3E%3C/g%3E%3C/svg%3E\");\n}\n\n/* top-left */\n.frame::before {\n  top: 0.08rem;\n  left: 0.08rem;\n  transform: scaleY(-1);\n  transform-origin: center;\n}\n\n/* top-right */\n.frame::after {\n  top: 0.08rem;\n  right: 0.08rem;\n  transform: scale(-1, -1);\n  transform-origin: center;\n}\n\n/* bottom-left */\n.frame .inner::before {\n  bottom: 0.08rem;\n  left: 0.08rem;\n  width: 1rem;\n  height: 1rem;\n  transform-origin: center;\n}\n\n/* bottom-right */\n.frame .inner::after {\n  bottom: 0.08rem;\n  right: 0.08rem;\n  width: 1rem;\n  height: 1rem;\n  transform: scaleX(-1);\n  transform-origin: center;\n}\n\n/* --- narrow heraldic name band --- */\n.frame .plaque {\n  bottom: 0.35rem;\n  padding: 0.08rem 0.5rem;\n  border: none;\n  border-top: 1px solid var(--frame-gold-light);\n  border-bottom: 1px solid var(--frame-gold-dark);\n  border-radius: 0.08rem;\n  background: linear-gradient(\n    to bottom,\n    var(--frame-plaque),\n    #1f1a14 50%,\n    var(--frame-plaque)\n  );\n  box-shadow:\n    0 0 0 1px rgba(169, 128, 31, 0.6),\n    0 0.1rem 0.2rem rgba(0, 0, 0, 0.5);\n  font-family: var(--font-text);\n  font-size: 0.62em;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n  color: var(--frame-gold-light);\n}\n\n.frame .plaque::before,\n.frame .plaque::after {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  width: 0.3rem;\n  height: 1px;\n  background: var(--frame-gold);\n  transform: translateY(-50%);\n}\n\n.frame .plaque::before {\n  left: 0;\n}\n\n.frame .plaque::after {\n  right: 0;\n}"
+    },
+    "item": {},
+    "creature": {},
+    "banner": {}
+  }
+}
