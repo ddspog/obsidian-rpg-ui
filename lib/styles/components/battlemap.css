@@ -1473,3 +1473,12 @@ button.lonelog-battle-title-link {
 button.lonelog-battle-title-link:hover {
   text-decoration-color: currentColor;
 }
+
+/* A wide window with the Log shut: the disc stands in the page margin beside the column, not on its text.
+   (Under 1400px the margin is too thin, and with the Log open the margin is the Log's.) */
+@media (min-width: 1400px) {
+  .lonelog-prose-layout:not(.with-sidebar) .lonelog-minimap:not(.is-small) {
+    right: auto;
+    left: calc(100% + 1rem);
+  }
+}

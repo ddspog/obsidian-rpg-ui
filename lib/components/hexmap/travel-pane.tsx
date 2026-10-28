@@ -195,15 +195,21 @@ export function TravelMinimap({
   bodyOf,
   readingId,
   onExpand,
+  compact,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onExpand: () => void;
+  /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
+  compact?: boolean;
 }) {
   const { frame, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
   // On a phone the disc starts as its small button: it would cover a third of the reading column.
   const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
+  React.useEffect(() => {
+    if (compact) setSmall(true);
+  }, [compact]);
   if (!frame) return null;
   if (small) {
     return (

@@ -3708,6 +3708,13 @@ body.is-mobile .lonelog-prose-doc button.lonelog-dot::after {
 .lonelog-prose-layout.with-sidebar:not(.is-stacked) .lonelog-prose-main {
   padding-inline-end: 1rem;
 }
+.lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
+.lonelog-balloon-pc .lonelog-balloon-speaker,
+.lonelog-balloon-npc .lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {
@@ -10219,6 +10226,12 @@ button.lonelog-battle-title-link {
 }
 button.lonelog-battle-title-link:hover {
   text-decoration-color: currentColor;
+}
+@media (min-width: 1400px) {
+  .lonelog-prose-layout:not(.with-sidebar) .lonelog-minimap:not(.is-small) {
+    right: auto;
+    left: calc(100% + 1rem);
+  }
 }
 
 /* lib/styles/components/hex-map.css */

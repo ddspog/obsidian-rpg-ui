@@ -3763,6 +3763,7 @@ function SessionLogRoot({
                   bodyOf={travelBodyOf}
                   readingId={readingId}
                   onExpand={() => setFullMap(true)}
+                  compact={sidebarOpen}
                 />
               </div>
             )}

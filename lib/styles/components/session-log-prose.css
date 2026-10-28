@@ -2784,3 +2784,13 @@ body.is-mobile .lonelog-prose-doc button.lonelog-dot::after {
 .lonelog-prose-layout.with-sidebar:not(.is-stacked) .lonelog-prose-main {
   padding-inline-end: 1rem;
 }
+
+/* Each speaker's name has a colour of its own (the same every time), dark enough on the parchment. */
+.lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
+
+.lonelog-balloon-pc .lonelog-balloon-speaker,
+.lonelog-balloon-npc .lonelog-balloon-speaker {
+  color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
