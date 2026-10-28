@@ -200,3 +200,57 @@
     min-width: 0;
   }
 }
+
+/* ═══ UI review: tabs that show there is more, a darker accent, sections that lead ═══ */
+
+/* The active tab and primary buttons: white on a darker accent (about 5:1, it was 3.4:1). */
+.rpg-settings-tab.is-active,
+.rpg-settings-panel button.mod-cta {
+  background: color-mix(in srgb, var(--interactive-accent) 76%, #000);
+  color: #fff;
+}
+
+.rpg-settings-section-note {
+  color: var(--text-muted);
+}
+
+/* Each section is set apart and its title leads. */
+.rpg-settings-section {
+  margin-top: 1.25rem;
+  border-bottom-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+
+.rpg-settings-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  /* The tab row runs off the screen: its right edge fades, so it reads as "more this way". */
+  .rpg-settings-tabs {
+    padding-inline-end: 1.5rem;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent);
+    mask-image: linear-gradient(to right, #000 82%, transparent);
+  }
+
+  .rpg-settings-tabs > li {
+    scroll-snap-align: start;
+  }
+
+  .rpg-settings-tab {
+    min-height: 2.5rem;
+  }
+
+  /* 16px, so the phone does not zoom in on a field, and 40px to touch. */
+  .rpg-settings-panel input,
+  .rpg-settings-panel select {
+    font-size: 16px;
+    min-height: 2.5rem;
+  }
+
+  .rpg-settings-panel .extra-setting-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+}

@@ -270,7 +270,12 @@
 }
 @media (max-width: 600px) {
   .skills-grid {
-    column-count: 1;
+    column-count: 2;
+    column-gap: 0.75rem;
+  }
+  .skill-card {
+    break-inside: avoid;
+    padding: 0.2rem 0.35rem;
   }
 }
 .skill-card {
@@ -581,7 +586,7 @@
 .consumable-label {
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--text-normal);
   display: inline-block;
   width: var(--consumable-label-width, 3.5rem);
   text-align: left;
@@ -613,6 +618,19 @@
 .checkbox-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-border-focus);
+}
+body.is-mobile .checkbox-button::after {
+  content: "";
+  position: absolute;
+  inset: -0.75rem -0.4rem;
+}
+body.is-mobile .checkbox-button {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.checkbox-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 /* lib/styles/components/initiative-layout.css */
@@ -1165,13 +1183,17 @@
 .rpg-items-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
 }
 .rpg-inventory-item {
-  padding: 0.75rem;
-  background: var(--background-secondary);
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+  padding: 0.6rem 0.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+}
+.rpg-inventory-item:last-child {
+  border-bottom: none;
 }
 .rpg-item-header {
   display: flex;
@@ -4101,6 +4123,82 @@ button.lonelog-bookkeeping-write.is-quiet {
 .lonelog-sidebar .lonelog-sidebar-item:last-child {
   border-bottom: none;
 }
+button.lonelog-bookkeeping-write,
+button.lonelog-bookkeeping-recount,
+button.lonelog-bookkeeping-tool {
+  min-height: 1.75rem;
+  padding-inline: 0.6rem;
+  font-size: max(0.75rem, 0.8em);
+}
+button.lonelog-bookkeeping-recount {
+  color: var(--text-muted);
+}
+button.lonelog-bookkeeping-write.is-quiet {
+  color: var(--text-muted);
+}
+.lonelog-bookkeeping-change .lonelog-row-label {
+  color: var(--text-muted);
+}
+body.is-mobile .lonelog-bookkeeping-sheet dd.lonelog-bookkeeping-change {
+  row-gap: 0.1rem;
+}
+body.is-mobile .lonelog-bookkeeping-status {
+  display: block;
+  grid-column: 1 / -1;
+  margin-left: 0;
+  white-space: normal;
+}
+body.is-mobile button.lonelog-bookkeeping-write,
+body.is-mobile button.lonelog-bookkeeping-recount,
+body.is-mobile button.lonelog-bookkeeping-tool {
+  min-height: 2.25rem;
+  min-width: 2.75rem;
+}
+.lonelog-row-label,
+.lonelog-threshold-label,
+.lonelog-roll-mod,
+.lonelog-roll-mod-name,
+.lonelog-roll-mod-value,
+.lonelog-economy-slot,
+.lonelog-contest-vs,
+.lonelog-tag-key {
+  font-size: max(11px, 0.82em);
+}
+.lonelog-row-label,
+.lonelog-roll-mod,
+.lonelog-contest-vs {
+  color: color-mix(in srgb, var(--text-normal) 62%, var(--background-primary));
+}
+.lonelog-prose-scene-id {
+  font-size: 0.8rem;
+}
+.lonelog-prose-scene-head {
+  border-bottom-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+.lonelog-balloon-npc {
+  background: light-dark(#e2c7ae, rgba(190, 140, 110, 0.22));
+  border-color: light-dark(#c9a98c, rgba(190, 140, 110, 0.45));
+}
+.lonelog-balloon-speaker {
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .lonelog-balloon {
+    max-width: calc(100% - 1.25rem);
+  }
+  .lonelog-balloon-pc {
+    margin-inline: 0 1.25rem;
+  }
+  .lonelog-balloon-npc {
+    margin-inline: 1.25rem 0;
+  }
+}
+body.is-mobile .lonelog-prose-doc button.lonelog-dot::after {
+  inset: -1.1rem;
+}
+.lonelog-prose-layout.with-sidebar:not(.is-stacked) .lonelog-prose-main {
+  padding-inline-end: 1rem;
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {
@@ -5230,6 +5328,44 @@ button.placeholder-party-flag {
 }
 .lonelog-placeholder-popover .placeholder-rider {
   font-size: var(--font-ui-small);
+}
+.placeholder-preview.is-empty .placeholder-preview-entries {
+  opacity: 0.55;
+}
+.lonelog-placeholder-popover button.placeholder-submit:disabled {
+  opacity: 1;
+  border: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.lonelog-placeholder-popover button.placeholder-cancel {
+  border: 1px solid var(--background-modifier-border);
+}
+.placeholder-needs {
+  color: var(--text-muted);
+}
+.lonelog-placeholder-popover .placeholder-input,
+.lonelog-placeholder-popover .placeholder-select {
+  min-height: 2.25rem;
+  box-sizing: border-box;
+}
+.lonelog-placeholder-popover .placeholder-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+.lonelog-placeholder-popover .lonelog-roll-expr--btn {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.25rem;
+}
+.lonelog-placeholder-popover .lonelog-roll-value--input {
+  min-width: 5.5ch;
+  height: 2rem;
+}
+.lonelog-placeholder-popover :is(.lonelog-roll-expr--btn, .lonelog-roll-value--input, .placeholder-submit, .placeholder-cancel):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 /* lib/styles/components/loadout-cards.css */
@@ -7949,6 +8085,12 @@ header[aria-details*=" Banner"] .rpg-banner-header__leveling > figure[aria-detai
     min-width: 0;
   }
 }
+header[aria-details*=" Banner"] a.internal-link {
+  color: #e9dcff;
+}
+header[aria-details*=" Banner"] a.internal-link:hover {
+  color: #fff;
+}
 
 /* lib/styles/components/pills.css */
 span[aria-details="Link Pill"] {
@@ -9350,6 +9492,34 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
 }
 .rpg-figure__caption > div > :last-child {
   margin-bottom: 0;
+}
+.rpg-figure__diagram svg .node rect,
+.rpg-figure__diagram svg .node polygon,
+.rpg-figure__diagram svg .node circle,
+.rpg-figure__diagram svg .node path {
+  fill: var(--background-secondary) !important;
+  stroke: var(--background-modifier-border-hover) !important;
+  stroke-width: 1px !important;
+}
+.rpg-figure__diagram svg text,
+.rpg-figure__diagram svg .nodeLabel,
+.rpg-figure__diagram svg .label {
+  font-family: var(--font-text) !important;
+  fill: var(--text-normal) !important;
+  color: var(--text-normal) !important;
+}
+.rpg-figure__diagram svg .edgePath path,
+.rpg-figure__diagram svg .flowchart-link {
+  stroke: var(--text-muted) !important;
+}
+@media (max-width: 600px) {
+  .rpg-figure--left,
+  .rpg-figure--right,
+  .rpg-figure--center {
+    float: none;
+    width: 100%;
+    margin-inline: auto;
+  }
 }
 
 /* lib/styles/components/battlemap.css */
@@ -12760,6 +12930,95 @@ button.lonelog-battle-title-link:hover {
   color: var(--text-accent);
   font-size: var(--font-ui-smaller);
 }
+.rpg-hexmap-empty {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+.rpg-hexmap-empty p {
+  margin: 0 0 0.4rem;
+}
+.rpg-hexmap-empty ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+.rpg-hexmap-empty li {
+  margin: 0;
+}
+.rpg-hexmap-empty code {
+  white-space: nowrap;
+}
+.rpg-hexmap-empty-errors {
+  color: var(--text-error);
+}
+.rpg-hexmap-empty button.rpg-hexmap-empty-paint {
+  width: 100%;
+  min-height: 2.25rem;
+}
+@media (min-width: 601px) {
+  .rpg-hexmap-empty button.rpg-hexmap-empty-paint {
+    width: auto;
+  }
+}
+.rpg-hexpaint-swatch-name,
+.rpg-hexpaint-section-title,
+.rpg-hexpaint-segmented label,
+.rpg-hexpaint-button {
+  font-size: max(0.7rem, 11px);
+  letter-spacing: 0;
+}
+.rpg-hexmap-crumbs {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.rpg-hexmap-crumbs button {
+  min-height: 1.75rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+}
+.rpg-hexmap-controls button,
+.rpg-hexmap-zoom button {
+  min-width: 2rem;
+  min-height: 2rem;
+}
+.rpg-hexmap-controls button:focus-visible,
+.rpg-hexmap-zoom button:focus-visible,
+.rpg-hexmap-crumbs button:focus-visible,
+.rpg-hexpaint-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .rpg-hexmap-crumbs button {
+    min-height: 2.5rem;
+  }
+  .rpg-hexpaint-segmented label,
+  .rpg-hexpaint-button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    justify-content: center;
+  }
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button[aria-label^="Open the map"] {
+    width: auto;
+    padding-inline: 0.7rem;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button[aria-label^="Open the map"]::after {
+    content: "Open";
+  }
+}
 
 /* lib/styles/components/draft.css */
 .rpg-draft {
@@ -13096,6 +13355,40 @@ button.lonelog-battle-title-link:hover {
 }
 .rpg-draft .is-gm-only .rpg-hotbar-strip {
   min-height: 0;
+}
+@media (max-width: 600px) {
+  .rpg-draft-sources {
+    grid-template-columns: 1fr;
+  }
+  .rpg-draft-source,
+  .rpg-draft-source:first-child {
+    padding-inline: 0;
+    padding-block: 0.5rem;
+  }
+  .rpg-draft-source + .rpg-draft-source {
+    border-inline-start: none;
+    border-top: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  }
+}
+.rpg-draft-note,
+.rpg-draft-source dt {
+  color: var(--text-muted);
+}
+.rpg-draft :is(button, select, input, a):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.rpg-draft :is(.rpg-draft-add, .rpg-draft-link, .rpg-draft-quiet, .rpg-draft-level) {
+  min-height: 1.75rem;
+}
+.rpg-draft .rpg-draft-x {
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  justify-content: center;
+}
+body.is-mobile .rpg-draft :is(.rpg-draft-add, .rpg-draft-link, .rpg-draft-quiet, .rpg-draft-level, .rpg-draft-x) {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
 }
 
 /* lib/styles/components/line-control-stats.css */
@@ -17668,6 +17961,53 @@ nav[aria-details="Play Toggle"] {
     min-width: 0;
   }
 }
+.rpg-settings-tab.is-active,
+.rpg-settings-panel button.mod-cta {
+  background: color-mix(in srgb, var(--interactive-accent) 76%, #000);
+  color: #fff;
+}
+.rpg-settings-section-note {
+  color: var(--text-muted);
+}
+.rpg-settings-section {
+  margin-top: 1.25rem;
+  border-bottom-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+.rpg-settings-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .rpg-settings-tabs {
+    padding-inline-end: 1.5rem;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        #000 82%,
+        transparent);
+    mask-image:
+      linear-gradient(
+        to right,
+        #000 82%,
+        transparent);
+  }
+  .rpg-settings-tabs > li {
+    scroll-snap-align: start;
+  }
+  .rpg-settings-tab {
+    min-height: 2.5rem;
+  }
+  .rpg-settings-panel input,
+  .rpg-settings-panel select {
+    font-size: 16px;
+    min-height: 2.5rem;
+  }
+  .rpg-settings-panel .extra-setting-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+}
 
 /* lib/styles/components/page-footer.css */
 .rpg-page-footer {
@@ -20872,24 +21212,25 @@ section[aria-details="Character Rolls"] > header > span {
   }
   .lonelog-placeholder-popover.is-sheet {
     position: fixed;
-    inset: 0;
+    inset: auto 0 0 0;
     z-index: 1000;
     display: flex;
     flex-direction: column;
     width: auto;
     min-width: 0;
     max-width: none;
-    height: 100dvh;
+    height: auto;
+    max-height: calc(100dvh - 1.5rem);
     padding: 0;
     border: 0;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35);
     overflow: hidden;
     background: var(--background-primary);
     font-size: var(--font-ui-small);
   }
   .is-sheet .placeholder-form {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -20929,7 +21270,7 @@ section[aria-details="Character Rolls"] > header > span {
     line-height: 1;
   }
   .is-sheet .placeholder-buttons {
-    margin-top: auto;
+    margin-top: 0.75rem;
     position: sticky;
     bottom: 0;
     z-index: 1;
@@ -20941,7 +21282,16 @@ section[aria-details="Character Rolls"] > header > span {
   }
   .placeholder-submit,
   .placeholder-cancel {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
+  }
+  .is-sheet .placeholder-input,
+  .is-sheet .placeholder-select {
+    min-height: 2.75rem;
+    font-size: 16px;
+  }
+  .lonelog-placeholder-popover .lonelog-roll-expr--btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
   }
   button.rpg-spell-entry-toggle {
     width: 2rem;

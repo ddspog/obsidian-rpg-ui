@@ -42,6 +42,29 @@ interface PluginWithSettings {
   refreshPageFooter?(): void;
 }
 
+/**
+ * Give every control in the panel a name a screen reader can say: the setting's own name (most fields had
+ * only a placeholder). A control that already has a label keeps it.
+ */
+function nameControls(panel: HTMLElement): void {
+  for (const item of Array.from(panel.querySelectorAll<HTMLElement>(".setting-item"))) {
+    const name = item.querySelector(".setting-item-name")?.textContent?.trim();
+    if (!name) continue;
+    const controls = Array.from(
+      item.querySelectorAll<HTMLElement>(
+        ".setting-item-control input, .setting-item-control select, .setting-item-control textarea"
+      )
+    );
+    controls.forEach((el, i) => {
+      if (el.getAttribute("aria-label") || el.id) return;
+      el.setAttribute("aria-label", controls.length > 1 ? `${name} ${i + 1}` : name);
+    });
+    for (const btn of Array.from(item.querySelectorAll<HTMLElement>(".setting-item-control .extra-setting-button"))) {
+      if (!btn.getAttribute("aria-label")) btn.setAttribute("aria-label", name);
+    }
+  }
+}
+
 /** What a kind's section says it draws with. */
 const SOURCE_NOTE: Record<FrameSource, string> = {
   css: "plain CSS frame",
@@ -178,6 +201,7 @@ export class DndSettingsTab extends PluginSettingTab {
         this.renderHexMaps(panel);
         break;
     }
+    nameControls(panel);
   }
 
   /** The state file, scroll restore and the page footer. */

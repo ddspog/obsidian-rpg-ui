@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
@@ -116,6 +116,13 @@ export function PlaceholderPopover({
   onCancel,
 }: PlaceholderPopoverProps) {
   const sheet = useIsPhone();
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Opened under the hotbar the form can sit half off screen: bring it into view.
+  useEffect(() => {
+    if (sheet) return;
+    const t = window.setTimeout(() => rootRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 60);
+    return () => window.clearTimeout(t);
+  }, [sheet]);
   useEffect(() => {
     if (!sheet) return;
     const onKey = (e: KeyboardEvent) => {
@@ -422,6 +429,7 @@ export function PlaceholderPopover({
 
   const popover = (
     <div
+      ref={rootRef}
       className={`lonelog-placeholder-popover${sheet ? " is-sheet" : ""}`}
       role="dialog"
       aria-modal={sheet || undefined}
@@ -706,8 +714,15 @@ export function PlaceholderPopover({
           </div>
         )}
         {preview.text.trim() && (
-          <section className="placeholder-preview" aria-label="Preview">
-            <span className="placeholder-preview-label">Adds to the log</span>
+          <section
+            className={`placeholder-preview${userInputs.length > 0 && !Object.values(values).some((v) => v.trim()) ? " is-empty" : ""}`}
+            aria-label="Preview"
+          >
+            <span className="placeholder-preview-label">
+              {userInputs.length > 0 && !Object.values(values).some((v) => v.trim())
+                ? "Adds to the log — fills in as you type"
+                : "Adds to the log"}
+            </span>
             <div className="lonelog-entries placeholder-preview-entries">
               {preview.items.map((item) => (
                 <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />

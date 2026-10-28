@@ -2564,7 +2564,10 @@
  * its labels clear of buttons. Expand takes the whole screen; there the modes, layers and the
  * Play tools are along the foot, a thumb away. */
 @media (max-width: 600px) {
-  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls > li:not(:has(button[aria-label^="Open the map"])),
+  .rpg-hexmap:not(.is-editing)
+    .rpg-hexmap-viewport
+    .rpg-hexmap-controls
+    > li:not(:has(button[aria-label^="Open the map"])),
   .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-hud {
     display: none;
   }
@@ -2705,4 +2708,116 @@
   margin-top: 0.15rem;
   color: var(--text-accent);
   font-size: var(--font-ui-smaller);
+}
+
+/* ═══ UI review: the empty map's help is a small panel, not a run of chips ═══ */
+.rpg-hexmap-empty {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexmap-empty p {
+  margin: 0 0 0.4rem;
+}
+
+.rpg-hexmap-empty ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.rpg-hexmap-empty li {
+  margin: 0;
+}
+
+.rpg-hexmap-empty code {
+  white-space: nowrap;
+}
+
+.rpg-hexmap-empty-errors {
+  color: var(--text-error);
+}
+
+.rpg-hexmap-empty button.rpg-hexmap-empty-paint {
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+@media (min-width: 601px) {
+  .rpg-hexmap-empty button.rpg-hexmap-empty-paint {
+    width: auto;
+  }
+}
+
+/* ═══ UI review: map controls you can read, see focus on, and press ═══ */
+
+/* Nothing under about 11px, and no tracking at that size. */
+.rpg-hexpaint-swatch-name,
+.rpg-hexpaint-section-title,
+.rpg-hexpaint-segmented label,
+.rpg-hexpaint-button {
+  font-size: max(0.7rem, 11px);
+  letter-spacing: 0;
+}
+
+.rpg-hexmap-crumbs {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* The level buttons (30 mi, 5 mi, 1 mi) are real buttons: an outline, and a size to press. */
+.rpg-hexmap-crumbs button {
+  min-height: 1.75rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+}
+
+.rpg-hexmap-controls button,
+.rpg-hexmap-zoom button {
+  min-width: 2rem;
+  min-height: 2rem;
+}
+
+.rpg-hexmap-controls button:focus-visible,
+.rpg-hexmap-zoom button:focus-visible,
+.rpg-hexmap-crumbs button:focus-visible,
+.rpg-hexpaint-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .rpg-hexmap-crumbs button {
+    min-height: 2.5rem;
+  }
+
+  .rpg-hexpaint-segmented label,
+  .rpg-hexpaint-button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    justify-content: center;
+  }
+
+  /* The window icon says what it does. */
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button[aria-label^="Open the map"] {
+    width: auto;
+    padding-inline: 0.7rem;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .rpg-hexmap:not(.is-editing) .rpg-hexmap-viewport .rpg-hexmap-controls button[aria-label^="Open the map"]::after {
+    content: "Open";
+  }
 }
