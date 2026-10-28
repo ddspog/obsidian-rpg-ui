@@ -83,6 +83,17 @@ export class Modal {
   open(): void {}
   close(): void {}
 }
+/** The note picker's base: the simulators have no hex-map picking, so it only has to exist. */
+export class FuzzySuggestModal<T> extends Modal {
+  setPlaceholder(_text: string): void {}
+  getItems(): T[] {
+    return [];
+  }
+  getItemText(_item: T): string {
+    return "";
+  }
+  onChooseItem(_item: T): void {}
+}
 export class Setting {}
 export class PluginSettingTab {}
 export class DropdownComponent {}
