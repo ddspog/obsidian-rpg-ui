@@ -33,6 +33,7 @@ import { ListRenderChild } from "lib/domains/lists/render-list-group";
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
 import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
+import { hashSource } from "lib/utils/section-fence-name";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { detectMetaFromSource } from "lib/utils/meta-extractor";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -84,7 +85,11 @@ export function processUnrenderedRpgFences(
       const blockName = meta.startsWith("table.") ? meta.slice("table.".length) : "unnamed";
       try {
         const def = parseTableBlock(blockName, source);
-        const disposers = renderTableBlock(el, def, { filePath: sourcePath });
+        // Nested renders lose the fence name, so tables fall back to "unnamed" and
+        // would all share one roll-result slot. Key the slot by the table's own
+        // content too (stable across re-renders, distinct between tables).
+        const filePath = meta.startsWith("table.") ? sourcePath : `${sourcePath}#${hashSource(source)}`;
+        const disposers = renderTableBlock(el, def, { filePath });
         if (disposers.length > 0) {
           const child = new (class extends MarkdownRenderChild {
             onunload(): void {

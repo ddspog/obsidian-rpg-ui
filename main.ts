@@ -30,7 +30,7 @@ import { settingsStore } from "lib/services/settings-store";
 import { getEntityBus } from "lib/services/entity-event-bus";
 import { patchYamlBlock } from "lib/utils/yaml-patcher";
 import { initEsbuild, setBundleCacheContext } from "lib/systems/ts-loader";
-import { fenceNameFromSection } from "lib/utils/section-fence-name";
+import { fenceNameFromSection, hashSource } from "lib/utils/section-fence-name";
 import { parseTableBlock } from "lib/domains/tables/parse-table-block";
 import { renderTableBlock } from "lib/domains/tables/render-table-block";
 import { parseListBlock } from "lib/domains/lists/parse-list-block";
@@ -355,13 +355,16 @@ export default class DndUIToolkitPlugin extends Plugin {
         if (meta === "table" || meta.startsWith("table.")) {
           let blockName = meta.startsWith("table.") ? meta.slice("table.".length) : "";
           const tableSection = ctx.getSectionInfo(el);
+          const nameFromMeta = !!blockName;
           if (!blockName) blockName = fenceNameFromSection(tableSection, "table");
           if (!blockName) blockName = "unnamed";
           try {
             const def = parseTableBlock(blockName, source);
             const disposers = renderTableBlock(el, def, {
-              // The block's line keeps same-named (or unnamed) tables from sharing roll results.
-              filePath: tableSection ? `${ctx.sourcePath}#${tableSection.lineStart}` : ctx.sourcePath,
+              // Roll results are keyed per file + table name. A table nested in a tab or
+              // card gets no fence name of its own (the section is the outer block), so
+              // key it by its own content to keep tables from sharing results.
+              filePath: nameFromMeta ? ctx.sourcePath : `${ctx.sourcePath}#${hashSource(source)}`,
             });
             if (disposers.length > 0) {
               const child = new (class extends MarkdownRenderChild {

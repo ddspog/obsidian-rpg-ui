@@ -24,3 +24,10 @@ export function fenceNameFromSection(info: SectionInfoLike | null | undefined, k
   }
   return "";
 }
+
+/** Small stable string hash (djb2) — identifies a block by its source text. */
+export function hashSource(source: string): string {
+  let h = 5381;
+  for (let i = 0; i < source.length; i++) h = ((h << 5) + h + source.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
