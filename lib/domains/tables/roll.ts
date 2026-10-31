@@ -194,11 +194,34 @@ export function rollCell(
   def: TableDef,
   cell: { segments: Array<{ kind: string; targets?: string[]; by?: string }> }
 ): string[] {
+  return rollCellRows(def, cell).values;
+}
+
+/**
+ * `rollCell`, also saying which body row each roll landed on (`null` for a gap or a
+ * pick across rows), so the table can point at the row it read.
+ */
+export function rollCellRows(
+  def: TableDef,
+  cell: { segments: Array<{ kind: string; targets?: string[]; by?: string }> },
+  rand: () => number = Math.random
+): { values: string[]; rows: Array<number | null> } {
   const values: string[] = [];
+  const rows: Array<number | null> = [];
   for (const seg of cell.segments) {
     if (seg.kind !== "roll") continue;
-    const outcome = rollOnce(def, seg.targets ?? [], seg.by);
+    const outcome = rollOnce(def, seg.targets ?? [], seg.by, rand);
     values.push(formatRollOutcome(outcome));
+    rows.push(outcome.kind === "hit" ? rowOfRoll(def, seg.by, outcome.rolled) : null);
   }
-  return values;
+  return { values, rows };
+}
+
+/** The body row a rolled number reads, by the same weight column `rollOnce` used. */
+function rowOfRoll(table: TableDef, weightCol: string | undefined, rolled: number): number | null {
+  const weightKey = weightCol ?? table.keyColumn ?? table.columns[0];
+  const weightIdx = weightKey ? table.columns.indexOf(weightKey) : -1;
+  if (weightIdx < 0) return null;
+  const weight = parseWeightColumn(table.rows, weightIdx);
+  return weight ? matchRoll(weight.ranges, rolled) : null;
 }

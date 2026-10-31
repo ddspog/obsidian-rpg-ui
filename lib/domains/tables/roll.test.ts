@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatRollOutcome, matchRoll, parseWeightCell, parseWeightColumn, rollOnce } from "./roll";
+import { formatRollOutcome, matchRoll, parseWeightCell, parseWeightColumn, rollCellRows, rollOnce } from "./roll";
+import { parseTableBlock } from "./parse-table-block";
 import type { TableDef } from "./types";
 
 describe("parseWeightCell", () => {
@@ -160,5 +161,25 @@ describe("rollOnce", () => {
     );
     const out = rollOnce(tbl, ["spell"], "w", () => 0);
     expect(out).toEqual({ kind: "hit", values: ["bless"], rolled: 1 });
+  });
+});
+
+describe("rollCellRows", () => {
+  const def = parseTableBlock(
+    "borders",
+    ["|d4*|Border|", "|---|---|", "|1|Swamp|", "|2|Desert|", "|3-4|**Hills**. A chain of hills.|"].join("\n")
+  );
+
+  it("says which row each roll landed on", () => {
+    const cell = { segments: [{ kind: "roll" }] };
+    // 0.6 of a d4 is a 3: the 3-4 row, the third.
+    const out = rollCellRows(def, cell, () => 0.6);
+    expect(out.values).toEqual(["**Hills**. A chain of hills."]);
+    expect(out.rows).toEqual([2]);
+  });
+
+  it("gives no row for a text segment, one per roll", () => {
+    const cell = { segments: [{ kind: "text" }, { kind: "roll" }, { kind: "roll" }] };
+    expect(rollCellRows(def, cell, () => 0).rows).toEqual([0, 0]);
   });
 });
