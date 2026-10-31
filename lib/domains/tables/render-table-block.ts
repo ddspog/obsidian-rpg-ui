@@ -829,11 +829,11 @@ export function renderTableBlock(
     remarkAxisData?.();
   }
 
-  /** Mark the rolled row; with `reveal`, open its page and bring it into view. */
+  /** Mark the rolled row and open the page that holds it; with `reveal`, also bring it into view. */
   function markRolledRow(row: number | null, reveal: boolean): void {
     if (row === rolledRow && !reveal) return;
     rolledRow = row;
-    if (reveal && row !== null && paginationConfig) {
+    if (row !== null && paginationConfig) {
       if (paginationConfig.controls === "show-more") {
         state.visiblePages = Math.max(state.visiblePages, Math.floor(row / paginationConfig.size) + 1);
       } else {
