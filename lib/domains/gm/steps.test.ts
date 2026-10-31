@@ -15,10 +15,20 @@ import {
   alternativesByRef,
   parsePickSpec,
   partText,
+  isPlainAlternatives,
   pickNames,
   pickResult,
   pickSides,
 } from "./steps";
+
+describe("isPlainAlternatives", () => {
+  it("is a lone part with no words and few names", () => {
+    expect(isPlainAlternatives("1,2")).toBe(true);
+    expect(isPlainAlternatives('"the "+Surname=1')).toBe(false);
+    expect(isPlainAlternatives("Start=1+End=2")).toBe(false);
+    expect(isPlainAlternatives("1,2,3,4,5")).toBe(false);
+  });
+});
 
 describe("step composition — use:", () => {
   const meaning: GMStep[] = [

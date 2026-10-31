@@ -1254,6 +1254,12 @@ describe("a name made of rolled parts — choose", () => {
     );
   });
 
+  it("puts one part with words around it together on a name row", () => {
+    expect(stepGeneratedLine({ choice: "Name", tables: [ref], labels: ["Name"], choose: ['"the "+Surname=1'] })).toBe(
+      `Surname: ${ref} d100= ->\nName: @pick("the "+Surname=1) ->`
+    );
+  });
+
   it("leaves a table without a spec alone", () => {
     expect(
       stepGeneratedLine({ choice: "Name", tables: [ref, `${ref}2`], choose: ["", "1,2"] }).split("\n")
