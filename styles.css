@@ -3552,6 +3552,8 @@ button.lonelog-bookkeeping-write.is-quiet {
   cursor: pointer;
   height: auto;
   min-height: 0;
+  white-space: normal;
+  text-align: start;
   transition: background-color 120ms ease;
 }
 .lonelog-picker-sep {
