@@ -151,13 +151,28 @@ export function rollOnce(
     return uniformPick(table, targetIndices, rand);
   }
 
-  const rolled = Math.floor(rand() * weight.max) + 1;
+  const rolled = rollWeight(table.columnLabels?.[weightIdx] ?? weightKey ?? "", weight.max, rand);
   const rowIdx = matchRoll(weight.ranges, rolled);
   if (rowIdx == null) return { kind: "miss", rolled, max: weight.max };
 
   const row = table.rows[rowIdx];
   const values = targetIndices.map((idx) => (idx >= 0 ? (row.cells[idx]?.value ?? "") : ""));
   return { kind: "hit", values, rolled };
+}
+
+/**
+ * The number a table is rolled with. A key column headed with several dice (`3d6`, `2d10`) is
+ * their sum, so its middle rows come up most, as in the book; otherwise one die as large as the
+ * table (`1..max`).
+ */
+function rollWeight(label: string, max: number, rand: () => number): number {
+  const m = label.trim().match(/^(\d+)d(\d+)\*?$/i);
+  const count = m ? Number(m[1]) : 1;
+  const sides = m ? Number(m[2]) : 0;
+  if (count < 2 || sides < 2) return Math.floor(rand() * max) + 1;
+  let sum = 0;
+  for (let i = 0; i < count; i++) sum += Math.floor(rand() * sides) + 1;
+  return sum;
 }
 
 /** Each target column contributes one uniformly-picked non-empty value. */
