@@ -89,14 +89,36 @@ export function rollLinkedTables(
       if (!raw) continue;
       const row = settlePicker(raw, `${seed}|${key}|${at}|pick`);
       const inner = rollLinkedTables(row, hit.file, lookup, `${seed}|${key}`, depth + 1, new Set([...chain, key]));
-      // Several tables under one heading each say which they are.
-      const name = hit.tables.length > 1 ? `${tableTitle(table)} ` : "";
-      rolled.push(`${name}${dice.count > 1 ? dice.count : ""}d${dice.sides} ${roll}: ${inner}`);
+      // Each result is named by its table: "Hill Theme Fey: Many talking plants (d8 7)".
+      const name = hit.tables.length > 1 ? tableTitle(table) : linkName([alias, heading], table);
+      rolled.push(
+        `${name}: ${inner.replace(/\.\s*$/, "")} (${dice.count > 1 ? dice.count : ""}d${dice.sides} ${roll})`
+      );
     }
     if (rolled.length === 0) return whole;
-    return `${(alias ?? heading).trim()} (${rolled.join("; ")})`;
+    return ROLLED + rolled.join("; ");
   });
-  return linkText(out);
+  // The instruction that sent you there ("Refer to", "Roll on", "See") has been done: it goes.
+  return linkText(out.replace(INSTRUCTION, "").replace(new RegExp(ROLLED, "g"), ""));
+}
+
+/** Marks where a link was rolled, so the instruction in front of it can go. */
+const ROLLED = "\uE001";
+
+/** "Refer to", "Roll once on", "See", "go to" (and a "Table" or *Nomicon* after them) right before a rolled link. */
+const INSTRUCTION =
+  /(?:\b(?:refer to|roll (?:once |twice )?on(?: either column of)?|see|go to|consult)\s+(?:the\s+)?(?:\*?Nomicon\*?\s+)?)?(?:\bTables?\s+)?(?=\uE001)/gi;
+
+/** A rolled table's name from its link: "Table 7-26: Hill Theme Fey" → Hill Theme Fey; for a bare "Table 5-21", the heading's words, else its caption. */
+function linkName(texts: Array<string | undefined>, table: TableDef): string {
+  for (const text of texts) {
+    const name = (text ?? "")
+      .trim()
+      .replace(/^Tables?\s+[\d.-]+\s*[:,\-–]?\s*/i, "")
+      .trim();
+    if (name) return name;
+  }
+  return tableTitle(table);
 }
 
 /** A rolled row of alternatives (`{a/b/c - }`) inside a chain: one of them, rolled, as the chain has no picker of its own. */

@@ -10,6 +10,7 @@ import {
   type SidebarItem,
 } from "../../domains/session-log/prose-model";
 import type { FormulaVars } from "../../domains/session-log/formula";
+import { GroupedOptions } from "./formula";
 import { applySwapsToBody, fillDerivedResults, pendingTermSwaps } from "../../domains/session-log/die-edits";
 import { SidebarEntry, hasEditableValue, type SidebarEditContext } from "./sidebar-entry";
 import { cardSummary } from "../../domains/session-log/card-summary";
@@ -804,11 +805,7 @@ function PlaceholderField({ placeholder, value, hint, entities, describe, onChan
       {placeholder.options ? (
         <select value={value} onChange={(e) => onChange(e.target.value)} className="placeholder-select">
           <option value="">Choose…</option>
-          {placeholder.options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
+          <GroupedOptions options={placeholder.options} />
         </select>
       ) : isTarget ? (
         <TargetSelector value={value} entities={entities} {...(describe ? { describe } : {})} onChange={onChange} />
