@@ -180,85 +180,58 @@ function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePat
 
   const active = tabs[activeIdx];
   const sectionRef = React.useRef<HTMLElement>(null);
+  const listRef = React.useRef<HTMLElement>(null);
   const names = tabs.map((t) => t.name);
-  // From the end of a subtab, the next one opens at its top.
+  // A part opened from the list's end, the docked row or the margin opens at its top.
   const pickAndShow = (i: number) => {
     setActiveIdx(i);
-    requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ block: "start" }));
+    requestAnimationFrame(() => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const scroller = section.closest(".markdown-preview-view") as HTMLElement | null;
+      if (!scroller) return;
+      const above = section.getBoundingClientRect().top < scroller.getBoundingClientRect().top;
+      if (above) section.scrollIntoView({ block: "start" });
+    });
   };
+
+  // Where the parts go: a rail in the left margin when the pane leaves room for one, else a
+  // list at the top of the tab whose row docks under the chapter row once it scrolls away.
+  const [rail, setRail] = React.useState(false);
+  const [docked, setDocked] = React.useState(false);
+  React.useEffect(() => {
+    const section = sectionRef.current;
+    const scroller = section?.closest(".markdown-preview-view") as HTMLElement | null;
+    if (!section || !scroller || typeof ResizeObserver !== "function") return;
+    const measure = () => {
+      const room = section.getBoundingClientRect().left - scroller.getBoundingClientRect().left;
+      setRail(room >= RAIL_ROOM && !document.body.classList.contains("is-mobile"));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    return () => ro.disconnect();
+  }, []);
+  React.useEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof IntersectionObserver !== "function") return;
+    const io = new IntersectionObserver(([e]) => setDocked(!e.isIntersecting && e.boundingClientRect.top < 0));
+    io.observe(list);
+    return () => io.disconnect();
+  }, []);
 
   if (tabs.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="rpg-subtab-group" data-rpg-rule="subtab">
-      <CompactTabNav names={names} activeIdx={activeIdx} onPick={setActiveIdx} label="Part" part />
-      <nav className="rpg-subtab-group__nav">
-        {tabs.map((tab, i) => {
-          const distance = i - activeIdx;
-          const absDistance = Math.abs(distance);
-          const isActive = i === activeIdx;
-          if (isActive) {
-            return (
-              <div
-                key={i}
-                role="button"
-                tabIndex={0}
-                className={`rpg-subtab-group__btn rpg-subtab-group__btn--active ${tab.homebrew ? "rpg-subtab-group__btn--homebrew" : ""}`}
-                onClick={() => setActiveIdx(i)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") setActiveIdx(i);
-                }}
-              >
-                {tab.name}
-              </div>
-            );
-          }
-          const scale = Math.pow(0.75, absDistance);
-          const lineHpx = 1.8 * scale;
-          let cumulativeOffset = 0;
-          for (let d = 1; d < absDistance; d++) {
-            cumulativeOffset += 1.8 * Math.pow(0.75, d);
-          }
-          const isAbove = distance < 0;
-          const posStyle: React.CSSProperties = isAbove
-            ? { bottom: `calc(100% + ${cumulativeOffset}rem)` }
-            : { top: `calc(100% + ${cumulativeOffset}rem)` };
-          const radiusStyle: React.CSSProperties = isAbove
-            ? { borderRadius: "0 24px 0 0" }
-            : { borderRadius: "0 0 24px 0" };
-          const widthVar =
-            absDistance === 1
-              ? "var(--subtab-w1, 40%)"
-              : absDistance === 2
-                ? "var(--subtab-w2, 18%)"
-                : "var(--subtab-w3, 13.5%)";
-          const padding = 12 * Math.pow(0.75, absDistance);
-          return (
-            <div
-              key={i}
-              role="button"
-              tabIndex={0}
-              className={`rpg-subtab-group__btn ${tab.homebrew ? "rpg-subtab-group__btn--homebrew" : ""}`}
-              style={{
-                opacity: scale,
-                height: `${lineHpx}rem`,
-                lineHeight: `${lineHpx}rem`,
-                fontSize: `${scale * 0.85}rem`,
-                width: widthVar,
-                padding: `0 ${padding}px`,
-                ...posStyle,
-                ...radiusStyle,
-              }}
-              onClick={() => setActiveIdx(i)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") setActiveIdx(i);
-              }}
-            >
-              {tab.name}
-            </div>
-          );
-        })}
-      </nav>
+    <section
+      ref={sectionRef}
+      className={`rpg-subtab-group${rail ? " has-rail" : ""}${docked ? " is-docked" : ""}`}
+      data-rpg-rule="subtab"
+    >
+      <PartList ref={listRef} names={names} tabs={tabs} activeIdx={activeIdx} onPick={pickAndShow} />
+      <div className="rpg-subtab-dock">
+        <CompactTabNav names={names} activeIdx={activeIdx} onPick={pickAndShow} label="Part" part />
+      </div>
       {active && (
         <article className={`rpg-subtab-group__panel ${active.homebrew ? "rpg-subtab-group__panel--homebrew" : ""}`}>
           {active.homebrew ? <TabHighlightBadge /> : null}
@@ -269,6 +242,61 @@ function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePat
     </section>
   );
 }
+
+/** Room in the left margin, in px, for the parts to stand beside the text as a rail. */
+const RAIL_ROOM = 240;
+
+/**
+ * Every part of a tab, numbered, names in full: a list at the top of the tab, or a rail in the
+ * margin (CSS, by `.has-rail`). Real buttons; arrow keys, Home and End move between them.
+ */
+const PartList = React.forwardRef<
+  HTMLElement,
+  { names: string[]; tabs: RuleTabBlock[]; activeIdx: number; onPick: (i: number) => void }
+>(function PartList({ names, tabs, activeIdx, onPick }, ref) {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("button.rpg-subtab-parts__btn"));
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (at < 0) return;
+    const to =
+      e.key === "ArrowDown" || e.key === "ArrowRight"
+        ? Math.min(buttons.length - 1, at + 1)
+        : e.key === "ArrowUp" || e.key === "ArrowLeft"
+          ? Math.max(0, at - 1)
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? buttons.length - 1
+              : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    buttons[to].focus();
+  };
+  return (
+    <nav ref={ref} className="rpg-subtab-parts" aria-label="Parts" onKeyDown={onKeyDown}>
+      <div className="rpg-subtab-parts__inner">
+        <div className="rpg-subtab-parts__rule" aria-hidden="true">
+          <span>Parts</span>
+        </div>
+        <ol className="rpg-subtab-parts__list">
+          {names.map((name, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                className={`rpg-subtab-parts__btn${i === activeIdx ? " is-active" : ""}${tabs[i].homebrew ? " rpg-subtab-group__btn--homebrew" : ""}`}
+                aria-current={i === activeIdx ? "true" : undefined}
+                onClick={() => onPick(i)}
+              >
+                <span className="rpg-subtab-parts__n">{i + 1}</span>
+                <span className="rpg-subtab-parts__name">{name}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </nav>
+  );
+});
 
 function SubTabPanelContent({ body, sourcePath }: { body: string; sourcePath: string }) {
   const expandedBody = useExpandedCalls(body, sourcePath);

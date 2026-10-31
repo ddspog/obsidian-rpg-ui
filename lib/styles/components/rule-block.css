@@ -1020,189 +1020,172 @@
   margin-inline: -3rem;
 }
 
-/* ─── Sub-tab group (nested rule.tab) ────────────────────────────────────── */
+/* ─── Sub-tab group (nested rule.tab) ──────────────────────────────────────
+ * Every part numbered, names in full, at one size: a list at the top of the
+ * tab, or (.has-rail, when the pane leaves room) a rail in the left margin
+ * that stays beside the text. Without the rail, a slim part row docks under
+ * the chapter row once the list has scrolled away (.is-docked). On a phone
+ * only the row shows (mobile.css). */
 
 .rpg-subtab-group {
   position: relative;
-  --subtab-offset: 20%;
-  --subtab-w1: 40%;
-  --subtab-w2: 18%;
-  --subtab-w3: 13.5%;
 }
 
-.rpg-subtab-group__nav {
-  position: relative;
-  margin-left: calc(-1 * var(--subtab-offset));
-  width: calc(80% + var(--subtab-offset));
-  margin-top: 24px;
-  margin-bottom: 24px;
+.rpg-subtab-parts {
+  margin: 16px 0 20px;
 }
 
-.rpg-subtab-group__nav::before {
+.rpg-subtab-parts__rule {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 6px;
+  font-family: var(--font-interface, var(--font-text));
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rpg-subtab-parts__rule::before,
+.rpg-subtab-parts__rule::after {
   content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 10rem;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--text-title, currentColor) 25%,
-    var(--text-title, currentColor) 75%,
-    transparent
-  );
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
 }
 
-.rpg-subtab-group__nav::after {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 8rem;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    color-mix(in srgb, var(--text-title, currentColor) 60%, transparent) 25%,
-    color-mix(in srgb, var(--text-title, currentColor) 60%, transparent) 75%,
-    transparent
-  );
+.rpg-subtab-parts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 2px 18px;
 }
 
-.rpg-subtab-group__btn {
-  position: absolute;
-  left: 0;
-  width: 20%;
-  padding: 0 6px;
-  font-size: 0.75em;
-  color: var(--text-title, currentColor);
-  background: color-mix(in srgb, var(--text-title, currentColor) 8%, transparent);
-  cursor: pointer;
-  white-space: nowrap;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-sizing: border-box;
-  font-weight: 500;
+.rpg-subtab-parts__list > li {
+  margin: 0;
+  padding: 0;
 }
 
-.rpg-subtab-group__btn:hover {
-  opacity: 1 !important;
-  background: color-mix(in srgb, var(--text-title, currentColor) 14%, transparent);
-}
-
-.rpg-subtab-group__btn--active {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 1.8rem;
-  line-height: 1.8rem;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--text-title, currentColor) 25%, transparent),
-    color-mix(in srgb, var(--text-title, currentColor) 12%, transparent) 70%,
-    transparent
-  );
-  padding: 0 12px;
-  font-weight: 800;
-  font-size: 1em;
-  border-radius: 0 24px 24px 0;
-  text-align: left;
-  overflow: visible;
-  opacity: 1;
-}
-
-.rpg-subtab-group__ornament {
+.rpg-subtab-parts__list > li::before {
   display: none;
+}
+
+.markdown-rendered button.rpg-subtab-parts__btn,
+button.rpg-subtab-parts__btn {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-family: var(--font-interface, var(--font-text));
+  font-size: 0.9em;
+  font-weight: 450;
+  line-height: 1.3;
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.markdown-rendered button.rpg-subtab-parts__btn:hover,
+button.rpg-subtab-parts__btn:hover {
+  background: color-mix(in srgb, var(--text-title, var(--text-normal)) 7%, transparent);
+}
+
+.markdown-rendered button.rpg-subtab-parts__btn.is-active,
+button.rpg-subtab-parts__btn.is-active {
+  background: color-mix(in srgb, var(--text-title, var(--text-normal)) 13%, transparent);
+  color: var(--text-title, var(--text-normal));
+  font-weight: 650;
+}
+
+button.rpg-subtab-parts__btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+.rpg-subtab-parts__n {
+  flex: none;
+  min-width: 1.2em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+}
+
+.rpg-subtab-parts__name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The docked part row: a zero-height sticky holder, so showing the row moves nothing. */
+.rpg-subtab-dock {
+  position: sticky;
+  top: var(--rpg-tab-dock, 0px);
+  z-index: 9;
+  height: 0;
+}
+
+.rpg-subtab-dock > .rpg-tab-compact {
+  display: flex;
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.rpg-subtab-group.is-docked > .rpg-subtab-dock > .rpg-tab-compact {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The rail: the same list, one column, in the left margin and beside the text while it is read. */
+.rpg-subtab-group.has-rail > .rpg-subtab-parts {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -232px;
+  width: 212px;
+  margin: 0;
+}
+
+.rpg-subtab-group.has-rail .rpg-subtab-parts__inner {
+  position: sticky;
+  top: calc(var(--rpg-tab-dock, 0px) + 12px);
+}
+
+.rpg-subtab-group.has-rail .rpg-subtab-parts__list {
+  grid-template-columns: 1fr;
+}
+
+.rpg-subtab-group.has-rail button.rpg-subtab-parts__btn {
+  font-size: 0.82em;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+.rpg-subtab-group.has-rail > .rpg-subtab-dock {
+  display: none;
+}
+
+/* The way on from the end of a part, at every size. */
+.rpg-subtab-group__panel > button.rpg-tab-next {
+  display: flex;
 }
 
 .rpg-subtab-group__panel {
   min-height: 100px;
-}
-
-/* ─── Sub-tab responsive ─────────────────────────────────────────────────── */
-
-@media (max-width: 1400px) {
-  .rpg-subtab-group {
-    --subtab-offset: 10%;
-    --subtab-w1: 30%;
-    --subtab-w2: 8%;
-    --subtab-w3: 3.5%;
-  }
-
-  .rpg-subtab-group__nav {
-    width: calc(90% + var(--subtab-offset));
-  }
-}
-
-@media (max-width: 1200px) {
-  .rpg-subtab-group {
-    --subtab-offset: 0%;
-    --subtab-w1: 100%;
-    --subtab-w2: 100%;
-    --subtab-w3: 100%;
-  }
-
-  .rpg-subtab-group__nav {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 12px;
-    margin-bottom: 12px;
-    justify-content: center;
-    padding: 6px 20px;
-    border-left: 2px solid var(--text-title, currentColor);
-    border-right: 2px solid var(--text-title, currentColor);
-    border-top: none;
-    border-bottom: none;
-    box-shadow: none;
-    overflow: visible;
-    position: relative;
-  }
-
-  .rpg-subtab-group__nav::before,
-  .rpg-subtab-group__nav::after {
-    content: "";
-    position: absolute;
-    height: 100%;
-    width: 2px;
-    background: var(--text-title, currentColor);
-    pointer-events: none;
-    transform: none;
-  }
-
-  .rpg-subtab-group__nav::before {
-    left: -6px;
-    right: auto;
-    top: 0;
-  }
-
-  .rpg-subtab-group__nav::after {
-    right: -6px;
-    left: auto;
-    top: 0;
-  }
-
-  .rpg-subtab-group__btn {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    line-height: 1.4 !important;
-    font-size: 0.8em !important;
-    opacity: 1 !important;
-    border-radius: 6px !important;
-    padding: 4px 10px !important;
-    transform: none !important;
-  }
-
-  .rpg-subtab-group__btn--active {
-    width: auto;
-    border-radius: 6px;
-  }
 }
 
 /* ── .highlight() chain modifier ─────────────────────────────────────
