@@ -45,14 +45,26 @@ describe("rollLinkedTables", () => {
     expect(rollLinkedTables(row, "Borders.md", lookup, "a")).toBe(rollLinkedTables(row, "Borders.md", lookup, "a"));
   });
 
-  it("leaves a link that isn't to a table as it is", () => {
-    const row = "Beast [[Leaders#Beasts|🔗]]";
-    expect(rollLinkedTables(row, "Borders.md", lookup, "s")).toBe(row);
+  it("reads a link that isn't to a table as its words, and drops a bare 🔗", () => {
+    expect(rollLinkedTables("Beast [[Leaders#Beasts|🔗]].", "Borders.md", lookup, "s")).toBe("Beast.");
+    expect(rollLinkedTables("See [[Leaders#Beasts]] or [[Leaders#^ab12|🔗]]", "Borders.md", lookup, "s")).toBe(
+      "See Beasts or"
+    );
+    expect(rollLinkedTables("Hope [[Gods#^ab12|Hope gods]]", "Borders.md", lookup, "s")).toBe("Hope Hope gods");
   });
 
   it("does not follow a table back onto itself", () => {
     const out = rollLinkedTables("[[#Loop|Loop]]", "Borders.md", lookup, "s");
-    expect(out).toMatch(/^Loop \(d2 [12]: Again: \[\[#Loop\|Loop\]\]\)$/);
+    expect(out).toMatch(/^Loop \(d2 [12]: Again: Loop\)$/);
+  });
+
+  it("takes one of a rolled row's alternatives, as a chain has no picker", () => {
+    const types = parseTableBlock(
+      "types",
+      ["|d4*|1|2|3|", "|---|---|---|---|", "|1-4|Change [[Gods#^a\\|🔗]]|Hope|Shadows|"].join("\n")
+    );
+    const out = rollLinkedTables("Deity: [[#Types|Types]]", "N.md", () => ({ tables: [types], file: "N.md" }), "s");
+    expect(out).toMatch(/^Deity: Types \(d4 [1-4]: (Change|Hope|Shadows)\)$/);
   });
 
   it("reads a `\\|` alias too", () => {
