@@ -105,7 +105,7 @@
 .rpg-table-tfoot button.rpg-table-pagination__arrow {
   font-size: 1.4em;
   padding: 0 0.4em;
-  opacity: 0.5;
+  opacity: 0.75;
   cursor: pointer;
   transition: opacity 0.15s;
   flex-shrink: 0;
@@ -117,7 +117,7 @@
 }
 
 .rpg-table-tfoot button.rpg-table-pagination__arrow:disabled {
-  opacity: 0.15;
+  opacity: 0.3;
   cursor: default;
 }
 
@@ -136,7 +136,8 @@
   font-family: inherit;
   font-size: 0.9em;
   padding: 0 0.25em;
-  opacity: 0.4;
+  min-width: 1.6em;
+  opacity: 0.7;
   cursor: pointer;
   transition:
     opacity 0.15s,
@@ -153,4 +154,84 @@
 .rpg-table-tfoot button.rpg-table-pagination__page.rpg-table-pagination__page--active {
   opacity: 1;
   font-weight: 600;
+}
+
+@media (hover: none) {
+  .rpg-table-tfoot button.rpg-table-pagination__page:hover {
+    transform: none;
+  }
+}
+
+/* "Page 3 of 10 ▾", shown in place of the numbers on a phone (mobile.css): the
+ * page list behind it names the rolls each page holds. */
+.rpg-table-pagination__pick {
+  display: none;
+  position: relative;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.75em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rpg-table-pagination__pick:focus-within {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.rpg-table-tfoot select.rpg-table-pagination__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+/* A roll result that runs to several lines keeps the spacing of running text. */
+.rpg-table-tfoot__roll-cell .dice-roller-result {
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* Long rows: the footer names the rolled row (`3-4 · Hills`); the row reads in
+ * full in the table, marked. */
+.rpg-table-roll-compact {
+  display: inline;
+  line-height: 1.4;
+}
+
+.rpg-table-roll-compact__key {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.rpg-table-roll-compact__key::after {
+  content: " · ";
+}
+
+.rpg-table tbody tr.rpg-table-row--rolled td {
+  background: color-mix(in srgb, var(--text-title, var(--interactive-accent)) 14%, transparent);
+}
+
+.rpg-table tbody tr.rpg-table-row--rolled td:first-child {
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rpg-table tbody tr.rpg-table-row--rolled td {
+    animation: rpg-table-rolled-in 0.6s ease-out;
+  }
+}
+
+@keyframes rpg-table-rolled-in {
+  from {
+    background: color-mix(in srgb, var(--text-title, var(--interactive-accent)) 35%, transparent);
+  }
 }

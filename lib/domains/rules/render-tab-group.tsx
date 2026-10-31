@@ -72,6 +72,85 @@ export function TabGroupView({
   return <HorizontalTabGroupView tabs={tabs} sourcePath={sourcePath} heading={heading} />;
 }
 
+/**
+ * The tab row on a phone: the current tab's whole name with ‹ › beside it and how far along it is
+ * (`2/9`); tapping the name opens the phone's own list of every tab, names in full. A strip of
+ * tabs shows one tab at a time at that width, cut short; this shows where you are and the rest.
+ */
+function CompactTabNav({
+  names,
+  activeIdx,
+  onPick,
+  label,
+}: {
+  names: string[];
+  activeIdx: number;
+  onPick: (idx: number) => void;
+  label: string;
+}) {
+  const n = names.length;
+  return (
+    <nav className="rpg-tab-compact" aria-label={label}>
+      <button
+        type="button"
+        className="rpg-tab-compact__arrow"
+        aria-label={activeIdx > 0 ? `Previous: ${names[activeIdx - 1]}` : "Previous"}
+        disabled={activeIdx === 0}
+        onClick={() => onPick(activeIdx - 1)}
+      >
+        ‹
+      </button>
+      <span className="rpg-tab-compact__pick">
+        <span className="rpg-tab-compact__name">{names[activeIdx]}</span>
+        <span className="rpg-tab-compact__count">
+          {activeIdx + 1}/{n} ▾
+        </span>
+        <select
+          className="rpg-tab-compact__select"
+          aria-label={label}
+          value={activeIdx}
+          onChange={(e) => onPick(Number(e.target.value))}
+        >
+          {names.map((name, i) => (
+            <option key={i} value={i}>
+              {`${i + 1}. ${name}`}
+            </option>
+          ))}
+        </select>
+      </span>
+      <button
+        type="button"
+        className="rpg-tab-compact__arrow"
+        aria-label={activeIdx < n - 1 ? `Next: ${names[activeIdx + 1]}` : "Next"}
+        disabled={activeIdx >= n - 1}
+        onClick={() => onPick(activeIdx + 1)}
+      >
+        ›
+      </button>
+    </nav>
+  );
+}
+
+/** At the end of a tab on a phone: the next tab, so reading on does not mean going back up. */
+function NextTabLink({
+  names,
+  activeIdx,
+  onPick,
+}: {
+  names: string[];
+  activeIdx: number;
+  onPick: (idx: number) => void;
+}) {
+  if (activeIdx >= names.length - 1) return null;
+  return (
+    <button type="button" className="rpg-tab-next" onClick={() => onPick(activeIdx + 1)}>
+      <span className="rpg-tab-next__label">Next</span>
+      <span className="rpg-tab-next__name">{names[activeIdx + 1]}</span>
+      <span aria-hidden="true">›</span>
+    </button>
+  );
+}
+
 function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePath: string }) {
   const storageKey = `rpg-subtab:${sourcePath}:${tabs.map((t) => t.name).join("|")}`;
   const [activeIdx, setActiveIdx] = React.useState(() => {
@@ -96,11 +175,19 @@ function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePat
   }, [activeIdx, storageKey]);
 
   const active = tabs[activeIdx];
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const names = tabs.map((t) => t.name);
+  // From the end of a subtab, the next one opens at its top.
+  const pickAndShow = (i: number) => {
+    setActiveIdx(i);
+    requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ block: "start" }));
+  };
 
   if (tabs.length === 0) return null;
 
   return (
-    <section className="rpg-subtab-group" data-rpg-rule="subtab">
+    <section ref={sectionRef} className="rpg-subtab-group" data-rpg-rule="subtab">
+      <CompactTabNav names={names} activeIdx={activeIdx} onPick={setActiveIdx} label="Part" />
       <nav className="rpg-subtab-group__nav">
         {tabs.map((tab, i) => {
           const distance = i - activeIdx;
@@ -172,6 +259,7 @@ function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePat
         <article className={`rpg-subtab-group__panel ${active.homebrew ? "rpg-subtab-group__panel--homebrew" : ""}`}>
           {active.homebrew ? <TabHighlightBadge /> : null}
           <SubTabPanelContent body={active.body} sourcePath={sourcePath} />
+          <NextTabLink names={names} activeIdx={activeIdx} onPick={pickAndShow} />
         </article>
       )}
     </section>
@@ -375,6 +463,12 @@ function HorizontalTabGroupView({
         className={`rpg-rule-tab-group__sticky-bar ${isStuck ? "rpg-rule-tab-group__sticky-bar--stuck" : ""}`}
       >
         {isStuck && heading ? <div className="rpg-rule-tab-group__stuck-heading">{heading}</div> : null}
+        <CompactTabNav
+          names={tabs.map((t) => t.name)}
+          activeIdx={activeIdx}
+          onPick={handleTabClick}
+          label={heading ? `${heading}: section` : "Section"}
+        />
         <menu role="tablist" className="rpg-rule-tab-group__tabs">
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--left" />
           <span className="rpg-rule-tab-group__diamond rpg-rule-tab-group__diamond--right" />
@@ -407,6 +501,7 @@ function HorizontalTabGroupView({
         >
           {active.homebrew ? <TabHighlightBadge /> : null}
           <TabPanelContent body={active.body} sourcePath={sourcePath} />
+          <NextTabLink names={tabs.map((t) => t.name)} activeIdx={activeIdx} onPick={handleTabClick} />
         </article>
       ) : null}
     </section>

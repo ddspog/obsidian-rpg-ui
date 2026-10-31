@@ -413,3 +413,132 @@ section[data-rpg-rule="tab"] {
     color-mix(in srgb, var(--text-faint, #999) 8%, transparent) 6px
   );
 }
+
+/* ── Compact tab row (phone) ───────────────────────────────────────────
+ * Shown instead of the strip and the subtab list at phone width (see
+ * mobile.css): ‹ the current name, in full, with its place (2/9) › and the
+ * phone's own list of every name behind a tap on it. */
+
+.rpg-tab-compact,
+.rpg-tab-next {
+  display: none;
+}
+
+.rpg-tab-compact {
+  align-items: stretch;
+  border: 2px solid var(--background-modifier-border, #444);
+  outline: 1px solid var(--background-modifier-border, #444);
+  outline-offset: 2px;
+  background: var(--background-primary, #1e1e1e);
+  margin: 4px 3px;
+}
+
+.rpg-subtab-group > .rpg-tab-compact {
+  border-width: 1px;
+  outline: none;
+  margin: 12px 0;
+  background: color-mix(in srgb, var(--text-title, currentColor) 6%, var(--background-primary, #1e1e1e));
+}
+
+.markdown-rendered button.rpg-tab-compact__arrow,
+button.rpg-tab-compact__arrow {
+  flex: 0 0 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: 1.5em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.markdown-rendered button.rpg-tab-compact__arrow:disabled,
+button.rpg-tab-compact__arrow:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.rpg-tab-compact__pick {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  min-height: 44px;
+  border-inline: 1px solid var(--background-modifier-border, #444);
+}
+
+.rpg-tab-compact__pick:focus-within {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.rpg-tab-compact__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 650;
+  line-height: 1.25;
+  text-wrap: balance;
+  color: var(--text-title, var(--text-normal));
+}
+
+.rpg-tab-compact__count {
+  flex: none;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The native list sits over the name, unseen: a tap anywhere on it opens it. */
+.rpg-tab-compact select.rpg-tab-compact__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.markdown-rendered button.rpg-tab-next,
+button.rpg-tab-next {
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  margin-top: 1.5em;
+  padding: 10px 4px;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border, #444);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.rpg-tab-next__label {
+  font-size: 0.8em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rpg-tab-next__name {
+  flex: 1;
+  font-weight: 650;
+  color: var(--text-title, var(--text-normal));
+}

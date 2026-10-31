@@ -371,3 +371,34 @@
 .rpg-table-roll-cell:not(.rpg-table-roll-cell-static):active {
   background-color: color-mix(in srgb, var(--text-title, var(--text-muted)) 16%, transparent);
 }
+
+/* A caption that repeats the heading right above the table. */
+.rpg-table > caption.rpg-table-caption--repeat {
+  display: none;
+}
+
+/* Columns with no names: the header bar shrinks to a rule. */
+.rpg-table.rpg-table--blank-head thead th {
+  height: 3px;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+}
+
+/* A table wider than its column scrolls sideways: its caption, roll result and
+ * pager stay in the visible window, and the far edge fades until it is
+ * scrolled through. */
+.rpg-table-wrapper--overflow > .rpg-table > caption {
+  text-align: start;
+}
+
+.rpg-table-wrapper--overflow .rpg-table-tfoot__expr-row td > .rpg-table-tfoot__roll-cell {
+  position: sticky;
+  left: 0;
+  width: var(--rpg-table-visible, 100%);
+}
+
+.rpg-table-wrapper--overflow:not(.rpg-table-wrapper--at-end) {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}
