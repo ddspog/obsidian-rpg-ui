@@ -36,8 +36,17 @@ describe("rollLinkedTables", () => {
   it("rolls the table a result links to, in place of the link", () => {
     const row = "Unusual border ([[#Table 5-21 Unusual Border|Table 5-21]])";
     expect(rollLinkedTables(row, "Borders.md", lookup, "seed")).toMatch(
-      /^Unusual border \(Table 5-21 \(d4 [1-4]: Magical Wards\. Not death to pass\.\)\)$/
+      /^Unusual border \(Unusual Border: Magical Wards\. Not death to pass \(d4 [1-4]\)\)$/
     );
+  });
+
+  it("drops the instruction that sent you to the table: the roll is done", () => {
+    for (const lead of ["Refer to", "Roll on", "roll once on", "See", "go to"]) {
+      const row = `Border. ${lead} [[#Table 5-21 Unusual Border|Table 5-21: Unusual Border]].`;
+      expect(rollLinkedTables(row, "Borders.md", lookup, "s")).toMatch(
+        /^Border\. Unusual Border: Magical Wards\. Not death to pass \(d4 [1-4]\)\.$/
+      );
+    }
   });
 
   it("reads the same chain for the same seed, a new one for another", () => {
@@ -55,7 +64,7 @@ describe("rollLinkedTables", () => {
 
   it("does not follow a table back onto itself", () => {
     const out = rollLinkedTables("[[#Loop|Loop]]", "Borders.md", lookup, "s");
-    expect(out).toMatch(/^Loop \(d2 [12]: Again: Loop\)$/);
+    expect(out).toMatch(/^Loop: Again: Loop \(d2 [12]\)$/);
   });
 
   it("takes one of a rolled row's alternatives, as a chain has no picker", () => {
@@ -64,12 +73,12 @@ describe("rollLinkedTables", () => {
       ["|d4*|1|2|3|", "|---|---|---|---|", "|1-4|Change [[Gods#^a\\|🔗]]|Hope|Shadows|"].join("\n")
     );
     const out = rollLinkedTables("Deity: [[#Types|Types]]", "N.md", () => ({ tables: [types], file: "N.md" }), "s");
-    expect(out).toMatch(/^Deity: Types \(d4 [1-4]: (Change|Hope|Shadows)\)$/);
+    expect(out).toMatch(/^Deity: Types: (Change|Hope|Shadows) \(d4 [1-4]\)$/);
   });
 
   it("reads a `\\|` alias too", () => {
     expect(rollLinkedTables("[[#Table 5-21 Unusual Border\\|Table 5-21]]", "Borders.md", lookup, "s")).toMatch(
-      /^Table 5-21 \(d4 [1-4]: /
+      /^Unusual Border: Magical Wards\. Not death to pass \(d4 [1-4]\)$/
     );
   });
 });
@@ -135,12 +144,12 @@ describe("rollLinkedTables, a section of several tables", () => {
       () => ({ tables: [base, mod], file: "N.md" }),
       "s"
     );
-    expect(out).toMatch(/^Shell creatures \(Base Creature d6 \d: Crab; Modification d6 \d: Colossal\)$/);
+    expect(out).toMatch(/^Base Creature: Crab \(d6 \d\); Modification: Colossal \(d6 \d\)$/);
   });
 
   it("reads a link written right after a bracket", () => {
     const out = rollLinkedTables("[[[#Table 5-21 Unusual Border|Table 5-21]]]", "Borders.md", lookup, "s");
-    expect(out).toMatch(/^\[Table 5-21 \(d4 /);
+    expect(out).toMatch(/^\[Unusual Border: Magical Wards\. Not death to pass \(d4 [1-4]\)\]$/);
   });
 });
 

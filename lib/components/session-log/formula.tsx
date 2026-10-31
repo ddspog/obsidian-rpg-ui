@@ -41,6 +41,7 @@ import {
   buildResultChoice,
   buildResultPicker,
   splitResultPicker,
+  groupOptions,
   type ChoiceToken,
   type PickerToken,
 } from "lib/domains/session-log/choice";
@@ -275,6 +276,31 @@ export function ChoiceOnlyView({
  *  list while the label sizes to the selection (not the longest option). With
  *  `onPick` the selection writes back to the log line; without it (read-only
  *  example) the pick is local. */
+/** A dropdown's options, under their `## Group` headings when the list has any. */
+export function GroupedOptions({ options }: { options: string[] }) {
+  return (
+    <>
+      {groupOptions(options).map((g, i) =>
+        g.label ? (
+          <optgroup key={`g${i}`} label={g.label}>
+            {g.options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </optgroup>
+        ) : (
+          g.options.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))
+        )
+      )}
+    </>
+  );
+}
+
 export function ChoiceSelect({ choice, onPick }: { choice: ChoiceToken; onPick?: (selected: string) => void }) {
   const [local, setLocal] = React.useState(choice.selected);
   const value = onPick ? choice.selected : local;
@@ -299,11 +325,7 @@ export function ChoiceSelect({ choice, onPick }: { choice: ChoiceToken; onPick?:
         }}
       >
         <option value="">pick</option>
-        {choice.options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
+        <GroupedOptions options={choice.options} />
       </select>
     </span>
   );
