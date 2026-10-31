@@ -9,6 +9,7 @@
  * chain anew. Pure: the caller supplies how a link finds its table.
  */
 
+import { splitResultPicker } from "../session-log/choice";
 import type { TableDef } from "../tables/types";
 import { resolveTableRoll } from "./steps";
 
@@ -57,8 +58,8 @@ export function tableDice(table: TableDef): { count: number; sides: number } | u
 
 /**
  * `text` with every link to a table replaced by `<link text> (d<n> <roll>: <row>)`, the row itself
- * rolled through the same way. Links that aren't to a table stay as they are, as does a table
- * already on the chain (no loops).
+ * rolled through the same way; a rolled row of alternatives takes one of them. A link that isn't to
+ * a table, or to a table already on the chain (no loops), reads as its words: a result is plain text.
  */
 export function rollLinkedTables(
   text: string,
@@ -68,9 +69,10 @@ export function rollLinkedTables(
   depth = 0,
   chain: ReadonlySet<string> = new Set()
 ): string {
-  if (depth >= MAX_DEPTH || !text.includes("[[")) return text;
+  if (!text.includes("[[")) return text;
+  if (depth >= MAX_DEPTH) return linkText(text);
   let nth = 0;
-  return text.replace(HEADING_LINK, (whole, target: string, heading: string, alias: string | undefined) => {
+  const out = text.replace(HEADING_LINK, (whole, target: string, heading: string, alias: string | undefined) => {
     const hit = lookup(fromFile, target.trim(), heading.trim());
     if (!hit) return whole;
     const rolled: string[] = [];
@@ -81,10 +83,11 @@ export function rollLinkedTables(
       const at = nth++;
       let roll = 0;
       for (let d = 0; d < dice.count; d++) roll += seededRoll(`${seed}|${key}|${at}|${d}`, dice.sides);
-      const row = resolveTableRoll(`x d100=${roll} ->`, table)
+      const raw = resolveTableRoll(`x d100=${roll} ->`, table)
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();
-      if (!row) continue;
+      if (!raw) continue;
+      const row = settlePicker(raw, `${seed}|${key}|${at}|pick`);
       const inner = rollLinkedTables(row, hit.file, lookup, `${seed}|${key}`, depth + 1, new Set([...chain, key]));
       // Several tables under one heading each say which they are.
       const name = hit.tables.length > 1 ? `${tableTitle(table)} ` : "";
@@ -93,6 +96,29 @@ export function rollLinkedTables(
     if (rolled.length === 0) return whole;
     return `${(alias ?? heading).trim()} (${rolled.join("; ")})`;
   });
+  return linkText(out);
+}
+
+/** A rolled row of alternatives (`{a/b/c - }`) inside a chain: one of them, rolled, as the chain has no picker of its own. */
+function settlePicker(row: string, seed: string): string {
+  const { before, after, picker } = splitResultPicker(row);
+  if (!picker) return row;
+  const word = picker.selected || picker.options[seededRoll(seed, picker.options.length) - 1];
+  return [before, word, after].filter(Boolean).join(" ");
+}
+
+/** Where a dropped link was, so the space before it goes too (a private-use character no row has). */
+const DROPPED = "\uE000";
+
+/** The links a chain did not follow, as the words they show: the alias, else the heading; a bare 🔗 goes. */
+function linkText(text: string): string {
+  return text
+    .replace(HEADING_LINK, (_whole, _target: string, heading: string, alias: string | undefined) => {
+      const shown = (alias ?? heading.replace(/^\^\S*$/, "")).trim();
+      return /^[\p{L}\p{N}]/u.test(shown) ? shown : DROPPED;
+    })
+    .replace(/[ \t]*\uE000/g, "")
+    .trim();
 }
 
 /** What a table is called: its caption without the book's number, else its block name. */

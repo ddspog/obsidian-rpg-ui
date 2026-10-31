@@ -2569,6 +2569,9 @@ button.lonelog-bookkeeping-write.is-quiet {
   cursor: pointer;
   height: auto;
   min-height: 0;
+  /* A long option (a rolled row) wraps instead of running past the panel. */
+  white-space: normal;
+  text-align: start;
   transition: background-color 120ms ease;
 }
 
