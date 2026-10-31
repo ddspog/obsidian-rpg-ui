@@ -135,10 +135,9 @@
 .lonelog-log-latest:focus-visible,
 .lonelog-log-undo:focus-visible,
 .lonelog-log-save:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--background-primary),
-    0 0 0 4px var(--interactive-accent);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 /* Reserved top-right corner so the first prose line wraps clear of the dog-ear. */
@@ -416,30 +415,33 @@
   border-top: 1px solid var(--background-modifier-border);
 }
 
-.lonelog-sidebar-header {
-  font-size: 0.72em;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-faint);
-  margin-bottom: 0.4rem;
-  /* Keep the heading visible while scrolling a long list of entries — and with
-     it the ✕ that closes the Log, at its right. */
+/* The Log's heading: the one rule for it. It keeps the panel's own colour and sticks while the
+   entries scroll (with the ✕ that closes the Log at its right), pulled up over the panel's top
+   padding so nothing shows through above it. */
+.lonelog-sidebar .lonelog-sidebar-header {
   position: sticky;
-  top: 0;
+  top: -0.75rem;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.2rem 0.1rem 0.2rem 0;
-  background: var(--background-primary);
+  margin: -0.75rem 0 0.4rem;
+  padding: calc(0.75rem + 0.35rem) 0.1rem 0.4rem;
+  background: inherit;
+  border-bottom: 1px solid var(--log-rule, var(--background-modifier-border));
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 /* Stacked, the panel's top padding would leave a strip that scrolled entries
    show through above the sticky heading — the heading covers it instead. */
-.lonelog-prose-layout.is-stacked .lonelog-sidebar-header {
+.lonelog-prose-layout.is-stacked .lonelog-sidebar .lonelog-sidebar-header {
   top: -0.5rem;
   margin-top: -0.5rem;
-  padding-top: 0.7rem;
+  padding-top: 0.85rem;
 }
 
 .lonelog-sidebar-empty {
@@ -465,14 +467,11 @@
 
 /* A card that calls other cards — a Multiattack, an Opportunity Attack — is
    one entry: its first attack's header strip names it (`OPPORTUNITY ATTACK
-   1 attack · …`), and its attacks run on inside one framed panel — tinted and
-   outlined — a faint dashed line where the next begins. */
+   1 attack · …`), and its attacks run on, indented under it, a faint dashed
+   line where the next begins. No frame: it is one entry in a flat list. */
 .lonelog-sidebar-item.in-multiattack {
   margin-left: 0.15rem;
-  padding-left: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
-  border-radius: 4px;
-  background-color: color-mix(in srgb, var(--text-accent) 6%, transparent);
+  padding-left: 0.6rem;
 }
 
 /* The theme's margin on every table (a whole line's height) would open a gap
@@ -515,7 +514,7 @@
 }
 
 .lonelog-sidebar .lonelog-sidebar-item:hover {
-  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 6%, transparent);
 }
 
 .lonelog-sidebar .lonelog-sidebar-item.is-selected {
@@ -1596,7 +1595,6 @@
 .lonelog-roll-expr--btn:hover .lonelog-roll-mark,
 .lonelog-roll-expr--btn:focus-visible .lonelog-roll-mark {
   transform: translateY(-1px) rotate(-6deg);
-  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--roll-hue) 45%, transparent));
 }
 
 /* The recorded dice and the brackets that hold them. The brackets are DRAWN, not
@@ -2220,9 +2218,9 @@ button.lonelog-bookkeeping-write.is-quiet {
 
 .lonelog-economy-slot.is-used {
   border-style: solid;
-  border-color: color-mix(in srgb, var(--text-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--text-accent) 14%, transparent);
-  color: var(--text-accent);
+  border-color: color-mix(in srgb, var(--log-ink, var(--text-accent)) 55%, transparent);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 9%, transparent);
+  color: var(--log-ink, var(--text-accent));
 }
 
 .lonelog-economy-slot.is-over {
@@ -2232,7 +2230,7 @@ button.lonelog-bookkeeping-write.is-quiet {
 }
 
 .lonelog-economy-attacks {
-  font-size: 0.82em;
+  font-size: max(0.82em, 12px);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -2267,8 +2265,7 @@ button.lonelog-bookkeeping-write.is-quiet {
   gap: 0.3em;
   padding: 0 0.4em 0.04em 0.25em;
   border-radius: 0.4em;
-  background: color-mix(in srgb, var(--text-normal) 4%, transparent);
-  box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+  background: color-mix(in srgb, var(--text-normal) 6%, transparent);
   color: var(--text-normal);
   font-weight: 600;
   text-decoration: none;
@@ -2624,12 +2621,6 @@ button.lonelog-bookkeeping-write.is-quiet {
 
 /* ═══ UI review: a Log you can read ═══ */
 
-.lonelog-sidebar-header {
-  font-size: 0.8em;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
 .lonelog-sidebar-item {
   font-size: 0.82em;
 }
@@ -2647,18 +2638,7 @@ button.lonelog-bookkeeping-write.is-quiet {
 
 /* ═══ UI review, round two: a header that belongs to its panel, entries set apart by a line ═══ */
 
-/* The header takes the panel's own colour (it was the page's, a pale bar on the tan panel) and
-   sits over a hairline; the close button is a plain ✕, not a boxed chip. */
-.lonelog-sidebar .lonelog-sidebar-header {
-  background: inherit;
-  padding: 0.35rem 0.1rem 0.4rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
-  font-size: 0.8em;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
+/* The close button is a plain ✕, not a boxed chip. */
 .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
   min-width: 1.75rem;
   min-height: 1.75rem;
@@ -2669,14 +2649,14 @@ button.lonelog-bookkeeping-write.is-quiet {
 }
 
 .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle:hover {
-  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 10%, transparent);
   color: var(--text-normal);
 }
 
 /* Every entry is set off by a visible line, with room above and below it. */
 .lonelog-sidebar .lonelog-sidebar-item {
   padding-block: 0.6rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+  border-bottom: 1px solid var(--log-rule, var(--background-modifier-border));
 }
 
 .lonelog-sidebar .lonelog-sidebar-item:last-child {

@@ -283,7 +283,7 @@
   position: sticky;
   top: var(--lonelog-sidebar-head-h, 1.6rem);
   z-index: 2;
-  background: var(--background-primary);
+  background: var(--log-surface, var(--background-primary));
 }
 
 /* The fight's entries hang from their map: a rule down the side, to the end. */
@@ -819,7 +819,7 @@ body.is-mobile .lonelog-minimap.is-small {
 
 /* Under the Log's ✕ and heading, not on them. */
 body.is-mobile .lonelog-minimap.is-small {
-  top: 4rem;
+  top: 4.4rem;
 }
 
 .lonelog-minimap-tools .rpg-hexpaint-button {
@@ -833,10 +833,11 @@ body.is-mobile .lonelog-minimap.is-small {
   width: 2.2rem;
   height: 2.2rem;
   padding: 0;
-  border: 1px solid var(--background-modifier-border);
+  /* Flat, in the Log's own colours: a hairline, no shadow (it read as a glowing disc). */
+  border: 1px solid var(--log-rule, var(--background-modifier-border));
   border-radius: 50%;
-  background: var(--background-primary);
-  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.25);
+  background: var(--log-surface, var(--background-primary));
+  box-shadow: none;
   color: var(--text-muted);
   cursor: pointer;
 }
