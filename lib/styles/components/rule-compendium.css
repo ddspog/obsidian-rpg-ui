@@ -433,11 +433,47 @@ section[data-rpg-rule="tab"] {
   margin: 4px 3px;
 }
 
-.rpg-subtab-group > .rpg-tab-compact {
-  border-width: 1px;
-  outline: none;
+/* The part row: no box, smaller interface type, an underline in the title
+ * colour. It docks under the chapter row (top: --rpg-tab-dock, set from the
+ * chapter row's height) while its part is read, and leaves with it. */
+.rpg-subtab-group > .rpg-tab-compact--part {
+  position: sticky;
+  top: var(--rpg-tab-dock, 0px);
+  z-index: 9;
   margin: 12px 0;
-  background: color-mix(in srgb, var(--text-title, currentColor) 6%, var(--background-primary, #1e1e1e));
+  border: none;
+  outline: none;
+  border-bottom: 2px solid var(--text-title, var(--text-normal));
+  background: var(--background-primary, #1e1e1e);
+  font-family: var(--font-interface, var(--font-text));
+  font-size: 0.88em;
+}
+
+.rpg-tab-compact--part .rpg-tab-compact__pick {
+  border-inline: none;
+  min-height: 40px;
+  padding-left: 10px;
+}
+
+.rpg-tab-compact--part .rpg-tab-compact__name {
+  font-weight: 550;
+  color: var(--text-normal);
+}
+
+.rpg-tab-compact__label {
+  flex: none;
+  font-size: 0.75em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.markdown-rendered .rpg-tab-compact--part button.rpg-tab-compact__arrow,
+.rpg-tab-compact--part button.rpg-tab-compact__arrow {
+  flex-basis: 40px;
+  min-height: 40px;
+  font-size: 1.25em;
+  color: var(--text-muted);
 }
 
 .markdown-rendered button.rpg-tab-compact__arrow,

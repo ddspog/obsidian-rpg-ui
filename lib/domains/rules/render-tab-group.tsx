@@ -82,15 +82,18 @@ function CompactTabNav({
   activeIdx,
   onPick,
   label,
+  part = false,
 }: {
   names: string[];
   activeIdx: number;
   onPick: (idx: number) => void;
   label: string;
+  /** A subtab row: a lighter line, docked under the chapter row while its part is read. */
+  part?: boolean;
 }) {
   const n = names.length;
   return (
-    <nav className="rpg-tab-compact" aria-label={label}>
+    <nav className={`rpg-tab-compact${part ? " rpg-tab-compact--part" : ""}`} aria-label={label}>
       <button
         type="button"
         className="rpg-tab-compact__arrow"
@@ -101,6 +104,7 @@ function CompactTabNav({
         ‹
       </button>
       <span className="rpg-tab-compact__pick">
+        {part ? <span className="rpg-tab-compact__label">Part</span> : null}
         <span className="rpg-tab-compact__name">{names[activeIdx]}</span>
         <span className="rpg-tab-compact__count">
           {activeIdx + 1}/{n} ▾
@@ -187,7 +191,7 @@ function SubTabGroupView({ tabs, sourcePath }: { tabs: RuleTabBlock[]; sourcePat
 
   return (
     <section ref={sectionRef} className="rpg-subtab-group" data-rpg-rule="subtab">
-      <CompactTabNav names={names} activeIdx={activeIdx} onPick={setActiveIdx} label="Part" />
+      <CompactTabNav names={names} activeIdx={activeIdx} onPick={setActiveIdx} label="Part" part />
       <nav className="rpg-subtab-group__nav">
         {tabs.map((tab, i) => {
           const distance = i - activeIdx;
@@ -451,12 +455,28 @@ function HorizontalTabGroupView({
     };
   }, [tabs.length]);
 
+  // Where the chapter row ends on screen, so a subtab row can dock right under it.
+  const sectionRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    const bar = stickyRef.current;
+    const section = sectionRef.current;
+    if (!bar || !section || typeof ResizeObserver !== "function") return;
+    const update = () => {
+      const top = parseFloat(bar.style.top || "0") || 0;
+      section.style.setProperty("--rpg-tab-dock", `${Math.max(0, top + bar.offsetHeight)}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, [isStuck]);
+
   if (tabs.length === 0) {
     return <div className="notice">rpg rule.tab: no tabs found</div>;
   }
 
   return (
-    <section data-rpg-rule="tab">
+    <section ref={sectionRef} data-rpg-rule="tab">
       <div ref={sentinelRef} className="rpg-rule-tab-group__sentinel" />
       <div
         ref={stickyRef}
