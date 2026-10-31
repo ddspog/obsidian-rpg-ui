@@ -183,3 +183,22 @@ describe("rollCellRows", () => {
     expect(rollCellRows(def, cell, () => 0).rows).toEqual([0, 0]);
   });
 });
+
+describe("rollOnce, a table rolled with several dice", () => {
+  const def = parseTableBlock(
+    "population",
+    ["|3d6*|People|", "|---|---|", "|3-5|Sparse|", "|6-15|Average|", "|16-18|Crowded|"].join("\n")
+  );
+
+  it("adds the dice: three lowest faces are a 3", () => {
+    expect(rollOnce(def, [], undefined, () => 0)).toEqual({ kind: "hit", values: ["Sparse"], rolled: 3 });
+  });
+
+  it("three highest faces are an 18", () => {
+    expect(rollOnce(def, [], undefined, () => 0.999)).toEqual({ kind: "hit", values: ["Crowded"], rolled: 18 });
+  });
+
+  it("never rolls below the number of dice", () => {
+    for (let i = 0; i < 200; i++) expect(rollOnce(def, [], undefined).kind).toBe("hit");
+  });
+});
