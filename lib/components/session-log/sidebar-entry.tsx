@@ -583,7 +583,18 @@ export function SidebarEntry({
   const editableEntry = !!edit && (item.rows.some((row) => row.scene) || hasEditableValue(item.rows));
   const interaction = onSelect
     ? editableEntry
-      ? { onClick: () => onSelect(item.id) }
+      ? {
+          // Its inputs mean it can't be a button, but it can still be tabbed to and opened from the keyboard.
+          role: "group" as const,
+          tabIndex: 0,
+          onClick: () => onSelect(item.id),
+          onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+              e.preventDefault();
+              onSelect(item.id);
+            }
+          },
+        }
       : {
           role: "button" as const,
           tabIndex: 0,

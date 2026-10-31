@@ -1671,12 +1671,34 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     parsed.cells.length === 0 && parsed.labels.length === 0 && parsed.markers.length === 0 && !parsed.stamps?.length;
   if (empty && !editing && !parent && !parsed.imports?.length) {
     return (
-      <div className="notice">
-        rpg map: add hexes below the <code>---</code> — <code>t(q,r): terrain</code>, <code>s(q,r): stack</code>,{" "}
-        <code>p(q,r): path</code>, <code>m(q,r): marker</code>, <code>l(q,r): (Text) label</code>
-        {parsed.errors.length > 0 &&
-          ` (${parsed.errors.length} problem${parsed.errors.length === 1 ? "" : "s"}: line ${parsed.errors[0].line}: ${parsed.errors[0].message})`}{" "}
-        <button type="button" onClick={startEditing}>
+      <div className="rpg-hexmap-empty">
+        <p>
+          Empty map. Add hexes below the <code>---</code>, one per line:
+        </p>
+        <ul>
+          <li>
+            <code>t(q,r): terrain</code>
+          </li>
+          <li>
+            <code>s(q,r): stack</code>
+          </li>
+          <li>
+            <code>p(q,r): path</code>
+          </li>
+          <li>
+            <code>m(q,r): marker</code>
+          </li>
+          <li>
+            <code>l(q,r): (Text) label</code>
+          </li>
+        </ul>
+        {parsed.errors.length > 0 && (
+          <p className="rpg-hexmap-empty-errors">
+            {parsed.errors.length} problem{parsed.errors.length === 1 ? "" : "s"}: line {parsed.errors[0].line}:{" "}
+            {parsed.errors[0].message}
+          </p>
+        )}
+        <button type="button" className="rpg-hexmap-empty-paint" onClick={startEditing}>
           Paint it
         </button>
       </div>

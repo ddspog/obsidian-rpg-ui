@@ -71,3 +71,37 @@
 .rpg-figure__caption > div > :last-child {
   margin-bottom: 0;
 }
+
+/* The diagram wears the page's colours and type, not mermaid's beige boxes with black outlines. */
+.rpg-figure__diagram svg .node rect,
+.rpg-figure__diagram svg .node polygon,
+.rpg-figure__diagram svg .node circle,
+.rpg-figure__diagram svg .node path {
+  fill: var(--background-secondary) !important;
+  stroke: var(--background-modifier-border-hover) !important;
+  stroke-width: 1px !important;
+}
+
+.rpg-figure__diagram svg text,
+.rpg-figure__diagram svg .nodeLabel,
+.rpg-figure__diagram svg .label {
+  font-family: var(--font-text) !important;
+  fill: var(--text-normal) !important;
+  color: var(--text-normal) !important;
+}
+
+.rpg-figure__diagram svg .edgePath path,
+.rpg-figure__diagram svg .flowchart-link {
+  stroke: var(--text-muted) !important;
+}
+
+/* A phone has no room for a floated figure: it takes the column. */
+@media (max-width: 600px) {
+  .rpg-figure--left,
+  .rpg-figure--right,
+  .rpg-figure--center {
+    float: none;
+    width: 100%;
+    margin-inline: auto;
+  }
+}

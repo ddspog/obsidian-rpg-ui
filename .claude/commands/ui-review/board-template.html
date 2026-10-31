@@ -31,13 +31,15 @@ section{display:flex;flex-direction:column;gap:16px}
 .verdict span{display:block;padding:8px 12px;min-height:40px;border:1px solid var(--rule);border-radius:99px;font-size:13px;font-weight:600;color:var(--muted)}
 .verdict label:has(input:checked) span{background:var(--accent);border-color:var(--accent);color:var(--bg)}
 .verdict label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px;border-radius:99px}
-.pair{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:flex-start}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px 28px;align-items:start}
+@media (max-width:720px){.pair{grid-template-columns:1fr}}
 .side{display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 auto;max-width:100%}
 .side.wide{flex:1 1 100%}
+.pair .side{flex:none}
 .lab{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .figs{display:flex;gap:12px;flex-wrap:wrap}
-.figs figure{flex:0 1 270px;min-width:0;max-width:100%}
-.figs figure.wide{flex:1 1 100%;max-width:760px}
+.figs figure{flex:1 1 120px;min-width:0;max-width:270px}
+.figs figure.wide{flex:1 1 100%;max-width:100%}
 figure{margin:0;display:flex;flex-direction:column;gap:5px}
 figure img{width:100%;max-width:100%;height:auto;border:1px solid var(--rule);border-radius:8px;display:block;background:var(--bg)}
 figcaption{font-size:12.5px;color:var(--muted)}

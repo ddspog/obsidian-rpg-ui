@@ -12,7 +12,7 @@ hero:
       link: /getting-started/quick-start
     - theme: alt
       text: View Components
-      link: /character-sheet/ability-scores
+      link: /character-sheet/features
 
 features:
   - title: Interactive Character Sheets

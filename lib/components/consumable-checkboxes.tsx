@@ -36,6 +36,7 @@ export function ConsumableCheckboxes(props: ConsumableCheckboxesProps) {
           key={i}
           checked={i < props.state.value}
           id={`consumable-${props.static.state_key}-${i}`}
+          label={`${props.static.label ?? "Use"}, ${i + 1} of ${props.static.uses}`}
           onChange={() => toggleUsage(i)}
         />
       );

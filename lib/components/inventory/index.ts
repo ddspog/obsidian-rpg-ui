@@ -5,4 +5,3 @@ export { ContainerRow } from "./ContainerRow";
 export { CurrencyRow } from "./CurrencyRow";
 export { EncumbranceBar } from "./EncumbranceBar";
 export { LoadoutCards } from "./LoadoutCards";
-export { Inventory as LegacyInventory } from "./Legacy";
