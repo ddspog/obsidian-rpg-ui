@@ -34,7 +34,7 @@ import { totalPages } from "./pagination";
 import type { RenderCell, RowRange } from "./row-merge";
 import { resolveRenderRows } from "./row-merge";
 import { parseAxisCell } from "./parse-table-block";
-import { rollCell } from "./roll";
+import { rollCellRows } from "./roll";
 import { interpretOracle, parseOracleThresholds, rollDice } from "./oracle";
 import { getRollResult, rollStoreKey, setRollResult, subscribeRollResult } from "./roll-store";
 
@@ -366,13 +366,16 @@ function appendTextWithLinks(el: HTMLElement, text: string): void {
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > 0 && text[m.index - 1] === "@") continue;
-    if (m.index > cursor) {
-      el.appendChild(doc.createTextNode(unescape(text.slice(cursor, m.index))));
-    }
     const inner = m[1];
     const pipe = inner.indexOf("|");
     const target = (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
     const label = (pipe >= 0 ? inner.slice(pipe + 1) : inner).split("/").pop()!.trim();
+    if (m.index > cursor) {
+      let before = unescape(text.slice(cursor, m.index));
+      // A link drawn as an icon (🔗) stays on the line of the word it follows.
+      if (!/[\p{L}\p{N}]/u.test(label)) before = before.replace(/ $/, "\u00a0");
+      el.appendChild(doc.createTextNode(before));
+    }
     const a = doc.createElement("a");
     a.className = "internal-link";
     a.setAttribute("href", target);
@@ -525,6 +528,27 @@ function renderCellContents(doc: Document, cell: FooterCell, root: HTMLElement, 
   }
 }
 
+/**
+ * The footer of a table of long rows: the rolled row's roll and the words it is known by
+ * (`3-4 · Hills`); the row itself is marked in the table, where it reads in full.
+ */
+function renderCompactRoll(doc: Document, root: HTMLElement, key: string, value: string): void {
+  root.innerHTML = "";
+  const wrap = doc.createElement("span");
+  wrap.classList.add("rpg-table-roll-compact");
+  if (key.trim()) {
+    const k = doc.createElement("span");
+    k.classList.add("rpg-table-roll-compact__key");
+    k.textContent = key.trim();
+    wrap.appendChild(k);
+  }
+  const lead = doc.createElement("span");
+  lead.classList.add("dice-roller-result", "rpg-table-roll-compact__lead");
+  lead.textContent = rowLead(value);
+  wrap.appendChild(lead);
+  root.appendChild(wrap);
+}
+
 function hasRollSegment(cell: FooterCell): boolean {
   return cell.segments.some((s) => s.kind === "roll");
 }
@@ -569,6 +593,110 @@ export interface RenderTableOptions {
  * render inside a managed lifecycle (Obsidian's `MarkdownRenderChild`)
  * should invoke them on unmount to drop the roll-store subscriptions.
  */
+/** Plain words of a cell: links read as their text, markup dropped. */
+function plainText(raw: string): string {
+  return raw
+    .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, "$1")
+    .replace(/\[\[([^\]]*)\]\]/g, "$1")
+    .replace(/[*_`]/g, "")
+    .trim();
+}
+
+/** Rows long enough that the roll's result is better read in the row itself than repeated under it. */
+const LONG_ROW_CHARS = 80;
+
+/**
+ * The few words a long row is known by: its bold lead (`**Hills**. A chain…` → Hills), else its
+ * opening words.
+ */
+function rowLead(raw: string): string {
+  const bold = raw.match(/^\s*\*\*(.+?)\*\*/);
+  if (bold) return bold[1].replace(/[.:]\s*$/, "");
+  const words = plainText(raw).split(/\s+/);
+  return words.length > 6 ? `${words.slice(0, 6).join(" ")}…` : words.join(" ");
+}
+
+/** The first and last roll numbers of a run of rows (`21–30`), when the key column holds numbers. */
+function keySpan(first: string | undefined, last: string | undefined): string | null {
+  const a = first?.trim().match(/^(\d+)/)?.[1];
+  const b = last?.trim().match(/(\d+)\D*$/)?.[1];
+  if (!a || !b) return null;
+  return a === b ? a : `${a}–${b}`;
+}
+
+const sameWords = (a: string, b: string): boolean =>
+  a.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "") === b.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
+/** The heading a block sits under: the nearest one above it, past a few paragraphs of text. */
+function headingAbove(el: HTMLElement): HTMLElement | null {
+  let node: HTMLElement | null = el;
+  for (let up = 0; node && up < 4; up++, node = node.parentElement) {
+    let prev = node.previousElementSibling as HTMLElement | null;
+    if (!prev) continue;
+    for (let hops = 0; prev && hops < 4; hops++, prev = prev.previousElementSibling as HTMLElement | null) {
+      const h = /^H[1-6]$/.test(prev.tagName)
+        ? prev
+        : prev.querySelector<HTMLElement>(
+            ":scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6"
+          );
+      if (h) return h;
+      const text = /^P$/.test(prev.tagName) || prev.querySelector(":scope > p");
+      if (!text) return null;
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * A caption that says what the heading above the table already says (the book's
+ * `#### Table 7-23: …` then the table's own `[Table 7-23: …]`) is hidden there; it still names
+ * the table wherever the block is shown on its own.
+ */
+function hideRepeatedCaption(table: HTMLTableElement, container: HTMLElement): void {
+  const cap = table.querySelector(":scope > caption");
+  if (!cap?.textContent) return;
+  const check = (): boolean => {
+    const h = headingAbove(container);
+    if (!h?.textContent) return false;
+    cap.classList.toggle("rpg-table-caption--repeat", sameWords(h.textContent, cap.textContent ?? ""));
+    return true;
+  };
+  // Obsidian adds the block to the page some time after it is drawn (later still for a section
+  // it draws as it scrolls into view); look until it is there.
+  let tries = 0;
+  const look = (): void => {
+    if (check() || ++tries > 12) return;
+    setTimeout(look, tries < 4 ? 100 : 500);
+  };
+  requestAnimationFrame(look);
+}
+
+/**
+ * A table wider than its column (four columns on a phone) scrolls sideways inside its wrapper.
+ * The wrapper says so (`--overflow`, `--at-end` once scrolled through, for the edge fade) and
+ * how wide its window is (`--rpg-table-visible`), so the caption, the roll result and the
+ * pager stay in view instead of spreading over the table's full width.
+ */
+function watchSidewaysScroll(wrapper: HTMLElement): () => void {
+  const update = (): void => {
+    const over = wrapper.scrollWidth > wrapper.clientWidth + 1;
+    wrapper.classList.toggle("rpg-table-wrapper--overflow", over);
+    wrapper.classList.toggle(
+      "rpg-table-wrapper--at-end",
+      over && wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 2
+    );
+    if (wrapper.clientWidth > 0) wrapper.style.setProperty("--rpg-table-visible", `${wrapper.clientWidth}px`);
+  };
+  wrapper.addEventListener("scroll", update, { passive: true });
+  const ro = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+  ro?.observe(wrapper);
+  return () => {
+    wrapper.removeEventListener("scroll", update);
+    ro?.disconnect();
+  };
+}
+
 export function renderTableBlock(
   container: HTMLElement,
   def: TableDef,
@@ -626,6 +754,10 @@ export function renderTableBlock(
       thead.appendChild(tr);
     }
     table.appendChild(thead);
+    // A header row of empty cells (a table whose columns have no names) draws as a thin rule.
+    if (def.headerRows.every((r) => r.cells.every((c) => !c.value.replace(/[\s\u200b-\u200d\ufeff*]/g, "")))) {
+      table.classList.add("rpg-table--blank-head");
+    }
   }
 
   const tbody = doc.createElement("tbody");
@@ -633,6 +765,10 @@ export function renderTableBlock(
   const paginationConfig = def.pagination;
 
   const state: PaginationState = { page: 0, visiblePages: 1 };
+  // The body row the footer's roll landed on, marked in the table.
+  let rolledRow: number | null = null;
+  // Redraws the pager after the page changes from elsewhere (a roll on another page).
+  let refreshPager: (() => void) | null = null;
 
   // Visible window of body rows, mirroring `sliceRows` semantics. Spans are
   // resolved over this window so a `^` orphaned at a page top re-anchors.
@@ -651,11 +787,13 @@ export function renderTableBlock(
 
   function renderRows(): void {
     tbody.innerHTML = "";
-    const rendered = resolveRenderRows(allRows, colCount, computeRange(), {
+    const range = computeRange();
+    const rendered = resolveRenderRows(allRows, colCount, range, {
       colStart: needsColStart,
     });
-    for (const rr of rendered) {
+    rendered.forEach((rr, k) => {
       const tr = doc.createElement("tr");
+      if (range.start + k === rolledRow) tr.classList.add("rpg-table-row--rolled");
       if (rr.category) {
         tr.setAttribute("data-category", "true");
         const td = doc.createElement("td");
@@ -687,9 +825,32 @@ export function renderTableBlock(
         }
       }
       tbody.appendChild(tr);
-    }
+    });
     remarkAxisData?.();
   }
+
+  /** Mark the rolled row and open the page that holds it; with `reveal`, also bring it into view. */
+  function markRolledRow(row: number | null, reveal: boolean): void {
+    if (row === rolledRow && !reveal) return;
+    rolledRow = row;
+    if (row !== null && paginationConfig) {
+      if (paginationConfig.controls === "show-more") {
+        state.visiblePages = Math.max(state.visiblePages, Math.floor(row / paginationConfig.size) + 1);
+      } else {
+        state.page = Math.floor(row / paginationConfig.size);
+      }
+    }
+    renderRows();
+    refreshPager?.();
+    if (reveal) tbody.querySelector(".rpg-table-row--rolled")?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  // Long rows (a paragraph each): the footer names the rolled row and the row itself is marked.
+  const keyIdx = def.columns.indexOf(def.keyColumn ?? def.columns[0] ?? "");
+  const textCells = allRows.flatMap((r) =>
+    r.cells.filter((_, i) => i !== keyIdx).map((c) => plainText(c.value).length)
+  );
+  const longRows = textCells.length > 0 && textCells.reduce((a, b) => a + b, 0) / allRows.length > LONG_ROW_CHARS;
 
   renderRows();
   table.appendChild(tbody);
@@ -705,8 +866,10 @@ export function renderTableBlock(
 
   wrapper.appendChild(table);
   container.appendChild(wrapper);
+  hideRepeatedCaption(table, container);
+  const stopOverflowWatch = watchSidewaysScroll(wrapper);
 
-  const disposers: Array<() => void> = [];
+  const disposers: Array<() => void> = [stopOverflowWatch];
   const filePath = opts.filePath ?? "";
   // Store slot for the currently-selected odds cell (one per table), read by
   // `{{ oracle }}`. Row/cell -1 can't collide with real roll/oracle cell keys.
@@ -753,6 +916,7 @@ export function renderTableBlock(
         const isShowMore = paginationConfig.controls === "show-more";
         if (!isShowMore) {
           const prev = makeBtn("rpg-table-pagination__arrow", "‹");
+          prev.setAttribute("aria-label", "Previous page");
           prev.disabled = state.page === 0;
           prev.addEventListener("click", () => {
             if (state.page > 0) {
@@ -788,7 +952,11 @@ export function renderTableBlock(
         } else {
           for (let i = 0; i < pages; i++) {
             const btn = makeBtn("rpg-table-pagination__page", String(i + 1));
-            if (i === state.page) btn.classList.add("rpg-table-pagination__page--active");
+            btn.setAttribute("aria-label", `Page ${i + 1}`);
+            if (i === state.page) {
+              btn.classList.add("rpg-table-pagination__page--active");
+              btn.setAttribute("aria-current", "page");
+            }
             btn.addEventListener("click", () => {
               state.page = i;
               renderRows();
@@ -797,9 +965,11 @@ export function renderTableBlock(
             middle.appendChild(btn);
           }
         }
+        if (!isShowMore) middle.appendChild(pagePicker(pages));
         cell.appendChild(middle);
         if (!isShowMore) {
           const next = makeBtn("rpg-table-pagination__arrow", "›");
+          next.setAttribute("aria-label", "Next page");
           next.disabled = state.page >= pages - 1;
           next.addEventListener("click", () => {
             if (state.page < pages - 1) {
@@ -811,6 +981,37 @@ export function renderTableBlock(
           cell.appendChild(next);
         }
       };
+      // On a phone the numbers give way to "Page 3 of 10", which opens a list of the pages with
+      // the rolls each holds (`21–30`).
+      const pagePicker = (pages: number): HTMLElement => {
+        const size = paginationConfig.size;
+        const pick = doc.createElement("label");
+        pick.classList.add("rpg-table-pagination__pick");
+        const text = doc.createElement("span");
+        text.textContent = `Page ${state.page + 1} of ${pages} ▾`;
+        pick.appendChild(text);
+        const select = doc.createElement("select");
+        select.classList.add("rpg-table-pagination__select");
+        select.setAttribute("aria-label", "Page");
+        for (let i = 0; i < pages; i++) {
+          const from = allRows[i * size];
+          const to = allRows[Math.min(allRows.length, (i + 1) * size) - 1];
+          const keys = keyIdx >= 0 ? keySpan(from?.cells[keyIdx]?.value, to?.cells[keyIdx]?.value) : null;
+          const opt = doc.createElement("option");
+          opt.value = String(i);
+          opt.textContent = keys ? `Page ${i + 1} · ${keys}` : `Page ${i + 1}`;
+          if (i === state.page) opt.selected = true;
+          select.appendChild(opt);
+        }
+        select.addEventListener("change", () => {
+          state.page = Number(select.value);
+          renderRows();
+          updateControls();
+        });
+        pick.appendChild(select);
+        return pick;
+      };
+      refreshPager = updateControls;
       updateControls();
     };
 
@@ -906,15 +1107,33 @@ export function renderTableBlock(
         } else {
           span.classList.add("rpg-table-roll-cell-static");
         }
+        const rowKey = `${key}:row`;
+        const single = cell.segments.filter((s) => s.kind === "roll").length === 1;
         const paint = () => {
-          renderCellContents(doc, cell, span, getRollResult(key));
+          const values = getRollResult(key);
+          const row = Number(getRollResult(rowKey)?.[0] ?? "");
+          const hit = Number.isInteger(row) && row >= 0 && row < allRows.length && getRollResult(rowKey)?.[0] !== "";
+          if (single && longRows && hit && values?.[0]) {
+            renderCompactRoll(doc, span, allRows[row].cells[keyIdx]?.value ?? "", values[0]);
+          } else {
+            renderCellContents(doc, cell, span, values);
+          }
+          if (single) markRolledRow(hit ? row : null, false);
+        };
+        const doRoll = (): void => {
+          const r = rollCellRows(def, cell);
+          setRollResult(rowKey, [r.rows[0] == null ? "" : String(r.rows[0])]);
+          setRollResult(key, r.values);
         };
         if (interactive && getRollResult(key) === undefined) {
-          setRollResult(key, rollCell(def, cell));
+          doRoll();
         }
         paint();
         if (interactive) {
-          const roll = () => setRollResult(key, rollCell(def, cell));
+          const roll = () => {
+            doRoll();
+            if (single) markRolledRow(rolledRow, true);
+          };
           // A link in the result is followed, not a reason to roll again.
           span.addEventListener("click", (ev) => {
             if ((ev.target as HTMLElement | null)?.closest?.("a")) return;

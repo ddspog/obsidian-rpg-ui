@@ -577,12 +577,48 @@
     gap: 0.25rem 1.25rem;
   }
 
-  /* A tab strip that scrolls fades out at its right edge, so a half-seen
-     tab reads as "more this way" rather than as a mistake. */
-  .rpg-rule-tab-group__tabs-scroll {
-    padding-right: 1.75rem;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+  /* Tabs and subtabs: one row with the current name in full, its place
+     (2/9) and ‹ ›, instead of a strip that shows one cut-off tab at a time
+     and a subtab list a third of the screen tall. */
+  [data-rpg-rule] .rpg-rule-tab-group__tabs,
+  [data-rpg-rule] .rpg-subtab-group__nav {
+    display: none;
+  }
+
+  /* Pager: "‹ Page 3 of 10 ▾ ›", arrows thumb-sized beside it, instead of ten
+     small numbers. */
+  .rpg-table-tfoot .rpg-table-pagination__middle > button.rpg-table-pagination__page {
+    display: none;
+  }
+
+  .rpg-table-tfoot .rpg-table-pagination__pick {
+    display: inline-flex;
+  }
+
+  .rpg-table-pagination__cell {
+    justify-content: center;
+  }
+
+  .rpg-table-pagination__cell > .rpg-table-pagination__middle {
+    flex: 0 1 auto;
+  }
+
+  .rpg-table-tfoot button.rpg-table-pagination__arrow {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Many columns: tighter cells, so four columns of words fit a phone. */
+  .rpg-table-wrapper--overflow .rpg-table th,
+  .rpg-table-wrapper--overflow .rpg-table td {
+    padding-inline: 0.35em;
+    hyphens: auto;
+  }
+
+  [data-rpg-rule] .rpg-tab-compact,
+  .markdown-rendered button.rpg-tab-next,
+  button.rpg-tab-next {
+    display: flex;
   }
 
   /* Replay buttons beside a fight's map: a thumb-sized target each. */
