@@ -1827,8 +1827,9 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-log-latest:focus-visible,
 .lonelog-log-undo:focus-visible,
 .lonelog-log-save:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 .lonelog-log-notch {
   float: right;
@@ -2034,25 +2035,27 @@ p.rpg-item-magic-card__subtitle {
   border-left: none;
   border-top: 1px solid var(--background-modifier-border);
 }
-.lonelog-sidebar-header {
-  font-size: 0.72em;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-faint);
-  margin-bottom: 0.4rem;
+.lonelog-sidebar .lonelog-sidebar-header {
   position: sticky;
-  top: 0;
+  top: -0.75rem;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.2rem 0.1rem 0.2rem 0;
-  background: var(--background-primary);
+  margin: -0.75rem 0 0.4rem;
+  padding: calc(0.75rem + 0.35rem) 0.1rem 0.4rem;
+  background: inherit;
+  border-bottom: 1px solid var(--log-rule, var(--background-modifier-border));
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
-.lonelog-prose-layout.is-stacked .lonelog-sidebar-header {
+.lonelog-prose-layout.is-stacked .lonelog-sidebar .lonelog-sidebar-header {
   top: -0.5rem;
   margin-top: -0.5rem;
-  padding-top: 0.7rem;
+  padding-top: 0.85rem;
 }
 .lonelog-sidebar-empty {
   color: var(--text-faint);
@@ -2071,10 +2074,7 @@ p.rpg-item-magic-card__subtitle {
 }
 .lonelog-sidebar-item.in-multiattack {
   margin-left: 0.15rem;
-  padding-left: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
-  border-radius: 4px;
-  background-color: color-mix(in srgb, var(--text-accent) 6%, transparent);
+  padding-left: 0.6rem;
 }
 .lonelog-sidebar-item.in-multiattack table.lonelog-sidebar-table,
 .lonelog-sidebar-item:has(+ .lonelog-sidebar-item.in-multiattack) table.lonelog-sidebar-table {
@@ -2109,7 +2109,7 @@ p.rpg-item-magic-card__subtitle {
   cursor: pointer;
 }
 .lonelog-sidebar .lonelog-sidebar-item:hover {
-  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 6%, transparent);
 }
 .lonelog-sidebar .lonelog-sidebar-item.is-selected {
   background: light-dark(rgba(109, 124, 186, 0.12), rgba(109, 124, 186, 0.2));
@@ -2822,7 +2822,6 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-roll-expr--btn:hover .lonelog-roll-mark,
 .lonelog-roll-expr--btn:focus-visible .lonelog-roll-mark {
   transform: translateY(-1px) rotate(-6deg);
-  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--roll-hue) 45%, transparent));
 }
 .lonelog-roll-field {
   display: inline-flex;
@@ -3283,9 +3282,9 @@ button.lonelog-bookkeeping-write.is-quiet {
 }
 .lonelog-economy-slot.is-used {
   border-style: solid;
-  border-color: color-mix(in srgb, var(--text-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--text-accent) 14%, transparent);
-  color: var(--text-accent);
+  border-color: color-mix(in srgb, var(--log-ink, var(--text-accent)) 55%, transparent);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 9%, transparent);
+  color: var(--log-ink, var(--text-accent));
 }
 .lonelog-economy-slot.is-over {
   border-color: light-dark(#b3261e, #ef6a5d);
@@ -3293,7 +3292,7 @@ button.lonelog-bookkeeping-write.is-quiet {
   color: light-dark(#b3261e, #ef6a5d);
 }
 .lonelog-economy-attacks {
-  font-size: 0.82em;
+  font-size: max(0.82em, 12px);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -3317,8 +3316,7 @@ button.lonelog-bookkeeping-write.is-quiet {
   gap: 0.3em;
   padding: 0 0.4em 0.04em 0.25em;
   border-radius: 0.4em;
-  background: color-mix(in srgb, var(--text-normal) 4%, transparent);
-  box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+  background: color-mix(in srgb, var(--text-normal) 6%, transparent);
   color: var(--text-normal);
   font-weight: 600;
   text-decoration: none;
@@ -3587,11 +3585,6 @@ button.lonelog-bookkeeping-write.is-quiet {
 .session-log-container.has-bar .lonelog-log-notch {
   display: none;
 }
-.lonelog-sidebar-header {
-  font-size: 0.8em;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
 .lonelog-sidebar-item {
   font-size: 0.82em;
 }
@@ -3604,15 +3597,6 @@ button.lonelog-bookkeeping-write.is-quiet {
   opacity: 1;
   color: color-mix(in srgb, var(--lonelog-tag-hue, var(--text-muted)) 65%, var(--text-normal));
 }
-.lonelog-sidebar .lonelog-sidebar-header {
-  background: inherit;
-  padding: 0.35rem 0.1rem 0.4rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
-  font-size: 0.8em;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
 .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
   min-width: 1.75rem;
   min-height: 1.75rem;
@@ -3622,12 +3606,12 @@ button.lonelog-bookkeeping-write.is-quiet {
   color: var(--text-muted);
 }
 .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle:hover {
-  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--log-ink, var(--text-accent)) 10%, transparent);
   color: var(--text-normal);
 }
 .lonelog-sidebar .lonelog-sidebar-item {
   padding-block: 0.6rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+  border-bottom: 1px solid var(--log-rule, var(--background-modifier-border));
 }
 .lonelog-sidebar .lonelog-sidebar-item:last-child {
   border-bottom: none;
@@ -5223,7 +5207,7 @@ button.rpg-hotbar-tile {
 button.rpg-hotbar-tile:hover {
   border-color: var(--tile);
   background: color-mix(in srgb, var(--tile) 18%, var(--background-primary));
-  box-shadow: 0 0 6px color-mix(in srgb, var(--tile) 45%, transparent);
+  box-shadow: inset 0 0 0 1px var(--tile);
 }
 button.rpg-hotbar-tile.is-depleted {
   opacity: 0.35;
@@ -5329,26 +5313,10 @@ button.rpg-hotbar-tile .rpg-hotbar-tile-name {
   --src: light-dark(#7a6230, #a8864a);
 }
 button.rpg-hotbar-tile {
-  background:
-    radial-gradient(
-      circle at 50% 35%,
-      color-mix(in srgb, var(--src) 28%, transparent),
-      transparent 70%),
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--src) 22%, var(--background-primary)),
-      var(--background-primary));
+  background: color-mix(in srgb, var(--src) 14%, var(--background-primary));
 }
 button.rpg-hotbar-tile:hover {
-  background:
-    radial-gradient(
-      circle at 50% 35%,
-      color-mix(in srgb, var(--tile) 25%, transparent),
-      transparent 70%),
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--src) 30%, var(--background-primary)),
-      var(--background-primary));
+  background: color-mix(in srgb, var(--src) 24%, var(--background-primary));
 }
 button.rpg-hotbar-tile.has-art {
   padding: 0;
@@ -5384,7 +5352,6 @@ button.rpg-hotbar-tile.has-art {
 .rpg-hotbar-pip.is-toggle.is-full {
   background: none;
   color: var(--hotbar-bonus);
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--hotbar-bonus) 70%, transparent));
 }
 .rpg-hotbar-pip.is-passive.is-full {
   background: none;
@@ -5392,7 +5359,7 @@ button.rpg-hotbar-tile.has-art {
 }
 button.rpg-hotbar-tile.is-toggle.is-on {
   border-color: var(--tile);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--tile) 60%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--tile) 40%, transparent);
+  box-shadow: inset 0 0 0 2px var(--tile);
 }
 button.rpg-hotbar-tile.is-toggle:not(.is-on) {
   filter: saturate(0.55);
@@ -5406,7 +5373,6 @@ button.rpg-hotbar-tile.is-toggle:not(.is-on) {
   height: 0.4rem;
   transform: rotate(45deg);
   background: var(--text-accent);
-  box-shadow: 0 0 4px var(--text-accent);
 }
 .rpg-hotbar-group-label {
   justify-content: center;
@@ -5524,11 +5490,11 @@ button.hud-face:hover .hud-face-frame {
 }
 button.hud-face.is-active .hud-face-frame {
   border-color: var(--interactive-accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 button.hud-face.is-foe.is-active .hud-face-frame {
   border-color: var(--text-error);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--text-error) 55%, transparent);
+  box-shadow: 0 0 0 2px var(--text-error);
 }
 .hud-face-img {
   width: 100%;
@@ -5550,7 +5516,7 @@ button.hud-face.is-foe.is-active .hud-face-frame {
   height: 0.55rem;
   border-radius: 50%;
   background: var(--color-yellow, #e3b04b);
-  box-shadow: 0 0 6px var(--color-yellow, #e3b04b);
+  box-shadow: 0 0 0 1.5px var(--background-primary);
 }
 button.hud-face.is-next .hud-face-frame {
   border-color: var(--color-yellow, #e3b04b);
@@ -5612,7 +5578,7 @@ button.hud-portrait {
 }
 button.hud-portrait:hover .hud-portrait-frame {
   border-color: var(--interactive-accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 .hud-gear {
   display: grid;
@@ -5821,7 +5787,8 @@ button.hud-opportunity {
   font-size: var(--font-ui-smaller);
   text-align: left;
   cursor: pointer;
-  animation: hud-pulse 1.6s ease-in-out infinite;
+  animation: hud-pulse 1.6s ease-in-out 2;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
 }
 button.hud-opportunity small {
   display: block;
@@ -5829,7 +5796,7 @@ button.hud-opportunity small {
 }
 @keyframes hud-pulse {
   50% {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 35%, transparent);
   }
 }
 .hud-warn {
@@ -9256,7 +9223,7 @@ hgroup[aria-details="Defense Stats Row"] > menu::after {
   position: sticky;
   top: var(--lonelog-sidebar-head-h, 1.6rem);
   z-index: 2;
-  background: var(--background-primary);
+  background: var(--log-surface, var(--background-primary));
 }
 .lonelog-sidebar-section {
   border-left: 2px solid var(--background-modifier-border);
@@ -9680,7 +9647,7 @@ body.is-mobile .lonelog-minimap.is-small {
   min-height: 2.25rem;
 }
 body.is-mobile .lonelog-minimap.is-small {
-  top: 4rem;
+  top: 4.4rem;
 }
 .lonelog-minimap-tools .rpg-hexpaint-button {
   padding: 0.15rem;
@@ -9692,10 +9659,10 @@ body.is-mobile .lonelog-minimap.is-small {
   width: 2.2rem;
   height: 2.2rem;
   padding: 0;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--log-rule, var(--background-modifier-border));
   border-radius: 50%;
-  background: var(--background-primary);
-  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.25);
+  background: var(--log-surface, var(--background-primary));
+  box-shadow: none;
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -18310,166 +18277,138 @@ nav[aria-details="Play Toggle"] {
 }
 .rpg-subtab-group {
   position: relative;
-  --subtab-offset: 20%;
-  --subtab-w1: 40%;
-  --subtab-w2: 18%;
-  --subtab-w3: 13.5%;
 }
-.rpg-subtab-group__nav {
-  position: relative;
-  margin-left: calc(-1 * var(--subtab-offset));
-  width: calc(80% + var(--subtab-offset));
-  margin-top: 24px;
-  margin-bottom: 24px;
+.rpg-subtab-parts {
+  margin: 16px 0 20px;
 }
-.rpg-subtab-group__nav::before {
+.rpg-subtab-parts__rule {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 6px;
+  font-family: var(--font-interface, var(--font-text));
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rpg-subtab-parts__rule::before,
+.rpg-subtab-parts__rule::after {
   content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 10rem;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      var(--text-title, currentColor) 25%,
-      var(--text-title, currentColor) 75%,
-      transparent);
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border, #444);
 }
-.rpg-subtab-group__nav::after {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 8rem;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      color-mix(in srgb, var(--text-title, currentColor) 60%, transparent) 25%,
-      color-mix(in srgb, var(--text-title, currentColor) 60%, transparent) 75%,
-      transparent);
+.rpg-subtab-parts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 2px 18px;
 }
-.rpg-subtab-group__btn {
-  position: absolute;
-  left: 0;
-  width: 20%;
-  padding: 0 6px;
-  font-size: 0.75em;
-  color: var(--text-title, currentColor);
-  background: color-mix(in srgb, var(--text-title, currentColor) 8%, transparent);
-  cursor: pointer;
-  white-space: nowrap;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-sizing: border-box;
-  font-weight: 500;
+.rpg-subtab-parts__list > li {
+  margin: 0;
+  padding: 0;
 }
-.rpg-subtab-group__btn:hover {
-  opacity: 1 !important;
-  background: color-mix(in srgb, var(--text-title, currentColor) 14%, transparent);
-}
-.rpg-subtab-group__btn--active {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 1.8rem;
-  line-height: 1.8rem;
-  background:
-    linear-gradient(
-      to right,
-      color-mix(in srgb, var(--text-title, currentColor) 25%, transparent),
-      color-mix(in srgb, var(--text-title, currentColor) 12%, transparent) 70%,
-      transparent);
-  padding: 0 12px;
-  font-weight: 800;
-  font-size: 1em;
-  border-radius: 0 24px 24px 0;
-  text-align: left;
-  overflow: visible;
-  opacity: 1;
-}
-.rpg-subtab-group__ornament {
+.rpg-subtab-parts__list > li::before {
   display: none;
+}
+.markdown-rendered button.rpg-subtab-parts__btn,
+button.rpg-subtab-parts__btn {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-family: var(--font-interface, var(--font-text));
+  font-size: 0.9em;
+  font-weight: 450;
+  line-height: 1.3;
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+}
+.markdown-rendered button.rpg-subtab-parts__btn:hover,
+button.rpg-subtab-parts__btn:hover {
+  background: color-mix(in srgb, var(--text-title, var(--text-normal)) 7%, transparent);
+}
+.markdown-rendered button.rpg-subtab-parts__btn.is-active,
+button.rpg-subtab-parts__btn.is-active {
+  background: color-mix(in srgb, var(--text-title, var(--text-normal)) 13%, transparent);
+  color: var(--text-title, var(--text-normal));
+  font-weight: 650;
+}
+button.rpg-subtab-parts__btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+.rpg-subtab-parts__n {
+  flex: none;
+  min-width: 1.2em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+}
+.rpg-subtab-parts__name {
+  flex: 1;
+  min-width: 0;
+}
+.rpg-subtab-dock {
+  position: sticky;
+  top: var(--rpg-tab-dock, 0px);
+  z-index: 9;
+  height: 0;
+}
+.rpg-subtab-dock > .rpg-tab-compact {
+  display: flex;
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.rpg-subtab-group.is-docked > .rpg-subtab-dock > .rpg-tab-compact {
+  opacity: 1;
+  pointer-events: auto;
+}
+.rpg-subtab-group.has-rail > .rpg-subtab-parts {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -232px;
+  width: 212px;
+  margin: 0;
+}
+.rpg-subtab-group.has-rail .rpg-subtab-parts__inner {
+  position: sticky;
+  top: calc(var(--rpg-tab-dock, 0px) + 12px);
+}
+.rpg-subtab-group.has-rail .rpg-subtab-parts__list {
+  grid-template-columns: 1fr;
+}
+.rpg-subtab-group.has-rail button.rpg-subtab-parts__btn {
+  font-size: 0.82em;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.rpg-subtab-group.has-rail > .rpg-subtab-dock {
+  display: none;
+}
+.rpg-subtab-group__panel > button.rpg-tab-next {
+  display: flex;
 }
 .rpg-subtab-group__panel {
   min-height: 100px;
-}
-@media (max-width: 1400px) {
-  .rpg-subtab-group {
-    --subtab-offset: 10%;
-    --subtab-w1: 30%;
-    --subtab-w2: 8%;
-    --subtab-w3: 3.5%;
-  }
-  .rpg-subtab-group__nav {
-    width: calc(90% + var(--subtab-offset));
-  }
-}
-@media (max-width: 1200px) {
-  .rpg-subtab-group {
-    --subtab-offset: 0%;
-    --subtab-w1: 100%;
-    --subtab-w2: 100%;
-    --subtab-w3: 100%;
-  }
-  .rpg-subtab-group__nav {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 12px;
-    margin-bottom: 12px;
-    justify-content: center;
-    padding: 6px 20px;
-    border-left: 2px solid var(--text-title, currentColor);
-    border-right: 2px solid var(--text-title, currentColor);
-    border-top: none;
-    border-bottom: none;
-    box-shadow: none;
-    overflow: visible;
-    position: relative;
-  }
-  .rpg-subtab-group__nav::before,
-  .rpg-subtab-group__nav::after {
-    content: "";
-    position: absolute;
-    height: 100%;
-    width: 2px;
-    background: var(--text-title, currentColor);
-    pointer-events: none;
-    transform: none;
-  }
-  .rpg-subtab-group__nav::before {
-    left: -6px;
-    right: auto;
-    top: 0;
-  }
-  .rpg-subtab-group__nav::after {
-    right: -6px;
-    left: auto;
-    top: 0;
-  }
-  .rpg-subtab-group__btn {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    line-height: 1.4 !important;
-    font-size: 0.8em !important;
-    opacity: 1 !important;
-    border-radius: 6px !important;
-    padding: 4px 10px !important;
-    transform: none !important;
-  }
-  .rpg-subtab-group__btn--active {
-    width: auto;
-    border-radius: 6px;
-  }
 }
 .rpg-call-highlight {
   position: relative;
@@ -19164,11 +19103,7 @@ section[data-rpg-rule=tab] {
   background: var(--background-primary, #1e1e1e);
   margin: 4px 3px;
 }
-.rpg-subtab-group > .rpg-tab-compact--part {
-  position: sticky;
-  top: var(--rpg-tab-dock, 0px);
-  z-index: 9;
-  margin: 12px 0;
+.rpg-tab-compact--part {
   border: none;
   outline: none;
   border-bottom: 2px solid var(--text-title, var(--text-normal));
@@ -20384,31 +20319,52 @@ section[aria-details="Character Rolls"] > header > span {
 .lonelog-roster-sticky {
   --text-faint: light-dark(#6d6048, #a8a08a);
   --text-muted: light-dark(#4a3f2c, #cfc7b2);
+  --log-surface: light-dark(#ece4d3, #24201c);
+  --log-rule: light-dark(#cdbf9f, #4a4238);
+  --log-ink: light-dark(#4b2f9a, #cdbfff);
   color: light-dark(#231a0c, #e3dcce);
 }
 .lonelog-bottom-drawer,
-.lonelog-bookkeeping {
-  background: light-dark(#ece4d3, #24201c);
-  border-color: light-dark(#cdbf9f, #4a4238);
-}
+.lonelog-bookkeeping,
 .lonelog-sidebar {
-  background: light-dark(#ece4d3, #24201c);
-  border-color: light-dark(#cdbf9f, #4a4238);
+  background: var(--log-surface);
+  border-color: var(--log-rule);
 }
 .lonelog-prose-layout:not(.is-stacked) .lonelog-sidebar {
   padding: 0.75rem 1rem;
-  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border: 1px solid var(--log-rule);
   border-radius: 8px;
 }
-.lonelog-sidebar-header,
 .lonelog-bookkeeping-head h3 {
   color: light-dark(#6a4e2a, #d4a840);
 }
 .lonelog-sidebar a.internal-link,
 .lonelog-bottom-drawer a.internal-link,
 .lonelog-bookkeeping a.internal-link {
-  color: light-dark(#4b2f9a, #cdbfff);
+  color: var(--log-ink);
   text-underline-offset: 3px;
+}
+.lonelog-sidebar .lonelog-sidebar-item table.lonelog-sidebar-table {
+  margin-block: 0;
+}
+.lonelog-sidebar .lonelog-roll-full,
+.lonelog-roll-full {
+  background: var(--log-surface, var(--background-primary));
+  box-shadow: 0 0 0 1px var(--log-rule, var(--background-modifier-border));
+}
+.lonelog-sidebar .lonelog-sidebar-item.is-flash {
+  animation-name: lonelog-flash-flat;
+}
+@keyframes lonelog-flash-flat {
+  0%, 35% {
+    background-color: color-mix(in srgb, var(--log-ink) 14%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.theme-light .lonelog-sidebar a.rpg-folder-link {
+  filter: brightness(0.78) saturate(1.1);
 }
 .lonelog-bottom-drawer {
   box-shadow: none;
@@ -20934,8 +20890,17 @@ section[aria-details="Character Rolls"] > header > span {
     gap: 0.25rem 1.25rem;
   }
   [data-rpg-rule] .rpg-rule-tab-group__tabs,
-  [data-rpg-rule] .rpg-subtab-group__nav {
+  [data-rpg-rule] .rpg-subtab-parts {
     display: none;
+  }
+  [data-rpg-rule] .rpg-subtab-dock {
+    height: auto;
+    margin: 12px 0;
+  }
+  [data-rpg-rule] .rpg-subtab-dock > .rpg-tab-compact {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
   }
   .rpg-table-tfoot .rpg-table-pagination__middle > button.rpg-table-pagination__page {
     display: none;
@@ -20957,6 +20922,18 @@ section[aria-details="Character Rolls"] > header > span {
   .rpg-table-wrapper--overflow .rpg-table td {
     padding-inline: 0.35em;
     hyphens: auto;
+  }
+  .lonelog-prose-layout.is-stacked .lonelog-sidebar {
+    max-height: none;
+    overflow-y: visible;
+    margin-inline: calc(-1 * var(--size-4-6, 24px));
+    width: auto;
+    padding-inline: 0.75rem;
+    border-top-color: var(--log-rule, var(--background-modifier-border));
+  }
+  .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
+    min-width: 44px;
+    min-height: 44px;
   }
   [data-rpg-rule] .rpg-tab-compact,
   .markdown-rendered button.rpg-tab-next,

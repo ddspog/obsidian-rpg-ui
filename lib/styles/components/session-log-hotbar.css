@@ -267,7 +267,7 @@ button.rpg-hotbar-tile {
 button.rpg-hotbar-tile:hover {
   border-color: var(--tile);
   background: color-mix(in srgb, var(--tile) 18%, var(--background-primary));
-  box-shadow: 0 0 6px color-mix(in srgb, var(--tile) 45%, transparent);
+  box-shadow: inset 0 0 0 1px var(--tile);
 }
 
 button.rpg-hotbar-tile.is-depleted {
@@ -390,15 +390,11 @@ button.rpg-hotbar-tile .rpg-hotbar-tile-name {
 }
 
 button.rpg-hotbar-tile {
-  background:
-    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--src) 28%, transparent), transparent 70%),
-    linear-gradient(160deg, color-mix(in srgb, var(--src) 22%, var(--background-primary)), var(--background-primary));
+  background: color-mix(in srgb, var(--src) 14%, var(--background-primary));
 }
 
 button.rpg-hotbar-tile:hover {
-  background:
-    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tile) 25%, transparent), transparent 70%),
-    linear-gradient(160deg, color-mix(in srgb, var(--src) 30%, var(--background-primary)), var(--background-primary));
+  background: color-mix(in srgb, var(--src) 24%, var(--background-primary));
 }
 
 /* ── Its own art, when the vault has some: filling the tile, the name over it ── */
@@ -444,7 +440,6 @@ button.rpg-hotbar-tile.has-art {
 .rpg-hotbar-pip.is-toggle.is-full {
   background: none;
   color: var(--hotbar-bonus);
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--hotbar-bonus) 70%, transparent));
 }
 
 .rpg-hotbar-pip.is-passive.is-full {
@@ -455,9 +450,7 @@ button.rpg-hotbar-tile.has-art {
 /* A toggle that's on: its tile lit. */
 button.rpg-hotbar-tile.is-toggle.is-on {
   border-color: var(--tile);
-  box-shadow:
-    0 0 8px color-mix(in srgb, var(--tile) 60%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--tile) 40%, transparent);
+  box-shadow: inset 0 0 0 2px var(--tile);
 }
 
 button.rpg-hotbar-tile.is-toggle:not(.is-on) {
@@ -474,7 +467,6 @@ button.rpg-hotbar-tile.is-toggle:not(.is-on) {
   height: 0.4rem;
   transform: rotate(45deg);
   background: var(--text-accent);
-  box-shadow: 0 0 4px var(--text-accent);
 }
 
 /* A group's name, centred under its tiles. */

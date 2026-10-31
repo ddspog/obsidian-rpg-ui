@@ -85,12 +85,12 @@ button.hud-face:hover .hud-face-frame {
 
 button.hud-face.is-active .hud-face-frame {
   border-color: var(--interactive-accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
 button.hud-face.is-foe.is-active .hud-face-frame {
   border-color: var(--text-error);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--text-error) 55%, transparent);
+  box-shadow: 0 0 0 2px var(--text-error);
 }
 
 /* A face, not the whole picture: the tall portrait shows from the top and is
@@ -118,7 +118,7 @@ button.hud-face.is-foe.is-active .hud-face-frame {
   height: 0.55rem;
   border-radius: 50%;
   background: var(--color-yellow, #e3b04b);
-  box-shadow: 0 0 6px var(--color-yellow, #e3b04b);
+  box-shadow: 0 0 0 1.5px var(--background-primary);
 }
 
 button.hud-face.is-next .hud-face-frame {
@@ -193,7 +193,7 @@ button.hud-portrait {
 
 button.hud-portrait:hover .hud-portrait-frame {
   border-color: var(--interactive-accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
 .hud-gear {
@@ -437,7 +437,9 @@ button.hud-opportunity {
   font-size: var(--font-ui-smaller);
   text-align: left;
   cursor: pointer;
-  animation: hud-pulse 1.6s ease-in-out infinite;
+  /* A short call to look, then a steady ring: no endless pulse. */
+  animation: hud-pulse 1.6s ease-in-out 2;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
 }
 
 button.hud-opportunity small {
@@ -447,7 +449,7 @@ button.hud-opportunity small {
 
 @keyframes hud-pulse {
   50% {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 60%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--hotbar-reaction, #4cc4b4) 35%, transparent);
   }
 }
 

@@ -9,27 +9,26 @@
   /* Captions that used `--text-faint` (about 2.3:1) read at AA on parchment. */
   --text-faint: light-dark(#6d6048, #a8a08a);
   --text-muted: light-dark(#4a3f2c, #cfc7b2);
+  /* The parchment, its rules and its link ink: declared once, used across the log's tools. */
+  --log-surface: light-dark(#ece4d3, #24201c);
+  --log-rule: light-dark(#cdbf9f, #4a4238);
+  --log-ink: light-dark(#4b2f9a, #cdbfff);
   color: light-dark(#231a0c, #e3dcce);
 }
 
 .lonelog-bottom-drawer,
-.lonelog-bookkeeping {
-  background: light-dark(#ece4d3, #24201c);
-  border-color: light-dark(#cdbf9f, #4a4238);
-}
-
+.lonelog-bookkeeping,
 .lonelog-sidebar {
-  background: light-dark(#ece4d3, #24201c);
-  border-color: light-dark(#cdbf9f, #4a4238);
+  background: var(--log-surface);
+  border-color: var(--log-rule);
 }
 
 .lonelog-prose-layout:not(.is-stacked) .lonelog-sidebar {
   padding: 0.75rem 1rem;
-  border: 1px solid light-dark(#cdbf9f, #4a4238);
+  border: 1px solid var(--log-rule);
   border-radius: 8px;
 }
 
-.lonelog-sidebar-header,
 .lonelog-bookkeeping-head h3 {
   color: light-dark(#6a4e2a, #d4a840);
 }
@@ -37,8 +36,42 @@
 .lonelog-sidebar a.internal-link,
 .lonelog-bottom-drawer a.internal-link,
 .lonelog-bookkeeping a.internal-link {
-  color: light-dark(#4b2f9a, #cdbfff);
+  color: var(--log-ink);
   text-underline-offset: 3px;
+}
+
+/* ── The Log's entries, flat on the parchment (UI review, round three) ── */
+
+/* Obsidian gives every table a line of margin above and below: an entry's own table keeps none. */
+.lonelog-sidebar .lonelog-sidebar-item table.lonelog-sidebar-table {
+  margin-block: 0;
+}
+
+/* A rolled expression opened over the Log: in the Log's colours, a hairline, no lift. */
+.lonelog-sidebar .lonelog-roll-full,
+.lonelog-roll-full {
+  background: var(--log-surface, var(--background-primary));
+  box-shadow: 0 0 0 1px var(--log-rule, var(--background-modifier-border));
+}
+
+/* An entry just gone to: tinted a moment, no ring. */
+.lonelog-sidebar .lonelog-sidebar-item.is-flash {
+  animation-name: lonelog-flash-flat;
+}
+
+@keyframes lonelog-flash-flat {
+  0%,
+  35% {
+    background-color: color-mix(in srgb, var(--log-ink) 14%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Names coloured by the vault's link styles are made for the page; on the parchment they need more ink. */
+.theme-light .lonelog-sidebar a.rpg-folder-link {
+  filter: brightness(0.78) saturate(1.1);
 }
 
 /* Elevation is the border; the drawer needs no lift shadow. */

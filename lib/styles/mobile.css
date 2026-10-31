@@ -581,8 +581,20 @@
      (2/9) and ‹ ›, instead of a strip that shows one cut-off tab at a time
      and a subtab list a third of the screen tall. */
   [data-rpg-rule] .rpg-rule-tab-group__tabs,
-  [data-rpg-rule] .rpg-subtab-group__nav {
+  [data-rpg-rule] .rpg-subtab-parts {
     display: none;
+  }
+
+  /* The part row stays in the flow on a phone, sticking under the chapter row. */
+  [data-rpg-rule] .rpg-subtab-dock {
+    height: auto;
+    margin: 12px 0;
+  }
+
+  [data-rpg-rule] .rpg-subtab-dock > .rpg-tab-compact {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Pager: "‹ Page 3 of 10 ▾ ›", arrows thumb-sized beside it, instead of ten
@@ -613,6 +625,22 @@
   .rpg-table-wrapper--overflow .rpg-table td {
     padding-inline: 0.35em;
     hyphens: auto;
+  }
+
+  /* The Log on a phone: full width like the drawer below it, scrolling with the page (no box of
+     its own), its rule the parchment's, LOG clear of the edge and a thumb-sized ✕. */
+  .lonelog-prose-layout.is-stacked .lonelog-sidebar {
+    max-height: none;
+    overflow-y: visible;
+    margin-inline: calc(-1 * var(--size-4-6, 24px));
+    width: auto;
+    padding-inline: 0.75rem;
+    border-top-color: var(--log-rule, var(--background-modifier-border));
+  }
+
+  .lonelog-sidebar .lonelog-sidebar-header button.lonelog-log-toggle {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   [data-rpg-rule] .rpg-tab-compact,
