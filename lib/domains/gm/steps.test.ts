@@ -342,6 +342,14 @@ describe("a name made of independently rolled parts — @pick", () => {
     expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Constrictor of Moons"]);
   });
 
+  it("joins a word part that ends in a hyphen without a space", () => {
+    const words = {
+      columnLabels: ["d20*", "A", "B"],
+      rows: [row("1-20", "Cloud-", "Cottage")],
+    } as unknown as TableDef;
+    expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Cloud-Cottage"]);
+  });
+
   it("reads the table, die and optional marks of a part", () => {
     expect(parsePickSpec("First=1+End?=2:4@10")).toEqual([
       { name: "First", cols: [1] },

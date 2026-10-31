@@ -254,7 +254,7 @@ export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: 
   return sets
     .reduce<
       string[]
-    >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v ? `${a} ${v}` : `${a}${v}`))), [""])
+    >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v && !a.endsWith("-") ? `${a} ${v}` : `${a}${v}`))), [""])
     .filter((name) => name);
 }
 

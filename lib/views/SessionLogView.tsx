@@ -94,6 +94,7 @@ import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
+import { headingKey, linkTargets, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -192,6 +193,11 @@ class SessionLogMarkdown extends ReactMarkdown {
   private entities: EntityData[] = [];
   private gmFeatures: GMFeature[] = [];
   private stepCtx: GMStepContext = {};
+  /** Tables a rolled row can link to, by note path then heading key; and the note each step table is in. */
+  private linkedTables: { byHeading: Record<string, Record<string, TableDef[]>>; refFile: Record<string, string> } = {
+    byHeading: {},
+    refFile: {},
+  };
   private stateKey = "default-log";
   private initialSidebarOpen = false;
   /** A PC's value for a `[[Name]]` roll term, by the actor's name (`Talon`). */
@@ -300,6 +306,7 @@ class SessionLogMarkdown extends ReactMarkdown {
       if (gmRef) {
         this.gmFeatures = await this.loadGMScreen(gmRef);
         this.stepCtx = await this.loadStepCtx(this.gmFeatures);
+        this.linkedTables = await this.loadLinkedTables(this.stepCtx.tables ?? {});
       }
 
       // Fold PC-declared resources (feature.details `resources:` + legacy
@@ -1700,6 +1707,64 @@ class SessionLogMarkdown extends ReactMarkdown {
    * fall back to a dial's `default` when the log omits its `[<abbr>:n]` token.
    * Mirrors FeatureGMView.
    */
+  /** Which table a `[[target#heading]]` in a rolled row points at, read from the note `fromFile`. */
+  private linkedTableLookup = (fromFile: string, target: string, heading: string) => {
+    const file = target
+      ? this.baseView.app.metadataCache.getFirstLinkpathDest(target, fromFile)
+      : this.baseView.app.vault.getAbstractFileByPath(fromFile);
+    if (!(file instanceof TFile)) return undefined;
+    const tables = this.linkedTables.byHeading[file.path]?.[headingKey(heading)];
+    return tables?.length ? { tables, file: file.path } : undefined;
+  };
+
+  /**
+   * The tables the GM tools' tables link to from their rows, and the ones those link to, so a
+   * rolled row that says "roll on Table 5-21" is rolled through. Read once, with the GM screen.
+   */
+  private async loadLinkedTables(
+    tables: Record<string, TableDef>
+  ): Promise<{ byHeading: Record<string, Record<string, TableDef[]>>; refFile: Record<string, string> }> {
+    const byHeading: Record<string, Record<string, TableDef[]>> = {};
+    const refFile: Record<string, string> = {};
+    const queue: TFile[] = [];
+    const queued = new Set<string>();
+    const enqueue = (f: TFile | null) => {
+      if (f && !queued.has(f.path)) {
+        queued.add(f.path);
+        queue.push(f);
+      }
+    };
+    for (const ref of Object.keys(tables)) {
+      const file = this.resolveLink(parseBranchRef(ref)?.target ?? ref);
+      if (!file) continue;
+      refFile[ref] = file.path;
+      enqueue(file);
+    }
+    // A breadth-first walk over the notes the tables link to, with a cap so a vault of links can't stall the Log.
+    for (let i = 0; i < queue.length && i < 400; i++) {
+      const file = queue[i];
+      try {
+        const contents = await this.baseView.app.vault.read(file);
+        const doc = parseSourceDocShared({ $name: file.basename, $contents: contents }, "class");
+        const byName = new Map(doc.tables.map((t) => [t.name, t] as const));
+        const index: Record<string, TableDef[]> = {};
+        for (const [key, names] of Object.entries(tableHeadings(contents))) {
+          const found = names.map((n) => byName.get(n)).filter((t): t is TableDef => !!t);
+          if (found.length) index[key] = found;
+        }
+        byHeading[file.path] = index;
+        for (const table of doc.tables)
+          for (const target of linkTargets(table)) {
+            const dest = target ? this.baseView.app.metadataCache.getFirstLinkpathDest(target, file.path) : file;
+            if (dest instanceof TFile) enqueue(dest);
+          }
+      } catch {
+        /* an unreadable note: its links just stay links */
+      }
+    }
+    return { byHeading, refFile };
+  }
+
   private async loadStepCtx(features: GMFeature[]): Promise<GMStepContext> {
     const steps: Record<string, GMFeature> = {};
     const tables: Record<string, TableDef> = {};
@@ -2223,9 +2288,12 @@ class SessionLogMarkdown extends ReactMarkdown {
           : undefined;
       }
       if (pick?.part != null) return partText(table, roll, pick.spec, pick.part);
-      return resolveTableRoll(`${ref} d100=${roll} ->`, table, this.stepCtx.alternatives?.[ref])
+      const row = resolveTableRoll(`${ref} d100=${roll} ->`, table, this.stepCtx.alternatives?.[ref])
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();
+      // A row that sends you to another table is rolled through, so the result reads whole.
+      const from = this.linkedTables.refFile[ref];
+      return row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
     };
 
     this.reactRoot.render(
