@@ -254,7 +254,7 @@ export function pickNames(tables: TableDef | TableDef[], rolls: number[], spec: 
   return sets
     .reduce<
       string[]
-    >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v ? `${a} ${v}` : `${a}${v}`))), [""])
+    >((acc, s, k) => acc.flatMap((a) => s.map((v) => (k > 0 && parts[k].spaced && v && !a.endsWith("-") ? `${a} ${v}` : `${a}${v}`))), [""])
     .filter((name) => name);
 }
 
@@ -286,6 +286,15 @@ function alternativesOf(row: TableDef["rows"][number], spec: string): string | u
 }
 
 /**
+ * A spec that only offers a row's alternative names: one part, no words around it, fewer names than
+ * a die is rolled for. One with words (`"the "+Surname=1`) is put together on a name row instead.
+ */
+export function isPlainAlternatives(spec: string): boolean {
+  const parts = parsePickSpec(spec);
+  return parts.length === 1 && !parts[0].prefix && !parts[0].suffix && pickSides(spec) < PICK_ROLL_FROM;
+}
+
+/**
  * The tables a step offers only alternatives from, by ref: a single-part spec with fewer names than
  * a die is rolled for (more get a Pick one row). Their rows read as the words to pick from.
  */
@@ -294,7 +303,7 @@ export function alternativesByRef(steps: GMStep[]): Record<string, string> {
   for (const s of flattenSteps(steps)) {
     s.tables?.forEach((ref, at) => {
       const spec = s.choose?.[at]?.trim();
-      if (spec && parsePickSpec(spec).length === 1 && pickSides(spec) < PICK_ROLL_FROM) out[ref] = spec;
+      if (spec && isPlainAlternatives(spec)) out[ref] = spec;
     });
   }
   return out;

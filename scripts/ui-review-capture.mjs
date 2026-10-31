@@ -73,8 +73,9 @@ const slug = (s) =>
   s
     .replace(/\.md$/, "")
     .replace(/[^A-Za-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
+    // The end of a path tells notes in one folder apart; its start does not.
+    .slice(-60)
+    .replace(/^-|-$/g, "");
 
 /** Switch Obsidian's phone emulation on or off; the app reloads, so reconnect after. */
 async function setPhone(on) {
