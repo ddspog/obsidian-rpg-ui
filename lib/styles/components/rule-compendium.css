@@ -434,13 +434,9 @@ section[data-rpg-rule="tab"] {
 }
 
 /* The part row: no box, smaller interface type, an underline in the title
- * colour. It docks under the chapter row (top: --rpg-tab-dock, set from the
- * chapter row's height) while its part is read, and leaves with it. */
-.rpg-subtab-group > .rpg-tab-compact--part {
-  position: sticky;
-  top: var(--rpg-tab-dock, 0px);
-  z-index: 9;
-  margin: 12px 0;
+ * colour. Its holder (.rpg-subtab-dock, rule-block.css) docks it under the
+ * chapter row. */
+.rpg-tab-compact--part {
   border: none;
   outline: none;
   border-bottom: 2px solid var(--text-title, var(--text-normal));
