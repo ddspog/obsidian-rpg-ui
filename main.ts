@@ -64,6 +64,7 @@ import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
 import { PageFooterManager } from "lib/plugin/page-footer";
+import { MarginPromptsManager } from "lib/plugin/margin-prompts";
 import { PageBannerManager } from "lib/plugin/page-banner";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { bindExpressions, buildEntityBlocks } from "lib/services/entity-context";
@@ -95,6 +96,7 @@ export default class DndUIToolkitPlugin extends Plugin {
   private valueResolver: ValueResolver | null = null;
   private folderLinkStyleManager: FolderLinkStyleManager | null = null;
   private pageFooterManager: PageFooterManager | null = null;
+  private marginPromptsManager: MarginPromptsManager | null = null;
   private pageBannerManager: PageBannerManager | null = null;
   /** Bumped on every `saveSettings` so the CM6 extension knows when to
    *  re-tag visible editor anchors without waiting for a docChanged. */
@@ -760,6 +762,14 @@ export default class DndUIToolkitPlugin extends Plugin {
     });
     this.pageFooterManager.start();
 
+    // ── Margin prompts (a strip of creativity prompts beside the text) ───
+    this.marginPromptsManager = new MarginPromptsManager({
+      app: this.app,
+      settings: this.settings,
+      registerEvent: (ref) => this.registerEvent(ref as Parameters<typeof this.registerEvent>[0]),
+    });
+    this.marginPromptsManager.start();
+
     // ── Page banner (behind-title image from frontmatter) ────────────────
     this.pageBannerManager = new PageBannerManager({
       app: this.app,
@@ -942,6 +952,8 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.folderLinkStyleManager = null;
     this.pageFooterManager?.dispose();
     this.pageFooterManager = null;
+    this.marginPromptsManager?.dispose();
+    this.marginPromptsManager = null;
     this.pageBannerManager?.dispose();
     this.pageBannerManager = null;
   }
@@ -950,6 +962,11 @@ export default class DndUIToolkitPlugin extends Plugin {
    *  after the author edits the field list so changes surface live. */
   refreshPageFooter(): void {
     this.pageFooterManager?.onSettingsChanged();
+  }
+
+  /** Settings tab hook — draw the margin prompts again after the sets change. */
+  refreshMarginPrompts(): void {
+    this.marginPromptsManager?.onSettingsChanged();
   }
 
   /**

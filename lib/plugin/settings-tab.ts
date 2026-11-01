@@ -11,6 +11,8 @@ import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 import { ImageStudioModal } from "lib/plugin/image-studio-modal";
 import { createSection, setSectionsOpen } from "lib/plugin/settings-sections";
 import { exportSettingsEnv } from "lib/plugin/settings-export";
+import { FileSuggest } from "lib/utils/file-suggest";
+import { FolderSuggest } from "lib/utils/folder-suggest";
 import {
   activeFrameSource,
   FRAME_KINDS,
@@ -40,6 +42,8 @@ interface PluginWithSettings {
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
+  /** Invoked after the margin-prompt sets change, to draw every open note again. */
+  refreshMarginPrompts?(): void;
 }
 
 /**
@@ -281,6 +285,76 @@ export class DndSettingsTab extends PluginSettingTab {
           this.display();
         })
       );
+
+    const prompts = createSection(panel, "general:margin-prompts", "Margin prompts", {
+      note: count(this.plugin.settings.marginPrompts.length, "set"),
+      desc:
+        "Creativity prompts down the margin of a note in reading view, as a book of tables prints a strip of words along its page edge. " +
+        "Each set pairs a folder with a note of prompts, one a line; a note in the folder shows a few of them, the same ones each time. " +
+        "Shown only where the margin has room (not on a phone).",
+    }).body;
+    this.renderMarginPrompts(prompts.createDiv({ cls: "rpg-margin-prompt-sets" }));
+    new Setting(prompts)
+      .setName("Add prompt set")
+      .setDesc("A folder, and the note whose lines its pages show")
+      .addButton((button) =>
+        button.setButtonText("Add").onClick(async () => {
+          this.plugin.settings.marginPrompts.push({ folder: "", wordsFile: "" });
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+  }
+
+  /** One row per prompt set: the folder, the note of prompts, and Remove. */
+  private renderMarginPrompts(container: HTMLElement): void {
+    container.empty();
+    const sets = this.plugin.settings.marginPrompts;
+    if (sets.length === 0) {
+      container.createEl("p", { text: "No prompt sets.", cls: "setting-item-description" });
+      return;
+    }
+    const save = async () => {
+      await this.plugin.saveSettings();
+      this.plugin.refreshMarginPrompts?.();
+    };
+    sets.forEach((set, idx) => {
+      const setting = new Setting(container).setName(`Set ${idx + 1}`).setDesc("Folder · note of prompts");
+      setting.addText((text) => {
+        text
+          .setPlaceholder("Folder")
+          .setValue(set.folder)
+          .onChange(async (value) => {
+            set.folder = value.trim();
+            await save();
+          });
+        new FolderSuggest(this.app, text, async (picked) => {
+          set.folder = picked.trim();
+          text.setValue(set.folder);
+          await save();
+        });
+      });
+      setting.addText((text) => {
+        text
+          .setPlaceholder("Prompts note (path)")
+          .setValue(set.wordsFile)
+          .onChange(async (value) => {
+            set.wordsFile = value.trim();
+            await save();
+          });
+        new FileSuggest(this.app, text);
+      });
+      setting.addExtraButton((btn) =>
+        btn
+          .setIcon("trash")
+          .setTooltip("Remove this prompt set")
+          .onClick(async () => {
+            sets.splice(idx, 1);
+            await save();
+            this.display();
+          })
+      );
+    });
   }
 
   /** Folder-to-system mappings, one collapsible entry each. */

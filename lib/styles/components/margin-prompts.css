@@ -1,0 +1,30 @@
+/* Creativity prompts down a page's margin (lib/plugin/margin-prompts.ts): short italic phrases, quiet,
+   in the margin beside the text, the way a book of tables prints a strip of words along its edge. */
+.markdown-preview-view:has(> .rpg-margin-prompts) {
+  position: relative;
+}
+
+.rpg-margin-prompts {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  user-select: none;
+  border-left: 1px solid color-mix(in srgb, var(--text-faint) 35%, transparent);
+}
+
+.rpg-margin-prompts__item {
+  position: absolute;
+  left: 14px;
+  right: 0;
+  font-family: var(--font-text);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--text-muted);
+  text-wrap: balance;
+}
+
+.markdown-embed .rpg-margin-prompts,
+.is-mobile .rpg-margin-prompts {
+  display: none;
+}
