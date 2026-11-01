@@ -1040,7 +1040,7 @@ body.is-mobile {
 
   .markdown-rendered :is(td, th, p, li) a.internal-link,
   .markdown-rendered a.rpg-folder-link {
-    padding: 8px 7px;
-    margin-inline: -7px;
+    padding: 8px;
+    margin-inline: -8px;
   }
 }
