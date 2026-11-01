@@ -557,6 +557,10 @@ export interface SidebarEntryProps {
  * One mechanical entry as a small `icon | content | dateline` table. Shared by
  * the live Log sidebar and the read-only feature Example showcase.
  */
+/** What a tap inside an entry is meant for when it is not the entry itself. */
+const ENTRY_CONTROLS =
+  ".lonelog-roll-chip, .lonelog-roll-full, .lonelog-row-detail.is-child, button, select, input, textarea, a, [role='button']";
+
 export function SidebarEntry({
   item,
   sourcePath,
@@ -581,13 +585,20 @@ export function SidebarEntry({
   // Entries that nest inputs (scene editor or editable dice) can't be a button;
   // they stay mouse-clickable. Read-only entries are keyboard-activatable buttons.
   const editableEntry = !!edit && (item.rows.some((row) => row.scene) || hasEditableValue(item.rows));
+  // A tap on a roll, a control or a generator's table line (where the dice are) is for that; only
+  // the rest of the entry goes to it in the prose. A tap that just misses a die must not jump away.
+  const select = (e: React.MouseEvent) => {
+    const at = (e.target as HTMLElement | null)?.closest?.(ENTRY_CONTROLS);
+    if (at && at !== e.currentTarget) return;
+    onSelect?.(item.id);
+  };
   const interaction = onSelect
     ? editableEntry
       ? {
           // Its inputs mean it can't be a button, but it can still be tabbed to and opened from the keyboard.
           role: "group" as const,
           tabIndex: 0,
-          onClick: () => onSelect(item.id),
+          onClick: select,
           onKeyDown: (e: React.KeyboardEvent) => {
             if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
               e.preventDefault();
@@ -598,7 +609,7 @@ export function SidebarEntry({
       : {
           role: "button" as const,
           tabIndex: 0,
-          onClick: () => onSelect(item.id),
+          onClick: select,
           onKeyDown: (e: React.KeyboardEvent) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();

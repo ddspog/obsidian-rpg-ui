@@ -57,9 +57,11 @@ export function tableDice(table: TableDef): { count: number; sides: number } | u
 }
 
 /**
- * `text` with every link to a table replaced by `<link text> (d<n> <roll>: <row>)`, the row itself
- * rolled through the same way; a rolled row of alternatives takes one of them. A link that isn't to
- * a table, or to a table already on the chain (no loops), reads as its words: a result is plain text.
+ * `text` with every link to a table rolled: the link (and the "Refer to" that sent you there) leaves
+ * the text, and each table it reached follows on its own line, `↳ <table>: <row> (d<n> <roll>)`,
+ * the row itself rolled through the same way (its own lines indented under it). A rolled row of
+ * alternatives takes one of them. A link that isn't to a table, or to a table already on the chain
+ * (no loops), reads as its words: a result is plain text.
  */
 export function rollLinkedTables(
   text: string,
@@ -72,6 +74,7 @@ export function rollLinkedTables(
   if (!text.includes("[[")) return text;
   if (depth >= MAX_DEPTH) return linkText(text);
   let nth = 0;
+  const lines: string[] = [];
   const out = text.replace(HEADING_LINK, (whole, target: string, heading: string, alias: string | undefined) => {
     const hit = lookup(fromFile, target.trim(), heading.trim());
     if (!hit) return whole;
@@ -89,18 +92,58 @@ export function rollLinkedTables(
       if (!raw) continue;
       const row = settlePicker(raw, `${seed}|${key}|${at}|pick`);
       const inner = rollLinkedTables(row, hit.file, lookup, `${seed}|${key}`, depth + 1, new Set([...chain, key]));
-      // Each result is named by its table: "Hill Theme Fey: Many talking plants (d8 7)".
+      // Each result is named by its table: "Hill Theme Fey: Many talking plants (d8 7)"; what it
+      // rolled in turn sits indented under it.
       const name = hit.tables.length > 1 ? tableTitle(table) : linkName([alias, heading], table);
-      rolled.push(
-        `${name}: ${inner.replace(/\.\s*$/, "")} (${dice.count > 1 ? dice.count : ""}d${dice.sides} ${roll})`
-      );
+      const [first, ...more] = inner.split("\n");
+      const die = `(${dice.count > 1 ? dice.count : ""}d${dice.sides} ${roll})`;
+      rolled.push([`${LINE}${name}: ${first.replace(/\.\s*$/, "")} ${die}`, ...more.map((l) => `  ${l}`)].join("\n"));
     }
     if (rolled.length === 0) return whole;
-    return ROLLED + rolled.join("; ");
+    lines.push(...rolled);
+    return ROLLED;
   });
-  // The instruction that sent you there ("Refer to", "Roll on", "See") has been done: it goes.
-  return linkText(out.replace(INSTRUCTION, "").replace(new RegExp(ROLLED, "g"), ""));
+  if (lines.length === 0) return linkText(out);
+  // The instruction that sent you there ("Refer to", "Roll on", "See") has been done, and the words
+  // that tied the links together ("and", a comma) have nothing left to tie: they go.
+  const words = linkText(
+    dropInstructionSentence(out.replace(INSTRUCTION, (m) => (m ? INSTRUCTED : "")))
+      .replace(/(?:\s*(?:,|\band\b|&|\+)\s*)*\uE001(?:\s*(?:,|\band\b|&|\+)\s*(?=\uE001))*/gi, ROLLED)
+      .replace(/\(\s*\uE001\s*\)|\[\s*\uE001\s*\]/g, "")
+      .replace(/\uE001[\s.;:,]*$/, "")
+      .replace(/\uE001/g, " ")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/\s+([.,;:)])/g, "$1")
+  )
+    .replace(/[\s:]+$/, "")
+    .trim();
+  return [words, ...lines].filter(Boolean).join("\n");
 }
+
+/** Marks where an instruction ("Refer to") began, so its whole sentence can go. */
+const INSTRUCTED = "\uE004";
+
+/**
+ * "Refer to Tables 7-24: Hill Theme Deity Type and 7-25: Hill Theme Deity Activity." is an
+ * instruction, done once its tables are rolled: from the start of its sentence to the end of the
+ * sentence that holds the last rolled link, it goes, with the names around the links.
+ */
+function dropInstructionSentence(text: string): string {
+  const at = text.indexOf(INSTRUCTED);
+  if (at < 0) return text;
+  // From the start of the sentence the instruction is in ("You can roll on …" goes whole).
+  const before = text.slice(0, at);
+  const stop = Math.max(before.lastIndexOf(". "), before.lastIndexOf("! "), before.lastIndexOf("? "));
+  const from = stop < 0 ? 0 : stop + 2;
+  const last = text.lastIndexOf(ROLLED);
+  if (last < from) return text.replace(new RegExp(INSTRUCTED, "g"), "");
+  const end = text.slice(last).search(/[.!?](\s|$)/);
+  const to = end < 0 ? text.length : last + end + 1;
+  return (text.slice(0, from) + text.slice(to)).replace(new RegExp(INSTRUCTED, "g"), "");
+}
+
+/** How a table rolled through a link starts its line. */
+const LINE = "↳ ";
 
 /** Marks where a link was rolled, so the instruction in front of it can go. */
 const ROLLED = "\uE001";
@@ -115,8 +158,9 @@ function linkName(texts: Array<string | undefined>, table: TableDef): string {
     const name = (text ?? "")
       .trim()
       .replace(/^Tables?\s+[\d.-]+\s*[:,\-–]?\s*/i, "")
+      .replace(/^\d+[:.]?\s+/, "")
       .trim();
-    if (name) return name;
+    if (/\p{L}/u.test(name)) return name;
   }
   return tableTitle(table);
 }
@@ -134,13 +178,19 @@ const DROPPED = "\uE000";
 
 /** The links a chain did not follow, as the words they show: the alias, else the heading; a bare 🔗 goes. */
 function linkText(text: string): string {
-  return text
-    .replace(HEADING_LINK, (_whole, _target: string, heading: string, alias: string | undefined) => {
-      const shown = (alias ?? heading.replace(/^\^\S*$/, "")).trim();
-      return /^[\p{L}\p{N}]/u.test(shown) ? shown : DROPPED;
-    })
-    .replace(/[ \t]*\uE000/g, "")
-    .trim();
+  return (
+    text
+      .replace(HEADING_LINK, (_whole, _target: string, heading: string, alias: string | undefined) => {
+        const shown = (alias ?? heading.replace(/^\^\S*$/, "")).trim();
+        return /^[\p{L}\p{N}]/u.test(shown) ? shown : DROPPED;
+      })
+      .replace(/[ \t]*\uE000/g, "")
+      // A link to a whole note reads as its words too: its alias, else the note's name.
+      .replace(/\[\[([^\][|#]+)(?:\\?\|([^\]]*))?\]\]/g, (_w, target: string, alias: string | undefined) =>
+        (alias ?? target.split("/").pop() ?? target).trim()
+      )
+      .trim()
+  );
 }
 
 /** What a table is called: its caption without the book's number, else its block name. */
