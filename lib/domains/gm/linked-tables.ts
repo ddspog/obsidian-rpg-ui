@@ -176,6 +176,18 @@ function settlePicker(row: string, seed: string): string {
 const DROPPED = "\uE000";
 
 /** The links a chain did not follow, as the words they show: the alias, else the heading; a bare 🔗 goes. */
+/**
+ * A rolled row read as plain text: bold and italic markers dropped (`**Economic Power** – the…`
+ * reads `Economic Power – the…`). The Log shows a result in an editable box, which draws no
+ * markdown, so the markers would show as asterisks.
+ */
+export function plainEmphasis(text: string): string {
+  return text
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "$2")
+    .replace(/(^|[^\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/g, "$1$2")
+    .replace(/(^|[^\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/g, "$1$2");
+}
+
 function linkText(text: string): string {
   return (
     text
