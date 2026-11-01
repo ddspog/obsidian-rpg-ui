@@ -1041,7 +1041,7 @@
   gap: 0.6em;
   margin-bottom: 6px;
   font-family: var(--font-interface, var(--font-text));
-  font-size: 0.7em;
+  font-size: max(12px, 0.7em);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;

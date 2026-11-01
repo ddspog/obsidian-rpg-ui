@@ -1029,3 +1029,17 @@ body.is-mobile .markdown-rendered [role="button"] img {
     display: none;
   }
 }
+
+/* Tap targets on a phone: at least 32px tall. A table's roll line, and the links in a note's text and
+   tables (a bare 🔗 is 18px), get the height without moving the text around them: vertical padding on
+   an inline link grows what a finger hits and leaves the line where it was. */
+body.is-mobile {
+  .rpg-table-roll-cell:not(.rpg-table-roll-cell-static) {
+    min-height: 32px;
+  }
+
+  .markdown-rendered :is(td, th, p, li) a.internal-link,
+  .markdown-rendered a.rpg-folder-link {
+    padding-block: 7px;
+  }
+}
