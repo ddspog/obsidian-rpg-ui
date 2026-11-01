@@ -131,6 +131,27 @@ describe("tableHeadings", () => {
   });
 });
 
+describe("tableHeadings, a section that opens with its own table", () => {
+  it("gives that table alone, however many follow it", () => {
+    const note = [
+      "## To Explain a Sleeping God",
+      "#### Table 11-48: To Explain a Sleeping God",
+      "```rpg table.sleeping",
+      "```",
+      ...["a", "b", "c", "d", "e"].flatMap((n) => [`#### Table ${n}`, `\`\`\`rpg table.${n}`, "```"]),
+    ].join("\n");
+    expect(tableHeadings(note)[headingKey("To Explain a Sleeping God")]).toEqual(["sleeping"]);
+  });
+
+  it("leaves out a section of more than five tables that has no table of its own name", () => {
+    const note = [
+      "## Guild",
+      ...["a", "b", "c", "d", "e", "f"].flatMap((n) => [`#### T ${n}`, `\`\`\`rpg table.${n}`, "```"]),
+    ].join("\n");
+    expect(tableHeadings(note)[headingKey("Guild")]).toBeUndefined();
+  });
+});
+
 describe("rollLinkedTables, a section of several tables", () => {
   it("rolls each, named", () => {
     const base = parseTableBlock(

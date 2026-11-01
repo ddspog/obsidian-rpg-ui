@@ -24,7 +24,7 @@ export type LinkedTableLookup = (
 const HEADING_LINK = /\[\[([^\][#|]*)#([^\]|\\]+?)(?:\\?\|([^\]]*))?\]\]/g;
 
 /** A section with more tables than this is a chapter, not a roll: its link stays a link. */
-const MAX_SECTION_TABLES = 4;
+const MAX_SECTION_TABLES = 5;
 
 /** How deep a chain is followed: a row that leads to a row that leads to a row. */
 const MAX_DEPTH = 3;
@@ -116,6 +116,7 @@ export function rollLinkedTables(
       .replace(/\s+([.,;:)])/g, "$1")
   )
     .replace(/[\s:]+$/, "")
+    .replace(/^Tables?\s+\d+-\d+\s*:\s*/i, "")
     .trim();
   return [words, ...lines].filter(Boolean).join("\n");
 }
@@ -202,7 +203,8 @@ function tableTitle(table: TableDef): string {
 /**
  * Index a note's tables by heading, for `rollLinkedTables`' lookup: each heading → the tables under
  * it, its own and its sub-headings' (a table's own heading, or a section such as "Beasts" with a few
- * tables). A section with more than four tables, or none, is left out.
+ * tables). A section that opens with its own table, named as the section is, gives that table
+ * alone; any other with more than five tables, or none, is left out.
  */
 export function tableHeadings(contents: string): Record<string, string[]> {
   const heads: Array<{ at: number; level: number; text: string }> = [];
@@ -219,12 +221,20 @@ export function tableHeadings(contents: string): Record<string, string[]> {
     const h = !fence && line.match(/^(#{1,6})\s+(.*\S)\s*$/);
     if (h) heads.push({ at, level: h[1].length, text: h[2] });
   });
+  // The heading right above a table names it ("Table 11-48: To Explain a Sleeping God").
+  const ownHeading = (t: { at: number }) => [...heads].reverse().find((h) => h.at < t.at);
   const out: Record<string, string[]> = {};
   heads.forEach((h, i) => {
     const end = heads.slice(i + 1).find((n) => n.level <= h.level)?.at ?? Infinity;
-    const under = tables.filter((t) => t.at > h.at && t.at < end).map((t) => t.name);
+    const inside = tables.filter((t) => t.at > h.at && t.at < end);
     const key = headingKey(h.text);
-    if (under.length > 0 && under.length <= MAX_SECTION_TABLES && !out[key]) out[key] = under;
+    if (inside.length === 0 || out[key]) return;
+    // A section that opens with its own table (named as the section is) rolls that one: the
+    // tables after it are what that one leads to, not more to roll now.
+    const first = ownHeading(inside[0]);
+    const named = first && first !== h && headingKey(first.text).replace(/^tables?\d+/, "") === key;
+    if (named && inside.length > 1) out[key] = [inside[0].name];
+    else if (inside.length <= MAX_SECTION_TABLES) out[key] = inside.map((t) => t.name);
   });
   return out;
 }
