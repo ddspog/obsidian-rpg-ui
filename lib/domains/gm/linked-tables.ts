@@ -125,23 +125,21 @@ export function rollLinkedTables(
 const INSTRUCTED = "\uE004";
 
 /**
- * "Refer to Tables 7-24: Hill Theme Deity Type and 7-25: Hill Theme Deity Activity." is an
- * instruction, done once its tables are rolled: from the start of its sentence to the end of the
- * sentence that holds the last rolled link, it goes, with the names around the links.
+ * "Refer to Tables 7-24: … and 7-25: …." or "Roll on the Default Benefits … Table." is an
+ * instruction, done once its tables are rolled: the whole sentence goes.
  */
 function dropInstructionSentence(text: string): string {
-  const at = text.indexOf(INSTRUCTED);
-  if (at < 0) return text;
-  // From the start of the sentence the instruction is in ("You can roll on …" goes whole).
-  const before = text.slice(0, at);
-  const stop = Math.max(before.lastIndexOf(". "), before.lastIndexOf("! "), before.lastIndexOf("? "));
-  const from = stop < 0 ? 0 : stop + 2;
-  const last = text.lastIndexOf(ROLLED);
-  if (last < from) return text.replace(new RegExp(INSTRUCTED, "g"), "");
-  const end = text.slice(last).search(/[.!?](\s|$)/);
-  const to = end < 0 ? text.length : last + end + 1;
-  return (text.slice(0, from) + text.slice(to)).replace(new RegExp(INSTRUCTED, "g"), "");
+  // Each sentence that held a rolled link and tells you to go somewhere ("Refer to …", "Roll on
+  // the … Table.", "You can use …") has been done: it goes whole, the names around its links too.
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  return sentences
+    .filter((s) => !(s.includes(ROLLED) && (s.includes(INSTRUCTED) || GO_TO.test(s))))
+    .join(" ")
+    .replace(new RegExp(INSTRUCTED, "g"), "");
 }
+
+/** Words that send you to another table. */
+const GO_TO = /\b(?:refer to|roll (?:once |twice |again )?on|see|go to|consult|use)\b/i;
 
 /** How a table rolled through a link starts its line. */
 const LINE = "↳ ";

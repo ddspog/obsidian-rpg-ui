@@ -198,6 +198,17 @@ describe("rollLinkedTables, the words around two links", () => {
     expect(out).toMatch(/^Deity \+ Location\. Then a tale\.\n↳ Unusual Border: .+\n↳ Unusual Border: .+$/);
   });
 
+  it("drops an instruction sentence even when the link sits further on in it", () => {
+    for (const row of [
+      "Invasion. Refer to “Unusual,” starting with [[#Table 5-21 Unusual Border|Table 5-21]], for names.",
+      "The hag is legendary. Roll on the [[#Table 5-21 Unusual Border|Unusual Border]] Table.",
+    ]) {
+      expect(rollLinkedTables(row, "Borders.md", lookup, "s")).toMatch(
+        /^(Invasion|The hag is legendary)\.\n↳ Unusual Border: /
+      );
+    }
+  });
+
   it("indents what a followed row rolled in turn", () => {
     const outer = parseTableBlock(
       "outer",
