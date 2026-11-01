@@ -122,7 +122,8 @@ export class MarginPromptsManager {
     const width = Math.min(200, room - gap);
     strip.style.left = `${textRight + gap}px`;
     strip.style.width = `${width}px`;
-    const height = Math.max(sizer.offsetHeight, scroller.clientHeight);
+    // as tall as the note's text, not the window: a short note gets a short strip
+    const height = sizer.offsetHeight;
     strip.style.height = `${height}px`;
     const count = Math.max(1, Math.floor((height - SPACING / 2) / SPACING));
     const key = `${seed}|${count}|${words.length}`;
