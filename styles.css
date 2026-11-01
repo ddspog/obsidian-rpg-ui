@@ -2186,6 +2186,7 @@ p.rpg-item-magic-card__subtitle {
 .lonelog-formula-result {
   color: var(--text-normal);
   font-weight: 500;
+  white-space: pre-line;
 }
 .lonelog-choice {
   position: relative;
@@ -3550,6 +3551,8 @@ button.lonelog-bookkeeping-write.is-quiet {
   cursor: pointer;
   height: auto;
   min-height: 0;
+  white-space: normal;
+  text-align: start;
   transition: background-color 120ms ease;
 }
 .lonelog-picker-sep {

@@ -1,0 +1,9 @@
+/* The Log is a box of its own that scrolls beside the text (or below it on a phone): the wheel or a
+ * finger over it scrolls it instead of the page, and it is a big part of the screen. In this demo the
+ * page is the only thing that scrolls. */
+.sim .lonelog-sidebar,
+.sim .lonelog-prose-layout.is-stacked .lonelog-sidebar {
+  position: static;
+  max-height: none;
+  overflow-y: visible;
+}

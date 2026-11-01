@@ -15,10 +15,20 @@ import {
   alternativesByRef,
   parsePickSpec,
   partText,
+  isPlainAlternatives,
   pickNames,
   pickResult,
   pickSides,
 } from "./steps";
+
+describe("isPlainAlternatives", () => {
+  it("is a lone part with no words and few names", () => {
+    expect(isPlainAlternatives("1,2")).toBe(true);
+    expect(isPlainAlternatives('"the "+Surname=1')).toBe(false);
+    expect(isPlainAlternatives("Start=1+End=2")).toBe(false);
+    expect(isPlainAlternatives("1,2,3,4,5")).toBe(false);
+  });
+});
 
 describe("step composition — use:", () => {
   const meaning: GMStep[] = [
@@ -340,6 +350,14 @@ describe("a name made of independently rolled parts — @pick", () => {
       rows: [row("1-20", "Constrictor", "of Moons")],
     } as unknown as TableDef;
     expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Constrictor of Moons"]);
+  });
+
+  it("joins a word part that ends in a hyphen without a space", () => {
+    const words = {
+      columnLabels: ["d20*", "A", "B"],
+      rows: [row("1-20", "Cloud-", "Cottage")],
+    } as unknown as TableDef;
+    expect(pickNames(words, [5, 5], "A=1&B=2")).toEqual(["Cloud-Cottage"]);
   });
 
   it("reads the table, die and optional marks of a part", () => {

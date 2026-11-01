@@ -304,15 +304,15 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
         };
         const sides = pickSides(spec);
         const nameRow = s.labels?.[at]?.trim() || "Name";
-        const rows =
-          parts.length > 1
-            ? parts.map((p, k) => rowOf(p, k, true))
-            : [
-                `${named}: ${(parts[0].table && tables[parts[0].table - 1]) || ref} ${parts[0].die ? `d${parts[0].die}` : "d100"}= ->`,
-              ];
-        if (sides >= PICK_ROLL_FROM)
-          return [...rows, `${parts.length > 1 ? nameRow : "Pick one"}: @pick(${spec}) d${sides}= ->`];
-        return parts.length > 1 ? [...rows, `${nameRow}: @pick(${spec}) ->`] : rows;
+        // One part with words around it ("the " + a surname) is put together on a name row too.
+        const joined = parts.length > 1 || !!parts[0].prefix || !!parts[0].suffix;
+        const rows = joined
+          ? parts.map((p, k) => rowOf(p, k, parts.length > 1))
+          : [
+              `${named}: ${(parts[0].table && tables[parts[0].table - 1]) || ref} ${parts[0].die ? `d${parts[0].die}` : "d100"}= ->`,
+            ];
+        if (sides >= PICK_ROLL_FROM) return [...rows, `${joined ? nameRow : "Pick one"}: @pick(${spec}) d${sides}= ->`];
+        return joined ? [...rows, `${nameRow}: @pick(${spec}) ->`] : rows;
       })
       .join("\n");
   }

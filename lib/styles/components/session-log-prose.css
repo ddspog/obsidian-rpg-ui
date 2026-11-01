@@ -629,6 +629,8 @@
 .lonelog-formula-result {
   color: var(--text-normal);
   font-weight: 500;
+  /* A table reached through a link is rolled on its own line (\`↳ Alien Action: …\`). */
+  white-space: pre-line;
 }
 
 /* Inline choice dropdown (`[a/b/c - sel]`). Quiet at rest like the other inline
@@ -2566,6 +2568,9 @@ button.lonelog-bookkeeping-write.is-quiet {
   cursor: pointer;
   height: auto;
   min-height: 0;
+  /* A long option (a rolled row) wraps instead of running past the panel. */
+  white-space: normal;
+  text-align: start;
   transition: background-color 120ms ease;
 }
 

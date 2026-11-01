@@ -161,3 +161,18 @@ export function applyChoicePick(
   }
   return out.join("\n");
 }
+
+/**
+ * A list of options may name groups: an entry `## Formulas` starts a group (it is a heading in the
+ * dropdown, never a pick); the options before the first heading stand on their own.
+ */
+export function groupOptions(options: string[]): Array<{ label: string | null; options: string[] }> {
+  const groups: Array<{ label: string | null; options: string[] }> = [];
+  for (const o of options) {
+    const head = o.match(/^##\s+(.+)$/);
+    if (head) groups.push({ label: head[1].trim(), options: [] });
+    else if (groups.length === 0) groups.push({ label: null, options: [o] });
+    else groups[groups.length - 1].options.push(o);
+  }
+  return groups.filter((g) => g.options.length > 0);
+}

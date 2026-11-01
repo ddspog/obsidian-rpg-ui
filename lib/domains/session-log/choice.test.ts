@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   splitResultChoice,
+  groupOptions,
   buildResultChoice,
   applyChoicePick,
   NESTED_SEP,
@@ -225,5 +226,18 @@ describe("word picker — {a/b/c - selected}", () => {
     expect(keepPicked("{a/b - }", "{a/b - b}")).toBe("{a/b - b}");
     expect(keepPicked("{a/c - }", "{a/b - b}")).toBe("{a/c - }");
     expect(keepPicked("Jaianfai", "{a/b - b}")).toBe("Jaianfai");
+  });
+});
+
+describe("groupOptions", () => {
+  it("puts options under the `## Group` heading before them", () => {
+    expect(groupOptions(["## Tables", "Ruin", "Stronghold", "## Formulas", "Name: The Amber Keep"])).toEqual([
+      { label: "Tables", options: ["Ruin", "Stronghold"] },
+      { label: "Formulas", options: ["Name: The Amber Keep"] },
+    ]);
+  });
+
+  it("leaves a list with no headings as one group, and drops an empty group", () => {
+    expect(groupOptions(["a", "b", "## Empty"])).toEqual([{ label: null, options: ["a", "b"] }]);
   });
 });
