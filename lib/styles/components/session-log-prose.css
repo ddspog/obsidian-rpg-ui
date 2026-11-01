@@ -630,6 +630,8 @@
 .lonelog-formula-result {
   color: var(--text-normal);
   font-weight: 500;
+  /* A table reached through a link is rolled on its own line (\`↳ Alien Action: …\`). */
+  white-space: pre-line;
 }
 
 /* Inline choice dropdown (`[a/b/c - sel]`). Quiet at rest like the other inline
