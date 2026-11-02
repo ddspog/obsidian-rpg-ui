@@ -29,6 +29,37 @@ export function promptSetFor(path: string, sets: MarginPromptSet[]): MarginPromp
     .sort((a, b) => norm(b.folder).length - norm(a.folder).length)[0];
 }
 
+/**
+ * The prompts note a page shows, from its own `margin-prompts` property and the folder sets.
+ * - `false` (or `off`, `no`): none, whatever the folder.
+ * - A link or path (`"[[My prompts]]"`): that note, in any folder. The caller resolves it.
+ * - `true` (or `on`, `yes`): the folder's set, else the first set in the settings.
+ * - Absent: the folder's set, if any.
+ * Returns `{ link }` for a note named in the property, `{ path }` for a set's note.
+ */
+export function promptSourceFor(
+  path: string,
+  sets: MarginPromptSet[],
+  property: unknown
+): { path: string } | { link: string } | undefined {
+  const folderSet = promptSetFor(path, sets);
+  const word = typeof property === "string" ? property.trim().toLowerCase() : property;
+  if (property === false || word === "false" || word === "off" || word === "no") return undefined;
+  if (property === true || word === "true" || word === "on" || word === "yes") {
+    const set = folderSet ?? sets.find((s) => s.wordsFile.trim());
+    return set ? { path: set.wordsFile.trim() } : undefined;
+  }
+  if (typeof property === "string" && property.trim()) {
+    const link = property
+      .trim()
+      .replace(/^\[\[|\]\]$/g, "")
+      .split("|")[0]
+      .trim();
+    if (link) return { link };
+  }
+  return folderSet ? { path: folderSet.wordsFile.trim() } : undefined;
+}
+
 /** A small seeded generator, so a page shows the same prompts each time it opens. */
 function seeded(seed: string): () => number {
   let h = 2166136261;

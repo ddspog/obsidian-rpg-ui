@@ -291,7 +291,8 @@ export class DndSettingsTab extends PluginSettingTab {
       desc:
         "Creativity prompts down the margin of a note in reading view, as a book of tables prints a strip of words along its page edge. " +
         "Each set pairs a folder with a note of prompts, one a line; a note in the folder shows a few of them, the same ones each time. " +
-        "Shown only where the margin has room (not on a phone).",
+        "Shown only where the margin has room (not on a phone), and they give way to anything of the note's own in the margin. " +
+        "A note decides for itself with the property margin-prompts: false (none), true (on, with its folder's set or else the first), or a link to its own prompts note.",
     }).body;
     this.renderMarginPrompts(prompts.createDiv({ cls: "rpg-margin-prompt-sets" }));
     new Setting(prompts)

@@ -9,7 +9,7 @@
  */
 import { App, MarkdownView, TFile } from "obsidian";
 import type { DndUIToolkitSettings } from "settings";
-import { parsePrompts, pickPrompts, promptSetFor } from "lib/domains/margin-prompts/prompts";
+import { parsePrompts, pickPrompts, promptSourceFor } from "lib/domains/margin-prompts/prompts";
 
 const STRIP_CLASS = "rpg-margin-prompts";
 /** Vertical space a prompt takes, in px: about one every three paragraphs. */
@@ -50,6 +50,8 @@ export class MarginPromptsManager {
         }
       })
     );
+    // a note's `margin-prompts` property changed: draw again
+    this.host.registerEvent(app.metadataCache.on("changed", again));
     app.workspace.onLayoutReady(again);
   }
 
@@ -86,12 +88,18 @@ export class MarginPromptsManager {
     const file = view.file;
     const preview = (view as unknown as { previewMode?: { containerEl?: HTMLElement } }).previewMode?.containerEl;
     const scroller = preview?.querySelector<HTMLElement>(".markdown-preview-view") ?? null;
-    const set = file ? promptSetFor(file.path, this.host.settings.marginPrompts ?? []) : undefined;
-    if (!file || !scroller || !set || document.body.classList.contains("is-mobile")) {
+    // A note can turn its prompts on or off, or name its own prompts note (`margin-prompts:`).
+    const property = file ? this.host.app.metadataCache.getFileCache(file)?.frontmatter?.["margin-prompts"] : undefined;
+    const source = file ? promptSourceFor(file.path, this.host.settings.marginPrompts ?? [], property) : undefined;
+    const wordsPath =
+      source && "link" in source
+        ? (this.host.app.metadataCache.getFirstLinkpathDest(source.link, file?.path ?? "")?.path ?? source.link)
+        : source?.path;
+    if (!file || !scroller || !wordsPath || document.body.classList.contains("is-mobile")) {
       this.clear(view.containerEl);
       return;
     }
-    const words = await this.prompts(set.wordsFile.trim());
+    const words = await this.prompts(wordsPath);
     if (words.length === 0) {
       this.clear(view.containerEl);
       return;
