@@ -128,6 +128,10 @@ function isFooterRollLine(line: string): boolean {
  *   roll : <target>[, <target>…]           — specific target columns
  *   roll : … by = <col>                    — override weight column
  *   roll by = <col>                        — bare roll, custom weight col
+ *   roll each[ : …]                        — each target column on its own
+ *                                            die (independent columns)
+ *   roll each … join = '<text>'            — what goes between their values
+ *                                            (default ` — `)
  *
  * Targets and the `by=` value can be bare identifiers (single word, no
  * spaces) or single-quoted strings (`'Adventuring Motivation'`) for labels
@@ -136,7 +140,7 @@ function isFooterRollLine(line: string): boolean {
  *
  * Returns null when the expression isn't a well-formed `roll` call.
  */
-function parseRollExpression(inner: string): { targets: string[]; by?: string } | null {
+function parseRollExpression(inner: string): { targets: string[]; by?: string; each?: boolean; join?: string } | null {
   const src = inner.trim();
   let i = 0;
 
@@ -165,8 +169,17 @@ function parseRollExpression(inner: string): { targets: string[]; by?: string } 
   i += helperMatch[0].length;
   skipWs();
 
+  // `each`: every target column is rolled on its own die.
+  const eachMatch = src.slice(i).match(/^each\b/);
+  const each = !!eachMatch;
+  if (eachMatch) {
+    i += eachMatch[0].length;
+    skipWs();
+  }
+
   const targets: string[] = [];
   let by: string | undefined;
+  let join: string | undefined;
 
   // Optional `:` introducing the target list. When absent, the target list
   // stays empty → renderer interprets as "all non-weight columns".
@@ -188,20 +201,30 @@ function parseRollExpression(inner: string): { targets: string[]; by?: string } 
     }
   }
 
-  // Optional `by=<col>` kwarg (works with or without a target list).
-  if (i < src.length) {
-    const kw = src.slice(i).match(/^by\s*=\s*/);
+  // Optional `by=<col>` kwarg (works with or without a target list), and, on an `each` roll,
+  // `join='<text>'`.
+  while (i < src.length) {
+    const kw = src.slice(i).match(/^(by|join)\s*=\s*/);
     if (!kw) return null;
     i += kw[0].length;
     skipWs();
-    const byCol = readColumnRef();
-    if (!byCol) return null;
-    by = byCol;
+    if (kw[1] === "by") {
+      if (by !== undefined) return null;
+      const byCol = readColumnRef();
+      if (!byCol) return null;
+      by = byCol;
+    } else {
+      if (!each || join !== undefined || src[i] !== "'") return null;
+      const end = src.indexOf("'", i + 1);
+      if (end < 0) return null;
+      join = src.slice(i + 1, end);
+      i = end + 1;
+    }
     skipWs();
   }
 
   if (i < src.length) return null; // trailing garbage
-  return { by, targets };
+  return each ? { by, targets, each, ...(join !== undefined ? { join } : {}) } : { by, targets };
 }
 
 /**
@@ -285,7 +308,13 @@ function tokenizeFooterCell(body: string): FooterSegment[] {
     const oracle = roll ? null : parseOracleExpression(match[1]);
     const paginate = roll || oracle ? null : parsePaginateExpression(match[1]);
     if (roll) {
-      out.push({ kind: "roll", targets: roll.targets, by: roll.by });
+      out.push({
+        kind: "roll",
+        targets: roll.targets,
+        by: roll.by,
+        ...(roll.each ? { each: true } : {}),
+        ...(roll.join !== undefined ? { join: roll.join } : {}),
+      });
     } else if (oracle) {
       out.push({ kind: "oracle", dice: oracle.dice, answers: oracle.answers });
     } else if (paginate) {
