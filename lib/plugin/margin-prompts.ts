@@ -174,7 +174,14 @@ export class MarginPromptsManager {
     const base = strip.getBoundingClientRect();
     const textRight = sizer.getBoundingClientRect().right;
     const hanging: Array<{ top: number; bottom: number }> = [];
-    sizer.querySelectorAll<HTMLElement>(":scope > div > *").forEach((el) => {
+    // the note's blocks, and what is drawn beside the column (a page banner across the pane)
+    const boxes = [
+      ...Array.from(sizer.querySelectorAll<HTMLElement>(":scope > div > *")),
+      ...Array.from(
+        scroller.querySelectorAll<HTMLElement>(`:scope > :not(.${STRIP_CLASS}):not(.markdown-preview-sizer)`)
+      ),
+    ];
+    boxes.forEach((el) => {
       const r = el.getBoundingClientRect();
       if (r.height > 0 && r.right > textRight + 4) hanging.push({ top: r.top - base.top, bottom: r.bottom - base.top });
     });
