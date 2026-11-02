@@ -290,9 +290,7 @@ export class DndSettingsTab extends PluginSettingTab {
       note: count(this.plugin.settings.marginPrompts.length, "set"),
       desc:
         "Creativity prompts down the margin of a note in reading view, as a book of tables prints a strip of words along its page edge. " +
-        "Each set pairs a folder with a note of prompts, one a line; a note in the folder shows a few of them, the same ones each time. " +
-        "Shown only where the margin has room (not on a phone), and they give way to anything of the note's own in the margin. " +
-        "A note decides for itself with the property margin-prompts: false (none), true (on, with its folder's set or else the first), or a link to its own prompts note.",
+        "Each set pairs a folder with a note of prompts; a note can also turn them on or off itself. See How to use below.",
     }).body;
     this.renderMarginPrompts(prompts.createDiv({ cls: "rpg-margin-prompt-sets" }));
     new Setting(prompts)
@@ -305,6 +303,52 @@ export class DndSettingsTab extends PluginSettingTab {
           this.display();
         })
       );
+    this.renderMarginPromptsHelp(prompts);
+  }
+
+  /** How to use margin prompts: folders, a note's own property, the prompts note, and how faint they are. */
+  private renderMarginPromptsHelp(container: HTMLElement): void {
+    const help = container.createEl("details", { cls: "rpg-margin-prompts-help" });
+    help.createEl("summary", { text: "How to use margin prompts" });
+    const para = (text: string) => help.createEl("p", { cls: "setting-item-description", text });
+    const code = (text: string) => help.createEl("pre").createEl("code", { text });
+
+    help.createEl("h4", { text: "For a folder" });
+    para(
+      "Add a set above: pick the folder, then the note of prompts. Every note inside that folder (and its subfolders) " +
+        "shows them in reading view. When two sets hold a note, the deeper folder wins."
+    );
+
+    help.createEl("h4", { text: "For one note" });
+    para("A note's own margin-prompts property overrides the folders. Add it to the note's properties:");
+    code(
+      "margin-prompts: false                  # no prompts on this note\n" +
+        "margin-prompts: true                   # prompts: its folder's set, else the first set\n" +
+        'margin-prompts: "[[My prompts note]]"  # prompts from this note, in any folder'
+    );
+    para("Without the property, the folder sets decide.");
+
+    help.createEl("h4", { text: "The note of prompts" });
+    para(
+      "One prompt a line. Its properties, headings, empty lines, list markers and %% comments %% are skipped, so a " +
+        "note can hold headings to keep its prompts in order. A page always shows the same prompts, picked by its path; " +
+        "editing the note changes them."
+    );
+
+    help.createEl("h4", { text: "How faint they are" });
+    para(
+      "The prompts take a share of the text's own colour; the rest is the page (32% in light, 36% in dark: faint, so the " +
+        "words are found when looked for). To change it, add a CSS snippet (Settings › Appearance › CSS snippets); a " +
+        "higher share is darker:"
+    );
+    code(
+      ".rpg-margin-prompts { --rpg-margin-prompt-ink: 32%; }\n" +
+        ".theme-dark .rpg-margin-prompts { --rpg-margin-prompt-ink: 36%; }"
+    );
+    para(
+      "They show only on a desktop where the margin has room, never on a phone, in print or with forced colours, and a " +
+        "prompt gives way to anything of the note's own in the margin (a page banner, a box set past the text)."
+    );
   }
 
   /** One row per prompt set: the folder, the note of prompts, and Remove. */

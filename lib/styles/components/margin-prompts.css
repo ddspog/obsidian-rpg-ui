@@ -61,3 +61,29 @@
     display: none;
   }
 }
+
+/* Settings › General › Margin prompts: the how-to under the sets */
+details.rpg-margin-prompts-help {
+  margin-top: var(--size-4-2);
+  padding: var(--size-4-2) 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+details.rpg-margin-prompts-help > summary {
+  cursor: pointer;
+  font-weight: var(--font-semibold);
+}
+
+details.rpg-margin-prompts-help h4 {
+  margin: var(--size-4-3) 0 var(--size-4-1);
+  font-size: var(--font-ui-small);
+}
+
+details.rpg-margin-prompts-help pre {
+  margin: var(--size-4-1) 0;
+  padding: var(--size-4-2);
+  overflow-x: auto;
+  font-size: var(--font-ui-smaller);
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+}
