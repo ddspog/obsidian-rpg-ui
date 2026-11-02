@@ -34,7 +34,15 @@ export interface RollRange {
 export type RollOutcome =
   | { kind: "hit"; values: string[]; rolled: number }
   | { kind: "uniform"; values: string[] }
-  | { kind: "each"; values: string[]; rolls: Array<number | null>; rows: Array<number | null>; join?: string }
+  | {
+      kind: "each";
+      values: string[];
+      rolls: Array<number | null>;
+      rows: Array<number | null>;
+      /** The column each value was read from. */
+      cols: number[];
+      join?: string;
+    }
   | { kind: "miss"; rolled: number; max: number };
 
 /**
@@ -187,7 +195,14 @@ export function rollEach(
   const weight = weightIdx < 0 ? null : parseWeightColumn(table.rows, weightIdx);
   if (!weight || weight.max === 0) {
     const picked = uniformPick(table, targetIndices, rand);
-    return { kind: "each", values: picked.kind === "uniform" ? picked.values : [], rolls: [], rows: [], join };
+    return {
+      kind: "each",
+      values: picked.kind === "uniform" ? picked.values : [],
+      rolls: [],
+      rows: [],
+      cols: [],
+      join,
+    };
   }
   const label = table.columnLabels?.[weightIdx] ?? weightKey ?? "";
   const values: string[] = [];
@@ -200,7 +215,7 @@ export function rollEach(
     rows.push(rowIdx);
     values.push(rowIdx == null || idx < 0 ? "" : (table.rows[rowIdx].cells[idx]?.value ?? ""));
   }
-  return { kind: "each", values, rolls, rows, join };
+  return { kind: "each", values, rolls, rows, cols: targetIndices, join };
 }
 
 /**
@@ -274,16 +289,18 @@ export function rollCell(
 /**
  * `rollCell`, also saying which body row each roll landed on (`null` for a gap or a
  * pick across rows), so the table can point at the row it read. `marked` holds, per roll, every
- * row it read: one for a linked roll, one per column for an `each` roll.
+ * row it read: one for a linked roll, one per column for an `each` roll; `cells`, for an `each`
+ * roll, the `[row, column]` each value was read from, so the table can mark the cells themselves.
  */
 export function rollCellRows(
   def: TableDef,
   cell: { segments: Array<{ kind: string; targets?: string[]; by?: string; each?: boolean; join?: string }> },
   rand: () => number = Math.random
-): { values: string[]; rows: Array<number | null>; marked: number[][] } {
+): { values: string[]; rows: Array<number | null>; marked: number[][]; cells: Array<Array<[number, number]>> } {
   const values: string[] = [];
   const rows: Array<number | null> = [];
   const marked: number[][] = [];
+  const cells: Array<Array<[number, number]>> = [];
   for (const seg of cell.segments) {
     if (seg.kind !== "roll") continue;
     const outcome = seg.each
@@ -299,8 +316,15 @@ export function rollCellRows(
           ? []
           : [row]
     );
+    cells.push(
+      outcome.kind === "each"
+        ? outcome.rows.flatMap(
+            (r, i): Array<[number, number]> => (r != null && outcome.cols[i] >= 0 ? [[r, outcome.cols[i]]] : [])
+          )
+        : []
+    );
   }
-  return { values, rows, marked };
+  return { values, rows, marked, cells };
 }
 
 /** The body row a rolled number reads, by the same weight column `rollOnce` used. */

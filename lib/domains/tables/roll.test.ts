@@ -242,6 +242,13 @@ describe("independent columns: {{ roll each }}", () => {
     expect(r.values).toEqual(["Adamantine Ape-Altar"]);
     expect(r.rows).toEqual([null]);
     expect(r.marked).toEqual([[0, 1, 2]]);
+    expect(r.cells).toEqual([
+      [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+    ]);
   });
 
   it("a linked roll still reads one row, and marks it", () => {
@@ -249,6 +256,7 @@ describe("independent columns: {{ roll each }}", () => {
     const r = rollCellRows(linked, exprRowsOf(linked)[0], seq(0.25));
     expect(r.values).toEqual(["Aerial — Ape- — Actor"]);
     expect(r.marked).toEqual([[1]]);
+    expect(r.cells).toEqual([[]]);
   });
 
   it("a column the table lacks reads nothing", () => {

@@ -224,7 +224,17 @@
   font-weight: 700;
 }
 
+/* An independent roll ({{ roll each }}): the cell each column was read from, and its row's roll. */
+.rpg-table tbody td.rpg-table-cell--rolled {
+  background: color-mix(in srgb, var(--text-title, var(--interactive-accent)) 14%, transparent);
+}
+
+.rpg-table tbody tr.rpg-table-row--rolled-part td:first-child {
+  font-weight: 700;
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .rpg-table tbody td.rpg-table-cell--rolled,
   .rpg-table tbody tr.rpg-table-row--rolled td {
     animation: rpg-table-rolled-in 0.6s ease-out;
   }
