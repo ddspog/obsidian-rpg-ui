@@ -15,6 +15,10 @@
  *    random value directly from the target column.
  *
  * Empty / `0` / `-` cells in the weight column exclude that row.
+ *
+ * A plain roll reads every target column from one rolled row: the columns are
+ * linked. `{{ roll each }}` rolls each target column on its own die, as a
+ * table of word parts or of separate traits is meant to be used.
  */
 
 import type { TableDef } from "./types";
@@ -30,6 +34,7 @@ export interface RollRange {
 export type RollOutcome =
   | { kind: "hit"; values: string[]; rolled: number }
   | { kind: "uniform"; values: string[] }
+  | { kind: "each"; values: string[]; rolls: Array<number | null>; rows: Array<number | null>; join?: string }
   | { kind: "miss"; rolled: number; max: number };
 
 /**
@@ -161,6 +166,58 @@ export function rollOnce(
 }
 
 /**
+ * Roll each target column on its own die: one roll per column, each matched against the weight
+ * column. A roll that lands on a row whose cell in that column is empty reads nothing for it.
+ * Falls back to `rollOnce`'s uniform pick when the weight column isn't numeric (which already picks
+ * each column on its own).
+ */
+export function rollEach(
+  table: TableDef,
+  targets: string[],
+  weightCol: string | undefined,
+  rand: () => number = Math.random,
+  join?: string
+): RollOutcome {
+  const weightKey = weightCol ?? table.keyColumn ?? table.columns[0];
+  const weightIdx = weightKey ? table.columns.indexOf(weightKey) : -1;
+  const targetIndices: number[] =
+    targets.length === 0
+      ? table.columns.map((_, i) => i).filter((i) => i !== weightIdx)
+      : targets.map((t) => table.columns.indexOf(t));
+  const weight = weightIdx < 0 ? null : parseWeightColumn(table.rows, weightIdx);
+  if (!weight || weight.max === 0) {
+    const picked = uniformPick(table, targetIndices, rand);
+    return { kind: "each", values: picked.kind === "uniform" ? picked.values : [], rolls: [], rows: [], join };
+  }
+  const label = table.columnLabels?.[weightIdx] ?? weightKey ?? "";
+  const values: string[] = [];
+  const rolls: Array<number | null> = [];
+  const rows: Array<number | null> = [];
+  for (const idx of targetIndices) {
+    const rolled = rollWeight(label, weight.max, rand);
+    const rowIdx = matchRoll(weight.ranges, rolled);
+    rolls.push(rolled);
+    rows.push(rowIdx);
+    values.push(rowIdx == null || idx < 0 ? "" : (table.rows[rowIdx].cells[idx]?.value ?? ""));
+  }
+  return { kind: "each", values, rolls, rows, join };
+}
+
+/**
+ * Independent values in one line: `join` between them (` — ` by default), except after a word
+ * part that ends in a hyphen (`Ant-` + `Abbot` → `Ant-Abbot`).
+ */
+export function joinEach(values: string[], join = " — "): string {
+  let out = "";
+  for (const raw of values) {
+    const v = raw.trim();
+    if (!v) continue;
+    out += out === "" || /-$/.test(out) ? v : join + v;
+  }
+  return out;
+}
+
+/**
  * The number a table is rolled with. A key column headed with several dice (`3d6`, `2d10`) is
  * their sum, so its middle rows come up most, as in the book; otherwise one die as large as the
  * table (`1..max`).
@@ -196,6 +253,8 @@ export function formatRollOutcome(outcome: RollOutcome): string {
     case "hit":
     case "uniform":
       return outcome.values.filter((v) => v !== "").join(" — ");
+    case "each":
+      return joinEach(outcome.values, outcome.join);
     case "miss":
       return `Rolled ${outcome.rolled}, nothing found.`;
   }
@@ -207,29 +266,41 @@ export function formatRollOutcome(outcome: RollOutcome): string {
  */
 export function rollCell(
   def: TableDef,
-  cell: { segments: Array<{ kind: string; targets?: string[]; by?: string }> }
+  cell: { segments: Array<{ kind: string; targets?: string[]; by?: string; each?: boolean; join?: string }> }
 ): string[] {
   return rollCellRows(def, cell).values;
 }
 
 /**
  * `rollCell`, also saying which body row each roll landed on (`null` for a gap or a
- * pick across rows), so the table can point at the row it read.
+ * pick across rows), so the table can point at the row it read. `marked` holds, per roll, every
+ * row it read: one for a linked roll, one per column for an `each` roll.
  */
 export function rollCellRows(
   def: TableDef,
-  cell: { segments: Array<{ kind: string; targets?: string[]; by?: string }> },
+  cell: { segments: Array<{ kind: string; targets?: string[]; by?: string; each?: boolean; join?: string }> },
   rand: () => number = Math.random
-): { values: string[]; rows: Array<number | null> } {
+): { values: string[]; rows: Array<number | null>; marked: number[][] } {
   const values: string[] = [];
   const rows: Array<number | null> = [];
+  const marked: number[][] = [];
   for (const seg of cell.segments) {
     if (seg.kind !== "roll") continue;
-    const outcome = rollOnce(def, seg.targets ?? [], seg.by, rand);
+    const outcome = seg.each
+      ? rollEach(def, seg.targets ?? [], seg.by, rand, seg.join)
+      : rollOnce(def, seg.targets ?? [], seg.by, rand);
     values.push(formatRollOutcome(outcome));
-    rows.push(outcome.kind === "hit" ? rowOfRoll(def, seg.by, outcome.rolled) : null);
+    const row = outcome.kind === "hit" ? rowOfRoll(def, seg.by, outcome.rolled) : null;
+    rows.push(row);
+    marked.push(
+      outcome.kind === "each"
+        ? [...new Set(outcome.rows.filter((r): r is number => r != null))]
+        : row == null
+          ? []
+          : [row]
+    );
   }
-  return { values, rows };
+  return { values, rows, marked };
 }
 
 /** The body row a rolled number reads, by the same weight column `rollOnce` used. */

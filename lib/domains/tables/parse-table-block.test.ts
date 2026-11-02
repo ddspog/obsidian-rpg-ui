@@ -254,6 +254,33 @@ describe("parseTableBlock: |= … =| footer rows", () => {
     expect(roll).toEqual({ kind: "roll", targets: [], by: "w" });
   });
 
+  it("parses {{ roll each }}: every column on its own die", () => {
+    const body = `| d4* | First | Second |
+|---|---|---|
+| 1 | Ant- | Abbot |
+|= {{ roll each }} =|`;
+    const roll = exprRows(parseTableBlock("npc", body))[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({ kind: "roll", targets: [], each: true });
+  });
+
+  it("parses {{ roll each : a, b join=' ' }} with targets and a joiner", () => {
+    const body = `| d4* | First | Second |
+|---|---|---|
+| 1 | Ant- | Abbot |
+|= {{ roll each : first, second join=' ' }} =|`;
+    const roll = exprRows(parseTableBlock("npc", body))[0].cells[0].segments.find((s) => s.kind === "roll");
+    expect(roll).toEqual({ kind: "roll", targets: ["first", "second"], each: true, join: " " });
+  });
+
+  it("keeps join= without each as text: it only means something for independent columns", () => {
+    const body = `| d4* | First |
+|---|---|
+| 1 | A |
+|= {{ roll join=' ' }} =|`;
+    const segs = exprRows(parseTableBlock("npc", body))[0].cells[0].segments;
+    expect(segs.some((s) => s.kind === "roll")).toBe(false);
+  });
+
   it("splits a multi-cell footer on internal pipes", () => {
     const body = `| dice | name | title |
 |---|---|---|
