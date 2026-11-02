@@ -16,6 +16,8 @@ const STRIP_CLASS = "rpg-margin-prompts";
 const SPACING = 104;
 /** Margin width under which no strip is drawn. */
 const MIN_ROOM = 130;
+/** Space kept between the strip and the pane's right border. */
+const EDGE = 16;
 
 export interface MarginPromptsHost {
   app: App;
@@ -122,12 +124,12 @@ export class MarginPromptsManager {
     this.layout(scroller, strip, words, file.path);
   }
 
-  /** Place the strip in the margin right of the text column, a prompt every SPACING px down the page. */
+  /** Place the strip in the margin right of the text column, against the pane's border, a prompt every SPACING px down the page. */
   private layout(scroller: HTMLElement, strip: HTMLElement, words: string[], seed: string): void {
     const sizer = scroller.querySelector<HTMLElement>(".markdown-preview-sizer");
     if (!sizer) return;
     const textRight = sizer.offsetLeft + sizer.offsetWidth;
-    const room = scroller.clientWidth - textRight - 16;
+    const room = scroller.clientWidth - textRight - EDGE;
     if (room < MIN_ROOM) {
       strip.hidden = true;
       return;
@@ -135,7 +137,8 @@ export class MarginPromptsManager {
     strip.hidden = false;
     const gap = Math.min(40, Math.round(room * 0.15));
     const width = Math.min(200, room - gap);
-    strip.style.left = `${textRight + gap}px`;
+    // against the pane's right border, as a book prints its strip along the page's edge
+    strip.style.left = `${scroller.clientWidth - EDGE - width}px`;
     strip.style.width = `${width}px`;
     // as tall as the note's text, not the window: a short note gets a short strip
     const height = sizer.offsetHeight;
