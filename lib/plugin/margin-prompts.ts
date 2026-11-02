@@ -13,7 +13,7 @@ import { parsePrompts, pickPrompts, promptSourceFor } from "lib/domains/margin-p
 
 const STRIP_CLASS = "rpg-margin-prompts";
 /** Vertical space a prompt takes, in px: about one every three paragraphs. */
-const SPACING = 104;
+const SPACING = 26;
 /** Margin width under which no strip is drawn. */
 const MIN_ROOM = 130;
 /** Space kept between the strip and the pane's right border. */
@@ -132,7 +132,7 @@ export class MarginPromptsManager {
     this.layout(scroller, strip, words, file.path);
   }
 
-  /** Place the strip in the margin right of the text column, against the pane's border, a prompt every SPACING px down the page. */
+  /** Place the strip in the margin right of the text column, against the pane's border, prompts one under another down the page, as close as the book prints them. */
   private layout(scroller: HTMLElement, strip: HTMLElement, words: string[], seed: string): void {
     const sizer = scroller.querySelector<HTMLElement>(".markdown-preview-sizer");
     if (!sizer) return;
@@ -151,15 +151,13 @@ export class MarginPromptsManager {
     // as tall as the note's text, not the window: a short note gets a short strip
     const height = sizer.offsetHeight;
     strip.style.height = `${height}px`;
-    const count = Math.max(1, Math.floor((height - SPACING / 2) / SPACING));
+    // about a line of prompt each SPACING px; the strip clips what is past the note's end
+    const count = Math.max(1, Math.ceil(height / SPACING));
     const key = `${seed}|${count}|${words.length}`;
     if (strip.dataset.key !== key) {
       strip.dataset.key = key;
       strip.empty();
-      pickPrompts(words, seed, count).forEach((text, i) => {
-        const item = strip.createSpan({ cls: `${STRIP_CLASS}__item`, text });
-        item.style.top = `${Math.round(SPACING / 2 + i * SPACING)}px`;
-      });
+      for (const text of pickPrompts(words, seed, count)) strip.createSpan({ cls: `${STRIP_CLASS}__item`, text });
     }
     this.avoidHanging(scroller, strip);
   }
@@ -188,7 +186,8 @@ export class MarginPromptsManager {
     strip.querySelectorAll<HTMLElement>(`.${STRIP_CLASS}__item`).forEach((item) => {
       const top = item.offsetTop;
       const bottom = top + item.offsetHeight;
-      item.hidden = hanging.some((h) => top < h.bottom + 16 && bottom > h.top - 16);
+      // hidden but keeping its place, so the prompts after it stay where they are
+      item.style.visibility = hanging.some((h) => top < h.bottom + 8 && bottom > h.top - 8) ? "hidden" : "";
     });
   }
 
