@@ -103,6 +103,21 @@ export class MarginPromptsManager {
       observer.observe(scroller);
       if (sizer) observer.observe(sizer);
       this.observers.set(strip, observer);
+      // Reading view draws a long note's sections as they scroll in: an aside in the margin may
+      // appear later, so the prompts beside it are checked again.
+      let queued = false;
+      scroller.addEventListener(
+        "scroll",
+        () => {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(() => {
+            queued = false;
+            if (strip?.isConnected) this.avoidHanging(scroller, strip);
+          });
+        },
+        { passive: true }
+      );
     }
     this.layout(scroller, strip, words, file.path);
   }
@@ -127,12 +142,35 @@ export class MarginPromptsManager {
     strip.style.height = `${height}px`;
     const count = Math.max(1, Math.floor((height - SPACING / 2) / SPACING));
     const key = `${seed}|${count}|${words.length}`;
-    if (strip.dataset.key === key) return;
-    strip.dataset.key = key;
-    strip.empty();
-    pickPrompts(words, seed, count).forEach((text, i) => {
-      const item = strip.createSpan({ cls: `${STRIP_CLASS}__item`, text });
-      item.style.top = `${Math.round(SPACING / 2 + i * SPACING)}px`;
+    if (strip.dataset.key !== key) {
+      strip.dataset.key = key;
+      strip.empty();
+      pickPrompts(words, seed, count).forEach((text, i) => {
+        const item = strip.createSpan({ cls: `${STRIP_CLASS}__item`, text });
+        item.style.top = `${Math.round(SPACING / 2 + i * SPACING)}px`;
+      });
+    }
+    this.avoidHanging(scroller, strip);
+  }
+
+  /**
+   * Hide the prompts that something of the note's own covers: a box that hangs past the text
+   * column into the margin (a book's aside set beside the text, a wide figure).
+   */
+  private avoidHanging(scroller: HTMLElement, strip: HTMLElement): void {
+    const sizer = scroller.querySelector<HTMLElement>(".markdown-preview-sizer");
+    if (!sizer || strip.hidden) return;
+    const base = strip.getBoundingClientRect();
+    const textRight = sizer.getBoundingClientRect().right;
+    const hanging: Array<{ top: number; bottom: number }> = [];
+    sizer.querySelectorAll<HTMLElement>(":scope > div > *").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.height > 0 && r.right > textRight + 4) hanging.push({ top: r.top - base.top, bottom: r.bottom - base.top });
+    });
+    strip.querySelectorAll<HTMLElement>(`.${STRIP_CLASS}__item`).forEach((item) => {
+      const top = item.offsetTop;
+      const bottom = top + item.offsetHeight;
+      item.hidden = hanging.some((h) => top < h.bottom + 16 && bottom > h.top - 16);
     });
   }
 
