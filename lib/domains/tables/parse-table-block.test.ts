@@ -593,3 +593,31 @@ describe("parseTableBlock: caption @title", () => {
     expect(t.captionTitle).toBeUndefined();
   });
 });
+
+describe("@pack", () => {
+  it("reads several rows from one body line, a row per column count", () => {
+    const def = parseTableBlock(
+      "patrons",
+      [
+        "@pack",
+        "|d1000*|Patron or Target|",
+        "|---|---|",
+        "|01|Abbot|02|Acolyte|03|Actor|",
+        "|04|Admiral|",
+        "[Patrons]",
+      ].join("\n")
+    );
+    expect(def.rows.map((r) => r.cells.map((c) => c.value))).toEqual([
+      ["01", "Abbot"],
+      ["02", "Acolyte"],
+      ["03", "Actor"],
+      ["04", "Admiral"],
+    ]);
+    expect(def.keyColumn).toBe(def.columns[0]);
+  });
+
+  it("leaves a line alone without the directive", () => {
+    const def = parseTableBlock("t", ["|d4*|Name|", "|---|---|", "|1|A|2|B|"].join("\n"));
+    expect(def.rows).toHaveLength(1);
+  });
+});
