@@ -25,6 +25,7 @@ import {
 } from "../../domains/session-log/hotbar-model";
 import { Menu } from "obsidian";
 import { isTableStack, mechanismOf, TABLE_MECHANISMS, tableAreaOf } from "../../domains/session-log/table-cards";
+import { tileName } from "../../domains/session-log/tile-name";
 import { LucideIcon } from "./lucide-icon";
 
 interface HotbarProps {
@@ -159,12 +160,15 @@ function Tile({
   source,
   image,
   depleted,
+  group,
   onPlay,
   onMenu,
 }: {
   card: SessionFeatureCard;
   kind: TileKind;
   source: TileSource;
+  /** The label of the group it sits in: its word is left off the tile's name. */
+  group?: string;
   /** Its own icon art, when there is some. */
   image?: string;
   depleted: boolean;
@@ -191,11 +195,14 @@ function Tile({
       )}
       {/* Its name, small, along the foot — the tile read at a glance. */}
       {(() => {
-        const label = card.name.replace(/\s*[ᴬᴮᴰᴴᴷᴺº]+$/u, "");
+        const label = tileName(card.name, group);
         // A very long word is set a size smaller, to stay whole in its tile.
         const longest = Math.max(...label.split(/\s+/).map((w) => w.length));
         return (
-          <span className={`rpg-hotbar-tile-name${longest >= 12 ? " is-longer" : longest >= 10 ? " is-long" : ""}`}>
+          <span
+            className={`rpg-hotbar-tile-name${longest >= 12 ? " is-longer" : longest >= 10 ? " is-long" : ""}`}
+            lang="en"
+          >
             {label}
           </span>
         );
@@ -397,6 +404,7 @@ export function Hotbar({
                       ? { onMenu: menuFor(card, kind, !!iconFor?.(card.name)) }
                       : {})}
                     depleted={!isAvailable(consumableState, card)}
+                    group={stack.label}
                     onPlay={() => onPlay(card)}
                   />
                 ))}
