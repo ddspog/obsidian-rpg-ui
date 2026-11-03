@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { formatRollOutcome, matchRoll, parseWeightCell, parseWeightColumn, rollCellRows, rollOnce } from "./roll";
+import {
+  formatRollOutcome,
+  joinEach,
+  matchRoll,
+  parseWeightCell,
+  parseWeightColumn,
+  rollCellRows,
+  rollEach,
+  rollOnce,
+} from "./roll";
 import { parseTableBlock } from "./parse-table-block";
 import type { TableDef } from "./types";
 
@@ -202,3 +211,66 @@ describe("rollOnce, a table rolled with several dice", () => {
     for (let i = 0; i < 200; i++) expect(rollOnce(def, [], undefined).kind).toBe("hit");
   });
 });
+
+describe("independent columns: {{ roll each }}", () => {
+  const body = `| d4* | Description | Feature (first word) | Feature (second word) |
+|---|---|---|---|
+| 1 | Adamantine | Ant- | Abbot |
+| 2 | Aerial | Ape- | Actor |
+| 3 | Black | Bat | Altar |
+| 4 | Burning | Bear | Barge |
+|= {{ roll each join=' ' }} =|`;
+  const def = parseTableBlock("parts", body);
+  // Rolls 1, 2, 3 (rand → 0, .25, .5 on a d4).
+  const seq = (...xs: number[]) => {
+    let i = 0;
+    return () => xs[i++ % xs.length];
+  };
+
+  it("rolls each column on its own die and reads it from its own row", () => {
+    const out = rollEach(def, [], undefined, seq(0, 0.25, 0.5));
+    expect(out).toMatchObject({
+      kind: "each",
+      values: ["Adamantine", "Ape-", "Altar"],
+      rolls: [1, 2, 3],
+      rows: [0, 1, 2],
+    });
+  });
+
+  it("a footer cell joins the values and marks every row read", () => {
+    const r = rollCellRows(def, exprRowsOf(def)[0], seq(0, 0.25, 0.5));
+    expect(r.values).toEqual(["Adamantine Ape-Altar"]);
+    expect(r.rows).toEqual([null]);
+    expect(r.marked).toEqual([[0, 1, 2]]);
+    expect(r.cells).toEqual([
+      [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+    ]);
+  });
+
+  it("a linked roll still reads one row, and marks it", () => {
+    const linked = parseTableBlock("parts", body.replace("{{ roll each join=' ' }}", "{{ roll }}"));
+    const r = rollCellRows(linked, exprRowsOf(linked)[0], seq(0.25));
+    expect(r.values).toEqual(["Aerial — Ape- — Actor"]);
+    expect(r.marked).toEqual([[1]]);
+    expect(r.cells).toEqual([[]]);
+  });
+
+  it("a column the table lacks reads nothing", () => {
+    const out = rollEach(def, ["nope", "description"], undefined, seq(0, 0.75));
+    expect(formatRollOutcome(out)).toBe("Burning");
+  });
+
+  it("joins with an em dash by default, and a trailing hyphen joins the next word", () => {
+    expect(joinEach(["Red", "Bitter"])).toBe("Red — Bitter");
+    expect(joinEach(["Ant-", "Abbot"], " ")).toBe("Ant-Abbot");
+    expect(joinEach(["", "Lone", " "])).toBe("Lone");
+  });
+});
+
+function exprRowsOf(def: TableDef) {
+  return def.footer.flatMap((it) => (it.kind === "expr" ? it.cells : []));
+}
