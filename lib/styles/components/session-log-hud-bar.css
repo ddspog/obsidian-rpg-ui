@@ -1566,3 +1566,49 @@ button.hud-face.is-foe.is-active .hud-face-frame {
   bottom: 0.25rem;
   left: auto;
 }
+
+/* ═══ Readable tile names (desktop) ══════════════════════════════════════════
+   The name is what tells the cards apart (many share a glyph): 10px, 9px for a long
+   word, never smaller, on a 60px tile; over art it sits in a dark band under the
+   picture, not on it. The phone has its own sizes (mobile.css). */
+body:not(.is-mobile) .lonelog-bottom-drawer .rpg-hotbar {
+  --hotbar-tile: 3.75rem;
+}
+
+body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile {
+  padding: 0.25rem 0.1rem 0;
+}
+
+body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name {
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  /* whole words, broken only where a word may be hyphenated */
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+
+body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-long,
+body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-longer {
+  font-size: 0.5625rem;
+}
+
+body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile.has-art .rpg-hotbar-tile-name {
+  background: rgb(14 10 18 / 0.88);
+  padding: 0.15rem 0.1rem;
+}
+
+/* The GM has no character card: the tiles take its column too, and the turn
+   column is as wide as its buttons, so the tiles fill the drawer. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-character)) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-character)) > .rpg-hotbar {
+  grid-column: 1;
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-character)) > .hud-turn {
+  grid-column: 2;
+}

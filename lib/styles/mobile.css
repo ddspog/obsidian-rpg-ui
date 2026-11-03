@@ -391,6 +391,34 @@
     --rows: 2 !important;
   }
 
+  /* Tile names a phone can read: 9px (never smaller, a long word included) on a 56px tile,
+     in a dark band under any art. */
+  .lonelog-bottom-drawer .rpg-hotbar {
+    --hotbar-tile: 3.5rem;
+  }
+
+  .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name,
+  .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-long,
+  .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-longer {
+    font-size: 0.5625rem;
+    font-weight: 500;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    /* whole words, broken only where a word may be hyphenated */
+    overflow-wrap: normal;
+    hyphens: auto;
+  }
+
+  .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-long,
+  .lonelog-bottom-drawer button.rpg-hotbar-tile .rpg-hotbar-tile-name.is-longer {
+    letter-spacing: 0;
+  }
+
+  .lonelog-bottom-drawer button.rpg-hotbar-tile.has-art .rpg-hotbar-tile-name {
+    background: rgb(14 10 18 / 0.88);
+    padding: 0.1rem 0.08rem;
+  }
+
   /* The acting chip and side switch sit beside the faces, not above them: one row, not two. */
   .lonelog-actions-panel:not(.is-in-margin) .hud-roster-card {
     flex-wrap: nowrap;
