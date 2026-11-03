@@ -10,7 +10,7 @@ import { renderSystemMappings } from "lib/plugin/system-mappings-ui";
 import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 import { ImageStudioModal } from "lib/plugin/image-studio-modal";
 import { createSection, setSectionsOpen } from "lib/plugin/settings-sections";
-import { exportSettingsEnv } from "lib/plugin/settings-export";
+import { exportSettingsEnv, importSettings } from "lib/plugin/settings-export";
 import { FileSuggest } from "lib/utils/file-suggest";
 import { FolderSuggest } from "lib/utils/folder-suggest";
 import {
@@ -253,12 +253,42 @@ export class DndSettingsTab extends PluginSettingTab {
     new Setting(share)
       .setName("Copy settings")
       .setDesc(
-        "Copies these settings as one PLUGIN_SETTINGS_B64=… line (API keys left out) to paste into a cloud environment's variables, so cloud sessions run with the same settings."
+        "Copies these settings as one PLUGIN_SETTINGS_B64=… line (API keys left out). Paste it below on another device (a phone), or into a cloud environment's variables, so it runs with the same settings."
       )
       .addButton((button) =>
         button.setButtonText("Copy").onClick(async () => {
           await navigator.clipboard.writeText(exportSettingsEnv(this.plugin.settings));
           new Notice("Settings copied");
+        })
+      );
+    // Paste: settings copied on another device (a phone has no file to copy them from).
+    let pasted = "";
+    new Setting(share)
+      .setName("Paste settings")
+      .setDesc(
+        "Paste the line Copy wrote on another device, then Apply. It replaces the settings it names; this device keeps its own API keys and any setting the copy doesn't name."
+      )
+      .addTextArea((area) => {
+        area.setPlaceholder("PLUGIN_SETTINGS_B64=…").onChange((value) => (pasted = value));
+        area.inputEl.rows = 3;
+        area.inputEl.addClass("rpg-settings-paste");
+      })
+      .addButton((button) =>
+        button.setButtonText("Apply").onClick(async () => {
+          if (!pasted.trim()) {
+            new Notice("Paste the copied settings first");
+            return;
+          }
+          try {
+            // in place: parts of the plugin hold this object
+            Object.assign(this.plugin.settings, importSettings(pasted, this.plugin.settings));
+          } catch {
+            new Notice("That isn't a copy of these settings");
+            return;
+          }
+          await this.plugin.saveSettings();
+          new Notice("Settings applied");
+          this.display();
         })
       );
 
