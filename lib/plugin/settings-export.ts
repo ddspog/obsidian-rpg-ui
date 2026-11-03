@@ -21,3 +21,28 @@ export function exportSettingsEnv(settings: object): string {
   for (const b of bytes) binary += String.fromCharCode(b);
   return `PLUGIN_SETTINGS_B64=${btoa(binary)}`;
 }
+
+/**
+ * Settings pasted from another device: the `PLUGIN_SETTINGS_B64=…` line Copy writes, the base64 alone,
+ * or the JSON. Laid over `current`: a key the copy blanked (an API key) keeps this device's value.
+ * Throws when the text is none of those.
+ */
+export function importSettings<T extends object>(text: string, current: T): T {
+  const raw = text.trim().replace(/^PLUGIN_SETTINGS_B64=/, "");
+  let parsed: unknown;
+  if (raw.startsWith("{")) {
+    parsed = JSON.parse(raw);
+  } else {
+    const binary = atob(raw.replace(/\s+/g, ""));
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    parsed = JSON.parse(new TextDecoder().decode(bytes));
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Not plugin settings");
+  const out: Record<string, unknown> = { ...(current as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+    const secret = SECRET_KEYS.includes(key) || /(?:api|secret|token|password)/i.test(key);
+    if (secret && value === "") continue;
+    out[key] = value;
+  }
+  return out as T;
+}
