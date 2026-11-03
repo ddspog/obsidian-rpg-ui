@@ -44,7 +44,7 @@ import {
 } from "lib/domains/draft/draft";
 import { parseSourceDoc } from "lib/domains/features/parse-source-doc";
 import type { GMFeature } from "lib/domains/features/types";
-import { type GMStepContext, gmStepLines, resolveGmBody } from "lib/domains/gm/example";
+import { genNameAbove, type GMStepContext, resolveGmBody, scopedStepLines } from "lib/domains/gm/example";
 import { hexCenter, hexKey, hexPoints } from "lib/domains/hexmap/axial";
 import { replaceRpgBody } from "lib/domains/hexmap/fence-text";
 import { loadImports } from "lib/domains/hexmap/imports";
@@ -55,7 +55,7 @@ import { resolveDialOps, resourceDefaults } from "lib/domains/lonelog/dial-ops";
 import { resolveListOps } from "lib/domains/lonelog/list-ops";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import type { CardStack } from "lib/domains/session-log/card-types";
-import { applyChoicePick } from "lib/domains/session-log/choice";
+import { applyChoicePick, type ChoiceAt } from "lib/domains/session-log/choice";
 import { pendingTermSwaps } from "lib/domains/session-log/die-edits";
 import { parseFormula, resultReplacement } from "lib/domains/session-log/formula";
 import { buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
@@ -288,10 +288,12 @@ export function DraftBlock({ source, app, sourcePath }: Props) {
     const body = resolveBody(fromLog(text));
     if (body !== ideas) writeBody(body);
   };
-  const pickChoice = (selected: string) => {
+  // A pick rewrites its own dropdown (`at`: which line, which of its kind), not the first in the log,
+  // and spawns its own card's lines, even when another card offers a choice of the same name.
+  const pickChoice = (selected: string, at?: ChoiceAt) => {
     if (!gm) return;
-    const stepLines = Object.assign({}, ...gm.features.map((f) => gmStepLines(f, gm.ctx)));
-    writeBody(resolveBody(applyChoicePick(ideas, selected, stepLines)));
+    const stepLines = scopedStepLines(gm.features, genNameAbove(ideas, at), gm.ctx);
+    writeBody(resolveBody(applyChoicePick(ideas, selected, stepLines, at)));
   };
 
   // A provenance dot in the prose and its entry in the Log, each brought to the other.
