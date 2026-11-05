@@ -10,6 +10,7 @@ import { castBlock } from "../../domains/session-log/casting";
 import { DrawerContext } from "./bottom-drawer";
 import { HudCharacter } from "./hud-character";
 import { HudRoster } from "./hud-roster";
+import { HudPicker } from "./hud-picker";
 import { HudTurn } from "./hud-turn";
 import { LucideIcon } from "./lucide-icon";
 import type { HudInfo } from "../../domains/session-log/hud";
@@ -575,6 +576,30 @@ export function SessionActionsPanel({
     setActiveCard(null);
   };
 
+  // Who acts: a face or chip in the roster, or a step from the picker under the portrait.
+  const [pickTick, setPickTick] = useState(0);
+  const pickActor = (name: string) => {
+    drawer?.expand();
+    // GM or Party: on the side that holds it, whichever is shown now.
+    const owner = name === GM || name === PARTY ? sides.find((x) => x.actors.includes(name)) : side;
+    if (!owner) return;
+    if (owner.id !== side?.id) setSideId(owner.id);
+    setPicked((p) => ({ ...p, [owner.id]: name }));
+    setReadCard(null);
+    setActiveCard(null);
+    setPickTick((n) => n + 1);
+  };
+  // The previous or next actor on this side, the GM first.
+  const stepActor = (dir: -1 | 1) => {
+    const order = [
+      ...[GM].filter((n) => sides.some((x) => x.actors.includes(n))),
+      ...(side?.actors ?? []).filter((n) => n !== GM && n !== PARTY),
+    ];
+    if (order.length === 0) return;
+    const at = Math.max(0, order.indexOf(actor ?? ""));
+    pickActor(order[(at + dir + order.length) % order.length]);
+  };
+
   const rosterNode = (
     <HudRoster
       sides={sides.map((x) => ({ id: x.id, label: x.label, count: x.actors.length, ...(x.foe ? { foe: true } : {}) }))}
@@ -593,16 +618,7 @@ export function SessionActionsPanel({
         .filter((n) => n !== GM && n !== PARTY)
         .map((n) => ({ name: n, log: side?.stacksFor(n)[0]?.cards[0]?.actor ?? n }))}
       active={actor}
-      onPick={(name) => {
-        drawer?.expand();
-        // GM or Party: on the side that holds it, whichever is shown now.
-        const owner = name === GM || name === PARTY ? sides.find((x) => x.actors.includes(name)) : side;
-        if (!owner) return;
-        if (owner.id !== side?.id) setSideId(owner.id);
-        setPicked((p) => ({ ...p, [owner.id]: name }));
-        setReadCard(null);
-        setActiveCard(null);
-      }}
+      onPick={pickActor}
       hudOf={(n) => hudOf?.(n)}
       hpOf={(log) => defense?.health(log)}
       order={combat?.clock.next ?? []}
@@ -630,12 +646,41 @@ export function SessionActionsPanel({
       </>
     ) : null;
 
+  // The turn buttons: their own column beside the cards with a margin, else at the end of the
+  // filter row, so the cards take the room.
+  const turnNode = gmOnly ? null : (
+    <HudTurn
+      inCombat={!!combat}
+      canRest={!side?.foe}
+      {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
+      onRest={(kind) => {
+        const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
+        if (rest) handleCardClick(rest);
+      }}
+      provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
+      {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
+      warn={warnOA}
+      onWarn={(on) => {
+        setWarnOA(on);
+        try {
+          window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
+        } catch {
+          // Nowhere to keep it: back on next time.
+        }
+      }}
+    />
+  );
+  // Without a margin for the roster, who acts is chosen from under the portrait.
+  const pickerProps = { roster: rosterNode, onStep: stepActor, closeSignal: pickTick };
+  const picker = !gmOnly && !inMargin ? <HudPicker {...pickerProps} /> : null;
+  const actorLabel = actor === GM ? "GM · Party" : actor === PARTY ? "Party" : (actor ?? "Choose");
+
   return (
     <div
       ref={panelRef}
       className={`lonelog-actions-panel${inMargin ? " is-in-margin" : ""}${gmOnly ? " is-gm-only" : ""}`}
     >
-      {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : rosterNode}
+      {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : null}
       <div className="hud-main">
         {showCharacter && (
           <HudCharacter
@@ -648,12 +693,16 @@ export function SessionActionsPanel({
             foe={!!side?.foe}
             {...(onMakeNamedIcon ? { onMakeIcon: onMakeNamedIcon } : {})}
             {...(switches ? { extras: switches } : {})}
+            {...(picker ? { picker } : {})}
+            {...(awayNote ? { awayNote } : {})}
           />
         )}
         <Hotbar
           key={`${side?.id}:${actor}`}
           stacks={castable}
-          {...(awayNote ? { awayNote } : {})}
+          {...(awayNote && !showCharacter ? { awayNote } : {})}
+          {...(picker && !showCharacter ? { lead: <HudPicker {...pickerProps} label={actorLabel} /> } : {})}
+          {...(turnNode && !inMargin ? { tail: turnNode } : {})}
           resources={resourcesNow}
           {...(iconFor ? { iconFor } : {})}
           {...(onMakeIcon ? { onMakeIcon } : {})}
@@ -661,28 +710,7 @@ export function SessionActionsPanel({
           onPlay={handleCardClick}
           {...(!showCharacter && switches ? { extras: switches } : {})}
         />
-        {!gmOnly && (
-          <HudTurn
-            inCombat={!!combat}
-            canRest={!side?.foe}
-            {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
-            onRest={(kind) => {
-              const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
-              if (rest) handleCardClick(rest);
-            }}
-            provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
-            {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
-            warn={warnOA}
-            onWarn={(on) => {
-              setWarnOA(on);
-              try {
-                window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
-              } catch {
-                // Nowhere to keep it: back on next time.
-              }
-            }}
-          />
-        )}
+        {inMargin && turnNode}
       </div>
       {readCard && (
         <PassivePopover

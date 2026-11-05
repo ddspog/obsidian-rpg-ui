@@ -54,6 +54,8 @@ import { parse as parseYaml } from "yaml";
 import { LazyMount } from "lib/components/session-log/lazy-mount";
 import { ProseView } from "lib/components/session-log/prose-view";
 import { LogSidebar } from "lib/components/session-log/log-sidebar";
+import { LogTrail } from "lib/components/session-log/log-trail";
+import { logTrails } from "lib/domains/session-log/log-trails";
 import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
 import {
@@ -3401,6 +3403,10 @@ function SessionLogRoot({
   // below the prose instead of clipping it off the edge.
   const [sidebarPx, setSidebarPx] = React.useState<number | null>(null);
   const [stacked, setStacked] = React.useState(false);
+  // The Log mixed into the prose (no margin): which runs are open, or all of them.
+  const [trailsAll, setTrailsAll] = React.useState(false);
+  const [trailOpen, setTrailOpen] = React.useState<Record<string, boolean>>({});
+  const trails = React.useMemo(() => logTrails(scenes, sidebarItems), [scenes, sidebarItems]);
 
   React.useEffect(() => {
     const layout = layoutRef.current;
@@ -3615,6 +3621,9 @@ function SessionLogRoot({
 
   const handleDotClick = (id: number) => {
     setSidebarOpen(true);
+    // Mixed into the prose: open the run the entry is in, so it can be shown.
+    const key = [...trails].find(([, items]) => items.some((i) => i.id === id))?.[0];
+    if (key) setTrailOpen((o) => ({ ...o, [key]: true }));
     clickTick.current += 1;
     setSelection({ id, side: "sidebar", n: clickTick.current });
   };
@@ -3737,17 +3746,49 @@ function SessionLogRoot({
   };
 
   const hasActions = pcStacks.size > 0 || foeStacks.size > 0 || gmStacks.length > 0;
-  // The bar's Log: opens or closes it, and on a phone, where it stacks under the prose, brings it into view.
+  // The bar's Log. With a margin it opens or closes the Log beside the prose. Without one the Log
+  // is mixed into the prose, under each passage: closed, then its runs as one line each, then all
+  // of them open.
   const toggleLogFromBar = () => {
-    const opening = !sidebarOpen;
-    setSidebarOpen(opening);
-    if (opening && window.matchMedia?.("(max-width: 600px)").matches) {
-      window.setTimeout(() => {
-        layoutRef.current
-          ?.querySelector(".lonelog-sidebar")
-          ?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-      }, 60);
+    if (!stacked) {
+      setSidebarOpen(!sidebarOpen);
+      return;
     }
+    if (!sidebarOpen) {
+      setTrailsAll(false);
+      setTrailOpen({});
+      setSidebarOpen(true);
+    } else if (!trailsAll) setTrailsAll(true);
+    else {
+      setTrailsAll(false);
+      setTrailOpen({});
+      setSidebarOpen(false);
+    }
+  };
+  const logMixed = stacked && sidebarOpen;
+  const logLabel = !logMixed ? "Log" : trailsAll ? "Log ▾" : "Log ▸";
+  const trailFor = (key: string) => {
+    const items = trails.get(key);
+    if (!logMixed || !items || items.length === 0) return null;
+    const open = trailsAll || !!trailOpen[key];
+    return (
+      <LogTrail
+        items={items}
+        open={open}
+        onToggle={() => setTrailOpen((o) => ({ ...o, [key]: !open }))}
+        selectedId={selection?.id ?? null}
+        onSelect={handleSidebarClick}
+        registerAnchor={registerSidebar}
+        sourcePath={sourcePath}
+        sceneEdits={sceneEdits}
+        onSceneChange={handleSceneChange}
+        dieEdits={dieEdits}
+        onDieChange={handleDieChange}
+        onResultChange={handleResultChange}
+        onTokenChange={handleTokenChange}
+        onChoice={onChoice}
+      />
+    );
   };
   const selectedId = selection?.id ?? null;
 
@@ -3809,15 +3850,15 @@ function SessionLogRoot({
                       Save
                     </button>
                   )}
-                  {!sidebarOpen && (
+                  {(!sidebarOpen || logMixed) && (
                     <button
                       type="button"
                       className="lonelog-log-toggle"
-                      aria-pressed={false}
-                      aria-label="Open log"
-                      onClick={() => setSidebarOpen(true)}
+                      aria-pressed={logMixed}
+                      aria-label={logMixed ? (trailsAll ? "Close the log" : "Open every log entry") : "Open log"}
+                      onClick={toggleLogFromBar}
                     >
-                      Log
+                      {logLabel}
                     </button>
                   )}
                 </div>
@@ -3853,10 +3894,11 @@ function SessionLogRoot({
                 registerAnchor={registerProse}
                 {...(hasBattle ? { renderTurnMap, onSelectStep: goToStep } : {})}
                 partyName={partyName}
+                renderTrail={trailFor}
               />
             </div>
           </div>
-          {sidebarOpen && (
+          {sidebarOpen && !stacked && (
             <LogSidebar
               items={sidebarItems}
               onClose={() => setSidebarOpen(false)}
@@ -3882,6 +3924,7 @@ function SessionLogRoot({
             bar={{
               hasLog: sidebarItems.length > 0,
               logOpen: sidebarOpen,
+              logLabel,
               onToggleLog: toggleLogFromBar,
               onLatest: goToLastBlock,
               dirty: isDirty,

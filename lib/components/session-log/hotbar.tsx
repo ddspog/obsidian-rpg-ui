@@ -42,6 +42,10 @@ interface HotbarProps {
   extras?: React.ReactNode;
   /** Why some cards are left out (spells that can't be cast with what's in hand). */
   awayNote?: string;
+  /** At the start of the top row: the actor picker, when there is no portrait to carry it. */
+  lead?: React.ReactNode;
+  /** At the end of the filter row: the turn buttons (Rest, End turn), so the cards take their column. */
+  tail?: React.ReactNode;
 }
 
 /** A card's tab, by where it comes from — BG3's Common · class · Items · Passives. */
@@ -223,6 +227,8 @@ export function Hotbar({
   onMakeIcon,
   extras,
   awayNote,
+  lead,
+  tail,
 }: HotbarProps) {
   const [tab, setTab] = useState("All");
   // A tile's menu: make its icon in the image studio.
@@ -349,8 +355,9 @@ export function Hotbar({
 
   return (
     <section className="rpg-hotbar">
-      {(everything.length > 0 || extras) && (
+      {(everything.length > 0 || extras || lead) && (
         <div className="rpg-hotbar-pills" role="toolbar" aria-label="Resources — pick one to see what spends it">
+          {lead && <div className="rpg-hotbar-lead">{lead}</div>}
           {[economy, slots, uses, states, mechanisms]
             .filter((g) => g.length > 0)
             .map((group, gi) => (
@@ -429,20 +436,25 @@ export function Hotbar({
         </button>
       </div>
       {awayNote && <p className="rpg-hotbar-away">{awayNote}</p>}
-      {tabNames.length > 1 && (
-        <div className="rpg-hotbar-tabs" role="tablist" aria-label="Where a card comes from">
-          {["All", ...tabNames].map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              className={`rpg-hotbar-tab${tab === t ? " is-active" : ""}`}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
+      {(tabNames.length > 1 || tail) && (
+        <div className="rpg-hotbar-foot">
+          {tabNames.length > 1 && (
+            <div className="rpg-hotbar-tabs" role="tablist" aria-label="Where a card comes from">
+              {["All", ...tabNames].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t}
+                  className={`rpg-hotbar-tab${tab === t ? " is-active" : ""}`}
+                  onClick={() => setTab(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {tail && <div className="rpg-hotbar-tail">{tail}</div>}
         </div>
       )}
     </section>
