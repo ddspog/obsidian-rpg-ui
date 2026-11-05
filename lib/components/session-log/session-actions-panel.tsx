@@ -219,7 +219,7 @@ const PARTY_CARDS: Array<{ stack: string; kind: PartyCardKind; name: string; ico
 
 /**
  * A side of the table: who it holds, each with their card stacks. The drawer
- * shows one side at a time — Party (the GM and the PCs) and Foes today; an
+ * shows one side at a time — Party (the PCs) and Foes (the GM, then the foes) today; an
  * NPCs side is one more entry here.
  */
 interface Side {
@@ -302,15 +302,17 @@ export function SessionActionsPanel({
     })),
   }));
   const allSides: Side[] = [
+    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: (a: string) => pcStacks.get(a) ?? [] },
+    // The GM plays the world, foes included: its cards (and the party's, the table's) head the Foes side, which
+    // so stays there out of a fight.
     {
-      id: "party",
-      label: "Party",
-      // The GM's cards and the party's together, as one: the table.
-      actors: [GM, ...pcStacks.keys()],
+      id: "foes",
+      label: "Foes",
+      actors: [GM, ...foes],
       stacksFor: (a: string) =>
-        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (pcStacks.get(a) ?? []),
+        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (foeStacks.get(a) ?? []),
+      foe: true,
     },
-    { id: "foes", label: "Foes", actors: foes, stacksFor: (a: string) => foeStacks.get(a) ?? [], foe: true },
   ];
   const sides = allSides.filter((s) => s.actors.length > 0);
   // The turn, round and end cards only mean something in a fight; starting one
@@ -593,7 +595,7 @@ export function SessionActionsPanel({
     setPickTick((n) => n + 1);
     setArrival((a) => ({ tick: (a?.tick ?? 0) + 1, dir: stepDir.current }));
     // For a screen reader: who acts now.
-    setSaid(`${name === GM ? "GM · Party" : name} acts`);
+    setSaid(`${name === GM ? "GM" : name} acts`);
     stepDir.current = 0;
   };
   // The previous or next actor on this side, the GM first where the side holds it: a step never
@@ -616,13 +618,19 @@ export function SessionActionsPanel({
   const stepTarget = (dir: -1 | 1) => {
     const to = stepTo(dir);
     if (!to) return undefined;
-    const label = to === GM ? "GM · Party" : to;
+    const label = to === GM ? "GM" : to;
     return { name: label, face: to === GM ? <SigilFace name={to} /> : <Face info={hudOf?.(to)} name={to} /> };
   };
 
   const rosterNode = (
     <HudRoster
-      sides={sides.map((x) => ({ id: x.id, label: x.label, count: x.actors.length, ...(x.foe ? { foe: true } : {}) }))}
+      // The count is of characters: the GM heading the Foes isn't one.
+      sides={sides.map((x) => ({
+        id: x.id,
+        label: x.label,
+        count: x.actors.filter((n) => n !== GM && n !== PARTY).length,
+        ...(x.foe ? { foe: true } : {}),
+      }))}
       sideId={side?.id ?? ""}
       onSide={(id) => {
         setSideId(id);
@@ -630,10 +638,8 @@ export function SessionActionsPanel({
         setActiveCard(null);
       }}
       foe={!!side?.foe}
-      // GM and Party are there on whichever side is shown: they belong to the side that has them.
-      specials={[GM]
-        .filter((n) => sides.some((x) => x.actors.includes(n)))
-        .map((n) => ({ name: n, label: "GM · Party" }))}
+      // The GM heads the side that holds it (the Foes).
+      specials={[GM].filter((n) => side?.actors.includes(n)).map((n) => ({ name: n, label: "GM" }))}
       actors={(side?.actors ?? [])
         .filter((n) => n !== GM && n !== PARTY)
         .map((n) => ({ name: n, log: side?.stacksFor(n)[0]?.cards[0]?.actor ?? n }))}
@@ -671,7 +677,8 @@ export function SessionActionsPanel({
   const turnNode = gmOnly ? null : (
     <HudTurn
       inCombat={!!combat}
-      canRest={!side?.foe}
+      // The party rests: from any of its own, or from the GM, who holds the table's cards.
+      canRest={!side?.foe || actor === GM}
       {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
       onRest={(kind) => {
         const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
@@ -691,7 +698,7 @@ export function SessionActionsPanel({
     />
   );
   // Without a margin for the roster, who acts is chosen from under the portrait.
-  const actorLabel = actor === GM ? "GM · Party" : actor === PARTY ? "Party" : (actor ?? "Choose");
+  const actorLabel = actor === GM ? "GM" : actor === PARTY ? "Party" : (actor ?? "Choose");
   const picker =
     !gmOnly && !inMargin ? (
       <HudPicker
