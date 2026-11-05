@@ -8,8 +8,8 @@ import { economyResources, type HotbarResource, type TileKind } from "../../doma
 import { Hotbar } from "./hotbar";
 import { castBlock } from "../../domains/session-log/casting";
 import { DrawerContext } from "./bottom-drawer";
-import { HudCharacter } from "./hud-character";
-import { HudRoster } from "./hud-roster";
+import { HudCharacter, HudStandIn, type Arrival } from "./hud-character";
+import { Face, HudRoster, SigilFace } from "./hud-roster";
 import { HudPicker } from "./hud-picker";
 import { HudTurn } from "./hud-turn";
 import { LucideIcon } from "./lucide-icon";
@@ -578,6 +578,9 @@ export function SessionActionsPanel({
 
   // Who acts: a face or chip in the roster, or a step from the picker under the portrait.
   const [pickTick, setPickTick] = useState(0);
+  const [arrival, setArrival] = useState<Arrival | undefined>();
+  const [said, setSaid] = useState("");
+  const stepDir = useRef<-1 | 0 | 1>(0);
   const pickActor = (name: string) => {
     drawer?.expand();
     // GM or Party: on the side that holds it, whichever is shown now.
@@ -588,16 +591,33 @@ export function SessionActionsPanel({
     setReadCard(null);
     setActiveCard(null);
     setPickTick((n) => n + 1);
+    setArrival((a) => ({ tick: (a?.tick ?? 0) + 1, dir: stepDir.current }));
+    // For a screen reader: who acts now.
+    setSaid(`${name === GM ? "GM · Party" : name} acts`);
+    stepDir.current = 0;
   };
-  // The previous or next actor on this side, the GM first.
+  // The previous or next actor on this side, the GM first where the side holds it: a step never
+  // crosses to the other side.
+  const stepOrder = [
+    ...[GM].filter((n) => side?.actors.includes(n)),
+    ...(side?.actors ?? []).filter((n) => n !== GM && n !== PARTY),
+  ];
+  const stepTo = (dir: -1 | 1): string | undefined => {
+    if (stepOrder.length < 2) return undefined;
+    const at = Math.max(0, stepOrder.indexOf(actor ?? ""));
+    return stepOrder[(at + dir + stepOrder.length) % stepOrder.length];
+  };
   const stepActor = (dir: -1 | 1) => {
-    const order = [
-      ...[GM].filter((n) => sides.some((x) => x.actors.includes(n))),
-      ...(side?.actors ?? []).filter((n) => n !== GM && n !== PARTY),
-    ];
-    if (order.length === 0) return;
-    const at = Math.max(0, order.indexOf(actor ?? ""));
-    pickActor(order[(at + dir + order.length) % order.length]);
+    const to = stepTo(dir);
+    if (!to) return;
+    stepDir.current = dir;
+    pickActor(to);
+  };
+  const stepTarget = (dir: -1 | 1) => {
+    const to = stepTo(dir);
+    if (!to) return undefined;
+    const label = to === GM ? "GM · Party" : to;
+    return { name: label, face: to === GM ? <SigilFace name={to} /> : <Face info={hudOf?.(to)} name={to} /> };
   };
 
   const rosterNode = (
@@ -671,9 +691,18 @@ export function SessionActionsPanel({
     />
   );
   // Without a margin for the roster, who acts is chosen from under the portrait.
-  const pickerProps = { roster: rosterNode, onStep: stepActor, closeSignal: pickTick };
-  const picker = !gmOnly && !inMargin ? <HudPicker {...pickerProps} /> : null;
   const actorLabel = actor === GM ? "GM · Party" : actor === PARTY ? "Party" : (actor ?? "Choose");
+  const picker =
+    !gmOnly && !inMargin ? (
+      <HudPicker
+        roster={rosterNode}
+        onStep={stepActor}
+        prev={stepTarget(-1)}
+        next={stepTarget(1)}
+        current={actorLabel}
+        closeSignal={pickTick}
+      />
+    ) : null;
 
   return (
     <div
@@ -681,6 +710,9 @@ export function SessionActionsPanel({
       className={`lonelog-actions-panel${inMargin ? " is-in-margin" : ""}${gmOnly ? " is-gm-only" : ""}`}
     >
       {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : null}
+      <span className="hud-picker-live" aria-live="polite">
+        {said}
+      </span>
       <div className="hud-main">
         {showCharacter && (
           <HudCharacter
@@ -695,13 +727,22 @@ export function SessionActionsPanel({
             {...(switches ? { extras: switches } : {})}
             {...(picker ? { picker } : {})}
             {...(awayNote ? { awayNote } : {})}
+            arrival={arrival}
+          />
+        )}
+        {!showCharacter && picker && (
+          <HudStandIn
+            name={actor ?? ""}
+            label={actorLabel}
+            info={actor ? hudOf?.(actor) : undefined}
+            picker={picker}
+            arrival={arrival}
           />
         )}
         <Hotbar
           key={`${side?.id}:${actor}`}
           stacks={castable}
           {...(awayNote && !showCharacter ? { awayNote } : {})}
-          {...(picker && !showCharacter ? { lead: <HudPicker {...pickerProps} label={actorLabel} /> } : {})}
           {...(turnNode && !inMargin ? { tail: turnNode } : {})}
           {...(drawer?.tools && !inMargin ? { end: drawer.tools } : {})}
           resources={resourcesNow}
