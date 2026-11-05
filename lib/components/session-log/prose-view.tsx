@@ -17,6 +17,7 @@ import { InlineMarkdown } from "./inline-markdown";
 import { Swords } from "lucide-react";
 import { actorLabel } from "lib/domains/session-log/prose-model";
 import type { ProseFragment, ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
+import { headTrailKey, nodeTrailKey, TRAIL_START } from "lib/domains/session-log/log-trails";
 
 export interface ProseViewProps {
   scenes: ProseScene[];
@@ -35,6 +36,8 @@ export interface ProseViewProps {
   partyName?: (actor: string) => string | undefined;
   /** A journey's map, drawn where it starts (`startId`: its `[TRAVEL]`). */
   renderTravelMap?: (startId: number) => React.ReactNode;
+  /** The Log mixed into the prose: what goes at a place (`log-trails.ts` keys), drawn after it. */
+  renderTrail?: (key: string) => React.ReactNode;
 }
 
 /** A stable hue (0-359) for a speaker's name, so each voice keeps its own colour through the log. */
@@ -54,13 +57,20 @@ export function ProseView({
   onSelectStep,
   partyName,
   renderTravelMap,
+  renderTrail,
 }: ProseViewProps) {
   if (scenes.length === 0) {
-    return <div className="lonelog-prose-empty">Nothing to narrate yet.</div>;
+    return (
+      <>
+        <div className="lonelog-prose-empty">Nothing to narrate yet.</div>
+        {renderTrail?.(TRAIL_START)}
+      </>
+    );
   }
 
   return (
     <div className="lonelog-prose-doc">
+      {renderTrail?.(TRAIL_START)}
       {scenes.map((scene, si) => (
         <section className="lonelog-prose-scene" key={si}>
           {scene.head && (
@@ -80,19 +90,22 @@ export function ProseView({
               )}
             </h4>
           )}
+          {scene.head && renderTrail?.(headTrailKey(si))}
           {scene.nodes.map((node, ni) => (
-            <ProseNodeView
-              key={ni}
-              node={node}
-              sourcePath={sourcePath}
-              selectedId={selectedId}
-              onSelectSource={onSelectSource}
-              registerAnchor={registerAnchor}
-              {...(renderTurnMap ? { renderTurnMap } : {})}
-              {...(onSelectStep ? { onSelectStep } : {})}
-              {...(partyName ? { partyName } : {})}
-              {...(renderTravelMap ? { renderTravelMap } : {})}
-            />
+            <React.Fragment key={ni}>
+              <ProseNodeView
+                node={node}
+                sourcePath={sourcePath}
+                selectedId={selectedId}
+                onSelectSource={onSelectSource}
+                registerAnchor={registerAnchor}
+                {...(renderTurnMap ? { renderTurnMap } : {})}
+                {...(onSelectStep ? { onSelectStep } : {})}
+                {...(partyName ? { partyName } : {})}
+                {...(renderTravelMap ? { renderTravelMap } : {})}
+              />
+              {renderTrail?.(nodeTrailKey(si, ni))}
+            </React.Fragment>
           ))}
         </section>
       ))}

@@ -386,6 +386,22 @@
     min-height: 0;
   }
 
+  /* The filter pills on one row that scrolls sideways: three wrapped rows were a quarter of the drawer. */
+  .lonelog-bottom-drawer .rpg-hotbar-tabs {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .lonelog-bottom-drawer .rpg-hotbar-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lonelog-bottom-drawer .rpg-hotbar-tabs > button {
+    flex: none;
+  }
+
   /* Never more than two rows of tiles: a third row was a band of empty drawer under every other group. */
   .lonelog-bottom-drawer .rpg-hotbar-tiles {
     --rows: 2 !important;

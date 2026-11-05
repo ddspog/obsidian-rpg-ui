@@ -6,6 +6,8 @@ export interface DrawerBar {
   /** Whether the log has a Log (sidebar) and a last block to jump to. */
   hasLog: boolean;
   logOpen: boolean;
+  /** What the Log button reads ("Log", or "Log ▸" / "Log ▾" when it is mixed into the prose). */
+  logLabel?: string;
   onToggleLog: () => void;
   onLatest: () => void;
   /** Edits not saved yet: Save and Undo show above the bar. */
@@ -166,7 +168,7 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
               title={bar.logOpen ? "Close the log" : "Open the log"}
             >
               <LucideIcon name="AlignLeft" size="0.9rem" strokeWidth={2} />
-              Log
+              {bar.logLabel ?? "Log"}
             </button>
           )}
           {bar.hasLog && (
@@ -213,7 +215,7 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
             </button>
             {bar.hasLog && (
               <button type="button" aria-pressed={bar.logOpen} onClick={bar.onToggleLog}>
-                Log
+                {bar.logLabel ?? "Log"}
               </button>
             )}
             {bar.hasLog && (

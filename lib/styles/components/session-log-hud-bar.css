@@ -1612,3 +1612,184 @@ body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile.has-art .rpg-
 .lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-character)) > .hud-turn {
   grid-column: 2;
 }
+
+/* ═══ Who acts, chosen from the portrait (no margin for the roster) ══════════
+   A ‹ ▾ › strip under the portrait, or at the head of the cards for the GM;
+   ▾ opens the roster in a pop-up above it (a sheet from the bottom on a phone). */
+.hud-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.hud-character > .hud-picker {
+  margin: 0.15rem 0 0.25rem;
+}
+
+.hud-picker button.hud-picker-step,
+.hud-picker button.hud-picker-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+
+.hud-picker button.hud-picker-step:hover,
+.hud-picker button.hud-picker-open:hover,
+.hud-picker button.hud-picker-open[aria-expanded="true"] {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.hud-picker-label {
+  max-width: 8rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: var(--font-semibold);
+}
+
+.rpg-hotbar-lead {
+  margin-right: auto;
+}
+
+.hud-picker-pop {
+  position: fixed;
+  z-index: var(--layer-menu, 60);
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: 60vh;
+  overflow: auto;
+  padding: 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  box-shadow: var(--shadow-l, 0 0.4rem 1.4rem rgba(0, 0, 0, 0.25));
+}
+
+.hud-picker-pop .hud-roster-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: auto;
+}
+
+.hud-picker-pop .hud-roster-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hud-picker-pop ul.hud-faces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.is-mobile .hud-picker-pop {
+  left: 0 !important;
+  right: 0;
+  bottom: 0 !important;
+  width: auto;
+  border-radius: 12px 12px 0 0;
+  padding: 0.8rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.is-mobile .hud-picker button.hud-picker-step,
+body.is-mobile .hud-picker button.hud-picker-open {
+  min-width: 2rem;
+  height: 2rem;
+}
+
+/* ═══ Rest with the filters, the cards in its column ═══════════════════════ */
+.rpg-hotbar-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rpg-hotbar-foot > .rpg-hotbar-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rpg-hotbar-tail {
+  flex: none;
+  margin-left: auto;
+}
+
+.rpg-hotbar-tail .hud-turn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  width: auto;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn,
+.rpg-hotbar-tail button.hud-endturn {
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn > span,
+.rpg-hotbar-tail button.hud-endturn > span {
+  display: none;
+}
+
+.rpg-hotbar-tail menu.hud-rest-menu {
+  top: auto;
+  bottom: calc(100% + 0.25rem);
+  right: 0;
+  left: auto;
+}
+
+/* No turn column: the cards take it (and the character's, for the GM). */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-turn)) {
+  grid-template-columns: 6rem minmax(0, 1fr);
+}
+
+.lonelog-actions-panel:not(.is-in-margin) .hud-main:not(:has(> .hud-turn)):not(:has(> .hud-character)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ═══ Spells the hands keep from casting: a badge on the hands ══════════════ */
+.hud-hands {
+  position: relative;
+}
+
+.hud-hands-away {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  display: grid;
+  place-items: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  border: 1px dashed var(--text-faint);
+  border-radius: 999px;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: var(--font-semibold);
+  line-height: 1;
+  cursor: help;
+}

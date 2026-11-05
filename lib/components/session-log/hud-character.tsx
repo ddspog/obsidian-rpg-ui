@@ -28,6 +28,10 @@ interface HudCharacterProps {
   foe?: boolean;
   /** Make an icon for a held item or a loadout (right-click it). */
   onMakeIcon?: (what: { name: string; text?: string; tone?: IconTone }) => void;
+  /** Under the portrait: choose who acts, when the roster has no margin to sit in. */
+  picker?: React.ReactNode;
+  /** What the hands keep from casting ("1 spell put away — no free hand"): a badge on them. */
+  awayNote?: string;
 }
 
 /** A small square that can be given an icon of its own: right-click → the image studio. */
@@ -67,7 +71,19 @@ function Slot({
   );
 }
 
-export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras, foe, onMakeIcon }: HudCharacterProps) {
+export function HudCharacter({
+  name,
+  info,
+  hp,
+  ac,
+  onOpenSheet,
+  onEquip,
+  extras,
+  foe,
+  onMakeIcon,
+  picker,
+  awayNote,
+}: HudCharacterProps) {
   const pct = hp && hp.max > 0 ? Math.max(0, Math.min(100, (hp.current / hp.max) * 100)) : undefined;
   const hands = info.hands ?? {};
   return (
@@ -107,6 +123,7 @@ export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras,
           </span>
         )}
       </button>
+      {picker}
       {/* The lower half: what's in the two hands, the loadouts to change it, the switches. */}
       <div className="hud-gear">
         {!foe && (
@@ -114,6 +131,12 @@ export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras,
             <div className="hud-hands" role="group" aria-label="In hand">
               <Slot item={hands.main} label="Main hand" {...(onMakeIcon ? { onMakeIcon } : {})} />
               <Slot item={hands.off} label="Off hand" {...(onMakeIcon ? { onMakeIcon } : {})} />
+              {awayNote && (
+                // Spells it can't cast for want of a free hand: a small count on the hands.
+                <span className="hud-hands-away" title={awayNote} aria-label={awayNote} tabIndex={0}>
+                  {awayNote.match(/^\d+/)?.[0] ?? "!"}
+                </span>
+              )}
             </div>
             {info.loadouts && info.loadouts.length > 0 && (
               <div className="hud-loadouts" role="group" aria-label="Loadouts">
