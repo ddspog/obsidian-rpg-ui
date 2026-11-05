@@ -387,19 +387,40 @@
   }
 
   /* The filter pills on one row that scrolls sideways: three wrapped rows were a quarter of the drawer. */
-  .lonelog-bottom-drawer .rpg-hotbar-tabs {
+  .lonelog-bottom-drawer .rpg-hotbar-foot {
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .lonelog-bottom-drawer .rpg-hotbar-tabs::-webkit-scrollbar {
+  .lonelog-bottom-drawer .rpg-hotbar-foot::-webkit-scrollbar {
     display: none;
   }
 
-  .lonelog-bottom-drawer .rpg-hotbar-tabs > button {
+  .lonelog-bottom-drawer .rpg-hotbar-tabs > button,
+  .lonelog-bottom-drawer .rpg-hotbar-foot > .rpg-hotbar-tail {
     flex: none;
+  }
+
+  /* Beside a character the hotbar has a pill row's worth of room under the pills (the portrait column is taller):
+     two rows of pills that scroll together fill it, and show nearly all of them. */
+  .lonelog-bottom-drawer .hud-main:has(> .hud-character) .rpg-hotbar-foot {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-columns: max-content;
+    justify-content: start;
+    gap: 0.25rem 0.3rem;
+  }
+
+  /* Rest scrolls with the pills, so its menu opens over the drawer's foot, where the row can't clip it. */
+  .lonelog-bottom-drawer .rpg-hotbar-tail menu.hud-rest-menu {
+    position: fixed;
+    top: auto;
+    right: 0.75rem;
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    left: 0.75rem;
   }
 
   /* Never more than two rows of tiles: a third row was a band of empty drawer under every other group. */

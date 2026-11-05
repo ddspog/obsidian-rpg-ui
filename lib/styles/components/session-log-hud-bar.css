@@ -1614,90 +1614,580 @@ body:not(.is-mobile) .lonelog-bottom-drawer button.rpg-hotbar-tile.has-art .rpg-
 }
 
 /* ═══ Who acts, chosen from the portrait (no margin for the roster) ══════════
-   A ‹ ▾ › strip under the portrait, or at the head of the cards for the GM;
-   ▾ opens the roster in a pop-up above it (a sheet from the bottom on a phone). */
+   A joined ‹ │ ▾ │ › pill under the portrait (a sigil stands in for the GM and the Party, so it never
+   moves); ▾ grows the roster above it, on the drawer's parchment (a sheet from the bottom on a phone). */
 .hud-picker {
+  position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 0.15rem;
-}
-
-.hud-character > .hud-picker {
-  margin: 0.15rem 0 0.25rem;
+  align-self: center;
+  margin: 0.2rem auto 0.3rem;
+  border: 1px solid var(--log-rule);
+  border-radius: 999px;
+  background: light-dark(#f6f0e2, #2e2923);
 }
 
 .hud-picker button.hud-picker-step,
 .hud-picker button.hud-picker-open {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  min-width: 1.6rem;
+  min-width: 1.75rem;
   height: 1.6rem;
-  padding: 0 0.35rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 999px;
-  background: var(--background-primary);
+  padding: 0 0.3rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.hud-picker button.hud-picker-step:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.hud-picker button.hud-picker-step:last-of-type {
+  border-radius: 0 999px 999px 0;
+}
+
+/* Hairlines between the three. */
+.hud-picker button.hud-picker-open {
+  border-inline: 1px solid var(--log-rule);
+}
+
+.hud-picker button.hud-picker-step:hover,
+.hud-picker button.hud-picker-open:hover {
+  background: light-dark(#ece4d3, #3a342c);
+  color: var(--text-normal);
+}
+
+.hud-picker button.hud-picker-step:active,
+.hud-picker button.hud-picker-open[aria-expanded="true"] {
+  color: var(--log-ink);
+}
+
+.hud-picker button.hud-picker-open[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.hud-picker button.hud-picker-open svg {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-picker button:focus-visible {
+  outline: 2px solid var(--log-ink);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+/* Who a step goes to, a small face over the arrow on hover (a mouse only). */
+.hud-picker-ghost {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  overflow: hidden;
+  border: 1.5px solid var(--log-rule);
+  border-radius: 50%;
+  background: var(--log-surface);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px) scale(0.9);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.hud-picker-ghost .hud-face-img {
+  transform: scale(1.7);
+}
+
+.hud-picker-ghost .hud-face-token {
+  font-size: 0.8rem;
+}
+
+@media (hover: hover) {
+  .hud-picker button.hud-picker-step:hover .hud-picker-ghost {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.hud-picker-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The pop-up: the drawer's parchment, one soft shadow, a caret to the ▾ it grew from. */
+.hud-picker-pop {
+  position: fixed;
+  z-index: var(--layer-menu, 60);
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: 60vh;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--log-surface);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.4) inset,
+    0 10px 28px -6px rgb(40 26 8 / 0.35),
+    0 2px 6px rgb(40 26 8 / 0.15);
+  transform-origin: var(--caret-x, 1.5rem) calc(100% + 0.6rem);
+}
+
+.hud-picker-pop::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: var(--caret-x, 1.5rem);
+  width: 0.7rem;
+  height: 0.7rem;
+  background: var(--log-surface);
+  box-shadow: 3px 3px 5px -2px rgb(40 26 8 / 0.2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.hud-picker-pop[data-state="open"] {
+  animation: hud-pop-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-picker-pop[data-state="closing"] {
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+  transition:
+    opacity 0.1s ease-in,
+    transform 0.1s ease-in;
+  pointer-events: none;
+}
+
+@keyframes hud-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+/* Its faces arrive one after another, 12ms apart. */
+.hud-picker-pop[data-state="open"] ul.hud-faces > li {
+  animation: hud-face-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 12ms + 30ms);
+}
+
+@keyframes hud-face-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.hud-picker-pop .hud-roster-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: auto;
+}
+
+.hud-picker-pop .hud-roster-head {
+  display: flex;
+  align-items: center;
+}
+
+.hud-picker-pop .hud-roster-head .actions-sides {
+  flex: 1 1 auto;
+}
+
+.hud-picker-pop ul.hud-faces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.6rem, 1fr));
+  gap: 0.45rem 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The scrim and the handle are the phone's. */
+.hud-picker-scrim,
+.hud-picker-handle {
+  display: none;
+}
+
+/* ═══ The faces: GM · Party as one of them, a ring for who acts, a notch for who is next ═══ */
+button.hud-face.is-special .hud-face-frame.hud-face-sigil {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, var(--interactive-accent) 22%, var(--log-surface, var(--background-primary))),
+    color-mix(in srgb, var(--interactive-accent) 8%, var(--log-surface, var(--background-primary)))
+  );
+}
+
+.hud-sigil {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: light-dark(#4b2f9a, #cdbfff);
+}
+
+button.hud-face.is-active .hud-face-frame {
+  border-color: var(--interactive-accent);
+  box-shadow:
+    0 0 0 2px var(--interactive-accent),
+    0 2px 6px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+button.hud-face:focus-visible {
+  outline: none;
+}
+
+/* Focus is dashed, so it never reads as the ring of whoever acts. */
+button.hud-face:focus-visible .hud-face-frame {
+  outline: 2px dashed var(--log-ink, var(--interactive-accent));
+  outline-offset: 3px;
+}
+
+/* Up next in a fight: a small notch under the face. */
+button.hud-face {
+  position: relative;
+}
+
+button.hud-face .hud-face-next {
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -0.1rem;
+  border: 0.3rem solid transparent;
+  border-top-color: var(--interactive-accent);
+  border-bottom: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transform: translateX(-50%);
+}
+
+.hud-roster ul.hud-faces .hud-face-frame + .hud-face-next {
+  position: relative;
+  left: auto;
+  align-self: center;
+  transform: none;
+}
+
+/* A foe at 0 hit points: down, faded, its bar a brick track. */
+button.hud-face.is-down .hud-face-frame {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+
+button.hud-face.is-down .hud-face-name {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+button.hud-face.is-down .hud-hpbar {
+  background: color-mix(in srgb, #c0524f 25%, transparent);
+}
+
+/* The foes' side changes the mood: a faint brick rim on every face, the switch tinted, not filled. */
+.hud-roster.is-foe-side button.hud-face .hud-face-frame {
+  border-color: color-mix(in srgb, #c0524f 45%, var(--log-rule, var(--background-modifier-border)));
+}
+
+.hud-roster.is-foe-side button.hud-face.is-active .hud-face-frame {
+  border-color: light-dark(#a8423f, #d9706d);
+  box-shadow:
+    0 0 0 2px light-dark(#a8423f, #d9706d),
+    0 2px 6px rgb(168 66 63 / 0.35);
+}
+
+.hud-roster .actions-side.is-foe.is-active {
+  background: light-dark(color-mix(in srgb, #c0524f 18%, #f6f0e2), color-mix(in srgb, #c0524f 30%, #24201c));
+  color: light-dark(#7c2a27, #f0b8b6);
+  box-shadow: inset 0 0 0 1px light-dark(#c0524f, #b04a47);
+}
+
+.hud-roster .actions-side.is-foe:focus-within {
+  box-shadow: inset 0 0 0 2px light-dark(#a8423f, #d9706d);
+}
+
+.hud-roster .actions-side-count {
+  opacity: 1;
+}
+
+.hud-roster .actions-side:not(.is-active) .actions-side-count {
+  color: var(--text-muted);
+}
+
+/* Switching sides cross-fades the faces. */
+.hud-picker-pop .hud-roster ul.hud-faces {
+  animation: hud-face-in 0.12s ease;
+}
+
+/* The picture-studio action: under the faces, never on one. */
+button.hud-roster-studio {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.35rem;
+  height: auto;
+  padding: 0.2rem 0.45rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
   box-shadow: none;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   cursor: pointer;
 }
 
-.hud-picker button.hud-picker-step:hover,
-.hud-picker button.hud-picker-open:hover,
-.hud-picker button.hud-picker-open[aria-expanded="true"] {
-  color: var(--text-normal);
-  background: var(--background-modifier-hover);
+/* In the margin's narrow rail: the icon alone, centred; its words are in the tooltip. */
+.hud-roster:not(.hud-picker-pop .hud-roster) button.hud-roster-studio {
+  align-self: center;
 }
 
-.hud-picker-label {
-  max-width: 8rem;
+.hud-roster:not(.hud-picker-pop .hud-roster) button.hud-roster-studio > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
+}
+
+button.hud-roster-studio:hover {
+  background: light-dark(#e3d9c2, #3a342c);
+  color: var(--text-normal);
+}
+
+/* ═══ The portrait greets who now acts: the ring drawn round it, the face settling, the name ═══ */
+@property --hud-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 360deg;
+}
+
+.hud-portrait-frame.is-arriving {
+  position: relative;
+}
+
+.hud-portrait-frame.is-arriving > :first-child {
+  animation: hud-arrive 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-portrait-frame.is-arriving[data-dir="1"] > :first-child {
+  animation-name: hud-arrive-right;
+}
+
+.hud-portrait-frame.is-arriving[data-dir="-1"] > :first-child {
+  animation-name: hud-arrive-left;
+}
+
+@keyframes hud-arrive {
+  from {
+    opacity: 0.35;
+    scale: 1.03;
+  }
+}
+
+@keyframes hud-arrive-right {
+  from {
+    opacity: 0.35;
+    translate: 8px 0;
+  }
+}
+
+@keyframes hud-arrive-left {
+  from {
+    opacity: 0.35;
+    translate: -8px 0;
+  }
+}
+
+.hud-portrait-frame.is-arriving::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(var(--interactive-accent) var(--hud-sweep), transparent 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  animation: hud-ring 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hud-ring {
+  0% {
+    --hud-sweep: 0deg;
+    opacity: 1;
+  }
+  40% {
+    --hud-sweep: 360deg;
+    opacity: 1;
+  }
+  100% {
+    --hud-sweep: 360deg;
+    opacity: 0;
+  }
+}
+
+/* The name, a moment, in the journal's heading face. */
+.hud-arrive-name {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 3;
+  padding: 0.6rem 0.2rem 0.2rem;
+  overflow: hidden;
+  background: linear-gradient(transparent, rgb(14 10 18 / 0.82) 55%);
+  color: #f6f0e2;
+  font-family: var(--h2-font, var(--font-text));
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-weight: var(--font-semibold);
+  opacity: 0;
+  pointer-events: none;
+  animation: hud-name 1.4s ease forwards;
 }
 
-.rpg-hotbar-lead {
-  margin-right: auto;
+@keyframes hud-name {
+  0% {
+    opacity: 0;
+    translate: 0 3px;
+  }
+  12%,
+  75% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
-.hud-picker-pop {
-  position: fixed;
-  z-index: var(--layer-menu, 60);
-  width: min(22rem, calc(100vw - 1rem));
-  max-height: 60vh;
-  overflow: auto;
-  padding: 0.6rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  background: var(--background-primary);
-  box-shadow: var(--shadow-l, 0 0.4rem 1.4rem rgba(0, 0, 0, 0.25));
-}
-
-.hud-picker-pop .hud-roster-card {
+/* ═══ A stand-in for whoever has no character card: a sigil, their name, the picker ═══ */
+.hud-character.is-stand-in .hud-portrait {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  width: auto;
+  align-items: stretch;
+  gap: 0.15rem;
+  cursor: default;
 }
 
-.hud-picker-pop .hud-roster-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.hud-picker-pop ul.hud-faces {
+.hud-character.is-stand-in .hud-portrait-frame {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  place-items: center;
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, var(--interactive-accent) 20%, var(--log-surface)),
+    color-mix(in srgb, var(--interactive-accent) 6%, var(--log-surface))
+  );
+}
+
+.hud-character.is-stand-in .hud-sigil {
+  width: 70%;
+  height: 70%;
+}
+
+/* As tall as a character's hit points and armor class, so the picker under it sits where theirs does. */
+.hud-character.is-stand-in .hud-portrait-hp {
+  justify-content: flex-end;
+  min-height: 1.25rem;
+}
+
+.hud-character.is-stand-in .hud-portrait-line small {
+  overflow: hidden;
+  color: var(--text-normal);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Without a margin the picker keeps one place for everyone: the column holds a character's height. */
+.lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+  min-height: 15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-picker-pop[data-state="open"],
+  .hud-picker-pop[data-state="open"] ul.hud-faces > li,
+  .hud-picker-pop .hud-roster ul.hud-faces,
+  .hud-portrait-frame.is-arriving > :first-child,
+  .hud-portrait-frame.is-arriving::after {
+    animation: none;
+  }
+
+  .hud-picker-pop[data-state="open"] {
+    animation: hud-fade 0.08s linear;
+  }
+
+  .hud-picker-pop[data-state="closing"] {
+    transform: none;
+  }
+
+  /* The name stays, without moving: shown, then gone. */
+  .hud-arrive-name {
+    animation: hud-name-still 1.4s steps(1, end) forwards;
+  }
+
+  .hud-picker-ghost,
+  .hud-picker button.hud-picker-open svg {
+    transition: none;
+  }
+}
+
+@keyframes hud-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hud-name-still {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ═══ On a phone: a sheet with a handle over a dimmed page; thumb-sized pill and switch ═══ */
+body.is-mobile .hud-picker-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--layer-menu, 60) - 1);
+  display: block;
+  background: rgb(0 0 0 / 0.28);
+  touch-action: none;
+  animation: hud-fade 0.16s ease;
+}
+
+body.is-mobile .hud-picker-scrim[data-state="closing"] {
+  opacity: 0;
+  transition: opacity 0.1s ease-in;
 }
 
 body.is-mobile .hud-picker-pop {
@@ -1705,14 +2195,93 @@ body.is-mobile .hud-picker-pop {
   right: 0;
   bottom: 0 !important;
   width: auto;
-  border-radius: 12px 12px 0 0;
-  padding: 0.8rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 0.4rem 0.9rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  transform: translateY(var(--drag, 0px));
+  overscroll-behavior: contain;
 }
 
+body.is-mobile .hud-picker-pop::after {
+  display: none;
+}
+
+body.is-mobile .hud-picker-pop[data-state="open"] {
+  animation: hud-sheet-in 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+body.is-mobile .hud-picker-pop[data-state="closing"] {
+  opacity: 1;
+  transform: translateY(100%);
+  transition: transform 0.1s ease-in;
+}
+
+@keyframes hud-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+body.is-mobile .hud-picker-handle {
+  display: block;
+  height: 1.4rem;
+  margin: -0.4rem -0.9rem 0.1rem;
+  touch-action: none;
+  cursor: grab;
+}
+
+body.is-mobile .hud-picker-handle::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0.6rem auto 0;
+  border-radius: 2px;
+  background: var(--log-rule);
+}
+
+body.is-mobile .hud-picker-pop ul.hud-faces {
+  grid-template-columns: repeat(auto-fill, minmax(4.2rem, 1fr));
+}
+
+body.is-mobile .hud-picker-pop .hud-roster-card .hud-face-frame {
+  width: 3.4rem;
+  margin-inline: auto;
+}
+
+body.is-mobile .hud-picker-pop .actions-side {
+  min-height: 2.75rem;
+}
+
+/* A thumb's size: the pill looks 2rem tall, its buttons take 44px with the padding round them. */
 body.is-mobile .hud-picker button.hud-picker-step,
 body.is-mobile .hud-picker button.hud-picker-open {
-  min-width: 2rem;
+  min-width: 2.4rem;
   height: 2rem;
+}
+
+body.is-mobile .hud-picker button.hud-picker-step::before,
+body.is-mobile .hud-picker button.hud-picker-open::before {
+  content: "";
+  position: absolute;
+  inset: -0.375rem 0;
+}
+
+body.is-mobile .lonelog-actions-panel:not(.is-in-margin) .hud-main > .hud-character {
+  min-height: 15.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-mobile .hud-picker-pop[data-state="open"],
+  body.is-mobile .hud-picker-scrim {
+    animation: hud-fade 0.08s linear;
+  }
+
+  body.is-mobile .hud-picker-pop[data-state="closing"] {
+    transform: none;
+    opacity: 0;
+  }
 }
 
 /* ═══ Rest with the filters, the cards in its column ═══════════════════════ */
@@ -1792,4 +2361,119 @@ body.is-mobile .hud-picker button.hud-picker-open {
   font-weight: var(--font-semibold);
   line-height: 1;
   cursor: help;
+}
+
+/* A tight pane: Log and Latest share the top row with the resource pills, spread evenly along it, instead of
+   floating over them at the drawer's corner. Folded, the drawer keeps them in its own bar. */
+.rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rpg-hotbar-end .lonelog-drawer-tools {
+  position: static;
+  transform: none;
+}
+
+.lonelog-bottom-drawer:not(.is-collapsed):has(.rpg-hotbar-end .lonelog-drawer-tools) > .lonelog-drawer-tools {
+  display: none;
+}
+
+body.is-mobile .rpg-hotbar-end {
+  display: none;
+}
+
+body.is-mobile .rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  justify-content: center;
+}
+
+/* Rest (and End turn) read as one more pill at the end of the filters, dark, so it reads as a button and not a
+   filter: the tabs' box steps aside, and the pills and Rest wrap (or, on a phone, scroll) as one row. */
+.rpg-hotbar-foot {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.rpg-hotbar-foot > .rpg-hotbar-tabs {
+  display: contents;
+}
+
+.rpg-hotbar-foot > .rpg-hotbar-tail {
+  margin-left: 0;
+}
+
+.rpg-hotbar-tail .hud-turn {
+  gap: 0.3rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn,
+.rpg-hotbar-tail button.hud-endturn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  width: auto;
+  height: auto;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.55rem;
+  border: 1px solid transparent;
+  background: light-dark(#2b2433, #e9e1f7);
+  box-shadow: none;
+  color: light-dark(#f6f0e2, #241d2c);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+body.is-mobile .rpg-hotbar-tail button.hud-rest-btn,
+body.is-mobile .rpg-hotbar-tail button.hud-endturn {
+  min-height: 2rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn:hover,
+.rpg-hotbar-tail button.hud-endturn:hover {
+  background: light-dark(#3d3448, #ffffff);
+}
+
+.rpg-hotbar-tail button.hud-rest-btn > span,
+.rpg-hotbar-tail button.hud-endturn > span {
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+
+/* The minimise button keeps its corner clear of Latest. */
+.rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  padding-right: 1rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn svg,
+.rpg-hotbar-tail button.hud-endturn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* Rest first among the pills: an action, and never scrolled out of sight. */
+.rpg-hotbar-foot > .rpg-hotbar-tail {
+  order: -1;
+}
+
+/* A tight desktop drawer keeps the pills on one row: Rest keeps its dark pill and says its name in the tooltip. */
+@container (max-width: 44rem) {
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-rest-btn,
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-endturn {
+    padding-inline: 0.55rem;
+  }
+
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-rest-btn > span,
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-endturn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }

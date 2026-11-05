@@ -46,6 +46,8 @@ interface HotbarProps {
   lead?: React.ReactNode;
   /** At the end of the filter row: the turn buttons (Rest, End turn), so the cards take their column. */
   tail?: React.ReactNode;
+  /** At the end of the top row, after the resource pills: the log's Log and Latest on a tight pane. */
+  end?: React.ReactNode;
 }
 
 /** A card's tab, by where it comes from — BG3's Common · class · Items · Passives. */
@@ -229,6 +231,7 @@ export function Hotbar({
   awayNote,
   lead,
   tail,
+  end,
 }: HotbarProps) {
   const [tab, setTab] = useState("All");
   // A tile's menu: make its icon in the image studio.
@@ -355,7 +358,7 @@ export function Hotbar({
 
   return (
     <section className="rpg-hotbar">
-      {(everything.length > 0 || extras || lead) && (
+      {(everything.length > 0 || extras || lead || end) && (
         <div className="rpg-hotbar-pills" role="toolbar" aria-label="Resources — pick one to see what spends it">
           {lead && <div className="rpg-hotbar-lead">{lead}</div>}
           {[economy, slots, uses, states, mechanisms]
@@ -373,6 +376,7 @@ export function Hotbar({
               </div>
             ))}
           {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          {end && <div className="rpg-hotbar-end">{end}</div>}
         </div>
       )}
       <div className="rpg-hotbar-body">
