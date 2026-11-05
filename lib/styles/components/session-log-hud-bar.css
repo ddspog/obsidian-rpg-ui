@@ -1860,34 +1860,44 @@ button.hud-face:focus-visible .hud-face-frame {
   outline-offset: 3px;
 }
 
-/* Up next in a fight: a small notch under the face. */
+/* Up next in a fight: a small tag on the foot of the face, in the accent. */
 button.hud-face {
   position: relative;
 }
 
 button.hud-face .hud-face-next {
-  position: absolute;
-  top: auto;
-  right: auto;
-  bottom: auto;
-  left: 50%;
-  width: 0;
-  height: 0;
-  margin-top: -0.1rem;
-  border: 0.3rem solid transparent;
-  border-top-color: var(--interactive-accent);
-  border-bottom: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-  transform: translateX(-50%);
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  align-self: center;
+  width: auto;
+  height: auto;
+  margin-top: -0.6rem;
+  padding: 0.05rem 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--interactive-accent);
+  box-shadow: 0 0 0 1.5px var(--log-surface, var(--background-primary));
+  color: var(--text-on-accent);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  transform: none;
 }
 
-.hud-roster ul.hud-faces .hud-face-frame + .hud-face-next {
-  position: relative;
-  left: auto;
-  align-self: center;
-  transform: none;
+.hud-roster.is-foe-side button.hud-face .hud-face-next {
+  background: light-dark(#a8423f, #b04a47);
+  color: #fff;
+}
+
+button.hud-face.is-next .hud-face-frame {
+  border-color: var(--interactive-accent);
+}
+
+.hud-roster.is-foe-side button.hud-face.is-next .hud-face-frame {
+  border-color: light-dark(#a8423f, #d9706d);
 }
 
 /* A foe at 0 hit points: down, faded, its bar a brick track. */

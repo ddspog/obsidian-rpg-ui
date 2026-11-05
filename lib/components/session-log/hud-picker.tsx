@@ -1,6 +1,6 @@
 /**
  * Who is acting, chosen from the drawer's portrait column when the roster has no margin to sit in:
- * a joined ‹ ▾ › pill under the portrait. ▾ opens the roster (the GM · Party face, the side switch,
+ * a joined ‹ ▾ › pill under the portrait. ▾ opens the roster (the side switch, the GM's face,
  * the faces) in a pop-up that grows from it, as a sheet from the bottom on a phone; ‹ › step to the
  * previous or next actor on this side, and say who that is. A tap, not hover: a phone has none.
  */

@@ -118,7 +118,7 @@ export function HudRoster({
   };
   const studioFor = onStudio && active && shown.some((a) => a.name === active) ? active : undefined;
   return (
-    // One card: the side switch on top, the faces below: the GM · Party first, as a face of its own.
+    // One card: the side switch on top, the faces below: the GM first on its side, as a face of its own.
     <aside className={`hud-roster hud-roster-card${foe ? " is-foe-side" : ""}`}>
       {sides.length > 1 && (
         <header className="hud-roster-head">
@@ -189,7 +189,11 @@ export function HudRoster({
                 <span className="hud-face-frame">
                   <Face info={info} name={a.name} />
                 </span>
-                {next && <span className="hud-face-next" aria-hidden="true" />}
+                {next && (
+                  <span className="hud-face-next" aria-hidden="true">
+                    Next
+                  </span>
+                )}
                 <span className="hud-face-name" title={a.name}>
                   {foe ? a.name : shortName(a.name, shown)}
                 </span>
