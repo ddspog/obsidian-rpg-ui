@@ -1793,3 +1793,118 @@ body.is-mobile .hud-picker button.hud-picker-open {
   line-height: 1;
   cursor: help;
 }
+
+/* A tight pane: Log and Latest share the top row with the resource pills, spread evenly along it, instead of
+   floating over them at the drawer's corner. Folded, the drawer keeps them in its own bar. */
+.rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rpg-hotbar-end .lonelog-drawer-tools {
+  position: static;
+  transform: none;
+}
+
+.lonelog-bottom-drawer:not(.is-collapsed):has(.rpg-hotbar-end .lonelog-drawer-tools) > .lonelog-drawer-tools {
+  display: none;
+}
+
+body.is-mobile .rpg-hotbar-end {
+  display: none;
+}
+
+body.is-mobile .rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  justify-content: center;
+}
+
+/* Rest (and End turn) read as one more pill at the end of the filters, dark, so it reads as a button and not a
+   filter: the tabs' box steps aside, and the pills and Rest wrap (or, on a phone, scroll) as one row. */
+.rpg-hotbar-foot {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.rpg-hotbar-foot > .rpg-hotbar-tabs {
+  display: contents;
+}
+
+.rpg-hotbar-foot > .rpg-hotbar-tail {
+  margin-left: 0;
+}
+
+.rpg-hotbar-tail .hud-turn {
+  gap: 0.3rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn,
+.rpg-hotbar-tail button.hud-endturn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  width: auto;
+  height: auto;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.55rem;
+  border: 1px solid transparent;
+  background: light-dark(#2b2433, #e9e1f7);
+  box-shadow: none;
+  color: light-dark(#f6f0e2, #241d2c);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+body.is-mobile .rpg-hotbar-tail button.hud-rest-btn,
+body.is-mobile .rpg-hotbar-tail button.hud-endturn {
+  min-height: 2rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn:hover,
+.rpg-hotbar-tail button.hud-endturn:hover {
+  background: light-dark(#3d3448, #ffffff);
+}
+
+.rpg-hotbar-tail button.hud-rest-btn > span,
+.rpg-hotbar-tail button.hud-endturn > span {
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+
+/* The minimise button keeps its corner clear of Latest. */
+.rpg-hotbar-pills:has(> .rpg-hotbar-end) {
+  padding-right: 1rem;
+}
+
+.rpg-hotbar-tail button.hud-rest-btn svg,
+.rpg-hotbar-tail button.hud-endturn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* Rest first among the pills: an action, and never scrolled out of sight. */
+.rpg-hotbar-foot > .rpg-hotbar-tail {
+  order: -1;
+}
+
+/* A tight desktop drawer keeps the pills on one row: Rest keeps its dark pill and says its name in the tooltip. */
+@container (max-width: 44rem) {
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-rest-btn,
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-endturn {
+    padding-inline: 0.55rem;
+  }
+
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-rest-btn > span,
+  body:not(.is-mobile) .rpg-hotbar-tail button.hud-endturn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

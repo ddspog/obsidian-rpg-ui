@@ -703,6 +703,7 @@ export function SessionActionsPanel({
           {...(awayNote && !showCharacter ? { awayNote } : {})}
           {...(picker && !showCharacter ? { lead: <HudPicker {...pickerProps} label={actorLabel} /> } : {})}
           {...(turnNode && !inMargin ? { tail: turnNode } : {})}
+          {...(drawer?.tools && !inMargin ? { end: drawer.tools } : {})}
           resources={resourcesNow}
           {...(iconFor ? { iconFor } : {})}
           {...(onMakeIcon ? { onMakeIcon } : {})}
