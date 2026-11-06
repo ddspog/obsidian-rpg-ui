@@ -17,7 +17,7 @@ import { InlineMarkdown } from "./inline-markdown";
 import { Swords } from "lucide-react";
 import { actorLabel } from "lib/domains/session-log/prose-model";
 import type { ProseFragment, ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
-import { headTrailKey, nodeTrailKey, TRAIL_START } from "lib/domains/session-log/log-trails";
+import { combatTrailKey, headTrailKey, nodeTrailKey, TRAIL_START } from "lib/domains/session-log/log-trails";
 
 export interface ProseViewProps {
   scenes: ProseScene[];
@@ -103,8 +103,10 @@ export function ProseView({
                 {...(onSelectStep ? { onSelectStep } : {})}
                 {...(partyName ? { partyName } : {})}
                 {...(renderTravelMap ? { renderTravelMap } : {})}
+                {...(renderTrail && node.kind === "combat" ? { renderTrail, trailAt: [si, ni] as const } : {})}
               />
-              {renderTrail?.(nodeTrailKey(si, ni))}
+              {/* A fight draws its own runs, inside it. */}
+              {node.kind !== "combat" && renderTrail?.(nodeTrailKey(si, ni))}
             </React.Fragment>
           ))}
         </section>
@@ -122,6 +124,9 @@ interface NodeViewProps {
   onSelectStep?: (id: number) => void;
   partyName?: (actor: string) => string | undefined;
   renderTravelMap?: (startId: number) => React.ReactNode;
+  /** A fight's Log runs (the Log mixed into the prose), and where the fight is: scene, node. */
+  renderTrail?: (key: string) => React.ReactNode;
+  trailAt?: readonly [number, number];
 }
 
 /** A run of conclusions, each with its provenance dot. */
@@ -152,14 +157,23 @@ function Fragments({
   );
 }
 
-/** A fight's nodes, its consecutive actions gathered into one list. */
-function CombatView({ node, ...props }: NodeViewProps & { node: Extract<ProseNode, { kind: "combat" }> }) {
-  const runs: Array<ProseNode | Array<Extract<ProseNode, { kind: "beat" }>>> = [];
-  for (const n of node.nodes) {
+/** A fight's nodes, its consecutive actions gathered into one list; with the Log mixed in, each turn and
+ *  action has its run of entries right under it. */
+function CombatView({
+  node,
+  renderTrail,
+  trailAt,
+  ...props
+}: NodeViewProps & { node: Extract<ProseNode, { kind: "combat" }> }) {
+  type Beat = Extract<ProseNode, { kind: "beat" }>;
+  // Each inner node with its index in the fight, which keys its Log run.
+  const runs: Array<{ node: ProseNode; k: number } | Array<{ beat: Beat; k: number }>> = [];
+  node.nodes.forEach((n, k) => {
     const last = runs[runs.length - 1];
-    if (n.kind === "beat" && Array.isArray(last)) last.push(n);
-    else runs.push(n.kind === "beat" ? [n] : n);
-  }
+    if (n.kind === "beat" && Array.isArray(last)) last.push({ beat: n, k });
+    else runs.push(n.kind === "beat" ? [{ beat: n, k }] : { node: n, k });
+  });
+  const trail = (k: number) => (renderTrail && trailAt ? renderTrail(combatTrailKey(trailAt[0], trailAt[1], k)) : null);
   // The fight's first map titles itself on this header line (`Combat · Map
   // Clearing … Setup`), rather than on a line of its own.
   const [headSlot, setHeadSlot] = React.useState<HTMLElement | null>(null);
@@ -170,12 +184,13 @@ function CombatView({ node, ...props }: NodeViewProps & { node: Extract<ProseNod
         <Swords size={14} aria-hidden="true" /> Combat
         <span className="lonelog-prose-combat-map" ref={setHeadSlot} />
       </header>
+      {renderTrail && trailAt && renderTrail(nodeTrailKey(trailAt[0], trailAt[1]))}
       {runs.map((run, i) =>
         Array.isArray(run) ? (
           <dl key={i} className="lonelog-prose-beats">
-            {run.map((beat, j) => (
+            {run.map(({ beat, k }) => (
               <div
-                key={j}
+                key={k}
                 className={`lonelog-prose-beat${props.onSelectStep ? " is-steppable" : ""}`}
                 // A click shows it on the turn's map. (Keyboard users step the map
                 // with its replay buttons; the passage's dot is a real button.)
@@ -186,18 +201,28 @@ function CombatView({ node, ...props }: NodeViewProps & { node: Extract<ProseNod
                 </dt>
                 <dd className="lonelog-conclusion">
                   <Fragments fragments={beat.fragments} {...props} />
+                  {/* Its rolls, right under it (a click there is the Log's, not the map's). */}
+                  {renderTrail && (
+                    <div className="lonelog-prose-beat-trail" onClick={(e) => e.stopPropagation()}>
+                      {trail(k)}
+                    </div>
+                  )}
                 </dd>
               </div>
             ))}
           </dl>
-        ) : run.kind === "turn" ? (
+        ) : run.node.kind === "turn" ? (
           // Each turn opens on the map: the fight as it stands in that turn.
           <React.Fragment key={i}>
-            {props.renderTurnMap?.(run.sourceId, run.sourceId === firstTurn ? headSlot : undefined)}
-            <ProseNodeView node={run} {...props} />
+            {props.renderTurnMap?.(run.node.sourceId, run.node.sourceId === firstTurn ? headSlot : undefined)}
+            <ProseNodeView node={run.node} {...props} />
+            {trail(run.k)}
           </React.Fragment>
         ) : (
-          <ProseNodeView key={i} node={run} {...props} />
+          <React.Fragment key={i}>
+            <ProseNodeView node={run.node} {...props} />
+            {trail(run.k)}
+          </React.Fragment>
         )
       )}
     </section>

@@ -12,14 +12,21 @@ import type { SidebarItem } from "lib/domains/session-log/prose-model";
 function entryWords(item: SidebarItem): string {
   const row = item.rows.find((r) => r.content || r.scene);
   const text = row?.scene ? `Scene ${row.scene.number}` : (row?.content ?? "");
-  return text
-    .replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2")
-    .replace(/[*_`~#>]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(" ")
-    .slice(0, 4)
-    .join(" ");
+  return (
+    text
+      .replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2")
+      // `@Kobold, Tinkerer.action("Parts-Filled Sling")` reads "Parts-Filled Sling"
+      .replace(/@?[^@"()]*?\.\w+\("([^"]+)"\)/g, "$1")
+      .replace(/@\(([^)]*)\)\s*/g, "")
+      // and its tags (`[Mv: J15]`) are left to the card
+      .replace(/\[[^\]]*\]\s*/g, "")
+      .replace(/[*_`~#>@]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .slice(0, 4)
+      .join(" ")
+  );
 }
 
 export function LogTrail({

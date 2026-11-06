@@ -361,21 +361,24 @@ export function Hotbar({
       {(everything.length > 0 || extras || lead || end) && (
         <div className="rpg-hotbar-pills" role="toolbar" aria-label="Resources — pick one to see what spends it">
           {lead && <div className="rpg-hotbar-lead">{lead}</div>}
-          {[economy, slots, uses, states, mechanisms]
-            .filter((g) => g.length > 0)
-            .map((group, gi) => (
-              <div key={gi} className="rpg-hotbar-pill-group">
-                {group.map((r) => (
-                  <Pill
-                    key={resourceKey(r)}
-                    r={r}
-                    active={filter === resourceKey(r)}
-                    onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
-                  />
-                ))}
-              </div>
-            ))}
-          {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          {/* The resource pills as one group, so beside Log and Latest the row holds two groups to space out. */}
+          <div className="rpg-hotbar-pill-set">
+            {[economy, slots, uses, states, mechanisms]
+              .filter((g) => g.length > 0)
+              .map((group, gi) => (
+                <div key={gi} className="rpg-hotbar-pill-group">
+                  {group.map((r) => (
+                    <Pill
+                      key={resourceKey(r)}
+                      r={r}
+                      active={filter === resourceKey(r)}
+                      onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
+                    />
+                  ))}
+                </div>
+              ))}
+            {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          </div>
           {end && <div className="rpg-hotbar-end">{end}</div>}
         </div>
       )}
