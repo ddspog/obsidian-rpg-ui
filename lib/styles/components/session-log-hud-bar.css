@@ -2456,8 +2456,9 @@ body.is-mobile .rpg-hotbar-tail button.hud-endturn {
 }
 
 /* The minimise button keeps its corner clear of Latest. */
+/* Room at both ends: the pills off the cards' left edge, Latest clear of the minimise button. */
 .rpg-hotbar-pills:has(> .rpg-hotbar-end) {
-  padding-right: 1rem;
+  padding-inline: 0.9rem 1.4rem;
 }
 
 .rpg-hotbar-tail button.hud-rest-btn svg,
