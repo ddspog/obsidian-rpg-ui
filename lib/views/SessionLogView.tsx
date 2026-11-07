@@ -54,6 +54,8 @@ import { parse as parseYaml } from "yaml";
 import { LazyMount } from "lib/components/session-log/lazy-mount";
 import { ProseView } from "lib/components/session-log/prose-view";
 import { LogSidebar } from "lib/components/session-log/log-sidebar";
+import { LogTrail } from "lib/components/session-log/log-trail";
+import { logTrails } from "lib/domains/session-log/log-trails";
 import type { SceneEditValue } from "lib/components/session-log/log-sidebar";
 import { groupIntoProse } from "lib/domains/session-log/prose-grouper";
 import {
@@ -92,9 +94,9 @@ import { parseSourceDocShared } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
-import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
+import { genNameAbove, resolveGmBody, scopedStepLines, type GMStepContext } from "lib/domains/gm/example";
 import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
-import { headingKey, linkTargets, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
+import { headingKey, linkTargets, plainEmphasis, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -2056,10 +2058,11 @@ class SessionLogMarkdown extends ReactMarkdown {
   /** A GM step dropdown pick: insert the chosen step's `label: calc` line under
    *  the gen: (via applyChoicePick), re-resolve, and persist to the note. */
   private async onChoicePick(selected: string, at?: ChoiceAt) {
-    const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
-    await this.rewriteLogBody((body) =>
-      resolveGmBody(applyChoicePick(body, selected, stepLines, at), this.gmFeatures, this.stepCtx)
-    );
+    await this.rewriteLogBody((body) => {
+      // The pick spawns its own card's lines, even when another card offers a choice of the same name.
+      const stepLines = scopedStepLines(this.gmFeatures, genNameAbove(body, at), this.stepCtx);
+      return resolveGmBody(applyChoicePick(body, selected, stepLines, at), this.gmFeatures, this.stepCtx);
+    });
   }
 
   /**
@@ -2249,7 +2252,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     const handleAppendText = async (text: string, headerMap?: HeaderMap) => {
       // A card that asked for its pick up front arrives with the option selected
       // (`[a/b - a]`): spawn that option's lines, as picking it in the Log would.
-      const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
+      const stepLines = scopedStepLines(this.gmFeatures, text.match(/^gen:\s*(.+)$/m)?.[1]?.trim(), this.stepCtx);
       const picks = [...text.matchAll(/^(\s*\+?\s*[^\n:]+:\s*)?\[[^\][]+?\s+-\s+([^\][]*?)\]/gm)];
       const kindLine = picks.length > 1 && /^\s*\+/.test(picks[1][0]) ? picks[1] : undefined;
       let spawned = text;
@@ -2293,7 +2296,9 @@ class SessionLogMarkdown extends ReactMarkdown {
         ?.trim();
       // A row that sends you to another table is rolled through, so the result reads whole.
       const from = this.linkedTables.refFile[ref];
-      return row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      const read = row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      // The result is written as plain text: a row's bold or italic would show as asterisks.
+      return read && plainEmphasis(read);
     };
 
     this.reactRoot.render(
@@ -3401,6 +3406,10 @@ function SessionLogRoot({
   // below the prose instead of clipping it off the edge.
   const [sidebarPx, setSidebarPx] = React.useState<number | null>(null);
   const [stacked, setStacked] = React.useState(false);
+  // The Log mixed into the prose (no margin): which runs are open, or all of them.
+  const [trailsAll, setTrailsAll] = React.useState(false);
+  const [trailOpen, setTrailOpen] = React.useState<Record<string, boolean>>({});
+  const trails = React.useMemo(() => logTrails(scenes, sidebarItems), [scenes, sidebarItems]);
 
   React.useEffect(() => {
     const layout = layoutRef.current;
@@ -3615,6 +3624,9 @@ function SessionLogRoot({
 
   const handleDotClick = (id: number) => {
     setSidebarOpen(true);
+    // Mixed into the prose: open the run the entry is in, so it can be shown.
+    const key = [...trails].find(([, items]) => items.some((i) => i.id === id))?.[0];
+    if (key) setTrailOpen((o) => ({ ...o, [key]: true }));
     clickTick.current += 1;
     setSelection({ id, side: "sidebar", n: clickTick.current });
   };
@@ -3737,17 +3749,49 @@ function SessionLogRoot({
   };
 
   const hasActions = pcStacks.size > 0 || foeStacks.size > 0 || gmStacks.length > 0;
-  // The bar's Log: opens or closes it, and on a phone, where it stacks under the prose, brings it into view.
+  // The bar's Log. With a margin it opens or closes the Log beside the prose. Without one the Log
+  // is mixed into the prose, under each passage: closed, then its runs as one line each, then all
+  // of them open.
   const toggleLogFromBar = () => {
-    const opening = !sidebarOpen;
-    setSidebarOpen(opening);
-    if (opening && window.matchMedia?.("(max-width: 600px)").matches) {
-      window.setTimeout(() => {
-        layoutRef.current
-          ?.querySelector(".lonelog-sidebar")
-          ?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-      }, 60);
+    if (!stacked) {
+      setSidebarOpen(!sidebarOpen);
+      return;
     }
+    if (!sidebarOpen) {
+      setTrailsAll(false);
+      setTrailOpen({});
+      setSidebarOpen(true);
+    } else if (!trailsAll) setTrailsAll(true);
+    else {
+      setTrailsAll(false);
+      setTrailOpen({});
+      setSidebarOpen(false);
+    }
+  };
+  const logMixed = stacked && sidebarOpen;
+  const logLabel = !logMixed ? "Log" : trailsAll ? "Log ▾" : "Log ▸";
+  const trailFor = (key: string) => {
+    const items = trails.get(key);
+    if (!logMixed || !items || items.length === 0) return null;
+    const open = trailsAll || !!trailOpen[key];
+    return (
+      <LogTrail
+        items={items}
+        open={open}
+        onToggle={() => setTrailOpen((o) => ({ ...o, [key]: !open }))}
+        selectedId={selection?.id ?? null}
+        onSelect={handleSidebarClick}
+        registerAnchor={registerSidebar}
+        sourcePath={sourcePath}
+        sceneEdits={sceneEdits}
+        onSceneChange={handleSceneChange}
+        dieEdits={dieEdits}
+        onDieChange={handleDieChange}
+        onResultChange={handleResultChange}
+        onTokenChange={handleTokenChange}
+        onChoice={onChoice}
+      />
+    );
   };
   const selectedId = selection?.id ?? null;
 
@@ -3809,15 +3853,15 @@ function SessionLogRoot({
                       Save
                     </button>
                   )}
-                  {!sidebarOpen && (
+                  {(!sidebarOpen || logMixed) && (
                     <button
                       type="button"
                       className="lonelog-log-toggle"
-                      aria-pressed={false}
-                      aria-label="Open log"
-                      onClick={() => setSidebarOpen(true)}
+                      aria-pressed={logMixed}
+                      aria-label={logMixed ? (trailsAll ? "Close the log" : "Open every log entry") : "Open log"}
+                      onClick={toggleLogFromBar}
                     >
-                      Log
+                      {logLabel}
                     </button>
                   )}
                 </div>
@@ -3853,10 +3897,11 @@ function SessionLogRoot({
                 registerAnchor={registerProse}
                 {...(hasBattle ? { renderTurnMap, onSelectStep: goToStep } : {})}
                 partyName={partyName}
+                renderTrail={trailFor}
               />
             </div>
           </div>
-          {sidebarOpen && (
+          {sidebarOpen && !stacked && (
             <LogSidebar
               items={sidebarItems}
               onClose={() => setSidebarOpen(false)}
@@ -3882,6 +3927,7 @@ function SessionLogRoot({
             bar={{
               hasLog: sidebarItems.length > 0,
               logOpen: sidebarOpen,
+              logLabel,
               onToggleLog: toggleLogFromBar,
               onLatest: goToLastBlock,
               dirty: isDirty,

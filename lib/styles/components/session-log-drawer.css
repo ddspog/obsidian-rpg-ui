@@ -14,7 +14,7 @@
 .lonelog-dock-zone.with-sidebar:not(.is-stacked) > .lonelog-bottom-drawer {
   margin-inline-start: calc(-2rem - var(--log-sidebar-width) / 2);
   /* A rem of air between the drawer and the Log it sits beside. */
-  margin-inline-end: calc(-1rem + var(--log-sidebar-width) / 2);
+  margin-inline-end: calc(1rem + var(--log-sidebar-width) / 2);
 }
 
 .lonelog-bottom-drawer {
@@ -416,4 +416,22 @@ button.actions-gear-option.is-held {
 /* The folded bar leaves the tools their room: "Press A to open" would run under them. */
 .lonelog-bottom-drawer.is-collapsed .drawer-collapsed-bar {
   padding-right: 13rem;
+}
+
+/* ═══ The drawer as wide as the pane (desktop) ═══════════════════════════════
+   It sat in the note's text column (about 760px) however wide the window. On a
+   desktop it now spans the reading pane, up to 75rem, centred on the note; with
+   the Log sidebar beside it, it keeps the placement above. */
+body:not(.is-mobile) .markdown-preview-view:has(.lonelog-bottom-drawer) {
+  container: rpg-reading-pane / inline-size;
+}
+
+body:not(.is-mobile) .lonelog-dock-zone:not(.with-sidebar) > .lonelog-bottom-drawer,
+body:not(.is-mobile) .lonelog-dock-zone.is-stacked > .lonelog-bottom-drawer {
+  --drawer-width: max(100%, min(100cqi - 3rem, 75rem));
+  width: var(--drawer-width);
+  max-width: none;
+  margin-left: calc((100% - var(--drawer-width)) / 2);
+  margin-right: calc((100% - var(--drawer-width)) / 2);
+  box-sizing: border-box;
 }

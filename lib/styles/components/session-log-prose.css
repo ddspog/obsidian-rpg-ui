@@ -167,6 +167,8 @@
 
 .lonelog-prose-layout.is-stacked.with-sidebar {
   flex-direction: column;
+  /* The prose keeps the column's width: the Log rows in it must not size it. */
+  align-items: stretch;
 }
 
 .lonelog-prose-main {
@@ -2778,4 +2780,82 @@ body.is-mobile .lonelog-prose-doc button.lonelog-dot::after {
 .lonelog-balloon-pc .lonelog-balloon-speaker,
 .lonelog-balloon-npc .lonelog-balloon-speaker {
   color: light-dark(hsl(var(--speaker-hue, 30) 55% 26%), hsl(var(--speaker-hue, 30) 60% 76%));
+}
+
+/* ═══ The Log mixed into the prose (no margin for it) ═══════════════════════
+   Under a passage, the entries it came from: one quiet line that opens to the
+   same entry cards the Log shows. A rule on the left ties it to the passage. */
+.lonelog-trail {
+  margin: 0.15rem 0 0.9rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+button.lonelog-trail-head {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 1.75rem;
+  margin: 0;
+  padding: 0.15rem 0.25rem;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+button.lonelog-trail-head:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.lonelog-trail-caret {
+  flex: none;
+  width: 0.8rem;
+  color: var(--text-faint);
+}
+
+.lonelog-trail-count {
+  flex: none;
+  font-weight: var(--font-semibold);
+}
+
+.lonelog-trail-summary {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-faint);
+}
+
+.lonelog-trail-entries {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.lonelog-trail-entries > .lonelog-sidebar-header[hidden] {
+  display: none;
+}
+
+body.is-mobile button.lonelog-trail-head {
+  min-height: 2.75rem;
+}
+
+/* Under an action in a fight: its rolls close under it. */
+.lonelog-prose-beat-trail:empty {
+  display: none;
+}
+
+.lonelog-prose-beat-trail .lonelog-trail {
+  margin: 0.1rem 0 0.35rem;
+}
+
+.lonelog-prose-combat > .lonelog-trail {
+  margin-inline: 0.75rem;
 }

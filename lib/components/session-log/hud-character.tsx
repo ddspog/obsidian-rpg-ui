@@ -11,7 +11,7 @@ import { Menu } from "obsidian";
 import type { IconTone } from "../../domains/image-studio/kinds";
 import type { Health } from "../../domains/session-log/health";
 import { loadoutIconName, type HeldItem, type HudInfo } from "../../domains/session-log/hud";
-import { Face } from "./hud-roster";
+import { Face, SigilFace } from "./hud-roster";
 import { LucideIcon } from "./lucide-icon";
 
 interface HudCharacterProps {
@@ -28,6 +28,70 @@ interface HudCharacterProps {
   foe?: boolean;
   /** Make an icon for a held item or a loadout (right-click it). */
   onMakeIcon?: (what: { name: string; text?: string; tone?: IconTone }) => void;
+  /** Under the portrait: choose who acts, when the roster has no margin to sit in. */
+  picker?: React.ReactNode;
+  /** What the hands keep from casting ("1 spell put away — no free hand"): a badge on them. */
+  awayNote?: string;
+  /** Bumped when someone is picked (dir: which way a step went): the portrait greets who now acts. */
+  arrival?: Arrival | undefined;
+}
+
+/** A pick: `tick` counts them, `dir` is the step's way (0 for a face picked from the roster). */
+export interface Arrival {
+  tick: number;
+  dir: -1 | 0 | 1;
+}
+
+/** The new face settling in, its ring drawn, the name a moment under it: only after a pick, not on the first draw. */
+function ArrivalFrame({
+  arrival,
+  name,
+  children,
+}: {
+  arrival?: Arrival | undefined;
+  name: string;
+  children: React.ReactNode;
+}) {
+  const tick = arrival?.tick ?? 0;
+  return (
+    <span key={tick} className={`hud-portrait-frame${tick > 0 ? " is-arriving" : ""}`} data-dir={arrival?.dir ?? 0}>
+      {children}
+      {tick > 0 && <span className="hud-arrive-name">{name}</span>}
+    </span>
+  );
+}
+
+/** For whoever has no character card (the GM, the Party, a foe with no sheet): the same column, a
+ *  sigil for the portrait and their name under it, so the picker under it never moves. */
+export function HudStandIn({
+  name,
+  label,
+  info,
+  picker,
+  arrival,
+}: {
+  name: string;
+  label: string;
+  info?: HudInfo | undefined;
+  picker?: React.ReactNode;
+  arrival?: Arrival | undefined;
+}) {
+  const sigil = /^(Game Master|GM|Party)$/i.test(name);
+  return (
+    <section className="hud-character is-stand-in" aria-label={label}>
+      <div className="hud-portrait">
+        <ArrivalFrame arrival={arrival} name={label}>
+          {sigil ? <SigilFace name={name} /> : <Face info={info} name={name} />}
+        </ArrivalFrame>
+        <span className="hud-portrait-hp">
+          <span className="hud-portrait-line">
+            <small>{label}</small>
+          </span>
+        </span>
+      </div>
+      {picker}
+    </section>
+  );
 }
 
 /** A small square that can be given an icon of its own: right-click → the image studio. */
@@ -67,7 +131,20 @@ function Slot({
   );
 }
 
-export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras, foe, onMakeIcon }: HudCharacterProps) {
+export function HudCharacter({
+  name,
+  info,
+  hp,
+  ac,
+  onOpenSheet,
+  onEquip,
+  extras,
+  foe,
+  onMakeIcon,
+  picker,
+  awayNote,
+  arrival,
+}: HudCharacterProps) {
   const pct = hp && hp.max > 0 ? Math.max(0, Math.min(100, (hp.current / hp.max) * 100)) : undefined;
   const hands = info.hands ?? {};
   return (
@@ -80,9 +157,9 @@ export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras,
         aria-label={`Open ${name}'s sheet`}
         onClick={onOpenSheet}
       >
-        <span className="hud-portrait-frame">
+        <ArrivalFrame arrival={arrival} name={name.split(/\s+/)[0]}>
           <Face info={info} name={name} />
-        </span>
+        </ArrivalFrame>
         {(hp || ac != null) && (
           <span className="hud-portrait-hp">
             {hp && (
@@ -107,6 +184,7 @@ export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras,
           </span>
         )}
       </button>
+      {picker}
       {/* The lower half: what's in the two hands, the loadouts to change it, the switches. */}
       <div className="hud-gear">
         {!foe && (
@@ -114,6 +192,12 @@ export function HudCharacter({ name, info, hp, ac, onOpenSheet, onEquip, extras,
             <div className="hud-hands" role="group" aria-label="In hand">
               <Slot item={hands.main} label="Main hand" {...(onMakeIcon ? { onMakeIcon } : {})} />
               <Slot item={hands.off} label="Off hand" {...(onMakeIcon ? { onMakeIcon } : {})} />
+              {awayNote && (
+                // Spells it can't cast for want of a free hand: a small count on the hands.
+                <span className="hud-hands-away" title={awayNote} aria-label={awayNote} tabIndex={0}>
+                  {awayNote.match(/^\d+/)?.[0] ?? "!"}
+                </span>
+              )}
             </div>
             {info.loadouts && info.loadouts.length > 0 && (
               <div className="hud-loadouts" role="group" aria-label="Loadouts">

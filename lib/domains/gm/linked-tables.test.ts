@@ -3,6 +3,7 @@ import { parseTableBlock } from "../tables/parse-table-block";
 import {
   headingKey,
   linkTargets,
+  plainEmphasis,
   rollLinkedTables,
   seededRoll,
   tableHeadings,
@@ -225,5 +226,23 @@ describe("rollLinkedTables, the words around two links", () => {
 describe("linkTargets", () => {
   it("lists the notes a table's cells link to", () => {
     expect(linkTargets(borders)).toEqual([""]);
+  });
+});
+
+describe("plainEmphasis", () => {
+  it("drops bold and italic markers from a rolled row", () => {
+    expect(plainEmphasis("**Economic Power** – the villain is working on gaining wealth")).toBe(
+      "Economic Power – the villain is working on gaining wealth"
+    );
+    expect(plainEmphasis("Amoeba – **Amoeba body form (formless),** floats in liquids")).toBe(
+      "Amoeba – Amoeba body form (formless), floats in liquids"
+    );
+    expect(plainEmphasis("*Gem* and __stone__ and _river_")).toBe("Gem and stone and river");
+  });
+
+  it("leaves asterisks and underscores that are not markers", () => {
+    expect(plainEmphasis("Religious Areas* (see note)")).toBe("Religious Areas* (see note)");
+    expect(plainEmphasis("2 * 3 and snake_case_name")).toBe("2 * 3 and snake_case_name");
+    expect(plainEmphasis("1d6 * 10 gp")).toBe("1d6 * 10 gp");
   });
 });

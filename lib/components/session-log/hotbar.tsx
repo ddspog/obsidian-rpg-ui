@@ -25,6 +25,7 @@ import {
 } from "../../domains/session-log/hotbar-model";
 import { Menu } from "obsidian";
 import { isTableStack, mechanismOf, TABLE_MECHANISMS, tableAreaOf } from "../../domains/session-log/table-cards";
+import { tileName } from "../../domains/session-log/tile-name";
 import { LucideIcon } from "./lucide-icon";
 
 interface HotbarProps {
@@ -41,6 +42,14 @@ interface HotbarProps {
   extras?: React.ReactNode;
   /** Why some cards are left out (spells that can't be cast with what's in hand). */
   awayNote?: string;
+  /** At the start of the top row: the actor picker, when there is no portrait to carry it. */
+  lead?: React.ReactNode;
+  /** At the end of the filter row: the turn buttons (Rest, End turn), so the cards take their column. */
+  tail?: React.ReactNode;
+  /** At the end of the top row, after the resource pills: the log's Log and Latest on a tight pane. */
+  end?: React.ReactNode;
+  /** The card being played (its form open): its tile stays lit. */
+  playingId?: string | undefined;
 }
 
 /** A card's tab, by where it comes from — BG3's Common · class · Items · Passives. */
@@ -159,15 +168,21 @@ function Tile({
   source,
   image,
   depleted,
+  group,
+  playing,
   onPlay,
   onMenu,
 }: {
   card: SessionFeatureCard;
   kind: TileKind;
   source: TileSource;
+  /** The label of the group it sits in: its word is left off the tile's name. */
+  group?: string;
   /** Its own icon art, when there is some. */
   image?: string;
   depleted: boolean;
+  /** Its card's form is open. */
+  playing?: boolean;
   onPlay: () => void;
   onMenu?: (e: React.MouseEvent) => void;
 }) {
@@ -177,7 +192,8 @@ function Tile({
   return (
     <button
       type="button"
-      className={`rpg-hotbar-tile is-${kind} from-${source}${image ? " has-art" : ""}${depleted ? " is-depleted" : ""}${card.toggle ? ` is-toggle${card.on ? " is-on" : ""}` : ""}${changed ? " is-changed" : ""}`}
+      className={`rpg-hotbar-tile is-${kind} from-${source}${image ? " has-art" : ""}${depleted ? " is-depleted" : ""}${card.toggle ? ` is-toggle${card.on ? " is-on" : ""}` : ""}${changed ? " is-changed" : ""}${playing ? " is-playing" : ""}`}
+      aria-pressed={playing || undefined}
       aria-label={`${card.name} — ${KIND_LABEL[kind]}${from ? ` · ${from}` : ""}${card.toggle ? ` · ${card.on ? "on" : "off"}` : ""}${what ? `\n${what}` : ""}${changed ? `\nChanged by ${changed}` : ""}`}
       data-tooltip-position="top"
       disabled={depleted}
@@ -191,11 +207,14 @@ function Tile({
       )}
       {/* Its name, small, along the foot — the tile read at a glance. */}
       {(() => {
-        const label = card.name.replace(/\s*[ᴬᴮᴰᴴᴷᴺº]+$/u, "");
+        const label = tileName(card.name, group);
         // A very long word is set a size smaller, to stay whole in its tile.
         const longest = Math.max(...label.split(/\s+/).map((w) => w.length));
         return (
-          <span className={`rpg-hotbar-tile-name${longest >= 12 ? " is-longer" : longest >= 10 ? " is-long" : ""}`}>
+          <span
+            className={`rpg-hotbar-tile-name${longest >= 12 ? " is-longer" : longest >= 10 ? " is-long" : ""}`}
+            lang="en"
+          >
             {label}
           </span>
         );
@@ -216,6 +235,10 @@ export function Hotbar({
   onMakeIcon,
   extras,
   awayNote,
+  lead,
+  tail,
+  end,
+  playingId,
 }: HotbarProps) {
   const [tab, setTab] = useState("All");
   // A tile's menu: make its icon in the image studio.
@@ -342,23 +365,28 @@ export function Hotbar({
 
   return (
     <section className="rpg-hotbar">
-      {(everything.length > 0 || extras) && (
+      {(everything.length > 0 || extras || lead || end) && (
         <div className="rpg-hotbar-pills" role="toolbar" aria-label="Resources — pick one to see what spends it">
-          {[economy, slots, uses, states, mechanisms]
-            .filter((g) => g.length > 0)
-            .map((group, gi) => (
-              <div key={gi} className="rpg-hotbar-pill-group">
-                {group.map((r) => (
-                  <Pill
-                    key={resourceKey(r)}
-                    r={r}
-                    active={filter === resourceKey(r)}
-                    onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
-                  />
-                ))}
-              </div>
-            ))}
-          {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          {lead && <div className="rpg-hotbar-lead">{lead}</div>}
+          {/* The resource pills as one group, so beside Log and Latest the row holds two groups to space out. */}
+          <div className="rpg-hotbar-pill-set">
+            {[economy, slots, uses, states, mechanisms]
+              .filter((g) => g.length > 0)
+              .map((group, gi) => (
+                <div key={gi} className="rpg-hotbar-pill-group">
+                  {group.map((r) => (
+                    <Pill
+                      key={resourceKey(r)}
+                      r={r}
+                      active={filter === resourceKey(r)}
+                      onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
+                    />
+                  ))}
+                </div>
+              ))}
+            {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          </div>
+          {end && <div className="rpg-hotbar-end">{end}</div>}
         </div>
       )}
       <div className="rpg-hotbar-body">
@@ -397,6 +425,8 @@ export function Hotbar({
                       ? { onMenu: menuFor(card, kind, !!iconFor?.(card.name)) }
                       : {})}
                     depleted={!isAvailable(consumableState, card)}
+                    group={stack.label}
+                    playing={card.id === playingId}
                     onPlay={() => onPlay(card)}
                   />
                 ))}
@@ -421,20 +451,25 @@ export function Hotbar({
         </button>
       </div>
       {awayNote && <p className="rpg-hotbar-away">{awayNote}</p>}
-      {tabNames.length > 1 && (
-        <div className="rpg-hotbar-tabs" role="tablist" aria-label="Where a card comes from">
-          {["All", ...tabNames].map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              className={`rpg-hotbar-tab${tab === t ? " is-active" : ""}`}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
+      {(tabNames.length > 1 || tail) && (
+        <div className="rpg-hotbar-foot">
+          {tabNames.length > 1 && (
+            <div className="rpg-hotbar-tabs" role="tablist" aria-label="Where a card comes from">
+              {["All", ...tabNames].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t}
+                  className={`rpg-hotbar-tab${tab === t ? " is-active" : ""}`}
+                  onClick={() => setTab(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {tail && <div className="rpg-hotbar-tail">{tail}</div>}
         </div>
       )}
     </section>

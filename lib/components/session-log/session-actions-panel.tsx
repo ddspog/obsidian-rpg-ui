@@ -8,8 +8,9 @@ import { economyResources, type HotbarResource, type TileKind } from "../../doma
 import { Hotbar } from "./hotbar";
 import { castBlock } from "../../domains/session-log/casting";
 import { DrawerContext } from "./bottom-drawer";
-import { HudCharacter } from "./hud-character";
-import { HudRoster } from "./hud-roster";
+import { HudCharacter, HudStandIn, type Arrival } from "./hud-character";
+import { Face, HudRoster, SigilFace } from "./hud-roster";
+import { HudPicker } from "./hud-picker";
 import { HudTurn } from "./hud-turn";
 import { LucideIcon } from "./lucide-icon";
 import type { HudInfo } from "../../domains/session-log/hud";
@@ -218,7 +219,7 @@ const PARTY_CARDS: Array<{ stack: string; kind: PartyCardKind; name: string; ico
 
 /**
  * A side of the table: who it holds, each with their card stacks. The drawer
- * shows one side at a time — Party (the GM and the PCs) and Foes today; an
+ * shows one side at a time — Party (the PCs) and Foes (the GM, then the foes) today; an
  * NPCs side is one more entry here.
  */
 interface Side {
@@ -301,15 +302,17 @@ export function SessionActionsPanel({
     })),
   }));
   const allSides: Side[] = [
+    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: (a: string) => pcStacks.get(a) ?? [] },
+    // The GM plays the world, foes included: its cards (and the party's, the table's) head the Foes side, which
+    // so stays there out of a fight.
     {
-      id: "party",
-      label: "Party",
-      // The GM's cards and the party's together, as one: the table.
-      actors: [GM, ...pcStacks.keys()],
+      id: "foes",
+      label: "Foes",
+      actors: [GM, ...foes],
       stacksFor: (a: string) =>
-        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (pcStacks.get(a) ?? []),
+        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (foeStacks.get(a) ?? []),
+      foe: true,
     },
-    { id: "foes", label: "Foes", actors: foes, stacksFor: (a: string) => foeStacks.get(a) ?? [], foe: true },
   ];
   const sides = allSides.filter((s) => s.actors.length > 0);
   // The turn, round and end cards only mean something in a fight; starting one
@@ -575,9 +578,59 @@ export function SessionActionsPanel({
     setActiveCard(null);
   };
 
+  // Who acts: a face or chip in the roster, or a step from the picker under the portrait.
+  const [pickTick, setPickTick] = useState(0);
+  const [arrival, setArrival] = useState<Arrival | undefined>();
+  const [said, setSaid] = useState("");
+  const stepDir = useRef<-1 | 0 | 1>(0);
+  const pickActor = (name: string) => {
+    drawer?.expand();
+    // GM or Party: on the side that holds it, whichever is shown now.
+    const owner = name === GM || name === PARTY ? sides.find((x) => x.actors.includes(name)) : side;
+    if (!owner) return;
+    if (owner.id !== side?.id) setSideId(owner.id);
+    setPicked((p) => ({ ...p, [owner.id]: name }));
+    setReadCard(null);
+    setActiveCard(null);
+    setPickTick((n) => n + 1);
+    setArrival((a) => ({ tick: (a?.tick ?? 0) + 1, dir: stepDir.current }));
+    // For a screen reader: who acts now.
+    setSaid(`${name === GM ? "GM" : name} acts`);
+    stepDir.current = 0;
+  };
+  // The previous or next actor on this side, the GM first where the side holds it: a step never
+  // crosses to the other side.
+  const stepOrder = [
+    ...[GM].filter((n) => side?.actors.includes(n)),
+    ...(side?.actors ?? []).filter((n) => n !== GM && n !== PARTY),
+  ];
+  const stepTo = (dir: -1 | 1): string | undefined => {
+    if (stepOrder.length < 2) return undefined;
+    const at = Math.max(0, stepOrder.indexOf(actor ?? ""));
+    return stepOrder[(at + dir + stepOrder.length) % stepOrder.length];
+  };
+  const stepActor = (dir: -1 | 1) => {
+    const to = stepTo(dir);
+    if (!to) return;
+    stepDir.current = dir;
+    pickActor(to);
+  };
+  const stepTarget = (dir: -1 | 1) => {
+    const to = stepTo(dir);
+    if (!to) return undefined;
+    const label = to === GM ? "GM" : to;
+    return { name: label, face: to === GM ? <SigilFace name={to} /> : <Face info={hudOf?.(to)} name={to} /> };
+  };
+
   const rosterNode = (
     <HudRoster
-      sides={sides.map((x) => ({ id: x.id, label: x.label, count: x.actors.length, ...(x.foe ? { foe: true } : {}) }))}
+      // The count is of characters: the GM heading the Foes isn't one.
+      sides={sides.map((x) => ({
+        id: x.id,
+        label: x.label,
+        count: x.actors.filter((n) => n !== GM && n !== PARTY).length,
+        ...(x.foe ? { foe: true } : {}),
+      }))}
       sideId={side?.id ?? ""}
       onSide={(id) => {
         setSideId(id);
@@ -585,24 +638,13 @@ export function SessionActionsPanel({
         setActiveCard(null);
       }}
       foe={!!side?.foe}
-      // GM and Party are there on whichever side is shown: they belong to the side that has them.
-      specials={[GM]
-        .filter((n) => sides.some((x) => x.actors.includes(n)))
-        .map((n) => ({ name: n, label: "GM · Party" }))}
+      // The GM heads the side that holds it (the Foes).
+      specials={[GM].filter((n) => side?.actors.includes(n)).map((n) => ({ name: n, label: "GM" }))}
       actors={(side?.actors ?? [])
         .filter((n) => n !== GM && n !== PARTY)
         .map((n) => ({ name: n, log: side?.stacksFor(n)[0]?.cards[0]?.actor ?? n }))}
       active={actor}
-      onPick={(name) => {
-        drawer?.expand();
-        // GM or Party: on the side that holds it, whichever is shown now.
-        const owner = name === GM || name === PARTY ? sides.find((x) => x.actors.includes(name)) : side;
-        if (!owner) return;
-        if (owner.id !== side?.id) setSideId(owner.id);
-        setPicked((p) => ({ ...p, [owner.id]: name }));
-        setReadCard(null);
-        setActiveCard(null);
-      }}
+      onPick={pickActor}
       hudOf={(n) => hudOf?.(n)}
       hpOf={(log) => defense?.health(log)}
       order={combat?.clock.next ?? []}
@@ -630,12 +672,54 @@ export function SessionActionsPanel({
       </>
     ) : null;
 
+  // The turn buttons: their own column beside the cards with a margin, else at the end of the
+  // filter row, so the cards take the room.
+  const turnNode = gmOnly ? null : (
+    <HudTurn
+      inCombat={!!combat}
+      // The party rests: from any of its own, or from the GM, who holds the table's cards.
+      canRest={!side?.foe || actor === GM}
+      {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
+      onRest={(kind) => {
+        const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
+        if (rest) handleCardClick(rest);
+      }}
+      provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
+      {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
+      warn={warnOA}
+      onWarn={(on) => {
+        setWarnOA(on);
+        try {
+          window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
+        } catch {
+          // Nowhere to keep it: back on next time.
+        }
+      }}
+    />
+  );
+  // Without a margin for the roster, who acts is chosen from under the portrait.
+  const actorLabel = actor === GM ? "GM" : actor === PARTY ? "Party" : (actor ?? "Choose");
+  const picker =
+    !gmOnly && !inMargin ? (
+      <HudPicker
+        roster={rosterNode}
+        onStep={stepActor}
+        prev={stepTarget(-1)}
+        next={stepTarget(1)}
+        current={actorLabel}
+        closeSignal={pickTick}
+      />
+    ) : null;
+
   return (
     <div
       ref={panelRef}
       className={`lonelog-actions-panel${inMargin ? " is-in-margin" : ""}${gmOnly ? " is-gm-only" : ""}`}
     >
-      {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : rosterNode}
+      {gmOnly ? null : inMargin && rosterHost ? createPortal(rosterNode, rosterHost) : null}
+      <span className="hud-picker-live" aria-live="polite">
+        {said}
+      </span>
       <div className="hud-main">
         {showCharacter && (
           <HudCharacter
@@ -648,12 +732,27 @@ export function SessionActionsPanel({
             foe={!!side?.foe}
             {...(onMakeNamedIcon ? { onMakeIcon: onMakeNamedIcon } : {})}
             {...(switches ? { extras: switches } : {})}
+            {...(picker ? { picker } : {})}
+            {...(awayNote ? { awayNote } : {})}
+            arrival={arrival}
+          />
+        )}
+        {!showCharacter && picker && (
+          <HudStandIn
+            name={actor ?? ""}
+            label={actorLabel}
+            info={actor ? hudOf?.(actor) : undefined}
+            picker={picker}
+            arrival={arrival}
           />
         )}
         <Hotbar
           key={`${side?.id}:${actor}`}
           stacks={castable}
-          {...(awayNote ? { awayNote } : {})}
+          {...(awayNote && !showCharacter ? { awayNote } : {})}
+          {...(turnNode && !inMargin ? { tail: turnNode } : {})}
+          {...(drawer?.tools && !inMargin ? { end: drawer.tools } : {})}
+          playingId={activeCard?.id ?? readCard?.id}
           resources={resourcesNow}
           {...(iconFor ? { iconFor } : {})}
           {...(onMakeIcon ? { onMakeIcon } : {})}
@@ -661,28 +760,7 @@ export function SessionActionsPanel({
           onPlay={handleCardClick}
           {...(!showCharacter && switches ? { extras: switches } : {})}
         />
-        {!gmOnly && (
-          <HudTurn
-            inCombat={!!combat}
-            canRest={!side?.foe}
-            {...(endTurnCard ? { onEndTurn: () => handleCardClick(endTurnCard) } : {})}
-            onRest={(kind) => {
-              const rest = partyStacks.flatMap((x) => x.cards).find((c) => c.partyKind === kind);
-              if (rest) handleCardClick(rest);
-            }}
-            provoked={creature && logActor ? combat?.provokedFor?.(logActor) : undefined}
-            {...(oaCard ? { onOpportunity: () => handleCardClick(oaCard) } : {})}
-            warn={warnOA}
-            onWarn={(on) => {
-              setWarnOA(on);
-              try {
-                window.localStorage.setItem("rpg-ui:oa-warn", on ? "1" : "0");
-              } catch {
-                // Nowhere to keep it: back on next time.
-              }
-            }}
-          />
-        )}
+        {inMargin && turnNode}
       </div>
       {readCard && (
         <PassivePopover

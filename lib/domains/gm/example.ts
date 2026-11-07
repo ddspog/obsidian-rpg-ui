@@ -244,6 +244,39 @@ function withTableDice(line: string, tables: GMStepContext["tables"]): string {
   });
 }
 
+/**
+ * What each choice spawns, for a pick made under `gen: <genName>`: every feature's lines, with the
+ * lines of the feature that declares that generator winning. Two cards may offer a choice of the
+ * same name ("Ooze" on a Monster card and on a Monster Name card); the pick must spawn its own card's.
+ */
+export function scopedStepLines(
+  features: GMFeature[],
+  genName: string | undefined,
+  stepCtx?: GMStepContext
+): Record<string, string> {
+  const merged: Record<string, string> = Object.assign({}, ...features.map((f) => gmStepLines(f, stepCtx)));
+  if (!genName) return merged;
+  const own = features.find((f) => [f.generator, ...(f.generators ?? [])].some((g) => g?.name === genName));
+  return own ? { ...merged, ...gmStepLines(own, stepCtx) } : merged;
+}
+
+/** The `gen: <name>` a log line sits under: the nearest one above the `nth` line reading `source`. */
+export function genNameAbove(body: string, at?: { source: string; nth: number }): string | undefined {
+  const lines = body.split("\n");
+  let idx = -1;
+  if (at) {
+    let seen = 0;
+    idx = lines.findIndex((l) => l.trim() === at.source.trim() && seen++ === at.nth);
+  }
+  if (idx < 0) return undefined;
+  for (let i = idx; i >= 0; i--) {
+    const m = lines[i].match(/^gen:\s*(.+)$/);
+    if (m) return m[1].trim();
+    if (i < idx && !/^\s/.test(lines[i])) return undefined;
+  }
+  return undefined;
+}
+
 export function gmStepLines(feature: GMFeature, stepCtx?: GMStepContext): Record<string, string> {
   const out = gmStepLinesRaw(feature, stepCtx);
   for (const [choice, line] of Object.entries(out)) out[choice] = withTableDice(line, stepCtx?.tables);
