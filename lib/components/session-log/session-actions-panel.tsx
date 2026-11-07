@@ -752,6 +752,7 @@ export function SessionActionsPanel({
           {...(awayNote && !showCharacter ? { awayNote } : {})}
           {...(turnNode && !inMargin ? { tail: turnNode } : {})}
           {...(drawer?.tools && !inMargin ? { end: drawer.tools } : {})}
+          playingId={activeCard?.id ?? readCard?.id}
           resources={resourcesNow}
           {...(iconFor ? { iconFor } : {})}
           {...(onMakeIcon ? { onMakeIcon } : {})}

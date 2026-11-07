@@ -2499,3 +2499,9 @@ body.is-mobile .rpg-hotbar-tail button.hud-endturn {
     clip-path: inset(50%);
   }
 }
+
+/* The card being played: its tile stays lit while its form is open. */
+.lonelog-bottom-drawer button.rpg-hotbar-tile.is-playing {
+  outline: 2px solid var(--log-ink);
+  outline-offset: 2px;
+}

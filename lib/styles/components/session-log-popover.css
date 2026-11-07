@@ -939,3 +939,223 @@ button.placeholder-party-flag {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
+
+/* ═══ UI review: the card on the drawer's parchment, as wide as the drawer lets it ═══
+   In the drawer (not the phone's sheet) the card takes the drawer's width up to 52rem: from 40rem wide it
+   is two columns, the fields at the left and what they add to the log (with Still needed and the buttons)
+   at the right. It is at most 36rem tall, its head and buttons staying put while the rest scrolls, so
+   opening a card never pushes the cards above it, or Append, out of view. */
+.lonelog-placeholder-popover:not(.is-sheet) {
+  container-type: inline-size;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 52rem;
+  /* What the window leaves under the drawer's cards (measured as it opens: --card-room), at most 36rem. */
+  max-height: min(36rem, var(--card-room, calc(100vh - 31rem)));
+  /* Clear of Obsidian's status bar, over the pane's bottom right corner. */
+  margin-bottom: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 12px;
+  /* A lighter leaf of the drawer's parchment, raised on one soft warm shadow. */
+  --card-leaf: light-dark(#f6f0e2, #2e2923);
+  background: var(--card-leaf);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.4) inset,
+    0 10px 28px -8px rgb(40 26 8 / 0.3),
+    0 2px 6px rgb(40 26 8 / 0.12);
+}
+
+/* A narrow drawer: one column, a little wider than before. */
+@container (max-width: 40rem) {
+  .lonelog-placeholder-popover:not(.is-sheet) {
+    max-width: 32rem;
+  }
+}
+
+.lonelog-placeholder-popover .placeholder-form {
+  gap: 0.75rem;
+}
+
+.lonelog-placeholder-popover .placeholder-fields,
+.lonelog-placeholder-popover .placeholder-result {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lonelog-placeholder-popover .placeholder-fields {
+  gap: 0.75rem;
+}
+
+.lonelog-placeholder-popover .placeholder-fields:empty {
+  display: none;
+}
+
+.lonelog-placeholder-popover .placeholder-result {
+  gap: 0.6rem;
+}
+
+/* One column: a little more room between the fields and what they make. */
+.lonelog-placeholder-popover .placeholder-fields:not(:empty) + .placeholder-result {
+  margin-top: 0.5rem;
+}
+
+@container (min-width: 37rem) {
+  .lonelog-placeholder-popover .placeholder-form:has(> .placeholder-fields:not(:empty)) {
+    display: grid;
+    grid-template-columns: minmax(16rem, 22rem) minmax(18rem, 1fr);
+    grid-template-areas:
+      "head head"
+      "fields result";
+    align-items: start;
+    column-gap: 1.75rem;
+    row-gap: 0.75rem;
+  }
+
+  .lonelog-placeholder-popover .placeholder-form > .placeholder-head {
+    grid-area: head;
+  }
+
+  .lonelog-placeholder-popover .placeholder-form > .placeholder-fields {
+    grid-area: fields;
+  }
+
+  .lonelog-placeholder-popover .placeholder-form > .placeholder-result {
+    grid-area: result;
+    margin-top: 0;
+  }
+}
+
+/* The head: the name once, in the drawer's face, with a close; it stays put while the rest scrolls. */
+.lonelog-placeholder-popover .placeholder-head {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--log-rule);
+}
+
+.lonelog-placeholder-popover:not(.is-sheet) .placeholder-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 0.85rem;
+  background: var(--card-leaf);
+}
+
+.lonelog-placeholder-popover .placeholder-title {
+  flex: 1 1 auto;
+  font-family: var(--font-text);
+}
+
+.lonelog-placeholder-popover .placeholder-head > :not(.placeholder-title, .placeholder-close) {
+  flex-basis: 100%;
+}
+
+.lonelog-placeholder-popover button.placeholder-close {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-inline-end: -0.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lonelog-placeholder-popover button.placeholder-close:hover {
+  background: light-dark(#e3d9c2, #3a342c);
+  color: var(--text-normal);
+}
+
+/* The buttons stay at the foot while the fields scroll. */
+.lonelog-placeholder-popover:not(.is-sheet) .placeholder-buttons {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 0.25rem;
+  padding-block: 0.5rem 0.9rem;
+  background: var(--card-leaf);
+}
+
+/* A rider is a plain checkbox row, not a box in the form. */
+.lonelog-placeholder-popover .placeholder-riders {
+  padding: 0;
+  border: none;
+}
+
+.lonelog-placeholder-popover .placeholder-riders > legend {
+  padding: 0;
+  margin-bottom: 0.25rem;
+}
+
+.lonelog-placeholder-popover .placeholder-rider {
+  padding: 0.2rem 0;
+  border: none;
+  background: none;
+}
+
+/* A field the card still needs: its label underlined in ink, as "Still needed" names it. */
+.lonelog-placeholder-popover .placeholder-field.is-missing .placeholder-label {
+  text-decoration: underline 2px var(--log-ink);
+  text-underline-offset: 3px;
+}
+
+/* The preview reads as the result: flat on the parchment, as the Log draws it, its unfilled parts in the
+   muted ink (not faded), its dice in the link ink. */
+.lonelog-placeholder-popover .placeholder-preview {
+  gap: 0.35rem;
+}
+
+.lonelog-placeholder-popover .placeholder-preview-label {
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.lonelog-placeholder-popover .placeholder-preview-entries {
+  max-height: none;
+  overflow: visible;
+  padding: 0.1rem 0 0.2rem;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.lonelog-placeholder-popover .placeholder-preview-entries .lonelog-sidebar-item {
+  padding-block: 0.15rem;
+}
+
+.lonelog-placeholder-popover .placeholder-preview.is-empty .placeholder-preview-entries {
+  opacity: 1;
+}
+
+.lonelog-placeholder-popover .placeholder-preview-entries :is(.lonelog-formula, .lonelog-roll-mod, .lonelog-vs) {
+  color: var(--text-muted);
+}
+
+.lonelog-placeholder-popover .lonelog-entries button.lonelog-roll-expr--btn {
+  color: var(--log-ink);
+}
+
+.lonelog-placeholder-popover .placeholder-hint,
+.lonelog-placeholder-popover .placeholder-preview-hint,
+.lonelog-placeholder-popover .placeholder-needs {
+  color: var(--text-muted);
+}
+
+.lonelog-placeholder-popover .placeholder-preview-raw pre {
+  background: light-dark(#ece4d3, #24201c);
+}
