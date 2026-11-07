@@ -46,6 +46,8 @@ export interface LogSidebarProps {
   follow?: { id: number; n: number } | null;
   /** Close the Log — its ✕ sits in the header, which sticks as the Log scrolls. */
   onClose?: () => void;
+  /** A run of entries mixed into the prose (no margin for the Log): no heading, no scroll box. */
+  bare?: boolean;
 }
 
 export interface SidebarSection {
@@ -75,6 +77,7 @@ export function LogSidebar({
   onReading,
   follow,
   onClose,
+  bare = false,
 }: LogSidebarProps) {
   // The entry last worked on stays open (entries are clamped until selected): the one a card has
   // just added, and whichever one a die, pick or word was last touched in.
@@ -177,8 +180,12 @@ export function LogSidebar({
       : undefined;
 
   return (
-    <aside ref={asideRef} className="lonelog-sidebar lonelog-entries" aria-label="Session log">
-      <div ref={headerRef} className="lonelog-sidebar-header">
+    <aside
+      ref={asideRef}
+      className={bare ? "lonelog-trail-entries lonelog-entries" : "lonelog-sidebar lonelog-entries"}
+      aria-label="Session log"
+    >
+      <div ref={headerRef} className="lonelog-sidebar-header" hidden={bare}>
         Log
         {onClose && (
           <button

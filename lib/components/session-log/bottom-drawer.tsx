@@ -6,6 +6,8 @@ export interface DrawerBar {
   /** Whether the log has a Log (sidebar) and a last block to jump to. */
   hasLog: boolean;
   logOpen: boolean;
+  /** What the Log button reads ("Log", or "Log ▸" / "Log ▾" when it is mixed into the prose). */
+  logLabel?: string;
   onToggleLog: () => void;
   onLatest: () => void;
   /** Edits not saved yet: Save and Undo show above the bar. */
@@ -27,6 +29,8 @@ interface BottomDrawerProps {
 export const DrawerContext = React.createContext<{
   expand: () => void;
   reportActor?: (name: string | undefined) => void;
+  /** The log's Log and Latest buttons, for the panel to lay in its own top row when the pane is tight. */
+  tools?: React.ReactNode;
 } | null>(null);
 
 const KEY = "rpg-ui:drawer-collapsed";
@@ -71,7 +75,6 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
       // Nowhere to keep it: folded next time.
     }
   }, []);
-  const context = React.useMemo(() => ({ expand: () => set(false), reportActor: setActor }), [set]);
 
   // On a phone the bar rests on the app's buttons across the pane's full width. The note's side margin differs
   // from device to device, so measure how far the drawer sits from the pane's edges rather than assuming it.
@@ -127,6 +130,51 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
 
   const acting = actor === "Game Master" ? "GM" : actor;
 
+  // On a wide pane the log's own controls live in the drawer, not floating over the prose: Save and Undo when
+  // there are edits, then Log and Latest. (A phone has the same controls in its own bar below.)
+  const toolsNode = bar ? (
+    <div className="lonelog-drawer-tools" role="group" aria-label="Log controls">
+      {bar.dirty && (
+        <>
+          <button type="button" className="lonelog-tool" onClick={bar.onUndo} title="Undo unsaved edits">
+            Undo
+          </button>
+          <button type="button" className="lonelog-tool is-primary" onClick={bar.onSave}>
+            Save
+          </button>
+        </>
+      )}
+      {bar.hasLog && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          aria-pressed={bar.logOpen}
+          onClick={bar.onToggleLog}
+          title={bar.logOpen ? "Close the log" : "Open the log"}
+        >
+          <LucideIcon name="AlignLeft" size="0.9rem" strokeWidth={2} />
+          {bar.logLabel ?? "Log"}
+        </button>
+      )}
+      {bar.hasLog && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          onClick={bar.onLatest}
+          title="Scroll to the last block"
+          aria-label="Scroll to the last block of the log"
+        >
+          <LucideIcon name="ChevronsDown" size="0.9rem" strokeWidth={2} />
+          Latest
+        </button>
+      )}
+    </div>
+  ) : null;
+  const context = React.useMemo(
+    () => ({ expand: () => set(false), reportActor: setActor, tools: toolsNode }),
+    [set, toolsNode]
+  );
+
   return (
     <div
       ref={root}
@@ -143,46 +191,7 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
       >
         <LucideIcon name={collapsed ? "ChevronUp" : "ChevronDown"} size="0.9rem" strokeWidth={1.8} />
       </button>
-      {bar && (
-        // On a wide pane the log's own controls live here, in the bar at the foot, not floating over the prose:
-        // Save and Undo when there are edits, then Log and Latest. (A phone has the same controls in its own bar below.)
-        <div className="lonelog-drawer-tools" role="group" aria-label="Log controls">
-          {bar.dirty && (
-            <>
-              <button type="button" className="lonelog-tool" onClick={bar.onUndo} title="Undo unsaved edits">
-                Undo
-              </button>
-              <button type="button" className="lonelog-tool is-primary" onClick={bar.onSave}>
-                Save
-              </button>
-            </>
-          )}
-          {bar.hasLog && (
-            <button
-              type="button"
-              className="lonelog-tool"
-              aria-pressed={bar.logOpen}
-              onClick={bar.onToggleLog}
-              title={bar.logOpen ? "Close the log" : "Open the log"}
-            >
-              <LucideIcon name="AlignLeft" size="0.9rem" strokeWidth={2} />
-              Log
-            </button>
-          )}
-          {bar.hasLog && (
-            <button
-              type="button"
-              className="lonelog-tool"
-              onClick={bar.onLatest}
-              title="Scroll to the last block"
-              aria-label="Scroll to the last block of the log"
-            >
-              <LucideIcon name="ChevronsDown" size="0.9rem" strokeWidth={2} />
-              Latest
-            </button>
-          )}
-        </div>
-      )}
+      {toolsNode}
       {collapsed && (
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
           <span className="drawer-collapsed-label">{label}</span>
@@ -213,7 +222,7 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
             </button>
             {bar.hasLog && (
               <button type="button" aria-pressed={bar.logOpen} onClick={bar.onToggleLog}>
-                Log
+                {bar.logLabel ?? "Log"}
               </button>
             )}
             {bar.hasLog && (

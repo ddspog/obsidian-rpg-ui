@@ -19,6 +19,7 @@ import type * as EsbuildWasm from "esbuild-wasm";
 import { resolveWikiFile, resolveWikiFolder } from "../utils/wiki-file";
 import * as UIModule from "../ui";
 import { getSystemSourceMaxMtime, readBundleCache, writeBundleCache } from "./bundle-cache";
+import * as pathPosix from "./posix-path";
 
 /** Plugin metadata used by the bundle cache to invalidate on plugin upgrade. */
 let cacheContext: { pluginDir: string; pluginVersion: string } | null = null;
@@ -48,9 +49,12 @@ export async function initEsbuild(wasmURL?: string): Promise<void> {
     // package which doesn't require WASM initialisation.
     if (typeof process !== "undefined" && process.versions?.node) {
       try {
-        const native = require("esbuild") as typeof EsbuildWasm;
-        esbuildModule = native;
-        return;
+        // Obsidian's phone UI on a desktop logs the require and hands back nothing instead of throwing.
+        const native = require("esbuild") as typeof EsbuildWasm | undefined;
+        if (native) {
+          esbuildModule = native;
+          return;
+        }
       } catch {
         // fall through to esbuild-wasm
       }
@@ -119,16 +123,12 @@ export async function loadSystemFromTypeScript(vault: Vault, systemFolderPath: s
             // confuse vault lookups. Keep the full normalized path so that
             // Obsidian's Vault API can resolve files correctly.
             // Use POSIX normalization to keep paths consistent across platforms.
-
-            const pathPosix = require("path").posix;
             const normalized = pathPosix.normalize(args.path).replace(/^\.\//, "");
             return { path: normalized, namespace: "vault" };
           }
           // Resolve relative paths robustly using posix normalization
           if (args.path.startsWith(".")) {
             // Use posix path operations to avoid Windows backslash issues
-
-            const pathPosix = require("path").posix;
             const importerDir = pathPosix.dirname(args.importer || "");
 
             // Preserve known extensions (.ts, .tsx, .js, .jsx) if present; otherwise
