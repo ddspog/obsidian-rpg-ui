@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { headTrailKey, logTrails, nodeTrailKey, TRAIL_START } from "./log-trails";
+import { combatTrailKey, headTrailKey, logTrails, nodeTrailKey, TRAIL_START } from "./log-trails";
 import type { ProseScene, SidebarItem } from "./prose-model";
 
 const item = (id: number): SidebarItem => ({ id, kind: "action", rows: [] });
@@ -45,8 +45,42 @@ describe("logTrails", () => {
     ];
     const m = logTrails(scenes, [1, 2, 3, 4, 6, 8].map(item));
     expect(ids(m, nodeTrailKey(0, 0))).toEqual([1, 2]);
-    expect(ids(m, nodeTrailKey(0, 1))).toEqual([3, 4, 6]);
+    // the fight's own line under its header, its actions' entries in the fight
+    expect(ids(m, nodeTrailKey(0, 1))).toEqual([3]);
+    expect(ids(m, combatTrailKey(0, 1, 0))).toEqual([4, 6]);
     expect(ids(m, nodeTrailKey(0, 2))).toEqual([8]);
+  });
+
+  it("gives each turn and each action of a fight its own run", () => {
+    const beat = (sourceId: number) => ({
+      kind: "beat" as const,
+      actor: "Talon",
+      fragments: [{ text: "hits", sourceId }],
+    });
+    const scenes: ProseScene[] = [
+      {
+        nodes: [
+          {
+            kind: "combat",
+            sourceId: 1,
+            nodes: [
+              { kind: "turn", number: 1, sourceId: 2 },
+              beat(4),
+              beat(6),
+              { kind: "turn", number: 2, sourceId: 8 },
+              beat(10),
+            ],
+          },
+        ],
+      } as ProseScene,
+    ];
+    const m = logTrails(scenes, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(item));
+    expect(ids(m, nodeTrailKey(0, 0))).toEqual([1]);
+    expect(ids(m, combatTrailKey(0, 0, 0))).toEqual([2, 3]);
+    expect(ids(m, combatTrailKey(0, 0, 1))).toEqual([4, 5]);
+    expect(ids(m, combatTrailKey(0, 0, 2))).toEqual([6, 7]);
+    expect(ids(m, combatTrailKey(0, 0, 3))).toEqual([8, 9]);
+    expect(ids(m, combatTrailKey(0, 0, 4))).toEqual([10, 11]);
   });
 
   it("keeps reading order when a later passage tells an earlier roll", () => {

@@ -2846,3 +2846,16 @@ button.lonelog-trail-head:hover {
 body.is-mobile button.lonelog-trail-head {
   min-height: 2.75rem;
 }
+
+/* Under an action in a fight: its rolls close under it. */
+.lonelog-prose-beat-trail:empty {
+  display: none;
+}
+
+.lonelog-prose-beat-trail .lonelog-trail {
+  margin: 0.1rem 0 0.35rem;
+}
+
+.lonelog-prose-combat > .lonelog-trail {
+  margin-inline: 0.75rem;
+}

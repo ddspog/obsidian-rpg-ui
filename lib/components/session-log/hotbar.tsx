@@ -48,6 +48,8 @@ interface HotbarProps {
   tail?: React.ReactNode;
   /** At the end of the top row, after the resource pills: the log's Log and Latest on a tight pane. */
   end?: React.ReactNode;
+  /** The card being played (its form open): its tile stays lit. */
+  playingId?: string | undefined;
 }
 
 /** A card's tab, by where it comes from — BG3's Common · class · Items · Passives. */
@@ -167,6 +169,7 @@ function Tile({
   image,
   depleted,
   group,
+  playing,
   onPlay,
   onMenu,
 }: {
@@ -178,6 +181,8 @@ function Tile({
   /** Its own icon art, when there is some. */
   image?: string;
   depleted: boolean;
+  /** Its card's form is open. */
+  playing?: boolean;
   onPlay: () => void;
   onMenu?: (e: React.MouseEvent) => void;
 }) {
@@ -187,7 +192,8 @@ function Tile({
   return (
     <button
       type="button"
-      className={`rpg-hotbar-tile is-${kind} from-${source}${image ? " has-art" : ""}${depleted ? " is-depleted" : ""}${card.toggle ? ` is-toggle${card.on ? " is-on" : ""}` : ""}${changed ? " is-changed" : ""}`}
+      className={`rpg-hotbar-tile is-${kind} from-${source}${image ? " has-art" : ""}${depleted ? " is-depleted" : ""}${card.toggle ? ` is-toggle${card.on ? " is-on" : ""}` : ""}${changed ? " is-changed" : ""}${playing ? " is-playing" : ""}`}
+      aria-pressed={playing || undefined}
       aria-label={`${card.name} — ${KIND_LABEL[kind]}${from ? ` · ${from}` : ""}${card.toggle ? ` · ${card.on ? "on" : "off"}` : ""}${what ? `\n${what}` : ""}${changed ? `\nChanged by ${changed}` : ""}`}
       data-tooltip-position="top"
       disabled={depleted}
@@ -232,6 +238,7 @@ export function Hotbar({
   lead,
   tail,
   end,
+  playingId,
 }: HotbarProps) {
   const [tab, setTab] = useState("All");
   // A tile's menu: make its icon in the image studio.
@@ -361,21 +368,24 @@ export function Hotbar({
       {(everything.length > 0 || extras || lead || end) && (
         <div className="rpg-hotbar-pills" role="toolbar" aria-label="Resources — pick one to see what spends it">
           {lead && <div className="rpg-hotbar-lead">{lead}</div>}
-          {[economy, slots, uses, states, mechanisms]
-            .filter((g) => g.length > 0)
-            .map((group, gi) => (
-              <div key={gi} className="rpg-hotbar-pill-group">
-                {group.map((r) => (
-                  <Pill
-                    key={resourceKey(r)}
-                    r={r}
-                    active={filter === resourceKey(r)}
-                    onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
-                  />
-                ))}
-              </div>
-            ))}
-          {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          {/* The resource pills as one group, so beside Log and Latest the row holds two groups to space out. */}
+          <div className="rpg-hotbar-pill-set">
+            {[economy, slots, uses, states, mechanisms]
+              .filter((g) => g.length > 0)
+              .map((group, gi) => (
+                <div key={gi} className="rpg-hotbar-pill-group">
+                  {group.map((r) => (
+                    <Pill
+                      key={resourceKey(r)}
+                      r={r}
+                      active={filter === resourceKey(r)}
+                      onToggle={() => setFilter((f) => (f === resourceKey(r) ? null : resourceKey(r)))}
+                    />
+                  ))}
+                </div>
+              ))}
+            {extras && <div className="rpg-hotbar-pill-group rpg-hotbar-extras">{extras}</div>}
+          </div>
           {end && <div className="rpg-hotbar-end">{end}</div>}
         </div>
       )}
@@ -416,6 +426,7 @@ export function Hotbar({
                       : {})}
                     depleted={!isAvailable(consumableState, card)}
                     group={stack.label}
+                    playing={card.id === playingId}
                     onPlay={() => onPlay(card)}
                   />
                 ))}

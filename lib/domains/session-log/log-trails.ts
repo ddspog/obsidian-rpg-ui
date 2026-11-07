@@ -4,7 +4,9 @@
  * With no margin beside the prose for the Log, its entries are drawn in the prose instead, each
  * run of them under the passage it led to: a passage's own entries (the roll whose `=>` it tells)
  * and those after it, up to the next passage. Entries before the first passage go at the top.
- * Pure: ProseView asks for each place's run by its key.
+ * In a fight, each turn and each action is a place of its own (an action's run right under it), and
+ * what comes before the first turn goes under the fight's header. Pure: ProseView asks for each
+ * place's run by its key.
  */
 
 import type { ProseNode, ProseScene, SidebarItem } from "./prose-model";
@@ -13,6 +15,8 @@ import type { ProseNode, ProseScene, SidebarItem } from "./prose-model";
 export const TRAIL_START = "start";
 export const headTrailKey = (scene: number) => `head:${scene}`;
 export const nodeTrailKey = (scene: number, node: number) => `node:${scene}:${node}`;
+/** In a fight (the scene's node `node`), at its inner node `inner` (a turn, an action). */
+export const combatTrailKey = (scene: number, node: number, inner: number) => `combat:${scene}:${node}:${inner}`;
 
 /** The source lines a passage tells (a fight: every one in it), lowest first. */
 export function nodeSourceIds(node: ProseNode): number[] {
@@ -36,6 +40,15 @@ export function logTrails(scenes: ProseScene[], items: SidebarItem[]): Map<strin
   scenes.forEach((scene, si) => {
     if (scene.head?.sourceId != null) places.push({ key: headTrailKey(si), start: scene.head.sourceId });
     scene.nodes.forEach((node, ni) => {
+      if (node.kind === "combat") {
+        // The fight's own line opens it (its run under the header), then a place per turn and action.
+        places.push({ key: nodeTrailKey(si, ni), start: node.sourceId });
+        node.nodes.forEach((inner, k) => {
+          const ids = nodeSourceIds(inner);
+          if (ids.length > 0) places.push({ key: combatTrailKey(si, ni, k), start: Math.min(...ids) });
+        });
+        return;
+      }
       const ids = nodeSourceIds(node);
       if (ids.length > 0) places.push({ key: nodeTrailKey(si, ni), start: Math.min(...ids) });
     });
