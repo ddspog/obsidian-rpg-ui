@@ -320,9 +320,16 @@ export function stepGeneratedLine(s: GMStep, rng: () => number = Math.random): s
     tables.forEach((_, at) => {
       for (const p of parsePickSpec(s.choose?.[at] ?? "")) if (p.table && p.table - 1 !== at) taken.add(p.table - 1);
     });
-    return chooseTables(tables, s.pick, rng)
-      .flatMap((ref, i) => {
-        const at = tables.indexOf(ref);
+    // Chosen by position, not by name: a table may be listed more than once (three cards drawn from
+    // one deck), each time with its own label.
+    return chooseTables(
+      tables.map((_, k) => String(k)),
+      s.pick,
+      rng
+    )
+      .map(Number)
+      .flatMap((at, i) => {
+        const ref = tables[at];
         if (taken.has(at)) return [];
         const named = s.labels?.[at]?.trim() || `${label} ${i + 1}`;
         const spec = s.choose?.[at]?.trim();
