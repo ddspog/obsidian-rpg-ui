@@ -96,7 +96,7 @@ import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
 import { genNameAbove, resolveGmBody, scopedStepLines, type GMStepContext } from "lib/domains/gm/example";
 import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
-import { headingKey, linkTargets, plainEmphasis, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
+import { headingKey, linkTargets, readRolled, tableHeadings } from "lib/domains/gm/linked-tables";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -2283,22 +2283,28 @@ class SessionLogMarkdown extends ReactMarkdown {
     const tableRoll: TableRoll = (ref, roll, pick) => {
       const table = this.stepCtx.tables?.[ref];
       if (!table) return undefined;
+      // A result that sends you to another table is rolled through, so it reads whole, seeded by the
+      // die (and the part) that rolled it so the same roll reads the same chain. It is written as
+      // plain text: a row's bold or italic would show as asterisks.
+      const read = (text: string | undefined, refs: string[], seed: string) => {
+        if (!text) return text;
+        const from = refs.map((r) => this.linkedTables.refFile[r]).find(Boolean);
+        return readRolled(text, from, this.linkedTableLookup, seed);
+      };
       if (pick?.rolls) {
         // Each part may be rolled on its own table.
-        const tables = (pick.refs ?? [ref]).map((r) => this.stepCtx.tables?.[r]);
-        return tables.every((t): t is TableDef => !!t)
-          ? pickResult(tables, pick.rolls, pick.spec, pick.roll)
-          : undefined;
+        const refs = pick.refs ?? [ref];
+        const tables = refs.map((r) => this.stepCtx.tables?.[r]);
+        if (!tables.every((t): t is TableDef => !!t)) return undefined;
+        const name = pickResult(tables, pick.rolls, pick.spec, pick.roll);
+        return read(name, refs, `${refs.join(",")}|${pick.rolls.join(",")}|pick${pick.roll ?? ""}`);
       }
-      if (pick?.part != null) return partText(table, roll, pick.spec, pick.part);
+      if (pick?.part != null)
+        return read(partText(table, roll, pick.spec, pick.part), [ref], `${ref}|${roll}|part${pick.part}`);
       const row = resolveTableRoll(`${ref} d100=${roll} ->`, table, this.stepCtx.alternatives?.[ref])
         .match(/->\s*(\S.*)$/)?.[1]
         ?.trim();
-      // A row that sends you to another table is rolled through, so the result reads whole.
-      const from = this.linkedTables.refFile[ref];
-      const read = row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
-      // The result is written as plain text: a row's bold or italic would show as asterisks.
-      return read && plainEmphasis(read);
+      return read(row, [ref], `${ref}|${roll}`);
     };
 
     this.reactRoot.render(

@@ -4,11 +4,13 @@ import {
   headingKey,
   linkTargets,
   plainEmphasis,
+  readRolled,
   rollLinkedTables,
   seededRoll,
   tableHeadings,
   type LinkedTableLookup,
 } from "./linked-tables";
+import { partText, pickResult } from "./steps";
 
 const borders = parseTableBlock(
   "minor-upriver-border",
@@ -244,5 +246,55 @@ describe("plainEmphasis", () => {
     expect(plainEmphasis("Religious Areas* (see note)")).toBe("Religious Areas* (see note)");
     expect(plainEmphasis("2 * 3 and snake_case_name")).toBe("2 * 3 and snake_case_name");
     expect(plainEmphasis("1d6 * 10 gp")).toBe("1d6 * 10 gp");
+  });
+});
+
+describe("readRolled, a part of a row and the name the parts make", () => {
+  // A `{{ roll each }}` table like the NPC Generator's: each column is rolled as its own part, and
+  // the Profession part sends you to another table.
+  const npc = parseTableBlock(
+    "alignment-profession-gender",
+    [
+      "|d100*|Gender|Alignment|Profession|",
+      "|---|---|---|---|",
+      "|1-100|Male|**Lawful** Neutral|Tradesperson/Merchant ([[NPC.md#Profession Table|Roll on Profession Table]], below)|",
+    ].join("\n")
+  );
+  const professions = parseTableBlock("profession", ["|d4*|Profession|", "|---|---|", "|1-4|Blacksmith|"].join("\n"));
+  const npcLookup: LinkedTableLookup = (fromFile, target, heading) =>
+    (target || fromFile) === "NPC.md" && headingKey(heading) === "professiontable"
+      ? { tables: [professions], file: "NPC.md" }
+      : undefined;
+
+  it("rolls a part's link through, as a whole row's is", () => {
+    const part = partText(npc, 40, "Gender=1+Alignment=2+Profession=3", 2)!;
+    expect(part).toContain("[[NPC.md#Profession Table");
+    expect(readRolled(part, "NPC.md", npcLookup, "npc|40|part2")).toMatch(
+      /^Tradesperson\/Merchant\n↳ Profession Table: Blacksmith \(d4 [1-4]\)$/
+    );
+  });
+
+  it("reads a part the same for the same seed", () => {
+    const part = partText(npc, 40, "Profession=3", 0)!;
+    expect(readRolled(part, "NPC.md", npcLookup, "a")).toBe(readRolled(part, "NPC.md", npcLookup, "a"));
+  });
+
+  it("drops a part's emphasis, and reads its links as words when the note is unknown", () => {
+    expect(readRolled(partText(npc, 40, "Alignment=2", 0)!, "NPC.md", npcLookup, "s")).toBe("Lawful Neutral");
+    expect(readRolled(partText(npc, 40, "Profession=3", 0)!, undefined, npcLookup, "s")).toBe(
+      "Tradesperson/Merchant (Roll on Profession Table, below)"
+    );
+  });
+
+  it("rolls the name the parts make through too", () => {
+    const name = pickResult([npc, npc], [40, 40], "Gender=1+Profession=3", 1)!;
+    expect(readRolled(name, "NPC.md", npcLookup, "pick")).toMatch(/\n↳ Profession Table: Blacksmith \(d4 [1-4]\)$/);
+    expect(readRolled(name, "NPC.md", npcLookup, "pick")).not.toContain("[[");
+  });
+
+  it("reads a word picker's options as words, leaving the picker whole", () => {
+    expect(readRolled("{[[NPC.md#Profession Table|Smith]]/*Baker* - }", "NPC.md", npcLookup, "s")).toBe(
+      "{Smith/Baker - }"
+    );
   });
 });
