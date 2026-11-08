@@ -811,7 +811,9 @@ export function PlaceholderPopover({
               className={`placeholder-preview${userInputs.length > 0 && !Object.values(values).some((v) => v.trim()) ? " is-empty" : ""}`}
               aria-label="Preview"
             >
-              <span className="placeholder-preview-label">Adds to the log</span>
+              <span className="placeholder-preview-label">
+                Adds to the log <span className="placeholder-preview-next">— the next entry</span>
+              </span>
               <div className="lonelog-entries placeholder-preview-entries">
                 {preview.items.map((item) => (
                   <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />
