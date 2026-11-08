@@ -94,7 +94,7 @@ import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
 import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
 import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
-import { headingKey, linkTargets, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
+import { headingKey, linkTargets, plainEmphasis, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -2293,7 +2293,9 @@ class SessionLogMarkdown extends ReactMarkdown {
         ?.trim();
       // A row that sends you to another table is rolled through, so the result reads whole.
       const from = this.linkedTables.refFile[ref];
-      return row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      const read = row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      // The result is written as plain text: a row's bold or italic would show as asterisks.
+      return read && plainEmphasis(read);
     };
 
     this.reactRoot.render(
