@@ -52,6 +52,19 @@ describe("stepGeneratedLine", () => {
     );
   });
 
+  it("labels each listing of a table that a step lists more than once", () => {
+    const s: GMStep = {
+      choice: "Three-card spread",
+      tables: ["@[[Cards]]#draw", "@[[Cards]]#draw", "@[[Cards]]#draw"],
+      labels: ["Past", "Present", "Future"],
+    };
+    expect(stepGeneratedLine(s)).toBe(
+      ["Past: @[[Cards]]#draw d100= ->", "Present: @[[Cards]]#draw d100= ->", "Future: @[[Cards]]#draw d100= ->"].join(
+        "\n"
+      )
+    );
+  });
+
   it("randomly picks a subset of tables (deterministic via injected rng)", () => {
     const s: GMStep = {
       choice: "Meaning Elements",
