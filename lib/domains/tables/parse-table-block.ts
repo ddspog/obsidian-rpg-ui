@@ -470,6 +470,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
   let footer: { caption: string; classes: string[]; title: boolean } | null = null;
   let legacyPaginate: PaginationConfig | undefined;
   let wide = false;
+  let packed = false;
 
   for (const raw of lines) {
     const line = raw.trimEnd();
@@ -477,6 +478,13 @@ export function parseTableBlock(name: string, body: string): TableDef {
 
     if (line.trim() === "@wide") {
       wide = true;
+      continue;
+    }
+
+    // `@pack`: a body line may hold several rows, one after another, each as many cells as the
+    // table has columns (`|01|Abbot|02|Acolyte|03|Actor|`), so a long table stays short to read.
+    if (line.trim() === "@pack") {
+      packed = true;
       continue;
     }
 
@@ -533,11 +541,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
     applyRowMarkers(row);
     return row;
   });
-  const rows: TableRow[] = bodyLines.map((l) => {
-    const row: TableRow = { cells: splitCells(l) };
-    applyRowMarkers(row);
-    return row;
-  });
+  const rowCells: TableCell[][] = bodyLines.map((l) => splitCells(l));
 
   // ── Footer items, in source order ──
   //   `|= … =|` → expr · strict `|---|` → group divider · else → cells row.
@@ -589,6 +593,14 @@ export function parseTableBlock(name: string, body: string): TableDef {
   for (let c = 0; c < columnCount; c++) columnLabels.push(colValue[c] ?? "");
   const columns = columnLabels.map(normalizeColumnKey);
 
+  const rows: TableRow[] = (
+    packed && columnCount > 0 ? rowCells.flatMap((c) => packedRows(c, columnCount)) : rowCells
+  ).map((cells) => {
+    const row: TableRow = { cells };
+    applyRowMarkers(row);
+    return row;
+  });
+
   // Default: first column is the key when no `*` sigil was given.
   if (keyColumnIndex < 0 && columns.length > 0) keyColumnIndex = 0;
   const keyColumn = keyColumnIndex >= 0 ? columns[keyColumnIndex] : undefined;
@@ -619,6 +631,13 @@ export function parseTableBlock(name: string, body: string): TableDef {
     pagination,
     wide: wide || undefined,
   };
+}
+
+/** A packed body line's cells cut into rows of `columns` cells each; a short last piece is a row too. */
+function packedRows(cells: TableCell[], columns: number): TableCell[][] {
+  const out: TableCell[][] = [];
+  for (let i = 0; i < cells.length; i += columns) out.push(cells.slice(i, i + columns));
+  return out;
 }
 
 /** The pagination config carried by the first `{{ paginate }}` footer
