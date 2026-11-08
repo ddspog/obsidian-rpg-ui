@@ -43,6 +43,14 @@ export interface FolderLinkStyle {
  * by CSS so a `![[Foo]]` transclusion doesn't drag the footer into
  * the host note.
  */
+/** Notes under `folder` show prompts from the note `wordsFile` (one prompt a line) in their margin. */
+export interface MarginPromptSet {
+  /** Vault folder, e.g. `tales-of-the-valiant/compendium/the-tome-of-adventure-design`. */
+  folder: string;
+  /** Vault path of the note holding the prompts, one a line. */
+  wordsFile: string;
+}
+
 export interface PageFooterField {
   /** Frontmatter key to look up (e.g. `"source"`). */
   key: string;
@@ -123,6 +131,10 @@ export interface DndUIToolkitSettings {
    *  into the host note. */
   pageFooterFields: PageFooterField[];
 
+  /** Creativity prompts in the margin of a reading-view note, by folder: a strip of words from a note
+   *  of prompts, as a book of tables prints them down its page edge. The longest folder wins. */
+  marginPrompts: MarginPromptSet[];
+
   /** Total time window (ms) the scroll-restore loop keeps re-applying
    *  the saved scroll position after a YAML-driven block rerender.
    *  `block-language-rpg` post-processors mount React asynchronously,
@@ -188,6 +200,7 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   systemMappings: [],
   folderLinkStyles: [],
   pageFooterFields: [],
+  marginPrompts: [],
   scrollRestoreDelayMs: 600,
   bannerField: "banner",
   bannerHeight: 200,

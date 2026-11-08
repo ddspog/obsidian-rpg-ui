@@ -60,7 +60,8 @@ export interface TableRow {
  *
  * For `roll`: targets are the column keys (normalised) the rolled row should
  * display; `by` is the weight-column key override (falls back to `keyColumn`,
- * then the first column).
+ * then the first column). `each` rolls every target column on its own die (the
+ * columns are independent), and `join` is what goes between the values.
  *
  * For `oracle` (Mythic Fate Chart style): `dice` is the die to roll (default
  * `d100`); `answers` are the ordered outcome labels for the periods the
@@ -69,7 +70,7 @@ export interface TableRow {
  */
 export type FooterSegment =
   | { kind: "text"; text: string }
-  | { kind: "roll"; targets: string[]; by?: string }
+  | { kind: "roll"; targets: string[]; by?: string; each?: boolean; join?: string }
   | { kind: "oracle"; dice: string; answers: string[] }
   | { kind: "paginate"; size: number; controls: PaginationControls };
 

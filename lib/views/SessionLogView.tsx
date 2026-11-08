@@ -92,9 +92,9 @@ import { parseSourceDocShared } from "lib/domains/features/parse-source-doc";
 import type { GMFeature, GMStep, GMGeneratorAspect } from "lib/domains/features/types";
 import type { TableDef } from "lib/domains/tables/types";
 import { applyChoicePick, NESTED_SEP, type ChoiceAt } from "lib/domains/session-log/choice";
-import { gmStepLines, resolveGmBody, type GMStepContext } from "lib/domains/gm/example";
+import { genNameAbove, resolveGmBody, scopedStepLines, type GMStepContext } from "lib/domains/gm/example";
 import { alternativesByRef, partText, pickResult, resolveTableRoll } from "lib/domains/gm/steps";
-import { headingKey, linkTargets, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
+import { headingKey, linkTargets, plainEmphasis, rollLinkedTables, tableHeadings } from "lib/domains/gm/linked-tables";
 import { TableRollContext, type TableRoll } from "lib/components/session-log/table-roll-context";
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import { flattenSteps, parseBranchRef, selectStepBlock, stepUseLinks, spliceStepUses } from "lib/domains/gm/steps";
@@ -2056,10 +2056,11 @@ class SessionLogMarkdown extends ReactMarkdown {
   /** A GM step dropdown pick: insert the chosen step's `label: calc` line under
    *  the gen: (via applyChoicePick), re-resolve, and persist to the note. */
   private async onChoicePick(selected: string, at?: ChoiceAt) {
-    const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
-    await this.rewriteLogBody((body) =>
-      resolveGmBody(applyChoicePick(body, selected, stepLines, at), this.gmFeatures, this.stepCtx)
-    );
+    await this.rewriteLogBody((body) => {
+      // The pick spawns its own card's lines, even when another card offers a choice of the same name.
+      const stepLines = scopedStepLines(this.gmFeatures, genNameAbove(body, at), this.stepCtx);
+      return resolveGmBody(applyChoicePick(body, selected, stepLines, at), this.gmFeatures, this.stepCtx);
+    });
   }
 
   /**
@@ -2249,7 +2250,7 @@ class SessionLogMarkdown extends ReactMarkdown {
     const handleAppendText = async (text: string, headerMap?: HeaderMap) => {
       // A card that asked for its pick up front arrives with the option selected
       // (`[a/b - a]`): spawn that option's lines, as picking it in the Log would.
-      const stepLines = Object.assign({}, ...this.gmFeatures.map((f) => gmStepLines(f, this.stepCtx)));
+      const stepLines = scopedStepLines(this.gmFeatures, text.match(/^gen:\s*(.+)$/m)?.[1]?.trim(), this.stepCtx);
       const picks = [...text.matchAll(/^(\s*\+?\s*[^\n:]+:\s*)?\[[^\][]+?\s+-\s+([^\][]*?)\]/gm)];
       const kindLine = picks.length > 1 && /^\s*\+/.test(picks[1][0]) ? picks[1] : undefined;
       let spawned = text;
@@ -2293,7 +2294,9 @@ class SessionLogMarkdown extends ReactMarkdown {
         ?.trim();
       // A row that sends you to another table is rolled through, so the result reads whole.
       const from = this.linkedTables.refFile[ref];
-      return row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      const read = row && from ? rollLinkedTables(row, from, this.linkedTableLookup, `${ref}|${roll}`) : row;
+      // The result is written as plain text: a row's bold or italic would show as asterisks.
+      return read && plainEmphasis(read);
     };
 
     this.reactRoot.render(

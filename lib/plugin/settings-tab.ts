@@ -11,6 +11,8 @@ import { renderFolderLinkStyles } from "lib/plugin/folder-link-styles-ui";
 import { ImageStudioModal } from "lib/plugin/image-studio-modal";
 import { createSection, setSectionsOpen } from "lib/plugin/settings-sections";
 import { exportSettingsEnv, importSettings } from "lib/plugin/settings-export";
+import { FileSuggest } from "lib/utils/file-suggest";
+import { FolderSuggest } from "lib/utils/folder-suggest";
 import {
   activeFrameSource,
   FRAME_KINDS,
@@ -40,6 +42,8 @@ interface PluginWithSettings {
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
+  /** Invoked after the margin-prompt sets change, to draw every open note again. */
+  refreshMarginPrompts?(): void;
 }
 
 /**
@@ -311,6 +315,121 @@ export class DndSettingsTab extends PluginSettingTab {
           this.display();
         })
       );
+
+    const prompts = createSection(panel, "general:margin-prompts", "Margin prompts", {
+      note: count(this.plugin.settings.marginPrompts.length, "set"),
+      desc:
+        "Creativity prompts down the margin of a note in reading view, as a book of tables prints a strip of words along its page edge. " +
+        "Each set pairs a folder with a note of prompts; a note can also turn them on or off itself. See How to use below.",
+    }).body;
+    this.renderMarginPrompts(prompts.createDiv({ cls: "rpg-margin-prompt-sets" }));
+    new Setting(prompts)
+      .setName("Add prompt set")
+      .setDesc("A folder, and the note whose lines its pages show")
+      .addButton((button) =>
+        button.setButtonText("Add").onClick(async () => {
+          this.plugin.settings.marginPrompts.push({ folder: "", wordsFile: "" });
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+    this.renderMarginPromptsHelp(prompts);
+  }
+
+  /** How to use margin prompts: folders, a note's own property, the prompts note, and how faint they are. */
+  private renderMarginPromptsHelp(container: HTMLElement): void {
+    const help = container.createEl("details", { cls: "rpg-margin-prompts-help" });
+    help.createEl("summary", { text: "How to use margin prompts" });
+    const para = (text: string) => help.createEl("p", { cls: "setting-item-description", text });
+    const code = (text: string) => help.createEl("pre").createEl("code", { text });
+
+    help.createEl("h4", { text: "For a folder" });
+    para(
+      "Add a set above: pick the folder, then the note of prompts. Every note inside that folder (and its subfolders) " +
+        "shows them in reading view. When two sets hold a note, the deeper folder wins."
+    );
+
+    help.createEl("h4", { text: "For one note" });
+    para("A note's own margin-prompts property overrides the folders. Add it to the note's properties:");
+    code(
+      "margin-prompts: false                  # no prompts on this note\n" +
+        "margin-prompts: true                   # prompts: its folder's set, else the first set\n" +
+        'margin-prompts: "[[My prompts note]]"  # prompts from this note, in any folder'
+    );
+    para("Without the property, the folder sets decide.");
+
+    help.createEl("h4", { text: "The note of prompts" });
+    para(
+      "One prompt a line. Its properties, headings, empty lines, list markers and %% comments %% are skipped, so a " +
+        "note can hold headings to keep its prompts in order. A page always shows the same prompts, picked by its path; " +
+        "editing the note changes them."
+    );
+
+    help.createEl("h4", { text: "How faint they are" });
+    para(
+      "The prompts take a share of the text's own colour; the rest is the page (32% in light, 36% in dark: faint, so the " +
+        "words are found when looked for). To change it, add a CSS snippet (Settings › Appearance › CSS snippets); a " +
+        "higher share is darker:"
+    );
+    code(
+      ".rpg-margin-prompts { --rpg-margin-prompt-ink: 32%; }\n" +
+        ".theme-dark .rpg-margin-prompts { --rpg-margin-prompt-ink: 36%; }"
+    );
+    para(
+      "They show only on a desktop where the margin has room, never on a phone, in print or with forced colours, and a " +
+        "prompt gives way to anything of the note's own in the margin (a page banner, a box set past the text)."
+    );
+  }
+
+  /** One row per prompt set: the folder, the note of prompts, and Remove. */
+  private renderMarginPrompts(container: HTMLElement): void {
+    container.empty();
+    const sets = this.plugin.settings.marginPrompts;
+    if (sets.length === 0) {
+      container.createEl("p", { text: "No prompt sets.", cls: "setting-item-description" });
+      return;
+    }
+    const save = async () => {
+      await this.plugin.saveSettings();
+      this.plugin.refreshMarginPrompts?.();
+    };
+    sets.forEach((set, idx) => {
+      const setting = new Setting(container).setName(`Set ${idx + 1}`).setDesc("Folder · note of prompts");
+      setting.addText((text) => {
+        text
+          .setPlaceholder("Folder")
+          .setValue(set.folder)
+          .onChange(async (value) => {
+            set.folder = value.trim();
+            await save();
+          });
+        new FolderSuggest(this.app, text, async (picked) => {
+          set.folder = picked.trim();
+          text.setValue(set.folder);
+          await save();
+        });
+      });
+      setting.addText((text) => {
+        text
+          .setPlaceholder("Prompts note (path)")
+          .setValue(set.wordsFile)
+          .onChange(async (value) => {
+            set.wordsFile = value.trim();
+            await save();
+          });
+        new FileSuggest(this.app, text);
+      });
+      setting.addExtraButton((btn) =>
+        btn
+          .setIcon("trash")
+          .setTooltip("Remove this prompt set")
+          .onClick(async () => {
+            sets.splice(idx, 1);
+            await save();
+            this.display();
+          })
+      );
+    });
   }
 
   /** Folder-to-system mappings, one collapsible entry each. */

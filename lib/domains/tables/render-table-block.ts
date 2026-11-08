@@ -765,8 +765,12 @@ export function renderTableBlock(
   const paginationConfig = def.pagination;
 
   const state: PaginationState = { page: 0, visiblePages: 1 };
-  // The body row the footer's roll landed on, marked in the table.
+  // The body row the footer's roll landed on, marked in the table; an `each` roll reads a row per
+  // column, and marks them all (the first one is the one paged to).
   let rolledRow: number | null = null;
+  let rolledRows: number[] = [];
+  // For an `each` roll, the cells (`row:column`) it read: those are marked, not their rows.
+  let rolledCells: string[] = [];
   // Redraws the pager after the page changes from elsewhere (a roll on another page).
   let refreshPager: (() => void) | null = null;
 
@@ -793,7 +797,9 @@ export function renderTableBlock(
     });
     rendered.forEach((rr, k) => {
       const tr = doc.createElement("tr");
-      if (range.start + k === rolledRow) tr.classList.add("rpg-table-row--rolled");
+      const at = range.start + k;
+      if (rolledRows.includes(at))
+        tr.classList.add(rolledCells.length > 0 ? "rpg-table-row--rolled-part" : "rpg-table-row--rolled");
       if (rr.category) {
         tr.setAttribute("data-category", "true");
         const td = doc.createElement("td");
@@ -803,6 +809,7 @@ export function renderTableBlock(
       } else {
         if (cellsRequestAny(rr.cells, HL_ROW)) tr.classList.add("rpg-table-row-highlight");
         if (cellsRequestAny(rr.cells, MID_ROW)) tr.classList.add("rpg-table-row-middle");
+        let gridCol = 0;
         for (const cell of rr.cells) {
           // `@header` styles the cell like a header (background, weight, etc.)
           // via class — the element stays a `<td>` so it doesn't accidentally
@@ -819,6 +826,8 @@ export function renderTableBlock(
           // be re-parsed by the `{{ oracle }}` footer (the rendered DOM has the
           // typeset math, not the `^{a} b ^{c}` source).
           td.setAttribute("data-rpg-cell-raw", cell.value);
+          if (rolledCells.includes(`${at}:${gridCol}`)) td.classList.add("rpg-table-cell--rolled");
+          gridCol += cell.colspan ?? 1;
           applyCellMods(td, cell, highlightCols, middleCols);
           renderCellValue(td, cell.value);
           tr.appendChild(td);
@@ -830,9 +839,16 @@ export function renderTableBlock(
   }
 
   /** Mark the rolled row and open the page that holds it; with `reveal`, also bring it into view. */
-  function markRolledRow(row: number | null, reveal: boolean): void {
-    if (row === rolledRow && !reveal) return;
+  function markRolledRow(
+    row: number | null,
+    reveal: boolean,
+    all: number[] = row == null ? [] : [row],
+    cells: string[] = []
+  ): void {
+    if (row === rolledRow && all.join() === rolledRows.join() && cells.join() === rolledCells.join() && !reveal) return;
     rolledRow = row;
+    rolledRows = all;
+    rolledCells = cells;
     if (row !== null && paginationConfig) {
       if (paginationConfig.controls === "show-more") {
         state.visiblePages = Math.max(state.visiblePages, Math.floor(row / paginationConfig.size) + 1);
@@ -842,7 +858,10 @@ export function renderTableBlock(
     }
     renderRows();
     refreshPager?.();
-    if (reveal) tbody.querySelector(".rpg-table-row--rolled")?.scrollIntoView?.({ block: "nearest" });
+    if (reveal)
+      tbody
+        .querySelector(".rpg-table-row--rolled, .rpg-table-row--rolled-part")
+        ?.scrollIntoView?.({ block: "nearest" });
   }
 
   // Long rows (a paragraph each): the footer names the rolled row and the row itself is marked.
@@ -1113,16 +1132,26 @@ export function renderTableBlock(
           const values = getRollResult(key);
           const row = Number(getRollResult(rowKey)?.[0] ?? "");
           const hit = Number.isInteger(row) && row >= 0 && row < allRows.length && getRollResult(rowKey)?.[0] !== "";
+          const marked = (getRollResult(rowKey)?.[1] ?? "")
+            .split(",")
+            .filter((v) => v !== "")
+            .map(Number)
+            .filter((n) => Number.isInteger(n) && n >= 0 && n < allRows.length);
           if (single && longRows && hit && values?.[0]) {
             renderCompactRoll(doc, span, allRows[row].cells[keyIdx]?.value ?? "", values[0]);
           } else {
             renderCellContents(doc, cell, span, values);
           }
-          if (single) markRolledRow(hit ? row : null, false);
+          const cellMarks = (getRollResult(rowKey)?.[2] ?? "").split(",").filter((v) => /^\d+:\d+$/.test(v));
+          if (single) markRolledRow(hit ? row : (marked[0] ?? null), false, hit ? [row] : marked, hit ? [] : cellMarks);
         };
         const doRoll = (): void => {
           const r = rollCellRows(def, cell);
-          setRollResult(rowKey, [r.rows[0] == null ? "" : String(r.rows[0])]);
+          setRollResult(rowKey, [
+            r.rows[0] == null ? "" : String(r.rows[0]),
+            (r.marked[0] ?? []).join(","),
+            (r.cells[0] ?? []).map(([row, col]) => `${row}:${col}`).join(","),
+          ]);
           setRollResult(key, r.values);
         };
         if (interactive && getRollResult(key) === undefined) {
@@ -1132,7 +1161,7 @@ export function renderTableBlock(
         if (interactive) {
           const roll = () => {
             doRoll();
-            if (single) markRolledRow(rolledRow, true);
+            if (single) markRolledRow(rolledRow, true, rolledRows, rolledCells);
           };
           // A link in the result is followed, not a reason to roll again.
           span.addEventListener("click", (ev) => {
