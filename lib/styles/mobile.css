@@ -1143,6 +1143,14 @@ body.is-mobile .markdown-rendered [role="button"] img {
     border-top-color: var(--log-rule);
   }
 
+  /* The phone's interface font has no small capitals: its labels are small uppercase instead. */
+  .is-sheet .placeholder-label {
+    font-size: 0.72rem;
+    font-variant: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
   /* Thumb-sized: the Lonelog toggle, the generator's pick in the preview, and dice with room of their own. */
   .is-sheet .placeholder-preview-raw summary {
     display: flex;
