@@ -3,6 +3,8 @@ import type { GMFeature, GMStep } from "../features/types";
 import type { TableDef } from "../tables/types";
 import { NESTED_SEP } from "../session-log/choice";
 import {
+  genNameAbove,
+  scopedStepLines,
   buildGMExampleLog,
   gmFollowLines,
   gmStepLines,
@@ -1318,5 +1320,36 @@ describe("a name made of rolled parts — choose", () => {
       expect(out).toContain("Start: " + starts + " d100=5 -> Cai / Ma");
       expect(out).toContain(`Name: @pick(${spec}) d6=5 -> Mallgarg`);
     });
+  });
+});
+
+describe("a pick spawns its own card's lines", () => {
+  const card = (gen: string, tables: string[]): GMFeature =>
+    ({
+      name: gen,
+      generators: [{ id: gen, name: gen, steps: [{ work: "Kind", ask: "kind", choices: ["Ooze"] }] }],
+      steps: [{ choice: "Ooze", tables, labels: tables.map((t) => t) }],
+    }) as unknown as GMFeature;
+  const monster = card("Monster Generator", ["Ooze Form", "Ooze Immunities"]);
+  const names = card("Monster Name Generator", ["Ooze Name"]);
+
+  it("takes the lines of the card that declares the generator", () => {
+    const forNames = scopedStepLines([names, monster], "Monster Name Generator");
+    const forMonster = scopedStepLines([names, monster], "Monster Generator");
+    expect(forNames["Ooze"]).toContain("Ooze Name");
+    expect(forNames["Ooze"]).not.toContain("Ooze Form");
+    expect(forMonster["Ooze"]).toContain("Ooze Form");
+  });
+
+  it("finds the gen: a picked line sits under", () => {
+    const body = [
+      "gen: Monster Generator",
+      "  Kind: [Ooze - Ooze]",
+      "gen: Monster Name Generator",
+      "  Kind: [Ooze - Ooze]",
+    ].join("\n");
+    expect(genNameAbove(body, { source: "Kind: [Ooze - Ooze]", nth: 1 })).toBe("Monster Name Generator");
+    expect(genNameAbove(body, { source: "Kind: [Ooze - Ooze]", nth: 0 })).toBe("Monster Generator");
+    expect(genNameAbove(body)).toBeUndefined();
   });
 });
