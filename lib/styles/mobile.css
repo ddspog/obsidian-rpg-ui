@@ -386,6 +386,43 @@
     min-height: 0;
   }
 
+  /* The filter pills on one row that scrolls sideways: three wrapped rows were a quarter of the drawer. */
+  .lonelog-bottom-drawer .rpg-hotbar-foot {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .lonelog-bottom-drawer .rpg-hotbar-foot::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lonelog-bottom-drawer .rpg-hotbar-tabs > button,
+  .lonelog-bottom-drawer .rpg-hotbar-foot > .rpg-hotbar-tail {
+    flex: none;
+  }
+
+  /* Beside a character the hotbar has a pill row's worth of room under the pills (the portrait column is taller):
+     two rows of pills that scroll together fill it, and show nearly all of them. */
+  .lonelog-bottom-drawer .hud-main:has(> .hud-character) .rpg-hotbar-foot {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-columns: max-content;
+    justify-content: start;
+    gap: 0.25rem 0.3rem;
+  }
+
+  /* Rest scrolls with the pills, so its menu opens over the drawer's foot, where the row can't clip it. */
+  .lonelog-bottom-drawer .rpg-hotbar-tail menu.hud-rest-menu {
+    position: fixed;
+    top: auto;
+    right: 0.75rem;
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    left: 0.75rem;
+  }
+
   /* Never more than two rows of tiles: a third row was a band of empty drawer under every other group. */
   .lonelog-bottom-drawer .rpg-hotbar-tiles {
     --rows: 2 !important;
@@ -1070,5 +1107,112 @@ body.is-mobile {
   .markdown-rendered a.rpg-folder-link {
     padding: 8px;
     margin-inline: -8px;
+  }
+}
+
+/* ═══ UI review: the card's sheet, on the parchment over a dimmed page that holds still ═══ */
+@media (max-width: 600px) {
+  .placeholder-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgb(0 0 0 / 0.32);
+    touch-action: none;
+    animation: placeholder-fade 0.16s ease;
+  }
+
+  .lonelog-placeholder-popover.is-sheet {
+    box-shadow: 0 -6px 24px rgb(40 26 8 / 0.25);
+    background: var(--log-surface);
+    transform: translateY(var(--drag, 0px));
+    animation: placeholder-sheet-in 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .placeholder-handle {
+    flex: none;
+    height: 1.4rem;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .placeholder-handle::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0.6rem auto 0;
+    border-radius: 2px;
+    background: var(--log-rule);
+  }
+
+  .is-sheet .placeholder-head,
+  .is-sheet .placeholder-buttons {
+    background: var(--log-surface);
+  }
+
+  .is-sheet .placeholder-head {
+    padding-top: 0.1rem;
+  }
+
+  .is-sheet .placeholder-buttons {
+    border-top-color: var(--log-rule);
+  }
+
+  /* The phone's interface font has no small capitals: its labels are small uppercase instead. */
+  .is-sheet .placeholder-label {
+    font-size: 0.72rem;
+    font-variant: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Thumb-sized: the Lonelog toggle, the generator's pick in the preview, and dice with room of their own. */
+  .is-sheet .placeholder-preview-raw summary {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+  }
+
+  /* As a flex row it loses its triangle: drawn again. */
+  .is-sheet .placeholder-preview-raw summary::before {
+    content: "▸";
+  }
+
+  .is-sheet .placeholder-preview-raw[open] summary::before {
+    content: "▾";
+  }
+
+  .is-sheet .placeholder-preview-entries select.lonelog-choice-native {
+    min-height: 2.25rem;
+    padding-inline: 0.5rem;
+    font-size: 16px;
+  }
+
+  .is-sheet .placeholder-preview-entries td {
+    padding-block: 0.3rem;
+  }
+
+  .is-sheet .placeholder-preview-entries .lonelog-sidebar-item tr + tr td {
+    border-top: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lonelog-placeholder-popover.is-sheet,
+    .placeholder-scrim {
+      animation: placeholder-fade 0.08s linear;
+    }
+  }
+}
+
+@keyframes placeholder-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes placeholder-sheet-in {
+  from {
+    transform: translateY(100%);
   }
 }

@@ -5,7 +5,9 @@
 .lonelog-sidebar,
 .lonelog-bottom-drawer,
 .lonelog-bookkeeping,
-.lonelog-roster-sticky {
+.lonelog-roster-sticky,
+.hud-picker-pop,
+.lonelog-placeholder-popover {
   /* Captions that used `--text-faint` (about 2.3:1) read at AA on parchment. */
   --text-faint: light-dark(#6d6048, #a8a08a);
   --text-muted: light-dark(#4a3f2c, #cfc7b2);

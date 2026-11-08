@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
@@ -118,20 +118,94 @@ export function PlaceholderPopover({
 }: PlaceholderPopoverProps) {
   const sheet = useIsPhone();
   const rootRef = useRef<HTMLDivElement>(null);
-  // Opened under the hotbar the form can sit half off screen: bring it into view.
-  useEffect(() => {
-    if (sheet) return;
-    const t = window.setTimeout(() => rootRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 60);
-    return () => window.clearTimeout(t);
+  // In the drawer the card is as tall as the window leaves under the cards above it (measured, so the drawer
+  // still fits the pane and keeps to its foot), its fields scrolling inside past that.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (sheet || !el) return;
+    const drawer = el.closest<HTMLElement>(".lonelog-bottom-drawer");
+    const view = el.closest<HTMLElement>(".markdown-preview-view, .cm-scroller");
+    // The drawer sticks to the pane's foot but can't rise above the log it belongs to.
+    const zone = el.closest<HTMLElement>(".lonelog-dock-zone");
+    if (!drawer) return;
+    const fit = () => {
+      const top = Math.max(view ? view.getBoundingClientRect().top : 0, zone ? zone.getBoundingClientRect().top : 0);
+      const above = el.getBoundingClientRect().top - drawer.getBoundingClientRect().top;
+      // the drawer's own foot and the status bar's corner, about 3rem
+      const room = window.innerHeight - top - above - 48;
+      el.style.setProperty("--card-room", `${Math.max(256, Math.round(room))}px`);
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
   }, [sheet]);
+  // Escape closes it, on a phone or not.
   useEffect(() => {
-    if (!sheet) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape" && !e.defaultPrevented) onCancel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [sheet, onCancel]);
+  }, [onCancel]);
+  // Focus goes in, to the first field (or Play card when there is none), and back to the card's tile after.
+  useEffect(() => {
+    const from = document.activeElement as HTMLElement | null;
+    const el = rootRef.current;
+    const first =
+      el?.querySelector<HTMLElement>(".placeholder-fields :is(input, select, textarea)") ??
+      el?.querySelector<HTMLElement>("button.placeholder-submit");
+    first?.focus({ preventScroll: true });
+    return () => {
+      if (from && from.isConnected && from !== document.body) from.focus({ preventScroll: true });
+    };
+  }, []);
+  // On a phone the page behind the sheet holds still.
+  useEffect(() => {
+    if (!sheet) return;
+    const scroller = document.querySelector<HTMLElement>(".workspace-leaf.mod-active .markdown-preview-view");
+    const was = scroller?.style.overflow ?? "";
+    if (scroller) scroller.style.overflow = "hidden";
+    return () => {
+      if (scroller) scroller.style.overflow = was;
+    };
+  }, [sheet]);
+  // Drag the sheet's handle down to close it.
+  const drag = useRef<{ y: number; t: number; dy: number } | null>(null);
+  const onDragStart = (e: React.PointerEvent) => {
+    drag.current = { y: e.clientY, t: e.timeStamp, dy: 0 };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || !rootRef.current) return;
+    d.dy = Math.max(0, e.clientY - d.y);
+    rootRef.current.style.setProperty("--drag", `${d.dy}px`);
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || !rootRef.current) return;
+    rootRef.current.style.removeProperty("--drag");
+    if (d.dy > 60 || (d.dy > 12 && d.dy / Math.max(1, e.timeStamp - d.t) > 0.6)) onCancel();
+  };
+  // Tab stays inside the card while it is open.
+  const onTrapKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab") return;
+    const stops = Array.from(
+      rootRef.current?.querySelectorAll<HTMLElement>(
+        "input, select, textarea, button, summary, [tabindex]:not([tabindex='-1'])"
+      ) ?? []
+    ).filter((x) => !x.hasAttribute("disabled") && x.getClientRects().length > 0);
+    if (stops.length === 0) return;
+    const i = stops.indexOf(document.activeElement as HTMLElement);
+    if (e.shiftKey && i <= 0) {
+      e.preventDefault();
+      stops[stops.length - 1].focus();
+    } else if (!e.shiftKey && i === stops.length - 1) {
+      e.preventDefault();
+      stops[0].focus();
+    }
+  };
   // The riders this attack can carry (Mystic Mark): on when picked — or, on a
   // target that already bears a rider's mark, on by itself, riding free.
   const [riderPicks, setRiderPicks] = useState<Record<string, boolean>>({});
@@ -304,7 +378,8 @@ export function PlaceholderPopover({
     (card.kind !== "move" || !!routeAfter) &&
     (!multi || strikes.some((st) => st.target.trim() !== ""));
 
-  const summary = cardSummary(card);
+  // The summary without the card's name: the title says it.
+  const summary = stripName(cardSummary(card), card.name);
   // Its range, and what a target's distance means for it — from where the
   // actor stands once its move before is walked. Advice, never a block: a
   // move may bring an out-of-range target in.
@@ -433,17 +508,26 @@ export function PlaceholderPopover({
       ref={rootRef}
       className={`lonelog-placeholder-popover${sheet ? " is-sheet" : ""}`}
       role="dialog"
-      aria-modal={sheet || undefined}
+      aria-modal="true"
       aria-label={`Play ${card.name}`}
+      onKeyDown={onTrapKey}
     >
+      {sheet && (
+        <div
+          className="placeholder-handle"
+          aria-hidden="true"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+        />
+      )}
       <form onSubmit={handleSubmit} className="placeholder-form">
         <header className="placeholder-head">
           <strong className="placeholder-title">{card.name}</strong>
-          {sheet && (
-            <button type="button" className="placeholder-close" aria-label="Close" onClick={onCancel}>
-              ×
-            </button>
-          )}
+          <button type="button" className="placeholder-close" aria-label="Close" title="Close (Esc)" onClick={onCancel}>
+            ×
+          </button>
           {summary && <p className="placeholder-summary">{summary}</p>}
           {/* What other features change on this card — Rage's +2, Archery's +2 to hit. */}
           {card.modifiedBy && card.modifiedBy.length > 0 && (
@@ -463,302 +547,346 @@ export function PlaceholderPopover({
             </p>
           )}
         </header>
-        {multi && (
-          <fieldset className="placeholder-strikes">
-            <legend className="placeholder-label">
-              {multi.count === 1 ? "Its attack" : `Its ${multi.count} attacks`}
-            </legend>
-            {strikes.map((st, i) => (
-              <div key={i} className="placeholder-strike">
-                <span className="placeholder-strike-n">{i + 1}</span>
-                {multi.attacks.length > 1 ? (
+        {/* The fields at the left; at the right, what they add to the log and the buttons (one column when narrow). */}
+        <div className="placeholder-fields">
+          {multi && (
+            <fieldset className="placeholder-strikes">
+              <legend className="placeholder-label">
+                {multi.count === 1 ? "Its attack" : `Its ${multi.count} attacks`}
+              </legend>
+              {strikes.map((st, i) => (
+                <div key={i} className="placeholder-strike">
+                  <span className="placeholder-strike-n">{i + 1}</span>
+                  {multi.attacks.length > 1 ? (
+                    <select
+                      className="placeholder-select"
+                      aria-label={`Attack ${i + 1}`}
+                      value={st.attack}
+                      onChange={(e) =>
+                        setStrikes((all) => all.map((x, j) => (j === i ? { ...x, attack: e.target.value } : x)))
+                      }
+                    >
+                      {multi.attacks.map((a) => (
+                        <option key={a.name} value={a.name}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="placeholder-strike-name">{st.attack}</span>
+                  )}
+                  <span className="placeholder-strike-at" aria-hidden="true">
+                    →
+                  </span>
                   <select
                     className="placeholder-select"
-                    aria-label={`Attack ${i + 1}`}
-                    value={st.attack}
+                    aria-label={`Target of attack ${i + 1}`}
+                    value={st.target}
                     onChange={(e) =>
-                      setStrikes((all) => all.map((x, j) => (j === i ? { ...x, attack: e.target.value } : x)))
+                      setStrikes((all) => all.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))
                     }
                   >
-                    {multi.attacks.map((a) => (
-                      <option key={a.name} value={a.name}>
-                        {a.name}
-                      </option>
-                    ))}
+                    <option value="">Choose…</option>
+                    {entities.map((t) => {
+                      const a = multi.attacks.find((x) => x.name === st.attack);
+                      const v = verdictFor(t, a?.range, a?.melee ?? /reach/i.test(a?.range ?? ""));
+                      const note = v
+                        ? ` — ${v.text.split(" — ")[0]}${v.status === "out" ? " · out of range" : v.status === "long" ? " · long range" : ""}`
+                        : "";
+                      return (
+                        <option key={t} value={t}>
+                          {t}
+                          {note}
+                        </option>
+                      );
+                    })}
                   </select>
-                ) : (
-                  <span className="placeholder-strike-name">{st.attack}</span>
-                )}
-                <span className="placeholder-strike-at" aria-hidden="true">
-                  →
-                </span>
-                <select
-                  className="placeholder-select"
-                  aria-label={`Target of attack ${i + 1}`}
-                  value={st.target}
-                  onChange={(e) =>
-                    setStrikes((all) => all.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))
-                  }
-                >
-                  <option value="">Choose…</option>
-                  {entities.map((t) => {
+                  {(() => {
                     const a = multi.attacks.find((x) => x.name === st.attack);
-                    const v = verdictFor(t, a?.range, a?.melee ?? /reach/i.test(a?.range ?? ""));
-                    const note = v
-                      ? ` — ${v.text.split(" — ")[0]}${v.status === "out" ? " · out of range" : v.status === "long" ? " · long range" : ""}`
-                      : "";
-                    return (
-                      <option key={t} value={t}>
-                        {t}
-                        {note}
-                      </option>
-                    );
-                  })}
-                </select>
-                {(() => {
-                  const a = multi.attacks.find((x) => x.name === st.attack);
-                  const v = st.target
-                    ? verdictFor(st.target, a?.range, a?.melee ?? /reach/i.test(a?.range ?? ""))
-                    : undefined;
-                  return v && (v.status !== "in" || v.disadvantage) ? (
-                    <small className="placeholder-warn placeholder-strike-verdict">{v.text}</small>
-                  ) : null;
-                })()}
-                {st.target &&
-                  adviceFor(st.target, true).map((a) => (
-                    <small
-                      key={a.roll}
-                      className={`placeholder-strike-verdict placeholder-advice-line is-${a.verdict}`}
-                    >
-                      {a.roll}: {ADVICE_SAYS[a.verdict]} — {a.why}
-                    </small>
+                    const v = st.target
+                      ? verdictFor(st.target, a?.range, a?.melee ?? /reach/i.test(a?.range ?? ""))
+                      : undefined;
+                    return v && (v.status !== "in" || v.disadvantage) ? (
+                      <small className="placeholder-warn placeholder-strike-verdict">{v.text}</small>
+                    ) : null;
+                  })()}
+                  {st.target &&
+                    adviceFor(st.target, true).map((a) => (
+                      <small
+                        key={a.roll}
+                        className={`placeholder-strike-verdict placeholder-advice-line is-${a.verdict}`}
+                      >
+                        {a.roll}: {ADVICE_SAYS[a.verdict]} — {a.why}
+                      </small>
+                    ))}
+                </div>
+              ))}
+            </fieldset>
+          )}
+          {userInputs.map((placeholder) => {
+            // A pick that depends on another (a style's kinds of name) offers that pick's options,
+            // and waits until there are some.
+            const options = placeholder.dependsOn
+              ? (placeholder.optionsBy?.[values[placeholder.dependsOn] ?? ""] ?? [])
+              : undefined;
+            if (options && options.length === 0) return null;
+            return (
+              <PlaceholderField
+                key={placeholder.kind}
+                placeholder={options ? { ...placeholder, options } : placeholder}
+                value={values[placeholder.kind]}
+                missing={missing.includes(fieldLabel(placeholder.kind))}
+                {...(hints[placeholder.kind] ? { hint: hints[placeholder.kind] } : {})}
+                entities={entities}
+                {...(placeholder.kind === "target" && aim ? { describe: describeTarget } : {})}
+                onChange={(v) => handleChange(placeholder.kind, v)}
+              />
+            );
+          })}
+          {targetVerdict && (
+            <p
+              className={
+                targetVerdict.status === "in" && !targetVerdict.disadvantage ? "placeholder-hint" : "placeholder-warn"
+              }
+            >
+              {target}: {targetVerdict.text}
+              {targetVerdict.status === "out" && route ? " — even after the move" : ""}.
+            </p>
+          )}
+          {advice.length > 0 && (
+            <ul className="placeholder-advice" aria-label="What to roll with">
+              {advice.map((a) => (
+                <li key={a.roll} className={`is-${a.verdict}`}>
+                  <strong>{a.roll}</strong>: {ADVICE_SAYS[a.verdict]} — {a.why}.
+                </li>
+              ))}
+            </ul>
+          )}
+          {card.cast && Object.keys(card.cast.damage).length > 1 && (
+            <label className="placeholder-field">
+              <span className="placeholder-label">Cast at</span>
+              <select className="placeholder-select" value={castAt} onChange={(e) => setCastAt(Number(e.target.value))}>
+                {Object.entries(card.cast.damage)
+                  .sort((a, b) => Number(a[0]) - Number(b[0]))
+                  .map(([c, damage]) => (
+                    <option key={c} value={c}>
+                      {ordinal(Number(c))} circle — {damage}
+                    </option>
                   ))}
-              </div>
-            ))}
-          </fieldset>
-        )}
-        {userInputs.map((placeholder) => {
-          // A pick that depends on another (a style's kinds of name) offers that pick's options,
-          // and waits until there are some.
-          const options = placeholder.dependsOn
-            ? (placeholder.optionsBy?.[values[placeholder.dependsOn] ?? ""] ?? [])
-            : undefined;
-          if (options && options.length === 0) return null;
-          return (
-            <PlaceholderField
-              key={placeholder.kind}
-              placeholder={options ? { ...placeholder, options } : placeholder}
-              value={values[placeholder.kind]}
-              {...(hints[placeholder.kind] ? { hint: hints[placeholder.kind] } : {})}
-              entities={entities}
-              {...(placeholder.kind === "target" && aim ? { describe: describeTarget } : {})}
-              onChange={(v) => handleChange(placeholder.kind, v)}
-            />
-          );
-        })}
-        {targetVerdict && (
-          <p
-            className={
-              targetVerdict.status === "in" && !targetVerdict.disadvantage ? "placeholder-hint" : "placeholder-warn"
-            }
-          >
-            {target}: {targetVerdict.text}
-            {targetVerdict.status === "out" && route ? " — even after the move" : ""}.
-          </p>
-        )}
-        {advice.length > 0 && (
-          <ul className="placeholder-advice" aria-label="What to roll with">
-            {advice.map((a) => (
-              <li key={a.roll} className={`is-${a.verdict}`}>
-                <strong>{a.roll}</strong>: {ADVICE_SAYS[a.verdict]} — {a.why}.
-              </li>
-            ))}
-          </ul>
-        )}
-        {card.cast && Object.keys(card.cast.damage).length > 1 && (
-          <label className="placeholder-field">
-            <span className="placeholder-label">Cast at</span>
-            <select className="placeholder-select" value={castAt} onChange={(e) => setCastAt(Number(e.target.value))}>
-              {Object.entries(card.cast.damage)
-                .sort((a, b) => Number(a[0]) - Number(b[0]))
-                .map(([c, damage]) => (
-                  <option key={c} value={c}>
-                    {ordinal(Number(c))} circle — {damage}
-                  </option>
-                ))}
-            </select>
-            <small className="placeholder-hint">Spends a {slotName(castAt)}.</small>
-          </label>
-        )}
-        {card.cast && Object.keys(card.cast.damage).length <= 1 && (
-          <small className="placeholder-hint">Spends a {slotName(card.cast.circle)}.</small>
-        )}
-        {card.inflicts && (
-          <label className="placeholder-rider">
-            <input type="checkbox" checked={inflictOn} onChange={(e) => setInflictOn(e.target.checked)} />
-            <span className="placeholder-rider-name">Leaves it {card.inflicts.condition}</span>
-            <small className="placeholder-hint">
-              {card.inflicts.note ? `${card.inflicts.note} — ` : ""}
-              {card.inflicts.on === "fail" ? "on a hit, if it fails its save" : "only on a hit"}
-            </small>
-          </label>
-        )}
-        {riders.length > 0 && (
-          <fieldset className="placeholder-riders">
-            <legend className="placeholder-label">With the attack</legend>
-            {riders.map((r) => {
-              const free = riderFree(r.mark);
-              const on = riderPicks[r.name] ?? free;
-              // Who bears its mark now, besides the target — a new mark moves it.
-              const marked =
-                r.mark && !free
-                  ? (fight?.withCondition(r.mark) ?? []).filter((n) => n.toLowerCase() !== pickedTarget.toLowerCase())
-                  : [];
-              const what = [
-                r.hit ? `+${r.hit} to hit` : "",
-                r.damage && !spellAttack ? `+${r.damage}${/^\d+$/.test(r.damage) ? " damage" : ""}` : "",
-                r.damage && spellAttack ? "no extra damage on a spell" : "",
-                !free && r.mark
-                  ? marked.length > 0
-                    ? `moves the mark from ${marked.join(", ")}`
-                    : "marks the target"
-                  : "",
-                !free && r.cost ? `${r.cost.amount} use${r.cost.amount > 1 ? "s" : ""}` : "",
-                r.takes ? `your ${SLOT_NAME[r.takes]}, hit or miss` : "free (no action)",
-              ]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <label key={r.name} className="placeholder-rider">
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    onChange={(e) => setRiderPicks((p) => ({ ...p, [r.name]: e.target.checked }))}
-                  />
-                  <span className="placeholder-rider-name">{r.name}</span>
-                  <small className="placeholder-hint">
-                    {free
-                      ? `the target is ${r.mark}: ${r.damage && !spellAttack ? `+${r.damage}, ` : ""}no use spent`
-                      : what}
-                  </small>
-                  {on && r.takes && spentAlready(r.takes).length > 0 && (
-                    <small className="placeholder-warn">
-                      {SLOT_NAME[r.takes]} already used — {spentAlready(r.takes).join(", ")}
+              </select>
+              <small className="placeholder-hint">Spends a {slotName(castAt)}.</small>
+            </label>
+          )}
+          {card.cast && Object.keys(card.cast.damage).length <= 1 && (
+            <small className="placeholder-hint">Spends a {slotName(card.cast.circle)}.</small>
+          )}
+          {card.inflicts && (
+            <label className="placeholder-rider">
+              <input type="checkbox" checked={inflictOn} onChange={(e) => setInflictOn(e.target.checked)} />
+              <span className="placeholder-rider-name">Leaves it {card.inflicts.condition}</span>
+              <small className="placeholder-hint">
+                {card.inflicts.note ? `${card.inflicts.note} — ` : ""}
+                {card.inflicts.on === "fail" ? "on a hit, if it fails its save" : "only on a hit"}
+              </small>
+            </label>
+          )}
+          {riders.length > 0 && (
+            <fieldset className="placeholder-riders">
+              <legend className="placeholder-label">With the attack</legend>
+              {riders.map((r) => {
+                const free = riderFree(r.mark);
+                const on = riderPicks[r.name] ?? free;
+                // Who bears its mark now, besides the target — a new mark moves it.
+                const marked =
+                  r.mark && !free
+                    ? (fight?.withCondition(r.mark) ?? []).filter((n) => n.toLowerCase() !== pickedTarget.toLowerCase())
+                    : [];
+                const what = [
+                  r.hit ? `+${r.hit} to hit` : "",
+                  r.damage && !spellAttack ? `+${r.damage}${/^\d+$/.test(r.damage) ? " damage" : ""}` : "",
+                  r.damage && spellAttack ? "no extra damage on a spell" : "",
+                  !free && r.mark
+                    ? marked.length > 0
+                      ? `moves the mark from ${marked.join(", ")}`
+                      : "marks the target"
+                    : "",
+                  !free && r.cost ? `${r.cost.amount} use${r.cost.amount > 1 ? "s" : ""}` : "",
+                  r.takes ? `your ${SLOT_NAME[r.takes]}, hit or miss` : "free (no action)",
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <label key={r.name} className="placeholder-rider">
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={(e) => setRiderPicks((p) => ({ ...p, [r.name]: e.target.checked }))}
+                    />
+                    <span className="placeholder-rider-name">{r.name}</span>
+                    <small className="placeholder-hint">
+                      {free
+                        ? `the target is ${r.mark}: ${r.damage && !spellAttack ? `+${r.damage}, ` : ""}no use spent`
+                        : what}
                     </small>
-                  )}
+                    {on && r.takes && spentAlready(r.takes).length > 0 && (
+                      <small className="placeholder-warn">
+                        {SLOT_NAME[r.takes]} already used — {spentAlready(r.takes).join(", ")}
+                      </small>
+                    )}
+                  </label>
+                );
+              })}
+              {riders.some((r) => !r.takes) && (
+                <small className="placeholder-hint">Only on a hit — a miss drops it.</small>
+              )}
+            </fieldset>
+          )}
+          {movement && (
+            <div className="placeholder-moves">
+              {!justMoves && (
+                <label className="placeholder-field placeholder-move">
+                  <span className="placeholder-label">
+                    move before
+                    <span className="placeholder-optional"> (optional)</span>
+                  </span>
+                  <input
+                    type="text"
+                    value={move}
+                    onChange={(e) => setMove(e.target.value)}
+                    placeholder="E3, or a route: G4>F4"
+                    className="placeholder-input"
+                    aria-invalid={route === null}
+                    aria-describedby={`${card.id}-move-hint`}
+                  />
+                  <small
+                    id={`${card.id}-move-hint`}
+                    className={`placeholder-hint${route === null ? " is-invalid" : ""}`}
+                  >
+                    {route === null
+                      ? "Squares like E3, or a route like G4>F4."
+                      : movement.from
+                        ? `Now at ${movement.from}${route ? ` — moves ${movement.from}>${route}, then acts` : ""}.`
+                        : "Moves, then acts."}
+                  </small>
                 </label>
-              );
-            })}
-            {riders.some((r) => !r.takes) && (
-              <small className="placeholder-hint">Only on a hit — a miss drops it.</small>
-            )}
-          </fieldset>
-        )}
-        {movement && (
-          <div className="placeholder-moves">
-            {!justMoves && (
+              )}
               <label className="placeholder-field placeholder-move">
                 <span className="placeholder-label">
-                  move before
-                  <span className="placeholder-optional"> (optional)</span>
+                  {justMoves ? "move to" : "move after"}
+                  {!justMoves && <span className="placeholder-optional"> (optional)</span>}
                 </span>
                 <input
                   type="text"
-                  value={move}
-                  onChange={(e) => setMove(e.target.value)}
-                  placeholder="E3, or a route: G4>F4"
+                  value={moveAfter}
+                  onChange={(e) => setMoveAfter(e.target.value)}
+                  placeholder="back into cover: J14"
                   className="placeholder-input"
-                  aria-invalid={route === null}
-                  aria-describedby={`${card.id}-move-hint`}
+                  aria-invalid={routeAfter === null}
+                  aria-describedby={`${card.id}-move-after-hint`}
                 />
-                <small id={`${card.id}-move-hint`} className={`placeholder-hint${route === null ? " is-invalid" : ""}`}>
-                  {route === null
+                <small
+                  id={`${card.id}-move-after-hint`}
+                  className={`placeholder-hint${routeAfter === null ? " is-invalid" : ""}`}
+                >
+                  {routeAfter === null
                     ? "Squares like E3, or a route like G4>F4."
-                    : movement.from
-                      ? `Now at ${movement.from}${route ? ` — moves ${movement.from}>${route}, then acts` : ""}.`
-                      : "Moves, then acts."}
+                    : justMoves
+                      ? movement.from
+                        ? `Now at ${movement.from}.`
+                        : "Where they move to — a square, or a route."
+                      : "Acts, then moves — from where the action left them."}
                 </small>
               </label>
-            )}
-            <label className="placeholder-field placeholder-move">
-              <span className="placeholder-label">
-                {justMoves ? "move to" : "move after"}
-                {!justMoves && <span className="placeholder-optional"> (optional)</span>}
+              {moveRead && (
+                <p className={moveRead.warn ? "placeholder-warn" : "placeholder-hint"} aria-live="polite">
+                  {moveRead.text}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="placeholder-result">
+          {preview.text.trim() && (
+            <section
+              className={`placeholder-preview${userInputs.length > 0 && !Object.values(values).some((v) => v.trim()) ? " is-empty" : ""}`}
+              aria-label="Preview"
+            >
+              <span className="placeholder-preview-label">
+                Adds to the log <span className="placeholder-preview-next">— the next entry</span>
               </span>
-              <input
-                type="text"
-                value={moveAfter}
-                onChange={(e) => setMoveAfter(e.target.value)}
-                placeholder="back into cover: J14"
-                className="placeholder-input"
-                aria-invalid={routeAfter === null}
-                aria-describedby={`${card.id}-move-after-hint`}
-              />
-              <small
-                id={`${card.id}-move-after-hint`}
-                className={`placeholder-hint${routeAfter === null ? " is-invalid" : ""}`}
-              >
-                {routeAfter === null
-                  ? "Squares like E3, or a route like G4>F4."
-                  : justMoves
-                    ? movement.from
-                      ? `Now at ${movement.from}.`
-                      : "Where they move to — a square, or a route."
-                    : "Acts, then moves — from where the action left them."}
-              </small>
-            </label>
-            {moveRead && (
-              <p className={moveRead.warn ? "placeholder-warn" : "placeholder-hint"} aria-live="polite">
-                {moveRead.text}
+              <div className="lonelog-entries placeholder-preview-entries">
+                {preview.items.map((item) => (
+                  <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />
+                ))}
+              </div>
+              {(hasDice || userInputs.length > 0) && (
+                <p className="placeholder-preview-hint">
+                  {[
+                    userInputs.length > 0 ? "Fills in as you type." : "",
+                    hasDice ? "Click a die to roll it, or type what you rolled." : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                </p>
+              )}
+              <details className="placeholder-preview-raw">
+                <summary>Lonelog</summary>
+                <pre>{preview.text}</pre>
+              </details>
+            </section>
+          )}
+          <div className="placeholder-buttons">
+            {!allFilled && missing.length > 0 && (
+              <p className="placeholder-needs" role="status">
+                Still needed: {missing.join(", ")}
               </p>
             )}
+            <button
+              type="submit"
+              disabled={!allFilled}
+              className="placeholder-submit"
+              autoFocus={userInputs.length === 0}
+            >
+              {userInputs.length === 0 ? "Play card" : "Append"}
+            </button>
+            <button type="button" onClick={onCancel} className="placeholder-cancel">
+              Cancel
+            </button>
           </div>
-        )}
-        {preview.text.trim() && (
-          <section
-            className={`placeholder-preview${userInputs.length > 0 && !Object.values(values).some((v) => v.trim()) ? " is-empty" : ""}`}
-            aria-label="Preview"
-          >
-            <span className="placeholder-preview-label">
-              {userInputs.length > 0 && !Object.values(values).some((v) => v.trim())
-                ? "Adds to the log — fills in as you type"
-                : "Adds to the log"}
-            </span>
-            <div className="lonelog-entries placeholder-preview-entries">
-              {preview.items.map((item) => (
-                <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} edit={edit} />
-              ))}
-            </div>
-            {hasDice && <p className="placeholder-preview-hint">Click a die to roll it, or type what you rolled.</p>}
-            <details className="placeholder-preview-raw">
-              <summary>Lonelog</summary>
-              <pre>{preview.text}</pre>
-            </details>
-          </section>
-        )}
-        <div className="placeholder-buttons">
-          {!allFilled && missing.length > 0 && (
-            <p className="placeholder-needs" role="status">
-              Still needed: {missing.join(", ")}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={!allFilled}
-            className="placeholder-submit"
-            autoFocus={userInputs.length === 0}
-          >
-            {userInputs.length === 0 ? "Play card" : "Append"}
-          </button>
-          <button type="button" onClick={onCancel} className="placeholder-cancel">
-            Cancel
-          </button>
         </div>
       </form>
     </div>
   );
-  // On a phone the card is a sheet over the story, outside the drawer's own scrolling and clipping.
-  return sheet ? createPortal(popover, document.body) : popover;
+  // On a phone the card is a sheet over the story, outside the drawer's own scrolling and clipping, over a
+  // dimmed page that a tap closes it from.
+  return sheet
+    ? createPortal(
+        <>
+          <div
+            className="placeholder-scrim"
+            aria-hidden="true"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              onCancel();
+            }}
+          />
+          {popover}
+        </>,
+        document.body
+      )
+    : popover;
+}
+
+/** A summary that opens with the card's name (`Lunarbolt Waxing: attack at +6…`) says it once, in the title. */
+function stripName(summary: string | undefined, name: string): string | undefined {
+  if (!summary) return summary;
+  const plain = (t: string) => t.replace(/[\u1d2c-\u1d6a\u00ba]+/gu, "").trim();
+  const head = summary.indexOf(":");
+  if (head > 0 && plain(summary.slice(0, head)).toLowerCase() === plain(name).toLowerCase()) {
+    const rest = summary.slice(head + 1).trim();
+    return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : summary;
+  }
+  return summary;
 }
 
 /** Whether the window is phone-width (the layout the sheet is for). */
@@ -790,14 +918,16 @@ interface PlaceholderFieldProps {
   entities: string[];
   /** A target's distance and range, shown with its name (`Kobold, Elite — 40 ft`). */
   describe?: (name: string) => string | undefined;
+  /** Still needed before the card can play: its label is marked, as "Still needed" names it. */
+  missing?: boolean;
   onChange: (value: string) => void;
 }
 
-function PlaceholderField({ placeholder, value, hint, entities, describe, onChange }: PlaceholderFieldProps) {
+function PlaceholderField({ placeholder, value, hint, entities, describe, missing, onChange }: PlaceholderFieldProps) {
   const isTarget = placeholder.kind === "target";
 
   return (
-    <label className="placeholder-field">
+    <label className={`placeholder-field${missing ? " is-missing" : ""}`} aria-invalid={missing || undefined}>
       <span className="placeholder-label">
         {FIELD_LABELS[placeholder.kind] ?? placeholder.kind.replace(/_/g, " ")}
         {placeholder.optional && <span className="placeholder-optional"> (optional)</span>}
