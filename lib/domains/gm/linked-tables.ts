@@ -9,7 +9,7 @@
  * chain anew. Pure: the caller supplies how a link finds its table.
  */
 
-import { splitResultPicker } from "../session-log/choice";
+import { buildResultPicker, splitResultPicker } from "../session-log/choice";
 import type { TableDef } from "../tables/types";
 import { resolveTableRoll } from "./steps";
 
@@ -109,7 +109,8 @@ export function rollLinkedTables(
   const words = linkText(
     dropInstructionSentence(out.replace(INSTRUCTION, (m) => (m ? INSTRUCTED : "")))
       .replace(/(?:\s*(?:,|\band\b|&|\+)\s*)*\uE001(?:\s*(?:,|\band\b|&|\+)\s*(?=\uE001))*/gi, ROLLED)
-      .replace(/\(\s*\uE001\s*\)|\[\s*\uE001\s*\]/g, "")
+      // A bracket that only held the link ("(Table 5-21)", "(Roll on …, below)") goes with it.
+      .replace(/\(\s*\uE001[\s,;]*(?:(?:see\s+)?(?:below|above|opposite))?\s*\)|\[\s*\uE001\s*\]/gi, "")
       .replace(/\uE001[\s.;:,]*$/, "")
       .replace(/\uE001/g, " ")
       .replace(/[ \t]{2,}/g, " ")
@@ -156,6 +157,8 @@ function linkName(texts: Array<string | undefined>, table: TableDef): string {
   for (const text of texts) {
     const name = (text ?? "")
       .trim()
+      // An alias that says what to do ("Roll on Profession Table") names the table by its words.
+      .replace(/^(?:refer to|roll (?:once |twice |again )?on|see|go to|consult|use)\s+(?:the\s+)?/i, "")
       .replace(/^Tables?\s+[\d.-]+\s*[:,\-–]?\s*/i, "")
       .replace(/^\d+[:.]?\s+/, "")
       .trim();
@@ -170,6 +173,26 @@ function settlePicker(row: string, seed: string): string {
   if (!picker) return row;
   const word = picker.selected || picker.options[seededRoll(seed, picker.options.length) - 1];
   return [before, word, after].filter(Boolean).join(" ");
+}
+
+/**
+ * A rolled result as the Log writes it, whether a whole row, one part of it, or the name the parts
+ * make: each link to a table rolled through (`rollLinkedTables`, seeded by `seed`), and its bold or
+ * italic dropped (`plainEmphasis`). Without the note the result was read from, its links read as
+ * their words. A word picker's options are words to pick from: their links read as their words, and
+ * the text around the picker is rolled through.
+ */
+export function readRolled(
+  text: string,
+  fromFile: string | undefined,
+  lookup: LinkedTableLookup,
+  seed: string
+): string {
+  const roll = (t: string) => (fromFile ? rollLinkedTables(t, fromFile, lookup, seed) : linkText(t));
+  const { before, after, picker } = splitResultPicker(text);
+  if (!picker) return plainEmphasis(roll(text));
+  const options = picker.options.map((o) => plainEmphasis(linkText(o)));
+  return plainEmphasis(buildResultPicker(roll(before), options, picker.selected, roll(after)));
 }
 
 /** Where a dropped link was, so the space before it goes too (a private-use character no row has). */
