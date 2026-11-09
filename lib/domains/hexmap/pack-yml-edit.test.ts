@@ -298,8 +298,12 @@ describe("far tables", () => {
 describe("classify edits", () => {
   it("sets and removes a folder's terrain", async () => {
     const { applyPackEdits } = await import("./pack-yml-edit");
-    const a = applyPackEdits("name: basic\n", [{ kind: "classify-set", pattern: "land/forest/dead", terrain: "badlands" }]);
+    const a = applyPackEdits("name: basic\n", [
+      { kind: "classify-set", pattern: "land/forest/dead", terrain: "badlands" },
+    ]);
     expect(a).toContain("classify:\n  land/forest/dead: badlands");
-    expect(applyPackEdits(a, [{ kind: "classify-set", pattern: "land/forest/dead", terrain: null }])).not.toContain("land/forest/dead");
+    expect(applyPackEdits(a, [{ kind: "classify-set", pattern: "land/forest/dead", terrain: null }])).not.toContain(
+      "land/forest/dead"
+    );
   });
 });
