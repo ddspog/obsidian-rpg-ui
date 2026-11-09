@@ -601,6 +601,7 @@ function Tooltip({
                   hex.road ? "road" : null,
                   hex.river ? "river" : null,
                   TERRAIN_RULES[hex.terrain].maxPace ? `nav DC ${TERRAIN_RULES[hex.terrain].navigationDC}` : "by boat",
+                  hex.population ? `${hex.population} population` : null,
                 ]
                   .filter(Boolean)
                   .map((t) => ` · ${t}`)

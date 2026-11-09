@@ -347,3 +347,15 @@ describe("a choice step that picks by terrain", () => {
     );
   });
 });
+
+describe("a choice step that picks by population", () => {
+  it("writes pop- tokens for the region's population", () => {
+    const line = genStepLine({
+      work: "Rolls",
+      ask: "rolls",
+      choices: ["Low: 2 by day", "High: 6 by day"],
+      population: { low: "Low: 2 by day", high: "High: 6 by day" },
+    });
+    expect(line).toContain("{{rolls:Low: 2 by day=pop-low|High: 6 by day=pop-high}}");
+  });
+});

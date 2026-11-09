@@ -310,6 +310,9 @@ export interface GMGenStep {
    * map (it can still be changed). Keys are terrain types (hexmap/terrain.ts) or their other names.
    */
   terrain?: Record<string, string>;
+  /** With `ask`: the choice for each population (`low`, `medium`, `high`) of the region the party
+   *  is in, as a hex map's region says (`population:`). */
+  population?: Record<string, string>;
 }
 
 /** `generator:` aspect → emits `gen:` plus its rolled working line(s). */

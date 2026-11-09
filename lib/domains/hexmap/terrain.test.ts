@@ -212,3 +212,24 @@ describe("weather and hex tracking", () => {
     expect(routeSteps(route, grid, "normal", 30, { tracking: "hexes" }).map((s) => s.hours)).toEqual([4, 8]);
   });
 });
+
+describe("population by region", () => {
+  it("takes the innermost region that declares one", async () => {
+    const { resolveHexMap } = await import("./layout");
+    const { parseHexMap } = await import("./parse-hex-map");
+    const map = parseHexMap(
+      [
+        "grid: hex",
+        "regions:",
+        "  Duchy: { population: medium }",
+        "  Wilds: { parent: Duchy, population: low }",
+        "---",
+        "t(0,0): forest @Duchy",
+        "t(1,0): forest @Duchy @Wilds",
+        "t(2,0): forest",
+      ].join("\n")
+    );
+    const grid = resolveHexMap(map, new Map(), "flat").grid;
+    expect(Object.fromEntries(grid.population ?? [])).toEqual({ "0,0": "medium", "1,0": "low" });
+  });
+});

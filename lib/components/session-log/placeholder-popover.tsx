@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { TERRAIN_RULES, type TerrainId } from "../../domains/hexmap/terrain";
+import { type Population, TERRAIN_RULES, type TerrainId } from "../../domains/hexmap/terrain";
 import { LucideIcon } from "./lucide-icon";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
@@ -37,7 +37,9 @@ import { withXpAward } from "../../domains/session-log/xp-award";
 
 /** Where the party stands, as the log's travel map says: its kind of ground and hex. */
 export interface PartyTerrain {
-  id: TerrainId;
+  id?: TerrainId;
+  /** The party's region's population, when the map says. */
+  population?: Population;
   /** `(3,-1) on Caulkin coast`. */
   where?: string;
 }
@@ -942,7 +944,20 @@ interface PlaceholderFieldProps {
 /** The option a pick by terrain starts on for the party's ground. */
 export function terrainPick(p: ParsedPlaceholder, terrain: PartyTerrain | undefined): string | undefined {
   if (!terrain || !p.optionTerrains) return undefined;
-  return Object.entries(p.optionTerrains).find(([, fits]) => fits.includes(terrain.id))?.[0];
+  const byTerrain = terrain.id
+    ? Object.entries(p.optionTerrains).find(([, fits]) => fits.includes(terrain.id!))?.[0]
+    : undefined;
+  const byPeople = terrain.population
+    ? Object.entries(p.optionTerrains).find(([, fits]) => fits.includes(`pop-${terrain.population}`))?.[0]
+    : undefined;
+  return byTerrain ?? byPeople;
+}
+
+/** What the chip by a pick says: the party's ground, its region's population, or both. */
+function terrainLabel(t: PartyTerrain): string {
+  return [t.id ? TERRAIN_RULES[t.id].name : null, t.population ? `${t.population} population` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function PlaceholderField({
@@ -968,11 +983,11 @@ function PlaceholderField({
             className={`placeholder-terrain${fits && fits === value ? " is-here" : ""}`}
             title={
               terrain
-                ? `The party is on ${TERRAIN_RULES[terrain.id].name.toLowerCase()}${terrain.where ? ` at ${terrain.where}` : ""}${fits ? `: ${fits}` : " (no choice for it)"}`
+                ? `The party is on ${terrainLabel(terrain).toLowerCase()}${terrain.where ? ` at ${terrain.where}` : ""}${fits ? `: ${fits}` : " (no choice for it)"}`
                 : "Where the party is isn't known: set out a [TRAVEL: [[Map]]] and place them on it"
             }
           >
-            <LucideIcon name="mountain" size={12} /> {terrain ? TERRAIN_RULES[terrain.id].name : "Terrain"}
+            <LucideIcon name="mountain" size={12} /> {terrain ? terrainLabel(terrain) : "Terrain"}
             {terrain && fits && fits !== value && (
               <button
                 type="button"

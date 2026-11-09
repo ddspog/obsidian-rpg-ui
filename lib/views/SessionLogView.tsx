@@ -3609,9 +3609,14 @@ function SessionLogRoot({
     if (!partyOnMap || travelGrid?.body !== partyOnMap.body) return undefined;
     const [q, r] = partyOnMap.spot.at;
     const id = travelGrid.grid.terrain.get(`${q},${r}`);
-    if (!id) return undefined;
+    const population = travelGrid.grid.population?.get(`${q},${r}`);
+    if (!id && !population) return undefined;
     const map = partyOnMap.map?.replace(/^\[\[|\]\]$/g, "").split("|")[0];
-    return { id, where: `(${q},${r})${map ? ` on ${map}` : ""}` };
+    return {
+      ...(id ? { id } : {}),
+      ...(population ? { population } : {}),
+      where: `(${q},${r})${map ? ` on ${map}` : ""}`,
+    };
   }, [partyOnMap, travelGrid]);
 
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {

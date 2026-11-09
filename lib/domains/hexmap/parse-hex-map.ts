@@ -46,7 +46,7 @@
 import { parse as parseYaml } from "yaml";
 import { type HexImport, readImports } from "./imports";
 import type { Layer } from "./packs";
-import { type ClassifyRule, readClassify, type TerrainId, terrainOf } from "./terrain";
+import { type ClassifyRule, type Population, populationOf, readClassify, type TerrainId, terrainOf } from "./terrain";
 
 export interface HexCell {
   q: number;
@@ -133,6 +133,8 @@ export interface HexRegion {
   parent?: string;
   /** How it's marked on the map (`demark:`): `outline` only, `fill` only, or `none`; unset: both. */
   demark?: "outline" | "fill" | "none";
+  /** `population: low|medium|high` — how settled it is (encounter rolls, unmarked settlements). */
+  population?: Population;
   /** `override: true` — this map's fields go over the region's own map's, here only (an exception). */
   override?: boolean;
   /** The note whose map the region is (when it's imported), set when maps are merged. */
@@ -665,6 +667,7 @@ function readRegions(map: ParsedHexMap, raw: unknown): void {
       link: typeof o.link === "string" ? linkText(o.link) : undefined,
       parent: typeof o.parent === "string" ? o.parent : undefined,
       demark: o.demark === "outline" || o.demark === "fill" || o.demark === "none" ? o.demark : undefined,
+      population: populationOf(o.population) ?? undefined,
       override: o.override === true ? true : undefined,
       // `label: { … }` says it all in one place, over the flat keys.
       ...(o.label && typeof o.label === "object" ? readRegionLabel(o.label) : {}),

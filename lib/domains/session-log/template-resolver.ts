@@ -1,4 +1,4 @@
-import { type TerrainId, terrainOf } from "lib/domains/hexmap/terrain";
+import { populationOf, terrainOf } from "lib/domains/hexmap/terrain";
 
 export type PlaceholderKind =
   | "actor"
@@ -31,7 +31,7 @@ export interface ParsedPlaceholder {
   optionsBy?: Record<string, string[]>;
   /** The terrain types each option fits (`{{ask:Desert miles=desert|…}}`): the popup starts on
    *  the option for the ground the party stands on. */
-  optionTerrains?: Record<string, TerrainId[]>;
+  optionTerrains?: Record<string, string[]>;
 }
 
 export interface ResolutionContext {
@@ -48,13 +48,16 @@ const PLACEHOLDER_RE = /\{\{(\w+)(\?)?(?:@(\w+))?(?::([^{}]*))?\}\}/g;
 
 /** `Five miles of desert=desert,badlands` → the option and the terrain types it fits. Text after an
  *  `=` that isn't a list of terrain types stays part of the option. */
-export function splitTerrains(option: string): { option: string; fits: TerrainId[] } {
+export function splitTerrains(option: string): { option: string; fits: string[] } {
   const at = option.lastIndexOf("=");
   if (at < 0) return { option, fits: [] };
   const words = option.slice(at + 1).split(",");
-  const fits = words.map((w) => terrainOf(w));
+  // Terrain types, and populations written `pop-high`.
+  const fits = words.map((w): string | null =>
+    w.startsWith("pop-") ? (populationOf(w.slice(4)) ? `pop-${populationOf(w.slice(4))}` : null) : terrainOf(w)
+  );
   if (!words.length || fits.some((t) => !t)) return { option, fits: [] };
-  return { option: option.slice(0, at).trim(), fits: fits as TerrainId[] };
+  return { option: option.slice(0, at).trim(), fits: fits as string[] };
 }
 
 /** `A>x|y;B>z` → `{ A: [x, y], B: [z] }`. */
@@ -87,7 +90,7 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
     const raw = match[0];
     const kind = match[1] as PlaceholderKind;
     const dependsOn = match[3];
-    const terrains: Record<string, TerrainId[]> = {};
+    const terrains: Record<string, string[]> = {};
     const options = dependsOn
       ? undefined
       : match[4]

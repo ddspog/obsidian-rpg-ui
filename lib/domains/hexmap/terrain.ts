@@ -309,6 +309,17 @@ export interface TerrainGrid {
   roads: Set<string>;
   /** Hexes a river runs through. */
   rivers: Set<string>;
+  /** How many people live round each hex, from its regions' `population:` (the innermost that says). */
+  population?: Map<string, Population>;
+}
+
+/** How settled a region is (Solo Adventurer's Toolbox: encounter rolls and unmarked settlements). */
+export type Population = "low" | "medium" | "high";
+export const POPULATIONS: Population[] = ["low", "medium", "high"];
+
+export function populationOf(word: unknown): Population | null {
+  const w = typeof word === "string" ? word.trim().toLowerCase() : "";
+  return (POPULATIONS as string[]).includes(w) ? (w as Population) : null;
 }
 
 export const emptyGrid = (): TerrainGrid => ({ terrain: new Map(), roads: new Set(), rivers: new Set() });

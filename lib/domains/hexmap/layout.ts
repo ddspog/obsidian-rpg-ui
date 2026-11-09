@@ -37,7 +37,14 @@ import { MARKER_ANCHOR, MARKER_HEIGHT, markerTuning } from "./markers";
 import type { HexCell, HexLabelLine, HexMapError, HexMarkerLine, ParsedHexMap } from "./parse-hex-map";
 import { type DrawRegion, layoutRegions } from "./regions";
 import { expandStamps } from "./stamps";
-import { buildTerrainGrid, DEFAULT_CLASSIFY, type GridHex, type TerrainGrid, type TerrainId } from "./terrain";
+import {
+  buildTerrainGrid,
+  DEFAULT_CLASSIFY,
+  type GridHex,
+  type Population,
+  type TerrainGrid,
+  type TerrainId,
+} from "./terrain";
 import {
   DEFAULT_STEP,
   type HexPack,
@@ -249,11 +256,26 @@ export function resolveHexMap(parsed: ParsedHexMap, packs: Map<string, HexPack>,
   });
   const gridPaths: Array<{ key: string; family: string }> = [];
   for (const [key, families] of around.paths) for (const family of families) gridPaths.push({ key, family });
+  // A hex's population: its innermost region that declares one (a region inside another goes first).
+  const population = new Map<string, Population>();
+  const depthOf = (name: string, seen = new Set<string>()): number => {
+    const parent = map.regions[name]?.parent;
+    if (!parent || seen.has(name)) return 0;
+    seen.add(name);
+    return 1 + depthOf(parent, seen);
+  };
+  for (const [key, cell] of topLine) {
+    const named = [...cell.regions, ...(cell.faintRegions ?? [])]
+      .filter((r) => map.regions[r]?.population)
+      .sort((a, b) => depthOf(b) - depthOf(a));
+    if (named.length) population.set(key, map.regions[named[0]].population!);
+  }
   const grid = buildTerrainGrid(gridHexes, gridPaths, [
     ...(map.classify ?? []),
     ...(pack?.config.classify ?? []),
     ...DEFAULT_CLASSIFY,
   ]);
+  if (population.size) grid.population = population;
 
   // Where each joined path runs into what it connects to (a river's mouth into the sea), per family.
   const mouths = new Map<string, Map<string, Side>>();
@@ -561,6 +583,7 @@ export interface HexInfo {
   terrain?: TerrainId;
   road?: boolean;
   river?: boolean;
+  population?: Population;
 }
 
 export interface DrawLabel {
@@ -699,6 +722,8 @@ export function layoutHexMap(
       if (terrain) info.terrain = terrain;
       if (resolved.grid?.roads.has(key)) info.road = true;
       if (resolved.grid?.rivers.has(key)) info.river = true;
+      const people = resolved.grid?.population?.get(key);
+      if (people) info.population = people;
       hexes.set(key, info);
     } else if (!cell.faint) info.faint = false;
     info.height = Math.max(info.height, cell.height);
