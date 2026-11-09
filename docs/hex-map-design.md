@@ -5,6 +5,8 @@
 > plugin as `rpg map` with `grid: hex`, for **overworld** maps — territory,
 > realms, regions, villages, roads and rivers — not battle maps. Supersedes the
 > hex half of `plan.md` Part 8 where they disagree (§11).
+> **Terrain and hexcrawls (2026-11-09):** terrain types per hex, travel time across them, hex
+> flowers and the Generate tool are in [hexcrawl-exploration.md](hexcrawl-exploration.md).
 > **Decisions settled 2026-10-15 (§12):** axial `(q, r)` coordinates; the
 > editor's per-hex line syntax; the editor's third-party pack copied into a
 > vault folder set in settings; terrain catalog and tuning in `pack.yml`;
