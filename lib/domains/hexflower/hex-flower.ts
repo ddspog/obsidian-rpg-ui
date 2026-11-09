@@ -22,7 +22,8 @@
  *   arrows:                        # an edge that sends the token elsewhere instead of wrapping
  *     N N > N: stay
  *     N N > NW: NW N
- *   doubles: Roll on [[Distinct Hex Elements]]   # said when the dice show doubles
+ *   doubles: Roll on [[Distinct Hex Elements]]   # said when the dice show doubles (both dice alike)
+ *   doublesTable: "#distinct-hex-elements"      # and rolled for you: a table block here, or [[Note]]#name
  *   temperature: true              # a die of 1 shifts colder, a 6 warmer (both: back to temperate)
  *   shifts:                        # what a result becomes when it's hot or cold
  *     hot: { Forest: Jungle }
@@ -65,6 +66,8 @@ export interface HexFlower {
   /** Landing on Start: repeat the previous result (`previous`), or this result. */
   start: "previous" | string;
   doubles?: string;
+  /** A table rolled on doubles (`doublesTable: "#distinct-hex-elements"`, or `[[Note]]#name`). */
+  doublesTable?: string;
   temperature: boolean;
   shifts: { hot: Record<string, string>; cold: Record<string, string> };
   errors: string[];
@@ -217,6 +220,7 @@ export function parseHexFlower(source: string): HexFlower {
   }
   if (typeof raw.start === "string" && raw.start.trim()) flower.start = raw.start.trim();
   if (typeof raw.doubles === "string" && raw.doubles.trim()) flower.doubles = raw.doubles.trim();
+  if (typeof raw.doublesTable === "string" && raw.doublesTable.trim()) flower.doublesTable = raw.doublesTable.trim();
   flower.temperature = raw.temperature === true;
   if (raw.shifts && typeof raw.shifts === "object") {
     const s = raw.shifts as Record<string, unknown>;

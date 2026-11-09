@@ -28,6 +28,7 @@ arrows:
   S S > SW: SW S
   S S > SE: SE S
 doubles: Roll on the **Distinct Hex Elements** table.
+doublesTable: "#distinct-hex-elements"
 temperature: true
 shifts:
   hot: { Forest: Jungle }

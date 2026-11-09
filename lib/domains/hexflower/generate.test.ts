@@ -74,3 +74,36 @@ describe("finding flowers in notes", () => {
     expect(chooseFlower(found, undefined, "ruins/underground terrain elements")?.path).toBe("x/Ruins.md");
   });
 });
+
+describe("a detail level keeps the big hex's character", () => {
+  it("starts from the big hex's terrain when no neighbour is known", async () => {
+    const { generateHexes } = await import("./generate");
+    // 3+3 = 6: south-east. From Mountains (0,-2), SE is Hills (1,-2)… (0,-2)+SE = (1,-2): Hills.
+    const { generated } = generateHexes(wilderness, [{ q: 10, r: 10 }], new Map(), startState(), seq(0.4), {
+      anchorFor: () => "mountain",
+    });
+    expect(generated[0].step.from).toEqual({ q: 0, r: -2 });
+    expect(generated[0].step.result).toBe("Hills");
+  });
+
+  it("pulls the token back when it strays past the tether", async () => {
+    const { generateHexes } = await import("./generate");
+    // A drag of four hexes, each roll 2d6 = 7 (south): from Mountains it walks down the flower;
+    // with tether 1 it never gets further than one step from the mountains.
+    const targets = [0, 1, 2, 3].map((q) => ({ q, r: 0 }));
+    const rnd = seq(0.5, 0.0); // dice 4 and 1 = 5: SE; then 4+1 again
+    const free = generateHexes(wilderness, targets, new Map(), startState(), rnd, { anchorFor: () => "mountain" });
+    const tied = generateHexes(wilderness, targets, new Map(), startState(), seq(0.5, 0.0), {
+      anchorFor: () => "mountain",
+      tether: 1,
+    });
+    const far = (g: typeof free.generated) =>
+      Math.max(...g.map((x) => Math.abs(x.step.to.q - 0) + Math.abs(x.step.to.r + 2)));
+    expect(far(tied.generated)).toBeLessThanOrEqual(far(free.generated));
+    for (const g of tied.generated) {
+      const d =
+        (Math.abs(g.step.from.q) + Math.abs(g.step.from.r + 2) + Math.abs(g.step.from.q + g.step.from.r + 2)) / 2;
+      expect(d).toBeLessThanOrEqual(1);
+    }
+  });
+});

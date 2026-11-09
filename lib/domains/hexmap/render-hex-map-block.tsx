@@ -63,6 +63,8 @@ import { pickNote } from "lib/components/hexmap/note-picker";
 import { chooseFlower, findFlowers, type FoundFlower } from "lib/domains/hexflower/find-flowers";
 import { type Generated, generateHexes, tileFor } from "lib/domains/hexflower/generate";
 import { type FlowerState, startState } from "lib/domains/hexflower/hex-flower";
+import { loadVaultTable, rollTable } from "lib/domains/hexflower/vault-tables";
+import type { TableDef } from "lib/domains/tables/types";
 import { type RegionEntry, RegionList } from "lib/components/hexmap/region-list";
 import { useMarginSpill } from "lib/components/hexmap/use-margin-spill";
 import { LucideIcon } from "lib/components/session-log/lucide-icon";
@@ -96,7 +98,7 @@ import {
 } from "./levels";
 import type { HexPack } from "./packs";
 import { replaceMapBody } from "./fence-text";
-import { type HexInfo, type HexLayout, type ImageSize, STEP_METRES } from "./layout";
+import { FLAT_PACK, type HexInfo, type HexLayout, type ImageSize, resolveHexMap, STEP_METRES } from "./layout";
 import {
   type HexCell,
   type HexLook,
@@ -953,6 +955,27 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     results: new Map(),
   });
   const [genLog, setGenLog] = React.useState<Generated[]>([]);
+  // The flower's doubles table, read once it's chosen, so a stroke can roll it at once.
+  const [doublesTable, setDoublesTable] = React.useState<TableDef | null>(null);
+  React.useEffect(() => {
+    setDoublesTable(null);
+    const ref = flower?.flower.doublesTable;
+    if (!ref || !flower) return;
+    let alive = true;
+    void loadVaultTable(app, ref, flower.path).then((t) => alive && setDoublesTable(t));
+    return () => {
+      alive = false;
+    };
+  }, [flower, app]);
+  /** On a detail level: what the bigger hex each hex lies in is, so the flower keeps its character. */
+  const [genTether, setGenTether] = React.useState(true);
+  const coarseGrid = React.useMemo(() => {
+    const coarse = level ? parent?.map : undefined;
+    if (!coarse) return null;
+    const pack = drawn?.pack;
+    const name = coarse.pack ?? pack?.name ?? FLAT_PACK;
+    return resolveHexMap(coarse, pack ? new Map([[name, pack]]) : new Map(), name).grid;
+  }, [level, parent?.map, drawn?.pack]);
   const generateEdits = React.useCallback(
     (p: PaintPointer, text: string): HexEdit[] | null => {
       if (!flower) {
@@ -1000,15 +1023,33 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
         }
         const spec = tile.terrain ? `${tile.spec} terrain=${tile.terrain}` : tile.spec;
         edits.push({ kind: "paint", layer: "terrain", q: item.hex.q, r: item.hex.r, spec, height: paint.height });
+        // Doubles: the flower's doubles table (Distinct Hex Elements) says what else is in the hex.
+        const element = item.step.doubles && doublesTable ? rollTable(doublesTable) : null;
+        if (element) {
+          item.element = { name: element.name, text: element.text };
+          edits.push({
+            kind: "point",
+            layer: "marker",
+            q: item.hex.q,
+            r: item.hex.r,
+            content: `pin[red] (${element.name.replace(/[()]/g, "")})`,
+          });
+        }
       }
       setGenLog((was) => [...generated.slice().reverse(), ...was].slice(0, 30));
-      const doubles = generated.filter((x) => x.step.doubles).map((x) => `(${x.hex.q},${x.hex.r})`);
+      const doubles = generated
+        .filter((x) => x.step.doubles)
+        .map((x) => `(${x.hex.q},${x.hex.r})${x.element ? ` ${x.element.name}` : ""}`);
       setStatus(
         [
           generated.map((x) => `(${x.hex.q},${x.hex.r}) ${x.step.result}`).join(" · "),
-          doubles.length && flower.flower.doubles
-            ? `doubles at ${doubles.join(", ")}: ${flower.flower.doubles.replace(/\[\[[^|\]]*\|?([^\]]*)\]\]/g, "$1")}`
-            : "",
+          doubles.length === 0
+            ? ""
+            : doublesTable
+              ? `doubles: ${doubles.join(", ")} (marked on the map)`
+              : flower.flower.doubles
+                ? `doubles at ${doubles.join(", ")}: ${flower.flower.doubles.replace(/\[\[[^|\]]*\|?([^\]]*)\]\]/g, "$1")}`
+                : "",
           missing.size ? `no tile for ${[...missing].join(", ")}: name one under generate: tiles:` : "",
         ]
           .filter(Boolean)
@@ -1016,7 +1057,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
       );
       return edits;
     },
-    [flower, flowers, viewOf, drawn, parsed.generate, paint.height]
+    [flower, flowers, viewOf, drawn, parsed.generate, paint.height, coarseGrid, genTether, doublesTable]
   );
 
   const editsFor = React.useCallback(
@@ -2235,6 +2276,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
                   temperature={gen.current.state.temperature}
                   log={genLog}
                   named={!!parsed.generate?.flower}
+                  {...(coarseGrid ? { tether: { on: genTether, onChange: setGenTether } } : {})}
                   onReset={() => {
                     gen.current = { state: startState(), results: new Map() };
                     setGenLog([]);

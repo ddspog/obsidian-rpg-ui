@@ -84,9 +84,18 @@ export function placeFor(f: HexFlower, what: string): { at: Axial; result: strin
   return null;
 }
 
+/** Steps between two cells of a flower. */
+export function flowerDistance(a: Axial, b: Axial): number {
+  const dq = a.q - b.q;
+  const dr = a.r - b.r;
+  return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
+}
+
 export interface Generated {
   hex: Axial;
   step: FlowerStep;
+  /** On doubles: what the flower's doubles table gave for the hex. */
+  element?: { name: string; text: string };
 }
 
 /**
@@ -100,8 +109,18 @@ export function generateHexes(
   known: Map<string, string>,
   state: FlowerState = startState(),
   random: () => number = Math.random,
-  /** The hex the walk comes from; `continuing`: the token is still where rolling `from` left it. */
-  { from, continuing = false }: { from?: Axial; continuing?: boolean } = {}
+  /**
+   * `from`: the hex the walk comes from; `continuing`: the token is still where rolling `from` left it.
+   * `anchorFor`: what the bigger hex a hex lies in is (a detail level's coarse hex: `forest`), where
+   * the walk starts when no neighbour says; `tether`: how many flower steps the token may stray from
+   * that hex's cell before it is put back there (the land keeps the big hex's character).
+   */
+  {
+    from,
+    continuing = false,
+    anchorFor,
+    tether,
+  }: { from?: Axial; continuing?: boolean; anchorFor?: (hex: Axial) => string | undefined; tether?: number } = {}
 ): { generated: Generated[]; state: FlowerState } {
   const generated: Generated[] = [];
   const seen = new Map(known);
@@ -125,7 +144,17 @@ export function generateHexes(
         .find((v): v is string => !!v);
       const place = near ? placeFor(f, near) : null;
       if (place) start = { ...state, at: place.at, last: place.result };
+      else {
+        const big = anchorFor?.(hex);
+        const anchor = big ? placeFor(f, big) : null;
+        if (anchor) start = { ...state, at: anchor.at, last: anchor.result };
+      }
     }
+    // Strayed too far from what the big hex is: back to its cell before rolling.
+    const big = tether !== undefined ? anchorFor?.(hex) : undefined;
+    const anchor = big ? placeFor(f, big) : null;
+    if (anchor && flowerDistance(start.at, anchor.at) > tether!)
+      start = { ...start, at: anchor.at, last: anchor.result };
     const { step, state: next } = rollFlower(f, start, random);
     state = next;
     seen.set(key, step.result);

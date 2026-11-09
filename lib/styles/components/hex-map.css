@@ -2868,3 +2868,15 @@
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+.rpg-hexpaint-generate-tether {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
+.rpg-hexpaint-generate-tether small {
+  display: block;
+}

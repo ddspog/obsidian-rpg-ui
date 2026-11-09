@@ -17,11 +17,22 @@ export interface GeneratePanelProps {
   onReset: () => void;
   /** The map names its flower (`generate:` in its head). */
   named: boolean;
+  /** On a detail level: keep the walk near what the bigger hex is. */
+  tether?: { on: boolean; onChange: (on: boolean) => void };
 }
 
 export const flowerKey = (f: FoundFlower) => `${f.path}#${f.title}`;
 
-export function GeneratePanel({ flowers, chosen, onChoose, temperature, log, onReset, named }: GeneratePanelProps) {
+export function GeneratePanel({
+  flowers,
+  chosen,
+  onChoose,
+  temperature,
+  log,
+  onReset,
+  named,
+  tether,
+}: GeneratePanelProps) {
   return (
     <section className="rpg-hexpaint-brush rpg-hexpaint-generate" aria-label="Generate">
       <dl className="rpg-hexpaint-fields">
@@ -53,6 +64,19 @@ export function GeneratePanel({ flowers, chosen, onChoose, temperature, log, onR
           </>
         )}
       </dl>
+      {tether && (
+        <label className="rpg-hexpaint-generate-tether">
+          <input type="checkbox" checked={tether.on} onChange={(e) => tether.onChange(e.target.checked)} />
+          <span>
+            Keep to the big hex
+            <small className="rpg-hexpaint-muted">
+              {" "}
+              Each roll starts from what the bigger hex is, and the token never strays more than one step from it on the
+              flower.
+            </small>
+          </span>
+        </label>
+      )}
       <p className="rpg-hexpaint-muted rpg-hexpaint-generate-hint">
         Drag across empty hexes to walk the flower, or click a filled hex to fill the empty ones round it.
       </p>
@@ -64,7 +88,12 @@ export function GeneratePanel({ flowers, chosen, onChoose, temperature, log, onR
                 ({g.hex.q},{g.hex.r})
               </span>{" "}
               <strong>{g.step.result}</strong>
-              {g.step.doubles && <em> · doubles</em>}
+              {g.step.doubles && (
+                <em title={g.element?.text ?? "Both dice alike: the book adds a distinct element to the hex"}>
+                  {" "}
+                  · doubles{g.element ? `: ${g.element.name}` : ""}
+                </em>
+              )}
             </li>
           ))}
         </ol>
