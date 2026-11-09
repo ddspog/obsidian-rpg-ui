@@ -435,6 +435,8 @@ export interface ParsedHexMap {
   view?: HexStartView;
   /** `classify:` — which tiles are which terrain type, over the pack's rules (terrain.ts). */
   classify?: ClassifyRule[];
+  /** `travel: hexes` — Play counts whole hexes a day (hex tracking) instead of miles. */
+  tracking?: "miles" | "hexes";
   /** `generate:` — the hex flower Build's Generate tool rolls, and the tile for each result. */
   generate?: HexGenerate;
   stamps?: HexStampLine[];
@@ -515,7 +517,7 @@ export function stripComment(line: string): string {
   return m && m.index !== undefined ? line.slice(0, m.index) : line;
 }
 
-const HEAD_KEY = /^(grid|title|pack|seed|scale|step|coords|of|parent)\s*:\s*(.*)$/;
+const HEAD_KEY = /^(grid|title|pack|seed|scale|step|coords|of|parent|travel)\s*:\s*(.*)$/;
 const STAMP = /^(?:c|stamp)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*:\s*(\S+)(?:\s+rot\s*=\s*(-?\d+))?\s*$/i;
 const CELL = /^(?:([tpseb])\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)|(-?\d+)\s*,\s*(-?\d+))\s*:(.*)$/;
 const NUM = String.raw`-?\d+(?:\.\d+)?|-?\.\d+`;
@@ -641,6 +643,7 @@ function applyHeadValue(map: ParsedHexMap, key: string, value: unknown): void {
   else if (key === "parent" && (str === "faint" || str === "grid" || str === "off")) map.parent = str;
   else if (key === "step" && str) map.step = parseStep(str) ?? map.step;
   else if (key === "coords" && (str === "off" || str === "hover" || str === "always")) map.coords = str;
+  else if (key === "travel" && (str === "hexes" || str === "miles")) map.tracking = str;
 }
 
 function readRegions(map: ParsedHexMap, raw: unknown): void {

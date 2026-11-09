@@ -889,6 +889,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     layout,
     hexMetres: parsed.scaleMetres,
     grid: drawn?.grid,
+    ...(parsed.tracking ? { tracking: parsed.tracking } : {}),
     active: mode === "play" && !builder,
   });
 

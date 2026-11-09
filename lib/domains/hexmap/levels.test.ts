@@ -164,3 +164,25 @@ detail(2,0): [[Barelgrove]]`;
     ]);
   });
 });
+
+describe("levelView keeps the terrain keys", () => {
+  it("carries classify, travel and generate down to a level", async () => {
+    const { levelView } = await import("./levels");
+    const { parseHexMap } = await import("./parse-hex-map");
+    const src = [
+      "grid: hex",
+      "scale: 30 mi",
+      "travel: hexes",
+      'classify: { "land/forest/dead": badlands }',
+      'generate: { flower: "[[Hexcrawls]]", title: Wilderness, tiles: { Mountains: "mountain[snowy]" } }',
+      "---",
+      "t(0,0): plains",
+      "level 1:",
+      "t(0,0): forest",
+    ].join("\n");
+    const lv = parseHexMap(levelView(src, 1));
+    expect(lv.tracking).toBe("hexes");
+    expect(lv.classify).toEqual([{ pattern: "land/forest/dead", terrain: "badlands" }]);
+    expect(lv.generate).toEqual({ flower: "Hexcrawls", title: "Wilderness", tiles: { Mountains: "mountain[snowy]" } });
+  });
+});

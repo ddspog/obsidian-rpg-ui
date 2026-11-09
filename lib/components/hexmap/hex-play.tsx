@@ -23,7 +23,12 @@ import {
   routeText,
   summarizeRoute,
   type TerrainGrid,
+  type Tracking,
+  type TravelOptions,
   type TravelStep,
+  WEATHER,
+  WEATHER_IDS,
+  type WeatherId,
 } from "lib/domains/hexmap/terrain";
 
 export type PlayTool = "move" | "measure";
@@ -39,6 +44,8 @@ export interface PlayState {
   trail: boolean;
   /** The pace moves and Measure count at; unset: normal. */
   pace?: Pace;
+  /** The day's weather; unset: agreeable. */
+  weather?: WeatherId;
 }
 
 export const newPlayState = (): PlayState => ({ pieces: {}, trails: {}, tool: "move", fog: false, trail: true });
@@ -46,16 +53,28 @@ export const newPlayState = (): PlayState => ({ pieces: {}, trails: {}, tool: "m
 const METRES_PER_MILE = 1609.344;
 
 /** A route's steps across the map's ground, when it has a scale and knows any hex's terrain. */
-export function stepsOf(route: Axial[], grid: TerrainGrid, pace: Pace, hexMetres?: number): TravelStep[] | null {
+export function stepsOf(
+  route: Axial[],
+  grid: TerrainGrid,
+  pace: Pace,
+  hexMetres?: number,
+  options: TravelOptions = {}
+): TravelStep[] | null {
   if (!hexMetres || grid.terrain.size === 0) return null;
-  return routeSteps(route, grid, pace, hexMetres / METRES_PER_MILE);
+  return routeSteps(route, grid, pace, hexMetres / METRES_PER_MILE, options);
 }
 
 /** "4 hexes · 24 mi · Normal · 1 d 2 h · 2 difficult", or without terrain "4 hexes · 24 mi · 1 day". */
-export function routeReadout(route: Axial[], grid: TerrainGrid, pace: Pace, hexMetres?: number): string {
-  const steps = stepsOf(route, grid, pace, hexMetres);
+export function routeReadout(
+  route: Axial[],
+  grid: TerrainGrid,
+  pace: Pace,
+  hexMetres?: number,
+  options: TravelOptions = {}
+): string {
+  const steps = stepsOf(route, grid, pace, hexMetres, options);
   if (!steps) return travelText(travel([route[0], route[route.length - 1]], hexMetres));
-  return routeText(summarizeRoute(steps, pace, hexMetres! / METRES_PER_MILE), pace);
+  return routeText(summarizeRoute(steps, pace, hexMetres! / METRES_PER_MILE, options.weather), pace);
 }
 
 /** The level's text with the pieces where Play put them (drawn, never written). */
@@ -87,6 +106,7 @@ export function usePlay({
   layout,
   hexMetres,
   grid = EMPTY_GRID,
+  tracking = "miles",
   active,
 }: {
   state: PlayState;
@@ -96,10 +116,13 @@ export function usePlay({
   hexMetres?: number;
   /** The map's ground, for travel times across it. */
   grid?: TerrainGrid;
+  /** `travel: hexes` in the map's head: whole hexes a day. */
+  tracking?: Tracking;
   active: boolean;
 }) {
   const pace = state.pace ?? "normal";
-  const readoutFor = (from: Axial, to: Axial) => routeReadout(hexLine(from, to), grid, pace, hexMetres);
+  const options: TravelOptions = { weather: state.weather ?? "agreeable", tracking };
+  const readoutFor = (from: Axial, to: Axial) => routeReadout(hexLine(from, to), grid, pace, hexMetres, options);
   const [drag, setDrag] = React.useState<Drag | null>(null);
   const [selected, setSelected] = React.useState<number | null>(null);
   const [readout, setReadout] = React.useState<string | null>(null);
@@ -243,7 +266,7 @@ export function usePlay({
         <g className="rpg-hexmap-measure">
           {(() => {
             const line = hexLine(drag.from, drag.to);
-            const steps = stepsOf(line, grid, pace, hexMetres);
+            const steps = stepsOf(line, grid, pace, hexMetres, options);
             return line.map((a, i) => {
               const step = i > 0 ? steps?.[i - 1] : undefined;
               const cls = step?.impassable
@@ -328,6 +351,25 @@ export function usePlay({
           ]}
         />
       )}
+      {hexMetres && grid.terrain.size > 0 && (
+        <label className="rpg-hexmap-hud-weather" title={WEATHER[state.weather ?? "agreeable"].examples}>
+          <LucideIcon name="cloud-sun" size={13} />
+          <select
+            aria-label="The day's weather"
+            value={state.weather ?? "agreeable"}
+            onChange={(e) => {
+              onState({ ...state, weather: e.target.value as WeatherId });
+              setReadout(null);
+            }}
+          >
+            {WEATHER_IDS.map((id) => (
+              <option key={id} value={id}>
+                {WEATHER[id].name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <IconButton
         icon="footprints"
         label={state.trail ? "Hide the routes taken" : "Show the routes taken"}
@@ -351,7 +393,14 @@ export function usePlay({
         onClick={() => {
           setSelected(null);
           setReadout(null);
-          onState({ ...newPlayState(), tool: state.tool, fog: state.fog, trail: state.trail, pace: state.pace });
+          onState({
+            ...newPlayState(),
+            tool: state.tool,
+            fog: state.fog,
+            trail: state.trail,
+            pace: state.pace,
+            weather: state.weather,
+          });
         }}
       >
         <span>Reset</span>

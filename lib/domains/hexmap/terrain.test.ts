@@ -175,3 +175,40 @@ describe("terrain rule overrides", () => {
     expect(TERRAIN_RULES.hills.navigationDC).toBe(10);
   });
 });
+
+describe("weather and hex tracking", () => {
+  const route = [0, 1, 2].map((q) => ({ q, r: 0 }));
+  it("scales travel by the weather and says what it costs", async () => {
+    const { emptyGrid, routeSteps, summarizeRoute, routeText } = await import("./terrain");
+    const grid = emptyGrid();
+    grid.terrain.set("1,0", "grassland");
+    grid.terrain.set("2,0", "forest");
+    const steps = routeSteps(route, grid, "normal", 6, { weather: "inclement" });
+    expect(steps.map((s) => s.hours)).toEqual([4, 8]);
+    const text = routeText(summarizeRoute(steps, "normal", 6, "inclement"), "normal");
+    expect(text).toContain("1 d 4 h");
+    expect(text).toContain("nav DC 15 (disadvantage)");
+    const stuck = routeText(
+      summarizeRoute(routeSteps(route, grid, "normal", 6, { weather: "catastrophic" }), "normal", 6, "catastrophic"),
+      "normal"
+    );
+    expect(stuck).toContain("no travel without magic");
+    const blizzard = routeText(
+      summarizeRoute(routeSteps(route, grid, "normal", 6, { weather: "extreme" }), "normal", 6, "extreme"),
+      "normal"
+    );
+    expect(blizzard).toContain("2 exhaustion");
+  });
+
+  it("counts whole hexes a day by the hex tracking table", async () => {
+    const { emptyGrid, routeSteps, hexesPerDay } = await import("./terrain");
+    expect(hexesPerDay(30, "normal", false)).toBe(2);
+    expect(hexesPerDay(30, "slow", true)).toBe(0.5);
+    expect(hexesPerDay(6, "fast", true)).toBe(2);
+    const grid = emptyGrid();
+    grid.terrain.set("1,0", "grassland");
+    grid.terrain.set("2,0", "forest");
+    // 30-mile hexes, normal pace: grassland half a day (4 h), forest a whole day (8 h).
+    expect(routeSteps(route, grid, "normal", 30, { tracking: "hexes" }).map((s) => s.hours)).toEqual([4, 8]);
+  });
+});

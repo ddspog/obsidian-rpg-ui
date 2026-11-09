@@ -2966,3 +2966,16 @@ button.rpg-terrain-settings-reset {
 .rpg-terrain-settings-folders li.is-own code {
   color: var(--text-accent);
 }
+
+.rpg-hexmap-hud-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
+.rpg-hexmap-hud-weather select {
+  font-size: var(--font-ui-smaller);
+  height: auto;
+  padding: 2px 22px 2px 6px;
+}

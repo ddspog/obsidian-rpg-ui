@@ -347,8 +347,15 @@ function slower(a: Pace, b: Pace): Pace {
  *    difficult ground;
  *  - difficult ground, or crossing a river where no road does, halves the speed.
  */
-export function routeSteps(route: Axial[], grid: TerrainGrid, pace: Pace, hexMiles: number): TravelStep[] {
+export function routeSteps(
+  route: Axial[],
+  grid: TerrainGrid,
+  pace: Pace,
+  hexMiles: number,
+  { weather = "agreeable", tracking = "miles" }: TravelOptions = {}
+): TravelStep[] {
   const out: TravelStep[] = [];
+  const w = WEATHER[weather];
   for (let i = 1; i < route.length; i++) {
     const from = hexKey(route[i - 1].q, route[i - 1].r);
     const to = hexKey(route[i].q, route[i].r);
@@ -361,10 +368,71 @@ export function routeSteps(route: Axial[], grid: TerrainGrid, pace: Pace, hexMil
     const stepPace = slower(pace, cap);
     const difficult = ((rules?.difficult ?? false) && !road) || ford;
     const mph = PACE_MILES[stepPace] / 8;
-    const hours = impassable ? 0 : (hexMiles / mph) * (difficult ? 2 : 1);
+    const base =
+      tracking === "hexes" ? 8 / hexesPerDay(hexMiles, stepPace, difficult) : (hexMiles / mph) * (difficult ? 2 : 1);
+    const hours = impassable || w.time === null ? 0 : base * w.time;
     out.push({ to: route[i], terrain, road, ford, difficult, impassable, pace: stepPace, hours });
   }
   return out;
+}
+
+/** Weather's effect on a day's travel (Campaign Builder, Weather Effects). */
+export type WeatherId = "catastrophic" | "extreme" | "inclement" | "unpleasant" | "agreeable" | "nice" | "ideal";
+export interface WeatherRules {
+  id: WeatherId;
+  name: string;
+  /** Times as long to cross a hex; null: no travel without magic. */
+  time: number | null;
+  /** Disadvantage on checks to stay on course. */
+  navDisadvantage: boolean;
+  /** A level of exhaustion for each hex crossed. */
+  exhaustionPerHex: boolean;
+  /** Advantage on foraging. */
+  forageAdvantage: boolean;
+  examples: string;
+}
+const wr = (
+  id: WeatherId,
+  name: string,
+  time: number | null,
+  navDisadvantage: boolean,
+  exhaustionPerHex: boolean,
+  forageAdvantage: boolean,
+  examples: string
+): WeatherRules => ({ id, name, time, navDisadvantage, exhaustionPerHex, forageAdvantage, examples });
+export const WEATHER: Record<WeatherId, WeatherRules> = {
+  catastrophic: wr("catastrophic", "Catastrophic", null, true, true, false, "Hurricanes, monsoons, floods"),
+  extreme: wr("extreme", "Extreme", 2, true, true, false, "Blizzards, hail, tornados, mud slides"),
+  inclement: wr("inclement", "Inclement", 2, true, false, false, "Thunderstorms, major snowstorm"),
+  unpleasant: wr("unpleasant", "Unpleasant", 2, false, false, false, "Rain and wind, light snowfall"),
+  agreeable: wr("agreeable", "Agreeable", 1, false, false, false, "Overcast"),
+  nice: wr("nice", "Nice", 1, false, false, true, "Sunny"),
+  ideal: wr("ideal", "Ideal", 0.5, false, false, true, "The most clement day of the year"),
+};
+export const WEATHER_IDS = Object.keys(WEATHER) as WeatherId[];
+
+/** A word read as weather (`Inclement`, `storm`): the table's names, or null. */
+export function weatherOf(word: string | undefined): WeatherId | null {
+  const w = word?.trim().toLowerCase();
+  return w && (WEATHER_IDS as string[]).includes(w) ? (w as WeatherId) : null;
+}
+
+/** How a route's time is counted: miles at the pace (the default), or whole hexes a day (Campaign
+ *  Builder, Travel Speed (Hex Tracking)). */
+export type Tracking = "miles" | "hexes";
+
+export interface TravelOptions {
+  weather?: WeatherId;
+  tracking?: Tracking;
+}
+
+/** Hexes a day by hex tracking: for hexes 12 miles or larger, or smaller ones. */
+export function hexesPerDay(hexMiles: number, pace: Pace, difficult: boolean): number {
+  const big = hexMiles >= 12;
+  const table: Record<Pace, [number, number]> = big
+    ? { slow: [1, 0.5], normal: [2, 1], fast: [3, 2] }
+    : { slow: [2, 1], normal: [3, 2], fast: [4, 2] };
+  return table[pace][difficult ? 1 : 0];
 }
 
 export interface RouteSummary {
@@ -382,9 +450,16 @@ export interface RouteSummary {
   capped: number;
   /** The hardest navigation DC on the way off the road, at this pace (fast adds 5); unset: all on roads. */
   navigationDC?: number;
+  /** The weather the route was counted in, when it isn't agreeable. */
+  weather?: WeatherId;
 }
 
-export function summarizeRoute(steps: TravelStep[], pace: Pace, hexMiles: number): RouteSummary {
+export function summarizeRoute(
+  steps: TravelStep[],
+  pace: Pace,
+  hexMiles: number,
+  weather: WeatherId = "agreeable"
+): RouteSummary {
   let navigationDC: number | undefined;
   const s: RouteSummary = {
     hexes: steps.length,
@@ -409,6 +484,7 @@ export function summarizeRoute(steps: TravelStep[], pace: Pace, hexMiles: number
     }
   }
   s.navigationDC = navigationDC;
+  if (weather !== "agreeable") s.weather = weather;
   return s;
 }
 
@@ -432,13 +508,18 @@ export function routeText(s: RouteSummary, pace: Pace): string {
   const parts = [`${s.hexes} hex${s.hexes === 1 ? "" : "es"}`];
   if (s.miles) parts.push(`${Math.round(s.miles * 10) / 10} mi`);
   parts.push(pace[0].toUpperCase() + pace.slice(1));
-  if (s.miles && s.water < s.hexes) parts.push(travelHoursText(s.hours));
+  const w = s.weather ? WEATHER[s.weather] : undefined;
+  if (w?.time === null) parts.push(`${w.name}: no travel without magic`);
+  else if (s.miles && s.water < s.hexes) parts.push(travelHoursText(s.hours));
   if (s.road) parts.push(`${s.road} by road`);
   if (s.difficult) parts.push(`${s.difficult} difficult`);
   if (s.fords) parts.push(`${s.fords} ford${s.fords === 1 ? "" : "s"}`);
   if (s.capped) parts.push(`${s.capped} slowed`);
   if (s.water) parts.push(`${s.water} by boat`);
-  if (s.navigationDC !== undefined) parts.push(`nav DC ${s.navigationDC}`);
+  if (s.navigationDC !== undefined)
+    parts.push(`nav DC ${s.navigationDC}${w?.navDisadvantage ? " (disadvantage)" : ""}`);
+  if (w?.exhaustionPerHex && w.time !== null) parts.push(`${s.hexes - s.water} exhaustion`);
+  if (w && w.time !== null && w.time !== 1) parts.push(`${w.name.toLowerCase()} weather ×${w.time}`);
   return parts.join(" · ");
 }
 
