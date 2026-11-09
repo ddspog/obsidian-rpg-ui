@@ -37,6 +37,7 @@ import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild, installListUnfoldObserver } from "lib/domains/lists/render-list-group";
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
+import { HexFlowerRenderChild } from "lib/domains/hexflower/render-hex-flower";
 import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
 import { setOfficialSourcesResolver, homebrewBySetting } from "lib/domains/lists/official-sources";
 import {
@@ -415,6 +416,17 @@ export default class DndUIToolkitPlugin extends Plugin {
           } catch (err) {
             console.error("rpg figure.* render failed", err);
             el.innerHTML = '<div class="notice">Error rendering rpg figure</div>';
+          }
+          return;
+        }
+
+        // `rpg hexflower` — a hex flower table drawn as a diagram, with a token to roll and walk.
+        if (meta === "hexflower" || meta.startsWith("hexflower.")) {
+          try {
+            ctx.addChild(new HexFlowerRenderChild(el, source, ctx.sourcePath));
+          } catch (err) {
+            console.error("rpg hexflower render failed", err);
+            el.innerHTML = '<div class="notice">Error rendering rpg hexflower</div>';
           }
           return;
         }

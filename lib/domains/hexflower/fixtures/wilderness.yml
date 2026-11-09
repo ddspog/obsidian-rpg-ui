@@ -1,0 +1,34 @@
+title: Wilderness Terrain Elements
+dice: 2d6
+start: previous
+cells:
+  N N: Mountains
+  NW N: Hills
+  NE N: Hills
+  NW NW: Desert / Grassland
+  N: Hills
+  NE NE: Forest / Hills
+  NW: Badlands
+  NE: Forest
+  NW SW: Desert
+  NE SE: Forest
+  SW: Farmland / Grassland
+  SE: Farmland / Grassland
+  SW SW: Desert / Grassland
+  S: Grassland
+  SE SE: Farmland / Grassland
+  SW S: Grassland
+  SE S: Coastal
+  S S: Swamp
+arrows:
+  N N > N: stay
+  N N > NW: NW N
+  N N > NE: NE N
+  S S > S: stay
+  S S > SW: SW S
+  S S > SE: SE S
+doubles: Roll on the **Distinct Hex Elements** table.
+temperature: true
+shifts:
+  hot: { Forest: Jungle }
+  cold: { Desert: Tundra }

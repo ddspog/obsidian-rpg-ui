@@ -1,0 +1,22 @@
+title: Ruins/Underground Terrain Elements
+dice: 2d6
+start: Up/Down
+cells:
+  N N: Water
+  NW N: Collapse
+  NE N: Chasm
+  NW NW: Narrow Tunnels
+  N: Recreation
+  NE NE: Large Caverns
+  NW: Work Ward
+  NE: Work Ward
+  NW SW: Military Ward
+  NE SE: Military Ward
+  SW: Merchant Ward
+  SE: Merchant Ward
+  SW SW: Government Ward
+  S: Residential Ward
+  SE SE: Library Ward
+  SW S: Residential Ward
+  SE S: Residential Ward
+  S S: Water
