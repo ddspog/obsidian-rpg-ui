@@ -25,6 +25,7 @@ import {
 import { arcPath } from "lib/domains/hexmap/labels";
 import type { DrawRegion } from "lib/domains/hexmap/regions";
 import type { CoordMode, HexMapError } from "lib/domains/hexmap/parse-hex-map";
+import { TERRAIN_RULES } from "lib/domains/hexmap/terrain";
 
 export interface HexMapViewProps {
   layout: HexLayout;
@@ -589,6 +590,25 @@ function Tooltip({
               </dd>
             </React.Fragment>
           ))}
+        {hex.terrain && (
+          <>
+            <dt>ground</dt>
+            <dd>
+              {TERRAIN_RULES[hex.terrain].name}
+              <span className="rpg-hexmap-tooltip-file">
+                {[
+                  TERRAIN_RULES[hex.terrain].difficult && !hex.road ? "difficult" : null,
+                  hex.road ? "road" : null,
+                  hex.river ? "river" : null,
+                  TERRAIN_RULES[hex.terrain].maxPace ? `nav DC ${TERRAIN_RULES[hex.terrain].navigationDC}` : "by boat",
+                ]
+                  .filter(Boolean)
+                  .map((t) => ` · ${t}`)
+                  .join("")}
+              </span>
+            </dd>
+          </>
+        )}
         {hex.regions.length > 0 && (
           <>
             <dt>region</dt>

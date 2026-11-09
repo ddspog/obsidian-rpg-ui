@@ -46,6 +46,7 @@
 import { parse as parseYaml } from "yaml";
 import { type HexImport, readImports } from "./imports";
 import type { Layer } from "./packs";
+import { type ClassifyRule, readClassify, type TerrainId, terrainOf } from "./terrain";
 
 export interface HexCell {
   q: number;
@@ -63,6 +64,8 @@ export interface HexCell {
   regions: string[];
   /** `xN` — copies scattered on the hex. */
   count: number;
+  /** `terrain=hills` — the kind of ground, over what its tile says (terrain.ts). */
+  terrain?: TerrainId;
   /** `size=` `shift=` `hue=` `sat=` `bright=` — how the tile is drawn (design §13.2). */
   look?: HexLook;
   /** Put down by this stamp (its line is the `stamp(q,r)` line). */
@@ -420,6 +423,8 @@ export interface ParsedHexMap {
   underlay?: HexUnderlay;
   /** Where the block opens (`view:`). */
   view?: HexStartView;
+  /** `classify:` — which tiles are which terrain type, over the pack's rules (terrain.ts). */
+  classify?: ClassifyRule[];
   stamps?: HexStampLine[];
   /** Detail maps kept in this block (`detail(q,r):` sections after the main map), as older blocks wrote them. */
   details?: HexDetailSection[];
@@ -590,6 +595,11 @@ function applyHeadValue(map: ParsedHexMap, key: string, value: unknown): void {
     map.imports = readImports(value);
     return;
   }
+  if (key === "classify") {
+    const rules = readClassify(value);
+    map.classify = rules.length ? rules : undefined;
+    return;
+  }
   const str = value === null || value === undefined ? "" : String(value).trim();
   if (key === "title" && str) map.title = str;
   else if (key === "pack" && str) map.pack = str;
@@ -644,6 +654,10 @@ function parseContent(cell: HexCell, content: string, errors: HexMapError[]): vo
       cell.link = linkText(tok);
     } else if (tok.startsWith("@") && tok.length > 1) {
       cell.regions.push(tok.slice(1));
+    } else if (/^terrain=/i.test(tok)) {
+      const t = terrainOf(tok.slice(8));
+      if (t) cell.terrain = t;
+      else errors.push({ line: cell.line, message: `"${tok.slice(8)}" isn't a terrain type — forest, hills, swamp…` });
     } else if (/^x\d+$/.test(tok)) {
       cell.count = Math.max(1, parseInt(tok.slice(1), 10));
     } else if (readLook((cell.look ??= {}), tok)) {

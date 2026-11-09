@@ -37,6 +37,7 @@ import { MARKER_ANCHOR, MARKER_HEIGHT, markerTuning } from "./markers";
 import type { HexCell, HexLabelLine, HexMapError, HexMarkerLine, ParsedHexMap } from "./parse-hex-map";
 import { type DrawRegion, layoutRegions } from "./regions";
 import { expandStamps } from "./stamps";
+import { buildTerrainGrid, DEFAULT_CLASSIFY, type GridHex, type TerrainGrid, type TerrainId } from "./terrain";
 import {
   DEFAULT_STEP,
   type HexPack,
@@ -161,6 +162,8 @@ export interface ResolvedHexMap {
   letterings?: Record<string, LabelTuning>;
   /** Metres per height step, and a step's lift as a share of the hex width. */
   step: { metres: number; share: number };
+  /** Each hex's terrain type, and where roads and rivers run (terrain.ts). */
+  grid: TerrainGrid;
 }
 
 /** A step's lift as a share of the hex width: the pack's `step` over its
@@ -229,6 +232,28 @@ export function resolveHexMap(parsed: ParsedHexMap, packs: Map<string, HexPack>,
     if (!set) around.paths.set(key, (set = new Set()));
     set.add(family);
   }
+
+  // What kind of ground each hex is, for travel: its top terrain line (the highest), drawn as the tile
+  // resolveHexMap picks for it.
+  const topLine = new Map<string, HexCell>();
+  for (const cell of map.cells) {
+    if (cell.layer !== "terrain") continue;
+    const key = hexKey(cell.q, cell.r);
+    const was = topLine.get(key);
+    if (!was || cell.height >= was.height) topLine.set(key, cell);
+  }
+  const gridHexes: GridHex[] = [...topLine].map(([key, cell]) => {
+    const tile =
+      pack && cell.spec ? selectTile(pack, "terrain", cell.spec, `${map.seed}:${cell.q},${cell.r}:terrain:0`) : null;
+    return { key, spec: cell.spec, own: cell.terrain, path: tile?.file.path };
+  });
+  const gridPaths: Array<{ key: string; family: string }> = [];
+  for (const [key, families] of around.paths) for (const family of families) gridPaths.push({ key, family });
+  const grid = buildTerrainGrid(gridHexes, gridPaths, [
+    ...(map.classify ?? []),
+    ...(pack?.config.classify ?? []),
+    ...DEFAULT_CLASSIFY,
+  ]);
 
   // Where each joined path runs into what it connects to (a river's mouth into the sea), per family.
   const mouths = new Map<string, Map<string, Side>>();
@@ -455,6 +480,7 @@ export function resolveHexMap(parsed: ParsedHexMap, packs: Map<string, HexPack>,
     water,
     letterings,
     step: { metres, share: stepShare(pack) },
+    grid,
   };
 }
 
@@ -531,6 +557,10 @@ export interface HexInfo {
   faint?: boolean;
   /** The regions a faint neighbour puts it in: drawn, not this map's to edit. */
   faintRegions?: string[];
+  /** The kind of ground (terrain.ts), and whether a road or river runs through it. */
+  terrain?: TerrainId;
+  road?: boolean;
+  river?: boolean;
 }
 
 export interface DrawLabel {
@@ -665,6 +695,10 @@ export function layoutHexMap(
     let info = hexes.get(key);
     if (!info) {
       info = { q: cell.q, r: cell.r, cx: x, cy: y, height: cell.height, specs: [], regions: [], faint: !!cell.faint };
+      const terrain = resolved.grid?.terrain.get(key);
+      if (terrain) info.terrain = terrain;
+      if (resolved.grid?.roads.has(key)) info.road = true;
+      if (resolved.grid?.rivers.has(key)) info.river = true;
       hexes.set(key, info);
     } else if (!cell.faint) info.faint = false;
     info.height = Math.max(info.height, cell.height);

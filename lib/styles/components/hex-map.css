@@ -1860,6 +1860,22 @@
   stroke-width: 1;
 }
 
+.rpg-hexmap-measure polygon.is-difficult {
+  fill: color-mix(in srgb, var(--color-orange) 26%, transparent);
+  stroke: var(--color-orange);
+}
+
+.rpg-hexmap-measure polygon.is-road {
+  fill: color-mix(in srgb, var(--color-green) 20%, transparent);
+  stroke: var(--color-green);
+}
+
+.rpg-hexmap-measure polygon.is-water {
+  fill: color-mix(in srgb, var(--color-blue) 26%, transparent);
+  stroke: var(--color-blue);
+  stroke-dasharray: 4 3;
+}
+
 .rpg-hexmap-measure polyline {
   fill: none;
   stroke: var(--interactive-accent);
