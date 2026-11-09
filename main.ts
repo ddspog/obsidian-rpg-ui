@@ -424,7 +424,7 @@ export default class DndUIToolkitPlugin extends Plugin {
         // `rpg hexflower` — a hex flower table drawn as a diagram, with a token to roll and walk.
         if (meta === "hexflower" || meta.startsWith("hexflower.")) {
           try {
-            ctx.addChild(new HexFlowerRenderChild(el, source, ctx.sourcePath));
+            ctx.addChild(new HexFlowerRenderChild(el, source, ctx.sourcePath, this.app));
           } catch (err) {
             console.error("rpg hexflower render failed", err);
             el.innerHTML = '<div class="notice">Error rendering rpg hexflower</div>';

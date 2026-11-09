@@ -1216,3 +1216,8 @@ body.is-mobile {
     transform: translateY(100%);
   }
 }
+
+/* Hex flower: thumb-sized controls. */
+.is-mobile .rpg-hexflower button {
+  min-height: 44px;
+}

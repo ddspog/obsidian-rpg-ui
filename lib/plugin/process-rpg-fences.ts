@@ -135,7 +135,7 @@ export function processUnrenderedRpgFences(
     // Hex flowers (rpg hexflower) — the diagram and its token, inside embeds too.
     if (meta === "hexflower" || meta.startsWith("hexflower.")) {
       try {
-        parent.addChild(new HexFlowerRenderChild(el, source, sourcePath));
+        parent.addChild(new HexFlowerRenderChild(el, source, sourcePath, app));
       } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }

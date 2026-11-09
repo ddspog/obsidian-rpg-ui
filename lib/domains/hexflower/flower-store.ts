@@ -4,12 +4,20 @@
  * written to disk: a plugin reload starts every flower at Start.
  */
 
+import type { Axial } from "lib/domains/hexmap/axial";
 import type { FlowerState, FlowerStep } from "./hex-flower";
+
+/** One line of a flower's history: a roll (with what doubles brought), or the token put by hand. */
+export type FlowerEntry =
+  | { kind: "roll"; step: FlowerStep; element?: { name: string; text: string } }
+  | { kind: "place"; to: Axial; cell: string };
 
 export interface FlowerRecord {
   state: FlowerState;
   /** Newest first. */
-  history: FlowerStep[];
+  history: FlowerEntry[];
+  /** The walk before the last Reset, for one Undo. */
+  undo?: { state: FlowerState; history: FlowerEntry[] };
 }
 
 const store = new Map<string, FlowerRecord>();
