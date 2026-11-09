@@ -153,7 +153,6 @@ function RulesTable({ overrides, onOverrides }: Omit<TerrainSettingsProps, "app"
 function PackFolders({ app, pack, onSaved }: { app: App; pack: HexPack; onSaved: () => void }) {
   const folders = React.useMemo(() => terrainFolders(pack), [pack]);
   const own = new Map(pack.config.classify.map((r) => [r.pattern, r.terrain]));
-  const rules = [...pack.config.classify, ...DEFAULT_CLASSIFY];
   const [busy, setBusy] = React.useState(false);
   const change = async (pattern: string, terrain: string | null) => {
     setBusy(true);
@@ -172,10 +171,10 @@ function PackFolders({ app, pack, onSaved }: { app: App; pack: HexPack; onSaved:
       {folders.map((f) => {
         const mine = own.get(f.path);
         // What it counts as without its own rule: the pack's broader rules, then the built-in ones.
-        const inherited = classifyPath(
-          f.path,
-          rules.filter((r) => r.pattern !== f.path)
-        );
+        const inherited = classifyPath(f.path, [
+          ...pack.config.classify.filter((r) => r.pattern !== f.path),
+          ...DEFAULT_CLASSIFY,
+        ]);
         return (
           <li key={f.path} className={`depth-${f.depth}${mine ? " is-own" : ""}`}>
             <code>{f.path}</code>

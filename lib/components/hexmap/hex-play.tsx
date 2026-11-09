@@ -123,6 +123,14 @@ export function usePlay({
   const pace = state.pace ?? "normal";
   const options: TravelOptions = { weather: state.weather ?? "agreeable", tracking };
   const readoutFor = (from: Axial, to: Axial) => routeReadout(hexLine(from, to), grid, pace, hexMetres, options);
+  /** On the map, only how far and how long: the bar below has the rest. */
+  const shortReadoutFor = (from: Axial, to: Axial) =>
+    readoutFor(from, to)
+      .split(" · ")
+      .filter(
+        (part, i) => i === 0 || /^(\d+ d( .*)?|[\d¼½¾]+ h|\d+ min|\d+ days?|\d+ by boat|.*no travel.*)$/.test(part)
+      )
+      .join(" · ");
   const [drag, setDrag] = React.useState<Drag | null>(null);
   const [selected, setSelected] = React.useState<number | null>(null);
   const [readout, setReadout] = React.useState<string | null>(null);
@@ -291,7 +299,7 @@ export function usePlay({
             y={(centre(drag.from).y + centre(drag.to).y) / 2 - R * 0.35}
             style={{ fontSize: R * 0.3 }}
           >
-            {readoutFor(drag.from, drag.to)}
+            {shortReadoutFor(drag.from, drag.to)}
           </text>
         </g>
       )}
