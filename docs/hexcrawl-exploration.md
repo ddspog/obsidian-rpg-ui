@@ -181,24 +181,30 @@ Generator_ (its hex encounters) have these maps.
 **Test notes** (testing-vault): `Sandbox/Tests/62-TEST-HEX-TERRAIN` (terrain, travel, Generate) and
 `63-TEST-TERRAIN-LOG` (picks by terrain).
 
-## 3. What's next, by the books
+## 3. Built since (2026-11-09, round 2)
 
-These are ordered by how often they come up in play.
+- **Settings › Maps › Terrain types**: each terrain's rules, editable over the books' numbers
+  (`hexTerrainRules` in the plugin's settings, applied at load), and each pack folder's terrain,
+  written to `pack.yml` `classify:`.
+- **Weather in Play** (Weather Effects table: time ×2 or ×½, disadvantage to navigate, exhaustion
+  a hex, no travel when catastrophic) and **hex tracking** (`travel: hexes`).
+- **Population**: `population: low|medium|high` on a region; a hex takes its innermost region's; a
+  generator step's `population:` map starts a pick on it, as `terrain:` does.
+- **Exploration card** (vault: `gm-tools/solo-play/Exploration Generator`): make camp (campsite DC by
+  terrain, then What Wakes You), encounter checks by population, hex location encounters, getting
+  lost (a d6 direction table).
+- **Generate**: on a detail level the walk starts from the coarse hex's terrain and, with _Keep to
+  the big hex_, never strays more than one flower step from it; a flower's `doublesTable` is rolled
+  on doubles and pinned on the hex.
+- **Terrain picks** on four more cards: Mystery and Clue, City and Settlement, Sea and Sky, Dungeon Map.
+- **Hex flower redesign** after a `/ui-review` (board: tmp/ui-review/, findings merged from an
+  Impeccable critique and a live measurement).
 
-1. **Weather as log state**: `[Weather: Inclement]` scales travel time (×2, ½), sets disadvantage on
-   navigation and exhaustion per hex. The Travel Generator's weather roll would also take the
-   terrain's ±5.
-2. **Camp cards from the ground**: a campsite check against the terrain's DC (`campDC`), then the
-   disturbance question and _What Wakes You?_.
-3. **Encounter checks by population**: a region's `population: low|medium|high` sets the number of
-   d100 rolls per 12 hours, and the chance of unmarked settlements between marked ones.
-4. **Five-mile rolls during a journey**: each move inside `[TRAVEL]` offers the overarching-terrain
-   roll for the hex's terrain (one per 5 miles of hex), with the minor feature as a marker.
-5. **Getting lost**: `[Mv: Party (3,-1) | lost]` keeps what the party believes and where it really
-   is. Players see the first, and the GM's minimap shows both.
-6. **Fog that remembers**: seen (terrain only, from next door), explored (Perception DC 15) and
-   scouted, kept across logs. Markers flagged `secret` show only once their hex is explored.
-7. **Distinct hex elements**: Generate's doubles roll the table and place a marker. **Haunted** and
-   **Volcanic** markers carry their rules in the tooltip.
-8. **Hex tracking**: `travel: hexes` reads whole hexes per day from the _Travel Speed (Hex
-   Tracking)_ table instead of miles.
+## 4. Still to do
+
+1. **Weather as log state**: `[Weather: Inclement]` in the log, read by journeys and the minimap.
+2. **Getting lost in the log**: `[Mv: Party (3,-1) | lost]` keeps believed and true positions; the
+   players' view shows the first, the GM's minimap both.
+3. **Fog that remembers** across logs, with `secret` markers shown once their hex is explored.
+4. **Haunted and Volcanic** markers carrying their rules in the tooltip.
+5. **Five-mile rolls by themselves**: one overarching-terrain roll per five miles walked in a journey.
