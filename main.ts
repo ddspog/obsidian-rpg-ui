@@ -38,6 +38,7 @@ import { ListRenderChild, installListUnfoldObserver } from "lib/domains/lists/re
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
 import { HexFlowerRenderChild } from "lib/domains/hexflower/render-hex-flower";
+import { applyTerrainOverrides } from "lib/domains/hexmap/terrain";
 import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
 import { setOfficialSourcesResolver, homebrewBySetting } from "lib/domains/lists/official-sources";
 import {
@@ -1014,6 +1015,8 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.settings.folderLinkStyles = this.normalizeFolderLinkStyles(this.settings.folderLinkStyles);
     // The image studio's settings, any left out filled from the defaults.
     this.settings.imageStudio = { ...DEFAULT_IMAGE_STUDIO, ...(this.settings.imageStudio ?? {}) };
+    // Terrain types' travel rules: the books', with the settings' changes over them.
+    applyTerrainOverrides(this.settings.hexTerrainRules);
   }
 
   async saveSettings() {

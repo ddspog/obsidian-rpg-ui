@@ -2880,3 +2880,89 @@
 .rpg-hexpaint-generate-tether small {
   display: block;
 }
+
+/* Settings › Hex maps › Terrain types */
+.rpg-terrain-settings h4 {
+  margin: 1em 0 0.25em;
+}
+
+.rpg-terrain-settings-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.rpg-terrain-settings-table {
+  border-collapse: collapse;
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-terrain-settings-table th,
+.rpg-terrain-settings-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rpg-terrain-settings-table thead th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rpg-terrain-settings-table input[type="number"] {
+  width: 4.2em;
+}
+
+.rpg-terrain-settings-table tr.is-changed th[scope="row"] {
+  color: var(--text-accent);
+}
+
+.rpg-terrain-settings-table tr.is-changed th[scope="row"]::after {
+  content: " •";
+}
+
+button.rpg-terrain-settings-reset {
+  font-size: var(--font-ui-smaller);
+  padding: 2px 8px;
+}
+
+.rpg-terrain-settings details {
+  margin: 0.5em 0;
+}
+
+.rpg-terrain-settings summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.rpg-terrain-settings-count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: 400;
+}
+
+.rpg-terrain-settings-folders {
+  list-style: none;
+  margin: 0.4em 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rpg-terrain-settings-folders li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 11em;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-terrain-settings-folders li.depth-2 code {
+  padding-left: 1.5em;
+}
+
+.rpg-terrain-settings-folders li.is-own code {
+  color: var(--text-accent);
+}

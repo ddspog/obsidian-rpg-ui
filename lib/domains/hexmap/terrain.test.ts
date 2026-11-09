@@ -162,3 +162,16 @@ describe("terrain on a map", () => {
     expect(map.errors[0].message).toContain("isn't a terrain type");
   });
 });
+
+describe("terrain rule overrides", () => {
+  it("lays the settings over the book's rules, and takes them off again", async () => {
+    const { applyTerrainOverrides, TERRAIN_RULES, BOOK_TERRAIN_RULES } = await import("./terrain");
+    applyTerrainOverrides({ hills: { difficult: true, navigationDC: 12 } });
+    expect(TERRAIN_RULES.hills.difficult).toBe(true);
+    expect(TERRAIN_RULES.hills.navigationDC).toBe(12);
+    expect(BOOK_TERRAIN_RULES.hills.difficult).toBe(false);
+    applyTerrainOverrides({});
+    expect(TERRAIN_RULES.hills.difficult).toBe(false);
+    expect(TERRAIN_RULES.hills.navigationDC).toBe(10);
+  });
+});

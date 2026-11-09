@@ -4,6 +4,8 @@
  */
 
 import { App, DropdownComponent, ExtraButtonComponent, Notice, PluginSettingTab, Setting, TFile } from "obsidian";
+import { TerrainSettings } from "lib/components/hexmap/terrain-settings";
+import type { TerrainOverrides } from "lib/domains/hexmap/terrain";
 import { DndUIToolkitSettings } from "settings";
 import { THEMES } from "lib/themes";
 import { renderSystemMappings } from "lib/plugin/system-mappings-ui";
@@ -690,6 +692,25 @@ export class DndSettingsTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    containerEl = createSection(panel, "hexmaps:terrain", "Terrain types", {
+      desc: "What each kind of ground does on a journey (difficult, fastest pace, the DCs), and which of a pack's tile folders counts as which terrain.",
+    }).body;
+    const terrain = ReactDOM.createRoot(containerEl.createDiv());
+    this.previews.push(terrain);
+    const renderTerrain = () =>
+      terrain.render(
+        React.createElement(TerrainSettings, {
+          app: this.app,
+          overrides: this.plugin.settings.hexTerrainRules ?? {},
+          onOverrides: (next: TerrainOverrides) => {
+            this.plugin.settings.hexTerrainRules = next;
+            void this.plugin.saveSettings();
+            renderTerrain();
+          },
+        })
+      );
+    renderTerrain();
 
     containerEl = createSection(panel, "hexmaps:browser", "Hex pack browser", {
       desc:

@@ -90,6 +90,25 @@ export const TERRAIN_RULES: Record<TerrainId, TerrainRules> = {
   water: r("water", "Water", false, null, 10, 15, 15, undefined, "6d6 × 10 ft"),
 };
 
+/** What the settings change in a terrain type's rules (Settings › Hex maps › Terrain types). */
+export type TerrainOverrides = Partial<Record<TerrainId, Partial<Omit<TerrainRules, "id" | "name">>>>;
+
+/** The rules as the books give them, before the settings' changes. */
+export const BOOK_TERRAIN_RULES: Readonly<Record<TerrainId, TerrainRules>> = Object.freeze(
+  Object.fromEntries(Object.entries(TERRAIN_RULES).map(([k, v]) => [k, Object.freeze({ ...v })])) as Record<
+    TerrainId,
+    TerrainRules
+  >
+);
+
+/** Puts the settings' changes over the books' rules (in place: every reader of TERRAIN_RULES sees them). */
+export function applyTerrainOverrides(overrides: TerrainOverrides | undefined): void {
+  for (const id of TERRAIN_IDS) {
+    const own = overrides?.[id] ?? {};
+    Object.assign(TERRAIN_RULES[id], BOOK_TERRAIN_RULES[id], own, { id, name: BOOK_TERRAIN_RULES[id].name });
+  }
+}
+
 /** Other words for a terrain type, as specs, catalog names and books write them. */
 const ALIASES: Record<string, TerrainId> = {
   plains: "grassland",
