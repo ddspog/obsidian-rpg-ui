@@ -58,7 +58,11 @@ import {
   type ViewBox,
 } from "lib/components/hexmap/hex-map-view";
 import { type Drawn, drawFar, drawHexMap } from "lib/components/hexmap/draw-hex-map";
+import { GeneratePanel } from "lib/components/hexmap/generate-panel";
 import { pickNote } from "lib/components/hexmap/note-picker";
+import { chooseFlower, findFlowers, type FoundFlower } from "lib/domains/hexflower/find-flowers";
+import { type Generated, generateHexes, tileFor } from "lib/domains/hexflower/generate";
+import { type FlowerState, startState } from "lib/domains/hexflower/hex-flower";
 import { type RegionEntry, RegionList } from "lib/components/hexmap/region-list";
 import { useMarginSpill } from "lib/components/hexmap/use-margin-spill";
 import { LucideIcon } from "lib/components/session-log/lucide-icon";
@@ -927,6 +931,94 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     [setImportEdits, schedule, commit]
   );
 
+  // ---- generating from a hex flower (Build's Generate tool) ----
+  const [flowers, setFlowers] = React.useState<FoundFlower[] | null>(null);
+  const [flowerPick, setFlowerPick] = React.useState<string | undefined>();
+  React.useEffect(() => {
+    if (paint.tool !== "generate" || flowers) return;
+    let alive = true;
+    void findFlowers(app).then((found) => alive && setFlowers(found));
+    return () => {
+      alive = false;
+    };
+  }, [paint.tool, flowers, app]);
+  const flower = React.useMemo(() => {
+    if (!flowers) return undefined;
+    const picked = flowerPick ? flowers.find((f) => `${f.path}#${f.title}` === flowerPick) : undefined;
+    return picked ?? chooseFlower(flowers, parsed.generate?.flower, parsed.generate?.title);
+  }, [flowers, flowerPick, parsed.generate]);
+  /** The walk so far: the token, the hex it last rolled, and what each rolled hex came out as. */
+  const gen = React.useRef<{ state: FlowerState; last?: Axial; results: Map<string, string> }>({
+    state: startState(),
+    results: new Map(),
+  });
+  const [genLog, setGenLog] = React.useState<Generated[]>([]);
+  const generateEdits = React.useCallback(
+    (p: PaintPointer, text: string): HexEdit[] | null => {
+      if (!flower) {
+        setStatus(
+          flowers ? "No hex flower in this vault: add an rpg hexflower block to a note" : "Finding hex flowers…"
+        );
+        return null;
+      }
+      const map = parseHexMap(viewOf(text));
+      const filled = new Set(map.cells.filter((c) => c.layer === "terrain").map((c) => hexKey(c.q, c.r)));
+      const g = gen.current;
+      // What the map's hexes are: what this walk rolled, else their terrain type.
+      const known = new Map<string, string>();
+      for (const k of filled) known.set(k, g.results.get(k) ?? drawn?.grid.terrain.get(k) ?? "?");
+      const here = hexKey(p.hex.q, p.hex.r);
+      let targets: Axial[];
+      let from = p.phase === "down" ? undefined : g.last;
+      if (filled.has(here)) {
+        // A filled hex: a click fills the empty hexes round it; a drag walks on from it.
+        g.last = p.hex;
+        if (p.phase !== "down") return null;
+        targets = SIDES.map((side) => neighbour(p.hex, side)).filter((n) => !filled.has(hexKey(n.q, n.r)));
+        from = p.hex;
+        if (!targets.length) {
+          setStatus("No empty hexes round this one");
+          return null;
+        }
+      } else targets = [p.hex];
+      const continuing =
+        !!from && !!g.last && from.q === g.last.q && from.r === g.last.r && g.results.has(hexKey(from.q, from.r));
+      const { generated, state } = generateHexes(flower.flower, targets, known, g.state, Math.random, {
+        from,
+        continuing,
+      });
+      g.state = state;
+      const edits: HexEdit[] = [];
+      const missing = new Set<string>();
+      for (const item of generated) {
+        const tile = tileFor(item.step.result, parsed.generate?.tiles);
+        g.results.set(hexKey(item.hex.q, item.hex.r), item.step.result);
+        g.last = item.hex;
+        if (!tile) {
+          missing.add(item.step.result);
+          continue;
+        }
+        const spec = tile.terrain ? `${tile.spec} terrain=${tile.terrain}` : tile.spec;
+        edits.push({ kind: "paint", layer: "terrain", q: item.hex.q, r: item.hex.r, spec, height: paint.height });
+      }
+      setGenLog((was) => [...generated.slice().reverse(), ...was].slice(0, 30));
+      const doubles = generated.filter((x) => x.step.doubles).map((x) => `(${x.hex.q},${x.hex.r})`);
+      setStatus(
+        [
+          generated.map((x) => `(${x.hex.q},${x.hex.r}) ${x.step.result}`).join(" · "),
+          doubles.length && flower.flower.doubles
+            ? `doubles at ${doubles.join(", ")}: ${flower.flower.doubles.replace(/\[\[[^|\]]*\|?([^\]]*)\]\]/g, "$1")}`
+            : "",
+          missing.size ? `no tile for ${[...missing].join(", ")}: name one under generate: tiles:` : "",
+        ]
+          .filter(Boolean)
+          .join(" — ")
+      );
+      return edits;
+    },
+    [flower, flowers, viewOf, drawn, parsed.generate, paint.height]
+  );
+
   const editsFor = React.useCallback(
     (p: PaintPointer, text: string): HexEdit[] | null => {
       const { layer, tool } = paint;
@@ -934,6 +1026,8 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
       const { q, r } = p.hex;
       const pointLayer = layer === "marker" || layer === "label";
       const erase = tool === "erase" || p.button === 2;
+
+      if (tool === "generate") return generateEdits(p, text);
 
       // Region tool, Alt-click: take the hex's innermost region into the brush (to style it), painting nothing.
       if (tool === "region" && p.alt) {
@@ -1028,7 +1122,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
       if (edits.length === 0) setStatus("Pick something from the palette first");
       return edits;
     },
-    [paint, layout, setPaint, cellEdits, level, regionInImport, mode]
+    [paint, layout, setPaint, cellEdits, level, regionInImport, mode, generateEdits]
   );
 
   /**
@@ -2132,6 +2226,19 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
                   here={stampHere ? { name: stampHere.name } : undefined}
                   onExpand={expandStamp}
                   onRemove={() => stampHere && apply([{ kind: "remove", line: stampHere.line }])}
+                />
+              ) : paint.tool === "generate" ? (
+                <GeneratePanel
+                  flowers={flowers}
+                  chosen={flower}
+                  onChoose={setFlowerPick}
+                  temperature={gen.current.state.temperature}
+                  log={genLog}
+                  named={!!parsed.generate?.flower}
+                  onReset={() => {
+                    gen.current = { state: startState(), results: new Map() };
+                    setGenLog([]);
+                  }}
                 />
               ) : undefined
             }

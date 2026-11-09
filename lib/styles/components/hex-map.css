@@ -2837,3 +2837,34 @@
     content: "Open";
   }
 }
+
+/* Build's Generate tool: the flower it rolls and what it gave. */
+.rpg-hexpaint-generate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.rpg-hexpaint-generate select {
+  width: 100%;
+}
+
+.rpg-hexpaint-muted {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexpaint-generate-hint {
+  margin: 0;
+}
+
+.rpg-hexpaint-generate-log {
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: var(--font-ui-smaller);
+}
+
+.rpg-hexpaint-generate-log span {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

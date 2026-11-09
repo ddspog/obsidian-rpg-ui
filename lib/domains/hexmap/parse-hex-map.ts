@@ -208,6 +208,16 @@ export function readRegionLabel(raw: unknown, keywords = false): Partial<HexRegi
   return out;
 }
 
+/** `generate: { flower: "[[Hexcrawls]]", title: Wilderness Terrain Elements, tiles: { Mountains: mountain[snowy] } }` */
+export interface HexGenerate {
+  /** The note the flower is in, as link text. */
+  flower?: string;
+  /** Its title, when the note has more than one. */
+  title?: string;
+  /** A tile spec for each result, over the defaults by terrain type. */
+  tiles?: Record<string, string>;
+}
+
 export interface HexMapError {
   line: number;
   message: string;
@@ -425,6 +435,8 @@ export interface ParsedHexMap {
   view?: HexStartView;
   /** `classify:` — which tiles are which terrain type, over the pack's rules (terrain.ts). */
   classify?: ClassifyRule[];
+  /** `generate:` — the hex flower Build's Generate tool rolls, and the tile for each result. */
+  generate?: HexGenerate;
   stamps?: HexStampLine[];
   /** Detail maps kept in this block (`detail(q,r):` sections after the main map), as older blocks wrote them. */
   details?: HexDetailSection[];
@@ -593,6 +605,24 @@ function applyHeadValue(map: ParsedHexMap, key: string, value: unknown): void {
   }
   if (key === "import") {
     map.imports = readImports(value);
+    return;
+  }
+  if (key === "generate") {
+    const o = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    const tiles: Record<string, string> = {};
+    if (o.tiles && typeof o.tiles === "object")
+      for (const [k, v] of Object.entries(o.tiles as Record<string, unknown>))
+        if (typeof v === "string" && v.trim()) tiles[k] = v.trim();
+    map.generate = {
+      flower:
+        typeof o.flower === "string" && o.flower.trim()
+          ? linkText(o.flower)
+          : typeof value === "string"
+            ? linkText(value)
+            : undefined,
+      title: typeof o.title === "string" && o.title.trim() ? o.title.trim() : undefined,
+      tiles: Object.keys(tiles).length ? tiles : undefined,
+    };
     return;
   }
   if (key === "classify") {

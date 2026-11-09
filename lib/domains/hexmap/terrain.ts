@@ -413,7 +413,7 @@ export function routeText(s: RouteSummary, pace: Pace): string {
   const parts = [`${s.hexes} hex${s.hexes === 1 ? "" : "es"}`];
   if (s.miles) parts.push(`${Math.round(s.miles * 10) / 10} mi`);
   parts.push(pace[0].toUpperCase() + pace.slice(1));
-  if (s.miles) parts.push(travelHoursText(s.hours));
+  if (s.miles && s.water < s.hexes) parts.push(travelHoursText(s.hours));
   if (s.road) parts.push(`${s.road} by road`);
   if (s.difficult) parts.push(`${s.difficult} difficult`);
   if (s.fords) parts.push(`${s.fords} ford${s.fords === 1 ? "" : "s"}`);
