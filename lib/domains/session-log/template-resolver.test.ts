@@ -214,3 +214,13 @@ describe("a slot whose options depend on another — {{kind?@style:A>x|y;B>z}}",
     expect(out).toContain("=> the inn is named");
   });
 });
+
+describe("picks by terrain", () => {
+  it("reads the terrain types an option fits, and keeps other `=` text", async () => {
+    const { parseLogTemplate, splitTerrains } = await import("./template-resolver");
+    const [p] = parseLogTemplate("[A/B/C - {{kind:Five miles of desert=desert,badlands|Forest miles=forest|x=y}}]");
+    expect(p.options).toEqual(["Five miles of desert", "Forest miles", "x=y"]);
+    expect(p.optionTerrains).toEqual({ "Five miles of desert": ["desert", "badlands"], "Forest miles": ["forest"] });
+    expect(splitTerrains("Weather=1@20")).toEqual({ option: "Weather=1@20", fits: [] });
+  });
+});

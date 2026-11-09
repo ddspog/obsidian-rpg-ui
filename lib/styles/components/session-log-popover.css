@@ -1295,3 +1295,34 @@ button.placeholder-party-flag {
 .lonelog-placeholder-popover .placeholder-preview-raw pre {
   background: light-dark(#e3d9c2, #2e2923);
 }
+
+/* A pick by terrain: the party's ground, with a button back to its choice when another is picked. */
+.placeholder-terrain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--radius-l);
+  font-size: var(--font-ui-smaller);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--background-modifier-hover);
+  vertical-align: middle;
+}
+
+.placeholder-terrain.is-here {
+  color: var(--text-normal);
+  background: color-mix(in srgb, var(--color-green) 20%, transparent);
+}
+
+.placeholder-terrain-reset {
+  all: unset;
+  cursor: pointer;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.placeholder-terrain-reset:hover {
+  text-decoration: underline;
+}

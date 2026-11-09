@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { TERRAIN_RULES, type TerrainId } from "../../domains/hexmap/terrain";
+import { LucideIcon } from "./lucide-icon";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
 import {
@@ -33,6 +35,13 @@ import { parseRange, rangeVerdict } from "../../domains/battlemap/ranges";
 import { adviseRolls, withAdvice, type ConditionEffects } from "../../domains/session-log/roll-advice";
 import { withXpAward } from "../../domains/session-log/xp-award";
 
+/** Where the party stands, as the log's travel map says: its kind of ground and hex. */
+export interface PartyTerrain {
+  id: TerrainId;
+  /** `(3,-1) on Caulkin coast`. */
+  where?: string;
+}
+
 interface PlaceholderPopoverProps {
   card: SessionFeatureCard;
   entities: string[];
@@ -58,6 +67,9 @@ interface PlaceholderPopoverProps {
   };
   /** Fields filled before the popup opens (a pick already made for you). */
   initialValues?: Record<string, string>;
+  /** The ground the party stands on in the log's travel map: a pick that names the choice for each
+   *  terrain (a generator step's `terrain:`) starts on this one. */
+  terrain?: PartyTerrain;
   /** The fight as it stands — who bears which condition, who's a foe — so an
    *  attack's riders know whether the target is marked already. */
   fight?: {
@@ -108,6 +120,7 @@ export function PlaceholderPopover({
   vars,
   movement,
   initialValues,
+  terrain,
   defense,
   fight,
   slotsUsed,
@@ -213,7 +226,7 @@ export function PlaceholderPopover({
   const userInputs = needsUserInput(placeholders);
   const [values, setValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    for (const p of userInputs) initial[p.kind] = initialValues?.[p.kind] ?? "";
+    for (const p of userInputs) initial[p.kind] = initialValues?.[p.kind] ?? terrainPick(p, terrain) ?? "";
     return initial;
   });
   const riders = card.riders ?? [];
@@ -639,6 +652,7 @@ export function PlaceholderPopover({
                 {...(hints[placeholder.kind] ? { hint: hints[placeholder.kind] } : {})}
                 entities={entities}
                 {...(placeholder.kind === "target" && aim ? { describe: describeTarget } : {})}
+                {...(placeholder.optionTerrains ? { terrain: terrain ?? null } : {})}
                 onChange={(v) => handleChange(placeholder.kind, v)}
               />
             );
@@ -920,17 +934,59 @@ interface PlaceholderFieldProps {
   describe?: (name: string) => string | undefined;
   /** Still needed before the card can play: its label is marked, as "Still needed" names it. */
   missing?: boolean;
+  /** A pick by terrain: the party's ground (null when the log doesn't know it), shown with the field. */
+  terrain?: PartyTerrain | null;
   onChange: (value: string) => void;
 }
 
-function PlaceholderField({ placeholder, value, hint, entities, describe, missing, onChange }: PlaceholderFieldProps) {
+/** The option a pick by terrain starts on for the party's ground. */
+export function terrainPick(p: ParsedPlaceholder, terrain: PartyTerrain | undefined): string | undefined {
+  if (!terrain || !p.optionTerrains) return undefined;
+  return Object.entries(p.optionTerrains).find(([, fits]) => fits.includes(terrain.id))?.[0];
+}
+
+function PlaceholderField({
+  placeholder,
+  value,
+  hint,
+  entities,
+  describe,
+  missing,
+  terrain,
+  onChange,
+}: PlaceholderFieldProps) {
   const isTarget = placeholder.kind === "target";
+  const fits = terrain ? terrainPick(placeholder, terrain) : undefined;
 
   return (
     <label className={`placeholder-field${missing ? " is-missing" : ""}`} aria-invalid={missing || undefined}>
       <span className="placeholder-label">
         {FIELD_LABELS[placeholder.kind] ?? placeholder.kind.replace(/_/g, " ")}
         {placeholder.optional && <span className="placeholder-optional"> (optional)</span>}
+        {terrain !== undefined && (
+          <span
+            className={`placeholder-terrain${fits && fits === value ? " is-here" : ""}`}
+            title={
+              terrain
+                ? `The party is on ${TERRAIN_RULES[terrain.id].name.toLowerCase()}${terrain.where ? ` at ${terrain.where}` : ""}${fits ? `: ${fits}` : " (no choice for it)"}`
+                : "Where the party is isn't known: set out a [TRAVEL: [[Map]]] and place them on it"
+            }
+          >
+            <LucideIcon name="mountain" size={12} /> {terrain ? TERRAIN_RULES[terrain.id].name : "Terrain"}
+            {terrain && fits && fits !== value && (
+              <button
+                type="button"
+                className="placeholder-terrain-reset"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onChange(fits);
+                }}
+              >
+                use
+              </button>
+            )}
+          </span>
+        )}
       </span>
       {placeholder.options ? (
         <select value={value} onChange={(e) => onChange(e.target.value)} className="placeholder-select">

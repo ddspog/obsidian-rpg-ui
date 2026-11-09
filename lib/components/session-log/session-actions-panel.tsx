@@ -15,7 +15,7 @@ import { HudTurn } from "./hud-turn";
 import { LucideIcon } from "./lucide-icon";
 import type { HudInfo } from "../../domains/session-log/hud";
 import { PassivePopover } from "./passive-popover";
-import { PlaceholderPopover } from "./placeholder-popover";
+import { type PartyTerrain, PlaceholderPopover } from "./placeholder-popover";
 import type { LootDestination } from "../../domains/session-log/loot-destinations";
 import type { NoteOption } from "./note-combobox";
 import type { ItemPrice } from "../../domains/session-log/party-cards";
@@ -129,6 +129,8 @@ interface SessionActionsPanelProps {
   isDown?: (name: string) => boolean;
   /** Whether a PC is dying (0 HP, making death saves) — Stabilize's targets. */
   isDying?: (name: string) => boolean;
+  /** The ground the party stands on in the log's travel map, for picks by terrain. */
+  terrain?: PartyTerrain;
   /** The party as one: its members now, where loot can go, what the last fight
    *  left, and the day's clock — for the Party's cards. */
   party?: {
@@ -262,6 +264,7 @@ export function SessionActionsPanel({
   onMakeIcon,
   onMakeNamedIcon,
   isDying,
+  terrain,
   party,
 }: SessionActionsPanelProps) {
   const foes = [...foeStacks.keys()];
@@ -823,6 +826,7 @@ export function SessionActionsPanel({
           key={activeCard.id}
           card={fightCard(activeCard).card}
           {...(fightCard(activeCard).initial ? { initialValues: fightCard(activeCard).initial } : {})}
+          {...(terrain ? { terrain } : {})}
           {...(defense ? { defense } : {})}
           {...(fight ? { fight } : {})}
           {...(slotsUsed ? { slotsUsed: slotsUsed(activeCard.actor) } : {})}

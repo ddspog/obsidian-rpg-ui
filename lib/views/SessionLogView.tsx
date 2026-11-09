@@ -33,11 +33,13 @@ import { foldHealth, withTargetAc, withTargetHealth, type Health } from "lib/dom
 import type { MapChoice, MapTools } from "lib/domains/battlemap/map-tools";
 import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
+import { drawHexMap } from "lib/components/hexmap/draw-hex-map";
 import { TravelFullscreen, TravelMinimap } from "lib/components/hexmap/travel-pane";
+import type { TerrainGrid } from "lib/domains/hexmap/terrain";
 import { firstHexMap } from "lib/domains/hexmap/detail";
 import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
-import { foldTravels, foldTravelTrack, type Journey } from "lib/domains/session-log/travel";
+import { foldTravels, foldTravelTrack, type Journey, partySpot } from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -84,6 +86,7 @@ import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { pendingTermSwaps } from "lib/domains/session-log/die-edits";
 import { SessionBookkeeping } from "lib/components/session-log/bookkeeping";
 import type { CreatureInfo } from "lib/components/session-log/start-combat-popover";
+import type { PartyTerrain } from "lib/components/session-log/placeholder-popover";
 import { collectInventoryChanges } from "lib/domains/session-log/inventory-changes";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
@@ -3585,6 +3588,32 @@ function SessionLogRoot({
     [travelMaps]
   );
 
+  // The ground the party stands on now (the end of the log's travel track), for GM cards that pick by
+  // terrain: the travel map drawn once per map, read at the party's hex.
+  const partyOnMap = React.useMemo(() => {
+    const frame = travelTrack.frames[travelTrack.frames.length - 1];
+    const spot = frame ? partySpot(frame) : null;
+    const body = frame ? travelBodyOf(frame) : undefined;
+    return spot && body ? { spot, body, map: frame?.map } : null;
+  }, [travelTrack, travelBodyOf]);
+  const [travelGrid, setTravelGrid] = React.useState<{ body: string; grid: TerrainGrid } | null>(null);
+  React.useEffect(() => {
+    if (!partyOnMap || travelGrid?.body === partyOnMap.body) return;
+    let alive = true;
+    void drawHexMap(partyOnMap.body).then((d) => alive && setTravelGrid({ body: partyOnMap.body, grid: d.grid }));
+    return () => {
+      alive = false;
+    };
+  }, [partyOnMap, travelGrid]);
+  const partyTerrain = React.useMemo((): PartyTerrain | undefined => {
+    if (!partyOnMap || travelGrid?.body !== partyOnMap.body) return undefined;
+    const [q, r] = partyOnMap.spot.at;
+    const id = travelGrid.grid.terrain.get(`${q},${r}`);
+    if (!id) return undefined;
+    const map = partyOnMap.map?.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    return { id, where: `(${q},${r})${map ? ` on ${map}` : ""}` };
+  }, [partyOnMap, travelGrid]);
+
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {
     const b = battleAt(turnId);
     if (!b) return null;
@@ -3973,6 +4002,7 @@ function SessionLogRoot({
                 rollConditions={rollConditions}
                 isDown={isDownNow}
                 isDying={(name: string) => health.now(name)?.life?.state === "dying"}
+                {...(partyTerrain ? { terrain: partyTerrain } : {})}
                 party={partyNow}
               />
             }

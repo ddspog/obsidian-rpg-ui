@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { clockText, foldClock } from "./clock";
 import { groupIntoProse } from "./prose-grouper";
-import { foldTravels, foldTravelTrack, journeyAt, trackAt } from "./travel";
+import { foldTravels, foldTravelTrack, journeyAt, partySpot, trackAt } from "./travel";
 
 const LOG = `S1 The road north
 [Group: Party = Elara, Thorne, Talon, Lilith]
@@ -143,5 +143,20 @@ S3 Far away
       },
     ]);
     expect(last.map).toBe("[[Caulkin coast]]");
+  });
+});
+
+describe("partySpot", () => {
+  const frame = (groups: Record<string, string[]>, positions: Record<string, [number, number]>) =>
+    ({ id: 0, groups, positions, trails: {}, marks: [], moved: [] }) as Parameters<typeof partySpot>[0];
+  it("takes the Party group, else the biggest group, else the one token", () => {
+    expect(partySpot(frame({ Party: ["A"], Scouts: ["B", "C"] }, { Party: [1, 0], Scouts: [2, 0] }))?.at).toEqual([
+      1, 0,
+    ]);
+    expect(partySpot(frame({ Wolves: ["A", "B"], Lone: ["C"] }, { Lone: [0, 0], Wolves: [3, -1] }))?.token).toBe(
+      "Wolves"
+    );
+    expect(partySpot(frame({}, { Elara: [4, 4] }))?.token).toBe("Elara");
+    expect(partySpot(frame({}, {}))).toBeNull();
   });
 });

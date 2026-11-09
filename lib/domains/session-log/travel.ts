@@ -410,3 +410,16 @@ export function journeyAt(journey: Journey, id: number): TravelFrame {
   }
   return at;
 }
+
+/**
+ * Where "the party" stands in a frame: the group named Party, else the biggest group, else the one
+ * token placed. Null when nobody is on the map.
+ */
+export function partySpot(frame: TravelFrame): { token: string; at: Hex } | null {
+  const placed = Object.keys(frame.positions);
+  if (placed.length === 0) return null;
+  const named = placed.find((t) => t.toLowerCase() === "party");
+  const biggest = [...placed].sort((a, b) => (frame.groups[b]?.length ?? 0) - (frame.groups[a]?.length ?? 0))[0];
+  const token = named ?? (placed.length === 1 ? placed[0] : biggest);
+  return { token, at: frame.positions[token] };
+}

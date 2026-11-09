@@ -1,3 +1,5 @@
+import { type TerrainId, terrainOf } from "lib/domains/hexmap/terrain";
+
 export type PlaceholderKind =
   | "actor"
   | "name"
@@ -27,6 +29,9 @@ export interface ParsedPlaceholder {
    *  its line is dropped when the pick has no options. */
   dependsOn?: string;
   optionsBy?: Record<string, string[]>;
+  /** The terrain types each option fits (`{{ask:Desert miles=desert|…}}`): the popup starts on
+   *  the option for the ground the party stands on. */
+  optionTerrains?: Record<string, TerrainId[]>;
 }
 
 export interface ResolutionContext {
@@ -40,6 +45,17 @@ const AUTO_RESOLVE_KINDS: Set<PlaceholderKind> = new Set(["actor", "name"]);
 /** `{{name}}` — typed in — or `{{name:a|b}}` — one of the listed options. A `?`
  *  after the name (`{{name?}}`, `{{name?:a|b}}`) makes it optional. */
 const PLACEHOLDER_RE = /\{\{(\w+)(\?)?(?:@(\w+))?(?::([^{}]*))?\}\}/g;
+
+/** `Five miles of desert=desert,badlands` → the option and the terrain types it fits. Text after an
+ *  `=` that isn't a list of terrain types stays part of the option. */
+export function splitTerrains(option: string): { option: string; fits: TerrainId[] } {
+  const at = option.lastIndexOf("=");
+  if (at < 0) return { option, fits: [] };
+  const words = option.slice(at + 1).split(",");
+  const fits = words.map((w) => terrainOf(w));
+  if (!words.length || fits.some((t) => !t)) return { option, fits: [] };
+  return { option: option.slice(0, at).trim(), fits: fits as TerrainId[] };
+}
 
 /** `A>x|y;B>z` → `{ A: [x, y], B: [z] }`. */
 function parseOptionsBy(map: string): Record<string, string[]> {
@@ -71,11 +87,16 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
     const raw = match[0];
     const kind = match[1] as PlaceholderKind;
     const dependsOn = match[3];
+    const terrains: Record<string, TerrainId[]> = {};
     const options = dependsOn
       ? undefined
       : match[4]
           ?.split("|")
-          .map((o) => o.trim())
+          .map((o) => {
+            const { option, fits } = splitTerrains(o.trim());
+            if (fits.length) terrains[option] = fits;
+            return option;
+          })
           .filter(Boolean);
     const known = byKind.get(kind);
     if (known) {
@@ -89,6 +110,7 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
       ...(options && options.length > 0 ? { options } : {}),
       ...(match[2] ? { optional: true } : {}),
       ...(dependsOn ? { dependsOn, optionsBy: parseOptionsBy(match[4] ?? "") } : {}),
+      ...(Object.keys(terrains).length ? { optionTerrains: terrains } : {}),
     };
     byKind.set(kind, placeholder);
     placeholders.push(placeholder);
