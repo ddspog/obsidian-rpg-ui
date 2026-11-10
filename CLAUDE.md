@@ -95,6 +95,10 @@ Recommended workflow: After running tests and fixing any issues, run `npm run bu
 
 `node scripts/perf-log-bench.mjs "<note path>" [runs] [--profile out.cpuprofile]` measures opening a note in that Obsidian (time to first content and to settled, long tasks, scroll frame times; `MOBILE=1 VIEWPORT=390x844` for the phone UI). The first run is a warm-up and is not counted. A `--profile` file lists by function in the usual way; build with `NODE_ENV` set to production and no minify to read it, or React's development build will dominate.
 
+## PDF import
+
+The command "Import PDF as compendium book" (`lib/plugin/pdf-import-modal.ts`) writes a PDF into the vault as a book: a note a chapter, tabs, `rpg table` and `rule.side` blocks, entries of a kind in folders, pictures in `_assets`. The work is in `lib/domains/pdf-import/` and has no Obsidian in it (`extract` reads a page with pdf.js, `layout` orders it, `blocks` types its lines, `structure` gathers chapters, `emit` writes notes, `pipeline` runs them against a host). `node scripts/pdf-import.mjs book.pdf out --title "Name"` runs the same code from a terminal (pdfjs-dist, @napi-rs/canvas and tesseract.js from `node_modules`); `PDF_IMPORT_DEBUG=1` prints heading looks and every block. Try a change on a real book that way before the cloud Obsidian. Obsidian's pdf.js is 4.9. See `docs/pdf-import.md`.
+
 ## Working with the repository owner
 
 - **Questions as artifacts.** When a question comes down to a choice that is visual or behavioural (a layout, a default, a flow), do not ask it in prose. Publish an artifact with the problem shown on real screenshots and the options as mockups to choose between, mark a recommendation, and end with a "Copy picks" summary to paste back. The owner liked this far better than text questions.

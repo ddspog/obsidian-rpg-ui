@@ -43,6 +43,7 @@
     "@storybook/addon-docs": "^10.3.5",
     "@storybook/addon-mcp": "^0.5.0",
     "@storybook/react-vite": "^10.3.5",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@types/node": "^24.0.13",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
@@ -57,6 +58,7 @@
     "jq": "^1.7.2",
     "mermaid": "^10.9.0",
     "obsidian": "latest",
+    "pdfjs-dist": "^4.10.38",
     "prettier": "^3.6.2",
     "storybook": "^10.3.5",
     "tslib": "^2.8.1",
@@ -71,7 +73,16 @@
     "lucide-react": "^0.284.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tesseract.js": "^7.0.0",
     "typescript-eslint": "^8.37.0",
     "yaml": "^2.8.0"
+  },
+  "overrides": {
+    "wasm-feature-detect": "1.6.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "wasm-feature-detect": "1.6.2"
+    }
   }
 }

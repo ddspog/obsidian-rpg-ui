@@ -17,6 +17,7 @@ import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_IMAGE_STUDIO, DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { ImageStudioModal, setImageStudioSettings } from "lib/plugin/image-studio-modal";
 import { NewMapModal } from "lib/plugin/new-map-modal";
+import { PdfImportModal } from "lib/plugin/pdf-import-modal";
 import { relinkFrames, retargetFrames, setCardFrameSource } from "lib/services/card-frame-config";
 import { applyFrameCss, removeFrameCss } from "lib/services/frame-css";
 import { msgbus } from "lib/services/event-bus";
@@ -860,6 +861,18 @@ export default class DndUIToolkitPlugin extends Plugin {
       id: "rpg-ui-new-battle-map",
       name: "New battle map note",
       callback: () => new NewMapModal(this.app).open(),
+    });
+
+    // A PDF book read into the vault: a note a chapter, tabs, rpg tables, entries in folders.
+    this.addCommand({
+      id: "rpg-ui-import-pdf",
+      name: "Import PDF as compendium book",
+      callback: () =>
+        new PdfImportModal(
+          this.app,
+          this.settings.imageStudio,
+          this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`
+        ).open(),
     });
 
     this.addCommand({
