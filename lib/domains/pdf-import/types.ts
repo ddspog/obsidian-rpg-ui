@@ -121,6 +121,8 @@ export interface Section {
   level: number;
   style: string;
   page: number;
+  /** A short tag the heading carried at its far end, taken off the title: a creature's `CR 1/4`. */
+  tag?: string;
   /** Blocks before the first subsection. */
   blocks: Block[];
   children: Section[];
@@ -158,6 +160,8 @@ export interface ImportOptions {
   images: boolean;
   /** Read pages that have no text with OCR. */
   ocr: boolean;
+  /** Write spells, creatures, items, classes and the like as the plugin's blocks for them. */
+  entities: boolean;
   /** First and last page to read (1-based, inclusive); the whole file when absent. */
   from?: number;
   to?: number;
@@ -169,4 +173,5 @@ export const DEFAULT_OPTIONS: ImportOptions = {
   catalogMin: 8,
   images: true,
   ocr: true,
+  entities: true,
 };

@@ -41,6 +41,31 @@ Player's Guide/
 Folder calls name the book's folder and the path below it, so the book's folder can be moved or renamed
 (Obsidian's rename does not rewrite them: rename the folder, then search and replace its old name in the book).
 
+## Game entities
+
+With **Game entities** on (the default), sections that are things of the game are written as the blocks the
+plugin reads them from, so they show as stat blocks, spell cards and items instead of plain text. They are
+recognised by the way rulebooks of the 5e family write them:
+
+| Entity | Recognised by | Written as |
+| --- | --- | --- |
+| Spell | a line under the name such as `2nd-Circle Arcane (Evocation)` or `3rd-level evocation`, then Casting Time, Range, Components, Duration | `rpg spell` with `circle`, `source`, `school`, `casting`, `range`, `components`, `duration`, `summary` |
+| Creature | Armor Class and Hit Points lines, the six abilities, a `CR` on the heading or a Challenge line | `rpg stat.monster`; each trait, action, bonus action and reaction as an `rpg feature.details` in `Creature Traits/<Name> Traits.md`, which the stat block refers to |
+| Magic item | an italic line such as `Wondrous Item, Uncommon 1,000 gp (Requires Attunement)` | `rpg item.magic` with `type`, `rarity`, `cost`, `attunement`, `applies_to.kinds` |
+| Weapon, armor, gear | a row of a table with a Cost column and a Damage, Armor Class or Weight column | `rpg item.element` (one note a row, in a folder named for the table) with `weapon` or `armor` filled in |
+| Class | a section with Class Features whose features come at stated levels | one note; each feature an `rpg feature.details` with `subtitle` and `level` |
+| Subclass | the sections after a class's Subclasses heading | a note in the class's folder, with `.SUBCLASS: parent_class` |
+| Lineage | a section with an `… Lineage Traits` heading | the traits as one `rpg feature.details` |
+| Heritage, background, talent | their place in the book (under Heritage, Backgrounds, … Talents) and their run-in traits | an `rpg feature.details` under the flavour text |
+
+Only what the page states is filled in: a spell's range, a creature's hit points, a weapon's damage. What
+takes reading the rules text is left as text in the block's body, for a later pass (by hand or with a model):
+what a feature grants or lets you choose (`traits`, `choose`, `passive`, `action`), how a spell rolls (`roll`),
+a magic item's bonuses, and links to the vault's own notes (`[[Light Armor]]`). The book's contents note ends
+with a count of the entities written.
+
+Other rule systems are not recognised; their books still import as text, tabs and tables.
+
 ## How a page is read
 
 1. **Text, pictures and shading** come from the PDF with pdf.js (Obsidian's own copy). A page with no text and a
@@ -72,7 +97,7 @@ The same code runs outside Obsidian, for trying changes on a book and for very l
 
 ```
 node scripts/pdf-import.mjs book.pdf out-folder --title "Player's Guide" [--from 9 --to 60] [--max-lines 300]
-     [--catalog-min 8] [--no-images] [--no-ocr]
+     [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
 ```
 
 `PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `OCR_LANG=por` picks the
@@ -84,7 +109,9 @@ The import is a first draft of the book, not a finished transcription:
 
 - **Heading ranks** come from type size. A book that sets one heading of a kind smaller than its fellows files
   it under the one before; a section that repeats its parent's parts is lifted back out, others are not.
-- **Stat blocks** come through as text lines, not as stat block fences.
+- **Entities** are found by the patterns above. One written another way stays text; check the count against
+  the book. A stat block's facts beyond the usual lines (a 5e block's Saving Throws, Skills) are kept under
+  `stats` by name.
 - **Scans** give no bold or italic, and headings only where the type is clearly bigger; pictures inside a
   scanned page are not cut out.
 - **Tables** that span columns with merged cells, and tables with cells that wrap in every row, may need their

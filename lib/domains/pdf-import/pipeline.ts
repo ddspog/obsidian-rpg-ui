@@ -52,6 +52,8 @@ export interface ImportResult {
   pages: number;
   ocrPages: number;
   chapters: Array<{ name: string; pages: string }>;
+  /** Entities written, by kind. */
+  entities: Record<string, number>;
   tables: number;
   sidebars: number;
 }
@@ -264,11 +266,18 @@ export async function importPdf(
     files: [],
     tableIds: new Set(),
     names: new Set(),
+    kinds: options.entities ? new Map() : undefined,
   };
   const facts = [
     `*Imported from a PDF of ${doc.numPages} pages${ocrPages ? `, ${ocrPages} of them read by OCR` : ""}: ${tables} tables, ${sidebars} sidebars, ${used.size} pictures.*`,
   ];
   const files = emitBook(chapters, ctx, facts);
+  const kinds = [...(ctx.kinds ?? new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
+  if (kinds.length) {
+    // The index note is written last, so the count can still be added to it.
+    const index = files[files.length - 1];
+    index.text += `\n*Written as game entities: ${kinds.map(([k, n]) => `${n} ${k}${n === 1 ? "" : k.endsWith("s") ? "es" : "s"}`).join(", ")}.*\n`;
+  }
   let done = 0;
   for (const file of files) {
     stop();
@@ -284,6 +293,7 @@ export async function importPdf(
     pages: total,
     ocrPages,
     chapters: chapters.map((c) => ({ name: c.title, pages: `${c.firstPage}–${c.lastPage}` })),
+    entities: Object.fromEntries(kinds),
     tables,
     sidebars,
   };
