@@ -138,6 +138,33 @@ async function ollamaImage(s: ImageStudioSettings, prompt: string): Promise<Gene
 }
 
 /** A one-sentence visual subject for an image of `what`, drafted from the note's text. */
+/** One question to the Anthropic-compatible endpoint, and the text of its answer. */
+export async function askAnthropic(
+  s: ImageStudioSettings,
+  system: string,
+  user: string,
+  maxTokens: number
+): Promise<string> {
+  if (!s.anthropicUrl.trim()) throw new Error("No Anthropic link set — add one in the plugin's settings.");
+  const res = await requestUrl({
+    url: `${trim(s.anthropicUrl)}/v1/messages`,
+    method: "POST",
+    contentType: "application/json",
+    headers: { "anthropic-version": "2023-06-01", ...(s.anthropicKey ? { "x-api-key": s.anthropicKey } : {}) },
+    body: JSON.stringify({
+      model: s.anthropicModel,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+    throw: false,
+  });
+  if (res.status >= 400) throw new Error(`Anthropic answered ${res.status}: ${res.text.slice(0, 300)}`);
+  return (
+    ((res.json?.content ?? []) as Array<{ type: string; text?: string }>).find((b) => b.type === "text")?.text ?? ""
+  );
+}
+
 export async function draftSubject(s: ImageStudioSettings, what: string, context: string): Promise<string> {
   if (!s.anthropicUrl.trim()) throw new Error("No Anthropic link set — add one in the plugin's settings.");
   const res = await requestUrl({

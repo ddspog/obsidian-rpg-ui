@@ -1466,7 +1466,14 @@ function resolveFolderCall(
   // `@[[bestiary/creatures/]]`) sweeps every subfolder (beast-forms, …).
   // All existing folder-call targets are leaf folders, so this is a no-op
   // for them and only broadens parents-with-subfolders.
-  const files = collectMarkdownFiles(folder).sort((a, b) => a.basename.localeCompare(b.basename));
+  // `.shallow()` keeps to the folder's own notes: a book's chapter folder holds its tab notes and,
+  // in subfolders, what those tabs are split into.
+  const shallow = call.chain.some((seg) => seg.fn === "shallow");
+  const files = (
+    shallow
+      ? folder.children.filter((c): c is TFile => c instanceof TFile && c.extension === "md")
+      : collectMarkdownFiles(folder)
+  ).sort((a, b) => a.basename.localeCompare(b.basename));
 
   if (files.length === 0) {
     renderError(span, `No .md files in [[${call.target}]]`);
