@@ -106,6 +106,7 @@ export class PdfImportModal extends Modal {
   private folder = "";
   private images = true;
   private ocr = true;
+  private entities = true;
   private ocrLang = "eng";
   private useModel = false;
   private maxLines = DEFAULT_OPTIONS.maxLines;
@@ -206,6 +207,13 @@ export class PdfImportModal extends Modal {
         t.inputEl.style.width = "4em";
       })
       .addToggle((t) => t.setValue(this.ocr).onChange((v) => (this.ocr = v)));
+
+    new Setting(contentEl)
+      .setName("Game entities")
+      .setDesc(
+        "Write spells, creatures, magic items, weapons and armor, classes and subclasses, lineages, heritages, backgrounds and talents as the plugin's own blocks. Off: they stay plain text."
+      )
+      .addToggle((t) => t.setValue(this.entities).onChange((v) => (this.entities = v)));
 
     new Setting(contentEl)
       .setName("Note length")
@@ -377,13 +385,23 @@ export class PdfImportModal extends Modal {
       const result = await importPdf(
         pdfjs,
         doc,
-        { ...DEFAULT_OPTIONS, title, images: this.images, ocr: this.ocr, maxLines: this.maxLines },
+        {
+          ...DEFAULT_OPTIONS,
+          title,
+          images: this.images,
+          ocr: this.ocr,
+          entities: this.entities,
+          maxLines: this.maxLines,
+        },
         host,
         parent
       );
       await doc.destroy();
       new Notice(
         `Imported "${title}": ${result.notes} notes, ${result.tables} tables, ${result.images} pictures` +
+          (Object.keys(result.entities).length
+            ? `, ${Object.values(result.entities).reduce((a, b) => a + b, 0)} game entities`
+            : "") +
           (result.ocrPages ? `, ${result.ocrPages} pages by OCR` : "") +
           "."
       );

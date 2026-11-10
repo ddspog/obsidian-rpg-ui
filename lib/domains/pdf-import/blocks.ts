@@ -86,7 +86,16 @@ export function tableRows(
   let title: string | undefined;
   let body = lines;
   const first = body[0];
-  if (first && first.cells.length === 1 && body.length > 2 && body[1].cells.length > 1 && first.cells[0].w < 0.9 * w) {
+  // A lone first line in the header strip is the top of a two-line header, not the table's title.
+  const inHeadStrip = first && headBottom !== undefined && first.base - first.size / 3 <= headBottom + 1;
+  if (
+    first &&
+    !inHeadStrip &&
+    first.cells.length === 1 &&
+    body.length > 2 &&
+    body[1].cells.length > 1 &&
+    first.cells[0].w < 0.9 * w
+  ) {
     const text = lineText(first);
     if (text.length <= 70 && !ENDS.test(text.replace(/[)"”’]$/, "x"))) {
       title = text;
@@ -158,6 +167,9 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): bo
   if (Math.abs(cur.size - prev.size) > 0.8) return true;
   if (jumped) {
     if (cur.x - cur.colL > 2.5) return true;
+    // A column that opens with a run-in name (`Echolocation.`) opens a paragraph.
+    const lead = cur.cells[0].spans[0];
+    if (lead && (lead.bold || lead.italic) && /[.:]\s*$/.test(lead.text) && cur.cells[0].spans.length > 1) return true;
     return ENDS.test(prevText) && !/^[a-zà-ÿ]/.test(lineText(cur));
   }
   const dy = cur.base - prev.base;
@@ -169,7 +181,12 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): bo
   const allItalic = (l: Line) => l.cells.every((c) => c.spans.every((s) => s.italic));
   if (allItalic(prev) !== allItalic(cur) && (ENDS.test(prevText) || allItalic(prev))) return true;
   const firstSpan = cur.cells[0].spans[0];
-  if (firstSpan?.bold && /[.:]\s*$/.test(firstSpan.text) && ENDS.test(prevText) && cur.cells[0].spans.length > 1)
+  if (
+    (firstSpan?.bold || firstSpan?.italic) &&
+    /[.:]\s*$/.test(firstSpan.text) &&
+    ENDS.test(prevText) &&
+    cur.cells[0].spans.length > 1
+  )
     return true;
   // A line that opens with a bold label (`Range:`) after a line that stopped short: a list of facts.
   if (
@@ -181,8 +198,11 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): bo
   )
     return true;
   const ended = ENDS.test(prevText) && prev.r < prev.colR - 0.25 * (prev.colR - prev.colL);
-  if (cur.x > prev.x + nudge) return count >= 2 || ended;
-  if (cur.x < prev.x - nudge) return count >= 2;
+  // A line set in from the one before opens a paragraph when that one closed its sentence; if it
+  // did not, the line hangs under it (a fact that wraps). A line set back out carries on a
+  // paragraph that opened with an indent, and ends one whose lines were hanging.
+  if (cur.x > prev.x + nudge) return ENDS.test(prevText) || ended;
+  if (cur.x < prev.x - nudge) return count >= 2 && ENDS.test(prevText);
   return ENDS.test(prevText) && prev.r < prev.colL + 0.6 * (prev.colR - prev.colL);
 }
 

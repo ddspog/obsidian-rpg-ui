@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toBlocks } from "./blocks";
 import { emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { itemsFromTable } from "./entities";
 import { fontName, isBold, isItalic } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
@@ -335,5 +336,203 @@ describe("model step and OCR", () => {
     expect(runs.map((r) => r.str)).toEqual(["Safety", "tools"]);
     expect(runs[0].x).toBe(100);
     expect(runs[0].y).toBe(48);
+  });
+});
+
+describe("entities", () => {
+  const span = (text: string, bold = false, italic = false) => ({ text, bold, italic });
+  const para = (...spans: ReturnType<typeof span>[]): Block => ({ type: "para", spans, page: 1 });
+  const section = (title: string, level: number, blocks: Block[], children: Section[] = [], tag?: string): Section => ({
+    title,
+    tag,
+    level,
+    style: `s${level}`,
+    page: 1,
+    blocks,
+    children,
+  });
+  const write = (root: Section) => {
+    const ctx: EmitContext = {
+      book: "Book",
+      source: "From **Book**.",
+      options: { ...DEFAULT_OPTIONS, title: "Book" },
+      look: lookFor,
+      mend: (t) => t,
+      files: [],
+      tableIds: new Set(),
+      names: new Set(),
+      kinds: new Map(),
+    };
+    const chapter: Chapter = { title: root.title, number: "01", firstPage: 1, lastPage: 9, root };
+    const files = emitBook([chapter], ctx, []);
+    return {
+      files,
+      kinds: Object.fromEntries(ctx.kinds ?? []),
+      note: files.find((f) => f.path === "01. " + root.title + ".md")?.text ?? "",
+    };
+  };
+
+  it("writes a spell's facts as an rpg spell block", () => {
+    const acid = section("Acid Arrow", 2, [
+      para(span("2nd-Circle Arcane (Evocation)", false, true)),
+      para(span("Casting Time:", true), span(" 1 action")),
+      para(span("Range:", true), span(" 90 feet")),
+      para(span("Components:", true), span(" V, S, M (powdered rhubarb leaf, and an adder’s stomach)")),
+      para(span("Duration:", true), span(" Instantaneous")),
+      para(span("You launch a missile of acid toward your target.", false, true)),
+      para(span("A shimmering green arrow streaks toward a target.")),
+    ]);
+    const { note, kinds } = write(section("Magic", 0, [], [section("Spells", 1, [], [acid])]));
+    expect(kinds).toEqual({ spell: 1 });
+    expect(note).toContain(
+      [
+        "```rpg spell",
+        "circle: 2nd-Circle",
+        "source:",
+        '  - "[[Arcane]]"',
+        "school: Evocation",
+        'casting: "1 action"',
+        'range: "90 feet"',
+        "components:",
+        '  - "V"',
+        '  - "S"',
+        '  - "M (powdered rhubarb leaf, and an adder’s stomach)"',
+        'duration: "Instantaneous"',
+        'summary: "You launch a missile of acid toward your target."',
+        "---",
+        "A shimmering green arrow streaks toward a target.",
+        "```",
+      ].join("\n")
+    );
+  });
+
+  it("writes a creature as a stat block that refers to a note of its traits and actions", () => {
+    const actions = section("Actions", 3, [
+      para(span("Bite.", true), span(" "), span("Melee Weapon Attack:", false, true), span(" +4 to hit.")),
+    ]);
+    const bat = section(
+      "Bat, Giant",
+      2,
+      [
+        para(span("Large Beast")),
+        para(span("Armor Class", true), span(" 12")),
+        para(span("Hit Points", true), span(" 15")),
+        para(span("Speed", true), span(" 10 ft., fly 60 ft.")),
+        para(span("Perception", true), span(" 11 "), span("Stealth", true), span(" 14")),
+        para(span("STR DEX CON INT WIS CHA")),
+        para(span("+2 +2 +0 −4 +1 −2")),
+        para(span("Echolocation.", true), span(" The bat can’t use its keensense while deafened.")),
+      ],
+      [actions],
+      "CR 1/4"
+    );
+    const { note, files, kinds } = write(section("Creatures", 0, [], [bat]));
+    expect(kinds).toEqual({ creature: 1 });
+    expect(note).toContain('cr: "1/4"');
+    expect(note).toContain("  pas_perception: 11\n  pas_stealth: 14");
+    expect(note).toContain("abilities:\n  str: 2\n  dex: 2\n  con: 0\n  int: -4\n  wis: 1\n  cha: -2");
+    expect(note).toContain('  - ref: "@[[Book/Creature Traits/Bat, Giant Traits]]#Bite"');
+    const traits = files.find((f) => f.path === "Creature Traits/Bat, Giant Traits.md")?.text ?? "";
+    expect(traits).toContain('name: "Echolocation"\ntype: trait\nheading: p');
+    expect(traits).toContain('name: "Bite"\ntype: action\nheading: p\n---\n*Melee Weapon Attack:* +4 to hit.');
+  });
+
+  it("writes a magic item with its rarity, price and attunement", () => {
+    const item = section("Armor of Resistance", 2, [
+      para(span("Armor (Light, Medium, or Heavy), Rare 5,000 gp + armor base cost (Requires Attunement)", false, true)),
+      para(span("You are resistant to one type of damage.")),
+    ]);
+    const { note } = write(section("Items", 0, [], [item]));
+    expect(note).toContain(
+      [
+        'name: "Armor of Resistance"',
+        'type: "Armor (Light, Medium, or Heavy)"',
+        "rarity: Rare",
+        'cost: "5,000 gp + armor base cost"',
+        "attunement: true",
+        "applies_to:",
+        "  kinds: [armor]",
+      ].join("\n")
+    );
+  });
+
+  it("writes a class's levelled features as blocks and its subclasses as notes of their own", () => {
+    const feature = (name: string, at: string) =>
+      section(name, 4, [para(span(`${at}-Level Barbarian Feature`, false, true)), para(span("What it does."))]);
+    const barbarian = section(
+      "Barbarian",
+      1,
+      [para(span("Some warriors hail from untamed lands."))],
+      [
+        section(
+          "Class Features",
+          2,
+          [para(span("As a barbarian, you have these."))],
+          [feature("Rage", "1st"), feature("Danger Sense", "2nd")]
+        ),
+        section("Barbarian Subclasses", 2, [para(span("Pick one."))]),
+        section(
+          "Berserker",
+          2,
+          [para(span("A rage most ferocious."))],
+          [section("Frenzy", 4, [para(span("3rd-Level Berserker Feature", false, true)), para(span("Go wild."))])]
+        ),
+      ]
+    );
+    const { note, files, kinds } = write(section("Classes", 0, [], [barbarian]));
+    expect(kinds).toEqual({ class: 1, subclass: 1 });
+    expect(note).toContain(
+      '```rpg feature.details\nname: "Rage"\nsubtitle: "1st-Level Barbarian Feature"\nlevel: 1\n---\nWhat it does.\n```'
+    );
+    const sub = files.find((f) => f.path === "01. Classes/Berserker.md")?.text ?? "";
+    expect(sub).toContain(".SUBCLASS:\n  parent_class: Barbarian");
+    expect(sub).toContain('name: "Frenzy"\nsubtitle: "3rd-Level Berserker Feature"\nlevel: 3');
+  });
+
+  it("makes an item of each priced row of a weapons table, and none of a price list", () => {
+    const weapons: Extract<Block, { type: "table" }> = {
+      type: "table",
+      caption: "WEAPONS",
+      page: 1,
+      rows: [
+        ["WEAPON", "COST", "DAMAGE", "WEIGHT", "WEAPON OPTION", "PROPERTIES"],
+        ["Simple Melee Weapons", "", "", "", "", ""],
+        ["Club", "1 sp", "1d4 bludgeoning", "2 lb.", "Bash", "Light"],
+        ["Dagger", "2 gp", "1d4 piercing", "1 lb.", "Pinning Shot", "Finesse, Light, Thrown (range 20/60 ft.)"],
+        ["Mace", "5 gp", "1d6 bludgeoning", "4 lb.", "Bash", "—"],
+      ],
+    };
+    const files = itemsFromTable(weapons, "Gear/Weapons", (_d, n) => n);
+    expect(files.map((f) => f.path)).toEqual([
+      "Gear/Weapons/Club.md",
+      "Gear/Weapons/Dagger.md",
+      "Gear/Weapons/Mace.md",
+    ]);
+    expect(files[1].text).toContain(
+      [
+        'name: "Dagger"',
+        'type: "Simple Melee Weapons"',
+        'cost: "2 gp"',
+        'weight: "1 lb."',
+        "weapon:",
+        '  damage: "1d4 piercing"',
+        "  properties:",
+        '    - "Finesse"',
+        '    - "Light"',
+        '    - "Thrown (range 20/60 ft.)"',
+        "  options:",
+        '    - "Pinning Shot"',
+      ].join("\n")
+    );
+    const services = {
+      ...weapons,
+      rows: [
+        ["SERVICE", "COST"],
+        ["Cantrip", "10 gp"],
+        ["1st", "50 gp"],
+        ["2nd", "100 gp"],
+      ],
+    };
+    expect(itemsFromTable(services, "x", (_d, n) => n)).toEqual([]);
   });
 });

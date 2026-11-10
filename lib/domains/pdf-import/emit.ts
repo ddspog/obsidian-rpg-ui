@@ -6,6 +6,7 @@
  */
 
 import { SOFT } from "./blocks";
+import { itemsFromTable, recogniseEntity, type EntityKind, type EntityOut } from "./entities";
 import { fileName, isCatalog, sizeOf, slug, titleCase } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
 
@@ -21,6 +22,14 @@ export interface EmitContext {
   files: OutFile[];
   tableIds: Set<string>;
   names: Set<string>;
+  /** How many of each kind of entity were written; absent when entities are not looked for. */
+  kinds?: Map<string, number>;
+}
+
+/** Where a piece of text is being written: its note (below the book's folder, no `.md`) and the sections above it. */
+interface Where {
+  path: string;
+  trail: string[];
 }
 
 const yamlValue = (text: string): string =>
@@ -87,7 +96,7 @@ function renderTable(block: Extract<Block, { type: "table" }>, ctx: EmitContext,
   return lines;
 }
 
-export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string): string[] {
+export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, where?: Where): string[] {
   const out: string[] = [];
   const gap = () => {
     if (out.length && out[out.length - 1] !== "") out.push("");
@@ -103,11 +112,18 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string): s
     } else if (block.type === "table") {
       gap();
       out.push(...renderTable(block, ctx, near));
+      if (ctx.kinds && where) {
+        // A table of weapons, armor or gear also gives a note an item, in a folder named for the table.
+        const dir = `${where.path}/${fileName(titleCase(block.caption ?? `${near} items`))}`;
+        const items = itemsFromTable(block, dir, (d, n) => uniqueName(d, n, ctx));
+        ctx.files.push(...items);
+        if (items.length) ctx.kinds.set("item", (ctx.kinds.get("item") ?? 0) + items.length);
+      }
     } else if (block.type === "image") {
       gap();
       out.push(`![[${block.file}]]`);
     } else if (block.type === "side") {
-      const body = renderBlocks(block.blocks, ctx, near);
+      const body = renderBlocks(block.blocks, ctx, near, where);
       const fence = fenceFor(body);
       gap();
       out.push(`${fence}rpg rule.side`, "type: rules");
@@ -121,15 +137,66 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string): s
 
 const hashes = (depth: number) => "#".repeat(Math.min(6, Math.max(1, depth)));
 
+/**
+ * A section that is a game entity, written as the plugin's block for it; null for any other.
+ * Notes it brings with it (a creature's traits, a class's subclasses) are written here.
+ */
+function entityFor(
+  section: Section,
+  depth: number,
+  ctx: EmitContext,
+  where: Where,
+  hint?: EntityKind
+): EntityOut | null {
+  if (!ctx.kinds) return null;
+  const inner: Where = { path: where.path, trail: [...where.trail, section.title] };
+  const out = recogniseEntity(section, {
+    book: ctx.book,
+    notePath: where.path,
+    trail: where.trail,
+    hint,
+    depth,
+    md: (spans) => spansToMd(spans, ctx.mend),
+    render: (blocks, near) => renderBlocks(blocks, ctx, near, inner),
+    inline: (child, d) => renderInline(child, d, ctx, inner),
+    unique: (dir, name) => uniqueName(dir, name, ctx),
+  });
+  if (!out) return null;
+  ctx.kinds.set(out.kind, (ctx.kinds.get(out.kind) ?? 0) + 1);
+  ctx.files.push(...out.files);
+  if (out.childNotes.length) {
+    for (const child of out.childNotes) {
+      const name = uniqueName(where.path, fileName(child.section.title), ctx);
+      writeNote(
+        {
+          section: child.section,
+          path: `${where.path}/${name}`,
+          title: child.section.title,
+          fields: [["source", ctx.source], ...child.fields],
+          depth: 3,
+          trail: inner.trail,
+          hint: "subclass",
+        },
+        ctx
+      );
+    }
+    out.lines.push(`\`@[[${ctx.book}/${where.path}/]].shallow().tab()\``);
+  }
+  return out;
+}
+
 /** A section as headings and text, its subsections under deeper headings. */
-function renderInline(section: Section, depth: number, ctx: EmitContext): string[] {
-  const out = [`${hashes(depth)} ${escapeMd(section.title)}`, ...renderBlocks(section.blocks, ctx, section.title)];
-  for (const child of section.children) out.push(...renderInline(child, depth + 1, ctx));
+function renderInline(section: Section, depth: number, ctx: EmitContext, where: Where): string[] {
+  const head = `${hashes(depth)} ${escapeMd(section.title)}`;
+  const entity = entityFor(section, depth, ctx, where);
+  const inner: Where = { path: where.path, trail: [...where.trail, section.title] };
+  const out = entity ? [head, ...entity.lines] : [head, ...renderBlocks(section.blocks, ctx, section.title, inner)];
+  if (!entity?.consumed) for (const child of section.children) out.push(...renderInline(child, depth + 1, ctx, inner));
   return out;
 }
 
 /** Sections as a row of tabs; a big section's own parts become tabs inside its tab. */
-function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: boolean): string[] {
+function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: boolean, where: Where): string[] {
   const out: string[] = [];
   sections.forEach((section, i) => {
     const look = ctx.look(section.title, i);
@@ -137,10 +204,16 @@ function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: 
     const body = nested
       ? [
           `${hashes(depth)} ${escapeMd(section.title)}`,
-          ...renderBlocks(section.blocks, ctx, section.title),
-          ...renderTabs(section.children, depth + 1, ctx, false),
+          ...renderBlocks(section.blocks, ctx, section.title, {
+            path: where.path,
+            trail: [...where.trail, section.title],
+          }),
+          ...renderTabs(section.children, depth + 1, ctx, false, {
+            path: where.path,
+            trail: [...where.trail, section.title],
+          }),
         ]
-      : renderInline(section, depth, ctx);
+      : renderInline(section, depth, ctx, where);
     const fence = fenceFor(body);
     out.push(
       `${fence}rpg rule.tab`,
@@ -157,7 +230,12 @@ function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: 
 
 function frontmatter(fields: Array<[string, string | undefined]>): string[] {
   const out = ["---"];
-  for (const [k, v] of fields) if (v !== undefined && v !== "") out.push(`${k}: ${v}`);
+  const seen = new Set<string>();
+  for (const [k, v] of fields) {
+    if (v === undefined || v === "" || seen.has(k)) continue;
+    seen.add(k);
+    out.push(v.startsWith("\n") ? `${k}:${v}` : `${k}: ${v}`);
+  }
   out.push("---");
   return out;
 }
@@ -201,6 +279,10 @@ interface NoteSpec {
   title: string;
   fields: Array<[string, string | undefined]>;
   depth: number;
+  /** Titles of the sections this one sits under. */
+  trail: string[];
+  /** What the section is already known to be. */
+  hint?: EntityKind;
 }
 
 /** One note; when it is too long, or its parts are entries of a kind, its parts go to a folder beside it. */
@@ -212,15 +294,21 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
   const catalog = isCatalog(section, catalogMin);
   const split =
     kids.length >= 2 && (catalog ? depth < 3 : depth < 2) && (size > maxLines || (catalog && size > maxLines / 2));
+  const where: Where = { path, trail: [...spec.trail, section.title] };
+  const entity = depth > 0 ? entityFor(section, 1, ctx, { path, trail: spec.trail }, spec.hint) : null;
   const lines = [
-    ...frontmatter(spec.fields),
+    ...frontmatter([...spec.fields, ...(entity?.fields ?? [])]),
     `# ${escapeMd(title)}`,
-    ...renderBlocks(section.blocks, ctx, section.title),
+    ...(entity ? entity.lines : renderBlocks(section.blocks, ctx, section.title, where)),
   ];
+  if (entity?.consumed) {
+    ctx.files.push({ path: `${path}.md`, text: lines.join("\n") + "\n" });
+    return;
+  }
 
   if (!split) {
-    if (kids.length >= 2 && kids.length <= 12 && size > 60) lines.push(...renderTabs(kids, 2, ctx, true));
-    else for (const child of kids) lines.push(...renderInline(child, 2, ctx));
+    if (kids.length >= 2 && kids.length <= 12 && size > 60) lines.push(...renderTabs(kids, 2, ctx, true, where));
+    else for (const child of kids) lines.push(...renderInline(child, 2, ctx, where));
   } else {
     const names: string[] = [];
     kids.forEach((child, i) => {
@@ -240,6 +328,7 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
             ["tab-color", look.color],
           ],
           depth: depth + 1,
+          trail: where.trail,
         },
         ctx
       );
@@ -284,6 +373,7 @@ export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[])
           ["source", ctx.source],
         ],
         depth: 0,
+        trail: [],
       },
       ctx
     );

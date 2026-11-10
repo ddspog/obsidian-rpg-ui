@@ -4,7 +4,7 @@
  * with pdfjs-dist and files on disk in place of Obsidian.
  *
  *   node scripts/pdf-import.mjs <book.pdf> <out folder> [--title "Name"] [--from N] [--to N]
- *        [--max-lines 300] [--catalog-min 8] [--no-images] [--no-ocr]
+ *        [--max-lines 300] [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
  */
 import esbuild from "esbuild";
 import fs from "fs";
@@ -34,6 +34,7 @@ const maxLines = Number(flag("max-lines", 300));
 const catalogMin = Number(flag("catalog-min", 8));
 const noImages = has("no-images");
 const noOcr = has("no-ocr");
+const noEntities = has("no-entities");
 const [pdfPath, outDir] = args;
 if (!pdfPath || !outDir) {
   console.error("usage: pdf-import.mjs <book.pdf> <out folder> [--title …] [--from N] [--to N]");
@@ -166,6 +167,7 @@ const result = await importPdf(
     catalogMin,
     images: !noImages,
     ocr: !noOcr,
+    entities: !noEntities,
     from: from ? Number(from) : undefined,
     to: to ? Number(to) : undefined,
   },

@@ -107,8 +107,10 @@ export function toSections(blocks: Block[], title: string, page: number): Sectio
   for (const block of blocks) {
     if (block.type === "heading") {
       while (stack.length > 1 && stack[stack.length - 1].level >= block.level) stack.pop();
+      const tagged = block.text.match(/^(.*\S)\s+(CR\s+\d+(?:\/\d+)?)$/i);
       const node: Section = {
-        title: titleCase(block.text),
+        title: titleCase(tagged ? tagged[1] : block.text),
+        tag: tagged?.[2],
         level: block.level,
         style: block.style,
         page: block.page,
