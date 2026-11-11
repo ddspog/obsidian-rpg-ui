@@ -94,7 +94,7 @@ function useTravel(track: TravelTrack, bodyOf: (frame: TravelFrame) => string | 
     !!frame &&
     !frame.travelling &&
     track.journeys.some((j) => j.end != null && j.end <= frame.id && (j.frames.length > 0 || !!j.summary));
-  return { frame, body, drawn, steps, at, colourOf, arrived, title: mapTitle(frame?.map, frame?.level) };
+  return { frame, body, source, drawn, steps, at, colourOf, arrived, title: mapTitle(frame?.map, frame?.level) };
 }
 
 /** A special move, drawn by its kind: a teleport arcs from where it vanished to
@@ -437,7 +437,7 @@ export function TravelFullscreen({
   /** Five-mile rolls: roll a vault table by name (a log line and its result), and add lines to the log. */
   land?: { roll: (table: string) => Promise<{ line: string; text: string } | null>; append: (text: string) => void };
 }) {
-  const { frame, body, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
+  const { frame, body, source, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
   const [fog, setFog] = React.useState(false);
   const paneRef = React.useRef<HTMLElement>(null);
   const open = !!frame;
@@ -482,8 +482,9 @@ export function TravelFullscreen({
   const drawnLayout = drawn?.layout;
   // Under Fog, a secret marker stays hidden until its hex has been seen.
   const layout = (() => {
-    if (!fog || !drawnLayout || !body) return drawnLayout;
-    const secret = parseHexMap(body).markers.filter((m) => m.secret);
+    if (!fog || !drawnLayout || !source) return drawnLayout;
+    // The text drawn (with the travellers in), so its lines match the drawing's.
+    const secret = parseHexMap(source).markers.filter((m) => m.secret);
     if (secret.length === 0) return drawnLayout;
     const seen = seenAt(frame, remembered?.(frame.map));
     const hidden = new Set(
