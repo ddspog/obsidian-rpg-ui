@@ -119,28 +119,37 @@ function Jump({ points, via, colour, R }: { points: Array<[number, number]>; via
   );
 }
 
+/** What has been seen by this entry: where everyone stood and walked, the ring round each, and what
+ *  earlier logs saw. */
+export function seenAt(frame: TravelFrame, remembered?: Set<string>): Set<string> {
+  const seen = explored(
+    Object.values(frame.trails)
+      .flat()
+      .concat(Object.values(frame.positions))
+      .map(([q, r]) => ({ q, r })),
+    1
+  );
+  for (const k of remembered ?? []) seen.add(k);
+  return seen;
+}
+
 /** Trails walked, the step just taken, and (with Fog) what nobody has seen. */
 function JourneyOverlay({
   frame,
   layout,
   colourOf,
   fog,
+  remembered,
 }: {
   frame: TravelFrame;
   layout: Drawn["layout"];
   colourOf: (name: string) => string;
   fog?: boolean;
+  /** Hexes earlier logs' parties saw on this map. */
+  remembered?: Set<string>;
 }) {
   const R = layout.R;
-  const seen = fog
-    ? explored(
-        Object.values(frame.trails)
-          .flat()
-          .concat(Object.values(frame.positions))
-          .map(([q, r]) => ({ q, r })),
-        1
-      )
-    : null;
+  const seen = fog ? seenAt(frame, remembered) : null;
   return (
     <g className="rpg-hexmap-play">
       {seen && (
@@ -317,12 +326,15 @@ export function TravelFullscreen({
   readingId,
   onSeek,
   onClose,
+  remembered,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onSeek: (id: number) => void;
   onClose: () => void;
+  /** Hexes earlier logs saw on a map (by its `[TRAVEL]` link). */
+  remembered?: (map?: string) => Set<string> | undefined;
 }) {
   const { frame, body, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
   const [fog, setFog] = React.useState(false);
@@ -366,7 +378,20 @@ export function TravelFullscreen({
   };
   if (!frame) return null;
   const tokens = Object.keys(frame.positions);
-  const layout = drawn?.layout;
+  const drawnLayout = drawn?.layout;
+  // Under Fog, a secret marker stays hidden until its hex has been seen.
+  const layout = (() => {
+    if (!fog || !drawnLayout || !body) return drawnLayout;
+    const secret = parseHexMap(body).markers.filter((m) => m.secret);
+    if (secret.length === 0) return drawnLayout;
+    const seen = seenAt(frame, remembered?.(frame.map));
+    const hidden = new Set(
+      secret.filter((m) => !seen.has(hexKey(Math.round(m.q), Math.round(m.r)))).map((m) => m.line)
+    );
+    return hidden.size
+      ? { ...drawnLayout, markers: drawnLayout.markers.filter((m) => !hidden.has(m.line)) }
+      : drawnLayout;
+  })();
   // On a phone the whole map is too small to read: open on the party, a few hexes across.
   const onPhone = document.body.classList.contains("is-mobile");
   const phoneView = (() => {
@@ -435,7 +460,15 @@ export function TravelFullscreen({
                 ? // Nobody on the map yet: open zoomed in on its middle, not the whole of it at 2px a label.
                   { startZoom: { zoom: 2.5 } }
                 : {})}
-            overlay={<JourneyOverlay frame={frame} layout={layout} colourOf={colourOf} fog={fog} />}
+            overlay={
+              <JourneyOverlay
+                frame={frame}
+                layout={layout}
+                colourOf={colourOf}
+                fog={fog}
+                remembered={remembered?.(frame.map)}
+              />
+            }
             maxHeight={78}
           />
         ) : (

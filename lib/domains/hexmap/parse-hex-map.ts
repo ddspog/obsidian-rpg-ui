@@ -263,6 +263,8 @@ export interface HexMarkerLine {
   size: number;
   /** `piece` — moves in Play mode (party figures are pieces anyway). */
   piece?: boolean;
+  /** `secret` — hidden under a travel map's Fog until its hex has been seen. */
+  secret?: boolean;
   /** How its caption is drawn: `text=place` (a lettering style), `tsize=`, `toff=dx,dy` (hex radii), `arc=`, `#colour`. */
   caption?: MarkerCaption;
   /** A faint neighbour's: drawn dimmed, not counted in the map's bounds. */
@@ -783,6 +785,7 @@ function parseMarker(marker: HexMarkerLine, content: string, errors: HexMapError
     else if (/^\(.*\)$/.test(tok)) marker.text = tok.slice(1, -1).trim() || undefined;
     else if (size) marker.size = Math.max(0.1, parseFloat(size[1]));
     else if (tok.toLowerCase() === "piece") marker.piece = true;
+    else if (tok.toLowerCase() === "secret") marker.secret = true;
     else if (!marker.spec) marker.spec = tok;
     else errors.push({ line: marker.line, message: `unexpected "${tok}" after "${marker.spec}"` });
   }

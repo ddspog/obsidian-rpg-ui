@@ -39,6 +39,7 @@ import { type TerrainGrid, weatherFromWords } from "lib/domains/hexmap/terrain";
 import { firstHexMap } from "lib/domains/hexmap/detail";
 import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
+import { type FogStore, fogKey, rememberedBy, seenByMap, withLog } from "lib/domains/session-log/fog-memory";
 import { foldTravels, foldTravelTrack, type Journey, lastWeather, partySpot } from "lib/domains/session-log/travel";
 import {
   parseSquare,
@@ -2375,6 +2376,11 @@ class SessionLogMarkdown extends ReactMarkdown {
           onEditBody={(edit) => void this.rewriteLogBody(edit)}
           battleMaps={this.battleMaps}
           travelMaps={this.travelMaps}
+          fogMemory={{
+            log: this.filePath,
+            load: async (map) => (await this.kv.get<FogStore>(fogKey(map))) ?? {},
+            save: (map, store) => this.kv.set(fogKey(map), store),
+          }}
           sheetHas={this.sheetHas}
         />
       </TableRollContext.Provider>
@@ -2437,6 +2443,12 @@ interface SessionLogRootProps {
   battleMaps: Record<string, SquareMap>;
   /** The hex maps the log's journeys are on, by `travelKey`. */
   travelMaps: Record<string, string>;
+  /** Where each log's seen hexes are kept, so Fog remembers across logs (fog-memory.ts). */
+  fogMemory?: {
+    log: string;
+    load: (map: string) => Promise<FogStore>;
+    save: (map: string, store: FogStore) => Promise<void>;
+  };
   /** Look up a battle map by its note — for the Start Combat card. */
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
@@ -2526,6 +2538,7 @@ function SessionLogRoot({
   lookupCreature,
   battleMaps,
   travelMaps,
+  fogMemory,
   mapTools,
   tokenIcon,
   openMapNote,
@@ -3626,6 +3639,26 @@ function SessionLogRoot({
     };
   }, [partyOnMap, travelGrid]);
 
+  // Fog that remembers: this log's seen hexes saved by map; the other logs' given to the map's Fog.
+  const [remembered, setRemembered] = React.useState<Record<string, Set<string>>>({});
+  React.useEffect(() => {
+    if (!fogMemory) return;
+    let alive = true;
+    void (async () => {
+      const out: Record<string, Set<string>> = {};
+      for (const [map, keys] of seenByMap(travelTrack)) {
+        const store = await fogMemory.load(map);
+        const next = withLog(store, fogMemory.log, keys);
+        if (next !== store) await fogMemory.save(map, next);
+        out[map] = rememberedBy(next, fogMemory.log);
+      }
+      if (alive) setRemembered(out);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [travelTrack, fogMemory?.log]);
+
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {
     const b = battleAt(turnId);
     if (!b) return null;
@@ -3932,6 +3965,7 @@ function SessionLogRoot({
                 bodyOf={travelBodyOf}
                 readingId={readingId}
                 onSeek={seekEntry}
+                remembered={(map?: string) => (map ? remembered[map] : undefined)}
                 onClose={() => setFullMap(false)}
               />
             )}
