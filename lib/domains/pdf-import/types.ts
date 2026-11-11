@@ -98,6 +98,8 @@ export interface Box extends Rect {
   lines: Line[];
   /** Bottom of the dark rectangle at its top, when there is one: a table's header rows. */
   headBottom?: number;
+  /** Bottom of a title bar above the header rows, when the table has one. */
+  titleBottom?: number;
   page: number;
 }
 

@@ -140,7 +140,9 @@ export async function importPdf(
       const raw = await doc.getPage(num);
       const runs = await host.ocrPage(raw, num);
       raw.cleanup();
-      if (runs.length) {
+      // A page of art gives OCR a few stray letters, not text: it stays a picture.
+      const read = runs.reduce((n, r) => n + r.str.replace(/[^A-Za-zÀ-ÿ0-9]/g, "").length, 0);
+      if (read >= 80) {
         page.runs = runs;
         page.ocr = true;
         // The page's picture is the scan itself.

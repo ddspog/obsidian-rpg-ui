@@ -215,6 +215,41 @@ describe("blocks", () => {
     expect(out).toHaveLength(8);
   });
 
+  it("puts a drop capital back at the head of its paragraph", () => {
+    const runs = [
+      run("A", 72, 124, 50, "Display-Bold"),
+      run("sking and answering questions is the heart", 100, 100),
+      run("of an adventure, your principal tool", 100, 112),
+      run("for learning about the game world.", 72, 124),
+    ];
+    expect(texts(page(runs))[0]).toBe("Asking and answering questions is the heart");
+    expect(texts(page(runs)).join(" ")).not.toMatch(/\bA for\b|\bAfor\b/);
+  });
+
+  it("reads a ruled grid by its title bar, header band and shaded first column", () => {
+    const rects: FillRect[] = [
+      { x: 55, y: 95, w: 500, h: 28, dark: true },
+      { x: 55, y: 123, w: 500, h: 30, dark: false },
+      { x: 55, y: 153, w: 90, h: 200, dark: false },
+    ];
+    const runs = [
+      run("EXAMPLE ODDS", 250, 114, 18),
+      run("ODDS", 80, 142),
+      run("DESCRIPTION", 180, 142),
+      run("CAR", 380, 142),
+    ];
+    ["CERTAIN", "LIKELY", "UNLIKELY", "IMPOSSIBLE"].forEach((odds, i) => {
+      const y = 175 + i * 46;
+      runs.push(run("You are as sure", 170, y), run("It was driven", 370, y));
+      runs.push(run(odds, 70, y + 6), run("of this as can be.", 170, y + 12), run("here just now.", 370, y + 12));
+    });
+    const table = blocksOf(runs, rects).find((b) => b.type === "table") as Extract<Block, { type: "table" }>;
+    expect(table.caption).toBe("Example Odds");
+    expect(table.rows[0]).toEqual(["ODDS", "DESCRIPTION", "CAR"]);
+    expect(table.rows).toHaveLength(5);
+    expect(table.rows[2]).toEqual(["LIKELY", "You are as sure of this as can be.", "It was driven here just now."]);
+  });
+
   it("reads a shaded box of prose as a sidebar with its title", () => {
     const rects: FillRect[] = [{ x: 72, y: 200, w: 228, h: 80, dark: false }];
     const runs = [

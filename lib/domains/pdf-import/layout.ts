@@ -9,6 +9,35 @@ import type { Box, Element, FillRect, Line, PageImage, RawPage, Rect, Seg, Span,
 const right = (r: Rect) => r.x + r.w;
 const bottom = (r: Rect) => r.y + r.h;
 
+/**
+ * How far apart two baselines may lie and still be one line. Type of two sizes set side by side (a
+ * big number between two small ones) sits on baselines a little apart: the bigger size decides.
+ */
+const sameBase = (a: number, b: number): number =>
+  Math.max(1.5, 0.22 * (Math.max(a, b) > 1.25 * Math.min(a, b) ? Math.max(a, b) : Math.min(a, b)));
+
+/**
+ * A drop capital is drawn on the baseline of the paragraph's second or third line, apart from the
+ * word it opens: it is put back at the head of the paragraph's first line.
+ */
+export function foldDropCaps(runs: TextRun[]): TextRun[] {
+  const sizes = runs.filter((r) => r.str.trim()).map((r) => r.size);
+  sizes.sort((a, b) => a - b);
+  const usual = sizes[Math.floor(sizes.length / 2)] ?? 10;
+  const out = [...runs];
+  for (const cap of runs) {
+    if (!/^[A-ZÀ-Ý]$/.test(cap.str.trim()) || cap.size < 2.5 * usual) continue;
+    const beside = out
+      .filter((r) => r !== cap && r.str.trim() && r.size < 0.6 * cap.size)
+      .filter((r) => r.y >= cap.y - cap.size && r.y <= cap.y - 2 && r.x > cap.x && r.x < cap.x + 2 * cap.size)
+      .sort((a, b) => a.y - b.y || a.x - b.x)[0];
+    if (!beside) continue;
+    out[out.indexOf(beside)] = { ...beside, str: cap.str.trim() + beside.str.replace(/^\s+/, "") };
+    out.splice(out.indexOf(cap), 1);
+  }
+  return out;
+}
+
 /** Runs on one baseline joined into segments; a gap wider than a word space starts a new one. */
 export function buildSegs(runs: TextRun[]): Seg[] {
   const sorted = [...runs].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -16,7 +45,7 @@ export function buildSegs(runs: TextRun[]): Seg[] {
   for (const run of sorted) {
     const row = rows[rows.length - 1];
     const ref = row?.[0];
-    if (ref && Math.abs(run.y - ref.y) <= Math.max(1.5, 0.22 * Math.min(ref.size, run.size))) row.push(run);
+    if (ref && Math.abs(run.y - ref.y) <= sameBase(ref.size, run.size)) row.push(run);
     else rows.push([run]);
   }
   const segs: Seg[] = [];
@@ -100,7 +129,7 @@ export function buildLines(segs: Seg[], page: number, colL: number, colR: number
   const lines: Line[] = [];
   for (const seg of sorted) {
     const line = lines[lines.length - 1];
-    if (line && Math.abs(seg.base - line.base) <= Math.max(1.5, 0.22 * Math.min(line.size, seg.size))) {
+    if (line && Math.abs(seg.base - line.base) <= sameBase(line.size, seg.size)) {
       line.cells.push(seg);
       line.r = Math.max(line.r, right(seg));
       line.x = Math.min(line.x, seg.x);
@@ -129,8 +158,8 @@ export function buildLines(segs: Seg[], page: number, colL: number, colR: number
 }
 
 /** Shading rectangles that belong together (a table's header and its stripes) made one box each. */
-export function mergeRects(rects: FillRect[]): Array<Rect & { headBottom?: number }> {
-  type B = Rect & { headBottom?: number; parts: FillRect[] };
+export function mergeRects(rects: FillRect[]): Array<Rect & { headBottom?: number; titleBottom?: number }> {
+  type B = Rect & { headBottom?: number; titleBottom?: number; parts: FillRect[] };
   let boxes: B[] = rects.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h, parts: [r] }));
   const inside = (a: Rect, b: Rect) =>
     a.x >= b.x - 3 && right(a) <= right(b) + 3 && a.y >= b.y - 3 && bottom(a) <= bottom(b) + 3;
@@ -174,6 +203,24 @@ export function mergeRects(rects: FillRect[]): Array<Rect & { headBottom?: numbe
       .filter((p) => p.dark && p.y <= box.y + 3 && p.w >= box.w - 8 && p.h < 0.6 * box.h + 1)
       .sort((a, b) => b.h - a.h)[0];
     if (head && box.parts.length > 1) box.headBottom = bottom(head);
+  }
+  // A grid drawn with rules: only its header band and its first column are shaded. The column
+  // hangs from the band's left end, and the table is as wide as the band and as tall as the two.
+  for (const band of boxes) {
+    const column = boxes.find(
+      (c) =>
+        c !== band &&
+        Math.abs(c.x - band.x) <= 4 &&
+        Math.abs(c.y - bottom(band)) <= 4 &&
+        c.w < 0.5 * band.w &&
+        c.h > band.h
+    );
+    if (!column) continue;
+    // What the band's dark strip holds is the table's title; the rest of the band its header.
+    if (band.headBottom !== undefined && band.headBottom < bottom(band) - 4) band.titleBottom = band.headBottom;
+    band.headBottom = bottom(band);
+    band.h = bottom(column) - band.y;
+    boxes = boxes.filter((b) => b !== column);
   }
   return boxes.map(({ parts: _parts, ...rest }) => rest);
 }
@@ -545,7 +592,7 @@ export interface PageLayout {
 }
 
 export function layoutPage(page: RawPage, opts: LayoutOptions = {}): PageLayout {
-  let segs = buildSegs(page.runs);
+  let segs = buildSegs(foldDropCaps(page.runs));
   if (opts.furniture) segs = segs.filter((s) => !opts.furniture?.(s, page));
   // A dark strip down the page's outer edge is dressing, and so are the words set on it.
   const strips = page.rects.filter(isEdgeStrip(page));

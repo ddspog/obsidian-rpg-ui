@@ -156,6 +156,10 @@ read for what such books share:
   in a narrow column (`45-` over `50`), a header on several lines, rows left unshaded between stripes, cells
   set centred: each is read as one row.
 - **A wide table of a number and a long description** is a table, not a sidebar.
+- **A grid drawn with rules**, of which only a title bar, a header band and the first column are shaded, is
+  one table: the bar's words are its caption, and each of its rows is the run of lines set close together
+  (cells of several lines, set against one another's middles).
+- **Type of two sizes in one cell** (a big number between two small ones) is read left to right.
 - **A dark strip down the page's outer edge**, and the words set on it (sample names, a chapter's label), is
   dressing and is left out.
 
@@ -185,8 +189,11 @@ A page that is only a picture is read by OCR, and helped along so that entities 
   numbers the scan lost is still written, with what could be read.
 
 A book that is a scan throughout takes long (about seven seconds a page from a terminal) and, with no
-bookmarks and headings set on coloured art, comes out as one chapter: Mythic Game Master Emulator 2e (230
-pages, every one a picture) is such a book, and is not usable as imported.
+bookmarks and headings set on coloured art, comes out as one chapter. One copy of Mythic Game Master
+Emulator 2e (230 pages, every one a picture) is such a file, and is not usable as imported; the publisher's
+own PDF of the same book, which has its text and bookmarks, imports in half a minute with its chapters and
+sections as the book has them. **Where a book can be had with its text, use that file.** A page of art in
+such a book gives OCR only stray letters, and is left a picture.
 
 How much comes through depends on the scan. On clean 200 dpi pages of the two books above, about half of
 the spells and creatures were recognised on the plainly set SRD pages and fewer on the Player's Guide's
@@ -203,6 +210,7 @@ textured, coloured pages; expect to fix names and numbers by hand.
    into bands; a column nothing crosses reads top to bottom.
 4. **Shaded boxes** are tables when their lines are aligned cells (a dark strip on top is the header), and
    sidebars when they hold prose. Rows of aligned cells with no shading are tables too.
+   A drop capital is put back at the head of the paragraph it opens.
 5. **Headings** are the looks (font, weight, size) that differ from the body text, ranked by size; a bar behind
    a line marks an entry's name. Paragraphs are cut at indents, wider gaps and changes of type, and run on
    across columns and pages; a word broken at a line's end is mended from the book's own words.

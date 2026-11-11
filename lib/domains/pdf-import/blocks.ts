@@ -143,20 +143,66 @@ function centredRows(body: Line[], place: (line: Line) => string[], headBottom?:
   return head.length ? [merge(head), ...rows] : rows;
 }
 
+/**
+ * Rows of a table whose cells run to several lines each, set against one another's middles: the
+ * lines of a row lie a leading apart and the rows further apart, so a row is a run of close lines.
+ * Null for a table whose rows are not told apart by their spacing.
+ */
+function spacedRows(body: Line[], place: (line: Line) => string[], headBottom?: number): string[][] | null {
+  const inHead = (l: Line) => headBottom !== undefined && l.base - l.size / 3 <= headBottom + 1;
+  const head = body.filter(inHead);
+  const rest = body.filter((l) => !inHead(l));
+  if (!head.length || rest.length < 6) return null;
+  const size = rest[0].size;
+  const gaps = rest.slice(1).map((l, i) => l.base - rest[i].base);
+  const close = gaps.filter((g) => g <= 1.35 * size).length;
+  const wide = gaps.filter((g) => g > 1.6 * size).length;
+  const between = gaps.length - close - wide;
+  if (wide < 2 || close < Math.max(3, 0.3 * gaps.length) || between > 0.1 * gaps.length) return null;
+  const merge = (lines: Line[]): string[] => {
+    const out: string[] = [];
+    let width = 0;
+    for (const line of lines) {
+      const cells = place(line);
+      width = cells.length;
+      cells.forEach((c, i) => {
+        if (c) out[i] = out[i] ? (out[i].endsWith("-") ? out[i].slice(0, -1) + c : `${out[i]} ${c}`) : c;
+      });
+    }
+    return Array.from({ length: width }, (_, i) => out[i] ?? "");
+  };
+  const rows: Line[][] = [[rest[0]]];
+  gaps.forEach((g, i) => {
+    if (g > 1.6 * size) rows.push([]);
+    rows[rows.length - 1].push(rest[i + 1]);
+  });
+  // Every row must have what stands in its first column: else these are not rows but paragraphs.
+  const out = rows.map(merge);
+  if (out.some((r) => !r[0])) return null;
+  return [merge(head), ...out];
+}
+
 /** Rows of cells from a table's lines; a line that only carries on the row above is folded into it. */
 export function tableRows(
   lines: Line[],
   x: number,
   w: number,
-  headBottom?: number
+  headBottom?: number,
+  titleBottom?: number
 ): { rows: string[][]; title?: string } {
   let title: string | undefined;
   let body = lines;
+  // A title bar across the top of the table, above its header.
+  if (titleBottom !== undefined && body[0] && body[0].base <= titleBottom + 1 && body[0].cells.length === 1) {
+    title = lineText(body[0]);
+    body = body.slice(1);
+  }
   const first = body[0];
   // A lone first line in the header strip is the top of a two-line header, not the table's title.
   const inHeadStrip = first && headBottom !== undefined && first.base - first.size / 3 <= headBottom + 1;
   if (
     first &&
+    !title &&
     !inHeadStrip &&
     first.cells.length === 1 &&
     body.length > 2 &&
@@ -199,7 +245,7 @@ export function tableRows(
   const gaps: number[] = [];
   for (let i = 1; i < body.length; i++) gaps.push(body[i].base - body[i - 1].base);
   const median = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] ?? 0;
-  const centred = centredRows(body, place, headBottom);
+  const centred = centredRows(body, place, headBottom) ?? spacedRows(body, place, headBottom);
   if (centred) return { rows: centred.map((r) => r.map(cellMd)), title };
   const rows: string[][] = [];
   let headDone = headBottom === undefined;
@@ -478,8 +524,9 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
       // A paragraph may run on under the box; it is closed here and picked up again after.
       const open = para;
       if (box.tabular) {
-        const { rows, title } = tableRows(box.lines, box.x, box.w, box.headBottom);
-        let caption = title;
+        const { rows, title } = tableRows(box.lines, box.x, box.w, box.headBottom, box.titleBottom);
+        // (A title set in capitals on the table's bar reads as a name.)
+        let caption = title && box.titleBottom !== undefined ? titleCase(title) : title;
         const above = open && open.lines.length === 1 ? open.lines[0] : !open ? lastParaLine : null;
         if (!caption && above && above.page === box.page) {
           const text = lineText(above);
