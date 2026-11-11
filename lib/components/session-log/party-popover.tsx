@@ -28,6 +28,8 @@ import {
   type TravelRole,
 } from "../../domains/session-log/party-cards";
 import type { LootDestination } from "../../domains/session-log/loot-destinations";
+import { TERRAIN_RULES, WEATHER as WEATHER_EFFECTS } from "../../domains/hexmap/terrain";
+import type { PartyTerrain } from "./placeholder-popover";
 import { NoteCombobox, type NoteOption } from "./note-combobox";
 
 export type PartyCardKind =
@@ -64,6 +66,9 @@ export interface PartyPopoverProps {
   sinceLongRest?: number;
   /** The clock now (`Day 2, 08:00`). */
   clock?: string;
+  /** Where the party stands (the travel map's ground, its region's population, the weather): a
+   *  stage on the road starts on its terrain and navigation DC. */
+  ground?: PartyTerrain;
   onCompose: (text: string, summary?: string) => void;
   onCancel: () => void;
 }
@@ -146,6 +151,7 @@ export function PartyPopover({
   itemCost,
   sinceLongRest,
   clock,
+  ground,
   onCompose,
   onCancel,
 }: PartyPopoverProps) {
@@ -201,9 +207,13 @@ export function PartyPopover({
   // Travel.
   const [destination, setDestination] = useState("");
   const [miles, setMiles] = useState("");
-  const [terrain, setTerrain] = useState("");
+  const [terrain, setTerrain] = useState(() => (ground?.id ? TERRAIN_RULES[ground.id].name.toLowerCase() : ""));
   const [pace, setPace] = useState<"fast" | "normal" | "slow">("normal");
-  const [dc, setDc] = useState("14");
+  // The navigation DC of the ground (+5 at a fast pace), until it's typed over.
+  const navDc = (p: string) =>
+    ground?.id ? TERRAIN_RULES[ground.id].navigationDC + (p === "fast" ? 5 : 0) : undefined;
+  const [dc, setDc] = useState(() => String(kind === "travel" ? (navDc("normal") ?? 14) : 14));
+  const [dcTyped, setDcTyped] = useState(false);
   const [roles, setRoles] = useState<TravelRole[]>(() => [
     { role: "Leader", who: names[0] ?? "", skill: "Persuasion" },
     { role: "Outrider", who: names[1] ?? "", skill: "Survival" },
@@ -321,6 +331,9 @@ export function PartyPopover({
             ...(terrain ? { terrain } : {}),
             pace,
             dc: num(dc, 14),
+            ...(ground?.weather && WEATHER_EFFECTS[ground.weather].time
+              ? { timeFactor: WEATHER_EFFECTS[ground.weather].time! }
+              : {}),
             roles,
             ...(encounterUnder ? { encounterUnder: num(encounterUnder) } : {}),
           }),
@@ -571,10 +584,39 @@ export function PartyPopover({
               {field("terrain", text(terrain, setTerrain, "forest, hills"))}
               {field(
                 "pace",
-                select(pace, ["fast", "normal", "slow"], (v) => setPace(v as "fast" | "normal" | "slow"))
+                select(pace, ["fast", "normal", "slow"], (v) => {
+                  setPace(v as "fast" | "normal" | "slow");
+                  const auto = navDc(v);
+                  if (!dcTyped && auto !== undefined) setDc(String(auto));
+                })
               )}
-              {field("DC", text(dc, setDc, "14", "number"))}
+              {field(
+                "DC",
+                text(
+                  dc,
+                  (v: string) => {
+                    setDc(v);
+                    setDcTyped(true);
+                  },
+                  "14",
+                  "number"
+                )
+              )}
             </div>
+            {ground && (ground.id || ground.weather) && (
+              <p className="placeholder-hint">
+                {[
+                  ground.id
+                    ? `${TERRAIN_RULES[ground.id].name}: navigation DC ${TERRAIN_RULES[ground.id].navigationDC} (+5 fast)${TERRAIN_RULES[ground.id].difficult ? ", difficult (half speed off a road)" : ""}`
+                    : null,
+                  ground.weather && ground.weather !== "agreeable"
+                    ? `${WEATHER_EFFECTS[ground.weather].name} weather${WEATHER_EFFECTS[ground.weather].time === null ? ": no travel without magic" : WEATHER_EFFECTS[ground.weather].time !== 1 ? `: time ×${WEATHER_EFFECTS[ground.weather].time}` : ""}${WEATHER_EFFECTS[ground.weather].navDisadvantage ? ", disadvantage to navigate" : ""}${WEATHER_EFFECTS[ground.weather].exhaustionPerHex ? ", exhaustion" : ""}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
             <fieldset className="placeholder-party-rows">
               <legend className="placeholder-label">Roles</legend>
               {roles.map((r, i) => (

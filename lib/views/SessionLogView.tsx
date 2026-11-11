@@ -35,11 +35,11 @@ import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
 import { drawHexMap } from "lib/components/hexmap/draw-hex-map";
 import { TravelFullscreen, TravelMinimap } from "lib/components/hexmap/travel-pane";
-import type { TerrainGrid } from "lib/domains/hexmap/terrain";
+import { type TerrainGrid, weatherFromWords } from "lib/domains/hexmap/terrain";
 import { firstHexMap } from "lib/domains/hexmap/detail";
 import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
-import { foldTravels, foldTravelTrack, type Journey, partySpot } from "lib/domains/session-log/travel";
+import { foldTravels, foldTravelTrack, type Journey, lastWeather, partySpot } from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -3596,6 +3596,11 @@ function SessionLogRoot({
     const body = frame ? travelBodyOf(frame) : undefined;
     return spot && body ? { spot, body, map: frame?.map } : null;
   }, [travelTrack, travelBodyOf]);
+  // The weather now: the log's last [Weather: …], read as a Weather Effects row.
+  const weatherNow = React.useMemo(() => {
+    const words = lastWeather(segments);
+    return words ? weatherFromWords(words) : null;
+  }, [segments]);
   const [travelGrid, setTravelGrid] = React.useState<{ body: string; grid: TerrainGrid } | null>(null);
   React.useEffect(() => {
     if (!partyOnMap || travelGrid?.body === partyOnMap.body) return;
@@ -3604,17 +3609,19 @@ function SessionLogRoot({
     return () => {
       alive = false;
     };
-  }, [partyOnMap, travelGrid]);
+  }, [partyOnMap, travelGrid, weatherNow]);
   const partyTerrain = React.useMemo((): PartyTerrain | undefined => {
-    if (!partyOnMap || travelGrid?.body !== partyOnMap.body) return undefined;
+    if (!partyOnMap || travelGrid?.body !== partyOnMap.body) return weatherNow ? { weather: weatherNow } : undefined;
     const [q, r] = partyOnMap.spot.at;
     const id = travelGrid.grid.terrain.get(`${q},${r}`);
     const population = travelGrid.grid.population?.get(`${q},${r}`);
-    if (!id && !population) return undefined;
+    const weather = weatherNow ?? undefined;
+    if (!id && !population) return weather ? { weather } : undefined;
     const map = partyOnMap.map?.replace(/^\[\[|\]\]$/g, "").split("|")[0];
     return {
       ...(id ? { id } : {}),
       ...(population ? { population } : {}),
+      ...(weather ? { weather } : {}),
       where: `(${q},${r})${map ? ` on ${map}` : ""}`,
     };
   }, [partyOnMap, travelGrid]);

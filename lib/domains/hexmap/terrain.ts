@@ -428,6 +428,36 @@ export function weatherOf(word: string | undefined): WeatherId | null {
   return w && (WEATHER_IDS as string[]).includes(w) ? (w as WeatherId) : null;
 }
 
+/** Words the log's weather tag uses (`Autumn · warm · windy · heavy rain`) read as the Weather
+ *  Effects row they fall in: the worst of them. A row's own name (`Inclement`) counts too. */
+const WEATHER_WORDS: Array<[RegExp, WeatherId]> = [
+  [/hurricane|monsoon|flood/, "catastrophic"],
+  [/blizzard|hail|tornado|mud ?slide|gale/, "extreme"],
+  [/storm|heavy rain|heavy snow|thunder/, "inclement"],
+  [/rain|snow|sleet|strong winds?|drizzle/, "unpleasant"],
+  [/overcast|cloud|fog|mist/, "agreeable"],
+  [/clear|sunny|fair/, "nice"],
+];
+const WEATHER_ORDER: WeatherId[] = ["ideal", "nice", "agreeable", "unpleasant", "inclement", "extreme", "catastrophic"];
+
+export function weatherFromWords(parts: string[]): WeatherId | null {
+  let worst: WeatherId | null = null;
+  const worse = (w: WeatherId) => {
+    if (!worst || WEATHER_ORDER.indexOf(w) > WEATHER_ORDER.indexOf(worst)) worst = w;
+  };
+  for (const raw of parts) {
+    const p = raw.trim().toLowerCase();
+    const named = weatherOf(p);
+    if (named) {
+      worse(named);
+      continue;
+    }
+    const hit = WEATHER_WORDS.find(([re]) => re.test(p));
+    if (hit) worse(hit[1]);
+  }
+  return worst;
+}
+
 /** How a route's time is counted: miles at the pace (the default), or whole hexes a day (Campaign
  *  Builder, Travel Speed (Hex Tracking)). */
 export type Tracking = "miles" | "hexes";

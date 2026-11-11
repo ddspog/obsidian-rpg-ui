@@ -233,3 +233,15 @@ describe("population by region", () => {
     expect(Object.fromEntries(grid.population ?? [])).toEqual({ "0,0": "medium", "1,0": "low" });
   });
 });
+
+describe("weather words", () => {
+  it("reads the log's weather tag as the worst Weather Effects row", async () => {
+    const { weatherFromWords } = await import("./terrain");
+    expect(weatherFromWords(["Autumn", "mild", "calm", "clear"])).toBe("nice");
+    expect(weatherFromWords(["Winter", "cold", "strong winds", "overcast"])).toBe("unpleasant");
+    expect(weatherFromWords(["Spring", "cool", "gale", "rain"])).toBe("extreme");
+    expect(weatherFromWords(["Summer", "storm"])).toBe("inclement");
+    expect(weatherFromWords(["Inclement"])).toBe("inclement");
+    expect(weatherFromWords(["Autumn", "mild"])).toBeNull();
+  });
+});

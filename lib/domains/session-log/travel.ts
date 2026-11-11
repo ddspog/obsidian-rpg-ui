@@ -423,3 +423,13 @@ export function partySpot(frame: TravelFrame): { token: string; at: Hex } | null
   const token = named ?? (placed.length === 1 ? placed[0] : biggest);
   return { token, at: frame.positions[token] };
 }
+
+/** The weather tag's words in force at the end of the log (the last `[Weather: …]`), or null. */
+export function lastWeather(segments: ProseSegment[]): string[] | null {
+  let last: string[] | null = null;
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") last = tag.parts;
+  }
+  return last;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { type Population, TERRAIN_RULES, type TerrainId } from "../../domains/hexmap/terrain";
+import { type Population, TERRAIN_RULES, type TerrainId, WEATHER, type WeatherId } from "../../domains/hexmap/terrain";
 import { LucideIcon } from "./lucide-icon";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
@@ -40,6 +40,8 @@ export interface PartyTerrain {
   id?: TerrainId;
   /** The party's region's population, when the map says. */
   population?: Population;
+  /** The weather now, from the log's last `[Weather: …]`, as a Weather Effects row. */
+  weather?: WeatherId;
   /** `(3,-1) on Caulkin coast`. */
   where?: string;
 }
@@ -955,7 +957,11 @@ export function terrainPick(p: ParsedPlaceholder, terrain: PartyTerrain | undefi
 
 /** What the chip by a pick says: the party's ground, its region's population, or both. */
 function terrainLabel(t: PartyTerrain): string {
-  return [t.id ? TERRAIN_RULES[t.id].name : null, t.population ? `${t.population} population` : null]
+  return [
+    t.id ? TERRAIN_RULES[t.id].name : null,
+    t.population ? `${t.population} population` : null,
+    t.weather && t.weather !== "agreeable" ? WEATHER[t.weather].name.toLowerCase() : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 }
