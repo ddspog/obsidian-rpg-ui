@@ -160,3 +160,29 @@ describe("partySpot", () => {
     expect(partySpot(frame({}, {}))).toBeNull();
   });
 });
+
+describe("getting lost", () => {
+  it("keeps where a lost party believes it is apart from where it is, until it moves found", () => {
+    const log = `S1 Into the fog
+[Group: Party = Elara, Thorne]
+[Pos: Party (0,0)]
+[TRAVEL: [[Caulkin coast]]]
+@(Party) [Mv: (1,0) | lost (0,1)] We should be at the ford by now
+@(Party) [Mv: (2,0) | lost (0,2)] Still no ford
+@(Party) [Mv: (0,3)] Got our bearings at the old stones
+[/TRAVEL: arrive Day 2]`;
+    const [j] = foldTravels(groupIntoProse(parseLonelog(log)));
+    const [a, b, c] = j.frames.filter((f) => f.moved.length);
+    expect(a.positions.Party).toEqual([0, 1]);
+    expect(a.believed).toEqual({ Party: [1, 0] });
+    expect(b.positions.Party).toEqual([0, 2]);
+    expect(b.believed).toEqual({ Party: [2, 0] });
+    expect(b.trails.Party).toEqual([
+      [0, 0],
+      [0, 1],
+      [0, 2],
+    ]);
+    expect(c.positions.Party).toEqual([0, 3]);
+    expect(c.believed).toBeUndefined();
+  });
+});

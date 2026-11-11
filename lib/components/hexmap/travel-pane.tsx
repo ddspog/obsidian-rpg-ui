@@ -172,6 +172,25 @@ function JourneyOverlay({
       {(frame.jumps ?? []).map((j, i) => (
         <Jump key={`jump:${i}`} points={j.points} via={j.via} colour={colourOf(j.token)} R={R} />
       ))}
+      {/* Lost: a dashed hex where they believe they are, tied to where they really are. */}
+      {Object.entries(frame.believed ?? {}).map(([name, [bq, br]]) => {
+        const real = frame.positions[name];
+        const b = hexCenter(bq, br, R);
+        const t = real ? hexCenter(real[0], real[1], R) : null;
+        return (
+          <g
+            key={`lost:${name}`}
+            className="lonelog-travel-lost"
+            style={{ "--trail": colourOf(name) } as React.CSSProperties}
+          >
+            {t && <line x1={t.x} y1={t.y} x2={b.x} y2={b.y} strokeWidth={R / 14} />}
+            <polygon points={hexPoints(b.x, b.y, R * 0.82)} strokeWidth={R / 12} />
+            <text x={b.x} y={b.y} dy="0.35em" style={{ fontSize: R * 0.55 }}>
+              ?
+            </text>
+          </g>
+        );
+      })}
       {frame.moved.map((name) => {
         const at = frame.positions[name];
         if (!at) return null;
@@ -430,6 +449,11 @@ export function TravelFullscreen({
               <span className="lonelog-travel-at">
                 ({frame.positions[name][0]},{frame.positions[name][1]})
               </span>
+              {frame.believed?.[name] && (
+                <span className="lonelog-travel-lost-note">
+                  lost: believes ({frame.believed[name][0]},{frame.believed[name][1]})
+                </span>
+              )}
             </li>
           ))}
         </ul>

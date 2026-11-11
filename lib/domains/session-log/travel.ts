@@ -56,6 +56,8 @@ export interface TravelFrame {
   marks: TravelMark[];
   /** Tokens that moved in this entry. */
   moved: string[];
+  /** Lost tokens: where they believe they are (their `positions` is where they really are). */
+  believed?: Record<string, Hex>;
 }
 
 export interface Journey {
@@ -108,6 +110,8 @@ class TravelState {
   positions = new Map<string, Hex>();
   trails = new Map<string, Hex[]>();
   marks = new Map<string, TravelMark>();
+  /** Lost tokens, and where they believe they are. */
+  believed = new Map<string, Hex>();
 
   /** The group a name is (by its own name), or the group a character is in. */
   groupNamed(name: string): string | undefined {
@@ -137,7 +141,7 @@ class TravelState {
     return name;
   }
   renameToken(from: string, to: string): void {
-    for (const map of [this.positions, this.trails] as Array<Map<string, unknown>>) {
+    for (const map of [this.positions, this.trails, this.believed] as Array<Map<string, unknown>>) {
       if (!map.has(from)) continue;
       map.set(to, map.get(from));
       map.delete(from);
@@ -217,9 +221,22 @@ class TravelState {
     });
   }
 
+  /** A lost token's move (`[Mv: Party (3,-1) | lost (2,0)]`): it believes it went where the route
+   *  says, and really went to `truly` (when the GM says; else where it believes). */
+  lost(name: string, path: Hex[], truly: Hex | undefined): string {
+    const t = this.token(name);
+    const believed = path[path.length - 1];
+    const real = truly ?? believed;
+    if (this.travelling) this.move(t, [real], true);
+    else this.step(t, [real], true);
+    this.believed.set(t, believed);
+    return t;
+  }
+
   /** Place a token (a hex `at`), its trail starting there if it has none. */
   place(name: string, at: Hex): string {
     const t = this.token(name);
+    this.believed.delete(t);
     this.positions.set(t, at);
     if (!this.trails.has(t)) this.trails.set(t, [at]);
     return t;
@@ -235,14 +252,16 @@ class TravelState {
   }
 
   /** Off the journey: everyone stands where they're moved, no path drawn. */
-  step(name: string, path: Hex[]): string {
+  step(name: string, path: Hex[], keepLost = false): string {
     const t = this.token(name);
+    if (!keepLost) this.believed.delete(t);
     this.positions.set(t, path[path.length - 1]);
     return t;
   }
 
-  move(name: string, path: Hex[]): string {
+  move(name: string, path: Hex[], keepLost = false): string {
     const t = this.token(name);
+    if (!keepLost) this.believed.delete(t);
     let from = this.positions.get(t);
     const trail = this.trails.get(t) ?? (from ? [from] : []);
     for (const step of path) {
@@ -267,6 +286,9 @@ class TravelState {
       trails: Object.fromEntries([...this.trails].map(([k, v]) => [k, v.map((h) => [...h] as Hex)])),
       marks: [...this.marks.values()].map((m) => ({ ...m })),
       moved,
+      ...(this.believed.size
+        ? { believed: Object.fromEntries([...this.believed].map(([k, v]) => [k, [...v] as Hex])) }
+        : {}),
     };
   }
 }
@@ -373,7 +395,12 @@ export function foldTravelTrack(segments: ProseSegment[]): TravelTrack {
         const who = tag.who ? [tag.who] : actorsOf(actor);
         for (const w of who) {
           // A walk draws its path inside a journey; a special move is a jump, anywhere.
-          if (tag.via && tag.via !== "walk") moved.push(state.jump(w, path as Hex[], tag.via));
+          const lost = tag.via?.match(/^lost\b\s*(?:\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\))?/);
+          if (lost)
+            moved.push(
+              state.lost(w, path as Hex[], lost[1] !== undefined ? [Number(lost[1]), Number(lost[2])] : undefined)
+            );
+          else if (tag.via && tag.via !== "walk") moved.push(state.jump(w, path as Hex[], tag.via));
           else if (state.travelling) moved.push(state.move(w, path as Hex[]));
           else moved.push(state.step(w, path as Hex[]));
         }

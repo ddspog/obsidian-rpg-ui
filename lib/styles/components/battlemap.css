@@ -1483,3 +1483,31 @@ button.lonelog-battle-title-link:hover {
     left: calc(100% + 1rem);
   }
 }
+
+/* A lost token: a dashed hex where it believes it is, tied to where it really is. */
+.lonelog-travel-lost polygon {
+  fill: color-mix(in srgb, var(--trail, var(--text-accent)) 12%, transparent);
+  stroke: var(--trail, var(--text-accent));
+  stroke-dasharray: 6 5;
+}
+
+.lonelog-travel-lost line {
+  stroke: var(--trail, var(--text-accent));
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.lonelog-travel-lost text {
+  text-anchor: middle;
+  font-weight: 700;
+  fill: var(--trail, var(--text-accent));
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+}
+
+.lonelog-travel-lost-note {
+  color: var(--text-warning, var(--color-orange));
+  font-size: var(--font-ui-smaller);
+}
