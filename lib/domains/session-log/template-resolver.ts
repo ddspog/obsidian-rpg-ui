@@ -24,6 +24,9 @@ export interface ParsedPlaceholder {
   options?: string[];
   /** `{{name?}}` — may be left blank, which drops the line holding it. */
   optional?: boolean;
+  /** `{{name~:a|b}}` — a pick the popup offers already made (by the party's terrain), left blank
+   *  when nothing fits: the line stays, its dropdown waiting in the log. */
+  suggested?: boolean;
   /** `{{kind?@style:A>x|y;B>z}}` — a choice whose options depend on another slot's pick (`style`):
    *  the options of that pick (`A` → `x`, `y`). It writes the whole `[x/y - picked]` token, and
    *  its line is dropped when the pick has no options. */
@@ -44,7 +47,7 @@ const AUTO_RESOLVE_KINDS: Set<PlaceholderKind> = new Set(["actor", "name"]);
 
 /** `{{name}}` — typed in — or `{{name:a|b}}` — one of the listed options. A `?`
  *  after the name (`{{name?}}`, `{{name?:a|b}}`) makes it optional. */
-const PLACEHOLDER_RE = /\{\{(\w+)(\?)?(?:@(\w+))?(?::([^{}]*))?\}\}/g;
+const PLACEHOLDER_RE = /\{\{(\w+)(\?|~)?(?:@(\w+))?(?::([^{}]*))?\}\}/g;
 
 /** `Five miles of desert=desert,badlands` → the option and the terrain types it fits. Text after an
  *  `=` that isn't a list of terrain types stays part of the option. */
@@ -111,7 +114,8 @@ export function parseLogTemplate(template: string): ParsedPlaceholder[] {
       raw,
       autoResolvable: AUTO_RESOLVE_KINDS.has(kind),
       ...(options && options.length > 0 ? { options } : {}),
-      ...(match[2] ? { optional: true } : {}),
+      ...(match[2] === "?" ? { optional: true } : {}),
+      ...(match[2] === "~" ? { suggested: true } : {}),
       ...(dependsOn ? { dependsOn, optionsBy: parseOptionsBy(match[4] ?? "") } : {}),
       ...(Object.keys(terrains).length ? { optionTerrains: terrains } : {}),
     };
@@ -130,12 +134,12 @@ const INFERRED = new Set(["target_ac"]);
 
 /** Whether every slot that must be filled has a value. */
 export function requiredFilled(placeholders: ParsedPlaceholder[], values: Record<string, string>): boolean {
-  return placeholders.every((p) => p.optional || INFERRED.has(p.kind) || values[p.kind]?.trim());
+  return placeholders.every((p) => p.optional || p.suggested || INFERRED.has(p.kind) || values[p.kind]?.trim());
 }
 
 /** A template with each blank inferred slot (and the space before it) taken out. */
 function withoutBlankInferred(template: string, values: Record<string, string>): string {
-  return template.replace(/[ \t]*\{\{(\w+)\??(?:@\w+)?(?::[^{}]*)?\}\}/g, (m, key: string) =>
+  return template.replace(/[ \t]*\{\{(\w+)[?~]?(?:@\w+)?(?::[^{}]*)?\}\}/g, (m, key: string) =>
     INFERRED.has(key) && !values[key]?.trim() ? "" : m
   );
 }
@@ -169,14 +173,14 @@ export function resolveLogTemplate(template: string, picked: Record<string, stri
     .flatMap((line) => {
       let blank = false;
       for (const m of line.matchAll(PLACEHOLDER_RE)) {
-        if (!m[2] || values[m[1]]?.trim()) continue;
+        if (m[2] !== "?" || values[m[1]]?.trim()) continue;
         const before = line.slice(0, m.index);
         if (before.lastIndexOf("[") > before.lastIndexOf("]")) return [];
         blank = true;
       }
       if (!blank) return [line];
       const rest = line
-        .replace(PLACEHOLDER_RE, (match, key, opt) => (opt && !values[key]?.trim() ? "" : match))
+        .replace(PLACEHOLDER_RE, (match, key, opt) => (opt === "?" && !values[key]?.trim() ? "" : match))
         .replace(/\s{2,}/g, " ");
       return /^\s*(?:=>|->|→)?\s*$/.test(rest) ? [] : [rest.replace(/(=>|->|→)\s+/, "$1 ").trimEnd()];
     })
@@ -196,7 +200,7 @@ export function previewLogTemplate(
 ): string {
   const values: Record<string, string> = { ...buildAutoValues(ctx), ...userValues };
   for (const p of parseLogTemplate(template)) {
-    if (!p.optional && !INFERRED.has(p.kind) && !values[p.kind]?.trim()) values[p.kind] = "…";
+    if (!p.optional && !p.suggested && !INFERRED.has(p.kind) && !values[p.kind]?.trim()) values[p.kind] = "…";
   }
   return resolveLogTemplate(template, values);
 }

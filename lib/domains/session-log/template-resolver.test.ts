@@ -224,3 +224,18 @@ describe("picks by terrain", () => {
     expect(splitTerrains("Weather=1@20")).toEqual({ option: "Weather=1@20", fits: [] });
   });
 });
+
+describe("suggested picks", () => {
+  it("are offered made, never required, and leave the line when blank", async () => {
+    const { parseLogTemplate, requiredFilled, resolveWithContext } = await import("./template-resolver");
+    const tpl = "gen: Elements Table\n  Elements: [A/B - {{elements~:A=forest|B}}]";
+    const [p] = parseLogTemplate(tpl);
+    expect(p.suggested).toBe(true);
+    expect(p.optional).toBeUndefined();
+    expect(p.optionTerrains).toEqual({ A: ["forest"] });
+    expect(requiredFilled([p], { elements: "" })).toBe(true);
+    const ctx = { actor: "GM", name: "GM", entities: [] };
+    expect(resolveWithContext(tpl, ctx, { elements: "" })).toBe("gen: Elements Table\n  Elements: [A/B - ]");
+    expect(resolveWithContext(tpl, ctx, { elements: "A" })).toBe("gen: Elements Table\n  Elements: [A/B - A]");
+  });
+});

@@ -983,7 +983,7 @@ function PlaceholderField({
     <label className={`placeholder-field${missing ? " is-missing" : ""}`} aria-invalid={missing || undefined}>
       <span className="placeholder-label">
         {FIELD_LABELS[placeholder.kind] ?? placeholder.kind.replace(/_/g, " ")}
-        {placeholder.optional && <span className="placeholder-optional"> (optional)</span>}
+        {(placeholder.optional || placeholder.suggested) && <span className="placeholder-optional"> (optional)</span>}
         {terrain !== undefined && (
           <span
             className={`placeholder-terrain${fits && fits === value ? " is-here" : ""}`}

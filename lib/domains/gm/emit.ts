@@ -209,6 +209,16 @@ function withTerrains(
   return fits.length ? `${choice}=${[...new Set(fits)].join(",")}` : choice;
 }
 
+/** A slot name from a step's label (`Elements` → `elements`). */
+function slotName(label: string): string {
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "") || "pick"
+  );
+}
+
 /** One generator step as a bare working line — `<work>: <roll>= [vs <vs>] ->`
  *  (no `gen:` header, no indent). Null when the step declares no roll. Used both
  *  by the generator emitter and to lay a called generator's steps out as `+ `
@@ -218,9 +228,10 @@ export function genStepLine(s: GMGenStep, cf: string | null = null): string | nu
   // no die, so it's checked before the roll guard.
   if (s.choices?.length) {
     const label = s.work ? `${s.work}: ` : "";
-    const picked = s.ask
-      ? `{{${s.ask}:${s.choices.map((c) => withTerrains(c, s.terrain, s.population)).join("|")}}}`
-      : "";
+    const options = s.choices.map((c) => withTerrains(c, s.terrain, s.population)).join("|");
+    // With no question but a terrain map: the pick is offered made, and may stay blank.
+    const suggest = !s.ask && (s.terrain || s.population) ? slotName(s.work ?? "pick") : null;
+    const picked = s.ask ? `{{${s.ask}:${options}}}` : suggest ? `{{${suggest}~:${options}}}` : "";
     return `${label}[${s.choices.join("/")} - ${picked}]`;
   }
   if (!s.roll) return null;
