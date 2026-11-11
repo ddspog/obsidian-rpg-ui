@@ -108,10 +108,25 @@ export type Element =
   | { kind: "image"; image: PageImage; page: number; colW: number };
 
 export type Block =
-  | { type: "heading"; level: number; text: string; page: number; style: string }
+  | {
+      type: "heading";
+      level: number;
+      text: string;
+      page: number;
+      style: string;
+      /** The caption of a table (`Table 2-3: Epithets`): stays with the text, and names the table under it. */
+      caption?: boolean;
+    }
   | { type: "para"; spans: Span[]; page: number }
   | { type: "list"; ordered: boolean; items: Span[][]; page: number }
-  | { type: "table"; caption?: string; rows: string[][]; page: number }
+  | {
+      type: "table";
+      caption?: string;
+      rows: string[][];
+      page: number;
+      /** Its columns are rolled each on its own die (the parts of a name). */
+      each?: boolean;
+    }
   | { type: "side"; title?: string; blocks: Block[]; page: number }
   | { type: "image"; file: string; page: number; wide: boolean; pxW: number; pxH: number };
 

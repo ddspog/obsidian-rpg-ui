@@ -49,6 +49,7 @@ const views = flag("views");
 const game = flag("game");
 const publisher = flag("publisher");
 const portraits = flag("portraits");
+const debugPages = new Set((process.env.PDF_IMPORT_PAGES ?? "").split(",").filter(Boolean).map(Number));
 const [pdfPath, outDir] = args;
 if (!pdfPath || !outDir) {
   console.error("usage: pdf-import.mjs <book.pdf> <out folder> [--title …] [--from N] [--to N]");
@@ -162,26 +163,44 @@ const host = {
       }
     : undefined,
   ocrPage: noOcr ? undefined : ocrPage,
-  debug: process.env.PDF_IMPORT_DEBUG
-    ? (what, data) => {
-        if (what === "styles") console.error(JSON.stringify(data, null, 1));
-        else if (what === "entities")
-          for (const e of data) console.error(`[entity] ${e.kind} | ${e.title} | ${e.path}`);
-        else
-          for (const b of data.blocks)
-            console.error(
-              `[${data.chapter}] p${b.page} ${b.type}${b.level ? b.level : ""} ` +
-                (b.text ??
-                  b.caption ??
-                  b.title ??
-                  b.file ??
-                  (b.spans ?? [])
-                    .map((s) => s.text)
-                    .join("")
-                    .slice(0, 70))
-            );
-      }
-    : undefined,
+  debug:
+    process.env.PDF_IMPORT_DEBUG || debugPages.size
+      ? (what, data) => {
+          if (what === "layout") {
+            // PDF_IMPORT_PAGES=30,31: what the layout made of those pages, in reading order.
+            if (!debugPages.has(data.page)) return;
+            const cells = (l) => l.cells.map((c) => c.spans.map((s) => s.text).join("")).join(" ¦ ");
+            const at = (l) => `x${Math.round(l.x)}-${Math.round(l.r)} y${Math.round(l.base)} ${l.size}pt`;
+            for (const el of data.elements) {
+              if (el.kind === "line") console.error(`[p${data.page}] line ${at(el.line)} ${cells(el.line)}`);
+              else if (el.kind === "image") console.error(`[p${data.page}] image ${el.image.file}`);
+              else {
+                const b = el.box;
+                console.error(
+                  `[p${data.page}] box x${Math.round(b.x)} y${Math.round(b.y)} ${Math.round(b.w)}x${Math.round(b.h)}` +
+                    ` ${b.tabular ? "table" : "sidebar"}${b.headBottom === undefined ? "" : " header to y" + Math.round(b.headBottom)}`
+                );
+                for (const l of b.lines) console.error(`[p${data.page}]   ${at(l)} ${cells(l)}`);
+              }
+            }
+          } else if (what === "styles") console.error(JSON.stringify(data, null, 1));
+          else if (what === "entities")
+            for (const e of data) console.error(`[entity] ${e.kind} | ${e.title} | ${e.path}`);
+          else
+            for (const b of data.blocks)
+              console.error(
+                `[${data.chapter}] p${b.page} ${b.type}${b.level ? b.level : ""} ` +
+                  (b.text ??
+                    b.caption ??
+                    b.title ??
+                    b.file ??
+                    (b.spans ?? [])
+                      .map((s) => s.text)
+                      .join("")
+                      .slice(0, 70))
+              );
+        }
+      : undefined,
   progress(stage, done, total) {
     if (process.stderr.isTTY) process.stderr.write(`\r${stage} ${done}/${total}        `);
     else if (done === 0 || done === total) console.error(`${stage} (${total})`);

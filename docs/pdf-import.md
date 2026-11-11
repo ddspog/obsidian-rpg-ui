@@ -10,19 +10,19 @@ Almost all of the work is done by code. A model is optional, and is asked one th
 
 Run the command, then:
 
-| Field | What it does |
-| --- | --- |
-| **PDF** | A PDF in the vault, or **Choose file…** for one anywhere on the device. The file is read in pieces as its pages are needed, so a book of hundreds of megabytes is never held in memory whole. |
-| **Book name** | Names the book's folder and the `source` its notes carry. |
-| **Folder** | Where the book's folder is made. |
-| **Pictures** | Keeps the art as WebP in the book's `_assets` folder. |
-| **OCR** | Reads pages that are only a scan (no text of their own) with Tesseract. The first use downloads the reader (about 15 MB) into the plugin's `ocr` folder; after that it works offline. The language is a Tesseract code (`eng`, `por`, `spa`…). |
-| **Game entities** | Writes spells, creatures, items, classes and the like as the plugin's own blocks (see below). |
-| **File into a system** | Shown when the vault has a folder with both `compendium` and `worldbuilding` in it. The book goes to that system's compendium and each entity to the folder its kind is kept in (see below). |
-| **Name mark**, **Pictures in the vault's own folders** | With a system chosen: see Filing into a system's folders. |
-| **Game line and publisher** | Make the `source` line every note carries (`From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.`) and name the shelf the book's pictures are kept on. |
-| **Note length** | A chapter or section longer than this many lines (300) is split into tabs, each a note in a folder. |
-| **Ask the model for tab icons** | Shown when an Anthropic link is set in the image studio's settings. |
+| Field                                                  | What it does                                                                                                                                                                                                                                   |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PDF**                                                | A PDF in the vault, or **Choose file…** for one anywhere on the device. The file is read in pieces as its pages are needed, so a book of hundreds of megabytes is never held in memory whole.                                                  |
+| **Book name**                                          | Names the book's folder and the `source` its notes carry.                                                                                                                                                                                      |
+| **Folder**                                             | Where the book's folder is made.                                                                                                                                                                                                               |
+| **Pictures**                                           | Keeps the art as WebP in the book's `_assets` folder.                                                                                                                                                                                          |
+| **OCR**                                                | Reads pages that are only a scan (no text of their own) with Tesseract. The first use downloads the reader (about 15 MB) into the plugin's `ocr` folder; after that it works offline. The language is a Tesseract code (`eng`, `por`, `spa`…). |
+| **Game entities**                                      | Writes spells, creatures, items, classes and the like as the plugin's own blocks (see below).                                                                                                                                                  |
+| **File into a system**                                 | Shown when the vault has a folder with both `compendium` and `worldbuilding` in it. The book goes to that system's compendium and each entity to the folder its kind is kept in (see below).                                                   |
+| **Name mark**, **Pictures in the vault's own folders** | With a system chosen: see Filing into a system's folders.                                                                                                                                                                                      |
+| **Game line and publisher**                            | Make the `source` line every note carries (`From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.`) and name the shelf the book's pictures are kept on.                                                                          |
+| **Note length**                                        | A chapter or section longer than this many lines (300) is split into tabs, each a note in a folder.                                                                                                                                            |
+| **Ask the model for tab icons**                        | Shown when an Anthropic link is set in the image studio's settings.                                                                                                                                                                            |
 
 ## What it writes
 
@@ -51,17 +51,17 @@ With **Game entities** on (the default), sections that are things of the game ar
 plugin reads them from, so they show as stat blocks, spell cards and items instead of plain text. They are
 recognised by the way rulebooks of the 5e family write them:
 
-| Entity | Recognised by | Written as |
-| --- | --- | --- |
-| Spell | a line under the name such as `2nd-Circle Arcane (Evocation)` or `3rd-level evocation`, then Casting Time, Range, Components, Duration | `rpg spell` with `circle`, `source`, `school`, `casting`, `range`, `components`, `duration`, `summary` |
-| Creature | Armor Class and Hit Points lines, the six abilities, a `CR` on the heading or a Challenge line | `rpg stat.monster`; each trait, action, bonus action and reaction as an `rpg feature.details` in `Creature Traits/<Name> Traits.md`, which the stat block refers to |
-| Vehicle | a stat block whose type line says Vehicle (`Large Land Vehicle (10 ft. by 5 ft.)`) | `rpg stat.vehicle` with `size`, `type`, `dimensions`, crew, passengers and cargo |
-| Magic item | an italic line such as `Wondrous Item, Uncommon 1,000 gp (Requires Attunement)` | `rpg item.magic` with `type`, `rarity`, `cost`, `attunement`, `applies_to.kinds` |
-| Weapon, armor, gear | a row of a table with a Cost column and a Damage, Armor Class or Weight column | `rpg item.element` (one note a row, in a folder named for the table) with `weapon` or `armor` filled in |
-| Class | a section with Class Features whose features come at stated levels | one note; each feature an `rpg feature.details` with `subtitle` and `level` |
-| Subclass | the sections after a class's Subclasses heading | a note in the class's folder, with `.SUBCLASS: parent_class` |
-| Lineage | a section with an `… Lineage Traits` heading | the traits as one `rpg feature.details` |
-| Heritage, background, talent | their place in the book (under Heritage, Backgrounds, … Talents) and their run-in traits | an `rpg feature.details` under the flavour text |
+| Entity                       | Recognised by                                                                                                                          | Written as                                                                                                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spell                        | a line under the name such as `2nd-Circle Arcane (Evocation)` or `3rd-level evocation`, then Casting Time, Range, Components, Duration | `rpg spell` with `circle`, `source`, `school`, `casting`, `range`, `components`, `duration`, `summary`                                                              |
+| Creature                     | Armor Class and Hit Points lines, the six abilities, a `CR` on the heading or a Challenge line                                         | `rpg stat.monster`; each trait, action, bonus action and reaction as an `rpg feature.details` in `Creature Traits/<Name> Traits.md`, which the stat block refers to |
+| Vehicle                      | a stat block whose type line says Vehicle (`Large Land Vehicle (10 ft. by 5 ft.)`)                                                     | `rpg stat.vehicle` with `size`, `type`, `dimensions`, crew, passengers and cargo                                                                                    |
+| Magic item                   | an italic line such as `Wondrous Item, Uncommon 1,000 gp (Requires Attunement)`                                                        | `rpg item.magic` with `type`, `rarity`, `cost`, `attunement`, `applies_to.kinds`                                                                                    |
+| Weapon, armor, gear          | a row of a table with a Cost column and a Damage, Armor Class or Weight column                                                         | `rpg item.element` (one note a row, in a folder named for the table) with `weapon` or `armor` filled in                                                             |
+| Class                        | a section with Class Features whose features come at stated levels                                                                     | one note; each feature an `rpg feature.details` with `subtitle` and `level`                                                                                         |
+| Subclass                     | the sections after a class's Subclasses heading                                                                                        | a note in the class's folder, with `.SUBCLASS: parent_class`                                                                                                        |
+| Lineage                      | a section with an `… Lineage Traits` heading                                                                                           | the traits as one `rpg feature.details`                                                                                                                             |
+| Heritage, background, talent | their place in the book (under Heritage, Backgrounds, … Talents) and their run-in traits                                               | an `rpg feature.details` under the flavour text                                                                                                                     |
 
 Only what the page states is filled in: a spell's range, a creature's hit points, a weapon's damage. What
 takes reading the rules text is left as text in the block's body, for a later pass (by hand or with a model):
@@ -75,8 +75,8 @@ The same rules are printed very differently from book to book, so entities are t
 not by how they are set:
 
 - **A name is known by the line under it.** The line that opens a spell's facts (`2nd-Circle Arcane
-  (Evocation)`, `3rd-level evocation (ritual)`, `Evocation cantrip`), a magic item's (`Wondrous item, rare
-  (requires attunement)`) or a creature's (`Large Beast`, `Medium humanoid (any race), any alignment`, then
+(Evocation)`, `3rd-level evocation (ritual)`, `Evocation cantrip`), a magic item's (`Wondrous item, rare
+(requires attunement)`) or a creature's (`Large Beast`, `Medium humanoid (any race), any alignment`, then
   Armor Class) makes the line above it a heading, whatever type it is in.
 - **Facts stand alone.** `Armor Class 12`, `Casting Time: 1 action` and the like are lines of their own and
   never headings, even where a book sets them bold in a second typeface.
@@ -97,20 +97,20 @@ text, tabs and tables.
 
 With **File into a system** set to a folder laid out like `tales-of-the-valiant`:
 
-| What | Where |
-| --- | --- |
-| The book's chapters | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`) |
-| Spells | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, … |
-| Creatures the book prices as mounts | `worldbuilding/bestiary/creatures/steeds/` |
-| What a druid may turn into | `worldbuilding/bestiary/animals/`: a creature with the Animal tag, or one in a section the book lists for druids' forms; in a book given a name mark, also a Beast below CR 6 |
-| The book's own nonplayer characters | `worldbuilding/bestiary/npcs/`: creatures under a heading that says NPCs or nonplayer characters |
-| Other creatures | `worldbuilding/bestiary/monsters/<creature type>/` (`beast`, `humanoid`, `fiend`…), the type as the stat block gives it |
-| Vehicles | `worldbuilding/bestiary/vehicles/<land|water|air>/`, as `rpg stat.vehicle` |
-| Creatures' traits and actions | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits` |
-| Magic items | `worldbuilding/enchantments/` |
-| Weapons, armor, gear, tools | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/` |
-| Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses`, `lineages`, `heritages`, `backgrounds` |
-| Talents | `worldbuilding/traits/talents/<magic|martial|technical>/` |
+| What                                                  | Where                                                                                                                                                                         |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------- |
+| The book's chapters                                   | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`)                                                                                      |
+| Spells                                                | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, …                                                                                                         |
+| Creatures the book prices as mounts                   | `worldbuilding/bestiary/creatures/steeds/`                                                                                                                                    |
+| What a druid may turn into                            | `worldbuilding/bestiary/animals/`: a creature with the Animal tag, or one in a section the book lists for druids' forms; in a book given a name mark, also a Beast below CR 6 |
+| The book's own nonplayer characters                   | `worldbuilding/bestiary/npcs/`: creatures under a heading that says NPCs or nonplayer characters                                                                              |
+| Other creatures                                       | `worldbuilding/bestiary/monsters/<creature type>/` (`beast`, `humanoid`, `fiend`…), the type as the stat block gives it                                                       |
+| Vehicles                                              | `worldbuilding/bestiary/vehicles/<land                                                                                                                                        | water   | air>/`, as `rpg stat.vehicle` |
+| Creatures' traits and actions                         | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits`                                                                                                |
+| Magic items                                           | `worldbuilding/enchantments/`                                                                                                                                                 |
+| Weapons, armor, gear, tools                           | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/`                                                           |
+| Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses`, `lineages`, `heritages`, `backgrounds`                                                                                          |
+| Talents                                               | `worldbuilding/traits/talents/<magic                                                                                                                                          | martial | technical>/`                  |
 
 - **A note the vault already has is never written over.** The book links to the one that is there, and
   the contents note lists which were left alone.
@@ -134,6 +134,46 @@ With **File into a system** set to a folder laid out like `tales-of-the-valiant`
 - **Source.** With a game line and a publisher given, every note carries
   `From **Game line** "Book" by **Publisher**.`
 
+### Books of tables
+
+Books that are mostly tables to roll on (name generators, adventure and world builders, solo toolboxes) are
+read for what such books share:
+
+- **A table's caption** (`Table 2-3: Creator Deity Epithet`, bold on a line of its own) stays in the text as a
+  small heading and names the table under it, with the lines of how to use it left between the two. The
+  table's id is the caption without its number (`creator-deity-epithet`). A table set straight under a
+  heading, with no caption, is named for the heading.
+- **A table that goes on** in the next column or on the next page is one table: its header repeated, its
+  caption repeated with `continued`, or its numbers counting on from the last row's. A row cut by the page's
+  end is mended.
+- **A table rolled on a die** is written to be rolled: its first column counts from 1 to a die's top with no
+  gap and its header names a die or a roll (`d20`, `1d100`, `Die Roll`). The header becomes `d20*` and the
+  table ends with a roll row (`|= {{ roll }} =|`). Where the lines under the caption say the columns are
+  rolled independently, the row is `{{ roll each }}`, with `join=''` when the cells are parts of a name. A
+  table of more than twenty rows opens with `@paginate 10 pages`. A book's misprint (a number skipped) leaves
+  the table as it is printed, not rollable; mend the row and add the roll row by hand.
+- **Rows taller than a line.** A number set against the middle of a cell of two or three lines, a range broken
+  in a narrow column (`45-` over `50`), a header on several lines, rows left unshaded between stripes, cells
+  set centred: each is read as one row.
+- **A wide table of a number and a long description** is a table, not a sidebar.
+- **A dark strip down the page's outer edge**, and the words set on it (sample names, a chapter's label), is
+  dressing and is left out.
+
+`node scripts/pdf-import-compare.mjs <import folder> <vault folders…> [-v]` measures an import against a book
+already adapted by hand in a vault: captions found, tables with the same number of rows, tables rollable.
+Tried on four books adapted in the testing vault (measured against the vault's tables):
+
+| Book                          | Captions found | Same row count | Rollable   |
+| ----------------------------- | -------------- | -------------- | ---------- |
+| The Nomicon                   | 221 of 230     | 143 of 160     | 169 of 221 |
+| Tome of World Building        | 374 of 404     | 323 of 363     | 324 of 374 |
+| Tome of Adventure Design      | 365 of 379     | 272 of 340     | 290 of 365 |
+| The Solo Adventurer's Toolbox | 16 of 94       | 13 of 16       | 3 of 12    |
+
+The Toolbox prints no captions, so its tables were named by hand in the vault and few names match; its tables
+themselves come through (its d100 lists as one table each across their pages). What the hand adaptation adds
+beyond the import: tables moved to `gm-tools/tables`, links between tables, GM cards, misprints fixed.
+
 ### Scanned books
 
 A page that is only a picture is read by OCR, and helped along so that entities can still be found:
@@ -143,6 +183,10 @@ A page that is only a picture is read by OCR, and helped along so that entities 
   and the names that open a paragraph;
 - names are also read from the words alone (`Bite. Melee Weapon Attack…`), and a stat block or spell whose
   numbers the scan lost is still written, with what could be read.
+
+A book that is a scan throughout takes long (about seven seconds a page from a terminal) and, with no
+bookmarks and headings set on coloured art, comes out as one chapter: Mythic Game Master Emulator 2e (230
+pages, every one a picture) is such a book, and is not usable as imported.
 
 How much comes through depends on the scan. On clean 200 dpi pages of the two books above, about half of
 the spells and creatures were recognised on the plainly set SRD pages and fewer on the Player's Guide's
@@ -162,7 +206,11 @@ textured, coloured pages; expect to fix names and numbers by hand.
 5. **Headings** are the looks (font, weight, size) that differ from the body text, ranked by size; a bar behind
    a line marks an entry's name. Paragraphs are cut at indents, wider gaps and changes of type, and run on
    across columns and pages; a word broken at a line's end is mended from the book's own words.
-6. **Chapters** follow the PDF's bookmarks, else its biggest headings. A section whose parts are in
+6. **Chapters** follow the PDF's bookmarks, else its biggest headings. Bookmarks are taken as they come:
+   those that say `Chapter N` (in figures or words) are the chapters wherever they sit, a chapter named only
+   by its number takes its name from its first page, bookmarks for every table, the file's own name and a
+   word processor's marks are passed over, one with no place of its own starts where its first part does,
+   and a bookmark around the whole book is looked under. A section whose parts are in
    alphabetical order under headings of one look is a list of entries, and becomes a folder.
 7. **Pictures** sit where they were on the page, after the paragraph they interrupt; the first wide picture of a
    chapter is its banner.
@@ -185,7 +233,8 @@ node scripts/pdf-import.mjs book.pdf out-folder --title "Player's Guide" [--from
      [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"]
 ```
 
-`PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `OCR_LANG=por` picks the
+`PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `PDF_IMPORT_PAGES=30,31`
+prints what the layout made of those pages (lines, boxes and their rows, in reading order). `OCR_LANG=por` picks the
 OCR language.
 
 ## What to check after an import

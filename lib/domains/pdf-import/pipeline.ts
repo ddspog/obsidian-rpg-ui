@@ -13,6 +13,7 @@ import { lookFor } from "./looks";
 import { placer } from "./organise";
 import { readStyles } from "./styles";
 import {
+  chapterLabel,
   dropTitleHeadings,
   fileName,
   isContentsPage,
@@ -23,6 +24,7 @@ import {
   promoteNames,
   slug,
   takeBanner,
+  titleCase,
   toSections,
   walkBlocks,
   type ChapterPlan,
@@ -180,6 +182,7 @@ export async function importPdf(
   const everything: Element[] = [];
   for (const page of pages) {
     const { elements } = layoutPage(page, { furniture, prefer });
+    host.debug?.("layout", { page: page.num, elements });
     const lines = elements.flatMap((el) => (el.kind === "line" ? [lineText(el.line)] : []));
     if (isContentsPage(lines)) {
       // The contents pages are not written, but their entries are checked against what was found.
@@ -223,6 +226,7 @@ export async function importPdf(
     for (let p = plan.firstPage; p <= plan.lastPage; p++) elements.push(...(perPage.get(p) ?? []));
     const blocks = toBlocks(elements, { styles });
     if (options.entities) promoteNames(blocks);
+    nameChapter(plan, blocks);
     drafts.push({ plan, blocks });
   }
   for (const { plan, blocks: all } of drafts) {
@@ -377,6 +381,23 @@ export async function importPdf(
     tables,
     sidebars,
   };
+}
+
+/**
+ * A chapter the bookmarks only number (`Chapter Two`) takes its name from its first page, where it
+ * is set under the number (`CHAPTER TWO`, then `PRIMORDIAL AND DIVINE NAMES`).
+ */
+function nameChapter(plan: ChapterPlan, blocks: Block[]): void {
+  if (!/^chapter \d+$/i.test(plan.title)) return;
+  const heads = blocks.filter((b) => b.type === "heading" && b.page === plan.firstPage).slice(0, 3) as Array<
+    Extract<Block, { type: "heading" }>
+  >;
+  const at = heads.findIndex((h) => chapterLabel(h.text));
+  if (at < 0) return;
+  const rest = chapterLabel(heads[at].text)?.rest;
+  const next = heads[at + 1];
+  const name = rest || (next && next.level <= heads[at].level + 1 ? next.text : "");
+  if (name && name.length <= 80) plan.title = titleCase(name);
 }
 
 /** Chapters cut at the book's biggest headings, when the file has no bookmarks. */
