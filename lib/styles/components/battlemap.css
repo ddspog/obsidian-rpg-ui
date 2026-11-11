@@ -1638,3 +1638,23 @@ button.lonelog-battle-title-link:hover {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* Open, the Here card sits above the Actions bar that may scroll under the minimap. */
+.lonelog-minimap:has(.lonelog-ground[open]) {
+  z-index: 60;
+}
+
+.lonelog-minimap .lonelog-ground[open] > .lonelog-ground-facts {
+  z-index: 60;
+}
+
+.lonelog-minimap-rail:has(.lonelog-ground[open]) {
+  z-index: 60;
+}
+
+.lonelog-ground.is-open header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}

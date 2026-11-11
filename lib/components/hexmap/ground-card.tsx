@@ -50,7 +50,12 @@ export function GroundCard({
     facts.push([
       "Ground",
       [
-        rules.difficult && !info?.road ? "difficult (half speed)" : info?.road ? "road: not difficult" : "open",
+        rules.difficult
+          ? info?.road
+            ? "difficult, but the road is easy going"
+            : "difficult (half speed)"
+          : "easy going",
+        info?.road && !rules.difficult ? "a road runs here" : null,
         rules.maxPace ? `fastest ${rules.maxPace}${info?.road ? " (+1 by road)" : ""}` : "by boat",
         info?.river ? "a river runs here" : null,
       ]
