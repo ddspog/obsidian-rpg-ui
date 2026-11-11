@@ -477,3 +477,38 @@ export function weatherTimeline(segments: ProseSegment[]): (id: number) => strin
     return at;
   };
 }
+
+/** The weather of one scene: what's in force by its end, and whether the scene changed it (`from`:
+ *  the weather it opened with, when known). */
+export interface SceneWeather {
+  parts: string[];
+  changed: boolean;
+  from: string[] | null;
+}
+
+/**
+ * The weather along the scenes: for each scene (`starts[i]`, the source index it opens at; null for
+ * the untitled stretch before the first), the last `[Weather: …]` in force by its end. A scene with a
+ * tag of its own changed it; one without carries the weather in. Null where no weather is known yet.
+ */
+export function sceneWeather(segments: ProseSegment[], starts: Array<number | null>): Array<SceneWeather | null> {
+  const marks: Array<[number, string[]]> = [];
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") marks.push([seg.sourceIndex, tag.parts]);
+  }
+  marks.sort((a, b) => a[0] - b[0]);
+  return starts.map((start, i) => {
+    const from = start ?? -Infinity;
+    const next = starts.slice(i + 1).find((s): s is number => s != null) ?? Infinity;
+    const before = marks.filter(([at]) => at < from);
+    const inside = marks.filter(([at]) => at >= from && at < next);
+    const carried = before.length ? before[before.length - 1][1] : null;
+    if (inside.length === 0) return carried ? { parts: carried, changed: false, from: null } : null;
+    return {
+      parts: inside[inside.length - 1][1],
+      changed: true,
+      from: carried ?? (inside.length > 1 ? inside[0][1] : null),
+    };
+  });
+}

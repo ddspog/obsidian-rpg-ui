@@ -3765,6 +3765,124 @@ body.is-mobile button.lonelog-trail-head {
 .lonelog-prose-combat > .lonelog-trail {
   margin-inline: 0.75rem;
 }
+.lonelog-prose-scene-head.has-weather {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  padding: 0.35rem 0.55rem 0.4rem;
+  margin-inline: -0.55rem;
+  border-radius: var(--radius-s, 4px) var(--radius-s, 4px) 0 0;
+  --rpg-sky: 120 130 150;
+  --rpg-sky-alpha: 0.1;
+  --rpg-sky-pattern: none;
+  background:
+    var(--rpg-sky-pattern),
+    linear-gradient(
+      90deg,
+      transparent 25%,
+      rgb(var(--rpg-sky) / var(--rpg-sky-alpha)) 100%);
+}
+.lonelog-prose-scene-head.is-weather-change {
+  --rpg-sky-alpha: 0.2;
+}
+.lonelog-prose-scene-head[data-sky=clear] {
+  --rpg-sky: 230 170 50;
+  --rpg-sky-pattern:
+    radial-gradient(
+      circle at 96% 45%,
+      rgb(240 190 70 / 0.3),
+      transparent 38%);
+}
+.lonelog-prose-scene-head[data-sky=heat] {
+  --rpg-sky: 225 110 45;
+}
+.lonelog-prose-scene-head[data-sky=cloud] {
+  --rpg-sky: 125 135 150;
+}
+.lonelog-prose-scene-head[data-sky=fog] {
+  --rpg-sky: 150 155 165;
+  --rpg-sky-pattern:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 7px,
+      rgb(170 175 185 / 0.14) 7px 11px);
+}
+.lonelog-prose-scene-head[data-sky=wind] {
+  --rpg-sky: 110 150 160;
+  --rpg-sky-pattern:
+    repeating-linear-gradient(
+      170deg,
+      transparent 0 12px,
+      rgb(110 150 160 / 0.14) 12px 13px);
+}
+.lonelog-prose-scene-head[data-sky=rain] {
+  --rpg-sky: 70 110 170;
+  --rpg-sky-pattern:
+    repeating-linear-gradient(
+      105deg,
+      transparent 0 9px,
+      rgb(70 110 170 / 0.16) 9px 10.5px);
+}
+.lonelog-prose-scene-head[data-sky=storm] {
+  --rpg-sky: 70 70 120;
+  --rpg-sky-alpha: 0.2;
+  --rpg-sky-pattern:
+    repeating-linear-gradient(
+      105deg,
+      transparent 0 7px,
+      rgb(70 70 130 / 0.2) 7px 9px);
+}
+.lonelog-prose-scene-head[data-sky=snow] {
+  --rpg-sky: 140 170 200;
+  --rpg-sky-pattern:
+    radial-gradient(
+      circle,
+      rgb(140 170 210 / 0.35) 1.2px,
+      transparent 1.8px) 0 0 / 12px 12px;
+}
+.lonelog-prose-scene-head.is-weather-change[data-sky=storm] {
+  --rpg-sky-alpha: 0.3;
+}
+.lonelog-prose-scene-head.has-weather {
+  background-clip: padding-box;
+}
+.lonelog-prose-scene-head.has-weather::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--background-primary) 20%,
+      transparent 70%);
+  pointer-events: none;
+}
+.lonelog-prose-scene-head.has-weather > * {
+  position: relative;
+}
+.lonelog-scene-weather {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-interface);
+  font-size: var(--rpg-fs-small, 0.8rem);
+  font-style: normal;
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+.lonelog-scene-weather-icon {
+  flex: none;
+  color: rgb(var(--rpg-sky) / 1);
+}
+.lonelog-scene-weather.is-change .lonelog-scene-weather-now {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+.lonelog-scene-weather-was {
+  color: var(--text-faint);
+}
 
 /* lib/styles/components/session-log-tags.css */
 .lonelog-tag-pills {
@@ -11662,9 +11780,52 @@ button.lonelog-battle-title-link:hover {
 .lonelog-ground summary::-webkit-details-marker {
   display: none;
 }
-.lonelog-ground summary strong,
-.lonelog-ground header strong {
-  color: var(--text-accent);
+.lonelog-ground-place,
+.lonelog-ground-numbers {
+  display: block;
+}
+.lonelog-ground-place {
+  font-weight: 600;
+}
+.lonelog-ground-weather {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.lonelog-ground-numbers {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.lonelog-ground-lost {
+  display: inline-block;
+  margin-right: 0.35em;
+  padding: 0 0.35em;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--color-orange) 18%, transparent);
+  color: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
+  font-weight: 700;
+}
+.lonelog-ground summary:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.lonelog-ground-change {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+}
+.lonelog-ground-source {
+  margin: 0.45rem 0 0;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+}
+.lonelog-ground.is-open header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.75rem;
+}
+.lonelog-ground.is-open header > span {
+  display: inline;
 }
 .lonelog-minimap .lonelog-ground {
   position: relative;

@@ -14,7 +14,9 @@
 import * as React from "react";
 import { Markdown } from "lib/components/markdown";
 import { InlineMarkdown } from "./inline-markdown";
-import { Swords } from "lucide-react";
+import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, Sun, Swords, Thermometer, Wind } from "lucide-react";
+import { weatherSky, type WeatherSky } from "lib/domains/hexmap/terrain";
+import type { SceneWeather } from "lib/domains/session-log/travel";
 import { actorLabel } from "lib/domains/session-log/prose-model";
 import type { ProseFragment, ProseScene, ProseNode } from "lib/domains/session-log/prose-model";
 import { combatTrailKey, headTrailKey, nodeTrailKey, TRAIL_START } from "lib/domains/session-log/log-trails";
@@ -38,6 +40,37 @@ export interface ProseViewProps {
   renderTravelMap?: (startId: number) => React.ReactNode;
   /** The Log mixed into the prose: what goes at a place (`log-trails.ts` keys), drawn after it. */
   renderTrail?: (key: string) => React.ReactNode;
+  /** The weather of each scene (by index), drawn behind its heading. */
+  sceneWeather?: Array<SceneWeather | null>;
+}
+
+const SKY_ICON: Record<WeatherSky, typeof Sun> = {
+  storm: CloudLightning,
+  snow: CloudSnow,
+  rain: CloudRain,
+  fog: CloudFog,
+  wind: Wind,
+  cloud: Cloud,
+  heat: Thermometer,
+  clear: Sun,
+};
+
+/** A scene's weather, at the end of its heading: what it is, and what it was when the scene changed it. */
+function SceneWeatherLabel({ weather }: { weather: SceneWeather }) {
+  const sky = weatherSky(weather.parts);
+  const Icon = sky ? SKY_ICON[sky.sky] : Cloud;
+  const was = weather.from ? (weatherSky(weather.from)?.word ?? weather.from[weather.from.length - 1]) : null;
+  const now = weather.parts.join(" · ");
+  const title = weather.changed
+    ? `The weather changes in this scene${weather.from ? `: was ${weather.from.join(" · ")}` : ""}; now ${now}`
+    : `The weather carried into this scene: ${now}`;
+  return (
+    <span className={`lonelog-scene-weather${weather.changed ? " is-change" : ""}`} title={title}>
+      <Icon className="lonelog-scene-weather-icon" size={15} aria-hidden="true" />
+      {weather.changed && was && <span className="lonelog-scene-weather-was">{was} →</span>}
+      <span className="lonelog-scene-weather-now">{now}</span>
+    </span>
+  );
 }
 
 /** A stable hue (0-359) for a speaker's name, so each voice keeps its own colour through the log. */
@@ -58,6 +91,7 @@ export function ProseView({
   partyName,
   renderTravelMap,
   renderTrail,
+  sceneWeather,
 }: ProseViewProps) {
   if (scenes.length === 0) {
     return (
@@ -71,46 +105,52 @@ export function ProseView({
   return (
     <div className="lonelog-prose-doc">
       {renderTrail?.(TRAIL_START)}
-      {scenes.map((scene, si) => (
-        <section className="lonelog-prose-scene" key={si}>
-          {scene.head && (
-            <h4
-              className="lonelog-prose-scene-head"
-              ref={scene.head.sourceId != null ? (el) => registerAnchor(scene.head!.sourceId!, el) : undefined}
-            >
-              <span className="lonelog-prose-scene-id">{scene.head.number}</span>
-              <span className="lonelog-prose-scene-title">{scene.head.context}</span>
-              {scene.head.fromConsequence && scene.head.sourceId != null && (
-                <ProseDot
-                  id={scene.head.sourceId}
-                  label={`Show the source of scene ${scene.head.number}: ${scene.head.context}`}
-                  selected={selectedId === scene.head.sourceId}
-                  onClick={onSelectSource}
+      {scenes.map((scene, si) => {
+        const weather = sceneWeather?.[si] ?? null;
+        const sky = weather ? weatherSky(weather.parts)?.sky : undefined;
+        return (
+          <section className="lonelog-prose-scene" key={si}>
+            {scene.head && (
+              <h4
+                className={`lonelog-prose-scene-head${weather ? " has-weather" : ""}${weather?.changed ? " is-weather-change" : ""}`}
+                {...(sky ? { "data-sky": sky } : {})}
+                ref={scene.head.sourceId != null ? (el) => registerAnchor(scene.head!.sourceId!, el) : undefined}
+              >
+                <span className="lonelog-prose-scene-id">{scene.head.number}</span>
+                <span className="lonelog-prose-scene-title">{scene.head.context}</span>
+                {scene.head.fromConsequence && scene.head.sourceId != null && (
+                  <ProseDot
+                    id={scene.head.sourceId}
+                    label={`Show the source of scene ${scene.head.number}: ${scene.head.context}`}
+                    selected={selectedId === scene.head.sourceId}
+                    onClick={onSelectSource}
+                  />
+                )}
+                {weather && <SceneWeatherLabel weather={weather} />}
+              </h4>
+            )}
+            {scene.head && renderTrail?.(headTrailKey(si))}
+            {scene.nodes.map((node, ni) => (
+              <React.Fragment key={ni}>
+                <ProseNodeView
+                  node={node}
+                  sourcePath={sourcePath}
+                  selectedId={selectedId}
+                  onSelectSource={onSelectSource}
+                  registerAnchor={registerAnchor}
+                  {...(renderTurnMap ? { renderTurnMap } : {})}
+                  {...(onSelectStep ? { onSelectStep } : {})}
+                  {...(partyName ? { partyName } : {})}
+                  {...(renderTravelMap ? { renderTravelMap } : {})}
+                  {...(renderTrail && node.kind === "combat" ? { renderTrail, trailAt: [si, ni] as const } : {})}
                 />
-              )}
-            </h4>
-          )}
-          {scene.head && renderTrail?.(headTrailKey(si))}
-          {scene.nodes.map((node, ni) => (
-            <React.Fragment key={ni}>
-              <ProseNodeView
-                node={node}
-                sourcePath={sourcePath}
-                selectedId={selectedId}
-                onSelectSource={onSelectSource}
-                registerAnchor={registerAnchor}
-                {...(renderTurnMap ? { renderTurnMap } : {})}
-                {...(onSelectStep ? { onSelectStep } : {})}
-                {...(partyName ? { partyName } : {})}
-                {...(renderTravelMap ? { renderTravelMap } : {})}
-                {...(renderTrail && node.kind === "combat" ? { renderTrail, trailAt: [si, ni] as const } : {})}
-              />
-              {/* A fight draws its own runs, inside it. */}
-              {node.kind !== "combat" && renderTrail?.(nodeTrailKey(si, ni))}
-            </React.Fragment>
-          ))}
-        </section>
-      ))}
+                {/* A fight draws its own runs, inside it. */}
+                {node.kind !== "combat" && renderTrail?.(nodeTrailKey(si, ni))}
+              </React.Fragment>
+            ))}
+          </section>
+        );
+      })}
     </div>
   );
 }

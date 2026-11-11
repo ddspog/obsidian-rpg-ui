@@ -204,3 +204,36 @@ describe("weatherTimeline", () => {
     expect(at(ids[ids.length - 1])).toEqual(["Autumn", "heavy rain"]);
   });
 });
+
+describe("sceneWeather", () => {
+  it("carries the weather along the scenes and marks the scene that changes it", async () => {
+    const { sceneWeather } = await import("./travel");
+    const { assembleProse } = await import("./prose-model");
+    const segs = groupIntoProse(
+      parseLonelog(`S1 Road
+@(Party) Walk
+=> Clouds [Weather: Autumn · overcast]
+@(Party) Walk on
+=> Rain [Weather: Autumn · heavy rain]
+S2 Camp
+@(Party) Rest
+S3 Morning
+@(Party) Look up
+=> Sun [Weather: Autumn · clear]`)
+    );
+    const scenes = assembleProse(segs);
+    const w = sceneWeather(
+      segs,
+      scenes.map((s) => s.head?.startId ?? null)
+    );
+    expect(w[0]).toEqual({ parts: ["Autumn", "heavy rain"], changed: true, from: ["Autumn", "overcast"] });
+    expect(w[1]).toEqual({ parts: ["Autumn", "heavy rain"], changed: false, from: null });
+    expect(w[2]).toEqual({ parts: ["Autumn", "clear"], changed: true, from: ["Autumn", "heavy rain"] });
+  });
+
+  it("has no weather before the first tag", async () => {
+    const { sceneWeather } = await import("./travel");
+    const segs = groupIntoProse(parseLonelog(`S1 Road\n@(Party) Walk`));
+    expect(sceneWeather(segs, [segs[0].sourceIndex])).toEqual([null]);
+  });
+});

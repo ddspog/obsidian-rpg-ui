@@ -41,6 +41,8 @@ export interface ProseSceneHead {
   context: string;
   /** Set when the scene was opened by a `=> S## Title` consequence (gets a dot). */
   sourceId?: number;
+  /** The source index the scene opens at (its `S1` line, or the `=> S2 …` consequence). */
+  startId?: number;
   fromConsequence: boolean;
 }
 
@@ -146,7 +148,7 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
     if (!text) return; // tag-only consequence → nothing reaches prose
     const scene = parseSceneMarker(text);
     if (scene) {
-      startScene({ number: scene.number, context: scene.context, sourceId, fromConsequence: true });
+      startScene({ number: scene.number, context: scene.context, sourceId, startId: sourceId, fromConsequence: true });
       return;
     }
     addFragment({ text, sourceId });
@@ -160,7 +162,12 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
   for (const seg of segments) {
     switch (seg.type) {
       case "scene":
-        startScene({ number: seg.entry.number, context: seg.entry.context, fromConsequence: false });
+        startScene({
+          number: seg.entry.number,
+          context: seg.entry.context,
+          startId: seg.sourceIndex,
+          fromConsequence: false,
+        });
         break;
 
       case "concat":

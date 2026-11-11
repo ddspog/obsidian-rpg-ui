@@ -26,7 +26,7 @@ import { isPiece, parseHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored } from "lib/domains/hexmap/play";
 import { TERRAIN_RULES, type TerrainGrid, type WeatherId } from "lib/domains/hexmap/terrain";
 import { landRolls } from "lib/domains/session-log/five-miles";
-import { trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
+import { partySpot, trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
 
 const TRAIL_COLORS = ["#e0b84a", "#5fb0e8", "#e86a5f", "#7fd17a", "#c58be8"];
 
@@ -316,6 +316,19 @@ function JourneyOverlay({
   );
 }
 
+/** Where the party came from: the last frame on the same map with it on another hex (for the ground card). */
+function previousOf(track: TravelTrack, frame: TravelFrame): { previous?: TravelFrame } {
+  const here = partySpot(frame);
+  if (!here) return {};
+  for (let j = track.frames.indexOf(frame) - 1; j >= 0; j--) {
+    const f = track.frames[j];
+    if (f.map !== frame.map) break;
+    const was = partySpot(f);
+    if (was && (was.at[0] !== here.at[0] || was.at[1] !== here.at[1])) return { previous: f };
+  }
+  return {};
+}
+
 /** The circle in the corner. */
 export function TravelMinimap({
   track,
@@ -334,7 +347,8 @@ export function TravelMinimap({
   /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
   compact?: boolean;
 }) {
-  const { frame, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
+  const { frame, body, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
+  const hexMiles = React.useMemo(() => (body ? (parseHexMap(body).scaleMetres ?? 0) / 1609.344 : 0), [body]);
   // On a phone the disc starts as its small button: it would cover a third of the reading column.
   const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
   React.useEffect(() => {
@@ -417,7 +431,13 @@ export function TravelMinimap({
           <IconButton icon="minus" label="Make the map small" onClick={() => setSmall(true)} />
         </li>
       </menu>
-      <GroundCard frame={frame} {...(layout ? { layout } : {})} weather={weatherAt?.(frame.id) ?? null} />
+      <GroundCard
+        frame={frame}
+        {...previousOf(track, frame)}
+        {...(layout ? { layout } : {})}
+        {...(hexMiles ? { hexMiles } : {})}
+        weather={weatherAt?.(frame.id) ?? null}
+      />
     </figure>
   );
 }
@@ -586,7 +606,9 @@ export function TravelFullscreen({
         )}
         <GroundCard
           frame={frame}
+          {...previousOf(track, frame)}
           {...(drawnLayout ? { layout: drawnLayout } : {})}
+          {...(body && parseHexMap(body).scaleMetres ? { hexMiles: parseHexMap(body).scaleMetres! / 1609.344 } : {})}
           weather={weatherAt?.(frame.id) ?? null}
           open
         />

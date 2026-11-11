@@ -48,6 +48,7 @@ import {
   type Journey,
   lastWeather,
   partySpot,
+  sceneWeather,
   weatherTimeline,
 } from "lib/domains/session-log/travel";
 import {
@@ -2933,6 +2934,15 @@ function SessionLogRoot({
     setReadingId(id);
   }, []);
   const scenes = React.useMemo(() => assembleProse(segments), [segments]);
+  // The weather along the scenes: each heading shows what's in force, and marks the scene that changed it.
+  const weatherByScene = React.useMemo(
+    () =>
+      sceneWeather(
+        segments,
+        scenes.map((s) => s.head?.startId ?? null)
+      ),
+    [segments, scenes]
+  );
   const dialOps = React.useMemo(() => resolveDialOps(logData.entries, resources), [logData.entries, resources]);
   const listOps = React.useMemo(() => resolveListOps(logData.entries, lists), [logData.entries, lists]);
   // The running values at the end of the log (`CF` → 4): declared defaults,
@@ -4017,6 +4027,7 @@ function SessionLogRoot({
                 {...(hasBattle ? { renderTurnMap, onSelectStep: goToStep } : {})}
                 partyName={partyName}
                 renderTrail={trailFor}
+                sceneWeather={weatherByScene}
               />
             </div>
           </div>

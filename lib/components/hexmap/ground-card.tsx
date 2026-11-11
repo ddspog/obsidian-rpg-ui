@@ -1,126 +1,246 @@
 /**
- * "Here": what the ground the party stands on means, at the entry being read — the terrain and its
- * rules, the region and how settled it is, the weather and what it costs, the hex's distinct
- * elements and their rules, and whether the party is lost. Under the log's minimap (folded to one
- * line) and in the journey view (open).
+ * The party's ground: what the hex the party stands on means for play, at the entry being read, in
+ * the order a hexcrawl turn runs — how long the hex takes to cross, the check to stay on course, how
+ * far off encounters start, then foraging, camp and searching. The weather is counted inside the row
+ * it changes; the hex's distinct elements add their rules; a lost party is told where it believes it
+ * is and how to find its bearings. Under the log's minimap (folded to the ground and its two numbers
+ * that matter most) and in the journey view (open).
  */
 
 import * as React from "react";
-import type { HexLayout } from "lib/domains/hexmap/layout";
-import { HEX_ELEMENT_RULES, TERRAIN_RULES, WEATHER, type WeatherId } from "lib/domains/hexmap/terrain";
+import { hexKey } from "lib/domains/hexmap/axial";
+import type { HexInfo, HexLayout } from "lib/domains/hexmap/layout";
+import {
+  HEX_ELEMENT_RULES,
+  PACES,
+  routeSteps,
+  TERRAIN_RULES,
+  travelHoursText,
+  WEATHER,
+  type Pace,
+  type Population,
+  type TerrainGrid,
+  type TerrainRules,
+  type WeatherId,
+} from "lib/domains/hexmap/terrain";
 import type { TravelFrame } from "lib/domains/session-log/travel";
 import { partySpot } from "lib/domains/session-log/travel";
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const POPULATION: Record<Population, string> = {
+  low: "Sparsely settled",
+  medium: "Settled",
+  high: "Well settled",
+};
+
+/** How long crossing this one hex takes at each pace (the ground caps it; null where it can't go). */
+function crossing(
+  info: HexInfo,
+  at: [number, number],
+  hexMiles: number,
+  weather: WeatherId
+): Array<{ pace: Pace; ran: Pace; hours: number; difficult: boolean }> {
+  const key = hexKey(at[0], at[1]);
+  const grid: TerrainGrid = {
+    terrain: new Map(info.terrain ? [[key, info.terrain]] : []),
+    roads: new Set(info.road ? [key] : []),
+    rivers: new Set(),
+    elements: new Map(info.elements?.length ? [[key, info.elements]] : []),
+  };
+  const hex = { q: at[0], r: at[1] };
+  return PACES.map((pace) => {
+    const [s] = routeSteps([hex, hex], grid, pace, hexMiles, { weather });
+    return { pace, ran: s.pace, hours: s.hours, difficult: s.difficult };
+  });
+}
+
+/** The folded line's numbers: how fast the party goes here, and the check to stay on course. */
+function verdict(rules: TerrainRules | undefined, info: HexInfo | undefined, navDis: boolean): string[] {
+  if (!rules) return [];
+  const overgrown = info?.elements?.some((e) => HEX_ELEMENT_RULES[e].difficult) ?? false;
+  const speed =
+    rules.maxPace === null
+      ? "by boat only"
+      : (rules.difficult || overgrown) && !info?.road
+        ? "half speed"
+        : rules.difficult && info?.road
+          ? "full speed on the road"
+          : "full speed";
+  return [speed, `navigate DC ${rules.navigationDC}${navDis ? ", disadv." : ""}`];
+}
+
+function termsOf(frame: TravelFrame | undefined, layout: HexLayout | undefined) {
+  const spot = frame ? partySpot(frame) : null;
+  const info = spot && layout ? layout.hexes.get(`${spot.at[0]},${spot.at[1]}`) : undefined;
+  return { spot, info, rules: info?.terrain ? TERRAIN_RULES[info.terrain] : undefined };
+}
 
 export function GroundCard({
   frame,
+  previous,
   layout,
+  hexMiles,
   weather,
   open = false,
 }: {
   frame: TravelFrame;
+  /** The step before, to say what changed on entering this hex. */
+  previous?: TravelFrame;
   layout?: HexLayout;
+  /** The map's hex width in miles, for the time to cross; unknown, the card says "half speed" only. */
+  hexMiles?: number;
   weather?: WeatherId | null;
   /** Shown whole (the journey view); else folded to its first line. */
   open?: boolean;
 }) {
-  const spot = partySpot(frame);
-  const info = spot && layout ? layout.hexes.get(`${spot.at[0]},${spot.at[1]}`) : undefined;
-  const rules = info?.terrain ? TERRAIN_RULES[info.terrain] : undefined;
-  const w = weather && weather !== "agreeable" ? WEATHER[weather] : undefined;
+  const { spot, info, rules } = termsOf(frame, layout);
+  const w = weather ? WEATHER[weather] : undefined;
+  const bad = w && weather !== "agreeable" ? w : undefined;
   const believed = spot ? frame.believed?.[spot.token] : undefined;
   const region = info?.regions.length
     ? (layout?.regions.find((g) => g.name === info.regions[info.regions.length - 1])?.title ??
       info.regions[info.regions.length - 1])
     : undefined;
-  if (!spot && !w) return null;
+  if (!spot && !bad) return null;
 
-  const headline = [
-    rules?.name ?? (spot ? "Unknown ground" : null),
-    region,
-    w ? w.name.toLowerCase() : null,
-    believed ? "lost" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const ground = rules?.name ?? (spot ? "Unmapped ground" : "Weather");
+  const place = [ground, region].filter(Boolean).join(" · ");
+  const numbers = verdict(rules, info, !!bad?.navDisadvantage);
 
-  const facts: Array<[string, string]> = [];
-  if (rules) {
+  // What changed on entering this hex: the ground, and the two numbers of the folded line.
+  const before = previous ? termsOf(previous, layout) : null;
+  const moved = before?.spot && spot && hexKey(...before.spot.at) !== hexKey(...spot.at);
+  const change =
+    moved && before?.rules && rules && before.rules.id !== rules.id
+      ? `Entered from ${before.rules.name}` +
+        (before.rules.navigationDC !== rules.navigationDC
+          ? `: navigate DC ${before.rules.navigationDC} → ${rules.navigationDC}`
+          : "")
+      : null;
+
+  const facts: Array<[string, React.ReactNode]> = [];
+  if (rules && info && spot) {
+    const runs = hexMiles ? crossing(info, spot.at, hexMiles, weather ?? "agreeable") : null;
+    const normal = runs?.find((r) => r.pace === "normal");
+    const why = [
+      (rules.difficult || info.elements?.some((e) => HEX_ELEMENT_RULES[e].difficult)) && !info.road
+        ? "difficult ground: half speed"
+        : null,
+      rules.difficult && info.road ? "difficult, but the road is easy going" : null,
+      !rules.difficult && info.road ? "a road runs here" : null,
+      info.river && !info.road ? "fording the river is difficult too" : null,
+      rules.maxPace && rules.maxPace !== "fast"
+        ? `${rules.maxPace} pace at most${info.road ? " (fast on the road)" : ""}`
+        : null,
+      bad?.time === null
+        ? `${bad.name.toLowerCase()} weather: no travel without magic`
+        : bad && bad.time !== 1
+          ? `${bad.name.toLowerCase()} weather: twice as long`
+          : null,
+      bad?.exhaustionPerHex ? "a level of exhaustion each hex" : null,
+    ].filter(Boolean);
+    if (rules.maxPace === null) facts.push(["Crossing", "Water: by boat only"]);
+    else
+      facts.push([
+        "Crossing",
+        <>
+          {normal && normal.hours > 0 && (
+            <>
+              <strong>{travelHoursText(normal.hours)}</strong> at normal pace
+              {runs!
+                .filter((r) => r.pace !== "normal" && r.ran === r.pace)
+                .map((r) => ` · ${travelHoursText(r.hours)} ${r.pace}`)
+                .join("")}
+              {why.length ? " — " : ""}
+            </>
+          )}
+          {why.join(" · ")}
+        </>,
+      ]);
     facts.push([
-      "Ground",
+      believed ? "Bearings" : "Navigate",
       [
-        rules.difficult
-          ? info?.road
-            ? "difficult, but the road is easy going"
-            : "difficult (half speed)"
-          : "easy going",
-        info?.road && !rules.difficult ? "a road runs here" : null,
-        rules.maxPace ? `fastest ${rules.maxPace}${info?.road ? " (+1 by road)" : ""}` : "by boat",
-        info?.river ? "a river runs here" : null,
+        `DC ${rules.navigationDC}`,
+        `DC ${rules.navigationDC + 5} at fast pace`,
+        bad?.navDisadvantage ? `disadvantage (${bad.name.toLowerCase()} weather)` : null,
       ]
         .filter(Boolean)
         .join(" · "),
     ]);
     facts.push([
-      "Checks",
+      "Encounters",
+      [`start ${rules.encounterDistance} away`, info.population ? POPULATION[info.population].toLowerCase() : null]
+        .filter(Boolean)
+        .join(" · "),
+    ]);
+    facts.push([
+      "Camp",
       [
-        `navigate DC ${rules.navigationDC} (+5 fast${w?.navDisadvantage ? ", disadvantage" : ""})`,
-        `forage DC ${rules.foragingDC}${w?.forageAdvantage ? " (advantage)" : ""}`,
-        rules.campDC !== undefined ? `camp DC ${rules.campDC}` : null,
+        `forage DC ${rules.foragingDC}${bad?.forageAdvantage || w?.forageAdvantage ? " (advantage)" : ""}`,
+        rules.campDC !== undefined ? `make camp DC ${rules.campDC}` : null,
         `search DC ${rules.searchDC}`,
       ]
         .filter(Boolean)
         .join(" · "),
     ]);
-    facts.push(["Encounters", `noticed at ${rules.encounterDistance}`]);
-  }
-  if (info?.population) facts.push(["People", `${cap(info.population)} population`]);
-  if (w)
+  } else if (bad) {
     facts.push([
       "Weather",
       [
-        w.name,
-        w.time === null ? "no travel without magic" : w.time !== 1 ? `travel time ×${w.time}` : null,
-        w.navDisadvantage ? "disadvantage to navigate" : null,
-        w.exhaustionPerHex ? "a level of exhaustion each hex" : null,
-        w.forageAdvantage ? "advantage to forage" : null,
+        bad.name,
+        bad.time === null ? "no travel without magic" : bad.time !== 1 ? "travel takes twice as long" : null,
+        bad.navDisadvantage ? "disadvantage to navigate" : null,
       ]
         .filter(Boolean)
         .join(" · "),
     ]);
-  for (const e of info?.elements ?? []) facts.push([HEX_ELEMENT_RULES[e].name, HEX_ELEMENT_RULES[e].rule]);
+  }
+  for (const e of info?.elements ?? []) {
+    const rule = HEX_ELEMENT_RULES[e];
+    facts.push([rule.name, <span title={rule.rule}>{rule.rule}</span>]);
+  }
   if (believed && spot)
-    facts.push(["Lost", `really at (${spot.at[0]},${spot.at[1]}); believes (${believed[0]},${believed[1]})`]);
+    facts.push([
+      "Lost",
+      `The party believes it is at (${believed[0]},${believed[1]}); it is really at (${spot.at[0]},${spot.at[1]}).` +
+        (rules ? ` A navigate check (DC ${rules.navigationDC}) finds its bearings.` : ""),
+    ]);
 
   const body = (
-    <dl className="lonelog-ground-facts">
-      {facts.map(([k, v]) => (
-        <React.Fragment key={k}>
-          <dt>{k}</dt>
-          <dd>{v}</dd>
-        </React.Fragment>
-      ))}
-    </dl>
+    <>
+      {change && <p className="lonelog-ground-change">{change}</p>}
+      <dl className="lonelog-ground-facts">
+        {facts.map(([k, v]) => (
+          <React.Fragment key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </React.Fragment>
+        ))}
+      </dl>
+      <p className="lonelog-ground-source">
+        What this ground and weather mean for the party (Campaign Builder, Running Exploration). Change the numbers in
+        Settings › Maps › Terrain types.
+      </p>
+    </>
+  );
+  const label = `The party's ground: ${place}`;
+  const head = (
+    <>
+      <span className="lonelog-ground-place">
+        {believed && <span className="lonelog-ground-lost">Lost</span>}
+        {place}
+        {bad && <span className="lonelog-ground-weather"> · {bad.name.toLowerCase()} weather</span>}
+      </span>
+      {numbers.length > 0 && <span className="lonelog-ground-numbers">{numbers.join(" · ")}</span>}
+    </>
   );
   return open ? (
-    <section className="lonelog-ground is-open" aria-label="Where the party stands">
-      <header>
-        <strong>Here</strong>
-        {spot && (
-          <span className="lonelog-ground-at">
-            ({spot.at[0]},{spot.at[1]})
-          </span>
-        )}{" "}
-        <span>{headline}</span>
-      </header>
+    <section className="lonelog-ground is-open" aria-label={label}>
+      <header>{head}</header>
       {body}
     </section>
   ) : (
-    <details className="lonelog-ground" aria-label="Where the party stands">
-      <summary>
-        <strong>Here</strong> <span>{headline}</span>
-      </summary>
+    <details className="lonelog-ground" aria-label={label}>
+      <summary title="What the party's ground means: open for the rules">{head}</summary>
       {body}
     </details>
   );

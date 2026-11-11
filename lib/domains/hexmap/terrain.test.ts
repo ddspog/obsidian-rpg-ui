@@ -275,3 +275,14 @@ describe("distinct hex elements on the map", () => {
     expect(steps[0].difficult).toBe(true);
   });
 });
+
+describe("weatherSky", () => {
+  it("reads the sky from the tag's words, rain before wind", async () => {
+    const { weatherSky } = await import("./terrain");
+    expect(weatherSky(["Autumn", "cool", "windy", "heavy rain"])).toEqual({ sky: "rain", word: "heavy rain" });
+    expect(weatherSky(["Autumn", "cool", "calm", "overcast"])).toEqual({ sky: "cloud", word: "overcast" });
+    expect(weatherSky(["Winter", "blizzard"])?.sky).toBe("snow");
+    expect(weatherSky(["Summer", "thunderstorm"])?.sky).toBe("storm");
+    expect(weatherSky(["Spring"])).toBeNull();
+  });
+});

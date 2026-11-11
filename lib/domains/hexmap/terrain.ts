@@ -476,6 +476,29 @@ const WEATHER_WORDS: Array<[RegExp, WeatherId]> = [
   [/overcast|cloud|fog|mist/, "agreeable"],
   [/clear|sunny|fair/, "nice"],
 ];
+/** What the sky looks like, read from the weather tag's words: what a scene heading draws behind it. */
+export type WeatherSky = "storm" | "snow" | "rain" | "fog" | "wind" | "cloud" | "heat" | "clear";
+const SKY_WORDS: Array<[RegExp, WeatherSky]> = [
+  [/storm|thunder|lightning|hurricane|tornado|monsoon/, "storm"],
+  [/blizzard|snow|sleet|hail|frost|ice/, "snow"],
+  [/rain|drizzle|shower|downpour/, "rain"],
+  [/fog|mist|haze/, "fog"],
+  [/gale|wind|gust/, "wind"],
+  [/overcast|cloud|grey|gray/, "cloud"],
+  [/heat|scorch|swelter|hot/, "heat"],
+  [/clear|sunny|sun|fair/, "clear"],
+];
+
+/** The sky of a weather tag (`Autumn · cool · windy · heavy rain` → rain) and the word that says
+ *  so; the first look in SKY_WORDS's order wins, so rain beats wind. Null when no word names one. */
+export function weatherSky(parts: string[]): { sky: WeatherSky; word: string } | null {
+  for (const [re, sky] of SKY_WORDS) {
+    const word = parts.find((p) => re.test(p.trim().toLowerCase()));
+    if (word) return { sky, word: word.trim() };
+  }
+  return null;
+}
+
 const WEATHER_ORDER: WeatherId[] = ["ideal", "nice", "agreeable", "unpleasant", "inclement", "extreme", "catastrophic"];
 
 export function weatherFromWords(parts: string[]): WeatherId | null {
