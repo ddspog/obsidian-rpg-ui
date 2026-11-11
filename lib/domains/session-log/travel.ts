@@ -460,3 +460,20 @@ export function lastWeather(segments: ProseSegment[]): string[] | null {
   }
   return last;
 }
+
+/** The weather tag in force at each entry: the last `[Weather: …]` at or before it. */
+export function weatherTimeline(segments: ProseSegment[]): (id: number) => string[] | null {
+  const marks: Array<[number, string[]]> = [];
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") marks.push([seg.sourceIndex, tag.parts]);
+  }
+  return (id) => {
+    let at: string[] | null = null;
+    for (const [i, parts] of marks) {
+      if (i > id) break;
+      at = parts;
+    }
+    return at;
+  };
+}

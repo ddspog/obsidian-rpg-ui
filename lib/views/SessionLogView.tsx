@@ -42,7 +42,14 @@ import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
 import { findVaultTable, rollTable } from "lib/domains/hexflower/vault-tables";
 import { plainEmphasis } from "lib/domains/gm/linked-tables";
 import { type FogStore, fogKey, rememberedBy, seenByMap, withLog } from "lib/domains/session-log/fog-memory";
-import { foldTravels, foldTravelTrack, type Journey, lastWeather, partySpot } from "lib/domains/session-log/travel";
+import {
+  foldTravels,
+  foldTravelTrack,
+  type Journey,
+  lastWeather,
+  partySpot,
+  weatherTimeline,
+} from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -3627,6 +3634,14 @@ function SessionLogRoot({
     const body = frame ? travelBodyOf(frame) : undefined;
     return spot && body ? { spot, body, map: frame?.map } : null;
   }, [travelTrack, travelBodyOf]);
+  // The weather at each entry (for the map's Here card), read as a Weather Effects row.
+  const weatherAtId = React.useMemo(() => {
+    const at = weatherTimeline(segments);
+    return (id: number) => {
+      const words = at(id);
+      return words ? weatherFromWords(words) : null;
+    };
+  }, [segments]);
   // The weather now: the log's last [Weather: …], read as a Weather Effects row.
   const weatherNow = React.useMemo(() => {
     const words = lastWeather(segments);
@@ -3973,6 +3988,7 @@ function SessionLogRoot({
                   bodyOf={travelBodyOf}
                   readingId={readingId}
                   onExpand={() => setFullMap(true)}
+                  weatherAt={weatherAtId}
                   compact={sidebarOpen}
                 />
               </div>
@@ -3984,6 +4000,7 @@ function SessionLogRoot({
                 readingId={readingId}
                 onSeek={seekEntry}
                 remembered={(map?: string) => (map ? remembered[map] : undefined)}
+                weatherAt={weatherAtId}
                 {...(rollNamedTable
                   ? { land: { roll: rollNamedTable, append: (text: string) => onAppendText(text) } }
                   : {})}

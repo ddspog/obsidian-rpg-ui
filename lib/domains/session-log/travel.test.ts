@@ -186,3 +186,21 @@ describe("getting lost", () => {
     expect(c.believed).toBeUndefined();
   });
 });
+
+describe("weatherTimeline", () => {
+  it("gives the weather in force at each entry", async () => {
+    const { weatherTimeline } = await import("./travel");
+    const segs = groupIntoProse(
+      parseLonelog(`S1 Road
+@(Party) Walk
+=> Clouds [Weather: Autumn · overcast]
+@(Party) Walk on
+=> Rain [Weather: Autumn · heavy rain]
+@(Party) Camp`)
+    );
+    const at = weatherTimeline(segs);
+    const ids = segs.map((s) => s.sourceIndex);
+    expect(at(ids[0])).toBeNull();
+    expect(at(ids[ids.length - 1])).toEqual(["Autumn", "heavy rain"]);
+  });
+});

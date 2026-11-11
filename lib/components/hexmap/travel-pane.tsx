@@ -16,6 +16,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { type Drawn, drawHexMap } from "lib/components/hexmap/draw-hex-map";
+import { GroundCard } from "lib/components/hexmap/ground-card";
 import { HexMapStatic, HexMapView } from "lib/components/hexmap/hex-map-view";
 import { IconButton } from "lib/components/hexmap/hex-paint-bar";
 import { LucideIcon } from "lib/components/session-log/lucide-icon";
@@ -23,7 +24,7 @@ import { hexCenter, hexKey, hexPoints } from "lib/domains/hexmap/axial";
 import { formatCoord } from "lib/domains/hexmap/edit-hex-map";
 import { isPiece, parseHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored } from "lib/domains/hexmap/play";
-import { TERRAIN_RULES, type TerrainGrid } from "lib/domains/hexmap/terrain";
+import { TERRAIN_RULES, type TerrainGrid, type WeatherId } from "lib/domains/hexmap/terrain";
 import { landRolls } from "lib/domains/session-log/five-miles";
 import { trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
 
@@ -322,11 +323,14 @@ export function TravelMinimap({
   readingId,
   onExpand,
   compact,
+  weatherAt,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onExpand: () => void;
+  /** The weather in force at an entry, as a Weather Effects row. */
+  weatherAt?: (id: number) => WeatherId | null;
   /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
   compact?: boolean;
 }) {
@@ -413,6 +417,7 @@ export function TravelMinimap({
           <IconButton icon="minus" label="Make the map small" onClick={() => setSmall(true)} />
         </li>
       </menu>
+      <GroundCard frame={frame} {...(layout ? { layout } : {})} weather={weatherAt?.(frame.id) ?? null} />
     </figure>
   );
 }
@@ -426,6 +431,7 @@ export function TravelFullscreen({
   onClose,
   remembered,
   land,
+  weatherAt,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
@@ -436,6 +442,8 @@ export function TravelFullscreen({
   remembered?: (map?: string) => Set<string> | undefined;
   /** Five-mile rolls: roll a vault table by name (a log line and its result), and add lines to the log. */
   land?: { roll: (table: string) => Promise<{ line: string; text: string } | null>; append: (text: string) => void };
+  /** The weather in force at an entry, as a Weather Effects row. */
+  weatherAt?: (id: number) => WeatherId | null;
 }) {
   const { frame, body, source, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
   const [fog, setFog] = React.useState(false);
@@ -576,6 +584,12 @@ export function TravelFullscreen({
         ) : (
           <div className="rpg-hexmap rpg-hexmap--loading">Drawing the map…</div>
         )}
+        <GroundCard
+          frame={frame}
+          {...(drawnLayout ? { layout: drawnLayout } : {})}
+          weather={weatherAt?.(frame.id) ?? null}
+          open
+        />
         {land && drawn && body && frame.moved.length > 0 && (
           <LandPanel
             key={frame.id}
