@@ -200,11 +200,18 @@ Generator_ (its hex encounters) have these maps.
 - **Hex flower redesign** after a `/ui-review` (board: tmp/ui-review/, findings merged from an
   Impeccable critique and a live measurement).
 
-## 4. Still to do
+## 4. Built in round 3 (2026-11-11)
 
-1. **Weather as log state**: `[Weather: Inclement]` in the log, read by journeys and the minimap.
-2. **Getting lost in the log**: `[Mv: Party (3,-1) | lost]` keeps believed and true positions; the
-   players' view shows the first, the GM's minimap both.
-3. **Fog that remembers** across logs, with `secret` markers shown once their hex is explored.
-4. **Haunted and Volcanic** markers carrying their rules in the tooltip.
-5. **Five-mile rolls by themselves**: one overarching-terrain roll per five miles walked in a journey.
+- **Getting lost**: `[Mv: Party (3,-1) | lost (2,0)]` keeps believed and true positions; the
+  journey view draws a dashed `?` hex where the party believes it is; a move without `lost` finds it.
+- **Five-mile rolls**: each journey step lists the hexes entered with their overarching-terrain
+  table (found in the vault by block name) and one roll per five miles; Roll the land, Add to the log.
+- **Fog that remembers**: each log's seen hexes are kept per map in the plugin's state; other logs'
+  Fog starts from them. Markers flagged `secret` stay hidden under Fog until their hex is seen.
+- **Distinct elements' rules**: a marker captioned Haunted, Volcanic activity, Overgrown, Dead end,
+  Fissure, River or Hazard puts its rule on the tooltip; Overgrown is difficult on the road.
+- **Weather in the log**: the last `[Weather: …]` tag is read as a Weather Effects row; GM chips
+  name it, and the party's Travel card starts on the ground's terrain and navigation DC and scales
+  hours by the weather.
+- **Suggested picks**: a choice step with a `terrain:` map but no `ask` offers its pick made
+  (`{{name~:…}}`, optional); Discover Meaning's Elements Table uses it.
