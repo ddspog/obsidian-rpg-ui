@@ -6,9 +6,17 @@
  */
 
 import { SOFT } from "./blocks";
-import { itemsFromTable, recogniseEntity, type EntityKind, type EntityOut } from "./entities";
+import {
+  fenced,
+  itemsFromTable,
+  priceKey,
+  priceList,
+  recogniseEntity,
+  type EntityKind,
+  type EntityOut,
+} from "./entities";
 import type { Placer } from "./organise";
-import { fileName, isCatalog, sizeOf, slug, titleCase } from "./structure";
+import { fileName, isCatalog, sizeOf, slug, titleCase, walkBlocks } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
 
 export interface EmitContext {
@@ -31,6 +39,10 @@ export interface EmitContext {
   existing?: Set<string>;
   /** Notes left as they were because the vault already had them. */
   kept?: string[];
+  /** What the book's price lists (mounts, vehicles) say, by name: written into the stat blocks they price. */
+  prices?: Map<string, { list: string; fields: Array<[string, string]> }>;
+  /** Traits notes shared by a creature type, built up as creatures are written. */
+  traitNotes?: Map<string, { lines: string[]; ids: Map<string, string>; taken: Set<string> }>;
   /** Pages whose text came from OCR. */
   scanned?: Set<number>;
   /** Every entity written: its kind, name and the note it is in. */
@@ -190,7 +202,8 @@ function entityFor(
     md: (spans) => spansToMd(spans, ctx.mend),
     render: (blocks, near) => renderBlocks(blocks, ctx, near, inner),
     inline: (child, d) => renderInline(child, d, ctx, inner),
-    traitsAt: ctx.place ? (name) => ctx.place?.("creature traits", name, {}, where.trail) ?? name : undefined,
+    priceOf: (name) => ctx.prices?.get(priceKey(name)),
+    shareTrait: ctx.place ? (type, creature, feature) => shareTrait(ctx, type, creature, feature) : undefined,
     unique: (dir, name) => uniqueName(dir, name, ctx),
   });
   if (!out) return null;
@@ -231,14 +244,107 @@ function entityFor(
       outside: true,
       path: `${target}.md`,
       text:
-        [...frontmatter([["source", ctx.source], ...out.fields]), `# ${escapeMd(section.title)}`, ...body].join("\n") +
-        "\n",
+        [
+          ...frontmatter([["source", ctx.source], ...out.fields]),
+          // The note's own name, with the mark of where it comes from when the book has one.
+          `# ${escapeMd(target.slice(target.lastIndexOf("/") + 1))}`,
+          ...body,
+        ].join("\n") + "\n",
     });
     out.placed = target;
     out.lines = [`!${link(target, section.title)}`];
     out.fields = [];
     out.consumed = true;
   }
+  return out;
+}
+
+/**
+ * A creature's trait or action, kept in the traits note of its creature type. One that another
+ * creature already has word for word is shared; one of the same name with other words is kept
+ * under the creature's name, and still shown by its own.
+ */
+function shareTrait(
+  ctx: EmitContext,
+  type: string,
+  creature: string,
+  feature: { name: string; type: string; body: string[] }
+): string {
+  const path = ctx.place?.("creature traits", type, {}, []) ?? `${type} Traits`;
+  const notes = (ctx.traitNotes ??= new Map());
+  let note = notes.get(path);
+  if (!note) {
+    note = {
+      lines: [
+        ...frontmatter([
+          ["source", ctx.source],
+          ["cssclasses", "\n  - note-feature"],
+        ]),
+        `# ${escapeMd(path.slice(path.lastIndexOf("/") + 1))}`,
+      ],
+      ids: new Map(),
+      taken: new Set(),
+    };
+    notes.set(path, note);
+  }
+  const key = `${feature.name}\n${feature.body.join("\n")}`;
+  let id = note.ids.get(key);
+  if (!id) {
+    id = feature.name;
+    if (note.taken.has(id.toLowerCase())) id = `${creature}: ${feature.name}`;
+    for (let n = 2; note.taken.has(id.toLowerCase()); n++) id = `${creature}: ${feature.name} (${n})`;
+    note.taken.add(id.toLowerCase());
+    note.ids.set(key, id);
+    const yaml = id === feature.name ? [] : [`id: ${JSON.stringify(id)}`];
+    yaml.push(`name: ${JSON.stringify(feature.name)}`, `type: ${feature.type}`, "heading: p");
+    note.lines.push(...fenced("feature.details", yaml, feature.body));
+  }
+  return `@[[${path}]]#${id}`;
+}
+
+/**
+ * Entities filed into the system's folders, listed the way the system's own pages list them:
+ * a call a folder and a letter, which shows every note there, this book's and any other's.
+ */
+function listPlaced(placed: Array<{ path: string; title: string }>, ctx: EmitContext): string[] {
+  const folders = new Map<string, Set<string>>();
+  const initial = (name: string) => (name.match(/[A-Za-z0-9]/)?.[0] ?? "").toUpperCase();
+  for (const p of placed) {
+    const dir = p.path.slice(0, p.path.lastIndexOf("/"));
+    const letters = folders.get(dir) ?? new Set<string>();
+    letters.add(initial(p.path.slice(dir.length + 1)));
+    folders.set(dir, letters);
+  }
+  // Notes the vault already keeps in those folders are listed with the book's.
+  for (const path of ctx.existing ?? []) {
+    const dir = path.slice(0, path.lastIndexOf("/"));
+    for (const [folder, letters] of folders)
+      if (folder.toLowerCase() === dir) letters.add(initial(path.slice(dir.length + 1)));
+  }
+  const order = (dir: string) => {
+    const name = dir.slice(dir.lastIndexOf("/") + 1);
+    return (parseInt(name, 10) || 0) * 2 + (/ritual/.test(name) ? 1 : 0);
+  };
+  const dirs = [...folders.keys()].sort((a, b) => order(a) - order(b) || a.localeCompare(b));
+  const out: string[] = [];
+  dirs.forEach((dir, i) => {
+    const view = /\/spells\//.test(dir) && ctx.options.views?.includes("spell") ? "spell" : "h4";
+    const body: string[] = [];
+    for (const letter of [...(folders.get(dir) ?? [])].filter(Boolean).sort()) {
+      body.push(`## ${letter}`, `\`@[[${dir}/]].shallow().filter(${letter} prefix name).${view}()\``);
+    }
+    if (dirs.length === 1) out.push(...body);
+    else {
+      const name = titleCase(
+        dir
+          .slice(dir.lastIndexOf("/") + 1)
+          .replace(/-/g, " ")
+          .toUpperCase()
+      );
+      const look = ctx.look(name, i);
+      out.push("```rpg rule.tab", `name: ${name}`, `icon: ${look.icon}`, `color: ${look.color}`, "---", ...body, "```");
+    }
+  });
   return out;
 }
 
@@ -404,15 +510,8 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
     });
     const call = `@[[${ctx.book}/${path}/]].shallow()`;
     if (placed.length) {
-      // Entities kept elsewhere: listed by letter when there are many, each a link to its note.
       if (names.length) lines.push(`\`${call}.tab()\``);
-      let letter = "";
-      for (const p of [...placed].sort((a, b) => a.title.localeCompare(b.title))) {
-        const first = (p.title.match(/[A-Za-z0-9]/)?.[0] ?? "#").toUpperCase();
-        if (placed.length > 20 && first !== letter) lines.push(`## ${first}`);
-        letter = first;
-        lines.push(`- [[${p.path}|${p.title}]]`);
-      }
+      lines.push(...listPlaced(placed, ctx));
     } else if (!catalog || kids.length <= 14) lines.push(`\`${call}.tab()\``);
     else {
       const groups = letterGroups(names);
@@ -436,6 +535,14 @@ export function chapterName(chapter: Chapter): string {
 }
 
 export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[]): OutFile[] {
+  // The book's price lists are read first: a mount's stat block may come chapters after its price.
+  if (ctx.kinds) {
+    ctx.prices = new Map();
+    for (const chapter of chapters)
+      walkBlocks(chapter.root, (block) => {
+        if (block.type === "table") for (const [k, v] of priceList(block)) ctx.prices?.set(k, v);
+      });
+  }
   const index = [...frontmatter([["source", ctx.source]]), `# ${ctx.options.title}`, ""];
   for (const chapter of chapters) {
     const name = uniqueName("", chapterName(chapter), ctx);
@@ -458,6 +565,8 @@ export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[])
     );
     index.push(`- [[${name}]] (p. ${chapter.firstPage}–${chapter.lastPage})`);
   }
+  for (const [path, note] of ctx.traitNotes ?? [])
+    pushFile(ctx, { outside: true, path: `${path}.md`, text: note.lines.join("\n") + "\n" });
   index.push("", ...facts);
   ctx.files.push({ path: `${fileName(ctx.options.title)}.md`, text: index.join("\n") + "\n" });
   return ctx.files;

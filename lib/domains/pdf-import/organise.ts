@@ -3,14 +3,18 @@
  * folder (the folder that holds `config/`, `compendium/`, `worldbuilding/`),
  * the way that folder is already laid out by hand:
  *
- *   compendium/<book>/              the book's chapters
- *   worldbuilding/spells/<circle>/  cantrips, 1st-circle, 1st-circle-ritual…
- *   worldbuilding/bestiary/creatures/<book>/
- *   worldbuilding/enchantments/     magic items
+ *   compendium/<book>/                the book's chapters
+ *   worldbuilding/spells/<circle>/    cantrips, 1st-circle, 1st-circle-ritual…
+ *   worldbuilding/bestiary/animals/           beasts (what a druid may turn into)
+ *   worldbuilding/bestiary/creatures/steeds/  what the book prices as a mount
+ *   worldbuilding/bestiary/npcs/              humanoids
+ *   worldbuilding/bestiary/monsters/<type>/   everything else, by creature type
+ *   worldbuilding/bestiary/vehicles/<land|water|air>/
+ *   worldbuilding/enchantments/       magic items
  *   worldbuilding/items/weapons/<kind>/, items/armor/<kind>/, items/adventuring-gear/…, items/tools/
  *   worldbuilding/traits/classes|subclasses|lineages|heritages|backgrounds/
  *   worldbuilding/traits/talents/<magic|martial|technical>/
- *   worldbuilding/traits/features/<book>/   creatures' traits and actions
+ *   worldbuilding/traits/features/    one traits note a creature type
  */
 
 import { fileName, slug } from "./structure";
@@ -18,8 +22,10 @@ import { fileName, slug } from "./structure";
 export interface PlaceInfo {
   /** A spell's circle as written in its block: `Cantrip`, `2nd-Circle`, `1st-Circle Ritual`. */
   circle?: string;
-  /** An item's kind as its table names it: `Simple Melee Weapons`, `Light Armor`, `Gear`. */
+  /** An item's kind as its table names it (`Simple Melee Weapons`), a creature's type (`Beast`), a vehicle's (`Large Land Vehicle`). */
   type?: string;
+  /** A creature the book prices as a mount. */
+  steed?: boolean;
 }
 
 export type Placer = (kind: string, title: string, info: PlaceInfo, trail: string[]) => string;
@@ -32,16 +38,23 @@ const itemFolder = (type: string): string => {
   if (/armor/.test(t)) return "items/armor";
   if (/weapon/.test(t)) return `items/weapons/${slug(t.replace(/\bweapons?\b/g, "")) || "other"}`;
   if (/tool/.test(t)) return "items/tools";
-  if (/mount|tack|harness|vehicle/.test(t)) return "items/mount-gear";
   return `items/adventuring-gear/${slug(t.replace(/\b(adventuring|gear|items?)\b/g, "")) || "general"}`;
 };
 
+const creatureFolder = (info: PlaceInfo): string => {
+  const type = (info.type ?? "").toLowerCase();
+  if (info.steed) return "bestiary/creatures/steeds";
+  if (/\bbeast\b/.test(type)) return "bestiary/animals";
+  if (/\bhumanoid\b/.test(type)) return "bestiary/npcs";
+  return `bestiary/monsters/${slug(type) || "other"}`;
+};
+
 /** The note path (no `.md`), from the vault's root, for an entity of a book imported into `system`. */
-export function placer(system: string, book: string): Placer {
+export function placer(system: string, book: string, marker = ""): Placer {
   const world = `${system.replace(/\/+$/, "")}/worldbuilding`;
-  const bookSlug = slug(book);
+  const mark = marker.trim() ? ` ${marker.trim()}` : "";
   return (kind, title, info, trail) => {
-    const name = fileName(title);
+    const name = `${fileName(title)}${mark}`;
     switch (kind) {
       case "spell": {
         const circle = (info.circle ?? "").toLowerCase();
@@ -49,9 +62,14 @@ export function placer(system: string, book: string): Placer {
         return `${world}/spells/${folder}/${name}`;
       }
       case "creature":
-        return `${world}/bestiary/creatures/${bookSlug}/${name}`;
+        return `${world}/${creatureFolder(info)}/${name}`;
+      case "vehicle": {
+        const medium = (info.type ?? "").toLowerCase().match(/\b(land|water|air|space)\b/)?.[1] ?? "other";
+        return `${world}/bestiary/vehicles/${medium}/${name}`;
+      }
       case "creature traits":
-        return `${world}/traits/features/${bookSlug}/${name}`;
+        // One note a creature type, named for the book so it never meets one written by hand.
+        return `${world}/traits/features/${fileName(`${book} ${title} Traits`)}${mark}`;
       case "magic item":
         return `${world}/enchantments/${name}`;
       case "item":
@@ -63,7 +81,7 @@ export function placer(system: string, book: string): Placer {
       case "lineage":
         return `${world}/traits/lineages/${name}`;
       case "heritage":
-        return `${world}/traits/heritages/${name.replace(/\s+heritage$/i, "")}`;
+        return `${world}/traits/heritages/${fileName(title.replace(/\s+heritage$/i, ""))}${mark}`;
       case "background":
         return `${world}/traits/backgrounds/${name}`;
       case "talent": {

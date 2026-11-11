@@ -169,6 +169,19 @@ export interface ImportOptions {
    * compendium and each entity into the folder its kind is kept in there. Empty: all in one folder.
    */
   system?: string;
+  /** The `source` line the notes carry; without one, `From **<title>**.` */
+  source?: string;
+  /**
+   * A mark put after the name of each entity filed into a system, saying where it comes from (in the
+   * vault: `ᴰ` a D&D book, `ᴷ` a Kobold Press book outside the core, `º` another publisher's).
+   */
+  marker?: string;
+  /** Folder for chapter banners (from the vault's root); the book's `_assets` without one. */
+  bannerFolder?: string;
+  /** Folder for the book's other pictures (from the vault's root); the book's `_assets` without one. */
+  pictureFolder?: string;
+  /** Rule views the system has (`spell`, …): used to list entities the way the system shows them. */
+  views?: string[];
   /** First and last page to read (1-based, inclusive); the whole file when absent. */
   from?: number;
   to?: number;

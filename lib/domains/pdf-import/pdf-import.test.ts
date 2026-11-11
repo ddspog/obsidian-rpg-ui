@@ -722,7 +722,18 @@ describe("styles of other books", () => {
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
-    expect(place("creature", "Bat", {}, [])).toBe("tov/worldbuilding/bestiary/creatures/players-guide/Bat");
+    expect(place("creature", "Bat", { type: "Beast" }, [])).toBe("tov/worldbuilding/bestiary/animals/Bat");
+    expect(place("creature", "Pony", { type: "Beast", steed: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/steeds/Pony"
+    );
+    expect(place("creature", "Guard", { type: "humanoid" }, [])).toBe("tov/worldbuilding/bestiary/npcs/Guard");
+    expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/monsters/fiend/Imp");
+    expect(place("vehicle", "Galley", { type: "Gargantuan Water Vehicle" }, [])).toBe(
+      "tov/worldbuilding/bestiary/vehicles/water/Galley"
+    );
+    expect(placer("tov", "SRD", "ᴰ")("spell", "Aid", { circle: "2nd-Circle" }, [])).toBe(
+      "tov/worldbuilding/spells/2nd-circle/Aid ᴰ"
+    );
     const { files, ctx } = write(section("Spells", 0, [], [acid, aid]), {
       place,
       existing: new Set(["tov/worldbuilding/spells/2nd-circle/aid"]),
@@ -734,6 +745,49 @@ describe("styles of other books", () => {
     const note = files.find((f) => f.path === "01. Spells.md")?.text ?? "";
     expect(note).toContain("![[tov/worldbuilding/spells/cantrips/Acid Splash|Acid Splash]]");
     expect(note).toContain("![[tov/worldbuilding/spells/2nd-circle/Aid|Aid]]");
+  });
+
+  it("writes a vehicle as a stat.vehicle with its price, and a creature's traits into its type's note", () => {
+    const stat = (name: string, type: string, extra: Block[] = []) =>
+      section(name, 2, [
+        para(span(type)),
+        para(span("Armor Class", true), span(" 11")),
+        para(span("Hit Points", true), span(" 50")),
+        ...extra,
+        para(span("STR DEX CON INT WIS CHA")),
+        para(span("+0 +1 +0 +0 +0 +0")),
+        para(span("Bite.", true), span(" It bites.")),
+      ]);
+    const prices: Block = {
+      type: "table",
+      caption: "VEHICLE BASE COST",
+      page: 1,
+      rows: [
+        ["VEHICLE", "COST", "TRAVEL SPEED (PER HOUR)"],
+        ["Sand Skimmer", "50 gp", "4 mph"],
+      ],
+    };
+    const skimmer = section(
+      "Sand Skimmer",
+      1,
+      [para(span("This wooden land vehicle slides atop sand."))],
+      [stat("Sand Skimmer", "Large Land Vehicle (10 ft. by 5 ft.)", [para(span("Crew 1 Passengers 1"))])]
+    );
+    const root = section("Gear", 0, [prices], [skimmer, stat("Wolf", "Medium Beast"), stat("Dog", "Small Beast")]);
+    const { files, kinds } = write(root, { place: placer("tov", "Guide") });
+    expect(kinds).toEqual({ vehicle: 1, creature: 2 });
+    const vehicle =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/vehicles/land/Sand Skimmer.md")?.text ?? "";
+    expect(vehicle).toContain(
+      '```rpg stat.vehicle\nname: "Sand Skimmer"\nsize: Large\ntype: "Land Vehicle"\ndimensions: "10 ft. by 5 ft."\ncost: "50 gp"\ntravel_speed: "4 mph"'
+    );
+    expect(vehicle).toContain('  crew: "1"\n  passengers: "1"');
+    expect(vehicle).toContain("This wooden land vehicle slides atop sand.");
+    const traits = files.find((f) => f.path === "tov/worldbuilding/traits/features/Guide Beast Traits.md")?.text ?? "";
+    // Two beasts with the same bite share one block.
+    expect(traits.match(/name: "Bite"/g)).toHaveLength(1);
+    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/animals/Wolf.md")?.text ?? "";
+    expect(wolf).toContain('  - ref: "@[[tov/worldbuilding/traits/features/Guide Beast Traits]]#Bite"');
   });
 
   it("turns a dark bar's white text dark, and tells bold words by their ink", () => {
