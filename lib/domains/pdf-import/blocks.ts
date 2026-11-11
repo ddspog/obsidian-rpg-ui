@@ -4,6 +4,7 @@
  */
 
 import { lineSpans, lineText, segText } from "./layout";
+import { FACT_LINE, opensEntity } from "./patterns";
 import { family, styleKey, type StyleBook } from "./styles";
 import type { Block, Box, Element, Line, Seg, Span } from "./types";
 
@@ -161,10 +162,15 @@ export interface BlockOptions {
 }
 
 /** Whether `cur` starts a new paragraph after `prev`, the last line of a paragraph of `count` lines. */
-function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): boolean {
+function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook, first: Line = prev): boolean {
   const prevText = lineText(prev);
   const jumped = cur.page !== prev.page || cur.base < prev.base - 1 || Math.abs(cur.colL - prev.colL) > 12;
   if (Math.abs(cur.size - prev.size) > 0.8) return true;
+  // A fact of a stat block or a spell, and the line that opens an entity's facts, each stand alone.
+  const curText = lineText(cur);
+  if (FACT_LINE.test(curText) || opensEntity(curText) || opensEntity(prevText)) return true;
+  if (FACT_LINE.test(prevText) && prev.r < prev.colL + 0.75 * (prev.colR - prev.colL) && /^[A-ZÀ-Ý]/.test(curText))
+    return true;
   if (jumped) {
     if (cur.x - cur.colL > 2.5) return true;
     // A column that opens with a run-in name (`Echolocation.`) opens a paragraph.
@@ -175,7 +181,7 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): bo
   const dy = cur.base - prev.base;
   const lead = styles.leading * (cur.size / styles.bodySize);
   // OCR's baselines and edges waver: only a clear gap or indent counts there.
-  const loose = cur.font === "ocr";
+  const loose = cur.font.startsWith("ocr");
   const nudge = loose ? 6 : 2.5;
   if (dy > lead * (loose ? 1.45 : 1.13)) return true;
   const allItalic = (l: Line) => l.cells.every((c) => c.spans.every((s) => s.italic));
@@ -197,13 +203,30 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook): bo
     prev.r < prev.colR - 0.2 * (prev.colR - prev.colL)
   )
     return true;
+  // Facts under one another (`Armor:`, `Weapons:`, `Tools:`): a line that opens with a label at the
+  // margin, in a paragraph that itself opened with one there, is the next fact.
+  const opener = first.cells[0].spans[0];
+  if (
+    firstSpan?.bold &&
+    /:\s*$/.test(firstSpan.text) &&
+    cur.cells[0].spans.length > 1 &&
+    opener?.bold &&
+    /:\s*$/.test(opener.text) &&
+    Math.abs(cur.x - first.x) <= 0.6 &&
+    cur.page === first.page
+  )
+    return true;
   const ended = ENDS.test(prevText) && prev.r < prev.colR - 0.25 * (prev.colR - prev.colL);
   // A line set in from the one before opens a paragraph when that one closed its sentence; if it
   // did not, the line hangs under it (a fact that wraps). A line set back out carries on a
   // paragraph that opened with an indent, and ends one whose lines were hanging.
   if (cur.x > prev.x + nudge) return ENDS.test(prevText) || ended;
   if (cur.x < prev.x - nudge) return count >= 2 && ENDS.test(prevText);
-  return ENDS.test(prevText) && prev.r < prev.colL + 0.6 * (prev.colR - prev.colL);
+  const short = prev.r < prev.colL + 0.6 * (prev.colR - prev.colL);
+  // A short line that opened with a label (`Duration: 24 hours`) is a fact; the sentence under it is text.
+  const label = prev.cells[0].spans[0];
+  if (short && count === 1 && label?.bold && /:\s*$/.test(label.text) && /^[A-ZÀ-Ý]/.test(lineText(cur))) return true;
+  return ENDS.test(prevText) && short;
 }
 
 /** Blocks from one stretch of the book (a chapter's pages, or the inside of a box). */
@@ -350,7 +373,8 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
         run.push(l);
         j++;
       }
-      if (run.filter((l) => l.cells.length >= 2).length >= 3) {
+      // (Facts of a stat block or a spell under one another are not a table, however their words are spaced.)
+      if (run.filter((l) => l.cells.length >= 2).length >= 3 && !run.some((l) => FACT_LINE.test(lineText(l)))) {
         flush();
         const x = Math.min(...run.map((l) => l.x));
         const r = Math.max(...run.map((l) => l.r));
@@ -403,7 +427,13 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
       flushList();
     }
 
-    if (para && breaksPara(para.lines[para.lines.length - 1], line, para.lines.length, styles)) flushPara();
+    // The line above an entity's opening line is its name: a paragraph of its own.
+    const named = !!nextLine && opensEntity(lineText(nextLine)) && text.length <= 70 && !ENDS.test(text);
+    if (
+      para &&
+      (named || breaksPara(para.lines[para.lines.length - 1], line, para.lines.length, styles, para.lines[0]))
+    )
+      flushPara();
     if (!para) {
       para = { spans: [], lines: [], page: line.page };
       pushSpans(para.spans, lineSpans(line));

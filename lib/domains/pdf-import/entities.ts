@@ -11,6 +11,7 @@
  * spell rolls) is left as text in the block's body, for a later pass.
  */
 
+import { PLAIN_RUN_IN } from "./patterns";
 import type { Block, OutFile, Section, Span } from "./types";
 
 export type EntityKind =
@@ -34,12 +35,18 @@ export interface EntityEnv {
   trail: string[];
   /** What the section is already known to be, from where it was found (a class's subclass). */
   hint?: EntityKind;
+  /** Look for this kind alone. */
+  only?: EntityKind;
+  /** The section's text was read by OCR: emphasis is patchy, so names are also read from the words. */
+  scanned?: boolean;
   /** Heading depth the section's own heading has in its note. */
   depth: number;
   md(spans: Span[]): string;
   render(blocks: Block[], near: string): string[];
   /** A section's usual rendering: its heading, text and subsections. */
   inline(section: Section, depth: number): string[];
+  /** Where a creature's traits note goes (from the vault's root, no `.md`), when not beside the creature. */
+  traitsAt?(name: string): string;
   /** A name no other note in `dir` has taken. */
   unique(dir: string, name: string): string;
 }
@@ -56,6 +63,10 @@ export interface EntityOut {
   childNotes: Array<{ section: Section; fields: Array<[string, string]> }>;
   /** True when the section's subsections are already in `lines`. */
   consumed: boolean;
+  /** What decides the entity's folder: a spell's circle, an item's kind. */
+  info?: { circle?: string; type?: string };
+  /** The note the entity was written to when entities are kept in folders of their own (from the vault's root). */
+  placed?: string;
 }
 
 const q = (text: string): string => JSON.stringify(text.replace(/\s+/g, " ").trim());
@@ -79,6 +90,32 @@ function fenced(kind: string, yaml: string[], body: string[]): string[] {
   while (body[0] === "") body = body.slice(1);
   const fence = fenceFor(body);
   return [`${fence}rpg ${kind}`, ...yaml, ...(body.length ? ["---", ...body] : []), fence];
+}
+
+/** True when none of the blocks carries bold or italic: text from a scan, where names must be read from the words. */
+const unmarked = (blocks: Block[]): boolean =>
+  !blocks.some((b) => b.type === "para" && b.spans.some((sp) => (sp.bold || sp.italic) && sp.text.trim()));
+
+/**
+ * A paragraph's run-in name and the rest of it: `**Bite.** Melee Weapon Attack…`.
+ * With `loose`, the name is read from the words alone (`Bite. Melee Weapon…`).
+ */
+function leadName(block: Block, loose: boolean, boldOnly = false): { name: string; rest: Span[] } | null {
+  if (block.type !== "para") return null;
+  const lead = block.spans[0];
+  if (
+    lead &&
+    (lead.bold || (!boldOnly && lead.italic)) &&
+    /[.:]\s*$/.test(lead.text) &&
+    block.spans.length > 1 &&
+    lead.text.length < 60
+  )
+    return { name: lead.text.replace(/[.:]\s*$/, "").trim(), rest: block.spans.slice(1) };
+  if (!loose) return null;
+  const text = block.spans.map((sp) => sp.text).join("");
+  const hit = text.match(PLAIN_RUN_IN);
+  if (!hit) return null;
+  return { name: hit[1], rest: [{ text: text.slice(hit[0].length), bold: false, italic: false }] };
 }
 
 const blank = (kind: EntityKind): EntityOut => ({
@@ -117,7 +154,12 @@ const SPELL_HEAD: Array<[RegExp, (m: RegExpMatchArray) => SpellHead]> = [
 const SPELL_FACT = /^(Casting Time|Range|Components?|Duration)\s*:\s*(.+)$/i;
 
 function spell(section: Section, env: EntityEnv): EntityOut | null {
-  const head = plain(section.blocks[0]);
+  // A scan may read the circle's digit as a letter (`sth-Circle`): put it back.
+  const digit: Record<string, string> = { s: "5", l: "1", i: "1", z: "2", o: "0", b: "6", g: "9" };
+  const head = plain(section.blocks[0]).replace(
+    /^([a-z])(?=(?:st|nd|rd|th)[- ]?(?:circle|level))/i,
+    (c) => digit[c.toLowerCase()] ?? c
+  );
   let g: SpellHead | null = null;
   for (const [re, read] of SPELL_HEAD) {
     const m = head.match(re);
@@ -137,7 +179,7 @@ function spell(section: Section, env: EntityEnv): EntityOut | null {
     if (!hits.every(Boolean)) break;
     for (const hit of hits) if (hit) facts.set(hit[1].toLowerCase().replace(/s$/, ""), hit[2].trim());
   }
-  if (facts.size < 2) return null;
+  if (facts.size < 1) return null;
   const ritual = !!g.ritual || env.trail.some((t) => /ritual/i.test(t));
   const circle = g.circle ? `${g.circle}-Circle${ritual ? " Ritual" : ""}` : "Cantrip";
   const yaml = [`circle: ${circle}`];
@@ -155,6 +197,7 @@ function spell(section: Section, env: EntityEnv): EntityOut | null {
   if (allItalic(section.blocks[i])) yaml.push(`summary: ${q(plain(section.blocks[i++]))}`);
   const out = blank("spell");
   out.lines = fenced("spell", yaml, env.render(section.blocks.slice(i), section.title));
+  out.info = { circle };
   out.fields = [cssclass("note-spell")];
   return out;
 }
@@ -175,7 +218,7 @@ const MAGIC_KIND: Array<[RegExp, string]> = [
 
 function magicItem(section: Section, env: EntityEnv): EntityOut | null {
   const match = plain(section.blocks[0]).match(MAGIC_HEAD);
-  if (!match || !allItalic(section.blocks[0])) return null;
+  if (!match || plain(section.blocks[0]).length > 160) return null;
   const [, type, rest] = match;
   const rarity = rest.match(/Very Rare|Uncommon|Common|Rare|Legendary|Fabled|Artifact|Rarity Varies/i)?.[0];
   const cost = rest.match(/[\d,]+\s*(?:cp|sp|ep|gp|pp)(?:\s*\+[^()]*)?/i)?.[0].trim();
@@ -248,12 +291,14 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
   const texts = seq.map((b) => (b.type === "label" ? "" : plain(b as Block)));
   if (!texts.some((t) => /^Armor Class\s+\d/i.test(t)) || !texts.some((t) => /^Hit Points\s+\d/i.test(t))) return null;
 
+  const loose = !!env.scanned || unmarked(seq.filter((b): b is Block => b.type !== "label"));
   const stats: Array<[string, string]> = [];
   const lore: Block[] = [];
   const features: Feature[] = [];
   let type = "";
   let cr = rating;
   let abilities: number[] | null = null;
+  let sawAbilities = false;
   let group = "trait";
   let seenStats = false;
   for (let i = 0; i < seq.length; i++) {
@@ -262,8 +307,27 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
       group = groupOf(item.text) ?? group;
       continue;
     }
-    const block = item as Block;
-    const text = texts[i];
+    let block = item as Block;
+    let text = texts[i];
+    // The abilities set as a small table: STR DEX CON INT WIS CHA over their values.
+    if (block.type === "table" && !abilities && /^str$/i.test(block.rows[0]?.[0]?.trim() ?? "")) {
+      const values = (block.rows[1] ?? []).join(" ");
+      const inBrackets = [...values.matchAll(/\(([+−–-]\d+)\)/g)].map((m) => signed(m[1]));
+      const bare = values.match(/[+−–-]\d+/g)?.map(signed) ?? [];
+      const got = inBrackets.length === 6 ? inBrackets : bare.length === 6 ? bare : null;
+      if (got) {
+        abilities = got;
+        continue;
+      }
+    }
+    // A group's label run into its first entry (`ACTIONS Beak. Melee…`), as a scan reads a bar and the line under it.
+    const led =
+      block.type === "para" ? text.match(/^(BONUS ACTIONS|LEGENDARY ACTIONS|REACTIONS|ACTIONS)\s+(?=[A-Z])/) : null;
+    if (led && block.type === "para") {
+      group = groupOf(led[1]) ?? group;
+      text = text.slice(led[0].length);
+      block = { ...block, spans: [{ text, bold: false, italic: false }] };
+    }
     if (block.type === "para") {
       if (groupOf(text)) {
         group = groupOf(text) ?? group;
@@ -286,7 +350,16 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
         seenStats = true;
         continue;
       }
-      if (/^STR\s+DEX\s+CON\s+INT\s+WIS\s+CHA$/i.test(text)) continue;
+      const header = text.match(/^STR\.?\s+DEX\.?\s+CON\.?\s+INT\.?\s+WIS\.?\s+CHA\.?\s*/i);
+      if (header) {
+        // On a scan the values, and what follows them, may have run into the header's line.
+        const after = text.slice(header[0].length);
+        const values = after.match(/^(?:\(?[+−–-]\s?\d+\)?\s*)+/)?.[0] ?? "";
+        const read = values.match(/[+−–-]\s?\d+/g)?.map((v) => signed(v.replace(/\s/g, ""))) ?? [];
+        if (read.length >= 3 && !abilities) abilities = [...read, 0, 0, 0].slice(0, 6);
+        sawAbilities = true;
+        continue;
+      }
       const mods = text.match(/^(?:[+−–-]\d+\s*){6}$/);
       const scores = [...text.matchAll(/\d+\s*\(([+−–-]\d+)\)/g)];
       if (!abilities && (mods || scores.length === 6)) {
@@ -297,26 +370,32 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
         type = text;
         continue;
       }
-      const lead = block.spans[0];
-      const named = lead && lead.bold && /[.:]\s*$/.test(lead.text) && block.spans.length > 1;
-      if (seenStats && named) {
-        features.push({
-          name: lead.text.replace(/[.:]\s*$/, "").trim(),
-          type: group,
-          blocks: [{ ...block, spans: block.spans.slice(1) }],
-        });
+      const named = seenStats ? leadName(block, loose, true) : null;
+      if (named) {
+        features.push({ name: named.name, type: group, blocks: [{ ...block, spans: named.rest }] });
         continue;
       }
     }
     if (seenStats && features.length) features[features.length - 1].blocks.push(block);
     else lore.push(block);
   }
-  if (!abilities) return null;
+  if (!abilities) {
+    // A scan may lose the numbers: the block is still a creature's, with its abilities left to fill in.
+    if (!(loose && (sawAbilities || stats.length >= 3))) return null;
+    abilities = [0, 0, 0, 0, 0, 0];
+  }
 
   const name = section.title.trim();
   const dir = env.notePath.includes("/") ? env.notePath.slice(0, env.notePath.lastIndexOf("/")) : "";
-  const traitsDir = dir ? `${dir}/Creature Traits` : "Creature Traits";
-  const traitsName = env.unique(traitsDir, `${name.replace(/[\\/:|#^[\]]/g, " ")} Traits`);
+  const cleanName = `${name.replace(/[\\/:|#^[\]]/g, " ")} Traits`;
+  const placedAt = env.traitsAt?.(cleanName);
+  const traitsDir = placedAt
+    ? placedAt.slice(0, placedAt.lastIndexOf("/"))
+    : dir
+      ? `${dir}/Creature Traits`
+      : "Creature Traits";
+  const traitsName = env.unique(traitsDir, cleanName);
+  const traitsRef = placedAt ? `${traitsDir}/${traitsName}` : `${env.book}/${traitsDir}/${traitsName}`;
   const yaml = [`name: ${q(name)}`, `type: ${q(type)}`];
   if (cr) yaml.push(`cr: ${q(cr)}`);
   yaml.push("stats:", ...stats.map(([k, v]) => `  ${k}: ${/^pas_/.test(k) ? v : q(v)}`));
@@ -333,12 +412,12 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
       let fname = f.name;
       for (let n = 2; taken.has(fname.toLowerCase()); n++) fname = `${f.name} (${n})`;
       taken.add(fname.toLowerCase());
-      yaml.push(`  - ref: ${q(`@[[${env.book}/${traitsDir}/${traitsName}]]#${fname}`)}`);
+      yaml.push(`  - ref: ${q(`@[[${traitsRef}]]#${fname}`)}`);
       traitLines.push(
         ...fenced("feature.details", [`name: ${q(fname)}`, `type: ${f.type}`, "heading: p"], env.render(f.blocks, name))
       );
     }
-    out.files.push({ path: `${traitsDir}/${traitsName}.md`, text: traitLines.join("\n") + "\n" });
+    out.files.push({ path: `${traitsDir}/${traitsName}.md`, text: traitLines.join("\n") + "\n", outside: !!placedAt });
   }
   out.lines = [...fenced("stat.monster", yaml, []), ...env.render(lore, name)];
   out.fields = [cssclass("note-statblock")];
@@ -350,18 +429,79 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
 
 const LEVEL_NOTE = /^(\d+)(?:st|nd|rd|th)\b.*\bfeature$/i;
 
-/** A section as one `feature.details` block: its name, the level it comes at when stated, and its text. */
-function featureBlock(section: Section, env: EntityEnv, extra: string[] = []): string[] {
-  const yaml = [`name: ${q(section.title)}`, ...extra];
+const ORDINAL = (n: number) =>
+  `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th")}`;
+const bareName = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+
+/** The level a feature's own text says it comes at: "Starting at 3rd level", "When you reach 7th level". */
+function levelInText(section: Section): number | undefined {
+  const text = section.blocks.slice(0, 2).map(plain).join(" ");
+  const hit = text.match(
+    /\b(?:at|starting at|beginning at|when you reach|once you reach|upon reaching|by|starting when you choose this \w+ at)\s+(\d+)(?:st|nd|rd|th)[- ]level\b/i
+  );
+  return hit ? Number(hit[1]) : undefined;
+}
+
+/**
+ * The level each feature first comes at, read from the class's own table (the
+ * one with a Level column and a Features column), by the feature's bare name.
+ */
+function levelsFromTable(sections: Section[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const tables: Array<Extract<Block, { type: "table" }>> = [];
+  const gather = (s: Section, depth: number) => {
+    for (const b of s.blocks) if (b.type === "table") tables.push(b);
+    if (depth < 4) s.children.forEach((c) => gather(c, depth + 1));
+  };
+  sections.forEach((s) => gather(s, 0));
+  for (const table of tables) {
+    const head = table.rows[0].map((h) => h.toLowerCase());
+    const level = head.findIndex((h) => /level/.test(h));
+    const features = head.findIndex((h) => /features?/.test(h));
+    if (level < 0 || features < 0) continue;
+    for (const row of table.rows.slice(1)) {
+      const n = Number((row[level] ?? "").match(/\d+/)?.[0]);
+      if (!n) continue;
+      for (const name of (row[features] ?? "").split(/,\s*(?![^(]*\))/)) {
+        const key = bareName(name);
+        if (key && !out.has(key)) out.set(key, n);
+      }
+    }
+  }
+  return out;
+}
+
+interface FeatureInfo {
+  /** The class or subclass the feature is of, for its subtitle. */
+  owner?: string;
+  levels?: Map<string, number>;
+}
+
+/** A section as one `feature.details` block: its name, the level it comes at when the book says, and its text. */
+function featureBlock(section: Section, env: EntityEnv, info: FeatureInfo = {}): string[] {
+  const yaml = [`name: ${q(section.title)}`];
   let blocks = section.blocks;
   const first = plain(blocks[0]);
-  const level = first.match(LEVEL_NOTE);
-  if (level && allItalic(blocks[0])) {
-    yaml.push(`subtitle: ${q(first)}`, `level: ${level[1]}`);
+  const stated = first.match(LEVEL_NOTE);
+  if (stated && first.length < 90) {
+    // The book says it on a line of its own: "3rd-Level Barbarian Feature".
+    yaml.push(`subtitle: ${q(first)}`, `level: ${stated[1]}`);
     blocks = blocks.slice(1);
-  } else if (/^prerequisites?\s*:/i.test(first) && allItalic(blocks[0])) {
+  } else if (/^prerequisites?\s*:/i.test(first) && first.length < 120) {
     yaml.push(`subtitle: ${q(first)}`);
     blocks = blocks.slice(1);
+  } else {
+    // Else the class's table knows, or the feature's first sentence does.
+    const basic = /^(hit points|proficiencies|(starting )?equipment)$/i.test(section.title.trim());
+    const level = basic ? undefined : (info.levels?.get(bareName(section.title)) ?? levelInText(section));
+    if (level) {
+      if (info.owner) yaml.push(`subtitle: ${q(`${ORDINAL(level)}-Level ${info.owner} Feature`)}`);
+      yaml.push(`level: ${level}`);
+    }
   }
   const body = env.render(blocks, section.title);
   for (const child of section.children) body.push(...env.inline(child, Math.min(6, env.depth + 2)));
@@ -369,46 +509,69 @@ function featureBlock(section: Section, env: EntityEnv, extra: string[] = []): s
 }
 
 /** Text first, then each subsection as a feature; a subsection that only groups others keeps its heading. */
-function featureList(sections: Section[], env: EntityEnv, depth: number): string[] {
+function featureList(sections: Section[], env: EntityEnv, depth: number, info: FeatureInfo = {}): string[] {
   const out: string[] = [];
   for (const s of sections) {
     const looksFeature = s.blocks.length > 0 || !s.children.length;
-    if (looksFeature) out.push(...featureBlock(s, env));
-    else out.push(`${"#".repeat(Math.min(6, depth))} ${s.title}`, ...featureList(s.children, env, depth + 1));
+    if (looksFeature) out.push(...featureBlock(s, env, info));
+    else out.push(`${"#".repeat(Math.min(6, depth))} ${s.title}`, ...featureList(s.children, env, depth + 1, info));
   }
   return out;
 }
 
+/** How many of a section's parts say the level they come at, by a line of their own or in their first sentence. */
+const leveledParts = (section: Section): number =>
+  section.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0])) || levelInText(c) !== undefined).length;
+
+/** A section most of whose parts come at stated levels: a subclass's features. */
+const isSubclassLike = (s: Section): boolean => s.children.length >= 2 && leveledParts(s) >= s.children.length / 2;
+
 function klass(section: Section, env: EntityEnv): EntityOut | null {
-  const featuresAt = section.children.findIndex((c) => /^class features$/i.test(c.title));
-  if (featuresAt < 0) return null;
-  // A class's features come at stated levels; a rules section that merely has a "Class Features" heading does not.
-  const leveled = section.children[featuresAt].children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
-  if (leveled < 2) return null;
+  const container = section.children.find((c) => /^class features$/i.test(c.title));
+  if (!container) return null;
+  // A class's features open with its hit points and proficiencies, or come at stated levels; a rules
+  // section that merely has a "Class Features" heading has neither.
+  const basics = ["hit points", "proficiencies"].every((t) =>
+    container.children.some((c) => c.title.toLowerCase() === t)
+  );
+  const stated = container.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
+  if (!basics && stated < 2) return null;
   const out = blank("class");
   const h = "#".repeat(Math.min(6, env.depth + 1));
+  const info: FeatureInfo = { owner: section.title, levels: levelsFromTable([section]) };
+  const sub = (s: Section) =>
+    out.childNotes.push({
+      section: s,
+      fields: [[".SUBCLASS", `\n  parent_class: ${section.title}`], cssclass("note-feature")],
+    });
   out.lines = env.render(section.blocks, section.title);
   let subclasses = false;
   for (const child of section.children) {
-    if (subclasses) {
-      out.childNotes.push({
-        section: child,
-        fields: [[".SUBCLASS", `\n  parent_class: ${section.title}`], cssclass("note-feature")],
-      });
-    } else if (/^class features$/i.test(child.title)) {
-      out.lines.push(
-        `${h} ${child.title}`,
-        ...env.render(child.blocks, child.title),
-        ...featureList(child.children, env, env.depth + 2)
-      );
+    if (subclasses) sub(child);
+    else if (child === container) {
+      out.lines.push(`${h} ${child.title}`, ...env.render(child.blocks, child.title));
+      const features: Section[] = [];
+      for (const part of child.children) {
+        // A part the class's table does not list, whose own parts come at levels, is a subclass
+        // set among the features (the SRD's "Path of the Berserker").
+        const listed = info.levels?.has(bareName(part.title));
+        // (Only where features do not state their level on a line of their own: there, a feature's parts do.)
+        if (stated < 2 && !listed && isSubclassLike(part)) sub(part);
+        else features.push(part);
+      }
+      out.lines.push(...featureList(features, env, env.depth + 2, info));
     } else if (/subclass(es)?$/i.test(child.title)) {
       out.lines.push(`${h} ${child.title}`, ...env.render(child.blocks, child.title));
-      for (const sub of child.children)
-        out.childNotes.push({
-          section: sub,
-          fields: [[".SUBCLASS", `\n  parent_class: ${section.title}`], cssclass("note-feature")],
-        });
+      child.children.forEach(sub);
       subclasses = true;
+    } else if (child.children.some(isSubclassLike)) {
+      // A section after the features that holds the subclasses under a name of the class's own
+      // ("Martial Archetypes", "Sacred Oaths").
+      out.lines.push(`${h} ${child.title}`, ...env.render(child.blocks, child.title));
+      for (const part of child.children) {
+        if (isSubclassLike(part)) sub(part);
+        else out.lines.push(...env.inline(part, env.depth + 2));
+      }
     } else out.lines.push(...env.inline(child, env.depth + 1));
   }
   out.fields = [cssclass("note-feature")];
@@ -423,7 +586,10 @@ function subclass(section: Section, env: EntityEnv): EntityOut | null {
   if (env.hint !== "subclass" && !underClass && !(leveled >= 2 && leveled >= section.children.length / 2)) return null;
   if (!section.children.length) return null;
   const out = blank("subclass");
-  out.lines = [...env.render(section.blocks, section.title), ...featureList(section.children, env, env.depth + 1)];
+  out.lines = [
+    ...env.render(section.blocks, section.title),
+    ...featureList(section.children, env, env.depth + 1, { owner: section.title }),
+  ];
   out.fields = [cssclass("note-feature")];
   out.consumed = true;
   return out;
@@ -437,7 +603,10 @@ const runIn = (b: Block): boolean => {
 };
 
 function lineage(section: Section, env: EntityEnv): EntityOut | null {
-  const traits = section.children.find((c) => /lineage traits$/i.test(c.title));
+  // "Beastkin Lineage Traits", or the 5e "Dwarf Traits" under "Dwarf".
+  const traits = section.children.find(
+    (c) => /lineage traits$/i.test(c.title) || c.title.toLowerCase() === `${section.title.toLowerCase()} traits`
+  );
   if (!traits) return null;
   const out = blank("lineage");
   out.lines = env.render(section.blocks, section.title);
@@ -458,7 +627,8 @@ function traitNote(
   name: string,
   extra: string[] = []
 ): EntityOut | null {
-  const at = section.blocks.findIndex(runIn);
+  const loose = !!env.scanned || unmarked(section.blocks);
+  const at = section.blocks.findIndex((b) => runIn(b) || (loose && !!leadName(b, true)));
   if (at < 0) return null;
   const out = blank(kind);
   out.lines = [
@@ -498,7 +668,9 @@ function talent(section: Section, env: EntityEnv): EntityOut | null {
 const RECOGNISERS = [spell, creature, magicItem, klass, subclass, lineage, heritage, background, talent];
 
 export function recogniseEntity(section: Section, env: EntityEnv): EntityOut | null {
-  if (!section.level) return null;
+  // A chapter can only be a class (a book that gives each class a chapter).
+  if (!section.level) return klass(section, env);
+  if (env.only === "creature") return creature(section, env);
   for (const recognise of RECOGNISERS) {
     const out = recognise(section, env);
     if (out) return out;
@@ -517,7 +689,8 @@ const COIN = /\d\s*(cp|sp|ep|gp|pp)\b/i;
  */
 export function itemsFromTable(
   table: Extract<Block, { type: "table" }>,
-  dir: string,
+  /** The folder for the table's items, or where each goes by its kind (then from the vault's root). */
+  dir: string | ((kind: string, name: string) => string),
   unique: (dir: string, name: string) => string
 ): OutFile[] {
   const head = table.rows[0].map((h) => h.toLowerCase().trim());
@@ -540,7 +713,7 @@ export function itemsFromTable(
       .map((s) => s.trim())
       .filter((s) => s && !/^[—–-]$/.test(s));
   const files: OutFile[] = [];
-  let kind = table.caption ?? head[0];
+  let kind = table.caption ?? table.rows[0][0];
   for (const row of table.rows.slice(1)) {
     const name = (row[0] ?? "").trim();
     if (!name) continue;
@@ -567,15 +740,16 @@ export function itemsFromTable(
       if (known.has(i) || !cell.trim() || /^[—–-]$/.test(cell.trim()) || !head[i]) return;
       yaml.push(`${head[i].replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}: ${q(cell)}`);
     });
-    const file = unique(
-      dir,
-      name
-        .replace(/[\\/:|#^[\]<>?*"]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-    );
+    const clean = name
+      .replace(/[\\/:|#^[\]<>?*"]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const placedAt = typeof dir === "function" ? dir(kind, clean) : undefined;
+    const folder = placedAt ? placedAt.slice(0, placedAt.lastIndexOf("/")) : (dir as string);
+    const file = unique(folder, clean);
     files.push({
-      path: `${dir}/${file}.md`,
+      outside: !!placedAt,
+      path: `${folder}/${file}.md`,
       text: ["---", "cssclasses:", "  - note-item", "---", `# ${name}`, ...fenced("item.element", yaml, []), ""].join(
         "\n"
       ),

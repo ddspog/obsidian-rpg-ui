@@ -142,6 +142,8 @@ export interface Chapter {
 export interface OutFile {
   path: string;
   text: string;
+  /** The path is from the vault's root, not from the book's folder. */
+  outside?: boolean;
 }
 
 export interface TabLook {
@@ -162,6 +164,11 @@ export interface ImportOptions {
   ocr: boolean;
   /** Write spells, creatures, items, classes and the like as the plugin's blocks for them. */
   entities: boolean;
+  /**
+   * A system's folder (the one with `compendium/` and `worldbuilding/`): the book goes into its
+   * compendium and each entity into the folder its kind is kept in there. Empty: all in one folder.
+   */
+  system?: string;
   /** First and last page to read (1-based, inclusive); the whole file when absent. */
   from?: number;
   to?: number;

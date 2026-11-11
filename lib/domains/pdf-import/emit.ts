@@ -7,6 +7,7 @@
 
 import { SOFT } from "./blocks";
 import { itemsFromTable, recogniseEntity, type EntityKind, type EntityOut } from "./entities";
+import type { Placer } from "./organise";
 import { fileName, isCatalog, sizeOf, slug, titleCase } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
 
@@ -24,12 +25,35 @@ export interface EmitContext {
   names: Set<string>;
   /** How many of each kind of entity were written; absent when entities are not looked for. */
   kinds?: Map<string, number>;
+  /** Where each entity's note goes when entities are kept in folders of their own; absent: beside the text. */
+  place?: Placer;
+  /** Notes the vault already has (lower-cased paths from its root, no `.md`): never written over. */
+  existing?: Set<string>;
+  /** Notes left as they were because the vault already had them. */
+  kept?: string[];
+  /** Pages whose text came from OCR. */
+  scanned?: Set<number>;
+  /** Every entity written: its kind, name and the note it is in. */
+  found?: Array<{ kind: string; title: string; path: string }>;
 }
 
 /** Where a piece of text is being written: its note (below the book's folder, no `.md`) and the sections above it. */
 interface Where {
   path: string;
   trail: string[];
+  /** The note is one of the entity notes kept outside the book's folder. */
+  outside?: boolean;
+  /** Inside an entity already: only a stat block is looked for there (a companion in a subclass). */
+  inside?: boolean;
+}
+
+/** Adds a note to write, unless the vault already has one there (which is then left alone). */
+function pushFile(ctx: EmitContext, file: OutFile): void {
+  if (file.outside && ctx.existing?.has(file.path.replace(/\.md$/, "").toLowerCase())) {
+    ctx.kept?.push(file.path);
+    return;
+  }
+  ctx.files.push(file);
 }
 
 const yamlValue = (text: string): string =>
@@ -114,9 +138,14 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
       out.push(...renderTable(block, ctx, near));
       if (ctx.kinds && where) {
         // A table of weapons, armor or gear also gives a note an item, in a folder named for the table.
-        const dir = `${where.path}/${fileName(titleCase(block.caption ?? `${near} items`))}`;
-        const items = itemsFromTable(block, dir, (d, n) => uniqueName(d, n, ctx));
-        ctx.files.push(...items);
+        const dir = `${where.path}/${fileName(titleCase(block.caption ?? block.rows[0][0] ?? `${near} items`))}`;
+        const place = ctx.place;
+        const items = itemsFromTable(
+          block,
+          place ? (type, name) => place("item", name, { type }, where.trail) : dir,
+          (d, n) => uniqueName(d, n, ctx)
+        );
+        for (const item of items) pushFile(ctx, item);
         if (items.length) ctx.kinds.set("item", (ctx.kinds.get("item") ?? 0) + items.length);
       }
     } else if (block.type === "image") {
@@ -149,28 +178,37 @@ function entityFor(
   hint?: EntityKind
 ): EntityOut | null {
   if (!ctx.kinds) return null;
-  const inner: Where = { path: where.path, trail: [...where.trail, section.title] };
+  const inner: Where = { path: where.path, trail: [...where.trail, section.title], inside: true };
   const out = recogniseEntity(section, {
     book: ctx.book,
     notePath: where.path,
     trail: where.trail,
     hint,
+    scanned: ctx.scanned?.has(section.page),
+    only: where.inside ? "creature" : undefined,
     depth,
     md: (spans) => spansToMd(spans, ctx.mend),
     render: (blocks, near) => renderBlocks(blocks, ctx, near, inner),
     inline: (child, d) => renderInline(child, d, ctx, inner),
+    traitsAt: ctx.place ? (name) => ctx.place?.("creature traits", name, {}, where.trail) ?? name : undefined,
     unique: (dir, name) => uniqueName(dir, name, ctx),
   });
   if (!out) return null;
   ctx.kinds.set(out.kind, (ctx.kinds.get(out.kind) ?? 0) + 1);
-  ctx.files.push(...out.files);
+  ctx.found?.push({ kind: out.kind, title: section.title, path: where.path });
+  for (const file of out.files) pushFile(ctx, file);
+  const place = ctx.place;
+  const link = (path: string, name: string) => `[[${path}|${name}]]`;
   if (out.childNotes.length) {
+    const links: string[] = [];
     for (const child of out.childNotes) {
+      const target = place?.("subclass", child.section.title, {}, inner.trail);
       const name = uniqueName(where.path, fileName(child.section.title), ctx);
       writeNote(
         {
           section: child.section,
-          path: `${where.path}/${name}`,
+          path: target ?? `${where.path}/${name}`,
+          outside: !!target,
           title: child.section.title,
           fields: [["source", ctx.source], ...child.fields],
           depth: 3,
@@ -179,8 +217,27 @@ function entityFor(
         },
         ctx
       );
+      if (target) links.push(`- ${link(target, child.section.title)}`);
     }
-    out.lines.push(`\`@[[${ctx.book}/${where.path}/]].shallow().tab()\``);
+    if (links.length) out.lines.push(...links);
+    else out.lines.push(`\`@[[${ctx.book}/${where.path}/]].shallow().tab()\``);
+  }
+  // Kept in a folder of its own: the entity is written there, and the text it sat in shows it from there.
+  const target = !where.outside ? place?.(out.kind, section.title, out.info ?? {}, where.trail) : undefined;
+  if (target) {
+    const body = [...out.lines];
+    if (!out.consumed) for (const child of section.children) body.push(...renderInline(child, 2, ctx, inner));
+    pushFile(ctx, {
+      outside: true,
+      path: `${target}.md`,
+      text:
+        [...frontmatter([["source", ctx.source], ...out.fields]), `# ${escapeMd(section.title)}`, ...body].join("\n") +
+        "\n",
+    });
+    out.placed = target;
+    out.lines = [`!${link(target, section.title)}`];
+    out.fields = [];
+    out.consumed = true;
   }
   return out;
 }
@@ -189,7 +246,7 @@ function entityFor(
 function renderInline(section: Section, depth: number, ctx: EmitContext, where: Where): string[] {
   const head = `${hashes(depth)} ${escapeMd(section.title)}`;
   const entity = entityFor(section, depth, ctx, where);
-  const inner: Where = { path: where.path, trail: [...where.trail, section.title] };
+  const inner: Where = { path: where.path, trail: [...where.trail, section.title], inside: where.inside };
   const out = entity ? [head, ...entity.lines] : [head, ...renderBlocks(section.blocks, ctx, section.title, inner)];
   if (!entity?.consumed) for (const child of section.children) out.push(...renderInline(child, depth + 1, ctx, inner));
   return out;
@@ -283,6 +340,8 @@ interface NoteSpec {
   trail: string[];
   /** What the section is already known to be. */
   hint?: EntityKind;
+  /** The path is from the vault's root: an entity's note kept outside the book's folder. */
+  outside?: boolean;
 }
 
 /** One note; when it is too long, or its parts are entries of a kind, its parts go to a folder beside it. */
@@ -294,15 +353,16 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
   const catalog = isCatalog(section, catalogMin);
   const split =
     kids.length >= 2 && (catalog ? depth < 3 : depth < 2) && (size > maxLines || (catalog && size > maxLines / 2));
-  const where: Where = { path, trail: [...spec.trail, section.title] };
-  const entity = depth > 0 ? entityFor(section, 1, ctx, { path, trail: spec.trail }, spec.hint) : null;
+  const where: Where = { path, trail: [...spec.trail, section.title], outside: spec.outside };
+  const push = (text: string) => pushFile(ctx, { path: `${path}.md`, text, outside: spec.outside });
+  const entity = entityFor(section, 1, ctx, { path, trail: spec.trail, outside: spec.outside }, spec.hint);
   const lines = [
     ...frontmatter([...spec.fields, ...(entity?.fields ?? [])]),
     `# ${escapeMd(title)}`,
     ...(entity ? entity.lines : renderBlocks(section.blocks, ctx, section.title, where)),
   ];
   if (entity?.consumed) {
-    ctx.files.push({ path: `${path}.md`, text: lines.join("\n") + "\n" });
+    push(lines.join("\n") + "\n");
     return;
   }
 
@@ -311,7 +371,16 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
     else for (const child of kids) lines.push(...renderInline(child, 2, ctx, where));
   } else {
     const names: string[] = [];
+    const placed: Array<{ path: string; title: string }> = [];
     kids.forEach((child, i) => {
+      // An entity that is kept in a folder of its own needs no note here: the list below links to it.
+      if (ctx.place) {
+        const kept = entityFor(child, 1, ctx, { path, trail: where.trail });
+        if (kept?.placed) {
+          placed.push({ path: kept.placed, title: child.title });
+          return;
+        }
+      }
       const base = fileName(child.title);
       const name = uniqueName(path, catalog ? base : `${String(i + 1).padStart(2, "0")}. ${base}`, ctx);
       names.push(name);
@@ -334,7 +403,17 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
       );
     });
     const call = `@[[${ctx.book}/${path}/]].shallow()`;
-    if (!catalog || kids.length <= 14) lines.push(`\`${call}.tab()\``);
+    if (placed.length) {
+      // Entities kept elsewhere: listed by letter when there are many, each a link to its note.
+      if (names.length) lines.push(`\`${call}.tab()\``);
+      let letter = "";
+      for (const p of [...placed].sort((a, b) => a.title.localeCompare(b.title))) {
+        const first = (p.title.match(/[A-Za-z0-9]/)?.[0] ?? "#").toUpperCase();
+        if (placed.length > 20 && first !== letter) lines.push(`## ${first}`);
+        letter = first;
+        lines.push(`- [[${p.path}|${p.title}]]`);
+      }
+    } else if (!catalog || kids.length <= 14) lines.push(`\`${call}.tab()\``);
     else {
       const groups = letterGroups(names);
       const tabs: string[] = [];
@@ -348,7 +427,7 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
       lines.push(...tabs);
     }
   }
-  ctx.files.push({ path: `${path}.md`, text: lines.join("\n") + "\n" });
+  push(lines.join("\n") + "\n");
 }
 
 export function chapterName(chapter: Chapter): string {

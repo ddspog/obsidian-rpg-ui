@@ -8,30 +8,37 @@
 import { toBlocks } from "./blocks";
 import { emitBook, mender, wordsOf, type EmitContext } from "./emit";
 import { readOutline, readPage, type DecodedImage } from "./extract";
-import { findFurniture, layoutPage, lineText, usualGutters, type Gutter } from "./layout";
+import { findFurniture, layoutPage, lineText, segText, usualGutters, type Gutter } from "./layout";
 import { lookFor } from "./looks";
+import { placer } from "./organise";
 import { readStyles } from "./styles";
 import {
   dropTitleHeadings,
   fileName,
   isContentsPage,
+  missingFromContents,
+  readContents,
   numberChapters,
   planFromOutline,
+  promoteNames,
   slug,
   takeBanner,
   toSections,
   walkBlocks,
   type ChapterPlan,
+  type ContentsEntry,
 } from "./structure";
 import type { Block, Chapter, Element, ImportOptions, RawPage, TabLook, TextRun } from "./types";
 
-export { ocrToRuns } from "./ocr";
+export { inkMeter, invertDarkBars, ocrToRuns } from "./ocr";
 
 export interface ImportHost {
   writeText(path: string, text: string): Promise<void>;
   writeBinary(path: string, bytes: Uint8Array): Promise<void>;
   remove(path: string): Promise<void>;
   rename(from: string, to: string): Promise<void>;
+  /** Every note under a folder (paths from the vault's root), so none the vault already has is written over. */
+  listNotes?(dir: string): Promise<string[]>;
   /** A picture as a file's bytes (`webp`, `png`…), or null to leave it out. */
   encodeImage?(img: DecodedImage): Promise<{ bytes: Uint8Array; ext: string } | null>;
   /** The words on a page that has no text of its own, read from its picture. */
@@ -52,6 +59,10 @@ export interface ImportResult {
   pages: number;
   ocrPages: number;
   chapters: Array<{ name: string; pages: string }>;
+  /** Entries of the book's table of contents, and those not found as headings. */
+  contents: { entries: number; missing: string[] };
+  /** Entity notes the vault already had, left as they were. */
+  kept: string[];
   /** Entities written, by kind. */
   entities: Record<string, number>;
   tables: number;
@@ -68,8 +79,16 @@ export async function importPdf(
   /** The folder the book's own folder is made in. */
   parent = ""
 ): Promise<ImportResult> {
-  const book = fileName(options.title) || "Imported Book";
-  const root = parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
+  // Into a system's folder: the book goes to its compendium under a plain folder name, as the others there.
+  const system = options.system?.replace(/\/+$/, "");
+  let book = system ? slug(options.title) || "imported-book" : fileName(options.title) || "Imported Book";
+  let root = system ? `${system}/compendium/${book}` : parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
+  // A folder that already holds notes is never written into: the book takes the next free name beside it.
+  if (host.listNotes) {
+    const base = root;
+    for (let n = 2; (await host.listNotes(root)).length; n++) root = `${base}-${n}`;
+    book = root.slice(root.lastIndexOf("/") + 1);
+  }
   const from = Math.max(1, options.from ?? 1);
   const to = Math.min(doc.numPages, options.to ?? doc.numPages);
   const total = to - from + 1;
@@ -157,11 +176,26 @@ export async function importPdf(
   const own: Gutter[][] = pages.map((p) => layoutPage(p, { furniture }).gutters);
   const prefer = usualGutters(own);
   const perPage = new Map<number, Element[]>();
+  const contents: ContentsEntry[] = [];
   const everything: Element[] = [];
   for (const page of pages) {
     const { elements } = layoutPage(page, { furniture, prefer });
     const lines = elements.flatMap((el) => (el.kind === "line" ? [lineText(el.line)] : []));
-    if (isContentsPage(lines)) continue;
+    if (isContentsPage(lines)) {
+      // The contents pages are not written, but their entries are checked against what was found.
+      if (page.num - from < Math.max(12, total * 0.1)) {
+        // Read cell by cell, a column at a time: a contents page's columns are too ragged to find by their gutters.
+        const cells = elements.flatMap((el) => (el.kind === "line" ? el.line.cells : []));
+        const starts: number[] = [];
+        for (const x of cells.map((c) => c.x).sort((a, b) => a - b)) {
+          if (!starts.length || x - starts[starts.length - 1] > 60) starts.push(x);
+        }
+        const column = (x: number) => starts.reduce((best, st, i) => (x >= st - 1 ? i : best), 0);
+        cells.sort((a, b) => column(a.x) - column(b.x) || a.base - b.base || a.x - b.x);
+        contents.push(...readContents(cells.map(segText)));
+      }
+      continue;
+    }
     perPage.set(page.num, elements);
     everything.push(...elements);
   }
@@ -176,6 +210,9 @@ export async function importPdf(
   // 4. Chapters: the file's bookmarks, else its biggest headings, else the whole book as one.
   const outline = await readOutline(doc);
   let plans: ChapterPlan[] = planFromOutline(outline, from, to);
+  // Bookmarks that leave most of the book in one piece (a file joined from two) say nothing of its chapters.
+  const longest = Math.max(0, ...plans.map((p) => p.lastPage - p.firstPage + 1));
+  if (plans.length && total > 40 && longest > 0.7 * total) plans = [];
   if (!plans.length) plans = planFromHeadings(perPage, styles, from, to);
   const chapters: Chapter[] = [];
   const drafts: Array<{ plan: ChapterPlan; blocks: Block[] }> = [];
@@ -184,7 +221,9 @@ export async function importPdf(
     stop();
     const elements: Element[] = [];
     for (let p = plan.firstPage; p <= plan.lastPage; p++) elements.push(...(perPage.get(p) ?? []));
-    drafts.push({ plan, blocks: toBlocks(elements, { styles }) });
+    const blocks = toBlocks(elements, { styles });
+    if (options.entities) promoteNames(blocks);
+    drafts.push({ plan, blocks });
   }
   for (const { plan, blocks: all } of drafts) {
     host.debug?.("blocks", { chapter: plan.title, blocks: all });
@@ -267,12 +306,40 @@ export async function importPdf(
     tableIds: new Set(),
     names: new Set(),
     kinds: options.entities ? new Map() : undefined,
+    found: [],
+    place: system && options.entities ? placer(system, options.title) : undefined,
+    existing:
+      system && host.listNotes
+        ? new Set((await host.listNotes(`${system}/worldbuilding`)).map((p) => p.replace(/\.md$/, "").toLowerCase()))
+        : undefined,
+    kept: [],
+    scanned: new Set(pages.filter((p) => p.ocr).map((p) => p.num)),
   };
   const facts = [
     `*Imported from a PDF of ${doc.numPages} pages${ocrPages ? `, ${ocrPages} of them read by OCR` : ""}: ${tables} tables, ${sidebars} sidebars, ${used.size} pictures.*`,
   ];
+  const missing = missingFromContents(contents, chapters);
+  if (contents.length) {
+    facts.push(
+      "",
+      missing.length
+        ? `*The book's table of contents has ${contents.length} entries; ${missing.length} were not found as headings (a heading set as a picture, or split or joined differently): ${missing
+            .slice(0, 60)
+            .map((m) => `${m.title} (p. ${m.page})`)
+            .join(", ")}${missing.length > 60 ? "…" : ""}.*`
+        : `*All ${contents.length} entries of the book's table of contents were found as headings.*`
+    );
+  }
   const files = emitBook(chapters, ctx, facts);
+  host.debug?.("entities", ctx.found);
   const kinds = [...(ctx.kinds ?? new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
+  if (ctx.kept?.length) {
+    files[files.length - 1].text +=
+      `\n*${ctx.kept.length} entities were already in the vault under the same name and were left as they are: ${ctx.kept
+        .slice(0, 40)
+        .map((p) => p.replace(/^.*\//, "").replace(/\.md$/, ""))
+        .join(", ")}${ctx.kept.length > 40 ? "…" : ""}.*\n`;
+  }
   if (kinds.length) {
     // The index note is written last, so the count can still be added to it.
     const index = files[files.length - 1];
@@ -282,7 +349,7 @@ export async function importPdf(
   for (const file of files) {
     stop();
     host.progress?.("Writing notes", done++, files.length);
-    await host.writeText(`${root}/${file.path}`, file.text);
+    await host.writeText(file.outside ? file.path : `${root}/${file.path}`, file.text);
   }
   host.progress?.("Done", 1, 1);
   void written;
@@ -293,6 +360,8 @@ export async function importPdf(
     pages: total,
     ocrPages,
     chapters: chapters.map((c) => ({ name: c.title, pages: `${c.firstPage}–${c.lastPage}` })),
+    contents: { entries: contents.length, missing: missing.map((m) => `${m.title} (p. ${m.page})`) },
+    kept: ctx.kept ?? [],
     entities: Object.fromEntries(kinds),
     tables,
     sidebars,

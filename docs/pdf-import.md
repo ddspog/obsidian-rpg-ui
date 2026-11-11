@@ -17,6 +17,8 @@ Run the command, then:
 | **Folder** | Where the book's folder is made. |
 | **Pictures** | Keeps the art as WebP in the book's `_assets` folder. |
 | **OCR** | Reads pages that are only a scan (no text of their own) with Tesseract. The first use downloads the reader (about 15 MB) into the plugin's `ocr` folder; after that it works offline. The language is a Tesseract code (`eng`, `por`, `spa`…). |
+| **Game entities** | Writes spells, creatures, items, classes and the like as the plugin's own blocks (see below). |
+| **File into a system** | Shown when the vault has a folder with both `compendium` and `worldbuilding` in it. The book goes to that system's compendium and each entity to the folder its kind is kept in (see below). |
 | **Note length** | A chapter or section longer than this many lines (300) is split into tabs, each a note in a folder. |
 | **Ask the model for tab icons** | Shown when an Anthropic link is set in the image studio's settings. |
 
@@ -64,7 +66,61 @@ what a feature grants or lets you choose (`traits`, `choose`, `passive`, `action
 a magic item's bonuses, and links to the vault's own notes (`[[Light Armor]]`). The book's contents note ends
 with a count of the entities written.
 
-Other rule systems are not recognised; their books still import as text, tabs and tables.
+### Books set in another style
+
+The same rules are printed very differently from book to book, so entities are told by what their lines say,
+not by how they are set:
+
+- **A name is known by the line under it.** The line that opens a spell's facts (`2nd-Circle Arcane
+  (Evocation)`, `3rd-level evocation (ritual)`, `Evocation cantrip`), a magic item's (`Wondrous item, rare
+  (requires attunement)`) or a creature's (`Large Beast`, `Medium humanoid (any race), any alignment`, then
+  Armor Class) makes the line above it a heading, whatever type it is in.
+- **Facts stand alone.** `Armor Class 12`, `Casting Time: 1 action` and the like are lines of their own and
+  never headings, even where a book sets them bold in a second typeface.
+- **Stat blocks** are read in both forms: modifiers alone (`+2 +1 −4 …`) or scores with modifiers
+  (`8 (−1) 14 (+2) …`), `CR` on the heading or a `Challenge` line, and whatever other facts the block has.
+- **A class's levels** come from a line under each feature (`3rd-Level Barbarian Feature`) where the book
+  prints one, else from the class's own table (its Level and Features columns), else from the feature's first
+  sentence (`Starting at 3rd level…`). A class may be a chapter of its own; its subclass may sit among its
+  features or in a section after them, under any name (`Martial Archetypes`).
+- **Tables** are found whether a book shades whole tables, stripes, or single cells, and where the header and
+  the first column are left unshaded.
+
+Tried on two books set quite unlike each other: the Tales of the Valiant Player's Guide and the 5e System
+Reference Document 5.1. Rule systems outside the 5e family are not recognised; their books still import as
+text, tabs and tables.
+
+### Filing into a system's folders
+
+With **File into a system** set to a folder laid out like `tales-of-the-valiant`:
+
+| What | Where |
+| --- | --- |
+| The book's chapters | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`) |
+| Spells | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, … |
+| Creatures | `worldbuilding/bestiary/creatures/<book-name>/`, their traits in `worldbuilding/traits/features/<book-name>/` |
+| Magic items | `worldbuilding/enchantments/` |
+| Weapons, armor, gear, tools | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/` |
+| Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses`, `lineages`, `heritages`, `backgrounds` |
+| Talents | `worldbuilding/traits/talents/<magic|martial|technical>/` |
+
+Where an entity sat in the book, its chapter shows it from its new place (an embed, or a list of links by
+letter for a section of entries). **A note the vault already has is never written over**: the book links to
+the one that is there, and the contents note lists which were left alone.
+
+### Scanned books
+
+A page that is only a picture is read by OCR, and helped along so that entities can still be found:
+
+- white text on dark bars (headings, table headers) is turned dark on light before it is read;
+- bold words are told by their ink, since OCR does not say which are bold; that is what marks headings
+  and the names that open a paragraph;
+- names are also read from the words alone (`Bite. Melee Weapon Attack…`), and a stat block or spell whose
+  numbers the scan lost is still written, with what could be read.
+
+How much comes through depends on the scan. On clean 200 dpi pages of the two books above, about half of
+the spells and creatures were recognised on the plainly set SRD pages and fewer on the Player's Guide's
+textured, coloured pages; expect to fix names and numbers by hand.
 
 ## How a page is read
 
@@ -112,8 +168,8 @@ The import is a first draft of the book, not a finished transcription:
 - **Entities** are found by the patterns above. One written another way stays text; check the count against
   the book. A stat block's facts beyond the usual lines (a 5e block's Saving Throws, Skills) are kept under
   `stats` by name.
-- **Scans** give no bold or italic, and headings only where the type is clearly bigger; pictures inside a
-  scanned page are not cut out.
+- **Scans** lose words and digits, and with them entities (see Scanned books); pictures inside a scanned
+  page are not cut out.
 - **Tables** that span columns with merged cells, and tables with cells that wrap in every row, may need their
   rows joined by hand.
 - Links to other notes (`[[Advantage]]`) and references between chapters are not made.
