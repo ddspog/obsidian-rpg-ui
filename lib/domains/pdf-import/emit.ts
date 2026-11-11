@@ -43,6 +43,10 @@ export interface EmitContext {
   prices?: Map<string, { list: string; fields: Array<[string, string]> }>;
   /** Traits notes shared by a creature type, built up as creatures are written. */
   traitNotes?: Map<string, { lines: string[]; ids: Map<string, string>; taken: Set<string> }>;
+  /** The opening text of the chapter being written, with its title: tells what its creatures are listed for. */
+  chapterIntro?: string;
+  /** Pictures that are an entity's portrait, with the entity's kind. */
+  portraits?: Map<string, string>;
   /** Pages whose text came from OCR. */
   scanned?: Set<number>;
   /** Every entity written: its kind, name and the note it is in. */
@@ -236,7 +240,15 @@ function entityFor(
     else out.lines.push(`\`@[[${ctx.book}/${where.path}/]].shallow().tab()\``);
   }
   // Kept in a folder of its own: the entity is written there, and the text it sat in shows it from there.
-  const target = !where.outside ? place?.(out.kind, section.title, out.info ?? {}, where.trail) : undefined;
+  // Where the creature sits in the book says what the book takes it for.
+  const around = [...where.trail, ctx.chapterIntro ?? ""].join(" · ");
+  const info = {
+    ...(out.info ?? {}),
+    druid: /\bdruids?\b|wild shape|beast forms?|beast shapes?/i.test(around),
+    npc: /\bnpcs?\b|non-?player characters?/i.test(where.trail.join(" · ")),
+  };
+  if (out.portrait) (ctx.portraits ??= new Map()).set(out.portrait, out.kind);
+  const target = !where.outside ? place?.(out.kind, section.title, info, where.trail) : undefined;
   if (target) {
     const body = [...out.lines];
     if (!out.consumed) for (const child of section.children) body.push(...renderInline(child, 2, ctx, inner));
@@ -545,6 +557,15 @@ export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[])
   const index = [...frontmatter([["source", ctx.source]]), `# ${ctx.options.title}`, ""];
   for (const chapter of chapters) {
     const name = uniqueName("", chapterName(chapter), ctx);
+    ctx.chapterIntro = [
+      chapter.title,
+      ...chapter.root.blocks
+        .slice(0, 4)
+        .map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : ""))
+        .filter(Boolean),
+    ]
+      .join(" ")
+      .slice(0, 900);
     writeNote(
       {
         section: chapter.root,

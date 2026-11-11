@@ -72,7 +72,9 @@ export interface EntityOut {
   /** True when the section's subsections are already in `lines`. */
   consumed: boolean;
   /** What decides the entity's folder: a spell's circle, an item's kind. */
-  info?: { circle?: string; type?: string; steed?: boolean };
+  info?: { circle?: string; type?: string; steed?: boolean; tags?: string; cr?: string };
+  /** The picture set with the entity, written as its `image`: the host may keep it with others of its kind. */
+  portrait?: string;
   /** The note the entity was written to when entities are kept in folders of their own (from the vault's root). */
   placed?: string;
 }
@@ -124,6 +126,12 @@ function leadName(block: Block, loose: boolean, boldOnly = false): { name: strin
   const hit = text.match(PLAIN_RUN_IN);
   if (!hit) return null;
   return { name: hit[1], rest: [{ text: text.slice(hit[0].length), bold: false, italic: false }] };
+}
+
+/** Takes the first picture out of an entity's text: it is the entity's portrait, shown by its block. */
+function takePortrait(blocks: Block[]): string {
+  const at = blocks.findIndex((b) => b.type === "image");
+  return at >= 0 ? (blocks.splice(at, 1)[0] as Extract<Block, { type: "image" }>).file : "";
 }
 
 const blank = (kind: EntityKind): EntityOut => ({
@@ -204,7 +212,13 @@ function spell(section: Section, env: EntityEnv): EntityOut | null {
   if (facts.has("duration")) yaml.push(`duration: ${q(facts.get("duration") ?? "")}`);
   if (allItalic(section.blocks[i])) yaml.push(`summary: ${q(plain(section.blocks[i++]))}`);
   const out = blank("spell");
-  out.lines = fenced("spell", yaml, env.render(section.blocks.slice(i), section.title));
+  const rest = section.blocks.slice(i);
+  const picture = takePortrait(rest);
+  if (picture) {
+    yaml.push(`image: ${q(`![[${picture}|384]]`)}`);
+    out.portrait = picture;
+  }
+  out.lines = fenced("spell", yaml, env.render(rest, section.title));
   out.info = { circle };
   out.fields = [cssclass("note-spell")];
   return out;
@@ -239,7 +253,13 @@ function magicItem(section: Section, env: EntityEnv): EntityOut | null {
   if (attune?.[1]?.trim()) yaml.push(`attunement_by: ${q(attune[1])}`);
   yaml.push("applies_to:", `  kinds: [${kind}]`);
   const out = blank("magic item");
-  out.lines = fenced("item.magic", yaml, env.render(section.blocks.slice(1), section.title));
+  const text = section.blocks.slice(1);
+  const picture = takePortrait(text);
+  if (picture) {
+    yaml.push(`image: ${q(`![[${picture}|384]]`)}`);
+    out.portrait = picture;
+  }
+  out.lines = fenced("item.magic", yaml, env.render(text, section.title));
   out.fields = [cssclass("note-item")];
   if (section.children.length) {
     // Variants and the like set under headings of their own stay with the item.
@@ -486,7 +506,13 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
     ? fenced("stat.vehicle", yaml, env.render(lore, name))
     : [...fenced("stat.monster", yaml, []), ...env.render(lore, name)];
   out.fields = [cssclass("note-statblock")];
-  out.info = { type: isVehicle ? type : kindWord, steed: !!price && /mount|steed/i.test(price.list) };
+  out.info = {
+    type: isVehicle ? type : kindWord,
+    steed: !!price && /mount|steed/i.test(price.list),
+    tags: typed?.[3] ?? "",
+    cr,
+  };
+  if (picture) out.portrait = picture;
   out.consumed = true;
   return out;
 }

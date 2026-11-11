@@ -180,6 +180,11 @@ export interface ImportOptions {
   bannerFolder?: string;
   /** Folder for the book's other pictures (from the vault's root); the book's `_assets` without one. */
   pictureFolder?: string;
+  /**
+   * Folders for the pictures of entities, by kind (`creature`, `vehicle`, `spell`, `magic item`),
+   * from the vault's root; a kind without one keeps its pictures with the book's.
+   */
+  portraitFolders?: Record<string, string>;
   /** Rule views the system has (`spell`, …): used to list entities the way the system shows them. */
   views?: string[];
   /** First and last page to read (1-based, inclusive); the whole file when absent. */

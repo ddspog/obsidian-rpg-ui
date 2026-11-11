@@ -20,7 +20,7 @@ Run the command, then:
 | **Game entities** | Writes spells, creatures, items, classes and the like as the plugin's own blocks (see below). |
 | **File into a system** | Shown when the vault has a folder with both `compendium` and `worldbuilding` in it. The book goes to that system's compendium and each entity to the folder its kind is kept in (see below). |
 | **Name mark**, **Pictures in the vault's own folders** | With a system chosen: see Filing into a system's folders. |
-| **Source** | The `source` line every note carries, e.g. `From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.` |
+| **Game line and publisher** | Make the `source` line every note carries (`From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.`) and name the shelf the book's pictures are kept on. |
 | **Note length** | A chapter or section longer than this many lines (300) is split into tabs, each a note in a folder. |
 | **Ask the model for tab icons** | Shown when an Anthropic link is set in the image studio's settings. |
 
@@ -101,10 +101,10 @@ With **File into a system** set to a folder laid out like `tales-of-the-valiant`
 | --- | --- |
 | The book's chapters | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`) |
 | Spells | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, … |
-| Beasts | `worldbuilding/bestiary/animals/` |
 | Creatures the book prices as mounts | `worldbuilding/bestiary/creatures/steeds/` |
-| Humanoids | `worldbuilding/bestiary/npcs/` |
-| Other creatures | `worldbuilding/bestiary/monsters/<creature type>/`, the type as the stat block gives it |
+| What a druid may turn into | `worldbuilding/bestiary/animals/`: a creature with the Animal tag, or one in a section the book lists for druids' forms; in a book given a name mark, also a Beast below CR 6 |
+| The book's own nonplayer characters | `worldbuilding/bestiary/npcs/`: creatures under a heading that says NPCs or nonplayer characters |
+| Other creatures | `worldbuilding/bestiary/monsters/<creature type>/` (`beast`, `humanoid`, `fiend`…), the type as the stat block gives it |
 | Vehicles | `worldbuilding/bestiary/vehicles/<land|water|air>/`, as `rpg stat.vehicle` |
 | Creatures' traits and actions | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits` |
 | Magic items | `worldbuilding/enchantments/` |
@@ -126,9 +126,13 @@ With **File into a system** set to a folder laid out like `tales-of-the-valiant`
   prices as a mount is filed with the steeds.
 - **Name mark.** A mark may be put after each entity's name to say where it comes from, as the vault does:
   `ᴰ` a D&D book, `ᴷ` a Kobold Press book outside the core, `º` another publisher's.
-- **Pictures.** Where the vault has top-level folders named `… Banners` and `… Reference`, chapter banners go
-  to `<Banners>/<Book>/` and the book's other pictures to `<Reference>/Compendium/<Book>/`, under plain names;
-  a picture the vault already has there is kept. A picture set with a stat block becomes its `image`.
+- **Pictures.** Where the vault has top-level folders named `… Banners` and `… Reference`, pictures are kept
+  as its others are: chapter banners in `<Banners>/<Game line>/`, the book's pictures in
+  `<Reference>/Compendium/<Game line>/<Book>/`, and the picture set with a creature, a magic item or a spell
+  in `<Reference>/Bestiary`, `Items` or `Spells`, where it also becomes the block's `image`. Names are plain
+  (`riding-horse.webp`); a picture the vault already has under that name is kept.
+- **Source.** With a game line and a publisher given, every note carries
+  `From **Game line** "Book" by **Publisher**.`
 
 ### Scanned books
 
@@ -176,7 +180,8 @@ The same code runs outside Obsidian, for trying changes on a book and for very l
 ```
 node scripts/pdf-import.mjs book.pdf out-folder --title "Player's Guide" [--from 9 --to 60] [--max-lines 300]
      [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
-     [--system tales-of-the-valiant] [--marker ᴰ] [--source '…'] [--views spell]
+     [--system tales-of-the-valiant] [--marker ᴰ] [--game "Tales of the Valiant"] [--publisher "Kobold Press"]
+     [--views spell] [--portraits "z50. Reference"]
      [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"]
 ```
 
