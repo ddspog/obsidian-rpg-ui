@@ -25,7 +25,7 @@ import {
 import { arcPath } from "lib/domains/hexmap/labels";
 import type { DrawRegion } from "lib/domains/hexmap/regions";
 import type { CoordMode, HexMapError } from "lib/domains/hexmap/parse-hex-map";
-import { TERRAIN_RULES } from "lib/domains/hexmap/terrain";
+import { HEX_ELEMENT_RULES, TERRAIN_RULES } from "lib/domains/hexmap/terrain";
 
 export interface HexMapViewProps {
   layout: HexLayout;
@@ -610,6 +610,12 @@ function Tooltip({
             </dd>
           </>
         )}
+        {hex.elements?.map((e) => (
+          <React.Fragment key={e}>
+            <dt>{HEX_ELEMENT_RULES[e].name.toLowerCase()}</dt>
+            <dd className="rpg-hexmap-tooltip-rule">{HEX_ELEMENT_RULES[e].rule}</dd>
+          </React.Fragment>
+        ))}
         {hex.regions.length > 0 && (
           <>
             <dt>region</dt>

@@ -245,3 +245,33 @@ describe("weather words", () => {
     expect(weatherFromWords(["Autumn", "mild"])).toBeNull();
   });
 });
+
+describe("distinct hex elements on the map", () => {
+  it("reads markers' captions as elements, and an overgrown hex is difficult", async () => {
+    const { resolveHexMap } = await import("./layout");
+    const { parseHexMap } = await import("./parse-hex-map");
+    const { routeSteps } = await import("./terrain");
+    const map = parseHexMap(
+      [
+        "grid: hex",
+        "---",
+        "t(0,0): plains",
+        "t(1,0): plains",
+        "m(1,0): pin[red] (Overgrown)",
+        "m(0,0): pin[red] (Haunted)",
+      ].join("\n")
+    );
+    const grid = resolveHexMap(map, new Map(), "flat").grid;
+    expect(Object.fromEntries(grid.elements ?? [])).toEqual({ "1,0": ["overgrown"], "0,0": ["haunted"] });
+    const steps = routeSteps(
+      [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 },
+      ],
+      grid,
+      "normal",
+      6
+    );
+    expect(steps[0].difficult).toBe(true);
+  });
+});

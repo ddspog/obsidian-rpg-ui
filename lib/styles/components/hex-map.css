@@ -2979,3 +2979,9 @@ button.rpg-terrain-settings-reset {
   height: auto;
   padding: 2px 22px 2px 6px;
 }
+
+.rpg-hexmap-tooltip dd.rpg-hexmap-tooltip-rule {
+  max-width: 22rem;
+  white-space: normal;
+  color: var(--text-muted);
+}

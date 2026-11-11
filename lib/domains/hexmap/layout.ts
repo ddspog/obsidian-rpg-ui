@@ -41,6 +41,8 @@ import {
   buildTerrainGrid,
   DEFAULT_CLASSIFY,
   type GridHex,
+  type HexElementId,
+  hexElementOf,
   type Population,
   type TerrainGrid,
   type TerrainId,
@@ -276,6 +278,15 @@ export function resolveHexMap(parsed: ParsedHexMap, packs: Map<string, HexPack>,
     ...DEFAULT_CLASSIFY,
   ]);
   if (population.size) grid.population = population;
+  // Distinct elements marked on hexes (a marker captioned Haunted, Overgrown…): their rules count.
+  const elements = new Map<string, HexElementId[]>();
+  for (const m of map.markers ?? []) {
+    const id = hexElementOf(m.text);
+    if (!id) continue;
+    const key = hexKey(Math.round(m.q), Math.round(m.r));
+    elements.set(key, [...(elements.get(key) ?? []), id]);
+  }
+  if (elements.size) grid.elements = elements;
 
   // Where each joined path runs into what it connects to (a river's mouth into the sea), per family.
   const mouths = new Map<string, Map<string, Side>>();
@@ -584,6 +595,8 @@ export interface HexInfo {
   road?: boolean;
   river?: boolean;
   population?: Population;
+  /** Distinct elements marked on it, with rules of their own. */
+  elements?: HexElementId[];
 }
 
 export interface DrawLabel {
@@ -724,6 +737,8 @@ export function layoutHexMap(
       if (resolved.grid?.rivers.has(key)) info.river = true;
       const people = resolved.grid?.population?.get(key);
       if (people) info.population = people;
+      const els = resolved.grid?.elements?.get(key);
+      if (els) info.elements = els;
       hexes.set(key, info);
     } else if (!cell.faint) info.faint = false;
     info.height = Math.max(info.height, cell.height);

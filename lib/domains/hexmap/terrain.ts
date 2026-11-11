@@ -311,6 +311,43 @@ export interface TerrainGrid {
   rivers: Set<string>;
   /** How many people live round each hex, from its regions' `population:` (the innermost that says). */
   population?: Map<string, Population>;
+  /** The distinct elements marked on each hex (a marker named Haunted, Overgrown…), by name. */
+  elements?: Map<string, HexElementId[]>;
+}
+
+/** Distinct Hex Elements with a rule of their own (Campaign Builder, Map Element Terrain Rules). */
+export type HexElementId = "haunted" | "volcanic" | "overgrown" | "dead-end" | "fissure" | "river" | "hazard";
+export const HEX_ELEMENT_RULES: Record<HexElementId, { name: string; rule: string; difficult?: boolean }> = {
+  haunted: {
+    name: "Haunted",
+    rule: "Each hour moving through: WIS save (DC 10 slight, 12 medium, 14 strong) or frightened for 1 hour. INT (Arcana or Religion) at the same DC recognises it: advantage on the save. Remove curse or Channel Divinity suppresses it for the caster's PB hours.",
+  },
+  volcanic: {
+    name: "Volcanic activity",
+    rule: "Hazards such as poisonous gases, burning rain and lava, and extreme heat for anyone crossing.",
+  },
+  overgrown: {
+    name: "Overgrown",
+    rule: "Most of the hex is difficult terrain, and lightly obscured unless you get some height.",
+    difficult: true,
+  },
+  "dead-end": { name: "Dead end", rule: "The way ends in obstructions: leave by backtracking." },
+  fissure: { name: "Fissure", rule: "Split by a deep fissure: 1d4 ways across." },
+  river: { name: "River", rule: "d6: 1–2 easy fording, 3–4 fast river, 5–6 rapids." },
+  hazard: { name: "Hazard", rule: "A large-scale hazard (Chapter 4) fitting the terrain." },
+};
+
+/** The element a marker's caption names (`Haunted`, `Volcanic Activity`, `Dead End`), or null. */
+export function hexElementOf(name: string | undefined): HexElementId | null {
+  const n = name?.trim().toLowerCase() ?? "";
+  if (/^haunt/.test(n)) return "haunted";
+  if (/^volcan/.test(n)) return "volcanic";
+  if (/^overgrown/.test(n)) return "overgrown";
+  if (/^dead end/.test(n)) return "dead-end";
+  if (/^fissure/.test(n)) return "fissure";
+  if (/^river$/.test(n)) return "river";
+  if (/^hazard/.test(n)) return "hazard";
+  return null;
 }
 
 /** How settled a region is (Solo Adventurer's Toolbox: encounter rolls and unmarked settlements). */
@@ -377,7 +414,8 @@ export function routeSteps(
     const impassable = rules?.maxPace === null;
     const cap = rules?.maxPace ? (road ? shiftPace(rules.maxPace, 1) : rules.maxPace) : "fast";
     const stepPace = slower(pace, cap);
-    const difficult = ((rules?.difficult ?? false) && !road) || ford;
+    const overgrown = grid.elements?.get(to)?.some((e) => HEX_ELEMENT_RULES[e].difficult) ?? false;
+    const difficult = ((rules?.difficult ?? false) && !road) || ford || overgrown;
     const mph = PACE_MILES[stepPace] / 8;
     const base =
       tracking === "hexes" ? 8 / hexesPerDay(hexMiles, stepPace, difficult) : (hexMiles / mph) * (difficult ? 2 : 1);
