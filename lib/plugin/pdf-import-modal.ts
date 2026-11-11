@@ -465,7 +465,12 @@ export class PdfImportModal extends Modal {
     try {
       const pictures = this.system && this.ownPictureFolders ? this.pictureFolders(fileName(title)) : {};
       // The views the system shows its entities with (a spell card), to list them the way its own pages do.
-      const loaded = this.system ? await SystemRegistry.getInstance().loadSystemAsync(this.system) : null;
+      // (The system's code is in its `config` folder.)
+      const registry = SystemRegistry.getInstance();
+      const loaded = this.system
+        ? ((await registry.loadSystemAsync(`${this.system}/config`).catch(() => null)) ??
+          (await registry.loadSystemAsync(this.system).catch(() => null)))
+        : null;
       const views = Object.keys((loaded as { ruleViews?: Record<string, unknown> } | null)?.ruleViews ?? {});
       const pdfjs = await loadPdfJs();
       // The file is read in pieces as pages are asked for, so a book of hundreds of megabytes

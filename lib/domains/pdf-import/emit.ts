@@ -335,12 +335,11 @@ function listPlaced(placed: Array<{ path: string; title: string }>, ctx: EmitCon
     }
     if (dirs.length === 1) out.push(...body);
     else {
-      const name = titleCase(
-        dir
-          .slice(dir.lastIndexOf("/") + 1)
-          .replace(/-/g, " ")
-          .toUpperCase()
-      );
+      // `1st-circle-ritual` → `1st Circle Ritual`.
+      const name = dir
+        .slice(dir.lastIndexOf("/") + 1)
+        .replace(/-/g, " ")
+        .replace(/(^|\s)([a-z])/g, (_m, lead: string, c: string) => lead + c.toUpperCase());
       const look = ctx.look(name, i);
       out.push("```rpg rule.tab", `name: ${name}`, `icon: ${look.icon}`, `color: ${look.color}`, "---", ...body, "```");
     }
