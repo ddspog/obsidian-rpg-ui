@@ -2,13 +2,22 @@ import { describe, expect, it } from "vitest";
 import { toBlocks } from "./blocks";
 import { emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
+import { placer } from "./organise";
 import { fontName, isBold, isItalic } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
 import { lookFor } from "./looks";
-import { ocrToRuns } from "./ocr";
+import { inkMeter, invertDarkBars, ocrToRuns } from "./ocr";
 import { readStyles } from "./styles";
-import { isCatalog, planFromOutline, titleCase, toSections } from "./structure";
+import {
+  isCatalog,
+  missingFromContents,
+  planFromOutline,
+  promoteNames,
+  readContents,
+  titleCase,
+  toSections,
+} from "./structure";
 import {
   DEFAULT_OPTIONS,
   type Block,
@@ -534,5 +543,214 @@ describe("entities", () => {
       ],
     };
     expect(itemsFromTable(services, "x", (_d, n) => n)).toEqual([]);
+  });
+});
+
+describe("styles of other books", () => {
+  const span = (text: string, bold = false, italic = false) => ({ text, bold, italic });
+  const para = (...spans: ReturnType<typeof span>[]): Block => ({ type: "para", spans, page: 1 });
+  const section = (title: string, level: number, blocks: Block[], children: Section[] = []): Section => ({
+    title,
+    level,
+    style: `s${level}`,
+    page: 1,
+    blocks,
+    children,
+  });
+  const write = (root: Section, extra: Partial<EmitContext> = {}) => {
+    const ctx: EmitContext = {
+      book: "Book",
+      source: "From **Book**.",
+      options: { ...DEFAULT_OPTIONS, title: "Book" },
+      look: lookFor,
+      mend: (t) => t,
+      files: [],
+      tableIds: new Set(),
+      names: new Set(),
+      kinds: new Map(),
+      kept: [],
+      ...extra,
+    };
+    const chapter: Chapter = { title: root.title, number: "01", firstPage: 1, lastPage: 9, root };
+    const files = emitBook([chapter], ctx, []);
+    return { files, ctx, kinds: Object.fromEntries(ctx.kinds ?? []) };
+  };
+
+  it("reads a 5e class set as a chapter: levels from its table, the subclass among its features", () => {
+    const table: Block = {
+      type: "table",
+      page: 1,
+      rows: [
+        ["Level", "Proficiency Bonus", "Features", "Rages"],
+        ["1st", "+2", "Rage, Unarmored Defense", "2"],
+        ["2nd", "+2", "Reckless Attack, Danger Sense", "2"],
+        ["3rd", "+2", "Primal Path", "3"],
+      ],
+    };
+    const feature = (name: string, text = "What it does.") => section(name, 4, [para(span(text))]);
+    const features = section(
+      "Class Features",
+      2,
+      [para(span("As a barbarian, you gain these."))],
+      [
+        section("Hit Points", 6, [para(span("Hit Dice:", true), span(" 1d12 per barbarian level"))]),
+        section("Proficiencies", 6, [para(span("Armor:", true), span(" Light armor"))]),
+        section("The Barbarian", 7, [table]),
+        feature("Rage"),
+        feature("Reckless Attack"),
+        feature("Primal Path"),
+        section(
+          "Path of the Berserker",
+          4,
+          [para(span("A path of untrammeled fury."))],
+          [
+            feature("Frenzy", "Starting when you choose this path at 3rd level, you can go into a frenzy."),
+            feature("Mindless Rage", "Beginning at 6th level, you can’t be charmed."),
+          ]
+        ),
+      ]
+    );
+    const { files, kinds } = write(section("Barbarian", 0, [], [features]));
+    expect(kinds).toEqual({ class: 1, subclass: 1 });
+    const note = files.find((f) => f.path === "01. Barbarian.md")?.text ?? "";
+    expect(note).toContain('name: "Rage"\nsubtitle: "1st-Level Barbarian Feature"\nlevel: 1');
+    expect(note).toContain('name: "Primal Path"\nsubtitle: "3rd-Level Barbarian Feature"\nlevel: 3');
+    expect(note).not.toContain('name: "Hit Points"\nsubtitle');
+    const sub = files.find((f) => f.path === "01. Barbarian/Path of the Berserker.md")?.text ?? "";
+    expect(sub).toContain(".SUBCLASS:\n  parent_class: Barbarian");
+    expect(sub).toContain('name: "Mindless Rage"\nsubtitle: "6th-Level Path of the Berserker Feature"\nlevel: 6');
+  });
+
+  it("reads a 5e stat block: scores with modifiers, a Challenge line, bold-italic names", () => {
+    const goblin = section("Goblin", 2, [
+      para(span("Small humanoid (goblinoid), neutral evil", false, true)),
+      para(span("Armor Class", true), span(" 15 (leather armor, shield)")),
+      para(span("Hit Points", true), span(" 7 (2d6)")),
+      para(span("Speed", true), span(" 30 ft.")),
+      para(span("STR DEX CON INT WIS CHA")),
+      para(span("8 (−1) 14 (+2) 10 (+0) 10 (+0) 8 (−1) 8 (−1)")),
+      para(span("Skills", true), span(" Stealth +6")),
+      para(span("Challenge", true), span(" 1/4 (50 XP)")),
+      para(span("Nimble Escape.", true, true), span(" The goblin can take the Disengage action.")),
+    ]);
+    const { files, kinds } = write(section("Monsters", 0, [], [goblin]));
+    expect(kinds).toEqual({ creature: 1 });
+    const note = files.find((f) => f.path === "01. Monsters.md")?.text ?? "";
+    expect(note).toContain('cr: "1/4"');
+    expect(note).toContain('  skills: "Stealth +6"');
+    expect(note).toContain("abilities:\n  str: -1\n  dex: 2\n  con: 0\n  int: 0\n  wis: -1\n  cha: -1");
+    expect(note).toContain("#Nimble Escape");
+  });
+
+  it("finds a name the type did not mark by the line under it, and reads a scan's unmarked names", () => {
+    const blocks: Block[] = [
+      para(span("Some text before.")),
+      para(span("Animal Messenger")),
+      para(span("2nd-level enchantment (ritual)")),
+      para(span("Casting Time: 1 action")),
+      para(span("At Higher Levels. If you cast this spell using a slot of")),
+      para(span("3rd level or higher, the duration increases.")),
+    ];
+    expect(promoteNames(blocks)).toBe(1);
+    expect(blocks[1]).toMatchObject({ type: "heading", text: "Animal Messenger" });
+    const bat = section("Bat", 2, [
+      para(span("Tiny Beast")),
+      para(span("Armor Class 11")),
+      para(span("Hit Points 8")),
+      para(span("STR DEX CON INT WIS CHA −4 +1 −1 −4 +1 −3")),
+      para(span("Echolocation. The bat can’t use its keensense while deafened.")),
+      para(span("ACTIONS Bite. Melee Weapon Attack: +3 to hit.")),
+    ]);
+    const { files } = write(section("Creatures", 0, [], [bat]), { scanned: new Set([1]) });
+    const traits = files.find((f) => f.path === "Creature Traits/Bat Traits.md")?.text ?? "";
+    expect(traits).toContain('name: "Echolocation"\ntype: trait');
+    expect(traits).toContain('name: "Bite"\ntype: action');
+  });
+
+  it("checks the book's table of contents against the headings found", () => {
+    const contents = readContents([
+      "TABLE OF CONTENTS",
+      "Introduction .............................. 7",
+      "Chapter 1: Character",
+      "Creation & Leveling................. 11",
+      "Safety Tools ..................................10",
+      "Rules to Remember .......................9",
+    ]);
+    expect(contents.map((c) => `${c.title}|${c.page}`)).toEqual([
+      "Introduction|7",
+      "Chapter 1: Character Creation & Leveling|11",
+      "Safety Tools|10",
+      "Rules to Remember|9",
+    ]);
+    const chapter = (title: string, kids: string[]): Chapter => ({
+      title,
+      number: "",
+      firstPage: 1,
+      lastPage: 2,
+      root: section(
+        title,
+        0,
+        [],
+        kids.map((k) => section(k, 1, []))
+      ),
+    });
+    const missing = missingFromContents(contents, [
+      chapter("Introduction", ["Safety Tools"]),
+      chapter("Character Creation and Leveling", []),
+    ]);
+    expect(missing.map((m) => m.title)).toEqual(["Rules to Remember"]);
+  });
+
+  it("files entities into a system's folders, links to them from the book, and leaves existing notes alone", () => {
+    const acid = section("Acid Splash", 2, [
+      para(span("Arcane Cantrip (Conjuration)", false, true)),
+      para(span("Casting Time:", true), span(" 1 action")),
+      para(span("Range:", true), span(" 60 feet")),
+      para(span("You hurl a bubble of acid.")),
+    ]);
+    const aid = section("Aid", 2, [
+      para(span("2nd-Circle Divine (Abjuration)", false, true)),
+      para(span("Casting Time:", true), span(" 1 action")),
+      para(span("Range:", true), span(" 30 feet")),
+      para(span("Your spell bolsters your allies.")),
+    ]);
+    const place = placer("tov", "Player's Guide");
+    expect(place("item", "Dagger", { type: "Simple Melee Weapons" }, [])).toBe(
+      "tov/worldbuilding/items/weapons/simple-melee/Dagger"
+    );
+    expect(place("item", "Padded", { type: "Light Armor" }, [])).toBe("tov/worldbuilding/items/armor/light/Padded");
+    expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
+      "tov/worldbuilding/traits/talents/magic/Arcanist"
+    );
+    expect(place("creature", "Bat", {}, [])).toBe("tov/worldbuilding/bestiary/creatures/players-guide/Bat");
+    const { files, ctx } = write(section("Spells", 0, [], [acid, aid]), {
+      place,
+      existing: new Set(["tov/worldbuilding/spells/2nd-circle/aid"]),
+    });
+    expect(files.filter((f) => f.outside).map((f) => f.path)).toEqual([
+      "tov/worldbuilding/spells/cantrips/Acid Splash.md",
+    ]);
+    expect(ctx.kept).toEqual(["tov/worldbuilding/spells/2nd-circle/Aid.md"]);
+    const note = files.find((f) => f.path === "01. Spells.md")?.text ?? "";
+    expect(note).toContain("![[tov/worldbuilding/spells/cantrips/Acid Splash|Acid Splash]]");
+    expect(note).toContain("![[tov/worldbuilding/spells/2nd-circle/Aid|Aid]]");
+  });
+
+  it("turns a dark bar's white text dark, and tells bold words by their ink", () => {
+    const w = 400;
+    const h = 60;
+    const px = new Uint8ClampedArray(w * h * 4).fill(255);
+    const set = (x: number, y: number, v: number) => {
+      const i = (y * w + x) * 4;
+      px[i] = px[i + 1] = px[i + 2] = v;
+    };
+    for (let y = 20; y < 44; y++) for (let x = 40; x < 360; x++) set(x, y, 30);
+    for (let y = 26; y < 38; y++) for (let x = 60; x < 120; x += 4) set(x, y, 255);
+    expect(invertDarkBars(px, w, h)).toBe(1);
+    expect(px[(30 * w + 200) * 4]).toBe(225);
+    expect(px[(30 * w + 60) * 4]).toBe(0);
+    const ink = inkMeter(px, w, h);
+    expect(ink({ x0: 60, y0: 26, x1: 120, y1: 38 })).toBeCloseTo(0.25, 1);
+    expect(ink({ x0: 200, y0: 26, x1: 260, y1: 38 })).toBe(0);
   });
 });

@@ -155,7 +155,7 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
       const paint = typeof args?.[0] === "number" ? args[0] : ops.fnArray[i + 1];
       if (!mm || !fillOps.has(paint) || fill.white) continue;
       const r = boxOf(mul(vt, ctm), mm[0], mm[1], mm[2], mm[3]);
-      if (r.w < 30 || r.h < 7) continue;
+      if (r.w < 12 || r.h < 7) continue;
       if (r.w * r.h > 0.8 * out.width * out.height) continue;
       out.rects.push({ ...r, dark: fill.dark } as FillRect);
     } else if (fn === OPS.paintImageXObject || fn === OPS.paintInlineImageXObject) {
@@ -209,8 +209,14 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     const size = Math.hypot(t[2], t[3]) || it.height || 0;
     if (size < 2) continue;
     const font = nameOf(it.fontName);
+    // Soft hyphens are dropped and the many hyphen characters made one, so `1st‑level` reads as it looks.
+    const str = it.str
+      .replace(/\u00AD/g, "")
+      .replace(/[\u2010\u2011]/g, "-")
+      .replace(/-{2,}/g, "-");
+    if (!str) continue;
     const run: TextRun = {
-      str: it.str,
+      str,
       x: t[4],
       y: t[5],
       w: it.width ?? 0,

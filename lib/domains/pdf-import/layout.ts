@@ -50,7 +50,9 @@ export function buildSegs(runs: TextRun[]): Seg[] {
       // A word drawn twice in the same place is a faked bold.
       if (last && last.str === run.str && Math.abs(last.x - run.x) < 0.6) continue;
       const gap = cur ? run.x - cur.end : 0;
-      if (cur && gap > Math.max(0.9 * Math.min(run.size, cur.seg.size), 6.5)) close();
+      // A scan's word spacing wavers: only a clearly wide gap parts two cells there.
+      const reach = run.font.startsWith("ocr") ? 1.7 : 0.9;
+      if (cur && gap > Math.max(reach * Math.min(run.size, cur.seg.size), 6.5)) close();
       if (!cur) {
         cur = {
           seg: { x: run.x, y: 0, w: 0, h: 0, spans: [], size: run.size, font: run.font, base: run.y },
@@ -137,6 +139,11 @@ export function mergeRects(rects: FillRect[]): Array<Rect & { headBottom?: numbe
     const gap = Math.max(a.y, b.y) - Math.min(bottom(a), bottom(b));
     return gap <= 26;
   };
+  // Shading drawn cell by cell: the cells of a row sit side by side.
+  const beside = (a: Rect, b: Rect) => {
+    if (Math.abs(a.y - b.y) > 3 || Math.abs(bottom(a) - bottom(b)) > 3) return false;
+    return Math.max(a.x, b.x) - Math.min(right(a), right(b)) <= 4;
+  };
   let merged = true;
   while (merged) {
     merged = false;
@@ -144,7 +151,7 @@ export function mergeRects(rects: FillRect[]): Array<Rect & { headBottom?: numbe
       for (let j = i + 1; j < boxes.length; j++) {
         const a = boxes[i];
         const b = boxes[j];
-        if (inside(a, b) || inside(b, a) || stacked(a, b)) {
+        if (inside(a, b) || inside(b, a) || stacked(a, b) || beside(a, b)) {
           const x = Math.min(a.x, b.x);
           const y = Math.min(a.y, b.y);
           boxes[i] = {
@@ -347,6 +354,79 @@ function flow(
   return out;
 }
 
+/**
+ * A table's shading need not cover all of it: a first column, the header
+ * above the first stripe and a last row below the last one are often left
+ * white. Text on the table's baselines beside it, rows of cells just above
+ * it and just below it are taken into the box. True when anything was.
+ */
+function growTable(box: Box, segs: Seg[], taken: Set<Seg>, page: number, gutters: Gutter[]): boolean {
+  const mine = box.lines.flatMap((l) => l.cells);
+  const bases = box.lines.map((l) => l.base).sort((a, b) => a - b);
+  const pitches = bases
+    .slice(1)
+    .map((b, i) => b - bases[i])
+    .sort((a, b) => a - b);
+  const pitch = pitches[Math.floor(pitches.length / 2)] ?? 12;
+  const top0 = box.y;
+  let grew = false;
+  const add = (seg: Seg) => {
+    taken.add(seg);
+    mine.push(seg);
+    const r = Math.max(right(box), right(seg));
+    const b = Math.max(bottom(box), seg.base + 2);
+    box.x = Math.min(box.x, seg.x - 1);
+    box.y = Math.min(box.y, seg.base - seg.size);
+    box.w = r - box.x;
+    box.h = b - box.y;
+    grew = true;
+  };
+  // Text across a gutter from the table is the next column's, however close it comes.
+  const mids = gutters.map((g) => (g.x0 + g.x1) / 2).filter((m) => !(box.x < m - 8 && right(box) > m + 8));
+  const centre = box.x + box.w / 2;
+  const sameSide = (s: Seg) => mids.every((m) => s.x + s.w / 2 < m === centre < m);
+  // Only text set like the table's own: a heading or a caption beside it is neither a cell nor a row.
+  const sizes = mine.map((s) => s.size).sort((a, b) => a - b);
+  const size = sizes[Math.floor(sizes.length / 2)] ?? 10;
+  const free = () => segs.filter((s) => !taken.has(s) && sameSide(s) && Math.abs(s.size - size) <= 0.16 * size);
+  // A table with a dark header strip is drawn whole but for a last white row; one shaded cell by
+  // cell or in stripes alone may lack its first column and its header too.
+  const open = box.headBottom === undefined;
+  // Beside: on a row's baseline, within reach of the box's edge.
+  for (const seg of open ? free() : []) {
+    const onRow = bases.some((b) => Math.abs(b - seg.base) <= 2.5);
+    const near = right(seg) > box.x - 45 && seg.x < right(box) + 45;
+    if (onRow && near && seg.w < box.w) add(seg);
+  }
+  // Below and above: whole rows of cells that carry the table on, one pitch at a time.
+  for (const dir of open ? [1, -1] : [1]) {
+    for (let step = 0; step < (dir > 0 ? 40 : 3); step++) {
+      const edge = dir > 0 ? Math.max(...mine.map((s) => s.base)) : Math.min(...mine.map((s) => s.base));
+      // The very next line, whatever it is set in: a heading or a line of prose there ends the table.
+      const within = (sg: Seg) => {
+        const dy = (sg.base - edge) * dir;
+        return dy > 2 && dy <= 1.7 * pitch + 2 && sg.x >= box.x - 6 && right(sg) <= right(box) + 6;
+      };
+      const near = segs.filter((sg) => !taken.has(sg) && sameSide(sg) && within(sg));
+      if (!near.length) break;
+      const first = dir > 0 ? Math.min(...near.map((sg) => sg.base)) : Math.max(...near.map((sg) => sg.base));
+      const line = near.filter((sg) => Math.abs(sg.base - first) <= 2.5);
+      // A row has cells that start where the table's columns do, set like the table's text.
+      const starts = mine.map((sg) => sg.x);
+      const fits = line.filter(
+        (sg) => Math.abs(sg.size - size) <= 0.16 * size && starts.some((x) => Math.abs(x - sg.x) <= 4)
+      );
+      if (line.length < 2 || fits.length < 2 || fits.length < line.length) break;
+      line.forEach(add);
+    }
+  }
+  if (!grew) return false;
+  // What now sits above the first stripe is the header.
+  if (box.headBottom === undefined && box.y < top0 - 3) box.headBottom = top0;
+  box.lines = buildLines(mine, page, box.x, right(box));
+  return true;
+}
+
 export interface LayoutOptions {
   /** True for text that is page furniture (a running head, a page number). */
   furniture?: (seg: Seg, page: RawPage) => boolean;
@@ -378,7 +458,7 @@ export function layoutPage(page: RawPage, opts: LayoutOptions = {}): PageLayout 
     );
     if (!mine.length) continue;
     const lines = buildLines(mine, page.num, rect.x, right(rect));
-    if (lines.length <= 1 && rect.h < 26) {
+    if (lines.length <= 1 && rect.h < 26 && (lines[0]?.cells.length ?? 0) <= 1) {
       // A bar behind a single line is a heading's rule, not a box: the line stays in the flow.
       for (const seg of mine) (seg as Seg & { barred?: boolean }).barred = true;
       continue;
@@ -386,10 +466,57 @@ export function layoutPage(page: RawPage, opts: LayoutOptions = {}): PageLayout 
     for (const seg of mine) taken.add(seg);
     boxes.push({ ...rect, lines, page: page.num });
   }
-  const free = segs.filter((s) => !taken.has(s));
+  // Stripes of one table with two unshaded rows between them: boxes of the very same width, one
+  // under the other, each holding a row of cells. (A heading's bar holds one cell, and stays apart.)
+  const rowed = (b: Box) => b.lines.some((l) => l.cells.length >= 2);
+  for (let again = true; again; ) {
+    again = false;
+    outer: for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const [a, b] = [boxes[i], boxes[j]];
+        const same = Math.abs(a.x - b.x) <= 2 && Math.abs(right(a) - right(b)) <= 2;
+        const gap = Math.max(a.y, b.y) - Math.min(bottom(a), bottom(b));
+        if (!same || gap > 46 || !rowed(a) || !rowed(b)) continue;
+        const y = Math.min(a.y, b.y);
+        const upper = a.y <= b.y ? a : b;
+        boxes[i] = {
+          x: Math.min(a.x, b.x),
+          y,
+          w: a.w,
+          h: Math.max(bottom(a), bottom(b)) - y,
+          lines: buildLines(
+            [...a.lines, ...b.lines].flatMap((l) => l.cells),
+            page.num,
+            a.x,
+            right(a)
+          ),
+          headBottom: upper.headBottom,
+          page: page.num,
+        };
+        boxes.splice(j, 1);
+        again = true;
+        break outer;
+      }
+    }
+  }
   const prefer = opts.prefer ?? [];
+  const pageGutters = findGutters(segs.filter((s) => !taken.has(s)));
+  const kept: Box[] = [];
   for (const box of boxes) {
-    const tabular = looksTabular(box.lines, box.w, box.headBottom !== undefined);
+    let tabular = looksTabular(box.lines, box.w, box.headBottom !== undefined);
+    const letters = box.lines.reduce((n, l) => n + lineText(l).length, 0);
+    if (!tabular && letters < 40) {
+      // Shading with next to nothing on it (a heading's bar and a rule under it, a form's field)
+      // is no sidebar: its words go back into the page's flow, as headings where they sat on a bar.
+      for (const line of box.lines)
+        for (const seg of line.cells) {
+          taken.delete(seg);
+          if (box.lines.length === 1) (seg as Seg & { barred?: boolean }).barred = true;
+        }
+      continue;
+    }
+    kept.push(box);
+    if (tabular && growTable(box, segs, taken, page.num, pageGutters)) tabular = true;
     (box as Box & { tabular?: boolean }).tabular = tabular;
     if (!tabular) {
       // Prose in a box may itself be set in columns.
@@ -404,9 +531,10 @@ export function layoutPage(page: RawPage, opts: LayoutOptions = {}): PageLayout 
       box.lines = inner.flatMap((el) => (el.kind === "line" ? [el.line] : []));
     }
   }
+  const free = segs.filter((s) => !taken.has(s));
   const elements = flow(
     free,
-    boxes,
+    kept,
     page.images.filter((i) => i.file),
     page.num,
     prefer
@@ -472,6 +600,8 @@ export function findFurniture(pages: RawPage[]): (seg: Seg, page: RawPage) => bo
   return (seg, page) => {
     if (!inMargin(seg, page)) return false;
     const key = norm(segText(seg));
+    // A page number with the book's or the chapter's name beside it, even in a file too short to show it repeats.
+    if (/^(#\s*\|?\s*[^#]{0,40}|[^#]{0,40}\|?\s*#)$/.test(key) && key.length <= 48) return true;
     if (key === "#" || (count.get(key) ?? 0) >= need) return true;
     const band = Math.round(seg.base / 3);
     return key.length <= 60 && (usual.has(band) || usual.has(band - 1) || usual.has(band + 1));

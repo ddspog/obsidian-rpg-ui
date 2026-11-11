@@ -5,6 +5,8 @@
  *
  *   node scripts/pdf-import.mjs <book.pdf> <out folder> [--title "Name"] [--from N] [--to N]
  *        [--max-lines 300] [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
+ *        [--system tales-of-the-valiant]   the out folder is then a vault: the book goes to that system's
+ *                                          compendium and its entities to its worldbuilding folders
  */
 import esbuild from "esbuild";
 import fs from "fs";
@@ -35,6 +37,7 @@ const catalogMin = Number(flag("catalog-min", 8));
 const noImages = has("no-images");
 const noOcr = has("no-ocr");
 const noEntities = has("no-entities");
+const system = flag("system");
 const [pdfPath, outDir] = args;
 if (!pdfPath || !outDir) {
   console.error("usage: pdf-import.mjs <book.pdf> <out folder> [--title …] [--from N] [--to N]");
@@ -50,7 +53,7 @@ await esbuild.build({
   outfile: bundle,
   logLevel: "warning",
 });
-const { importPdf, ocrToRuns } = await import(pathToFileURL(bundle).href);
+const { importPdf, ocrToRuns, inkMeter, invertDarkBars } = await import(pathToFileURL(bundle).href);
 fs.rmSync(bundle, { force: true });
 
 const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -102,8 +105,11 @@ async function ocrPage(page) {
   const viewport = page.getViewport({ scale });
   const c = canvas.createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
   await page.render({ canvasContext: c.getContext("2d"), viewport }).promise;
+  const ctx = c.getContext("2d");
+  const pixels = ctx.getImageData(0, 0, c.width, c.height);
+  if (invertDarkBars(pixels.data, c.width, c.height)) ctx.putImageData(pixels, 0, 0);
   const { data } = await ocrWorker.recognize(c.toBuffer("image/png"), {}, { blocks: true });
-  return ocrToRuns(data, scale);
+  return ocrToRuns(data, scale, inkMeter(pixels.data, c.width, c.height));
 }
 
 const host = {
@@ -114,6 +120,18 @@ const host = {
   async writeBinary(p, bytes) {
     fs.mkdirSync(path.dirname(path.join(outDir, p)), { recursive: true });
     fs.writeFileSync(path.join(outDir, p), bytes);
+  },
+  async listNotes(dir) {
+    const out = [];
+    const walk = (d) => {
+      for (const entry of fs.readdirSync(path.join(outDir, d), { withFileTypes: true })) {
+        const rel = `${d}/${entry.name}`;
+        if (entry.isDirectory()) walk(rel);
+        else if (entry.name.endsWith(".md")) out.push(rel);
+      }
+    };
+    if (fs.existsSync(path.join(outDir, dir))) walk(dir);
+    return out;
   },
   async remove(p) {
     fs.rmSync(path.join(outDir, p), { force: true });
@@ -134,6 +152,8 @@ const host = {
   debug: process.env.PDF_IMPORT_DEBUG
     ? (what, data) => {
         if (what === "styles") console.error(JSON.stringify(data, null, 1));
+        else if (what === "entities")
+          for (const e of data) console.error(`[entity] ${e.kind} | ${e.title} | ${e.path}`);
         else
           for (const b of data.blocks)
             console.error(
@@ -168,6 +188,7 @@ const result = await importPdf(
     images: !noImages,
     ocr: !noOcr,
     entities: !noEntities,
+    system,
     from: from ? Number(from) : undefined,
     to: to ? Number(to) : undefined,
   },

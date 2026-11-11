@@ -3,6 +3,7 @@
  * or its biggest headings), and each chapter's blocks as a tree of sections.
  */
 
+import { CREATURE_TYPE, FACT_LINE, MAGIC_HEAD, SPELL_HEAD, opensEntity } from "./patterns";
 import type { Block, Chapter, OutlineEntry, Section } from "./types";
 
 const SMALL = new Set(
@@ -124,6 +125,11 @@ export function toSections(blocks: Block[], title: string, page: number): Sectio
   // The chapter's own title set as its one heading: its parts are the chapter's.
   while (root.children.length === 1 && !root.blocks.some((b) => b.type !== "image")) {
     const only = root.children[0];
+    // Only a heading that says what the chapter is called: any other lone heading is a real section.
+    const words = (text: string) => new Set(text.toLowerCase().match(/[a-z0-9]{2,}/g) ?? []);
+    const [a, b] = [words(only.title), words(title)];
+    const shared = [...a].filter((w) => b.has(w)).length;
+    if (shared < Math.min(a.size, b.size) || !shared) break;
     root.blocks.push(...only.blocks);
     root.children = only.children;
   }
@@ -171,6 +177,42 @@ export function dropTitleHeadings(blocks: Block[], title: string, number: string
     const same = have === want || (want.length >= 6 && have.includes(want));
     return !((isNumber && !seenText) || same);
   });
+}
+
+/**
+ * A name the type did not mark as a heading (a scan, a book that sets names
+ * in the text's own face) is known by the line under it: the one that opens a
+ * spell's, a magic item's or a creature's facts. Such names become headings,
+ * all of one rank below every other, so each entity is a section.
+ */
+export function promoteNames(blocks: Block[]): number {
+  const text = (b: Block | undefined) =>
+    b?.type === "para"
+      ? b.spans
+          .map((s) => s.text)
+          .join("")
+          .trim()
+      : "";
+  const opens = (i: number) => {
+    const under = text(blocks[i + 1]);
+    const creature = CREATURE_TYPE.test(under) && /^armor class\b/i.test(text(blocks[i + 2]));
+    return creature || /^armor class\s+\d/i.test(under) || SPELL_HEAD.test(under) || MAGIC_HEAD.test(under);
+  };
+  // Names the type did mark set the rank: a name found by its line alone is their fellow, not their part.
+  const ranks = new Map<number, number>();
+  blocks.forEach((b, i) => {
+    if (b.type === "heading" && opens(i)) ranks.set(b.level, (ranks.get(b.level) ?? 0) + 1);
+  });
+  const level = [...ranks.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 90;
+  let made = 0;
+  for (let i = 0; i + 1 < blocks.length; i++) {
+    const name = text(blocks[i]);
+    if (!name || name.length > 70 || /[.!?;,]$/.test(name) || FACT_LINE.test(name) || opensEntity(name)) continue;
+    if (!opens(i)) continue;
+    blocks[i] = { type: "heading", level, text: name, page: blocks[i].page, style: "name" };
+    made++;
+  }
+  return made;
 }
 
 /** How many lines of a note a section takes, near enough to decide what to split. */
@@ -237,4 +279,50 @@ export function isContentsPage(lines: string[]): boolean {
   if (lines.length < 8) return false;
   const dotted = lines.filter((l) => /(\.{3,}|…{2,}|(\. ){3,})\s*\d{1,4}\s*$/.test(l)).length;
   return dotted / lines.length > 0.35;
+}
+
+export interface ContentsEntry {
+  title: string;
+  /** The page number the book prints, which need not be the file's. */
+  page: number;
+}
+
+/** The entries of a table of contents, from its lines; a title that wrapped is joined to the line that carries its page. */
+export function readContents(lines: string[]): ContentsEntry[] {
+  const out: ContentsEntry[] = [];
+  let carry = "";
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    const hit = line.match(/^(.*?)\s*(?:\.{2,}|…+|(?:\s\.)+)\s*(\d{1,4})$/);
+    if (hit) {
+      const title = `${carry} ${hit[1]}`.trim();
+      if (title) out.push({ title: titleCase(title), page: Number(hit[2]) });
+      carry = "";
+    } else carry = line.length <= 45 && !/[.!?]$/.test(line) && !/^(table of )?contents$/i.test(line) ? line : "";
+  }
+  return out;
+}
+
+/** The contents entries that no chapter or heading of the import carries. */
+export function missingFromContents(contents: ContentsEntry[], chapters: Chapter[]): ContentsEntry[] {
+  const bare = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/^(chapter\s+\d+|appendix\s+[a-z])\s*[:.]?\s*/, "")
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "");
+  const have = new Set<string>();
+  const walk = (section: Section) => {
+    have.add(bare(section.title));
+    section.children.forEach(walk);
+  };
+  for (const chapter of chapters) walk(chapter.root);
+  const seen = new Set<string>();
+  return contents.filter((entry) => {
+    const key = bare(entry.title);
+    if (!key || have.has(key) || seen.has(key)) return false;
+    if (/^(index|tableofcontents|contents|charactersheet)$/.test(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

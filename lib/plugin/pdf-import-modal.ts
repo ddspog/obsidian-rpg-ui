@@ -9,7 +9,7 @@
 import { App, Modal, Notice, Setting, TFile, loadPdfJs, normalizePath, requestUrl } from "obsidian";
 import type { DecodedImage } from "lib/domains/pdf-import/extract";
 import { LOOKS_SYSTEM, looksPrompt, parseLooks } from "lib/domains/pdf-import/llm";
-import { ocrToRuns, type OcrResult } from "lib/domains/pdf-import/ocr";
+import { inkMeter, invertDarkBars, ocrToRuns, type OcrResult } from "lib/domains/pdf-import/ocr";
 import { importPdf, type ImportHost } from "lib/domains/pdf-import/pipeline";
 import { fileName } from "lib/domains/pdf-import/structure";
 import { DEFAULT_OPTIONS, type TextRun } from "lib/domains/pdf-import/types";
@@ -107,6 +107,7 @@ export class PdfImportModal extends Modal {
   private images = true;
   private ocr = true;
   private entities = true;
+  private system = "";
   private ocrLang = "eng";
   private useModel = false;
   private maxLines = DEFAULT_OPTIONS.maxLines;
@@ -215,6 +216,26 @@ export class PdfImportModal extends Modal {
       )
       .addToggle((t) => t.setValue(this.entities).onChange((v) => (this.entities = v)));
 
+    // Folders laid out as a system: they hold both a compendium and a worldbuilding folder.
+    const systems = this.app.vault
+      .getAllFolders()
+      .filter(
+        (f) => f.children.some((c) => c.name === "compendium") && f.children.some((c) => c.name === "worldbuilding")
+      )
+      .map((f) => f.path);
+    if (systems.length) {
+      new Setting(contentEl)
+        .setName("File into a system")
+        .setDesc(
+          "The book goes to the system's compendium, and each entity to the folder its kind is kept in under worldbuilding (spells by circle, bestiary, enchantments, items, traits). Notes the vault already has are never written over. None: everything stays in the book's own folder."
+        )
+        .addDropdown((d) => {
+          d.addOption("", "None");
+          for (const path of systems) d.addOption(path, path);
+          d.setValue(this.system).onChange((v) => (this.system = v));
+        });
+    }
+
     new Setting(contentEl)
       .setName("Note length")
       .setDesc("A chapter or section longer than this many lines is split into tabs, each a note in a folder.")
@@ -319,8 +340,12 @@ export class PdfImportModal extends Modal {
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    const ctx = canvas.getContext("2d");
+    const pixels = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+    // White text on dark bars (headings, table headers) is turned dark-on-light so it is read too.
+    if (ctx && pixels && invertDarkBars(pixels.data, canvas.width, canvas.height)) ctx.putImageData(pixels, 0, 0);
     const { data } = await this.ocrWorker.recognize(canvas, {}, { blocks: true });
-    return ocrToRuns(data as OcrResult, scale);
+    return ocrToRuns(data as OcrResult, scale, pixels ? inkMeter(pixels.data, canvas.width, canvas.height) : undefined);
   }
 
   private async run(progress: (stage: string, done: number, total: number) => void): Promise<void> {
@@ -368,6 +393,13 @@ export class PdfImportModal extends Modal {
         if (await adapter.exists(to)) await adapter.remove(to);
         await adapter.rename(from, to);
       },
+      listNotes: async (dir) => {
+        const prefix = `${normalizePath(dir)}/`;
+        return this.app.vault
+          .getMarkdownFiles()
+          .map((f) => f.path)
+          .filter((p) => p.startsWith(prefix));
+      },
       encodeImage: encodeWebp,
       ocrPage: this.ocr ? (page) => this.ocrPage(page) : undefined,
       refineLooks: this.useModel
@@ -391,6 +423,7 @@ export class PdfImportModal extends Modal {
           images: this.images,
           ocr: this.ocr,
           entities: this.entities,
+          system: this.system || undefined,
           maxLines: this.maxLines,
         },
         host,
