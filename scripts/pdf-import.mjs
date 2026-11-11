@@ -7,6 +7,8 @@
  *        [--max-lines 300] [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
  *        [--system tales-of-the-valiant]   the out folder is then a vault: the book goes to that system's
  *                                          compendium and its entities to its worldbuilding folders
+ *        [--marker ᴰ] [--source 'From **D&D 5e** "Book" by **Publisher**.']
+ *        [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"] [--views spell]
  */
 import esbuild from "esbuild";
 import fs from "fs";
@@ -38,6 +40,11 @@ const noImages = has("no-images");
 const noOcr = has("no-ocr");
 const noEntities = has("no-entities");
 const system = flag("system");
+const marker = flag("marker");
+const source = flag("source");
+const bannerFolder = flag("banners");
+const pictureFolder = flag("pictures");
+const views = flag("views");
 const [pdfPath, outDir] = args;
 if (!pdfPath || !outDir) {
   console.error("usage: pdf-import.mjs <book.pdf> <out folder> [--title …] [--from N] [--to N]");
@@ -137,6 +144,8 @@ const host = {
     fs.rmSync(path.join(outDir, p), { force: true });
   },
   async rename(a, b) {
+    fs.mkdirSync(path.dirname(path.join(outDir, b)), { recursive: true });
+    if (fs.existsSync(path.join(outDir, b)) && a !== b) return fs.rmSync(path.join(outDir, a), { force: true });
     fs.renameSync(path.join(outDir, a), path.join(outDir, b));
   },
   encodeImage: canvas
@@ -189,6 +198,11 @@ const result = await importPdf(
     ocr: !noOcr,
     entities: !noEntities,
     system,
+    marker,
+    source,
+    bannerFolder,
+    pictureFolder,
+    views: views ? views.split(",") : undefined,
     from: from ? Number(from) : undefined,
     to: to ? Number(to) : undefined,
   },

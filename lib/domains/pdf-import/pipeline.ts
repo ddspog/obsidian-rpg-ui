@@ -245,22 +245,27 @@ export async function importPdf(
   const used = new Map<string, string>();
   const taken = new Set<string>();
   const bookSlug = slug(book);
-  const rename = async (file: string, near: string): Promise<string> => {
+  // A vault that keeps banners and reference pictures in folders of their own gets them there,
+  // under plain names as its others have; else they stay in the book's folder, named for the book.
+  const folderFor = (banner: boolean) => (banner ? options.bannerFolder : options.pictureFolder)?.replace(/\/+$/, "");
+  const rename = async (file: string, near: string, banner = false): Promise<string> => {
     const hit = used.get(file);
     if (hit) return hit;
     const ext = file.slice(file.lastIndexOf("."));
-    const base = `${bookSlug}-${slug(near) || "art"}`.slice(0, 80);
+    const folder = folderFor(banner);
+    const base = (folder ? slug(near) || "art" : `${bookSlug}-${slug(near) || "art"}`).slice(0, 80);
     let name = `${base}${ext}`;
     for (let n = 2; taken.has(name); n++) name = `${base}-${n}${ext}`;
     taken.add(name);
     used.set(file, name);
-    await host.rename(`${root}/${ASSETS}/${file}`, `${root}/${ASSETS}/${name}`);
+    await host.rename(`${root}/${ASSETS}/${file}`, folder ? `${folder}/${name}` : `${root}/${ASSETS}/${name}`);
     return name;
   };
   let tables = 0;
   let sidebars = 0;
   for (const chapter of chapters) {
-    if (chapter.banner) chapter.banner = await rename(chapter.banner, `${chapter.title} banner`);
+    if (chapter.banner)
+      chapter.banner = await rename(chapter.banner, folderFor(true) ? chapter.title : `${chapter.title} banner`, true);
     const todo: Array<{ block: Extract<Block, { type: "image" }>; near: string }> = [];
     walkBlocks(chapter.root, (block, owner) => {
       if (block.type === "image") todo.push({ block, near: owner.level ? owner.title : chapter.title });
@@ -298,7 +303,7 @@ export async function importPdf(
   // 7. Write the notes.
   const ctx: EmitContext = {
     book,
-    source: `From **${options.title}**.`,
+    source: options.source?.trim() || `From **${options.title}**.`,
     options,
     look: (title, index) => picked.get(title) ?? lookFor(title, index),
     mend: mender(vocabulary),
@@ -307,7 +312,7 @@ export async function importPdf(
     names: new Set(),
     kinds: options.entities ? new Map() : undefined,
     found: [],
-    place: system && options.entities ? placer(system, options.title) : undefined,
+    place: system && options.entities ? placer(system, options.title, options.marker) : undefined,
     existing:
       system && host.listNotes
         ? new Set((await host.listNotes(`${system}/worldbuilding`)).map((p) => p.replace(/\.md$/, "").toLowerCase()))

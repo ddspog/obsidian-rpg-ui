@@ -19,6 +19,8 @@ Run the command, then:
 | **OCR** | Reads pages that are only a scan (no text of their own) with Tesseract. The first use downloads the reader (about 15 MB) into the plugin's `ocr` folder; after that it works offline. The language is a Tesseract code (`eng`, `por`, `spa`…). |
 | **Game entities** | Writes spells, creatures, items, classes and the like as the plugin's own blocks (see below). |
 | **File into a system** | Shown when the vault has a folder with both `compendium` and `worldbuilding` in it. The book goes to that system's compendium and each entity to the folder its kind is kept in (see below). |
+| **Name mark**, **Pictures in the vault's own folders** | With a system chosen: see Filing into a system's folders. |
+| **Source** | The `source` line every note carries, e.g. `From **Tales of the Valiant** "Player's Guide" by **Kobold Press**.` |
 | **Note length** | A chapter or section longer than this many lines (300) is split into tabs, each a note in a folder. |
 | **Ask the model for tab icons** | Shown when an Anthropic link is set in the image studio's settings. |
 
@@ -53,6 +55,7 @@ recognised by the way rulebooks of the 5e family write them:
 | --- | --- | --- |
 | Spell | a line under the name such as `2nd-Circle Arcane (Evocation)` or `3rd-level evocation`, then Casting Time, Range, Components, Duration | `rpg spell` with `circle`, `source`, `school`, `casting`, `range`, `components`, `duration`, `summary` |
 | Creature | Armor Class and Hit Points lines, the six abilities, a `CR` on the heading or a Challenge line | `rpg stat.monster`; each trait, action, bonus action and reaction as an `rpg feature.details` in `Creature Traits/<Name> Traits.md`, which the stat block refers to |
+| Vehicle | a stat block whose type line says Vehicle (`Large Land Vehicle (10 ft. by 5 ft.)`) | `rpg stat.vehicle` with `size`, `type`, `dimensions`, crew, passengers and cargo |
 | Magic item | an italic line such as `Wondrous Item, Uncommon 1,000 gp (Requires Attunement)` | `rpg item.magic` with `type`, `rarity`, `cost`, `attunement`, `applies_to.kinds` |
 | Weapon, armor, gear | a row of a table with a Cost column and a Damage, Armor Class or Weight column | `rpg item.element` (one note a row, in a folder named for the table) with `weapon` or `armor` filled in |
 | Class | a section with Class Features whose features come at stated levels | one note; each feature an `rpg feature.details` with `subtitle` and `level` |
@@ -98,15 +101,34 @@ With **File into a system** set to a folder laid out like `tales-of-the-valiant`
 | --- | --- |
 | The book's chapters | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`) |
 | Spells | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, … |
-| Creatures | `worldbuilding/bestiary/creatures/<book-name>/`, their traits in `worldbuilding/traits/features/<book-name>/` |
+| Beasts | `worldbuilding/bestiary/animals/` |
+| Creatures the book prices as mounts | `worldbuilding/bestiary/creatures/steeds/` |
+| Humanoids | `worldbuilding/bestiary/npcs/` |
+| Other creatures | `worldbuilding/bestiary/monsters/<creature type>/`, the type as the stat block gives it |
+| Vehicles | `worldbuilding/bestiary/vehicles/<land|water|air>/`, as `rpg stat.vehicle` |
+| Creatures' traits and actions | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits` |
 | Magic items | `worldbuilding/enchantments/` |
 | Weapons, armor, gear, tools | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/` |
 | Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses`, `lineages`, `heritages`, `backgrounds` |
 | Talents | `worldbuilding/traits/talents/<magic|martial|technical>/` |
 
-Where an entity sat in the book, its chapter shows it from its new place (an embed, or a list of links by
-letter for a section of entries). **A note the vault already has is never written over**: the book links to
-the one that is there, and the contents note lists which were left alone.
+- **A note the vault already has is never written over.** The book links to the one that is there, and
+  the contents note lists which were left alone.
+- **The book's pages list entities the way the system's own pages do**: a section of entries becomes one
+  call a folder and a letter (`@[[…/spells/cantrips/]].shallow().filter(C prefix name).spell()`), which shows
+  every note in that folder, this book's and any other's. The system's `spell` view is used where it has one.
+- **Traits shared by a type.** Creatures of one type share a traits note. A trait two creatures have word for
+  word is written once; one of the same name with other words is kept under the creature's name (its `id`)
+  and still shown by its own name.
+- **Price lists.** A table that prices things which are not carried (mounts, vehicles: a Cost column and no
+  Weight, Damage or Armor Class) is a summary of stat blocks found elsewhere. Its cost and other columns are
+  written into the stat block of the same name (`cost`, `travel_speed`, `carrying_capacity`), and a creature it
+  prices as a mount is filed with the steeds.
+- **Name mark.** A mark may be put after each entity's name to say where it comes from, as the vault does:
+  `ᴰ` a D&D book, `ᴷ` a Kobold Press book outside the core, `º` another publisher's.
+- **Pictures.** Where the vault has top-level folders named `… Banners` and `… Reference`, chapter banners go
+  to `<Banners>/<Book>/` and the book's other pictures to `<Reference>/Compendium/<Book>/`, under plain names;
+  a picture the vault already has there is kept. A picture set with a stat block becomes its `image`.
 
 ### Scanned books
 
@@ -154,6 +176,8 @@ The same code runs outside Obsidian, for trying changes on a book and for very l
 ```
 node scripts/pdf-import.mjs book.pdf out-folder --title "Player's Guide" [--from 9 --to 60] [--max-lines 300]
      [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
+     [--system tales-of-the-valiant] [--marker ᴰ] [--source '…'] [--views spell]
+     [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"]
 ```
 
 `PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `OCR_LANG=por` picks the

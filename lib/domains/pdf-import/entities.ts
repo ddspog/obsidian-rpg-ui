@@ -17,6 +17,7 @@ import type { Block, OutFile, Section, Span } from "./types";
 export type EntityKind =
   | "spell"
   | "creature"
+  | "vehicle"
   | "magic item"
   | "item"
   | "class"
@@ -47,6 +48,13 @@ export interface EntityEnv {
   inline(section: Section, depth: number): string[];
   /** Where a creature's traits note goes (from the vault's root, no `.md`), when not beside the creature. */
   traitsAt?(name: string): string;
+  /**
+   * Keeps a creature's trait or action in a note shared by its creature type, and gives the ref to
+   * it. Absent: each creature has a traits note of its own.
+   */
+  shareTrait?(type: string, creature: string, feature: { name: string; type: string; body: string[] }): string;
+  /** What a price list of the book says of this name (a mounts or vehicles table): its cost and other columns. */
+  priceOf?(name: string): { list: string; fields: Array<[string, string]> } | undefined;
   /** A name no other note in `dir` has taken. */
   unique(dir: string, name: string): string;
 }
@@ -64,7 +72,7 @@ export interface EntityOut {
   /** True when the section's subsections are already in `lines`. */
   consumed: boolean;
   /** What decides the entity's folder: a spell's circle, an item's kind. */
-  info?: { circle?: string; type?: string };
+  info?: { circle?: string; type?: string; steed?: boolean };
   /** The note the entity was written to when entities are kept in folders of their own (from the vault's root). */
   placed?: string;
 }
@@ -86,7 +94,7 @@ function fenceFor(lines: string[]): string {
 }
 
 /** A fenced rpg block: YAML above `---`, text below. */
-function fenced(kind: string, yaml: string[], body: string[]): string[] {
+export function fenced(kind: string, yaml: string[], body: string[]): string[] {
   while (body[0] === "") body = body.slice(1);
   const fence = fenceFor(body);
   return [`${fence}rpg ${kind}`, ...yaml, ...(body.length ? ["---", ...body] : []), fence];
@@ -258,6 +266,8 @@ const STAT_KEYS: Array<[RegExp, string]> = [
   [/^Skills\s+(.+)$/i, "skills"],
   [/^Senses\s+(.+)$/i, "senses"],
   [/^Languages\s+(.+)$/i, "languages"],
+  [/^Initiative\s+(.+)$/i, "initiative"],
+  [/^Cargo(?: Capacity)?\s+(.+)$/i, "cargo"],
 ];
 const FEATURE_GROUP: Array<[RegExp, string]> = [
   [/^bonus actions?$/i, "bonus"],
@@ -276,6 +286,18 @@ interface Feature {
 }
 
 function creature(section: Section, env: EntityEnv): EntityOut | null {
+  // A description under the thing's name, then its stat block under the same name again (a vehicle):
+  // one entity, the description its text.
+  const twin = section.children.length === 1 ? section.children[0] : undefined;
+  const opening: Block[] = [];
+  if (
+    twin &&
+    twin.title.toLowerCase() === section.title.toLowerCase() &&
+    !section.blocks.some((b) => /^Armor Class\s+\d/i.test(plain(b)))
+  ) {
+    opening.push(...section.blocks);
+    section = { ...twin, title: section.title, tag: section.tag ?? twin.tag };
+  }
   const rating = section.tag?.match(/^CR\s+(.+)$/i)?.[1] ?? "";
   // The block's own first lines must be a stat block's: a section that merely holds one further down is not a creature.
   const own = section.blocks.slice(0, 10).map(plain);
@@ -293,7 +315,7 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
 
   const loose = !!env.scanned || unmarked(seq.filter((b): b is Block => b.type !== "label"));
   const stats: Array<[string, string]> = [];
-  const lore: Block[] = [];
+  const lore: Block[] = [...opening];
   const features: Feature[] = [];
   let type = "";
   let cr = rating;
@@ -336,6 +358,12 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
       const both = text.match(/^Perception\s+(\d+)\s+Stealth\s+(\d+)$/i);
       if (both) {
         stats.push(["pas_perception", both[1]], ["pas_stealth", both[2]]);
+        seenStats = true;
+        continue;
+      }
+      const crew = text.match(/^Crew\s+(\S+)\s+Passengers\s+(\S+)$/i);
+      if (crew) {
+        stats.push(["crew", crew[1]], ["passengers", crew[2]]);
         seenStats = true;
         continue;
       }
@@ -386,41 +414,79 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
   }
 
   const name = section.title.trim();
-  const dir = env.notePath.includes("/") ? env.notePath.slice(0, env.notePath.lastIndexOf("/")) : "";
-  const cleanName = `${name.replace(/[\\/:|#^[\]]/g, " ")} Traits`;
-  const placedAt = env.traitsAt?.(cleanName);
-  const traitsDir = placedAt
-    ? placedAt.slice(0, placedAt.lastIndexOf("/"))
-    : dir
-      ? `${dir}/Creature Traits`
-      : "Creature Traits";
-  const traitsName = env.unique(traitsDir, cleanName);
-  const traitsRef = placedAt ? `${traitsDir}/${traitsName}` : `${env.book}/${traitsDir}/${traitsName}`;
-  const yaml = [`name: ${q(name)}`, `type: ${q(type)}`];
-  if (cr) yaml.push(`cr: ${q(cr)}`);
+  // `Large Beast`, `Medium humanoid (any race), any alignment`, `Large Land Vehicle (10 ft. by 5 ft.)`.
+  const typed = type.match(/^(tiny|small|medium|large|huge|gargantuan)\s+([^(,]+?)\s*(?:\(([^)]*)\))?\s*(?:,.*)?$/i);
+  const kindWord = (typed?.[2] ?? "").trim();
+  const isVehicle = /vehicle/i.test(type);
+  const price = env.priceOf?.(name);
+  const out = blank(isVehicle ? "vehicle" : "creature");
+  // A picture set with the block is the entity's portrait, not part of its text.
+  const portrait = lore.findIndex((b) => b.type === "image");
+  const picture = portrait >= 0 ? (lore.splice(portrait, 1)[0] as Extract<Block, { type: "image" }>).file : "";
+  const yaml = [`name: ${q(name)}`];
+  if (picture) yaml.push(`image: ${q(`![[${picture}|384]]`)}`);
+  if (isVehicle) {
+    if (typed) yaml.push(`size: ${typed[1].charAt(0).toUpperCase()}${typed[1].slice(1).toLowerCase()}`);
+    yaml.push(`type: ${q(kindWord || type)}`);
+    if (typed?.[3]) yaml.push(`dimensions: ${q(typed[3])}`);
+  } else {
+    yaml.push(`type: ${q(type)}`);
+    if (cr) yaml.push(`cr: ${q(cr)}`);
+  }
+  // What a mounts or vehicles table says of it: what it costs to buy or hire, and the like.
+  for (const [k, v] of price?.fields ?? []) yaml.push(`${k}: ${q(v)}`);
   yaml.push("stats:", ...stats.map(([k, v]) => `  ${k}: ${/^pas_/.test(k) ? v : q(v)}`));
   yaml.push(
     "abilities:",
     ...["str", "dex", "con", "int", "wis", "cha"].map((k, i) => `  ${k}: ${abilities?.[i] ?? 0}`)
   );
-  const out = blank("creature");
   if (features.length) {
-    const taken = new Set<string>();
-    const traitLines = ["---", "cssclasses:", "  - note-feature", "---", `# ${traitsName}`];
     yaml.push("features:");
-    for (const f of features) {
-      let fname = f.name;
-      for (let n = 2; taken.has(fname.toLowerCase()); n++) fname = `${f.name} (${n})`;
-      taken.add(fname.toLowerCase());
-      yaml.push(`  - ref: ${q(`@[[${traitsRef}]]#${fname}`)}`);
-      traitLines.push(
-        ...fenced("feature.details", [`name: ${q(fname)}`, `type: ${f.type}`, "heading: p"], env.render(f.blocks, name))
-      );
+    const share = env.shareTrait;
+    if (share) {
+      const group = isVehicle ? "Vehicle" : kindWord.replace(/\b\w/g, (c) => c.toUpperCase()) || "Creature";
+      for (const f of features)
+        yaml.push(
+          `  - ref: ${q(share(group, name, { name: f.name, type: f.type, body: env.render(f.blocks, name) }))}`
+        );
+    } else {
+      const dir = env.notePath.includes("/") ? env.notePath.slice(0, env.notePath.lastIndexOf("/")) : "";
+      const cleanName = `${name.replace(/[\\/:|#^[\]]/g, " ")} Traits`;
+      const placedAt = env.traitsAt?.(cleanName);
+      const traitsDir = placedAt
+        ? placedAt.slice(0, placedAt.lastIndexOf("/"))
+        : dir
+          ? `${dir}/Creature Traits`
+          : "Creature Traits";
+      const traitsName = env.unique(traitsDir, cleanName);
+      const traitsRef = placedAt ? `${traitsDir}/${traitsName}` : `${env.book}/${traitsDir}/${traitsName}`;
+      const taken = new Set<string>();
+      const traitLines = ["---", "cssclasses:", "  - note-feature", "---", `# ${traitsName}`];
+      for (const f of features) {
+        let fname = f.name;
+        for (let n = 2; taken.has(fname.toLowerCase()); n++) fname = `${f.name} (${n})`;
+        taken.add(fname.toLowerCase());
+        yaml.push(`  - ref: ${q(`@[[${traitsRef}]]#${fname}`)}`);
+        traitLines.push(
+          ...fenced(
+            "feature.details",
+            [`name: ${q(fname)}`, `type: ${f.type}`, "heading: p"],
+            env.render(f.blocks, name)
+          )
+        );
+      }
+      out.files.push({
+        path: `${traitsDir}/${traitsName}.md`,
+        text: traitLines.join("\n") + "\n",
+        outside: !!placedAt,
+      });
     }
-    out.files.push({ path: `${traitsDir}/${traitsName}.md`, text: traitLines.join("\n") + "\n", outside: !!placedAt });
   }
-  out.lines = [...fenced("stat.monster", yaml, []), ...env.render(lore, name)];
+  out.lines = isVehicle
+    ? fenced("stat.vehicle", yaml, env.render(lore, name))
+    : [...fenced("stat.monster", yaml, []), ...env.render(lore, name)];
   out.fields = [cssclass("note-statblock")];
+  out.info = { type: isVehicle ? type : kindWord, steed: !!price && /mount|steed/i.test(price.list) };
   out.consumed = true;
   return out;
 }
@@ -756,4 +822,46 @@ export function itemsFromTable(
     });
   }
   return files;
+}
+
+const tokens = (name: string) =>
+  (name.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter((w) => w !== "or" && w !== "and")
+    .sort()
+    .join(" ");
+
+/** A name as a price list is looked up by: its words, in any order (`Horse, Riding` is `Riding horse`). */
+export const priceKey = tokens;
+
+/**
+ * A table that prices things which are not carried (mounts, vehicles): a Cost
+ * column and no Weight, Damage or Armor Class. Its rows are a summary of
+ * stat blocks found elsewhere in the book, so each row's cost and other
+ * columns are kept by name, to be written into the stat block they belong to.
+ */
+export function priceList(
+  table: Extract<Block, { type: "table" }>
+): Map<string, { list: string; fields: Array<[string, string]> }> {
+  const out = new Map<string, { list: string; fields: Array<[string, string]> }>();
+  const head = table.rows[0].map((h) => h.toLowerCase().trim());
+  const cost = head.findIndex((h) => /^cost$|^price$/.test(h));
+  const subject = `${table.caption ?? ""} ${head[0]}`;
+  if (cost < 1 || !/mount|steed|vehicle|ship|companion|hireling/i.test(subject)) return out;
+  if (head.some((h) => /^weight$|^damage$|armor class|^ac$/.test(h))) return out;
+  for (const row of table.rows.slice(1)) {
+    const name = (row[0] ?? "").trim();
+    if (!name || !COIN.test(row[cost] ?? "")) continue;
+    const fields: Array<[string, string]> = [["cost", row[cost]]];
+    row.forEach((cell, i) => {
+      if (i === 0 || i === cost || !cell.trim() || /^[—–-]$/.test(cell.trim()) || !head[i]) return;
+      const key = head[i]
+        .replace(/\(.*?\)/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_|_$/g, "");
+      if (key) fields.push([key, cell]);
+    });
+    // `Donkey or mule` prices both.
+    for (const part of name.split(/\s+or\s+/i)) out.set(tokens(part), { list: subject, fields });
+  }
+  return out;
 }

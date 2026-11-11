@@ -14,6 +14,7 @@ import { importPdf, type ImportHost } from "lib/domains/pdf-import/pipeline";
 import { fileName } from "lib/domains/pdf-import/structure";
 import { DEFAULT_OPTIONS, type TextRun } from "lib/domains/pdf-import/types";
 import { askAnthropic } from "lib/services/image-gen";
+import { SystemRegistry } from "lib/systems/registry";
 import type { ImageStudioSettings } from "settings";
 
 /** Where tesseract.js's parts come from the first time OCR is used; they are kept in the plugin's folder after. */
@@ -108,6 +109,9 @@ export class PdfImportModal extends Modal {
   private ocr = true;
   private entities = true;
   private system = "";
+  private source = "";
+  private marker = "";
+  private ownPictureFolders = true;
   private ocrLang = "eng";
   private useModel = false;
   private maxLines = DEFAULT_OPTIONS.maxLines;
@@ -234,7 +238,40 @@ export class PdfImportModal extends Modal {
           for (const path of systems) d.addOption(path, path);
           d.setValue(this.system).onChange((v) => (this.system = v));
         });
+
+      new Setting(contentEl)
+        .setName("Name mark")
+        .setDesc(
+          "Put after the name of each entity filed into the system, to say where it comes from. None for the system's own books."
+        )
+        .addDropdown((d) => {
+          d.addOption("", "None");
+          d.addOption("ᴰ", "ᴰ  a D&D book");
+          d.addOption("ᴷ", "ᴷ  a Kobold Press book outside the core");
+          d.addOption("º", "º  another publisher's book");
+          d.setValue(this.marker).onChange((v) => (this.marker = v));
+        });
+
+      const folders = this.pictureFolders("Book");
+      if (folders.banners || folders.pictures) {
+        new Setting(contentEl)
+          .setName("Pictures in the vault's own folders")
+          .setDesc(
+            `Chapter banners go to "${folders.banners ?? "the book's _assets"}" and the book's other pictures to "${folders.pictures ?? "the book's _assets"}" (Book being the book's name). Off: all in the book's _assets folder.`
+          )
+          .addToggle((t) => t.setValue(this.ownPictureFolders).onChange((v) => (this.ownPictureFolders = v)));
+      }
     }
+
+    new Setting(contentEl)
+      .setName("Source")
+      .setDesc("The source line every note carries. Empty: From **<book name>**.")
+      .addText((t) => {
+        t.setPlaceholder('From **Tales of the Valiant** "Player\'s Guide" by **Kobold Press**.').onChange(
+          (v) => (this.source = v.trim())
+        );
+        t.inputEl.style.width = "100%";
+      });
 
     new Setting(contentEl)
       .setName("Note length")
@@ -288,6 +325,18 @@ export class PdfImportModal extends Modal {
             }
           })
       );
+  }
+
+  /** The vault's folders for banners and for reference pictures, with a place in each for this book. */
+  private pictureFolders(book: string): { banners?: string; pictures?: string } {
+    const top = this.app.vault.getAllFolders().filter((f) => !f.path.includes("/"));
+    const banners = top.find((f) => /banners$/i.test(f.name));
+    const reference = top.find((f) => /reference$/i.test(f.name));
+    const shelf = reference?.children.find((c) => c.name === "Compendium");
+    return {
+      banners: banners ? `${banners.path}/${book}` : undefined,
+      pictures: reference ? `${shelf ? shelf.path : reference.path}/${book}` : undefined,
+    };
   }
 
   onClose(): void {
@@ -390,7 +439,12 @@ export class PdfImportModal extends Modal {
         if (await adapter.exists(path)) await adapter.remove(path);
       },
       rename: async (from, to) => {
-        if (await adapter.exists(to)) await adapter.remove(to);
+        // A picture the vault already has under that name is kept: the book's copy is dropped.
+        if (await adapter.exists(to)) {
+          await adapter.remove(from);
+          return;
+        }
+        await ensureDir(to);
         await adapter.rename(from, to);
       },
       listNotes: async (dir) => {
@@ -409,6 +463,10 @@ export class PdfImportModal extends Modal {
       cancelled: () => this.cancelled,
     };
     try {
+      const pictures = this.system && this.ownPictureFolders ? this.pictureFolders(fileName(title)) : {};
+      // The views the system shows its entities with (a spell card), to list them the way its own pages do.
+      const loaded = this.system ? await SystemRegistry.getInstance().loadSystemAsync(this.system) : null;
+      const views = Object.keys((loaded as { ruleViews?: Record<string, unknown> } | null)?.ruleViews ?? {});
       const pdfjs = await loadPdfJs();
       // The file is read in pieces as pages are asked for, so a book of hundreds of megabytes
       // never sits in memory whole.
@@ -424,6 +482,11 @@ export class PdfImportModal extends Modal {
           ocr: this.ocr,
           entities: this.entities,
           system: this.system || undefined,
+          source: this.source || undefined,
+          marker: this.system ? this.marker : undefined,
+          bannerFolder: pictures.banners,
+          pictureFolder: pictures.pictures,
+          views,
           maxLines: this.maxLines,
         },
         host,

@@ -17,7 +17,7 @@ export const MAGIC_HEAD =
   /^((?:Armor|Weapon|Wondrous Item|Potion|Ring|Rod|Staff|Wand|Scroll|Ammunition|Shield)s?\b(?:\s*\([^)]*\))?[^,]*),\s*(.*(?:Common|Uncommon|Rare|Legendary|Fabled|Artifact|Varies).*)$/i;
 
 /** The line under a creature's name: `Large Beast`, `Medium humanoid (any race), any alignment`. */
-export const CREATURE_TYPE = /^(tiny|small|medium|large|huge|gargantuan)\b[^.!?]{2,70}$/i;
+export const CREATURE_TYPE = /^(tiny|small|medium|large|huge|gargantuan)\b(?:[^.!?(]|\([^)]*\)){2,70}$/i;
 
 /** A line that opens an entity's facts, so the line above it is the entity's name. */
 export const opensEntity = (text: string): boolean =>

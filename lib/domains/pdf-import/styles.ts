@@ -4,7 +4,7 @@
  */
 
 import { lineText, segText } from "./layout";
-import { FACT_LINE } from "./patterns";
+import { CREATURE_TYPE, FACT_LINE } from "./patterns";
 import type { Element, Line } from "./types";
 
 export const family = (font: string): string =>
@@ -53,6 +53,14 @@ function candidate(line: Line, bodySize: number, bodyFamily: string): boolean {
     if (line.size >= bodySize * 1.35) return true;
     return line.cells[0].spans.every((s) => s.bold) && text.length <= 60 && line.size >= bodySize * 0.9;
   }
+  // The line that says what a creature is (`Large Beast`, `Huge Land Vehicle (15 ft. by 10 ft.)`) is not a heading.
+  if (
+    CREATURE_TYPE.test(text) &&
+    /\b(vehicle|beast|humanoid|undead|fiend|fey|dragon|construct|monstrosity|aberration|celestial|elemental|giant|ooze|plant|swarm)\b/i.test(
+      text
+    )
+  )
+    return false;
   if (line.size >= bodySize * 1.12) return true;
   if (line.size < bodySize * 0.97) return false;
   // At the body's size, a line that is a fact (a label and its value) is not a heading, bold as it may be.
