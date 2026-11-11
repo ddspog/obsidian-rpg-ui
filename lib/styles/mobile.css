@@ -1221,3 +1221,21 @@ body.is-mobile {
 .is-mobile .rpg-hexflower button {
   min-height: 44px;
 }
+
+/* The party's ground card and the disc's small button: thumb-sized. */
+.is-mobile .lonelog-ground > summary {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.is-mobile button.lonelog-minimap.is-small {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* A scene heading's weather goes under the title on a phone. */
+.is-mobile .lonelog-scene-weather {
+  margin-left: 0;
+  flex-basis: 100%;
+}

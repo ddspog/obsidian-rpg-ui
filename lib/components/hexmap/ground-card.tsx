@@ -206,7 +206,7 @@ export function GroundCard({
     ]);
 
   const body = (
-    <>
+    <div className="lonelog-ground-body">
       {change && <p className="lonelog-ground-change">{change}</p>}
       <dl className="lonelog-ground-facts">
         {facts.map(([k, v]) => (
@@ -220,7 +220,7 @@ export function GroundCard({
         What this ground and weather mean for the party (Campaign Builder, Running Exploration). Change the numbers in
         Settings › Maps › Terrain types.
       </p>
-    </>
+    </div>
   );
   const label = `The party's ground: ${place}`;
   const head = (

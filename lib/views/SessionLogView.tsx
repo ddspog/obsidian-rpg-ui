@@ -3538,7 +3538,23 @@ function SessionLogRoot({
       el.dataset.lonelogAnchor = String(id);
       observer.observe(el);
     }
-    return () => observer.disconnect();
+    // At the end of the page the last entries may never reach the band (a short log, or one near the
+    // note's end): there, the last entry on screen is the one being read.
+    const first = proseAnchors.current.values().next().value as HTMLElement | undefined;
+    const scroller = first?.closest(".markdown-preview-view, .cm-scroller, .view-content") as HTMLElement | null;
+    const atEnd = () => {
+      if (!scroller || scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 4) return;
+      const bottom = scroller.getBoundingClientRect().bottom;
+      const shown = [...proseAnchors.current].filter(([, el]) => el.getBoundingClientRect().top < bottom);
+      if (shown.length) readFromScroll(Math.max(...shown.map(([id]) => id)));
+    };
+    scroller?.addEventListener("scroll", atEnd, { passive: true });
+    const settle = window.setTimeout(atEnd, 400);
+    return () => {
+      observer.disconnect();
+      scroller?.removeEventListener("scroll", atEnd);
+      window.clearTimeout(settle);
+    };
   }, [followsReading, scenes]);
 
   // A request for the Log to bring an entry up under its map (the timeline).

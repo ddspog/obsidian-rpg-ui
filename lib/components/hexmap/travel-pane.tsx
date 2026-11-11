@@ -353,6 +353,8 @@ export function TravelMinimap({
   const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
   React.useEffect(() => {
     if (compact) setSmall(true);
+    // The Log closed again: the disc comes back where it was folded for it (not on a phone).
+    else if (!document.body.classList.contains("is-mobile")) setSmall(false);
   }, [compact]);
   if (!frame) return null;
   if (small) {
@@ -436,7 +438,7 @@ export function TravelMinimap({
         {...previousOf(track, frame)}
         {...(layout ? { layout } : {})}
         {...(hexMiles ? { hexMiles } : {})}
-        weather={weatherAt?.(frame.id) ?? null}
+        weather={weatherAt?.(Math.max(frame.id, readingId ?? frame.id)) ?? null}
       />
     </figure>
   );

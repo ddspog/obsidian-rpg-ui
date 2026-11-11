@@ -1570,7 +1570,7 @@ button.lonelog-battle-title-link:hover {
 .lonelog-ground summary {
   cursor: pointer;
   list-style: none;
-  padding: 0.15rem 0.45rem;
+  padding: 0.3rem 0.5rem;
   border-radius: var(--radius-m);
   background: color-mix(in srgb, var(--background-primary) 88%, transparent);
   border: 1px solid var(--background-modifier-border);
@@ -1608,9 +1608,13 @@ button.lonelog-battle-title-link:hover {
   color: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
   font-weight: 700;
 }
-.lonelog-ground summary:focus-visible {
+.lonelog-ground > summary:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
+  box-shadow: none;
+}
+.lonelog-ground-facts dd {
+  max-width: 75ch;
 }
 .lonelog-ground-change {
   margin: 0 0 0.4rem;
@@ -1637,13 +1641,16 @@ button.lonelog-battle-title-link:hover {
   margin-top: 0.3rem;
 }
 
-/* Under the minimap, opened: a card over the margin, right-aligned to the map. */
-.lonelog-minimap .lonelog-ground[open] > .lonelog-ground-facts {
+/* Under the minimap, opened: a card over the margin, right-aligned to the map. It opens upward over
+   the disc, so it never covers the Actions bar under the rail. */
+.lonelog-minimap .lonelog-ground[open] > .lonelog-ground-body {
   position: absolute;
   right: 0;
-  top: calc(100% + 4px);
+  bottom: calc(100% + 4px);
+  max-height: 70vh;
+  overflow-y: auto;
   z-index: 5;
-  width: 19rem;
+  width: 21rem;
   max-width: calc(100vw - 2rem);
   padding: 0.6rem 0.75rem;
   border-radius: var(--radius-m);
@@ -1683,12 +1690,12 @@ button.lonelog-battle-title-link:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Open, the Here card sits above the Actions bar that may scroll under the minimap. */
+/* Open, the ground card sits above the Actions bar that may scroll under the minimap. */
 .lonelog-minimap:has(.lonelog-ground[open]) {
   z-index: 60;
 }
 
-.lonelog-minimap .lonelog-ground[open] > .lonelog-ground-facts {
+.lonelog-minimap .lonelog-ground[open] > .lonelog-ground-body {
   z-index: 60;
 }
 
