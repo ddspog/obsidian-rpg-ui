@@ -56,3 +56,23 @@ export function rollTable(
   const text = formatRollOutcome(out).replace(/^\d+(?:[-–]\d+)?\s+—\s+/, "");
   return { text, name: shortName(text), ...(out.kind === "hit" ? { rolled: out.rolled } : {}) };
 }
+
+const byName = new Map<string, { table: TableDef; path: string } | null>();
+
+/** A table block found anywhere in the vault by its name (`rpg table.<name>`), with its note's path.
+ *  Kept once found (null too) for this session. */
+export async function findVaultTable(app: App, name: string): Promise<{ table: TableDef; path: string } | null> {
+  if (byName.has(name)) return byName.get(name)!;
+  const needle = `rpg table.${name}`;
+  for (const file of app.vault.getMarkdownFiles()) {
+    const text = await app.vault.cachedRead(file);
+    if (!text.includes(needle)) continue;
+    const table = tableIn(text, name);
+    if (table) {
+      byName.set(name, { table, path: file.path });
+      return byName.get(name)!;
+    }
+  }
+  byName.set(name, null);
+  return null;
+}

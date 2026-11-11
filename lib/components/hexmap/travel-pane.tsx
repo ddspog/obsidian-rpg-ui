@@ -23,6 +23,8 @@ import { hexCenter, hexKey, hexPoints } from "lib/domains/hexmap/axial";
 import { formatCoord } from "lib/domains/hexmap/edit-hex-map";
 import { isPiece, parseHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored } from "lib/domains/hexmap/play";
+import { TERRAIN_RULES, type TerrainGrid } from "lib/domains/hexmap/terrain";
+import { landRolls } from "lib/domains/session-log/five-miles";
 import { trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
 
 const TRAIL_COLORS = ["#e0b84a", "#5fb0e8", "#e86a5f", "#7fd17a", "#c58be8"];
@@ -131,6 +133,102 @@ export function seenAt(frame: TravelFrame, remembered?: Set<string>): Set<string
   );
   for (const k of remembered ?? []) seen.add(k);
   return seen;
+}
+
+/** The hexes a step entered: each moved token's trail past where it was the step before. */
+function enteredOn(frame: TravelFrame, before: TravelFrame | undefined): Array<{ q: number; r: number }> {
+  const out: Array<{ q: number; r: number }> = [];
+  const seen = new Set<string>();
+  for (const t of frame.moved) {
+    const now = frame.trails[t] ?? [];
+    const had = before?.trails[t]?.length ?? 1;
+    for (const [q, r] of now.slice(Math.max(1, had))) {
+      const k = hexKey(q, r);
+      if (!seen.has(k)) out.push({ q, r });
+      seen.add(k);
+    }
+  }
+  return out;
+}
+
+/** Five-mile rolls for the hexes a step entered: roll them, then add them to the log. */
+function LandPanel({
+  entered,
+  grid,
+  hexMiles,
+  land,
+}: {
+  entered: Array<{ q: number; r: number }>;
+  grid: TerrainGrid;
+  hexMiles: number;
+  land: NonNullable<Parameters<typeof TravelFullscreen>[0]["land"]>;
+}) {
+  const rolls = hexMiles > 0 ? landRolls(entered, grid, hexMiles) : [];
+  const [results, setResults] = React.useState<Array<{ line: string; text: string }[]> | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [added, setAdded] = React.useState(false);
+  if (rolls.length === 0) return null;
+  const rollAll = async () => {
+    setBusy(true);
+    const out: Array<{ line: string; text: string }[]> = [];
+    for (const r of rolls) {
+      const each: { line: string; text: string }[] = [];
+      for (let i = 0; i < r.rolls; i++) {
+        const got = await land.roll(r.table);
+        if (got) each.push(got);
+      }
+      out.push(each);
+    }
+    setResults(out);
+    setAdded(false);
+    setBusy(false);
+  };
+  return (
+    <section className="lonelog-travel-land" aria-label="The land on this step">
+      <header>
+        <strong>The land on this step</strong>
+        <span className="lonelog-travel-land-hint">one roll per five miles (Solo Adventurer's Toolbox)</span>
+      </header>
+      <ul>
+        {rolls.map((r, i) => (
+          <li key={`${r.hex.q},${r.hex.r}`}>
+            <span className="lonelog-travel-at">
+              ({r.hex.q},{r.hex.r})
+            </span>{" "}
+            {TERRAIN_RULES[r.terrain].name} · {r.rolls} roll{r.rolls === 1 ? "" : "s"}
+            {results?.[i]?.map((x, j) => (
+              <div key={j} className="lonelog-travel-land-result">
+                {x.text}
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
+      <div className="lonelog-travel-land-actions">
+        <button type="button" onClick={() => void rollAll()} disabled={busy}>
+          <LucideIcon name="dices" size={14} /> {results ? "Roll again" : "Roll the land"}
+        </button>
+        {results && (
+          <button
+            type="button"
+            className="mod-cta"
+            disabled={added}
+            onClick={() => {
+              land.append(
+                results
+                  .flat()
+                  .map((x) => x.line)
+                  .join("\n")
+              );
+              setAdded(true);
+            }}
+          >
+            {added ? "Added" : "Add to the log"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
 }
 
 /** Trails walked, the step just taken, and (with Fog) what nobody has seen. */
@@ -327,6 +425,7 @@ export function TravelFullscreen({
   onSeek,
   onClose,
   remembered,
+  land,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
@@ -335,6 +434,8 @@ export function TravelFullscreen({
   onClose: () => void;
   /** Hexes earlier logs saw on a map (by its `[TRAVEL]` link). */
   remembered?: (map?: string) => Set<string> | undefined;
+  /** Five-mile rolls: roll a vault table by name (a log line and its result), and add lines to the log. */
+  land?: { roll: (table: string) => Promise<{ line: string; text: string } | null>; append: (text: string) => void };
 }) {
   const { frame, body, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
   const [fog, setFog] = React.useState(false);
@@ -473,6 +574,15 @@ export function TravelFullscreen({
           />
         ) : (
           <div className="rpg-hexmap rpg-hexmap--loading">Drawing the map…</div>
+        )}
+        {land && drawn && body && frame.moved.length > 0 && (
+          <LandPanel
+            key={frame.id}
+            entered={enteredOn(frame, steps[at - 1])}
+            grid={drawn.grid}
+            hexMiles={(parseHexMap(body).scaleMetres ?? 0) / 1609.344}
+            land={land}
+          />
         )}
         <ul className="lonelog-travel-groups">
           {tokens.map((name) => (

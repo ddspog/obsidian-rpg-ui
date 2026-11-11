@@ -1511,3 +1511,51 @@ button.lonelog-battle-title-link:hover {
   color: var(--text-warning, var(--color-orange));
   font-size: var(--font-ui-smaller);
 }
+
+/* A journey step's five-mile rolls. */
+.lonelog-travel-land {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  font-size: var(--font-ui-small);
+}
+
+.lonelog-travel-land header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.lonelog-travel-land-hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.lonelog-travel-land ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lonelog-travel-land-result {
+  margin-left: 1.5em;
+  color: var(--text-normal);
+}
+
+.lonelog-travel-land-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lonelog-travel-land-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

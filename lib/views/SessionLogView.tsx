@@ -39,6 +39,8 @@ import { type TerrainGrid, weatherFromWords } from "lib/domains/hexmap/terrain";
 import { firstHexMap } from "lib/domains/hexmap/detail";
 import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
+import { findVaultTable, rollTable } from "lib/domains/hexflower/vault-tables";
+import { plainEmphasis } from "lib/domains/gm/linked-tables";
 import { type FogStore, fogKey, rememberedBy, seenByMap, withLog } from "lib/domains/session-log/fog-memory";
 import { foldTravels, foldTravelTrack, type Journey, lastWeather, partySpot } from "lib/domains/session-log/travel";
 import {
@@ -689,6 +691,18 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
     return out;
   }
+
+  /** A vault table rolled by its block name, as a `tbl:` line (the five-mile rolls of a journey). */
+  private rollNamedTable = async (name: string): Promise<{ line: string; text: string } | null> => {
+    const found = await findVaultTable(this.baseView.app, name);
+    if (!found) return null;
+    const got = rollTable(found.table);
+    if (!got) return null;
+    const die = (found.table.columnLabels[0] ?? "").replace(/\*$/, "").trim();
+    const roll = /^\d*d\d+$/i.test(die) && got.rolled !== undefined ? ` ${die}=${got.rolled}` : "";
+    const text = plainEmphasis(got.text);
+    return { line: `tbl: @[[${found.path.replace(/\.md$/, "")}]]#${name}${roll} -> ${text}`, text };
+  };
 
   /** Open a fight's map note (`[COMBAT: [[Kobold Ambush]]]`) — not a map written in this log, which has no note. */
   private openMapNote = (ref: string): void => {
@@ -2376,6 +2390,7 @@ class SessionLogMarkdown extends ReactMarkdown {
           onEditBody={(edit) => void this.rewriteLogBody(edit)}
           battleMaps={this.battleMaps}
           travelMaps={this.travelMaps}
+          rollNamedTable={this.rollNamedTable}
           fogMemory={{
             log: this.filePath,
             load: async (map) => (await this.kv.get<FogStore>(fogKey(map))) ?? {},
@@ -2443,6 +2458,8 @@ interface SessionLogRootProps {
   battleMaps: Record<string, SquareMap>;
   /** The hex maps the log's journeys are on, by `travelKey`. */
   travelMaps: Record<string, string>;
+  /** Rolls a vault table by name (`overarching-terrain-hills`), as a log line and its result. */
+  rollNamedTable?: (name: string) => Promise<{ line: string; text: string } | null>;
   /** Where each log's seen hexes are kept, so Fog remembers across logs (fog-memory.ts). */
   fogMemory?: {
     log: string;
@@ -2539,6 +2556,7 @@ function SessionLogRoot({
   battleMaps,
   travelMaps,
   fogMemory,
+  rollNamedTable,
   mapTools,
   tokenIcon,
   openMapNote,
@@ -3966,6 +3984,9 @@ function SessionLogRoot({
                 readingId={readingId}
                 onSeek={seekEntry}
                 remembered={(map?: string) => (map ? remembered[map] : undefined)}
+                {...(rollNamedTable
+                  ? { land: { roll: rollNamedTable, append: (text: string) => onAppendText(text) } }
+                  : {})}
                 onClose={() => setFullMap(false)}
               />
             )}
