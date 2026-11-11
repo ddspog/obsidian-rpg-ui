@@ -6,7 +6,7 @@
  * lib/domains/pdf-import; this is its host inside Obsidian.
  */
 
-import { App, Modal, Notice, Setting, TFile, loadPdfJs, normalizePath, requestUrl } from "obsidian";
+import { App, Modal, Notice, Setting, TFile, TFolder, loadPdfJs, normalizePath, requestUrl } from "obsidian";
 import type { DecodedImage } from "lib/domains/pdf-import/extract";
 import { LOOKS_SYSTEM, looksPrompt, parseLooks } from "lib/domains/pdf-import/llm";
 import { inkMeter, invertDarkBars, ocrToRuns, type OcrResult } from "lib/domains/pdf-import/ocr";
@@ -109,7 +109,8 @@ export class PdfImportModal extends Modal {
   private ocr = true;
   private entities = true;
   private system = "";
-  private source = "";
+  private game = "";
+  private publisher = "";
   private marker = "";
   private ownPictureFolders = true;
   private ocrLang = "eng";
@@ -252,26 +253,30 @@ export class PdfImportModal extends Modal {
           d.setValue(this.marker).onChange((v) => (this.marker = v));
         });
 
-      const folders = this.pictureFolders("Book");
+      const folders = this.pictureFolders("Book", "Game line");
       if (folders.banners || folders.pictures) {
         new Setting(contentEl)
           .setName("Pictures in the vault's own folders")
           .setDesc(
-            `Chapter banners go to "${folders.banners ?? "the book's _assets"}" and the book's other pictures to "${folders.pictures ?? "the book's _assets"}" (Book being the book's name). Off: all in the book's _assets folder.`
+            `Chapter banners go to "${folders.banners ?? "the book's _assets"}", the book's other pictures to "${folders.pictures ?? "the book's _assets"}", and the pictures of creatures, items and spells to the folders of their kind beside them. Off: all in the book's _assets folder.`
           )
           .addToggle((t) => t.setValue(this.ownPictureFolders).onChange((v) => (this.ownPictureFolders = v)));
       }
     }
 
+    // The game line and the publisher make the source line the vault's notes carry, and name the
+    // shelf the book's pictures are kept on.
+    const lines = this.shelves();
     new Setting(contentEl)
-      .setName("Source")
-      .setDesc("The source line every note carries. Empty: From **<book name>**.")
+      .setName("Game line and publisher")
+      .setDesc('Written as the notes\' source: From **Game line** "Book" by **Publisher**. Empty: From **Book**.')
       .addText((t) => {
-        t.setPlaceholder('From **Tales of the Valiant** "Player\'s Guide" by **Kobold Press**.').onChange(
-          (v) => (this.source = v.trim())
-        );
-        t.inputEl.style.width = "100%";
-      });
+        t.setPlaceholder("Tales of the Valiant").onChange((v) => (this.game = v.trim()));
+        const list = contentEl.createEl("datalist", { attr: { id: "rpg-pdf-import-lines" } });
+        for (const name of lines) list.createEl("option", { value: name });
+        t.inputEl.setAttribute("list", "rpg-pdf-import-lines");
+      })
+      .addText((t) => t.setPlaceholder("Kobold Press").onChange((v) => (this.publisher = v.trim())));
 
     new Setting(contentEl)
       .setName("Note length")
@@ -327,15 +332,50 @@ export class PdfImportModal extends Modal {
       );
   }
 
-  /** The vault's folders for banners and for reference pictures, with a place in each for this book. */
-  private pictureFolders(book: string): { banners?: string; pictures?: string } {
+  /** The vault's top-level folders for banners and for reference pictures. */
+  private pictureRoots() {
     const top = this.app.vault.getAllFolders().filter((f) => !f.path.includes("/"));
     const banners = top.find((f) => /banners$/i.test(f.name));
     const reference = top.find((f) => /reference$/i.test(f.name));
     const shelf = reference?.children.find((c) => c.name === "Compendium");
+    return { banners, reference, shelf };
+  }
+
+  /** The game lines the vault already has a shelf for. */
+  private shelves(): string[] {
+    const { banners, shelf } = this.pictureRoots();
+    const names = [...(banners?.children ?? []), ...((shelf as TFolder | undefined)?.children ?? [])]
+      .filter((c) => c instanceof TFolder)
+      .map((c) => c.name);
+    return [...new Set(names)].sort();
+  }
+
+  /**
+   * Where this book's pictures go in the vault's own folders, as its others are kept: banners on the
+   * game line's shelf, the book's pictures in a folder of its own on that shelf, and the pictures of
+   * creatures, items and spells with the others of their kind.
+   */
+  private pictureFolders(book: string, line: string) {
+    const { banners, reference, shelf } = this.pictureRoots();
+    const on = (root: string) => (line ? `${root}/${line}` : root);
+    const kind = (name: string) => {
+      const folder = reference?.children.find((c) => c instanceof TFolder && c.name === name);
+      return folder?.path;
+    };
+    const portraits: Record<string, string> = {};
+    for (const [k, name] of [
+      ["creature", "Bestiary"],
+      ["vehicle", "Bestiary"],
+      ["magic item", "Items"],
+      ["spell", "Spells"],
+    ]) {
+      const path = kind(name);
+      if (path) portraits[k] = path;
+    }
     return {
-      banners: banners ? `${banners.path}/${book}` : undefined,
-      pictures: reference ? `${shelf ? shelf.path : reference.path}/${book}` : undefined,
+      banners: banners ? (line ? on(banners.path) : `${banners.path}/${book}`) : undefined,
+      pictures: reference ? `${on(shelf ? shelf.path : reference.path)}/${book}` : undefined,
+      portraits,
     };
   }
 
@@ -463,7 +503,13 @@ export class PdfImportModal extends Modal {
       cancelled: () => this.cancelled,
     };
     try {
-      const pictures = this.system && this.ownPictureFolders ? this.pictureFolders(fileName(title)) : {};
+      const pictures =
+        this.system && this.ownPictureFolders
+          ? this.pictureFolders(fileName(title), fileName(this.game))
+          : { banners: undefined, pictures: undefined, portraits: undefined };
+      const source = this.game
+        ? `From **${this.game}** "${title}"${this.publisher ? ` by **${this.publisher}**` : ""}.`
+        : undefined;
       // The views the system shows its entities with (a spell card), to list them the way its own pages do.
       // (The system's code is in its `config` folder.)
       const registry = SystemRegistry.getInstance();
@@ -487,10 +533,11 @@ export class PdfImportModal extends Modal {
           ocr: this.ocr,
           entities: this.entities,
           system: this.system || undefined,
-          source: this.source || undefined,
+          source,
           marker: this.system ? this.marker : undefined,
           bannerFolder: pictures.banners,
           pictureFolder: pictures.pictures,
+          portraitFolders: pictures.portraits,
           views,
           maxLines: this.maxLines,
         },

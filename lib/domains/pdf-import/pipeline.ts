@@ -337,6 +337,12 @@ export async function importPdf(
   }
   const files = emitBook(chapters, ctx, facts);
   host.debug?.("entities", ctx.found);
+  // An entity's portrait is kept with the others of its kind, where the vault has a folder for them.
+  for (const [file, kind] of ctx.portraits ?? []) {
+    const to = options.portraitFolders?.[kind]?.replace(/\/+$/, "");
+    const at = folderFor(false) ?? `${root}/${ASSETS}`;
+    if (to && to !== at) await host.rename(`${at}/${file}`, `${to}/${file}`);
+  }
   const kinds = [...(ctx.kinds ?? new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
   if (ctx.kept?.length) {
     files[files.length - 1].text +=

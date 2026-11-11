@@ -5,10 +5,10 @@
  *
  *   compendium/<book>/                the book's chapters
  *   worldbuilding/spells/<circle>/    cantrips, 1st-circle, 1st-circle-ritual…
- *   worldbuilding/bestiary/animals/           beasts (what a druid may turn into)
+ *   worldbuilding/bestiary/animals/           what a druid may turn into (the Animal tag, a druid's list)
  *   worldbuilding/bestiary/creatures/steeds/  what the book prices as a mount
- *   worldbuilding/bestiary/npcs/              humanoids
- *   worldbuilding/bestiary/monsters/<type>/   everything else, by creature type
+ *   worldbuilding/bestiary/npcs/              the book's own nonplayer characters
+ *   worldbuilding/bestiary/monsters/<type>/   everything else, by creature type (beast, humanoid, fiend…)
  *   worldbuilding/bestiary/vehicles/<land|water|air>/
  *   worldbuilding/enchantments/       magic items
  *   worldbuilding/items/weapons/<kind>/, items/armor/<kind>/, items/adventuring-gear/…, items/tools/
@@ -26,6 +26,14 @@ export interface PlaceInfo {
   type?: string;
   /** A creature the book prices as a mount. */
   steed?: boolean;
+  /** What a creature's type line has in brackets: its tags (`Animal`, `Shapechanger`). */
+  tags?: string;
+  /** A creature's challenge rating, as written (`1/4`, `5`). */
+  cr?: string;
+  /** The creature sits where the book lists what a druid may turn into. */
+  druid?: boolean;
+  /** The creature sits where the book lists its nonplayer characters. */
+  npc?: boolean;
 }
 
 export type Placer = (kind: string, title: string, info: PlaceInfo, trail: string[]) => string;
@@ -41,11 +49,24 @@ const itemFolder = (type: string): string => {
   return `items/adventuring-gear/${slug(t.replace(/\b(adventuring|gear|items?)\b/g, "")) || "general"}`;
 };
 
-const creatureFolder = (info: PlaceInfo): string => {
+const rating = (cr: string | undefined): number => {
+  const m = (cr ?? "").match(/^(\d+)(?:\/(\d+))?$/);
+  return m ? Number(m[1]) / Number(m[2] ?? 1) : NaN;
+};
+
+/**
+ * - steeds: what the book prices as a mount;
+ * - animals: what carries the Animal tag, or sits where the book lists a druid's forms, or, in a
+ *   book from outside the system (one given a name mark), a Beast below CR 6;
+ * - npcs: what sits in the book's own section of nonplayer characters;
+ * - monsters/<type>: everything else, a Beast or a Humanoid included.
+ */
+const creatureFolder = (info: PlaceInfo, outside: boolean): string => {
   const type = (info.type ?? "").toLowerCase();
   if (info.steed) return "bestiary/creatures/steeds";
-  if (/\bbeast\b/.test(type)) return "bestiary/animals";
-  if (/\bhumanoid\b/.test(type)) return "bestiary/npcs";
+  if (/\banimal\b/i.test(info.tags ?? "") || info.druid) return "bestiary/animals";
+  if (outside && /\bbeast\b/.test(type) && rating(info.cr) < 6) return "bestiary/animals";
+  if (info.npc) return "bestiary/npcs";
   return `bestiary/monsters/${slug(type) || "other"}`;
 };
 
@@ -62,7 +83,7 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/spells/${folder}/${name}`;
       }
       case "creature":
-        return `${world}/${creatureFolder(info)}/${name}`;
+        return `${world}/${creatureFolder(info, !!marker.trim())}/${name}`;
       case "vehicle": {
         const medium = (info.type ?? "").toLowerCase().match(/\b(land|water|air|space)\b/)?.[1] ?? "other";
         return `${world}/bestiary/vehicles/${medium}/${name}`;

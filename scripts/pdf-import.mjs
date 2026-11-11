@@ -8,6 +8,7 @@
  *        [--system tales-of-the-valiant]   the out folder is then a vault: the book goes to that system's
  *                                          compendium and its entities to its worldbuilding folders
  *        [--marker ᴰ] [--source 'From **D&D 5e** "Book" by **Publisher**.']
+ *        [--game "Tales of the Valiant"] [--publisher "Kobold Press"] [--portraits "z50. Reference"]
  *        [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"] [--views spell]
  */
 import esbuild from "esbuild";
@@ -45,6 +46,9 @@ const source = flag("source");
 const bannerFolder = flag("banners");
 const pictureFolder = flag("pictures");
 const views = flag("views");
+const game = flag("game");
+const publisher = flag("publisher");
+const portraits = flag("portraits");
 const [pdfPath, outDir] = args;
 if (!pdfPath || !outDir) {
   console.error("usage: pdf-import.mjs <book.pdf> <out folder> [--title …] [--from N] [--to N]");
@@ -199,7 +203,20 @@ const result = await importPdf(
     entities: !noEntities,
     system,
     marker,
-    source,
+    // A game line and a publisher make the source line the vault's notes carry.
+    source:
+      source ??
+      (game
+        ? `From **${game}** "${title ?? path.basename(pdfPath, path.extname(pdfPath))}"${publisher ? ` by **${publisher}**` : ""}.`
+        : undefined),
+    portraitFolders: portraits
+      ? {
+          creature: `${portraits}/Bestiary`,
+          vehicle: `${portraits}/Bestiary`,
+          "magic item": `${portraits}/Items`,
+          spell: `${portraits}/Spells`,
+        }
+      : undefined,
     bannerFolder,
     pictureFolder,
     views: views ? views.split(",") : undefined,

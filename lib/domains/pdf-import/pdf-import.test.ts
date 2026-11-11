@@ -722,11 +722,31 @@ describe("styles of other books", () => {
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
-    expect(place("creature", "Bat", { type: "Beast" }, [])).toBe("tov/worldbuilding/bestiary/animals/Bat");
+    // Animals: the Animal tag, a druid's list, or (in a book from outside the system) a Beast below CR 6.
+    expect(place("creature", "Bat", { type: "Beast", druid: true }, [])).toBe("tov/worldbuilding/bestiary/animals/Bat");
+    expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal" }, [])).toBe(
+      "tov/worldbuilding/bestiary/animals/Owlbear"
+    );
+    expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/monsters/beast/Wolf"
+    );
+    const outside = placer("tov", "SRD", "ᴰ");
+    expect(outside("creature", "Wolf", { type: "beast", cr: "1/4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/animals/Wolf ᴰ"
+    );
+    expect(outside("creature", "Mammoth", { type: "beast", cr: "6" }, [])).toBe(
+      "tov/worldbuilding/bestiary/monsters/beast/Mammoth ᴰ"
+    );
     expect(place("creature", "Pony", { type: "Beast", steed: true }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/steeds/Pony"
     );
-    expect(place("creature", "Guard", { type: "humanoid" }, [])).toBe("tov/worldbuilding/bestiary/npcs/Guard");
+    // Humanoids are monsters unless the book lists them among its nonplayer characters.
+    expect(place("creature", "Goblin", { type: "humanoid" }, [])).toBe(
+      "tov/worldbuilding/bestiary/monsters/humanoid/Goblin"
+    );
+    expect(place("creature", "Guard", { type: "humanoid", npc: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/npcs/Guard"
+    );
     expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/monsters/fiend/Imp");
     expect(place("vehicle", "Galley", { type: "Gargantuan Water Vehicle" }, [])).toBe(
       "tov/worldbuilding/bestiary/vehicles/water/Galley"
@@ -786,7 +806,7 @@ describe("styles of other books", () => {
     const traits = files.find((f) => f.path === "tov/worldbuilding/traits/features/Guide Beast Traits.md")?.text ?? "";
     // Two beasts with the same bite share one block.
     expect(traits.match(/name: "Bite"/g)).toHaveLength(1);
-    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/animals/Wolf.md")?.text ?? "";
+    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/beast/Wolf.md")?.text ?? "";
     expect(wolf).toContain('  - ref: "@[[tov/worldbuilding/traits/features/Guide Beast Traits]]#Bite"');
   });
 
