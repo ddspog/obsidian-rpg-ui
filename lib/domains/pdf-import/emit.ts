@@ -5,6 +5,7 @@
  * `rpg rule.side`.
  */
 
+import { reviewLine } from "../review/block-review";
 import { rollRange, SOFT } from "./blocks";
 import {
   fenced,
@@ -16,6 +17,7 @@ import {
   type EntityOut,
 } from "./entities";
 import type { Placer } from "./organise";
+import { dieOfNumbered, tableReviews } from "./review";
 import { captionParts, fileName, isCatalog, sizeOf, slug, titleCase, walkBlocks } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
 
@@ -154,10 +156,14 @@ function renderTable(block: Extract<Block, { type: "table" }>, ctx: EmitContext,
   const name = (caption && captionParts(caption)?.name) || caption;
   const id = uniqueId(slug(name || `${near} table`), ctx.tableIds);
   ctx.tablePages?.set(id, block.page);
-  const die = dieOf(block.rows);
+  // What a person should check in it, written at the block's top: the block shows it, and turns
+  // off what does not work (a dice table with gaps keeps its roll row, which stays off till mended).
+  const reviews = [...tableReviews(block.rows, block.page, caption), ...(block.reviews ?? [])];
+  const gappy = reviews.some((r) => r.kind === "table-numbers") && !rollRange(block.rows[0]?.[0]);
+  const die = dieOf(block.rows) || (gappy ? dieOfNumbered(block.rows) : 0);
   const head = die ? [`d${die}*`, ...block.rows[0].slice(1)] : block.rows[0];
   const rule = `|${Array.from({ length: width }, () => "---").join("|")}|`;
-  const lines = [`\`\`\`rpg table.${id}`];
+  const lines = [`\`\`\`rpg table.${id}`, ...reviews.map(reviewLine)];
   if (block.rows.length > 21) lines.push("@paginate 10 pages");
   lines.push(row(head), rule);
   for (const r of block.rows.slice(1)) lines.push(row(r));
@@ -219,7 +225,7 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
       const body = renderBlocks(block.blocks, ctx, near, where);
       const fence = fenceFor(body);
       gap();
-      out.push(`${fence}rpg rule.side`, "type: rules");
+      out.push(`${fence}rpg rule.side`, ...(block.reviews ?? []).map(reviewLine), "type: rules");
       if (block.title) out.push(`title: ${yamlValue(titleCase(block.title))}`);
       out.push("---", ...body, fence);
     }

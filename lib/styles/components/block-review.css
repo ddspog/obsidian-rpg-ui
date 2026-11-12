@@ -1,0 +1,65 @@
+/* A block's review (lib/domains/review/block-review.ts): what to check in it before trusting it,
+   shown at its top. Fix items in the theme's error colour, checks in its warning colour, notes muted. */
+.rpg-block-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2, 4px);
+  margin: 0 0 var(--size-4-2, 8px);
+  padding: var(--size-2-3, 6px) var(--size-4-3, 12px);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius-s, 4px);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small, 13px);
+  line-height: 1.4;
+  color: var(--text-normal);
+}
+.rpg-block-review--fix {
+  border-left-color: var(--text-error);
+  background: rgba(var(--color-red-rgb), 0.08);
+}
+.rpg-block-review--check {
+  border-left-color: var(--text-warning, var(--color-orange));
+  background: rgba(var(--color-orange-rgb), 0.08);
+}
+.rpg-block-review__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-2-1, 2px) var(--size-2-3, 6px);
+}
+.rpg-block-review__tag {
+  flex: none;
+  font-size: var(--font-ui-smaller, 11px);
+  font-weight: var(--font-semibold, 600);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rpg-block-review__item--fix .rpg-block-review__tag {
+  color: var(--text-error);
+}
+.rpg-block-review__item--check .rpg-block-review__tag {
+  color: var(--text-warning, var(--color-orange));
+}
+.rpg-block-review__text {
+  flex: 1 1 16em;
+  min-width: 0;
+}
+.rpg-block-review__off {
+  flex: none;
+  padding: 0 var(--size-2-2, 4px);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-s, 4px);
+  font-size: var(--font-ui-smaller, 11px);
+  color: var(--text-error);
+}
+
+/* A table's roll row turned off by its review: still there, saying why, not clickable. */
+.rpg-table-roll-cell.rpg-table-roll-cell-off {
+  cursor: not-allowed;
+  font-style: italic;
+  color: var(--text-muted);
+}
+.rpg-table-roll-cell.rpg-table-roll-cell-off::after {
+  display: none;
+}

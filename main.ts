@@ -1,3 +1,4 @@
+import { keepBlockReview, takeBlockReview, type BlockReview } from "./lib/domains/review/block-review";
 import {
   App,
   Plugin,
@@ -335,7 +336,10 @@ export default class DndUIToolkitPlugin extends Plugin {
 
     this.registerMarkdownCodeBlockProcessor(
       "rpg",
-      (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+      (rawSource: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+        // A review written into the block (by the PDF import): taken off its body, and shown at its top.
+        const { reviews, source } = takeBlockReview(rawSource);
+        if (reviews.length) watchBlockReview(el, reviews, ctx);
         const meta = extractMeta(ctx, el, source);
         if (!meta) {
           console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
@@ -364,6 +368,7 @@ export default class DndUIToolkitPlugin extends Plugin {
           try {
             const def = parseTableBlock(blockName, source);
             const disposers = renderTableBlock(el, def, {
+              reviews,
               // Roll results are keyed per file + table name. A table nested in a tab or
               // card gets no fence name of its own (the section is the outer block), so
               // key it by its own content to keep tables from sharing results.
@@ -624,18 +629,18 @@ export default class DndUIToolkitPlugin extends Plugin {
           meta = classMatch[1];
         }
         if (!meta) {
-          const source = code.textContent ?? "";
-          meta = detectMetaFromSource(source);
+          meta = detectMetaFromSource(takeBlockReview(code.textContent ?? "").source);
         }
         if (!meta) continue;
 
-        const source = code.textContent ?? "";
+        const { reviews, source } = takeBlockReview(code.textContent ?? "");
         const wrapper = pre.ownerDocument.createElement("div");
         wrapper.classList.add("el-pre");
         const container = pre.ownerDocument.createElement("div");
         container.classList.add("block-language-rpg");
         wrapper.appendChild(container);
         pre.replaceWith(wrapper);
+        if (reviews.length) watchBlockReview(container, reviews, ctx);
 
         // Dispatch using the same logic as the code block processor.
         const ruleSubtype = subtypeFromMeta(meta);
@@ -1612,4 +1617,15 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
     }
     // No DOM mutation to clean up for cssclasses (handled by Obsidian)
   }
+}
+
+/** Keeps a block's review at its top while the block is shown. */
+function watchBlockReview(el: HTMLElement, reviews: BlockReview[], ctx: MarkdownPostProcessorContext): void {
+  const stop = keepBlockReview(el, reviews);
+  const child = new (class extends MarkdownRenderChild {
+    onunload(): void {
+      stop();
+    }
+  })(el);
+  ctx.addChild(child);
 }

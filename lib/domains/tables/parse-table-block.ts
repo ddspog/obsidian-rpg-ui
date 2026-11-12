@@ -16,6 +16,7 @@
  * unchanged to `<thead>`.
  */
 
+import { parseReviewLine, type BlockReview } from "../review/block-review";
 import type { FooterCell, FooterRow, FooterRowItem, FooterSegment, TableCell, TableDef, TableRow } from "./types";
 import { parsePaginateDirective, type PaginationConfig, type PaginationControls } from "./pagination";
 import { parseMergeMarker } from "./row-merge";
@@ -500,6 +501,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
   let legacyPaginate: PaginationConfig | undefined;
   let wide = false;
   let packed = false;
+  const reviews: BlockReview[] = [];
 
   for (const raw of lines) {
     const line = raw.trimEnd();
@@ -507,6 +509,13 @@ export function parseTableBlock(name: string, body: string): TableDef {
 
     if (line.trim() === "@wide") {
       wide = true;
+      continue;
+    }
+
+    // `@review fix roll: …` — what to check in the table (see review/block-review.ts).
+    const review = parseReviewLine(line);
+    if (review) {
+      reviews.push(review);
       continue;
     }
 
@@ -659,6 +668,7 @@ export function parseTableBlock(name: string, body: string): TableDef {
     classes: footer?.classes ?? [],
     pagination,
     wide: wide || undefined,
+    reviews: reviews.length ? reviews : undefined,
   };
 }
 

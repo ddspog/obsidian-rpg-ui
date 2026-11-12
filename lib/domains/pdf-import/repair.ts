@@ -336,6 +336,12 @@ function widenGaps(table: TableBlock, strays: Set<number>, changes: RepairChange
       const from = prev.row[0];
       prev.row[0] = `${pad(prev.range[0])}-${pad(r[0] - 1)}`;
       const skipped = prev.range[1] + 1 === r[0] - 1 ? `${prev.range[1] + 1}` : `${prev.range[1] + 1}–${r[0] - 1}`;
+      (table.reviews ??= []).push({
+        severity: "check",
+        kind: "row-widened",
+        off: [],
+        message: `Row ${from} was widened to ${prev.row[0]} (the book's PDF page ${table.page}): no row ${skipped} was found, in the table or near it. Right if the book skips it; if a row was lost, put it back and narrow this one.`,
+      });
       changes.push({
         kind: "widened",
         caption: table.caption,
@@ -382,6 +388,12 @@ function chainPieces(blocks: Block[], at: number, changes: RepairChange[]): numb
     k--;
     joined++;
     page = b.page;
+    (table.reviews ??= []).push({
+      severity: "check",
+      kind: "rows-joined",
+      off: [],
+      message: `A piece from page ${b.page} was joined on although ${first[0] - last - 1 === 1 ? `row ${last + 1} is` : `rows ${last + 1}–${first[0] - 1} are`} missing between them.`,
+    });
     changes.push({
       kind: "joined",
       caption: table.caption,
@@ -416,6 +428,13 @@ export function repairTables(blocks: Block[]): RepairReport {
     const behind = isTableCaption(b.caption) && firstNumber(b) === 1 ? joinBehind(blocks, i) : 0;
     i -= behind;
     report.joined += behind + joinOnwards(blocks, i);
+    if (b.rows.length > before)
+      (b.reviews ??= []).push({
+        severity: "note",
+        kind: "rows-joined",
+        off: [],
+        message: `${b.rows.length - before} rows were put back from other pieces of the chapter (from the book's PDF page ${b.page} on); glance at their order.`,
+      });
     if (b.rows.length > before)
       report.changes.push({
         kind: "joined",

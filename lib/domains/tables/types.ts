@@ -11,6 +11,7 @@
  * separator) are preserved as authored so multi-row headers round-trip.
  */
 
+import type { BlockReview } from "../review/block-review";
 import type { PaginationConfig, PaginationControls } from "./pagination";
 
 /** Vertical alignment of a row-spanning (merged) cell's content. */
@@ -117,6 +118,8 @@ export type FooterRowItem =
  * convention so rolled values pick up the theme styling automatically.
  */
 export interface TableDef {
+  /** The block's review lines (`@review fix roll: …`), when it is parsed with them. */
+  reviews?: BlockReview[];
   /** Local name inside the source doc (e.g. `progression`). */
   name: string;
   /** Parent compendium-doc name, set during aggregation (e.g. `Cleric`). */

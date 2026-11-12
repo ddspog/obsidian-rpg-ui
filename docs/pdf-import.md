@@ -305,6 +305,32 @@ item with its note, its `rpg table` id and the PDF's page, as a checklist:
 
 The plugin's command writes the same note, and its notice says how many items there are.
 
+### Reviews in the blocks
+
+What belongs to one block is also written **into the block**, as lines at the top of its body, and
+the block shows them as a banner over itself:
+
+````
+```rpg table.population-per-hex-realistic
+# @review fix/table-numbers roll: The table has no row for 1–2, 19–20 of the d20 (the book's PDF page 124). …
+|d20*|People per square mile|…|
+…
+|= {{ roll }} =|
+```
+````
+
+A line is `# @review <fix|check|note>[/<kind>] [what it turns off]: <message>`. It is a YAML comment,
+so any block's YAML reads the same with it, and code that reads blocks from a note's text is not
+disturbed; the plugin takes it off the block's body before the block is parsed. The block still shows
+everything it can, and what the review turns off stops working, saying why: a dice table whose
+numbers skip keeps its roll row, which reads _Rolling is off until the table is mended_ and does not
+roll. **Deleting the line once the block is mended turns it back on.** The import writes them for
+tables (numbers that skip or stop short, a piece of another table, a column nearly empty, a row
+widened, rows put back), for sidebars that read like a table, and for stat blocks whose ability scores
+could not be read or that were read by OCR. The review note is gathered from these lines, together
+with what belongs to no block (contents entries, OCR pages, chapters, loose text). Any `rpg` block may
+carry them (`lib/domains/review/block-review.ts`); today `roll` is the one function a review turns off.
+
 ## What to check after an import
 
 The import is a first draft of the book, not a finished transcription:

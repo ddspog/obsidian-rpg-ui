@@ -11,6 +11,7 @@
  * spell rolls) is left as text in the block's body, for a later pass.
  */
 
+import { reviewLine, type BlockReview } from "../review/block-review";
 import { PLAIN_RUN_IN } from "./patterns";
 import type { Block, OutFile, Section, Span } from "./types";
 
@@ -427,11 +428,26 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
     if (seenStats && features.length) features[features.length - 1].blocks.push(block);
     else lore.push(block);
   }
+  // What a person should check in the stat block, written at its top.
+  const reviews: BlockReview[] = [];
   if (!abilities) {
     // A scan may lose the numbers: the block is still a creature's, with its abilities left to fill in.
     if (!(loose && (sawAbilities || stats.length >= 3))) return null;
     abilities = [0, 0, 0, 0, 0, 0];
+    reviews.push({
+      severity: "fix",
+      kind: "entity-incomplete",
+      off: [],
+      message: `The ability scores of “${section.title.trim()}” could not be read (the book's PDF page ${section.page}): they are 0 until filled in from the book.`,
+    });
   }
+  if (env.scanned)
+    reviews.push({
+      severity: "check",
+      kind: "ocr-page",
+      off: [],
+      message: `“${section.title.trim()}” was read by OCR (the book's PDF page ${section.page}): check its numbers and names against the book.`,
+    });
 
   const name = section.title.trim();
   // `Large Beast`, `Medium humanoid (any race), any alignment`, `Large Land Vehicle (10 ft. by 5 ft.)`.
@@ -503,8 +519,8 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
     }
   }
   out.lines = isVehicle
-    ? fenced("stat.vehicle", yaml, env.render(lore, name))
-    : [...fenced("stat.monster", yaml, []), ...env.render(lore, name)];
+    ? fenced("stat.vehicle", [...reviews.map(reviewLine), ...yaml], env.render(lore, name))
+    : [...fenced("stat.monster", [...reviews.map(reviewLine), ...yaml], []), ...env.render(lore, name)];
   out.fields = [cssclass("note-statblock")];
   out.info = {
     type: isVehicle ? type : kindWord,

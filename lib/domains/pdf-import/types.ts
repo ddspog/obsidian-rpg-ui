@@ -1,3 +1,5 @@
+import type { BlockReview } from "../review/block-review";
+
 /**
  * PDF import: the shapes that travel between its steps. A page is read into
  * runs of text, pictures and filled boxes (extract.ts); laid out into lines in
@@ -128,8 +130,10 @@ export type Block =
       page: number;
       /** Its columns are rolled each on its own die (the parts of a name). */
       each?: boolean;
+      /** What a person should check in it, written into the block as review lines. */
+      reviews?: BlockReview[];
     }
-  | { type: "side"; title?: string; blocks: Block[]; page: number }
+  | { type: "side"; title?: string; blocks: Block[]; page: number; reviews?: BlockReview[] }
   | { type: "image"; file: string; page: number; wide: boolean; pxW: number; pxH: number };
 
 /** A heading and what is under it. The root of a chapter has level 0. */

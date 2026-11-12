@@ -49,7 +49,10 @@ function tables(dirs) {
         const table = {
           caption,
           rows: rows.length - 1,
-          rollable: body.some((l) => l.startsWith("|=") && l.includes("roll")),
+          // (A roll row a review has turned off does not roll.)
+          rollable:
+            body.some((l) => l.startsWith("|=") && l.includes("roll")) &&
+            !body.some((l) => /^(#\s*)?@review\s+\w+(\/[\w-]+)?\s+[\w,]*\broll\b[^:]*:/.test(l)),
           // Several rows a line: the vault's row count says nothing.
           packed: body.some((l) => l.startsWith("@pack")),
         };

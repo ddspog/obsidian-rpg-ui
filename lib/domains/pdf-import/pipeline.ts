@@ -414,7 +414,6 @@ export async function importPdf(
     files,
     root,
     tablePages: ctx.tablePages ?? new Map(),
-    changes: repaired.changes,
     textItems,
     contentsMissing: missing,
     ocrPages: pages.filter((p) => p.ocr).map((p) => p.num),

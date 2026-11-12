@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildReview, ranges, renderReview, reviewBlocks, reviewCounts, type ReviewInput } from "./review";
+import {
+  buildReview,
+  ranges,
+  renderReview,
+  reviewBlocks,
+  reviewCounts,
+  tableReviews,
+  type ReviewInput,
+} from "./review";
 import type { Block, OutFile } from "./types";
 
 const note = (path: string, ...tables: string[]): OutFile => ({ path, text: `# ${path}\n\n${tables.join("\n\n")}\n` });
@@ -15,7 +23,6 @@ const input = (files: OutFile[], more: Partial<ReviewInput> = {}): ReviewInput =
     ["monsters", 12],
     ["piece", 13],
   ]),
-  changes: [],
   textItems: [],
   contentsMissing: [],
   ocrPages: [],
@@ -29,45 +36,75 @@ describe("review", () => {
     expect(ranges([1, 2, 3, 5, 8, 9])).toBe("1–3, 5, 8–9");
   });
 
-  it("finds a table that cannot be rolled and a piece of one, with their note and page", () => {
+  it("writes into a table what keeps it from being rolled, and a piece of one", () => {
+    const gaps = tableReviews(
+      [
+        ["d6", "Monster"],
+        ["1", "Orc"],
+        ["2", "Ogre"],
+        ["3", "Troll"],
+        ["5", "Hag"],
+        ["6", "Lich"],
+      ],
+      12,
+      "Table 2-1: Monsters"
+    );
+    expect(gaps).toEqual([expect.objectContaining({ severity: "fix", kind: "table-numbers", off: ["roll"] })]);
+    expect(gaps[0].message).toContain("no row for 4 of the d6 (the book's PDF page 12)");
+    const piece = tableReviews(
+      [
+        ["4", "Goblin"],
+        ["5", "Kobold"],
+      ],
+      13
+    );
+    expect(piece).toEqual([expect.objectContaining({ severity: "fix", kind: "table-fragment" })]);
+    expect(
+      tableReviews(
+        [
+          ["d4", "M"],
+          ["1", "a"],
+          ["2", "b"],
+          ["3", "c"],
+          ["4", "d"],
+        ],
+        1
+      )
+    ).toEqual([]);
+  });
+
+  it("gathers the review from the lines in the blocks, with their note, table and page", () => {
     const files = [
       note(
         "01. Monsters.md",
         table(
           "monsters",
-          ["|d6|Monster|", "|1|Orc|", "|2|Ogre|", "|3|Troll|", "|5|Hag|", "|6|Lich|"],
+          ["# @review fix/table-numbers roll: No row for 4 of the d6.", "|d6*|Monster|", "|1|Orc|"],
           "Table 2-1: Monsters"
         ),
-        table("piece", ["|4|Goblin|", "|5|Kobold|"])
+        "```rpg stat.monster\n# @review fix/entity-incomplete: The ability scores could not be read.\nname: Orc\n```"
       ),
     ];
     const items = buildReview(input(files));
-    expect(items.map((i) => [i.kind, i.severity, i.note, i.table, i.page])).toEqual([
+    expect(items.map((i) => [i.kind, i.severity, i.note, i.table ?? i.block, i.page])).toEqual([
       ["table-numbers", "fix", "Book/01. Monsters", "monsters", 12],
-      ["table-fragment", "fix", "Book/01. Monsters", "piece", 13],
+      ["entity-incomplete", "fix", "Book/01. Monsters", "stat.monster", undefined],
     ]);
-    expect(items[0].message).toContain("no row for 4 of the d6");
   });
 
-  it("lists rows widened, contents not found, OCR pages and a book with no chapters, worst first", () => {
+  it("lists contents not found, OCR pages and a book with no chapters, worst first", () => {
     const files = [
       note(
         "01. Monsters.md",
-        table("monsters", ["|d4|Monster|", "|1|Orc|", "|2-3|Ogre|", "|4|Troll|"], "Table 2-1: Monsters")
+        table(
+          "monsters",
+          ["# @review check/row-widened: Row 2 was widened to 2-3.", "|d4*|Monster|", "|1|Orc|"],
+          "Table 2-1: Monsters"
+        )
       ),
     ];
     const items = buildReview(
       input(files, {
-        changes: [
-          {
-            kind: "widened",
-            caption: "Table 2-1: Monsters",
-            page: 12,
-            from: "2",
-            to: "2-3",
-            text: "Row 2 was widened to 2-3.",
-          },
-        ],
         contentsMissing: [{ title: "Lost Section", page: 40 }],
         ocrPages: [3, 4, 5, 9],
         chapters: { count: 1, from: "one", pages: 300 },
