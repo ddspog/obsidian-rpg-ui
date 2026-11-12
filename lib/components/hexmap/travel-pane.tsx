@@ -26,7 +26,14 @@ import { isPiece, parseHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored } from "lib/domains/hexmap/play";
 import { TERRAIN_RULES, type TerrainGrid, type WeatherId } from "lib/domains/hexmap/terrain";
 import { landRolls } from "lib/domains/session-log/five-miles";
-import { partySpot, trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
+import {
+  asBelieved,
+  partySpot,
+  trackAt,
+  type ShownFrame,
+  type TravelFrame,
+  type TravelTrack,
+} from "lib/domains/session-log/travel";
 
 const TRAIL_COLORS = ["#e0b84a", "#5fb0e8", "#e86a5f", "#7fd17a", "#c58be8"];
 
@@ -69,11 +76,18 @@ export function mapTitle(map: string | undefined, level?: Array<[number, number]
 }
 
 /** The travel at an entry: its frame, every step, the drawing, and a colour per name. */
-function useTravel(track: TravelTrack, bodyOf: (frame: TravelFrame) => string | undefined, readingId: number | null) {
+function useTravel(
+  track: TravelTrack,
+  bodyOf: (frame: TravelFrame) => string | undefined,
+  readingId: number | null,
+  revealLost = false
+) {
   const frame = trackAt(track, readingId ?? track.from ?? 0) ?? track.frames[0];
+  // What the map draws: a lost party where it believes it is, unless the GM shows where it really is.
+  const shown: ShownFrame | undefined = frame && !revealLost ? asBelieved(frame) : frame;
   const body = frame ? bodyOf(frame) : undefined;
   const [drawn, setDrawn] = React.useState<Drawn | null>(null);
-  const source = body && frame ? withTravellers(body, frame) : undefined;
+  const source = body && shown ? withTravellers(body, shown) : undefined;
   React.useEffect(() => {
     if (!source) return;
     let alive = true;
@@ -95,7 +109,18 @@ function useTravel(track: TravelTrack, bodyOf: (frame: TravelFrame) => string | 
     !!frame &&
     !frame.travelling &&
     track.journeys.some((j) => j.end != null && j.end <= frame.id && (j.frames.length > 0 || !!j.summary));
-  return { frame, body, source, drawn, steps, at, colourOf, arrived, title: mapTitle(frame?.map, frame?.level) };
+  return {
+    frame,
+    shown: shown ?? frame,
+    body,
+    source,
+    drawn,
+    steps,
+    at,
+    colourOf,
+    arrived,
+    title: mapTitle(frame?.map, frame?.level),
+  };
 }
 
 /** A special move, drawn by its kind: a teleport arcs from where it vanished to
@@ -316,6 +341,12 @@ function JourneyOverlay({
   );
 }
 
+/** Lost: whether the maps show where a lost party really is, and the switch for it. */
+export interface LostReveal {
+  shown: boolean;
+  onShow: (shown: boolean) => void;
+}
+
 /** Where the party came from: the last frame on the same map with it on another hex (for the ground card). */
 function previousOf(track: TravelTrack, frame: TravelFrame): { previous?: TravelFrame } {
   const here = partySpot(frame);
@@ -337,6 +368,7 @@ export function TravelMinimap({
   onExpand,
   compact,
   weatherAt,
+  lost,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
@@ -344,10 +376,12 @@ export function TravelMinimap({
   onExpand: () => void;
   /** The weather in force at an entry, as a Weather Effects row. */
   weatherAt?: (id: number) => WeatherId | null;
+  /** Lost: whether the map shows where the party really is (else where it believes it is). */
+  lost?: LostReveal;
   /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
   compact?: boolean;
 }) {
-  const { frame, body, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
+  const { frame, shown, body, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId, lost?.shown);
   const hexMiles = React.useMemo(() => (body ? (parseHexMap(body).scaleMetres ?? 0) / 1609.344 : 0), [body]);
   // On a phone the disc starts as its small button: it would cover a third of the reading column.
   const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
@@ -372,7 +406,7 @@ export function TravelMinimap({
   }
   const layout = drawn?.layout;
   // Centred on whoever just moved, else the first token, else the map's middle.
-  const focus = frame.positions[frame.moved[0]] ?? Object.values(frame.positions)[0];
+  const focus = shown!.positions[frame.moved[0]] ?? Object.values(shown!.positions)[0];
   const R = layout?.R ?? 40;
   const c = focus ? hexCenter(focus[0], focus[1], R) : null;
   const span = R * 7;
@@ -413,7 +447,7 @@ export function TravelMinimap({
                   width={view.w * 3}
                   height={view.h * 3}
                 />
-                <JourneyOverlay frame={frame} layout={layout} colourOf={colourOf} />
+                <JourneyOverlay frame={shown!} layout={layout} colourOf={colourOf} />
               </>
             }
           />
@@ -439,6 +473,7 @@ export function TravelMinimap({
         {...(layout ? { layout } : {})}
         {...(hexMiles ? { hexMiles } : {})}
         weather={weatherAt?.(Math.max(frame.id, readingId ?? frame.id)) ?? null}
+        {...(lost ? { lost } : {})}
       />
     </figure>
   );
@@ -454,6 +489,7 @@ export function TravelFullscreen({
   remembered,
   land,
   weatherAt,
+  lost,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
@@ -466,8 +502,15 @@ export function TravelFullscreen({
   land?: { roll: (table: string) => Promise<{ line: string; text: string } | null>; append: (text: string) => void };
   /** The weather in force at an entry, as a Weather Effects row. */
   weatherAt?: (id: number) => WeatherId | null;
+  /** Lost: whether the map shows where the party really is (else where it believes it is). */
+  lost?: LostReveal;
 }) {
-  const { frame, body, source, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
+  const { frame, shown, body, source, drawn, steps, at, colourOf, title } = useTravel(
+    track,
+    bodyOf,
+    readingId,
+    lost?.shown
+  );
   const [fog, setFog] = React.useState(false);
   const paneRef = React.useRef<HTMLElement>(null);
   const open = !!frame;
@@ -508,7 +551,7 @@ export function TravelFullscreen({
     if (target) onSeek(target.id);
   };
   if (!frame) return null;
-  const tokens = Object.keys(frame.positions);
+  const tokens = Object.keys(shown.positions);
   const drawnLayout = drawn?.layout;
   // Under Fog, a secret marker stays hidden until its hex has been seen.
   const layout = (() => {
@@ -516,7 +559,7 @@ export function TravelFullscreen({
     // The text drawn (with the travellers in), so its lines match the drawing's.
     const secret = parseHexMap(source).markers.filter((m) => m.secret);
     if (secret.length === 0) return drawnLayout;
-    const seen = seenAt(frame, remembered?.(frame.map));
+    const seen = seenAt(shown, remembered?.(frame.map));
     const hidden = new Set(
       secret.filter((m) => !seen.has(hexKey(Math.round(m.q), Math.round(m.r)))).map((m) => m.line)
     );
@@ -528,7 +571,7 @@ export function TravelFullscreen({
   const onPhone = document.body.classList.contains("is-mobile");
   const phoneView = (() => {
     if (!layout || !onPhone) return undefined;
-    const at = frame.positions[frame.moved[0]] ?? Object.values(frame.positions)[0] ?? frame.marks[0]?.at;
+    const at = shown.positions[frame.moved[0]] ?? Object.values(shown.positions)[0] ?? frame.marks[0]?.at;
     if (!at) return undefined;
     const c = hexCenter(at[0], at[1], layout.R);
     const [w, h] = [layout.R * 14, layout.R * 18];
@@ -594,7 +637,7 @@ export function TravelFullscreen({
                 : {})}
             overlay={
               <JourneyOverlay
-                frame={frame}
+                frame={shown}
                 layout={layout}
                 colourOf={colourOf}
                 fog={fog}
@@ -609,6 +652,7 @@ export function TravelFullscreen({
         <GroundCard
           frame={frame}
           {...previousOf(track, frame)}
+          {...(lost ? { lost } : {})}
           {...(drawnLayout ? { layout: drawnLayout } : {})}
           {...(body && parseHexMap(body).scaleMetres ? { hexMiles: parseHexMap(body).scaleMetres! / 1609.344 } : {})}
           weather={weatherAt?.(frame.id) ?? null}
@@ -629,9 +673,10 @@ export function TravelFullscreen({
               <strong>{name}</strong>
               {frame.groups[name] && <span>{frame.groups[name].join(", ") || "nobody"}</span>}
               <span className="lonelog-travel-at">
-                ({frame.positions[name][0]},{frame.positions[name][1]})
+                ({shown.positions[name][0]},{shown.positions[name][1]})
               </span>
-              {frame.believed?.[name] && (
+              {shown.truly?.[name] && <span className="lonelog-travel-lost-note">lost</span>}
+              {frame.believed?.[name] && !shown.truly && (
                 <span className="lonelog-travel-lost-note">
                   lost: believes ({frame.believed[name][0]},{frame.believed[name][1]})
                 </span>

@@ -80,6 +80,7 @@ export function GroundCard({
   layout,
   hexMiles,
   weather,
+  lost,
   open = false,
 }: {
   frame: TravelFrame;
@@ -89,9 +90,12 @@ export function GroundCard({
   /** The map's hex width in miles, for the time to cross; unknown, the card says "half speed" only. */
   hexMiles?: number;
   weather?: WeatherId | null;
+  /** Lost: whether the real hex is shown (the GM's look) or only where the party believes it is. */
+  lost?: { shown: boolean; onShow: (shown: boolean) => void };
   /** Shown whole (the journey view); else folded to its first line. */
   open?: boolean;
 }) {
+  const [how, setHow] = React.useState(false);
   const { spot, info, rules } = termsOf(frame, layout);
   const w = weather ? WEATHER[weather] : undefined;
   const bad = w && weather !== "agreeable" ? w : undefined;
@@ -198,11 +202,21 @@ export function GroundCard({
     const rule = HEX_ELEMENT_RULES[e];
     facts.push([rule.name, <span title={rule.rule}>{rule.rule}</span>]);
   }
+  // Lost: where the party believes it is, and (only when the GM shows it) where it really is.
+  const hidden = !!lost && !lost.shown;
   if (believed && spot)
     facts.push([
       "Lost",
-      `The party believes it is at (${believed[0]},${believed[1]}); it is really at (${spot.at[0]},${spot.at[1]}).` +
-        (rules ? ` A navigate check (DC ${rules.navigationDC}) finds its bearings.` : ""),
+      <>
+        {`The party believes it is at (${believed[0]},${believed[1]})`}
+        {hidden ? ". " : `; it is really at (${spot.at[0]},${spot.at[1]}). `}
+        {rules ? `A navigate check (DC ${rules.navigationDC}) finds its bearings.` : ""}
+        {lost && (
+          <button type="button" className="lonelog-ground-reveal" onClick={() => lost.onShow(!lost.shown)}>
+            {lost.shown ? "Hide where they really are" : "Show where they really are"}
+          </button>
+        )}
+      </>,
     ]);
 
   const body = (
@@ -216,10 +230,39 @@ export function GroundCard({
           </React.Fragment>
         ))}
       </dl>
-      <p className="lonelog-ground-source">
-        What this ground and weather mean for the party (Campaign Builder, Running Exploration). Change the numbers in
-        Settings › Maps › Terrain types.
-      </p>
+      <button type="button" className="lonelog-ground-how" aria-expanded={how} onClick={() => setHow((v) => !v)}>
+        How this works
+      </button>
+      {how && (
+        <div className="lonelog-ground-explain">
+          <p>
+            Each hex the party enters costs time and asks for checks. The rows follow a hexcrawl turn, as the Campaign
+            Builder's <em>Running Exploration</em> runs it:
+          </p>
+          <ul>
+            <li>
+              <strong>Crossing</strong>: the hours to cross one hex of this map at each pace. Difficult ground (and a
+              river without a bridge) halves the speed; a road cancels difficult ground and lifts the pace cap by one;
+              bad weather doubles the time.
+            </li>
+            <li>
+              <strong>Navigate</strong>: the Survival check to stay on course; +5 at a fast pace, and with disadvantage
+              in inclement weather or worse. Fail it and the party is lost.
+            </li>
+            <li>
+              <strong>Encounters</strong>: how far apart the party and a creature are when one notices the other, and
+              how settled the region is (the encounter check's odds).
+            </li>
+            <li>
+              <strong>Camp</strong>: the checks to forage, to make a good camp, and to search the hex.
+            </li>
+          </ul>
+          <p>
+            The numbers are the terrain's, from Settings › Maps › Terrain types, where you can change them. The weather
+            is the log's last <code>[Weather: …]</code> at the entry you're reading.
+          </p>
+        </div>
+      )}
     </div>
   );
   const label = `The party's ground: ${place}`;

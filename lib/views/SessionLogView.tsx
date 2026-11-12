@@ -3522,6 +3522,18 @@ function SessionLogRoot({
   React.useEffect(() => {
     if (!followsReading) return;
     const visible = new Set<number>();
+    // At the end of the page the last entries may never reach the band (a short log, or one near the
+    // note's end): there, the last entry on screen is the one being read.
+    const first = proseAnchors.current.values().next().value as HTMLElement | undefined;
+    const scroller = first?.closest(".markdown-preview-view, .cm-scroller, .view-content") as HTMLElement | null;
+    const atEnd = (): boolean => {
+      if (!scroller || scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 4) return false;
+      const bottom = scroller.getBoundingClientRect().bottom;
+      const shown = [...proseAnchors.current].filter(([, el]) => el.getBoundingClientRect().top < bottom);
+      if (shown.length === 0) return false;
+      readFromScroll(Math.max(...shown.map(([id]) => id)));
+      return true;
+    };
     const observer = new IntersectionObserver(
       (records) => {
         for (const r of records) {
@@ -3530,6 +3542,7 @@ function SessionLogRoot({
           if (r.isIntersecting) visible.add(id);
           else visible.delete(id);
         }
+        if (atEnd()) return;
         if (visible.size > 0) readFromScroll(Math.max(...visible));
       },
       { rootMargin: "-25% 0px -65% 0px" }
@@ -3538,21 +3551,12 @@ function SessionLogRoot({
       el.dataset.lonelogAnchor = String(id);
       observer.observe(el);
     }
-    // At the end of the page the last entries may never reach the band (a short log, or one near the
-    // note's end): there, the last entry on screen is the one being read.
-    const first = proseAnchors.current.values().next().value as HTMLElement | undefined;
-    const scroller = first?.closest(".markdown-preview-view, .cm-scroller, .view-content") as HTMLElement | null;
-    const atEnd = () => {
-      if (!scroller || scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 4) return;
-      const bottom = scroller.getBoundingClientRect().bottom;
-      const shown = [...proseAnchors.current].filter(([, el]) => el.getBoundingClientRect().top < bottom);
-      if (shown.length) readFromScroll(Math.max(...shown.map(([id]) => id)));
-    };
-    scroller?.addEventListener("scroll", atEnd, { passive: true });
-    const settle = window.setTimeout(atEnd, 400);
+    const onScroll = () => void atEnd();
+    scroller?.addEventListener("scroll", onScroll, { passive: true });
+    const settle = window.setTimeout(onScroll, 400);
     return () => {
       observer.disconnect();
-      scroller?.removeEventListener("scroll", atEnd);
+      scroller?.removeEventListener("scroll", onScroll);
       window.clearTimeout(settle);
     };
   }, [followsReading, scenes]);
@@ -3668,6 +3672,9 @@ function SessionLogRoot({
       return words ? weatherFromWords(words) : null;
     };
   }, [segments]);
+  // A lost party: the maps show where it believes it is, until the GM shows where it really is.
+  const [lostShown, setLostShown] = React.useState(false);
+  const lostReveal = React.useMemo(() => ({ shown: lostShown, onShow: setLostShown }), [lostShown]);
   // The weather now: the log's last [Weather: …], read as a Weather Effects row.
   const weatherNow = React.useMemo(() => {
     const words = lastWeather(segments);
@@ -4015,6 +4022,7 @@ function SessionLogRoot({
                   readingId={readingId}
                   onExpand={() => setFullMap(true)}
                   weatherAt={weatherAtId}
+                  lost={lostReveal}
                   compact={sidebarOpen}
                 />
               </div>
@@ -4027,6 +4035,7 @@ function SessionLogRoot({
                 onSeek={seekEntry}
                 remembered={(map?: string) => (map ? remembered[map] : undefined)}
                 weatherAt={weatherAtId}
+                lost={lostReveal}
                 {...(rollNamedTable
                   ? { land: { roll: rollNamedTable, append: (text: string) => onAppendText(text) } }
                   : {})}

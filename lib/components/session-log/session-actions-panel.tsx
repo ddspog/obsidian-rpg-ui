@@ -20,6 +20,7 @@ import type { LootDestination } from "../../domains/session-log/loot-destination
 import type { NoteOption } from "./note-combobox";
 import type { ItemPrice } from "../../domains/session-log/party-cards";
 import { PartyPopover, type LootSource, type PartyCardKind } from "./party-popover";
+import { memberTerrainStack, partyTerrainStack } from "../../domains/session-log/terrain-cards";
 import type { PartyMember } from "../../domains/session-log/party-cards";
 import { StartCombatPopover, type CreatureInfo } from "./start-combat-popover";
 import type { FormulaVars } from "../../domains/session-log/formula";
@@ -304,8 +305,19 @@ export function SessionActionsPanel({
       actor: PARTY,
     })),
   }));
+  // What the ground asks for: the party's checks as one on the Party's cards, each member's on theirs.
+  const ground = {
+    ...(terrain?.id ? { terrain: terrain.id } : {}),
+    ...(terrain?.weather ? { weather: terrain.weather } : {}),
+  };
+  const partyGround = partyTerrainStack(ground, party?.members.map((m) => m.name) ?? []);
+  const memberGround = (a: string): CardStackData[] => {
+    const own = pcStacks.get(a) ?? [];
+    const st = memberTerrainStack(ground, own[0]?.cards[0]?.actor ?? a);
+    return st ? [...own, st] : own;
+  };
   const allSides: Side[] = [
-    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: (a: string) => pcStacks.get(a) ?? [] },
+    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: memberGround },
     // The GM plays the world, foes included: its cards (and the party's, the table's) head the Foes side, which
     // so stays there out of a fight.
     {
@@ -313,7 +325,12 @@ export function SessionActionsPanel({
       label: "Foes",
       actors: [GM, ...foes],
       stacksFor: (a: string) =>
-        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (foeStacks.get(a) ?? []),
+        a === GM
+          ? [
+              ...gmCards,
+              ...(party && party.members.length > 0 ? [...partyStacks, ...(partyGround ? [partyGround] : [])] : []),
+            ]
+          : (foeStacks.get(a) ?? []),
       foe: true,
     },
   ];

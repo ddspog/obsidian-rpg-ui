@@ -237,3 +237,29 @@ S3 Morning
     expect(sceneWeather(segs, [segs[0].sourceIndex])).toEqual([null]);
   });
 });
+
+describe("asBelieved", () => {
+  it("puts a lost party where it believes it is, along the trail it thinks it walked", async () => {
+    const { asBelieved } = await import("./travel");
+    const segs = groupIntoProse(
+      parseLonelog(`[TRAVEL: [[Map]]]
+[Pos: Party (0,0)]
+@(Party) [Mv: (1,0)] Road
+@(Party) [Mv: (2,0) | lost (1,1)] Shortcut
+@(Party) [Mv: (3,0) | lost (2,1)] On`)
+    );
+    const track = foldTravelTrack(segs);
+    const last = track.frames[track.frames.length - 1];
+    expect(last.positions.Party).toEqual([2, 1]);
+    const shown = asBelieved(last);
+    expect(shown.positions.Party).toEqual([3, 0]);
+    expect(shown.trails.Party).toEqual([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [3, 0],
+    ]);
+    expect(shown.truly).toEqual({ Party: [2, 1] });
+    expect(shown.believed).toBeUndefined();
+  });
+});
