@@ -18480,6 +18480,116 @@ button.rpg-caster-text-toggle[aria-pressed=true] {
       transparent);
 }
 
+/* lib/styles/components/block-review.css */
+.rpg-block-review {
+  clear: both;
+  margin: var(--size-2-1, 2px) 0 var(--size-4-2, 8px);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller, 12px);
+  line-height: 1.4;
+}
+.rpg-rule-side .rpg-block-review {
+  margin: var(--size-4-2, 8px) 0 0;
+}
+button.clickable-icon.rpg-block-review__toggle {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--size-2-2, 4px);
+  width: auto;
+  height: auto;
+  min-height: 24px;
+  padding: var(--size-2-1, 2px) var(--size-2-3, 6px);
+  font-size: inherit;
+  color: var(--text-muted);
+  text-align: start;
+}
+button.clickable-icon.rpg-block-review__toggle:hover {
+  color: var(--text-normal);
+}
+.rpg-block-review__icon {
+  display: inline-flex;
+  flex: none;
+}
+.rpg-block-review__icon svg {
+  width: 14px;
+  height: 14px;
+}
+.rpg-block-review--fix .rpg-block-review__icon {
+  color: var(--text-error);
+}
+.rpg-block-review--check .rpg-block-review__icon {
+  color: color-mix(in srgb, var(--text-warning, var(--color-orange)) 65%, var(--text-normal));
+}
+.rpg-block-review__card {
+  display: grid;
+  gap: var(--size-4-2, 8px);
+  margin-top: var(--size-2-2, 4px);
+  padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small, 13px);
+}
+.rpg-block-review__card[hidden] {
+  display: none;
+}
+.rpg-block-review__item {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--size-2-3, 6px);
+  align-items: baseline;
+}
+.rpg-block-review__tag {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+.rpg-block-review__tag::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: var(--size-2-2, 4px);
+  border-radius: 50%;
+  background: var(--text-faint);
+  vertical-align: 1px;
+}
+.rpg-block-review__item--fix .rpg-block-review__tag::before {
+  background: var(--text-error);
+}
+.rpg-block-review__item--check .rpg-block-review__tag::before {
+  background: color-mix(in srgb, var(--text-warning, var(--color-orange)) 65%, var(--text-normal));
+}
+.rpg-block-review__body {
+  min-width: 0;
+}
+.rpg-block-review .rpg-block-review__text,
+.rpg-block-review .rpg-block-review__todo p {
+  margin: 0;
+}
+.rpg-block-review__todo {
+  margin-top: var(--size-2-1, 2px);
+  color: var(--text-muted);
+}
+.rpg-block-review__todo summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--font-ui-smaller, 12px);
+}
+.rpg-block-review__todo[open] summary {
+  margin-bottom: var(--size-2-1, 2px);
+}
+.rpg-table-roll-cell.rpg-table-roll-cell-off {
+  cursor: not-allowed;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.rpg-table-roll-cell.rpg-table-roll-cell-off::after {
+  display: none;
+}
+
 /* lib/styles/components/death-save-dots.css */
 fieldset[aria-details="Death Save Successes"],
 fieldset[aria-details="Death Save Failures"] {
@@ -21752,6 +21862,9 @@ p.rpg-statblock-subtitle {
   font-size: 0.95em;
   text-align: center;
 }
+.rpg-statblock-abilities td.rpg-statblock-abilities__unknown {
+  color: var(--text-muted);
+}
 .cm-html-embed .rpg-statblock-abilities td,
 .markdown-rendered .rpg-statblock-abilities td,
 .cm-html-embed .rpg-statblock-abilities th,
@@ -23309,6 +23422,9 @@ body.is-mobile {
 .is-mobile .lonelog-scene-weather {
   margin-left: 0;
   flex-basis: 100%;
+}
+.is-mobile button.clickable-icon.rpg-block-review__toggle {
+  min-height: 32px;
 }
 
 /* lib/styles/index.css */

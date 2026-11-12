@@ -80,6 +80,7 @@
 @import "./components/spells.css";
 @import "./components/spell-card.css";
 @import "./components/rpg-table.css";
+@import "./components/block-review.css";
 @import "./components/death-save-dots.css";
 @import "./components/dice-tray.css";
 @import "./components/dice-roll-modal.css";

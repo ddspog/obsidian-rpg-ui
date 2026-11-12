@@ -1,3 +1,4 @@
+import { keepBlockReview, takeBlockReview, type BlockReview } from "./lib/domains/review/block-review";
 import {
   App,
   Plugin,
@@ -6,6 +7,7 @@ import {
   MarkdownSectionInformation,
   Notice,
   parseYaml,
+  setIcon,
   TAbstractFile,
   TFile,
 } from "obsidian";
@@ -17,6 +19,7 @@ import { JsonDataStore } from "./lib/services/kv/local-file-store";
 import { DEFAULT_IMAGE_STUDIO, DEFAULT_SETTINGS, DndUIToolkitSettings } from "settings";
 import { ImageStudioModal, setImageStudioSettings } from "lib/plugin/image-studio-modal";
 import { NewMapModal } from "lib/plugin/new-map-modal";
+import { PdfImportModal } from "lib/plugin/pdf-import-modal";
 import { relinkFrames, retargetFrames, setCardFrameSource } from "lib/services/card-frame-config";
 import { applyFrameCss, removeFrameCss } from "lib/services/frame-css";
 import { msgbus } from "lib/services/event-bus";
@@ -336,7 +339,10 @@ export default class DndUIToolkitPlugin extends Plugin {
 
     this.registerMarkdownCodeBlockProcessor(
       "rpg",
-      (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+      (rawSource: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+        // A review written into the block (by the PDF import): taken off its body, and shown at its top.
+        const { reviews, source } = takeBlockReview(rawSource);
+        if (reviews.length) watchBlockReview(el, reviews, ctx);
         const meta = extractMeta(ctx, el, source);
         if (!meta) {
           console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
@@ -365,6 +371,7 @@ export default class DndUIToolkitPlugin extends Plugin {
           try {
             const def = parseTableBlock(blockName, source);
             const disposers = renderTableBlock(el, def, {
+              reviews,
               // Roll results are keyed per file + table name. A table nested in a tab or
               // card gets no fence name of its own (the section is the outer block), so
               // key it by its own content to keep tables from sharing results.
@@ -636,18 +643,18 @@ export default class DndUIToolkitPlugin extends Plugin {
           meta = classMatch[1];
         }
         if (!meta) {
-          const source = code.textContent ?? "";
-          meta = detectMetaFromSource(source);
+          meta = detectMetaFromSource(takeBlockReview(code.textContent ?? "").source);
         }
         if (!meta) continue;
 
-        const source = code.textContent ?? "";
+        const { reviews, source } = takeBlockReview(code.textContent ?? "");
         const wrapper = pre.ownerDocument.createElement("div");
         wrapper.classList.add("el-pre");
         const container = pre.ownerDocument.createElement("div");
         container.classList.add("block-language-rpg");
         wrapper.appendChild(container);
         pre.replaceWith(wrapper);
+        if (reviews.length) watchBlockReview(container, reviews, ctx);
 
         // Dispatch using the same logic as the code block processor.
         const ruleSubtype = subtypeFromMeta(meta);
@@ -873,6 +880,18 @@ export default class DndUIToolkitPlugin extends Plugin {
       id: "rpg-ui-new-battle-map",
       name: "New battle map note",
       callback: () => new NewMapModal(this.app).open(),
+    });
+
+    // A PDF book read into the vault: a note a chapter, tabs, rpg tables, entries in folders.
+    this.addCommand({
+      id: "rpg-ui-import-pdf",
+      name: "Import PDF as compendium book",
+      callback: () =>
+        new PdfImportModal(
+          this.app,
+          this.settings.imageStudio,
+          this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`
+        ).open(),
     });
 
     this.addCommand({
@@ -1614,4 +1633,15 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
     }
     // No DOM mutation to clean up for cssclasses (handled by Obsidian)
   }
+}
+
+/** Keeps a block's review at its top while the block is shown. */
+function watchBlockReview(el: HTMLElement, reviews: BlockReview[], ctx: MarkdownPostProcessorContext): void {
+  const stop = keepBlockReview(el, reviews, (icon, name) => setIcon(icon, name));
+  const child = new (class extends MarkdownRenderChild {
+    onunload(): void {
+      stop();
+    }
+  })(el);
+  ctx.addChild(child);
 }

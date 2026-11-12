@@ -1801,6 +1801,8 @@ export interface StatblockVehicleProps {
   dimensions?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
+  /** Scores not known (an import could not read them; written as "—"): shown as "—". */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: ResolvedStatFeature[];
   body?: string;
   image?: string;
@@ -1821,6 +1823,8 @@ export interface StatMonsterData {
   category?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
+  /** Scores not known (an import could not read them; written as "—"): shown as "—". */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: StatFeatureRef[];
   text?: string;
   [key: string]: unknown;
@@ -1838,6 +1842,8 @@ export interface StatblockMonsterProps {
   image?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
+  /** Scores not known (an import could not read them; written as "—"): shown as "—". */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: ResolvedStatFeature[];
   body?: string;
   hideTitle?: boolean;

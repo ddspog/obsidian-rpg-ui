@@ -208,6 +208,11 @@ p.rpg-statblock-subtitle {
   text-align: center;
 }
 
+/* A score not known (an import could not read it): a muted dash, not a false +0. */
+.rpg-statblock-abilities td.rpg-statblock-abilities__unknown {
+  color: var(--text-muted);
+}
+
 .cm-html-embed .rpg-statblock-abilities td,
 .markdown-rendered .rpg-statblock-abilities td,
 .cm-html-embed .rpg-statblock-abilities th,

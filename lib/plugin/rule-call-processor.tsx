@@ -66,6 +66,7 @@ import { StatblockVehicle } from "lib/components/statblock-vehicle";
 import { StatblockMonster } from "lib/components/statblock-monster";
 import { StatblockCategory } from "lib/components/statblock-group";
 import { mapMonster, mapCategory } from "lib/domains/statblocks/monster-fields";
+import { isUnknownScore } from "lib/domains/statblocks/types";
 import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature } from "lib/domains/statblocks/types";
 import type { SystemRegistry } from "lib/systems/registry";
@@ -1104,6 +1105,9 @@ function StatblockCallInline({
     dimensions: typeof parsed.dimensions === "string" ? parsed.dimensions : undefined,
     stats: normalizeStatsInline(parsed.stats),
     abilities: normalizeAbilitiesInline(parsed.abilities),
+    unknownAbilities: (["str", "dex", "con", "int", "wis", "cha"] as const).filter((k) =>
+      isUnknownScore((parsed.abilities as Record<string, unknown> | undefined)?.[k])
+    ),
     features: resolved,
     body,
     hideTitle,
@@ -1158,6 +1162,7 @@ function StatblockMonsterCallInline({
     image: data.image,
     stats: data.stats,
     abilities: data.abilities,
+    unknownAbilities: data.unknownAbilities,
     features: resolved,
     body: data.text,
     sourcePath,
@@ -1466,7 +1471,14 @@ function resolveFolderCall(
   // `@[[bestiary/creatures/]]`) sweeps every subfolder (beast-forms, …).
   // All existing folder-call targets are leaf folders, so this is a no-op
   // for them and only broadens parents-with-subfolders.
-  const files = collectMarkdownFiles(folder).sort((a, b) => a.basename.localeCompare(b.basename));
+  // `.shallow()` keeps to the folder's own notes: a book's chapter folder holds its tab notes and,
+  // in subfolders, what those tabs are split into.
+  const shallow = call.chain.some((seg) => seg.fn === "shallow");
+  const files = (
+    shallow
+      ? folder.children.filter((c): c is TFile => c instanceof TFile && c.extension === "md")
+      : collectMarkdownFiles(folder)
+  ).sort((a, b) => a.basename.localeCompare(b.basename));
 
   if (files.length === 0) {
     renderError(span, `No .md files in [[${call.target}]]`);

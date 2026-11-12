@@ -1,5 +1,5 @@
 import { parse as parseYAML } from "yaml";
-import type { AbilityScores, StatFeatureRef, StatVehicleData } from "./types";
+import { isUnknownScore, type AbilityScores, type StatFeatureRef, type StatVehicleData } from "./types";
 
 function splitOnSeparator(raw: string): [string, string] {
   const lines = raw.split("\n");
@@ -24,6 +24,15 @@ function normalizeAbilities(raw: unknown): AbilityScores {
     }
   }
   return defaults;
+}
+
+/** The scores written as unknown (`"—"`), when there are any. */
+function unknownOf(raw: unknown): { unknownAbilities?: Array<keyof AbilityScores> } {
+  if (!raw || typeof raw !== "object") return {};
+  const obj = raw as Record<string, unknown>;
+  const keys = ["str", "dex", "con", "int", "wis", "cha"] as const;
+  const unknown = keys.filter((k) => isUnknownScore(obj[k]));
+  return unknown.length ? { unknownAbilities: [...unknown] } : {};
 }
 
 function normalizeFeatures(raw: unknown): StatFeatureRef[] {
@@ -85,6 +94,7 @@ export function parseStatVehicleBlock(source: string): StatVehicleData {
     dimensions: typeof parsed.dimensions === "string" ? parsed.dimensions : undefined,
     stats: normalizeStats(parsed.stats),
     abilities: normalizeAbilities(parsed.abilities),
+    ...unknownOf(parsed.abilities),
     features: normalizeFeatures(parsed.features),
     text: bodyText.trim() || undefined,
     image: typeof parsed.image === "string" ? parsed.image : undefined,

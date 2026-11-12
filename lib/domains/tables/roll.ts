@@ -115,6 +115,9 @@ export function parseWeightColumn(
   return { ranges, max };
 }
 
+/** How many times `@reroll` rolls again before it gives up and reads the gap. */
+const REROLLS = 100;
+
 /**
  * Pick which row matches `rolled` in the parsed ranges. Returns the row
  * index, or `null` for a gap (rolled value outside every range).
@@ -164,8 +167,14 @@ export function rollOnce(
     return uniformPick(table, targetIndices, rand);
   }
 
-  const rolled = rollWeight(table.columnLabels?.[weightIdx] ?? weightKey ?? "", weight.max, rand);
-  const rowIdx = matchRoll(weight.ranges, rolled);
+  const label = table.columnLabels?.[weightIdx] ?? weightKey ?? "";
+  let rolled = rollWeight(label, weight.max, rand);
+  let rowIdx = matchRoll(weight.ranges, rolled);
+  // `@reroll`: a number the table lacks is rolled again.
+  for (let tries = 0; rowIdx == null && table.reroll && tries < REROLLS; tries++) {
+    rolled = rollWeight(label, weight.max, rand);
+    rowIdx = matchRoll(weight.ranges, rolled);
+  }
   if (rowIdx == null) return { kind: "miss", rolled, max: weight.max };
 
   const row = table.rows[rowIdx];
@@ -209,8 +218,12 @@ export function rollEach(
   const rolls: Array<number | null> = [];
   const rows: Array<number | null> = [];
   for (const idx of targetIndices) {
-    const rolled = rollWeight(label, weight.max, rand);
-    const rowIdx = matchRoll(weight.ranges, rolled);
+    let rolled = rollWeight(label, weight.max, rand);
+    let rowIdx = matchRoll(weight.ranges, rolled);
+    for (let tries = 0; rowIdx == null && table.reroll && tries < REROLLS; tries++) {
+      rolled = rollWeight(label, weight.max, rand);
+      rowIdx = matchRoll(weight.ranges, rolled);
+    }
     rolls.push(rolled);
     rows.push(rowIdx);
     values.push(rowIdx == null || idx < 0 ? "" : (table.rows[rowIdx].cells[idx]?.value ?? ""));
