@@ -170,16 +170,27 @@ read for what such books share:
 - **A dark strip down the page's outer edge**, and the words set on it (sample names, a chapter's label), is
   dressing and is left out.
 
+**Once a chapter is read** its tables are looked at again, with all of the chapter at hand
+(`repair.ts`). A table rolled on a die says by its numbers what belongs to it, so the pieces the
+page-by-page reading left apart are put back: its rest further on (a table without a caption of its
+own, or rows read as text such as `**4** A cult of the deity…`, the number at the start or against
+the middle of the cell, references like `Tables 7-32 and 7-33` aside), its first part further back,
+its rest read before it on the same page, its first rows read as short lines above it (`1 Goblin`,
+`2 Kobold`), and lines of a wrapped cell read as rows of their own. A number the book skips, found
+nowhere near the table, is covered by widening the row before it (`5-8` then `10` gives `5-9`), so
+every roll lands on a row; the book's contents note says how many rows were widened, to check against
+the book.
+
 `node scripts/pdf-import-compare.mjs <import folder> <vault folders…> [-v]` measures an import against a book
 already adapted by hand in a vault: captions found, tables with the same number of rows, tables rollable.
 Tried on four books adapted in the testing vault (measured against the vault's tables):
 
 | Book                          | Captions found | Same row count | Rollable   |
 | ----------------------------- | -------------- | -------------- | ---------- |
-| The Nomicon                   | 223 of 230     | 155 of 162     | 190 of 223 |
-| Tome of World Building        | 390 of 404     | 349 of 377     | 350 of 390 |
-| Tome of Adventure Design      | 369 of 379     | 313 of 344     | 334 of 369 |
-| The Solo Adventurer's Toolbox | 17 of 94       | 14 of 17       | 4 of 13    |
+| The Nomicon                   | 223 of 230     | 157 of 162     | 210 of 223 |
+| Tome of World Building        | 392 of 404     | 354 of 379     | 359 of 392 |
+| Tome of Adventure Design      | 369 of 379     | 315 of 344     | 340 of 369 |
+| The Solo Adventurer's Toolbox | 17 of 94       | 14 of 17       | 5 of 13    |
 
 The Toolbox prints no captions, so its tables were named by hand in the vault and few names match; its tables
 themselves come through (its d100 lists as one table each across their pages). What the hand adaptation adds

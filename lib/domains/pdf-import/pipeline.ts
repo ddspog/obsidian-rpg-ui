@@ -11,6 +11,7 @@ import { readOutline, readPage, type DecodedImage } from "./extract";
 import { findFurniture, layoutPage, lineText, segText, usualGutters, type Gutter } from "./layout";
 import { lookFor } from "./looks";
 import { placer } from "./organise";
+import { repairTables, type RepairReport } from "./repair";
 import { readStyles } from "./styles";
 import {
   chapterLabel,
@@ -231,9 +232,15 @@ export async function importPdf(
     nameChapter(plan, blocks);
     drafts.push({ plan, blocks });
   }
+  const repaired: RepairReport = { joined: 0, folded: 0, widened: 0 };
   for (const { plan, blocks: all } of drafts) {
     host.debug?.("blocks", { chapter: plan.title, blocks: all });
     const blocks = dropTitleHeadings(all, plan.title, plan.number);
+    // With the whole chapter read, the pieces of its tables are put back together.
+    const mended = repairTables(blocks);
+    repaired.joined += mended.joined;
+    repaired.folded += mended.folded;
+    repaired.widened += mended.widened;
     if (!blocks.some((b) => b.type !== "image")) continue;
     const chapter: Chapter = {
       title: plan.title,
@@ -329,6 +336,16 @@ export async function importPdf(
   const facts = [
     `*Imported from a PDF of ${doc.numPages} pages${ocrPages ? `, ${ocrPages} of them read by OCR` : ""}: ${tables} tables, ${sidebars} sidebars, ${used.size} pictures.*`,
   ];
+  if (repaired.joined || repaired.widened) {
+    facts.push(
+      "",
+      `*Tables mended once the chapters were read: ${repaired.joined} pieces put back${
+        repaired.widened
+          ? `, and ${repaired.widened} rows widened over a number the book skips (so every roll lands on a row; check them against the book)`
+          : ""
+      }.*`
+    );
+  }
   const missing = missingFromContents(contents, chapters);
   if (contents.length) {
     facts.push(
