@@ -187,8 +187,8 @@ Tried on four books adapted in the testing vault (measured against the vault's t
 
 | Book                          | Captions found | Same row count | Rollable   |
 | ----------------------------- | -------------- | -------------- | ---------- |
-| The Nomicon                   | 223 of 230     | 157 of 162     | 210 of 223 |
-| Tome of World Building        | 392 of 404     | 354 of 379     | 359 of 392 |
+| The Nomicon                   | 223 of 230     | 159 of 162     | 212 of 223 |
+| Tome of World Building        | 392 of 404     | 355 of 379     | 360 of 392 |
 | Tome of Adventure Design      | 369 of 379     | 315 of 344     | 340 of 369 |
 | The Solo Adventurer's Toolbox | 17 of 94       | 14 of 17       | 5 of 13    |
 
@@ -249,19 +249,61 @@ it gets wrong is ignored, and without it icons come from the words in the title.
 
 ## From a terminal
 
-The same code runs outside Obsidian, for trying changes on a book and for very large files:
+The same code runs outside Obsidian, for trying changes on a book, for very large files, and for a
+model to drive (`.claude/commands/pdf-import.md` is the workflow for one). `node scripts/pdf-import.mjs help`
+lists everything.
 
 ```
-node scripts/pdf-import.mjs book.pdf out-folder --title "Player's Guide" [--from 9 --to 60] [--max-lines 300]
-     [--catalog-min 8] [--no-images] [--no-ocr] [--no-entities]
+node scripts/pdf-import.mjs import book.pdf out-folder --title "Player's Guide" [--json] [--dry-run]
+     [--report file.json] [--fail-on fix|check] [--from 9 --to 60] [--max-lines 300] [--catalog-min 8]
+     [--no-images] [--no-ocr] [--no-entities]
      [--system tales-of-the-valiant] [--marker ᴰ] [--game "Tales of the Valiant"] [--publisher "Kobold Press"]
      [--views spell] [--portraits "z50. Reference"]
      [--banners "z51. Banners/Book"] [--pictures "z50. Reference/Compendium/Book"]
+node scripts/pdf-import.mjs pages book.pdf 30,31 [--json]
+node scripts/pdf-import.mjs review out-folder/.pdf-import/book.json [--severity fix] [--kind table-numbers] [--json]
 ```
 
-`PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `PDF_IMPORT_PAGES=30,31`
-prints what the layout made of those pages (lines, boxes and their rows, in reading order). `OCR_LANG=por` picks the
-OCR language.
+- **`import`** (the default command) writes the notes, the review note, and a report of the whole
+  result in `<out>/.pdf-import/<book>.json` (a dot folder, which Obsidian does not show; `--report`
+  puts it elsewhere). `--dry-run` writes only the report.
+- **`--json`** prints one JSON object a line: `start`; `progress` a few times a stage (reading pages,
+  OCR, laying out, finding chapters, mending tables, checking the result, writing notes); `stage`
+  with what a stage found (`pages`, `chapters` and whether they came from the bookmarks, `tables
+mended`, `review` counts); and last `result` (with the first fix items and the report's path) or
+  `error` (with the stage it failed in). Without it, the same in plain words on stderr and a summary
+  on stdout.
+- **Exit codes**: 0 done, 1 failed, 2 bad arguments, and 3 when `--fail-on` was given and the review
+  has items that severe.
+- **`pages`** prints what the layout made of those pages (lines with their place and size, boxes read
+  as tables or sidebars and their rows, in reading order), after reading the whole book so the
+  columns and running heads are the import's own.
+- **`review`** pages through a report's items, worst first.
+
+`PDF_IMPORT_DEBUG=1` prints the heading looks found and every block with its page. `OCR_LANG=por` picks
+the OCR language.
+
+## The import review
+
+Every import writes a note **Import review** in the book's folder (linked from the book's contents
+note), and the same list in the report. It holds what the import could not settle on its own, each
+item with its note, its `rpg table` id and the PDF's page, as a checklist:
+
+| Kind                               | Severity    | What it is                                                                             |
+| ---------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| Tables that cannot be rolled       | fix         | A dice table whose numbers skip or stop short, as written.                             |
+| Pieces of tables                   | fix         | A few numbered rows with no caption, not starting at 1.                                |
+| Columns nearly empty               | check       | A column filled in only a row or two: a cell that slipped sideways.                    |
+| Rows widened over a skipped number | check       | The repair covered a number found nowhere; right for a misprint, wrong for a lost row. |
+| Rows put back                      | note        | Pieces joined from elsewhere in the chapter.                                           |
+| Text that reads like a table       | check       | Lines in a row that open with numbers counting up.                                     |
+| Headings that open with a number   | check       | Perhaps a table's row.                                                                 |
+| Contents entries not found         | check       | An entry of the book's contents with no heading or caption of that name.               |
+| Pages read by OCR                  | check       | Words and digits may be wrong.                                                         |
+| Chapters                           | check / fix | The book was cut by its headings, or not at all.                                       |
+| Notes left as they were            | note        | Entity notes the vault already had.                                                    |
+
+The plugin's command writes the same note, and its notice says how many items there are.
 
 ## What to check after an import
 

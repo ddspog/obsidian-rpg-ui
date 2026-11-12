@@ -12,6 +12,7 @@ import { findFurniture, layoutPage, lineText, segText, usualGutters, type Gutter
 import { lookFor } from "./looks";
 import { placer } from "./organise";
 import { repairTables, type RepairReport } from "./repair";
+import { buildReview, renderReview, reviewBlocks, reviewCounts, type ReviewItem } from "./review";
 import { readStyles } from "./styles";
 import {
   chapterLabel,
@@ -49,6 +50,11 @@ export interface ImportHost {
   /** Icons and colours for the book's tabs from a model, by title; the rules of thumb fill the rest. */
   refineLooks?(titles: string[]): Promise<Map<string, TabLook>>;
   progress?(stage: string, done: number, total: number): void;
+  /**
+   * What each stage found, as it finishes, for a program that drives the import (a terminal, a
+   * model): `pages`, `chapters`, `tables mended`, `review`, `written`.
+   */
+  event?(name: string, data: Record<string, unknown>): void;
   /** Told what was found on the way (heading looks, chapters), for a log. */
   debug?(what: string, data: unknown): void;
   /** True once the user has asked to stop. */
@@ -70,6 +76,8 @@ export interface ImportResult {
   entities: Record<string, number>;
   tables: number;
   sidebars: number;
+  /** What needs a person's judgement, worst first (see review.ts), and how many of each severity. */
+  review: { note: string; counts: ReturnType<typeof reviewCounts>; items: ReviewItem[] };
 }
 
 const ASSETS = "_assets";
@@ -154,6 +162,8 @@ export async function importPdf(
     pages.push(page);
   }
 
+  host.event?.("pages", { pages: total, ocrPages, pictures: written });
+
   // 2. Pictures that repeat down the book are its dressing (page backgrounds, rules): dropped.
   const dressing = new Set<string>();
   const need = Math.max(3, Math.floor(total * 0.02));
@@ -219,7 +229,18 @@ export async function importPdf(
   // Bookmarks that leave most of the book in one piece (a file joined from two) say nothing of its chapters.
   const longest = Math.max(0, ...plans.map((p) => p.lastPage - p.firstPage + 1));
   if (plans.length && total > 40 && longest > 0.7 * total) plans = [];
+  const fromBookmarks = plans.length > 0;
   if (!plans.length) plans = planFromHeadings(perPage, styles, from, to);
+  const chapterSource: "bookmarks" | "headings" | "one" = fromBookmarks
+    ? "bookmarks"
+    : plans.length === 1
+      ? "one"
+      : "headings";
+  host.progress?.("Finding chapters", 1, 1);
+  host.event?.("chapters", {
+    from: chapterSource,
+    chapters: plans.filter((p) => !p.skip).map((p) => ({ title: p.title, pages: `${p.firstPage}–${p.lastPage}` })),
+  });
   const chapters: Chapter[] = [];
   const drafts: Array<{ plan: ChapterPlan; blocks: Block[] }> = [];
   for (const plan of plans) {
@@ -232,8 +253,11 @@ export async function importPdf(
     nameChapter(plan, blocks);
     drafts.push({ plan, blocks });
   }
-  const repaired: RepairReport = { joined: 0, folded: 0, widened: 0 };
+  const repaired: RepairReport = { joined: 0, folded: 0, widened: 0, changes: [] };
+  const textItems: ReviewItem[] = [];
+  let mendedChapters = 0;
   for (const { plan, blocks: all } of drafts) {
+    host.progress?.("Mending tables", mendedChapters++, drafts.length);
     host.debug?.("blocks", { chapter: plan.title, blocks: all });
     const blocks = dropTitleHeadings(all, plan.title, plan.number);
     // With the whole chapter read, the pieces of its tables are put back together.
@@ -241,6 +265,8 @@ export async function importPdf(
     repaired.joined += mended.joined;
     repaired.folded += mended.folded;
     repaired.widened += mended.widened;
+    repaired.changes.push(...mended.changes);
+    textItems.push(...reviewBlocks(blocks, plan.title));
     if (!blocks.some((b) => b.type !== "image")) continue;
     const chapter: Chapter = {
       title: plan.title,
@@ -252,6 +278,8 @@ export async function importPdf(
     takeBanner(chapter);
     chapters.push(chapter);
   }
+
+  host.event?.("tables mended", { joined: repaired.joined, folded: repaired.folded, widened: repaired.widened });
 
   // 5. Pictures get names that say where they sit; ones no note shows are removed.
   const vocabulary = new Set<string>();
@@ -322,6 +350,7 @@ export async function importPdf(
     mend: mender(vocabulary),
     files: [],
     tableIds: new Set(),
+    tablePages: new Map(),
     names: new Set(),
     kinds: options.entities ? new Map() : undefined,
     found: [],
@@ -379,6 +408,28 @@ export async function importPdf(
     const index = files[files.length - 1];
     index.text += `\n*Written as game entities: ${kinds.map(([k, n]) => `${n} ${k}${n === 1 ? "" : k.endsWith("s") ? "es" : "s"}`).join(", ")}.*\n`;
   }
+  // What needs a person's judgement: a note of the book, and the result's own list.
+  host.progress?.("Checking the result", 0, 1);
+  const review = buildReview({
+    files,
+    root,
+    tablePages: ctx.tablePages ?? new Map(),
+    changes: repaired.changes,
+    textItems,
+    contentsMissing: missing,
+    ocrPages: pages.filter((p) => p.ocr).map((p) => p.num),
+    kept: ctx.kept ?? [],
+    chapters: { count: chapters.length, from: chapterSource, pages: total },
+  });
+  const counts = reviewCounts(review);
+  const reviewNote = "Import review";
+  // The book's contents note is the last one written; it points at the review.
+  const contentsNote = files[files.length - 1];
+  if (review.length)
+    contentsNote.text += `\n*[[${root}/${reviewNote}|${reviewNote}]]: ${counts.fix} to fix, ${counts.check} to check against the book.*\n`;
+  files.push({ path: `${reviewNote}.md`, text: renderReview(review, options.title, ctx.source) });
+  host.event?.("review", { reviewNote: `${root}/${reviewNote}`, ...counts });
+
   let done = 0;
   for (const file of files) {
     stop();
@@ -399,6 +450,7 @@ export async function importPdf(
     entities: Object.fromEntries(kinds),
     tables,
     sidebars,
+    review: { note: `${root}/${reviewNote}`, counts, items: review },
   };
 }
 

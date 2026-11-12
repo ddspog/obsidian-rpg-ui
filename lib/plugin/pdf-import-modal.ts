@@ -551,7 +551,11 @@ export class PdfImportModal extends Modal {
             ? `, ${Object.values(result.entities).reduce((a, b) => a + b, 0)} game entities`
             : "") +
           (result.ocrPages ? `, ${result.ocrPages} pages by OCR` : "") +
-          "."
+          "." +
+          (result.review.counts.fix || result.review.counts.check
+            ? ` The note "Import review" lists ${result.review.counts.fix} things to fix and ${result.review.counts.check} to check against the book.`
+            : ""),
+        10000
       );
       const index = this.app.vault.getAbstractFileByPath(`${result.folder}/${fileName(title)}.md`);
       this.close();

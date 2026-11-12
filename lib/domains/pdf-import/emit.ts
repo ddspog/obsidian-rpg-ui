@@ -30,6 +30,8 @@ export interface EmitContext {
   mend: (text: string) => string;
   files: OutFile[];
   tableIds: Set<string>;
+  /** The page each table written starts on, by its id: for the review of the import. */
+  tablePages?: Map<string, number>;
   names: Set<string>;
   /** How many of each kind of entity were written; absent when entities are not looked for. */
   kinds?: Map<string, number>;
@@ -151,6 +153,7 @@ function renderTable(block: Extract<Block, { type: "table" }>, ctx: EmitContext,
   // `Table 2-3: Creator Deity Epithet` is addressed by its name: the number may change with the edition.
   const name = (caption && captionParts(caption)?.name) || caption;
   const id = uniqueId(slug(name || `${near} table`), ctx.tableIds);
+  ctx.tablePages?.set(id, block.page);
   const die = dieOf(block.rows);
   const head = die ? [`d${die}*`, ...block.rows[0].slice(1)] : block.rows[0];
   const rule = `|${Array.from({ length: width }, () => "---").join("|")}|`;

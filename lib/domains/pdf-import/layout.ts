@@ -50,6 +50,24 @@ export function buildSegs(runs: TextRun[]): Seg[] {
   }
   const segs: Seg[] = [];
   for (const row of rows) {
+    // Text drawn twice, once whole and once word by word on top of it (`CREATOR DEITIES` and
+    // `CREATOR`, `DEITIES`): a run lying inside a longer one that holds its words is the copy.
+    const whole = row.filter((r) => r.str.trim().includes(" "));
+    if (whole.length)
+      for (let i = row.length - 1; i >= 0; i--) {
+        const r = row[i];
+        const word = r.str.trim();
+        if (!word) continue;
+        const inside = whole.some(
+          (w) =>
+            w !== r &&
+            w.str.trim().length > word.length &&
+            w.x <= r.x + 0.6 &&
+            w.x + w.w >= r.x + r.w - 0.6 &&
+            ` ${w.str.trim()} `.includes(` ${word} `)
+        );
+        if (inside) row.splice(i, 1);
+      }
     row.sort((a, b) => a.x - b.x);
     let cur: { seg: Seg; end: number; chars: Map<string, number>; sizes: Map<number, number> } | null = null;
     let space = false;

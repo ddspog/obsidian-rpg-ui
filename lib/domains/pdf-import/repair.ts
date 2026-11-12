@@ -26,18 +26,33 @@ export interface RepairReport {
   folded: number;
   /** Rows widened over a number the book skips. */
   widened: number;
+  /** Each change, with the table and the page it is on: what a reader should check against the book. */
+  changes: RepairChange[];
+}
+
+export interface RepairChange {
+  kind: "joined" | "widened";
+  /** The table's caption, if it has one. */
+  caption?: string;
+  /** The page of the book the table starts on. */
+  page: number;
+  /** What was done, in a sentence. */
+  text: string;
+  /** For a widened row: the row's number as printed, and as written. */
+  from?: string;
+  to?: string;
 }
 
 const plain = (spans: Span[]) => spans.map((s) => s.text).join("");
 
 /** The rows of a table after its header, and whether most of them carry a roll's number. */
 function numbered(table: TableBlock): boolean {
-  const body = table.rows.slice(1);
+  const body = bodyOf(table);
   return body.length >= 2 && body.filter((r) => rollRange(r[0])).length >= 0.6 * body.length;
 }
 
 function firstNumber(table: TableBlock): number {
-  for (const row of table.rows.slice(1)) {
+  for (const row of bodyOf(table)) {
     const r = rollRange(row[0]);
     if (r) return r[0];
   }
@@ -45,8 +60,9 @@ function firstNumber(table: TableBlock): number {
 }
 
 function lastNumber(table: TableBlock): number {
-  for (let i = table.rows.length - 1; i > 0; i--) {
-    const r = rollRange(table.rows[i][0]);
+  const body = bodyOf(table);
+  for (let i = body.length - 1; i >= 0; i--) {
+    const r = rollRange(body[i][0]);
     if (r) return r[1];
   }
   return 0;
@@ -79,6 +95,24 @@ function bodyOf(piece: TableBlock): string[][] {
 }
 
 const join = (a: string, b: string) => (!a ? b : !b ? a : a.endsWith("-") ? a.slice(0, -1) + b : `${a} ${b}`);
+
+/**
+ * A piece read as one column, its number on a line of its own among the lines of its text (one
+ * shaded stripe of a table whose numbers are set against the middle of their cells): one row.
+ */
+function oneRowPiece(table: TableBlock): boolean {
+  if (table.rows.some((r) => r.filter((c) => c.trim()).length > 1) || table.rows.length < 2) return false;
+  const marks = table.rows.filter((r) => rollRange(r[0]));
+  if (marks.length !== 1) return false;
+  const text = table.rows
+    .filter((r) => r !== marks[0])
+    .map((r) => r[0].trim())
+    .filter(Boolean)
+    .reduce((a, b) => join(a, b), "");
+  if (!text) return false;
+  table.rows = [[marks[0][0], text]];
+  return true;
+}
 
 /** Lines of a wrapped cell read as rows of their own (no number) go back into the row above. */
 function foldBlankRows(table: TableBlock): number {
@@ -257,28 +291,35 @@ function recoverHead(blocks: Block[], at: number): number {
 }
 
 /** A captioned table that starts past 1: its first part, a table without a caption a little way back. */
-function joinBackwards(blocks: Block[], at: number): number {
+function joinBackwards(blocks: Block[], at: number): { joined: number; before: number } {
   const table = blocks[at] as TableBlock;
   const first = firstNumber(table);
-  if (first <= 1 || !isTableCaption(table.caption)) return 0;
-  for (let k = at - 1; k >= 0 && k >= at - REACH_BLOCKS; k--) {
+  if (first <= 1 || !isTableCaption(table.caption)) return { joined: 0, before: 0 };
+  // Back a little way, or (read after it: halves side by side) on along the same page.
+  const near = [
+    ...Array.from({ length: Math.min(at, REACH_BLOCKS) }, (_, i) => at - 1 - i),
+    ...Array.from({ length: 8 }, (_, i) => at + 1 + i).filter((k) => k < blocks.length),
+  ];
+  for (const k of near) {
     const b = blocks[k];
-    if (table.page - b.page > REACH_PAGES) break;
+    if (k < at && table.page - b.page > REACH_PAGES) continue;
+    if (k > at && b.page !== table.page) continue;
     if (b.type !== "table" || isTableCaption(b.caption) || b.rows[0].length !== table.rows[0].length) continue;
     if (firstNumber(b) !== 1 || lastNumber(b) + 1 !== first) continue;
-    const head = rollRange(b.rows[0][0]) ? table.rows[0] : b.rows[0];
-    table.rows = [head, ...bodyOf(b), ...table.rows.slice(1)];
+    const body = bodyOf(table);
+    const head = body === table.rows ? (rollRange(b.rows[0][0]) ? undefined : b.rows[0]) : table.rows[0];
+    table.rows = [...(head ? [head] : []), ...bodyOf(b), ...body];
     blocks.splice(k, 1);
-    return 1;
+    return { joined: 1, before: k < at ? 1 : 0 };
   }
-  return 0;
+  return { joined: 0, before: 0 };
 }
 
 /**
  * A number the book skips (`5` then `7`, or `01-05` then `07-10`): the row before the gap is widened
  * over it, so the table can still be rolled. Only for a table whose count runs from 1 to its die's top.
  */
-function widenGaps(table: TableBlock, strays: Set<number>): number {
+function widenGaps(table: TableBlock, strays: Set<number>, changes: RepairChange[]): number {
   if (!numbered(table) || firstNumber(table) !== 1 || lastNumber(table) !== dieFor(table)) return 0;
   let widened = 0;
   let prev: { row: string[]; range: [number, number] } | null = null;
@@ -292,7 +333,17 @@ function widenGaps(table: TableBlock, strays: Set<number>): number {
     if (prev && r[0] > prev.range[1] + 1 && !lost) {
       const width = String(row[0]).match(/^0\d/) ? 2 : 1;
       const pad = (n: number) => (n === 100 && width === 2 ? "00" : String(n).padStart(width, "0"));
+      const from = prev.row[0];
       prev.row[0] = `${pad(prev.range[0])}-${pad(r[0] - 1)}`;
+      const skipped = prev.range[1] + 1 === r[0] - 1 ? `${prev.range[1] + 1}` : `${prev.range[1] + 1}–${r[0] - 1}`;
+      changes.push({
+        kind: "widened",
+        caption: table.caption,
+        page: table.page,
+        from,
+        to: prev.row[0],
+        text: `Row ${from} was widened to ${prev.row[0]}: no row ${skipped} was found, in the table or near it.`,
+      });
       widened++;
     }
     prev = { row, range: r };
@@ -300,26 +351,83 @@ function widenGaps(table: TableBlock, strays: Set<number>): number {
   return widened;
 }
 
+/** How many numbers may be missing between two pieces that are still taken for one table. */
+const PIECE_GAP = 5;
+
+/**
+ * Pieces of one table in a row (the same columns, numbers going up) with a few numbers lost between
+ * them, at a page's end or a column's foot: joined, so the table is one; the numbers still missing
+ * are left for the review to report, not covered over.
+ */
+function chainPieces(blocks: Block[], at: number, changes: RepairChange[]): number {
+  const table = blocks[at] as TableBlock;
+  let joined = 0;
+  // (Measured from the last piece joined: a long table runs over many pages.)
+  let page = table.page;
+  for (let k = at + 1; k < blocks.length && k <= at + 12; k++) {
+    const b = blocks[k];
+    if (b.page > page + REACH_PAGES) break;
+    if (b.type !== "table") continue;
+    if (!numbered(b) && !rollRange(bodyOf(b)[0]?.[0])) break;
+    if (!mayJoin(table, b)) {
+      if (isTableCaption(b.caption)) break;
+      continue;
+    }
+    const body = bodyOf(b);
+    const first = rollRange(body[0]?.[0]);
+    const last = lastNumber(table);
+    if (!first || first[0] <= last || first[0] - last - 1 > PIECE_GAP) break;
+    table.rows.push(...body);
+    blocks.splice(k, 1);
+    k--;
+    joined++;
+    page = b.page;
+    changes.push({
+      kind: "joined",
+      caption: table.caption,
+      page: table.page,
+      text: `A piece from page ${b.page} was joined to it although ${first[0] - last - 1 === 1 ? `row ${last + 1} is` : `rows ${last + 1}–${first[0] - 1} are`} missing between them.`,
+    });
+  }
+  return joined;
+}
+
 /** The chapter's tables, mended in place; what was done, for the book's notes. */
 export function repairTables(blocks: Block[]): RepairReport {
-  const report: RepairReport = { joined: 0, folded: 0, widened: 0 };
-  for (const b of blocks) if (b.type === "table") report.folded += foldBlankRows(b);
+  const report: RepairReport = { joined: 0, folded: 0, widened: 0, changes: [] };
+  for (const b of blocks)
+    if (b.type === "table") {
+      if (oneRowPiece(b)) report.folded++;
+      report.folded += foldBlankRows(b);
+    }
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
     if (b.type !== "table" || !numbered(b)) continue;
+    const before = b.rows.length;
+    const pieces = report.joined;
     const head = recoverHead(blocks, i);
     if (head) {
       report.joined += 1;
       i -= head;
     }
     const back = joinBackwards(blocks, i);
-    if (back) {
-      report.joined += back;
-      i -= back;
-    }
+    report.joined += back.joined;
+    i -= back.before;
     const behind = isTableCaption(b.caption) && firstNumber(b) === 1 ? joinBehind(blocks, i) : 0;
     i -= behind;
     report.joined += behind + joinOnwards(blocks, i);
+    if (b.rows.length > before)
+      report.changes.push({
+        kind: "joined",
+        caption: b.caption,
+        page: b.page,
+        text: `${b.rows.length - before} rows were put back from ${report.joined - pieces} other pieces (a table or text further on or back).`,
+      });
+  }
+  // Pieces left apart by a few lost numbers, once nothing else would join them.
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b.type === "table" && numbered(b)) report.joined += chainPieces(blocks, i, report.changes);
   }
   blocks.forEach((b, i) => {
     if (b.type !== "table") return;
@@ -330,7 +438,7 @@ export function repairTables(blocks: Block[]): RepairReport {
         for (const m of text.matchAll(/(?:^|\s)\**(\d{1,3})(?:\s*[-–]\s*\d{1,3})?\**(?=\s|$)/g))
           strays.add(Number(m[1]));
     }
-    report.widened += widenGaps(b, strays);
+    report.widened += widenGaps(b, strays, report.changes);
   });
   return report;
 }

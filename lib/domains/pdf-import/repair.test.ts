@@ -128,6 +128,9 @@ describe("repair", () => {
       ["5-9", "Camp"],
       ["10", "Storm"],
     ]);
-    expect(report).toEqual({ joined: 0, folded: 1, widened: 1 });
+    expect(report).toMatchObject({ joined: 0, folded: 1, widened: 1 });
+    expect(report.changes).toEqual([
+      expect.objectContaining({ kind: "widened", from: "5-8", to: "5-9", text: expect.stringContaining("no row 9") }),
+    ]);
   });
 });
