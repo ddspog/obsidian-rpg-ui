@@ -120,7 +120,7 @@ export function dieOfNumbered(rows: string[][]): number {
  */
 export function tableReviews(rows: string[][], page: number, caption?: string): BlockReview[] {
   const out: BlockReview[] = [];
-  const at = `(the book's PDF page ${page})`;
+  const at = `p. ${page}`;
   const body = rollRange(rows[0]?.[0]) ? rows : rows.slice(1);
   const numbered = body.filter((r) => rollRange(r[0]));
   const first = numbered.length ? (rollRange(numbered[0][0]) as [number, number])[0] : 0;
@@ -130,17 +130,17 @@ export function tableReviews(rows: string[][], page: number, caption?: string): 
       severity: "fix",
       kind: "table-fragment",
       off: [],
-      message: `Only rows ${ranges(numbered.map((r) => (rollRange(r[0]) as [number, number])[0]))} ${at}, with no caption: most likely a piece of the table before or after it, to join to it.`,
+      message: `Only rows ${ranges(numbered.map((r) => (rollRange(r[0]) as [number, number])[0]))}, with no caption (${at}). What to do: it is most likely a piece of the table before or after it; move its rows into that table and delete this block.`,
     });
   } else if (trouble) {
     const parts: string[] = [];
-    if (trouble.missing.length) parts.push(`no row for ${ranges(trouble.missing)} of the d${trouble.die}`);
+    if (trouble.missing.length) parts.push(`No row for ${ranges(trouble.missing)} of the d${trouble.die}`);
     if (trouble.doubled.length) parts.push(`${ranges(trouble.doubled)} in two rows`);
     out.push({
       severity: "fix",
       kind: "table-numbers",
-      off: ["roll"],
-      message: `The table has ${parts.join(" and ")} ${at}. The missing rows may be in the text or the table near it, or on the next page; if the book itself skips a number, widen the row before it. Delete this line when the numbers are whole.`,
+      off: [],
+      message: `${parts.join("; ")} (${at})${trouble.missing.length ? ": a roll on those is rolled again" : ""}. What to do: the missing rows may be in the text or a table near it, or on the next page; if the book itself skips a number, widen the row before it. Once the numbers are whole, delete this line and the @reroll line.`,
     });
   }
   // A column empty in nearly every row (a stray cell pushed sideways).
@@ -153,7 +153,7 @@ export function tableReviews(rows: string[][], page: number, caption?: string): 
           severity: "check",
           kind: "table-column",
           off: [],
-          message: `Column ${c + 1} (“${rows[0][c] || "no header"}”) is filled in only ${filled} of ${rows.length - 1} rows ${at}: a cell that slipped sideways?`,
+          message: `${["The second", "The third", "The fourth", "The fifth", "The sixth"][c - 1] ?? `Column ${c + 1}`} column${rows[0][c] ? ` (“${rows[0][c]}”)` : ""} is filled in only ${filled} of ${rows.length - 1} rows (${at}). What to do: it is usually a cell that slipped sideways; move it back into its row.`,
         });
     }
   return out;
@@ -191,7 +191,7 @@ export function reviewBlocks(blocks: Block[], chapter: string): ReviewItem[] {
         severity: "check",
         kind: "text-like-table",
         off: [],
-        message: `${run.count} lines in a row open with numbers that count up, from “${run.sample}…” (the book's PDF page ${run.page}): perhaps a table read as text.`,
+        message: `${run.count} lines open with numbers that count up, from “${run.sample}…” (p. ${run.page}). What to do: if it is a table in the book, make it an rpg table.`,
       });
       continue;
     }

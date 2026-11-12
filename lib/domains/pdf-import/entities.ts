@@ -438,7 +438,7 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
       severity: "fix",
       kind: "entity-incomplete",
       off: [],
-      message: `The ability scores of “${section.title.trim()}” could not be read (the book's PDF page ${section.page}): they are 0 until filled in from the book.`,
+      message: `Ability scores not read (p. ${section.page}); they are 0. What to do: fill them in from the book.`,
     });
   }
   if (env.scanned)
@@ -446,7 +446,7 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
       severity: "check",
       kind: "ocr-page",
       off: [],
-      message: `“${section.title.trim()}” was read by OCR (the book's PDF page ${section.page}): check its numbers and names against the book.`,
+      message: `Read by OCR (p. ${section.page}). What to do: check its numbers and names against the book.`,
     });
 
   const name = section.title.trim();

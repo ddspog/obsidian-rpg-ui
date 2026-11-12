@@ -340,7 +340,7 @@ function widenGaps(table: TableBlock, strays: Set<number>, changes: RepairChange
         severity: "check",
         kind: "row-widened",
         off: [],
-        message: `Row ${from} was widened to ${prev.row[0]} (the book's PDF page ${table.page}): no row ${skipped} was found, in the table or near it. Right if the book skips it; if a row was lost, put it back and narrow this one.`,
+        message: `Row ${from} widened to ${prev.row[0]}: no row ${skipped} was found (p. ${table.page}). What to do: right if the book skips ${skipped}; if the book has that row, put it back and narrow row ${prev.row[0]}.`,
       });
       changes.push({
         kind: "widened",
@@ -392,7 +392,7 @@ function chainPieces(blocks: Block[], at: number, changes: RepairChange[]): numb
       severity: "check",
       kind: "rows-joined",
       off: [],
-      message: `A piece from page ${b.page} was joined on although ${first[0] - last - 1 === 1 ? `row ${last + 1} is` : `rows ${last + 1}–${first[0] - 1} are`} missing between them.`,
+      message: `A piece from p. ${b.page} joined on, with ${first[0] - last - 1 === 1 ? `row ${last + 1}` : `rows ${last + 1}–${first[0] - 1}`} missing between. What to do: look for the missing ${first[0] - last - 1 === 1 ? "row" : "rows"} at the foot of p. ${b.page - 1 > table.page ? b.page - 1 : table.page} or the top of p. ${b.page}.`,
     });
     changes.push({
       kind: "joined",
@@ -433,7 +433,7 @@ export function repairTables(blocks: Block[]): RepairReport {
         severity: "note",
         kind: "rows-joined",
         off: [],
-        message: `${b.rows.length - before} rows were put back from other pieces of the chapter (from the book's PDF page ${b.page} on); glance at their order.`,
+        message: `${b.rows.length - before} rows put back from other pieces of the chapter (from p. ${b.page}). What to do: glance at their order against the book.`,
       });
     if (b.rows.length > before)
       report.changes.push({

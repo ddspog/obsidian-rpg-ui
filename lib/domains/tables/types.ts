@@ -154,4 +154,9 @@ export interface TableDef {
   pagination?: PaginationConfig;
   /** When true, the table wrapper scrolls horizontally (`@wide` directive). */
   wide?: boolean;
+  /**
+   * `@reroll`: a roll that lands on no row (a number the table lacks) is rolled again, so every
+   * roll reads a row. The PDF import writes it on a table whose numbers have gaps.
+   */
+  reroll?: boolean;
 }

@@ -49,8 +49,11 @@ describe("review", () => {
       12,
       "Table 2-1: Monsters"
     );
-    expect(gaps).toEqual([expect.objectContaining({ severity: "fix", kind: "table-numbers", off: ["roll"] })]);
-    expect(gaps[0].message).toContain("no row for 4 of the d6 (the book's PDF page 12)");
+    // Rolling stays on (the table re-rolls the gap); the problem and page come first, what to do after.
+    expect(gaps).toEqual([expect.objectContaining({ severity: "fix", kind: "table-numbers", off: [] })]);
+    expect(gaps[0].message).toMatch(
+      /^No row for 4 of the d6 \(p\. 12\): a roll on those is rolled again\. What to do: /
+    );
     const piece = tableReviews(
       [
         ["4", "Goblin"],

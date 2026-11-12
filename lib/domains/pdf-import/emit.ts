@@ -163,7 +163,8 @@ function renderTable(block: Extract<Block, { type: "table" }>, ctx: EmitContext,
   const die = dieOf(block.rows) || (gappy ? dieOfNumbered(block.rows) : 0);
   const head = die ? [`d${die}*`, ...block.rows[0].slice(1)] : block.rows[0];
   const rule = `|${Array.from({ length: width }, () => "---").join("|")}|`;
-  const lines = [`\`\`\`rpg table.${id}`, ...reviews.map(reviewLine)];
+  // (Rolls that land on a number the table lacks are rolled again, so it stays of use.)
+  const lines = [`\`\`\`rpg table.${id}`, ...reviews.map(reviewLine), ...(gappy && die ? ["@reroll"] : [])];
   if (block.rows.length > 21) lines.push("@paginate 10 pages");
   lines.push(row(head), rule);
   for (const r of block.rows.slice(1)) lines.push(row(r));

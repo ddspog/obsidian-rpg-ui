@@ -1216,3 +1216,8 @@ body.is-mobile {
     transform: translateY(100%);
   }
 }
+
+/* A block's import review: a tap target of a thumb's size. */
+.is-mobile button.clickable-icon.rpg-block-review__toggle {
+  min-height: 32px;
+}

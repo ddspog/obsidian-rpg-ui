@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseTableBlock } from "../tables/parse-table-block";
-import { offReason, parseReviewLine, reviewLine, takeBlockReview } from "./block-review";
+import { offReason, parseReviewLine, reviewLine, splitMessage, takeBlockReview } from "./block-review";
 
 describe("block review", () => {
   it("reads a review line, as a YAML comment or bare, with its kind and what it turns off", () => {
@@ -28,6 +28,14 @@ describe("block review", () => {
     expect(offReason(reviews, "edit")).toBeNull();
     // Only the lines at the top: one further down is the block's own text.
     expect(takeBlockReview("name: Orc\n# @review fix: x").reviews).toHaveLength(0);
+  });
+
+  it("splits a message into the problem and what to do", () => {
+    expect(splitMessage("No row for 4 of the d6 (p. 12). What to do: look on the next page.")).toEqual({
+      problem: "No row for 4 of the d6 (p. 12).",
+      todo: "Look on the next page.",
+    });
+    expect(splitMessage("Rows put back.")).toEqual({ problem: "Rows put back." });
   });
 
   it("lets a table parsed straight from a note carry its review", () => {

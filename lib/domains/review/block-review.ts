@@ -71,57 +71,147 @@ export function offReason(reviews: BlockReview[] | undefined, fn: string): strin
   return hit.length ? hit.map((r) => r.message).join(" ") : null;
 }
 
+/** A review's message in two: the problem (with its page), and what to do about it, if it says. */
+export function splitMessage(message: string): { problem: string; todo?: string } {
+  const at = message.search(/\bWhat to do:\s*/i);
+  if (at < 0) return { problem: message.trim() };
+  const rest = message
+    .slice(at)
+    .replace(/^What to do:\s*/i, "")
+    .trim();
+  const todo = rest.charAt(0).toUpperCase() + rest.slice(1);
+  return { problem: message.slice(0, at).trim(), ...(todo ? { todo } : {}) };
+}
+
 const ORDER: Record<BlockReviewSeverity, number> = { fix: 0, check: 1, note: 2 };
-const LABEL: Record<BlockReviewSeverity, string> = { fix: "To fix", check: "To check", note: "Note" };
+const LABEL: Record<BlockReviewSeverity, string> = { fix: "Fix", check: "Check", note: "Note" };
+const COUNT: Record<BlockReviewSeverity, [string, string]> = {
+  fix: ["to fix", "to fix"],
+  check: ["to check", "to check"],
+  note: ["note", "notes"],
+};
+const ICON: Record<BlockReviewSeverity, string> = { fix: "alert-triangle", check: "help-circle", note: "info" };
 const FUNCTION: Record<string, string> = { roll: "Rolling is off" };
 
-/** The review's banner: worst first, each item with what it turns off. */
-export function renderBlockReview(doc: Document, reviews: BlockReview[]): HTMLElement {
+/** Draws an icon into an element (Obsidian's `setIcon`); without one, the severity's initial. */
+export type IconPainter = (el: HTMLElement, name: string) => void;
+
+let reviewIds = 0;
+
+/**
+ * The review of a block, for its foot: an icon and a count that open a card of the items, worst
+ * first; each item says what is wrong and on which page, with what to do behind a disclosure.
+ */
+export function renderBlockReview(doc: Document, reviews: BlockReview[], icon?: IconPainter): HTMLElement {
   const sorted = [...reviews].sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
+  const worst = sorted[0].severity;
   const box = doc.createElement("div");
-  box.classList.add("rpg-block-review", `rpg-block-review--${sorted[0].severity}`);
-  box.setAttribute("role", "note");
-  box.setAttribute("aria-label", "Review of this block");
+  box.classList.add("rpg-block-review", `rpg-block-review--${worst}`);
+
+  const counts = (["fix", "check", "note"] as BlockReviewSeverity[])
+    .map((sev) => [sev, sorted.filter((r) => r.severity === sev).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([sev, n]) => `${n} ${COUNT[sev][n === 1 ? 0 : 1]}`);
+  const off = [...new Set(sorted.flatMap((r) => r.off))].map((fn) => FUNCTION[fn] ?? `${fn} is off`);
+
+  const toggle = doc.createElement("button");
+  toggle.classList.add("clickable-icon", "rpg-block-review__toggle");
+  toggle.type = "button";
+  const id = `rpg-block-review-${++reviewIds}`;
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-controls", id);
+  const mark = doc.createElement("span");
+  mark.classList.add("rpg-block-review__icon");
+  mark.setAttribute("aria-hidden", "true");
+  if (icon) icon(mark, ICON[worst]);
+  else mark.textContent = worst === "fix" ? "!" : worst === "check" ? "?" : "i";
+  toggle.appendChild(mark);
+  const summary = doc.createElement("span");
+  summary.classList.add("rpg-block-review__summary");
+  summary.textContent = `Import review: ${[...counts, ...off].join(" · ")}`;
+  toggle.appendChild(summary);
+  box.appendChild(toggle);
+
+  const card = doc.createElement("div");
+  card.classList.add("rpg-block-review__card");
+  card.id = id;
+  card.hidden = true;
   for (const review of sorted) {
+    const { problem, todo } = splitMessage(review.message);
     const item = doc.createElement("div");
     item.classList.add("rpg-block-review__item", `rpg-block-review__item--${review.severity}`);
     const tag = doc.createElement("span");
     tag.classList.add("rpg-block-review__tag");
     tag.textContent = LABEL[review.severity];
     item.appendChild(tag);
-    const text = doc.createElement("span");
+    const body = doc.createElement("div");
+    body.classList.add("rpg-block-review__body");
+    const text = doc.createElement("p");
     text.classList.add("rpg-block-review__text");
-    text.textContent = review.message;
-    item.appendChild(text);
-    for (const fn of review.off) {
-      const off = doc.createElement("span");
-      off.classList.add("rpg-block-review__off");
-      off.textContent = FUNCTION[fn] ?? `${fn} is off`;
-      item.appendChild(off);
+    text.textContent = problem;
+    body.appendChild(text);
+    if (todo) {
+      const how = doc.createElement("details");
+      how.classList.add("rpg-block-review__todo");
+      const label = doc.createElement("summary");
+      label.textContent = "What to do";
+      how.appendChild(label);
+      const steps = doc.createElement("p");
+      steps.textContent = todo;
+      how.appendChild(steps);
+      body.appendChild(how);
     }
-    box.appendChild(item);
+    item.appendChild(body);
+    card.appendChild(item);
   }
+  box.appendChild(card);
+
+  toggle.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const open = card.hidden;
+    card.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    box.classList.toggle("is-open", open);
+  });
   return box;
 }
 
+/** The element of a block's content that floats (a sidebar at the page's edge), if one does. */
+function floated(el: HTMLElement, review: HTMLElement): HTMLElement | null {
+  const view = el.ownerDocument.defaultView;
+  if (!view) return null;
+  const stack: Array<{ node: Element; depth: number }> = Array.from(el.children).map((node) => ({ node, depth: 0 }));
+  while (stack.length) {
+    const { node, depth } = stack.shift() as { node: Element; depth: number };
+    if (node === review || !(node instanceof view.HTMLElement)) continue;
+    const float = view.getComputedStyle(node).float;
+    if (float && float !== "none") return node;
+    if (depth < 3) stack.push(...Array.from(node.children).map((child) => ({ node: child, depth: depth + 1 })));
+  }
+  return null;
+}
+
 /**
- * Keeps the banner at the top of a block's element, whatever the block's own renderer does to it
- * (most empty their element and fill it, some later and more than once). Returns the function that
- * stops watching.
+ * Keeps the review at the foot of a block's element, whatever the block's own renderer does to
+ * it (most empty their element and fill it, some later and more than once); inside the block's
+ * frame when the block floats beside the text. Returns the function that stops watching.
  */
-export function keepBlockReview(el: HTMLElement, reviews: BlockReview[]): () => void {
-  const banner = renderBlockReview(el.ownerDocument, reviews);
-  el.classList.add(
-    "rpg-block-reviewed",
-    `rpg-block-reviewed--${banner.classList[1].replace("rpg-block-review--", "")}`
-  );
+export function keepBlockReview(el: HTMLElement, reviews: BlockReview[], icon?: IconPainter): () => void {
+  const review = renderBlockReview(el.ownerDocument, reviews, icon);
+  el.classList.add("rpg-block-reviewed");
+  let placing = false;
   const place = () => {
-    if (el.firstChild !== banner) el.insertBefore(banner, el.firstChild);
+    if (placing) return;
+    placing = true;
+    const host = floated(el, review) ?? el;
+    if (review.parentElement !== host || host.lastElementChild !== review) host.appendChild(review);
+    placing = false;
   };
   place();
   const View = el.ownerDocument.defaultView;
   if (!View || !("MutationObserver" in View)) return () => undefined;
   const watch = new (View as unknown as { MutationObserver: typeof MutationObserver }).MutationObserver(place);
-  watch.observe(el, { childList: true });
+  watch.observe(el, { childList: true, subtree: true });
   return () => watch.disconnect();
 }

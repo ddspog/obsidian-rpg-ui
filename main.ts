@@ -7,6 +7,7 @@ import {
   MarkdownSectionInformation,
   Notice,
   parseYaml,
+  setIcon,
   TAbstractFile,
   TFile,
 } from "obsidian";
@@ -1621,7 +1622,7 @@ class EntityBlockRenderChild extends MarkdownRenderChild {
 
 /** Keeps a block's review at its top while the block is shown. */
 function watchBlockReview(el: HTMLElement, reviews: BlockReview[], ctx: MarkdownPostProcessorContext): void {
-  const stop = keepBlockReview(el, reviews);
+  const stop = keepBlockReview(el, reviews, (icon, name) => setIcon(icon, name));
   const child = new (class extends MarkdownRenderChild {
     onunload(): void {
       stop();

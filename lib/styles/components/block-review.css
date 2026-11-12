@@ -1,63 +1,117 @@
-/* A block's review (lib/domains/review/block-review.ts): what to check in it before trusting it,
-   shown at its top. Fix items in the theme's error colour, checks in its warning colour, notes muted. */
+/* A block's import review (lib/domains/review/block-review.ts), at the block's foot: a small icon
+   and count that open a card of the items. The block reads first; the review waits to be asked. */
 .rpg-block-review {
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-2-2, 4px);
-  margin: 0 0 var(--size-4-2, 8px);
-  padding: var(--size-2-3, 6px) var(--size-4-3, 12px);
-  border-left: 3px solid var(--text-muted);
-  border-radius: var(--radius-s, 4px);
-  background: var(--background-secondary);
-  font-size: var(--font-ui-small, 13px);
+  clear: both;
+  margin: var(--size-2-1, 2px) 0 var(--size-4-2, 8px);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller, 12px);
   line-height: 1.4;
+}
+
+/* Floated blocks (a sidebar) carry the review inside their own frame. */
+.rpg-rule-side .rpg-block-review {
+  margin: var(--size-4-2, 8px) 0 0;
+}
+
+button.clickable-icon.rpg-block-review__toggle {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--size-2-2, 4px);
+  width: auto;
+  height: auto;
+  min-height: 24px;
+  padding: var(--size-2-1, 2px) var(--size-2-3, 6px);
+  font-size: inherit;
+  color: var(--text-muted);
+  text-align: start;
+}
+button.clickable-icon.rpg-block-review__toggle:hover {
   color: var(--text-normal);
 }
-.rpg-block-review--fix {
-  border-left-color: var(--text-error);
-  background: rgba(var(--color-red-rgb), 0.08);
+.rpg-block-review__icon {
+  display: inline-flex;
+  flex: none;
 }
-.rpg-block-review--check {
-  border-left-color: var(--text-warning, var(--color-orange));
-  background: rgba(var(--color-orange-rgb), 0.08);
+.rpg-block-review__icon svg {
+  width: 14px;
+  height: 14px;
+}
+.rpg-block-review--fix .rpg-block-review__icon {
+  color: var(--text-error);
+}
+/* (The theme's orange alone is under 3:1 on its page: darkened toward the text.) */
+.rpg-block-review--check .rpg-block-review__icon {
+  color: color-mix(in srgb, var(--text-warning, var(--color-orange)) 65%, var(--text-normal));
+}
+
+.rpg-block-review__card {
+  display: grid;
+  gap: var(--size-4-2, 8px);
+  margin-top: var(--size-2-2, 4px);
+  padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small, 13px);
+}
+.rpg-block-review__card[hidden] {
+  display: none;
 }
 .rpg-block-review__item {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--size-2-3, 6px);
   align-items: baseline;
-  gap: var(--size-2-1, 2px) var(--size-2-3, 6px);
 }
 .rpg-block-review__tag {
-  flex: none;
-  font-size: var(--font-ui-smaller, 11px);
   font-weight: var(--font-semibold, 600);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-normal);
 }
-.rpg-block-review__item--fix .rpg-block-review__tag {
-  color: var(--text-error);
+/* The severity's mark: a dot before the tag, the colour only an addition to the word. */
+.rpg-block-review__tag::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: var(--size-2-2, 4px);
+  border-radius: 50%;
+  background: var(--text-faint);
+  vertical-align: 1px;
 }
-.rpg-block-review__item--check .rpg-block-review__tag {
-  color: var(--text-warning, var(--color-orange));
+.rpg-block-review__item--fix .rpg-block-review__tag::before {
+  background: var(--text-error);
 }
-.rpg-block-review__text {
-  flex: 1 1 16em;
+.rpg-block-review__item--check .rpg-block-review__tag::before {
+  background: color-mix(in srgb, var(--text-warning, var(--color-orange)) 65%, var(--text-normal));
+}
+.rpg-block-review__body {
   min-width: 0;
 }
-.rpg-block-review__off {
-  flex: none;
-  padding: 0 var(--size-2-2, 4px);
-  border: 1px solid currentColor;
-  border-radius: var(--radius-s, 4px);
-  font-size: var(--font-ui-smaller, 11px);
-  color: var(--text-error);
+/* (Under the block's own rules: a sidebar's paragraphs have margins of their own.) */
+.rpg-block-review .rpg-block-review__text,
+.rpg-block-review .rpg-block-review__todo p {
+  margin: 0;
+}
+.rpg-block-review__todo {
+  margin-top: var(--size-2-1, 2px);
+  color: var(--text-muted);
+}
+.rpg-block-review__todo summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--font-ui-smaller, 12px);
+}
+.rpg-block-review__todo[open] summary {
+  margin-bottom: var(--size-2-1, 2px);
 }
 
 /* A table's roll row turned off by its review: still there, saying why, not clickable. */
 .rpg-table-roll-cell.rpg-table-roll-cell-off {
   cursor: not-allowed;
   font-style: italic;
+  line-height: 1.4;
   color: var(--text-muted);
 }
 .rpg-table-roll-cell.rpg-table-roll-cell-off::after {

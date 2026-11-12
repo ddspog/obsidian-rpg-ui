@@ -1129,7 +1129,7 @@ export function renderTableBlock(
           span.classList.add("rpg-table-roll-cell-off");
           span.setAttribute("aria-disabled", "true");
           span.title = `Rolling is off: ${rollOff}`;
-          span.textContent = "Rolling is off until the table is mended (see the note above it).";
+          span.textContent = "Rolling is off: see the import review under the table.";
           flexWrap.appendChild(span);
           return;
         }

@@ -10,7 +10,7 @@
  *      `<pre><code>` blocks)
  */
 
-import { App, Component, MarkdownRenderChild, parseYaml } from "obsidian";
+import { App, Component, MarkdownRenderChild, parseYaml, setIcon } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { SourcePathContext } from "lib/ui/source-file";
@@ -82,7 +82,7 @@ export function processUnrenderedRpgFences(
     wrapper.appendChild(el);
     pre.replaceWith(wrapper);
     if (reviews.length) {
-      const stop = keepBlockReview(el, reviews);
+      const stop = keepBlockReview(el, reviews, (icon, name) => setIcon(icon, name));
       const watcher = new (class extends MarkdownRenderChild {
         onunload(): void {
           stop();
