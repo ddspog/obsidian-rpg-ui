@@ -430,15 +430,18 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
   }
   // What a person should check in the stat block, written at its top.
   const reviews: BlockReview[] = [];
+  // Scores the import could not read are written as unknown ("—"), not as 0.
+  let unread = false;
   if (!abilities) {
     // A scan may lose the numbers: the block is still a creature's, with its abilities left to fill in.
     if (!(loose && (sawAbilities || stats.length >= 3))) return null;
     abilities = [0, 0, 0, 0, 0, 0];
+    unread = true;
     reviews.push({
       severity: "fix",
       kind: "entity-incomplete",
       off: [],
-      message: `Ability scores not read (p. ${section.page}); they are 0. What to do: fill them in from the book.`,
+      message: `Ability scores not read (p. ${section.page}); they show as —. What to do: fill them in from the book.`,
     });
   }
   if (env.scanned)
@@ -474,7 +477,7 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
   yaml.push("stats:", ...stats.map(([k, v]) => `  ${k}: ${/^pas_/.test(k) ? v : q(v)}`));
   yaml.push(
     "abilities:",
-    ...["str", "dex", "con", "int", "wis", "cha"].map((k, i) => `  ${k}: ${abilities?.[i] ?? 0}`)
+    ...["str", "dex", "con", "int", "wis", "cha"].map((k, i) => `  ${k}: ${unread ? '"—"' : (abilities?.[i] ?? 0)}`)
   );
   if (features.length) {
     yaml.push("features:");

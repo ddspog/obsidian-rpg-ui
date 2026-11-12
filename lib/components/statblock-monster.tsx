@@ -27,6 +27,8 @@ export interface StatblockMonsterProps {
   category?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
+  /** Scores not known (written as "—"): shown as "—". */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: ResolvedStatFeature[];
   body?: string;
   hideTitle?: boolean;
@@ -58,6 +60,7 @@ export function StatblockMonster({
   category,
   stats,
   abilities,
+  unknownAbilities,
   features,
   body,
   hideTitle,
@@ -101,7 +104,7 @@ export function StatblockMonster({
         {renderStatEntries(Object.entries(displayStats), STAT_LABELS, PAIRED_STATS, sourcePath)}
       </dl>
 
-      <AbilitiesTable abilities={abilities} />
+      <AbilitiesTable abilities={abilities} unknown={unknownAbilities} />
 
       <FeatureSections traits={traits} sections={sections} sourcePath={sourcePath} />
 

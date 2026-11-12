@@ -138,28 +138,36 @@ export function FeatureEntry({ feature, sourcePath }: { feature: ResolvedStatFea
   );
 }
 
-/** The six-column ability-modifier table. */
-export function AbilitiesTable({ abilities }: { abilities: AbilityScores }) {
+/** The six-column ability-modifier table. A score written as unknown shows as "—". */
+export function AbilitiesTable({
+  abilities,
+  unknown,
+}: {
+  abilities: AbilityScores;
+  /** Scores not known (an import could not read them): "—" in place of a modifier. */
+  unknown?: Array<keyof AbilityScores>;
+}) {
+  const keys = ["str", "dex", "con", "int", "wis", "cha"] as const;
   return (
     <table className="rpg-statblock-abilities">
       <thead>
         <tr>
-          <th>STR</th>
-          <th>DEX</th>
-          <th>CON</th>
-          <th>INT</th>
-          <th>WIS</th>
-          <th>CHA</th>
+          {keys.map((k) => (
+            <th key={k}>{k.toUpperCase()}</th>
+          ))}
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>{formatModifier(abilities.str)}</td>
-          <td>{formatModifier(abilities.dex)}</td>
-          <td>{formatModifier(abilities.con)}</td>
-          <td>{formatModifier(abilities.int)}</td>
-          <td>{formatModifier(abilities.wis)}</td>
-          <td>{formatModifier(abilities.cha)}</td>
+          {keys.map((k) =>
+            unknown?.includes(k) ? (
+              <td key={k} className="rpg-statblock-abilities__unknown" aria-label="not known" title="Not known">
+                —
+              </td>
+            ) : (
+              <td key={k}>{formatModifier(abilities[k])}</td>
+            )
+          )}
         </tr>
       </tbody>
     </table>

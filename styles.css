@@ -21111,6 +21111,9 @@ p.rpg-statblock-subtitle {
   font-size: 0.95em;
   text-align: center;
 }
+.rpg-statblock-abilities td.rpg-statblock-abilities__unknown {
+  color: var(--text-muted);
+}
 .cm-html-embed .rpg-statblock-abilities td,
 .markdown-rendered .rpg-statblock-abilities td,
 .cm-html-embed .rpg-statblock-abilities th,

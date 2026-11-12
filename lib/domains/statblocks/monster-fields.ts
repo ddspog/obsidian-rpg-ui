@@ -7,7 +7,13 @@
  * legacy (flat frontmatter) way still resolves.
  */
 
-import type { AbilityScores, StatFeatureRef, StatCategoryData, StatMonsterData } from "./types";
+import {
+  isUnknownScore,
+  type AbilityScores,
+  type StatFeatureRef,
+  type StatCategoryData,
+  type StatMonsterData,
+} from "./types";
 
 /** YAML parses bare `[[Name]]` as `[["Name"]]`; collapse it back to text. */
 function stringifyValue(value: unknown): string {
@@ -84,6 +90,13 @@ function normalizeAbilities(self: Record<string, unknown>): AbilityScores {
   return out;
 }
 
+/** The scores written as unknown (`"—"`), when there are any. */
+function unknownOf(self: Record<string, unknown>): { unknownAbilities?: Array<keyof AbilityScores> } {
+  const keys = ["str", "dex", "con", "int", "wis", "cha"] as const;
+  const unknown = keys.filter((k) => isUnknownScore(self[`${k}_mod`] ?? self[k]));
+  return unknown.length ? { unknownAbilities: [...unknown] } : {};
+}
+
 /** Stat rows in display order. Keys map to labels in `StatblockMonster`. */
 const STAT_FIELDS = [
   "ac",
@@ -131,6 +144,7 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
     category: isBlank(category) ? undefined : category,
     stats,
     abilities: normalizeAbilities(abilSrc),
+    ...unknownOf(abilSrc),
     features: normalizeFeatures(self.features),
     text: typeof self.text === "string" && self.text.trim() ? self.text : undefined,
     image: typeof self.image === "string" && self.image.trim() ? self.image : undefined,
