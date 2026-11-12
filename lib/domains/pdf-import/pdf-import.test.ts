@@ -206,6 +206,35 @@ describe("blocks", () => {
     expect(tables[0].rows.map((r) => r[0])).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
 
+  it("reads one stripe holding a single wrapped row as a table's row", () => {
+    const rects: FillRect[] = [{ x: 72, y: 120, w: 400, h: 34, dark: false }];
+    const runs = [
+      ...filler(60, 4),
+      run("A relic of the deity is in the desert and is being used for", 120, 134),
+      run("5", 78, 141),
+      run("probably-nefarious purposes by somebody nearby.", 120, 147),
+    ];
+    const blocks = blocksOf(runs, rects);
+    expect(blocks.some((b) => b.type === "side")).toBe(false);
+    const table = blocks.find((b) => b.type === "table") as Extract<Block, { type: "table" }>;
+    expect(table.rows[0][0]).toBe("5");
+  });
+
+  it("carries a table on under a misspelt continued caption", () => {
+    const rects: FillRect[] = [
+      { x: 72, y: 106, w: 200, h: 42, dark: false },
+      { x: 72, y: 506, w: 200, h: 42, dark: false },
+    ];
+    const runs: TextRun[] = [run("Table 3-1: Plants", 72, 96, 11, "Baskerville-Bold")];
+    for (let i = 0; i < 3; i++) runs.push(run(String(i + 1), 76, 118 + i * 14), run(`plant ${i}`, 150, 118 + i * 14));
+    runs.push(...filler(200, 10), run("table 3-1: Plants contined", 72, 496, 8));
+    for (let i = 0; i < 3; i++)
+      runs.push(run(String(i + 4), 76, 518 + i * 14), run(`plant ${i + 3}`, 150, 518 + i * 14));
+    const tables = blocksOf(runs, rects).filter((b) => b.type === "table") as Array<Extract<Block, { type: "table" }>>;
+    expect(tables).toHaveLength(1);
+    expect(tables[0].rows.map((r) => r[0])).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
   it("drops the words set on a dark strip down the page's edge", () => {
     const strip: FillRect = { x: -10, y: -10, w: 100, h: 820, dark: true };
     const runs = [run("Sample name", 20, 200, 8), run("Another one", 20, 260, 8)];

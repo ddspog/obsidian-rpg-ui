@@ -192,6 +192,16 @@ export function tableRows(
 ): { rows: string[][]; title?: string } {
   let title: string | undefined;
   let body = lines;
+  // No strip marks the header: the bold lines without a number at the table's top are it, when
+  // what comes under them is numbered rows set in the body's type.
+  if (headBottom === undefined) {
+    const bold = (l: Line) => l.cells.every((c) => c.spans.every((sp) => sp.bold || !sp.text.trim()));
+    const numbered = (l: Line) => !!rollRange(segText(l.cells[0]));
+    let n = 0;
+    while (n < body.length && bold(body[n]) && !numbered(body[n])) n++;
+    const after = body.slice(n, n + 6);
+    if (n >= 2 && after.some(numbered) && after.some((l) => !bold(l))) headBottom = body[n - 1].base + 1;
+  }
   // A title bar across the top of the table, above its header.
   if (titleBottom !== undefined && body[0] && body[0].base <= titleBottom + 1 && body[0].cells.length === 1) {
     title = lineText(body[0]);
@@ -253,7 +263,8 @@ export function tableRows(
   // A row that opened with a wrapped cell's first line, its number still to come on the line below
   // (the number is set against the middle of a cell of two or three lines).
   let awaiting = false;
-  const numbered = body.filter((l) => rollRange(place(l)[0])).length >= 0.4 * body.length;
+  // (A lone stripe of a striped table holds one row of three lines, its number on the middle one.)
+  const numbered = body.filter((l) => rollRange(place(l)[0])).length >= 0.3 * body.length;
   for (const line of body) {
     const cells = place(line);
     if (awaiting && prev && cells[0] && line.base - prev.base <= 1.3 * line.size) {
@@ -385,16 +396,26 @@ export function rollRange(cell: string | undefined): [number, number] | null {
 
 /** True when `rows` carry on where `prev` stopped: its numbers go on counting from the last row's. */
 function carriesOn(prev: TableBlock, rows: string[][]): boolean {
-  const last = rollRange(prev.rows[prev.rows.length - 1]?.[0]);
-  if (!last) return false;
   const first = rollRange(rows[0]?.[0]) ?? rollRange(rows[1]?.[0]);
-  return !!first && first[0] === last[1] + 1;
+  if (!first) return false;
+  const last = rollRange(prev.rows[prev.rows.length - 1]?.[0]);
+  if (last) return first[0] === last[1] + 1;
+  // (A last row that lost its number: the count goes on from the row before it, one further.)
+  const before = prev.rows.length > 2 ? rollRange(prev.rows[prev.rows.length - 2]?.[0]) : null;
+  return !!before && !prev.rows[prev.rows.length - 1][0] && first[0] === before[1] + 2;
 }
 
 /** `Table 2-4: Eldritch God Names continued` → `2-4`; empty for a caption that does not say it carries on. */
+const CONTINUED = /[\s,(]*\b(?:cont(?:inued|['’]?d|\.)?|contined|continnued|contnued)\)?\s*$/i;
+
+/**
+ * `Table 2-4: Eldritch God Names continued` → `2-4`; `*` for a caption that says it carries on but
+ * lost its number (the end of a caption that wrapped); empty for one that does not carry on. Books
+ * misspell the word (`contined`, `continnued`, `contnued`).
+ */
 function continuedNumber(text: string | undefined): string {
-  if (!text || !/\(?\bcont(inued|['’]?d|\.)\)?\s*$/i.test(text)) return "";
-  return captionParts(text)?.number ?? "";
+  if (!text || !CONTINUED.test(text)) return "";
+  return captionParts(text)?.number ?? "*";
 }
 
 /**
@@ -403,6 +424,9 @@ function continuedNumber(text: string | undefined): string {
  * counting on), else as a table of its own, named by the caption set above it.
  */
 function pushTable(out: Block[], table: TableBlock): void {
+  // A header the book repeats in the middle of a table (at the top of a column) is not a row.
+  const headKey = table.rows[0]?.join("|");
+  table.rows = table.rows.filter((r, i) => i === 0 || r.join("|") !== headKey);
   const { rows } = table;
   if (!rows.length) return;
   // A row cut by the page's end: its last words open the next page, above the rest of the table.
@@ -420,11 +444,31 @@ function pushTable(out: Block[], table: TableBlock): void {
       out.pop();
     }
   }
+  // `Table 10-17: Prisons continued` set as a line of text above the rest of the table.
+  // (Lines of its header the table did not take may stand between: short lines, kept as they are.)
+  // (A title the table took from its own top line is a header's piece, not its caption.)
+  for (let k = out.length - 1; !captionParts(table.caption ?? "") && k >= Math.max(0, out.length - 4); k--) {
+    const note = out[k];
+    if (note?.type !== "para" || note.page !== table.page) break;
+    const text = note.spans.map((sp) => sp.text).join("");
+    if (text.length <= 120 && continuedNumber(text) && captionParts(text)) {
+      table.caption = text;
+      out.splice(k, 1);
+      break;
+    }
+    if (text.length > 60) break;
+  }
   const prev = out[out.length - 1];
   const again = continuedNumber(table.caption);
   if (prev?.type === "table" && prev.rows[0]?.length === rows[0]?.length) {
     const sameHead = rows[0].join("|") === prev.rows[0].join("|");
     const named = !!table.caption && !again && table.caption !== prev.caption;
+    // (A caption that lost its number carries on the table before it only if the numbers agree.)
+    if (again === "*" && !sameHead && !carriesOn(prev, rows)) {
+      table.caption = undefined;
+      out.push(table);
+      return;
+    }
     if (!named && (sameHead || again || carriesOn(prev, rows))) {
       prev.rows.push(...rows.slice(sameHead ? 1 : 0));
       return;
@@ -442,7 +486,32 @@ function pushTable(out: Block[], table: TableBlock): void {
       }
       break;
     }
-    table.caption = table.caption?.replace(/[\s,(]*\bcont(inued|['’]?d|\.)\)?\s*$/i, "");
+    table.caption = again === "*" ? undefined : table.caption?.replace(CONTINUED, "");
+  }
+  // The table's first part lies a little way back, with text or another table's caption between
+  // (two halves set side by side at the feet of two columns): the same header, the numbers counting on.
+  if (!table.caption) {
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 14); k--) {
+      const b = out[k];
+      if (b.type !== "table" || table.page - b.page > 1) continue;
+      if (b.rows[0].length !== rows[0].length || !rollRange(b.rows[1]?.[0])) continue;
+      const sameHead = rows[0].join("|") === b.rows[0].join("|");
+      if ((sameHead || rollRange(rows[0][0])) && carriesOn(b, rows)) {
+        b.rows.push(...rows.slice(sameHead ? 1 : 0));
+        // Its caption stands between its two parts (the first was read ahead of it): the table
+        // takes the caption and its place under it.
+        const named = out
+          .slice(k + 1)
+          .find((c) => c.type === "heading" && c.caption && !(c as HeadingBlock & { used?: boolean }).used);
+        if (named?.type === "heading" && !captionParts(b.caption ?? "")) {
+          b.caption = named.text;
+          (named as HeadingBlock & { used?: boolean }).used = true;
+          out.splice(k, 1);
+          out.push(b);
+        }
+        return;
+      }
+    }
   }
   const over = out[out.length - 1];
   if (
@@ -466,6 +535,21 @@ function pushTable(out: Block[], table: TableBlock): void {
         (b as HeadingBlock & { used?: boolean }).used = true;
       }
       break;
+    }
+  }
+  // Its second part was read first (a page whose columns could not be told): an unnamed table a
+  // little way back, on this page, with the same header and numbers that count on from this one's.
+  if (captionParts(table.caption ?? "")) {
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 10); k--) {
+      const b = out[k];
+      if (b.type !== "table" || b.page !== table.page || captionParts(b.caption ?? "")) continue;
+      if (b.rows[0].length !== rows[0].length) continue;
+      const sameHead = rows[0].join("|") === b.rows[0].join("|");
+      if ((sameHead || rollRange(b.rows[0][0])) && carriesOn(table, b.rows)) {
+        table.rows.push(...b.rows.slice(sameHead ? 1 : 0));
+        out.splice(k, 1);
+        break;
+      }
     }
   }
   out.push(table);

@@ -155,7 +155,14 @@ read for what such books share:
 - **Rows taller than a line.** A number set against the middle of a cell of two or three lines, a range broken
   in a narrow column (`45-` over `50`), a header on several lines, rows left unshaded between stripes, cells
   set centred: each is read as one row.
-- **A wide table of a number and a long description** is a table, not a sidebar.
+- **A wide table of a number and a long description** is a table, not a sidebar, and so is one stripe
+  of a striped table that holds a single wrapped row.
+- **Two halves side by side.** A table that ends one column and goes on at the foot of the next, a
+  caption or a heading between, is joined by its numbers; one whose second half was read first is put
+  back in order under its caption. A caption that says it continues, misspelt (`contined`, `continnued`)
+  or cut short by its wrap, carries a table on; the book's header repeated in a column is dropped.
+- **A header without a strip**: the bold, unnumbered lines at the top of a table are its header.
+- **A page of two columns for part of its height** (a wide table above them) keeps the book's columns.
 - **A grid drawn with rules**, of which only a title bar, a header band and the first column are shaded, is
   one table: the bar's words are its caption, and each of its rows is the run of lines set close together
   (cells of several lines, set against one another's middles).
@@ -169,10 +176,10 @@ Tried on four books adapted in the testing vault (measured against the vault's t
 
 | Book                          | Captions found | Same row count | Rollable   |
 | ----------------------------- | -------------- | -------------- | ---------- |
-| The Nomicon                   | 221 of 230     | 143 of 160     | 169 of 221 |
-| Tome of World Building        | 374 of 404     | 323 of 363     | 324 of 374 |
-| Tome of Adventure Design      | 365 of 379     | 272 of 340     | 290 of 365 |
-| The Solo Adventurer's Toolbox | 16 of 94       | 13 of 16       | 3 of 12    |
+| The Nomicon                   | 223 of 230     | 155 of 162     | 190 of 223 |
+| Tome of World Building        | 390 of 404     | 349 of 377     | 350 of 390 |
+| Tome of Adventure Design      | 369 of 379     | 313 of 344     | 334 of 369 |
+| The Solo Adventurer's Toolbox | 17 of 94       | 14 of 17       | 4 of 13    |
 
 The Toolbox prints no captions, so its tables were named by hand in the vault and few names match; its tables
 themselves come through (its d100 lists as one table each across their pages). What the hand adaptation adds

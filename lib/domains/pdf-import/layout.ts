@@ -281,9 +281,11 @@ export function findGutters(segs: Seg[]): Gutter[] {
 export function looksTabular(lines: Line[], width: number, hasHead: boolean): boolean {
   // A column of numbers counting up down the box's left edge: a table rolled on a die, however
   // long the text beside each number runs.
-  const left = Math.min(...lines.map((l) => l.x));
-  let next = 0;
-  let counted = 0;
+  // (Measured from the leftmost numbered line: a header may be set a little further out.)
+  const numberedLine = (l: Line) => /^\d{1,4}(\s*[-–—]\s*\d{0,4})?$/.test(segText(l.cells[0]).trim());
+  const left = Math.min(...lines.filter(numberedLine).map((l) => l.cells[0].x), Infinity);
+  // Numbers that go up down the edge, gaps allowed (a row whose number was set elsewhere).
+  const found: Array<[number, number]> = [];
   // (A range broken over two lines, `45-` then `50`, is one number.)
   let broken = false;
   for (const l of lines) {
@@ -292,21 +294,26 @@ export function looksTabular(lines: Line[], width: number, hasHead: boolean): bo
       .trim()
       .match(/^(\d{1,4})(?:\s*([-–—])\s*(\d{1,4})?)?$/);
     if (!hit) continue;
-    const lo = Number(hit[1]);
+    const lo = Number(hit[1]) || 10 ** hit[1].length;
     if (broken) {
       broken = false;
-      next = (lo || 10 ** hit[1].length) + 1;
+      if (found.length) found[found.length - 1][1] = lo;
       continue;
     }
-    if (counted && lo !== next) {
-      if (counted < 5) counted = 0;
-      break;
-    }
-    counted++;
     broken = !!hit[2] && !hit[3];
-    next = (hit[3] ? Number(hit[3]) || 10 ** hit[3].length : lo) + 1;
+    found.push([lo, hit[3] ? Number(hit[3]) || 10 ** hit[3].length : lo]);
   }
+  let up = 0;
+  for (let i = 1; i < found.length; i++) if (found[i][0] > found[i - 1][1]) up++;
+  const counted = found.length >= 3 && up >= 0.8 * (found.length - 1) ? found.length : 0;
   if (counted >= 3) return true;
+  // One stripe of a striped table: a row or two, each number at the left edge with its text
+  // hanging in a column to the right of it, never back at the margin.
+  if (found.length >= 1 && found.length <= 2 && lines.length >= 2) {
+    const rest = lines.filter((l) => !numberedLine(l));
+    const textCol = Math.min(...lines.map((l) => (numberedLine(l) ? (l.cells[1]?.x ?? Infinity) : l.x)));
+    if (Number.isFinite(textCol) && textCol > left + 15 && rest.every((l) => l.x >= textCol - 3)) return true;
+  }
   const multi = lines.filter((l) => l.cells.length >= 2);
   if (multi.length < 2) return false;
   if (multi.length / lines.length < (hasHead ? 0.25 : 0.4)) return false;
@@ -363,8 +370,11 @@ function flow(
   if (!segs.length && !boxes.length && !images.length) return [];
   let gutters = findGutters([...segs, ...boxRows(segs, boxes)]);
   const rows = new Set(segs.map((s) => Math.round(s.base / 2))).size;
+  // (A page that is mostly tables in columns has few lines of its own: its tables' rows count
+  // towards having enough to judge by, though not towards what may cross a gutter.)
+  const allRows = new Set([...segs, ...boxRows(segs, boxes)].map((s) => Math.round(s.base / 2))).size;
   for (const cand of prefer) {
-    if (!cand.length || rows < 6) continue;
+    if (!cand.length || allRows < 6) continue;
     const same =
       cand.length === gutters.length &&
       cand.every((g, i) => Math.abs((g.x0 + g.x1) / 2 - (gutters[i].x0 + gutters[i].x1) / 2) < 8);
@@ -375,7 +385,24 @@ function flow(
       const crossing = segs.filter((s) => s.x < mid - 3 && right(s) > mid + 3).length;
       const leftSide = segs.some((s) => right(s) <= mid);
       const rightSide = segs.some((s) => s.x >= mid);
-      return crossing <= Math.max(2, 0.15 * rows) && leftSide && rightSide;
+      if (!leftSide || !rightSide) return false;
+      if (crossing <= Math.max(2, 0.15 * rows)) return true;
+      // A page of two columns for part of its height only (a wide table above them, a wide
+      // paragraph below): enough lines of text stand on both sides of the gutter at once.
+      const all = [...segs, ...boxRows(segs, boxes)];
+      const sides = new Map<number, { l: number; r: number }>();
+      for (const sg of all) {
+        if (sg.x < mid - 3 && right(sg) > mid + 3) continue;
+        // (In strips of a couple of lines: the two columns' baselines need not match.)
+        const strip = Math.round(sg.base / 24);
+        const row = sides.get(strip) ?? { l: 0, r: 0 };
+        if (right(sg) <= mid + 3) row.l += segText(sg).length;
+        else row.r += segText(sg).length;
+        sides.set(strip, row);
+      }
+      const both = [...sides.values()].filter((row) => row.l && row.r);
+      const letters = (side: "l" | "r") => both.reduce((n, row) => n + row[side], 0) / Math.max(1, both.length);
+      return crossing <= 0.6 * rows && both.length >= 5 && letters("l") >= 14 && letters("r") >= 14;
     });
     if (clear) {
       gutters = cand.map((g) => {
@@ -445,12 +472,35 @@ function flow(
       continue;
     }
     const across = spanning.filter((s) => s.c0 >= group.c0 && s.c1 <= group.c1);
+    // A table's caption set at the margin just above something that lies across the columns
+    // heads it: it is read after the columns beside it, not as the last line of the first of them.
+    const heads = new Map<FlowItem, FlowItem[]>();
+    const headed = new Set<FlowItem>();
+    for (const s of across) {
+      const mine = perCol[group.c0].items.filter(
+        (item) =>
+          item.el.kind === "line" &&
+          item.y < s.y &&
+          s.y - item.el.line.base <= 48 &&
+          /^(table|figure)\s+[A-Z]?\d/i.test(lineText(item.el.line)) &&
+          !headed.has(item)
+      );
+      // (Only when nothing else of its column lies between the two.)
+      const last = mine[mine.length - 1];
+      if (!last || perCol[group.c0].items.some((item) => item.y > last.y && item.y < s.y && !mine.includes(item)))
+        continue;
+      heads.set(s, [last]);
+      headed.add(last);
+    }
     let top = -Infinity;
     for (let i = 0; i <= across.length; i++) {
       const cut = i < across.length ? across[i].y - 2 : Infinity;
       for (let k = group.c0; k <= group.c1; k++)
-        for (const item of perCol[k].items) if (item.y >= top && item.y < cut) out.push(item.el);
-      if (i < across.length) out.push(across[i].el);
+        for (const item of perCol[k].items) if (item.y >= top && item.y < cut && !headed.has(item)) out.push(item.el);
+      if (i < across.length) {
+        for (const head of heads.get(across[i]) ?? []) out.push(head.el);
+        out.push(across[i].el);
+      }
       top = cut;
     }
   }
@@ -503,11 +553,12 @@ function growTable(box: Box, segs: Seg[], taken: Set<Seg>, page: number, gutters
     if (onRow && near && seg.w < 0.7 * width0) add(seg);
   }
   // Below and above: whole rows of cells that carry the table on, one pitch at a time.
-  const reach = Math.max(1.7 * pitch + 2, 2.3 * size);
+  const reach = Math.max(1.7 * pitch + 2, 3.3 * size);
   for (const dir of open ? [1, -1] : [1]) {
     // Lines of a row whose cells wrap, or of a header set on several lines: taken once a row of cells is.
     let held: Seg[] = [];
     let rowBase = NaN;
+    let headed = false;
     for (let step = 0; step < (dir > 0 ? 60 : 4); step++) {
       const all = [...mine, ...held];
       const edge = dir > 0 ? Math.max(...all.map((s) => s.base)) : Math.min(...all.map((s) => s.base));
@@ -545,11 +596,32 @@ function growTable(box: Box, segs: Seg[], taken: Set<Seg>, page: number, gutters
       if (fits.length < line.length) break;
       if (line.length < 2) {
         // One cell on a line of its own: a cell's wrapped text, above or below the row it belongs to.
-        const bold = line[0].spans.every((sp) => sp.bold);
-        if (dir < 0 && !bold) break;
         const after = !Number.isNaN(rowBase) && Math.abs(line[0].base - rowBase) <= 1.5 * size;
         if (after) add(line[0]);
         else held.push(line[0]);
+        continue;
+      }
+      if (dir < 0) {
+        // Upwards, a numbered row must be the one before the table's first; a row of labels is
+        // the header, and nothing above a header is the table's.
+        const range = (sg: Seg) =>
+          segText(sg)
+            .trim()
+            .match(/^(\d{1,4})(?:\s*[-–—]\s*(\d{1,4}))?$/);
+        const lowest = [...line].sort((a, b) => a.x - b.x)[0];
+        const mineTop = [...mine].filter((sg) => range(sg)).sort((a, b) => a.base - b.base || a.x - b.x)[0];
+        const hit = range(lowest);
+        // (Above the header's row of labels only the rest of the header may lie, never a row.)
+        if (headed && hit) break;
+        if (hit && mineTop) {
+          const hi = Number(hit[2] ?? hit[1]);
+          if (hi + 1 !== Number((range(mineTop) as RegExpMatchArray)[1])) break;
+        }
+        held.forEach(add);
+        held = [];
+        line.forEach(add);
+        rowBase = first;
+        if (!hit) headed = true;
         continue;
       }
       held.forEach(add);
@@ -563,10 +635,16 @@ function growTable(box: Box, segs: Seg[], taken: Set<Seg>, page: number, gutters
   box.lines = buildLines(mine, page, box.x, right(box));
   if (box.headBottom === undefined && box.y < top0 - 3) {
     box.headBottom = top0;
-    // Two lines above the first stripe, the second a numbered row: only the first is the header.
+    // Rows above the first stripe that carry a number are rows, not the header: the header is
+    // what is set bold above the first of them, if anything is.
     const above = box.lines.filter((l) => l.base - l.size / 3 <= top0 + 1);
-    if (above.length >= 2 && /^\d{1,4}(\s*[-–—]\s*\d{1,4})?$/.test(segText(above[1].cells[0]).trim()))
-      box.headBottom = above[0].base + 1;
+    const isRow = (l: Line) => /^\d{1,4}(\s*[-–—]\s*\d{0,4})?$/.test(segText(l.cells[0]).trim());
+    if (above.some(isRow)) {
+      const bold = (l: Line) => l.cells.every((c) => c.spans.every((sp) => sp.bold));
+      let n = 0;
+      while (n < above.length && bold(above[n]) && !isRow(above[n])) n++;
+      box.headBottom = n ? above[n - 1].base + 1 : undefined;
+    }
   }
   return true;
 }
@@ -753,7 +831,7 @@ export function findFurniture(pages: RawPage[]): (seg: Seg, page: RawPage) => bo
     for (const seg of buildSegs(page.runs)) {
       if (!inMargin(seg, page)) continue;
       const key = norm(segText(seg));
-      if (key.length > 60 || seen.has(key)) continue;
+      if (key.length > 110 || seen.has(key)) continue;
       seen.add(key);
       count.set(key, (count.get(key) ?? 0) + 1);
     }
@@ -781,6 +859,6 @@ export function findFurniture(pages: RawPage[]): (seg: Seg, page: RawPage) => bo
     if (/^(#\s*\|?\s*[^#]{0,40}|[^#]{0,40}\|?\s*#)$/.test(key) && key.length <= 48) return true;
     if (key === "#" || (count.get(key) ?? 0) >= need) return true;
     const band = Math.round(seg.base / 3);
-    return key.length <= 60 && (usual.has(band) || usual.has(band - 1) || usual.has(band + 1));
+    return key.length <= 110 && (usual.has(band) || usual.has(band - 1) || usual.has(band + 1));
   };
 }
