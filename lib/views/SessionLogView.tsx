@@ -33,11 +33,24 @@ import { foldHealth, withTargetAc, withTargetHealth, type Health } from "lib/dom
 import type { MapChoice, MapTools } from "lib/domains/battlemap/map-tools";
 import { combatOpen, squareNow } from "lib/domains/battlemap/movement";
 import { measureMapImage, resolveMapImage } from "lib/domains/battlemap/render-map-block";
+import { drawHexMap } from "lib/components/hexmap/draw-hex-map";
 import { TravelFullscreen, TravelMinimap } from "lib/components/hexmap/travel-pane";
+import { type TerrainGrid, weatherFromWords } from "lib/domains/hexmap/terrain";
 import { firstHexMap } from "lib/domains/hexmap/detail";
 import { levelView, migrateDetails } from "lib/domains/hexmap/levels";
 import { isHexMapSource } from "lib/domains/hexmap/parse-hex-map";
-import { foldTravels, foldTravelTrack, type Journey } from "lib/domains/session-log/travel";
+import { findVaultTable, rollTable } from "lib/domains/hexflower/vault-tables";
+import { plainEmphasis } from "lib/domains/gm/linked-tables";
+import { type FogStore, fogKey, rememberedBy, seenByMap, withLog } from "lib/domains/session-log/fog-memory";
+import {
+  foldTravels,
+  foldTravelTrack,
+  type Journey,
+  lastWeather,
+  partySpot,
+  sceneWeather,
+  weatherTimeline,
+} from "lib/domains/session-log/travel";
 import {
   parseSquare,
   parseSquareMap,
@@ -84,6 +97,7 @@ import { ChangeOverview } from "lib/components/session-log/change-overview";
 import { pendingTermSwaps } from "lib/domains/session-log/die-edits";
 import { SessionBookkeeping } from "lib/components/session-log/bookkeeping";
 import type { CreatureInfo } from "lib/components/session-log/start-combat-popover";
+import type { PartyTerrain } from "lib/components/session-log/placeholder-popover";
 import { collectInventoryChanges } from "lib/domains/session-log/inventory-changes";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
@@ -685,6 +699,18 @@ class SessionLogMarkdown extends ReactMarkdown {
     }
     return out;
   }
+
+  /** A vault table rolled by its block name, as a `tbl:` line (the five-mile rolls of a journey). */
+  private rollNamedTable = async (name: string): Promise<{ line: string; text: string } | null> => {
+    const found = await findVaultTable(this.baseView.app, name);
+    if (!found) return null;
+    const got = rollTable(found.table);
+    if (!got) return null;
+    const die = (found.table.columnLabels[0] ?? "").replace(/\*$/, "").trim();
+    const roll = /^\d*d\d+$/i.test(die) && got.rolled !== undefined ? ` ${die}=${got.rolled}` : "";
+    const text = plainEmphasis(got.text);
+    return { line: `tbl: @[[${found.path.replace(/\.md$/, "")}]]#${name}${roll} -> ${text}`, text };
+  };
 
   /** Open a fight's map note (`[COMBAT: [[Kobold Ambush]]]`) — not a map written in this log, which has no note. */
   private openMapNote = (ref: string): void => {
@@ -2372,6 +2398,12 @@ class SessionLogMarkdown extends ReactMarkdown {
           onEditBody={(edit) => void this.rewriteLogBody(edit)}
           battleMaps={this.battleMaps}
           travelMaps={this.travelMaps}
+          rollNamedTable={this.rollNamedTable}
+          fogMemory={{
+            log: this.filePath,
+            load: async (map) => (await this.kv.get<FogStore>(fogKey(map))) ?? {},
+            save: (map, store) => this.kv.set(fogKey(map), store),
+          }}
           sheetHas={this.sheetHas}
         />
       </TableRollContext.Provider>
@@ -2434,6 +2466,14 @@ interface SessionLogRootProps {
   battleMaps: Record<string, SquareMap>;
   /** The hex maps the log's journeys are on, by `travelKey`. */
   travelMaps: Record<string, string>;
+  /** Rolls a vault table by name (`overarching-terrain-hills`), as a log line and its result. */
+  rollNamedTable?: (name: string) => Promise<{ line: string; text: string } | null>;
+  /** Where each log's seen hexes are kept, so Fog remembers across logs (fog-memory.ts). */
+  fogMemory?: {
+    log: string;
+    load: (map: string) => Promise<FogStore>;
+    save: (map: string, store: FogStore) => Promise<void>;
+  };
   /** Look up a battle map by its note — for the Start Combat card. */
   mapTools: MapTools;
   /** A combatant's token emoji, from their note. */
@@ -2523,6 +2563,8 @@ function SessionLogRoot({
   lookupCreature,
   battleMaps,
   travelMaps,
+  fogMemory,
+  rollNamedTable,
   mapTools,
   tokenIcon,
   openMapNote,
@@ -2892,6 +2934,15 @@ function SessionLogRoot({
     setReadingId(id);
   }, []);
   const scenes = React.useMemo(() => assembleProse(segments), [segments]);
+  // The weather along the scenes: each heading shows what's in force, and marks the scene that changed it.
+  const weatherByScene = React.useMemo(
+    () =>
+      sceneWeather(
+        segments,
+        scenes.map((s) => s.head?.startId ?? null)
+      ),
+    [segments, scenes]
+  );
   const dialOps = React.useMemo(() => resolveDialOps(logData.entries, resources), [logData.entries, resources]);
   const listOps = React.useMemo(() => resolveListOps(logData.entries, lists), [logData.entries, lists]);
   // The running values at the end of the log (`CF` → 4): declared defaults,
@@ -3471,6 +3522,18 @@ function SessionLogRoot({
   React.useEffect(() => {
     if (!followsReading) return;
     const visible = new Set<number>();
+    // At the end of the page the last entries may never reach the band (a short log, or one near the
+    // note's end): there, the last entry on screen is the one being read.
+    const first = proseAnchors.current.values().next().value as HTMLElement | undefined;
+    const scroller = first?.closest(".markdown-preview-view, .cm-scroller, .view-content") as HTMLElement | null;
+    const atEnd = (): boolean => {
+      if (!scroller || scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 4) return false;
+      const bottom = scroller.getBoundingClientRect().bottom;
+      const shown = [...proseAnchors.current].filter(([, el]) => el.getBoundingClientRect().top < bottom);
+      if (shown.length === 0) return false;
+      readFromScroll(Math.max(...shown.map(([id]) => id)));
+      return true;
+    };
     const observer = new IntersectionObserver(
       (records) => {
         for (const r of records) {
@@ -3479,6 +3542,7 @@ function SessionLogRoot({
           if (r.isIntersecting) visible.add(id);
           else visible.delete(id);
         }
+        if (atEnd()) return;
         if (visible.size > 0) readFromScroll(Math.max(...visible));
       },
       { rootMargin: "-25% 0px -65% 0px" }
@@ -3487,7 +3551,14 @@ function SessionLogRoot({
       el.dataset.lonelogAnchor = String(id);
       observer.observe(el);
     }
-    return () => observer.disconnect();
+    const onScroll = () => void atEnd();
+    scroller?.addEventListener("scroll", onScroll, { passive: true });
+    const settle = window.setTimeout(onScroll, 400);
+    return () => {
+      observer.disconnect();
+      scroller?.removeEventListener("scroll", onScroll);
+      window.clearTimeout(settle);
+    };
   }, [followsReading, scenes]);
 
   // A request for the Log to bring an entry up under its map (the timeline).
@@ -3584,6 +3655,75 @@ function SessionLogRoot({
       travelMaps[`${frame.map ?? ""}|${frame.level?.length ?? 0}`],
     [travelMaps]
   );
+
+  // The ground the party stands on now (the end of the log's travel track), for GM cards that pick by
+  // terrain: the travel map drawn once per map, read at the party's hex.
+  const partyOnMap = React.useMemo(() => {
+    const frame = travelTrack.frames[travelTrack.frames.length - 1];
+    const spot = frame ? partySpot(frame) : null;
+    const body = frame ? travelBodyOf(frame) : undefined;
+    return spot && body ? { spot, body, map: frame?.map } : null;
+  }, [travelTrack, travelBodyOf]);
+  // The weather at each entry (for the map's Here card), read as a Weather Effects row.
+  const weatherAtId = React.useMemo(() => {
+    const at = weatherTimeline(segments);
+    return (id: number) => {
+      const words = at(id);
+      return words ? weatherFromWords(words) : null;
+    };
+  }, [segments]);
+  // A lost party: the maps show where it believes it is, until the GM shows where it really is.
+  const [lostShown, setLostShown] = React.useState(false);
+  const lostReveal = React.useMemo(() => ({ shown: lostShown, onShow: setLostShown }), [lostShown]);
+  // The weather now: the log's last [Weather: …], read as a Weather Effects row.
+  const weatherNow = React.useMemo(() => {
+    const words = lastWeather(segments);
+    return words ? weatherFromWords(words) : null;
+  }, [segments]);
+  const [travelGrid, setTravelGrid] = React.useState<{ body: string; grid: TerrainGrid } | null>(null);
+  React.useEffect(() => {
+    if (!partyOnMap || travelGrid?.body === partyOnMap.body) return;
+    let alive = true;
+    void drawHexMap(partyOnMap.body).then((d) => alive && setTravelGrid({ body: partyOnMap.body, grid: d.grid }));
+    return () => {
+      alive = false;
+    };
+  }, [partyOnMap, travelGrid, weatherNow]);
+  const partyTerrain = React.useMemo((): PartyTerrain | undefined => {
+    if (!partyOnMap || travelGrid?.body !== partyOnMap.body) return weatherNow ? { weather: weatherNow } : undefined;
+    const [q, r] = partyOnMap.spot.at;
+    const id = travelGrid.grid.terrain.get(`${q},${r}`);
+    const population = travelGrid.grid.population?.get(`${q},${r}`);
+    const weather = weatherNow ?? undefined;
+    if (!id && !population) return weather ? { weather } : undefined;
+    const map = partyOnMap.map?.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+    return {
+      ...(id ? { id } : {}),
+      ...(population ? { population } : {}),
+      ...(weather ? { weather } : {}),
+      where: `(${q},${r})${map ? ` on ${map}` : ""}`,
+    };
+  }, [partyOnMap, travelGrid]);
+
+  // Fog that remembers: this log's seen hexes saved by map; the other logs' given to the map's Fog.
+  const [remembered, setRemembered] = React.useState<Record<string, Set<string>>>({});
+  React.useEffect(() => {
+    if (!fogMemory) return;
+    let alive = true;
+    void (async () => {
+      const out: Record<string, Set<string>> = {};
+      for (const [map, keys] of seenByMap(travelTrack)) {
+        const store = await fogMemory.load(map);
+        const next = withLog(store, fogMemory.log, keys);
+        if (next !== store) await fogMemory.save(map, next);
+        out[map] = rememberedBy(next, fogMemory.log);
+      }
+      if (alive) setRemembered(out);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [travelTrack, fogMemory?.log]);
 
   const renderTurnMap = (turnId: number, headInto?: HTMLElement | null) => {
     const b = battleAt(turnId);
@@ -3881,6 +4021,8 @@ function SessionLogRoot({
                   bodyOf={travelBodyOf}
                   readingId={readingId}
                   onExpand={() => setFullMap(true)}
+                  weatherAt={weatherAtId}
+                  lost={lostReveal}
                   compact={sidebarOpen}
                 />
               </div>
@@ -3891,6 +4033,12 @@ function SessionLogRoot({
                 bodyOf={travelBodyOf}
                 readingId={readingId}
                 onSeek={seekEntry}
+                remembered={(map?: string) => (map ? remembered[map] : undefined)}
+                weatherAt={weatherAtId}
+                lost={lostReveal}
+                {...(rollNamedTable
+                  ? { land: { roll: rollNamedTable, append: (text: string) => onAppendText(text) } }
+                  : {})}
                 onClose={() => setFullMap(false)}
               />
             )}
@@ -3904,6 +4052,7 @@ function SessionLogRoot({
                 {...(hasBattle ? { renderTurnMap, onSelectStep: goToStep } : {})}
                 partyName={partyName}
                 renderTrail={trailFor}
+                sceneWeather={weatherByScene}
               />
             </div>
           </div>
@@ -3973,6 +4122,7 @@ function SessionLogRoot({
                 rollConditions={rollConditions}
                 isDown={isDownNow}
                 isDying={(name: string) => health.now(name)?.life?.state === "dying"}
+                {...(partyTerrain ? { terrain: partyTerrain } : {})}
                 party={partyNow}
               />
             }

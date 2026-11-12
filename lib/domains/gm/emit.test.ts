@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { GMFeature, GMCardDef, NamedGenerator } from "../features/types";
-import { emitGMFeature, emitCard, cardPrimaryStack, gmPrimaryStack, gmStacks, refLabel } from "./emit";
+import { emitGMFeature, emitCard, cardPrimaryStack, gmPrimaryStack, gmStacks, refLabel, genStepLine } from "./emit";
 
 describe("emitCard", () => {
   it("emits a card's pieces in the declared order, sharing the oracle's cf", () => {
@@ -326,5 +326,36 @@ describe("oracle `consult` — an o: line under the question", () => {
 
   it("rolls 2d10 for a Fate Check, and bakes fixed odds in", () => {
     expect(card({ consult: "Fate Check", odds: "likely" }).split("\n")[1]).toBe("o: Fate Check (Likely) 2d10=");
+  });
+});
+
+describe("a choice step that picks by terrain", () => {
+  it("writes the terrain types each choice fits into the ask slot", () => {
+    const line = genStepLine({
+      work: "What to roll",
+      ask: "what",
+      choices: ["Five miles of desert", "Five miles of forest or jungle", "Monument"],
+      terrain: {
+        desert: "Five miles of desert",
+        forest: "Five miles of forest or jungle",
+        Jungle: "Five miles of forest or jungle",
+        lava: "Monument",
+      },
+    });
+    expect(line).toBe(
+      "What to roll: [Five miles of desert/Five miles of forest or jungle/Monument - {{what:Five miles of desert=desert|Five miles of forest or jungle=forest,jungle|Monument}}]"
+    );
+  });
+});
+
+describe("a choice step that picks by population", () => {
+  it("writes pop- tokens for the region's population", () => {
+    const line = genStepLine({
+      work: "Rolls",
+      ask: "rolls",
+      choices: ["Low: 2 by day", "High: 6 by day"],
+      population: { low: "Low: 2 by day", high: "High: 6 by day" },
+    });
+    expect(line).toContain("{{rolls:Low: 2 by day=pop-low|High: 6 by day=pop-high}}");
   });
 });

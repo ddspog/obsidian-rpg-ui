@@ -214,3 +214,28 @@ describe("a slot whose options depend on another — {{kind?@style:A>x|y;B>z}}",
     expect(out).toContain("=> the inn is named");
   });
 });
+
+describe("picks by terrain", () => {
+  it("reads the terrain types an option fits, and keeps other `=` text", async () => {
+    const { parseLogTemplate, splitTerrains } = await import("./template-resolver");
+    const [p] = parseLogTemplate("[A/B/C - {{kind:Five miles of desert=desert,badlands|Forest miles=forest|x=y}}]");
+    expect(p.options).toEqual(["Five miles of desert", "Forest miles", "x=y"]);
+    expect(p.optionTerrains).toEqual({ "Five miles of desert": ["desert", "badlands"], "Forest miles": ["forest"] });
+    expect(splitTerrains("Weather=1@20")).toEqual({ option: "Weather=1@20", fits: [] });
+  });
+});
+
+describe("suggested picks", () => {
+  it("are offered made, never required, and leave the line when blank", async () => {
+    const { parseLogTemplate, requiredFilled, resolveWithContext } = await import("./template-resolver");
+    const tpl = "gen: Elements Table\n  Elements: [A/B - {{elements~:A=forest|B}}]";
+    const [p] = parseLogTemplate(tpl);
+    expect(p.suggested).toBe(true);
+    expect(p.optional).toBeUndefined();
+    expect(p.optionTerrains).toEqual({ A: ["forest"] });
+    expect(requiredFilled([p], { elements: "" })).toBe(true);
+    const ctx = { actor: "GM", name: "GM", entities: [] };
+    expect(resolveWithContext(tpl, ctx, { elements: "" })).toBe("gen: Elements Table\n  Elements: [A/B - ]");
+    expect(resolveWithContext(tpl, ctx, { elements: "A" })).toBe("gen: Elements Table\n  Elements: [A/B - A]");
+  });
+});

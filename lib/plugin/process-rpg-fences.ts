@@ -32,6 +32,7 @@ import { parseListBlock } from "lib/domains/lists/parse-list-block";
 import { ListRenderChild } from "lib/domains/lists/render-list-group";
 import { parseFigureBlock } from "lib/domains/figures/parse-figure-block";
 import { FigureRenderChild } from "lib/domains/figures/render-figure-block";
+import { HexFlowerRenderChild } from "lib/domains/hexflower/render-hex-flower";
 import { MapRenderChild } from "lib/domains/battlemap/render-map-block";
 import { hashSource } from "lib/utils/section-fence-name";
 import { splitFenceBody } from "lib/utils/fence-split";
@@ -136,6 +137,16 @@ export function processUnrenderedRpgFences(
         const block = parseFigureBlock(source);
         const child = new FigureRenderChild(el, block, sourcePath);
         parent.addChild(child);
+      } catch {
+        el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
+      }
+      continue;
+    }
+
+    // Hex flowers (rpg hexflower) — the diagram and its token, inside embeds too.
+    if (meta === "hexflower" || meta.startsWith("hexflower.")) {
+      try {
+        parent.addChild(new HexFlowerRenderChild(el, source, sourcePath, app));
       } catch {
         el.innerHTML = `<div class="notice">Error rendering rpg ${meta}</div>`;
       }

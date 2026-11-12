@@ -58,7 +58,13 @@ import {
   type ViewBox,
 } from "lib/components/hexmap/hex-map-view";
 import { type Drawn, drawFar, drawHexMap } from "lib/components/hexmap/draw-hex-map";
+import { GeneratePanel } from "lib/components/hexmap/generate-panel";
 import { pickNote } from "lib/components/hexmap/note-picker";
+import { chooseFlower, findFlowers, type FoundFlower } from "lib/domains/hexflower/find-flowers";
+import { type Generated, generateHexes, tileFor } from "lib/domains/hexflower/generate";
+import { type FlowerState, startState } from "lib/domains/hexflower/hex-flower";
+import { loadVaultTable, rollTable } from "lib/domains/hexflower/vault-tables";
+import type { TableDef } from "lib/domains/tables/types";
 import { type RegionEntry, RegionList } from "lib/components/hexmap/region-list";
 import { useMarginSpill } from "lib/components/hexmap/use-margin-spill";
 import { LucideIcon } from "lib/components/session-log/lucide-icon";
@@ -92,7 +98,7 @@ import {
 } from "./levels";
 import type { HexPack } from "./packs";
 import { replaceMapBody } from "./fence-text";
-import { type HexInfo, type HexLayout, type ImageSize, STEP_METRES } from "./layout";
+import { FLAT_PACK, type HexInfo, type HexLayout, type ImageSize, resolveHexMap, STEP_METRES } from "./layout";
 import {
   type HexCell,
   type HexLook,
@@ -882,6 +888,8 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     map: parsed,
     layout,
     hexMetres: parsed.scaleMetres,
+    grid: drawn?.grid,
+    ...(parsed.tracking ? { tracking: parsed.tracking } : {}),
     active: mode === "play" && !builder,
   });
 
@@ -926,6 +934,133 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
     [setImportEdits, schedule, commit]
   );
 
+  // ---- generating from a hex flower (Build's Generate tool) ----
+  const [flowers, setFlowers] = React.useState<FoundFlower[] | null>(null);
+  const [flowerPick, setFlowerPick] = React.useState<string | undefined>();
+  React.useEffect(() => {
+    if (paint.tool !== "generate" || flowers) return;
+    let alive = true;
+    void findFlowers(app).then((found) => alive && setFlowers(found));
+    return () => {
+      alive = false;
+    };
+  }, [paint.tool, flowers, app]);
+  const flower = React.useMemo(() => {
+    if (!flowers) return undefined;
+    const picked = flowerPick ? flowers.find((f) => `${f.path}#${f.title}` === flowerPick) : undefined;
+    return picked ?? chooseFlower(flowers, parsed.generate?.flower, parsed.generate?.title);
+  }, [flowers, flowerPick, parsed.generate]);
+  /** The walk so far: the token, the hex it last rolled, and what each rolled hex came out as. */
+  const gen = React.useRef<{ state: FlowerState; last?: Axial; results: Map<string, string> }>({
+    state: startState(),
+    results: new Map(),
+  });
+  const [genLog, setGenLog] = React.useState<Generated[]>([]);
+  // The flower's doubles table, read once it's chosen, so a stroke can roll it at once.
+  const [doublesTable, setDoublesTable] = React.useState<TableDef | null>(null);
+  React.useEffect(() => {
+    setDoublesTable(null);
+    const ref = flower?.flower.doublesTable;
+    if (!ref || !flower) return;
+    let alive = true;
+    void loadVaultTable(app, ref, flower.path).then((t) => alive && setDoublesTable(t));
+    return () => {
+      alive = false;
+    };
+  }, [flower, app]);
+  /** On a detail level: what the bigger hex each hex lies in is, so the flower keeps its character. */
+  const [genTether, setGenTether] = React.useState(true);
+  const coarseGrid = React.useMemo(() => {
+    const coarse = level ? parent?.map : undefined;
+    if (!coarse) return null;
+    const pack = drawn?.pack;
+    const name = coarse.pack ?? pack?.name ?? FLAT_PACK;
+    return resolveHexMap(coarse, pack ? new Map([[name, pack]]) : new Map(), name).grid;
+  }, [level, parent?.map, drawn?.pack]);
+  const generateEdits = React.useCallback(
+    (p: PaintPointer, text: string): HexEdit[] | null => {
+      if (!flower) {
+        setStatus(
+          flowers ? "No hex flower in this vault: add an rpg hexflower block to a note" : "Finding hex flowers…"
+        );
+        return null;
+      }
+      const map = parseHexMap(viewOf(text));
+      const filled = new Set(map.cells.filter((c) => c.layer === "terrain").map((c) => hexKey(c.q, c.r)));
+      const g = gen.current;
+      // What the map's hexes are: what this walk rolled, else their terrain type.
+      const known = new Map<string, string>();
+      for (const k of filled) known.set(k, g.results.get(k) ?? drawn?.grid.terrain.get(k) ?? "?");
+      const here = hexKey(p.hex.q, p.hex.r);
+      let targets: Axial[];
+      let from = p.phase === "down" ? undefined : g.last;
+      if (filled.has(here)) {
+        // A filled hex: a click fills the empty hexes round it; a drag walks on from it.
+        g.last = p.hex;
+        if (p.phase !== "down") return null;
+        targets = SIDES.map((side) => neighbour(p.hex, side)).filter((n) => !filled.has(hexKey(n.q, n.r)));
+        from = p.hex;
+        if (!targets.length) {
+          setStatus("No empty hexes round this one");
+          return null;
+        }
+      } else targets = [p.hex];
+      const continuing =
+        !!from && !!g.last && from.q === g.last.q && from.r === g.last.r && g.results.has(hexKey(from.q, from.r));
+      const { generated, state } = generateHexes(flower.flower, targets, known, g.state, Math.random, {
+        from,
+        continuing,
+      });
+      g.state = state;
+      const edits: HexEdit[] = [];
+      const missing = new Set<string>();
+      for (const item of generated) {
+        const tile = tileFor(item.step.result, parsed.generate?.tiles);
+        g.results.set(hexKey(item.hex.q, item.hex.r), item.step.result);
+        g.last = item.hex;
+        if (!tile) {
+          missing.add(item.step.result);
+          continue;
+        }
+        const spec = tile.terrain ? `${tile.spec} terrain=${tile.terrain}` : tile.spec;
+        edits.push({ kind: "paint", layer: "terrain", q: item.hex.q, r: item.hex.r, spec, height: paint.height });
+        // Doubles: the flower's doubles table (Distinct Hex Elements) says what else is in the hex.
+        const element = item.step.doubles && doublesTable ? rollTable(doublesTable) : null;
+        if (element) {
+          item.element = { name: element.name, text: element.text };
+          edits.push({
+            kind: "point",
+            layer: "marker",
+            q: item.hex.q,
+            r: item.hex.r,
+            content: `pin[red] (${element.name.replace(/[()]/g, "")})`,
+          });
+        }
+      }
+      setGenLog((was) => [...generated.slice().reverse(), ...was].slice(0, 30));
+      const doubles = generated
+        .filter((x) => x.step.doubles)
+        .map((x) => `(${x.hex.q},${x.hex.r})${x.element ? ` ${x.element.name}` : ""}`);
+      setStatus(
+        [
+          generated.map((x) => `(${x.hex.q},${x.hex.r}) ${x.step.result}`).join(" · "),
+          doubles.length === 0
+            ? ""
+            : doublesTable
+              ? `doubles: ${doubles.join(", ")} (marked on the map)`
+              : flower.flower.doubles
+                ? `doubles at ${doubles.join(", ")}: ${flower.flower.doubles.replace(/\[\[[^|\]]*\|?([^\]]*)\]\]/g, "$1")}`
+                : "",
+          missing.size ? `no tile for ${[...missing].join(", ")}: name one under generate: tiles:` : "",
+        ]
+          .filter(Boolean)
+          .join(" — ")
+      );
+      return edits;
+    },
+    [flower, flowers, viewOf, drawn, parsed.generate, paint.height, coarseGrid, genTether, doublesTable]
+  );
+
   const editsFor = React.useCallback(
     (p: PaintPointer, text: string): HexEdit[] | null => {
       const { layer, tool } = paint;
@@ -933,6 +1068,8 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
       const { q, r } = p.hex;
       const pointLayer = layer === "marker" || layer === "label";
       const erase = tool === "erase" || p.button === 2;
+
+      if (tool === "generate") return generateEdits(p, text);
 
       // Region tool, Alt-click: take the hex's innermost region into the brush (to style it), painting nothing.
       if (tool === "region" && p.alt) {
@@ -1027,7 +1164,7 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
       if (edits.length === 0) setStatus("Pick something from the palette first");
       return edits;
     },
-    [paint, layout, setPaint, cellEdits, level, regionInImport, mode]
+    [paint, layout, setPaint, cellEdits, level, regionInImport, mode, generateEdits]
   );
 
   /**
@@ -2131,6 +2268,20 @@ export function HexMapBlock({ source, app, sourcePath, component, builder }: Hex
                   here={stampHere ? { name: stampHere.name } : undefined}
                   onExpand={expandStamp}
                   onRemove={() => stampHere && apply([{ kind: "remove", line: stampHere.line }])}
+                />
+              ) : paint.tool === "generate" ? (
+                <GeneratePanel
+                  flowers={flowers}
+                  chosen={flower}
+                  onChoose={setFlowerPick}
+                  temperature={gen.current.state.temperature}
+                  log={genLog}
+                  named={!!parsed.generate?.flower}
+                  {...(coarseGrid ? { tether: { on: genTether, onChange: setGenTether } } : {})}
+                  onReset={() => {
+                    gen.current = { state: startState(), results: new Map() };
+                    setGenLog([]);
+                  }}
                 />
               ) : undefined
             }

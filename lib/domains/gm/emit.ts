@@ -26,6 +26,7 @@ import type {
   GMTableAspect,
   NamedGenerator,
 } from "../features/types";
+import { populationOf, terrainOf } from "../hexmap/terrain";
 
 /** Canonical emission order — aspects chain into one block in this order. */
 const ASPECT_ORDER = ["oracle", "roll", "table", "generator", "event", "scene"] as const satisfies readonly GMStack[];
@@ -187,6 +188,37 @@ function emitGenerator(g: GMGeneratorAspect, cf: string | null, steps?: GMStep[]
   return lines;
 }
 
+/**
+ * A choice as its popup slot lists it: with the terrain types it fits (`Five miles of desert=desert`),
+ * from the step's `terrain:` map, so the popup can start on the party's terrain.
+ */
+function withTerrains(
+  choice: string,
+  byTerrain: Record<string, string> | undefined,
+  byPopulation?: Record<string, string>
+): string {
+  const fits: string[] = [];
+  for (const [t, c] of Object.entries(byTerrain ?? {})) {
+    const id = terrainOf(t);
+    if (id && c.trim() === choice.trim()) fits.push(id);
+  }
+  for (const [p, c] of Object.entries(byPopulation ?? {})) {
+    const pop = populationOf(p);
+    if (pop && c.trim() === choice.trim()) fits.push(`pop-${pop}`);
+  }
+  return fits.length ? `${choice}=${[...new Set(fits)].join(",")}` : choice;
+}
+
+/** A slot name from a step's label (`Elements` → `elements`). */
+function slotName(label: string): string {
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "") || "pick"
+  );
+}
+
 /** One generator step as a bare working line — `<work>: <roll>= [vs <vs>] ->`
  *  (no `gen:` header, no indent). Null when the step declares no roll. Used both
  *  by the generator emitter and to lay a called generator's steps out as `+ `
@@ -196,7 +228,10 @@ export function genStepLine(s: GMGenStep, cf: string | null = null): string | nu
   // no die, so it's checked before the roll guard.
   if (s.choices?.length) {
     const label = s.work ? `${s.work}: ` : "";
-    const picked = s.ask ? `{{${s.ask}:${s.choices.join("|")}}}` : "";
+    const options = s.choices.map((c) => withTerrains(c, s.terrain, s.population)).join("|");
+    // With no question but a terrain map: the pick is offered made, and may stay blank.
+    const suggest = !s.ask && (s.terrain || s.population) ? slotName(s.work ?? "pick") : null;
+    const picked = s.ask ? `{{${s.ask}:${options}}}` : suggest ? `{{${suggest}~:${options}}}` : "";
     return `${label}[${s.choices.join("/")} - ${picked}]`;
   }
   if (!s.roll) return null;

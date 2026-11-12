@@ -29,6 +29,7 @@ export type PaintTool =
   | "look"
   | "region"
   | "height"
+  | "generate"
   | "move"
   | "edit"
   | "pan";
@@ -52,7 +53,7 @@ export const MODES: Array<{ mode: MapMode; icon: string; name: string; hint: str
 
 /** What each editing mode offers. */
 const MODE_TOOLS: Record<Exclude<MapMode, "play">, PaintTool[]> = {
-  build: ["paint", "erase", "lasso", "select", "pick", "look", "height", "pan"],
+  build: ["paint", "erase", "lasso", "select", "pick", "look", "height", "generate", "pan"],
   mark: ["paint", "edit", "move", "erase", "pick", "pan"],
   regions: ["region", "pick", "pan"],
 };
@@ -127,6 +128,12 @@ const TOOLS: Array<{ tool: PaintTool; icon: string; name: string; hint: string }
     hint: "Add hexes to a region, or take them out; Alt-click a hex to pick its region and style it",
   },
   { tool: "height", icon: "mountain", name: "Height", hint: "Move hexes to the height in the brush" },
+  {
+    tool: "generate",
+    icon: "dices",
+    name: "Generate",
+    hint: "Roll a hex flower for empty hexes: drag across them, or click a filled hex to fill the empty ones round it",
+  },
   { tool: "move", icon: "move", name: "Move", hint: "Drag a marker or label to a new spot" },
   {
     tool: "edit",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { clockText, foldClock } from "./clock";
 import { groupIntoProse } from "./prose-grouper";
-import { foldTravels, foldTravelTrack, journeyAt, trackAt } from "./travel";
+import { foldTravels, foldTravelTrack, journeyAt, partySpot, trackAt } from "./travel";
 
 const LOG = `S1 The road north
 [Group: Party = Elara, Thorne, Talon, Lilith]
@@ -143,5 +143,123 @@ S3 Far away
       },
     ]);
     expect(last.map).toBe("[[Caulkin coast]]");
+  });
+});
+
+describe("partySpot", () => {
+  const frame = (groups: Record<string, string[]>, positions: Record<string, [number, number]>) =>
+    ({ id: 0, groups, positions, trails: {}, marks: [], moved: [] }) as Parameters<typeof partySpot>[0];
+  it("takes the Party group, else the biggest group, else the one token", () => {
+    expect(partySpot(frame({ Party: ["A"], Scouts: ["B", "C"] }, { Party: [1, 0], Scouts: [2, 0] }))?.at).toEqual([
+      1, 0,
+    ]);
+    expect(partySpot(frame({ Wolves: ["A", "B"], Lone: ["C"] }, { Lone: [0, 0], Wolves: [3, -1] }))?.token).toBe(
+      "Wolves"
+    );
+    expect(partySpot(frame({}, { Elara: [4, 4] }))?.token).toBe("Elara");
+    expect(partySpot(frame({}, {}))).toBeNull();
+  });
+});
+
+describe("getting lost", () => {
+  it("keeps where a lost party believes it is apart from where it is, until it moves found", () => {
+    const log = `S1 Into the fog
+[Group: Party = Elara, Thorne]
+[Pos: Party (0,0)]
+[TRAVEL: [[Caulkin coast]]]
+@(Party) [Mv: (1,0) | lost (0,1)] We should be at the ford by now
+@(Party) [Mv: (2,0) | lost (0,2)] Still no ford
+@(Party) [Mv: (0,3)] Got our bearings at the old stones
+[/TRAVEL: arrive Day 2]`;
+    const [j] = foldTravels(groupIntoProse(parseLonelog(log)));
+    const [a, b, c] = j.frames.filter((f) => f.moved.length);
+    expect(a.positions.Party).toEqual([0, 1]);
+    expect(a.believed).toEqual({ Party: [1, 0] });
+    expect(b.positions.Party).toEqual([0, 2]);
+    expect(b.believed).toEqual({ Party: [2, 0] });
+    expect(b.trails.Party).toEqual([
+      [0, 0],
+      [0, 1],
+      [0, 2],
+    ]);
+    expect(c.positions.Party).toEqual([0, 3]);
+    expect(c.believed).toBeUndefined();
+  });
+});
+
+describe("weatherTimeline", () => {
+  it("gives the weather in force at each entry", async () => {
+    const { weatherTimeline } = await import("./travel");
+    const segs = groupIntoProse(
+      parseLonelog(`S1 Road
+@(Party) Walk
+=> Clouds [Weather: Autumn · overcast]
+@(Party) Walk on
+=> Rain [Weather: Autumn · heavy rain]
+@(Party) Camp`)
+    );
+    const at = weatherTimeline(segs);
+    const ids = segs.map((s) => s.sourceIndex);
+    expect(at(ids[0])).toBeNull();
+    expect(at(ids[ids.length - 1])).toEqual(["Autumn", "heavy rain"]);
+  });
+});
+
+describe("sceneWeather", () => {
+  it("carries the weather along the scenes and marks the scene that changes it", async () => {
+    const { sceneWeather } = await import("./travel");
+    const { assembleProse } = await import("./prose-model");
+    const segs = groupIntoProse(
+      parseLonelog(`S1 Road
+@(Party) Walk
+=> Clouds [Weather: Autumn · overcast]
+@(Party) Walk on
+=> Rain [Weather: Autumn · heavy rain]
+S2 Camp
+@(Party) Rest
+S3 Morning
+@(Party) Look up
+=> Sun [Weather: Autumn · clear]`)
+    );
+    const scenes = assembleProse(segs);
+    const w = sceneWeather(
+      segs,
+      scenes.map((s) => s.head?.startId ?? null)
+    );
+    expect(w[0]).toEqual({ parts: ["Autumn", "heavy rain"], changed: true, from: ["Autumn", "overcast"] });
+    expect(w[1]).toEqual({ parts: ["Autumn", "heavy rain"], changed: false, from: null });
+    expect(w[2]).toEqual({ parts: ["Autumn", "clear"], changed: true, from: ["Autumn", "heavy rain"] });
+  });
+
+  it("has no weather before the first tag", async () => {
+    const { sceneWeather } = await import("./travel");
+    const segs = groupIntoProse(parseLonelog(`S1 Road\n@(Party) Walk`));
+    expect(sceneWeather(segs, [segs[0].sourceIndex])).toEqual([null]);
+  });
+});
+
+describe("asBelieved", () => {
+  it("puts a lost party where it believes it is, along the trail it thinks it walked", async () => {
+    const { asBelieved } = await import("./travel");
+    const segs = groupIntoProse(
+      parseLonelog(`[TRAVEL: [[Map]]]
+[Pos: Party (0,0)]
+@(Party) [Mv: (1,0)] Road
+@(Party) [Mv: (2,0) | lost (1,1)] Shortcut
+@(Party) [Mv: (3,0) | lost (2,1)] On`)
+    );
+    const track = foldTravelTrack(segs);
+    const last = track.frames[track.frames.length - 1];
+    expect(last.positions.Party).toEqual([2, 1]);
+    const shown = asBelieved(last);
+    expect(shown.positions.Party).toEqual([3, 0]);
+    expect(shown.trails.Party).toEqual([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [3, 0],
+    ]);
+    expect(shown.truly).toEqual({ Party: [2, 1] });
+    expect(shown.believed).toBeUndefined();
   });
 });

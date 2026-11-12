@@ -67,6 +67,15 @@ export function levelView(source: string, depth: number): string {
   if (top.step) head.step = `${top.step} m`;
   if (top.coords) head.coords = top.coords;
   if (top.parent) head.parent = top.parent;
+  // What the ground is and how it's travelled and generated hold at every level.
+  if (top.classify?.length) head.classify = Object.fromEntries(top.classify.map((r) => [r.pattern, r.terrain]));
+  if (top.tracking) head.travel = top.tracking;
+  if (top.generate)
+    head.generate = {
+      ...(top.generate.flower ? { flower: `[[${top.generate.flower}]]` } : {}),
+      ...(top.generate.title ? { title: top.generate.title } : {}),
+      ...(top.generate.tiles ? { tiles: top.generate.tiles } : {}),
+    };
   if (Object.keys(top.regions).length) {
     head.regions = Object.fromEntries(
       Object.values(top.regions).map((g) => [

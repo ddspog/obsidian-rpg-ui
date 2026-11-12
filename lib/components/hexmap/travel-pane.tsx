@@ -16,6 +16,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { type Drawn, drawHexMap } from "lib/components/hexmap/draw-hex-map";
+import { GroundCard } from "lib/components/hexmap/ground-card";
 import { HexMapStatic, HexMapView } from "lib/components/hexmap/hex-map-view";
 import { IconButton } from "lib/components/hexmap/hex-paint-bar";
 import { LucideIcon } from "lib/components/session-log/lucide-icon";
@@ -23,7 +24,16 @@ import { hexCenter, hexKey, hexPoints } from "lib/domains/hexmap/axial";
 import { formatCoord } from "lib/domains/hexmap/edit-hex-map";
 import { isPiece, parseHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored } from "lib/domains/hexmap/play";
-import { trackAt, type TravelFrame, type TravelTrack } from "lib/domains/session-log/travel";
+import { TERRAIN_RULES, type TerrainGrid, type WeatherId } from "lib/domains/hexmap/terrain";
+import { landRolls } from "lib/domains/session-log/five-miles";
+import {
+  asBelieved,
+  partySpot,
+  trackAt,
+  type ShownFrame,
+  type TravelFrame,
+  type TravelTrack,
+} from "lib/domains/session-log/travel";
 
 const TRAIL_COLORS = ["#e0b84a", "#5fb0e8", "#e86a5f", "#7fd17a", "#c58be8"];
 
@@ -66,11 +76,18 @@ export function mapTitle(map: string | undefined, level?: Array<[number, number]
 }
 
 /** The travel at an entry: its frame, every step, the drawing, and a colour per name. */
-function useTravel(track: TravelTrack, bodyOf: (frame: TravelFrame) => string | undefined, readingId: number | null) {
+function useTravel(
+  track: TravelTrack,
+  bodyOf: (frame: TravelFrame) => string | undefined,
+  readingId: number | null,
+  revealLost = false
+) {
   const frame = trackAt(track, readingId ?? track.from ?? 0) ?? track.frames[0];
+  // What the map draws: a lost party where it believes it is, unless the GM shows where it really is.
+  const shown: ShownFrame | undefined = frame && !revealLost ? asBelieved(frame) : frame;
   const body = frame ? bodyOf(frame) : undefined;
   const [drawn, setDrawn] = React.useState<Drawn | null>(null);
-  const source = body && frame ? withTravellers(body, frame) : undefined;
+  const source = body && shown ? withTravellers(body, shown) : undefined;
   React.useEffect(() => {
     if (!source) return;
     let alive = true;
@@ -92,7 +109,18 @@ function useTravel(track: TravelTrack, bodyOf: (frame: TravelFrame) => string | 
     !!frame &&
     !frame.travelling &&
     track.journeys.some((j) => j.end != null && j.end <= frame.id && (j.frames.length > 0 || !!j.summary));
-  return { frame, body, drawn, steps, at, colourOf, arrived, title: mapTitle(frame?.map, frame?.level) };
+  return {
+    frame,
+    shown: shown ?? frame,
+    body,
+    source,
+    drawn,
+    steps,
+    at,
+    colourOf,
+    arrived,
+    title: mapTitle(frame?.map, frame?.level),
+  };
 }
 
 /** A special move, drawn by its kind: a teleport arcs from where it vanished to
@@ -119,28 +147,133 @@ function Jump({ points, via, colour, R }: { points: Array<[number, number]>; via
   );
 }
 
+/** What has been seen by this entry: where everyone stood and walked, the ring round each, and what
+ *  earlier logs saw. */
+export function seenAt(frame: TravelFrame, remembered?: Set<string>): Set<string> {
+  const seen = explored(
+    Object.values(frame.trails)
+      .flat()
+      .concat(Object.values(frame.positions))
+      .map(([q, r]) => ({ q, r })),
+    1
+  );
+  for (const k of remembered ?? []) seen.add(k);
+  return seen;
+}
+
+/** The hexes a step entered: each moved token's trail past where it was the step before. */
+function enteredOn(frame: TravelFrame, before: TravelFrame | undefined): Array<{ q: number; r: number }> {
+  const out: Array<{ q: number; r: number }> = [];
+  const seen = new Set<string>();
+  for (const t of frame.moved) {
+    const now = frame.trails[t] ?? [];
+    const had = before?.trails[t]?.length ?? 1;
+    for (const [q, r] of now.slice(Math.max(1, had))) {
+      const k = hexKey(q, r);
+      if (!seen.has(k)) out.push({ q, r });
+      seen.add(k);
+    }
+  }
+  return out;
+}
+
+/** Five-mile rolls for the hexes a step entered: roll them, then add them to the log. */
+function LandPanel({
+  entered,
+  grid,
+  hexMiles,
+  land,
+}: {
+  entered: Array<{ q: number; r: number }>;
+  grid: TerrainGrid;
+  hexMiles: number;
+  land: NonNullable<Parameters<typeof TravelFullscreen>[0]["land"]>;
+}) {
+  const rolls = hexMiles > 0 ? landRolls(entered, grid, hexMiles) : [];
+  const [results, setResults] = React.useState<Array<{ line: string; text: string }[]> | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [added, setAdded] = React.useState(false);
+  if (rolls.length === 0) return null;
+  const rollAll = async () => {
+    setBusy(true);
+    const out: Array<{ line: string; text: string }[]> = [];
+    for (const r of rolls) {
+      const each: { line: string; text: string }[] = [];
+      for (let i = 0; i < r.rolls; i++) {
+        const got = await land.roll(r.table);
+        if (got) each.push(got);
+      }
+      out.push(each);
+    }
+    setResults(out);
+    setAdded(false);
+    setBusy(false);
+  };
+  return (
+    <section className="lonelog-travel-land" aria-label="The land on this step">
+      <header>
+        <strong>The land on this step</strong>
+        <span className="lonelog-travel-land-hint">one roll per five miles (Solo Adventurer's Toolbox)</span>
+      </header>
+      <ul>
+        {rolls.map((r, i) => (
+          <li key={`${r.hex.q},${r.hex.r}`}>
+            <span className="lonelog-travel-at">
+              ({r.hex.q},{r.hex.r})
+            </span>{" "}
+            {TERRAIN_RULES[r.terrain].name} · {r.rolls} roll{r.rolls === 1 ? "" : "s"}
+            {results?.[i]?.map((x, j) => (
+              <div key={j} className="lonelog-travel-land-result">
+                {x.text}
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
+      <div className="lonelog-travel-land-actions">
+        <button type="button" onClick={() => void rollAll()} disabled={busy}>
+          <LucideIcon name="dices" size={14} /> {results ? "Roll again" : "Roll the land"}
+        </button>
+        {results && (
+          <button
+            type="button"
+            className="mod-cta"
+            disabled={added}
+            onClick={() => {
+              land.append(
+                results
+                  .flat()
+                  .map((x) => x.line)
+                  .join("\n")
+              );
+              setAdded(true);
+            }}
+          >
+            {added ? "Added" : "Add to the log"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** Trails walked, the step just taken, and (with Fog) what nobody has seen. */
 function JourneyOverlay({
   frame,
   layout,
   colourOf,
   fog,
+  remembered,
 }: {
   frame: TravelFrame;
   layout: Drawn["layout"];
   colourOf: (name: string) => string;
   fog?: boolean;
+  /** Hexes earlier logs' parties saw on this map. */
+  remembered?: Set<string>;
 }) {
   const R = layout.R;
-  const seen = fog
-    ? explored(
-        Object.values(frame.trails)
-          .flat()
-          .concat(Object.values(frame.positions))
-          .map(([q, r]) => ({ q, r })),
-        1
-      )
-    : null;
+  const seen = fog ? seenAt(frame, remembered) : null;
   return (
     <g className="rpg-hexmap-play">
       {seen && (
@@ -172,6 +305,25 @@ function JourneyOverlay({
       {(frame.jumps ?? []).map((j, i) => (
         <Jump key={`jump:${i}`} points={j.points} via={j.via} colour={colourOf(j.token)} R={R} />
       ))}
+      {/* Lost: a dashed hex where they believe they are, tied to where they really are. */}
+      {Object.entries(frame.believed ?? {}).map(([name, [bq, br]]) => {
+        const real = frame.positions[name];
+        const b = hexCenter(bq, br, R);
+        const t = real ? hexCenter(real[0], real[1], R) : null;
+        return (
+          <g
+            key={`lost:${name}`}
+            className="lonelog-travel-lost"
+            style={{ "--trail": colourOf(name) } as React.CSSProperties}
+          >
+            {t && <line x1={t.x} y1={t.y} x2={b.x} y2={b.y} strokeWidth={R / 14} />}
+            <polygon points={hexPoints(b.x, b.y, R * 0.82)} strokeWidth={R / 12} />
+            <text x={b.x} y={b.y} dy="0.35em" style={{ fontSize: R * 0.55 }}>
+              ?
+            </text>
+          </g>
+        );
+      })}
       {frame.moved.map((name) => {
         const at = frame.positions[name];
         if (!at) return null;
@@ -189,6 +341,25 @@ function JourneyOverlay({
   );
 }
 
+/** Lost: whether the maps show where a lost party really is, and the switch for it. */
+export interface LostReveal {
+  shown: boolean;
+  onShow: (shown: boolean) => void;
+}
+
+/** Where the party came from: the last frame on the same map with it on another hex (for the ground card). */
+function previousOf(track: TravelTrack, frame: TravelFrame): { previous?: TravelFrame } {
+  const here = partySpot(frame);
+  if (!here) return {};
+  for (let j = track.frames.indexOf(frame) - 1; j >= 0; j--) {
+    const f = track.frames[j];
+    if (f.map !== frame.map) break;
+    const was = partySpot(f);
+    if (was && (was.at[0] !== here.at[0] || was.at[1] !== here.at[1])) return { previous: f };
+  }
+  return {};
+}
+
 /** The circle in the corner. */
 export function TravelMinimap({
   track,
@@ -196,19 +367,28 @@ export function TravelMinimap({
   readingId,
   onExpand,
   compact,
+  weatherAt,
+  lost,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onExpand: () => void;
+  /** The weather in force at an entry, as a Weather Effects row. */
+  weatherAt?: (id: number) => WeatherId | null;
+  /** Lost: whether the map shows where the party really is (else where it believes it is). */
+  lost?: LostReveal;
   /** With the Log open the page margin is the Log's: fold to the small button (it can be opened again). */
   compact?: boolean;
 }) {
-  const { frame, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId);
+  const { frame, shown, body, drawn, colourOf, arrived, title } = useTravel(track, bodyOf, readingId, lost?.shown);
+  const hexMiles = React.useMemo(() => (body ? (parseHexMap(body).scaleMetres ?? 0) / 1609.344 : 0), [body]);
   // On a phone the disc starts as its small button: it would cover a third of the reading column.
   const [small, setSmall] = React.useState(() => document.body.classList.contains("is-mobile"));
   React.useEffect(() => {
     if (compact) setSmall(true);
+    // The Log closed again: the disc comes back where it was folded for it (not on a phone).
+    else if (!document.body.classList.contains("is-mobile")) setSmall(false);
   }, [compact]);
   if (!frame) return null;
   if (small) {
@@ -226,7 +406,7 @@ export function TravelMinimap({
   }
   const layout = drawn?.layout;
   // Centred on whoever just moved, else the first token, else the map's middle.
-  const focus = frame.positions[frame.moved[0]] ?? Object.values(frame.positions)[0];
+  const focus = shown!.positions[frame.moved[0]] ?? Object.values(shown!.positions)[0];
   const R = layout?.R ?? 40;
   const c = focus ? hexCenter(focus[0], focus[1], R) : null;
   const span = R * 7;
@@ -267,7 +447,7 @@ export function TravelMinimap({
                   width={view.w * 3}
                   height={view.h * 3}
                 />
-                <JourneyOverlay frame={frame} layout={layout} colourOf={colourOf} />
+                <JourneyOverlay frame={shown!} layout={layout} colourOf={colourOf} />
               </>
             }
           />
@@ -287,6 +467,14 @@ export function TravelMinimap({
           <IconButton icon="minus" label="Make the map small" onClick={() => setSmall(true)} />
         </li>
       </menu>
+      <GroundCard
+        frame={frame}
+        {...previousOf(track, frame)}
+        {...(layout ? { layout } : {})}
+        {...(hexMiles ? { hexMiles } : {})}
+        weather={weatherAt?.(Math.max(frame.id, readingId ?? frame.id)) ?? null}
+        {...(lost ? { lost } : {})}
+      />
     </figure>
   );
 }
@@ -298,14 +486,31 @@ export function TravelFullscreen({
   readingId,
   onSeek,
   onClose,
+  remembered,
+  land,
+  weatherAt,
+  lost,
 }: {
   track: TravelTrack;
   bodyOf: (frame: TravelFrame) => string | undefined;
   readingId: number | null;
   onSeek: (id: number) => void;
   onClose: () => void;
+  /** Hexes earlier logs saw on a map (by its `[TRAVEL]` link). */
+  remembered?: (map?: string) => Set<string> | undefined;
+  /** Five-mile rolls: roll a vault table by name (a log line and its result), and add lines to the log. */
+  land?: { roll: (table: string) => Promise<{ line: string; text: string } | null>; append: (text: string) => void };
+  /** The weather in force at an entry, as a Weather Effects row. */
+  weatherAt?: (id: number) => WeatherId | null;
+  /** Lost: whether the map shows where the party really is (else where it believes it is). */
+  lost?: LostReveal;
 }) {
-  const { frame, body, drawn, steps, at, colourOf, title } = useTravel(track, bodyOf, readingId);
+  const { frame, shown, body, source, drawn, steps, at, colourOf, title } = useTravel(
+    track,
+    bodyOf,
+    readingId,
+    lost?.shown
+  );
   const [fog, setFog] = React.useState(false);
   const paneRef = React.useRef<HTMLElement>(null);
   const open = !!frame;
@@ -346,13 +551,27 @@ export function TravelFullscreen({
     if (target) onSeek(target.id);
   };
   if (!frame) return null;
-  const tokens = Object.keys(frame.positions);
-  const layout = drawn?.layout;
+  const tokens = Object.keys(shown.positions);
+  const drawnLayout = drawn?.layout;
+  // Under Fog, a secret marker stays hidden until its hex has been seen.
+  const layout = (() => {
+    if (!fog || !drawnLayout || !source) return drawnLayout;
+    // The text drawn (with the travellers in), so its lines match the drawing's.
+    const secret = parseHexMap(source).markers.filter((m) => m.secret);
+    if (secret.length === 0) return drawnLayout;
+    const seen = seenAt(shown, remembered?.(frame.map));
+    const hidden = new Set(
+      secret.filter((m) => !seen.has(hexKey(Math.round(m.q), Math.round(m.r)))).map((m) => m.line)
+    );
+    return hidden.size
+      ? { ...drawnLayout, markers: drawnLayout.markers.filter((m) => !hidden.has(m.line)) }
+      : drawnLayout;
+  })();
   // On a phone the whole map is too small to read: open on the party, a few hexes across.
   const onPhone = document.body.classList.contains("is-mobile");
   const phoneView = (() => {
     if (!layout || !onPhone) return undefined;
-    const at = frame.positions[frame.moved[0]] ?? Object.values(frame.positions)[0] ?? frame.marks[0]?.at;
+    const at = shown.positions[frame.moved[0]] ?? Object.values(shown.positions)[0] ?? frame.marks[0]?.at;
     if (!at) return undefined;
     const c = hexCenter(at[0], at[1], layout.R);
     const [w, h] = [layout.R * 14, layout.R * 18];
@@ -416,11 +635,37 @@ export function TravelFullscreen({
                 ? // Nobody on the map yet: open zoomed in on its middle, not the whole of it at 2px a label.
                   { startZoom: { zoom: 2.5 } }
                 : {})}
-            overlay={<JourneyOverlay frame={frame} layout={layout} colourOf={colourOf} fog={fog} />}
+            overlay={
+              <JourneyOverlay
+                frame={shown}
+                layout={layout}
+                colourOf={colourOf}
+                fog={fog}
+                remembered={remembered?.(frame.map)}
+              />
+            }
             maxHeight={78}
           />
         ) : (
           <div className="rpg-hexmap rpg-hexmap--loading">Drawing the map…</div>
+        )}
+        <GroundCard
+          frame={frame}
+          {...previousOf(track, frame)}
+          {...(lost ? { lost } : {})}
+          {...(drawnLayout ? { layout: drawnLayout } : {})}
+          {...(body && parseHexMap(body).scaleMetres ? { hexMiles: parseHexMap(body).scaleMetres! / 1609.344 } : {})}
+          weather={weatherAt?.(frame.id) ?? null}
+          open
+        />
+        {land && drawn && body && frame.moved.length > 0 && (
+          <LandPanel
+            key={frame.id}
+            entered={enteredOn(frame, steps[at - 1])}
+            grid={drawn.grid}
+            hexMiles={(parseHexMap(body).scaleMetres ?? 0) / 1609.344}
+            land={land}
+          />
         )}
         <ul className="lonelog-travel-groups">
           {tokens.map((name) => (
@@ -428,8 +673,14 @@ export function TravelFullscreen({
               <strong>{name}</strong>
               {frame.groups[name] && <span>{frame.groups[name].join(", ") || "nobody"}</span>}
               <span className="lonelog-travel-at">
-                ({frame.positions[name][0]},{frame.positions[name][1]})
+                ({shown.positions[name][0]},{shown.positions[name][1]})
               </span>
+              {shown.truly?.[name] && <span className="lonelog-travel-lost-note">lost</span>}
+              {frame.believed?.[name] && !shown.truly && (
+                <span className="lonelog-travel-lost-note">
+                  lost: believes ({frame.believed[name][0]},{frame.believed[name][1]})
+                </span>
+              )}
             </li>
           ))}
         </ul>

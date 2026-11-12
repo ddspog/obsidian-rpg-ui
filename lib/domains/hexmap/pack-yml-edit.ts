@@ -25,6 +25,8 @@ export type TuneLevel = { kind: "defaults" } | { kind: "terrains"; key: string }
 export type PackEdit =
   | { kind: "catalog-set"; id: string; spec: string; color?: string }
   | { kind: "catalog-delete"; id: string }
+  /** Which terrain type a tile folder is (`classify:`); null removes the pack's own rule for it. */
+  | { kind: "classify-set"; pattern: string; terrain: string | null }
   | { kind: "catalog-rename"; from: string; to: string }
   /** `null` clears the key at that level (falls back to the level above). */
   | { kind: "tune"; level: TuneLevel; key: TuneKey | FlagKey; value: number | boolean | null }
@@ -277,6 +279,9 @@ export function applyPackEdits(text: string, edits: PackEdit[]): string {
       );
     } else if (edit.kind === "catalog-delete") {
       deleteValue(doc, ["catalog", edit.id]);
+    } else if (edit.kind === "classify-set") {
+      if (edit.terrain === null) deleteValue(doc, ["classify", edit.pattern]);
+      else setValue(doc, ["classify", edit.pattern], edit.terrain);
     } else if (edit.kind === "tile-rename") {
       renameTile(doc, edit);
     } else if (edit.kind === "tile-move") {

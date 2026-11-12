@@ -189,9 +189,11 @@ export function travel(opts: {
   dc: number;
   roles: TravelRole[];
   encounterUnder?: number;
+  /** The weather's effect on time (Campaign Builder: ×2 in unpleasant weather and worse, ×½ ideal). */
+  timeFactor?: number;
 }): string {
   const perHour = PACE_MILES_PER_DAY[opts.pace] / 8;
-  const hours = opts.miles ? Math.max(1, Math.round(opts.miles / perHour)) : undefined;
+  const hours = opts.miles ? Math.max(1, Math.round((opts.miles / perHour) * (opts.timeFactor ?? 1))) : undefined;
   const what = [opts.miles ? `${opts.miles} miles` : "", opts.terrain ?? "", `${opts.pace} pace`]
     .filter(Boolean)
     .join(", ");

@@ -1,0 +1,306 @@
+/* rpg hexflower: the book's line drawing in the vault's title ink, lettered in the text colour. */
+
+.rpg-hexflower {
+  /* One ink for lines and arrows: the theme's title colour (the tables' header band), else a maroon. */
+  --rpg-hexflower-ink: var(--text-title, color-mix(in srgb, var(--color-red) 55%, var(--text-normal)));
+  --rpg-hexflower-paper: var(--background-primary);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  margin: var(--size-4-3) 0;
+  font-family: var(--font-interface);
+}
+
+.rpg-hexflower-title {
+  font-family: var(--font-interface);
+  font-weight: 700;
+  font-size: var(--font-ui-medium);
+  color: var(--rpg-hexflower-ink);
+}
+
+.rpg-hexflower-diagram {
+  display: block;
+  width: 100%;
+  max-width: 34rem;
+  height: auto;
+  margin-inline: auto;
+  user-select: none;
+  overflow: visible;
+}
+
+/* Hexes: paper fill, thin inner lines in a third of the ink. */
+.rpg-hexflower-cell {
+  cursor: pointer;
+  outline: none;
+}
+
+.rpg-hexflower-cell polygon {
+  fill: var(--rpg-hexflower-paper);
+  stroke: color-mix(in srgb, var(--rpg-hexflower-ink) 38%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 120ms ease;
+}
+
+.rpg-hexflower-cell:hover polygon:first-child {
+  fill: color-mix(in srgb, var(--rpg-hexflower-ink) 6%, var(--rpg-hexflower-paper));
+}
+
+.rpg-hexflower-cell.is-start polygon:first-child {
+  fill: color-mix(in srgb, var(--rpg-hexflower-ink) 7%, var(--rpg-hexflower-paper));
+}
+
+.rpg-hexflower-cell.is-here polygon:first-child {
+  fill: color-mix(in srgb, var(--interactive-accent) 14%, var(--rpg-hexflower-paper));
+}
+
+/* The current hex: a ring inside it, so nothing covers its lettering. */
+.rpg-hexflower-cell polygon.rpg-hexflower-here {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.rpg-hexflower-cell:focus-visible polygon:first-child {
+  stroke: var(--interactive-accent);
+  stroke-width: 2.5;
+}
+
+.rpg-hexflower-outline {
+  fill: none;
+  stroke: var(--rpg-hexflower-ink);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.rpg-hexflower-arrow {
+  fill: none;
+  stroke: var(--rpg-hexflower-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.rpg-hexflower-arrowhead {
+  fill: var(--rpg-hexflower-ink);
+}
+
+/* The last move, under the lettering. */
+.rpg-hexflower-move {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.rpg-hexflower-move.is-wrapped {
+  stroke-dasharray: 5 4;
+}
+
+.rpg-hexflower-movehead {
+  fill: var(--interactive-accent);
+}
+
+/* Lettering: the text colour, a paper halo where lines pass. */
+.rpg-hexflower-lettering text {
+  text-anchor: middle;
+  font-family: var(--font-interface);
+  paint-order: stroke;
+  stroke: var(--rpg-hexflower-paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.rpg-hexflower-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--text-normal);
+}
+
+.rpg-hexflower-start {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  fill: var(--rpg-hexflower-ink);
+}
+
+.rpg-hexflower-number {
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-muted);
+}
+
+/* A narrow block (a phone) draws the flower smaller: bigger lettering keeps it readable. */
+@container (max-width: 460px) {
+  .rpg-hexflower-label {
+    font-size: 13.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .rpg-hexflower-start {
+    font-size: 14.5px;
+  }
+
+  .rpg-hexflower-number {
+    font-size: 12.5px;
+  }
+}
+
+/* Controls: the roll first, the weather as a status, a quiet reset at the end. */
+.rpg-hexflower-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  flex-wrap: wrap;
+}
+
+button.rpg-hexflower-roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-interface);
+}
+
+.rpg-hexflower-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.rpg-hexflower-weather::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.rpg-hexflower-weather.is-hot::before {
+  background: var(--color-orange);
+}
+
+.rpg-hexflower-weather.is-cold::before {
+  background: var(--color-blue);
+}
+
+.rpg-hexflower-controls button.rpg-hexflower-quiet {
+  margin-left: auto;
+}
+
+button.rpg-hexflower-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 4px 6px;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.rpg-hexflower-quiet:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+button.rpg-hexflower-quiet:disabled {
+  opacity: 0.45;
+  background: none;
+  cursor: default;
+}
+
+button.rpg-hexflower-quiet:focus-visible,
+button.rpg-hexflower-roll:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* The result: what came up in the ink, how in muted figures. */
+.rpg-hexflower-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.rpg-hexflower-result-line strong {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--rpg-hexflower-ink);
+  margin-right: var(--size-4-2);
+}
+
+.rpg-hexflower-detail {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-hexflower-doubles {
+  display: flex;
+  gap: var(--size-4-2);
+  align-items: baseline;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexflower-doubles-label {
+  flex: none;
+  font-weight: 700;
+  color: var(--rpg-hexflower-ink);
+}
+
+.rpg-hexflower-doubles-text,
+.rpg-hexflower-doubles-text p {
+  margin: 0;
+  min-width: 0;
+}
+
+.rpg-hexflower-history {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-ui-small);
+}
+
+.rpg-hexflower-history-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rpg-hexflower-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rpg-hexflower-history li {
+  margin: 0;
+  padding: 0;
+  text-indent: 0;
+}
+
+.rpg-hexflower-history-result {
+  color: var(--text-normal);
+}
+
+.rpg-hexflower-history button.rpg-hexflower-quiet {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.rpg-hexflower-errors {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  margin: 0;
+}

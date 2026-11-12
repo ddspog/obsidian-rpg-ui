@@ -15,11 +15,12 @@ import { HudTurn } from "./hud-turn";
 import { LucideIcon } from "./lucide-icon";
 import type { HudInfo } from "../../domains/session-log/hud";
 import { PassivePopover } from "./passive-popover";
-import { PlaceholderPopover } from "./placeholder-popover";
+import { type PartyTerrain, PlaceholderPopover } from "./placeholder-popover";
 import type { LootDestination } from "../../domains/session-log/loot-destinations";
 import type { NoteOption } from "./note-combobox";
 import type { ItemPrice } from "../../domains/session-log/party-cards";
 import { PartyPopover, type LootSource, type PartyCardKind } from "./party-popover";
+import { memberTerrainStack, partyTerrainStack } from "../../domains/session-log/terrain-cards";
 import type { PartyMember } from "../../domains/session-log/party-cards";
 import { StartCombatPopover, type CreatureInfo } from "./start-combat-popover";
 import type { FormulaVars } from "../../domains/session-log/formula";
@@ -129,6 +130,8 @@ interface SessionActionsPanelProps {
   isDown?: (name: string) => boolean;
   /** Whether a PC is dying (0 HP, making death saves) — Stabilize's targets. */
   isDying?: (name: string) => boolean;
+  /** The ground the party stands on in the log's travel map, for picks by terrain. */
+  terrain?: PartyTerrain;
   /** The party as one: its members now, where loot can go, what the last fight
    *  left, and the day's clock — for the Party's cards. */
   party?: {
@@ -262,6 +265,7 @@ export function SessionActionsPanel({
   onMakeIcon,
   onMakeNamedIcon,
   isDying,
+  terrain,
   party,
 }: SessionActionsPanelProps) {
   const foes = [...foeStacks.keys()];
@@ -301,8 +305,19 @@ export function SessionActionsPanel({
       actor: PARTY,
     })),
   }));
+  // What the ground asks for: the party's checks as one on the Party's cards, each member's on theirs.
+  const ground = {
+    ...(terrain?.id ? { terrain: terrain.id } : {}),
+    ...(terrain?.weather ? { weather: terrain.weather } : {}),
+  };
+  const partyGround = partyTerrainStack(ground, party?.members.map((m) => m.name) ?? []);
+  const memberGround = (a: string): CardStackData[] => {
+    const own = pcStacks.get(a) ?? [];
+    const st = memberTerrainStack(ground, own[0]?.cards[0]?.actor ?? a);
+    return st ? [...own, st] : own;
+  };
   const allSides: Side[] = [
-    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: (a: string) => pcStacks.get(a) ?? [] },
+    { id: "party", label: "Party", actors: [...pcStacks.keys()], stacksFor: memberGround },
     // The GM plays the world, foes included: its cards (and the party's, the table's) head the Foes side, which
     // so stays there out of a fight.
     {
@@ -310,7 +325,12 @@ export function SessionActionsPanel({
       label: "Foes",
       actors: [GM, ...foes],
       stacksFor: (a: string) =>
-        a === GM ? [...gmCards, ...(party && party.members.length > 0 ? partyStacks : [])] : (foeStacks.get(a) ?? []),
+        a === GM
+          ? [
+              ...gmCards,
+              ...(party && party.members.length > 0 ? [...partyStacks, ...(partyGround ? [partyGround] : [])] : []),
+            ]
+          : (foeStacks.get(a) ?? []),
       foe: true,
     },
   ];
@@ -805,6 +825,7 @@ export function SessionActionsPanel({
           {...(party.itemCost ? { itemCost: party.itemCost } : {})}
           {...(party.sinceLongRest != null ? { sinceLongRest: party.sinceLongRest } : {})}
           {...(party.clock ? { clock: party.clock } : {})}
+          {...(terrain ? { ground: terrain } : {})}
           onCompose={(text, summary) =>
             // Its lines, played as any card: previewed, rolled, an outcome to add.
             setActiveCard({
@@ -823,6 +844,7 @@ export function SessionActionsPanel({
           key={activeCard.id}
           card={fightCard(activeCard).card}
           {...(fightCard(activeCard).initial ? { initialValues: fightCard(activeCard).initial } : {})}
+          {...(terrain ? { terrain } : {})}
           {...(defense ? { defense } : {})}
           {...(fight ? { fight } : {})}
           {...(slotsUsed ? { slotsUsed: slotsUsed(activeCard.actor) } : {})}

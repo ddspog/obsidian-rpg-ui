@@ -17,6 +17,7 @@ import {
 } from "lib/domains/hexmap/layout";
 import type { HexPack } from "lib/domains/hexmap/packs";
 import { type HexMapError, parseHexMap, type ParsedHexMap } from "lib/domains/hexmap/parse-hex-map";
+import type { TerrainGrid } from "lib/domains/hexmap/terrain";
 import { hexPackIndex } from "lib/services/hex-pack-index";
 
 export interface Drawn {
@@ -24,6 +25,8 @@ export interface Drawn {
   layout: HexLayout;
   errors: HexMapError[];
   pack?: HexPack;
+  /** Each hex's kind of ground, and where roads and rivers run. */
+  grid: TerrainGrid;
 }
 
 /** The text drawn, with other maps' lines merged in at their places (`import:`; faint ones dimmed). */
@@ -45,6 +48,7 @@ export async function drawHexMap(source: string, imports: PlacedImport[] = []): 
     // Imported lines' problems belong to their own notes.
     errors: resolved.errors.filter((e) => e.line > 0),
     pack: packName === FLAT_PACK ? undefined : packs.get(packName),
+    grid: resolved.grid,
   };
 }
 

@@ -56,6 +56,10 @@ export interface TravelFrame {
   marks: TravelMark[];
   /** Tokens that moved in this entry. */
   moved: string[];
+  /** Lost tokens: where they believe they are (their `positions` is where they really are). */
+  believed?: Record<string, Hex>;
+  /** Lost tokens' trails as they believe they walked them. */
+  believedTrails?: Record<string, Hex[]>;
 }
 
 export interface Journey {
@@ -108,6 +112,10 @@ class TravelState {
   positions = new Map<string, Hex>();
   trails = new Map<string, Hex[]>();
   marks = new Map<string, TravelMark>();
+  /** Lost tokens, and where they believe they are. */
+  believed = new Map<string, Hex>();
+  /** Lost tokens' trails as they believe they walked them. */
+  believedTrails = new Map<string, Hex[]>();
 
   /** The group a name is (by its own name), or the group a character is in. */
   groupNamed(name: string): string | undefined {
@@ -137,7 +145,9 @@ class TravelState {
     return name;
   }
   renameToken(from: string, to: string): void {
-    for (const map of [this.positions, this.trails] as Array<Map<string, unknown>>) {
+    for (const map of [this.positions, this.trails, this.believed, this.believedTrails] as Array<
+      Map<string, unknown>
+    >) {
       if (!map.has(from)) continue;
       map.set(to, map.get(from));
       map.delete(from);
@@ -217,9 +227,31 @@ class TravelState {
     });
   }
 
+  /** A lost token's move (`[Mv: Party (3,-1) | lost (2,0)]`): it believes it went where the route
+   *  says, and really went to `truly` (when the GM says; else where it believes). */
+  lost(name: string, path: Hex[], truly: Hex | undefined): string {
+    const t = this.token(name);
+    const believed = path[path.length - 1];
+    const real = truly ?? believed;
+    // The trail they think they walked: the real one up to where they got lost, then their route.
+    const thought = this.believedTrails.get(t) ?? [...(this.trails.get(t) ?? [])];
+    let from = this.believed.get(t) ?? this.positions.get(t);
+    for (const step of path) {
+      thought.push(...(from ? line(from, step).slice(1) : [step]));
+      from = step;
+    }
+    this.believedTrails.set(t, thought);
+    if (this.travelling) this.move(t, [real], true);
+    else this.step(t, [real], true);
+    this.believed.set(t, believed);
+    return t;
+  }
+
   /** Place a token (a hex `at`), its trail starting there if it has none. */
   place(name: string, at: Hex): string {
     const t = this.token(name);
+    this.believed.delete(t);
+    this.believedTrails.delete(t);
     this.positions.set(t, at);
     if (!this.trails.has(t)) this.trails.set(t, [at]);
     return t;
@@ -235,14 +267,16 @@ class TravelState {
   }
 
   /** Off the journey: everyone stands where they're moved, no path drawn. */
-  step(name: string, path: Hex[]): string {
+  step(name: string, path: Hex[], keepLost = false): string {
     const t = this.token(name);
+    if (!keepLost) this.forget(t);
     this.positions.set(t, path[path.length - 1]);
     return t;
   }
 
-  move(name: string, path: Hex[]): string {
+  move(name: string, path: Hex[], keepLost = false): string {
     const t = this.token(name);
+    if (!keepLost) this.forget(t);
     let from = this.positions.get(t);
     const trail = this.trails.get(t) ?? (from ? [from] : []);
     for (const step of path) {
@@ -252,6 +286,12 @@ class TravelState {
     if (from) this.positions.set(t, from);
     this.trails.set(t, trail);
     return t;
+  }
+
+  /** Found again: no longer lost. */
+  private forget(t: string) {
+    this.believed.delete(t);
+    this.believedTrails.delete(t);
   }
 
   frame(id: number, actor: string | undefined, moved: string[]): TravelFrame {
@@ -267,6 +307,16 @@ class TravelState {
       trails: Object.fromEntries([...this.trails].map(([k, v]) => [k, v.map((h) => [...h] as Hex)])),
       marks: [...this.marks.values()].map((m) => ({ ...m })),
       moved,
+      ...(this.believed.size
+        ? { believed: Object.fromEntries([...this.believed].map(([k, v]) => [k, [...v] as Hex])) }
+        : {}),
+      ...(this.believedTrails.size
+        ? {
+            believedTrails: Object.fromEntries(
+              [...this.believedTrails].map(([k, v]) => [k, v.map((h) => [...h] as Hex)])
+            ),
+          }
+        : {}),
     };
   }
 }
@@ -373,7 +423,12 @@ export function foldTravelTrack(segments: ProseSegment[]): TravelTrack {
         const who = tag.who ? [tag.who] : actorsOf(actor);
         for (const w of who) {
           // A walk draws its path inside a journey; a special move is a jump, anywhere.
-          if (tag.via && tag.via !== "walk") moved.push(state.jump(w, path as Hex[], tag.via));
+          const lost = tag.via?.match(/^lost\b\s*(?:\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\))?/);
+          if (lost)
+            moved.push(
+              state.lost(w, path as Hex[], lost[1] !== undefined ? [Number(lost[1]), Number(lost[2])] : undefined)
+            );
+          else if (tag.via && tag.via !== "walk") moved.push(state.jump(w, path as Hex[], tag.via));
           else if (state.travelling) moved.push(state.move(w, path as Hex[]));
           else moved.push(state.step(w, path as Hex[]));
         }
@@ -409,4 +464,99 @@ export function journeyAt(journey: Journey, id: number): TravelFrame {
     at = f;
   }
   return at;
+}
+
+/**
+ * Where "the party" stands in a frame: the group named Party, else the biggest group, else the one
+ * token placed. Null when nobody is on the map.
+ */
+export function partySpot(frame: TravelFrame): { token: string; at: Hex } | null {
+  const placed = Object.keys(frame.positions);
+  if (placed.length === 0) return null;
+  const named = placed.find((t) => t.toLowerCase() === "party");
+  const biggest = [...placed].sort((a, b) => (frame.groups[b]?.length ?? 0) - (frame.groups[a]?.length ?? 0))[0];
+  const token = named ?? (placed.length === 1 ? placed[0] : biggest);
+  return { token, at: frame.positions[token] };
+}
+
+/** The weather tag's words in force at the end of the log (the last `[Weather: …]`), or null. */
+export function lastWeather(segments: ProseSegment[]): string[] | null {
+  let last: string[] | null = null;
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") last = tag.parts;
+  }
+  return last;
+}
+
+/** The weather tag in force at each entry: the last `[Weather: …]` at or before it. */
+export function weatherTimeline(segments: ProseSegment[]): (id: number) => string[] | null {
+  const marks: Array<[number, string[]]> = [];
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") marks.push([seg.sourceIndex, tag.parts]);
+  }
+  return (id) => {
+    let at: string[] | null = null;
+    for (const [i, parts] of marks) {
+      if (i > id) break;
+      at = parts;
+    }
+    return at;
+  };
+}
+
+/** The weather of one scene: what's in force by its end, and whether the scene changed it (`from`:
+ *  the weather it opened with, when known). */
+export interface SceneWeather {
+  parts: string[];
+  changed: boolean;
+  from: string[] | null;
+}
+
+/**
+ * The weather along the scenes: for each scene (`starts[i]`, the source index it opens at; null for
+ * the untitled stretch before the first), the last `[Weather: …]` in force by its end. A scene with a
+ * tag of its own changed it; one without carries the weather in. Null where no weather is known yet.
+ */
+export function sceneWeather(segments: ProseSegment[], starts: Array<number | null>): Array<SceneWeather | null> {
+  const marks: Array<[number, string[]]> = [];
+  for (const seg of segments) {
+    const tags = [...(seg.type === "action-group" ? (seg.action.tags ?? []) : []), ...segmentTags(seg)];
+    for (const tag of tags) if (tag.kind === "weather") marks.push([seg.sourceIndex, tag.parts]);
+  }
+  marks.sort((a, b) => a[0] - b[0]);
+  return starts.map((start, i) => {
+    const from = start ?? -Infinity;
+    const next = starts.slice(i + 1).find((s): s is number => s != null) ?? Infinity;
+    const before = marks.filter(([at]) => at < from);
+    const inside = marks.filter(([at]) => at >= from && at < next);
+    const carried = before.length ? before[before.length - 1][1] : null;
+    if (inside.length === 0) return carried ? { parts: carried, changed: false, from: null } : null;
+    return {
+      parts: inside[inside.length - 1][1],
+      changed: true,
+      from: carried ?? (inside.length > 1 ? inside[0][1] : null),
+    };
+  });
+}
+
+/**
+ * A frame as a lost party sees it (the spoiler-free view): each lost token stands where it believes it
+ * is, along the trail it believes it walked; where it really is goes to `truly`, unseen on the map.
+ */
+export type ShownFrame = TravelFrame & { truly?: Record<string, Hex> };
+export function asBelieved(frame: TravelFrame): ShownFrame {
+  if (!frame.believed) return frame;
+  const positions = { ...frame.positions };
+  const trails = { ...frame.trails };
+  for (const [t, at] of Object.entries(frame.believed)) {
+    positions[t] = at;
+    if (frame.believedTrails?.[t]) trails[t] = frame.believedTrails[t];
+  }
+  const truly = Object.fromEntries(Object.keys(frame.believed).map((t) => [t, frame.positions[t]]));
+  const rest: TravelFrame = { ...frame, positions, trails };
+  delete rest.believed;
+  delete rest.believedTrails;
+  return { ...rest, truly };
 }

@@ -1,5 +1,6 @@
 import type { CardFrameSettings, FrameKind } from "lib/services/card-frame-config";
 import { THEMES } from "lib/themes";
+import type { TerrainOverrides } from "lib/domains/hexmap/terrain";
 
 /**
  * Folder-to-system mapping entry
@@ -167,6 +168,8 @@ export interface DndUIToolkitSettings {
   hexLabelScale: number;
   /** Tallest a hex map gets in a note, in % of the window height. */
   hexMapMaxHeight: number;
+  /** Changes to the terrain types' travel rules (difficult, pace, DCs), over the books'. */
+  hexTerrainRules: TerrainOverrides;
 
   // Color variables
   colorBgPrimary: string;
@@ -212,6 +215,7 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   hexCoords: "hover",
   hexLabelScale: 1,
   hexMapMaxHeight: 75,
+  hexTerrainRules: {},
 
   ...THEMES.default.colors,
 };

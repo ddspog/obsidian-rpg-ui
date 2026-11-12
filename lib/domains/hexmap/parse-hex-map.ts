@@ -46,6 +46,7 @@
 import { parse as parseYaml } from "yaml";
 import { type HexImport, readImports } from "./imports";
 import type { Layer } from "./packs";
+import { type ClassifyRule, type Population, populationOf, readClassify, type TerrainId, terrainOf } from "./terrain";
 
 export interface HexCell {
   q: number;
@@ -63,6 +64,8 @@ export interface HexCell {
   regions: string[];
   /** `xN` — copies scattered on the hex. */
   count: number;
+  /** `terrain=hills` — the kind of ground, over what its tile says (terrain.ts). */
+  terrain?: TerrainId;
   /** `size=` `shift=` `hue=` `sat=` `bright=` — how the tile is drawn (design §13.2). */
   look?: HexLook;
   /** Put down by this stamp (its line is the `stamp(q,r)` line). */
@@ -130,6 +133,8 @@ export interface HexRegion {
   parent?: string;
   /** How it's marked on the map (`demark:`): `outline` only, `fill` only, or `none`; unset: both. */
   demark?: "outline" | "fill" | "none";
+  /** `population: low|medium|high` — how settled it is (encounter rolls, unmarked settlements). */
+  population?: Population;
   /** `override: true` — this map's fields go over the region's own map's, here only (an exception). */
   override?: boolean;
   /** The note whose map the region is (when it's imported), set when maps are merged. */
@@ -205,6 +210,16 @@ export function readRegionLabel(raw: unknown, keywords = false): Partial<HexRegi
   return out;
 }
 
+/** `generate: { flower: "[[Hexcrawls]]", title: Wilderness Terrain Elements, tiles: { Mountains: mountain[snowy] } }` */
+export interface HexGenerate {
+  /** The note the flower is in, as link text. */
+  flower?: string;
+  /** Its title, when the note has more than one. */
+  title?: string;
+  /** A tile spec for each result, over the defaults by terrain type. */
+  tiles?: Record<string, string>;
+}
+
 export interface HexMapError {
   line: number;
   message: string;
@@ -248,6 +263,8 @@ export interface HexMarkerLine {
   size: number;
   /** `piece` — moves in Play mode (party figures are pieces anyway). */
   piece?: boolean;
+  /** `secret` — hidden under a travel map's Fog until its hex has been seen. */
+  secret?: boolean;
   /** How its caption is drawn: `text=place` (a lettering style), `tsize=`, `toff=dx,dy` (hex radii), `arc=`, `#colour`. */
   caption?: MarkerCaption;
   /** A faint neighbour's: drawn dimmed, not counted in the map's bounds. */
@@ -420,6 +437,12 @@ export interface ParsedHexMap {
   underlay?: HexUnderlay;
   /** Where the block opens (`view:`). */
   view?: HexStartView;
+  /** `classify:` — which tiles are which terrain type, over the pack's rules (terrain.ts). */
+  classify?: ClassifyRule[];
+  /** `travel: hexes` — Play counts whole hexes a day (hex tracking) instead of miles. */
+  tracking?: "miles" | "hexes";
+  /** `generate:` — the hex flower Build's Generate tool rolls, and the tile for each result. */
+  generate?: HexGenerate;
   stamps?: HexStampLine[];
   /** Detail maps kept in this block (`detail(q,r):` sections after the main map), as older blocks wrote them. */
   details?: HexDetailSection[];
@@ -498,7 +521,7 @@ export function stripComment(line: string): string {
   return m && m.index !== undefined ? line.slice(0, m.index) : line;
 }
 
-const HEAD_KEY = /^(grid|title|pack|seed|scale|step|coords|of|parent)\s*:\s*(.*)$/;
+const HEAD_KEY = /^(grid|title|pack|seed|scale|step|coords|of|parent|travel)\s*:\s*(.*)$/;
 const STAMP = /^(?:c|stamp)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*:\s*(\S+)(?:\s+rot\s*=\s*(-?\d+))?\s*$/i;
 const CELL = /^(?:([tpseb])\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)|(-?\d+)\s*,\s*(-?\d+))\s*:(.*)$/;
 const NUM = String.raw`-?\d+(?:\.\d+)?|-?\.\d+`;
@@ -590,6 +613,29 @@ function applyHeadValue(map: ParsedHexMap, key: string, value: unknown): void {
     map.imports = readImports(value);
     return;
   }
+  if (key === "generate") {
+    const o = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    const tiles: Record<string, string> = {};
+    if (o.tiles && typeof o.tiles === "object")
+      for (const [k, v] of Object.entries(o.tiles as Record<string, unknown>))
+        if (typeof v === "string" && v.trim()) tiles[k] = v.trim();
+    map.generate = {
+      flower:
+        typeof o.flower === "string" && o.flower.trim()
+          ? linkText(o.flower)
+          : typeof value === "string"
+            ? linkText(value)
+            : undefined,
+      title: typeof o.title === "string" && o.title.trim() ? o.title.trim() : undefined,
+      tiles: Object.keys(tiles).length ? tiles : undefined,
+    };
+    return;
+  }
+  if (key === "classify") {
+    const rules = readClassify(value);
+    map.classify = rules.length ? rules : undefined;
+    return;
+  }
   const str = value === null || value === undefined ? "" : String(value).trim();
   if (key === "title" && str) map.title = str;
   else if (key === "pack" && str) map.pack = str;
@@ -601,6 +647,7 @@ function applyHeadValue(map: ParsedHexMap, key: string, value: unknown): void {
   else if (key === "parent" && (str === "faint" || str === "grid" || str === "off")) map.parent = str;
   else if (key === "step" && str) map.step = parseStep(str) ?? map.step;
   else if (key === "coords" && (str === "off" || str === "hover" || str === "always")) map.coords = str;
+  else if (key === "travel" && (str === "hexes" || str === "miles")) map.tracking = str;
 }
 
 function readRegions(map: ParsedHexMap, raw: unknown): void {
@@ -622,6 +669,7 @@ function readRegions(map: ParsedHexMap, raw: unknown): void {
       link: typeof o.link === "string" ? linkText(o.link) : undefined,
       parent: typeof o.parent === "string" ? o.parent : undefined,
       demark: o.demark === "outline" || o.demark === "fill" || o.demark === "none" ? o.demark : undefined,
+      population: populationOf(o.population) ?? undefined,
       override: o.override === true ? true : undefined,
       // `label: { … }` says it all in one place, over the flat keys.
       ...(o.label && typeof o.label === "object" ? readRegionLabel(o.label) : {}),
@@ -644,6 +692,10 @@ function parseContent(cell: HexCell, content: string, errors: HexMapError[]): vo
       cell.link = linkText(tok);
     } else if (tok.startsWith("@") && tok.length > 1) {
       cell.regions.push(tok.slice(1));
+    } else if (/^terrain=/i.test(tok)) {
+      const t = terrainOf(tok.slice(8));
+      if (t) cell.terrain = t;
+      else errors.push({ line: cell.line, message: `"${tok.slice(8)}" isn't a terrain type — forest, hills, swamp…` });
     } else if (/^x\d+$/.test(tok)) {
       cell.count = Math.max(1, parseInt(tok.slice(1), 10));
     } else if (readLook((cell.look ??= {}), tok)) {
@@ -733,6 +785,7 @@ function parseMarker(marker: HexMarkerLine, content: string, errors: HexMapError
     else if (/^\(.*\)$/.test(tok)) marker.text = tok.slice(1, -1).trim() || undefined;
     else if (size) marker.size = Math.max(0.1, parseFloat(size[1]));
     else if (tok.toLowerCase() === "piece") marker.piece = true;
+    else if (tok.toLowerCase() === "secret") marker.secret = true;
     else if (!marker.spec) marker.spec = tok;
     else errors.push({ line: marker.line, message: `unexpected "${tok}" after "${marker.spec}"` });
   }

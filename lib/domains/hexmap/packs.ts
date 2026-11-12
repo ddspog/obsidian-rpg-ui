@@ -21,6 +21,7 @@
 import { parse as parseYaml } from "yaml";
 import { type FarCompose, readCompose } from "./far-compose";
 import { shapeKey } from "./path-shapes";
+import { type ClassifyRule, readClassify } from "./terrain";
 
 /** In drawing order: the ground with its base (the slab under the face, drawn
  *  over the terrain art's own), edges along its sides (coasts), paths, then
@@ -97,6 +98,8 @@ export interface PackConfig {
   stamps: Record<string, string[]>;
   /** How terrains look from the level above (zoomed out), by family: see far.ts. */
   far: Record<string, FarFamily>;
+  /** Which tiles are which terrain type (`classify:`), before the built-in rules: see terrain.ts. */
+  classify: ClassifyRule[];
 }
 
 /** A terrain's far (zoomed-out) art: one autotile set, picked by which of the six neighbours
@@ -450,6 +453,7 @@ export function parsePackConfig(text: string | null, packName: string): PackConf
     markers: readMarkers(raw.markers),
     stamps: { ...readStamps(raw.stamps), ...readStamps(raw.custom) },
     far: readFar(raw.far),
+    classify: readClassify(raw.classify),
   };
 }
 

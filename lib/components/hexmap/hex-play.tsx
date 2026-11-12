@@ -16,6 +16,20 @@ import { applyHexEdits, type HexEdit } from "lib/domains/hexmap/edit-hex-map";
 import type { HexLayout } from "lib/domains/hexmap/layout";
 import { isPiece, type ParsedHexMap } from "lib/domains/hexmap/parse-hex-map";
 import { explored, hexDistance, hexLine, travel, travelText } from "lib/domains/hexmap/play";
+import {
+  emptyGrid,
+  type Pace,
+  routeSteps,
+  routeText,
+  summarizeRoute,
+  type TerrainGrid,
+  type Tracking,
+  type TravelOptions,
+  type TravelStep,
+  WEATHER,
+  WEATHER_IDS,
+  type WeatherId,
+} from "lib/domains/hexmap/terrain";
 
 export type PlayTool = "move" | "measure";
 
@@ -28,9 +42,40 @@ export interface PlayState {
   tool: PlayTool;
   fog: boolean;
   trail: boolean;
+  /** The pace moves and Measure count at; unset: normal. */
+  pace?: Pace;
+  /** The day's weather; unset: agreeable. */
+  weather?: WeatherId;
 }
 
 export const newPlayState = (): PlayState => ({ pieces: {}, trails: {}, tool: "move", fog: false, trail: true });
+
+const METRES_PER_MILE = 1609.344;
+
+/** A route's steps across the map's ground, when it has a scale and knows any hex's terrain. */
+export function stepsOf(
+  route: Axial[],
+  grid: TerrainGrid,
+  pace: Pace,
+  hexMetres?: number,
+  options: TravelOptions = {}
+): TravelStep[] | null {
+  if (!hexMetres || grid.terrain.size === 0) return null;
+  return routeSteps(route, grid, pace, hexMetres / METRES_PER_MILE, options);
+}
+
+/** "4 hexes · 24 mi · Normal · 1 d 2 h · 2 difficult", or without terrain "4 hexes · 24 mi · 1 day". */
+export function routeReadout(
+  route: Axial[],
+  grid: TerrainGrid,
+  pace: Pace,
+  hexMetres?: number,
+  options: TravelOptions = {}
+): string {
+  const steps = stepsOf(route, grid, pace, hexMetres, options);
+  if (!steps) return travelText(travel([route[0], route[route.length - 1]], hexMetres));
+  return routeText(summarizeRoute(steps, pace, hexMetres! / METRES_PER_MILE, options.weather), pace);
+}
 
 /** The level's text with the pieces where Play put them (drawn, never written). */
 export function withPieces(view: string, state: PlayState): string {
@@ -50,6 +95,8 @@ interface Drag {
   to: Axial;
 }
 
+const EMPTY_GRID = emptyGrid();
+
 const TRAIL_COLORS = ["#e0b84a", "#5fb0e8", "#e86a5f", "#7fd17a", "#c58be8"];
 
 export function usePlay({
@@ -58,6 +105,8 @@ export function usePlay({
   map,
   layout,
   hexMetres,
+  grid = EMPTY_GRID,
+  tracking = "miles",
   active,
 }: {
   state: PlayState;
@@ -65,8 +114,23 @@ export function usePlay({
   map: ParsedHexMap;
   layout: HexLayout | undefined;
   hexMetres?: number;
+  /** The map's ground, for travel times across it. */
+  grid?: TerrainGrid;
+  /** `travel: hexes` in the map's head: whole hexes a day. */
+  tracking?: Tracking;
   active: boolean;
 }) {
+  const pace = state.pace ?? "normal";
+  const options: TravelOptions = { weather: state.weather ?? "agreeable", tracking };
+  const readoutFor = (from: Axial, to: Axial) => routeReadout(hexLine(from, to), grid, pace, hexMetres, options);
+  /** On the map, only how far and how long: the bar below has the rest. */
+  const shortReadoutFor = (from: Axial, to: Axial) =>
+    readoutFor(from, to)
+      .split(" · ")
+      .filter(
+        (part, i) => i === 0 || /^(\d+ d( .*)?|[\d¼½¾]+ h|\d+ min|\d+ days?|\d+ by boat|.*no travel.*)$/.test(part)
+      )
+      .join(" · ");
   const [drag, setDrag] = React.useState<Drag | null>(null);
   const [selected, setSelected] = React.useState<number | null>(null);
   const [readout, setReadout] = React.useState<string | null>(null);
@@ -109,7 +173,7 @@ export function usePlay({
       trails: { ...state.trails, [line]: [...trail, ...steps] },
     });
     const name = pieces.find((pc) => pc.line === line)?.text ?? "Piece";
-    setReadout(`${name}: ${travelText(travel([from, to], hexMetres))}`);
+    setReadout(`${name}: ${readoutFor(from, to)}`);
   };
 
   const claims = (p: PaintPointer): boolean => {
@@ -145,7 +209,7 @@ export function usePlay({
     }
     setDrag(null);
     if (drag.kind === "measure") {
-      setReadout(travelText(travel([drag.from, p.hex], hexMetres)));
+      setReadout(readoutFor(drag.from, p.hex));
       setDrag({ ...drag, to: p.hex, kind: "measure" });
       return;
     }
@@ -208,16 +272,34 @@ export function usePlay({
       )}
       {drag && hexDistance(drag.from, drag.to) > 0 && (
         <g className="rpg-hexmap-measure">
-          {hexLine(drag.from, drag.to).map((a) => (
-            <polygon key={`m:${a.q},${a.r}`} points={hexPoints(centre(a).x, centre(a).y, R * 0.9)} />
-          ))}
+          {(() => {
+            const line = hexLine(drag.from, drag.to);
+            const steps = stepsOf(line, grid, pace, hexMetres, options);
+            return line.map((a, i) => {
+              const step = i > 0 ? steps?.[i - 1] : undefined;
+              const cls = step?.impassable
+                ? "is-water"
+                : step?.difficult
+                  ? "is-difficult"
+                  : step?.road
+                    ? "is-road"
+                    : undefined;
+              return (
+                <polygon
+                  key={`m:${a.q},${a.r}`}
+                  className={cls}
+                  points={hexPoints(centre(a).x, centre(a).y, R * 0.9)}
+                />
+              );
+            });
+          })()}
           <polyline points={linePoints([drag.from, drag.to])} strokeWidth={R / 14} />
           <text
             x={(centre(drag.from).x + centre(drag.to).x) / 2}
             y={(centre(drag.from).y + centre(drag.to).y) / 2 - R * 0.35}
             style={{ fontSize: R * 0.3 }}
           >
-            {travelText(travel([drag.from, drag.to], hexMetres))}
+            {shortReadoutFor(drag.from, drag.to)}
           </text>
         </g>
       )}
@@ -254,6 +336,48 @@ export function usePlay({
           },
         ]}
       />
+      {hexMetres && grid.terrain.size > 0 && (
+        <Segmented<Pace>
+          legend="Travel pace"
+          value={pace}
+          onChange={(next) => {
+            onState({ ...state, pace: next });
+            setReadout(null);
+          }}
+          options={[
+            {
+              value: "slow",
+              title: "Slow: 18 mi a day; can move stealthily, +5 to navigate",
+              label: <span>Slow</span>,
+            },
+            { value: "normal", title: "Normal: 24 mi a day", label: <span>Normal</span> },
+            {
+              value: "fast",
+              title: "Fast: 30 mi a day; −5 passive Perception, navigation DC +5, can't forage",
+              label: <span>Fast</span>,
+            },
+          ]}
+        />
+      )}
+      {hexMetres && grid.terrain.size > 0 && (
+        <label className="rpg-hexmap-hud-weather" title={WEATHER[state.weather ?? "agreeable"].examples}>
+          <LucideIcon name="cloud-sun" size={13} />
+          <select
+            aria-label="The day's weather"
+            value={state.weather ?? "agreeable"}
+            onChange={(e) => {
+              onState({ ...state, weather: e.target.value as WeatherId });
+              setReadout(null);
+            }}
+          >
+            {WEATHER_IDS.map((id) => (
+              <option key={id} value={id}>
+                {WEATHER[id].name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <IconButton
         icon="footprints"
         label={state.trail ? "Hide the routes taken" : "Show the routes taken"}
@@ -277,7 +401,14 @@ export function usePlay({
         onClick={() => {
           setSelected(null);
           setReadout(null);
-          onState({ ...newPlayState(), tool: state.tool, fog: state.fog, trail: state.trail });
+          onState({
+            ...newPlayState(),
+            tool: state.tool,
+            fog: state.fog,
+            trail: state.trail,
+            pace: state.pace,
+            weather: state.weather,
+          });
         }}
       >
         <span>Reset</span>
