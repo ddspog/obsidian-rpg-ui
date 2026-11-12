@@ -1,3 +1,5 @@
+import type { BlockReview } from "../review/block-review";
+
 /**
  * PDF import: the shapes that travel between its steps. A page is read into
  * runs of text, pictures and filled boxes (extract.ts); laid out into lines in
@@ -98,6 +100,8 @@ export interface Box extends Rect {
   lines: Line[];
   /** Bottom of the dark rectangle at its top, when there is one: a table's header rows. */
   headBottom?: number;
+  /** Bottom of a title bar above the header rows, when the table has one. */
+  titleBottom?: number;
   page: number;
 }
 
@@ -108,11 +112,28 @@ export type Element =
   | { kind: "image"; image: PageImage; page: number; colW: number };
 
 export type Block =
-  | { type: "heading"; level: number; text: string; page: number; style: string }
+  | {
+      type: "heading";
+      level: number;
+      text: string;
+      page: number;
+      style: string;
+      /** The caption of a table (`Table 2-3: Epithets`): stays with the text, and names the table under it. */
+      caption?: boolean;
+    }
   | { type: "para"; spans: Span[]; page: number }
   | { type: "list"; ordered: boolean; items: Span[][]; page: number }
-  | { type: "table"; caption?: string; rows: string[][]; page: number }
-  | { type: "side"; title?: string; blocks: Block[]; page: number }
+  | {
+      type: "table";
+      caption?: string;
+      rows: string[][];
+      page: number;
+      /** Its columns are rolled each on its own die (the parts of a name). */
+      each?: boolean;
+      /** What a person should check in it, written into the block as review lines. */
+      reviews?: BlockReview[];
+    }
+  | { type: "side"; title?: string; blocks: Block[]; page: number; reviews?: BlockReview[] }
   | { type: "image"; file: string; page: number; wide: boolean; pxW: number; pxH: number };
 
 /** A heading and what is under it. The root of a chapter has level 0. */

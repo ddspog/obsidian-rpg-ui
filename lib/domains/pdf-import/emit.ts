@@ -5,7 +5,8 @@
  * `rpg rule.side`.
  */
 
-import { SOFT } from "./blocks";
+import { reviewLine } from "../review/block-review";
+import { rollRange, SOFT } from "./blocks";
 import {
   fenced,
   itemsFromTable,
@@ -16,7 +17,8 @@ import {
   type EntityOut,
 } from "./entities";
 import type { Placer } from "./organise";
-import { fileName, isCatalog, sizeOf, slug, titleCase, walkBlocks } from "./structure";
+import { dieOfNumbered, tableReviews } from "./review";
+import { captionParts, fileName, isCatalog, sizeOf, slug, titleCase, walkBlocks } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
 
 export interface EmitContext {
@@ -30,6 +32,8 @@ export interface EmitContext {
   mend: (text: string) => string;
   files: OutFile[];
   tableIds: Set<string>;
+  /** The page each table written starts on, by its id: for the review of the import. */
+  tablePages?: Map<string, number>;
   names: Set<string>;
   /** How many of each kind of entity were written; absent when entities are not looked for. */
   kinds?: Map<string, number>;
@@ -119,18 +123,58 @@ function uniqueId(base: string, taken: Set<string>): string {
   return id;
 }
 
+const DICE = [2, 3, 4, 6, 8, 10, 12, 20, 30, 100, 1000];
+
+/**
+ * The die a table is rolled on, when its first column counts from 1 to the die's top with no gap
+ * (`1`…`20`, `01-05`…`96-00`) and its header names a die or a roll (`d20`, `1d100`, `Die Roll`, `Roll`).
+ */
+export function dieOf(rows: string[][]): number {
+  const head = (rows[0]?.[0] ?? "").trim();
+  const named = head.match(/^1?d(\d{1,4}|%)$/i);
+  if (!named && !/^(die|dice)?\s*(roll|result)?$|^(roll|die|dice|d\d+ roll|#|no\.?|number)$/i.test(head)) return 0;
+  let next = 1;
+  for (const row of rows.slice(1)) {
+    const range = rollRange(row[0]);
+    if (!range || range[0] !== next || range[1] < range[0]) return 0;
+    next = range[1] + 1;
+  }
+  const top = next - 1;
+  if (rows.length < 3 || !DICE.includes(top)) return 0;
+  if (named && (named[1] === "%" ? 100 : Number(named[1])) !== top) return 0;
+  // A bare column of numbers is a die only when it is one a player owns: a list of steps is not.
+  if (!named && !head && top !== 100) return 0;
+  return top;
+}
+
 function renderTable(block: Extract<Block, { type: "table" }>, ctx: EmitContext, near: string): string[] {
   const width = Math.max(...block.rows.map((r) => r.length));
   const cell = (c: string) => ctx.mend(c).replace(/\|/g, "\\|").trim() || " ";
   const row = (r: string[]) => `|${Array.from({ length: width }, (_, i) => cell(r[i] ?? "")).join("|")}|`;
   const caption = block.caption?.replace(/[[\]]/g, "").trim();
-  const id = uniqueId(slug(caption || `${near} table`), ctx.tableIds);
-  const lines = [
-    `\`\`\`rpg table.${id}`,
-    row(block.rows[0]),
-    `|${Array.from({ length: width }, () => "---").join("|")}|`,
-  ];
+  // `Table 2-3: Creator Deity Epithet` is addressed by its name: the number may change with the edition.
+  const name = (caption && captionParts(caption)?.name) || caption;
+  const id = uniqueId(slug(name || `${near} table`), ctx.tableIds);
+  ctx.tablePages?.set(id, block.page);
+  // What a person should check in it, written at the block's top: the block shows it, and turns
+  // off what does not work (a dice table with gaps keeps its roll row, which stays off till mended).
+  const reviews = [...tableReviews(block.rows, block.page, caption), ...(block.reviews ?? [])];
+  const gappy = reviews.some((r) => r.kind === "table-numbers") && !rollRange(block.rows[0]?.[0]);
+  const die = dieOf(block.rows) || (gappy ? dieOfNumbered(block.rows) : 0);
+  const head = die ? [`d${die}*`, ...block.rows[0].slice(1)] : block.rows[0];
+  const rule = `|${Array.from({ length: width }, () => "---").join("|")}|`;
+  // (Rolls that land on a number the table lacks are rolled again, so it stays of use.)
+  const lines = [`\`\`\`rpg table.${id}`, ...reviews.map(reviewLine), ...(gappy && die ? ["@reroll"] : [])];
+  if (block.rows.length > 21) lines.push("@paginate 10 pages");
+  lines.push(row(head), rule);
   for (const r of block.rows.slice(1)) lines.push(row(r));
+  if (die) {
+    // Columns rolled each on its own die (parts of a name) when the text above the table says so.
+    const each = block.each && width > 2;
+    const parts = block.rows.slice(1).flatMap((r) => r.slice(1));
+    const glued = parts.length > 0 && parts.every((c) => c.length <= 12 && !/\s/.test(c.trim()));
+    lines.push(rule, `|= {{ roll${each ? ` each${glued ? " join=''" : ""}` : ""} }} =|`);
+  }
   if (caption) lines.push(`[${caption}]`);
   lines.push("```");
   return lines;
@@ -147,6 +191,17 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
       out.push(spansToMd(block.spans, ctx.mend));
     } else if (block.type === "heading") {
       out.push(`#### ${escapeMd(titleCase(block.text))}`);
+      // What the lines under a caption say of the table's use (`Roll independently on each column`).
+      const at = blocks.indexOf(block);
+      const table = blocks.slice(at + 1, at + 8).find((b) => b.type !== "para" && b.type !== "list");
+      if (block.caption && table?.type === "table") {
+        const said = blocks
+          .slice(at + 1, blocks.indexOf(table))
+          .map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : ""))
+          .join(" ");
+        if (/\broll(ed)?\b[^.]{0,60}\b(independently|separately|each (column|part)|once (for|on) each)/i.test(said))
+          table.each = true;
+      }
     } else if (block.type === "list") {
       block.items.forEach((item, i) => out.push(`${block.ordered ? `${i + 1}.` : "-"} ${spansToMd(item, ctx.mend)}`));
     } else if (block.type === "table") {
@@ -171,7 +226,7 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
       const body = renderBlocks(block.blocks, ctx, near, where);
       const fence = fenceFor(body);
       gap();
-      out.push(`${fence}rpg rule.side`, "type: rules");
+      out.push(`${fence}rpg rule.side`, ...(block.reviews ?? []).map(reviewLine), "type: rules");
       if (block.title) out.push(`title: ${yamlValue(titleCase(block.title))}`);
       out.push("---", ...body, fence);
     }

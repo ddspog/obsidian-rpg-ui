@@ -23,6 +23,7 @@
  *   </div>
  */
 
+import { offReason, type BlockReview } from "../review/block-review";
 import { finishRenderMath, loadMathJax, renderMath } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
@@ -586,6 +587,8 @@ function oracleTree(key: string, selKey: string): React.ReactElement {
 export interface RenderTableOptions {
   /** Path of the note the table lives in — keys the in-memory roll store. */
   filePath?: string;
+  /** The block's review (taken off its body before parsing); with `roll` off, the footer does not roll. */
+  reviews?: BlockReview[];
 }
 
 /**
@@ -1117,9 +1120,19 @@ export function renderTableBlock(
           return;
         }
 
-        const interactive = hasRollSegment(cell);
+        // A review that turns rolling off: the cell stays, saying why, and does not roll.
+        const rollOff = offReason(opts.reviews ?? def.reviews, "roll");
+        const interactive = hasRollSegment(cell) && !rollOff;
         const span = doc.createElement("span");
         span.classList.add("dice-roller", "rpg-table-roll-cell");
+        if (rollOff && hasRollSegment(cell)) {
+          span.classList.add("rpg-table-roll-cell-off");
+          span.setAttribute("aria-disabled", "true");
+          span.title = `Rolling is off: ${rollOff}`;
+          span.textContent = "Rolling is off: see the import review under the table.";
+          flexWrap.appendChild(span);
+          return;
+        }
         if (interactive) {
           span.setAttribute("role", "button");
           span.setAttribute("tabindex", "0");

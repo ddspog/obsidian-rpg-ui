@@ -10,7 +10,7 @@
  *      `<pre><code>` blocks)
  */
 
-import { App, Component, MarkdownRenderChild, parseYaml } from "obsidian";
+import { App, Component, MarkdownRenderChild, parseYaml, setIcon } from "obsidian";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { SourcePathContext } from "lib/ui/source-file";
@@ -37,6 +37,7 @@ import { hashSource } from "lib/utils/section-fence-name";
 import { splitFenceBody } from "lib/utils/fence-split";
 import { detectMetaFromSource } from "lib/utils/meta-extractor";
 import type { SystemRegistry } from "lib/systems/registry";
+import { keepBlockReview, takeBlockReview } from "../domains/review/block-review";
 
 let _registry: SystemRegistry | null = null;
 
@@ -56,7 +57,8 @@ export function processUnrenderedRpgFences(
     if (!pre) continue;
     if (pre.querySelector("[data-rpg-rule], .rpg-table-wrapper, .notice")) continue;
 
-    const source = code.textContent ?? "";
+    // A review written into the block (by the PDF import): taken off its body, and shown at its top.
+    const { reviews, source } = takeBlockReview(code.textContent ?? "");
 
     // Try to get meta from class (e.g. "language-rpg rule.side" → "rule.side")
     // Obsidian adds internal classes like "is-loaded" — validate the captured
@@ -79,6 +81,15 @@ export function processUnrenderedRpgFences(
     el.classList.add("block-language-rpg");
     wrapper.appendChild(el);
     pre.replaceWith(wrapper);
+    if (reviews.length) {
+      const stop = keepBlockReview(el, reviews, (icon, name) => setIcon(icon, name));
+      const watcher = new (class extends MarkdownRenderChild {
+        onunload(): void {
+          stop();
+        }
+      })(el);
+      parent.addChild(watcher);
+    }
 
     // Handle table blocks
     if (meta === "table" || meta.startsWith("table.")) {
@@ -89,7 +100,7 @@ export function processUnrenderedRpgFences(
         // would all share one roll-result slot. Key the slot by the table's own
         // content too (stable across re-renders, distinct between tables).
         const filePath = meta.startsWith("table.") ? sourcePath : `${sourcePath}#${hashSource(source)}`;
-        const disposers = renderTableBlock(el, def, { filePath });
+        const disposers = renderTableBlock(el, def, { filePath, reviews });
         if (disposers.length > 0) {
           const child = new (class extends MarkdownRenderChild {
             onunload(): void {

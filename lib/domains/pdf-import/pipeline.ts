@@ -11,8 +11,11 @@ import { readOutline, readPage, type DecodedImage } from "./extract";
 import { findFurniture, layoutPage, lineText, segText, usualGutters, type Gutter } from "./layout";
 import { lookFor } from "./looks";
 import { placer } from "./organise";
+import { repairTables, type RepairReport } from "./repair";
+import { buildReview, renderReview, reviewBlocks, reviewCounts, type ReviewItem } from "./review";
 import { readStyles } from "./styles";
 import {
+  chapterLabel,
   dropTitleHeadings,
   fileName,
   isContentsPage,
@@ -23,6 +26,7 @@ import {
   promoteNames,
   slug,
   takeBanner,
+  titleCase,
   toSections,
   walkBlocks,
   type ChapterPlan,
@@ -46,6 +50,11 @@ export interface ImportHost {
   /** Icons and colours for the book's tabs from a model, by title; the rules of thumb fill the rest. */
   refineLooks?(titles: string[]): Promise<Map<string, TabLook>>;
   progress?(stage: string, done: number, total: number): void;
+  /**
+   * What each stage found, as it finishes, for a program that drives the import (a terminal, a
+   * model): `pages`, `chapters`, `tables mended`, `review`, `written`.
+   */
+  event?(name: string, data: Record<string, unknown>): void;
   /** Told what was found on the way (heading looks, chapters), for a log. */
   debug?(what: string, data: unknown): void;
   /** True once the user has asked to stop. */
@@ -67,6 +76,8 @@ export interface ImportResult {
   entities: Record<string, number>;
   tables: number;
   sidebars: number;
+  /** What needs a person's judgement, worst first (see review.ts), and how many of each severity. */
+  review: { note: string; counts: ReturnType<typeof reviewCounts>; items: ReviewItem[] };
 }
 
 const ASSETS = "_assets";
@@ -138,7 +149,9 @@ export async function importPdf(
       const raw = await doc.getPage(num);
       const runs = await host.ocrPage(raw, num);
       raw.cleanup();
-      if (runs.length) {
+      // A page of art gives OCR a few stray letters, not text: it stays a picture.
+      const read = runs.reduce((n, r) => n + r.str.replace(/[^A-Za-zÀ-ÿ0-9]/g, "").length, 0);
+      if (read >= 80) {
         page.runs = runs;
         page.ocr = true;
         // The page's picture is the scan itself.
@@ -148,6 +161,8 @@ export async function importPdf(
     }
     pages.push(page);
   }
+
+  host.event?.("pages", { pages: total, ocrPages, pictures: written });
 
   // 2. Pictures that repeat down the book are its dressing (page backgrounds, rules): dropped.
   const dressing = new Set<string>();
@@ -180,6 +195,7 @@ export async function importPdf(
   const everything: Element[] = [];
   for (const page of pages) {
     const { elements } = layoutPage(page, { furniture, prefer });
+    host.debug?.("layout", { page: page.num, elements });
     const lines = elements.flatMap((el) => (el.kind === "line" ? [lineText(el.line)] : []));
     if (isContentsPage(lines)) {
       // The contents pages are not written, but their entries are checked against what was found.
@@ -213,7 +229,18 @@ export async function importPdf(
   // Bookmarks that leave most of the book in one piece (a file joined from two) say nothing of its chapters.
   const longest = Math.max(0, ...plans.map((p) => p.lastPage - p.firstPage + 1));
   if (plans.length && total > 40 && longest > 0.7 * total) plans = [];
+  const fromBookmarks = plans.length > 0;
   if (!plans.length) plans = planFromHeadings(perPage, styles, from, to);
+  const chapterSource: "bookmarks" | "headings" | "one" = fromBookmarks
+    ? "bookmarks"
+    : plans.length === 1
+      ? "one"
+      : "headings";
+  host.progress?.("Finding chapters", 1, 1);
+  host.event?.("chapters", {
+    from: chapterSource,
+    chapters: plans.filter((p) => !p.skip).map((p) => ({ title: p.title, pages: `${p.firstPage}–${p.lastPage}` })),
+  });
   const chapters: Chapter[] = [];
   const drafts: Array<{ plan: ChapterPlan; blocks: Block[] }> = [];
   for (const plan of plans) {
@@ -223,11 +250,23 @@ export async function importPdf(
     for (let p = plan.firstPage; p <= plan.lastPage; p++) elements.push(...(perPage.get(p) ?? []));
     const blocks = toBlocks(elements, { styles });
     if (options.entities) promoteNames(blocks);
+    nameChapter(plan, blocks);
     drafts.push({ plan, blocks });
   }
+  const repaired: RepairReport = { joined: 0, folded: 0, widened: 0, changes: [] };
+  const textItems: ReviewItem[] = [];
+  let mendedChapters = 0;
   for (const { plan, blocks: all } of drafts) {
+    host.progress?.("Mending tables", mendedChapters++, drafts.length);
     host.debug?.("blocks", { chapter: plan.title, blocks: all });
     const blocks = dropTitleHeadings(all, plan.title, plan.number);
+    // With the whole chapter read, the pieces of its tables are put back together.
+    const mended = repairTables(blocks);
+    repaired.joined += mended.joined;
+    repaired.folded += mended.folded;
+    repaired.widened += mended.widened;
+    repaired.changes.push(...mended.changes);
+    textItems.push(...reviewBlocks(blocks, plan.title));
     if (!blocks.some((b) => b.type !== "image")) continue;
     const chapter: Chapter = {
       title: plan.title,
@@ -239,6 +278,8 @@ export async function importPdf(
     takeBanner(chapter);
     chapters.push(chapter);
   }
+
+  host.event?.("tables mended", { joined: repaired.joined, folded: repaired.folded, widened: repaired.widened });
 
   // 5. Pictures get names that say where they sit; ones no note shows are removed.
   const vocabulary = new Set<string>();
@@ -309,6 +350,7 @@ export async function importPdf(
     mend: mender(vocabulary),
     files: [],
     tableIds: new Set(),
+    tablePages: new Map(),
     names: new Set(),
     kinds: options.entities ? new Map() : undefined,
     found: [],
@@ -323,6 +365,16 @@ export async function importPdf(
   const facts = [
     `*Imported from a PDF of ${doc.numPages} pages${ocrPages ? `, ${ocrPages} of them read by OCR` : ""}: ${tables} tables, ${sidebars} sidebars, ${used.size} pictures.*`,
   ];
+  if (repaired.joined || repaired.widened) {
+    facts.push(
+      "",
+      `*Tables mended once the chapters were read: ${repaired.joined} pieces put back${
+        repaired.widened
+          ? `, and ${repaired.widened} rows widened over a number the book skips (so every roll lands on a row; check them against the book)`
+          : ""
+      }.*`
+    );
+  }
   const missing = missingFromContents(contents, chapters);
   if (contents.length) {
     facts.push(
@@ -356,6 +408,27 @@ export async function importPdf(
     const index = files[files.length - 1];
     index.text += `\n*Written as game entities: ${kinds.map(([k, n]) => `${n} ${k}${n === 1 ? "" : k.endsWith("s") ? "es" : "s"}`).join(", ")}.*\n`;
   }
+  // What needs a person's judgement: a note of the book, and the result's own list.
+  host.progress?.("Checking the result", 0, 1);
+  const review = buildReview({
+    files,
+    root,
+    tablePages: ctx.tablePages ?? new Map(),
+    textItems,
+    contentsMissing: missing,
+    ocrPages: pages.filter((p) => p.ocr).map((p) => p.num),
+    kept: ctx.kept ?? [],
+    chapters: { count: chapters.length, from: chapterSource, pages: total },
+  });
+  const counts = reviewCounts(review);
+  const reviewNote = "Import review";
+  // The book's contents note is the last one written; it points at the review.
+  const contentsNote = files[files.length - 1];
+  if (review.length)
+    contentsNote.text += `\n*[[${root}/${reviewNote}|${reviewNote}]]: ${counts.fix} to fix, ${counts.check} to check against the book.*\n`;
+  files.push({ path: `${reviewNote}.md`, text: renderReview(review, options.title, ctx.source) });
+  host.event?.("review", { reviewNote: `${root}/${reviewNote}`, ...counts });
+
   let done = 0;
   for (const file of files) {
     stop();
@@ -376,7 +449,25 @@ export async function importPdf(
     entities: Object.fromEntries(kinds),
     tables,
     sidebars,
+    review: { note: `${root}/${reviewNote}`, counts, items: review },
   };
+}
+
+/**
+ * A chapter the bookmarks only number (`Chapter Two`) takes its name from its first page, where it
+ * is set under the number (`CHAPTER TWO`, then `PRIMORDIAL AND DIVINE NAMES`).
+ */
+function nameChapter(plan: ChapterPlan, blocks: Block[]): void {
+  if (!/^chapter \d+$/i.test(plan.title)) return;
+  const heads = blocks.filter((b) => b.type === "heading" && b.page === plan.firstPage).slice(0, 3) as Array<
+    Extract<Block, { type: "heading" }>
+  >;
+  const at = heads.findIndex((h) => chapterLabel(h.text));
+  if (at < 0) return;
+  const rest = chapterLabel(heads[at].text)?.rest;
+  const next = heads[at + 1];
+  const name = rest || (next && next.level <= heads[at].level + 1 ? next.text : "");
+  if (name && name.length <= 80) plan.title = titleCase(name);
 }
 
 /** Chapters cut at the book's biggest headings, when the file has no bookmarks. */

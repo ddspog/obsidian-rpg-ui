@@ -63,36 +63,166 @@ export interface ChapterPlan {
   skip?: boolean;
 }
 
-const UNNUMBERED = /^(appendix|index|glossary|credits|licen[cs]e|afterword|front matter|open game)/i;
+const UNNUMBERED =
+  /^(appendix|appendices|index|glossary|credits|licen[cs]e|afterword|front matter|open game|list of|checklist|cover|inside cover)/i;
 
-/** Chapters from the file's top bookmarks. Empty when it has too few to go by. */
-export function planFromOutline(outline: OutlineEntry[], from: number, to: number): ChapterPlan[] {
-  const top = outline
-    .filter((o) => o.depth === 0 && o.title && !/^blank page$/i.test(o.title) && o.page >= from && o.page <= to)
-    .sort((a, b) => a.page - b.page);
-  const unique = top.filter((o, i) => i === 0 || o.page !== top[i - 1].page);
-  if (unique.length < 2) return [];
-  const plans: ChapterPlan[] = [];
-  if (unique[0].page > from) {
-    plans.push({ title: "Front Matter", number: "", firstPage: from, lastPage: unique[0].page - 1 });
+const UNITS =
+  "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split(
+    " "
+  );
+const TENS = "twenty thirty forty fifty sixty seventy eighty ninety".split(" ");
+
+/** `12`, `Twelve`, `Twenty One`, `twenty-one`, `IV` as a number; 0 when the words are not one. */
+export function numberFrom(text: string): number {
+  const t = text.trim().toLowerCase();
+  if (/^\d{1,3}$/.test(t)) return Number(t);
+  const words = t.split(/[\s-]+/);
+  const unit = UNITS.indexOf(words[words.length - 1]);
+  const ten = TENS.indexOf(words[0]);
+  if (words.length === 1 && unit >= 0) return unit;
+  if (words.length === 1 && ten >= 0) return (ten + 2) * 10;
+  if (words.length === 2 && ten >= 0 && unit > 0 && unit < 10) return (ten + 2) * 10 + unit;
+  if (/^[ivxl]+$/.test(t)) {
+    const val: Record<string, number> = { i: 1, v: 5, x: 10, l: 50 };
+    let n = 0;
+    for (let i = 0; i < t.length; i++) n += val[t[i]] < (val[t[i + 1]] ?? 0) ? -val[t[i]] : val[t[i]];
+    return n;
   }
-  unique.forEach((o, i) => {
-    const lastPage = i + 1 < unique.length ? unique[i + 1].page - 1 : to;
-    plans.push({ title: o.title, number: "", firstPage: o.page, lastPage });
-  });
-  return numberChapters(plans);
+  return 0;
+}
+
+/** `Chapter Two: Monsters` → 2 and `Monsters`; `Chapter Twenty One` → 21 and nothing. */
+export function chapterLabel(text: string): { n: number; rest: string } | null {
+  const hit = text.trim().match(/^chapter\s+(.*)$/i);
+  if (!hit) return null;
+  const words = hit[1].split(/\s+/);
+  // The longest run of words that is a number: `Twenty One`, before `One`.
+  for (const take of [2, 1]) {
+    if (words.length < take) continue;
+    const head = words.slice(0, take).join(" ");
+    const n = numberFrom(head.replace(/[:.,–—-]+$/, ""));
+    if (!n) continue;
+    const rest = words
+      .slice(take)
+      .join(" ")
+      .replace(/^[:.,–—-]+\s*/, "")
+      .trim();
+    if (take === 1 && !/[:.,–—-]$/.test(head) && rest && /^[a-z]/.test(rest)) continue;
+    return { n, rest };
+  }
+  return null;
+}
+
+/** The caption of a table or a figure (`Table 2-13: Epithets`), which some files bookmark one by one. */
+export const CAPTION = /^(table|figure|fig\.|map|chart|plate|illustration)\s+[A-Z]?\d+(?:\s*[-.–:]\s*\d+)*[a-z]?\b/i;
+
+/** `Table 2-13: Epithets` → `2-13` and `Epithets`. */
+export function captionParts(text: string): { number: string; name: string } | null {
+  const hit = text.trim().match(/^table\s+([A-Z]?\d+(?:\s*[-.–]\s*\d+)*[a-z]?)\s*[:.–—-]?\s*(.*)$/i);
+  if (!hit) return null;
+  return { number: hit[1].replace(/\s+/g, ""), name: hit[2].trim() };
+}
+
+/**
+ * Chapters from the file's bookmarks. Empty when they say too little.
+ *
+ * Bookmarks are as tidy as the program that made the file: the chapters may sit under one bookmark
+ * named for the file, beside one for every table, or among their own sections. So: bookmarks that
+ * say `Chapter N` are the chapters wherever they sit; without any, the shallowest bookmarks that
+ * cut the book into more than one real piece are.
+ */
+export function planFromOutline(outline: OutlineEntry[], from: number, to: number): ChapterPlan[] {
+  const total = to - from + 1;
+  const entries = outline.filter(
+    (o) =>
+      o.title &&
+      o.page >= from &&
+      o.page <= to &&
+      !/^blank page$/i.test(o.title) &&
+      // Marks a word processor leaves behind (`_Hlk180566310`), the file's own name, captions.
+      !/^_\w+$/.test(o.title) &&
+      !/\.(pdf|indd|docx?|pub)$/i.test(o.title) &&
+      !CAPTION.test(o.title)
+  );
+  const build = (starts: Array<{ title: string; page: number }>): ChapterPlan[] => {
+    const plans: ChapterPlan[] = [];
+    if (starts[0].page > from)
+      plans.push({ title: "Front Matter", number: "", firstPage: from, lastPage: starts[0].page - 1 });
+    starts.forEach((o, i) => {
+      const lastPage = i + 1 < starts.length ? starts[i + 1].page - 1 : to;
+      plans.push({ title: o.title, number: "", firstPage: o.page, lastPage });
+    });
+    return numberChapters(plans);
+  };
+
+  const labelled = entries.map((o, i) => ({ o, i, label: chapterLabel(o.title) })).filter((e) => e.label);
+  const numbers = new Set(labelled.map((e) => e.label?.n));
+  if (numbers.size >= 2) {
+    const starts: Array<{ title: string; page: number }> = [];
+    const seen = new Set<number>();
+    const pages = new Set<number>();
+    for (const { o, i, label } of labelled) {
+      if (!label || seen.has(label.n)) continue;
+      seen.add(label.n);
+      pages.add(o.page);
+      // `Chapter Twenty` with its name as the next bookmark on the same page.
+      const next = entries[i + 1];
+      const named = !label.rest && next && next.page === o.page && !chapterLabel(next.title) ? next.title : label.rest;
+      starts.push({ title: named ? `Chapter ${label.n}: ${named}` : `Chapter ${label.n}`, page: o.page });
+    }
+    starts.sort((a, b) => a.page - b.page);
+    const first = starts[0].page;
+    const last = starts[starts.length - 1].page;
+    // The chapters' own depth, and whether they have it to themselves or share it with their sections.
+    const depths = new Map<number, number>();
+    for (const { o } of labelled) depths.set(o.depth, (depths.get(o.depth) ?? 0) + 1);
+    const depth = [...depths.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const level = entries.filter((o) => o.depth <= depth && !pages.has(o.page));
+    const among = level.filter((o) => o.page > first && o.page < last).length;
+    const pure = among <= 0.4 * starts.length;
+    const extra = new Map<number, string>();
+    for (const o of level) {
+      const outside = o.page < first || o.page > last;
+      if (extra.has(o.page) || !(outside || pure)) continue;
+      if (o.page > first && !pure && !UNNUMBERED.test(o.title)) continue;
+      extra.set(o.page, o.title);
+    }
+    for (const [page, title] of extra) starts.push({ title, page });
+    starts.sort((a, b) => a.page - b.page);
+    return build(starts);
+  }
+
+  let shallowest: ChapterPlan[] = [];
+  for (let depth = 0; depth <= 3; depth++) {
+    const top = entries.filter((o) => o.depth <= depth).sort((a, b) => a.page - b.page);
+    const unique = top.filter((o, i) => i === 0 || o.page !== top[i - 1].page);
+    if (unique.length < 2) continue;
+    if (depth > 0 && total / unique.length < 3) break;
+    const longest = Math.max(
+      unique[0].page - from,
+      ...unique.map((o, i) => (i + 1 < unique.length ? unique[i + 1].page : to + 1) - o.page)
+    );
+    // Bookmarks that leave most of the book in one piece (a file joined from two, a bookmark
+    // around the whole book) say little of its chapters: the ones under them may say more.
+    if (total > 40 && longest > 0.7 * total) {
+      if (!shallowest.length) shallowest = build(unique);
+      continue;
+    }
+    return build(unique);
+  }
+  return shallowest;
 }
 
 export function numberChapters(plans: ChapterPlan[]): ChapterPlan[] {
   const numbered = plans.filter((p) => !UNNUMBERED.test(p.title));
   let n = numbered[0] && /^(intro|foreword|preface|prologue|welcome)/i.test(numbered[0].title) ? 0 : 1;
   for (const plan of plans) {
-    const own = plan.title.match(/^chapter\s+(\d+)\s*[:.–-]?\s*(.*)$/i);
+    const own = chapterLabel(plan.title);
     if (own) {
-      plan.number = own[1].padStart(2, "0");
-      plan.title = own[2] || plan.title;
-      n = Number(own[1]) + 1;
-    } else if (/^index$/i.test(plan.title.trim())) plan.skip = true;
+      plan.number = String(own.n).padStart(2, "0");
+      plan.title = own.rest || `Chapter ${own.n}`;
+      n = own.n + 1;
+    } else if (/^(index|list of tables|list of figures)$/i.test(plan.title.trim())) plan.skip = true;
     else if (!UNNUMBERED.test(plan.title)) plan.number = String(n++).padStart(2, "0");
     plan.title = titleCase(plan.title);
   }
@@ -106,7 +236,7 @@ export function toSections(blocks: Block[], title: string, page: number): Sectio
   const root: Section = { title, level: 0, style: "", page, blocks: [], children: [] };
   const stack: Section[] = [root];
   for (const block of blocks) {
-    if (block.type === "heading") {
+    if (block.type === "heading" && !block.caption) {
       while (stack.length > 1 && stack[stack.length - 1].level >= block.level) stack.pop();
       const tagged = block.text.match(/^(.*\S)\s+(CR\s+\d+(?:\/\d+)?)$/i);
       const node: Section = {
@@ -169,11 +299,13 @@ export function dropTitleHeadings(blocks: Block[], title: string, number: string
   let checked = 0;
   return blocks.filter((b) => {
     if (b.type === "para" || b.type === "list" || b.type === "table") seenText = true;
-    if (b.type !== "heading" || checked >= 4) return true;
+    if (b.type !== "heading" || b.caption || checked >= 4) return true;
     checked++;
     const have = key(b.text);
     const isNumber =
-      /^(chapter|appendix|part)\s*[\dA-Za-z]{0,4}$/i.test(b.text.trim()) || have === key(`chapter ${Number(number)}`);
+      /^(chapter|appendix|part)\s*[\dA-Za-z]{0,4}$/i.test(b.text.trim()) ||
+      have === key(`chapter ${Number(number)}`) ||
+      chapterLabel(b.text)?.rest === "";
     const same = have === want || (want.length >= 6 && have.includes(want));
     return !((isNumber && !seenText) || same);
   });
@@ -314,6 +446,11 @@ export function missingFromContents(contents: ContentsEntry[], chapters: Chapter
   const have = new Set<string>();
   const walk = (section: Section) => {
     have.add(bare(section.title));
+    // A book that lists its tables in its contents: their captions count as found.
+    walkBlocks({ ...section, children: [] }, (b) => {
+      if (b.type === "heading") have.add(bare(b.text));
+      else if (b.type === "table" && b.caption) have.add(bare(b.caption));
+    });
     section.children.forEach(walk);
   };
   for (const chapter of chapters) walk(chapter.root);

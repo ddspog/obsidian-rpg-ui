@@ -242,22 +242,23 @@ export async function readOutline(doc: PdfDoc): Promise<OutlineEntry[]> {
   }
   const walk = async (items: any[] | undefined, depth: number) => {
     for (const it of items ?? []) {
+      const title = String(it.title ?? "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const at = out.length;
+      let found = false;
       try {
         const dest = typeof it.dest === "string" ? await doc.getDestination(it.dest) : it.dest;
         if (dest?.[0]) {
-          const page = (await doc.getPageIndex(dest[0])) + 1;
-          out.push({
-            title: String(it.title ?? "")
-              .replace(/\s+/g, " ")
-              .trim(),
-            page,
-            depth,
-          });
+          out.push({ title, page: (await doc.getPageIndex(dest[0])) + 1, depth });
+          found = true;
         }
       } catch {
         /* a bookmark that points nowhere */
       }
       await walk(it.items, depth + 1);
+      // A bookmark that only holds others (no place of its own) starts where the first of them does.
+      if (!found && out.length > at) out.splice(at, 0, { title, page: out[at].page, depth });
     }
   };
   await walk(outline ?? undefined, 0);

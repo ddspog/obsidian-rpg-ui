@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toBlocks } from "./blocks";
-import { emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { dieOf, emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
 import { fontName, isBold, isItalic } from "./extract";
@@ -10,6 +10,7 @@ import { lookFor } from "./looks";
 import { inkMeter, invertDarkBars, ocrToRuns } from "./ocr";
 import { readStyles } from "./styles";
 import {
+  chapterLabel,
   isCatalog,
   missingFromContents,
   planFromOutline,
@@ -162,6 +163,122 @@ describe("blocks", () => {
     ]);
   });
 
+  it("names a table by the caption above it and keeps the caption with the text", () => {
+    const rects: FillRect[] = [{ x: 72, y: 246, w: 228, h: 56, dark: false }];
+    const runs = [
+      ...filler(100, 6),
+      run("Table 2-3: Creator Deity Epithet", 72, 200, 11, "Baskerville-Bold"),
+      run("Adding a title to the name of the deity can add a little flavour.", 72, 218),
+      run("d4", 76, 240, 10),
+      run("Title", 150, 240, 10),
+    ];
+    ["The Shaper", "The Beginning", "The Builder", "The Crafter"].forEach((t, i) =>
+      runs.push(run(String(i + 1), 76, 256 + i * 14, 10), run(t, 150, 256 + i * 14, 10))
+    );
+    const blocks = blocksOf(runs, rects);
+    const caption = blocks.find((b) => b.type === "heading") as Extract<Block, { type: "heading" }>;
+    expect(caption.caption).toBe(true);
+    const table = blocks.find((b) => b.type === "table") as Extract<Block, { type: "table" }>;
+    expect(table.caption).toBe("Table 2-3: Creator Deity Epithet");
+    expect(table.rows[0]).toEqual(["d4", "Title"]);
+    expect(table.rows).toHaveLength(5);
+    // The caption is not a section of its own.
+    expect(toSections(blocks, "Names", 1).children).toHaveLength(0);
+  });
+
+  it("joins a table that goes on in the next column, by its numbers counting on", () => {
+    const rects: FillRect[] = [
+      { x: 72, y: 306, w: 200, h: 42, dark: false },
+      { x: 324, y: 86, w: 200, h: 42, dark: false },
+    ];
+    // The left column's text, then its table; the right column opens with the table's last rows.
+    const runs: TextRun[] = [];
+    for (let i = 0; i < 10; i++) {
+      runs.push(run(`left column line number ${i} goes on a while`, 72, 100 + i * 12));
+      runs.push(run(`right column line number ${i} goes on as well`, 324, 160 + i * 12));
+    }
+    for (let i = 0; i < 3; i++) {
+      runs.push(run(String(i + 1), 76, 318 + i * 14), run(`left ${i}`, 150, 318 + i * 14));
+      runs.push(run(String(i + 4), 328, 98 + i * 14), run(`right ${i}`, 402, 98 + i * 14));
+    }
+    const tables = blocksOf(runs, rects).filter((b) => b.type === "table") as Array<Extract<Block, { type: "table" }>>;
+    expect(tables).toHaveLength(1);
+    expect(tables[0].rows.map((r) => r[0])).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("reads one stripe holding a single wrapped row as a table's row", () => {
+    const rects: FillRect[] = [{ x: 72, y: 120, w: 400, h: 34, dark: false }];
+    const runs = [
+      ...filler(60, 4),
+      run("A relic of the deity is in the desert and is being used for", 120, 134),
+      run("5", 78, 141),
+      run("probably-nefarious purposes by somebody nearby.", 120, 147),
+    ];
+    const blocks = blocksOf(runs, rects);
+    expect(blocks.some((b) => b.type === "side")).toBe(false);
+    const table = blocks.find((b) => b.type === "table") as Extract<Block, { type: "table" }>;
+    expect(table.rows[0][0]).toBe("5");
+  });
+
+  it("carries a table on under a misspelt continued caption", () => {
+    const rects: FillRect[] = [
+      { x: 72, y: 106, w: 200, h: 42, dark: false },
+      { x: 72, y: 506, w: 200, h: 42, dark: false },
+    ];
+    const runs: TextRun[] = [run("Table 3-1: Plants", 72, 96, 11, "Baskerville-Bold")];
+    for (let i = 0; i < 3; i++) runs.push(run(String(i + 1), 76, 118 + i * 14), run(`plant ${i}`, 150, 118 + i * 14));
+    runs.push(...filler(200, 10), run("table 3-1: Plants contined", 72, 496, 8));
+    for (let i = 0; i < 3; i++)
+      runs.push(run(String(i + 4), 76, 518 + i * 14), run(`plant ${i + 3}`, 150, 518 + i * 14));
+    const tables = blocksOf(runs, rects).filter((b) => b.type === "table") as Array<Extract<Block, { type: "table" }>>;
+    expect(tables).toHaveLength(1);
+    expect(tables[0].rows.map((r) => r[0])).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("drops the words set on a dark strip down the page's edge", () => {
+    const strip: FillRect = { x: -10, y: -10, w: 100, h: 820, dark: true };
+    const runs = [run("Sample name", 20, 200, 8), run("Another one", 20, 260, 8)];
+    for (let i = 0; i < 8; i++) runs.push(run("Plain body text that fills the line across.", 120, 100 + i * 12));
+    const out = texts(page(runs, [strip]));
+    expect(out.join(" ")).not.toContain("Sample name");
+    expect(out).toHaveLength(8);
+  });
+
+  it("puts a drop capital back at the head of its paragraph", () => {
+    const runs = [
+      run("A", 72, 124, 50, "Display-Bold"),
+      run("sking and answering questions is the heart", 100, 100),
+      run("of an adventure, your principal tool", 100, 112),
+      run("for learning about the game world.", 72, 124),
+    ];
+    expect(texts(page(runs))[0]).toBe("Asking and answering questions is the heart");
+    expect(texts(page(runs)).join(" ")).not.toMatch(/\bA for\b|\bAfor\b/);
+  });
+
+  it("reads a ruled grid by its title bar, header band and shaded first column", () => {
+    const rects: FillRect[] = [
+      { x: 55, y: 95, w: 500, h: 28, dark: true },
+      { x: 55, y: 123, w: 500, h: 30, dark: false },
+      { x: 55, y: 153, w: 90, h: 200, dark: false },
+    ];
+    const runs = [
+      run("EXAMPLE ODDS", 250, 114, 18),
+      run("ODDS", 80, 142),
+      run("DESCRIPTION", 180, 142),
+      run("CAR", 380, 142),
+    ];
+    ["CERTAIN", "LIKELY", "UNLIKELY", "IMPOSSIBLE"].forEach((odds, i) => {
+      const y = 175 + i * 46;
+      runs.push(run("You are as sure", 170, y), run("It was driven", 370, y));
+      runs.push(run(odds, 70, y + 6), run("of this as can be.", 170, y + 12), run("here just now.", 370, y + 12));
+    });
+    const table = blocksOf(runs, rects).find((b) => b.type === "table") as Extract<Block, { type: "table" }>;
+    expect(table.caption).toBe("Example Odds");
+    expect(table.rows[0]).toEqual(["ODDS", "DESCRIPTION", "CAR"]);
+    expect(table.rows).toHaveLength(5);
+    expect(table.rows[2]).toEqual(["LIKELY", "You are as sure of this as can be.", "It was driven here just now."]);
+  });
+
   it("reads a shaded box of prose as a sidebar with its title", () => {
     const rects: FillRect[] = [{ x: 72, y: 200, w: 228, h: 80, dark: false }];
     const runs = [
@@ -205,6 +322,57 @@ describe("structure", () => {
     ]);
   });
 
+  it("finds the chapters among bookmarks for every table, and reads a number set in words", () => {
+    expect(chapterLabel("Chapter Twenty One")).toEqual({ n: 21, rest: "" });
+    expect(chapterLabel("Chapter Two: Monsters")).toEqual({ n: 2, rest: "Monsters" });
+    expect(chapterLabel("Chapters of the book")).toBeNull();
+    const plans = planFromOutline(
+      [
+        { title: "Chapter One", page: 9, depth: 0 },
+        { title: "Chapter Two", page: 20, depth: 0 },
+        { title: "Sequatorial", page: 20, depth: 0 },
+        { title: "Checklist", page: 90, depth: 0 },
+        { title: "List of Tables", page: 95, depth: 0 },
+        { title: "_Hlk180566310", page: 40, depth: 0 },
+        { title: "Table 1-1: Randomly Choosing a Naming Group", page: 10, depth: 0 },
+        { title: "Table 2-1: Creator Deity Name", page: 21, depth: 0 },
+        { title: "Table 2-2: Epithets", page: 30, depth: 0 },
+      ],
+      1,
+      100
+    );
+    expect(plans.map((p) => `${p.number}|${p.title}|${p.firstPage}-${p.lastPage}${p.skip ? "|skip" : ""}`)).toEqual([
+      "|Front Matter|1-8",
+      "01|Chapter 1|9-19",
+      "02|Sequatorial|20-89",
+      "|Checklist|90-94",
+      "|List of Tables|95-100|skip",
+    ]);
+  });
+
+  it("looks under a bookmark that wraps the whole book", () => {
+    const plans = planFromOutline(
+      [
+        { title: "Cover", page: 1, depth: 0 },
+        { title: "Book.pdf", page: 2, depth: 0 },
+        { title: "Introduction", page: 5, depth: 1 },
+        { title: "Chapter One: Principles", page: 16, depth: 1 },
+        { title: "Locations", page: 19, depth: 1 },
+        { title: "Chapter Two: ", page: 88, depth: 1 },
+        { title: "Monsters", page: 88, depth: 1 },
+        { title: "Part One: Monster Types", page: 89, depth: 1 },
+      ],
+      1,
+      200
+    );
+    expect(plans.map((p) => `${p.number}|${p.title}|${p.firstPage}`)).toEqual([
+      "|Cover|1",
+      "00|Introduction|5",
+      "01|Principles|16",
+      "02|Monsters|88",
+    ]);
+  });
+
   it("nests headings by rank and knows a list of entries from a run of steps", () => {
     const h = (text: string, level: number): Block => ({ type: "heading", level, text, page: 1, style: `s${level}` });
     const p: Block = { type: "para", spans: [{ text: "x", bold: false, italic: false }], page: 1 };
@@ -245,6 +413,15 @@ describe("emit", () => {
     names: new Set(),
   });
   const chapter = (root: Section): Chapter => ({ title: root.title, number: "01", firstPage: 1, lastPage: 9, root });
+
+  it("knows the die a table is rolled on", () => {
+    const rows = (head: string, firsts: string[]) => [[head, "Result"], ...firsts.map((f) => [f, "x"])];
+    expect(dieOf(rows("d6", ["1", "2", "3", "4", "5", "6"]))).toBe(6);
+    expect(dieOf(rows("Die Roll", ["01-25", "26-50", "51-75", "76-00"]))).toBe(100);
+    expect(dieOf(rows("d20", ["1", "2", "3"]))).toBe(0);
+    expect(dieOf(rows("Level", ["1", "2", "3", "4"]))).toBe(0);
+    expect(dieOf(rows("d8", ["1", "2", "4", "5", "6", "7", "8"]))).toBe(0);
+  });
 
   it("writes emphasis and mends words broken across lines", () => {
     const words = new Set<string>();

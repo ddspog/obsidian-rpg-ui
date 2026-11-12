@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapCategory } from "./monster-fields";
+import { mapCategory, mapMonster } from "./monster-fields";
 
 describe("mapCategory", () => {
   it("maps the core fields and collapses blank placeholders", () => {
@@ -45,5 +45,17 @@ describe("mapCategory", () => {
     it("ignores non-numeric input", () => {
       expect(mapCategory({ name: "Druids", level: "huge" }).level).toBeUndefined();
     });
+  });
+});
+
+describe("unknown ability scores", () => {
+  it("marks scores written as — as unknown, counting them as 0", () => {
+    const data = mapMonster({
+      name: "Black Bear",
+      abilities: { str: "—", dex: "—", con: 2, int: "?", wis: 1, cha: -2 },
+    });
+    expect(data.unknownAbilities).toEqual(["str", "dex", "int"]);
+    expect(data.abilities).toMatchObject({ str: 0, con: 2, int: 0 });
+    expect(mapMonster({ name: "Orc", abilities: { str: 3 } }).unknownAbilities).toBeUndefined();
   });
 });

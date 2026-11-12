@@ -274,3 +274,19 @@ describe("independent columns: {{ roll each }}", () => {
 function exprRowsOf(def: TableDef) {
   return def.footer.flatMap((it) => (it.kind === "expr" ? it.cells : []));
 }
+
+describe("@reroll", () => {
+  it("rolls again when the die lands on a number the table lacks", () => {
+    const src = "|d4*|Monster|\n|---|---|\n|1|Orc|\n|2|Ogre|\n|4|Troll|";
+    // The die comes up 3 (no row), then 2.
+    const rolls = [0.5, 0.25];
+    const rand = () => rolls.shift() ?? 0;
+    expect(rollOnce(parseTableBlock("m", src), [], undefined, rand)).toMatchObject({ kind: "miss", rolled: 3 });
+    rolls.push(0.5, 0.25);
+    expect(rollOnce(parseTableBlock("m", "@reroll\n" + src), [], undefined, rand)).toMatchObject({
+      kind: "hit",
+      rolled: 2,
+      values: ["Ogre"],
+    });
+  });
+});

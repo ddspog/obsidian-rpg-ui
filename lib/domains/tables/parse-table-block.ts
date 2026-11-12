@@ -16,6 +16,7 @@
  * unchanged to `<thead>`.
  */
 
+import { parseReviewLine, type BlockReview } from "../review/block-review";
 import type { FooterCell, FooterRow, FooterRowItem, FooterSegment, TableCell, TableDef, TableRow } from "./types";
 import { parsePaginateDirective, type PaginationConfig, type PaginationControls } from "./pagination";
 import { parseMergeMarker } from "./row-merge";
@@ -500,6 +501,8 @@ export function parseTableBlock(name: string, body: string): TableDef {
   let legacyPaginate: PaginationConfig | undefined;
   let wide = false;
   let packed = false;
+  let reroll = false;
+  const reviews: BlockReview[] = [];
 
   for (const raw of lines) {
     const line = raw.trimEnd();
@@ -510,8 +513,20 @@ export function parseTableBlock(name: string, body: string): TableDef {
       continue;
     }
 
+    // `@review fix roll: …` — what to check in the table (see review/block-review.ts).
+    const review = parseReviewLine(line);
+    if (review) {
+      reviews.push(review);
+      continue;
+    }
+
     // `@pack`: a body line may hold several rows, one after another, each as many cells as the
     // table has columns (`|01|Abbot|02|Acolyte|03|Actor|`), so a long table stays short to read.
+    if (line.trim() === "@reroll") {
+      reroll = true;
+      continue;
+    }
+
     if (line.trim() === "@pack") {
       packed = true;
       continue;
@@ -659,6 +674,8 @@ export function parseTableBlock(name: string, body: string): TableDef {
     classes: footer?.classes ?? [],
     pagination,
     wide: wide || undefined,
+    reroll: reroll || undefined,
+    reviews: reviews.length ? reviews : undefined,
   };
 }
 

@@ -5,6 +5,8 @@ export interface StatVehicleData {
   dimensions?: string;
   stats: Record<string, string>;
   abilities: AbilityScores;
+  /** Scores written as unknown (`"—"`, `"?"`): shown as "—"; they count as 0 in sums. */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: StatFeatureRef[];
   text?: string;
   image?: string;
@@ -28,6 +30,8 @@ export interface StatMonsterData {
   stats: Record<string, string>;
   /** Ability modifiers (str/dex/… as signed numbers). */
   abilities: AbilityScores;
+  /** Scores written as unknown (`"—"`, `"?"`): shown as "—"; they count as 0 in sums. */
+  unknownAbilities?: Array<keyof AbilityScores>;
   features: StatFeatureRef[];
   text?: string;
   /** Markdown image ref (`![[creature.webp|384]]`). */
@@ -85,3 +89,8 @@ export const STAT_SECTION_LABELS: Record<StatFeatureCategory, string> = {
 };
 
 export const STAT_SECTION_ORDER: StatFeatureCategory[] = ["action", "bonus", "reaction", "legendary"];
+
+/** True for a score written as unknown: `"—"`, `"–"`, `"?"` or `"unknown"`. */
+export function isUnknownScore(value: unknown): boolean {
+  return typeof value === "string" && /^\s*(—|–|\?|unknown)\s*$/i.test(value);
+}

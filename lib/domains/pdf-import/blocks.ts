@@ -5,6 +5,7 @@
 
 import { lineSpans, lineText, segText } from "./layout";
 import { FACT_LINE, opensEntity } from "./patterns";
+import { captionParts, titleCase } from "./structure";
 import { family, styleKey, type StyleBook } from "./styles";
 import type { Block, Box, Element, Line, Seg, Span } from "./types";
 
@@ -77,20 +78,141 @@ function tableColumns(lines: Line[], x: number, w: number): Column[] {
 
 const cellMd = (text: string) => text.replace(/\s+/g, " ").trim();
 
+/**
+ * Rows of a table whose numbers are set against the middle of cells of several lines: each line
+ * belongs to the number nearest it. Null for any other table (numbers on a row's first line, or none).
+ */
+function centredRows(body: Line[], place: (line: Line) => string[], headBottom?: number): string[][] | null {
+  const inHead = (l: Line) => headBottom !== undefined && l.base - l.size / 3 <= headBottom + 1;
+  const placed = body.map((line) => ({ line, cells: place(line), head: inHead(line) }));
+  let rest = placed.filter((p) => !p.head);
+  const head = placed.filter((p) => p.head);
+  // Without a header strip, a first line of labels is the header.
+  if (!head.length && rest[0] && !rollRange(rest[0].cells[0]) && rest[0].cells.filter(Boolean).length >= 2) {
+    head.push(rest[0]);
+    rest = rest.slice(1);
+  }
+  const anchors = rest.filter((p) => rollRange(p.cells[0]));
+  if (anchors.length < 3) return null;
+  // Text above the first number, close to it, is what tells such a table from one set top to top.
+  // (A wrapped line at the foot of a row set top to top also has a number under it, but sits
+  // nearer the line above it than that number.)
+  const above = rest.filter((p, i) => {
+    const next = rest[i + 1];
+    const prev = rest[i - 1];
+    if (p.cells[0] || !next || !rollRange(next.cells[0])) return false;
+    const down = next.line.base - p.line.base;
+    return down <= 1.7 * p.line.size && (!prev || p.line.base - prev.line.base > down + 1);
+  });
+  if (!above.length) return null;
+  const merge = (lines: typeof placed): string[] => {
+    const out: string[] = [];
+    for (const { cells } of [...lines].sort((a, b) => a.line.base - b.line.base))
+      cells.forEach((c, i) => {
+        if (!c) return;
+        out[i] = out[i] ? (out[i].endsWith("-") ? out[i].slice(0, -1) + c : `${out[i]} ${c}`) : c;
+      });
+    return Array.from({ length: lines[0]?.cells.length ?? 0 }, (_, i) => out[i] ?? "");
+  };
+  // Column by column: lines a leading apart are one cell, and a cell is the row's whose number
+  // stands nearest its middle (rows differ in height, so a line alone cannot be told by its place).
+  const width = rest[0].cells.length;
+  const rows = anchors.map((a) => Array.from({ length: width }, (_, i) => (i === 0 ? a.cells[0] : "")));
+  const join = (a: string, b: string) => (a ? (a.endsWith("-") ? a.slice(0, -1) + b : `${a} ${b}`) : b);
+  for (let col = 1; col < width; col++) {
+    const lines = rest.filter((p) => p.cells[col]).sort((a, b) => a.line.base - b.line.base);
+    const gaps = lines.slice(1).map((p, i) => p.line.base - lines[i].line.base);
+    const leading = Math.min(...gaps.filter((g) => g > 2), 1.5 * (lines[0]?.line.size ?? 9));
+    let cell: typeof lines = [];
+    const close = () => {
+      if (!cell.length) return;
+      const mid = (cell[0].line.base + cell[cell.length - 1].line.base) / 2;
+      let best = 0;
+      anchors.forEach((a, i) => {
+        if (Math.abs(a.line.base - mid) < Math.abs(anchors[best].line.base - mid)) best = i;
+      });
+      for (const p of cell) rows[best][col] = join(rows[best][col], p.cells[col]);
+      cell = [];
+    };
+    lines.forEach((p, i) => {
+      if (i && gaps[i - 1] > 1.2 * leading + 0.5) close();
+      cell.push(p);
+    });
+    close();
+  }
+  return head.length ? [merge(head), ...rows] : rows;
+}
+
+/**
+ * Rows of a table whose cells run to several lines each, set against one another's middles: the
+ * lines of a row lie a leading apart and the rows further apart, so a row is a run of close lines.
+ * Null for a table whose rows are not told apart by their spacing.
+ */
+function spacedRows(body: Line[], place: (line: Line) => string[], headBottom?: number): string[][] | null {
+  const inHead = (l: Line) => headBottom !== undefined && l.base - l.size / 3 <= headBottom + 1;
+  const head = body.filter(inHead);
+  const rest = body.filter((l) => !inHead(l));
+  if (!head.length || rest.length < 6) return null;
+  const size = rest[0].size;
+  const gaps = rest.slice(1).map((l, i) => l.base - rest[i].base);
+  const close = gaps.filter((g) => g <= 1.35 * size).length;
+  const wide = gaps.filter((g) => g > 1.6 * size).length;
+  const between = gaps.length - close - wide;
+  if (wide < 2 || close < Math.max(3, 0.3 * gaps.length) || between > 0.1 * gaps.length) return null;
+  const merge = (lines: Line[]): string[] => {
+    const out: string[] = [];
+    let width = 0;
+    for (const line of lines) {
+      const cells = place(line);
+      width = cells.length;
+      cells.forEach((c, i) => {
+        if (c) out[i] = out[i] ? (out[i].endsWith("-") ? out[i].slice(0, -1) + c : `${out[i]} ${c}`) : c;
+      });
+    }
+    return Array.from({ length: width }, (_, i) => out[i] ?? "");
+  };
+  const rows: Line[][] = [[rest[0]]];
+  gaps.forEach((g, i) => {
+    if (g > 1.6 * size) rows.push([]);
+    rows[rows.length - 1].push(rest[i + 1]);
+  });
+  // Every row must have what stands in its first column: else these are not rows but paragraphs.
+  const out = rows.map(merge);
+  if (out.some((r) => !r[0])) return null;
+  return [merge(head), ...out];
+}
+
 /** Rows of cells from a table's lines; a line that only carries on the row above is folded into it. */
 export function tableRows(
   lines: Line[],
   x: number,
   w: number,
-  headBottom?: number
+  headBottom?: number,
+  titleBottom?: number
 ): { rows: string[][]; title?: string } {
   let title: string | undefined;
   let body = lines;
+  // No strip marks the header: the bold lines without a number at the table's top are it, when
+  // what comes under them is numbered rows set in the body's type.
+  if (headBottom === undefined) {
+    const bold = (l: Line) => l.cells.every((c) => c.spans.every((sp) => sp.bold || !sp.text.trim()));
+    const numbered = (l: Line) => !!rollRange(segText(l.cells[0]));
+    let n = 0;
+    while (n < body.length && bold(body[n]) && !numbered(body[n])) n++;
+    const after = body.slice(n, n + 6);
+    if (n >= 2 && after.some(numbered) && after.some((l) => !bold(l))) headBottom = body[n - 1].base + 1;
+  }
+  // A title bar across the top of the table, above its header.
+  if (titleBottom !== undefined && body[0] && body[0].base <= titleBottom + 1 && body[0].cells.length === 1) {
+    title = lineText(body[0]);
+    body = body.slice(1);
+  }
   const first = body[0];
   // A lone first line in the header strip is the top of a two-line header, not the table's title.
   const inHeadStrip = first && headBottom !== undefined && first.base - first.size / 3 <= headBottom + 1;
   if (
     first &&
+    !title &&
     !inHeadStrip &&
     first.cells.length === 1 &&
     body.length > 2 &&
@@ -105,7 +227,7 @@ export function tableRows(
   }
   const cols = tableColumns(body, x, w);
   if (cols.length < 2) return { rows: body.map((l) => [lineText(l)]), title };
-  const place = (line: Line): string[] => {
+  const placeRaw = (line: Line): string[] => {
     const out = cols.map(() => "");
     for (const cell of line.cells) {
       const mid = cell.x + Math.min(cell.w / 2, 12);
@@ -118,14 +240,42 @@ export function tableRows(
     }
     return out;
   };
+  // A range broken in a narrow first column (`45-` over `50`) is one number, on its second line.
+  const placed = new Map(body.map((l) => [l, placeRaw(l)]));
+  for (let i = 0; i + 1 < body.length; i++) {
+    const cells = placed.get(body[i]) as string[];
+    if (!/^\d{1,4}\s*[-–—]$/.test(cells[0])) continue;
+    const under = body.slice(i + 1, i + 3).find((l) => /^\d{1,4}$/.test((placed.get(l) as string[])[0]));
+    if (!under || under.base - body[i].base > 2.4 * under.size) continue;
+    (placed.get(under) as string[])[0] = `${cells[0].replace(/\s+/g, "")}${(placed.get(under) as string[])[0]}`;
+    cells[0] = "";
+  }
+  body = body.filter((l) => (placed.get(l) as string[]).some(Boolean));
+  const place = (line: Line): string[] => placed.get(line) ?? placeRaw(line);
   const gaps: number[] = [];
   for (let i = 1; i < body.length; i++) gaps.push(body[i].base - body[i - 1].base);
   const median = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] ?? 0;
+  const centred = centredRows(body, place, headBottom) ?? spacedRows(body, place, headBottom);
+  if (centred) return { rows: centred.map((r) => r.map(cellMd)), title };
   const rows: string[][] = [];
   let headDone = headBottom === undefined;
   let prev: Line | undefined;
+  // A row that opened with a wrapped cell's first line, its number still to come on the line below
+  // (the number is set against the middle of a cell of two or three lines).
+  let awaiting = false;
+  // (A lone stripe of a striped table holds one row of three lines, its number on the middle one.)
+  const numbered = body.filter((l) => rollRange(place(l)[0])).length >= 0.3 * body.length;
   for (const line of body) {
     const cells = place(line);
+    if (awaiting && prev && cells[0] && line.base - prev.base <= 1.3 * line.size) {
+      const row = rows[rows.length - 1];
+      cells.forEach((c, i) => {
+        if (c) row[i] = row[i] ? (row[i].endsWith("-") ? row[i].slice(0, -1) + c : `${row[i]} ${c}`) : c;
+      });
+      awaiting = false;
+      prev = line;
+      continue;
+    }
     const inHead = headBottom !== undefined && line.base - line.size / 3 <= headBottom + 1;
     const dy = prev ? line.base - prev.base : Infinity;
     const filled = cells.filter(Boolean).length;
@@ -143,7 +293,10 @@ export function tableRows(
         if (!c) return;
         row[i] = row[i] ? (row[i].endsWith("-") ? row[i].slice(0, -1) + c : `${row[i]} ${c}`) : c;
       });
-    } else rows.push(cells);
+    } else {
+      rows.push(cells);
+      awaiting = numbered && headDone && !inHead && !cells[0];
+    }
     prev = line;
   }
   return { rows: rows.map((r) => r.map(cellMd)), title };
@@ -229,6 +382,179 @@ function breaksPara(prev: Line, cur: Line, count: number, styles: StyleBook, fir
   return ENDS.test(prevText) && short;
 }
 
+type TableBlock = Extract<Block, { type: "table" }>;
+type HeadingBlock = Extract<Block, { type: "heading" }>;
+
+/** The first and last number a row is rolled on (`7`, `01-05`, `96–00`), or null when its first cell is not one. */
+export function rollRange(cell: string | undefined): [number, number] | null {
+  const hit = (cell ?? "").trim().match(/^(\d{1,4})(?:\s*[-–—]\s*(\d{1,4}))?$/);
+  if (!hit) return null;
+  const num = (t: string) => (/^0+$/.test(t) ? 10 ** t.length : Number(t));
+  const lo = num(hit[1]);
+  return [lo, hit[2] ? num(hit[2]) : lo];
+}
+
+/** True when `rows` carry on where `prev` stopped: its numbers go on counting from the last row's. */
+function carriesOn(prev: TableBlock, rows: string[][]): boolean {
+  const first = rollRange(rows[0]?.[0]) ?? rollRange(rows[1]?.[0]);
+  if (!first) return false;
+  const last = rollRange(prev.rows[prev.rows.length - 1]?.[0]);
+  if (last) return first[0] === last[1] + 1;
+  // (A last row that lost its number: the count goes on from the row before it, one further.)
+  const before = prev.rows.length > 2 ? rollRange(prev.rows[prev.rows.length - 2]?.[0]) : null;
+  return !!before && !prev.rows[prev.rows.length - 1][0] && first[0] === before[1] + 2;
+}
+
+/** `Table 2-4: Eldritch God Names continued` → `2-4`; empty for a caption that does not say it carries on. */
+const CONTINUED = /[\s,(]*\b(?:cont(?:inued|['’]?d|\.)?|contined|continnued|contnued)\)?\s*$/i;
+
+/**
+ * `Table 2-4: Eldritch God Names continued` → `2-4`; `*` for a caption that says it carries on but
+ * lost its number (the end of a caption that wrapped); empty for one that does not carry on. Books
+ * misspell the word (`contined`, `continnued`, `contnued`).
+ */
+function continuedNumber(text: string | undefined): string {
+  if (!text || !CONTINUED.test(text)) return "";
+  return captionParts(text)?.number ?? "*";
+}
+
+/**
+ * Adds a table's rows to the blocks: onto the table before it when it is that table going on in
+ * the next column or page (its header repeated, its caption saying `continued`, or its numbers
+ * counting on), else as a table of its own, named by the caption set above it.
+ */
+function pushTable(out: Block[], table: TableBlock): void {
+  // A header the book repeats in the middle of a table (at the top of a column) is not a row.
+  const headKey = table.rows[0]?.join("|");
+  table.rows = table.rows.filter((r, i) => i === 0 || r.join("|") !== headKey);
+  const { rows } = table;
+  if (!rows.length) return;
+  // A row cut by the page's end: its last words open the next page, above the rest of the table.
+  const tail = out[out.length - 1];
+  const before = out[out.length - 2];
+  if (tail?.type === "para" && before?.type === "table" && tail.page === table.page && before.page < table.page) {
+    const text = tail.spans
+      .map((sp) => sp.text)
+      .join("")
+      .trim();
+    const last = before.rows[before.rows.length - 1];
+    const cell = last[last.length - 1] ?? "";
+    if (/^[a-zà-ÿ(]/.test(text) && text.length <= 140 && cell && !/[.!?]$/.test(cell) && carriesOn(before, rows)) {
+      last[last.length - 1] = `${cell} ${text}`;
+      out.pop();
+    }
+  }
+  // `Table 10-17: Prisons continued` set as a line of text above the rest of the table.
+  // (Lines of its header the table did not take may stand between: short lines, kept as they are.)
+  // (A title the table took from its own top line is a header's piece, not its caption.)
+  for (let k = out.length - 1; !captionParts(table.caption ?? "") && k >= Math.max(0, out.length - 4); k--) {
+    const note = out[k];
+    if (note?.type !== "para" || note.page !== table.page) break;
+    const text = note.spans.map((sp) => sp.text).join("");
+    if (text.length <= 120 && continuedNumber(text) && captionParts(text)) {
+      table.caption = text;
+      out.splice(k, 1);
+      break;
+    }
+    if (text.length > 60) break;
+  }
+  const prev = out[out.length - 1];
+  const again = continuedNumber(table.caption);
+  if (prev?.type === "table" && prev.rows[0]?.length === rows[0]?.length) {
+    const sameHead = rows[0].join("|") === prev.rows[0].join("|");
+    const named = !!table.caption && !again && table.caption !== prev.caption;
+    // (A caption that lost its number carries on the table before it only if the numbers agree.)
+    if (again === "*" && !sameHead && !carriesOn(prev, rows)) {
+      table.caption = undefined;
+      out.push(table);
+      return;
+    }
+    if (!named && (sameHead || again || carriesOn(prev, rows))) {
+      prev.rows.push(...rows.slice(sameHead ? 1 : 0));
+      return;
+    }
+  }
+  if (again) {
+    // The table's first part lies further back (a picture or a note between): found by its number.
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 12); k--) {
+      const b = out[k];
+      if (b.type !== "table" || captionParts(b.caption ?? "")?.number !== again) continue;
+      const sameHead = rows[0].join("|") === b.rows[0].join("|");
+      if (b.rows[0].length === rows[0].length) {
+        b.rows.push(...rows.slice(sameHead ? 1 : 0));
+        return;
+      }
+      break;
+    }
+    table.caption = again === "*" ? undefined : table.caption?.replace(CONTINUED, "");
+  }
+  // The table's first part lies a little way back, with text or another table's caption between
+  // (two halves set side by side at the feet of two columns): the same header, the numbers counting on.
+  if (!table.caption) {
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 14); k--) {
+      const b = out[k];
+      if (b.type !== "table" || table.page - b.page > 1) continue;
+      if (b.rows[0].length !== rows[0].length || !rollRange(b.rows[1]?.[0])) continue;
+      const sameHead = rows[0].join("|") === b.rows[0].join("|");
+      if ((sameHead || rollRange(rows[0][0])) && carriesOn(b, rows)) {
+        b.rows.push(...rows.slice(sameHead ? 1 : 0));
+        // Its caption stands between its two parts (the first was read ahead of it): the table
+        // takes the caption and its place under it.
+        const named = out
+          .slice(k + 1)
+          .find((c) => c.type === "heading" && c.caption && !(c as HeadingBlock & { used?: boolean }).used);
+        if (named?.type === "heading" && !captionParts(b.caption ?? "")) {
+          b.caption = named.text;
+          (named as HeadingBlock & { used?: boolean }).used = true;
+          out.splice(k, 1);
+          out.push(b);
+        }
+        return;
+      }
+    }
+  }
+  const over = out[out.length - 1];
+  if (
+    !table.caption &&
+    over?.type === "heading" &&
+    !over.caption &&
+    over.page === table.page &&
+    over.text.length <= 60
+  ) {
+    // A table set straight under a heading is what the heading names.
+    table.caption = titleCase(over.text);
+  }
+  if (!table.caption) {
+    // The caption set above the table, with a few lines of how to use it between the two.
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 8); k--) {
+      const b = out[k];
+      if (b.type === "table" || b.type === "side" || (b.type === "heading" && !b.caption)) break;
+      if (b.type !== "heading") continue;
+      if (!(b as HeadingBlock & { used?: boolean }).used) {
+        table.caption = b.text;
+        (b as HeadingBlock & { used?: boolean }).used = true;
+      }
+      break;
+    }
+  }
+  // Its second part was read first (a page whose columns could not be told): an unnamed table a
+  // little way back, on this page, with the same header and numbers that count on from this one's.
+  if (captionParts(table.caption ?? "")) {
+    for (let k = out.length - 1; k >= Math.max(0, out.length - 10); k--) {
+      const b = out[k];
+      if (b.type !== "table" || b.page !== table.page || captionParts(b.caption ?? "")) continue;
+      if (b.rows[0].length !== rows[0].length) continue;
+      const sameHead = rows[0].join("|") === b.rows[0].join("|");
+      if ((sameHead || rollRange(b.rows[0][0])) && carriesOn(table, b.rows)) {
+        table.rows.push(...b.rows.slice(sameHead ? 1 : 0));
+        out.splice(k, 1);
+        break;
+      }
+    }
+  }
+  out.push(table);
+}
+
 /** Blocks from one stretch of the book (a chapter's pages, or the inside of a box). */
 export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
   const { styles } = opts;
@@ -282,8 +608,9 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
       // A paragraph may run on under the box; it is closed here and picked up again after.
       const open = para;
       if (box.tabular) {
-        const { rows, title } = tableRows(box.lines, box.x, box.w, box.headBottom);
-        let caption = title;
+        const { rows, title } = tableRows(box.lines, box.x, box.w, box.headBottom, box.titleBottom);
+        // (A title set in capitals on the table's bar reads as a name.)
+        let caption = title && box.titleBottom !== undefined ? titleCase(title) : title;
         const above = open && open.lines.length === 1 ? open.lines[0] : !open ? lastParaLine : null;
         if (!caption && above && above.page === box.page) {
           const text = lineText(above);
@@ -301,17 +628,7 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
           }
         }
         flush();
-        const prev = out[out.length - 1];
-        // A table that runs on in the next column or page repeats its header: one table.
-        if (
-          prev?.type === "table" &&
-          prev.rows[0]?.length === rows[0]?.length &&
-          rows.length &&
-          (!caption || caption === prev.caption) &&
-          rows[0].join("|") === prev.rows[0].join("|")
-        ) {
-          prev.rows.push(...rows.slice(1));
-        } else if (rows.length) out.push({ type: "table", caption, rows, page: box.page });
+        pushTable(out, { type: "table", caption, rows, page: box.page });
       } else {
         flush();
         const inner = sideBlocks(box, styles);
@@ -330,7 +647,15 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
     const line = el.line;
     const prevLine = lines[i - 1];
     const nextLine = lines[i + 1];
-    const level = opts.headings === false ? 0 : styles.headingLevel(line, prevLine, nextLine);
+    let level = opts.headings === false ? 0 : styles.headingLevel(line, prevLine, nextLine);
+    // A table's caption (`Table 2-3: Creator Deity Epithet`), set bold on a line of its own.
+    const captioned =
+      opts.headings !== false &&
+      line.cells.length === 1 &&
+      !!captionParts(lineText(line)) &&
+      lineText(line).length <= 110 &&
+      (level > 0 || line.cells[0].spans.every((sp) => sp.bold));
+    if (captioned && !level) level = 9;
     if (level) {
       flush();
       const text = lineText(line);
@@ -353,6 +678,7 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
           page: line.page,
           style: key,
         };
+        if (captioned) block.caption = true;
         out.push(block);
         lastHeading = { line, block };
       }
@@ -380,7 +706,7 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
         const r = Math.max(...run.map((l) => l.r));
         const { rows } = tableRows(run, x, r - x);
         if (rows[0]?.length >= 2) {
-          out.push({ type: "table", rows, page: line.page });
+          pushTable(out, { type: "table", rows, page: line.page });
           i = j - 1;
           lastParaLine = null;
           continue;
