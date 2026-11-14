@@ -41,6 +41,91 @@ export function fontName(raw: string): string {
   return (raw || "").replace(/^[A-Z]{6}\+/, "");
 }
 
+const GLYPH_NAMES: Record<string, string> = {
+  ampersand: "&",
+  zero: "0",
+  one: "1",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  hyphen: "-",
+  period: ".",
+  comma: ",",
+  colon: ":",
+  semicolon: ";",
+  exclam: "!",
+  question: "?",
+  quoteright: "’",
+  quoteleft: "‘",
+  quotesingle: "'",
+  parenleft: "(",
+  parenright: ")",
+  slash: "/",
+  space: " ",
+};
+
+/**
+ * The text a glyph name spells, for the names pdf.js cannot map: a small capital or other variant
+ * (`e.sc`, `a.alt`) and a ligature (`f_f`, `T_h`, `f_f_i`). `null` for any other name.
+ */
+export function glyphText(name: string): string | null {
+  // A plain name (`e`, `ampersand`) pdf.js maps already; only variants and ligatures are read here.
+  if (!/[._]/.test(name)) return null;
+  const base = name.replace(/\..*$/, "");
+  if (!base) return null;
+  let out = "";
+  for (const part of base.split("_")) {
+    const ch = /^[A-Za-z]$/.test(part)
+      ? part
+      : /^uni[0-9A-F]{4}$/.test(part)
+        ? String.fromCharCode(parseInt(part.slice(3), 16))
+        : GLYPH_NAMES[part];
+    if (ch === undefined) return null;
+    out += ch;
+  }
+  return out || null;
+}
+
+/**
+ * For a font whose glyphs are named variants or ligatures that pdf.js read as the raw codes
+ * (`!` for `f_f`, `(` for `l.sc`, as in a subset with no Unicode map), the text each such code
+ * stands for. Empty when the font maps them already.
+ */
+export function glyphFixes(
+  font: { differences?: (string | null | undefined)[]; toUnicode?: any } | null
+): Map<string, string> {
+  const fixes = new Map<string, string>();
+  const names = font?.differences;
+  if (!Array.isArray(names)) return fixes;
+  const map: unknown[] = font?.toUnicode?._map ?? [];
+  // What pdf.js gives a code it cannot map: its own character, or its built-in encoding's.
+  const shownAt = (code: number): string => {
+    const mapped = map[code];
+    return typeof mapped === "string" && mapped ? mapped : String.fromCharCode(code);
+  };
+  const used = new Map<string, number>();
+  for (let code = 0; code < Math.max(names.length, map.length); code++) {
+    if (names[code] || map[code]) used.set(shownAt(code), (used.get(shownAt(code)) ?? 0) + 1);
+  }
+  names.forEach((name, code) => {
+    if (!name) return;
+    const text = glyphText(name);
+    if (!text) return;
+    const mapped = map[code];
+    // pdf.js already has it right (`ﬁ`, `ff`): leave it.
+    if (typeof mapped === "string" && mapped.normalize("NFKC").toLowerCase() === text.toLowerCase()) return;
+    const shown = shownAt(code);
+    // A character the font also prints as itself cannot be told apart, so is left alone.
+    if (shown.length === 1 && (used.get(shown) ?? 0) === 1) fixes.set(shown, text);
+  });
+  return fixes;
+}
+
 export function isBold(font: string): boolean {
   return /bold|black|heavy|semibold|demi|extrabold|[-_ ]bd\b|[-_ ]sb\b|[-_]b$/i.test(font);
 }
@@ -187,6 +272,19 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
 
   const tc = await page.getTextContent();
   const names = new Map<string, string>();
+  const fixesOf = new Map<string, Map<string, string>>();
+  const fixOf = (id: string): Map<string, string> => {
+    let fixes = fixesOf.get(id);
+    if (!fixes) {
+      try {
+        fixes = glyphFixes(page.commonObjs.get(id));
+      } catch {
+        fixes = new Map();
+      }
+      fixesOf.set(id, fixes);
+    }
+    return fixes;
+  };
   const nameOf = (id: string): string => {
     let name = names.get(id);
     if (name === undefined) {
@@ -210,7 +308,9 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     if (size < 2) continue;
     const font = nameOf(it.fontName);
     // Soft hyphens are dropped and the many hyphen characters made one, so `1st‑level` reads as it looks.
-    const str = it.str
+    const fixes = fixOf(it.fontName);
+    const raw = fixes.size ? Array.from(it.str as string, (c) => fixes.get(c) ?? c).join("") : it.str;
+    const str = raw
       .replace(/\u00AD/g, "")
       .replace(/[\u2010\u2011]/g, "-")
       .replace(/-{2,}/g, "-");

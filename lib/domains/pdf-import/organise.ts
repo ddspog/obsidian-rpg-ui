@@ -61,10 +61,12 @@ const rating = (cr: string | undefined): number => {
  * - npcs: what sits in the book's own section of nonplayer characters;
  * - monsters/<type>: everything else, a Beast or a Humanoid included.
  */
-const creatureFolder = (info: PlaceInfo, outside: boolean): string => {
+const creatureFolder = (info: PlaceInfo, outside: boolean, trail: string[] = []): string => {
   const type = (info.type ?? "").toLowerCase();
   if (info.steed) return "bestiary/creatures/steeds";
   if (/\banimal\b/i.test(info.tags ?? "") || info.druid) return "bestiary/animals";
+  // A section of the book given to animals (the Monster Vault's "Appendix: Animals").
+  if (/\bbeast\b/.test(type) && trail.some((t) => /\banimals\b/i.test(t))) return "bestiary/animals";
   if (outside && /\bbeast\b/.test(type) && rating(info.cr) < 6) return "bestiary/animals";
   if (info.npc) return "bestiary/npcs";
   return `bestiary/monsters/${slug(type) || "other"}`;
@@ -83,7 +85,7 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/spells/${folder}/${name}`;
       }
       case "creature":
-        return `${world}/${creatureFolder(info, !!marker.trim())}/${name}`;
+        return `${world}/${creatureFolder(info, !!marker.trim(), trail)}/${name}`;
       case "vehicle": {
         const medium = (info.type ?? "").toLowerCase().match(/\b(land|water|air|space)\b/)?.[1] ?? "other";
         return `${world}/bestiary/vehicles/${medium}/${name}`;

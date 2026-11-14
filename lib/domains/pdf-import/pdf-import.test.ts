@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { toBlocks } from "./blocks";
+import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
 import { dieOf, emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
-import { fontName, isBold, isItalic } from "./extract";
+import { fontName, glyphFixes, glyphText, isBold, isItalic } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
 import { lookFor } from "./looks";
@@ -907,6 +907,9 @@ describe("styles of other books", () => {
     expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, [])).toBe(
       "tov/worldbuilding/bestiary/monsters/beast/Wolf"
     );
+    expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, ["Book", "07. Appendix, Animals"])).toBe(
+      "tov/worldbuilding/bestiary/animals/Wolf"
+    );
     const outside = placer("tov", "SRD", "ᴰ");
     expect(outside("creature", "Wolf", { type: "beast", cr: "1/4" }, [])).toBe(
       "tov/worldbuilding/bestiary/animals/Wolf ᴰ"
@@ -1003,5 +1006,107 @@ describe("styles of other books", () => {
     const ink = inkMeter(px, w, h);
     expect(ink({ x0: 60, y0: 26, x1: 120, y1: 38 })).toBeCloseTo(0.25, 1);
     expect(ink({ x0: 200, y0: 26, x1: 260, y1: 38 })).toBe(0);
+  });
+});
+
+describe("glyph names pdf.js cannot map", () => {
+  it("reads small capitals and ligatures from their names", () => {
+    expect(glyphText("e.sc")).toBe("e");
+    expect(glyphText("f_f_i")).toBe("ffi");
+    expect(glyphText("T_h")).toBe("Th");
+    expect(glyphText("ampersand.sc")).toBe("&");
+    expect(glyphText("e")).toBeNull();
+    expect(glyphText("foo.sc")).toBeNull();
+  });
+
+  it("maps the raw codes of a subset with no Unicode map back to letters", () => {
+    // As the Monster Vault's bold small capitals: codes 33… named e.sc, s.sc, l.sc, some read
+    // by pdf.js as the code itself and some by its built-in encoding.
+    const differences: (string | null)[] = [];
+    const toUnicode: (string | null)[] = [];
+    differences[33] = "e.sc";
+    differences[34] = "s.sc";
+    differences[40] = "l.sc";
+    toUnicode[40] = "(";
+    differences[50] = "f_i";
+    toUnicode[50] = "ﬁ";
+    const fixes = glyphFixes({ differences, toUnicode: { _map: toUnicode } });
+    expect(fixes.get("!")).toBe("e");
+    expect(fixes.get('"')).toBe("s");
+    expect(fixes.get("(")).toBe("l");
+    expect(fixes.has("ﬁ")).toBe(false);
+  });
+
+  it("leaves a character alone that the font also prints as itself", () => {
+    const differences: (string | null)[] = [];
+    const toUnicode: (string | null)[] = [];
+    differences[33] = "f_f";
+    toUnicode[60] = "!";
+    differences[60] = "exclam";
+    expect(glyphFixes({ differences, toUnicode: { _map: toUnicode } }).has("!")).toBe(false);
+  });
+});
+
+describe("tables stacked in one box", () => {
+  it("starts a new table at a lone caption row over a die's header", () => {
+    const parts = splitStacked([
+      ["d20", "DESCRIPTION"],
+      ["1", "Continue straight"],
+      ["2-20", "Stairs"],
+      ["PASSAGE WIDTH", ""],
+      ["d20", "WIDTH"],
+      ["1-20", "5 ft."],
+    ]);
+    expect(parts).toHaveLength(2);
+    expect(parts[0].rows).toHaveLength(3);
+    expect(parts[1].caption).toBe("Passage Width");
+    expect(parts[1].rows[0]).toEqual(["d20", "WIDTH"]);
+  });
+
+  it("keeps a table whose lone row is not followed by a die header", () => {
+    const rows = [
+      ["d6", "Result"],
+      ["1", "A"],
+      ["2", "B"],
+      ["Note", ""],
+      ["3", "C"],
+    ];
+    expect(splitStacked(rows)).toEqual([{ rows }]);
+  });
+});
+
+describe("tables set side by side", () => {
+  it("puts the groups of a repeated header one under the other", () => {
+    const rows = unfoldSideBySide([
+      ["d100", "PURPOSE", "d100", "PURPOSE"],
+      ["1-2", "Antechamber", "51-52", "Kitchen"],
+      ["3-4", "Armory", "", ""],
+    ]);
+    expect(rows).toEqual([
+      ["d100", "PURPOSE"],
+      ["1-2", "Antechamber"],
+      ["3-4", "Armory"],
+      ["51-52", "Kitchen"],
+    ]);
+  });
+
+  it("parts a die from the column's name set in one cell", () => {
+    expect(
+      unfoldSideBySide([
+        ["d8 ADVENTURING MOTIVATION", ""],
+        ["1", "Fame"],
+      ])
+    ).toEqual([
+      ["d8", "ADVENTURING MOTIVATION"],
+      ["1", "Fame"],
+    ]);
+  });
+
+  it("leaves a table whose header does not repeat", () => {
+    const rows = [
+      ["d6", "Name", "Effect", "Cost"],
+      ["1", "A", "B", "C"],
+    ];
+    expect(unfoldSideBySide(rows)).toBe(rows);
   });
 });
