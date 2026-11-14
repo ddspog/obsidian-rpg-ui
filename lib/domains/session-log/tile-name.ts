@@ -12,6 +12,8 @@ export function tileName(name: string, groupLabel?: string): string {
     const shorter = out.replace(new RegExp(`\\s+${stem}s?$`, "i"), "");
     if (shorter && shorter !== out) out = shorter;
   }
+  // Under a group's own name (Names, Worldbuilding), "Generator" is what every tile in it is
+  if (word && !/generator/i.test(word)) out = out.replace(/\s+Generator$/i, "") || out;
   // "Roll on" is what every tile does
   const rolled = out.replace(/^Roll on\s+(?:the\s+)?/i, "");
   return rolled || out;

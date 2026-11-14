@@ -123,6 +123,23 @@ describe("gmStepLines — word-pair rows named for their tables", () => {
   });
 });
 
+describe("gmStepLines — a pick that calls a generator", () => {
+  it("spawns its own line, then the called generator's lines", () => {
+    const feature: GMFeature = {
+      name: "Random Event",
+      steps: [
+        { choice: "Roll", calc: "Event Focus table", calls: "@[[Event Focus]]#event-focus" },
+        { choice: "Choose", calc: "" },
+      ],
+    };
+    const lines = gmStepLines(feature, { calls: { "@[[Event Focus]]#event-focus": ["Event Focus: d100= ->"] } });
+    expect(lines["Roll"]).toBe("Roll: Event Focus table\nEvent Focus: d100= ->");
+    expect(applyChoicePick("gen: Random Event\n  Focus: [Roll/Choose - ]", "Roll", lines)).toBe(
+      "gen: Random Event\n  Focus: [Roll/Choose - Roll]\n  + Roll: Event Focus table\n  + Event Focus: d100= ->"
+    );
+  });
+});
+
 describe("gmStepLines — a step with a nested dropdown", () => {
   const feature: GMFeature = {
     name: "Name Generator",

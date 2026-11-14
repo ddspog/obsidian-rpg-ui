@@ -287,7 +287,10 @@ function gmStepLinesRaw(feature: GMFeature, stepCtx?: GMStepContext): Record<str
   const out = gmFollowLines(feature);
   const add = (s: GMStep) => {
     if (!s.choice) return;
-    out[s.choice] = stepGeneratedLine(s);
+    // A pick that `calls:` a generator (Random Event's "Roll" → Event Focus) spawns its line and,
+    // after it, the called generator's lines, all as the pick's children.
+    const called = (s.calls ? stepCtx?.calls?.[s.calls.trim()] : undefined) ?? [];
+    out[s.choice] = [stepGeneratedLine(s), ...called].filter((l) => l.trim()).join("\n");
     // What a nested dropdown's option spawns, under the pick it was made below.
     for (const t of s.then ?? []) if (t.choice) out[`${s.choice}${NESTED_SEP}${t.choice}`] = stepGeneratedLine(t);
   };

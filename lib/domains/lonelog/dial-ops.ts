@@ -23,8 +23,12 @@ export interface DialDecl {
   default: number;
   /** Display name (e.g. "Chaos Factor"); falls back to `key` when absent. */
   name?: string;
-  /** Shape, for future per-shape rendering; unused by the fold. */
+  /** Shape: a clock or track's pill reads `current/max`. */
   shape?: "dial" | "clock" | "track" | "counter" | "charges" | "timer";
+  /** A track's phase length, and what its pill says on crossing one / on filling. */
+  phase?: number;
+  phaseText?: string;
+  endText?: string;
 }
 
 /** One resolved op: the running value at this point, ready for the pill. */
@@ -38,6 +42,12 @@ export interface ResolvedDialOp {
   max: number;
   /** From a question's leading `[CF:n]`, not a written op — no pill of its own. */
   stated?: boolean;
+  /** A clock or track: its pill reads `current/max`. */
+  filling?: boolean;
+  /** What this op reached on a phased track: a new phase, or the end. */
+  mark?: "phase" | "end";
+  /** The words for that mark (`Flashpoint?`, `Conclusion`). */
+  markText?: string;
 }
 
 /**
@@ -79,7 +89,17 @@ export function normalizeResource(decl: ResourceDecl): DialDecl {
   if ("clock" in decl || "track" in decl) {
     const c = "clock" in decl ? decl.clock : decl.track;
     const shape = "clock" in decl ? "clock" : "track";
-    return { key: c.abbr ?? c.name ?? shape, min: 0, max: c.max, default: 0, name: c.name ?? c.abbr, shape };
+    return {
+      key: c.abbr ?? c.name ?? shape,
+      min: 0,
+      max: c.max,
+      default: 0,
+      name: c.name ?? c.abbr,
+      shape,
+      ...(c.phase ? { phase: c.phase } : {}),
+      ...(c.phaseText ? { phaseText: c.phaseText } : {}),
+      ...(c.endText ? { endText: c.endText } : {}),
+    };
   }
   // counter / charges / timer — start full, spend/tick down.
   const c = "counter" in decl ? decl.counter : "charges" in decl ? decl.charges : decl.timer;
@@ -152,6 +172,8 @@ export function resolveDialOps(
   decls: Record<string, DialDecl>
 ): Map<number, ResolvedDialOp[]> {
   const running: Record<string, number> = {};
+  // A length a set gave the resource in this log (`[TP:0/15]`), over its declared max.
+  const length: Record<string, number> = {};
   const out = new Map<number, ResolvedDialOp[]>();
 
   entries.forEach((entry, i) => {
@@ -160,14 +182,27 @@ export function resolveDialOps(
       const decl = decls[declKey(tag)];
       if (!decl) continue; // unmatched → inert
       const rk = runKey(tag);
+      if (tag.op === "set" && tag.max != null && tag.max > decl.min) length[rk] = tag.max;
+      const max = length[rk] ?? decl.max;
       const prev = running[rk] ?? decl.default;
       let next = prev;
       if (tag.op === "set") next = tag.amount ?? prev;
       else if (tag.op === "inc") next = prev + (tag.amount ?? 0);
       else if (tag.op === "dec") next = prev - (tag.amount ?? 0);
       // "inspect" leaves the value unchanged.
-      next = clamp(next, decl.min, decl.max);
+      next = clamp(next, decl.min, max);
       running[rk] = next;
+      const filling = decl.shape === "clock" || decl.shape === "track";
+      // On a phased track, a rise that fills it, or that crosses into a new phase.
+      const mark: ResolvedDialOp["mark"] =
+        filling && tag.op === "inc" && next > prev
+          ? next >= max
+            ? "end"
+            : decl.phase && Math.floor(next / decl.phase) > Math.floor(prev / decl.phase)
+              ? "phase"
+              : undefined
+          : undefined;
+      const markText = mark === "end" ? decl.endText : mark === "phase" ? decl.phaseText : undefined;
       const resolved: ResolvedDialOp = {
         key: rk,
         name: decl.name ?? decl.key,
@@ -175,8 +210,11 @@ export function resolveDialOps(
         amount: tag.amount,
         current: next,
         min: decl.min,
-        max: decl.max,
+        max,
         ...(tag.stated ? { stated: true } : {}),
+        ...(filling ? { filling: true } : {}),
+        ...(mark ? { mark } : {}),
+        ...(markText ? { markText } : {}),
       };
       const list = out.get(i);
       if (list) list.push(resolved);

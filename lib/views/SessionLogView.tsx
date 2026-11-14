@@ -1857,62 +1857,7 @@ class SessionLogMarkdown extends ReactMarkdown {
                 // steps into the child lines laid out as `+ ` children (expanding
                 // any cross-file `emits:` sub-generators), and load any TABLE
                 // those steps roll (so children auto-fill).
-                if (s.calls && !calls[s.calls.trim()]) {
-                  const cref = parseBranchRef(s.calls);
-                  const cfile = this.resolveLink(cref?.target ?? s.calls);
-                  if (cfile) {
-                    const cdoc = parseSourceDocShared(
-                      { $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) },
-                      "class"
-                    );
-                    const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
-                    if (gen) {
-                      // Lists the called file (and sub-generator files) `reads:`
-                      // travel with the call; step blocks a `choices` step needs
-                      // feed the pick map.
-                      await this.loadReadsLists(cdoc.gmFeatures ?? [], lists);
-                      const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
-                      await this.loadReadsLists(expanded.readsFeatures, lists);
-                      for (const sb of expanded.stepBlocks) {
-                        if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
-                        // A `choices` pick's word-pair tables (Actions/Descriptions).
-                        for (const bs of flattenSteps(sb.steps ?? [])) {
-                          for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
-                            if (tables[rawRef]) continue;
-                            const btref = parseBranchRef(rawRef);
-                            const btf = this.resolveLink(btref?.target ?? rawRef);
-                            if (!btf) continue;
-                            const btdoc = parseSourceDocShared(
-                              { $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) },
-                              "class"
-                            );
-                            const bt =
-                              (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
-                            if (bt) tables[rawRef] = bt;
-                          }
-                        }
-                      }
-                      const gsteps = expanded.steps;
-                      calls[s.calls.trim()] = gsteps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
-                      for (const gs of gsteps) {
-                        if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
-                        if (!gs.table || !gs.work) continue;
-                        stepTables[gs.work] = gs.table;
-                        if (tables[gs.table]) continue;
-                        const gtref = parseBranchRef(gs.table);
-                        const gtf = this.resolveLink(gtref?.target ?? gs.table);
-                        if (!gtf) continue;
-                        const gtdoc = parseSourceDocShared(
-                          { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
-                          "class"
-                        );
-                        const gtable =
-                          (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
-                        if (gtable) tables[gs.table] = gtable;
-                      }
-                    }
-                  }
-                }
+                if (s.calls) await this.loadCall(s.calls, { steps, tables, calls, stepTables, stepFollows, lists });
               }
             } catch {
               /* unreadable target — skip; that branch just has no dropdown/auto-fill */
@@ -1944,6 +1889,8 @@ class SessionLogMarkdown extends ReactMarkdown {
             /* skip an unreadable table — that pick just won't auto-fill */
           }
         }
+        // A pick that `calls:` a generator (Random Event's "Roll" → Event Focus) lays out its lines.
+        if (s.calls) await this.loadCall(s.calls, { steps, tables, calls, stepTables, stepFollows, lists });
       }
     }
     // A GM feature's own generator → its working lines (its own `steps:`, plus
@@ -2001,6 +1948,79 @@ class SessionLogMarkdown extends ReactMarkdown {
       );
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * A step that `calls:` a sub-procedure → resolve its generator's steps into the child lines laid
+   * out as `+ ` children (expanding any cross-file `emits:` sub-generators), and load any TABLE those
+   * steps roll (so children auto-fill). Fills the step context's maps in place.
+   */
+  private async loadCall(
+    ref: string,
+    ctx: {
+      steps: Record<string, GMFeature>;
+      tables: Record<string, TableDef>;
+      calls: Record<string, string[]>;
+      stepTables: Record<string, string>;
+      stepFollows: Record<string, import("lib/domains/features/types").GMInterpret>;
+      lists: Record<string, ListDecl>;
+    }
+  ): Promise<void> {
+    const { steps, tables, calls, stepTables, stepFollows, lists } = ctx;
+    if (!calls[ref.trim()]) {
+      const cref = parseBranchRef(ref);
+      const cfile = this.resolveLink(cref?.target ?? ref);
+      if (cfile) {
+        const cdoc = parseSourceDocShared(
+          { $name: cfile.basename, $contents: await this.baseView.app.vault.read(cfile) },
+          "class"
+        );
+        const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
+        if (gen) {
+          // Lists the called file (and sub-generator files) `reads:`
+          // travel with the call; step blocks a `choices` step needs
+          // feed the pick map.
+          await this.loadReadsLists(cdoc.gmFeatures ?? [], lists);
+          const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
+          await this.loadReadsLists(expanded.readsFeatures, lists);
+          for (const sb of expanded.stepBlocks) {
+            if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
+            // A `choices` pick's word-pair tables (Actions/Descriptions).
+            for (const bs of flattenSteps(sb.steps ?? [])) {
+              for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
+                if (tables[rawRef]) continue;
+                const btref = parseBranchRef(rawRef);
+                const btf = this.resolveLink(btref?.target ?? rawRef);
+                if (!btf) continue;
+                const btdoc = parseSourceDocShared(
+                  { $name: btf.basename, $contents: await this.baseView.app.vault.read(btf) },
+                  "class"
+                );
+                const bt = (btref?.block && btdoc.tables.find((t) => t.name === btref.block)) || btdoc.tables[0];
+                if (bt) tables[rawRef] = bt;
+              }
+            }
+          }
+          const gsteps = expanded.steps;
+          calls[ref.trim()] = gsteps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
+          for (const gs of gsteps) {
+            if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
+            if (!gs.table || !gs.work) continue;
+            stepTables[gs.work] = gs.table;
+            if (tables[gs.table]) continue;
+            const gtref = parseBranchRef(gs.table);
+            const gtf = this.resolveLink(gtref?.target ?? gs.table);
+            if (!gtf) continue;
+            const gtdoc = parseSourceDocShared(
+              { $name: gtf.basename, $contents: await this.baseView.app.vault.read(gtf) },
+              "class"
+            );
+            const gtable = (gtref?.block && gtdoc.tables.find((t) => t.name === gtref.block)) || gtdoc.tables[0];
+            if (gtable) tables[gs.table] = gtable;
+          }
+        }
+      }
     }
   }
 

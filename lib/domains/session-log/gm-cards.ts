@@ -176,6 +176,7 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
     text?: string;
     summary?: string;
     icon?: string;
+    group?: string;
     kind?: "start-combat" | "next-round" | "next-turn" | "end-combat";
     rank?: number;
     uses?: number;
@@ -200,6 +201,7 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
           text: card.text,
           summary: card.summary,
           icon: card.icon,
+          ...(card.group ? { group: card.group } : {}),
           kind: card.kind,
           rank: card.rank,
           uses: card.uses,
@@ -216,6 +218,7 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
       text: feature.text,
       summary: feature.summary,
       icon: feature.icon,
+      ...(feature.group ? { group: feature.group } : {}),
       rank: feature.rank,
       uses: feature.uses,
       recovery: feature.recovery,
@@ -224,29 +227,53 @@ export function buildGMStacksFromFeatures(features: GMFeature[]): CardStack[] {
 
   const stacks: CardStack[] = [];
   for (const stack of GM_STACK_ORDER) {
-    const entries = byUtility(byStack.get(stack) ?? []);
-    if (entries.length === 0) continue;
-    stacks.push({
-      actor: GM_ACTOR,
-      actorType: "gm",
-      bucket: stack,
-      label: GM_STACK_LABELS[stack],
-      cards: entries.map((e) => ({
-        id: `gm:${stack}:${e.name}`,
-        name: e.name,
-        bucket: stack as any,
-        logTemplate: e.logTemplate,
-        text: e.text,
-        summary: e.summary,
-        icon: e.icon,
-        ...(e.kind ? { kind: e.kind } : {}),
-        source: "gm",
-        actor: GM_ACTOR,
-        maxUses: e.uses,
-        recovery: e.recovery,
-      })),
-    });
+    const all = byStack.get(stack) ?? [];
+    if (all.length === 0) continue;
+    // The stack's ungrouped cards first, under the stack's name; then each group, in the
+    // order its first card was declared, under the group's name.
+    const groups = [...new Set(all.map((e) => e.group ?? ""))].sort((a, b) => Number(a !== "") - Number(b !== ""));
+    for (const group of groups) {
+      const entries = byUtility(all.filter((e) => (e.group ?? "") === group));
+      stacks.push(gmStack(stack, group || GM_STACK_LABELS[stack], entries));
+    }
   }
 
   return stacks;
+}
+
+/** One stack of GM cards (or one group of a stack), under its label. */
+function gmStack(
+  stack: GMStack,
+  label: string,
+  entries: Array<{
+    name: string;
+    logTemplate: string;
+    text?: string;
+    summary?: string;
+    icon?: string;
+    kind?: "start-combat" | "next-round" | "next-turn" | "end-combat";
+    uses?: number;
+    recovery?: string;
+  }>
+): CardStack {
+  return {
+    actor: GM_ACTOR,
+    actorType: "gm",
+    bucket: stack,
+    label,
+    cards: entries.map((e) => ({
+      id: `gm:${stack}:${e.name}`,
+      name: e.name,
+      bucket: stack as any,
+      logTemplate: e.logTemplate,
+      text: e.text,
+      summary: e.summary,
+      icon: e.icon,
+      ...(e.kind ? { kind: e.kind } : {}),
+      source: "gm",
+      actor: GM_ACTOR,
+      maxUses: e.uses,
+      recovery: e.recovery,
+    })),
+  };
 }
