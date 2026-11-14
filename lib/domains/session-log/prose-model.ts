@@ -367,7 +367,7 @@ export interface SidebarRow {
   /** A second roll on the row above (`@pick(1,2+3)`): the columns it chooses among. */
   pick?: string;
   /** The row a second roll reads: its raw line and its content, to find its die. */
-  pickFrom?: { source: string; content: string }[];
+  pickFrom?: { source: string; content: string; nth?: number }[];
   /** A second roll with no die: it shows the name (or names) its rows make. */
   pickOnly?: boolean;
   /** This step spawns the following step(s) (authored with a trailing ` ...`) —
@@ -471,7 +471,8 @@ export function applyTokenEdits(
   if (!match) return content;
 
   const [, fence, blockContent, closing] = match;
-  const lines = blockContent.split("\n");
+  const original = blockContent.split("\n");
+  const lines = [...original];
   // Group by target line so several token swaps on one line all apply (each is
   // matched against the original line text before any swap changes it).
   // Keyed by line text AND occurrence: a log may repeat a line verbatim, so an
@@ -488,7 +489,9 @@ export function applyTokenEdits(
     const nth = parseInt(key.slice(0, sep), 10);
     const line = key.slice(sep + 1);
     let seen = 0;
-    const idx = lines.findIndex((l) => l.trim() === line && seen++ === nth);
+    // Found in the text as it was: a copy rewritten first no longer reads like
+    // its twin, which would shift every later copy's count.
+    const idx = original.findIndex((l) => l.trim() === line && seen++ === nth);
     if (idx < 0) continue;
     let updated = lines[idx];
     for (const { from, to } of swaps) {
@@ -512,14 +515,21 @@ export interface SidebarItem {
   rows: SidebarRow[];
 }
 
-/** Stable key for a formula result edit (the text after `->` on a source line). */
-export function resultEditKey(source: string): string {
-  return `${source} #result`;
+/**
+ * Stable key for a formula result edit (the text after `->` on a source line).
+ * `nth` is which occurrence of `source` the row is (`SidebarRow.sourceNth`): a
+ * log may repeat a line verbatim, and each copy keeps its own edit.
+ */
+export function resultEditKey(source: string, nth = 0): string {
+  return `${source}\u0000${nth} #result`;
 }
 
-/** Stable key for one die-value edit slot: source line + die raw + slot index. */
-export function dieEditKey(source: string, raw: string, slot: number): string {
-  return `${source}\u0000${raw} #${slot}`;
+/**
+ * Stable key for one die-value edit slot: source line + its occurrence (`nth`,
+ * see `resultEditKey`) + die raw + slot index.
+ */
+export function dieEditKey(source: string, raw: string, slot: number, nth = 0): string {
+  return `${source}\u0000${nth}\u0000${raw} #${slot}`;
 }
 
 /** A persistent tag split into a key (`name`) and an optional state (`value`). */
@@ -1290,6 +1300,8 @@ export function buildSidebarItems(
   const seenSource = new Map<string, number>();
   for (const item of items) {
     for (const row of item.rows) {
+      // A second roll reads rows above it: the latest occurrence of each is the one it means.
+      for (const f of row.pickFrom ?? []) f.nth = Math.max(0, (seenSource.get(f.source) ?? 1) - 1);
       if (!row.source) continue;
       const nth = seenSource.get(row.source) ?? 0;
       row.sourceNth = nth;

@@ -32,8 +32,8 @@ export interface LogSidebarProps {
   onSceneChange?: (original: string, next: SceneEditValue) => void;
   /** Pending die-value edits keyed by `dieEditKey(source, raw, slot)`. */
   dieEdits?: Record<string, string>;
-  onDieChange?: (source: string, raw: string, slot: number, value: string) => void;
-  onResultChange?: (source: string, value: string) => void;
+  onDieChange?: (source: string, raw: string, slot: number, value: string, nth?: number) => void;
+  onResultChange?: (source: string, value: string, nth?: number) => void;
   /** Swap a token on a source line — powers the list-consult picker. */
   onTokenChange?: (source: string, from: string, to: string, nth: number) => void;
   /** A GM step dropdown pick — inserts the chosen step line into the note. */
