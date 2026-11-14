@@ -15,6 +15,8 @@ export interface TokenSwap {
   line: string;
   from: string;
   to: string;
+  /** Which occurrence of `line` (0-based): a log may repeat a line verbatim. */
+  nth?: number;
 }
 
 /**
@@ -30,12 +32,13 @@ export function pendingTermSwaps(items: SidebarItem[], dieEdits: Record<string, 
       const formula = parseFormula(row.content);
       if (!formula) continue;
       for (const term of editableTerms(formula)) {
-        const keys = Array.from({ length: termSlots(term) }, (_, i) => dieEditKey(row.source!, term.raw, i));
+        const nth = row.sourceNth ?? 0;
+        const keys = Array.from({ length: termSlots(term) }, (_, i) => dieEditKey(row.source!, term.raw, i, nth));
         if (!keys.some((k) => k in dieEdits)) continue; // untouched
         const slots = keys.map((k, i) => dieEdits[k] ?? termSlotInitial(term, i));
         const next = combineTermValue(term, slots);
         const original = term.value != null ? String(term.value) : "";
-        if (next !== original) out.push({ line: row.source, from: term.raw, to: setTermRaw(term, next) });
+        if (next !== original) out.push({ line: row.source, from: term.raw, to: setTermRaw(term, next), nth });
       }
     }
   }
@@ -45,9 +48,12 @@ export function pendingTermSwaps(items: SidebarItem[], dieEdits: Record<string, 
 /** Apply swaps to a bare lonelog body (not wrapped in its code block). */
 export function applySwapsToBody(body: string, swaps: TokenSwap[]): string {
   if (swaps.length === 0) return body;
-  const lines = body.split("\n");
-  for (const { line, from, to } of swaps) {
-    const i = lines.findIndex((l) => l.trim() === line);
+  const original = body.split("\n");
+  const lines = [...original];
+  // Each swap finds its line in the text as it was: a copy written first no
+  // longer reads like its twin, which would shift every later copy's count.
+  for (const { line, from, to, nth } of swaps) {
+    const i = nthLineIndex(original, line, nth ?? 0);
     if (i >= 0) lines[i] = lines[i].replace(from, to);
   }
   return lines.join("\n");
@@ -58,11 +64,18 @@ export function applySwapsToBody(body: string, swaps: TokenSwap[]): string {
  * becomes `… -> Success` — for the rows that have one and no result of their own.
  */
 export function fillDerivedResults(body: string, items: SidebarItem[]): string {
-  const lines = body.split("\n");
+  const original = body.split("\n");
+  const lines = [...original];
   for (const row of items.flatMap((i) => i.rows)) {
     if (!row.derivedResult || !row.source) continue;
-    const i = lines.findIndex((l) => l.trim() === row.source);
+    const i = nthLineIndex(original, row.source, row.sourceNth ?? 0);
     if (i >= 0) lines[i] = lines[i].replace(/\s*->\s*$/, ` -> ${row.derivedResult}`);
   }
   return lines.join("\n");
+}
+
+/** The index of the `nth` line (0-based) whose trimmed text is `line`, or -1. */
+function nthLineIndex(lines: string[], line: string, nth: number): number {
+  let seen = 0;
+  return lines.findIndex((l) => l.trim() === line && seen++ === nth);
 }

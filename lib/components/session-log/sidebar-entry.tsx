@@ -43,8 +43,9 @@ export interface SceneEditValue {
 /** Write-back wiring that makes an entry's values editable (live sidebar only). */
 export interface SidebarEditContext {
   dieEdits: Record<string, string>;
-  onDieChange: (source: string, raw: string, slot: number, value: string) => void;
-  onResultChange: (source: string, value: string) => void;
+  /** `nth` is which occurrence of `source` the row is (`SidebarRow.sourceNth`). */
+  onDieChange: (source: string, raw: string, slot: number, value: string, nth?: number) => void;
+  onResultChange: (source: string, value: string, nth?: number) => void;
   /** Scene-line editing — optional. When omitted, scene rows render read-only
    *  (the feature example edits dice but not scenes). */
   sceneEdits?: Record<string, SceneEditValue>;
@@ -231,7 +232,9 @@ function RollBoth({ rows, edit }: { rows: SidebarRow[]; edit: SidebarEditContext
   const dice = rows.flatMap((r) => {
     if (!r.source) return [];
     const f = parseFormulaLine(r.content, { vars: r.vars, refs: r.refs })?.[0];
-    return (f ? editableTerms(f) : []).flatMap((term) => (term.kind === "dice" ? [{ source: r.source!, term }] : []));
+    return (f ? editableTerms(f) : []).flatMap((term) =>
+      term.kind === "dice" ? [{ source: r.source!, nth: r.sourceNth ?? 0, term }] : []
+    );
   });
   if (dice.length < 2) return null;
   return (
@@ -242,7 +245,8 @@ function RollBoth({ rows, edit }: { rows: SidebarRow[]; edit: SidebarEditContext
       aria-label="Roll all the dice on this line"
       onClick={(e) => {
         e.stopPropagation();
-        for (const d of dice) edit.onDieChange(d.source, d.term.raw, 0, formatDiceValue(d.term, rollDiceFaces(d.term)));
+        for (const d of dice)
+          edit.onDieChange(d.source, d.term.raw, 0, formatDiceValue(d.term, rollDiceFaces(d.term)), d.nth);
       }}
     >
       <Lucide.Dices size={14} />
@@ -312,6 +316,7 @@ function RowContent({
     const formula = formulas?.length === 1 ? formulas[0] : null;
     const party = formulas && formulas.length > 1 ? formulas : null;
     const source = row.source;
+    const nth = row.sourceNth ?? 0;
     // A dieless line whose content is just a `[a/b/c - ]` token is a GM-picks
     // step (`GMGenStep.choices`) — no formula, but it still renders a dropdown
     // rather than literal text. Tested on the TOKEN, not on the element (a JSX
@@ -320,14 +325,14 @@ function RowContent({
     // A table roll with no result yet reads its row as soon as the die shows a
     // value, pending or saved, so the outcome appears before the Log is saved.
     // The die a row shows, pending or saved: what its first dice term reads.
-    const dieValue = (src: string, content: string): number | undefined => {
+    const dieValue = (src: string, content: string, nth: number): number | undefined => {
       if (!edit) return undefined;
       const f = parseFormulaLine(content, { vars: row.vars, refs: row.refs })?.[0];
       const term = f && editableTerms(f).find((t) => t.kind === "dice");
       if (!term) return undefined;
       const slots = Array.from(
         { length: termSlots(term) },
-        (_, i) => edit.dieEdits[dieEditKey(src, term.raw, i)] ?? termSlotInitial(term, i)
+        (_, i) => edit.dieEdits[dieEditKey(src, term.raw, i, nth)] ?? termSlotInitial(term, i)
       );
       const n = Number(combineTermValue(term, slots));
       return Number.isFinite(n) && n > 0 ? n : undefined;
@@ -337,9 +342,9 @@ function RowContent({
     const previewPick = (r: SidebarRow): string | undefined => {
       if (!tableRoll || r.pick == null || !r.pickFrom?.length) return undefined;
       const refs = r.pickFrom.map((f) => f.source.match(REF)?.[0] ?? "");
-      const rolls = r.pickFrom.map((f) => dieValue(f.source, f.content));
+      const rolls = r.pickFrom.map((f) => dieValue(f.source, f.content, f.nth ?? 0));
       if (!refs[0] || refs.some((x) => !x) || rolls.some((n) => n == null)) return undefined;
-      const own = r.pickOnly || !r.source ? undefined : dieValue(r.source, r.content);
+      const own = r.pickOnly || !r.source ? undefined : dieValue(r.source, r.content, r.sourceNth ?? 0);
       if (!r.pickOnly && own == null) return undefined;
       return tableRoll(refs[0], 0, { spec: r.pick, rolls: rolls as number[], refs, roll: own });
     };
@@ -354,7 +359,7 @@ function RowContent({
       if (row.pick != null) return pickPreview();
       // The ref is hidden from `content` on a word-pair row; `source` keeps the raw line.
       const ref = source.match(REF)?.[0];
-      const n = ref ? dieValue(source, row.content) : undefined;
+      const n = ref ? dieValue(source, row.content, nth) : undefined;
       if (!ref || n == null) return undefined;
       return tableRoll(ref, n, row.pickedBy ? { spec: row.pickedBy.spec, part: row.pickedBy.part } : undefined);
     };
@@ -363,19 +368,18 @@ function RowContent({
     const die: DieEditContext | undefined =
       edit && source
         ? {
-            valueFor: (term, slot) => edit.dieEdits[dieEditKey(source, term.raw, slot)] ?? termSlotInitial(term, slot),
-            onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value),
+            valueFor: (term, slot) =>
+              edit.dieEdits[dieEditKey(source, term.raw, slot, nth)] ?? termSlotInitial(term, slot),
+            onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value, nth),
             resultValue:
               formula?.result != null
-                ? (edit.dieEdits[resultEditKey(source)] ?? rollPreview() ?? formula.result)
+                ? (edit.dieEdits[resultEditKey(source, nth)] ?? rollPreview() ?? formula.result)
                 : undefined,
-            onResultChange: (value) => edit.onResultChange(source, value),
+            onResultChange: (value) => edit.onResultChange(source, value, nth),
             // What a part of a name offers is worked out from its die, not typed over.
             ...(row.pickedBy ? { resultReadOnly: true } : {}),
             // A sum's stored total is expression text, not a term — swap it directly.
-            onTokenSwap: edit.onTokenChange
-              ? (from, to) => edit.onTokenChange!(source, from, to, row.sourceNth ?? 0)
-              : undefined,
+            onTokenSwap: edit.onTokenChange ? (from, to) => edit.onTokenChange!(source, from, to, nth) : undefined,
           }
         : undefined;
     return (
@@ -396,13 +400,13 @@ function RowContent({
           <ChoiceOnlyView
             text={row.content}
             onChoice={pick}
-            onResultChange={source && edit ? (value) => edit.onResultChange(source, value) : undefined}
+            onResultChange={source && edit ? (value) => edit.onResultChange(source, value, nth) : undefined}
           />
         ) : row.pickOnly ? (
           <PickedName
-            text={edit && source ? (edit.dieEdits[resultEditKey(source)] ?? pickedText) : pickedText}
+            text={edit && source ? (edit.dieEdits[resultEditKey(source, nth)] ?? pickedText) : pickedText}
             sourcePath={sourcePath}
-            {...(edit && source ? { onChange: (value: string) => edit.onResultChange(source, value) } : {})}
+            {...(edit && source ? { onChange: (value: string) => edit.onResultChange(source, value, nth) } : {})}
           />
         ) : (
           <InlineMarkdown source={row.content} sourcePath={sourcePath} />
@@ -423,11 +427,13 @@ function RowContent({
   const formulas = parseFormulaLine(row.content, { vars: row.vars, refs: row.refs });
   if (formulas) {
     const source = row.source;
+    const nth = row.sourceNth ?? 0;
     const rollEdit: DieEditContext | undefined =
       row.rollable && edit && source
         ? {
-            valueFor: (term, slot) => edit.dieEdits[dieEditKey(source, term.raw, slot)] ?? termSlotInitial(term, slot),
-            onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value),
+            valueFor: (term, slot) =>
+              edit.dieEdits[dieEditKey(source, term.raw, slot, nth)] ?? termSlotInitial(term, slot),
+            onChange: (term, slot, value) => edit.onDieChange(source, term.raw, slot, value, nth),
           }
         : undefined;
     return (

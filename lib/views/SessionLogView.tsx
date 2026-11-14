@@ -2098,7 +2098,7 @@ class SessionLogMarkdown extends ReactMarkdown {
    */
   private async editLogBody(
     sceneReplacements: Array<{ from: string; to: string }>,
-    dieReplacements: Array<{ line: string; from: string; to: string }>
+    dieReplacements: Array<{ line: string; from: string; to: string; nth?: number }>
   ) {
     if (sceneReplacements.length === 0 && dieReplacements.length === 0 && !this.staged.text) return;
     try {
@@ -2444,7 +2444,7 @@ interface SessionLogRootProps {
   onChoice: (selected: string, at?: ChoiceAt) => void;
   onSave: (edits: {
     scenes: Array<{ from: string; to: string }>;
-    dice: Array<{ line: string; from: string; to: string }>;
+    dice: Array<{ line: string; from: string; to: string; nth?: number }>;
   }) => void | Promise<void>;
   /** Whether a card's lines wait, unsaved, in the Log. */
   stagedCount: number;
@@ -3822,14 +3822,15 @@ function SessionLogRoot({
   // Formula results (the text after `->`), with their source line + original, so
   // the result can be edited and written back like the terms.
   const editResults = React.useMemo(() => {
-    const list: Array<{ source: string; original: string }> = [];
+    const list: Array<{ source: string; nth: number; original: string }> = [];
     for (const item of sidebarItems) {
       for (const row of item.rows) {
         if (!row.detail || !row.source) continue;
         const formula = parseFormula(row.content);
-        if (formula?.result != null) list.push({ source: row.source, original: formula.result });
+        const nth = row.sourceNth ?? 0;
+        if (formula?.result != null) list.push({ source: row.source, nth, original: formula.result });
         // A name made without a die holds its result alone: a word picked in it is written back too.
-        else if (row.pickOnly) list.push({ source: row.source, original: row.content });
+        else if (row.pickOnly) list.push({ source: row.source, nth, original: row.content });
       }
     }
     return list;
@@ -3840,14 +3841,17 @@ function SessionLogRoot({
   // are skipped, so a pool's blank per-die boxes never clobber its saved total.
   // Edited results add their own arrow-anchored swap on the same line.
   const dieReplacements = React.useMemo(() => {
-    const out: Array<{ line: string; from: string; to: string }> = pendingTermSwaps(sidebarItems, dieEdits);
+    const out: Array<{ line: string; from: string; to: string; nth?: number }> = pendingTermSwaps(
+      sidebarItems,
+      dieEdits
+    );
     for (const r of editResults) {
-      const key = resultEditKey(r.source);
+      const key = resultEditKey(r.source, r.nth);
       if (!(key in dieEdits)) continue;
       const next = dieEdits[key];
       if (next === r.original) continue;
       const swap = resultReplacement(r.source, next);
-      if (swap) out.push({ line: r.source, ...swap });
+      if (swap) out.push({ line: r.source, ...swap, nth: r.nth });
     }
     return out;
   }, [sidebarItems, editResults, dieEdits]);
@@ -3858,12 +3862,12 @@ function SessionLogRoot({
     setSceneEdits((prev) => ({ ...prev, [original]: next }));
   };
 
-  const handleDieChange = (source: string, raw: string, slot: number, value: string) => {
-    setDieEdits((prev) => ({ ...prev, [dieEditKey(source, raw, slot)]: value }));
+  const handleDieChange = (source: string, raw: string, slot: number, value: string, nth = 0) => {
+    setDieEdits((prev) => ({ ...prev, [dieEditKey(source, raw, slot, nth)]: value }));
   };
 
-  const handleResultChange = (source: string, value: string) => {
-    setDieEdits((prev) => ({ ...prev, [resultEditKey(source)]: value }));
+  const handleResultChange = (source: string, value: string, nth = 0) => {
+    setDieEdits((prev) => ({ ...prev, [resultEditKey(source, nth)]: value }));
   };
 
   // A list-consult pick (`[Characters?]` → `[Characters?= Bertha]`) is a plain

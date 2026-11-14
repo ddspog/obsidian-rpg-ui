@@ -260,15 +260,19 @@ export function DraftBlock({ source, app, sourcePath }: Props) {
     [sceneEdits, sceneOriginals]
   );
   const dieReplacements = React.useMemo(() => {
-    const out: Array<{ line: string; from: string; to: string }> = pendingTermSwaps(sidebarItems, dieEdits);
+    const out: Array<{ line: string; from: string; to: string; nth?: number }> = pendingTermSwaps(
+      sidebarItems,
+      dieEdits
+    );
     for (const item of sidebarItems)
       for (const row of item.rows) {
         if (!row.detail || !row.source) continue;
         const original = parseFormula(row.content)?.result;
-        const k = resultEditKey(row.source);
+        const nth = row.sourceNth ?? 0;
+        const k = resultEditKey(row.source, nth);
         if (original == null || !(k in dieEdits) || dieEdits[k] === original) continue;
         const swap = resultReplacement(row.source, dieEdits[k]);
-        if (swap) out.push({ line: row.source, ...swap });
+        if (swap) out.push({ line: row.source, ...swap, nth });
       }
     return out;
   }, [sidebarItems, dieEdits]);
@@ -789,10 +793,12 @@ export function DraftBlock({ source, app, sourcePath }: Props) {
               sceneEdits={sceneEdits}
               onSceneChange={(original, next) => setSceneEdits((prev) => ({ ...prev, [original]: next }))}
               dieEdits={dieEdits}
-              onDieChange={(src, raw, slot, value) =>
-                setDieEdits((prev) => ({ ...prev, [dieEditKey(src, raw, slot)]: value }))
+              onDieChange={(src, raw, slot, value, nth) =>
+                setDieEdits((prev) => ({ ...prev, [dieEditKey(src, raw, slot, nth)]: value }))
               }
-              onResultChange={(src, value) => setDieEdits((prev) => ({ ...prev, [resultEditKey(src)]: value }))}
+              onResultChange={(src, value, nth) =>
+                setDieEdits((prev) => ({ ...prev, [resultEditKey(src, nth)]: value }))
+              }
               onTokenChange={(src, from, to, nth) =>
                 setTokenEdits((prev) => [
                   ...prev.filter((e) => !(e.line === src && e.from === from && e.nth === nth)),

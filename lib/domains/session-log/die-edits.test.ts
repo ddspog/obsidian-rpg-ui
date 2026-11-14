@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { parseLonelog } from "lib/domains/lonelog/parser";
 import { groupIntoProse } from "./prose-grouper";
-import { buildSidebarItems, checkResult, dieEditKey, withActorRefs, withCheckResults } from "./prose-model";
+import {
+  applyTokenEdits,
+  buildSidebarItems,
+  checkResult,
+  dieEditKey,
+  withActorRefs,
+  withCheckResults,
+} from "./prose-model";
 import { applySwapsToBody, fillDerivedResults, pendingTermSwaps } from "./die-edits";
 
 const read = (text: string, refs: Record<string, number> = {}) =>
@@ -48,5 +55,42 @@ describe("rolling a card in its preview", () => {
   it("shows the judged result in the Log too, for a hand-written check left blank", () => {
     const [item] = read("@(Talon) Look\nd: d20+[[Perception]]=4 vs DC 12 ->", { Perception: 3 });
     expect(item.rows.find((r) => r.derivedResult)?.content).toBe("d20+[[Perception]]=4 vs DC 12 → Failure");
+  });
+});
+
+describe("identical lines — each copy keeps its own roll", () => {
+  // Two Random Events whose Event Meaning picks the same table: the log holds
+  // the same unrolled line twice, character for character.
+  const twin = "  + Actions 1: @[[Actions Meaning]]#action-01 d100= -> ";
+  const log = ["? Random Event", "  gen: Event Meaning", twin, "? Random Event", "  gen: Event Meaning", twin].join(
+    "\n"
+  );
+  const source = twin.trim();
+  const raw = "d100=";
+
+  it("numbers each copy, so its edits have a key of their own", () => {
+    const rows = read(log).flatMap((i) => i.rows.filter((r) => r.source === source));
+    expect(rows.map((r) => r.sourceNth)).toEqual([0, 1]);
+    expect(dieEditKey(source, raw, 0, 0)).not.toBe(dieEditKey(source, raw, 0, 1));
+  });
+
+  it("writes a roll of the SECOND copy into the second line only", () => {
+    const rolled = applySwapsToBody(log, pendingTermSwaps(read(log), { [dieEditKey(source, raw, 0, 1)]: "42" }));
+    const lines = rolled.split("\n");
+    expect(lines[2]).toBe(twin);
+    expect(lines[5]).toBe("  + Actions 1: @[[Actions Meaning]]#action-01 d100=42 -> ");
+  });
+
+  it("writes two copies rolled separately each into its own line", () => {
+    const edits = { [dieEditKey(source, raw, 0, 0)]: "7", [dieEditKey(source, raw, 0, 1)]: "93" };
+    const swaps = pendingTermSwaps(read(log), edits);
+    expect(swaps.map((s) => s.nth)).toEqual([0, 1]);
+    const lines = applySwapsToBody(log, swaps).split("\n");
+    expect(lines[2]).toContain("d100=7 ->");
+    expect(lines[5]).toContain("d100=93 ->");
+    // The Log's own write-back (into the note's code block) addresses each copy the same way.
+    const note = applyTokenEdits("```rpg log\n" + log + "\n```", swaps).split("\n");
+    expect(note[3]).toContain("d100=7 ->");
+    expect(note[6]).toContain("d100=93 ->");
   });
 });
