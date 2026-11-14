@@ -24,7 +24,7 @@ const TAG_BODY = String.raw`((?:\[\[[^\]\n]*\]\]|\[[^\[\]\n]*\]|[^\]])+)`;
  * Factories (not shared globals) so `lastIndex` never leaks between calls.
  */
 function dialOpRegex(): RegExp {
-  return /\[([A-Z][A-Z0-9]*)(?:([:=+-])\s*(\d+)|(\?))\]/g;
+  return /\[([A-Z][A-Z0-9]*)(?:([:=+-])\s*(\d+)(?:\/(\d+))?|(\?))\]/g;
 }
 
 /**
@@ -132,10 +132,12 @@ function extractResourceOps(text: string): DialOpTag[] {
     q === "?" ? "inspect" : sym === "+" ? "inc" : sym === "-" ? "dec" : "set";
   const sRe = dialOpRegex();
   for (let m = sRe.exec(text); m; m = sRe.exec(text)) {
-    const op = opOf(m[2], m[4]);
+    const op = opOf(m[2], m[5]);
+    // `[TP:0/15]`: a set that also gives the resource its length for this log.
+    const max = m[4] && op === "set" ? { max: parseInt(m[4], 10) } : {};
     found.push({
       index: m.index,
-      tag: { kind: "dial-op", abbr: m[1], op, amount: m[4] ? undefined : parseInt(m[3], 10) },
+      tag: { kind: "dial-op", abbr: m[1], op, amount: m[5] ? undefined : parseInt(m[3], 10), ...max },
     });
   }
   const pRe = pcOpRegex();

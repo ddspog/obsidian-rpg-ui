@@ -19,6 +19,12 @@ describe("tileName", () => {
     expect(tileName("Name Generator")).toBe("Name Generator");
   });
 
+  it("drops 'Generator' under a group's own name", () => {
+    expect(tileName("Name Generator", "Names")).toBe("Name");
+    expect(tileName("Deity Generator", "Worldbuilding")).toBe("Deity");
+    expect(tileName("Generator", "Names")).toBe("Generator");
+  });
+
   it("drops a source mark after the name", () => {
     expect(tileName("Echo Knight ᴰ", "Class")).toBe("Echo Knight");
   });

@@ -204,4 +204,35 @@ describe("card icons", () => {
     ]);
     expect(stack.cards[0].icon).toBe("help-circle");
   });
+  describe("buildGMStacksFromFeatures — groups", () => {
+    const gen = (name: string, group?: string): GMFeature => ({
+      name,
+      generator: { name },
+      ...(group ? { group } : {}),
+    });
+
+    it("splits a stack into its groups, ungrouped first, groups in declared order", () => {
+      const stacks = buildGMStacksFromFeatures([
+        gen("Name Generator", "Names"),
+        gen("Deity Generator", "Worldbuilding"),
+        gen("Travel Generator"),
+        gen("Title Generator", "Names"),
+      ]);
+      expect(stacks.map((s) => [s.bucket, s.label, s.cards.map((c) => c.name)])).toEqual([
+        ["generator", "Generator", ["Travel Generator"]],
+        ["generator", "Names", ["Name Generator", "Title Generator"]],
+        ["generator", "Worldbuilding", ["Deity Generator"]],
+      ]);
+    });
+
+    it("takes a card's group from `cards:` too", () => {
+      const stacks = buildGMStacksFromFeatures([
+        {
+          name: "Dread",
+          cards: [{ name: "Inflict Dread", group: "Hazards", emits: [{ generator: { name: "Dread" } }] }],
+        },
+      ]);
+      expect(stacks.map((s) => s.label)).toEqual(["Hazards"]);
+    });
+  });
 });
