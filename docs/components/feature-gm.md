@@ -118,14 +118,15 @@ event:
 
 ## Configuration
 
-| Property   | Type   | Description                                                                             |
-| ---------- | ------ | --------------------------------------------------------------------------------------- |
-| `name`     | String | **Required** — feature name; the card label                                             |
-| `text`     | String | Card description (markdown). Body after a `---` separator folds in here                 |
-| `stack`    | String | Override the card stack (`oracle` / `roll` / `table` / `generator` / `event` / `scene`) |
-| `uses`     | Number | Optional limited uses (reuses the consumable mechanics)                                 |
-| `recovery` | String | Recovery cadence for `uses` (e.g. `1/session`)                                          |
-| `source`   | String | Homebrew attribution badge                                                              |
+| Property   | Type   | Description                                                                                                                                                                              |
+| ---------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`     | String | **Required** — feature name; the card label                                                                                                                                              |
+| `text`     | String | Card description (markdown). Body after a `---` separator folds in here                                                                                                                  |
+| `stack`    | String | Override the card stack (`oracle` / `roll` / `table` / `generator` / `event` / `scene`)                                                                                                  |
+| `uses`     | Number | Optional limited uses (reuses the consumable mechanics)                                                                                                                                  |
+| `recovery` | String | Recovery cadence for `uses` (e.g. `1/session`)                                                                                                                                           |
+| `source`   | String | Homebrew attribution badge                                                                                                                                                               |
+| `group`    | String | A group within the stack (`Names`, `Worldbuilding`): the drawer shows each group of a stack as its own labelled row of tiles, after the stack's ungrouped cards. On a `cards:` entry too |
 
 ### `oracle`
 
@@ -192,3 +193,18 @@ event:
 | `4-15`             | roll within an inclusive range           |
 | `even` `odd`       | roll parity                              |
 | `<=CF, odd`        | comma-joined clauses — **all** must hold |
+
+## Tracks
+
+A `resources:` entry declares a value the log moves with `[ABBR+n]` / `[ABBR-n]` / `[ABBR:n]`. A
+`track` (or `clock`) fills from 0 toward its `max`, and its pill reads `points/max`. Mythic's Thread
+Progress Track:
+
+```yaml
+resources:
+  - track: { abbr: TP, name: Thread Progress, max: 20, phase: 5, phaseText: "Flashpoint?", endText: "Conclusion" }
+```
+
+- `[TP:0/15]` sets the value and gives the track its length for this log (10, 15 or 20 here).
+- With `phase`, a rise that carries the value into a new phase says `phaseText` on its pill
+  (`6/15 · Flashpoint?`), and one that fills the track says `endText` (`15/15 · Conclusion`).

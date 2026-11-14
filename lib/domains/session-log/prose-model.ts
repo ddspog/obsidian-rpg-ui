@@ -588,7 +588,9 @@ function tagPill(tag: PersistentTag): SidebarPill {
 
 /** A resolved dial op → a clean `name: value` pill (the running value). */
 function dialOpPill(r: ResolvedDialOp): SidebarPill {
-  return { name: r.name, value: String(r.current), kind: "dial" };
+  // A clock or track fills toward its length; a phased one says what a crossing brings.
+  const value = r.filling ? `${r.current}/${r.max}` : String(r.current);
+  return { name: r.name, value: r.markText ? `${value} · ${r.markText}` : value, kind: "dial" };
 }
 
 /** The exact ROLL token for `name` on a source line — `[Characters@]` or a baked

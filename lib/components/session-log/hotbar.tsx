@@ -402,7 +402,7 @@ export function Hotbar({
         <div className="rpg-hotbar-strip" ref={strip}>
           {shown.map(({ stack, tiles }) => (
             <div
-              key={`${stack.actor}-${stack.bucket}`}
+              key={`${stack.actor}-${stack.bucket}-${stack.label}`}
               className="rpg-hotbar-group"
               role="group"
               aria-label={stack.label}

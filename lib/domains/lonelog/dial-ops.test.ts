@@ -104,6 +104,51 @@ describe("resolveDialOps", () => {
   });
 });
 
+describe("resolveDialOps — tracks", () => {
+  const TP = foldResources([
+    {
+      track: {
+        abbr: "TP",
+        name: "Thread Progress",
+        max: 20,
+        phase: 5,
+        phaseText: "Flashpoint?",
+        endText: "Conclusion",
+      },
+    },
+  ]);
+
+  it("a set can give the track its length for the log (`[TP:0/15]`)", () => {
+    const got = ops("=> Focus thread [TP:0/15]\n=> Progress [TP+2]", TP);
+    expect(got.map((o) => [o.current, o.max])).toEqual([
+      [0, 15],
+      [2, 15],
+    ]);
+  });
+
+  it("marks a rise into a new phase, and one that fills the track", () => {
+    const got = ops("=> [TP:0/10]\n=> [TP+2]\n=> [TP+2]\n=> [TP+2]\n=> [TP+3]\n=> [TP+2]", TP);
+    expect(got.map((o) => [o.current, o.mark ?? null, o.markText ?? null])).toEqual([
+      [0, null, null],
+      [2, null, null],
+      [4, null, null],
+      [6, "phase", "Flashpoint?"],
+      [9, null, null],
+      [10, "end", "Conclusion"],
+    ]);
+  });
+
+  it("clamps to the log's length, not the declared one", () => {
+    const got = ops("=> [TP:8/10]\n=> [TP+5]", TP);
+    expect(got[got.length - 1]?.current).toBe(10);
+  });
+
+  it("a track's pill is filling; a dial's is not", () => {
+    expect(ops("=> [TP+2]", TP)[0].filling).toBe(true);
+    expect(ops("=> [CF+1]")[0].filling).toBeUndefined();
+  });
+});
+
 describe("normalizeResource", () => {
   it("dial → band as declared", () => {
     expect(normalizeResource({ dial: { abbr: "CF", min: 1, max: 9, default: 5, name: "Chaos Factor" } })).toEqual({

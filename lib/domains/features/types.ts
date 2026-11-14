@@ -451,6 +451,14 @@ export interface DialResource extends ResourceBase {
 export interface ClockResource extends ResourceBase {
   abbr?: string;
   max: number;
+  /**
+   * Points in a phase (Mythic's Thread Progress Track: 5). An op that carries the
+   * value into a new phase is marked, with `phaseText` on its pill (`Flashpoint?`),
+   * and one that fills the track with `endText` (`Conclusion`).
+   */
+  phase?: number;
+  phaseText?: string;
+  endText?: string;
 }
 /** counter/charges → 0..max, starts FULL (`-n` spends). `abbr` → session, else PC. */
 export interface ChargesResource extends ResourceBase {
@@ -585,6 +593,8 @@ export interface GMFeature {
   summary?: string;
   /** A Lucide icon name drawn large on the card (when the feature is itself one). */
   icon?: string;
+  /** A group within its stack (when the feature is itself a card) — see `GMCardDef.group`. */
+  group?: string;
   /**
    * Addressable id for `@[[file]].bare(id)` import (matched like a
    * `rule.content` block's `id`, falling back to `name`).
@@ -704,6 +714,11 @@ export interface GMCardDef {
   summary?: string;
   /** A Lucide icon name (`help-circle`, `clapperboard`) drawn large on the card. */
   icon?: string;
+  /**
+   * A group within its stack (`Names`, `Worldbuilding`): the drawer gives each
+   * group of a stack its own row of tiles, labelled with the group's name.
+   */
+  group?: string;
   /** A card whose lines come from the fight rather than a template:
    *  `start-combat` sets up a fight (foes, party, initiative) in its own popup;
    *  `next-turn` starts the next pass through the initiative order (`T2`);

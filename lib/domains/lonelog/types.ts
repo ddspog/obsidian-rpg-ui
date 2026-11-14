@@ -406,6 +406,8 @@ export interface DialOpTag {
   op: "set" | "inc" | "dec" | "inspect";
   /** Operand for set/inc/dec; absent for inspect. */
   amount?: number;
+  /** A set's new length (`[TP:0/15]`): the resource's max from here on in this log. */
+  max?: number;
   /** Synthesized from a question's leading `[CF:n]` rather than written as an op. */
   stated?: boolean;
 }
