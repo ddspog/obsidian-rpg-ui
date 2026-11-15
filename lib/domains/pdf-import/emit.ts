@@ -245,8 +245,11 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
  */
 function entryOf(section: Section, ctx: EmitContext): Section | undefined {
   const stack = ctx.stack ?? [];
-  const parent = stack[stack.length - 1];
-  if (!parent || parent === section || stack.length < 2) return undefined;
+  // A lair set under its creature's entry (`A Brass Dragon's Lair`) is part of that entry, not one of its own.
+  let i = stack.length - 1;
+  while (i >= 1 && LAIR.test(stack[i].title)) i--;
+  const parent = stack[i];
+  if (!parent || parent === section || i < 1) return undefined;
   if (isCatalog(parent, ctx.options.catalogMin)) return undefined;
   const lore = parent.blocks
     .map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : ""))
@@ -254,6 +257,23 @@ function entryOf(section: Section, ctx: EmitContext): Section | undefined {
     .trim();
   return lore.length >= 120 ? parent : undefined;
 }
+
+/** A section's text and the text of its subsections, leaving out those that are a stat block. */
+function loreOf(section: Section, depth: number, ctx: EmitContext, where: Where): string[] {
+  const out = renderBlocks(section.blocks, ctx, section.title, where);
+  for (const child of section.children) {
+    const stat = child.blocks.some(
+      (b) => b.type === "para" && /^\s*Armor Class\b/.test(b.spans.map((sp) => sp.text).join(""))
+    );
+    if (stat) continue;
+    const inner = { path: where.path, trail: [...where.trail, child.title] };
+    out.push(`${hashes(depth)} ${escapeMd(child.title)}`, ...loreOf(child, depth + 1, ctx, inner));
+  }
+  return out;
+}
+
+/** A section of an entry about the creature's lair: its lair actions and regional effects. */
+const LAIR = /\blairs?\b|\bregional effects\b/i;
 
 /** An entry's lore as the system's category note, which lists every creature that names it. */
 function writeCategory(entry: Section, creature: string, info: PlaceInfo, where: Where, ctx: EmitContext): void {
@@ -264,7 +284,8 @@ function writeCategory(entry: Section, creature: string, info: PlaceInfo, where:
   const bestiary = creature.includes("/bestiary/")
     ? creature.slice(0, creature.indexOf("/bestiary/") + "/bestiary/".length)
     : "bestiary/";
-  const lore = renderBlocks(entry.blocks, ctx, entry.title, { path: where.path, trail: where.trail });
+  // The entry's whole text, its lair (actions, regional effects) included; its stat blocks stay apart.
+  const lore = loreOf(entry, 2, ctx, { path: where.path, trail: where.trail });
   const body = [`name: ${yamlValue(entry.title)}`, "---", ...lore];
   const fence = fenceFor(body);
   pushFile(ctx, {

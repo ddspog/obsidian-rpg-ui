@@ -720,6 +720,8 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
     const prevLine = lines[i - 1];
     const nextLine = lines[i + 1];
     let level = opts.headings === false ? 0 : styles.headingLevel(line, prevLine, nextLine);
+    // A line that opens with a bullet is an item of a list, however its words are set.
+    if (level && /^\s*[•●▪◦‣]\s*/.test(lineText(line))) level = 0;
     // A table's caption (`Table 2-3: Creator Deity Epithet`), set bold on a line of its own.
     const captioned =
       opts.headings !== false &&

@@ -144,6 +144,17 @@ describe("blocks", () => {
     );
   });
 
+  it("never takes a line that opens with a bullet for a heading", () => {
+    const runs = [
+      run("Lair Actions", 72, 100, 26, "Modesto-Light"),
+      ...filler(120, 3),
+      run("• Heat Blast. A ripple of", 77, 170, 16, "Modesto-Light"),
+      ...filler(190, 3),
+    ];
+    const blocks = blocksOf(runs);
+    expect(blocks.filter((b) => b.type === "heading")).toHaveLength(1);
+  });
+
   it("reads a shaded box of aligned cells as a table with its caption", () => {
     const rects: FillRect[] = [
       { x: 72, y: 220, w: 228, h: 13, dark: true },
@@ -1050,6 +1061,46 @@ describe("styles of other books", () => {
     expect(category).toContain("`@[[tov/worldbuilding/bestiary/]].filter(category == [[Kobolds]]).highlight().stat()`");
     // One category note however many of its creatures are written.
     expect(files.filter((f) => f.path.endsWith("categories/Kobolds.md"))).toHaveLength(1);
+  });
+
+  it("takes a creature set under its entry's lair as one of the entry, and keeps the lair in the category", () => {
+    const stat = section("Young Brass Dragon", 4, [
+      para(span("Large Dragon")),
+      para(span("Armor Class", true), span(" 17")),
+      para(span("Hit Points", true), span(" 110")),
+      para(span("STR DEX CON INT WIS CHA")),
+      para(span("+4 +0 +3 +1 +0 +2")),
+      para(span("Bite.", true), span(" It bites.")),
+    ]);
+    const lair = section(
+      "A Brass Dragon’s Lair",
+      3,
+      [para(span("Brass dragons often have two lairs, one remote and one in a nearby humanoid settlement."))],
+      [section("Lair Actions", 4, [para(span("On initiative count 20, the dragon blasts heat."))]), stat]
+    );
+    const lore =
+      "The bright, golden scales of the dragon shimmer in the desert sun as it lounges near an oasis and talks at length to the travellers who stop there.";
+    const brass = section("Dragon, Brass", 2, [para(span(lore))], [lair]);
+    const others = ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
+      section(n, 2, [para(span(`${n} lore.`))])
+    );
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [brass, ...others])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const young =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Young Brass Dragon.md")?.text ?? "";
+    expect(young).toContain('category: "[[Dragon, Brass]]"');
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Dragon, Brass.md")?.text ?? "";
+    expect(category).toContain("The bright, golden scales");
+    expect(category).toContain("## A Brass Dragon’s Lair");
+    expect(category).toContain("On initiative count 20");
+    expect(category).not.toContain("Armor Class");
+    expect(files.some((f) => /categories\/A Brass Dragon/.test(f.path))).toBe(false);
   });
 
   it("turns a dark bar's white text dark, and tells bold words by their ink", () => {
