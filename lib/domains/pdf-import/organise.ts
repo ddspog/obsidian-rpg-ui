@@ -76,7 +76,7 @@ export function typePlural(type: string): string {
  * - creatures/shifter-forms: a Beast or Animal-tagged creature of CR 6 or lower, which only a Shifter
  *   druid may take (Potent Forms);
  * - creatures/spell-forms: a Beast or Animal-tagged creature beyond that, reached only by spells;
- * - creatures/familiars/normal and /warlock: the forms *find familiar* offers, and those only Pact of the
+ * - creatures/familiars and creatures/warlock-familiars: the forms *find familiar* offers, and those only Pact of the
  *   Chain adds;
  * - creatures/summons: what the summoning spells raise or call (Animate Dead, Create Undead, Conjure
  *   Elemental);
@@ -126,8 +126,8 @@ const creatureFolder = (info: PlaceInfo, title: string): string => {
   if (info.steed) return "bestiary/creatures/steeds";
   const names = namesOf(title);
   if (!info.legendary) {
-    if (names.some((n) => PACT_FAMILIARS.has(n))) return "bestiary/creatures/familiars/warlock";
-    if (/\bbeast\b/.test(type) && names.some((n) => FAMILIARS.has(n))) return "bestiary/creatures/familiars/normal";
+    if (names.some((n) => PACT_FAMILIARS.has(n))) return "bestiary/creatures/warlock-familiars";
+    if (/\bbeast\b/.test(type) && names.some((n) => FAMILIARS.has(n))) return "bestiary/creatures/familiars";
     if (names.some((n) => SUMMONS.has(n))) return "bestiary/creatures/summons";
   }
   const beast = /\bbeasts?\b/.test(type);

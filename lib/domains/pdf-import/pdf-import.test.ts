@@ -916,13 +916,13 @@ describe("styles of other books", () => {
     );
     // Familiars, Pact of the Chain's forms, and what summoning spells call up.
     expect(place("creature", "Bat", { type: "Beast", cr: "0" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/familiars/normal/Bat"
+      "tov/worldbuilding/bestiary/creatures/familiars/Bat"
     );
     expect(place("creature", "Snake, Poisonous", { type: "Beast", cr: "1/8" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/familiars/normal/Snake, Poisonous"
+      "tov/worldbuilding/bestiary/creatures/familiars/Snake, Poisonous"
     );
     expect(place("creature", "Devil, Imp", { type: "Fiend (Devil)", cr: "1" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/familiars/warlock/Devil, Imp"
+      "tov/worldbuilding/bestiary/creatures/warlock-familiars/Devil, Imp"
     );
     expect(place("creature", "Fire Elemental", { type: "Elemental", cr: "5" }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/summons/Fire Elemental"
