@@ -98,6 +98,7 @@
 @import "./components/rule-call.css";
 @import "./components/rule-compendium.css";
 @import "./components/table-pagination.css";
+@import "./components/folder-pager.css";
 @import "./components/rpg-list.css";
 @import "./components/statblock.css";
 @import "./file-suggest.css";

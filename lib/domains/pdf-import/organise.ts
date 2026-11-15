@@ -6,7 +6,7 @@
  *   compendium/<book>/                the book's chapters
  *   worldbuilding/spells/<circle>/    cantrips, 1st-circle, 1st-circle-ritual…
  *   worldbuilding/bestiary/creatures/<forms>/  companions: Beasts and Animal-tagged creatures by who can
- *                                              turn into them (beast-forms, shifter-forms, spell-forms)
+ *                                              turn into them (druid-forms, shifter-forms, spell-forms)
  *   worldbuilding/bestiary/creatures/steeds/   what the book prices as a mount
  *   worldbuilding/bestiary/families/<types>/   monsters and NPCs, by creature type (humanoids, fiends…)
  *   worldbuilding/bestiary/<monsters|npcs>/categories/  an entry's lore, which its stat blocks name as `category`
@@ -71,7 +71,7 @@ export function typePlural(type: string): string {
 
 /**
  * - creatures/steeds: what the book prices as a mount;
- * - creatures/beast-forms: a Beast of CR 2 or lower without legendary or lair actions, which any
+ * - creatures/druid-forms: a Beast of CR 2 or lower without legendary or lair actions, which any
  *   druid may take the form of;
  * - creatures/shifter-forms: a Beast or Animal-tagged creature of CR 6 or lower, which only a Shifter
  *   druid may take (Potent Forms);
@@ -85,7 +85,7 @@ const creatureFolder = (info: PlaceInfo): string => {
   const animal = beast || /\banimal\b/i.test(info.tags ?? "");
   if (animal) {
     const cr = rating(info.cr);
-    if (beast && !info.legendary && !(cr > 2)) return "bestiary/creatures/beast-forms";
+    if (beast && !info.legendary && !(cr > 2)) return "bestiary/creatures/druid-forms";
     if (!info.legendary && !(cr > 6)) return "bestiary/creatures/shifter-forms";
     return "bestiary/creatures/spell-forms";
   }

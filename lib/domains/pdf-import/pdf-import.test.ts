@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
-import { dieOf, emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
 import { fontName, glyphFixes, glyphText, isBold, isItalic } from "./extract";
@@ -912,7 +912,7 @@ describe("styles of other books", () => {
     );
     // Companions: Beasts and Animal-tagged creatures by who can take their form.
     expect(place("creature", "Bat", { type: "Beast", cr: "0" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/beast-forms/Bat"
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Bat"
     );
     expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal", cr: "3" }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/shifter-forms/Owlbear"
@@ -927,7 +927,7 @@ describe("styles of other books", () => {
       "tov/worldbuilding/bestiary/creatures/spell-forms/Giant Boar"
     );
     expect(place("creature", "Rats", { type: "Swarm of Tiny Beasts", cr: "1/4" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/beast-forms/Rats"
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Rats"
     );
     expect(place("creature", "Pony", { type: "Beast", steed: true }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/steeds/Pony"
@@ -1024,7 +1024,7 @@ describe("styles of other books", () => {
     const traits = files.find((f) => f.path === "tov/worldbuilding/traits/features/Guide Beast Traits.md")?.text ?? "";
     // Two beasts with the same bite share one block.
     expect(traits.match(/name: "Bite"/g)).toHaveLength(1);
-    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/creatures/beast-forms/Wolf.md")?.text ?? "";
+    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/creatures/druid-forms/Wolf.md")?.text ?? "";
     expect(wolf).toContain('  - ref: "@[[tov/worldbuilding/traits/features/Guide Beast Traits]]#Bite"');
   });
 
@@ -1063,8 +1063,8 @@ describe("styles of other books", () => {
     expect(files.filter((f) => f.path.endsWith("categories/Kobolds.md"))).toHaveLength(1);
   });
 
-  it("takes a creature set under its entry's lair as one of the entry, and keeps the lair in the category", () => {
-    const stat = section("Young Brass Dragon", 4, [
+  const dragonStat = (name: string) =>
+    section(name, 4, [
       para(span("Large Dragon")),
       para(span("Armor Class", true), span(" 17")),
       para(span("Hit Points", true), span(" 110")),
@@ -1072,35 +1072,101 @@ describe("styles of other books", () => {
       para(span("+4 +0 +3 +1 +0 +2")),
       para(span("Bite.", true), span(" It bites.")),
     ]);
+  const fillers = () =>
+    ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
+      section(n, 2, [para(span(`${n} lore.`))])
+    );
+  const lore =
+    "The bright, golden scales of the dragon shimmer in the desert sun as it lounges near an oasis and talks at length to the travellers who stop there.";
+
+  it("names a family the bestiary's way, keeping a lair set under it with the family", () => {
     const lair = section(
       "A Brass Dragon’s Lair",
       3,
       [para(span("Brass dragons often have two lairs, one remote and one in a nearby humanoid settlement."))],
-      [section("Lair Actions", 4, [para(span("On initiative count 20, the dragon blasts heat."))]), stat]
+      [
+        section("Lair Actions", 4, [para(span("On initiative count 20, the dragon blasts heat."))]),
+        dragonStat("Young Brass Dragon"),
+        dragonStat("Adult Brass Dragon"),
+      ]
     );
-    const lore =
-      "The bright, golden scales of the dragon shimmer in the desert sun as it lounges near an oasis and talks at length to the travellers who stop there.";
     const brass = section("Dragon, Brass", 2, [para(span(lore))], [lair]);
-    const others = ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
-      section(n, 2, [para(span(`${n} lore.`))])
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [brass, ...fillers()])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const young =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Young Brass Dragon.md")?.text ?? "";
+    expect(young).toContain('category: "[[Brass Dragons]]"');
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Brass Dragons.md")?.text ?? "";
+    expect(category).toContain("name: Brass Dragons");
+    expect(category).toContain("The bright, golden scales");
+    expect(category).toContain("## A Brass Dragon’s Lair");
+    expect(category).toContain("On initiative count 20");
+    expect(category).not.toContain("Armor Class");
+    expect(files.some((f) => /categories\/(A Brass|Dragon, Brass)/.test(f.path))).toBe(false);
+  });
+
+  it("makes no family of an entry of one creature, and gives the creature the entry's text", () => {
+    const golmana = section("Demon, Golmana", 2, [para(span(lore))], [dragonStat("Golmana")]);
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [golmana, ...fillers()])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const note = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Golmana.md")?.text ?? "";
+    expect(note).not.toContain("category:");
+    expect(note).toContain("The bright, golden scales");
+    expect(note.indexOf("The bright, golden scales")).toBeLessThan(note.indexOf("rpg stat.monster"));
+    expect(files.some((f) => /categories\//.test(f.path))).toBe(false);
+  });
+
+  it("takes an entry of many stat blocks for a family, not a catalog", () => {
+    const names = [
+      "Bugbear",
+      "Bugbear Champion",
+      "Goblin",
+      "Goblin Captain",
+      "Hobgoblin",
+      "Hobgoblin Commander",
+      "Hobgoblin Conjurer",
+    ];
+    const goblins = section(
+      "Goblins",
+      2,
+      [para(span(lore))],
+      [
+        section("Rule Bound Hobgoblins", 3, [para(span("Hobgoblin enclaves are highly organized military bands."))]),
+        ...names.map(dragonStat),
+      ]
     );
     const root = section(
       "Monster Vault",
       0,
       [],
-      [section("Monsters A to Z", 1, [para(span("Entries."))], [brass, ...others])]
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [goblins, ...fillers()])]
     );
     const { files } = write(root, { place: placer("tov", "Vault") });
-    const young =
-      files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Young Brass Dragon.md")?.text ?? "";
-    expect(young).toContain('category: "[[Dragon, Brass]]"');
     const category =
-      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Dragon, Brass.md")?.text ?? "";
-    expect(category).toContain("The bright, golden scales");
-    expect(category).toContain("## A Brass Dragon’s Lair");
-    expect(category).toContain("On initiative count 20");
-    expect(category).not.toContain("Armor Class");
-    expect(files.some((f) => /categories\/A Brass Dragon/.test(f.path))).toBe(false);
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Goblins.md")?.text ?? "";
+    expect(category).toContain("name: Goblins");
+    expect(category).toContain("Hobgoblin enclaves are highly organized");
+    const goblin = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Goblin.md")?.text ?? "";
+    expect(goblin).toContain('category: "[[Goblins]]"');
+  });
+
+  it("names families as a bestiary lists them", () => {
+    expect(familyName("Dragon, Brass")).toBe("Brass Dragons");
+    expect(familyName("Hag, Green")).toBe("Green Hags");
+    expect(familyName("Harpy, Storm")).toBe("Storm Harpies");
+    expect(familyName("Elf, Shadow")).toBe("Shadow Elves");
+    expect(familyName("Kobolds")).toBe("Kobolds");
   });
 
   it("turns a dark bar's white text dark, and tells bold words by their ink", () => {

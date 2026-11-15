@@ -57,8 +57,8 @@ export interface EmitContext {
   found?: Array<{ kind: string; title: string; path: string }>;
   /** The sections being written, outermost first: a creature's entry is found among them. */
   stack?: Section[];
-  /** Entries whose category note is written. */
-  categories?: Set<string>;
+  /** The book's entries that creatures were set under, until the book is written (see finishFamilies). */
+  families?: Map<string, { name: string; path: string; bestiary: string; lore: string[]; members: string[] }>;
 }
 
 /** Where a piece of text is being written: its note (below the book's folder, no `.md`) and the sections above it. */
@@ -250,7 +250,8 @@ function entryOf(section: Section, ctx: EmitContext): Section | undefined {
   while (i >= 1 && LAIR.test(stack[i].title)) i--;
   const parent = stack[i];
   if (!parent || parent === section || i < 1) return undefined;
-  if (isCatalog(parent, ctx.options.catalogMin)) return undefined;
+  // A catalog of entries (Monsters A to Z, an appendix) is no entry; an entry of a few stat blocks is.
+  if (parent.children.length > 15 || /\b(appendix|chapter|a to z)\b/i.test(parent.title)) return undefined;
   const lore = parent.blocks
     .map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : ""))
     .join(" ")
@@ -275,33 +276,79 @@ function loreOf(section: Section, depth: number, ctx: EmitContext, where: Where)
 /** A section of an entry about the creature's lair: its lair actions and regional effects. */
 const LAIR = /\blairs?\b|\bregional effects\b/i;
 
-/** An entry's lore as the system's category note, which lists every creature that names it. */
-function writeCategory(entry: Section, creature: string, info: PlaceInfo, where: Where, ctx: EmitContext): void {
+/** A noun's plural, for a family's name: `Dragon` → `Dragons`, `Harpy` → `Harpies`, `Elf` → `Elves`. */
+function plural(word: string): string {
+  if (/s$/i.test(word)) return word;
+  if (/[^aeiou]y$/i.test(word)) return word.replace(/y$/i, "ies");
+  if (/man$/i.test(word)) return word.replace(/man$/i, "men");
+  if (/[^f]f$/i.test(word)) return word.replace(/f$/i, "ves");
+  return `${word}s`;
+}
+
+/**
+ * A family's name, as a bestiary lists it: an entry named `Dragon, Brass` is the family of
+ * `Brass Dragons`, filed under B with all its stat blocks; `Kobolds` stays `Kobolds`.
+ */
+export function familyName(entry: string): string {
+  const m = entry.match(/^([^,]+),\s*(.+)$/);
+  return m ? `${m[2].trim()} ${plural(m[1].trim())}` : entry;
+}
+
+/** An entry a creature was set under: remembered until the book is written, to know how many it holds. */
+function noteFamily(entry: Section, creature: string, info: PlaceInfo, where: Where, ctx: EmitContext): void {
+  if (!ctx.place) return;
   const key = entry.title.toLowerCase();
-  if (ctx.categories?.has(key) || !ctx.place) return;
-  (ctx.categories ??= new Set()).add(key);
-  const path = ctx.place("creature category", entry.title, { npc: info.npc }, where.trail);
-  const bestiary = creature.includes("/bestiary/")
-    ? creature.slice(0, creature.indexOf("/bestiary/") + "/bestiary/".length)
-    : "bestiary/";
-  // The entry's whole text, its lair (actions, regional effects) included; its stat blocks stay apart.
-  const lore = loreOf(entry, 2, ctx, { path: where.path, trail: where.trail });
-  const body = [`name: ${yamlValue(entry.title)}`, "---", ...lore];
-  const fence = fenceFor(body);
-  pushFile(ctx, {
-    outside: true,
-    path: `${path}.md`,
-    text:
-      [
-        ...frontmatter([["source", ctx.source]]),
-        `${fence}rpg stat.category`,
-        ...body,
-        fence,
-        "---",
-        `\`@[[${bestiary}]].filter(category == [[${entry.title.replace(/[[\]|#^]/g, "")}]]).highlight().stat()\``,
-      ].join("\n") + "\n",
+  const known = ctx.families?.get(key);
+  if (known) {
+    known.members.push(creature);
+    return;
+  }
+  const name = familyName(entry.title);
+  (ctx.families ??= new Map()).set(key, {
+    name,
+    path: ctx.place("creature category", name, { npc: info.npc }, where.trail),
+    bestiary: creature.includes("/bestiary/")
+      ? creature.slice(0, creature.indexOf("/bestiary/") + "/bestiary/".length)
+      : "bestiary/",
+    // The entry's whole text, its lair (actions, regional effects) included; its stat blocks stay apart.
+    lore: loreOf(entry, 2, ctx, { path: where.path, trail: where.trail }),
+    members: [creature],
   });
-  ctx.kinds?.set("creature category", (ctx.kinds.get("creature category") ?? 0) + 1);
+}
+
+/**
+ * The book's entries written as the system keeps them: an entry of two or more creatures is a
+ * family, its text in a category note that lists them; an entry of one creature is no family, and
+ * its text goes into the creature's own note.
+ */
+function finishFamilies(ctx: EmitContext): void {
+  for (const family of ctx.families?.values() ?? []) {
+    if (family.members.length >= 2) {
+      const body = [`name: ${yamlValue(family.name)}`, "---", ...family.lore];
+      const fence = fenceFor(body);
+      pushFile(ctx, {
+        outside: true,
+        path: `${family.path}.md`,
+        text:
+          [
+            ...frontmatter([["source", ctx.source]]),
+            `${fence}rpg stat.category`,
+            ...body,
+            fence,
+            "---",
+            `\`@[[${family.bestiary}]].filter(category == [[${family.name.replace(/[[\]|#^]/g, "")}]]).highlight().stat()\``,
+          ].join("\n") + "\n",
+      });
+      ctx.kinds?.set("creature category", (ctx.kinds.get("creature category") ?? 0) + 1);
+      continue;
+    }
+    const file = ctx.files.find((f) => f.path === `${family.members[0]}.md`);
+    if (!file) continue;
+    const lines = file.text.split("\n").filter((l) => l !== `category: ${JSON.stringify(`[[${family.name}]]`)}`);
+    const head = lines.findIndex((l) => /^# /.test(l));
+    lines.splice(head + 1, 0, ...family.lore);
+    file.text = lines.join("\n");
+  }
 }
 
 const hashes = (depth: number) => "#".repeat(Math.min(6, Math.max(1, depth)));
@@ -334,7 +381,7 @@ function entityFor(
     priceOf: (name) => ctx.prices?.get(priceKey(name)),
     shareTrait: ctx.place ? (type, creature, feature) => shareTrait(ctx, type, creature, feature) : undefined,
     unique: (dir, name) => uniqueName(dir, name, ctx),
-    category: entry?.title,
+    category: entry ? familyName(entry.title) : undefined,
   });
   if (!out) return null;
   ctx.kinds.set(out.kind, (ctx.kinds.get(out.kind) ?? 0) + 1);
@@ -390,7 +437,7 @@ function entityFor(
         ].join("\n") + "\n",
     });
     out.placed = target;
-    if (out.kind === "creature" && entry) writeCategory(entry, target, info, where, ctx);
+    if (out.kind === "creature" && entry) noteFamily(entry, target, info, where, ctx);
     out.lines = [`!${link(target, section.title)}`];
     out.fields = [];
     out.consumed = true;
@@ -728,6 +775,7 @@ export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[])
   }
   for (const [path, note] of ctx.traitNotes ?? [])
     pushFile(ctx, { outside: true, path: `${path}.md`, text: note.lines.join("\n") + "\n" });
+  finishFamilies(ctx);
   index.push("", ...facts);
   ctx.files.push({ path: `${fileName(ctx.options.title)}.md`, text: index.join("\n") + "\n" });
   return ctx.files;

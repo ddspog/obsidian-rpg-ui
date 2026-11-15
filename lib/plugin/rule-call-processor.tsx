@@ -45,6 +45,8 @@ import { matchAllCalls, type ParsedCall, type ChainSegment, ARGS_INNER } from "l
 import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
+import { pagerOptions } from "lib/domains/references/folder-pager";
+import { FolderPager } from "lib/components/folder-pager";
 import { homebrewBySetting } from "lib/domains/lists/official-sources";
 import { findAllFences } from "lib/domains/lists/resolve-entries";
 import type { FileRefCache } from "lib/domains/references";
@@ -1468,7 +1470,7 @@ function resolveFolderCall(
   }
 
   // Gather `.md` files recursively so a parent folder import (e.g.
-  // `@[[bestiary/creatures/]]`) sweeps every subfolder (beast-forms, …).
+  // `@[[bestiary/creatures/]]`) sweeps every subfolder (druid-forms, …).
   // All existing folder-call targets are leaf folders, so this is a no-op
   // for them and only broadens parents-with-subfolders.
   // `.shallow()` keeps to the folder's own notes: a book's chapter folder holds its tab notes and,
@@ -1690,6 +1692,8 @@ function resolveFolderCall(
       const folderCallerFm =
         (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
       const folderCallerSource = normalizeSource(folderCallerFm.source ? String(folderCallerFm.source) : "");
+      // What each note is told apart by in the pager: its name and its fields.
+      const itemData = new Map<string, { name: string; data: Record<string, unknown> }>();
       for (const { file: f, raw } of entries) {
         const cleaned = stripLocalFences(raw);
 
@@ -1740,6 +1744,7 @@ function resolveFolderCall(
             const fileFm =
               (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
             const mergedFm = { ...fileFm, ...fenceFm };
+            itemData.set(f.path, { name: f.basename, data: mergedFm });
             const fileName = f.basename;
             if (view.wrapper === "table") {
               try {
@@ -1878,6 +1883,7 @@ function resolveFolderCall(
         const fileName = f.basename;
         const fileFm =
           (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
+        itemData.set(f.path, { name: fileName, data: { ...fileFm, ...(fenced[0]?.frontmatter ?? {}) } });
 
         let viewArgs = call.args;
         let matching: HarvestedBlock[] = fenced;
@@ -2103,9 +2109,9 @@ function resolveFolderCall(
             /* ignore */
           }
         });
-        root.render(<>{nodes}</>);
-        // Post-render: inject badges into magic card headers for highlighted items
-        if (highlight2.active && call.fn === "magic") {
+        // Post-render: inject badges into magic card headers for highlighted items (on each page shown)
+        const markMagic = () => {
+          if (!(highlight2.active && call.fn === "magic")) return;
           setTimeout(() => {
             const cards = span.querySelectorAll(".rpg-call--magic-highlight");
             for (const card of Array.from(cards)) {
@@ -2113,6 +2119,20 @@ function resolveFolderCall(
               injectMagicHighlightBadge(card as HTMLElement, source);
             }
           }, 80);
+        };
+        // A folder of many notes is shown a page at a time, with a search and a select per field.
+        // (Lists page only when the call asks: their highlight marks follow the notes' order.)
+        const pager = pagerOptions(call.chain, call.fn);
+        if (view.wrapper !== "ul" || pager.explicit) {
+          const items = nodes.map((node, i) => {
+            const key = String((node as React.ReactElement)?.key ?? i);
+            const meta = itemData.get(key);
+            return { key, name: meta?.name ?? key, data: meta?.data ?? {}, node };
+          });
+          root.render(<FolderPager items={items} options={pager} onRendered={markMagic} />);
+        } else {
+          root.render(<>{nodes}</>);
+          markMagic();
         }
         // Post-render: mark folder item <li> elements that have different source
         if (highlight2.active && view.wrapper === "ul") {
