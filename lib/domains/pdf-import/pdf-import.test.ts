@@ -922,7 +922,7 @@ describe("styles of other books", () => {
       "tov/worldbuilding/bestiary/creatures/familiars/Snake, Poisonous"
     );
     expect(place("creature", "Devil, Imp", { type: "Fiend (Devil)", cr: "1" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/warlock-familiars/Devil, Imp"
+      "tov/worldbuilding/bestiary/creatures/chain-pacts/Devil, Imp"
     );
     expect(place("creature", "Fire Elemental", { type: "Elemental", cr: "5" }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/summons/Fire Elemental"
