@@ -899,35 +899,62 @@ describe("styles of other books", () => {
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
-    // Animals: the Animal tag, a druid's list, or (in a book from outside the system) a Beast below CR 6.
-    expect(place("creature", "Bat", { type: "Beast", druid: true }, [])).toBe("tov/worldbuilding/bestiary/animals/Bat");
-    expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal" }, [])).toBe(
-      "tov/worldbuilding/bestiary/animals/Owlbear"
+    // Companions: Beasts and Animal-tagged creatures by who can take their form.
+    expect(place("creature", "Bat", { type: "Beast", cr: "0" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/beast-forms/Bat"
     );
-    expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/beast/Wolf"
+    expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal", cr: "3" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/shifter-forms/Owlbear"
     );
-    expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, ["Book", "07. Appendix, Animals"])).toBe(
-      "tov/worldbuilding/bestiary/animals/Wolf"
+    expect(place("creature", "Elephant", { type: "Beast", cr: "4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/shifter-forms/Elephant"
     );
-    const outside = placer("tov", "SRD", "ᴰ");
-    expect(outside("creature", "Wolf", { type: "beast", cr: "1/4" }, [])).toBe(
-      "tov/worldbuilding/bestiary/animals/Wolf ᴰ"
+    expect(place("creature", "Roc", { type: "Beast", cr: "11" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/spell-forms/Roc"
     );
-    expect(outside("creature", "Mammoth", { type: "beast", cr: "6" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/beast/Mammoth ᴰ"
+    expect(place("creature", "Giant Boar", { type: "Beast", cr: "2", legendary: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/spell-forms/Giant Boar"
+    );
+    expect(place("creature", "Rats", { type: "Swarm of Tiny Beasts", cr: "1/4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/beast-forms/Rats"
     );
     expect(place("creature", "Pony", { type: "Beast", steed: true }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/steeds/Pony"
     );
-    // Humanoids are monsters unless the book lists them among its nonplayer characters.
+    // Monsters and NPCs: by type, their entries' lore in category notes.
     expect(place("creature", "Goblin", { type: "humanoid" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/humanoid/Goblin"
+      "tov/worldbuilding/bestiary/families/humanoids/Goblin"
     );
     expect(place("creature", "Guard", { type: "humanoid", npc: true }, [])).toBe(
-      "tov/worldbuilding/bestiary/npcs/Guard"
+      "tov/worldbuilding/bestiary/families/humanoids/Guard"
     );
-    expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/monsters/fiend/Imp");
+    expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/families/fiends/Imp");
+    expect(place("creature", "Owlbear", { type: "Monstrosity" }, [])).toBe(
+      "tov/worldbuilding/bestiary/families/monstrosities/Owlbear"
+    );
+    expect(place("creature", "Dryad", { type: "Fey" }, [])).toBe("tov/worldbuilding/bestiary/families/fey/Dryad");
+    expect(place("creature category", "Kobolds", {}, [])).toBe(
+      "tov/worldbuilding/bestiary/monsters/categories/Kobolds"
+    );
+    expect(place("creature category", "Guards", { npc: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/npcs/categories/Guards"
+    );
+    // Magic items by type; subclasses named with their class.
+    expect(place("magic item", "Bag of Holding", { type: "Wondrous Item" }, [])).toBe(
+      "tov/worldbuilding/enchantments/wondrous/Bag of Holding"
+    );
+    expect(place("magic item", "Wand of Webs", { type: "Wand" }, [])).toBe(
+      "tov/worldbuilding/enchantments/rod-staff-wand/Wand of Webs"
+    );
+    expect(place("magic item", "Flame Tongue", { type: "Weapon (any sword)" }, [])).toBe(
+      "tov/worldbuilding/enchantments/weapon/Flame Tongue"
+    );
+    expect(place("subclass", "Draconic", { parent: "Sorcerer" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Draconic (Sorcerer)"
+    );
+    expect(place("subclass", "Life Domain", { parent: "13. Cleric" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Life Domain (Cleric)"
+    );
     expect(place("vehicle", "Galley", { type: "Gargantuan Water Vehicle" }, [])).toBe(
       "tov/worldbuilding/bestiary/vehicles/water/Galley"
     );
@@ -986,8 +1013,43 @@ describe("styles of other books", () => {
     const traits = files.find((f) => f.path === "tov/worldbuilding/traits/features/Guide Beast Traits.md")?.text ?? "";
     // Two beasts with the same bite share one block.
     expect(traits.match(/name: "Bite"/g)).toHaveLength(1);
-    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/beast/Wolf.md")?.text ?? "";
+    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/creatures/beast-forms/Wolf.md")?.text ?? "";
     expect(wolf).toContain('  - ref: "@[[tov/worldbuilding/traits/features/Guide Beast Traits]]#Bite"');
+  });
+
+  it("files a monster by its type and writes its entry's lore as a category note", () => {
+    const stat = (name: string, type: string) =>
+      section(name, 3, [
+        para(span(type)),
+        para(span("Armor Class", true), span(" 12")),
+        para(span("Hit Points", true), span(" 9")),
+        para(span("STR DEX CON INT WIS CHA")),
+        para(span("-2 +4 -1 -1 -2 -1")),
+        para(span("Dagger.", true), span(" It stabs.")),
+      ]);
+    const lore =
+      "Cowardly cousins to chromatic dragons, kobolds serve draconic overlords as warriors and servants, and they are especially adept at creating traps.";
+    const kobolds = section(
+      "Kobolds",
+      2,
+      [para(span(lore))],
+      [stat("Kobold", "Small Humanoid"), stat("Kobold Elite", "Small Humanoid")]
+    );
+    const others = ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
+      section(n, 2, [para(span(`${n} lore.`))])
+    );
+    const atoz = section("Monsters A to Z", 1, [para(span("Creatures in alphabetical order."))], [kobolds, ...others]);
+    const root = section("Monster Vault", 0, [], [atoz]);
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const kobold = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/humanoids/Kobold.md")?.text ?? "";
+    expect(kobold).toContain('category: "[[Kobolds]]"');
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Kobolds.md")?.text ?? "";
+    expect(category).toContain("```rpg stat.category\nname: Kobolds\n---");
+    expect(category).toContain("Cowardly cousins to chromatic dragons");
+    expect(category).toContain("`@[[tov/worldbuilding/bestiary/]].filter(category == [[Kobolds]]).highlight().stat()`");
+    // One category note however many of its creatures are written.
+    expect(files.filter((f) => f.path.endsWith("categories/Kobolds.md"))).toHaveLength(1);
   });
 
   it("turns a dark bar's white text dark, and tells bold words by their ink", () => {

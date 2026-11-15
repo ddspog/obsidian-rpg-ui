@@ -58,6 +58,8 @@ export interface EntityEnv {
   priceOf?(name: string): { list: string; fields: Array<[string, string]> } | undefined;
   /** A name no other note in `dir` has taken. */
   unique(dir: string, name: string): string;
+  /** The book's entry a creature is one of (`Kobolds`), when the entry holds more than its stat blocks. */
+  category?: string;
 }
 
 export interface EntityOut {
@@ -73,7 +75,7 @@ export interface EntityOut {
   /** True when the section's subsections are already in `lines`. */
   consumed: boolean;
   /** What decides the entity's folder: a spell's circle, an item's kind. */
-  info?: { circle?: string; type?: string; steed?: boolean; tags?: string; cr?: string };
+  info?: { circle?: string; type?: string; steed?: boolean; tags?: string; cr?: string; legendary?: boolean };
   /** The picture set with the entity, written as its `image`: the host may keep it with others of its kind. */
   portrait?: string;
   /** The note the entity was written to when entities are kept in folders of their own (from the vault's root). */
@@ -261,6 +263,7 @@ function magicItem(section: Section, env: EntityEnv): EntityOut | null {
     out.portrait = picture;
   }
   out.lines = fenced("item.magic", yaml, env.render(text, section.title));
+  out.info = { type };
   out.fields = [cssclass("note-item")];
   if (section.children.length) {
     // Variants and the like set under headings of their own stay with the item.
@@ -471,6 +474,7 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
   } else {
     yaml.push(`type: ${q(type)}`);
     if (cr) yaml.push(`cr: ${q(cr)}`);
+    if (env.category) yaml.push(`category: ${q(`[[${env.category}]]`)}`);
   }
   // What a mounts or vehicles table says of it: what it costs to buy or hire, and the like.
   for (const [k, v] of price?.fields ?? []) yaml.push(`${k}: ${q(v)}`);
@@ -530,6 +534,12 @@ function creature(section: Section, env: EntityEnv): EntityOut | null {
     steed: !!price && /mount|steed/i.test(price.list),
     tags: typed?.[3] ?? "",
     cr,
+    // A druid can't take the form of a creature with legendary or lair actions.
+    legendary:
+      features.some((f) => f.type === "legendary") ||
+      /\blair actions?\b/i.test(
+        lore.map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : "")).join(" ")
+      ),
   };
   if (picture) out.portrait = picture;
   out.consumed = true;
