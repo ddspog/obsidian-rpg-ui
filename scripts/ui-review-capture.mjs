@@ -154,7 +154,9 @@ for (const mode of order) {
     await sleep(wait);
     // A fresh vault can open on a modal (settings, trust) or show indexing toasts over the note.
     for (let k = 0; k < 3; k++) await page.keyboard.press("Escape");
-    await page.evaluate(() => document.querySelectorAll(".modal-container, .notice-container").forEach((m) => m.remove()));
+    await page.evaluate(() =>
+      document.querySelectorAll(".modal-container, .notice-container").forEach((m) => m.remove())
+    );
     // Walk the note once so lazily rendered blocks exist before measuring. With --find the walk stops at
     // the first match, while it is rendered: Obsidian unloads sections that are far off the screen.
     const total = await page.evaluate(async (sel) => {
