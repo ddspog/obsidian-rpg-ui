@@ -3,7 +3,7 @@ import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
 import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
-import { fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic } from "./extract";
+import { fixGlyphs, fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic, ligatureGuesses } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
 import { lookFor } from "./looks";
@@ -1346,5 +1346,27 @@ describe("decorations", () => {
     expect(isDecoration(art)).toBe(false);
     expect(isDecoration(tall)).toBe(false);
     expect(isDecoration(square)).toBe(false);
+  });
+});
+
+describe("ligatures a font prints as another character", () => {
+  // The Monster Vault's text font maps both a real ampersand and `f_l` to `&`.
+  const differences: (string | null)[] = [];
+  differences[38] = "f_l";
+  const toUnicode = { _map: Object.assign([], { 8: "&", 38: "&" }) };
+  const font = { differences, toUnicode };
+
+  it("guesses the letters only where the character sits against a lowercase letter", () => {
+    const guesses = ligatureGuesses(font);
+    expect(glyphFixes(font).size).toBe(0);
+    expect(guesses.get("&")).toBe("fl");
+    expect(fixGlyphs("rotten &esh and in&uence", new Map(), guesses)).toBe("rotten flesh and influence");
+    expect(fixGlyphs("Dungeons & Dragons, R&D", new Map(), guesses)).toBe("Dungeons & Dragons, R&D");
+  });
+
+  it("reads a ligature set alone in a run of its own by the runs beside it", () => {
+    const guesses = ligatureGuesses(font);
+    expect(fixGlyphs("&", new Map(), guesses, "Skeletons are ", "eshless undead")).toBe("fl");
+    expect(fixGlyphs("&", new Map(), guesses, "Tome of Beasts 1 ", " Creature")).toBe("&");
   });
 });

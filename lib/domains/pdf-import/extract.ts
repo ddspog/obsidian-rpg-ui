@@ -126,6 +126,58 @@ export function glyphFixes(
   return fixes;
 }
 
+/**
+ * Ligatures `glyphFixes` cannot settle because the font prints a real character the same way
+ * (`f_l` mapped to `&`, as `ampersand` is): the letters each such character stands for where it
+ * sits against a lowercase letter, as a ligature does (`&esh`, `in&uence`) and an ampersand
+ * does not.
+ */
+export function ligatureGuesses(
+  font: { differences?: (string | null | undefined)[]; toUnicode?: any } | null
+): Map<string, string> {
+  const guesses = new Map<string, string>();
+  const names = font?.differences;
+  if (!Array.isArray(names)) return guesses;
+  const map: unknown[] = font?.toUnicode?._map ?? [];
+  const fixes = glyphFixes(font);
+  names.forEach((name, code) => {
+    if (!name) return;
+    const text = glyphText(name);
+    if (!text || !/^[a-z]{2,3}$/.test(text)) return;
+    const shown = typeof map[code] === "string" && map[code] ? (map[code] as string) : String.fromCharCode(code);
+    if (shown.length !== 1 || /[\p{L}\p{N}\s]/u.test(shown) || fixes.has(shown)) return;
+    if (shown.normalize("NFKC").toLowerCase() === text) return;
+    guesses.set(shown, text);
+  });
+  return guesses;
+}
+
+/**
+ * A run's text with a font's glyph fixes and ligature guesses applied. `before` and `after` are
+ * the runs either side, since a book may set a ligature alone in a font of its own (`&` then `esh`).
+ */
+export function fixGlyphs(
+  str: string,
+  fixes: Map<string, string>,
+  guesses?: Map<string, string>,
+  before = "",
+  after = ""
+): string {
+  let out = fixes.size ? Array.from(str, (c) => fixes.get(c) ?? c).join("") : str;
+  if (guesses?.size) {
+    const b = before.slice(-1);
+    const a = after.slice(0, 1);
+    out = b + out + a;
+    for (const [shown, text] of guesses) {
+      if (!out.includes(shown)) continue;
+      const at = shown.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      out = out.replace(new RegExp(`(?<![\\p{Lu}\\p{N}${at}])${at}(?=\\p{Ll})`, "gu"), text);
+    }
+    out = out.slice(b.length, out.length - a.length);
+  }
+  return out;
+}
+
 export function isBold(font: string): boolean {
   return /bold|black|heavy|semibold|demi|extrabold|[-_ ]bd\b|[-_ ]sb\b|[-_]b$/i.test(font);
 }
@@ -305,14 +357,16 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
 
   const tc = await page.getTextContent();
   const names = new Map<string, string>();
-  const fixesOf = new Map<string, Map<string, string>>();
-  const fixOf = (id: string): Map<string, string> => {
+  type Fixes = { fixes: Map<string, string>; guesses: Map<string, string> };
+  const fixesOf = new Map<string, Fixes>();
+  const fixOf = (id: string): Fixes => {
     let fixes = fixesOf.get(id);
     if (!fixes) {
       try {
-        fixes = glyphFixes(page.commonObjs.get(id));
+        const font = page.commonObjs.get(id);
+        fixes = { fixes: glyphFixes(font), guesses: ligatureGuesses(font) };
       } catch {
-        fixes = new Map();
+        fixes = { fixes: new Map(), guesses: new Map() };
       }
       fixesOf.set(id, fixes);
     }
@@ -332,7 +386,15 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     }
     return name;
   };
-  for (const it of tc.items as any[]) {
+  const items = tc.items as any[];
+  const near = (from: number, step: number): string => {
+    for (let j = from + step; j >= 0 && j < items.length; j += step) {
+      if (typeof items[j].str === "string" && items[j].str) return items[j].str;
+    }
+    return "";
+  };
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx];
     if (typeof it.str !== "string" || !it.str) continue;
     const t = mul(vt, it.transform as Matrix);
     // Text set on its side (a label up a margin) is not part of the page's flow.
@@ -341,8 +403,10 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     if (size < 2) continue;
     const font = nameOf(it.fontName);
     // Soft hyphens are dropped and the many hyphen characters made one, so `1st‑level` reads as it looks.
-    const fixes = fixOf(it.fontName);
-    const raw = fixes.size ? Array.from(it.str as string, (c) => fixes.get(c) ?? c).join("") : it.str;
+    const { fixes, guesses } = fixOf(it.fontName);
+    const raw = guesses.size
+      ? fixGlyphs(it.str as string, fixes, guesses, near(idx, -1), near(idx, 1))
+      : fixGlyphs(it.str as string, fixes);
     const str = raw
       .replace(/\u00AD/g, "")
       .replace(/[\u2010\u2011]/g, "-")

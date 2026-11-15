@@ -67,7 +67,7 @@ export function FolderPager({ items, options, onRendered }: FolderPagerProps) {
               setPage(0);
             }}
           >
-            <option value="">{`Any ${field}`}</option>
+            <option value="">{`Any ${field.length <= 2 ? field.toUpperCase() : field}`}</option>
             {values.map((v) => (
               <option key={v} value={v}>
                 {v}
