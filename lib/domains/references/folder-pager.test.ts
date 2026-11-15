@@ -8,6 +8,9 @@ import {
   pageOf,
   pagerOptions,
   type PagerItem,
+  countText,
+  DEFAULT_PHONE_PAGE_SIZE,
+  fieldLabel,
   pagerFields,
 } from "./folder-pager";
 
@@ -23,7 +26,14 @@ const items: PagerItem[] = [
 
 describe("folder pager", () => {
   it("reads its options from the chain, with defaults by view", () => {
-    expect(pagerOptions([], "magic")).toEqual({ size: DEFAULT_PAGE_SIZE, facets: ["rarity", "type"], explicit: false });
+    expect(pagerOptions([], "magic")).toEqual({
+      size: DEFAULT_PAGE_SIZE,
+      facets: ["rarity", "type"],
+      explicit: false,
+      noun: ["item", "items"],
+    });
+    expect(pagerOptions([], "stat", true).size).toBe(DEFAULT_PHONE_PAGE_SIZE);
+    expect(pagerOptions([seg("paginate", 4)], "stat", true).size).toBe(4);
     expect(pagerOptions([seg("paginate", 5)], "stat").size).toBe(5);
     expect(pagerOptions([seg("paginate", 0)], "stat").size).toBe(0);
     expect(pagerOptions([seg("facets", "school")], "spell")).toMatchObject({ facets: ["school"], explicit: true });
@@ -80,5 +90,19 @@ describe("pagerFields", () => {
   it("falls back when the note has only rule blocks", () => {
     const fences = [fence("rule", "content", { circle: "x" }, 0, 10)];
     expect(pagerFields(fences, {}, { circle: "3rd-Circle" })).toEqual({ circle: "3rd-Circle" });
+  });
+});
+
+describe("pager words", () => {
+  it("names fields as a reader knows them", () => {
+    expect(fieldLabel("cr")).toBe("CR");
+    expect(fieldLabel("rarity")).toBe("Rarity");
+    expect(fieldLabel("system.school")).toBe("School");
+  });
+
+  it("counts in the view's noun", () => {
+    expect(countText(241, 241, ["item", "items"])).toBe("241 items");
+    expect(countText(3, 241, ["item", "items"])).toBe("3 of 241 items");
+    expect(countText(1, 1, ["creature", "creatures"])).toBe("1 creature");
   });
 });

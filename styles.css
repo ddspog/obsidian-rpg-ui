@@ -21325,7 +21325,8 @@ button.rpg-tab-next {
   flex: 1 1 auto;
   width: 100%;
 }
-.rpg-table-tfoot button.rpg-table-pagination__arrow {
+.rpg-table-tfoot button.rpg-table-pagination__arrow,
+.rpg-folder-pager button.rpg-folder-pager__arrow {
   font-size: 1.4em;
   padding: 0 0.4em;
   opacity: 0.75;
@@ -21334,10 +21335,12 @@ button.rpg-tab-next {
   flex-shrink: 0;
   color: inherit;
 }
-.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled) {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled),
+.rpg-folder-pager button.rpg-folder-pager__arrow:hover:not(:disabled) {
   opacity: 1;
 }
-.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled,
+.rpg-folder-pager button.rpg-folder-pager__arrow:disabled {
   opacity: 0.3;
   cursor: default;
 }
@@ -21383,7 +21386,8 @@ button.rpg-tab-next {
   white-space: nowrap;
   cursor: pointer;
 }
-.rpg-table-pagination__pick:focus-within {
+.rpg-table-pagination__pick:focus-within,
+.rpg-folder-pager__pick:focus-within {
   outline: 2px solid var(--interactive-accent);
   outline-offset: -2px;
 }
@@ -21450,40 +21454,116 @@ button.rpg-tab-next {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5em;
-  padding: 0.5em 0;
-  border-bottom: 1px solid var(--background-modifier-border);
 }
 .rpg-folder-pager__search {
   flex: 1 1 12em;
   min-width: 0;
 }
+.rpg-folder-pager input.rpg-folder-pager__search,
+.rpg-folder-pager select.rpg-folder-pager__facet {
+  min-height: 32px;
+  background-color: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary));
+}
+.rpg-folder-pager__search::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
 .rpg-folder-pager__facet {
   flex: 0 1 auto;
   max-width: 100%;
-  text-transform: capitalize;
+}
+.rpg-folder-pager__facet--set {
+  color: var(--text-accent);
+  font-weight: var(--font-semibold, 600);
+}
+.rpg-folder-pager__search:focus-visible,
+.rpg-folder-pager__facet:focus-visible,
+.rpg-folder-pager button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.rpg-folder-pager__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25em 0.75em;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-title, var(--text-accent)) 45%, transparent);
 }
 .rpg-folder-pager__count {
   color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-ui-small);
   font-variant-numeric: tabular-nums;
-  margin-left: auto;
+}
+.rpg-folder-pager button.rpg-folder-pager__clear,
+.rpg-folder-pager button.rpg-folder-pager__clear-all {
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 0.25em 0.4em;
+  height: auto;
+  color: var(--text-accent);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.rpg-folder-pager button.rpg-folder-pager__clear:hover,
+.rpg-folder-pager button.rpg-folder-pager__clear-all:hover {
+  text-decoration: underline;
 }
 .rpg-folder-pager__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em;
   color: var(--text-muted);
+}
+.rpg-folder-pager__empty p {
+  margin: 0;
   font-style: italic;
 }
 .rpg-folder-pager__pages {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.75em;
+  gap: 0.25em;
+}
+.rpg-folder-pager__pages--top {
+  margin-left: auto;
+}
+.rpg-folder-pager button.rpg-folder-pager__arrow {
+  background: none;
+  box-shadow: none;
+  border: none;
+  min-width: 32px;
+  min-height: 32px;
+  height: auto;
+  line-height: 1;
+}
+.rpg-folder-pager__pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.5em;
+  cursor: pointer;
 }
 .rpg-folder-pager__label {
-  color: var(--text-muted);
+  font-size: var(--font-ui-small);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.rpg-folder-pager__arrow {
-  min-width: 2.5em;
+.rpg-folder-pager select.rpg-folder-pager__page-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
 }
 
 /* lib/styles/components/rpg-list.css */
@@ -23055,6 +23135,18 @@ section[aria-details="Character Rolls"] > header > span {
     flex: 0 1 auto;
   }
   .rpg-table-tfoot button.rpg-table-pagination__arrow {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .rpg-folder-pager__search {
+    flex: 1 1 100%;
+  }
+  .rpg-folder-pager__facet {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .rpg-folder-pager button.rpg-folder-pager__arrow,
+  .rpg-folder-pager__pick {
     min-width: 44px;
     min-height: 44px;
   }

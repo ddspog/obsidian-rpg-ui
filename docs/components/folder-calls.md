@@ -18,14 +18,19 @@ A call on a folder shows each note in it through a view, and sweeps its subfolde
 ## Pages and filters
 
 A folder can hold hundreds of notes, and drawing them all at once makes a note slow to open. A call that
-shows notes as blocks (`.stat()`, `.magic()`, `.spell()`, `.bare()` and the like) shows **12 a page** when it
-finds more than that, with:
+shows notes as blocks (`.stat()`, `.magic()`, `.spell()`, `.bare()` and the like) shows **12 a page** (**6 on a
+phone**) when it finds more than that, with:
 
 - a search box, matching the words of the note's name;
 - a select for each field the view's notes are usually told apart by: `.magic()` rarity and type, `.spell()`
   circle and school, `.stat()` and `.bare()` type and CR (a field with a single value across the notes is left
-  out);
-- the count of notes shown, and arrows between pages.
+  out). A select that is narrowing the list is set in the accent colour;
+- a count of what is shown, in the view's words (`241 items`, `3 of 241 items`, `71 creatures`, `34 spells`), with
+  **Clear** beside it while anything is filtered;
+- `‹ Page 2 of 21 ▾ ›` above the entries and again below them: the arrows step a page, and the label opens a list
+  to jump to any page. After a page change from below, the view goes back to the top of the list.
+
+When nothing matches, the call says so and offers **Clear filters**.
 
 `.paginate(n)` sets another page size, `.paginate(0)` turns paging off, and `.facets(…)` chooses the fields. These options (and `.shallow()`, `.highlight()`) can also come after the view: `.stat().paginate(4)`.
 Calls that list notes as lines (rows of a list) are not paged unless they ask with `.paginate(n)`.

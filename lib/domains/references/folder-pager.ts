@@ -4,7 +4,7 @@
  * select per field (rarity, type, CR…) narrow what is listed.
  *
  * Chain options:
- *   .paginate(10)        a page of 10 (the default is DEFAULT_PAGE_SIZE)
+ *   .paginate(10)        a page of 10 (the default is DEFAULT_PAGE_SIZE, or DEFAULT_PHONE_PAGE_SIZE on a phone)
  *   .paginate(0)         every note at once, no controls
  *   .facets(rarity, type) the fields offered as selects (views have defaults, see DEFAULT_FACETS)
  */
@@ -13,6 +13,8 @@ import type { FenceMatch } from "./fence-scan";
 import type { ChainSegment } from "./parse-call";
 
 export const DEFAULT_PAGE_SIZE = 12;
+/** A phone shows fewer: a page of 12 stat blocks is many screens long. */
+export const DEFAULT_PHONE_PAGE_SIZE = 6;
 
 /** The fields a view's notes are usually told apart by. */
 export const DEFAULT_FACETS: Record<string, string[]> = {
@@ -28,6 +30,29 @@ export interface PagerOptions {
   facets: string[];
   /** Set by the call itself (`.paginate(n)` or `.facets(…)`), not by default. */
   explicit: boolean;
+  /** What the notes are, for the count: `241 items`, `1 creature`. */
+  noun: [string, string];
+}
+
+/** The words a view's notes are counted in. */
+const NOUNS: Record<string, [string, string]> = {
+  magic: ["item", "items"],
+  item: ["item", "items"],
+  stat: ["creature", "creatures"],
+  spell: ["spell", "spells"],
+};
+
+/** A field's name as a reader knows it: `cr` → `CR`, `rarity` → `Rarity`. */
+export function fieldLabel(field: string): string {
+  const last = field.split(".").pop() ?? field;
+  if (last.length <= 2) return last.toUpperCase();
+  return last.charAt(0).toUpperCase() + last.slice(1);
+}
+
+/** `241 items`, or `3 of 241 items` when the list is narrowed. */
+export function countText(shown: number, total: number, noun: [string, string]): string {
+  const word = total === 1 ? noun[0] : noun[1];
+  return shown === total ? `${total} ${word}` : `${shown} of ${total} ${word}`;
 }
 
 export interface PagerItem {
@@ -36,15 +61,20 @@ export interface PagerItem {
   data: Record<string, unknown>;
 }
 
-export function pagerOptions(chain: ChainSegment[], view: string): PagerOptions {
+export function pagerOptions(chain: ChainSegment[], view: string, phone = false): PagerOptions {
   const paginate = chain.find((s) => s.fn === "paginate");
   const facets = chain.find((s) => s.fn === "facets");
   const size =
-    paginate && paginate.args.length ? Math.max(0, Math.floor(Number(paginate.args[0]) || 0)) : DEFAULT_PAGE_SIZE;
+    paginate && paginate.args.length
+      ? Math.max(0, Math.floor(Number(paginate.args[0]) || 0))
+      : phone
+        ? DEFAULT_PHONE_PAGE_SIZE
+        : DEFAULT_PAGE_SIZE;
   return {
     size,
     facets: facets ? facets.args.map((a) => String(a).trim()).filter(Boolean) : (DEFAULT_FACETS[view] ?? []),
     explicit: !!paginate || !!facets,
+    noun: NOUNS[view] ?? ["note", "notes"],
   };
 }
 

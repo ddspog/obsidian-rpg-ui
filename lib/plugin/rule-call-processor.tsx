@@ -36,6 +36,7 @@ import {
   MarkdownRenderChild,
   MarkdownRenderer,
   parseYaml,
+  Platform,
   TFile,
   TFolder,
 } from "obsidian";
@@ -2125,7 +2126,7 @@ function resolveFolderCall(
         };
         // A folder of many notes is shown a page at a time, with a search and a select per field.
         // (Lists page only when the call asks: their highlight marks follow the notes' order.)
-        const pager = pagerOptions(call.chain, call.fn);
+        const pager = pagerOptions(call.chain, call.fn, Platform.isMobile);
         if (view.wrapper !== "ul" || pager.explicit) {
           const items = nodes.map((node, i) => {
             const key = String((node as React.ReactElement)?.key ?? i);
