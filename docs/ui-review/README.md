@@ -50,5 +50,6 @@ Phone first, then desktop, by eye on these notes (no Impeccable score yet unless
 | Hex maps (world map)                               | controls reworked                     | reviewed                              |
 | Statblocks, items, spell cards, features           | reviewed, fixed                       | reviewed                              |
 | Rule tabs, tables, spell lists                     | reviewed, fixed                       | reviewed, fixed                       |
+| Folder-call pager (search, filters, pages)         | reviewed, fixed (Impeccable)          | reviewed, fixed (Impeccable)          |
 | Legacy blocks, `system.*`, draft, `figure.mermaid` | not reviewed                          | not reviewed                          |
 | Standalone `inventory`, `character.sheet`          | not reviewed                          | not reviewed                          |
