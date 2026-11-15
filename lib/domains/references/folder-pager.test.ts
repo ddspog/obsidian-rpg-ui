@@ -8,6 +8,7 @@ import {
   pageOf,
   pagerOptions,
   type PagerItem,
+  pagerFields,
 } from "./folder-pager";
 
 const seg = (fn: string, ...args: unknown[]) => ({ fn, args, params: {} });
@@ -56,5 +57,28 @@ describe("folder pager", () => {
     expect(pageOf([1, 2, 3, 4, 5], 1, 2)).toEqual({ items: [3, 4], page: 1 });
     expect(pageOf([1, 2, 3, 4, 5], 9, 2)).toEqual({ items: [5], page: 2 });
     expect(pageOf([1, 2, 3], 0, 0)).toEqual({ items: [1, 2, 3], page: 0 });
+  });
+});
+
+describe("pagerFields", () => {
+  const fence = (entity: string, block: string, body: Record<string, unknown>, start: number, end: number) => ({
+    entity,
+    block,
+    body,
+    start,
+    end,
+  });
+
+  it("reads the note's own block, not a side box after it", () => {
+    const fences = [
+      fence("stat", "monster", { type: "Tiny Beast", cr: "1/8" }, 0, 100),
+      fence("rule", "side", { type: "rules", title: "Variant" }, 200, 300),
+    ];
+    expect(pagerFields(fences, { source: "MV" })).toEqual({ source: "MV", type: "Tiny Beast", cr: "1/8" });
+  });
+
+  it("falls back when the note has only rule blocks", () => {
+    const fences = [fence("rule", "content", { circle: "x" }, 0, 10)];
+    expect(pagerFields(fences, {}, { circle: "3rd-Circle" })).toEqual({ circle: "3rd-Circle" });
   });
 });

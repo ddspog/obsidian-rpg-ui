@@ -45,7 +45,7 @@ import { matchAllCalls, type ParsedCall, type ChainSegment, ARGS_INNER } from "l
 import { interpolateParams } from "lib/domains/references/interpolate-params";
 import { extractAllRpgFences } from "lib/domains/references/fence-scan";
 import { parseFilterExpr, evaluateFilter } from "lib/domains/references/filter-expr";
-import { pagerOptions } from "lib/domains/references/folder-pager";
+import { pagerFields, pagerOptions } from "lib/domains/references/folder-pager";
 import { FolderPager } from "lib/components/folder-pager";
 import { homebrewBySetting } from "lib/domains/lists/official-sources";
 import { findAllFences } from "lib/domains/lists/resolve-entries";
@@ -1883,7 +1883,10 @@ function resolveFolderCall(
         const fileName = f.basename;
         const fileFm =
           (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
-        itemData.set(f.path, { name: fileName, data: { ...fileFm, ...(fenced[0]?.frontmatter ?? {}) } });
+        itemData.set(f.path, {
+          name: fileName,
+          data: pagerFields(extractAllRpgFences(cleaned), fileFm, fenced[0]?.frontmatter),
+        });
 
         let viewArgs = call.args;
         let matching: HarvestedBlock[] = fenced;

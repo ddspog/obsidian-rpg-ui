@@ -9,6 +9,7 @@
  *   .facets(rarity, type) the fields offered as selects (views have defaults, see DEFAULT_FACETS)
  */
 
+import type { FenceMatch } from "./fence-scan";
 import type { ChainSegment } from "./parse-call";
 
 export const DEFAULT_PAGE_SIZE = 12;
@@ -106,4 +107,19 @@ export function pageOf<T>(items: T[], page: number, size: number): { items: T[];
   const last = pageCount(items.length, size) - 1;
   const p = Math.min(Math.max(0, page), last);
   return { items: items.slice(p * size, p * size + size), page: p };
+}
+
+/**
+ * The fields a note is told apart by: its frontmatter under its own entity's block (the stat
+ * block, the magic item), not a side box beside it (a `rule.side` "Variant" with `type: rules`).
+ * `fallback` is used when the note has no such block.
+ */
+export function pagerFields(
+  fences: FenceMatch[],
+  frontmatter: Record<string, unknown>,
+  fallback: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const top = fences.filter((f) => !fences.some((g) => g !== f && g.start < f.start && g.end > f.end));
+  const own = top.find((f) => f.entity !== "rule" && f.body);
+  return { ...frontmatter, ...(own?.body ?? fallback) };
 }
