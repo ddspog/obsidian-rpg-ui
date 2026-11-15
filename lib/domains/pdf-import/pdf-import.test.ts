@@ -3,7 +3,7 @@ import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
 import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
-import { fontName, glyphFixes, glyphText, isBold, isItalic } from "./extract";
+import { fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
 import { lookFor } from "./looks";
@@ -1300,5 +1300,33 @@ describe("tables set side by side", () => {
       ["1", "A", "B", "C"],
     ];
     expect(unfoldSideBySide(rows)).toBe(rows);
+  });
+});
+
+describe("decorations", () => {
+  /** A w×h RGBA picture whose pixel at (x, y) is `px(x, y)`. */
+  const picture = (w: number, h: number, px: (x: number, y: number) => number[]) => {
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) data.set(px(x, y), (y * w + x) * 4);
+    return { width: w, height: h, kind: 3, data };
+  };
+
+  it("drops a coloured ribbon drawn mostly in transparency", () => {
+    const ribbon = picture(800, 100, (_x, y) => (y >= 45 && y < 55 ? [30, 80, 200, 255] : [0, 0, 0, 0]));
+    expect(isDecoration(ribbon)).toBe(true);
+  });
+
+  it("drops grey heading text set as a picture", () => {
+    const heading = picture(800, 100, (x) => (x % 9 < 3 ? [60, 60, 60, 255] : [240, 240, 240, 255]));
+    expect(isDecoration(heading)).toBe(true);
+  });
+
+  it("keeps art: a wide coloured picture, a tall strip, a small spot", () => {
+    const art = picture(800, 100, (x, y) => [x % 255, y * 2, 120, 255]);
+    const tall = picture(100, 800, (x) => (x >= 45 && x < 55 ? [30, 80, 200, 255] : [0, 0, 0, 0]));
+    const square = picture(200, 200, () => [128, 128, 128, 255]);
+    expect(isDecoration(art)).toBe(false);
+    expect(isDecoration(tall)).toBe(false);
+    expect(isDecoration(square)).toBe(false);
   });
 });

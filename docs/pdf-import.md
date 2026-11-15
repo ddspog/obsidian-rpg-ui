@@ -224,7 +224,9 @@ textured, coloured pages; expect to fix names and numbers by hand.
 1. **Text, pictures and shading** come from the PDF with pdf.js (Obsidian's own copy). A page with no text and a
    picture over most of it goes to OCR, and its words then take the same path.
 2. **Furniture is dropped**: running heads and page numbers (text in the margins that repeats down the book),
-   and pictures that repeat (page backgrounds, rules). Tables of contents and the index are skipped.
+   pictures that repeat (page backgrounds, rules), and long thin strips that are page dressing rather than art: a
+   coloured bar drawn mostly in transparency (the ribbons under headings), or grey heading text set as a picture.
+   Tables of contents and the index are skipped.
 3. **Columns** are found from the empty strips that run down a page; the book's usual columns settle pages that
    are unclear on their own. What lies across columns (a wide heading, a wide table) splits the columns under it
    into bands; a column nothing crosses reads top to bottom.

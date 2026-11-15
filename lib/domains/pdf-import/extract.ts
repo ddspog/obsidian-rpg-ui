@@ -183,6 +183,38 @@ function signature(img: DecodedImage): string {
   return (h >>> 0).toString(36);
 }
 
+/**
+ * A picture that is page furniture rather than art: a long, thin strip that is either a
+ * coloured ribbon drawn mostly in transparency (the bars under headings), or grey text
+ * set as a picture (a heading the book rasterised). Read from a sample of its pixels.
+ */
+export function isDecoration(img: DecodedImage): boolean {
+  const { width: w, height: h, data: d, kind } = img;
+  if (!d || !w || !h || (kind !== 2 && kind !== 3)) return false;
+  if (w < h * 6.4) return false;
+  const bpp = kind === 3 ? 4 : 3;
+  const total = w * h;
+  const step = Math.max(1, Math.floor(total / 20000));
+  let seen = 0;
+  let opaque = 0;
+  let sat = 0;
+  for (let i = 0; i < total; i += step) {
+    const o = i * bpp;
+    if (o + bpp > d.length) break;
+    seen++;
+    if (bpp === 4 && d[o + 3] <= 128) continue;
+    opaque++;
+    const max = Math.max(d[o], d[o + 1], d[o + 2]);
+    const min = Math.min(d[o], d[o + 1], d[o + 2]);
+    sat += max ? ((max - min) / max) * 255 : 0;
+  }
+  if (!seen || !opaque) return false;
+  const coverage = opaque / seen;
+  const saturation = sat / opaque;
+  if (coverage <= 0.13 && saturation >= 150) return true;
+  return w >= h * 7 && coverage >= 0.95 && saturation < 15;
+}
+
 async function getObj(page: PdfPage, id: string): Promise<DecodedImage | null> {
   const store = id.startsWith("g_") ? page.commonObjs : page.objs;
   try {
@@ -249,6 +281,7 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
       const inline = fn === OPS.paintInlineImageXObject;
       const img: DecodedImage | null = inline ? args[0] : await getObj(page, args[0]);
       if (!img || !img.width || !img.height) continue;
+      if (isDecoration(img)) continue;
       const id = String(inline ? `inline${num}_${i}` : args[0]);
       const sig = signature(img);
       const key = sig
