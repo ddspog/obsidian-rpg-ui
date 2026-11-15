@@ -1,9 +1,9 @@
 /* ─── rpg table styling bridge ─────────────────────────────────────────────
  *
- * Base table styling is inherited from the active theme via the `.el-table`
- * wrapper `renderTableBlock` emits — themes that ship `.el-table > table`
- * rules (Ribbons, the default Obsidian theme, etc.) apply their full table
- * look with no additional CSS here.
+ * The base look of a table (header band, row rules, table fonts) is in
+ * `theme-base.css`, keyed on the `.el-table.rpg-table-wrapper` wrapper
+ * `renderTableBlock` emits. It is the Ribbons theme's table look, carried by
+ * the plugin so a table reads the same on any theme.
  *
  * The rules below handle the few tx-style variant selectors that are scoped
  * to `.block-language-tx` in typical themes, so our `.rpg-table` output

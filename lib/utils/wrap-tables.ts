@@ -13,7 +13,7 @@ export function wrapBareTables(container: HTMLElement): void {
     // Our own tables (a `rpg table.*` block) are styled as they are.
     if (table.closest(".rpg-table-wrapper, .block-language-rpg .block-language-rpg")) continue;
     const wrap = table.ownerDocument.createElement("div");
-    wrap.className = "el-table";
+    wrap.className = "el-table rpg-el-table";
     parent.insertBefore(wrap, table);
     wrap.appendChild(table);
   }

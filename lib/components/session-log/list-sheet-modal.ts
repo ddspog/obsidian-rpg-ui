@@ -38,7 +38,7 @@ export class ListSheetModal extends Modal {
     // Wrap in `.el-table` + `.rpg-table` so the ACTIVE THEME styles it exactly
     // like every other table in the vault (borders, zebra, header bar); only the
     // section band and the muted number columns are added on top.
-    const wrapper = contentEl.createDiv({ cls: "el-table" });
+    const wrapper = contentEl.createDiv({ cls: "el-table rpg-el-table" });
     const table = wrapper.createEl("table", { cls: "rpg-table rpg-list-sheet" });
     const head = table.createEl("thead").createEl("tr");
     // The entry header is tagged so it can stay left-aligned with its column
