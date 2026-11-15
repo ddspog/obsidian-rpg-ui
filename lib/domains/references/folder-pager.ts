@@ -131,16 +131,41 @@ export function pageCount(total: number, size: number): number {
   return size > 0 ? Math.max(1, Math.ceil(total / size)) : 1;
 }
 
-/** Each page named by its first and last entries (`Abacus – Amulet of Health`), to pick one by. */
-export function pageNames(items: PagerItem[], size: number): string[] {
+/**
+ * Two names cut short, as a tab is named in a word: each to its first word (`Ammunition – Apparatus`),
+ * or, when they start alike, up to the word where they part, the shared start said once
+ * (`Potion of Climbing – Mind`).
+ */
+export function guideWords(first: string, last: string): string {
+  const words = (s: string) =>
+    s
+      .replace(/\s*\([^)]*\)/g, "")
+      .split(/\s+/)
+      .map((w) => w.replace(/[,;:.]+$/, ""))
+      .filter(Boolean);
+  const a = words(first);
+  const b = words(last);
+  // One entry (or two of a name): its first word.
+  if (a.join(" ").toLowerCase() === b.join(" ").toLowerCase()) return a[0] ?? "";
+  let at = 0;
+  while (at < a.length - 1 && at < b.length - 1 && a[at].toLowerCase() === b[at].toLowerCase()) at++;
+  // What they share is said once: `Ring of Regeneration – Swimming`.
+  return `${a.slice(0, at + 1).join(" ")} – ${b[at]}`;
+}
+
+/** The entries of each page: its first and last, short (for the row) and in full (for the list). */
+export function pageNames(items: PagerItem[], size: number): { short: string[]; full: string[] } {
   const n = pageCount(items.length, size);
-  return Array.from({ length: n }, (_, i) => {
+  const short: string[] = [];
+  const full: string[] = [];
+  for (let i = 0; i < n; i++) {
     const page = size > 0 ? items.slice(i * size, i * size + size) : items;
-    if (!page.length) return "";
-    const first = page[0].name;
-    const last = page[page.length - 1].name;
-    return first === last ? first : `${first} – ${last}`;
-  });
+    const first = page[0]?.name ?? "";
+    const last = page[page.length - 1]?.name ?? "";
+    short.push(guideWords(first, last));
+    full.push(first === last ? first : `${first} – ${last}`);
+  }
+  return { short, full };
 }
 
 /** The items of page `page` (0-based), the page kept in range. */

@@ -21527,6 +21527,12 @@ button.rpg-tab-next {
 .rpg-folder-pager__row > .rpg-tab-compact {
   margin: 0;
 }
+.rpg-folder-pager .rpg-tab-compact__name,
+.rpg-folder-pager .rpg-tab-next__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .rpg-folder-pager__dock {
   position: sticky;
   top: var(--rpg-tab-dock, 0px);
@@ -23117,6 +23123,9 @@ section[aria-details="Character Rolls"] > header > span {
   .rpg-folder-pager__facet {
     flex: 1 1 0;
     min-width: 0;
+  }
+  .rpg-folder-pager .rpg-tab-compact__label {
+    display: none;
   }
   .rpg-table-wrapper--overflow .rpg-table th,
   .rpg-table-wrapper--overflow .rpg-table td {

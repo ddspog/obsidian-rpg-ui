@@ -140,10 +140,28 @@ export function FolderPager({ items, options, onRendered }: FolderPagerProps) {
       {paged && (
         <>
           <div className="rpg-folder-pager__row" ref={row}>
-            <CompactTabNav names={names} activeIdx={current} onPick={goTo} label="Page" part tag="Page" />
+            <CompactTabNav
+              names={names.short}
+              listNames={names.full}
+              activeIdx={current}
+              onPick={goTo}
+              label="Page"
+              part
+              tag="Page"
+            />
           </div>
           <div className="rpg-folder-pager__dock">
-            {docked && <CompactTabNav names={names} activeIdx={current} onPick={goTo} label="Page" part tag="Page" />}
+            {docked && (
+              <CompactTabNav
+                names={names.short}
+                listNames={names.full}
+                activeIdx={current}
+                onPick={goTo}
+                label="Page"
+                part
+                tag="Page"
+              />
+            )}
           </div>
         </>
       )}
@@ -157,7 +175,9 @@ export function FolderPager({ items, options, onRendered }: FolderPagerProps) {
           </button>
         </div>
       )}
-      {paged && <NextTabLink names={names.map((n, i) => `Page ${i + 1} · ${n}`)} activeIdx={current} onPick={goTo} />}
+      {paged && (
+        <NextTabLink names={names.short.map((n, i) => `Page ${i + 1} · ${n}`)} activeIdx={current} onPick={goTo} />
+      )}
     </div>
   );
 }

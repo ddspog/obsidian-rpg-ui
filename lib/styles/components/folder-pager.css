@@ -114,6 +114,15 @@
   margin: 0;
 }
 
+/* A page's name stays on one line, however long its entries' names: the list it opens has them in
+ * full. */
+.rpg-folder-pager .rpg-tab-compact__name,
+.rpg-folder-pager .rpg-tab-next__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* A zero-height sticky holder, so showing the docked row moves nothing. */
 .rpg-folder-pager__dock {
   position: sticky;

@@ -17,6 +17,7 @@ export function CompactTabNav({
   label,
   part = false,
   tag = part ? "Part" : undefined,
+  listNames = names,
 }: {
   names: string[];
   activeIdx: number;
@@ -26,6 +27,8 @@ export function CompactTabNav({
   part?: boolean;
   /** The word before the name (`Part`, `Page`); a part row has `Part` unless told otherwise. */
   tag?: string;
+  /** The names in the list the row opens, when they are longer than the row's (`names`). */
+  listNames?: string[];
 }) {
   const n = names.length;
   return (
@@ -51,7 +54,7 @@ export function CompactTabNav({
           value={activeIdx}
           onChange={(e) => onPick(Number(e.target.value))}
         >
-          {names.map((name, i) => (
+          {listNames.map((name, i) => (
             <option key={i} value={i}>
               {`${i + 1}. ${name}`}
             </option>

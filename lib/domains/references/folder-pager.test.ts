@@ -11,6 +11,7 @@ import {
   countText,
   DEFAULT_PHONE_PAGE_SIZE,
   fieldLabel,
+  guideWords,
   pageNames,
   pagerFields,
 } from "./folder-pager";
@@ -109,8 +110,18 @@ describe("pager words", () => {
 });
 
 describe("pageNames", () => {
-  it("names each page by its first and last entries", () => {
+  it("names each page by its first and last entries, short and in full", () => {
     const items = ["Ape", "Bat", "Cat", "Deer", "Elk"].map((name) => ({ key: name, name, data: {} }));
-    expect(pageNames(items, 2)).toEqual(["Ape – Bat", "Cat – Deer", "Elk"]);
+    expect(pageNames(items, 2)).toEqual({
+      short: ["Ape – Bat", "Cat – Deer", "Elk"],
+      full: ["Ape – Bat", "Cat – Deer", "Elk"],
+    });
+  });
+
+  it("cuts names to the words a reader tells them apart by", () => {
+    expect(guideWords("Ammunition, +1, +2 or +3", "Apparatus of the Crab")).toBe("Ammunition – Apparatus");
+    expect(guideWords("Potion of Climbing", "Potion of Mind Reading")).toBe("Potion of Climbing – Mind");
+    expect(guideWords("Snake, Constrictor", "Snake, Poisonous")).toBe("Snake Constrictor – Poisonous");
+    expect(guideWords("Wings of Flying", "Wings of Flying")).toBe("Wings");
   });
 });
