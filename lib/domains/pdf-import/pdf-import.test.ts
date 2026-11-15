@@ -911,8 +911,24 @@ describe("styles of other books", () => {
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
     // Companions: Beasts and Animal-tagged creatures by who can take their form.
+    expect(place("creature", "Deer", { type: "Beast", cr: "0" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Deer"
+    );
+    // Familiars, Pact of the Chain's forms, and what summoning spells call up.
     expect(place("creature", "Bat", { type: "Beast", cr: "0" }, [])).toBe(
-      "tov/worldbuilding/bestiary/creatures/druid-forms/Bat"
+      "tov/worldbuilding/bestiary/creatures/familiars/normal/Bat"
+    );
+    expect(place("creature", "Snake, Poisonous", { type: "Beast", cr: "1/8" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/familiars/normal/Snake, Poisonous"
+    );
+    expect(place("creature", "Devil, Imp", { type: "Fiend (Devil)", cr: "1" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/familiars/warlock/Devil, Imp"
+    );
+    expect(place("creature", "Fire Elemental", { type: "Elemental", cr: "5" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/summons/Fire Elemental"
+    );
+    expect(place("creature", "Giant Spider", { type: "Beast", cr: "1" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Giant Spider"
     );
     expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal", cr: "3" }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/shifter-forms/Owlbear"
@@ -939,7 +955,9 @@ describe("styles of other books", () => {
     expect(place("creature", "Guard", { type: "humanoid", npc: true }, [])).toBe(
       "tov/worldbuilding/bestiary/families/humanoids/Guard"
     );
-    expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/families/fiends/Imp");
+    expect(place("creature", "Lemure", { type: "Fiend" }, [])).toBe(
+      "tov/worldbuilding/bestiary/families/fiends/Lemure"
+    );
     expect(place("creature", "Owlbear", { type: "Monstrosity" }, [])).toBe(
       "tov/worldbuilding/bestiary/families/monstrosities/Owlbear"
     );

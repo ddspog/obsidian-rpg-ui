@@ -76,11 +76,60 @@ export function typePlural(type: string): string {
  * - creatures/shifter-forms: a Beast or Animal-tagged creature of CR 6 or lower, which only a Shifter
  *   druid may take (Potent Forms);
  * - creatures/spell-forms: a Beast or Animal-tagged creature beyond that, reached only by spells;
+ * - creatures/familiars/normal and /warlock: the forms *find familiar* offers, and those only Pact of the
+ *   Chain adds;
+ * - creatures/summons: what the summoning spells raise or call (Animate Dead, Create Undead, Conjure
+ *   Elemental);
  * - families/<types>: every other creature, the book's NPCs included, by its type.
  */
-const creatureFolder = (info: PlaceInfo): string => {
+const FAMILIARS = new Set([
+  "bat",
+  "cat",
+  "crab",
+  "frog",
+  "toad",
+  "hawk",
+  "lizard",
+  "octopus",
+  "owl",
+  "poisonous snake",
+  "quipper",
+  "rat",
+  "raven",
+  "seahorse",
+  "spider",
+  "weasel",
+]);
+const PACT_FAMILIARS = new Set(["blink dog", "imp", "pseudodragon", "quasit"]);
+const SUMMONS = new Set([
+  "skeleton",
+  "zombie",
+  "ghoul",
+  "air elemental",
+  "earth elemental",
+  "fire elemental",
+  "water elemental",
+]);
+
+/** The names a creature goes by: `Snake, Poisonous` is also `poisonous snake`, `Devil, Imp` also `imp`. */
+function namesOf(title: string): string[] {
+  const t = title
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, "")
+    .trim();
+  const m = t.match(/^([^,]+),\s*(.+)$/);
+  return m ? [t, m[2], `${m[2]} ${m[1]}`] : [t];
+}
+
+const creatureFolder = (info: PlaceInfo, title: string): string => {
   const type = (info.type ?? "").toLowerCase();
   if (info.steed) return "bestiary/creatures/steeds";
+  const names = namesOf(title);
+  if (!info.legendary) {
+    if (names.some((n) => PACT_FAMILIARS.has(n))) return "bestiary/creatures/familiars/warlock";
+    if (/\bbeast\b/.test(type) && names.some((n) => FAMILIARS.has(n))) return "bestiary/creatures/familiars/normal";
+    if (names.some((n) => SUMMONS.has(n))) return "bestiary/creatures/summons";
+  }
   const beast = /\bbeasts?\b/.test(type);
   const animal = beast || /\banimal\b/i.test(info.tags ?? "");
   if (animal) {
@@ -117,7 +166,7 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/spells/${folder}/${name}`;
       }
       case "creature":
-        return `${world}/${creatureFolder(info)}/${name}`;
+        return `${world}/${creatureFolder(info, title)}/${name}`;
       case "creature category":
         // An entry's lore, named as the book names the entry, with no mark: its stat blocks link to it.
         return `${world}/bestiary/${info.npc ? "npcs" : "monsters"}/categories/${fileName(title)}`;
