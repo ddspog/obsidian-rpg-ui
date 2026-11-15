@@ -27,7 +27,7 @@ One real note per thing worth looking at, in `testing-vault` (the owner's vault,
 | Hazard                             | `…/worldbuilding/dangers/hazards/Extreme Cold.md`                                                                         | `feature.danger`                                                                  |
 | Items                              | `…/items/tools/Artist Tools.md`, `…/equipment-packs/Burglar's Pack.md`, `…/enchantments/Sword of Vengeance ᴰ.md`          | `item.element`, `item.magic`                                                      |
 | Containers and personal items      | `…/adventuring/collected/magic/Kowyn's Bag.md`, `Druid Glaive.md`                                                         | `item.container`, `item.personal`                                                 |
-| Statblocks                         | `…/bestiary/creatures/beast-forms/Panther.md`, `…/vehicles/land/Sand Skimmer.md`, `…/monsters/categories/Lycanthropes.md` | `stat.monster`, `stat.vehicle`, `stat.category`                                   |
+| Statblocks                         | `…/bestiary/creatures/druid-forms/Panther.md`, `…/vehicles/land/Sand Skimmer.md`, `…/monsters/categories/Lycanthropes.md` | `stat.monster`, `stat.vehicle`, `stat.category`                                   |
 | Spell card, spell lists            | `…/spells/1st-circle/Goodberry.md`, `…/spells/spell-lists/Arcane.md`                                                      | `spell`, `list.*` and its tabs                                                    |
 | Tables, figures                    | `…/gm-tools/oracle/Fate Chart.md`, `…/glossary/topics/solo-scenes/Generating NPC Behavior.md`                             | `table.*`, `figure.mermaid`                                                       |
 | Standalone inventory               | `Sandbox/Tests/11-TEST-INVENTORY.md`                                                                                      | the `inventory` block                                                             |
@@ -50,5 +50,6 @@ Phone first, then desktop, by eye on these notes (no Impeccable score yet unless
 | Hex maps (world map)                               | controls reworked                     | reviewed                              |
 | Statblocks, items, spell cards, features           | reviewed, fixed                       | reviewed                              |
 | Rule tabs, tables, spell lists                     | reviewed, fixed                       | reviewed, fixed                       |
+| Folder-call pager (search, filters, pages)         | reviewed, fixed (Impeccable)          | reviewed, fixed (Impeccable)          |
 | Legacy blocks, `system.*`, draft, `figure.mermaid` | not reviewed                          | not reviewed                          |
 | Standalone `inventory`, `character.sheet`          | not reviewed                          | not reviewed                          |

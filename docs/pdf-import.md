@@ -97,20 +97,24 @@ text, tabs and tables.
 
 With **File into a system** set to a folder laid out like `tales-of-the-valiant`:
 
-| What                                                  | Where                                                                                                                                                                         |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------- |
-| The book's chapters                                   | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`)                                                                                      |
-| Spells                                                | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, …                                                                                                         |
-| Creatures the book prices as mounts                   | `worldbuilding/bestiary/creatures/steeds/`                                                                                                                                    |
-| What a druid may turn into                            | `worldbuilding/bestiary/animals/`: a creature with the Animal tag, or one in a section the book lists for druids' forms; in a book given a name mark, also a Beast below CR 6 |
-| The book's own nonplayer characters                   | `worldbuilding/bestiary/npcs/`: creatures under a heading that says NPCs or nonplayer characters                                                                              |
-| Other creatures                                       | `worldbuilding/bestiary/monsters/<creature type>/` (`beast`, `humanoid`, `fiend`…), the type as the stat block gives it                                                       |
-| Vehicles                                              | `worldbuilding/bestiary/vehicles/<land                                                                                                                                        | water   | air>/`, as `rpg stat.vehicle` |
-| Creatures' traits and actions                         | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits`                                                                                                |
-| Magic items                                           | `worldbuilding/enchantments/`                                                                                                                                                 |
-| Weapons, armor, gear, tools                           | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/`                                                           |
-| Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses`, `lineages`, `heritages`, `backgrounds`                                                                                          |
-| Talents                                               | `worldbuilding/traits/talents/<magic                                                                                                                                          | martial | technical>/`                  |
+| What                                                  | Where                                                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------ |
+| The book's chapters                                   | `compendium/<book-name>/` (a new folder; if one of that name has notes, `<book-name>-2`)                                                                                           |
+| Spells                                                | `worldbuilding/spells/cantrips`, `1st-circle`, `1st-circle-ritual`, …                                                                                                              |
+| Creatures the book prices as mounts                   | `worldbuilding/bestiary/creatures/steeds/`                                                                                                                                         |
+| Beasts any druid may turn into                        | `worldbuilding/bestiary/creatures/druid-forms/`: a Beast of CR 2 or lower without legendary or lair actions                                                                        |
+| Forms only a Shifter druid may take                   | `worldbuilding/bestiary/creatures/shifter-forms/`: a Beast or Animal-tagged creature of CR 6 or lower                                                                              |
+| Forms only spells reach                               | `worldbuilding/bestiary/creatures/spell-forms/`: a Beast or Animal-tagged creature beyond CR 6, or with legendary or lair actions                                                  |
+| Familiars                                             | `worldbuilding/bestiary/creatures/familiars/`: the Beasts _find familiar_ offers (bat, cat, owl, poisonous snake…); `chain-pacts/`: blink dog, imp, pseudodragon, quasit           |
+| Summons                                               | `worldbuilding/bestiary/creatures/summons/`: what Animate Dead, Create Undead and Conjure Elemental call up (skeleton, zombie, ghoul, the four elementals); they keep their family |
+| Monsters and the book's NPCs                          | `worldbuilding/bestiary/families/<types>/` (`humanoids`, `fiends`, `fey`…), the type as the stat block gives it                                                                    |
+| An entry's lore (`Kobolds`, over its stat blocks)     | `worldbuilding/bestiary/monsters/categories/` (`npcs/categories/` for NPCs) as `rpg stat.category`; each of its creatures carries `category: "[[Kobolds]]"`                        |
+| Vehicles                                              | `worldbuilding/bestiary/vehicles/<land\|water\|air>/`, as `rpg stat.vehicle`                                                                                                       |
+| Creatures' traits and actions                         | one note a creature type, `worldbuilding/traits/features/<Book> <Type> Traits`                                                                                                     |
+| Magic items                                           | `worldbuilding/enchantments/<type>/`: `armor`, `weapon`, `wondrous`, `potion`, `ring`, `rod-staff-wand`, `scroll`                                                                  |
+| Weapons, armor, gear, tools                           | `worldbuilding/items/weapons/<simple-melee…>/`, `items/armor/<light…>/`, `items/adventuring-gear/…`, `items/tools/`                                                                |
+| Classes, subclasses, lineages, heritages, backgrounds | `worldbuilding/traits/classes`, `subclasses` (named with their class: `Draconic (Sorcerer)`), `lineages`, `heritages`, `backgrounds`                                               |
+| Talents                                               | `worldbuilding/traits/talents/<magic                                                                                                                                               | martial | technical>/` |
 
 - **A note the vault already has is never written over.** The book links to the one that is there, and
   the contents note lists which were left alone.
@@ -222,7 +226,9 @@ textured, coloured pages; expect to fix names and numbers by hand.
 1. **Text, pictures and shading** come from the PDF with pdf.js (Obsidian's own copy). A page with no text and a
    picture over most of it goes to OCR, and its words then take the same path.
 2. **Furniture is dropped**: running heads and page numbers (text in the margins that repeats down the book),
-   and pictures that repeat (page backgrounds, rules). Tables of contents and the index are skipped.
+   pictures that repeat (page backgrounds, rules), and long thin strips that are page dressing rather than art: a
+   coloured bar drawn mostly in transparency (the ribbons under headings), or grey heading text set as a picture.
+   Tables of contents and the index are skipped.
 3. **Columns** are found from the empty strips that run down a page; the book's usual columns settle pages that
    are unclear on their own. What lies across columns (a wide heading, a wide table) splits the columns under it
    into bands; a column nothing crosses reads top to bottom.

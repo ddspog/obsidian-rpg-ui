@@ -433,7 +433,12 @@ emit("start", {
 let result;
 try {
   const data = new Uint8Array(fs.readFileSync(pdfPath));
-  const doc = await pdfjs.getDocument({ data, verbosity: 0, isOffscreenCanvasSupported: false }).promise;
+  const doc = await pdfjs.getDocument({
+    data,
+    verbosity: 0,
+    isOffscreenCanvasSupported: false,
+    fontExtraProperties: true,
+  }).promise;
   result = await importPdf(pdfjs, doc, options, host);
 } catch (e) {
   if (ocrWorker) await ocrWorker.terminate();

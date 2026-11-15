@@ -1,0 +1,192 @@
+/**
+ * Paging and filtering for folder calls (`@[[folder/]].magic()`), whose folders can hold
+ * hundreds of notes: only a page of them is rendered at a time, and a search box and a
+ * select per field (rarity, type, CR…) narrow what is listed.
+ *
+ * Chain options:
+ *   .paginate(10)        a page of 10 (the default is DEFAULT_PAGE_SIZE, or DEFAULT_PHONE_PAGE_SIZE on a phone)
+ *   .paginate(0)         every note at once, no controls
+ *   .facets(rarity, type) the fields offered as selects (views have defaults, see DEFAULT_FACETS)
+ */
+
+import type { FenceMatch } from "./fence-scan";
+import type { ChainSegment } from "./parse-call";
+
+export const DEFAULT_PAGE_SIZE = 12;
+/** A phone shows fewer: a page of 12 stat blocks is many screens long. */
+export const DEFAULT_PHONE_PAGE_SIZE = 6;
+
+/** The fields a view's notes are usually told apart by. */
+export const DEFAULT_FACETS: Record<string, string[]> = {
+  magic: ["rarity", "type"],
+  spell: ["circle", "school"],
+  stat: ["type", "cr"],
+  bare: ["type", "cr"],
+};
+
+export interface PagerOptions {
+  /** Notes a page; 0 shows them all. */
+  size: number;
+  facets: string[];
+  /** Set by the call itself (`.paginate(n)` or `.facets(…)`), not by default. */
+  explicit: boolean;
+  /** What the notes are, for the count: `241 items`, `1 creature`. */
+  noun: [string, string];
+}
+
+/** The words a view's notes are counted in. */
+const NOUNS: Record<string, [string, string]> = {
+  magic: ["item", "items"],
+  item: ["item", "items"],
+  stat: ["creature", "creatures"],
+  spell: ["spell", "spells"],
+};
+
+/** A field's name as a reader knows it: `cr` → `CR`, `rarity` → `Rarity`. */
+export function fieldLabel(field: string): string {
+  const last = field.split(".").pop() ?? field;
+  if (last.length <= 2) return last.toUpperCase();
+  return last.charAt(0).toUpperCase() + last.slice(1);
+}
+
+/** `241 items`, or `3 of 241 items` when the list is narrowed. */
+export function countText(shown: number, total: number, noun: [string, string]): string {
+  const word = total === 1 ? noun[0] : noun[1];
+  return shown === total ? `${total} ${word}` : `${shown} of ${total} ${word}`;
+}
+
+export interface PagerItem {
+  key: string;
+  name: string;
+  data: Record<string, unknown>;
+}
+
+export function pagerOptions(chain: ChainSegment[], view: string, phone = false): PagerOptions {
+  const paginate = chain.find((s) => s.fn === "paginate");
+  const facets = chain.find((s) => s.fn === "facets");
+  const size =
+    paginate && paginate.args.length
+      ? Math.max(0, Math.floor(Number(paginate.args[0]) || 0))
+      : phone
+        ? DEFAULT_PHONE_PAGE_SIZE
+        : DEFAULT_PAGE_SIZE;
+  return {
+    size,
+    facets: facets ? facets.args.map((a) => String(a).trim()).filter(Boolean) : (DEFAULT_FACETS[view] ?? []),
+    explicit: !!paginate || !!facets,
+    noun: NOUNS[view] ?? ["note", "notes"],
+  };
+}
+
+/** A field's value as words to show and compare: `[[Rare]]` → `Rare`, a list joined. */
+export function facetValue(data: Record<string, unknown>, field: string): string {
+  const raw = field
+    .split(".")
+    .reduce<unknown>((v, k) => (v && typeof v === "object" ? (v as Record<string, unknown>)[k] : undefined), data);
+  // Values grouped as a reader picks them: `Weapon (Any Sword)` is a Weapon, `Medium Fiend (Demon)` a Fiend.
+  const one = (v: unknown) =>
+    String(v ?? "")
+      .replace(/\[\[([^\]|]+\|)?([^\]]+)\]\]/g, "$2")
+      .replace(/\s*\([^)]*\)/g, "")
+      .replace(/^(?:(?:tiny|small|medium|large|huge|gargantuan)(?:\s+or\s+|\s+))+/i, "")
+      .trim();
+  return Array.isArray(raw) ? raw.map(one).filter(Boolean).join(", ") : one(raw);
+}
+
+/** The values a field takes across the items, in order (numbers and fractions by value). */
+export function facetChoices(items: PagerItem[], field: string): string[] {
+  const seen = new Set<string>();
+  for (const it of items) {
+    const v = facetValue(it.data, field);
+    if (v) seen.add(v);
+  }
+  const num = (s: string) => {
+    const m = s.match(/^(\d+)(?:\/(\d+))?$/);
+    return m ? Number(m[1]) / Number(m[2] ?? 1) : NaN;
+  };
+  return [...seen].sort((a, b) => {
+    const na = num(a);
+    const nb = num(b);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+}
+
+/** The items whose name has the search words and whose fields have the values chosen. */
+export function filterItems<T extends PagerItem>(items: T[], search: string, chosen: Record<string, string>): T[] {
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  return items.filter((it) => {
+    const name = it.name.toLowerCase();
+    if (!words.every((w) => name.includes(w))) return false;
+    for (const [field, value] of Object.entries(chosen)) {
+      if (!value) continue;
+      const v = facetValue(it.data, field);
+      if (!v.split(", ").includes(value) && v !== value) return false;
+    }
+    return true;
+  });
+}
+
+export function pageCount(total: number, size: number): number {
+  return size > 0 ? Math.max(1, Math.ceil(total / size)) : 1;
+}
+
+/**
+ * Two names cut short, as a tab is named in a word: each to its first word (`Ammunition – Apparatus`),
+ * or, when they start alike, up to the word where they part, the shared start said once
+ * (`Potion of Climbing – Mind`).
+ */
+export function guideWords(first: string, last: string): string {
+  const words = (s: string) =>
+    s
+      .replace(/\s*\([^)]*\)/g, "")
+      .split(/\s+/)
+      .map((w) => w.replace(/[,;:.]+$/, ""))
+      .filter(Boolean);
+  const a = words(first);
+  const b = words(last);
+  // One entry (or two of a name): its first word.
+  if (a.join(" ").toLowerCase() === b.join(" ").toLowerCase()) return a[0] ?? "";
+  let at = 0;
+  while (at < a.length - 1 && at < b.length - 1 && a[at].toLowerCase() === b[at].toLowerCase()) at++;
+  // What they share is said once: `Ring of Regeneration – Swimming`.
+  return `${a.slice(0, at + 1).join(" ")} – ${b[at]}`;
+}
+
+/** The entries of each page: its first and last, short (for the row) and in full (for the list). */
+export function pageNames(items: PagerItem[], size: number): { short: string[]; full: string[] } {
+  const n = pageCount(items.length, size);
+  const short: string[] = [];
+  const full: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const page = size > 0 ? items.slice(i * size, i * size + size) : items;
+    const first = page[0]?.name ?? "";
+    const last = page[page.length - 1]?.name ?? "";
+    short.push(guideWords(first, last));
+    full.push(first === last ? first : `${first} – ${last}`);
+  }
+  return { short, full };
+}
+
+/** The items of page `page` (0-based), the page kept in range. */
+export function pageOf<T>(items: T[], page: number, size: number): { items: T[]; page: number } {
+  if (size <= 0) return { items, page: 0 };
+  const last = pageCount(items.length, size) - 1;
+  const p = Math.min(Math.max(0, page), last);
+  return { items: items.slice(p * size, p * size + size), page: p };
+}
+
+/**
+ * The fields a note is told apart by: its frontmatter under its own entity's block (the stat
+ * block, the magic item), not a side box beside it (a `rule.side` "Variant" with `type: rules`).
+ * `fallback` is used when the note has no such block.
+ */
+export function pagerFields(
+  fences: FenceMatch[],
+  frontmatter: Record<string, unknown>,
+  fallback: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const top = fences.filter((f) => !fences.some((g) => g !== f && g.start < f.start && g.end > f.end));
+  const own = top.find((f) => f.entity !== "rule" && f.body);
+  return { ...frontmatter, ...(own?.body ?? fallback) };
+}

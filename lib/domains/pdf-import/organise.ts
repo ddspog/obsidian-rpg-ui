@@ -5,12 +5,13 @@
  *
  *   compendium/<book>/                the book's chapters
  *   worldbuilding/spells/<circle>/    cantrips, 1st-circle, 1st-circle-ritual…
- *   worldbuilding/bestiary/animals/           what a druid may turn into (the Animal tag, a druid's list)
- *   worldbuilding/bestiary/creatures/steeds/  what the book prices as a mount
- *   worldbuilding/bestiary/npcs/              the book's own nonplayer characters
- *   worldbuilding/bestiary/monsters/<type>/   everything else, by creature type (beast, humanoid, fiend…)
+ *   worldbuilding/bestiary/creatures/<forms>/  companions: Beasts and Animal-tagged creatures by who can
+ *                                              turn into them (druid-forms, shifter-forms, spell-forms)
+ *   worldbuilding/bestiary/creatures/steeds/   what the book prices as a mount
+ *   worldbuilding/bestiary/families/<types>/   monsters and NPCs, by creature type (humanoids, fiends…)
+ *   worldbuilding/bestiary/<monsters|npcs>/categories/  an entry's lore, which its stat blocks name as `category`
  *   worldbuilding/bestiary/vehicles/<land|water|air>/
- *   worldbuilding/enchantments/       magic items
+ *   worldbuilding/enchantments/<type>/  magic items, by item type (armor, weapon, wondrous, potion…)
  *   worldbuilding/items/weapons/<kind>/, items/armor/<kind>/, items/adventuring-gear/…, items/tools/
  *   worldbuilding/traits/classes|subclasses|lineages|heritages|backgrounds/
  *   worldbuilding/traits/talents/<magic|martial|technical>/
@@ -34,6 +35,10 @@ export interface PlaceInfo {
   druid?: boolean;
   /** The creature sits where the book lists its nonplayer characters. */
   npc?: boolean;
+  /** The creature has legendary or lair actions, which no druid's form may have. */
+  legendary?: boolean;
+  /** A subclass's class. */
+  parent?: string;
 }
 
 export type Placer = (kind: string, title: string, info: PlaceInfo, trail: string[]) => string;
@@ -54,20 +59,98 @@ const rating = (cr: string | undefined): number => {
   return m ? Number(m[1]) / Number(m[2] ?? 1) : NaN;
 };
 
+/** `humanoid` → `humanoids`, `monstrosity` → `monstrosities`; `fey` and `undead` stay. */
+export function typePlural(type: string): string {
+  const t = slug(type.replace(/\(.*\)/g, "").replace(/^swarm of \w+ /i, "swarm "));
+  if (!t) return "other";
+  if (/^(fey|undead)$/.test(t)) return t;
+  if (/^swarm/.test(t)) return "swarms";
+  if (/y$/.test(t)) return t.replace(/y$/, "ies");
+  return `${t}s`;
+}
+
 /**
- * - steeds: what the book prices as a mount;
- * - animals: what carries the Animal tag, or sits where the book lists a druid's forms, or, in a
- *   book from outside the system (one given a name mark), a Beast below CR 6;
- * - npcs: what sits in the book's own section of nonplayer characters;
- * - monsters/<type>: everything else, a Beast or a Humanoid included.
+ * - creatures/steeds: what the book prices as a mount;
+ * - creatures/druid-forms: a Beast of CR 2 or lower without legendary or lair actions, which any
+ *   druid may take the form of;
+ * - creatures/shifter-forms: a Beast or Animal-tagged creature of CR 6 or lower, which only a Shifter
+ *   druid may take (Potent Forms);
+ * - creatures/spell-forms: a Beast or Animal-tagged creature beyond that, reached only by spells;
+ * - creatures/familiars and creatures/chain-pacts: the forms *find familiar* offers, and those only Pact of the
+ *   Chain adds;
+ * - creatures/summons: what the summoning spells raise or call (Animate Dead, Create Undead, Conjure
+ *   Elemental);
+ * - families/<types>: every other creature, the book's NPCs included, by its type.
  */
-const creatureFolder = (info: PlaceInfo, outside: boolean): string => {
+const FAMILIARS = new Set([
+  "bat",
+  "cat",
+  "crab",
+  "frog",
+  "toad",
+  "hawk",
+  "lizard",
+  "octopus",
+  "owl",
+  "poisonous snake",
+  "quipper",
+  "rat",
+  "raven",
+  "seahorse",
+  "spider",
+  "weasel",
+]);
+const PACT_FAMILIARS = new Set(["blink dog", "imp", "pseudodragon", "quasit"]);
+const SUMMONS = new Set([
+  "skeleton",
+  "zombie",
+  "ghoul",
+  "air elemental",
+  "earth elemental",
+  "fire elemental",
+  "water elemental",
+]);
+
+/** The names a creature goes by: `Snake, Poisonous` is also `poisonous snake`, `Devil, Imp` also `imp`. */
+function namesOf(title: string): string[] {
+  const t = title
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, "")
+    .trim();
+  const m = t.match(/^([^,]+),\s*(.+)$/);
+  return m ? [t, m[2], `${m[2]} ${m[1]}`] : [t];
+}
+
+const creatureFolder = (info: PlaceInfo, title: string): string => {
   const type = (info.type ?? "").toLowerCase();
   if (info.steed) return "bestiary/creatures/steeds";
-  if (/\banimal\b/i.test(info.tags ?? "") || info.druid) return "bestiary/animals";
-  if (outside && /\bbeast\b/.test(type) && rating(info.cr) < 6) return "bestiary/animals";
-  if (info.npc) return "bestiary/npcs";
-  return `bestiary/monsters/${slug(type) || "other"}`;
+  const names = namesOf(title);
+  if (!info.legendary) {
+    if (names.some((n) => PACT_FAMILIARS.has(n))) return "bestiary/creatures/chain-pacts";
+    if (/\bbeast\b/.test(type) && names.some((n) => FAMILIARS.has(n))) return "bestiary/creatures/familiars";
+    if (names.some((n) => SUMMONS.has(n))) return "bestiary/creatures/summons";
+  }
+  const beast = /\bbeasts?\b/.test(type);
+  const animal = beast || /\banimal\b/i.test(info.tags ?? "");
+  if (animal) {
+    const cr = rating(info.cr);
+    if (beast && !info.legendary && !(cr > 2)) return "bestiary/creatures/druid-forms";
+    if (!info.legendary && !(cr > 6)) return "bestiary/creatures/shifter-forms";
+    return "bestiary/creatures/spell-forms";
+  }
+  return `bestiary/families/${typePlural(type)}`;
+};
+
+/** A magic item's folder, by the kind its line names (`Wondrous Item`, `Armor (Plate)`, `Ring`). */
+const magicFolder = (type: string): string => {
+  const t = type.toLowerCase();
+  if (/armor|shield/.test(t)) return "armor";
+  if (/weapon|ammunition/.test(t)) return "weapon";
+  if (/potion|oil|philter|elixir/.test(t)) return "potion";
+  if (/\bring\b/.test(t)) return "ring";
+  if (/\b(rod|staff|wand)\b/.test(t)) return "rod-staff-wand";
+  if (/scroll/.test(t)) return "scroll";
+  return "wondrous";
 };
 
 /** The note path (no `.md`), from the vault's root, for an entity of a book imported into `system`. */
@@ -83,7 +166,10 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/spells/${folder}/${name}`;
       }
       case "creature":
-        return `${world}/${creatureFolder(info, !!marker.trim())}/${name}`;
+        return `${world}/${creatureFolder(info, title)}/${name}`;
+      case "creature category":
+        // An entry's lore, named as the book names the entry, with no mark: its stat blocks link to it.
+        return `${world}/bestiary/${info.npc ? "npcs" : "monsters"}/categories/${fileName(title)}`;
       case "vehicle": {
         const medium = (info.type ?? "").toLowerCase().match(/\b(land|water|air|space)\b/)?.[1] ?? "other";
         return `${world}/bestiary/vehicles/${medium}/${name}`;
@@ -92,13 +178,17 @@ export function placer(system: string, book: string, marker = ""): Placer {
         // One note a creature type, named for the book so it never meets one written by hand.
         return `${world}/traits/features/${fileName(`${book} ${title} Traits`)}${mark}`;
       case "magic item":
-        return `${world}/enchantments/${name}`;
+        return `${world}/enchantments/${magicFolder(info.type ?? "")}/${name}`;
       case "item":
         return `${world}/${itemFolder(info.type ?? "")}/${name}`;
       case "class":
         return `${world}/traits/classes/${name}`;
-      case "subclass":
-        return `${world}/traits/subclasses/${name}`;
+      case "subclass": {
+        // Named with its class (`Draconic (Sorcerer)`), so it never meets a language or spell of its name.
+        const parent = (info.parent ?? "").replace(/^\d+\.\s*/, "").trim();
+        const full = parent && !title.toLowerCase().includes(parent.toLowerCase()) ? `${title} (${parent})` : title;
+        return `${world}/traits/subclasses/${fileName(full)}${mark}`;
+      }
       case "lineage":
         return `${world}/traits/lineages/${name}`;
       case "heritage":

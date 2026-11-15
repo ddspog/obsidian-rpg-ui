@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { toBlocks } from "./blocks";
-import { dieOf, emitBook, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
+import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
-import { fontName, isBold, isItalic } from "./extract";
+import { fixGlyphs, fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic, ligatureGuesses } from "./extract";
 import { layoutPage, findFurniture } from "./layout";
 import { parseLooks } from "./llm";
 import { lookFor } from "./looks";
@@ -142,6 +142,17 @@ describe("blocks", () => {
     expect(list.items[1].map((s) => s.text).join("")).toBe(
       "Second thing, which is long enough to wrap onto another line"
     );
+  });
+
+  it("never takes a line that opens with a bullet for a heading", () => {
+    const runs = [
+      run("Lair Actions", 72, 100, 26, "Modesto-Light"),
+      ...filler(120, 3),
+      run("• Heat Blast. A ripple of", 77, 170, 16, "Modesto-Light"),
+      ...filler(190, 3),
+    ];
+    const blocks = blocksOf(runs);
+    expect(blocks.filter((b) => b.type === "heading")).toHaveLength(1);
   });
 
   it("reads a shaded box of aligned cells as a table with its caption", () => {
@@ -899,32 +910,80 @@ describe("styles of other books", () => {
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
-    // Animals: the Animal tag, a druid's list, or (in a book from outside the system) a Beast below CR 6.
-    expect(place("creature", "Bat", { type: "Beast", druid: true }, [])).toBe("tov/worldbuilding/bestiary/animals/Bat");
-    expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal" }, [])).toBe(
-      "tov/worldbuilding/bestiary/animals/Owlbear"
+    // Companions: Beasts and Animal-tagged creatures by who can take their form.
+    expect(place("creature", "Deer", { type: "Beast", cr: "0" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Deer"
     );
-    expect(place("creature", "Wolf", { type: "Beast", cr: "1/4" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/beast/Wolf"
+    // Familiars, Pact of the Chain's forms, and what summoning spells call up.
+    expect(place("creature", "Bat", { type: "Beast", cr: "0" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/familiars/Bat"
     );
-    const outside = placer("tov", "SRD", "ᴰ");
-    expect(outside("creature", "Wolf", { type: "beast", cr: "1/4" }, [])).toBe(
-      "tov/worldbuilding/bestiary/animals/Wolf ᴰ"
+    expect(place("creature", "Snake, Poisonous", { type: "Beast", cr: "1/8" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/familiars/Snake, Poisonous"
     );
-    expect(outside("creature", "Mammoth", { type: "beast", cr: "6" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/beast/Mammoth ᴰ"
+    expect(place("creature", "Devil, Imp", { type: "Fiend (Devil)", cr: "1" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/chain-pacts/Devil, Imp"
+    );
+    expect(place("creature", "Fire Elemental", { type: "Elemental", cr: "5" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/summons/Fire Elemental"
+    );
+    expect(place("creature", "Giant Spider", { type: "Beast", cr: "1" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Giant Spider"
+    );
+    expect(place("creature", "Owlbear", { type: "Monstrosity", tags: "Animal", cr: "3" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/shifter-forms/Owlbear"
+    );
+    expect(place("creature", "Elephant", { type: "Beast", cr: "4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/shifter-forms/Elephant"
+    );
+    expect(place("creature", "Roc", { type: "Beast", cr: "11" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/spell-forms/Roc"
+    );
+    expect(place("creature", "Giant Boar", { type: "Beast", cr: "2", legendary: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/spell-forms/Giant Boar"
+    );
+    expect(place("creature", "Rats", { type: "Swarm of Tiny Beasts", cr: "1/4" }, [])).toBe(
+      "tov/worldbuilding/bestiary/creatures/druid-forms/Rats"
     );
     expect(place("creature", "Pony", { type: "Beast", steed: true }, [])).toBe(
       "tov/worldbuilding/bestiary/creatures/steeds/Pony"
     );
-    // Humanoids are monsters unless the book lists them among its nonplayer characters.
+    // Monsters and NPCs: by type, their entries' lore in category notes.
     expect(place("creature", "Goblin", { type: "humanoid" }, [])).toBe(
-      "tov/worldbuilding/bestiary/monsters/humanoid/Goblin"
+      "tov/worldbuilding/bestiary/families/humanoids/Goblin"
     );
     expect(place("creature", "Guard", { type: "humanoid", npc: true }, [])).toBe(
-      "tov/worldbuilding/bestiary/npcs/Guard"
+      "tov/worldbuilding/bestiary/families/humanoids/Guard"
     );
-    expect(place("creature", "Imp", { type: "Fiend" }, [])).toBe("tov/worldbuilding/bestiary/monsters/fiend/Imp");
+    expect(place("creature", "Lemure", { type: "Fiend" }, [])).toBe(
+      "tov/worldbuilding/bestiary/families/fiends/Lemure"
+    );
+    expect(place("creature", "Owlbear", { type: "Monstrosity" }, [])).toBe(
+      "tov/worldbuilding/bestiary/families/monstrosities/Owlbear"
+    );
+    expect(place("creature", "Dryad", { type: "Fey" }, [])).toBe("tov/worldbuilding/bestiary/families/fey/Dryad");
+    expect(place("creature category", "Kobolds", {}, [])).toBe(
+      "tov/worldbuilding/bestiary/monsters/categories/Kobolds"
+    );
+    expect(place("creature category", "Guards", { npc: true }, [])).toBe(
+      "tov/worldbuilding/bestiary/npcs/categories/Guards"
+    );
+    // Magic items by type; subclasses named with their class.
+    expect(place("magic item", "Bag of Holding", { type: "Wondrous Item" }, [])).toBe(
+      "tov/worldbuilding/enchantments/wondrous/Bag of Holding"
+    );
+    expect(place("magic item", "Wand of Webs", { type: "Wand" }, [])).toBe(
+      "tov/worldbuilding/enchantments/rod-staff-wand/Wand of Webs"
+    );
+    expect(place("magic item", "Flame Tongue", { type: "Weapon (any sword)" }, [])).toBe(
+      "tov/worldbuilding/enchantments/weapon/Flame Tongue"
+    );
+    expect(place("subclass", "Draconic", { parent: "Sorcerer" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Draconic (Sorcerer)"
+    );
+    expect(place("subclass", "Life Domain", { parent: "13. Cleric" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Life Domain (Cleric)"
+    );
     expect(place("vehicle", "Galley", { type: "Gargantuan Water Vehicle" }, [])).toBe(
       "tov/worldbuilding/bestiary/vehicles/water/Galley"
     );
@@ -983,8 +1042,149 @@ describe("styles of other books", () => {
     const traits = files.find((f) => f.path === "tov/worldbuilding/traits/features/Guide Beast Traits.md")?.text ?? "";
     // Two beasts with the same bite share one block.
     expect(traits.match(/name: "Bite"/g)).toHaveLength(1);
-    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/beast/Wolf.md")?.text ?? "";
+    const wolf = files.find((f) => f.path === "tov/worldbuilding/bestiary/creatures/druid-forms/Wolf.md")?.text ?? "";
     expect(wolf).toContain('  - ref: "@[[tov/worldbuilding/traits/features/Guide Beast Traits]]#Bite"');
+  });
+
+  it("files a monster by its type and writes its entry's lore as a category note", () => {
+    const stat = (name: string, type: string) =>
+      section(name, 3, [
+        para(span(type)),
+        para(span("Armor Class", true), span(" 12")),
+        para(span("Hit Points", true), span(" 9")),
+        para(span("STR DEX CON INT WIS CHA")),
+        para(span("-2 +4 -1 -1 -2 -1")),
+        para(span("Dagger.", true), span(" It stabs.")),
+      ]);
+    const lore =
+      "Cowardly cousins to chromatic dragons, kobolds serve draconic overlords as warriors and servants, and they are especially adept at creating traps.";
+    const kobolds = section(
+      "Kobolds",
+      2,
+      [para(span(lore))],
+      [stat("Kobold", "Small Humanoid"), stat("Kobold Elite", "Small Humanoid")]
+    );
+    const others = ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
+      section(n, 2, [para(span(`${n} lore.`))])
+    );
+    const atoz = section("Monsters A to Z", 1, [para(span("Creatures in alphabetical order."))], [kobolds, ...others]);
+    const root = section("Monster Vault", 0, [], [atoz]);
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const kobold = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/humanoids/Kobold.md")?.text ?? "";
+    expect(kobold).toContain('category: "[[Kobolds]]"');
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Kobolds.md")?.text ?? "";
+    expect(category).toContain("```rpg stat.category\nname: Kobolds\n---");
+    expect(category).toContain("Cowardly cousins to chromatic dragons");
+    expect(category).toContain("`@[[tov/worldbuilding/bestiary/]].filter(category == [[Kobolds]]).highlight().stat()`");
+    // One category note however many of its creatures are written.
+    expect(files.filter((f) => f.path.endsWith("categories/Kobolds.md"))).toHaveLength(1);
+  });
+
+  const dragonStat = (name: string) =>
+    section(name, 4, [
+      para(span("Large Dragon")),
+      para(span("Armor Class", true), span(" 17")),
+      para(span("Hit Points", true), span(" 110")),
+      para(span("STR DEX CON INT WIS CHA")),
+      para(span("+4 +0 +3 +1 +0 +2")),
+      para(span("Bite.", true), span(" It bites.")),
+    ]);
+  const fillers = () =>
+    ["Aboleth", "Basilisk", "Couatl", "Derro", "Ettin", "Gnoll", "Harpy", "Imp"].map((n) =>
+      section(n, 2, [para(span(`${n} lore.`))])
+    );
+  const lore =
+    "The bright, golden scales of the dragon shimmer in the desert sun as it lounges near an oasis and talks at length to the travellers who stop there.";
+
+  it("names a family the bestiary's way, keeping a lair set under it with the family", () => {
+    const lair = section(
+      "A Brass Dragon’s Lair",
+      3,
+      [para(span("Brass dragons often have two lairs, one remote and one in a nearby humanoid settlement."))],
+      [
+        section("Lair Actions", 4, [para(span("On initiative count 20, the dragon blasts heat."))]),
+        dragonStat("Young Brass Dragon"),
+        dragonStat("Adult Brass Dragon"),
+      ]
+    );
+    const brass = section("Dragon, Brass", 2, [para(span(lore))], [lair]);
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [brass, ...fillers()])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const young =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Young Brass Dragon.md")?.text ?? "";
+    expect(young).toContain('category: "[[Brass Dragons]]"');
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Brass Dragons.md")?.text ?? "";
+    expect(category).toContain("name: Brass Dragons");
+    expect(category).toContain("The bright, golden scales");
+    expect(category).toContain("## A Brass Dragon’s Lair");
+    expect(category).toContain("On initiative count 20");
+    expect(category).not.toContain("Armor Class");
+    expect(files.some((f) => /categories\/(A Brass|Dragon, Brass)/.test(f.path))).toBe(false);
+  });
+
+  it("makes no family of an entry of one creature, and gives the creature the entry's text", () => {
+    const golmana = section("Demon, Golmana", 2, [para(span(lore))], [dragonStat("Golmana")]);
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [golmana, ...fillers()])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const note = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Golmana.md")?.text ?? "";
+    expect(note).not.toContain("category:");
+    expect(note).toContain("The bright, golden scales");
+    expect(note.indexOf("The bright, golden scales")).toBeLessThan(note.indexOf("rpg stat.monster"));
+    expect(files.some((f) => /categories\//.test(f.path))).toBe(false);
+  });
+
+  it("takes an entry of many stat blocks for a family, not a catalog", () => {
+    const names = [
+      "Bugbear",
+      "Bugbear Champion",
+      "Goblin",
+      "Goblin Captain",
+      "Hobgoblin",
+      "Hobgoblin Commander",
+      "Hobgoblin Conjurer",
+    ];
+    const goblins = section(
+      "Goblins",
+      2,
+      [para(span(lore))],
+      [
+        section("Rule Bound Hobgoblins", 3, [para(span("Hobgoblin enclaves are highly organized military bands."))]),
+        ...names.map(dragonStat),
+      ]
+    );
+    const root = section(
+      "Monster Vault",
+      0,
+      [],
+      [section("Monsters A to Z", 1, [para(span("Entries."))], [goblins, ...fillers()])]
+    );
+    const { files } = write(root, { place: placer("tov", "Vault") });
+    const category =
+      files.find((f) => f.path === "tov/worldbuilding/bestiary/monsters/categories/Goblins.md")?.text ?? "";
+    expect(category).toContain("name: Goblins");
+    expect(category).toContain("Hobgoblin enclaves are highly organized");
+    const goblin = files.find((f) => f.path === "tov/worldbuilding/bestiary/families/dragons/Goblin.md")?.text ?? "";
+    expect(goblin).toContain('category: "[[Goblins]]"');
+  });
+
+  it("names families as a bestiary lists them", () => {
+    expect(familyName("Dragon, Brass")).toBe("Brass Dragons");
+    expect(familyName("Hag, Green")).toBe("Green Hags");
+    expect(familyName("Harpy, Storm")).toBe("Storm Harpies");
+    expect(familyName("Elf, Shadow")).toBe("Shadow Elves");
+    expect(familyName("Kobolds")).toBe("Kobolds");
   });
 
   it("turns a dark bar's white text dark, and tells bold words by their ink", () => {
@@ -1003,5 +1203,170 @@ describe("styles of other books", () => {
     const ink = inkMeter(px, w, h);
     expect(ink({ x0: 60, y0: 26, x1: 120, y1: 38 })).toBeCloseTo(0.25, 1);
     expect(ink({ x0: 200, y0: 26, x1: 260, y1: 38 })).toBe(0);
+  });
+});
+
+describe("glyph names pdf.js cannot map", () => {
+  it("reads small capitals and ligatures from their names", () => {
+    expect(glyphText("e.sc")).toBe("e");
+    expect(glyphText("f_f_i")).toBe("ffi");
+    expect(glyphText("T_h")).toBe("Th");
+    expect(glyphText("ampersand.sc")).toBe("&");
+    expect(glyphText("e")).toBeNull();
+    expect(glyphText("foo.sc")).toBeNull();
+  });
+
+  it("maps the raw codes of a subset with no Unicode map back to letters", () => {
+    // As the Monster Vault's bold small capitals: codes 33… named e.sc, s.sc, l.sc, some read
+    // by pdf.js as the code itself and some by its built-in encoding.
+    const differences: (string | null)[] = [];
+    const toUnicode: (string | null)[] = [];
+    differences[33] = "e.sc";
+    differences[34] = "s.sc";
+    differences[40] = "l.sc";
+    toUnicode[40] = "(";
+    differences[50] = "f_i";
+    toUnicode[50] = "ﬁ";
+    const fixes = glyphFixes({ differences, toUnicode: { _map: toUnicode } });
+    expect(fixes.get("!")).toBe("e");
+    expect(fixes.get('"')).toBe("s");
+    expect(fixes.get("(")).toBe("l");
+    expect(fixes.has("ﬁ")).toBe(false);
+  });
+
+  it("leaves a character alone that the font also prints as itself", () => {
+    const differences: (string | null)[] = [];
+    const toUnicode: (string | null)[] = [];
+    differences[33] = "f_f";
+    toUnicode[60] = "!";
+    differences[60] = "exclam";
+    expect(glyphFixes({ differences, toUnicode: { _map: toUnicode } }).has("!")).toBe(false);
+  });
+});
+
+describe("tables stacked in one box", () => {
+  it("starts a new table at a lone caption row over a die's header", () => {
+    const parts = splitStacked([
+      ["d20", "DESCRIPTION"],
+      ["1", "Continue straight"],
+      ["2-20", "Stairs"],
+      ["PASSAGE WIDTH", ""],
+      ["d20", "WIDTH"],
+      ["1-20", "5 ft."],
+    ]);
+    expect(parts).toHaveLength(2);
+    expect(parts[0].rows).toHaveLength(3);
+    expect(parts[1].caption).toBe("Passage Width");
+    expect(parts[1].rows[0]).toEqual(["d20", "WIDTH"]);
+  });
+
+  it("keeps a table whose lone row is not followed by a die header", () => {
+    const rows = [
+      ["d6", "Result"],
+      ["1", "A"],
+      ["2", "B"],
+      ["Note", ""],
+      ["3", "C"],
+    ];
+    expect(splitStacked(rows)).toEqual([{ rows }]);
+  });
+});
+
+describe("tables set side by side", () => {
+  it("puts the groups of a repeated header one under the other", () => {
+    const rows = unfoldSideBySide([
+      ["d100", "PURPOSE", "d100", "PURPOSE"],
+      ["1-2", "Antechamber", "51-52", "Kitchen"],
+      ["3-4", "Armory", "", ""],
+    ]);
+    expect(rows).toEqual([
+      ["d100", "PURPOSE"],
+      ["1-2", "Antechamber"],
+      ["3-4", "Armory"],
+      ["51-52", "Kitchen"],
+    ]);
+  });
+
+  it("parts a die from the column's name set in one cell", () => {
+    expect(
+      unfoldSideBySide([
+        ["d8 ADVENTURING MOTIVATION", ""],
+        ["1", "Fame"],
+      ])
+    ).toEqual([
+      ["d8", "ADVENTURING MOTIVATION"],
+      ["1", "Fame"],
+    ]);
+  });
+
+  it("unfolds a repeated header with empty columns left at its right", () => {
+    expect(
+      unfoldSideBySide([
+        ["d100", "COMMON MAGIC ITEM", "d100", "COMMON MAGIC ITEM", "", ""],
+        ["1-50", "Staff of False Hues", "51-100", "Slipforged Armor", "", ""],
+      ])
+    ).toEqual([
+      ["d100", "COMMON MAGIC ITEM"],
+      ["1-50", "Staff of False Hues"],
+      ["51-100", "Slipforged Armor"],
+    ]);
+  });
+
+  it("leaves a table whose header does not repeat", () => {
+    const rows = [
+      ["d6", "Name", "Effect", "Cost"],
+      ["1", "A", "B", "C"],
+    ];
+    expect(unfoldSideBySide(rows)).toBe(rows);
+  });
+});
+
+describe("decorations", () => {
+  /** A w×h RGBA picture whose pixel at (x, y) is `px(x, y)`. */
+  const picture = (w: number, h: number, px: (x: number, y: number) => number[]) => {
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) data.set(px(x, y), (y * w + x) * 4);
+    return { width: w, height: h, kind: 3, data };
+  };
+
+  it("drops a coloured ribbon drawn mostly in transparency", () => {
+    const ribbon = picture(800, 100, (_x, y) => (y >= 45 && y < 55 ? [30, 80, 200, 255] : [0, 0, 0, 0]));
+    expect(isDecoration(ribbon)).toBe(true);
+  });
+
+  it("drops grey heading text set as a picture", () => {
+    const heading = picture(800, 100, (x) => (x % 9 < 3 ? [60, 60, 60, 255] : [240, 240, 240, 255]));
+    expect(isDecoration(heading)).toBe(true);
+  });
+
+  it("keeps art: a wide coloured picture, a tall strip, a small spot", () => {
+    const art = picture(800, 100, (x, y) => [x % 255, y * 2, 120, 255]);
+    const tall = picture(100, 800, (x) => (x >= 45 && x < 55 ? [30, 80, 200, 255] : [0, 0, 0, 0]));
+    const square = picture(200, 200, () => [128, 128, 128, 255]);
+    expect(isDecoration(art)).toBe(false);
+    expect(isDecoration(tall)).toBe(false);
+    expect(isDecoration(square)).toBe(false);
+  });
+});
+
+describe("ligatures a font prints as another character", () => {
+  // The Monster Vault's text font maps both a real ampersand and `f_l` to `&`.
+  const differences: (string | null)[] = [];
+  differences[38] = "f_l";
+  const toUnicode = { _map: Object.assign([], { 8: "&", 38: "&" }) };
+  const font = { differences, toUnicode };
+
+  it("guesses the letters only where the character sits against a lowercase letter", () => {
+    const guesses = ligatureGuesses(font);
+    expect(glyphFixes(font).size).toBe(0);
+    expect(guesses.get("&")).toBe("fl");
+    expect(fixGlyphs("rotten &esh and in&uence", new Map(), guesses)).toBe("rotten flesh and influence");
+    expect(fixGlyphs("Dungeons & Dragons, R&D", new Map(), guesses)).toBe("Dungeons & Dragons, R&D");
+  });
+
+  it("reads a ligature set alone in a run of its own by the runs beside it", () => {
+    const guesses = ligatureGuesses(font);
+    expect(fixGlyphs("&", new Map(), guesses, "Skeletons are ", "eshless undead")).toBe("fl");
+    expect(fixGlyphs("&", new Map(), guesses, "Tome of Beasts 1 ", " Creature")).toBe("&");
   });
 });

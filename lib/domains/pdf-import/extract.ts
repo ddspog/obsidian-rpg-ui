@@ -41,6 +41,143 @@ export function fontName(raw: string): string {
   return (raw || "").replace(/^[A-Z]{6}\+/, "");
 }
 
+const GLYPH_NAMES: Record<string, string> = {
+  ampersand: "&",
+  zero: "0",
+  one: "1",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  hyphen: "-",
+  period: ".",
+  comma: ",",
+  colon: ":",
+  semicolon: ";",
+  exclam: "!",
+  question: "?",
+  quoteright: "’",
+  quoteleft: "‘",
+  quotesingle: "'",
+  parenleft: "(",
+  parenright: ")",
+  slash: "/",
+  space: " ",
+};
+
+/**
+ * The text a glyph name spells, for the names pdf.js cannot map: a small capital or other variant
+ * (`e.sc`, `a.alt`) and a ligature (`f_f`, `T_h`, `f_f_i`). `null` for any other name.
+ */
+export function glyphText(name: string): string | null {
+  // A plain name (`e`, `ampersand`) pdf.js maps already; only variants and ligatures are read here.
+  if (!/[._]/.test(name)) return null;
+  const base = name.replace(/\..*$/, "");
+  if (!base) return null;
+  let out = "";
+  for (const part of base.split("_")) {
+    const ch = /^[A-Za-z]$/.test(part)
+      ? part
+      : /^uni[0-9A-F]{4}$/.test(part)
+        ? String.fromCharCode(parseInt(part.slice(3), 16))
+        : GLYPH_NAMES[part];
+    if (ch === undefined) return null;
+    out += ch;
+  }
+  return out || null;
+}
+
+/**
+ * For a font whose glyphs are named variants or ligatures that pdf.js read as the raw codes
+ * (`!` for `f_f`, `(` for `l.sc`, as in a subset with no Unicode map), the text each such code
+ * stands for. Empty when the font maps them already.
+ */
+export function glyphFixes(
+  font: { differences?: (string | null | undefined)[]; toUnicode?: any } | null
+): Map<string, string> {
+  const fixes = new Map<string, string>();
+  const names = font?.differences;
+  if (!Array.isArray(names)) return fixes;
+  const map: unknown[] = font?.toUnicode?._map ?? [];
+  // What pdf.js gives a code it cannot map: its own character, or its built-in encoding's.
+  const shownAt = (code: number): string => {
+    const mapped = map[code];
+    return typeof mapped === "string" && mapped ? mapped : String.fromCharCode(code);
+  };
+  const used = new Map<string, number>();
+  for (let code = 0; code < Math.max(names.length, map.length); code++) {
+    if (names[code] || map[code]) used.set(shownAt(code), (used.get(shownAt(code)) ?? 0) + 1);
+  }
+  names.forEach((name, code) => {
+    if (!name) return;
+    const text = glyphText(name);
+    if (!text) return;
+    const mapped = map[code];
+    // pdf.js already has it right (`ﬁ`, `ff`): leave it.
+    if (typeof mapped === "string" && mapped.normalize("NFKC").toLowerCase() === text.toLowerCase()) return;
+    const shown = shownAt(code);
+    // A character the font also prints as itself cannot be told apart, so is left alone.
+    if (shown.length === 1 && (used.get(shown) ?? 0) === 1) fixes.set(shown, text);
+  });
+  return fixes;
+}
+
+/**
+ * Ligatures `glyphFixes` cannot settle because the font prints a real character the same way
+ * (`f_l` mapped to `&`, as `ampersand` is): the letters each such character stands for where it
+ * sits against a lowercase letter, as a ligature does (`&esh`, `in&uence`) and an ampersand
+ * does not.
+ */
+export function ligatureGuesses(
+  font: { differences?: (string | null | undefined)[]; toUnicode?: any } | null
+): Map<string, string> {
+  const guesses = new Map<string, string>();
+  const names = font?.differences;
+  if (!Array.isArray(names)) return guesses;
+  const map: unknown[] = font?.toUnicode?._map ?? [];
+  const fixes = glyphFixes(font);
+  names.forEach((name, code) => {
+    if (!name) return;
+    const text = glyphText(name);
+    if (!text || !/^[a-z]{2,3}$/.test(text)) return;
+    const shown = typeof map[code] === "string" && map[code] ? (map[code] as string) : String.fromCharCode(code);
+    if (shown.length !== 1 || /[\p{L}\p{N}\s]/u.test(shown) || fixes.has(shown)) return;
+    if (shown.normalize("NFKC").toLowerCase() === text) return;
+    guesses.set(shown, text);
+  });
+  return guesses;
+}
+
+/**
+ * A run's text with a font's glyph fixes and ligature guesses applied. `before` and `after` are
+ * the runs either side, since a book may set a ligature alone in a font of its own (`&` then `esh`).
+ */
+export function fixGlyphs(
+  str: string,
+  fixes: Map<string, string>,
+  guesses?: Map<string, string>,
+  before = "",
+  after = ""
+): string {
+  let out = fixes.size ? Array.from(str, (c) => fixes.get(c) ?? c).join("") : str;
+  if (guesses?.size) {
+    const b = before.slice(-1);
+    const a = after.slice(0, 1);
+    out = b + out + a;
+    for (const [shown, text] of guesses) {
+      if (!out.includes(shown)) continue;
+      const at = shown.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      out = out.replace(new RegExp(`(?<![\\p{Lu}\\p{N}${at}])${at}(?=\\p{Ll})`, "gu"), text);
+    }
+    out = out.slice(b.length, out.length - a.length);
+  }
+  return out;
+}
+
 export function isBold(font: string): boolean {
   return /bold|black|heavy|semibold|demi|extrabold|[-_ ]bd\b|[-_ ]sb\b|[-_]b$/i.test(font);
 }
@@ -96,6 +233,38 @@ function signature(img: DecodedImage): string {
   const step = Math.max(1, Math.floor(d.length / 4096));
   for (let i = 0; i < d.length; i += step) h = Math.imul(h ^ d[i], 16777619);
   return (h >>> 0).toString(36);
+}
+
+/**
+ * A picture that is page furniture rather than art: a long, thin strip that is either a
+ * coloured ribbon drawn mostly in transparency (the bars under headings), or grey text
+ * set as a picture (a heading the book rasterised). Read from a sample of its pixels.
+ */
+export function isDecoration(img: DecodedImage): boolean {
+  const { width: w, height: h, data: d, kind } = img;
+  if (!d || !w || !h || (kind !== 2 && kind !== 3)) return false;
+  if (w < h * 6.4) return false;
+  const bpp = kind === 3 ? 4 : 3;
+  const total = w * h;
+  const step = Math.max(1, Math.floor(total / 20000));
+  let seen = 0;
+  let opaque = 0;
+  let sat = 0;
+  for (let i = 0; i < total; i += step) {
+    const o = i * bpp;
+    if (o + bpp > d.length) break;
+    seen++;
+    if (bpp === 4 && d[o + 3] <= 128) continue;
+    opaque++;
+    const max = Math.max(d[o], d[o + 1], d[o + 2]);
+    const min = Math.min(d[o], d[o + 1], d[o + 2]);
+    sat += max ? ((max - min) / max) * 255 : 0;
+  }
+  if (!seen || !opaque) return false;
+  const coverage = opaque / seen;
+  const saturation = sat / opaque;
+  if (coverage <= 0.13 && saturation >= 150) return true;
+  return w >= h * 7 && coverage >= 0.95 && saturation < 15;
 }
 
 async function getObj(page: PdfPage, id: string): Promise<DecodedImage | null> {
@@ -164,6 +333,7 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
       const inline = fn === OPS.paintInlineImageXObject;
       const img: DecodedImage | null = inline ? args[0] : await getObj(page, args[0]);
       if (!img || !img.width || !img.height) continue;
+      if (isDecoration(img)) continue;
       const id = String(inline ? `inline${num}_${i}` : args[0]);
       const sig = signature(img);
       const key = sig
@@ -187,6 +357,21 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
 
   const tc = await page.getTextContent();
   const names = new Map<string, string>();
+  type Fixes = { fixes: Map<string, string>; guesses: Map<string, string> };
+  const fixesOf = new Map<string, Fixes>();
+  const fixOf = (id: string): Fixes => {
+    let fixes = fixesOf.get(id);
+    if (!fixes) {
+      try {
+        const font = page.commonObjs.get(id);
+        fixes = { fixes: glyphFixes(font), guesses: ligatureGuesses(font) };
+      } catch {
+        fixes = { fixes: new Map(), guesses: new Map() };
+      }
+      fixesOf.set(id, fixes);
+    }
+    return fixes;
+  };
   const nameOf = (id: string): string => {
     let name = names.get(id);
     if (name === undefined) {
@@ -201,7 +386,15 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     }
     return name;
   };
-  for (const it of tc.items as any[]) {
+  const items = tc.items as any[];
+  const near = (from: number, step: number): string => {
+    for (let j = from + step; j >= 0 && j < items.length; j += step) {
+      if (typeof items[j].str === "string" && items[j].str) return items[j].str;
+    }
+    return "";
+  };
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx];
     if (typeof it.str !== "string" || !it.str) continue;
     const t = mul(vt, it.transform as Matrix);
     // Text set on its side (a label up a margin) is not part of the page's flow.
@@ -210,7 +403,11 @@ export async function readPage(pdfjs: PdfJs, doc: PdfDoc, num: number, opts: Rea
     if (size < 2) continue;
     const font = nameOf(it.fontName);
     // Soft hyphens are dropped and the many hyphen characters made one, so `1st‑level` reads as it looks.
-    const str = it.str
+    const { fixes, guesses } = fixOf(it.fontName);
+    const raw = guesses.size
+      ? fixGlyphs(it.str as string, fixes, guesses, near(idx, -1), near(idx, 1))
+      : fixGlyphs(it.str as string, fixes);
+    const str = raw
       .replace(/\u00AD/g, "")
       .replace(/[\u2010\u2011]/g, "-")
       .replace(/-{2,}/g, "-");

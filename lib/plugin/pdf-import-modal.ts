@@ -520,8 +520,14 @@ export class PdfImportModal extends Modal {
       const views = Object.keys((loaded as { ruleViews?: Record<string, unknown> } | null)?.ruleViews ?? {});
       const pdfjs = await loadPdfJs();
       // The file is read in pieces as pages are asked for, so a book of hundreds of megabytes
-      // never sits in memory whole.
-      const doc = await pdfjs.getDocument({ url, disableAutoFetch: true, rangeChunkSize: 1 << 20 }).promise;
+      // never sits in memory whole. Fonts keep their glyph names, so letters a book set as small
+      // capitals or ligatures (`e.sc`, `f_f`) without a Unicode map can still be read.
+      const doc = await pdfjs.getDocument({
+        url,
+        disableAutoFetch: true,
+        rangeChunkSize: 1 << 20,
+        fontExtraProperties: true,
+      }).promise;
       const parent = normalizePath(this.folder || "/").replace(/^\/$/, "");
       const result = await importPdf(
         pdfjs,

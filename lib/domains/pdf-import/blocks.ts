@@ -250,13 +250,26 @@ export function tableRows(
     (placed.get(under) as string[])[0] = `${cells[0].replace(/\s+/g, "")}${(placed.get(under) as string[])[0]}`;
     cells[0] = "";
   }
+  // A row whose number and text the book set as one run (`15–19 Chamber (see Chambers).`), in a
+  // table whose first column is numbered: the number is its first cell, the words its second.
+  const numberedRows = body.filter((l) => rollRange((placed.get(l) as string[])[0])).length;
+  if (numberedRows >= 3) {
+    for (const l of body) {
+      const cells = placed.get(l) as string[];
+      const hit = cells[0].match(/^(\d{1,4}(?:\s*[-–—]\s*\d{1,4})?)\s+(\S.*)$/);
+      if (hit && !cells[1]) {
+        cells[0] = hit[1];
+        cells[1] = hit[2];
+      }
+    }
+  }
   body = body.filter((l) => (placed.get(l) as string[]).some(Boolean));
   const place = (line: Line): string[] => placed.get(line) ?? placeRaw(line);
   const gaps: number[] = [];
   for (let i = 1; i < body.length; i++) gaps.push(body[i].base - body[i - 1].base);
   const median = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] ?? 0;
   const centred = centredRows(body, place, headBottom) ?? spacedRows(body, place, headBottom);
-  if (centred) return { rows: centred.map((r) => r.map(cellMd)), title };
+  if (centred) return { rows: unfoldSideBySide(centred.map((r) => r.map(cellMd))), title };
   const rows: string[][] = [];
   let headDone = headBottom === undefined;
   let prev: Line | undefined;
@@ -299,7 +312,7 @@ export function tableRows(
     }
     prev = line;
   }
-  return { rows: rows.map((r) => r.map(cellMd)), title };
+  return { rows: unfoldSideBySide(rows.map((r) => r.map(cellMd))), title };
 }
 
 interface ParaState {
@@ -386,6 +399,69 @@ type TableBlock = Extract<Block, { type: "table" }>;
 type HeadingBlock = Extract<Block, { type: "heading" }>;
 
 /** The first and last number a row is rolled on (`7`, `01-05`, `96–00`), or null when its first cell is not one. */
+/**
+ * Rows of one box that hold tables set one under the other: a row with only a caption in it
+ * (`PASSAGE WIDTH`) and, under it, a header that names a die (`d20 | WIDTH`) starts the next.
+ */
+/**
+ * A table set as two or three tables side by side under one header that repeats
+ * (`d100 | PURPOSE | d100 | PURPOSE`): its groups of columns put one under the other, left first.
+ */
+export function unfoldSideBySide(rows: string[][]): string[][] {
+  let head = rows[0];
+  if (!head || rows.length < 2) return rows;
+  // A die and the column's name set as one run (`d8 ADVENTURING MOTIVATION`), the cell beside it empty.
+  const joined = head.length === 2 && !head[1] ? head[0].match(/^(\*{0,2}\d*d\d+\*{0,2})\s+(\S.*)$/i) : null;
+  if (joined && rows.slice(1).some((r) => rollRange(r[0]))) {
+    head = [joined[1], joined[2]];
+    rows = [head, ...rows.slice(1)];
+  }
+  const die = (c: string) => /^\*{0,2}\d*d\d+\*{0,2}$/i.test(c.trim());
+  if (!die(head[0])) return rows;
+  // Empty columns at the right of the header (a group the page left blank) are not part of it.
+  let width = head.length;
+  while (width > 2 && !head[width - 1]?.trim() && rows.every((r) => !r[width - 1]?.trim())) width--;
+  if (width < head.length) {
+    rows = rows.map((r) => r.slice(0, width));
+    head = rows[0];
+  }
+  for (let size = 2; size <= Math.floor(head.length / 2); size++) {
+    if (head.length % size) continue;
+    const groups = head.length / size;
+    const same = Array.from({ length: groups }, (_, g) =>
+      head
+        .slice(g * size, g * size + size)
+        .join("|")
+        .toLowerCase()
+    );
+    if (!same.every((h) => h === same[0])) continue;
+    const out: string[][] = [head.slice(0, size)];
+    for (let g = 0; g < groups; g++) {
+      for (const row of rows.slice(1)) {
+        const part = row.slice(g * size, g * size + size);
+        if (part.some((c) => c && c.trim())) out.push(part.map((c) => c ?? ""));
+      }
+    }
+    return out;
+  }
+  return rows;
+}
+
+export function splitStacked(rows: string[][]): { caption?: string; rows: string[][] }[] {
+  const parts: { caption?: string; rows: string[][] }[] = [{ rows: [] }];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const next = rows[i + 1];
+    const lone = !!row[0] && row.slice(1).every((c) => !c) && !rollRange(row[0]) && row[0].length <= 60;
+    if (i >= 2 && lone && next && /^\*{0,2}\d*d\d+\*{0,2}$/i.test(next[0].trim()) && next.slice(1).some(Boolean)) {
+      parts.push({ caption: titleCase(row[0].replace(/\*+/g, "")), rows: [] });
+      continue;
+    }
+    parts[parts.length - 1].rows.push(row);
+  }
+  return parts.filter((p) => p.rows.length);
+}
+
 export function rollRange(cell: string | undefined): [number, number] | null {
   const hit = (cell ?? "").trim().match(/^(\d{1,4})(?:\s*[-–—]\s*(\d{1,4}))?$/);
   if (!hit) return null;
@@ -628,7 +704,10 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
           }
         }
         flush();
-        pushTable(out, { type: "table", caption, rows, page: box.page });
+        // Two tables in one shaded box: a caption on a row of its own, then a die's header.
+        for (const [i, part] of splitStacked(rows).entries()) {
+          pushTable(out, { type: "table", caption: i ? part.caption : caption, rows: part.rows, page: box.page });
+        }
       } else {
         flush();
         const inner = sideBlocks(box, styles);
@@ -648,6 +727,8 @@ export function toBlocks(elements: Element[], opts: BlockOptions): Block[] {
     const prevLine = lines[i - 1];
     const nextLine = lines[i + 1];
     let level = opts.headings === false ? 0 : styles.headingLevel(line, prevLine, nextLine);
+    // A line that opens with a bullet is an item of a list, however its words are set.
+    if (level && /^\s*[•●▪◦‣]\s*/.test(lineText(line))) level = 0;
     // A table's caption (`Table 2-3: Creator Deity Epithet`), set bold on a line of its own.
     const captioned =
       opts.headings !== false &&

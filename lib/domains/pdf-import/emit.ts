@@ -16,7 +16,7 @@ import {
   type EntityKind,
   type EntityOut,
 } from "./entities";
-import type { Placer } from "./organise";
+import type { PlaceInfo, Placer } from "./organise";
 import { dieOfNumbered, tableReviews } from "./review";
 import { captionParts, fileName, isCatalog, sizeOf, slug, titleCase, walkBlocks } from "./structure";
 import type { Block, Chapter, ImportOptions, OutFile, Section, Span, TabLook } from "./types";
@@ -55,6 +55,10 @@ export interface EmitContext {
   scanned?: Set<number>;
   /** Every entity written: its kind, name and the note it is in. */
   found?: Array<{ kind: string; title: string; path: string }>;
+  /** The sections being written, outermost first: a creature's entry is found among them. */
+  stack?: Section[];
+  /** The book's entries that creatures were set under, until the book is written (see finishFamilies). */
+  families?: Map<string, { name: string; path: string; bestiary: string; lore: string[]; members: string[] }>;
 }
 
 /** Where a piece of text is being written: its note (below the book's folder, no `.md`) and the sections above it. */
@@ -235,6 +239,118 @@ export function renderBlocks(blocks: Block[], ctx: EmitContext, near: string, wh
   return out;
 }
 
+/**
+ * The book's entry a creature is one of: the section it sits in, when that section has lore of its
+ * own (`Kobolds`, with a stat block a kobold) and is not a catalog of many entries.
+ */
+function entryOf(section: Section, ctx: EmitContext): Section | undefined {
+  const stack = ctx.stack ?? [];
+  // A lair set under its creature's entry (`A Brass Dragon's Lair`) is part of that entry, not one of its own.
+  let i = stack.length - 1;
+  while (i >= 1 && LAIR.test(stack[i].title)) i--;
+  const parent = stack[i];
+  if (!parent || parent === section || i < 1) return undefined;
+  // A catalog of entries (Monsters A to Z, an appendix) is no entry; an entry of a few stat blocks is.
+  if (parent.children.length > 15 || /\b(appendix|chapter|a to z)\b/i.test(parent.title)) return undefined;
+  const lore = parent.blocks
+    .map((b) => (b.type === "para" ? b.spans.map((sp) => sp.text).join("") : ""))
+    .join(" ")
+    .trim();
+  return lore.length >= 120 ? parent : undefined;
+}
+
+/** A section's text and the text of its subsections, leaving out those that are a stat block. */
+function loreOf(section: Section, depth: number, ctx: EmitContext, where: Where): string[] {
+  const out = renderBlocks(section.blocks, ctx, section.title, where);
+  for (const child of section.children) {
+    const stat = child.blocks.some(
+      (b) => b.type === "para" && /^\s*Armor Class\b/.test(b.spans.map((sp) => sp.text).join(""))
+    );
+    if (stat) continue;
+    const inner = { path: where.path, trail: [...where.trail, child.title] };
+    out.push(`${hashes(depth)} ${escapeMd(child.title)}`, ...loreOf(child, depth + 1, ctx, inner));
+  }
+  return out;
+}
+
+/** A section of an entry about the creature's lair: its lair actions and regional effects. */
+const LAIR = /\blairs?\b|\bregional effects\b/i;
+
+/** A noun's plural, for a family's name: `Dragon` → `Dragons`, `Harpy` → `Harpies`, `Elf` → `Elves`. */
+function plural(word: string): string {
+  if (/s$/i.test(word)) return word;
+  if (/[^aeiou]y$/i.test(word)) return word.replace(/y$/i, "ies");
+  if (/man$/i.test(word)) return word.replace(/man$/i, "men");
+  if (/[^f]f$/i.test(word)) return word.replace(/f$/i, "ves");
+  return `${word}s`;
+}
+
+/**
+ * A family's name, as a bestiary lists it: an entry named `Dragon, Brass` is the family of
+ * `Brass Dragons`, filed under B with all its stat blocks; `Kobolds` stays `Kobolds`.
+ */
+export function familyName(entry: string): string {
+  const m = entry.match(/^([^,]+),\s*(.+)$/);
+  return m ? `${m[2].trim()} ${plural(m[1].trim())}` : entry;
+}
+
+/** An entry a creature was set under: remembered until the book is written, to know how many it holds. */
+function noteFamily(entry: Section, creature: string, info: PlaceInfo, where: Where, ctx: EmitContext): void {
+  if (!ctx.place) return;
+  const key = entry.title.toLowerCase();
+  const known = ctx.families?.get(key);
+  if (known) {
+    known.members.push(creature);
+    return;
+  }
+  const name = familyName(entry.title);
+  (ctx.families ??= new Map()).set(key, {
+    name,
+    path: ctx.place("creature category", name, { npc: info.npc }, where.trail),
+    bestiary: creature.includes("/bestiary/")
+      ? creature.slice(0, creature.indexOf("/bestiary/") + "/bestiary/".length)
+      : "bestiary/",
+    // The entry's whole text, its lair (actions, regional effects) included; its stat blocks stay apart.
+    lore: loreOf(entry, 2, ctx, { path: where.path, trail: where.trail }),
+    members: [creature],
+  });
+}
+
+/**
+ * The book's entries written as the system keeps them: an entry of two or more creatures is a
+ * family, its text in a category note that lists them; an entry of one creature is no family, and
+ * its text goes into the creature's own note.
+ */
+function finishFamilies(ctx: EmitContext): void {
+  for (const family of ctx.families?.values() ?? []) {
+    if (family.members.length >= 2) {
+      const body = [`name: ${yamlValue(family.name)}`, "---", ...family.lore];
+      const fence = fenceFor(body);
+      pushFile(ctx, {
+        outside: true,
+        path: `${family.path}.md`,
+        text:
+          [
+            ...frontmatter([["source", ctx.source]]),
+            `${fence}rpg stat.category`,
+            ...body,
+            fence,
+            "---",
+            `\`@[[${family.bestiary}]].filter(category == [[${family.name.replace(/[[\]|#^]/g, "")}]]).highlight().stat()\``,
+          ].join("\n") + "\n",
+      });
+      ctx.kinds?.set("creature category", (ctx.kinds.get("creature category") ?? 0) + 1);
+      continue;
+    }
+    const file = ctx.files.find((f) => f.path === `${family.members[0]}.md`);
+    if (!file) continue;
+    const lines = file.text.split("\n").filter((l) => l !== `category: ${JSON.stringify(`[[${family.name}]]`)}`);
+    const head = lines.findIndex((l) => /^# /.test(l));
+    lines.splice(head + 1, 0, ...family.lore);
+    file.text = lines.join("\n");
+  }
+}
+
 const hashes = (depth: number) => "#".repeat(Math.min(6, Math.max(1, depth)));
 
 /**
@@ -250,6 +366,7 @@ function entityFor(
 ): EntityOut | null {
   if (!ctx.kinds) return null;
   const inner: Where = { path: where.path, trail: [...where.trail, section.title], inside: true };
+  const entry = ctx.place ? entryOf(section, ctx) : undefined;
   const out = recogniseEntity(section, {
     book: ctx.book,
     notePath: where.path,
@@ -264,6 +381,7 @@ function entityFor(
     priceOf: (name) => ctx.prices?.get(priceKey(name)),
     shareTrait: ctx.place ? (type, creature, feature) => shareTrait(ctx, type, creature, feature) : undefined,
     unique: (dir, name) => uniqueName(dir, name, ctx),
+    category: entry ? familyName(entry.title) : undefined,
   });
   if (!out) return null;
   ctx.kinds.set(out.kind, (ctx.kinds.get(out.kind) ?? 0) + 1);
@@ -274,7 +392,7 @@ function entityFor(
   if (out.childNotes.length) {
     const links: string[] = [];
     for (const child of out.childNotes) {
-      const target = place?.("subclass", child.section.title, {}, inner.trail);
+      const target = place?.("subclass", child.section.title, { parent: section.title }, inner.trail);
       const name = uniqueName(where.path, fileName(child.section.title), ctx);
       writeNote(
         {
@@ -319,6 +437,7 @@ function entityFor(
         ].join("\n") + "\n",
     });
     out.placed = target;
+    if (out.kind === "creature" && entry) noteFamily(entry, target, info, where, ctx);
     out.lines = [`!${link(target, section.title)}`];
     out.fields = [];
     out.consumed = true;
@@ -420,7 +539,11 @@ function renderInline(section: Section, depth: number, ctx: EmitContext, where: 
   const entity = entityFor(section, depth, ctx, where);
   const inner: Where = { path: where.path, trail: [...where.trail, section.title], inside: where.inside };
   const out = entity ? [head, ...entity.lines] : [head, ...renderBlocks(section.blocks, ctx, section.title, inner)];
-  if (!entity?.consumed) for (const child of section.children) out.push(...renderInline(child, depth + 1, ctx, inner));
+  if (!entity?.consumed) {
+    (ctx.stack ??= []).push(section);
+    for (const child of section.children) out.push(...renderInline(child, depth + 1, ctx, inner));
+    ctx.stack.pop();
+  }
   return out;
 }
 
@@ -430,6 +553,7 @@ function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: 
   sections.forEach((section, i) => {
     const look = ctx.look(section.title, i);
     const nested = nest && section.children.length >= 3 && section.children.length <= 12 && sizeOf(section) > 150;
+    if (nested) (ctx.stack ??= []).push(section);
     const body = nested
       ? [
           `${hashes(depth)} ${escapeMd(section.title)}`,
@@ -443,6 +567,7 @@ function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: 
           }),
         ]
       : renderInline(section, depth, ctx, where);
+    if (nested) ctx.stack?.pop();
     const fence = fenceFor(body);
     out.push(
       `${fence}rpg rule.tab`,
@@ -537,62 +662,70 @@ function writeNote(spec: NoteSpec, ctx: EmitContext): void {
     push(lines.join("\n") + "\n");
     return;
   }
-
-  if (!split) {
-    if (kids.length >= 2 && kids.length <= 12 && size > 60) lines.push(...renderTabs(kids, 2, ctx, true, where));
-    else for (const child of kids) lines.push(...renderInline(child, 2, ctx, where));
-  } else {
-    const names: string[] = [];
-    const placed: Array<{ path: string; title: string }> = [];
-    kids.forEach((child, i) => {
-      // An entity that is kept in a folder of its own needs no note here: the list below links to it.
-      if (ctx.place) {
-        const kept = entityFor(child, 1, ctx, { path, trail: where.trail });
-        if (kept?.placed) {
-          placed.push({ path: kept.placed, title: child.title });
-          return;
-        }
-      }
-      const base = fileName(child.title);
-      const name = uniqueName(path, catalog ? base : `${String(i + 1).padStart(2, "0")}. ${base}`, ctx);
-      names.push(name);
-      const look = ctx.look(child.title, i);
-      writeNote(
-        {
-          section: child,
-          path: `${path}/${name}`,
-          title: child.title,
-          fields: [
-            ["source", ctx.source],
-            ["tab-name", yamlValue(child.title)],
-            ["tab-icon", look.icon],
-            ["tab-color", look.color],
-          ],
-          depth: depth + 1,
-          trail: where.trail,
-        },
-        ctx
-      );
-    });
-    const call = `@[[${ctx.book}/${path}/]].shallow()`;
-    if (placed.length) {
-      if (names.length) lines.push(`\`${call}.tab()\``);
-      lines.push(...listPlaced(placed, ctx));
-    } else if (!catalog || kids.length <= 14) lines.push(`\`${call}.tab()\``);
-    else {
-      const groups = letterGroups(names);
-      const tabs: string[] = [];
-      groups.forEach((letters, i) => {
-        const name = letters.length > 1 ? `${letters[0]}–${letters[letters.length - 1]}` : letters[0];
-        const look = ctx.look(section.title, i);
-        tabs.push("```rpg rule.tab", `name: ${name}`, `icon: ${look.icon}`, `color: ${look.color}`, "---");
-        for (const letter of letters) tabs.push(`## ${letter}`, `\`${call}.filter(${letter} prefix name).h4()\``);
-        tabs.push("```");
-      });
-      lines.push(...tabs);
-    }
+  (ctx.stack ??= []).push(section);
+  try {
+    writeChildren();
+  } finally {
+    ctx.stack.pop();
   }
   push(lines.join("\n") + "\n");
+
+  function writeChildren(): void {
+    if (!split) {
+      if (kids.length >= 2 && kids.length <= 12 && size > 60) lines.push(...renderTabs(kids, 2, ctx, true, where));
+      else for (const child of kids) lines.push(...renderInline(child, 2, ctx, where));
+    } else {
+      const names: string[] = [];
+      const placed: Array<{ path: string; title: string }> = [];
+      kids.forEach((child, i) => {
+        // An entity that is kept in a folder of its own needs no note here: the list below links to it.
+        if (ctx.place) {
+          const kept = entityFor(child, 1, ctx, { path, trail: where.trail });
+          if (kept?.placed) {
+            placed.push({ path: kept.placed, title: child.title });
+            return;
+          }
+        }
+        const base = fileName(child.title);
+        const name = uniqueName(path, catalog ? base : `${String(i + 1).padStart(2, "0")}. ${base}`, ctx);
+        names.push(name);
+        const look = ctx.look(child.title, i);
+        writeNote(
+          {
+            section: child,
+            path: `${path}/${name}`,
+            title: child.title,
+            fields: [
+              ["source", ctx.source],
+              ["tab-name", yamlValue(child.title)],
+              ["tab-icon", look.icon],
+              ["tab-color", look.color],
+            ],
+            depth: depth + 1,
+            trail: where.trail,
+          },
+          ctx
+        );
+      });
+      const call = `@[[${ctx.book}/${path}/]].shallow()`;
+      if (placed.length) {
+        if (names.length) lines.push(`\`${call}.tab()\``);
+        lines.push(...listPlaced(placed, ctx));
+      } else if (!catalog || kids.length <= 14) lines.push(`\`${call}.tab()\``);
+      else {
+        const groups = letterGroups(names);
+        const tabs: string[] = [];
+        groups.forEach((letters, i) => {
+          const name = letters.length > 1 ? `${letters[0]}–${letters[letters.length - 1]}` : letters[0];
+          const look = ctx.look(section.title, i);
+          tabs.push("```rpg rule.tab", `name: ${name}`, `icon: ${look.icon}`, `color: ${look.color}`, "---");
+          for (const letter of letters) tabs.push(`## ${letter}`, `\`${call}.filter(${letter} prefix name).h4()\``);
+          tabs.push("```");
+        });
+        lines.push(...tabs);
+      }
+    }
+  }
 }
 
 export function chapterName(chapter: Chapter): string {
@@ -642,6 +775,7 @@ export function emitBook(chapters: Chapter[], ctx: EmitContext, facts: string[])
   }
   for (const [path, note] of ctx.traitNotes ?? [])
     pushFile(ctx, { outside: true, path: `${path}.md`, text: note.lines.join("\n") + "\n" });
+  finishFamilies(ctx);
   index.push("", ...facts);
   ctx.files.push({ path: `${fileName(ctx.options.title)}.md`, text: index.join("\n") + "\n" });
   return ctx.files;

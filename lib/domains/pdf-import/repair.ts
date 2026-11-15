@@ -7,7 +7,7 @@
  * itself skips is covered by the row before it, so that every roll lands on a row.
  */
 
-import { rollRange } from "./blocks";
+import { rollRange, unfoldSideBySide } from "./blocks";
 import { captionParts } from "./structure";
 import type { Block, Span } from "./types";
 
@@ -407,6 +407,8 @@ function chainPieces(blocks: Block[], at: number, changes: RepairChange[]): numb
 /** The chapter's tables, mended in place; what was done, for the book's notes. */
 export function repairTables(blocks: Block[]): RepairReport {
   const report: RepairReport = { joined: 0, folded: 0, widened: 0, changes: [] };
+  // A table set two or three across, however its pieces were put together.
+  for (const b of blocks) if (b.type === "table") b.rows = unfoldSideBySide(b.rows);
   for (const b of blocks)
     if (b.type === "table") {
       if (oneRowPiece(b)) report.folded++;

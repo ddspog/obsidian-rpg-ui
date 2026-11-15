@@ -5,7 +5,8 @@
  *   `@[[folder/]].filter(rarity == Rare).block(item.magic).magic()`
  *
  * The last segment is the terminal (render function). All preceding
- * segments are chain operations (filter, block, etc.).
+ * segments are chain operations (filter, block, etc.). Option steps
+ * (paginate, facets, shallow, highlight) may also follow the terminal.
  *
  * Args grammar (positional):
  *   - bare identifier:  `name`         → `"name"` (string)
@@ -85,6 +86,19 @@ function splitSection(raw: string): { path: string; section?: string } {
   return { path: raw.slice(0, idx), section: raw.slice(idx + 1) };
 }
 
+/**
+ * Chain steps that only set an option, which a call may also write after its view
+ * (`.stat().paginate(4)` as `.paginate(4).stat()`).
+ */
+const TRAILING_OPTIONS = new Set(["paginate", "facets", "shallow", "highlight"]);
+
+/** The view (the last segment that is not a trailing option) and the chain steps around it. */
+function terminalOf(segments: ChainSegment[]): { terminal: ChainSegment; chain: ChainSegment[] } {
+  let at = segments.length - 1;
+  while (at > 0 && TRAILING_OPTIONS.has(segments[at].fn)) at--;
+  return { terminal: segments[at], chain: [...segments.slice(0, at), ...segments.slice(at + 1)] };
+}
+
 /** Parse a single call expression. Returns null if the input doesn't match. */
 export function parseCall(source: string): ParsedCall | null {
   const re = new RegExp(`^${CALL_PATTERN.source}$`);
@@ -92,7 +106,7 @@ export function parseCall(source: string): ParsedCall | null {
   if (!m) return null;
   const segments = parseSegments(m[2]);
   if (segments.length === 0) return null;
-  const terminal = segments[segments.length - 1];
+  const { terminal, chain } = terminalOf(segments);
   const { path, section } = splitSection(m[1].trim());
   return {
     target: path,
@@ -100,7 +114,7 @@ export function parseCall(source: string): ParsedCall | null {
     fn: terminal.fn,
     args: terminal.args,
     params: terminal.params,
-    chain: segments.slice(0, -1),
+    chain,
     source,
   };
 }
@@ -117,7 +131,7 @@ export function matchAllCalls(text: string): Array<ParsedCall & { start: number;
   while ((m = CALL_PATTERN.exec(text)) !== null) {
     const segments = parseSegments(m[2]);
     if (segments.length === 0) continue;
-    const terminal = segments[segments.length - 1];
+    const { terminal, chain } = terminalOf(segments);
     const { path, section } = splitSection(m[1].trim());
     out.push({
       target: path,
@@ -125,7 +139,7 @@ export function matchAllCalls(text: string): Array<ParsedCall & { start: number;
       fn: terminal.fn,
       args: terminal.args,
       params: terminal.params,
-      chain: segments.slice(0, -1),
+      chain,
       source: m[0],
       start: m.index,
       end: m.index + m[0].length,

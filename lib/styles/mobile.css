@@ -685,6 +685,21 @@
     min-height: 44px;
   }
 
+  /* Folder-call pager: the search on its own line, the selects sharing the next one evenly. */
+  .rpg-folder-pager__search {
+    flex: 1 1 100%;
+  }
+
+  .rpg-folder-pager__facet {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* The page row's name gets the width: "2/41 ▾" already says it is a page. */
+  .rpg-folder-pager .rpg-tab-compact__label {
+    display: none;
+  }
+
   /* Many columns: tighter cells, so four columns of words fit a phone. */
   .rpg-table-wrapper--overflow .rpg-table th,
   .rpg-table-wrapper--overflow .rpg-table td {

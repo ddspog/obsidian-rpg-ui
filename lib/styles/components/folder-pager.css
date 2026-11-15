@@ -1,0 +1,138 @@
+/* ── Folder call pager: search, a select per field, a count, and pages ──────
+ * The page row and the Next link are a rule tab's (compact-tab-nav.tsx); phone sizes are in
+ * mobile.css. */
+
+.rpg-folder-pager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+}
+
+.rpg-folder-pager__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.rpg-folder-pager__search {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+
+/* Filled with a tint of the accent, as Obsidian's phone fields are, so the row reads as one
+ * set of controls on the page rather than loose white boxes. */
+.rpg-folder-pager input.rpg-folder-pager__search,
+.rpg-folder-pager select.rpg-folder-pager__facet {
+  min-height: 32px;
+  background-color: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary));
+}
+
+.rpg-folder-pager__search::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.rpg-folder-pager__facet {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+/* A select that is narrowing the list says so. */
+.rpg-folder-pager__facet--set {
+  color: var(--text-accent);
+  font-weight: var(--font-semibold, 600);
+}
+
+.rpg-folder-pager__search:focus-visible,
+.rpg-folder-pager__facet:focus-visible,
+.rpg-folder-pager button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* The count and Clear, under the filters. With one page, a rule in the theme's title colour sets them
+ * off from the entries; with pages, the page row's own underline does. */
+.rpg-folder-pager__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25em 0.75em;
+}
+
+.rpg-folder-pager__status:last-child,
+.rpg-folder-pager__status:not(:has(+ .rpg-folder-pager__row)) {
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-title, var(--text-accent)) 45%, transparent);
+}
+
+.rpg-folder-pager__count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-folder-pager button.rpg-folder-pager__clear,
+.rpg-folder-pager button.rpg-folder-pager__clear-all {
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 0.25em 0.4em;
+  height: auto;
+  color: var(--text-accent);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
+.rpg-folder-pager button.rpg-folder-pager__clear:hover,
+.rpg-folder-pager button.rpg-folder-pager__clear-all:hover {
+  text-decoration: underline;
+}
+
+.rpg-folder-pager__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em;
+  color: var(--text-muted);
+}
+
+.rpg-folder-pager__empty p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Pages: a rule tab's part row ("PAGE  Abacus – Amulet  2/21 ▾" between ‹ ›) under the count, a copy
+ * of it docked at the top of the screen while the list is read, and the tab's "Next" link at the end
+ * (compact-tab-nav.tsx; their look is in rule-compendium.css). */
+.rpg-folder-pager .rpg-tab-compact,
+.rpg-folder-pager button.rpg-tab-next {
+  display: flex;
+}
+
+.rpg-folder-pager__row > .rpg-tab-compact {
+  margin: 0;
+}
+
+/* A page's name stays on one line, however long its entries' names: the list it opens has them in
+ * full. */
+.rpg-folder-pager .rpg-tab-compact__name,
+.rpg-folder-pager .rpg-tab-next__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A zero-height sticky holder, so showing the docked row moves nothing. */
+.rpg-folder-pager__dock {
+  position: sticky;
+  top: var(--rpg-tab-dock, 0px);
+  z-index: 9;
+  height: 0;
+}
+
+.rpg-folder-pager__dock > .rpg-tab-compact {
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0;
+}
