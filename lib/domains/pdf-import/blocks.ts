@@ -418,6 +418,13 @@ export function unfoldSideBySide(rows: string[][]): string[][] {
   }
   const die = (c: string) => /^\*{0,2}\d*d\d+\*{0,2}$/i.test(c.trim());
   if (!die(head[0])) return rows;
+  // Empty columns at the right of the header (a group the page left blank) are not part of it.
+  let width = head.length;
+  while (width > 2 && !head[width - 1]?.trim() && rows.every((r) => !r[width - 1]?.trim())) width--;
+  if (width < head.length) {
+    rows = rows.map((r) => r.slice(0, width));
+    head = rows[0];
+  }
   for (let size = 2; size <= Math.floor(head.length / 2); size++) {
     if (head.length % size) continue;
     const groups = head.length / size;

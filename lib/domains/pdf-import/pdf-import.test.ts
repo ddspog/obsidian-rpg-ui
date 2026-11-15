@@ -1215,6 +1215,19 @@ describe("tables set side by side", () => {
     ]);
   });
 
+  it("unfolds a repeated header with empty columns left at its right", () => {
+    expect(
+      unfoldSideBySide([
+        ["d100", "COMMON MAGIC ITEM", "d100", "COMMON MAGIC ITEM", "", ""],
+        ["1-50", "Staff of False Hues", "51-100", "Slipforged Armor", "", ""],
+      ])
+    ).toEqual([
+      ["d100", "COMMON MAGIC ITEM"],
+      ["1-50", "Staff of False Hues"],
+      ["51-100", "Slipforged Armor"],
+    ]);
+  });
+
   it("leaves a table whose header does not repeat", () => {
     const rows = [
       ["d6", "Name", "Effect", "Cost"],
