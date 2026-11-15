@@ -685,8 +685,7 @@
     min-height: 44px;
   }
 
-  /* Folder-call pager: the search on its own line, the selects sharing the next one evenly,
-     the count and pages on a line of their own, and thumb-sized arrows. */
+  /* Folder-call pager: the search on its own line, the selects sharing the next one evenly. */
   .rpg-folder-pager__search {
     flex: 1 1 100%;
   }
@@ -694,12 +693,6 @@
   .rpg-folder-pager__facet {
     flex: 1 1 0;
     min-width: 0;
-  }
-
-  .rpg-folder-pager button.rpg-folder-pager__arrow,
-  .rpg-folder-pager__pick {
-    min-width: 44px;
-    min-height: 44px;
   }
 
   /* Many columns: tighter cells, so four columns of words fit a phone. */

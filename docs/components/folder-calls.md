@@ -27,8 +27,10 @@ phone**) when it finds more than that, with:
   out). A select that is narrowing the list is set in the accent colour;
 - a count of what is shown, in the view's words (`241 items`, `3 of 241 items`, `71 creatures`, `34 spells`), with
   **Clear** beside it while anything is filtered;
-- `‹ Page 2 of 21 ▾ ›` above the entries and again below them: the arrows step a page, and the label opens a list
-  to jump to any page. After a page change from below, the view goes back to the top of the list.
+- the pages as a rule tab shows its parts: a row `‹ PAGE Bag of Holding – Boots of Levitation 2/21 ▾ ›` above the
+  entries, whose name opens a list of every page (each named by its first and last entries) and which docks at
+  the top of the screen while the list is read, and a **Next** link at the end of a page. A page opened from
+  below opens at its top.
 
 When nothing matches, the call says so and offers **Clear filters**.
 

@@ -131,6 +131,18 @@ export function pageCount(total: number, size: number): number {
   return size > 0 ? Math.max(1, Math.ceil(total / size)) : 1;
 }
 
+/** Each page named by its first and last entries (`Abacus – Amulet of Health`), to pick one by. */
+export function pageNames(items: PagerItem[], size: number): string[] {
+  const n = pageCount(items.length, size);
+  return Array.from({ length: n }, (_, i) => {
+    const page = size > 0 ? items.slice(i * size, i * size + size) : items;
+    if (!page.length) return "";
+    const first = page[0].name;
+    const last = page[page.length - 1].name;
+    return first === last ? first : `${first} – ${last}`;
+  });
+}
+
 /** The items of page `page` (0-based), the page kept in range. */
 export function pageOf<T>(items: T[], page: number, size: number): { items: T[]; page: number } {
   if (size <= 0) return { items, page: 0 };

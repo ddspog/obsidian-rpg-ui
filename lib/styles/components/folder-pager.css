@@ -1,6 +1,6 @@
 /* ── Folder call pager: search, a select per field, a count, and pages ──────
- * The arrows and the page picker share the table pager's look (table-pagination.css);
- * phone sizes are in mobile.css. */
+ * The page row and the Next link are a rule tab's (compact-tab-nav.tsx); phone sizes are in
+ * mobile.css. */
 
 .rpg-folder-pager {
   display: flex;
@@ -51,13 +51,17 @@
   outline-offset: 2px;
 }
 
-/* The count, Clear and the pages, under the filters; the theme's title colour rules it off
- * from the entries, as the blocks below are ruled. */
+/* The count and Clear, under the filters. With one page, a rule in the theme's title colour sets them
+ * off from the entries; with pages, the page row's own underline does. */
 .rpg-folder-pager__status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25em 0.75em;
+}
+
+.rpg-folder-pager__status:last-child,
+.rpg-folder-pager__status:not(:has(+ .rpg-folder-pager__row)) {
   padding-bottom: 0.4em;
   border-bottom: 1px solid color-mix(in srgb, var(--text-title, var(--text-accent)) 45%, transparent);
 }
@@ -98,54 +102,28 @@
   font-style: italic;
 }
 
-/* ‹ Page 2 of 21 ▾ › */
-.rpg-folder-pager__pages {
+/* Pages: a rule tab's part row ("PAGE  Abacus – Amulet  2/21 ▾" between ‹ ›) under the count, a copy
+ * of it docked at the top of the screen while the list is read, and the tab's "Next" link at the end
+ * (compact-tab-nav.tsx; their look is in rule-compendium.css). */
+.rpg-folder-pager .rpg-tab-compact,
+.rpg-folder-pager button.rpg-tab-next {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.25em;
 }
 
-.rpg-folder-pager__pages--top {
-  margin-left: auto;
-}
-
-.rpg-folder-pager button.rpg-folder-pager__arrow {
-  background: none;
-  box-shadow: none;
-  border: none;
-  min-width: 32px;
-  min-height: 32px;
-  height: auto;
-  line-height: 1;
-}
-
-.rpg-folder-pager__pick {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 0.5em;
-  cursor: pointer;
-}
-
-.rpg-folder-pager__label {
-  font-size: var(--font-ui-small);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* The picker's select lies over the label, invisible: a tap opens the page list. */
-.rpg-folder-pager select.rpg-folder-pager__page-select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0;
+.rpg-folder-pager__row > .rpg-tab-compact {
   margin: 0;
-  opacity: 0;
-  border: none;
-  box-shadow: none;
-  cursor: pointer;
+}
+
+/* A zero-height sticky holder, so showing the docked row moves nothing. */
+.rpg-folder-pager__dock {
+  position: sticky;
+  top: var(--rpg-tab-dock, 0px);
+  z-index: 9;
+  height: 0;
+}
+
+.rpg-folder-pager__dock > .rpg-tab-compact {
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0;
 }

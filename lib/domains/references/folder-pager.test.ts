@@ -11,6 +11,7 @@ import {
   countText,
   DEFAULT_PHONE_PAGE_SIZE,
   fieldLabel,
+  pageNames,
   pagerFields,
 } from "./folder-pager";
 
@@ -104,5 +105,12 @@ describe("pager words", () => {
     expect(countText(241, 241, ["item", "items"])).toBe("241 items");
     expect(countText(3, 241, ["item", "items"])).toBe("3 of 241 items");
     expect(countText(1, 1, ["creature", "creatures"])).toBe("1 creature");
+  });
+});
+
+describe("pageNames", () => {
+  it("names each page by its first and last entries", () => {
+    const items = ["Ape", "Bat", "Cat", "Deer", "Elk"].map((name) => ({ key: name, name, data: {} }));
+    expect(pageNames(items, 2)).toEqual(["Ape – Bat", "Cat – Deer", "Elk"]);
   });
 });

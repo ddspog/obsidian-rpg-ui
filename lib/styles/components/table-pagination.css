@@ -101,9 +101,8 @@
   width: 100%;
 }
 
-/* Arrow buttons (the folder-call pager's arrows share this look) */
-.rpg-table-tfoot button.rpg-table-pagination__arrow,
-.rpg-folder-pager button.rpg-folder-pager__arrow {
+/* Arrow buttons */
+.rpg-table-tfoot button.rpg-table-pagination__arrow {
   font-size: 1.4em;
   padding: 0 0.4em;
   opacity: 0.75;
@@ -113,13 +112,11 @@
   color: inherit;
 }
 
-.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled),
-.rpg-folder-pager button.rpg-folder-pager__arrow:hover:not(:disabled) {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:hover:not(:disabled) {
   opacity: 1;
 }
 
-.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled,
-.rpg-folder-pager button.rpg-folder-pager__arrow:disabled {
+.rpg-table-tfoot button.rpg-table-pagination__arrow:disabled {
   opacity: 0.3;
   cursor: default;
 }
@@ -178,8 +175,7 @@
   cursor: pointer;
 }
 
-.rpg-table-pagination__pick:focus-within,
-.rpg-folder-pager__pick:focus-within {
+.rpg-table-pagination__pick:focus-within {
   outline: 2px solid var(--interactive-accent);
   outline-offset: -2px;
 }
