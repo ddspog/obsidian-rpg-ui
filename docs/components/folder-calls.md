@@ -27,5 +27,5 @@ finds more than that, with:
   out);
 - the count of notes shown, and arrows between pages.
 
-`.paginate(n)` sets another page size, `.paginate(0)` turns paging off, and `.facets(…)` chooses the fields.
+`.paginate(n)` sets another page size, `.paginate(0)` turns paging off, and `.facets(…)` chooses the fields. These options (and `.shallow()`, `.highlight()`) can also come after the view: `.stat().paginate(4)`.
 Calls that list notes as lines (rows of a list) are not paged unless they ask with `.paginate(n)`.

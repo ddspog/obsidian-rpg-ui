@@ -331,4 +331,15 @@ describe("matchAllCalls", () => {
     expect(calls[0].params).toEqual({ name: "${name} (${level})" });
     expect(text.slice(calls[0].start, calls[0].end)).toBe(text);
   });
+
+  it("takes option steps written after the view as chain steps", () => {
+    const call = parseCall("@[[steeds/]].stat().paginate(4)")!;
+    expect(call.fn).toBe("stat");
+    expect(call.chain).toEqual([{ fn: "paginate", args: [4], params: {} }]);
+    const [m] = matchAllCalls("@[[items/]].filter(rarity == Rare).magic().facets(type).highlight()");
+    expect(m.fn).toBe("magic");
+    expect(m.chain.map((c) => c.fn)).toEqual(["filter", "facets", "highlight"]);
+    // An option alone is still the call's function.
+    expect(parseCall("@[[note]].highlight()")!.fn).toBe("highlight");
+  });
 });
