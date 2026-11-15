@@ -1,5 +1,7 @@
 @import "./utilities.css";
 @import "./common.css";
+/* What the blocks used to take from the Ribbons theme: title colours, tables, floated pictures */
+@import "./theme-base.css";
 
 /* Components */
 @import "./components/consumables.css";
