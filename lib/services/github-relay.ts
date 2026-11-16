@@ -23,6 +23,8 @@ export interface Relay {
   read(path: string, ref?: string): Promise<string | null>;
   changed(base: string, head: string): Promise<Array<{ path: string; removed: boolean }>>;
   comment(pr: number, body: string): Promise<void>;
+  /** Whether the token reaches the branch, and may write to the repository (unknown when GitHub does not say). */
+  probe(): Promise<{ branch: boolean; write: boolean | undefined }>;
 }
 
 const enc = (path: string) => path.split("/").map(encodeURIComponent).join("/");
@@ -30,14 +32,21 @@ const enc = (path: string) => path.split("/").map(encodeURIComponent).join("/");
 export function githubRelay(repo: string, branch: string, token: string): Relay {
   const api = `https://api.github.com/repos/${repo}`;
   async function call(method: string, path: string, body?: unknown, accept = "application/vnd.github+json") {
-    const res = await requestUrl({
-      url: `${api}${path}`,
-      method,
-      headers: { Authorization: `Bearer ${token}`, Accept: accept, "X-GitHub-Api-Version": "2022-11-28" },
-      ...(body !== undefined ? { body: JSON.stringify(body), contentType: "application/json" } : {}),
-      throw: false,
-    });
-    return res;
+    try {
+      return await requestUrl({
+        url: `${api}${path}`,
+        method,
+        headers: { Authorization: `Bearer ${token}`, Accept: accept, "X-GitHub-Api-Version": "2022-11-28" },
+        ...(body !== undefined ? { body: JSON.stringify(body), contentType: "application/json" } : {}),
+        throw: false,
+      });
+    } catch (e) {
+      // No answer at all: offline, or a network that blocks GitHub.
+      throw new RelayError(
+        `GitHub could not be reached (${e instanceof Error ? e.message : String(e)}). Check the connection and try again.`,
+        0
+      );
+    }
   }
   const fail = (what: string, res: { status: number; text: string }): never => {
     const hint =
@@ -96,6 +105,14 @@ export function githubRelay(repo: string, branch: string, token: string): Relay 
         if (files.length < 100) break;
       }
       return out;
+    },
+
+    async probe() {
+      const repoRes = await call("GET", "");
+      if (repoRes.status >= 400) fail("Reaching the repository", repoRes);
+      const branchRes = await call("GET", `/git/ref/heads/${enc(branch)}`);
+      const push = (repoRes.json?.permissions as { push?: boolean } | undefined)?.push;
+      return { branch: branchRes.status < 400, write: typeof push === "boolean" ? push : undefined };
     },
 
     async comment(pr, body) {

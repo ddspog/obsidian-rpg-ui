@@ -39,6 +39,26 @@ export function formatGmLink(l: GmLink): string {
   return `rpg-gm://${l.repo}?${q.toString()}`;
 }
 
+/** The same link as one to tap: it opens Obsidian and sets the link there. */
+export const openGmLinkUrl = (l: GmLink): string => `obsidian://rpg-gm?link=${encodeURIComponent(formatGmLink(l))}`;
+
+/**
+ * GitHub's page for a new fine-grained token, filled in for the GM link: its
+ * name, the repository's owner, and the two permissions it needs. The
+ * repository itself is picked on the page.
+ */
+export function newTokenUrl(l: GmLink): string {
+  const q = new URLSearchParams({
+    name: `RPG GM link (${l.repo.split("/")[1]})`.slice(0, 40),
+    description: "Obsidian RPG UI: hands a session's turns to its Game Master over a branch.",
+    target_name: l.repo.split("/")[0],
+    expires_in: "90",
+    contents: "write",
+    pull_requests: "write",
+  });
+  return `https://github.com/settings/personal-access-tokens/new?${q.toString()}`;
+}
+
 /** Whose turn it is, kept on the branch beside the session's saved lines. */
 export interface TableFile {
   /** Counts the GM's turns: the GM gives the turn back at `rev + 1`. */

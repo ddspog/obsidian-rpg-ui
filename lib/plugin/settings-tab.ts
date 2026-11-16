@@ -42,7 +42,7 @@ interface PluginWithSettings {
   saveSettings(): Promise<void>;
   applyColorSettings(): void;
   /** The GM link's controller: where the linked session stands, and its two moves. */
-  gmLink: { describe(): string; openHandOver(): void; check(): Promise<void> };
+  gmLink: { describe(): string; openSetup(): void; openHandOver(): void; check(): Promise<void> };
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
@@ -258,34 +258,16 @@ export class DndSettingsTab extends PluginSettingTab {
       note: this.plugin.settings.gmLink ? "linked" : "off",
       desc: "Play a session here with its Game Master somewhere else (a Claude Code session): your turn travels over a branch of a GitHub repository. Commands: “GM link: hand over to the Game Master”, “GM link: check for the GM's turn”.",
     }).body;
-    const gmStatus = gm.createEl("p", { text: this.plugin.gmLink.describe(), cls: "setting-item-description" });
+    gm.createEl("p", { text: this.plugin.gmLink.describe(), cls: "setting-item-description" });
     new Setting(gm)
-      .setName("Link")
-      .setDesc("What the GM gave you (rpg table link prints it): it names the repository, the branch and the session.")
-      .addText((t) =>
-        t
-          .setPlaceholder("rpg-gm://owner/vault?branch=…&session=…")
-          .setValue(this.plugin.settings.gmLink)
-          .onChange(async (v) => {
-            this.plugin.settings.gmLink = v.trim();
-            await this.plugin.saveSettings();
-            gmStatus.setText(this.plugin.gmLink.describe());
-          })
-      );
-    new Setting(gm)
-      .setName("GitHub token")
-      .setDesc(
-        "A fine-grained token for that one repository: Contents and Pull requests, read and write. Kept on this device; never in a copy of the settings."
+      .setName("Set up")
+      .setDesc("The steps, each with its button: the link from the GM, a GitHub token, a test, the first hand-over.")
+      .addButton((b) =>
+        b
+          .setButtonText("Set up…")
+          .setCta()
+          .onClick(() => this.plugin.gmLink.openSetup())
       )
-      .addText((t) => {
-        t.inputEl.type = "password";
-        t.setValue(this.plugin.settings.gmLinkToken).onChange(async (v) => {
-          this.plugin.settings.gmLinkToken = v.trim();
-          await this.plugin.saveSettings();
-        });
-      });
-    new Setting(gm)
-      .setName("Turn")
       .addButton((b) => b.setButtonText("Hand over").onClick(() => this.plugin.gmLink.openHandOver()))
       .addButton((b) => b.setButtonText("Check for the GM's turn").onClick(() => void this.plugin.gmLink.check()));
 

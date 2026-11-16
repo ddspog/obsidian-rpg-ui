@@ -14,12 +14,23 @@ rpg table link "<session>" --pr 21
 # rpg-gm://owner/vault?branch=…&session=…&pr=21
 ```
 
-The player, in the plugin's settings, General › GM link:
+`rpg table link` prints two forms: the link, and the same as an
+`obsidian://rpg-gm?link=…` URL which, tapped on the player's device, opens
+Obsidian and sets the link by itself.
 
-- **Link**: that line.
-- **GitHub token**: a fine-grained token for that one repository, with
-  Contents and Pull requests set to read and write. It stays on the device
-  (the settings' Copy leaves it out).
+The player opens the set-up (the command "GM link: set up", or Settings,
+General › GM link › Set up; it also opens by itself when Hand over is pressed
+with something missing). It is four steps, each with its button and a tick
+once done:
+
+1. **The link from the GM**: Paste (from the clipboard, or typed in the field).
+2. **A GitHub token**: _Create on GitHub_ opens GitHub's new-token page with
+   the name, the owner and the two permissions filled in (Contents and Pull
+   requests, read and write); the repository is picked there. Then Paste. The
+   token stays on the device (the settings' Copy leaves it out).
+3. **Test the connection**: that the token reaches the branch and may write,
+   and that the session's note is in this vault. Nothing is written.
+4. **Play, then hand over**: opens the session, or hands over.
 
 ## A turn
 

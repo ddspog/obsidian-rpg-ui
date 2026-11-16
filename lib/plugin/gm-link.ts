@@ -8,6 +8,7 @@ import { type App, Modal, normalizePath, Notice, Setting, TFile } from "obsidian
 import {
   changedSince,
   type GmLink,
+  newTokenUrl,
   type LinkState,
   parseGmLink,
   playNotes,
@@ -34,6 +35,13 @@ interface Host {
   saveSettings(): Promise<void>;
   addCommand(command: { id: string; name: string; callback: () => void }): unknown;
   registerInterval(id: number): number;
+  registerObsidianProtocolHandler(action: string, handler: (params: Record<string, string>) => void): void;
+}
+
+/** What the last test of the connection found. */
+export interface LinkTest {
+  ok: boolean;
+  lines: Array<{ ok: boolean; text: string }>;
 }
 
 /** How often a turn that is with the GM is looked for, while Obsidian is in front. */
@@ -56,15 +64,71 @@ export class GmLinkController {
     await this.host.saveSettings();
   }
 
-  /** The link and a relay for it, or a notice of what is missing. */
+  /** The last test's findings, until the link or the token changes. */
+  tested: LinkTest | null = null;
+
+  async setLink(text: string): Promise<boolean> {
+    const clean = text.trim();
+    if (clean && !parseGmLink(clean)) return false;
+    this.host.settings.gmLink = clean;
+    this.tested = null;
+    await this.host.saveSettings();
+    return true;
+  }
+
+  async setToken(text: string): Promise<void> {
+    this.host.settings.gmLinkToken = text.trim();
+    this.tested = null;
+    await this.host.saveSettings();
+  }
+
+  hasToken(): boolean {
+    return !!this.host.settings.gmLinkToken;
+  }
+
+  /** Whether the link, the token and this vault fit together: each finding in words. */
+  async test(): Promise<LinkTest> {
+    const link = this.link();
+    const lines: LinkTest["lines"] = [];
+    if (!link || !this.hasToken()) {
+      lines.push({ ok: false, text: !link ? "No link yet (step 1)." : "No token yet (step 2)." });
+      return (this.tested = { ok: false, lines });
+    }
+    const here = this.host.app.vault.getAbstractFileByPath(link.session) instanceof TFile;
+    lines.push({
+      ok: here,
+      text: here ? "The session's note is in this vault." : `The session's note is not in this vault: ${link.session}`,
+    });
+    try {
+      const found = await githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken).probe();
+      lines.push({ ok: true, text: `The token reaches ${link.repo}.` });
+      lines.push({
+        ok: found.branch,
+        text: found.branch ? `The branch ${link.branch} is there.` : `No branch ${link.branch} in the repository.`,
+      });
+      if (found.write !== undefined)
+        lines.push({
+          ok: found.write,
+          text: found.write
+            ? "The token may write to it."
+            : "The token may only read: it needs Contents and Pull requests set to read and write.",
+        });
+    } catch (e) {
+      lines.push({ ok: false, text: e instanceof Error ? e.message : String(e) });
+    }
+    return (this.tested = { ok: lines.every((l) => l.ok), lines });
+  }
+
+  /** The guided set-up: the steps, each with its button, ticked as they are done. */
+  openSetup(): void {
+    new SetupModal(this.host.app, this).open();
+  }
+
+  /** The link and a relay for it; with something missing, the set-up opens instead. */
   private ready(): { link: GmLink; relay: Relay } | null {
     const link = this.link();
-    if (!link) {
-      new Notice("GM link: paste the link the GM gave you in the plugin's settings (General › GM link).");
-      return null;
-    }
-    if (!this.host.settings.gmLinkToken) {
-      new Notice("GM link: add a GitHub token for the repository in the plugin's settings.");
+    if (!link || !this.host.settings.gmLinkToken) {
+      this.openSetup();
       return null;
     }
     if (!(this.host.app.vault.getAbstractFileByPath(link.session) instanceof TFile)) {
@@ -224,6 +288,14 @@ export class GmLinkController {
   }
 
   register(): void {
+    this.host.addCommand({ id: "rpg-ui-gm-setup", name: "GM link: set up", callback: () => this.openSetup() });
+    // A link to tap (`obsidian://rpg-gm?link=…`, as `rpg table link` prints it): sets the link and opens the set-up.
+    this.host.registerObsidianProtocolHandler("rpg-gm", (params) => {
+      void this.setLink(params.link ?? "").then((ok) => {
+        if (!ok) new Notice("That is not a GM link.");
+        this.openSetup();
+      });
+    });
     this.host.addCommand({
       id: "rpg-ui-gm-hand-over",
       name: "GM link: hand over to the Game Master",
@@ -331,5 +403,166 @@ class TurnModal extends Modal {
   }
   onClose(): void {
     this.contentEl.empty();
+  }
+}
+
+/** Text from the clipboard, or null where Obsidian may not read it (then the field is typed into). */
+async function clipboard(): Promise<string | null> {
+  try {
+    const text = await navigator.clipboard.readText();
+    return text.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The set-up, as steps. Each says what it is for, has the button that does it,
+ * and shows a tick once it is done; the next is drawn open.
+ */
+class SetupModal extends Modal {
+  constructor(
+    app: App,
+    private gm: GmLinkController
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Play with a Game Master elsewhere");
+    this.modalEl.addClass("rpg-gm-setup");
+    this.draw();
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+
+  private step(n: number, title: string, done: boolean, about: string): HTMLElement {
+    const box = this.contentEl.createDiv({ cls: `rpg-gm-step${done ? " is-done" : ""}` });
+    const head = box.createDiv({ cls: "rpg-gm-step-head" });
+    head.createSpan({ cls: "rpg-gm-step-mark", text: done ? "✓" : String(n) });
+    head.createSpan({ cls: "rpg-gm-step-title", text: title });
+    box.createEl("p", { text: about, cls: "rpg-gm-step-about" });
+    return box;
+  }
+
+  private draw(): void {
+    const { contentEl, gm } = this;
+    contentEl.empty();
+    contentEl.createEl("p", {
+      text: "You play here, in your own notes. When you hand over, your turn goes to the Game Master over a branch of the vault's GitHub repository, and their turn comes back into your notes.",
+    });
+    const link = gm.link();
+    const tested = gm.tested;
+
+    // 1. The link
+    const one = this.step(
+      1,
+      "The link from the GM",
+      !!link,
+      link
+        ? `${link.session.split("/").pop()?.replace(/\.md$/, "")}, on ${link.repo} (${link.branch}).`
+        : "The GM gives you a link starting rpg-gm://. Copy it, then press Paste. (A link starting obsidian://rpg-gm does this step by itself when tapped.)"
+    );
+    let typedLink = "";
+    new Setting(one)
+      .addText((t) => t.setPlaceholder("rpg-gm://…").onChange((v) => (typedLink = v)))
+      .addButton((b) =>
+        b
+          .setButtonText(link ? "Replace" : "Paste")
+          .setCta()
+          .onClick(async () => {
+            const text = typedLink.trim() || (await clipboard());
+            if (!text) return void new Notice("Nothing to paste: copy the link first, or type it in the field.");
+            if (!(await gm.setLink(text))) return void new Notice("That is not a GM link (it starts rpg-gm://).");
+            this.draw();
+          })
+      );
+
+    // 2. The token
+    const two = this.step(
+      2,
+      "A GitHub token",
+      gm.hasToken(),
+      gm.hasToken()
+        ? "A token is kept on this device (never in a copy of the settings)."
+        : "The plugin needs leave to write to that one repository. Create a token on GitHub (the page opens filled in: under Repository access pick Only select repositories and choose the vault, then Generate token), copy it, come back and press Paste."
+    );
+    let typedToken = "";
+    const tokenRow = new Setting(two);
+    if (link)
+      tokenRow.addButton((b) => b.setButtonText("Create on GitHub").onClick(() => window.open(newTokenUrl(link))));
+    tokenRow
+      .addText((t) => {
+        t.inputEl.type = "password";
+        t.setPlaceholder("github_pat_…").onChange((v) => (typedToken = v));
+      })
+      .addButton((b) =>
+        b
+          .setButtonText(gm.hasToken() ? "Replace" : "Paste")
+          .setCta()
+          .onClick(async () => {
+            const text = typedToken.trim() || (await clipboard());
+            if (!text) return void new Notice("Nothing to paste: copy the token first, or type it in the field.");
+            await gm.setToken(text);
+            this.draw();
+          })
+      );
+
+    // 3. The test
+    const three = this.step(
+      3,
+      "Test the connection",
+      !!tested?.ok,
+      tested
+        ? ""
+        : "Checks that the token reaches the branch and that the session's note is in this vault. Nothing is written."
+    );
+    for (const l of tested?.lines ?? [])
+      three.createEl("p", { text: `${l.ok ? "✓" : "✗"} ${l.text}`, cls: l.ok ? "rpg-gm-ok" : "mod-warning" });
+    new Setting(three).addButton((b) =>
+      b
+        .setButtonText(tested ? "Test again" : "Test")
+        .setCta()
+        .setDisabled(!link || !gm.hasToken())
+        .onClick(async () => {
+          b.setButtonText("Testing…").setDisabled(true);
+          await gm.test();
+          this.draw();
+        })
+    );
+
+    // 4. Play
+    const state = link ? gm.state(link) : null;
+    const four = this.step(
+      4,
+      "Play, then hand over",
+      !!state && (state.waiting || state.rev > 0),
+      state?.waiting
+        ? "Your turn is with the Game Master. Their turn is looked for while Obsidian is open; a dialog shows it when it comes."
+        : "Play your turn in the session's Log as always and save it. Then press Hand over (here, or in the Log's own bar). You can add a line for the GM. When they have played, a dialog shows what they say and writes their changes into your notes."
+    );
+    new Setting(four)
+      .addButton((b) =>
+        b
+          .setButtonText("Open the session")
+          .setDisabled(!link)
+          .onClick(() => {
+            if (link) void this.app.workspace.openLinkText(link.session, "");
+            this.close();
+          })
+      )
+      .addButton((b) =>
+        b
+          .setButtonText(state?.waiting ? "Check for the GM's turn" : "Hand over")
+          .setCta()
+          .setDisabled(!link || !gm.hasToken())
+          .onClick(() => {
+            this.close();
+            if (state?.waiting) void gm.check();
+            else gm.openHandOver();
+          })
+      );
   }
 }

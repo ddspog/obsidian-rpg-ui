@@ -13,7 +13,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { formatGmLink, parseTable, type TableFile, tablePath } from "lib/domains/gm-link/link";
+import { formatGmLink, openGmLinkUrl, parseTable, type TableFile, tablePath } from "lib/domains/gm-link/link";
 import type { Ctx } from "../app";
 
 const git = (root: string, ...args: string[]): string =>
@@ -32,14 +32,21 @@ export function tableLink(ctx: Ctx, ref: string, pr?: number): { value: unknown;
   // https://github.com/owner/name(.git), git@github.com:owner/name.git, or a proxy's …/owner/name
   const repo = remote.replace(/\.git$/, "").match(/([\w.-]+\/[\w.-]+)$/)?.[1];
   if (!repo) throw new Error(`Cannot tell the repository from the origin (${remote}).`);
-  const link = formatGmLink({ repo, branch, session, ...(pr ? { pr } : {}) });
+  const parts = { repo, branch, session, ...(pr ? { pr } : {}) };
+  const link = formatGmLink(parts);
+  const open = openGmLinkUrl(parts);
   return {
-    value: { link, repo, branch, session, pr },
+    value: { link, open, repo, branch, session, pr },
     text: [
-      link,
+      "For the player, either:",
       "",
-      "The player pastes this in the plugin's settings (General › GM link), with a GitHub token for the repository",
-      "(fine-grained: Contents and Pull requests, read and write).",
+      `  tap this on the device they play on (it opens Obsidian and sets the link):`,
+      `  ${open}`,
+      "",
+      `  or paste this in the plugin's settings (General › GM link › Set up):`,
+      `  ${link}`,
+      "",
+      "The set-up there walks through the rest (a GitHub token for the repository, a test, the first hand-over).",
       pr
         ? `A comment on pull request #${pr} tells the GM a turn is in.`
         : "No pull request named (--pr N): the player tells the GM by hand when a turn is in.",

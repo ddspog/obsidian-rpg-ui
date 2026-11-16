@@ -1,0 +1,59 @@
+/* The GM link's set-up: numbered steps, ticked as they are done. */
+.rpg-gm-setup .rpg-gm-step {
+  margin: 12px 0;
+  padding: 12px 14px 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+}
+.rpg-gm-setup .rpg-gm-step.is-done {
+  border-color: var(--color-green);
+}
+.rpg-gm-setup .rpg-gm-step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.rpg-gm-setup .rpg-gm-step-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+.rpg-gm-setup .rpg-gm-step.is-done .rpg-gm-step-mark {
+  background: var(--color-green);
+  color: var(--text-on-accent);
+}
+.rpg-gm-setup .rpg-gm-step-about,
+.rpg-gm-setup .rpg-gm-step p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.rpg-gm-setup .rpg-gm-step p.rpg-gm-ok {
+  color: var(--color-green);
+}
+.rpg-gm-setup .rpg-gm-step .setting-item {
+  border-top: none;
+  padding: 10px 0;
+}
+.rpg-gm-setup .rpg-gm-step .setting-item-info {
+  display: none;
+}
+.rpg-gm-setup .rpg-gm-step .setting-item-control {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.rpg-gm-setup .rpg-gm-step .setting-item-control input[type="text"],
+.rpg-gm-setup .rpg-gm-step .setting-item-control input[type="password"] {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+.rpg-gm-setup .rpg-gm-step button {
+  min-height: 36px;
+}

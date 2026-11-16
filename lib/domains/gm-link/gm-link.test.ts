@@ -5,6 +5,8 @@ import {
   changedSince,
   formatGmLink,
   type LinkState,
+  newTokenUrl,
+  openGmLinkUrl,
   parseGmLink,
   parseTable,
   playNotes,
@@ -34,6 +36,7 @@ function fakeRelay(start: Record<string, string>) {
         .map((path) => ({ path, removed: b[path] === undefined }));
     },
     comment: async (_pr, body) => void comments.push(body),
+    probe: async () => ({ branch: true, write: true }),
   };
   return {
     relay,
@@ -84,6 +87,21 @@ describe("the link", () => {
     expect(accepts(".rpg-sessions/one/table.json")).toBe(false);
     expect(accepts(".obsidian/plugins/x/main.js")).toBe(false);
     expect(accepts("../outside.md")).toBe(false);
+  });
+});
+
+describe("the set-up's links", () => {
+  it("makes a link to tap and a token page filled in", () => {
+    const open = new URL(openGmLinkUrl(LINK));
+    expect(open.protocol + "//" + open.host).toBe("obsidian://rpg-gm");
+    expect(parseGmLink(open.searchParams.get("link") ?? "")).toEqual(LINK);
+    const token = new URL(newTokenUrl(LINK));
+    expect(token.pathname).toBe("/settings/personal-access-tokens/new");
+    expect(Object.fromEntries(token.searchParams)).toMatchObject({
+      target_name: "someone",
+      contents: "write",
+      pull_requests: "write",
+    });
   });
 });
 
