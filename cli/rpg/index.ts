@@ -8,6 +8,11 @@
  *                                           a hex map's hexes (terrain, regions, places, marks); a battle map's squares
  *   rpg lookup "Kobolds"                   a compendium note: its blocks and text
  *   rpg search kobold                      notes whose names match
+ *   rpg gm …                               run a session as its Game Master (rpg gm guide)
+ *   rpg session …                          a session's files, and its lines of play
+ *
+ * Reading commands write nothing. `rpg gm` writes a session's log and its GM
+ * notebook; `rpg session` its saved lines (and, on switch, its notes).
  *
  * Options: --vault <path> (else $RPG_VAULT, else the vault the plugin sits in), --json.
  */
@@ -18,6 +23,23 @@ import { characterSheet, renderCharacter } from "./commands/character";
 import { logState, renderLog } from "./commands/log";
 import { lookupNote, renderLookup, searchNotes } from "./commands/lookup";
 import { mapState, renderMap } from "./commands/map";
+import {
+  gmBrief,
+  gmCards,
+  gmMode,
+  gmNote,
+  gmNotebook,
+  type GmOptions,
+  gmPlay,
+  gmPrep,
+  gmReveal,
+  gmRoll,
+  gmSay,
+} from "./gm/commands";
+import { consult, renderPassages, renderShelf, shelf, systemRoot } from "./gm/consult";
+import GUIDE from "./gm/guide.md";
+import { forkLine, listLines, listSessions, packSession, saveLine, switchLine, unpackSession } from "./session/lines";
+import { manifest, renderManifest } from "./session/manifest";
 
 const HELP = `rpg — read your RPG vault as the plugin calculates it (read-only)
 
@@ -28,6 +50,39 @@ Usage:
                                        a hex map's hexes, or a battle map's squares
   rpg lookup <note> [--full]           a note's blocks and text, as the compendium has it
   rpg search <words>                   notes whose names match
+
+Game Master (the session's log and GM notebook are written; rpg gm guide explains):
+  rpg gm guide                         how to run a session with these commands
+  rpg gm brief <session>               where play stands, the GM's dials and lists, the notebook
+  rpg gm cards <session> [words]       the GM Screen's cards, and their slots
+  rpg gm play <session> <card> [--set name=value]… [--pick value]… --into log|"<prep title>"
+                                       play a card: dice rolled here, lines written (--dry: its slots)
+  rpg gm roll <session> <dice> [--label text] --into log|"<prep title>"
+                                       2d6+3, d20+5 vs 14, 2d20kh1+6
+  rpg gm say <session> <line> | --file <path>
+                                       lines for the log (no dice in them)
+  rpg gm consult <words> [--in folder]… [--limit N]
+                                       passages of the books that hold the words
+  rpg gm shelf <session>               what the vault holds, by folder
+  rpg gm prep <session> <title> [--note text]… [--when text] [--status idea|ready|used|dropped]
+               [--attach note]… [--ask encounter|npc|scene|…] [--map note --level N --hex q,r]
+                                       a prep draft in the notebook, made or changed
+  rpg gm note <session> <text>         a standing note
+  rpg gm notebook <session>            the notebook
+  rpg gm mode <session> [secret|open]  where the notebook is kept
+  rpg gm reveal <session> <title>|--all  hidden prep moved into the open notebook
+
+Sessions:
+  rpg session list                     notes that are sessions
+  rpg session manifest <session> [--full]
+                                       what the session is made of, and what git does not carry
+  rpg session save <session> [--note text]
+  rpg session fork <session> <name> [--note text]
+                                       start a line of play from here
+  rpg session switch <session> <line>  put another line back in the vault
+  rpg session lines <session>
+  rpg session pack <session> [--line name] [--full] [--out file.zip]
+  rpg session unpack <file.zip> [--force]
 
 Options:
   --vault <path>   the vault (default: $RPG_VAULT, else the one this plugin is in)
@@ -46,6 +101,26 @@ async function main(): Promise<number> {
       radius: { type: "string" },
       log: { type: "string" },
       full: { type: "boolean", default: false },
+      set: { type: "string", multiple: true },
+      pick: { type: "string", multiple: true },
+      into: { type: "string" },
+      dry: { type: "boolean", default: false },
+      label: { type: "string" },
+      when: { type: "string" },
+      status: { type: "string" },
+      attach: { type: "string", multiple: true },
+      ask: { type: "string" },
+      map: { type: "string" },
+      hex: { type: "string", multiple: true },
+      note: { type: "string", multiple: true },
+      file: { type: "string" },
+      dice: { type: "boolean", default: false },
+      all: { type: "boolean", default: false },
+      in: { type: "string", multiple: true },
+      limit: { type: "string" },
+      line: { type: "string" },
+      out: { type: "string" },
+      force: { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
     },
   });
@@ -62,7 +137,124 @@ async function main(): Promise<number> {
     log(values.json ? JSON.stringify(value, null, 2) : md());
   };
 
+  if (command === "gm" && (rest[0] === "guide" || rest[0] === "help")) {
+    log(GUIDE);
+    return 0;
+  }
   const ctx: Ctx = boot(findVault(values.vault));
+  if (command === "gm") {
+    const [sub, a = "", ...more] = rest;
+    const b = more.join(" ").trim();
+    const o: GmOptions = {
+      set: values.set ?? [],
+      pick: values.pick ?? [],
+      into: values.into,
+      dry: values.dry,
+      nth: Number(values.log ?? 1),
+      label: values.label,
+      when: values.when,
+      status: values.status,
+      attach: values.attach ?? [],
+      ask: values.ask,
+      map: values.map,
+      level: values.level,
+      hex: values.hex ?? [],
+      note: values.note ?? [],
+      file: values.file,
+      dice: values.dice,
+      all: values.all,
+    };
+    const session = () => need(a, "the session's note");
+    let r: { value: unknown; text: string };
+    switch (sub) {
+      case "brief":
+        r = await gmBrief(ctx, session(), o);
+        break;
+      case "cards":
+        r = await gmCards(ctx, session(), b, o);
+        break;
+      case "play":
+        r = await gmPlay(ctx, session(), need(b, "a card's name"), o);
+        break;
+      case "roll":
+        r = await gmRoll(ctx, session(), need(b, "the dice (2d6+3)"), o);
+        break;
+      case "say":
+        r = await gmSay(ctx, session(), b, o);
+        break;
+      case "prep":
+        r = await gmPrep(ctx, session(), b, o);
+        break;
+      case "note":
+        r = await gmNote(ctx, session(), b, o);
+        break;
+      case "notebook":
+        r = await gmNotebook(ctx, session(), o);
+        break;
+      case "mode":
+        r = await gmMode(ctx, session(), b);
+        break;
+      case "reveal":
+        r = await gmReveal(ctx, session(), b, o);
+        break;
+      case "consult": {
+        const found = consult(ctx, need(rest.slice(1).join(" "), "words to look for"), {
+          under: values.in,
+          limit: values.limit ? Number(values.limit) : undefined,
+        });
+        r = { value: found, text: renderPassages(found) };
+        break;
+      }
+      case "shelf": {
+        const tree = shelf(ctx, systemRoot(ctx.note(session()).path));
+        r = { value: tree, text: renderShelf(tree) };
+        break;
+      }
+      default:
+        process.stderr.write(`Unknown: rpg gm ${sub ?? ""}\n\n${HELP}`);
+        return 1;
+    }
+    out(r.value, () => r.text);
+    return 0;
+  }
+  if (command === "session" || command === "sessions") {
+    const [sub = "list", a = "", ...more] = rest;
+    const b = more.join(" ").trim();
+    const note = values.note?.[0];
+    switch (sub) {
+      case "list": {
+        const found = listSessions(ctx);
+        out(found, () => (found.length ? found.map((f) => `- ${f}`).join("\n") : "No session in this vault."));
+        return 0;
+      }
+      case "manifest": {
+        const m = manifest(ctx, need(a, "the session's note"));
+        out(m, () => renderManifest(m, values.full));
+        return 0;
+      }
+      case "save":
+        log(saveLine(ctx, need(a, "the session's note"), note));
+        return 0;
+      case "fork":
+        log(forkLine(ctx, need(a, "the session's note"), need(b, "a name for the new line"), note));
+        return 0;
+      case "switch":
+        log(switchLine(ctx, need(a, "the session's note"), need(b, "the line to switch to")));
+        return 0;
+      case "lines":
+        log(listLines(ctx, need(a, "the session's note")));
+        return 0;
+      case "pack":
+        log(packSession(ctx, need(a, "the session's note"), { line: values.line, full: values.full, out: values.out }));
+        return 0;
+      case "unpack":
+        log(unpackSession(ctx, need(a, "the zip"), values.force));
+        return 0;
+      default:
+        process.stderr.write(`Unknown: rpg session ${sub}\n\n${HELP}`);
+        return 1;
+    }
+  }
   switch (command) {
     case "character":
     case "char":

@@ -1,6 +1,6 @@
 # `rpg` — the headless CLI
 
-A read-only command line over the plugin's own calculations, for playing with
+A command line over the plugin's own calculations, for playing with
 an LLM in a terminal (a cloud one too) that has the vault but no Obsidian.
 It loads the TTRPG system from the vault the way the plugin does (bundling
 `tales-of-the-valiant/config` with esbuild), then answers with what the
@@ -16,8 +16,13 @@ node cli/dist/rpg.cjs --help
 ```
 
 The vault is found by itself (the one the plugin sits in). Elsewhere, pass
-`--vault <path>` or set `RPG_VAULT`. Nothing is ever written: the CLI's vault
-refuses every write.
+`--vault <path>` or set `RPG_VAULT`. The commands below write nothing: the
+CLI's vault refuses every write. `rpg gm` (a session's log and GM notebook)
+and `rpg session` (its saved lines) do write: see `docs/game-master.md`.
+
+With no plugin settings in the vault (a clone: the plugin's folder is not in
+git), a top folder holding `config/index.ts` is taken as the system of its own
+notes.
 
 ## Commands
 

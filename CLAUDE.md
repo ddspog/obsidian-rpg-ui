@@ -109,6 +109,10 @@ The command "Import PDF as compendium book" (`lib/plugin/pdf-import-modal.ts`) w
 
 `simulators/` is a sub-project for trying single pieces of the plugin in a browser (a phone included): each simulator is one HTML file holding the plugin code it exercises, `styles.css` and a copy of the vault's notes, with `obsidian` stubbed. `npm run build`, then `RPG_VAULT_ROOT=/path/to/vault npm run sim:build [id]` writes `simulators/dist/<id>.html`; `npm run sim:check` opens each in headless Chromium; `npm run sim:new <id>` scaffolds one. Shared code is in `simulators/core/`, each simulator in its own folder (`lonelog-log`: the Log and its cards; `rpg-table`: a table block). See `simulators/README.md` for the API and for what is not simulated (character sheets, other plugins, images).
 
+## rpg CLI and the LLM Game Master
+
+`npm run build:cli` writes `cli/dist/rpg.cjs` (sources in `cli/rpg/`): the plugin's own code run against a vault on disk (`--vault`, `$RPG_VAULT`, else the vault the plugin sits in). `rpg character|log|map|lookup|search` read. `rpg gm …` lets a model run a session as its Game Master: `guide` (the orientation, `cli/rpg/gm/guide.md`), `brief`, `cards`, `play` (a GM Screen card, dice rolled in the CLI and written at once, to the log or to a prep draft), `roll`, `say`, `consult`, `prep`, `note`, `mode secret|open`, `reveal`. `rpg session manifest|fork|switch|lines|save|pack|unpack` keeps a session's lines of play under `.rpg-sessions/`. `/gm <session>` (`.claude/commands/gm.md`) starts a GM. Try a change on a copy of the vault, never the checkout: `rpg gm` writes the session note. See `docs/game-master.md`.
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.

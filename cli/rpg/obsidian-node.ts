@@ -41,3 +41,19 @@ export class TFolder extends TAbstractFile {
 export class FuzzySuggestModal {
   constructor(..._args: unknown[]) {}
 }
+
+/** No phone, no desktop app: a terminal. */
+export const Platform = {
+  isMobile: false,
+  isPhone: false,
+  isTablet: false,
+  isDesktop: true,
+  isDesktopApp: false,
+  isMobileApp: false,
+  isMacOS: false,
+  isWin: false,
+  isLinux: true,
+  isIosApp: false,
+  isAndroidApp: false,
+  isSafari: false,
+};

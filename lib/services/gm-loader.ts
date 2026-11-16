@@ -12,7 +12,14 @@ import { cardXFileRefs, inlineCardXFileRefs, selectGenerator } from "lib/domains
 import { generatorSteps, genStepLine } from "lib/domains/gm/emit";
 import type { GMStepContext } from "lib/domains/gm/example";
 import { expandCalledGenerator } from "lib/domains/gm/expand-gen";
-import { parseBranchRef, selectStepBlock, spliceStepUses, stepUseLinks } from "lib/domains/gm/steps";
+import {
+  alternativesByRef,
+  flattenSteps,
+  parseBranchRef,
+  selectStepBlock,
+  spliceStepUses,
+  stepUseLinks,
+} from "lib/domains/gm/steps";
 import { collectResources } from "lib/domains/lonelog/dial-ops";
 import { collectLists, type ListDecl } from "lib/domains/lonelog/list-ops";
 import type { TableDef } from "lib/domains/tables/types";
@@ -149,7 +156,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
               if (!step) continue;
               const expanded = await this.expandStepUses(step);
               steps[ref.target] = expanded;
-              for (const s of expanded.steps ?? []) {
+              for (const s of flattenSteps(expanded.steps ?? [])) {
                 const refs = [...(s.table ? [s.table] : []), ...(s.tables ?? [])];
                 for (const rawRef of refs) {
                   if (tables[rawRef]) continue;
@@ -183,7 +190,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
                       for (const sb of expanded.stepBlocks) {
                         if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
                         // A `choices` pick's word-pair tables (Actions/Descriptions).
-                        for (const bs of sb.steps ?? []) {
+                        for (const bs of flattenSteps(sb.steps ?? [])) {
                           for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])]) {
                             if (tables[rawRef]) continue;
                             const btref = parseBranchRef(rawRef);
@@ -234,7 +241,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
     // feature declaring both a `choices` generator and what each pick spawns) —
     // load those so a picked line auto-fills when rolled.
     for (const feature of features) {
-      for (const s of feature.steps ?? []) {
+      for (const s of flattenSteps(feature.steps ?? [])) {
         for (const rawRef of [...(s.table ? [s.table] : []), ...(s.tables ?? [])]) {
           if (tables[rawRef]) continue;
           const oref = parseBranchRef(rawRef);
@@ -248,6 +255,8 @@ export class GMLoader<N extends NoteRef = NoteRef> {
             /* skip an unreadable table — that pick just won't auto-fill */
           }
         }
+        // A pick that `calls:` a generator (Random Event's "Roll" → Event Focus) lays out its lines.
+        if (s.calls) await this.loadCall(s.calls, { steps, tables, calls, stepTables, stepFollows, lists });
       }
     }
     // A GM feature's own generator → its working lines (its own `steps:`, plus
@@ -279,6 +288,7 @@ export class GMLoader<N extends NoteRef = NoteRef> {
     return {
       steps,
       tables,
+      alternatives: alternativesByRef([...resFeatures, ...Object.values(steps)].flatMap((f) => f.steps ?? [])),
       dials,
       calls,
       stepTables,
@@ -287,6 +297,67 @@ export class GMLoader<N extends NoteRef = NoteRef> {
       genLines,
       resources: collectResources(resFeatures),
     };
+  }
+
+  /** A table by its ref (`@[[File]]#block`), read into `tables` once. */
+  private async loadTable(rawRef: string, tables: Record<string, TableDef>): Promise<void> {
+    if (tables[rawRef]) return;
+    const ref = parseBranchRef(rawRef);
+    const file = this.reader.resolve(ref?.target ?? rawRef);
+    if (!file) return;
+    try {
+      const doc = parseSourceDocShared({ $name: file.name, $contents: await this.reader.read(file) }, "class");
+      const table = (ref?.block && doc.tables.find((t) => t.name === ref.block)) || doc.tables[0];
+      if (table) tables[rawRef] = table;
+    } catch {
+      /* an unreadable table: that roll just won't auto-fill */
+    }
+  }
+
+  /**
+   * A step that `calls:` a sub-procedure: its generator's steps become the child lines laid out
+   * under the pick (cross-file `emits:` sub-generators expanded), and the tables those steps roll
+   * are loaded. Fills the step context's maps in place. Mirrors the log view's own.
+   */
+  private async loadCall(
+    ref: string,
+    ctx: {
+      steps: Record<string, GMFeature>;
+      tables: Record<string, TableDef>;
+      calls: Record<string, string[]>;
+      stepTables: Record<string, string>;
+      stepFollows: Record<string, GMInterpret>;
+      lists: Record<string, ListDecl>;
+    }
+  ): Promise<void> {
+    const { steps, tables, calls, stepTables, stepFollows, lists } = ctx;
+    if (calls[ref.trim()]) return;
+    const cref = parseBranchRef(ref);
+    const cfile = this.reader.resolve(cref?.target ?? ref);
+    if (!cfile) return;
+    try {
+      const cdoc = parseSourceDocShared({ $name: cfile.name, $contents: await this.reader.read(cfile) }, "class");
+      const gen = selectGenerator(cdoc.gmFeatures ?? [], cref?.block);
+      if (!gen) return;
+      await this.loadReadsLists(cdoc.gmFeatures ?? [], lists);
+      const expanded = await expandCalledGenerator(gen, (t) => this.readGMFeatures(t));
+      await this.loadReadsLists(expanded.readsFeatures, lists);
+      for (const sb of expanded.stepBlocks) {
+        if (sb.name && !steps[sb.name]) steps[sb.name] = sb;
+        for (const bs of flattenSteps(sb.steps ?? []))
+          for (const rawRef of [...(bs.table ? [bs.table] : []), ...(bs.tables ?? [])])
+            await this.loadTable(rawRef, tables);
+      }
+      calls[ref.trim()] = expanded.steps.map((gs) => genStepLine(gs)).filter((l): l is string => !!l);
+      for (const gs of expanded.steps) {
+        if (gs.work && gs.interpret) stepFollows[gs.work] = gs.interpret;
+        if (!gs.table || !gs.work) continue;
+        stepTables[gs.work] = gs.table;
+        await this.loadTable(gs.table, tables);
+      }
+    } catch {
+      /* an unreadable call: the pick spawns its own line only */
+    }
   }
 
   /** Read a linked file's GM features by wikilink target (for the composition
