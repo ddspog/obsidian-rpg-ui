@@ -11,8 +11,9 @@ import {
   TAbstractFile,
   TFile,
 } from "obsidian";
-import { setGmLinkProvider } from "lib/domains/gm-link/registry";
+import { setGmLinkProvider, setRewordProvider } from "lib/domains/gm-link/registry";
 import { GmLinkController } from "lib/plugin/gm-link";
+import { openReword } from "lib/plugin/reword-modal";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import { COMPILATION_VIEW_TYPE, compilationFactory, compilationOptions } from "lib/views/CompilationBasesView";
@@ -871,6 +872,14 @@ export default class DndUIToolkitPlugin extends Plugin {
     this.gmLink.register();
     setGmLinkProvider((path) => this.gmLink.bar(path));
     this.register(() => setGmLinkProvider(null));
+    // "Improve the wording": the model rewrites the prose of the passages picked, and nothing else.
+    setRewordProvider((path) => openReword(this.app, path, this.settings.imageStudio));
+    this.register(() => setRewordProvider(null));
+    this.addCommand({
+      id: "rpg-ui-reword-log",
+      name: "Improve the wording of this session's log",
+      callback: () => openReword(this.app, this.app.workspace.getActiveFile()?.path, this.settings.imageStudio),
+    });
     // The image studio, on the note that's open.
     this.addCommand({
       id: "rpg-ui-image-studio",

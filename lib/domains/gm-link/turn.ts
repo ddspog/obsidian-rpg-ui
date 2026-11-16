@@ -17,11 +17,19 @@ export async function handOver(
   link: GmLink,
   state: LinkState,
   notes: Record<string, string>,
-  message: string
+  message: string,
+  kind = "play"
 ): Promise<{ state: LinkState; told: boolean; toldError?: string }> {
   const send = async () => {
     const parent = await relay.head();
-    const table: TableFile = { rev: state.rev, turn: "gm", message, base: parent, at: new Date().toISOString() };
+    const table: TableFile = {
+      rev: state.rev,
+      turn: "gm",
+      ...(kind !== "play" ? { kind } : {}),
+      message,
+      base: parent,
+      at: new Date().toISOString(),
+    };
     const files = { ...notes, [tablePath(link.session)]: `${JSON.stringify(table, null, 2)}\n` };
     return relay.commit(
       files,

@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { parseSessionLogBlock } from "lib/domains/session-log";
 import type { Ctx } from "../app";
 import { logState, renderLog } from "../commands/log";
+import { prefsForGm, readPrefs } from "lib/domains/gm-link/prefs";
 import { fencesOf } from "../fences";
 import type { TFile } from "../obsidian-node";
 import { appendToFence, readNote, setFrontmatter, writeNote } from "../write";
@@ -397,6 +398,14 @@ export async function gmBrief(ctx: Ctx, ref: string, o: GmOptions): Promise<{ va
   const tools = s.screen ? gmState(s.screen, s.body) : { dials: [], lists: [] };
   const nb = readNotebook(ctx, s.file, s.mode);
   const fm = ctx.metadataCache.frontmatterOf(s.file) ?? {};
+  const prefs = readPrefs(fm);
+  const profileFile = prefs.profile ? ctx.vault.resolveLink(prefs.profile, s.file.path) : null;
+  const profileText = profileFile
+    ? ctx.vault
+        .readSync(profileFile)
+        .replace(/^---\n[\s\S]*?\n---\n?/, "")
+        .slice(0, 6000)
+    : undefined;
   const out = [
     `# GM brief: ${s.file.basename}`,
     "",
@@ -406,6 +415,9 @@ export async function gmBrief(ctx: Ctx, ref: string, o: GmOptions): Promise<{ va
         ? `prep, reasoning and hidden rolls go to ${nb.path} (out of the player's sight); the log holds only what the table sees.`
         : `prep and reasoning go to ${nb.path}, which the player may read as play goes.`
     }`,
+    "",
+    "## How the player wants it run",
+    ...prefsForGm(prefs, profileText),
     "",
     "## The GM's tools",
     ...tools.dials.map((d) => `- ${d.name} (${d.key}): ${d.current}${d.max !== undefined ? `/${d.max}` : ""}`),
@@ -424,5 +436,5 @@ export async function gmBrief(ctx: Ctx, ref: string, o: GmOptions): Promise<{ va
     "",
     renderLog(state).replace(/^# /, "## Play: "),
   ];
-  return { value: { mode: s.mode, notebook: nb, tools, state }, text: out.join("\n") };
+  return { value: { mode: s.mode, prefs, notebook: nb, tools, state }, text: out.join("\n") };
 }

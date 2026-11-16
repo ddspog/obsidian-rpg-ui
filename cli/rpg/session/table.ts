@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { formatGmLink, openGmLinkUrl, parseTable, type TableFile, tablePath } from "lib/domains/gm-link/link";
+import { TURN_KINDS } from "lib/domains/gm-link/prefs";
 import type { Ctx } from "../app";
 
 const git = (root: string, ...args: string[]): string =>
@@ -85,9 +86,11 @@ export function takeTurn(ctx: Ctx, ref: string): { value: unknown; text: string 
       added = [];
     }
   }
+  const kind = TURN_KINDS.find((k) => k.value === table.kind) ?? TURN_KINDS[0];
   const out = [
     `# The player's turn (rev ${table.rev}${table.at ? `, ${table.at}` : ""})`,
     "",
+    `What they ask of you: **${kind.label.toLowerCase()}**. ${kind.forGm}`,
     table.message ? `The player says: ${table.message}` : "The player left no message.",
     "",
     ...(added.length

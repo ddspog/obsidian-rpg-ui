@@ -14,8 +14,10 @@ import {
   playNotes,
   type TableFile,
 } from "lib/domains/gm-link/link";
+import { TURN_KINDS } from "lib/domains/gm-link/prefs";
 import type { GmLinkBar } from "lib/domains/gm-link/registry";
 import { applyTurn, checkTurn, handOver, type VaultPort } from "lib/domains/gm-link/turn";
+import { GmPrefsModal } from "lib/plugin/gm-prefs-modal";
 import { githubRelay, type Relay } from "lib/services/github-relay";
 
 export interface GmLinkSettings {
@@ -194,17 +196,28 @@ export class GmLinkController {
     const ready = this.ready();
     if (!ready) return;
     const state = this.state(ready.link);
-    new HandOverModal(this.host.app, ready.link, state, (message) => void this.send(message)).open();
+    new HandOverModal(this.host.app, ready.link, state, (message, kind) => void this.send(message, kind)).open();
   }
 
-  private async send(message: string): Promise<void> {
+  /** How the GM runs the linked session: the dialog that sets it in the session's note. */
+  openPrefs(): void {
+    const link = this.link();
+    const file = link ? this.host.app.vault.getAbstractFileByPath(link.session) : null;
+    if (!(file instanceof TFile)) {
+      this.openSetup();
+      return;
+    }
+    new GmPrefsModal(this.host.app, file).open();
+  }
+
+  private async send(message: string, kind = "play"): Promise<void> {
     const ready = this.ready();
     if (!ready || this.busy) return;
     this.busy = true;
     const working = new Notice("GM link: sending your turn…", 0);
     try {
       const notes = await this.notes(ready.link);
-      const done = await handOver(ready.relay, ready.link, this.state(ready.link), notes, message);
+      const done = await handOver(ready.relay, ready.link, this.state(ready.link), notes, message, kind);
       await this.keep(ready.link, done.state);
       new Notice(
         done.told
@@ -289,6 +302,11 @@ export class GmLinkController {
 
   register(): void {
     this.host.addCommand({ id: "rpg-ui-gm-setup", name: "GM link: set up", callback: () => this.openSetup() });
+    this.host.addCommand({
+      id: "rpg-ui-gm-prefs",
+      name: "GM link: how the Game Master runs the session",
+      callback: () => this.openPrefs(),
+    });
     // A link to tap (`obsidian://rpg-gm?link=…`, as `rpg table link` prints it): sets the link and opens the set-up.
     this.host.registerObsidianProtocolHandler("rpg-gm", (params) => {
       void this.setLink(params.link ?? "").then((ok) => {
@@ -327,7 +345,7 @@ class HandOverModal extends Modal {
     app: App,
     private link: GmLink,
     private state: LinkState,
-    private onSend: (message: string) => void
+    private onSend: (message: string, kind: string) => void
   ) {
     super(app);
   }
@@ -342,6 +360,11 @@ class HandOverModal extends Modal {
         text: "A turn is already with the GM: sending again replaces it.",
         cls: "mod-warning",
       });
+    let kind = "play";
+    new Setting(contentEl).setName("Ask the GM to").addDropdown((d) => {
+      for (const k of TURN_KINDS) d.addOption(k.value, k.label);
+      d.setValue(kind).onChange((v) => (kind = v));
+    });
     let message = "";
     const area = contentEl.createEl("textarea", {
       attr: { rows: "4", placeholder: "Anything to tell the GM: what the party means to do, a question." },
@@ -356,7 +379,7 @@ class HandOverModal extends Modal {
           .setCta()
           .onClick(() => {
             this.close();
-            this.onSend(message.trim());
+            this.onSend(message.trim(), kind);
           })
       );
   }
@@ -544,6 +567,15 @@ class SetupModal extends Modal {
         : "Play your turn in the session's Log as always and save it. Then press Hand over (here, or in the Log's own bar). You can add a line for the GM. When they have played, a dialog shows what they say and writes their changes into your notes."
     );
     new Setting(four)
+      .addButton((b) =>
+        b
+          .setButtonText("How the GM runs it…")
+          .setDisabled(!link)
+          .onClick(() => {
+            this.close();
+            gm.openPrefs();
+          })
+      )
       .addButton((b) =>
         b
           .setButtonText("Open the session")

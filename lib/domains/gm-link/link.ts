@@ -64,6 +64,8 @@ export interface TableFile {
   /** Counts the GM's turns: the GM gives the turn back at `rev + 1`. */
   rev: number;
   turn: "player" | "gm";
+  /** What the player asks of the GM with this turn (go on, prepare only, a ruling…): `TURN_KINDS`. */
+  kind?: string;
   /** What the player told the GM with this turn. */
   message?: string;
   /** What the GM tells the player with theirs. */

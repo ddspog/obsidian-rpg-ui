@@ -57,6 +57,27 @@ the branch and never reach the player's vault.
 If the player changes a note after handing over, the dialog says so before
 the GM's turn replaces it. "GM link: take the turn back" stops the waiting.
 
+## How the GM runs the session
+
+"GM link: how the Game Master runs the session" (also in the set-up and the
+settings) sets, in the session note's properties:
+
+| Property       | What it says                                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `gm-mode`      | `secret` or `open`: where prep and hidden rolls are kept.                                                                                                                                              |
+| `gm-autonomy`  | `beat`, `decision` or `scene`: how far a GM's turn goes before the turn comes back.                                                                                                                    |
+| `gm-ask-first` | What the GM asks about before it happens: a character at 0 HP, a death, loot and XP, threads, ending the scene, rolling for a PC, a lasting change to the world, and any sentence of the player's own. |
+| `gm-profile`   | A note of tone, difficulty, pacing, content limits, house rules and language (**New profile** writes one to start from).                                                                               |
+
+They travel with the session's note at every hand-over, and `rpg gm brief`
+prints them (the profile note's text included) under "How the player wants it
+run". For an ask-first matter the GM gives the turn back with the question
+instead of acting.
+
+The hand-over dialog also says what the turn asks for: go on with the story,
+prepare only, a rules question, a recap, or the foes' turn. It is `kind` in
+`table.json`, and `rpg table take` tells the GM what that kind allows.
+
 ## Where the code is
 
 - `lib/domains/gm-link/link.ts`: the link, `table.json`, which notes go and
@@ -65,7 +86,9 @@ the GM's turn replaces it. "GM link: take the turn back" stops the waiting.
 - `lib/services/github-relay.ts`: GitHub's API through Obsidian's
   `requestUrl` (one commit through the git data API, raw file reads, compare,
   a pull request comment).
-- `lib/plugin/gm-link.ts`: the controller, its two dialogs, the commands.
+- `lib/plugin/gm-link.ts`: the controller, the set-up, its dialogs, the commands.
+- `lib/domains/gm-link/prefs.ts` and `lib/plugin/gm-prefs-modal.ts`: how the
+  GM runs the session.
 - `cli/rpg/session/table.ts`: `rpg table link | take | give`.
 
 ## Not yet

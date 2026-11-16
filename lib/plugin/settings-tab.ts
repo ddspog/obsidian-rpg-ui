@@ -42,7 +42,7 @@ interface PluginWithSettings {
   saveSettings(): Promise<void>;
   applyColorSettings(): void;
   /** The GM link's controller: where the linked session stands, and its two moves. */
-  gmLink: { describe(): string; openSetup(): void; openHandOver(): void; check(): Promise<void> };
+  gmLink: { describe(): string; openSetup(): void; openPrefs(): void; openHandOver(): void; check(): Promise<void> };
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
@@ -268,6 +268,7 @@ export class DndSettingsTab extends PluginSettingTab {
           .setCta()
           .onClick(() => this.plugin.gmLink.openSetup())
       )
+      .addButton((b) => b.setButtonText("How the GM runs it…").onClick(() => this.plugin.gmLink.openPrefs()))
       .addButton((b) => b.setButtonText("Hand over").onClick(() => this.plugin.gmLink.openHandOver()))
       .addButton((b) => b.setButtonText("Check for the GM's turn").onClick(() => void this.plugin.gmLink.check()));
 

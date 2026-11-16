@@ -47,6 +47,18 @@ The brief names the **mode**:
 
 `rpg gm mode <s> secret|open` changes it; only the player decides that.
 
+The brief also says **how the player wants it run** (they set it in the
+plugin; it is in the session note's properties):
+
+- **How far your turn goes**: one beat, until the party must decide, or a
+  whole scene. Stop where it says, even with more you could do.
+- **Ask first**: things you do not do until the player says yes. When play
+  reaches one, stop before it, and give the turn back with the question
+  (what would happen, and the choice). Do not write it to the log first.
+- **The GM profile**: the player's note of tone, difficulty, pacing, content
+  limits, house rules and language. Follow it. Where it and this guide's
+  contract disagree, the contract holds and you say so.
+
 ## The loop
 
 The player says what the party does. Then:
@@ -221,8 +233,10 @@ The player may play in their own Obsidian and hand turns over a git branch.
 You are then told a turn is in (a comment on the pull request, or a message).
 Each time:
 
-1. `git pull` in the vault, then `rpg table take <s>`: the player's message
-   and what they added to the log. Those lines and their dice are the
+1. `git pull` in the vault, then `rpg table take <s>`: what the player asks
+   of you this turn (go on with the story, prepare only, a rules question, a
+   recap, the foes' turn: do that and nothing more), their message, and what
+   they added to the log. Those lines and their dice are the
    player's: leave them as they are.
 2. `rpg gm brief <s>`, then play your part as in the loop above.
 3. `rpg table give <s> --note "<what you tell the player>"`, then commit and

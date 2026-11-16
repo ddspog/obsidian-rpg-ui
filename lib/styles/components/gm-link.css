@@ -57,3 +57,80 @@
 .rpg-gm-setup .rpg-gm-step button {
   min-height: 36px;
 }
+
+/* "Improve the wording": the passages to pick, then each before and after. */
+.rpg-reword .rpg-reword-about {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.rpg-reword .rpg-reword-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px 10px 8px;
+  margin: 8px 0;
+}
+.rpg-reword .rpg-reword-scene {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: -4px;
+  padding: 8px 0 4px;
+  background: var(--modal-background, var(--background-primary));
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rpg-reword .rpg-reword-all {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: var(--font-ui-smaller);
+}
+.rpg-reword .rpg-reword-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 0;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.rpg-reword .rpg-reword-row input {
+  flex: none;
+  margin-top: 0.25em;
+}
+.rpg-reword .rpg-reword-row.is-dialogue span {
+  font-style: italic;
+}
+.rpg-reword .rpg-reword-wish,
+.rpg-reword .rpg-reword-now {
+  width: 100%;
+}
+.rpg-reword .rpg-reword-result {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.rpg-reword .rpg-reword-result:last-child {
+  border-bottom: none;
+}
+.rpg-reword .rpg-reword-keep {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.rpg-reword .rpg-reword-was {
+  margin: 6px 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.rpg-reword .rpg-reword-result.is-same .rpg-reword-was {
+  color: var(--text-normal);
+}
+.rpg-reword .rpg-reword-quick .setting-item-control {
+  flex-wrap: wrap;
+  gap: 6px;
+}

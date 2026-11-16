@@ -17,6 +17,8 @@ export interface DrawerBar {
   onUndo: () => void;
   /** A session linked to a Game Master elsewhere: hand the turn over, or look for theirs. */
   gm?: GmLinkBar;
+  /** Opens "Improve the wording" on this log's note. */
+  onReword?: () => void;
 }
 
 interface BottomDrawerProps {
@@ -171,6 +173,17 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
           Latest
         </button>
       )}
+      {bar.onReword && bar.hasLog && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          onClick={bar.onReword}
+          title="Pick passages and have their wording improved"
+        >
+          <LucideIcon name="Sparkles" size="0.9rem" strokeWidth={2} />
+          Wording
+        </button>
+      )}
       {bar.gm && (
         <button
           type="button"
@@ -212,7 +225,10 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
           <span className="drawer-collapsed-label">{label}</span>
           {acting && <span className="drawer-collapsed-actor">{acting} acting</span>}
-          <span className="drawer-collapsed-hint">Press {HOTKEY.toUpperCase()} to open</span>
+          {/* With more tools on the bar there is no room left for the hint. */}
+          {!(bar?.gm || bar?.onReword) && (
+            <span className="drawer-collapsed-hint">Press {HOTKEY.toUpperCase()} to open</span>
+          )}
         </div>
       )}
       {/* Mounted either way: the roster lives in the page's margin, and its choices with it. */}
@@ -244,6 +260,11 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
             {bar.hasLog && (
               <button type="button" onClick={bar.onLatest}>
                 ↓ Latest
+              </button>
+            )}
+            {bar.onReword && bar.hasLog && (
+              <button type="button" onClick={bar.onReword}>
+                Wording
               </button>
             )}
             {bar.gm && (
