@@ -215,6 +215,20 @@ the earlier fights in this log are written, and roll with
 `rpg gm roll <s> "d20+4" --label "Attack" --into log`. The brief shows who
 stands where, the round, and who is next.
 
+## When the player is at the session table
+
+The player may play in a page (the session table) instead of the chat. You
+are then told "the player's turn is in". Each time:
+
+1. Read the turn from the page's database (`table/turn`) into a file, and
+   `rpg table take <s> --file turn.json`: it puts the player's notes in the
+   vault and prints their message and the new log lines. Those lines and
+   their dice are the player's: leave them as they are.
+2. `rpg gm brief <s>`, then play your part as in the loop above.
+3. `rpg table state <s> --rev <the turn's rev + 1> --note "<what you tell the player>"`
+   and write what it prints to `table/state`. The note is what the player
+   reads first: what their characters perceive, and what is theirs to decide.
+
 ## Lines of play
 
 `rpg session fork <s> <name>` starts a line from where the session stands;

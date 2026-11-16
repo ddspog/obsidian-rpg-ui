@@ -254,3 +254,42 @@ describe.skipIf(!existsSync(join(VAULT, SESSION)))("the vault's GM Screen", () =
     expect(value.reads[0]).toMatch(/against 35 \(Likely, Chaos Factor 3\)/);
   });
 });
+
+describe("the session table", () => {
+  it("takes the player's turn into the vault and gives the state back", async () => {
+    const { writeFileSync: write } = await import("node:fs");
+    const { takeTurn, tableState } = await import("../session/table");
+    const root = vault();
+    const note = readFileSync(join(root, "game/binder/One.md"), "utf8");
+    const played = note.replace(
+      "=> They set out.",
+      "=> They set out.\n@(Ana) Climbs the ridge\nd: Athletics | d20+3=17"
+    );
+    const turn = join(root, "turn.json");
+    write(
+      turn,
+      JSON.stringify({
+        rev: 0,
+        message: "Up we go.",
+        files: { "game/binder/One.md": played, "game/books/Rules.md": "x" },
+      })
+    );
+    const taken = takeTurn(boot(root), "One", turn).value as { written: string[]; refused: string[]; added: string[] };
+    expect(taken.written).toEqual(["game/binder/One.md"]);
+    expect(taken.refused).toEqual(["game/books/Rules.md"]);
+    expect(taken.added).toEqual(["@(Ana) Climbs the ridge", "d: Athletics | d20+3=17"]);
+    expect(readFileSync(join(root, "game/books/Rules.md"), "utf8")).toContain("Falling");
+
+    await gmPrep(boot(root), "One", "Rockfall", OPTIONS);
+    await gmMode(boot(root), "One", "open");
+    const state = tableState(boot(root), "One", 1, "The ridge holds.") as {
+      rev: number;
+      gm: string;
+      files: Record<string, string>;
+    };
+    expect(state.rev).toBe(1);
+    expect(state.files["game/binder/One.md"]).toContain("Climbs the ridge");
+    // The GM's notebook does not go to the player's page.
+    expect(Object.keys(state.files).some((p) => p.includes("(GM)"))).toBe(false);
+  });
+});

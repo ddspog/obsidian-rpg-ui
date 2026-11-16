@@ -113,6 +113,8 @@ The command "Import PDF as compendium book" (`lib/plugin/pdf-import-modal.ts`) w
 
 `npm run build:cli` writes `cli/dist/rpg.cjs` (sources in `cli/rpg/`): the plugin's own code run against a vault on disk (`--vault`, `$RPG_VAULT`, else the vault the plugin sits in). `rpg character|log|map|lookup|search` read. `rpg gm …` lets a model run a session as its Game Master: `guide` (the orientation, `cli/rpg/gm/guide.md`), `brief`, `cards`, `play` (a GM Screen card, dice rolled in the CLI and written at once, to the log or to a prep draft), `roll`, `say`, `consult`, `prep`, `note`, `mode secret|open`, `reveal`. `rpg session manifest|fork|switch|lines|save|pack|unpack` keeps a session's lines of play under `.rpg-sessions/`. `/gm <session>` (`.claude/commands/gm.md`) starts a GM. Try a change on a copy of the vault, never the checkout: `rpg gm` writes the session note. See `docs/game-master.md`.
 
+The **session table** is that session as a page for the player: `node simulators/build.mjs session-table --session "<note>" --notify <Claude session id>` builds `simulators/dist/session-table.html` (the Log with the party's sheets and cards; the vault's systems are bundled in), published as an artifact with `db`, `user` and `mcp` (Claude Code Remote `send_message`). The player's turn arrives in the artifact's database as `table/turn`; `rpg table take <session> --file turn.json` puts it in the vault, and `rpg table state <session> --rev N --note "…"` prints the `table/state` document that gives the turn back. See `docs/session-table.md`.
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.

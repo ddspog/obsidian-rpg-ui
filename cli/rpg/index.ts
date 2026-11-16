@@ -40,6 +40,7 @@ import { consult, renderPassages, renderShelf, shelf, systemRoot } from "./gm/co
 import GUIDE from "./gm/guide.md";
 import { forkLine, listLines, listSessions, packSession, saveLine, switchLine, unpackSession } from "./session/lines";
 import { manifest, renderManifest } from "./session/manifest";
+import { tableState, takeTurn } from "./session/table";
 
 const HELP = `rpg — read your RPG vault as the plugin calculates it (read-only)
 
@@ -84,6 +85,11 @@ Sessions:
   rpg session pack <session> [--line name] [--full] [--out file.zip]
   rpg session unpack <file.zip> [--force]
 
+Session table (a page where the player plays; docs/session-table.md):
+  rpg table take <session> --file turn.json     the player's turn, put in the vault
+  rpg table state <session> --rev N [--note "what the GM says"]
+                                       what the GM left, as the page's table/state document
+
 Options:
   --vault <path>   the vault (default: $RPG_VAULT, else the one this plugin is in)
   --json           JSON instead of Markdown
@@ -121,6 +127,7 @@ async function main(): Promise<number> {
       line: { type: "string" },
       out: { type: "string" },
       force: { type: "boolean", default: false },
+      rev: { type: "string" },
       help: { type: "boolean", short: "h", default: false },
     },
   });
@@ -216,6 +223,23 @@ async function main(): Promise<number> {
     }
     out(r.value, () => r.text);
     return 0;
+  }
+  if (command === "table") {
+    const [sub, ...more] = rest;
+    const ref = need(more.join(" ").trim(), "the session's note");
+    if (sub === "take") {
+      const r = takeTurn(ctx, ref, need(values.file ?? "", "--file <turn.json> (or --file - for stdin)"));
+      out(r.value, () => r.text);
+      return 0;
+    }
+    if (sub === "state") {
+      const rev = Number(values.rev);
+      if (!Number.isInteger(rev) || rev < 1) throw new Error("Give --rev N: one more than the turn's rev.");
+      log(JSON.stringify(tableState(ctx, ref, rev, (values.note ?? []).join("\n\n"))));
+      return 0;
+    }
+    process.stderr.write(`Unknown: rpg table ${sub ?? ""}\n\n${HELP}`);
+    return 1;
   }
   if (command === "session" || command === "sessions") {
     const [sub = "list", a = "", ...more] = rest;
