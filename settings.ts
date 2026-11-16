@@ -111,6 +111,7 @@ export interface DndUIToolkitSettings {
   gmLink: string;
   gmLinkToken: string;
   gmLinkState: Record<string, import("lib/domains/gm-link/link").LinkState>;
+  gmLinkApi?: string;
   statePath: string;
   selectedTheme: string;
   imageStudio: ImageStudioSettings;

@@ -27,6 +27,8 @@ export interface GmLinkSettings {
   gmLinkToken: string;
   /** What is remembered of each linked session, by its note's path. */
   gmLinkState: Record<string, LinkState>;
+  /** Another address for GitHub's API (GitHub Enterprise: `https://host/api/v3`). Empty: github.com. */
+  gmLinkApi?: string;
 }
 
 export const DEFAULT_GM_LINK: GmLinkSettings = { gmLink: "", gmLinkToken: "", gmLinkState: {} };
@@ -102,7 +104,7 @@ export class GmLinkController {
       text: here ? "The session's note is in this vault." : `The session's note is not in this vault: ${link.session}`,
     });
     try {
-      const found = await githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken).probe();
+      const found = await githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken, this.host.settings.gmLinkApi).probe();
       lines.push({ ok: true, text: `The token reaches ${link.repo}.` });
       lines.push({
         ok: found.branch,
@@ -137,7 +139,7 @@ export class GmLinkController {
       new Notice(`GM link: the session's note is not in this vault (${link.session}).`);
       return null;
     }
-    return { link, relay: githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken) };
+    return { link, relay: githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken, this.host.settings.gmLinkApi) };
   }
 
   private port(): VaultPort {
@@ -268,7 +270,7 @@ export class GmLinkController {
   private quietReady(): { link: GmLink; relay: Relay } | null {
     const link = this.link();
     if (!link || !this.host.settings.gmLinkToken) return null;
-    return { link, relay: githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken) };
+    return { link, relay: githubRelay(link.repo, link.branch, this.host.settings.gmLinkToken, this.host.settings.gmLinkApi) };
   }
 
   /** Stop waiting: the notes are the player's again (the GM's turn, if it comes, is still offered). */

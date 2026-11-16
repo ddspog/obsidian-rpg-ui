@@ -29,8 +29,9 @@ export interface Relay {
 
 const enc = (path: string) => path.split("/").map(encodeURIComponent).join("/");
 
-export function githubRelay(repo: string, branch: string, token: string): Relay {
-  const api = `https://api.github.com/repos/${repo}`;
+/** `base`: GitHub's API, or another address that speaks it (GitHub Enterprise: `https://host/api/v3`). */
+export function githubRelay(repo: string, branch: string, token: string, base = "https://api.github.com"): Relay {
+  const api = `${(base || "https://api.github.com").replace(/\/+$/, "")}/repos/${repo}`;
   async function call(method: string, path: string, body?: unknown, accept = "application/vnd.github+json") {
     try {
       return await requestUrl({
