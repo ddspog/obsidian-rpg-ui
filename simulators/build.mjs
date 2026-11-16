@@ -4,7 +4,6 @@
  * styles and a copy of the vault's notes, which runs in any browser (a phone included).
  *
  *   node simulators/build.mjs [id ...] [--watch] [--vault <dir>]      → simulators/dist/<id>.html
- *   node simulators/build.mjs session-table --session "<note>" [--notify <claude session id>]
  *
  * With no id, every simulator is built. The vault is `--vault`, else $RPG_VAULT_ROOT, else the testing-vault checkout beside this repo. Run
  * `npm run build` first so the plugin's styles.css is current.
@@ -27,9 +26,7 @@ const vaultFlag = args.indexOf("--vault");
 const vaultRoot = path.resolve(
   vaultFlag >= 0 ? args[vaultFlag + 1] : (process.env.RPG_VAULT_ROOT ?? path.join(root, "../testing-vault"))
 );
-const flag = (name) => (args.indexOf(name) >= 0 ? args[args.indexOf(name) + 1] : undefined);
-const VALUE_FLAGS = ["--vault", "--session", "--notify"];
-const wanted = args.filter((a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1]));
+const wanted = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--vault");
 
 /** The simulators on disk: a folder with a `simulator.json`. Folders starting `_` are templates. */
 export function listSimulators() {
@@ -94,15 +91,6 @@ const withoutFileFonts = (css) => css.replace(/@font-face\s*\{[^}]*url\(\s*["']?
 
 const esc = (s) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 
-/** A session's note by path or by name, as a vault path. */
-function sessionPath(notes, ref) {
-  if (!ref) return undefined;
-  const clean = ref.replace(/\.md$/, "");
-  const found = Object.keys(notes).filter((p) => p === `${clean}.md` || p.endsWith(`/${clean}.md`));
-  if (found.length === 0) throw new Error(`No note "${ref}" among the notes this simulator copies.`);
-  return found.sort((x, y) => x.length - y.length)[0];
-}
-
 /**
  * The vault's systems (`<folder>/config/index.ts`), bundled as the plugin bundles them in Obsidian
  * (an IIFE that sets `__system_module`, everything that is not a relative import left to the
@@ -146,18 +134,8 @@ async function buildOne(sim) {
     file(path.join(here, sim.dir, "style.css")),
     file(path.join(root, "styles.css")),
   ].join("\n");
-  const session = sim.session ? sessionPath(notes, flag("--session")) : undefined;
-  if (sim.session && !session) {
-    console.log(`${sim.id}: skipped (it runs one session: give it with --session "<note>")`);
-    return;
-  }
   const systems = sim.system ? await systemBundles() : {};
-  const meta = {
-    id: sim.id,
-    title: sim.title,
-    about: sim.about,
-    ...(session ? { session, notify: flag("--notify") } : {}),
-  };
+  const meta = { id: sim.id, title: sim.title, about: sim.about };
   const entry = path.basename(sim.entry ?? "index.ts").replace(/\.tsx?$/, "");
 
   const assemble = (code) => {

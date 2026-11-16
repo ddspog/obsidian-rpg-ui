@@ -40,7 +40,7 @@ import { consult, renderPassages, renderShelf, shelf, systemRoot } from "./gm/co
 import GUIDE from "./gm/guide.md";
 import { forkLine, listLines, listSessions, packSession, saveLine, switchLine, unpackSession } from "./session/lines";
 import { manifest, renderManifest } from "./session/manifest";
-import { tableState, takeTurn } from "./session/table";
+import { giveTurn, tableLink, takeTurn } from "./session/table";
 
 const HELP = `rpg — read your RPG vault as the plugin calculates it (read-only)
 
@@ -85,10 +85,11 @@ Sessions:
   rpg session pack <session> [--line name] [--full] [--out file.zip]
   rpg session unpack <file.zip> [--force]
 
-Session table (a page where the player plays; docs/session-table.md):
-  rpg table take <session> --file turn.json     the player's turn, put in the vault
-  rpg table state <session> --rev N [--note "what the GM says"]
-                                       what the GM left, as the page's table/state document
+GM link (the player in Obsidian, a phone too; turns over the vault's GitHub branch; docs/gm-link.md):
+  rpg table link <session> [--pr N]    the link the player pastes in the plugin's settings
+  rpg table take <session>             after a pull: what the player said and added
+  rpg table give <session> --note "what the GM tells the player"
+                                       the turn given back (then commit and push)
 
 Options:
   --vault <path>   the vault (default: $RPG_VAULT, else the one this plugin is in)
@@ -127,7 +128,7 @@ async function main(): Promise<number> {
       line: { type: "string" },
       out: { type: "string" },
       force: { type: "boolean", default: false },
-      rev: { type: "string" },
+      pr: { type: "string" },
       help: { type: "boolean", short: "h", default: false },
     },
   });
@@ -227,19 +228,16 @@ async function main(): Promise<number> {
   if (command === "table") {
     const [sub, ...more] = rest;
     const ref = need(more.join(" ").trim(), "the session's note");
-    if (sub === "take") {
-      const r = takeTurn(ctx, ref, need(values.file ?? "", "--file <turn.json> (or --file - for stdin)"));
-      out(r.value, () => r.text);
-      return 0;
+    let r: { value: unknown; text: string };
+    if (sub === "link") r = tableLink(ctx, ref, values.pr ? Number(values.pr) : undefined);
+    else if (sub === "take") r = takeTurn(ctx, ref);
+    else if (sub === "give") r = giveTurn(ctx, ref, (values.note ?? []).join("\n\n"));
+    else {
+      process.stderr.write(`Unknown: rpg table ${sub ?? ""}\n\n${HELP}`);
+      return 1;
     }
-    if (sub === "state") {
-      const rev = Number(values.rev);
-      if (!Number.isInteger(rev) || rev < 1) throw new Error("Give --rev N: one more than the turn's rev.");
-      log(JSON.stringify(tableState(ctx, ref, rev, (values.note ?? []).join("\n\n"))));
-      return 0;
-    }
-    process.stderr.write(`Unknown: rpg table ${sub ?? ""}\n\n${HELP}`);
-    return 1;
+    out(r.value, () => r.text);
+    return 0;
   }
   if (command === "session" || command === "sessions") {
     const [sub = "list", a = "", ...more] = rest;

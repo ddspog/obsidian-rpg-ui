@@ -1,9 +1,0 @@
-{
-  "id": "session-table",
-  "title": "Session Table",
-  "about": "One session's Log, played in a browser: the player's actions are collected and handed to the Game Master.",
-  "entry": "index.ts",
-  "session": true,
-  "system": true,
-  "vault": { "include": ["**/*.md"], "exclude": ["Sandbox/**", "tools/**", "**/compendium/**", "**/* (GM).md"] }
-}

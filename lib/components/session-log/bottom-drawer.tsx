@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { GmLinkBar } from "lib/domains/gm-link/registry";
 import { LucideIcon } from "./lucide-icon";
 
 /** What the log's own controls need to show in the drawer's bar on a phone. */
@@ -14,6 +15,8 @@ export interface DrawerBar {
   dirty: boolean;
   onSave: () => void;
   onUndo: () => void;
+  /** A session linked to a Game Master elsewhere: hand the turn over, or look for theirs. */
+  gm?: GmLinkBar;
 }
 
 interface BottomDrawerProps {
@@ -168,6 +171,19 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
           Latest
         </button>
       )}
+      {bar.gm && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          onClick={bar.gm.waiting ? bar.gm.onCheck : bar.gm.onHandOver}
+          title={
+            bar.gm.waiting ? "The turn is with the Game Master: look for theirs" : "Send your turn to the Game Master"
+          }
+        >
+          <LucideIcon name={bar.gm.waiting ? "Hourglass" : "Send"} size="0.9rem" strokeWidth={2} />
+          {bar.gm.waiting ? "GM's turn?" : "Hand over"}
+        </button>
+      )}
     </div>
   ) : null;
   const context = React.useMemo(
@@ -228,6 +244,11 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
             {bar.hasLog && (
               <button type="button" onClick={bar.onLatest}>
                 ↓ Latest
+              </button>
+            )}
+            {bar.gm && (
+              <button type="button" onClick={bar.gm.waiting ? bar.gm.onCheck : bar.gm.onHandOver}>
+                {bar.gm.waiting ? "GM's turn?" : "Hand over"}
               </button>
             )}
           </div>

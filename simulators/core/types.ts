@@ -14,8 +14,6 @@ export interface SimulatorContext {
   id: string;
   title: string;
   about: string;
-  session?: string;
-  notify?: string;
   /** The page's `<body>`: a simulator builds its UI here (usually through `mountShell`). */
   root: HTMLElement;
   /** A stand-in for Obsidian's `App`, backed by the vault copy. */
@@ -53,8 +51,4 @@ export interface Manifest {
   id: string;
   title: string;
   about: string;
-  /** For a simulator of one session: its note's path in the vault copy. */
-  session?: string;
-  /** The Claude Code session to tell when the player hands over. */
-  notify?: string;
 }

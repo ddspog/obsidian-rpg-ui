@@ -15,7 +15,6 @@ simulators/
     base.css           Obsidian's variables and the frame's styles (light and dark)
   lonelog-log/      the Log and its cards (lonelog in, cards played, Save)
   rpg-table/        an `rpg table` block: edit it, see it render, load any table from the vault
-  session-table/    one session's Log for a player, with the party's sheets; hands turns to a GM (docs/session-table.md)
   _template/        what `sim:new` copies
   build.mjs  new.mjs  check.mjs  glob.mjs
 ```

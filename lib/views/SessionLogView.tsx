@@ -19,6 +19,7 @@ import type { SessionLogData } from "lib/domains/session-log";
 import { EntityResolver } from "lib/services/entity-resolver";
 import type { EntityData } from "lib/services/entity-resolver";
 import { buildEntityContext, entityTypeOf } from "lib/services/entity-context";
+import { gmLinkFor } from "lib/domains/gm-link/registry";
 import { SystemRegistry } from "lib/systems/registry";
 import { logNames, matchActor } from "lib/domains/session-log/actors";
 import { foesInPlay } from "lib/domains/session-log/foes";
@@ -4112,6 +4113,7 @@ function SessionLogRoot({
               dirty: isDirty,
               onSave: () => void handleSave(),
               onUndo: handleUndo,
+              gm: gmLinkFor(sourcePath),
             }}
             actionsPanel={
               <SessionActionsPanel

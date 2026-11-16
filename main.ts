@@ -11,6 +11,8 @@ import {
   TAbstractFile,
   TFile,
 } from "obsidian";
+import { setGmLinkProvider } from "lib/domains/gm-link/registry";
+import { GmLinkController } from "lib/plugin/gm-link";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import { COMPILATION_VIEW_TYPE, compilationFactory, compilationOptions } from "lib/views/CompilationBasesView";
@@ -88,6 +90,7 @@ try {
 }
 
 export default class DndUIToolkitPlugin extends Plugin {
+  gmLink!: GmLinkController;
   settings: DndUIToolkitSettings;
   dataStore: JsonDataStore;
   /** Shared KV store instance. Held on the plugin so `saveSettings` can
@@ -863,6 +866,11 @@ export default class DndUIToolkitPlugin extends Plugin {
       if (relinkFrames(this.settings.cardFrames, this.settings.cardFramesFolder || "Frames", exists))
         void this.saveSettings();
     });
+    // The GM link: a session handed to a Game Master playing on a GitHub branch, and taken back.
+    this.gmLink = new GmLinkController(this);
+    this.gmLink.register();
+    setGmLinkProvider((path) => this.gmLink.bar(path));
+    this.register(() => setGmLinkProvider(null));
     // The image studio, on the note that's open.
     this.addCommand({
       id: "rpg-ui-image-studio",

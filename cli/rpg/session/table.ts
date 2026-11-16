@@ -1,63 +1,111 @@
 /**
- * The session table (the page `simulators/session-table` builds): the two ends of a turn.
+ * The GM's end of the GM link (lib/domains/gm-link/link.ts): the session is
+ * played in Obsidian, a phone too, and its turns travel over a branch of the
+ * vault's repository. The GM works on a checkout of that branch.
  *
- *   take   the player's turn, as the page wrote it to its database (`table/turn`), put in the
- *          vault: only the session's play notes are written, each copied to .rpg-backups first
- *   state  what the Game Master left, as the document the page reads (`table/state`)
+ *   link   the link to paste in the plugin's settings (repository, branch, session, pull request)
+ *   take   after a pull: whose turn it is, what the player said, what they added to the log
+ *   give   the turn given back: `table.json` set to the player, with what the GM tells them
+ *
+ * Pulling, committing and pushing are git's, done by whoever runs the GM.
  */
 
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { formatGmLink, parseTable, type TableFile, tablePath } from "lib/domains/gm-link/link";
 import type { Ctx } from "../app";
-import { writeNote } from "../write";
-import { manifest } from "./manifest";
 
-export interface Turn {
-  rev: number;
-  files: Record<string, string>;
-  message?: string;
-  at?: string;
+const git = (root: string, ...args: string[]): string =>
+  execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+
+export function tableLink(ctx: Ctx, ref: string, pr?: number): { value: unknown; text: string } {
+  const session = ctx.note(ref).path;
+  let remote: string;
+  let branch: string;
+  try {
+    remote = git(ctx.root, "remote", "get-url", "origin");
+    branch = git(ctx.root, "rev-parse", "--abbrev-ref", "HEAD");
+  } catch {
+    throw new Error("The vault is not a git checkout with an origin: the GM link travels over its GitHub repository.");
+  }
+  // https://github.com/owner/name(.git), git@github.com:owner/name.git, or a proxy's …/owner/name
+  const repo = remote.replace(/\.git$/, "").match(/([\w.-]+\/[\w.-]+)$/)?.[1];
+  if (!repo) throw new Error(`Cannot tell the repository from the origin (${remote}).`);
+  const link = formatGmLink({ repo, branch, session, ...(pr ? { pr } : {}) });
+  return {
+    value: { link, repo, branch, session, pr },
+    text: [
+      link,
+      "",
+      "The player pastes this in the plugin's settings (General › GM link), with a GitHub token for the repository",
+      "(fine-grained: Contents and Pull requests, read and write).",
+      pr
+        ? `A comment on pull request #${pr} tells the GM a turn is in.`
+        : "No pull request named (--pr N): the player tells the GM by hand when a turn is in.",
+    ].join("\n"),
+  };
 }
 
-export function takeTurn(ctx: Ctx, ref: string, file: string): { value: unknown; text: string } {
-  const raw = JSON.parse(readFileSync(file === "-" ? 0 : file, "utf8")) as Turn | { data?: Turn };
-  const turn = ("data" in raw && raw.data ? raw.data : raw) as Turn;
-  const m = manifest(ctx, ref);
-  const refused = Object.keys(turn.files ?? {}).filter((p) => !m.play.includes(p));
-  const written: string[] = [];
-  const added: string[] = [];
-  for (const [path, text] of Object.entries(turn.files ?? {})) {
-    if (refused.includes(path)) continue;
-    const was = ctx.vault.getFileByPath(path);
-    const before = was ? ctx.vault.readSync(was) : "";
-    if (before === text) continue;
-    if (path === m.session) {
-      const old = new Set(before.split("\n"));
-      added.push(...text.split("\n").filter((l) => l.trim() && !old.has(l)));
+function readTable(ctx: Ctx, session: string): TableFile | null {
+  const p = join(ctx.root, tablePath(session));
+  return existsSync(p) ? parseTable(readFileSync(p, "utf8")) : null;
+}
+
+export function takeTurn(ctx: Ctx, ref: string): { value: unknown; text: string } {
+  const session = ctx.note(ref).path;
+  const table = readTable(ctx, session);
+  if (!table)
+    return {
+      value: { turn: null },
+      text: "No turn has been handed over yet (no table.json for this session). Pull the branch first.",
+    };
+  if (table.turn !== "gm")
+    return {
+      value: table,
+      text: `It is the player's turn (rev ${table.rev}). Nothing to take: wait for their hand-over, then pull.`,
+    };
+  // What the player added: the session's note now, against the commit their turn was made on.
+  let added: string[] = [];
+  if (table.base) {
+    try {
+      const before = new Set(git(ctx.root, "show", `${table.base}:${session}`).split("\n"));
+      added = ctx.vault
+        .readSync(ctx.note(ref))
+        .split("\n")
+        .filter((l) => l.trim() && !before.has(l));
+    } catch {
+      added = [];
     }
-    writeNote(ctx.root, path, text);
-    written.push(path);
   }
   const out = [
-    `# The player's turn (on top of rev ${turn.rev}${turn.at ? `, ${turn.at}` : ""})`,
+    `# The player's turn (rev ${table.rev}${table.at ? `, ${table.at}` : ""})`,
     "",
-    turn.message ? `The player says: ${turn.message}` : "The player left no message.",
+    table.message ? `The player says: ${table.message}` : "The player left no message.",
     "",
-    written.length ? `Written to the vault: ${written.join(", ")}` : "No note changed.",
-    ...(refused.length ? [`Refused (not this session's play notes): ${refused.join(", ")}`] : []),
-    ...(added.length ? ["", "New in the log:", "```", ...added, "```"] : []),
+    ...(added.length
+      ? ["New in the log (theirs, with their dice: leave them as they are):", "```", ...added, "```"]
+      : ["Nothing new in the log."]),
+    "",
+    `When you have played: rpg table give "${ref}" --note "<what you tell the player>", then commit and push.`,
   ];
-  return { value: { rev: turn.rev, message: turn.message ?? "", written, refused, added }, text: out.join("\n") };
+  return { value: { ...table, added }, text: out.join("\n") };
 }
 
-/** The play notes as they stand, for the page: `{ rev, files, gm, at }`. Hidden notebooks stay out. */
-export function tableState(ctx: Ctx, ref: string, rev: number, gm: string): Record<string, unknown> {
-  const m = manifest(ctx, ref);
-  const files: Record<string, string> = {};
-  for (const path of m.play) {
-    const f = ctx.vault.getFileByPath(path);
-    // What the vault the CLI reads does not show (a dot-folder) the player does not get.
-    if (!f || / \(GM\)\.md$/.test(path)) continue;
-    files[path] = ctx.vault.readSync(f);
-  }
-  return { rev, files, gm, at: new Date().toISOString() };
+export function giveTurn(ctx: Ctx, ref: string, gm: string): { value: unknown; text: string } {
+  const session = ctx.note(ref).path;
+  const was = readTable(ctx, session);
+  if (was && was.turn === "player") throw new Error(`The turn is the player's already (rev ${was.rev}).`);
+  if (!gm.trim())
+    throw new Error(
+      'Say what the player reads first: --note "<what their characters perceive, and what is theirs to decide>".'
+    );
+  const table: TableFile = { rev: (was?.rev ?? 0) + 1, turn: "player", gm: gm.trim(), at: new Date().toISOString() };
+  const p = join(ctx.root, tablePath(session));
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, `${JSON.stringify(table, null, 2)}\n`);
+  return {
+    value: table,
+    text: `The turn is the player's (rev ${table.rev}). Commit and push so it reaches them:\n  git add -A && git commit -m "The GM's turn (rev ${table.rev})" && git push`,
+  };
 }

@@ -255,41 +255,53 @@ describe.skipIf(!existsSync(join(VAULT, SESSION)))("the vault's GM Screen", () =
   });
 });
 
-describe("the session table", () => {
-  it("takes the player's turn into the vault and gives the state back", async () => {
-    const { writeFileSync: write } = await import("node:fs");
-    const { takeTurn, tableState } = await import("../session/table");
+describe("the GM's end of the GM link", () => {
+  it("prints the link, reads the player's turn after a pull, and gives the turn back", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { giveTurn, tableLink, takeTurn } = await import("../session/table");
+    const { parseGmLink, tablePath } = await import("lib/domains/gm-link/link");
     const root = vault();
-    const note = readFileSync(join(root, "game/binder/One.md"), "utf8");
-    const played = note.replace(
-      "=> They set out.",
-      "=> They set out.\n@(Ana) Climbs the ridge\nd: Athletics | d20+3=17"
-    );
-    const turn = join(root, "turn.json");
-    write(
-      turn,
-      JSON.stringify({
-        rev: 0,
-        message: "Up we go.",
-        files: { "game/binder/One.md": played, "game/books/Rules.md": "x" },
-      })
-    );
-    const taken = takeTurn(boot(root), "One", turn).value as { written: string[]; refused: string[]; added: string[] };
-    expect(taken.written).toEqual(["game/binder/One.md"]);
-    expect(taken.refused).toEqual(["game/books/Rules.md"]);
-    expect(taken.added).toEqual(["@(Ana) Climbs the ridge", "d: Athletics | d20+3=17"]);
-    expect(readFileSync(join(root, "game/books/Rules.md"), "utf8")).toContain("Falling");
+    const git = (...args: string[]) =>
+      execFileSync(
+        "git",
+        ["-C", root, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", ...args],
+        { encoding: "utf8" }
+      ).trim();
+    git("init", "-q", "-b", "play");
+    git("remote", "add", "origin", "https://github.com/someone/vault.git");
+    git("add", "-A");
+    git("commit", "-q", "-m", "start");
+    const base = git("rev-parse", "HEAD");
 
-    await gmPrep(boot(root), "One", "Rockfall", OPTIONS);
-    await gmMode(boot(root), "One", "open");
-    const state = tableState(boot(root), "One", 1, "The ridge holds.") as {
-      rev: number;
-      gm: string;
-      files: Record<string, string>;
-    };
-    expect(state.rev).toBe(1);
-    expect(state.files["game/binder/One.md"]).toContain("Climbs the ridge");
-    // The GM's notebook does not go to the player's page.
-    expect(Object.keys(state.files).some((p) => p.includes("(GM)"))).toBe(false);
+    const link = parseGmLink((tableLink(boot(root), "One", 7).value as { link: string }).link);
+    expect(link).toEqual({ repo: "someone/vault", branch: "play", session: "game/binder/One.md", pr: 7 });
+    expect(takeTurn(boot(root), "One").text).toMatch(/No turn has been handed over/);
+
+    // The player's hand-over, as the plugin commits it.
+    const note = join(root, "game/binder/One.md");
+    writeFileSync(
+      note,
+      readFileSync(note, "utf8").replace(
+        "=> They set out.",
+        "=> They set out.\n@(Ana) Climbs the ridge\nd: Athletics | d20+3=17"
+      )
+    );
+    mkdirSync(join(root, tablePath("game/binder/One.md"), ".."), { recursive: true });
+    writeFileSync(
+      join(root, tablePath("game/binder/One.md")),
+      JSON.stringify({ rev: 0, turn: "gm", message: "Up we go.", base })
+    );
+    const taken = takeTurn(boot(root), "One").value as { added: string[]; message: string };
+    expect(taken.message).toBe("Up we go.");
+    expect(taken.added).toEqual(["@(Ana) Climbs the ridge", "d: Athletics | d20+3=17"]);
+
+    expect(() => giveTurn(boot(root), "One", "")).toThrow(/what the player reads/);
+    expect(giveTurn(boot(root), "One", "The ridge holds.").value).toMatchObject({
+      rev: 1,
+      turn: "player",
+      gm: "The ridge holds.",
+    });
+    expect(() => giveTurn(boot(root), "One", "Again.")).toThrow(/player's already/);
+    expect(takeTurn(boot(root), "One").text).toMatch(/player's turn \(rev 1\)/);
   });
 });
