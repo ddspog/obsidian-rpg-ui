@@ -29,7 +29,7 @@ export class GmPrefsModal extends Modal {
   }
 
   onOpen(): void {
-    this.titleEl.setText("How the Game Master runs this session");
+    this.titleEl.setText("How the GM runs this session");
     this.modalEl.addClass("rpg-gm-prefs");
     this.draw();
   }
@@ -86,13 +86,15 @@ export class GmPrefsModal extends Modal {
           if (on) this.prefs.askFirst.push(k.id);
         })
       );
-    new Setting(contentEl)
-      .setName("Anything else")
-      .setDesc("One a line, in your words.")
-      .addTextArea((t) => {
-        t.setValue(this.own).onChange((v) => (this.own = v));
-        t.inputEl.rows = 2;
-      });
+    // Sentences need room: the box takes the dialog's width under its label.
+    const own = new Setting(contentEl).setName("Anything else").setDesc("One per line, in your words.");
+    own.settingEl.addClass("rpg-gm-own");
+    const area = contentEl.createEl("textarea", {
+      cls: "rpg-gm-own-text",
+      attr: { rows: "3", "aria-label": "Anything else to ask about first", placeholder: "Before a fight starts" },
+    });
+    area.value = this.own;
+    area.addEventListener("input", () => (this.own = area.value));
 
     contentEl.createEl("h4", { text: "GM profile" });
     const profiles = this.profiles();
@@ -100,7 +102,9 @@ export class GmPrefsModal extends Modal {
     new Setting(contentEl)
       .setName("Profile note")
       .setDesc(
-        "A note of tone, difficulty, pacing, content limits, house rules and language, in your words. The GM follows it."
+        current
+          ? "A note of tone, difficulty, pacing, content limits, house rules and language, in your words. The GM follows it."
+          : "A note of tone, difficulty, pacing, content limits, house rules and language, in your words. The GM follows it. Creating one saves these choices and opens the note."
       )
       .addDropdown((d) => {
         d.addOption("", "None");
@@ -109,7 +113,7 @@ export class GmPrefsModal extends Modal {
         d.setValue(current).onChange((v) => (this.prefs.profile = v ? `[[${v}]]` : undefined));
       })
       .addButton((b) =>
-        b.setButtonText(current ? "Open" : "New profile").onClick(async () => {
+        b.setButtonText(current ? "Save and open" : "Create profile note").onClick(async () => {
           if (current) {
             await this.save(false);
             void this.app.workspace.openLinkText(current, this.session.path);

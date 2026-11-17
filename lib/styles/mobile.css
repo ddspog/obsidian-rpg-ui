@@ -585,6 +585,11 @@
     font-weight: 600;
   }
 
+  /* The turn is with the GM: its button says so in the accent, beside the others' muted. */
+  .lonelog-bar > button.is-waiting {
+    color: light-dark(#4b2f9a, #cdbfff);
+  }
+
   .lonelog-bar > button[aria-pressed="true"] {
     color: light-dark(#4b2f9a, #cdbfff);
     box-shadow: inset 0 -2px 0 currentColor;

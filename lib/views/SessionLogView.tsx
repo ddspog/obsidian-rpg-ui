@@ -4111,7 +4111,7 @@ function SessionLogRoot({
               onToggleLog: toggleLogFromBar,
               onLatest: goToLastBlock,
               dirty: isDirty,
-              onSave: () => void handleSave(),
+              onSave: () => handleSave(),
               onUndo: handleUndo,
               gm: gmLinkFor(sourcePath),
               onReword: rewordFor(sourcePath),

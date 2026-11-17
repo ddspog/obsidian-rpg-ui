@@ -13,7 +13,7 @@ export interface DrawerBar {
   onLatest: () => void;
   /** Edits not saved yet: Save and Undo show above the bar. */
   dirty: boolean;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   onUndo: () => void;
   /** A session linked to a Game Master elsewhere: hand the turn over, or look for theirs. */
   gm?: GmLinkBar;
@@ -184,17 +184,20 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
           Wording
         </button>
       )}
+      {bar.gm?.waiting && (
+        <span className="lonelog-gm-status" role="status">
+          With the GM
+        </span>
+      )}
       {bar.gm && (
         <button
           type="button"
           className="lonelog-tool"
-          onClick={bar.gm.waiting ? bar.gm.onCheck : bar.gm.onHandOver}
-          title={
-            bar.gm.waiting ? "The turn is with the Game Master: look for theirs" : "Send your turn to the Game Master"
-          }
+          onClick={() => (bar.gm!.waiting ? bar.gm!.onCheck() : bar.gm!.onHandOver(bar.dirty ? bar.onSave : undefined))}
+          title={bar.gm.waiting ? "Your turn is with the GM: see whether theirs has come" : "Send your turn to the GM"}
         >
           <LucideIcon name={bar.gm.waiting ? "Hourglass" : "Send"} size="0.9rem" strokeWidth={2} />
-          {bar.gm.waiting ? "GM's turn?" : "Hand over"}
+          {bar.gm.waiting ? "Check for GM" : "Hand over"}
         </button>
       )}
     </div>
@@ -268,8 +271,15 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
               </button>
             )}
             {bar.gm && (
-              <button type="button" onClick={bar.gm.waiting ? bar.gm.onCheck : bar.gm.onHandOver}>
-                {bar.gm.waiting ? "GM's turn?" : "Hand over"}
+              <button
+                type="button"
+                className={bar.gm.waiting ? "is-waiting" : undefined}
+                onClick={() =>
+                  bar.gm!.waiting ? bar.gm!.onCheck() : bar.gm!.onHandOver(bar.dirty ? bar.onSave : undefined)
+                }
+                aria-label={bar.gm.waiting ? "With the GM: check for the GM's turn" : "Hand over to the GM"}
+              >
+                {bar.gm.waiting ? "Check GM" : "Hand over"}
               </button>
             )}
           </div>

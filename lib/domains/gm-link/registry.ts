@@ -6,7 +6,8 @@
 export interface GmLinkBar {
   /** The turn is with the GM. */
   waiting: boolean;
-  onHandOver: () => void;
+  /** `save`: the Log has unsaved edits, saved before the turn goes. */
+  onHandOver: (save?: () => void | Promise<void>) => void;
   onCheck: () => void;
 }
 

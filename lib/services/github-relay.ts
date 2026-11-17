@@ -8,10 +8,12 @@
 
 import { requestUrl } from "obsidian";
 
+/** A request GitHub refused or never answered: a message for the player, the raw cause apart. */
 export class RelayError extends Error {
   constructor(
     message: string,
-    public status: number
+    public status: number,
+    public detail?: string
   ) {
     super(message);
   }
@@ -44,21 +46,24 @@ export function githubRelay(repo: string, branch: string, token: string, base = 
     } catch (e) {
       // No answer at all: offline, or a network that blocks GitHub.
       throw new RelayError(
-        `GitHub could not be reached (${e instanceof Error ? e.message : String(e)}). Check the connection and try again.`,
-        0
+        "GitHub could not be reached. Check the connection and try again.",
+        0,
+        e instanceof Error ? e.message : String(e)
       );
     }
   }
   const fail = (what: string, res: { status: number; text: string }): never => {
-    const hint =
+    const message =
       res.status === 401
-        ? "the token is not accepted"
+        ? "GitHub did not accept the token. Create a new one in the set-up (step 2) and paste it again."
         : res.status === 403
-          ? "the token may not do this (it needs Contents and Pull requests, read and write, on this repository)"
+          ? "The token may not do this: it needs Contents and Pull requests set to read and write on this repository."
           : res.status === 404
-            ? "not found (the repository, the branch, or the token's access to them)"
-            : res.text.slice(0, 200);
-    throw new RelayError(`${what}: GitHub answered ${res.status}, ${hint}`, res.status);
+            ? "GitHub could not find the repository or the branch, or the token cannot see them."
+            : res.status === 409 || res.status === 422
+              ? "The branch changed while your turn was being sent. Check for the GM's turn, then hand over again."
+              : "GitHub answered with an error. Try again in a moment.";
+    throw new RelayError(message, res.status, `${what}: ${res.status} ${res.text.slice(0, 200)}`.trim());
   };
 
   return {
