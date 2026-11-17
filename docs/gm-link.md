@@ -5,6 +5,14 @@ else: a Claude Code session in the cloud (`docs/game-master.md`), or anyone
 with a checkout of the vault. Turns travel over a branch of the vault's GitHub
 repository. Nothing else is run: no server, no page.
 
+## Turning it on
+
+The GM link is **off by default**. While it is off there are no GM link
+commands, no Hand over button in the Log's bar, and nothing is sent to or
+checked on GitHub. Turn it on in Settings › General › GM link › **Use the GM
+link** (`gmLinkEnabled` in the plugin's settings). A tapped `obsidian://rpg-gm`
+link while it is off keeps the link and says to turn it on.
+
 ## Setting it up
 
 The GM, on a checkout of the branch it plays on:

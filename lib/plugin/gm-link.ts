@@ -21,6 +21,8 @@ import { GmPrefsModal } from "lib/plugin/gm-prefs-modal";
 import { githubRelay, type Relay, RelayError } from "lib/services/github-relay";
 
 export interface GmLinkSettings {
+  /** The GM link is on. Off by default: no commands, no bar button, no checks, until turned on in settings. */
+  gmLinkEnabled?: boolean;
   /** The link `rpg table link` prints: repository, branch, session, pull request. */
   gmLink: string;
   /** A GitHub token for that repository. Never copied with the settings. */
@@ -37,7 +39,7 @@ interface Host {
   app: App;
   settings: GmLinkSettings;
   saveSettings(): Promise<void>;
-  addCommand(command: { id: string; name: string; callback: () => void }): unknown;
+  addCommand(command: { id: string; name: string; checkCallback: (checking: boolean) => boolean | void }): unknown;
   registerInterval(id: number): number;
   registerObsidianProtocolHandler(action: string, handler: (params: Record<string, string>) => void): void;
 }
@@ -74,6 +76,16 @@ export class GmLinkController {
   /** "Not now" on the GM's turn: no more checks by themselves until the player checks or hands over. */
   private snoozed = false;
   constructor(private host: Host) {}
+
+  /** Whether the GM link is turned on (Settings › General › GM link). */
+  enabled(): boolean {
+    return this.host.settings.gmLinkEnabled === true;
+  }
+
+  async setEnabled(on: boolean): Promise<void> {
+    this.host.settings.gmLinkEnabled = on;
+    await this.host.saveSettings();
+  }
 
   link(): GmLink | null {
     return parseGmLink(this.host.settings.gmLink ?? "");
@@ -367,6 +379,7 @@ export class GmLinkController {
 
   /** For the Log of the linked session: whose turn it is, and the two moves. */
   bar(path: string): GmLinkBar | undefined {
+    if (!this.enabled()) return undefined;
     const link = this.link();
     if (!link || link.session !== path) return undefined;
     return {
@@ -376,39 +389,56 @@ export class GmLinkController {
     };
   }
 
+  /** A command that is there only while the GM link is on. */
+  private gate(checking: boolean, run: () => void): boolean {
+    if (!this.enabled()) return false;
+    if (!checking) run();
+    return true;
+  }
+
   register(): void {
-    this.host.addCommand({ id: "rpg-ui-gm-setup", name: "GM link: set up", callback: () => this.openSetup() });
+    this.host.addCommand({
+      id: "rpg-ui-gm-setup",
+      name: "GM link: set up",
+      checkCallback: (checking) => this.gate(checking, () => this.openSetup()),
+    });
     this.host.addCommand({
       id: "rpg-ui-gm-prefs",
       name: "GM link: how the GM runs the session",
-      callback: () => this.openPrefs(),
+      checkCallback: (checking) => this.gate(checking, () => this.openPrefs()),
     });
     // A link to tap (`obsidian://rpg-gm?link=…`, as `rpg table link` prints it): sets the link and opens the set-up.
     this.host.registerObsidianProtocolHandler("rpg-gm", (params) => {
       void this.setLink(params.link ?? "").then((ok) => {
-        if (!ok) new Notice("That is not a GM link (it starts rpg-gm://).");
+        if (!ok) return void new Notice("That is not a GM link (it starts rpg-gm://).");
+        if (!this.enabled())
+          return void new Notice(
+            "The link is kept, but the GM link is off: turn it on in Settings › General › GM link, then open the set-up.",
+            10000
+          );
         this.openSetup();
       });
     });
     this.host.addCommand({
       id: "rpg-ui-gm-hand-over",
       name: "GM link: hand over to the GM",
-      callback: () => this.openHandOver(),
+      checkCallback: (checking) => this.gate(checking, () => this.openHandOver()),
     });
     this.host.addCommand({
       id: "rpg-ui-gm-check",
       name: "GM link: check for the GM's turn",
-      callback: () => void this.check(),
+      checkCallback: (checking) => this.gate(checking, () => void this.check()),
     });
     this.host.addCommand({
       id: "rpg-ui-gm-take-back",
       name: "GM link: take the turn back",
-      callback: () => void this.takeBack(),
+      checkCallback: (checking) => this.gate(checking, () => void this.takeBack()),
     });
     // While a turn is out, look for its answer, but only with Obsidian in front and no dialog open.
     this.host.registerInterval(
       window.setInterval(() => {
         const link = this.link();
+        if (!this.enabled()) return;
         if (!link || !this.state(link).waiting || document.hidden || document.querySelector(".modal-container")) return;
         void this.check(true);
       }, EVERY_MS)
