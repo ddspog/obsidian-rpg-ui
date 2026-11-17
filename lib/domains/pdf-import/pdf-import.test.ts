@@ -17,6 +17,7 @@ import {
   promoteNames,
   readContents,
   titleCase,
+  respace,
   toSections,
 } from "./structure";
 import {
@@ -400,6 +401,31 @@ describe("structure", () => {
       1
     );
     expect(isCatalog({ ...steps, children: [...steps.children].reverse() }, 8)).toBe(false);
+  });
+
+  it("drops the bare numbers bookmarks put before chapter names", () => {
+    const plans = planFromOutline(
+      [
+        { title: "Bright Magic, Big City", page: 6, depth: 0 },
+        { title: "1 City Planning", page: 7, depth: 0 },
+        { title: "2 Anatomy of a City", page: 33, depth: 0 },
+      ],
+      1,
+      60
+    );
+    expect(plans.map((p) => `${p.number}|${p.title}`)).toEqual([
+      "|Front Matter",
+      "01|Bright Magic, Big City",
+      "02|City Planning",
+      "03|Anatomy of a City",
+    ]);
+  });
+
+  it("spells a letter-spaced heading as the contents have it", () => {
+    expect(respace("F i v e Q u e s t i o n s", ["Five Questions"])).toBe("Five Questions");
+    expect(respace("G e o g r a p h y a n d C l i m a t e", ["Geography and Climate"])).toBe("Geography and Climate");
+    expect(respace("C i t y D i s t r i c t s", [])).toBe("City Districts");
+    expect(respace("A Fine Day", [])).toBe("A Fine Day");
   });
 
   it("puts features that name a subclass under it when the book sets them the same size", () => {
@@ -983,6 +1009,10 @@ describe("styles of other books", () => {
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
     );
+    expect(place("talent", "Magic Talent: Teleporting Harrier", {}, ["Talents"])).toBe(
+      "tov/worldbuilding/traits/talents/magic/Teleporting Harrier"
+    );
+    expect(place("subclass", "Barbarian: Titan", {}, [])).toBe("tov/worldbuilding/traits/subclasses/Titan (Barbarian)");
     expect(place("subclass", "Sorcerer Subclass: Umbral", {}, [])).toBe(
       "tov/worldbuilding/traits/subclasses/Umbral (Sorcerer)"
     );

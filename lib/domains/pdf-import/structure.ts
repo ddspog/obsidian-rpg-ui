@@ -214,6 +214,11 @@ export function planFromOutline(outline: OutlineEntry[], from: number, to: numbe
 }
 
 export function numberChapters(plans: ChapterPlan[]): ChapterPlan[] {
+  // Bookmarks that open with the chapter's bare number ("1 City Planning", "2: Running Exploration"),
+  // two or more of them: the number goes, the chapters are numbered in order as any others.
+  const BARE = /^\d{1,2}[:.,]?\s+(?=[A-Za-z])/;
+  if (plans.filter((p) => BARE.test(p.title)).length >= 2)
+    for (const plan of plans) plan.title = plan.title.replace(BARE, "");
   const numbered = plans.filter((p) => !UNNUMBERED.test(p.title));
   let n = numbered[0] && /^(intro|foreword|preface|prologue|welcome)/i.test(numbered[0].title) ? 0 : 1;
   for (const plan of plans) {
@@ -479,6 +484,18 @@ export function isContentsPage(lines: string[]): boolean {
   if (lines.length < 8) return false;
   const dotted = lines.filter((l) => /(\.{3,}|…{2,}|(\. ){3,})\s*\d{1,4}\s*$/.test(l)).length;
   return dotted / lines.length > 0.35;
+}
+
+/**
+ * A heading set with wide tracking reaches us as "F i v e Q u e s t i o n s", its word breaks lost:
+ * spelled as the contents or bookmarks have it, else parted where a capital follows a small letter.
+ */
+export function respace(text: string, known: string[]): string {
+  if (!/^(\S )+\S$/.test(text.trim())) return text;
+  const joined = text.replace(/ /g, "");
+  const key = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const hit = known.find((k) => key(k) === key(joined));
+  return hit ? hit.trim() : joined.replace(/([a-z])(?=[A-Z])/g, "$1 ");
 }
 
 export interface ContentsEntry {

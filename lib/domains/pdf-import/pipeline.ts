@@ -21,6 +21,7 @@ import {
   isContentsPage,
   missingFromContents,
   readContents,
+  respace,
   numberChapters,
   planFromOutline,
   promoteNames,
@@ -243,6 +244,7 @@ export async function importPdf(
     from: chapterSource,
     chapters: plans.filter((p) => !p.skip).map((p) => ({ title: p.title, pages: `${p.firstPage}–${p.lastPage}` })),
   });
+  const known = [...contents.map((c) => c.title), ...outline.map((o) => o.title)];
   const chapters: Chapter[] = [];
   const drafts: Array<{ plan: ChapterPlan; blocks: Block[] }> = [];
   for (const plan of plans) {
@@ -251,6 +253,7 @@ export async function importPdf(
     const elements: Element[] = [];
     for (let p = plan.firstPage; p <= plan.lastPage; p++) elements.push(...(perPage.get(p) ?? []));
     const blocks = toBlocks(elements, { styles });
+    for (const b of blocks) if (b.type === "heading") b.text = respace(b.text, known);
     if (options.entities) promoteNames(blocks);
     nameChapter(plan, blocks);
     drafts.push({ plan, blocks });

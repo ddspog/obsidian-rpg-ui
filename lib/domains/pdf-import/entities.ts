@@ -708,26 +708,74 @@ function klass(section: Section, env: EntityEnv): EntityOut | null {
   return out;
 }
 
-function subclass(section: Section, env: EntityEnv): EntityOut | null {
+/** A subclass named with its class: "Warlock Subclass: Void Saint", "Barbarian: Titan". */
+export const NAMED_SUBCLASS =
+  /^(barbarian|bard|cleric|druid|fighter|mechanist|monk|paladin|ranger|rogue|sorcerer|theurge|vanguard|warlock|witch|wizard)(?:\s+subclass)?\s*:\s*(.+)$/i;
+
+/**
+ * Features whose names are set as plain lines (Night Hunters): a short line followed by
+ * "3rd-Level Cursebreaker Feature" opens a feature, as a heading would.
+ */
+function featuresFromLines(given: Section): Section {
+  let section = given;
+  const at = (i: number) => {
+    const b = section.blocks[i];
+    const next = plain(section.blocks[i + 1]);
+    return b?.type === "para" && plain(b).length < 60 && LEVEL_NOTE.test(next) && next.length < 90;
+  };
+  // A part (a Channel Divinity option set as a heading) may hold the next features: they go beside it.
+  const parts: Section[] = [];
+  for (const c of section.children) {
+    const split = featuresFromLines({ ...c, children: [] });
+    const own = split.children;
+    parts.push({ ...c, blocks: split.blocks, children: c.children }, ...own);
+  }
+  section = { ...section, children: parts };
+  const first = section.blocks.findIndex((_, i) => at(i));
+  if (first < 0) return section;
+  const children: Section[] = [];
+  for (let i = first; i < section.blocks.length; i++) {
+    if (at(i)) {
+      const b = section.blocks[i];
+      children.push({ title: plain(b), level: section.level + 1, style: "", page: b.page, blocks: [], children: [] });
+    } else children[children.length - 1].blocks.push(section.blocks[i]);
+  }
+  return { ...section, blocks: section.blocks.slice(0, first), children: [...children, ...section.children] };
+}
+
+function subclass(given: Section, env: EntityEnv): EntityOut | null {
   const parent = env.trail[env.trail.length - 1] ?? "";
+  const named = given.title.match(NAMED_SUBCLASS);
+  const section = named ? featuresFromLines(given) : given;
   // Under a "Subclasses" heading, a part none of whose features come at a level is something else the
   // book set at the same size (Book of Blades puts its heritages, backgrounds and talents there).
   const strict = section.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
   const underClass = /subclass(es)?$/i.test(parent) && (strict > 0 || leveledParts(section) >= 2);
   const leveled = section.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
-  if (env.hint !== "subclass" && !underClass && !(leveled >= 2 && leveled >= section.children.length / 2)) return null;
+  const byName = !!named && (leveledParts(section) > 0 || section.children.some((c) => leveledParts(c) > 0));
+  if (env.hint !== "subclass" && !byName && !underClass && !(leveled >= 2 && leveled >= section.children.length / 2))
+    return null;
   if (!section.children.length) return null;
   const out = blank("subclass");
   // Its class, for the note's name: "Barbarian Subclasses" above it, or its own "Sorcerer Subclass: Umbral".
-  const own = section.title.match(/^(.+?)\s+subclass\s*:/i)?.[1];
+  const own = named?.[1] ?? section.title.match(/^(.+?)\s+subclass\s*:/i)?.[1];
   const above = [...env.trail].reverse().find((t) => /^.+\s+subclass(es)?$/i.test(t.trim()));
   const klassName = own ?? above?.trim().replace(/\s+subclass(es)?$/i, "");
   if (klassName) out.info = { parent: klassName };
-  out.lines = [
-    ...env.render(section.blocks, section.title),
-    ...featureList(section.children, env, env.depth + 1, { owner: section.title }),
+  out.lines = env.render(section.blocks, section.title);
+  // A table's caption set as a heading ("Warlock Level Features") holds the features after it:
+  // its table is the subclass's, its parts the features.
+  const owner = named?.[2] ?? section.title;
+  for (const child of section.children) {
+    if (/\blevel (features|spells)$/i.test(child.title)) {
+      out.lines.push(...env.render(child.blocks, child.title));
+      out.lines.push(...featureList(child.children, env, env.depth + 1, { owner }));
+    } else out.lines.push(...featureList([child], env, env.depth + 1, { owner }));
+  }
+  out.fields = [
+    ...(klassName ? ([[".SUBCLASS", `\n  parent_class: ${klassName}`]] as Array<[string, string]>) : []),
+    cssclass("note-feature"),
   ];
-  out.fields = [cssclass("note-feature")];
   out.consumed = true;
   return out;
 }
@@ -736,7 +784,9 @@ function subclass(section: Section, env: EntityEnv): EntityOut | null {
 const runIn = (b: Block): boolean => {
   if (b.type !== "para" || b.spans.length < 2) return false;
   const lead = b.spans[0];
-  return (lead.bold || lead.italic) && /[.:]\s*$/.test(lead.text) && lead.text.length < 60;
+  // The stop may be set plain after the name: "**Skill Proficiencies**: Choose two…".
+  const stop = /[.:]\s*$/.test(lead.text) || /^\s*[.:]/.test(b.spans[1].text);
+  return (lead.bold || lead.italic) && stop && lead.text.length < 60;
 };
 
 function lineage(section: Section, env: EntityEnv): EntityOut | null {
@@ -783,12 +833,16 @@ function heritage(section: Section, env: EntityEnv): EntityOut | null {
   const parent = env.trail[env.trail.length - 1] ?? "";
   const named = /\bheritage$/i.test(section.title) && env.trail.some((t) => /heritage/i.test(t));
   if (!named && !/heritages$/i.test(parent.trim())) return null;
+  // A section about the heritages' languages or names is not one.
+  if (/^(languages?|.*\bnames?)$/i.test(section.title.trim())) return null;
   const name = section.title.replace(/\s+heritage$/i, "");
   return traitNote("heritage", section, env, `${name} Features`, ['view: "No Title"']);
 }
 
 function background(section: Section, env: EntityEnv): EntityOut | null {
   if (!env.trail.some((t) => /^backgrounds?$/i.test(t.trim()))) return null;
+  // A table set as a heading ("d8 Adventuring Motivation") is not a background.
+  if (/^d\d+\b/i.test(section.title.trim())) return null;
   if (!section.blocks.some((b) => /^skill proficienc/i.test(plain(b)))) return null;
   return traitNote("background", section, env, `${section.title} Background`);
 }
