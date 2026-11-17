@@ -190,6 +190,11 @@ export interface ImportOptions {
    * compendium and each entity into the folder its kind is kept in there. Empty: all in one folder.
    */
   system?: string;
+  /**
+   * The shelf of the system's compendium the book goes on (`rules`, `tables`, `builders`, `settings`):
+   * `compendium/<shelf>/<book>`. Empty: straight under `compendium/`.
+   */
+  shelf?: string;
   /** The `source` line the notes carry; without one, `From **<title>**.` */
   source?: string;
   /**

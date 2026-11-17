@@ -18,7 +18,8 @@ node scripts/pdf-import.mjs import book.pdf <out> --title "Book Name" --json [--
 ```
 
 - With `--system`, `<out>` is the vault (`../testing-vault`, or `RPG_VAULT_ROOT`); the book goes to
-  `<system>/compendium/<book>` and nothing that exists is written over. Without it, try in a scratch
+  `<system>/compendium/<book>` (`--shelf rules|tables|builders|settings` puts it on that shelf,
+  `<system>/compendium/<shelf>/<book>`) and nothing that exists is written over. Without it, try in a scratch
   folder first. `--dry-run` reads and checks everything and writes only the report.
 - Each stdout line is one JSON object. `progress` lines come a few times a stage (`Reading pages`,
   `Reading pages (OCR)`, `Laying out`, `Finding chapters`, `Mending tables`, `Checking the result`,
@@ -80,7 +81,7 @@ first, so columns and running heads are the ones the import used. Rendering the 
 For a change to `lib/domains/pdf-import/`, compare before and after on books already adapted by hand:
 
 ```
-node scripts/pdf-import-compare.mjs <out>/<book> ../testing-vault/tales-of-the-valiant/compendium/<book> \
+node scripts/pdf-import-compare.mjs <out>/<book> ../testing-vault/tales-of-the-valiant/compendium/<shelf>/<book> \
   ../testing-vault/tales-of-the-valiant/gm-tools/tables/<book> [-v]
 ```
 

@@ -21,6 +21,7 @@ import {
   isContentsPage,
   missingFromContents,
   readContents,
+  respace,
   numberChapters,
   planFromOutline,
   promoteNames,
@@ -90,10 +91,12 @@ export async function importPdf(
   /** The folder the book's own folder is made in. */
   parent = ""
 ): Promise<ImportResult> {
-  // Into a system's folder: the book goes to its compendium under a plain folder name, as the others there.
+  // Into a system's folder: the book goes to its compendium (on a shelf, if given) under a plain folder name, as the others there.
   const system = options.system?.replace(/\/+$/, "");
   let book = system ? slug(options.title) || "imported-book" : fileName(options.title) || "Imported Book";
-  let root = system ? `${system}/compendium/${book}` : parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
+  const shelf = options.shelf?.replace(/^\/+|\/+$/g, "");
+  const compendium = shelf ? `${system}/compendium/${shelf}` : `${system}/compendium`;
+  let root = system ? `${compendium}/${book}` : parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
   // A folder that already holds notes is never written into: the book takes the next free name beside it.
   if (host.listNotes) {
     const base = root;
@@ -241,6 +244,7 @@ export async function importPdf(
     from: chapterSource,
     chapters: plans.filter((p) => !p.skip).map((p) => ({ title: p.title, pages: `${p.firstPage}–${p.lastPage}` })),
   });
+  const known = [...contents.map((c) => c.title), ...outline.map((o) => o.title)];
   const chapters: Chapter[] = [];
   const drafts: Array<{ plan: ChapterPlan; blocks: Block[] }> = [];
   for (const plan of plans) {
@@ -249,6 +253,7 @@ export async function importPdf(
     const elements: Element[] = [];
     for (let p = plan.firstPage; p <= plan.lastPage; p++) elements.push(...(perPage.get(p) ?? []));
     const blocks = toBlocks(elements, { styles });
+    for (const b of blocks) if (b.type === "heading") b.text = respace(b.text, known);
     if (options.entities) promoteNames(blocks);
     nameChapter(plan, blocks);
     drafts.push({ plan, blocks });

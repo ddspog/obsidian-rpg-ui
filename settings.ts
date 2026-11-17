@@ -46,7 +46,7 @@ export interface FolderLinkStyle {
  */
 /** Notes under `folder` show prompts from the note `wordsFile` (one prompt a line) in their margin. */
 export interface MarginPromptSet {
-  /** Vault folder, e.g. `tales-of-the-valiant/compendium/the-tome-of-adventure-design`. */
+  /** Vault folder, e.g. `tales-of-the-valiant/compendium/tables/the-tome-of-adventure-design`. */
   folder: string;
   /** Vault path of the note holding the prompts, one a line. */
   wordsFile: string;

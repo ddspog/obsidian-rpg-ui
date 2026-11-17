@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
-import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, yamlScalar, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
 import { fixGlyphs, fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic, ligatureGuesses } from "./extract";
@@ -17,6 +17,7 @@ import {
   promoteNames,
   readContents,
   titleCase,
+  respace,
   toSections,
 } from "./structure";
 import {
@@ -401,6 +402,61 @@ describe("structure", () => {
     );
     expect(isCatalog({ ...steps, children: [...steps.children].reverse() }, 8)).toBe(false);
   });
+
+  it("drops the bare numbers bookmarks put before chapter names", () => {
+    const plans = planFromOutline(
+      [
+        { title: "Bright Magic, Big City", page: 6, depth: 0 },
+        { title: "1 City Planning", page: 7, depth: 0 },
+        { title: "2 Anatomy of a City", page: 33, depth: 0 },
+      ],
+      1,
+      60
+    );
+    expect(plans.map((p) => `${p.number}|${p.title}`)).toEqual([
+      "|Front Matter",
+      "01|Bright Magic, Big City",
+      "02|City Planning",
+      "03|Anatomy of a City",
+    ]);
+  });
+
+  it("spells a letter-spaced heading as the contents have it", () => {
+    expect(respace("F i v e Q u e s t i o n s", ["Five Questions"])).toBe("Five Questions");
+    expect(respace("G e o g r a p h y a n d C l i m a t e", ["Geography and Climate"])).toBe("Geography and Climate");
+    expect(respace("C i t y D i s t r i c t s", [])).toBe("City Districts");
+    expect(respace("A Fine Day", [])).toBe("A Fine Day");
+  });
+
+  it("puts features that name a subclass under it when the book sets them the same size", () => {
+    const h = (text: string, level: number): Block => ({ type: "heading", level, text, page: 1, style: `s${level}` });
+    const p = (text: string): Block => ({ type: "para", spans: [{ text, bold: false, italic: false }], page: 1 });
+    const root = toSections(
+      [
+        h("Monk Subclasses", 1),
+        h("Equine Soul", 3),
+        p("Riders."),
+        h("Horse Archer", 3),
+        p("3rd-Level Equine Soul Feature"),
+        h("Bonded Horse", 2),
+        h("Reactions", 2.5),
+        h("Swift Steed", 3),
+        p("7th-Level Equine Soul Feature"),
+        h("Righteous Fist", 3),
+        p("Monks of the fist."),
+        h("Blazing Strike", 3),
+        p("3rd-Level Righteous Fist Feature"),
+        h("Soul Burst", 3),
+        p("15th-Level Iron Righteous Fist Feature"),
+      ],
+      "Martial Options",
+      1
+    );
+    const monk = root.children[0];
+    expect(monk.children.map((c) => c.title)).toEqual(["Equine Soul", "Righteous Fist"]);
+    expect(monk.children[0].children.map((c) => c.title)).toEqual(["Horse Archer", "Bonded Horse", "Swift Steed"]);
+    expect(monk.children[1].children.map((c) => c.title)).toEqual(["Blazing Strike", "Soul Burst"]);
+  });
 });
 
 describe("emit", () => {
@@ -536,6 +592,16 @@ describe("model step and OCR", () => {
   });
 });
 
+describe("frontmatter", () => {
+  it("quotes a value YAML would misread", () => {
+    expect(yamlScalar('From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins".')).toBe(
+      JSON.stringify('From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins".')
+    );
+    expect(yamlScalar("var(--color-red)")).toBe("var(--color-red)");
+    expect(yamlScalar('"[[book.webp]]"')).toBe('"[[book.webp]]"');
+  });
+});
+
 describe("entities", () => {
   const span = (text: string, bold = false, italic = false) => ({ text, bold, italic });
   const para = (...spans: ReturnType<typeof span>[]): Block => ({ type: "para", spans, page: 1 });
@@ -568,6 +634,49 @@ describe("entities", () => {
       note: files.find((f) => f.path === "01. " + root.title + ".md")?.text ?? "",
     };
   };
+
+  it("knows heritages, backgrounds and talents a book sets under its subclasses heading", () => {
+    const feature = (title: string, level: string) => section(title, 4, [para(span(level)), para(span("You rage."))]);
+    const raider = section(
+      "Frostborn Raider",
+      3,
+      [para(span("Cold."))],
+      [
+        feature("Bitter Animus", "3rd-Level Frostborn Raider Feature"),
+        feature("One With the Storm", "7th-Level Frostborn Raider Feature"),
+      ]
+    );
+    const lord = section("Horse Lord", 3, [
+      para(span("Horses are wealth.")),
+      para(span("Clansman.", false, true), span(" You gain proficiency with Animal Handling.")),
+    ]);
+    const ascetic = section("Ascetic", 3, [
+      para(span("You gave up wealth.")),
+      para(span("Skill Proficiencies:", true), span(" Choose two from Medicine and Nature.")),
+    ]);
+    const poisoner = section("Poisoner", 3, [para(span("You are immune to poison."))]);
+    const { kinds } = write(
+      section(
+        "Subclasses & Backgrounds",
+        0,
+        [],
+        [
+          section(
+            "Subclasses",
+            1,
+            [],
+            [
+              section("Barbarian Subclasses", 2, [], [raider]),
+              section("Heritages", 2, [], [lord]),
+              section("Backgrounds", 2, [], [ascetic]),
+              section("Martial Talents", 2, [], [poisoner]),
+            ]
+          ),
+        ]
+      )
+    );
+    expect(kinds).toEqual({ subclass: 1, heritage: 1, background: 1, talent: 1 });
+  });
 
   it("writes a spell's facts as an rpg spell block", () => {
     const acid = section("Acid Arrow", 2, [
@@ -909,6 +1018,16 @@ describe("styles of other books", () => {
     expect(place("item", "Padded", { type: "Light Armor" }, [])).toBe("tov/worldbuilding/items/armor/light/Padded");
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
+    );
+    expect(place("talent", "Magic Talent: Teleporting Harrier", {}, ["Talents"])).toBe(
+      "tov/worldbuilding/traits/talents/magic/Teleporting Harrier"
+    );
+    expect(place("subclass", "Barbarian: Titan", {}, [])).toBe("tov/worldbuilding/traits/subclasses/Titan (Barbarian)");
+    expect(place("subclass", "Sorcerer Subclass: Umbral", {}, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Umbral (Sorcerer)"
+    );
+    expect(place("subclass", "Frostborn Raider", { parent: "Barbarian" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Frostborn Raider (Barbarian)"
     );
     // Companions: Beasts and Animal-tagged creatures by who can take their form.
     expect(place("creature", "Deer", { type: "Beast", cr: "0" }, [])).toBe(

@@ -582,13 +582,19 @@ function renderTabs(sections: Section[], depth: number, ctx: EmitContext, nest: 
   return out;
 }
 
+/** A value as YAML reads it back: quoted when plain it would not be (a `: ` inside, a `#` comment, a leading sigil). */
+export function yamlScalar(v: string): string {
+  if (/^["']/.test(v)) return v;
+  return /: |\s#|^[-?:,[\]{}#&*!|>%@`]/.test(v) || /:$/.test(v) ? JSON.stringify(v) : v;
+}
+
 function frontmatter(fields: Array<[string, string | undefined]>): string[] {
   const out = ["---"];
   const seen = new Set<string>();
   for (const [k, v] of fields) {
     if (v === undefined || v === "" || seen.has(k)) continue;
     seen.add(k);
-    out.push(v.startsWith("\n") ? `${k}:${v}` : `${k}: ${v}`);
+    out.push(v.startsWith("\n") ? `${k}:${v}` : `${k}: ${yamlScalar(v)}`);
   }
   out.push("---");
   return out;

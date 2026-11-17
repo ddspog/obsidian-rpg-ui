@@ -18,6 +18,7 @@
  *   worldbuilding/traits/features/    one traits note a creature type
  */
 
+import { NAMED_SUBCLASS } from "./entities";
 import { fileName, slug } from "./structure";
 
 export interface PlaceInfo {
@@ -185,7 +186,10 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/traits/classes/${name}`;
       case "subclass": {
         // Named with its class (`Draconic (Sorcerer)`), so it never meets a language or spell of its name.
-        const parent = (info.parent ?? "").replace(/^\d+\.\s*/, "").trim();
+        // "Sorcerer Subclass: Umbral" is the Umbral subclass of the sorcerer.
+        const own = title.match(NAMED_SUBCLASS);
+        if (own) title = own[2];
+        const parent = (info.parent ?? own?.[1] ?? "").replace(/^\d+\.\s*/, "").trim();
         const full = parent && !title.toLowerCase().includes(parent.toLowerCase()) ? `${title} (${parent})` : title;
         return `${world}/traits/subclasses/${fileName(full)}${mark}`;
       }
@@ -196,9 +200,12 @@ export function placer(system: string, book: string, marker = ""): Placer {
       case "background":
         return `${world}/traits/backgrounds/${name}`;
       case "talent": {
-        const group = [...trail].reverse().find((t) => /talents$/i.test(t)) ?? "";
+        // "Magic Talent: Teleporting Harrier" names its kind; else the heading above it does ("Martial Talents").
+        const own = title.match(/^(magic|martial|technical)\s+talent\s*:\s*(.+)$/i);
+        const group = own?.[1] ?? [...trail].reverse().find((t) => /talents$/i.test(t)) ?? "";
         const folder = slug(group.replace(/\s*talents$/i, ""));
-        return `${world}/traits/talents/${folder ? `${folder}/` : ""}${name}`;
+        const talentName = own ? `${fileName(own[2])}${mark}` : name;
+        return `${world}/traits/talents/${folder ? `${folder}/` : ""}${talentName}`;
       }
       default:
         return `${world}/${slug(kind)}/${name}`;
