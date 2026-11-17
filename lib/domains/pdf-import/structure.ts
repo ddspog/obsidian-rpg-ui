@@ -264,7 +264,75 @@ export function toSections(blocks: Block[], title: string, page: number): Sectio
     root.children = only.children;
   }
   liftRepeats(root);
+  nestSubclassFeatures(root);
   return root;
+}
+
+const FEATURE_OF = /^\d+(?:st|nd|rd|th)-level\s+(.+?)\s+feature$/i;
+const firstText = (s: Section): string => {
+  const b = s.blocks[0];
+  return b && "spans" in b
+    ? b.spans
+        .map((x) => x.text)
+        .join("")
+        .trim()
+    : "";
+};
+
+/**
+ * A book that sets a subclass's name the size of its features (Book of Blades) puts them side by
+ * side: "Frostborn Raider", then "Bitter Animus" saying "3rd-Level Frostborn Raider Feature". The
+ * features that name a section before them as theirs are put under it.
+ */
+function nestSubclassFeatures(node: Section): void {
+  const kids = node.children;
+  const of = (s: Section) => FEATURE_OF.exec(firstText(s))?.[1].toLowerCase();
+  // (A misprint may add a word: Skirmisher's last feature says "15th-Level Iron Skirmisher Feature".)
+  const same = (a: string, b: string) => a === b || a.endsWith(` ${b}`) || b.endsWith(` ${a}`);
+  // A head is named by its features (or by a misprint that adds a word before its name).
+  const names = (list: Section[]) => list.map(of).filter((n): n is string => !!n);
+  const isHead = (k: Section, named: string[]) => {
+    const t = k.title.toLowerCase();
+    return !of(k) && named.some((n) => n === t || n.endsWith(` ${t}`));
+  };
+  // A stat block set bigger than the features (Equine Soul's Bonded Horse) takes the features after
+  // it, and the next subclass with them: they are given back to the run.
+  const below = (list: Section[]): string[] => list.flatMap((k) => [...names(k.children), ...below(k.children)]);
+  const deep = [...names(kids), ...below(kids)];
+  const lift = (k: Section): Section[] => {
+    for (let m = 0; m < k.children.length; m++) {
+      const c = k.children[m];
+      if ((of(c) || isHead(c, deep)) && k.children.slice(m).some((x) => !!of(x))) return k.children.splice(m);
+      const found = lift(c);
+      if (found.length) return [...found, ...k.children.splice(m + 1)];
+    }
+    return [];
+  };
+  // (Only after a subclass of this run has begun: a heading above the run gives nothing back.)
+  const first = kids.findIndex((k) => isHead(k, deep));
+  for (let i = first + 1; first >= 0 && i < kids.length; i++) {
+    if (of(kids[i]) || isHead(kids[i], deep)) continue;
+    kids.splice(i + 1, 0, ...lift(kids[i]));
+  }
+  const named = names(kids);
+  const heads = kids.map((k, i) => (isHead(k, named) ? i : -1)).filter((i) => i >= 0);
+  if (heads.length) {
+    // Each takes what follows it up to the next; the last, up to its last feature, or to the end
+    // under a heading of subclasses.
+    const all = /subclass(es)?$/i.test(node.title);
+    const groups = heads.map((h, n) => {
+      let end = n + 1 < heads.length ? heads[n + 1] : kids.length;
+      if (n + 1 === heads.length && !all) {
+        const name = kids[h].title.toLowerCase();
+        let last = h;
+        for (let k = h + 1; k < end; k++) if (same(of(kids[k]) ?? "", name)) last = k;
+        end = last + 1;
+      }
+      return { h, end };
+    });
+    for (const { h, end } of [...groups].reverse()) kids[h].children.push(...kids.splice(h + 1, end - h - 1));
+  }
+  for (const child of kids) nestSubclassFeatures(child);
 }
 
 /**

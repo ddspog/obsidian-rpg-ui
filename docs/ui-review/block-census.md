@@ -260,8 +260,8 @@ Examples are ordered best first: real content over tests, a few blocks of the ty
 
 - **`list.*`** — 144 uses in 9 notes (7 real). built-in (named list); 125 different names.
   - Defined in: `lib/domains/lists` · styled by: rpg-list.css
-  - Example: `testing-vault/tales-of-the-valiant/compendium/monster-vault/Appendix, Creatures by Challenge.md` (7 here)
-  - Example: `testing-vault/tales-of-the-valiant/compendium/monster-vault/Appendix, Creatures by Tag.md` (8 here)
+  - Example: `testing-vault/tales-of-the-valiant/compendium/rules/monster-vault/Appendix, Creatures by Challenge.md` (7 here)
+  - Example: `testing-vault/tales-of-the-valiant/compendium/rules/monster-vault/Appendix, Creatures by Tag.md` (8 here)
   - Example: `testing-vault/tales-of-the-valiant/worldbuilding/spells/spell-lists/Arcane.md` (19 here)
 
 ### `log`
@@ -289,7 +289,7 @@ Examples are ordered best first: real content over tests, a few blocks of the ty
 
 - **`rule.content`** — 391 uses in 197 notes (195 real). built-in (rule note).
   - Defined in: `lib/domains/rules/parse-rule-block.ts, lib/plugin/rule-call-processor.tsx` · styled by: rule-block.css, rule-compendium.css
-  - Example: `testing-vault/tales-of-the-valiant/compendium/players-guide/05. Equipment & Magic Items.md` (1 here)
+  - Example: `testing-vault/tales-of-the-valiant/compendium/rules/players-guide/05. Equipment & Magic Items.md` (1 here)
   - Example: `testing-vault/tales-of-the-valiant/gm-tools/oracle/Fate Check.md` (1 here)
   - Example: `testing-vault/tales-of-the-valiant/gm-tools/random-events/Random Event.md` (1 here)
 - **`rule.side`** — 150 uses in 67 notes (64 real). built-in (rule note).

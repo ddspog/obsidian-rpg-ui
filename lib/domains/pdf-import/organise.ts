@@ -185,7 +185,10 @@ export function placer(system: string, book: string, marker = ""): Placer {
         return `${world}/traits/classes/${name}`;
       case "subclass": {
         // Named with its class (`Draconic (Sorcerer)`), so it never meets a language or spell of its name.
-        const parent = (info.parent ?? "").replace(/^\d+\.\s*/, "").trim();
+        // "Sorcerer Subclass: Umbral" is the Umbral subclass of the sorcerer.
+        const own = title.match(/^(.+?)\s+subclass\s*:\s*(.+)$/i);
+        if (own) title = own[2];
+        const parent = (info.parent ?? own?.[1] ?? "").replace(/^\d+\.\s*/, "").trim();
         const full = parent && !title.toLowerCase().includes(parent.toLowerCase()) ? `${title} (${parent})` : title;
         return `${world}/traits/subclasses/${fileName(full)}${mark}`;
       }

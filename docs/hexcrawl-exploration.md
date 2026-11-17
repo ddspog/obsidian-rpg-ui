@@ -11,7 +11,7 @@ what the plugin does with each rule, and what's left.
 
 ### The Solo Adventurer's Toolbox
 
-The notes are in `tales-of-the-valiant/compendium/solo-adventurers-toolbox/` and their tables are in
+The notes are in `tales-of-the-valiant/compendium/tables/solo-adventurers-toolbox/` and their tables are in
 `gm-tools/tables/solo-adventurers-toolbox/`.
 
 | Rule                                                                                                                                                                    | Where                    | Keyed by            |

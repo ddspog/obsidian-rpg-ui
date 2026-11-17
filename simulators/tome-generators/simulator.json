@@ -7,8 +7,8 @@
     "include": [
       "tales-of-the-valiant/binder/00. GM Screen.md",
       "tales-of-the-valiant/gm-tools/**",
-      "tales-of-the-valiant/compendium/the-tome-of-worldbuilding/**",
-      "tales-of-the-valiant/compendium/the-nomicon/**"
+      "tales-of-the-valiant/compendium/tables/the-tome-of-worldbuilding/**",
+      "tales-of-the-valiant/compendium/tables/the-nomicon/**"
     ]
   }
 }

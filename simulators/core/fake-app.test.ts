@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryMetadataCache, MemoryVault } from "./fake-app";
 
 const vault = new MemoryVault({
-  "tales/compendium/the-nomicon/18. Nörslik.md": "---\ntab-name: Nörslik\n---\nbody",
+  "tales/compendium/tables/the-nomicon/18. Nörslik.md": "---\ntab-name: Nörslik\n---\nbody",
   "tales/binder/01.md": '---\ngm: "[[00. GM Screen]]"\n---\n```rpg log\n```',
   "old/the-nomicon/18. Nörslik.md": "legacy",
   "tales/gm-tools/Name Generator.md": "x",
@@ -23,14 +23,14 @@ describe("the in-memory vault", () => {
 
 describe("link resolution", () => {
   it("takes a full path as it is", () => {
-    expect(cache.getFirstLinkpathDest("tales/compendium/the-nomicon/18. Nörslik", "tales/binder/01.md")?.path).toBe(
-      "tales/compendium/the-nomicon/18. Nörslik.md"
-    );
+    expect(
+      cache.getFirstLinkpathDest("tales/compendium/tables/the-nomicon/18. Nörslik", "tales/binder/01.md")?.path
+    ).toBe("tales/compendium/tables/the-nomicon/18. Nörslik.md");
   });
 
   it("finds a bare name, preferring the note nearest the source", () => {
     expect(cache.getFirstLinkpathDest("18. Nörslik", "tales/binder/01.md")?.path).toBe(
-      "tales/compendium/the-nomicon/18. Nörslik.md"
+      "tales/compendium/tables/the-nomicon/18. Nörslik.md"
     );
     expect(cache.getFirstLinkpathDest("18. Nörslik", "old/x.md")?.path).toBe("old/the-nomicon/18. Nörslik.md");
   });

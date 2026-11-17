@@ -6,7 +6,7 @@
  *
  *   node scripts/pdf-import-compare.mjs <import folder> <vault folder> [<vault folder> …] [-v]
  *
- * e.g. the Nomicon: out/nomicon  $VAULT/tales-of-the-valiant/compendium/the-nomicon
+ * e.g. the Nomicon: out/nomicon  $VAULT/tales-of-the-valiant/compendium/tables/the-nomicon
  *                                $VAULT/tales-of-the-valiant/gm-tools/tables/the-nomicon
  * `-v` lists the captions not found, the row counts that differ and the tables not rollable.
  */

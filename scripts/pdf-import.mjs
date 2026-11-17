@@ -22,6 +22,8 @@ COMMANDS
                                  learnt from the pages read, so debug on the whole book)
         --system <folder>       the out folder is a vault: file the book into <folder>/compendium
                                  and its entities into <folder>/worldbuilding; nothing is written over
+        --shelf <name>          with --system: the compendium's shelf the book goes on
+                                 (rules, tables, builders, settings): <folder>/compendium/<shelf>
         --game "Line" --publisher "Name" --marker ᴰ --source '...'
         --banners <folder> --pictures <folder> --portraits <folder> --views spell
         --max-lines 300 --catalog-min 8
@@ -143,6 +145,7 @@ const noImages = has("no-images") || command === "pages";
 const noOcr = has("no-ocr");
 const noEntities = has("no-entities");
 const system = flag("system");
+const shelf = flag("shelf");
 const marker = flag("marker");
 const source = flag("source");
 const bannerFolder = flag("banners");
@@ -401,6 +404,7 @@ const options = {
   ocr: !noOcr,
   entities: !noEntities,
   system,
+  shelf,
   marker,
   // A game line and a publisher make the source line the vault's notes carry.
   source:

@@ -75,7 +75,15 @@ export interface EntityOut {
   /** True when the section's subsections are already in `lines`. */
   consumed: boolean;
   /** What decides the entity's folder: a spell's circle, an item's kind. */
-  info?: { circle?: string; type?: string; steed?: boolean; tags?: string; cr?: string; legendary?: boolean };
+  info?: {
+    circle?: string;
+    type?: string;
+    steed?: boolean;
+    tags?: string;
+    cr?: string;
+    legendary?: boolean;
+    parent?: string;
+  };
   /** The picture set with the entity, written as its `image`: the host may keep it with others of its kind. */
   portrait?: string;
   /** The note the entity was written to when entities are kept in folders of their own (from the vault's root). */
@@ -702,11 +710,19 @@ function klass(section: Section, env: EntityEnv): EntityOut | null {
 
 function subclass(section: Section, env: EntityEnv): EntityOut | null {
   const parent = env.trail[env.trail.length - 1] ?? "";
-  const underClass = /subclass(es)?$/i.test(parent);
+  // Under a "Subclasses" heading, a part none of whose features come at a level is something else the
+  // book set at the same size (Book of Blades puts its heritages, backgrounds and talents there).
+  const strict = section.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
+  const underClass = /subclass(es)?$/i.test(parent) && (strict > 0 || leveledParts(section) >= 2);
   const leveled = section.children.filter((c) => LEVEL_NOTE.test(plain(c.blocks[0]))).length;
   if (env.hint !== "subclass" && !underClass && !(leveled >= 2 && leveled >= section.children.length / 2)) return null;
   if (!section.children.length) return null;
   const out = blank("subclass");
+  // Its class, for the note's name: "Barbarian Subclasses" above it, or its own "Sorcerer Subclass: Umbral".
+  const own = section.title.match(/^(.+?)\s+subclass\s*:/i)?.[1];
+  const above = [...env.trail].reverse().find((t) => /^.+\s+subclass(es)?$/i.test(t.trim()));
+  const klassName = own ?? above?.trim().replace(/\s+subclass(es)?$/i, "");
+  if (klassName) out.info = { parent: klassName };
   out.lines = [
     ...env.render(section.blocks, section.title),
     ...featureList(section.children, env, env.depth + 1, { owner: section.title }),
@@ -763,7 +779,10 @@ function traitNote(
 }
 
 function heritage(section: Section, env: EntityEnv): EntityOut | null {
-  if (!/\bheritage$/i.test(section.title) || !env.trail.some((t) => /heritage/i.test(t))) return null;
+  // "Cloud Heritage" under a heritages heading, or any part right under one ("Horse Lord" under "Heritages").
+  const parent = env.trail[env.trail.length - 1] ?? "";
+  const named = /\bheritage$/i.test(section.title) && env.trail.some((t) => /heritage/i.test(t));
+  if (!named && !/heritages$/i.test(parent.trim())) return null;
   const name = section.title.replace(/\s+heritage$/i, "");
   return traitNote("heritage", section, env, `${name} Features`, ['view: "No Title"']);
 }

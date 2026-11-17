@@ -109,6 +109,7 @@ export class PdfImportModal extends Modal {
   private ocr = true;
   private entities = true;
   private system = "";
+  private shelf = "";
   private game = "";
   private publisher = "";
   private marker = "";
@@ -238,6 +239,17 @@ export class PdfImportModal extends Modal {
           d.addOption("", "None");
           for (const path of systems) d.addOption(path, path);
           d.setValue(this.system).onChange((v) => (this.system = v));
+        });
+
+      new Setting(contentEl)
+        .setName("Shelf")
+        .setDesc(
+          "Where in the system's compendium the book goes: rules (the game's rules and options), tables (oracles and random tables), builders (themes for building a world, with rules and tables), settings (a world or theme for adventures). None: straight under compendium."
+        )
+        .addDropdown((d) => {
+          d.addOption("", "None");
+          for (const shelf of ["rules", "tables", "builders", "settings"]) d.addOption(shelf, shelf);
+          d.setValue(this.shelf).onChange((v) => (this.shelf = v));
         });
 
       new Setting(contentEl)
@@ -539,6 +551,7 @@ export class PdfImportModal extends Modal {
           ocr: this.ocr,
           entities: this.entities,
           system: this.system || undefined,
+          shelf: this.system ? this.shelf || undefined : undefined,
           source,
           marker: this.system ? this.marker : undefined,
           bannerFolder: pictures.banners,

@@ -90,10 +90,12 @@ export async function importPdf(
   /** The folder the book's own folder is made in. */
   parent = ""
 ): Promise<ImportResult> {
-  // Into a system's folder: the book goes to its compendium under a plain folder name, as the others there.
+  // Into a system's folder: the book goes to its compendium (on a shelf, if given) under a plain folder name, as the others there.
   const system = options.system?.replace(/\/+$/, "");
   let book = system ? slug(options.title) || "imported-book" : fileName(options.title) || "Imported Book";
-  let root = system ? `${system}/compendium/${book}` : parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
+  const shelf = options.shelf?.replace(/^\/+|\/+$/g, "");
+  const compendium = shelf ? `${system}/compendium/${shelf}` : `${system}/compendium`;
+  let root = system ? `${compendium}/${book}` : parent ? `${parent.replace(/\/+$/, "")}/${book}` : book;
   // A folder that already holds notes is never written into: the book takes the next free name beside it.
   if (host.listNotes) {
     const base = root;

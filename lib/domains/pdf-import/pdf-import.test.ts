@@ -401,6 +401,36 @@ describe("structure", () => {
     );
     expect(isCatalog({ ...steps, children: [...steps.children].reverse() }, 8)).toBe(false);
   });
+
+  it("puts features that name a subclass under it when the book sets them the same size", () => {
+    const h = (text: string, level: number): Block => ({ type: "heading", level, text, page: 1, style: `s${level}` });
+    const p = (text: string): Block => ({ type: "para", spans: [{ text, bold: false, italic: false }], page: 1 });
+    const root = toSections(
+      [
+        h("Monk Subclasses", 1),
+        h("Equine Soul", 3),
+        p("Riders."),
+        h("Horse Archer", 3),
+        p("3rd-Level Equine Soul Feature"),
+        h("Bonded Horse", 2),
+        h("Reactions", 2.5),
+        h("Swift Steed", 3),
+        p("7th-Level Equine Soul Feature"),
+        h("Righteous Fist", 3),
+        p("Monks of the fist."),
+        h("Blazing Strike", 3),
+        p("3rd-Level Righteous Fist Feature"),
+        h("Soul Burst", 3),
+        p("15th-Level Iron Righteous Fist Feature"),
+      ],
+      "Martial Options",
+      1
+    );
+    const monk = root.children[0];
+    expect(monk.children.map((c) => c.title)).toEqual(["Equine Soul", "Righteous Fist"]);
+    expect(monk.children[0].children.map((c) => c.title)).toEqual(["Horse Archer", "Bonded Horse", "Swift Steed"]);
+    expect(monk.children[1].children.map((c) => c.title)).toEqual(["Blazing Strike", "Soul Burst"]);
+  });
 });
 
 describe("emit", () => {
@@ -568,6 +598,49 @@ describe("entities", () => {
       note: files.find((f) => f.path === "01. " + root.title + ".md")?.text ?? "",
     };
   };
+
+  it("knows heritages, backgrounds and talents a book sets under its subclasses heading", () => {
+    const feature = (title: string, level: string) => section(title, 4, [para(span(level)), para(span("You rage."))]);
+    const raider = section(
+      "Frostborn Raider",
+      3,
+      [para(span("Cold."))],
+      [
+        feature("Bitter Animus", "3rd-Level Frostborn Raider Feature"),
+        feature("One With the Storm", "7th-Level Frostborn Raider Feature"),
+      ]
+    );
+    const lord = section("Horse Lord", 3, [
+      para(span("Horses are wealth.")),
+      para(span("Clansman.", false, true), span(" You gain proficiency with Animal Handling.")),
+    ]);
+    const ascetic = section("Ascetic", 3, [
+      para(span("You gave up wealth.")),
+      para(span("Skill Proficiencies:", true), span(" Choose two from Medicine and Nature.")),
+    ]);
+    const poisoner = section("Poisoner", 3, [para(span("You are immune to poison."))]);
+    const { kinds } = write(
+      section(
+        "Subclasses & Backgrounds",
+        0,
+        [],
+        [
+          section(
+            "Subclasses",
+            1,
+            [],
+            [
+              section("Barbarian Subclasses", 2, [], [raider]),
+              section("Heritages", 2, [], [lord]),
+              section("Backgrounds", 2, [], [ascetic]),
+              section("Martial Talents", 2, [], [poisoner]),
+            ]
+          ),
+        ]
+      )
+    );
+    expect(kinds).toEqual({ subclass: 1, heritage: 1, background: 1, talent: 1 });
+  });
 
   it("writes a spell's facts as an rpg spell block", () => {
     const acid = section("Acid Arrow", 2, [
@@ -909,6 +982,12 @@ describe("styles of other books", () => {
     expect(place("item", "Padded", { type: "Light Armor" }, [])).toBe("tov/worldbuilding/items/armor/light/Padded");
     expect(place("talent", "Arcanist", {}, ["Talents", "Magic Talents"])).toBe(
       "tov/worldbuilding/traits/talents/magic/Arcanist"
+    );
+    expect(place("subclass", "Sorcerer Subclass: Umbral", {}, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Umbral (Sorcerer)"
+    );
+    expect(place("subclass", "Frostborn Raider", { parent: "Barbarian" }, [])).toBe(
+      "tov/worldbuilding/traits/subclasses/Frostborn Raider (Barbarian)"
     );
     // Companions: Beasts and Animal-tagged creatures by who can take their form.
     expect(place("creature", "Deer", { type: "Beast", cr: "0" }, [])).toBe(

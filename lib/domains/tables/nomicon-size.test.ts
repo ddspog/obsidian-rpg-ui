@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
  *  part files (in `gm-tools/tables/the-nomicon`, one folder per chapter) that the chapter imports as tabs. */
 const MAX_LINES = 300;
 const VAULT = path.resolve(__dirname, "../../../../testing-vault/tales-of-the-valiant");
-const ROOTS = [VAULT + "/compendium/the-nomicon", VAULT + "/gm-tools/tables/the-nomicon"];
+const ROOTS = [VAULT + "/compendium/tables/the-nomicon", VAULT + "/gm-tools/tables/the-nomicon"];
 
 function pages(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
