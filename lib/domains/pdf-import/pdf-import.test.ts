@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { splitStacked, toBlocks, unfoldSideBySide } from "./blocks";
-import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, type EmitContext } from "./emit";
+import { dieOf, emitBook, familyName, mender, spansToMd, wordsOf, yamlScalar, type EmitContext } from "./emit";
 import { itemsFromTable } from "./entities";
 import { placer } from "./organise";
 import { fixGlyphs, fontName, glyphFixes, glyphText, isBold, isDecoration, isItalic, ligatureGuesses } from "./extract";
@@ -589,6 +589,16 @@ describe("model step and OCR", () => {
     expect(runs.map((r) => r.str)).toEqual(["Safety", "tools"]);
     expect(runs[0].x).toBe(100);
     expect(runs[0].y).toBe(48);
+  });
+});
+
+describe("frontmatter", () => {
+  it("quotes a value YAML would misread", () => {
+    expect(yamlScalar('From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins".')).toBe(
+      JSON.stringify('From **Tales of the Valiant** "Campaign Builder: Dungeons & Ruins".')
+    );
+    expect(yamlScalar("var(--color-red)")).toBe("var(--color-red)");
+    expect(yamlScalar('"[[book.webp]]"')).toBe('"[[book.webp]]"');
   });
 });
 
