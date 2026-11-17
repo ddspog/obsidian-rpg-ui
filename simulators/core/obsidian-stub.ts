@@ -223,3 +223,49 @@ export const MarkdownRenderer = {
     el.innerHTML = toHtml(markdown);
   },
 };
+
+/** A browser page: a phone when it is narrow, as the page's `is-mobile` class says. */
+const narrow = () => typeof window !== "undefined" && window.matchMedia("(max-width: 600px)").matches;
+export const Platform = {
+  get isMobile() {
+    return narrow();
+  },
+  get isPhone() {
+    return narrow();
+  },
+  isTablet: false,
+  get isDesktop() {
+    return !narrow();
+  },
+  isDesktopApp: false,
+  isMobileApp: false,
+  isMacOS: false,
+  isWin: false,
+  isLinux: false,
+  isIosApp: false,
+  isAndroidApp: false,
+  isSafari: false,
+};
+
+/** Where a note's frontmatter sits, as Obsidian reports it. */
+export function getFrontMatterInfo(content: string): {
+  exists: boolean;
+  frontmatter: string;
+  from: number;
+  to: number;
+  contentStart: number;
+} {
+  const none = { exists: false, frontmatter: "", from: 0, to: 0, contentStart: 0 };
+  if (!content || !content.startsWith("---")) return none;
+  const openEnd = content.indexOf("\n");
+  const closeStart = openEnd < 0 ? -1 : content.indexOf("\n---", openEnd);
+  if (closeStart < 0) return none;
+  const closeLineEnd = content.indexOf("\n", closeStart + 1);
+  return {
+    exists: true,
+    frontmatter: content.slice(openEnd + 1, closeStart),
+    from: openEnd + 1,
+    to: closeStart,
+    contentStart: closeLineEnd < 0 ? content.length : closeLineEnd + 1,
+  };
+}

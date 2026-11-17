@@ -68,7 +68,9 @@ function obsidianCss() {
     .map((d) => path.join(cache, d.name, "squashfs-root", "resources", "obsidian.asar"))
     .find((f) => fs.existsSync(f));
   if (!asar) {
-    console.warn("No Obsidian app.css found: the simulator will not look like Obsidian. Run `node scripts/cloud-obsidian.mjs prepare`, or set OBSIDIAN_APP_CSS.");
+    console.warn(
+      "No Obsidian app.css found: the simulator will not look like Obsidian. Run `node scripts/cloud-obsidian.mjs prepare`, or set OBSIDIAN_APP_CSS."
+    );
     return "";
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sim-asar-"));
@@ -80,21 +82,59 @@ function obsidianCss() {
 /** The theme's CSS: $THEME_DIR (a checkout with a built theme.css), as the harness uses. */
 function themeCss() {
   const f = process.env.THEME_DIR && path.join(process.env.THEME_DIR, "theme.css");
-  return f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+  if (!f || !fs.existsSync(f)) return "";
+  return fs.readFileSync(f, "utf8");
 }
 
+/** CSS without the font faces that load a file beside the stylesheet: the page has no such file. */
+const withoutFileFonts = (css) => css.replace(/@font-face\s*\{[^}]*url\(\s*["']?(?!data:|https?:)[^}]*\}/g, "");
+
 const esc = (s) => s.replace(/<\/(script|style)/gi, "<\\/$1");
+
+/**
+ * The vault's systems (`<folder>/config/index.ts`), bundled as the plugin bundles them in Obsidian
+ * (an IIFE that sets `__system_module`, everything that is not a relative import left to the
+ * plugin's `require`), so a page can run character sheets without carrying a compiler.
+ */
+async function systemBundles() {
+  const out = {};
+  for (const e of fs.readdirSync(vaultRoot, { withFileTypes: true })) {
+    const entry = path.join(vaultRoot, e.name, "config", "index.ts");
+    if (!e.isDirectory() || e.name.startsWith(".") || !fs.existsSync(entry)) continue;
+    const result = await esbuild.build({
+      entryPoints: [entry],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "__system_module",
+      platform: "browser",
+      target: "es2018",
+      logLevel: "warning",
+      plugins: [
+        {
+          name: "relative-only",
+          setup(b) {
+            b.onResolve({ filter: /^[^.]/ }, (a) => (a.kind === "entry-point" ? undefined : { external: true }));
+          },
+        },
+      ],
+    });
+    out[`${e.name}/config`] = result.outputFiles[0].text;
+  }
+  return out;
+}
 
 async function buildOne(sim) {
   const notes = readVault(vaultRoot, sim);
   const file = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
   const css = [
-    obsidianCss(),
-    themeCss(),
+    withoutFileFonts(obsidianCss()),
+    withoutFileFonts(themeCss()),
     file(path.join(here, "core", "base.css")),
     file(path.join(here, sim.dir, "style.css")),
     file(path.join(root, "styles.css")),
   ].join("\n");
+  const systems = sim.system ? await systemBundles() : {};
   const meta = { id: sim.id, title: sim.title, about: sim.about };
   const entry = path.basename(sim.entry ?? "index.ts").replace(/\.tsx?$/, "");
 
@@ -104,7 +144,7 @@ async function buildOne(sim) {
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>${esc(css)}</style>
 <script id="vault-data" type="application/json">${esc(JSON.stringify(notes))}</script>
-<script>${esc(code)}</script>
+${sim.system ? `<script id="system-bundles" type="application/json">${esc(JSON.stringify(systems))}</script>\n` : ""}<script>${esc(code)}</script>
 `;
     fs.mkdirSync(dist, { recursive: true });
     const file = path.join(dist, `${sim.id}.html`);
@@ -137,7 +177,14 @@ async function buildOne(sim) {
         // The system loader compiles a vault's TypeScript with esbuild: left out of the page.
         name: "no-system-compiler",
         setup(b) {
-          b.onResolve({ filter: /(^|\/)ts-loader$/ }, () => ({ path: path.join(here, "core", "ts-loader-stub.ts") }));
+          // …unless the simulator asked for systems: then the bundles built here are evaluated.
+          b.onResolve({ filter: /(^|\/)ts-loader$/ }, (a) =>
+            // The prebuilt loader's own import of the real one goes through.
+            a.importer.endsWith("ts-loader-prebuilt.ts")
+              ? undefined
+              : { path: path.join(here, "core", sim.system ? "ts-loader-prebuilt.ts" : "ts-loader-stub.ts") }
+          );
+          b.onResolve({ filter: /^esbuild(-wasm)?$/ }, () => ({ path: path.join(here, "core", "empty.ts") }));
           b.onEnd((result) => {
             if (result.errors.length === 0 && result.outputFiles?.[0]) assemble(result.outputFiles[0].text);
           });

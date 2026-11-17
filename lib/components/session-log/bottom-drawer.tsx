@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { GmLinkBar } from "lib/domains/gm-link/registry";
 import { LucideIcon } from "./lucide-icon";
 
 /** What the log's own controls need to show in the drawer's bar on a phone. */
@@ -12,8 +13,12 @@ export interface DrawerBar {
   onLatest: () => void;
   /** Edits not saved yet: Save and Undo show above the bar. */
   dirty: boolean;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   onUndo: () => void;
+  /** A session linked to a Game Master elsewhere: hand the turn over, or look for theirs. */
+  gm?: GmLinkBar;
+  /** Opens "Improve the wording" on this log's note. */
+  onReword?: () => void;
 }
 
 interface BottomDrawerProps {
@@ -168,6 +173,33 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
           Latest
         </button>
       )}
+      {bar.onReword && bar.hasLog && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          onClick={bar.onReword}
+          title="Pick passages and have their wording improved"
+        >
+          <LucideIcon name="Sparkles" size="0.9rem" strokeWidth={2} />
+          Wording
+        </button>
+      )}
+      {bar.gm?.waiting && (
+        <span className="lonelog-gm-status" role="status">
+          With the GM
+        </span>
+      )}
+      {bar.gm && (
+        <button
+          type="button"
+          className="lonelog-tool"
+          onClick={() => (bar.gm!.waiting ? bar.gm!.onCheck() : bar.gm!.onHandOver(bar.dirty ? bar.onSave : undefined))}
+          title={bar.gm.waiting ? "Your turn is with the GM: see whether theirs has come" : "Send your turn to the GM"}
+        >
+          <LucideIcon name={bar.gm.waiting ? "Hourglass" : "Send"} size="0.9rem" strokeWidth={2} />
+          {bar.gm.waiting ? "Check for GM" : "Hand over"}
+        </button>
+      )}
     </div>
   ) : null;
   const context = React.useMemo(
@@ -196,7 +228,10 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
         <div className="drawer-collapsed-bar" onClick={() => set(false)}>
           <span className="drawer-collapsed-label">{label}</span>
           {acting && <span className="drawer-collapsed-actor">{acting} acting</span>}
-          <span className="drawer-collapsed-hint">Press {HOTKEY.toUpperCase()} to open</span>
+          {/* With more tools on the bar there is no room left for the hint. */}
+          {!(bar?.gm || bar?.onReword) && (
+            <span className="drawer-collapsed-hint">Press {HOTKEY.toUpperCase()} to open</span>
+          )}
         </div>
       )}
       {/* Mounted either way: the roster lives in the page's margin, and its choices with it. */}
@@ -228,6 +263,23 @@ export function BottomDrawer({ actionsPanel, bar, className, label = "Actions" }
             {bar.hasLog && (
               <button type="button" onClick={bar.onLatest}>
                 ↓ Latest
+              </button>
+            )}
+            {bar.onReword && bar.hasLog && (
+              <button type="button" onClick={bar.onReword}>
+                Wording
+              </button>
+            )}
+            {bar.gm && (
+              <button
+                type="button"
+                className={bar.gm.waiting ? "is-waiting" : undefined}
+                onClick={() =>
+                  bar.gm!.waiting ? bar.gm!.onCheck() : bar.gm!.onHandOver(bar.dirty ? bar.onSave : undefined)
+                }
+                aria-label={bar.gm.waiting ? "With the GM: check for the GM's turn" : "Hand over to the GM"}
+              >
+                {bar.gm.waiting ? "Check GM" : "Hand over"}
               </button>
             )}
           </div>

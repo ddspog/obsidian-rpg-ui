@@ -11,6 +11,9 @@ import {
   TAbstractFile,
   TFile,
 } from "obsidian";
+import { setGmLinkProvider, setRewordProvider } from "lib/domains/gm-link/registry";
+import { GmLinkController } from "lib/plugin/gm-link";
+import { openReword } from "lib/plugin/reword-modal";
 import { DndSettingsTab } from "lib/plugin/settings-tab";
 import { createViews, createViewRegistry, LEGACY_MAPPINGS } from "lib/plugin/view-registry";
 import { COMPILATION_VIEW_TYPE, compilationFactory, compilationOptions } from "lib/views/CompilationBasesView";
@@ -88,6 +91,7 @@ try {
 }
 
 export default class DndUIToolkitPlugin extends Plugin {
+  gmLink!: GmLinkController;
   settings: DndUIToolkitSettings;
   dataStore: JsonDataStore;
   /** Shared KV store instance. Held on the plugin so `saveSettings` can
@@ -862,6 +866,20 @@ export default class DndUIToolkitPlugin extends Plugin {
       const exists = (p: string) => !!this.app.vault.getAbstractFileByPath(p);
       if (relinkFrames(this.settings.cardFrames, this.settings.cardFramesFolder || "Frames", exists))
         void this.saveSettings();
+    });
+    // The GM link: a session handed to a Game Master playing on a GitHub branch, and taken back.
+    this.gmLink = new GmLinkController(this);
+    this.gmLink.register();
+    setGmLinkProvider((path) => this.gmLink.bar(path));
+    this.register(() => setGmLinkProvider(null));
+    // "Improve the wording": the model rewrites the prose of the passages picked, and nothing else.
+    setRewordProvider((path) => openReword(this.app, path, this.settings.imageStudio, this.manifest.id));
+    this.register(() => setRewordProvider(null));
+    this.addCommand({
+      id: "rpg-ui-reword-log",
+      name: "Improve the wording of this session's log",
+      callback: () =>
+        openReword(this.app, this.app.workspace.getActiveFile()?.path, this.settings.imageStudio, this.manifest.id),
     });
     // The image studio, on the note that's open.
     this.addCommand({

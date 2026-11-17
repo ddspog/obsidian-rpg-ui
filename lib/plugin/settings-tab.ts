@@ -41,6 +41,17 @@ interface PluginWithSettings {
   settings: DndUIToolkitSettings;
   saveSettings(): Promise<void>;
   applyColorSettings(): void;
+  /** The GM link's controller: where the linked session stands, and its two moves. */
+  gmLink: {
+    enabled(): boolean;
+    setEnabled(on: boolean): Promise<void>;
+    describe(): { status: string; detail: string; linked: boolean; waiting: boolean };
+    openSetup(): void;
+    openPrefs(): void;
+    openHandOver(): void;
+    check(): Promise<void>;
+    unlink(): Promise<void>;
+  };
   /** Invoked after the author edits the footer-fields list so the
    *  injector can re-render every open reading-view immediately. */
   refreshPageFooter?(): void;
@@ -250,6 +261,70 @@ export class DndSettingsTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    const where = this.plugin.gmLink.describe();
+    const gmOn = this.plugin.gmLink.enabled();
+    const gm = createSection(panel, "general:gm-link", "GM link", {
+      open: false,
+      note: !gmOn ? "off" : where.linked ? (where.waiting ? "with the GM" : "your turn") : "on",
+      desc: "Play a session here with its Game Master somewhere else (a Claude Code session): your turn travels over a branch of the vault's GitHub repository.",
+    }).body;
+    new Setting(gm)
+      .setName("Use the GM link")
+      .setDesc(
+        gmOn
+          ? "On: its commands, the Hand over button in the Log's bar and the checks for the GM's turn."
+          : "Off: no commands, no Hand over button, nothing sent or checked. Turn it on to set it up."
+      )
+      .addToggle((t) =>
+        t.setValue(gmOn).onChange(async (on) => {
+          await this.plugin.gmLink.setEnabled(on);
+          this.display();
+        })
+      );
+    if (gmOn) {
+      new Setting(gm)
+        .setName(where.status)
+        .setDesc(where.detail)
+        .addButton((b) =>
+          where.linked
+            ? b.setButtonText("Set up…").onClick(() => this.plugin.gmLink.openSetup())
+            : b
+                .setButtonText("Set up…")
+                .setCta()
+                .onClick(() => this.plugin.gmLink.openSetup())
+        )
+        .addButton((b) =>
+          b
+            .setButtonText("How the GM runs it…")
+            .setDisabled(!where.linked)
+            .onClick(() => this.plugin.gmLink.openPrefs())
+        );
+      if (where.linked) {
+        new Setting(gm)
+          .setName("This turn")
+          .setDesc(where.waiting ? "Your turn is with the GM." : "Play in the session's Log, then hand over.")
+          .addButton((b) =>
+            b
+              .setButtonText(where.waiting ? "Check for GM" : "Hand over")
+              .setCta()
+              .onClick(() => (where.waiting ? void this.plugin.gmLink.check() : this.plugin.gmLink.openHandOver()))
+          );
+        new Setting(gm)
+          .setName("Unlink")
+          .setDesc("Forgets the link and the token on this device. Your notes stay as they are.")
+          .addButton((b) =>
+            b
+              .setButtonText("Unlink")
+              .setWarning()
+              .onClick(async () => {
+                await this.plugin.gmLink.unlink();
+                new Notice("Unlinked. The token is forgotten on this device.");
+                this.display();
+              })
+          );
+      }
+    }
 
     const share = createSection(panel, "general:share", "Share settings", { open: false }).body;
     new Setting(share)

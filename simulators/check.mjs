@@ -55,12 +55,10 @@ for (const id of ids) {
     `<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>\n${fs.readFileSync(path.join(here, "dist", `${id}.html`), "utf8")}</body></html>`
   );
   await page.goto(`file://${wrapped}`);
-  const ready = await page
-    .waitForFunction("window.__simulatorReady === true", null, { timeout: 20000 })
-    .then(
-      () => true,
-      () => false
-    );
+  const ready = await page.waitForFunction("window.__simulatorReady === true", null, { timeout: 20000 }).then(
+    () => true,
+    () => false
+  );
   if (!ready) problems.push("never reported ready");
   const styled = await page.evaluate(
     "getComputedStyle(document.querySelector('.sim-bar') ?? document.body).display === 'flex'"

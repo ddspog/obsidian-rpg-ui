@@ -107,6 +107,12 @@ export const DEFAULT_IMAGE_STUDIO: ImageStudioSettings = {
 };
 
 export interface DndUIToolkitSettings {
+  /** The GM link (lib/plugin/gm-link.ts): the link the GM gave, a GitHub token, and each linked session's state. */
+  gmLinkEnabled?: boolean;
+  gmLink: string;
+  gmLinkToken: string;
+  gmLinkState: Record<string, import("lib/domains/gm-link/link").LinkState>;
+  gmLinkApi?: string;
   statePath: string;
   selectedTheme: string;
   imageStudio: ImageStudioSettings;
@@ -197,6 +203,10 @@ export interface DndUIToolkitSettings {
 }
 
 export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
+  gmLinkEnabled: false,
+  gmLink: "",
+  gmLinkToken: "",
+  gmLinkState: {},
   statePath: ".dnd-ui-toolkit-state.json",
   selectedTheme: "default",
   imageStudio: DEFAULT_IMAGE_STUDIO,

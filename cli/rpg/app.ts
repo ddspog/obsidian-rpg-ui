@@ -5,7 +5,7 @@
  * (bundled from the vault's TypeScript with esbuild). Nothing is written.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { SystemRegistry } from "lib/systems/registry";
 import type { RPGSystem } from "lib/systems/types";
@@ -56,6 +56,11 @@ export function boot(root: string): Ctx {
   for (const m of (settings.systemMappings as Array<{ folderPaths?: string[]; systemFolderPath?: string }>) ?? []) {
     for (const folder of m.folderPaths ?? []) if (m.systemFolderPath) mappings.set(folder, m.systemFolderPath);
   }
+  // No settings here (a clone: the plugin's folder is not in git): a folder that holds a
+  // system (`<folder>/config/index.ts`) is the system of its own notes.
+  if (mappings.size === 0)
+    for (const name of readdirSync(root))
+      if (existsSync(join(root, name, "config", "index.ts"))) mappings.set(name, `${name}/config`);
   // Mappings are set without preloading: a command loads only the system it needs.
   (registry as unknown as { folderMappings: Map<string, string> }).folderMappings = mappings;
 

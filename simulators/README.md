@@ -76,8 +76,9 @@ export default defineSimulator({
 
 - Obsidian itself: panes, the file explorer, the editor, plugins other than this one. `MarkdownRenderer` is a
   small stand-in (links, bold, italics, code), `Menu` a small popup, `setIcon` a placeholder.
-- The system loader, which compiles a vault's TypeScript with esbuild. Everything runs with the default
-  system, so character sheets and their cards are not available; GM-side features are.
+- The system loader, which compiles a vault's TypeScript with esbuild. A simulator runs with the default
+  system (GM-side features only) unless its `simulator.json` says `"system": true`: then the build bundles
+  the vault's systems into the page and character sheets and their cards work.
 - Images and other non-note files: only `.md` notes are copied.
 - Dice Roller and other community plugins' blocks.
 
