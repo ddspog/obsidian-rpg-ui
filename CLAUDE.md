@@ -117,6 +117,10 @@ The **GM link** (off by default: `gmLinkEnabled`, Settings › General › GM li
 
 **Improve the wording** (`lib/domains/session-log/reword.ts`, `lib/plugin/reword-modal.ts`): passages of a log picked in a dialog, reworded by the Anthropic endpoint of the settings, reviewed, then written; only a passage's words change, never its tags, links or any other line. See `docs/reword.md`.
 
+## rpg sim (encounter simulator)
+
+`rpg sim run --monster "<note>[:<count>]"… [--pc <note>]… [--seed N] [--trials N] [--rounds N]` runs a seeded Monte Carlo of a party (default: the four level-1 PCs under `tales-of-the-valiant/adventuring/characters/`) against bestiary notes and prints one JSON document (win/TPK/stalemate rates, per-trial rounds and HP, per-PC KO rate, the ToV difficulty label, and a `fidelity` section saying which spells, attacks and features were modelled or skipped). `rpg sim suggest [--difficulty easy|challenging|deadly] [--habitat H] [--type T] [--cr C] [--limit N]` sweeps the bestiary for single-kind groups near the ToV benchmark and ranks them. `rpg sim --help` lists every flag; sim usage errors exit 1, runtime errors 2. The engine is pure (`lib/domains/encounter-sim/`: rng, difficulty, monster-actions, spell-actions, engine, montecarlo); the vault-facing loaders and commands are in `cli/rpg/sim/` (`rpg` hands everything after `sim` to `cli/rpg/sim/index.ts`, which has its own strict flag parse). Specs in `cli/rpg/sim/` build a fixture system and, when `../testing-vault` is there, run over a copy of it (`test-support.ts`).
+
 ## rpg-dev CLI (DevTools Automation)
 
 A CLI at `cli/rpg-dev.mjs` wraps the Obsidian CLI to automate debugging and inspection. Requires Obsidian running with `testing-vault` open.

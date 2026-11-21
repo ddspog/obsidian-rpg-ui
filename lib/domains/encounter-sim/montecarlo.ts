@@ -1,0 +1,85 @@
+import { simulateTrial } from "./engine";
+import { createSeededRng } from "./rng";
+import type { CombatActor, TrialResult } from "./types";
+
+export interface MonsterGroup {
+  actor: CombatActor;
+  count: number;
+}
+
+export interface MonteCarloInput {
+  party: CombatActor[];
+  monsters: MonsterGroup[];
+  seed: number;
+  trials: number;
+  roundCap: number;
+}
+
+export interface MonteCarloSummary {
+  winRate: number;
+  tpkRate: number;
+  stalemateRate: number;
+  avgRounds: number;
+  roundsPerTrial: number[];
+  hpRemainingPerTrial: number[];
+  koRate: Record<string, number>;
+}
+
+export type CompactSummary = Omit<MonteCarloSummary, "roundsPerTrial" | "hpRemainingPerTrial">;
+
+/** Four decimal places, as the JSON contract states. */
+export const round4 = (x: number): number => Math.round(x * 10000) / 10000;
+
+/**
+ * Expand each monster group into distinct combatants. A group of one keeps its
+ * name; a larger group gets " 1", " 2", ... so combatants stay distinguishable.
+ */
+export function expandMonsters(groups: MonsterGroup[]): CombatActor[] {
+  const out: CombatActor[] = [];
+  groups.forEach((group, g) => {
+    for (let i = 1; i <= group.count; i++) {
+      const name = group.count > 1 ? `${group.actor.name} ${i}` : group.actor.name;
+      out.push({ ...group.actor, key: `${group.actor.key}#${g}.${i}`, name, side: "monsters" });
+    }
+  });
+  return out;
+}
+
+/** Run N seeded trials of the party against the monster groups and summarise. */
+export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
+  const { party, monsters, seed, trials, roundCap } = input;
+  const rng = createSeededRng(seed);
+  const combatants: CombatActor[] = [
+    ...party.map((p) => ({ ...p, side: "party" as const })),
+    ...expandMonsters(monsters),
+  ];
+
+  const results: TrialResult[] = [];
+  for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap));
+
+  const share = (outcome: TrialResult["outcome"]) =>
+    trials === 0 ? 0 : round4(results.filter((r) => r.outcome === outcome).length / trials);
+  const roundsPerTrial = results.map((r) => (r.outcome === "stalemate" ? roundCap : r.rounds));
+  const koRate: Record<string, number> = {};
+  for (const p of party) {
+    koRate[p.name] = trials === 0 ? 0 : round4(results.filter((r) => r.knockedOut.includes(p.name)).length / trials);
+  }
+
+  return {
+    winRate: share("win"),
+    tpkRate: share("tpk"),
+    stalemateRate: share("stalemate"),
+    avgRounds: trials === 0 ? 0 : round4(roundsPerTrial.reduce((a, b) => a + b, 0) / trials),
+    roundsPerTrial,
+    hpRemainingPerTrial: results.map((r) => r.partyHpRemaining),
+    koRate,
+  };
+}
+
+/** The summary without its per-trial arrays, for suggest. */
+export function compactSummary(summary: MonteCarloSummary): CompactSummary {
+  const { roundsPerTrial: _r, hpRemainingPerTrial: _h, ...rest } = summary;
+  void _r;
+  void _h;
+  return rest;
+}
