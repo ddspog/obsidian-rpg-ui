@@ -10,6 +10,7 @@
  *   rpg search kobold                      notes whose names match
  *   rpg gm …                               run a session as its Game Master (rpg gm guide)
  *   rpg session …                          a session's files, and its lines of play
+ *   rpg sim run|suggest …                  encounter simulator: Monte Carlo party-vs-monster outcomes (rpg sim --help)
  *
  * Reading commands write nothing. `rpg gm` writes a session's log and its GM
  * notebook; `rpg session` its saved lines (and, on switch, its notes).
@@ -40,6 +41,7 @@ import { consult, renderPassages, renderShelf, shelf, systemRoot } from "./gm/co
 import GUIDE from "./gm/guide.md";
 import { forkLine, listLines, listSessions, packSession, saveLine, switchLine, unpackSession } from "./session/lines";
 import { manifest, renderManifest } from "./session/manifest";
+import { simEntry } from "./sim";
 import { giveTurn, tableLink, takeTurn } from "./session/table";
 
 const HELP = `rpg — read your RPG vault as the plugin calculates it (read-only)
@@ -73,6 +75,10 @@ Game Master (the session's log and GM notebook are written; rpg gm guide explain
   rpg gm mode <session> [secret|open]  where the notebook is kept
   rpg gm reveal <session> <title>|--all  hidden prep moved into the open notebook
 
+Encounter simulator (seedable Monte Carlo over party notes and bestiary notes; rpg sim --help):
+  rpg sim run --monster "<note>:<count>"… [--pc <note>]… [--seed N] [--trials N] [--rounds N]
+  rpg sim suggest [--difficulty easy|challenging|deadly] [--habitat H] [--type T] [--cr C] [--limit N]
+
 Sessions:
   rpg session list                     notes that are sessions
   rpg session manifest <session> [--full]
@@ -97,7 +103,32 @@ Options:
   -h, --help       this help
 `;
 
+/** `sim` as the first token past the leading `--vault <v>` / `--vault=<v>` / `--json` globals, or -1. */
+function simTokenIndex(argv: string[]): number {
+  for (let i = 0; i < argv.length; i++) {
+    const t = argv[i];
+    if (t === "--json" || t.startsWith("--vault=")) continue;
+    if (t === "--vault") {
+      i++;
+      continue;
+    }
+    return t === "sim" ? i : -1;
+  }
+  return -1;
+}
+
 async function main(): Promise<number> {
+  // `rpg sim …` has its own strict flag parse (its usage errors exit 1): hand it every token but `sim`.
+  const argv = process.argv.slice(2);
+  const simAt = simTokenIndex(argv);
+  if (simAt >= 0) {
+    const log = console.log;
+    console.log = console.debug = console.info = console.warn = () => {};
+    return simEntry([...argv.slice(0, simAt), ...argv.slice(simAt + 1)], {
+      out: (s) => log(s),
+      err: (s) => process.stderr.write(s.endsWith("\n") ? s : s + "\n"),
+    });
+  }
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
@@ -324,7 +355,9 @@ function need(value: string, what: string): string {
 }
 
 main().then(
-  (code) => process.exit(code),
+  // Exit once stdout has drained: a pipe takes writes asynchronously, and a large document (a run's
+  // per-trial arrays) would otherwise be cut off at the pipe's buffer size.
+  (code) => process.stdout.write("", () => process.exit(code)),
   (err) => {
     process.stderr.write(`rpg: ${err instanceof Error ? err.message : String(err)}\n`);
     process.exit(2);
