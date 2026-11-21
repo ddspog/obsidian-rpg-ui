@@ -19,6 +19,13 @@ describe("parseMultiattack", () => {
     });
     expect(parseMultiattack("The dragon uses its Frightful Presence.")).toBeUndefined();
   });
+
+  it("counts the first of alternatives, not their sum, and offers every attack named", () => {
+    expect(parseMultiattack("The knight makes three Greatsword attacks, or it makes four Javelin attacks.")).toEqual({
+      count: 3,
+      attacks: ["Greatsword", "Javelin"],
+    });
+  });
 });
 
 describe("composeMultiattack", () => {

@@ -7,6 +7,7 @@ import {
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
+import { MONSTER_ROLES, parseRole, type MonsterRole } from "lib/domains/encounter-sim/monster-role";
 
 /** A wrong flag, value or subcommand of `rpg sim` (exit 1, with the usage). */
 export class UsageError extends Error {
@@ -314,6 +315,37 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "`run`, `suggest`, `catalog suggest`: the short answer a model needs (groups as --monster takes them, no per-trial arrays or statblocks)",
   },
   {
+    name: "role",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "controller|leader|soldier|striker",
+    description:
+      "`roles`: only monsters of this role; repeat for each; `equivalents`: look for this role instead of the monster's own",
+  },
+  {
+    name: "write",
+    kind: "boolean",
+    default: false,
+    description:
+      "`roles`: write each guess at or above --min-confidence as `role:` in its statblock (never over a written role); else a dry run",
+  },
+  {
+    name: "set",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: '"<note>=<role>"',
+    description: "`roles`: write this role in the monster's statblock (over any written one); repeat for each",
+  },
+  {
+    name: "steps",
+    kind: "string",
+    default: 1,
+    value: "<n>",
+    description: "`equivalents`: how many steps of the CR ladder (… 1/4, 1/2, 1, 2 …) from the monster's CR to look",
+  },
+  {
     name: "vault",
     kind: "string",
     default: undefined,
@@ -390,6 +422,14 @@ export interface SimOptions {
   json: boolean;
   /** `run`, `suggest`, `catalog suggest`: print the short form (see brief.ts). */
   brief: boolean;
+  /** `roles`: the roles to list; `equivalents`: the role to look for. */
+  roles: MonsterRole[];
+  /** `roles`: `<note>=<role>` to write. */
+  set: string[];
+  /** `roles`: write the guesses. */
+  write: boolean;
+  /** `equivalents`: CR ladder steps to look. */
+  steps: number;
 }
 
 export interface ParsedSim {
@@ -435,6 +475,10 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     includeDraft: false,
     json: false,
     brief: false,
+    roles: [],
+    set: [],
+    write: false,
+    steps: flagDefault<number>("steps"),
   };
 }
 
@@ -528,7 +572,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   const [subcommand, ...extra] = parsed.positionals;
   // `catalog` takes an action and then bare words of its own, `plan` theme words; the others take none.
   const isCatalog = subcommand === "catalog";
-  if (!isCatalog && subcommand !== "plan" && extra.length) {
+  const takesWords = subcommand === "plan" || subcommand === "roles" || subcommand === "equivalents";
+  if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
 
@@ -538,6 +583,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     options.args = extra.slice(1);
   } else if (subcommand === "plan") {
     options.args = extra.flatMap((word) => word.split(/\s+/)).filter((word) => word.length > 0);
+  } else if (takesWords) {
+    options.args = extra.map((word) => word.trim()).filter((word) => word.length > 0);
   }
 
   const pcs = (values.pc as string[] | undefined) ?? [];
@@ -652,6 +699,14 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (typeof values.vault === "string") options.vault = values.vault;
   options.json = values.json === true;
   options.brief = values.brief === true;
+  options.roles = ((values.role as string[] | undefined) ?? []).map((raw) => {
+    const role = parseRole(raw);
+    if (!role) throw new UsageError(`--role must be one of ${MONSTER_ROLES.join(", ")}, got "${raw}".`);
+    return role;
+  });
+  options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
+  options.write = values.write === true;
+  if (typeof values.steps === "string") options.steps = integer("steps", values.steps, 0, "a non-negative integer");
 
   return { subcommand, help: false, options };
 }
@@ -749,6 +804,37 @@ const PLAN_FLAGS = [
   "help",
 ];
 
+/** The flags `roles` and `equivalents` take. */
+const ROLES_FLAGS = [
+  "role",
+  "write",
+  "set",
+  "min-confidence",
+  "habitat",
+  "type",
+  "cr",
+  "limit",
+  "vault",
+  "json",
+  "help",
+];
+const EQUIVALENTS_FLAGS = ["role", "steps", "habitat", "type", "limit", "vault", "json", "help"];
+
+function validateRoles(subcommand: "roles" | "equivalents", options: SimOptions): void {
+  const allowed = subcommand === "roles" ? ROLES_FLAGS : EQUIVALENTS_FLAGS;
+  for (const flag of options.given) {
+    if (!allowed.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`${subcommand}\`.`);
+  }
+  if (subcommand === "equivalents") {
+    if (options.args.length !== 1)
+      throw new UsageError("`equivalents` needs one monster note (quote a name with spaces).");
+    if (options.roles.length > 1) throw new UsageError("`equivalents` takes one --role.");
+  }
+  if (subcommand === "roles" && options.set.length && (options.write || options.args.length)) {
+    throw new UsageError("--set writes the roles it names: pass it without --write or notes.");
+  }
+}
+
 function validatePlan(options: SimOptions): void {
   for (const flag of options.given) {
     if (!PLAN_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`plan\`.`);
@@ -774,6 +860,7 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
     return;
   }
   if (subcommand === "plan") validatePlan(options);
+  if (subcommand === "roles" || subcommand === "equivalents") validateRoles(subcommand, options);
   if ((subcommand === "suggest" || subcommand === "plan") && options.cr !== undefined) {
     try {
       parseCr(options.cr);
@@ -804,7 +891,7 @@ function helpLines(): string {
 }
 
 /** The help of `rpg sim`, written from SIM_FLAGS. */
-export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan encounters, or keep a catalog of them
+export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan encounters, keep a catalog of them, or read monster roles
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [--brief] [flags]
@@ -824,6 +911,11 @@ Usage:
   rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--include-used] [--limit N] [--brief]
   rpg sim catalog list [--tag <tag>]... [--review draft|confirmed] [--state <state>]... [--limit N]
     (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
+  rpg sim roles [<note>...] [--role R]... [--habitat H] [--type T] [--cr C] [--limit N] [--write [--min-confidence C]]
+    (each monster's role, controller|leader|soldier|striker: written in its statblock or guessed, least sure first)
+  rpg sim roles --set "<note>=<role>"...   (write roles in statblocks)
+  rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
+    (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help
 
 Flags:

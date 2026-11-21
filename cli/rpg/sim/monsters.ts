@@ -18,6 +18,7 @@ import {
   type SkipReason,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
+import { parseRole, type MonsterRole } from "lib/domains/encounter-sim/monster-role";
 import { mapCategory, mapMonster } from "lib/domains/statblocks/monster-fields";
 import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature, StatMonsterData } from "lib/domains/statblocks/types";
@@ -46,6 +47,12 @@ export interface LoadedMonster {
   /** The type line as plain text, e.g. "Medium Humanoid" (links reduced to their text). */
   monsterType: string;
   fidelity: FidelityRecord[];
+  /** The features resolved to prose (for the role guess). */
+  features: Array<{ name: string; type?: string; text: string }>;
+  /** The speed line as written ("30 ft., fly 60 ft."). */
+  speedText: string;
+  /** The role written in the statblock (`role:`), when it has one. */
+  role?: MonsterRole;
 }
 
 /** Every markdown note under the bestiary, in the vault's order. */
@@ -247,5 +254,8 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     habitat: linkNames(data.habitat ?? categoryHabitat(ctx, data.category, file.path)),
     monsterType: plainType(data.type),
     fidelity,
+    features: resolved.map((f, i) => ({ name: f.name?.trim() || refs[i], type: f.type, text: f.text })),
+    speedText: data.stats.speed ?? "",
+    ...(parseRole(state.yaml.role) ? { role: parseRole(state.yaml.role) } : {}),
   };
 }

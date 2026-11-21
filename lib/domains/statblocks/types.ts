@@ -23,6 +23,8 @@ export interface StatMonsterData {
   habitat?: string;
   /** Treasure line, e.g. `None` / `Individual`. */
   treasure?: string;
+  /** Monster Vault role: controller, leader, soldier or striker (`rpg sim roles` guesses and writes it). */
+  role?: string;
   /** Link to a `stat.category` note (e.g. `[[Bears]]`). When set, the monster
    *  inherits habitat/treasure from the category and renders neither. */
   category?: string;

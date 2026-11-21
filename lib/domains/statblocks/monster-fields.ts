@@ -134,6 +134,7 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
   const habitat = stringifyValue(self.habitat);
   const treasure = stringifyValue(self.treasure);
   const category = stringifyValue(self.category) || stringifyValue(self.group);
+  const role = stringifyValue(self.role);
 
   return {
     name: typeof self.name === "string" ? self.name : "",
@@ -141,6 +142,7 @@ export function mapMonster(self: Record<string, unknown>): StatMonsterData {
     cr: crDisplay(self.cr),
     habitat: isBlank(habitat) ? undefined : habitat,
     treasure: isBlank(treasure) ? undefined : treasure,
+    ...(isBlank(role) ? {} : { role }),
     category: isBlank(category) ? undefined : category,
     stats,
     abilities: normalizeAbilities(abilSrc),

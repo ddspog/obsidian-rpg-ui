@@ -7,6 +7,7 @@ import { boot, findVault } from "../app";
 import { simCatalog } from "./catalog";
 import { simMain, type SimIo } from "./dispatch";
 import { simPlan } from "./plan";
+import { simEquivalents, simRoles } from "./roles";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
 
@@ -20,5 +21,7 @@ export function simEntry(tokens: string[], io: SimIo): Promise<number> {
     suggest: simSuggest,
     catalog: simCatalog,
     plan: simPlan,
+    roles: simRoles,
+    equivalents: simEquivalents,
   });
 }

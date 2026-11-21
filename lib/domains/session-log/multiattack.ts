@@ -30,15 +30,21 @@ const NUMBERS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, fiv
  * attack and two Claw attacks` (three, of either). Undefined when it names none.
  */
 export function parseMultiattack(text: string): MultiattackSpec | undefined {
-  const body = text.match(/\bmakes\s+([^.]+)/i)?.[1];
-  if (!body) return undefined;
+  const whole = text.match(/\bmakes\s+([^.]+)/i)?.[1];
+  if (!whole) return undefined;
+  // "makes three Greatsword attacks, or it makes four Javelin attacks": alternatives, not a sum.
+  // The count is the first one's; every attack named in any of them may be picked.
+  const [first, ...others] = whole.split(/,?\s+or\s+(?:it|they|the [\w' -]+?)\s+makes\s+/i);
   let count = 0;
   const attacks: string[] = [];
-  for (const m of body.matchAll(/\b(one|two|three|four|five|six|\d+)\s+(.+?)\s+attacks?\b/gi)) {
-    count += NUMBERS[m[1].toLowerCase()] ?? parseInt(m[1], 10);
-    for (const name of m[2].split(/\s*,\s*|\s+or\s+/i)) {
-      const n = name.replace(/^(?:with\s+)?(?:its|their|a|an)\s+/i, "").trim();
-      if (n && !attacks.some((a) => a.toLowerCase() === n.toLowerCase())) attacks.push(n);
+  for (const body of [first, ...others]) {
+    const counted = body === first;
+    for (const m of body.matchAll(/\b(one|two|three|four|five|six|\d+)\s+(.+?)\s+attacks?\b/gi)) {
+      if (counted) count += NUMBERS[m[1].toLowerCase()] ?? parseInt(m[1], 10);
+      for (const name of m[2].split(/\s*,\s*|\s+or\s+/i)) {
+        const n = name.replace(/^(?:with\s+)?(?:its|their|a|an)\s+/i, "").trim();
+        if (n && !attacks.some((a) => a.toLowerCase() === n.toLowerCase())) attacks.push(n);
+      }
     }
   }
   return count > 0 ? { count, attacks } : undefined;

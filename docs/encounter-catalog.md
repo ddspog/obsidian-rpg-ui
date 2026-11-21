@@ -122,6 +122,25 @@ The tag holds the link to the entry (its block id, `^<id>`, written under each e
 
 **Unprepare** takes the prepared line back out (only while it is unfought). `rpg sim catalog prepare <id>` writes the same line from the CLI (`lib/domains/session-log/prepared-encounter.ts` is shared).
 
+## Monster roles and equivalents
+
+The Monster Vault sorts monsters into four roles ("Monster Roles and Tactics"): **controller** (hinders the party, often many at once), **leader** (makes its allies better), **soldier** (moderate damage, plenty of HP and AC, holds the line) and **striker** (heavy damage to one target, mobile, light defence). A statblock can write its role in its `rpg stat.monster` fence (`role: "striker"`); otherwise `rpg sim` guesses it (`lib/domains/encounter-sim/monster-role.ts`) from:
+
+- its hit points, AC and best damage in a round against its CR's row of the Creature Statistics by Challenge Rating table (Homebrewer's Toolbox);
+- what its features say: conditions it deals (not ones it is spared), areas, forced movement and control spells (controller); help given to allies, healing and support spells (leader); teleporting, hiding and extra damage (striker); guarding and protecting (soldier);
+- its name, when it says the role (the role templates' Goblin Controller, Hobgoblin Leader, Worg Soldier, Bugbear Striker) or a rank (Captain, Chief, Priest…).
+
+Each guess has a confidence (how far the top role is ahead of the next), the runner-up when it is close (`alt`), its reasons, and **subroles**: `ranged`, `caster`, `flier`, `ambusher`, `healer`, `area`, `legendary`, `minion`. Subroles are always computed, never written.
+
+| Command                                                                            | What it does                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `roles [<note>…] [--role R]… [--habitat H] [--type T] [--cr C] [--limit N]`        | Read-only. Every monster's role (written, or the guess), least sure first, with counts by role and by confidence.                                                                                                                                             |
+| `roles --write [--min-confidence high\|medium\|low]`                               | Writes the guesses at or above the confidence (default `high`) as `role:` in their statblocks, never over a written role.                                                                                                                                     |
+| `roles --set "<note>=<role>"…`                                                     | Writes those roles, over any written one (for a person's corrections).                                                                                                                                                                                        |
+| `equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]` | The monsters of its role within `--steps` (1) of its CR on the ladder (… 1/4, 1/2, 1, 2 …), closest first: CR, then HP and damage alike, shared subroles; one of another family before one of the same. `--habitat` and `--type` keep the swaps of a setting. |
+
+On the testing vault the guess reads 986 monsters: 399 soldiers, 391 controllers, 168 strikers and 28 leaders; 179 sure, 368 fairly sure and 439 unsure. The four role-template examples are named for their role; with the name left out, two of the four come out right (the Goblin Controller reads as a leader, the Worg Soldier as a controller by a hair), so read a guess as a suggestion.
+
 ## The party's tier
 
 Every command that offers encounters first profiles the party (`lib/domains/encounter-sim/party-profile.ts`):

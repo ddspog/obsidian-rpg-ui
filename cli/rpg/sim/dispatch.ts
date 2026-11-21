@@ -18,6 +18,9 @@ export interface SimDeps {
   catalog?: SimHandler;
   /** `rpg sim plan …` (optional, as catalog). */
   plan?: SimHandler;
+  /** `rpg sim roles …` and `rpg sim equivalents …` (optional, as catalog). */
+  roles?: SimHandler;
+  equivalents?: SimHandler;
 }
 
 /**
@@ -48,8 +51,14 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
             ? deps.catalog
             : subcommand === "plan"
               ? deps.plan
-              : undefined;
-    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run, suggest, plan or catalog).`);
+              : subcommand === "roles"
+                ? deps.roles
+                : subcommand === "equivalents"
+                  ? deps.equivalents
+                  : undefined;
+    if (!handler) {
+      return usage(`Unknown subcommand "${subcommand}" (use run, suggest, plan, catalog, roles or equivalents).`);
+    }
     validateForSubcommand(subcommand, options);
     const { doc } = await handler(deps.context(options.vault), options);
     // `plan` and the --brief forms are read by a model: laid out to spend fewer tokens.
