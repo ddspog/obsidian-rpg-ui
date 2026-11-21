@@ -88,6 +88,25 @@ A usual run: `init`, `draft <folder>` (read the dry run), `draft <folder> --acce
 
 Each option has its `monsters` as `--monster` takes them (pass them to `sim run` or `catalog add` as they are), its `fit` and the measured `winRate`, `tpkRate` and `avgHpLost`. `notes` says what the caller should know: catalog entries left out because their fit is stale (run `catalog check`), drafts to confirm, a swept group that can be kept with `catalog add`, a party whose CR benchmark is 0 (nothing to sweep toward), or a sweep that found nothing. `plan` writes nothing. The sweep costs what `suggest --rank outcome` does (about 20 s over the whole bestiary for the four stock characters, 2 to 3 s with a habitat or theme words); it is skipped when the catalog fills the options.
 
+## In Obsidian: the board
+
+The note opens with an `rpg encounter-catalog` block (body `view: encounter-catalog`). The plugin renders it as the catalog's board (`lib/views/EncounterCatalogView.tsx`, `lib/components/encounter-catalog/`):
+
+- **Party header:** the party, its PCs, and chips for tier, size and level, benchmark, single-monster CR range, difficulty and session.
+- **Fit strip:** how many encounters of the party's tier fit, are too easy, too hard, or need a check. Click a segment or the legend to filter.
+- **Search and toggles:** search across names, tags, monsters and scenes; show or hide drafts; add lower tiers.
+- **A card per encounter**, best first:
+  - its monsters, each a link to its note;
+  - the scene;
+  - a gauge of the share of party HP the fight costs, with the band where it fits and a dashed line at the difficulty's aim;
+  - the wipe and win rates;
+  - what a high or low roll does to a rolled count.
+- **Card actions:** **Confirm** (drafts only), **Ran it** (`catalog use`), and **Tags**. Each action writes the note.
+
+Each entry is an `rpg encounter` block that renders as one line, so its YAML shows only in source mode. `yaml encounter` blocks from before are still read, and are rewritten as `rpg encounter` on the next write.
+
+The board does not simulate. It judges staleness against the `profile` that `catalog check` writes to the frontmatter: the party's size, level, tier, benchmark, single-monster CR and stamp. Run `rpg sim catalog check` after the party changes. In the board, an entry with no tier tag counts as the party's tier, because the board does not read monster CRs; the CLI's `--tiers` does.
+
 ## The party's tier
 
 Every command that offers encounters first profiles the party (`lib/domains/encounter-sim/party-profile.ts`):

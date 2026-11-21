@@ -375,3 +375,17 @@ describe("detectMetaFromSource — a log with its head", () => {
     );
   });
 });
+
+describe("detectMetaFromSource — encounter catalog", () => {
+  it("reads the board by its body and an entry by its monsters with a review flag or an id", () => {
+    expect(detectMetaFromSource("view: encounter-catalog\n")).toBe("encounter-catalog");
+    expect(
+      detectMetaFromSource(
+        'id: arctic-t1-3-dire-wolf\nname: "Arctic T1 #3: Dire Wolf"\nmonsters:\n  - note: Wolf, Dire.md\n    count: 1\ntags:\n  - arctic\nreview: draft\n'
+      )
+    ).toBe("encounter");
+    expect(detectMetaFromSource("name: Goblin ambush\nmonsters:\n  - note: Goblin\nreview: confirmed\n")).toBe(
+      "encounter"
+    );
+  });
+});

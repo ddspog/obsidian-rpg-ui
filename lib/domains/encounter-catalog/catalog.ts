@@ -1,6 +1,8 @@
 /**
  * The encounter catalog of a party: ready-made encounters kept in a vault note,
- * one fenced `yaml encounter` block each, editable by hand. This is the model
+ * one fenced `rpg encounter` block each (`yaml encounter` is still read),
+ * under one `rpg encounter-catalog` block the plugin renders as the board,
+ * editable by hand. This is the model
  * and its markdown form. Pure: no Obsidian and no I/O.
  */
 
@@ -43,8 +45,22 @@ export interface CatalogEntry {
   lastUsedSession?: number;
 }
 
+/** The party as `catalog check` last profiled it: what the board shows without simulating anything. */
+export interface CatalogProfile {
+  size: number;
+  averageLevel: number;
+  tier: number;
+  benchmark: string;
+  /** The single-monster CR range, "1/8-1/2". */
+  singleCr: string;
+  /** The party stamp of that check: an entry whose fit has another stamp is out of date. */
+  stamp: string;
+}
+
 export interface Catalog {
   party: { name: string; pcs: string[] };
+  /** Written by `catalog check`; absent until the first check. */
+  profile?: CatalogProfile;
   difficulty: Difficulty;
   /** The party's current session number. */
   session: number;
@@ -62,7 +78,9 @@ export interface MergeResult {
 }
 
 export const CATALOG_TYPE = "encounter-catalog";
-export const ENTRY_INFO_STRING = "yaml encounter";
+export const ENTRY_INFO_STRING = "rpg encounter";
+/** The block the plugin renders as the catalog's board. */
+export const BOARD_INFO_STRING = "rpg encounter-catalog";
 export const DEFAULT_RECHECK_EVERY_SESSIONS = 5;
 export const DEFAULT_REUSE_AFTER_SESSIONS = 3;
 
@@ -124,6 +142,22 @@ export function addEntry(catalog: Catalog, entry: CatalogEntry): Catalog {
   }
   return { ...catalog, entries: [...catalog.entries, entry] };
 }
+
+/** A new catalog with the entry of that id changed by `change`; an id that is not there is an error. */
+export function updateEntry(catalog: Catalog, id: string, change: (entry: CatalogEntry) => CatalogEntry): Catalog {
+  if (!catalog.entries.some((e) => e.id === id)) {
+    throw new Error(`Encounter catalog has no entry with id "${id}"`);
+  }
+  return { ...catalog, entries: catalog.entries.map((e) => (e.id === id ? change(e) : e)) };
+}
+
+/** The entry marked as read by a person. */
+export const confirmed = (entry: CatalogEntry): CatalogEntry => ({ ...entry, review: "confirmed" });
+
+/** The entry marked as run at `session`. */
+export const usedAt =
+  (session: number) =>
+  (entry: CatalogEntry): CatalogEntry => ({ ...entry, uses: (entry.uses ?? 0) + 1, lastUsedSession: session });
 
 /** A new catalog without the entry of that id; an id that is not there is an error. */
 export function removeEntry(catalog: Catalog, id: string): Catalog {
@@ -202,7 +236,7 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
 
 const YAML_OPTIONS = { lineWidth: 0 } as const;
 
-/** The catalog as a markdown note: frontmatter, a title, an intro line, one `yaml encounter` block per entry. */
+/** The catalog as a markdown note: frontmatter, a title, an intro line, the board block, one `rpg encounter` block per entry. */
 export function serializeCatalog(catalog: Catalog): string {
   const frontmatter = stringifyYaml(
     {
@@ -213,6 +247,7 @@ export function serializeCatalog(catalog: Catalog): string {
       session: catalog.session,
       recheckEverySessions: catalog.recheckEverySessions,
       reuseAfterSessions: catalog.reuseAfterSessions,
+      ...(catalog.profile ? { profile: { ...catalog.profile } } : {}),
     },
     YAML_OPTIONS
   );
@@ -226,6 +261,11 @@ export function serializeCatalog(catalog: Catalog): string {
     "",
     `Ready-made encounters for ${catalog.party.name}, checked against the party by \`rpg sim\` ` +
       `(${catalog.entries.length === 1 ? "1 entry" : `${catalog.entries.length} entries`}, ${confirmed} confirmed). Edit the blocks by hand; the fit is recomputed.`,
+    "",
+    `\`\`\`${BOARD_INFO_STRING}`,
+    // The body names the block, for Obsidian's reading view (which may lose the info string).
+    "view: encounter-catalog",
+    "```",
     "",
   ];
   for (const entry of catalog.entries) {
@@ -290,10 +330,36 @@ function parseFrontmatter(front: string): Omit<Catalog, "entries"> {
   }
   return {
     party: { name, pcs: pcsRaw as string[] },
+    ...(data.profile !== undefined && data.profile !== null ? { profile: parseProfile(data.profile) } : {}),
     difficulty: difficulty as Difficulty,
     session,
     recheckEverySessions: every,
     reuseAfterSessions: reuse,
+  };
+}
+
+/** The frontmatter `profile` `catalog check` writes; a malformed one throws naming the key. */
+function parseProfile(raw: unknown): CatalogProfile {
+  if (!isObj(raw)) throw new Error("Encounter catalog frontmatter `profile` must be a mapping");
+  const whole = (key: string): number => {
+    const v = raw[key];
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+      throw new Error(`Encounter catalog frontmatter \`profile.${key}\` must be a whole number`);
+    }
+    return v;
+  };
+  const text = (key: string): string => {
+    const v = str(raw[key]);
+    if (v === undefined) throw new Error(`Encounter catalog frontmatter \`profile.${key}\` must be text`);
+    return v;
+  };
+  return {
+    size: whole("size"),
+    averageLevel: whole("averageLevel"),
+    tier: whole("tier"),
+    benchmark: text("benchmark"),
+    singleCr: text("singleCr"),
+    stamp: text("stamp"),
   };
 }
 
@@ -431,6 +497,11 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
   return entry;
 }
 
+/** One entry block's YAML read as an entry (the plugin renders each block on its own). */
+export function parseEntryBlock(yamlText: string): CatalogEntry {
+  return parseEntry(yamlText, 1, new Set());
+}
+
 /**
  * Reads a catalog note. Prose between the blocks is ignored, comments and key
  * order inside a block do not matter, and a missing optional key takes its
@@ -444,7 +515,7 @@ export function parseCatalog(text: string): Catalog {
   const taken = new Set<string>();
 
   const lines = body.split("\n");
-  const open = /^(`{3,})\s*yaml\s+encounter\s*$/;
+  const open = /^(`{3,})\s*(?:yaml|rpg)\s+encounter\s*$/;
   for (let i = 0; i < lines.length; i += 1) {
     const match = open.exec(lines[i]);
     if (!match) continue;

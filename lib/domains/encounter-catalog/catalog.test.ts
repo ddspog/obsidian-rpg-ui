@@ -6,6 +6,7 @@ import {
   type CatalogEntry,
   mergeDrafts,
   parseCatalog,
+  parseEntryBlock,
   removeEntry,
   serializeCatalog,
   slugId,
@@ -64,18 +65,20 @@ describe("slugId", () => {
 });
 
 describe("serializeCatalog", () => {
-  it("writes frontmatter, a title and one yaml encounter block per entry", () => {
+  it("writes frontmatter, a title, the board block and one rpg encounter block per entry", () => {
     const text = serializeCatalog(catalog([entry(), entry({ id: "wolves", name: "Wolves", fit: undefined })]));
     expect(text.startsWith("---\ntype: encounter-catalog\n")).toBe(true);
     expect(text).toContain("# Encounter catalog: The Ashen Four: Kowyn & co");
-    expect(text.match(/^```yaml encounter$/gm)).toHaveLength(2);
+    expect(text.match(/^```rpg encounter$/gm)).toHaveLength(2);
+    expect(text.match(/^```rpg encounter-catalog\nview: encounter-catalog\n```$/gm)).toHaveLength(1);
+    expect(text.indexOf("rpg encounter-catalog")).toBeLessThan(text.indexOf("```rpg encounter\n"));
     expect(text).toContain("difficulty: challenging");
     expect(text).toContain("recheckEverySessions: 5");
   });
 
   it("keeps the keys in a fixed order and omits what is undefined", () => {
     const text = serializeCatalog(catalog([entry({ source: undefined, notes: undefined, fit: undefined })]));
-    const block = /```yaml encounter\n([\s\S]*?)```/.exec(text)?.[1] ?? "";
+    const block = /```rpg encounter\n([\s\S]*?)```/.exec(text)?.[1] ?? "";
     expect(block.split("\n").filter((l) => /^\w/.test(l))).toEqual([
       "id: goblin-ambush",
       "name: Goblin ambush",
@@ -315,5 +318,26 @@ describe("parseCatalog: the scene, uses and a rolled count's range", () => {
     expect(() => parseCatalog(bad)).toThrow(/`uses` must be a whole number/);
     const badFit = serializeCatalog(catalog()).replace("checkedAtSession: 3", "checkedAtSession: 3\n  atMax: brutal");
     expect(() => parseCatalog(badFit)).toThrow(/fit.atMax/);
+  });
+});
+
+describe("parseCatalog: the profile and the older block form", () => {
+  it("round-trips the profile check writes", () => {
+    const c = {
+      ...catalog(),
+      profile: { size: 4, averageLevel: 1, tier: 1, benchmark: "1/2", singleCr: "1/8-1/2", stamp: "00ff00ff11aa22bb" },
+    };
+    expect(parseCatalog(serializeCatalog(c))).toEqual(c);
+    expect(() => parseCatalog(serializeCatalog(c).replace("tier: 1", "tier: one"))).toThrow(/profile.tier/);
+  });
+
+  it("still reads entries written as yaml encounter blocks, and ignores the board block", () => {
+    const text = serializeCatalog(catalog()).replace(/^```rpg encounter$/gm, "```yaml encounter");
+    expect(parseCatalog(text)).toEqual(catalog());
+  });
+
+  it("reads one entry block on its own", () => {
+    const one = /```rpg encounter\n([\s\S]*?)```/.exec(serializeCatalog(catalog()))?.[1] ?? "";
+    expect(parseEntryBlock(one)).toEqual(entry());
   });
 });

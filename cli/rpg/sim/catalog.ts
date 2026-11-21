@@ -17,6 +17,7 @@ import {
   slugId,
   type Catalog,
   type CatalogEntry,
+  type CatalogProfile,
 } from "lib/domains/encounter-catalog/catalog";
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import {
@@ -215,8 +216,12 @@ async function runCheck(
   const withSession: Catalog = { ...catalog, session };
   const party = await loadPartyState(ctx, withSession, path);
   const result = await checkEntries(ctx, withSession, party, checkParams(options, now));
-  if (result.checked > 0 || session !== catalog.session) saveCatalog(ctx, path, result.catalog);
-  return { catalog: result.catalog, result, party };
+  // The party as checked, for the board in Obsidian (which does not simulate).
+  const profile: CatalogProfile = { ...profileView(party.profile), stamp: party.stamp };
+  const next: Catalog = { ...result.catalog, profile };
+  const profileChanged = JSON.stringify(catalog.profile ?? null) !== JSON.stringify(profile);
+  if (result.checked > 0 || session !== catalog.session || profileChanged) saveCatalog(ctx, path, next);
+  return { catalog: next, result: { ...result, catalog: next }, party };
 }
 
 // ---------------------------------------------------------------- actions
