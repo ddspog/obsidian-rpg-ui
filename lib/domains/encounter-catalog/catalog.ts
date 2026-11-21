@@ -251,7 +251,6 @@ export function serializeCatalog(catalog: Catalog): string {
     },
     YAML_OPTIONS
   );
-  const confirmed = catalog.entries.filter((e) => e.review === "confirmed").length;
   const lines = [
     "---",
     frontmatter.trimEnd(),
@@ -259,17 +258,24 @@ export function serializeCatalog(catalog: Catalog): string {
     "",
     `# Encounter catalog: ${catalog.party.name}`,
     "",
-    `Ready-made encounters for ${catalog.party.name}, checked against the party by \`rpg sim\` ` +
-      `(${catalog.entries.length === 1 ? "1 entry" : `${catalog.entries.length} entries`}, ${confirmed} confirmed). Edit the blocks by hand; the fit is recomputed.`,
-    "",
     `\`\`\`${BOARD_INFO_STRING}`,
     // The body names the block, for Obsidian's reading view (which may lose the info string).
     "view: encounter-catalog",
     "```",
     "",
   ];
-  for (const entry of catalog.entries) {
-    lines.push(`\`\`\`${ENTRY_INFO_STRING}`, stringifyYaml(entryObject(entry), YAML_OPTIONS).trimEnd(), "```", "");
+  if (catalog.entries.length > 0) {
+    // The entries as written, folded away under the board (which shows them): open the callout to edit one.
+    const n = catalog.entries.length;
+    lines.push(
+      `> [!abstract]- ${n === 1 ? "1 entry" : `${n} entries`} as written`,
+      "> Edit a block by hand; `rpg sim catalog check` measures it again."
+    );
+    for (const entry of catalog.entries) {
+      const block = [`\`\`\`${ENTRY_INFO_STRING}`, stringifyYaml(entryObject(entry), YAML_OPTIONS).trimEnd(), "```"];
+      lines.push(">", ...block.flatMap((l) => l.split("\n")).map((l) => (l ? `> ${l}` : ">")));
+    }
+    lines.push("");
   }
   return lines.join("\n");
 }
@@ -514,7 +520,8 @@ export function parseCatalog(text: string): Catalog {
   const entries: CatalogEntry[] = [];
   const taken = new Set<string>();
 
-  const lines = body.split("\n");
+  // Entries may sit in a callout (`> ` before each line, as the note is written): read them without it.
+  const lines = body.split("\n").map((line) => line.replace(/^>[ \t]?/, ""));
   const open = /^(`{3,})\s*(?:yaml|rpg)\s+encounter\s*$/;
   for (let i = 0; i < lines.length; i += 1) {
     const match = open.exec(lines[i]);

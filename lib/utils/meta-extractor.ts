@@ -111,6 +111,12 @@ function looksLikeLonelog(lines: string[]): boolean {
 }
 
 export function detectMetaFromSource(source: string): string | null {
+  // A block inside a callout can reach us with the callout's `> ` still on its lines (every line, or
+  // every line but the first, which Obsidian may have taken it off).
+  const filled = source.split("\n").filter((l) => l.trim());
+  if (filled.length > 1 && filled.slice(1).every((l) => /^\s*>/.test(l))) {
+    source = source.replace(/^\s*>[ \t]?/gm, "");
+  }
   // `rpg figure.mermaid` — checked first: a leading mermaid diagram
   // declaration is unambiguous and appears in no other block type's body.
   if (looksLikeMermaidFigure(source)) return "figure.mermaid";

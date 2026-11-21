@@ -20,7 +20,6 @@ import {
   type Catalog,
 } from "lib/domains/encounter-catalog/catalog";
 import { normaliseTags } from "lib/domains/encounter-catalog/words";
-import { OUTCOME_PROFILES } from "lib/domains/encounter-sim/fit";
 import { BaseView } from "lib/views/BaseView";
 import { ReactMarkdown } from "lib/views/ReactMarkdown";
 
@@ -53,13 +52,25 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
     return () => app.vault.offref(ref);
   }, [app, sourcePath, load]);
 
+  /** Writes a change to the note; `undo`, when given, is offered on the notice that says it was done. */
   const write = React.useCallback(
-    async (change: (c: Catalog) => Catalog, done: string) => {
+    async (change: (c: Catalog) => Catalog, done: string, undo?: (c: Catalog) => Catalog) => {
       const file = app.vault.getAbstractFileByPath(sourcePath);
       if (!(file instanceof TFile)) return;
       try {
         await app.vault.process(file, (text) => serializeCatalog(change(parseCatalog(text))));
-        new Notice(done);
+        if (!undo) {
+          new Notice(done);
+          return;
+        }
+        const message = document.createDocumentFragment();
+        message.appendText(`${done} `);
+        const button = message.createEl("button", { text: "Undo", cls: "rpg-enc-undo" });
+        const notice = new Notice(message, 8000);
+        button.addEventListener("click", () => {
+          notice.hide();
+          void app.vault.process(file, (text) => serializeCatalog(undo(parseCatalog(text))));
+        });
       } catch (e) {
         new Notice(`Encounter catalog: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -77,12 +88,31 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
       lowerTiers={lowerTiers}
       onLowerTiers={setLowerTiers}
       onConfirm={(id) => void write((c) => updateEntry(c, id, confirmed), "Encounter confirmed")}
-      onUsed={(id) =>
+      onUsed={(id) => {
+        const before = catalog.entries.find((e) => e.id === id);
         void write(
           (c) => updateEntry(c, id, usedAt(c.session)),
-          `Marked as run in session ${catalog.session}; offered again in ${catalog.reuseAfterSessions} sessions`
-        )
-      }
+          `Ran in session ${catalog.session}. It rests until session ${catalog.session + catalog.reuseAfterSessions}.`,
+          // Undo puts back what the entry had: its count of runs and the session of its last one.
+          (c) =>
+            updateEntry(c, id, (e) => {
+              const { uses: _u, lastUsedSession: _l, ...rest } = e;
+              void _u;
+              void _l;
+              return {
+                ...rest,
+                ...(before?.uses !== undefined ? { uses: before.uses } : {}),
+                ...(before?.lastUsedSession !== undefined ? { lastUsedSession: before.lastUsedSession } : {}),
+              };
+            })
+        );
+      }}
+      onCopy={(text) => {
+        navigator.clipboard.writeText(text).then(
+          () => new Notice(`Copied: ${text}`),
+          () => new Notice(`Could not copy; the command is: ${text}`)
+        );
+      }}
       onTags={(id, tags) =>
         void write((c) => updateEntry(c, id, (e) => ({ ...e, tags: normaliseTags(tags) })), "Tags saved")
       }
@@ -159,13 +189,7 @@ class EntryMarkdown extends ReactMarkdown {
         entries: [],
       };
       const card = cardOf(entry, catalog, "same");
-      this.reactRoot.render(
-        <EncounterRow
-          card={card}
-          aim={OUTCOME_PROFILES[catalog.difficulty].toll}
-          openNote={openIn(this.app, this.sourcePath)}
-        />
-      );
+      this.reactRoot.render(<EncounterRow card={card} openNote={openIn(this.app, this.sourcePath)} />);
     } catch (e) {
       this.reactRoot.render(<div className="notice">Encounter: {e instanceof Error ? e.message : String(e)}</div>);
     }

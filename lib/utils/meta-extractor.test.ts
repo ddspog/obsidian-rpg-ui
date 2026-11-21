@@ -389,3 +389,17 @@ describe("detectMetaFromSource — encounter catalog", () => {
     );
   });
 });
+
+describe("detectMetaFromSource — a block inside a callout", () => {
+  it("reads past the callout's > on every line but the first", () => {
+    expect(detectMetaFromSource("id: wolves\n> name: Wolves\n> monsters:\n>   - note: Wolf\n> review: draft\n")).toBe(
+      "encounter"
+    );
+  });
+
+  it("reads past the callout's > on every line", () => {
+    expect(detectMetaFromSource("> id: wolves\n> name: Wolves\n> monsters:\n>   - note: Wolf\n> review: draft\n")).toBe(
+      "encounter"
+    );
+  });
+});

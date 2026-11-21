@@ -108,3 +108,25 @@ describe("buildBoard", () => {
     expect(card.atMin).toBeUndefined();
   });
 });
+
+describe("buildBoard: titles, bylines and resting", () => {
+  it("splits a drafted name into title and byline, and rests a recent run until its session comes", () => {
+    const board = buildBoard(
+      catalog([
+        entry("t3-4", { name: "Arctic T3-4 #7: Remorhaz", fit: fit("too-hard", 0.9), tags: ["tier-1"] }),
+        entry("ran", {
+          name: "Forests T1 #9: 8 Baboon",
+          fit: fit("fit", 0.5),
+          lastUsedSession: 2,
+          source: { note: "tables/Forests Encounters.md", row: "9", book: "game-masters-guide" },
+        }),
+        entry("hand", { name: "Goblin ambush", fit: fit("fit", 0.5) }),
+      ])
+    );
+    expect(board.cards.map((c) => c.id)).toEqual(["hand", "t3-4", "ran"]);
+    expect(board.cards[1]).toMatchObject({ title: "Remorhaz", byline: "Arctic · tier 3–4 · row 7" });
+    expect(board.cards[2]).toMatchObject({ title: "8 Baboon", restingUntil: 5, book: "game-masters-guide" });
+    expect(board.cards[0]).toMatchObject({ title: "Goblin ambush" });
+    expect(board.cards[0].byline).toBeUndefined();
+  });
+});

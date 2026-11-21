@@ -103,7 +103,7 @@ The note opens with an `rpg encounter-catalog` block (body `view: encounter-cata
   - what a high or low roll does to a rolled count.
 - **Card actions:** **Confirm** (drafts only), **Ran it** (`catalog use`), and **Tags**. Each action writes the note.
 
-Each entry is an `rpg encounter` block that renders as one line, so its YAML shows only in source mode. `yaml encounter` blocks from before are still read, and are rewritten as `rpg encounter` on the next write.
+Each entry is an `rpg encounter` block that renders as one line, so its YAML shows only in source mode. The note keeps the entries in a folded callout under the board ("N entries as written"); open it to edit one by hand. The parser reads entries inside or outside the callout. `yaml encounter` blocks from before are still read, and are rewritten as `rpg encounter` on the next write.
 
 The board does not simulate. It judges staleness against the `profile` that `catalog check` writes to the frontmatter: the party's size, level, tier, benchmark, single-monster CR and stamp. Run `rpg sim catalog check` after the party changes. In the board, an entry with no tier tag counts as the party's tier, because the board does not read monster CRs; the CLI's `--tiers` does.
 

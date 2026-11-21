@@ -69,7 +69,9 @@ describe("serializeCatalog", () => {
     const text = serializeCatalog(catalog([entry(), entry({ id: "wolves", name: "Wolves", fit: undefined })]));
     expect(text.startsWith("---\ntype: encounter-catalog\n")).toBe(true);
     expect(text).toContain("# Encounter catalog: The Ashen Four: Kowyn & co");
-    expect(text.match(/^```rpg encounter$/gm)).toHaveLength(2);
+    // The entries sit in a folded callout under the board.
+    expect(text.match(/^> ```rpg encounter$/gm)).toHaveLength(2);
+    expect(text).toContain("> [!abstract]- 2 entries as written");
     expect(text.match(/^```rpg encounter-catalog\nview: encounter-catalog\n```$/gm)).toHaveLength(1);
     expect(text.indexOf("rpg encounter-catalog")).toBeLessThan(text.indexOf("```rpg encounter\n"));
     expect(text).toContain("difficulty: challenging");
@@ -78,7 +80,7 @@ describe("serializeCatalog", () => {
 
   it("keeps the keys in a fixed order and omits what is undefined", () => {
     const text = serializeCatalog(catalog([entry({ source: undefined, notes: undefined, fit: undefined })]));
-    const block = /```rpg encounter\n([\s\S]*?)```/.exec(text)?.[1] ?? "";
+    const block = /```rpg encounter\n([\s\S]*?)```/.exec(text.replace(/^> ?/gm, ""))?.[1] ?? "";
     expect(block.split("\n").filter((l) => /^\w/.test(l))).toEqual([
       "id: goblin-ambush",
       "name: Goblin ambush",
@@ -332,12 +334,25 @@ describe("parseCatalog: the profile and the older block form", () => {
   });
 
   it("still reads entries written as yaml encounter blocks, and ignores the board block", () => {
-    const text = serializeCatalog(catalog()).replace(/^```rpg encounter$/gm, "```yaml encounter");
+    // An older note: yaml encounter blocks, outside any callout.
+    const text = serializeCatalog(catalog())
+      .replace(/^> ?/gm, "")
+      .replace(/^```rpg encounter$/gm, "```yaml encounter");
+    expect(text).toContain("```yaml encounter");
     expect(parseCatalog(text)).toEqual(catalog());
   });
 
   it("reads one entry block on its own", () => {
-    const one = /```rpg encounter\n([\s\S]*?)```/.exec(serializeCatalog(catalog()))?.[1] ?? "";
+    const one = /```rpg encounter\n([\s\S]*?)```/.exec(serializeCatalog(catalog()).replace(/^> ?/gm, ""))?.[1] ?? "";
     expect(parseEntryBlock(one)).toEqual(entry());
+  });
+});
+
+describe("serializeCatalog: an empty catalog", () => {
+  it("writes the board and no callout", () => {
+    const text = serializeCatalog(catalog([]));
+    expect(text).toContain("```rpg encounter-catalog");
+    expect(text).not.toContain("[!abstract]");
+    expect(parseCatalog(text).entries).toEqual([]);
   });
 });

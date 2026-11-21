@@ -44,6 +44,14 @@ export interface BoardCard {
   lastUsedSession?: number;
   /** The table it came from: "Arctic Encounters, row 3". */
   source?: string;
+  /** Where the encounter is from, said after its title: "Arctic · tier 1 · row 5". */
+  byline?: string;
+  /** The title without the table prefix the draft name carries ("Dire Wolf" from "Arctic T1 #3: Dire Wolf"). */
+  title: string;
+  /** The book slug of the source (its tag says nothing the byline does not). */
+  book?: string;
+  /** When it was run recently: the session it is offered again from. */
+  restingUntil?: number;
 }
 
 export interface BoardCounts {
@@ -106,6 +114,10 @@ export function cardOf(entry: CatalogEntry, catalog: Catalog, tier: TierMatch): 
   const source = entry.source
     ? `${nameOf(entry.source.note)}${entry.source.row !== undefined ? `, row ${entry.source.row}` : ""}`
     : undefined;
+  // A drafted name carries its table: "Arctic T1 #3: Dire Wolf" (or "Arctic T3-4 #3: …").
+  const named = /^(.+?) T(\d+(?:-\d+)?) #(\d+): (.+)$/.exec(entry.name);
+  const byline = named ? `${named[1]} · tier ${named[2].replace("-", "–")} · row ${named[3]}` : source;
+  const used = recentlyUsed(entry, catalog.session, catalog.reuseAfterSessions);
   return {
     id: entry.id,
     name: entry.name,
@@ -124,7 +136,13 @@ export function cardOf(entry: CatalogEntry, catalog: Catalog, tier: TierMatch): 
     ...(fit?.atMax !== undefined && fit.atMax !== fit.state ? { atMax: fit.atMax } : {}),
     ...(entry.source?.text ? { scene: entry.source.text } : {}),
     tier,
-    usedRecently: recentlyUsed(entry, catalog.session, catalog.reuseAfterSessions),
+    usedRecently: used,
+    ...(used && entry.lastUsedSession !== undefined
+      ? { restingUntil: entry.lastUsedSession + catalog.reuseAfterSessions }
+      : {}),
+    title: named ? named[4] : entry.name,
+    ...(byline ? { byline } : {}),
+    ...(entry.source?.book ? { book: entry.source.book } : {}),
     ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
     ...(entry.lastUsedSession !== undefined ? { lastUsedSession: entry.lastUsedSession } : {}),
     ...(source ? { source } : {}),
@@ -161,13 +179,13 @@ export function buildBoard(catalog: Catalog, options: BoardOptions = {}): Board 
     distance.set(entry.id, entry.fit ? outcomeDistance(entry.fit, catalog.difficulty) : Number.POSITIVE_INFINITY);
     cards.push(card);
   }
-  // Fit first, then too easy, too hard, out of date, never checked; within a state: the party's own tier,
-  // not used recently, confirmed, closest to the aim, then by id.
+  // Encounters run recently last (they are resting); then fit, too easy, too hard, out of date, never
+  // checked; within a state: the party's own tier, confirmed, closest to the aim, then by id.
   cards.sort(
     (a, b) =>
+      Number(a.usedRecently) - Number(b.usedRecently) ||
       STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
       TIER_ORDER[a.tier] - TIER_ORDER[b.tier] ||
-      Number(a.usedRecently) - Number(b.usedRecently) ||
       Number(a.draft) - Number(b.draft) ||
       (distance.get(a.id) ?? 0) - (distance.get(b.id) ?? 0) ||
       (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
