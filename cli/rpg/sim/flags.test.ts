@@ -307,6 +307,15 @@ describe("simMain usage errors", () => {
   });
 });
 
+describe("upper bounds", () => {
+  it("refuses a trial count or a monster count that would exhaust memory", () => {
+    expect(() => parseSimArgv(["run", "--trials", "100001"])).toThrow(/--trials/);
+    expect(parseSimArgv(["run", "--trials", "100000"]).options.trials).toBe(100000);
+    expect(() => parseSimArgv(["run", "--monster", "Goblin:101"])).toThrow(/Goblin:101/);
+    expect(parseSimArgv(["run", "--monster", "Goblin:100"]).options.monsters).toEqual([{ note: "Goblin", count: 100 }]);
+  });
+});
+
 describe("simMain handlers", () => {
   it("runs the handler once with the vault and prints its document once", async () => {
     const h = await drive(["run", "--vault", "/v", "--trials", "5", "--monster", "Orc:2"]);

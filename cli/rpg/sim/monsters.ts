@@ -116,20 +116,20 @@ export function crNumber(cr: string): number {
 }
 
 /** `[[Forest]], [[Hills|the hills]]` -> ["Forest", "Hills"]. */
-function linkNames(text: string | undefined): string[] {
+export function linkNames(text: string | undefined): string[] {
   if (!text) return [];
   return [...text.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g)].map((m) => m[1].trim());
 }
 
 /** A type line with `[[Beast]]` / `[[Beast|beasts]]` reduced to the link text. */
-function plainType(type: string): string {
+export function plainType(type: string): string {
   return type
     .replace(/\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (_, target: string, label?: string) => label ?? target)
     .trim();
 }
 
 /** The habitat line a monster inherits from its `stat.category` note when it writes none. */
-function categoryHabitat(ctx: Ctx, category: string | undefined, from: string): string | undefined {
+export function categoryHabitat(ctx: Ctx, category: string | undefined, from: string): string | undefined {
   const target = linkNames(category)[0];
   if (!target) return undefined;
   const file = ctx.vault.resolveLink(target, from);

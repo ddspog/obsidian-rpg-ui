@@ -5,7 +5,6 @@
  * target; the candidates closest to the target (then the least deadly) win.
  */
 
-import { parse as parseYaml } from "yaml";
 import {
   absDiffCr,
   benchmarkFor,
@@ -20,12 +19,10 @@ import {
 } from "lib/domains/encounter-sim/difficulty";
 import { compactSummary, runMonteCarlo, type CompactSummary } from "lib/domains/encounter-sim/montecarlo";
 import { isDamaging } from "lib/domains/encounter-sim/types";
-import { mapCategory } from "lib/domains/statblocks/monster-fields";
 import type { Ctx } from "../app";
-import { fencesOf } from "../fences";
 import type { SimHandler } from "./dispatch";
 import { UsageError, type SimOptions } from "./flags";
-import { bestiaryPaths, loadMonster, readMonsterNote } from "./monsters";
+import { bestiaryPaths, categoryHabitat, linkNames, loadMonster, plainType, readMonsterNote } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 
 /** Why a bestiary note was left out of the sweep. */
@@ -47,37 +44,6 @@ export interface SuggestDocument {
   target: { difficulty: string; targetTotal: string; benchmark: string };
   candidates: SuggestCandidate[];
   excluded: Record<string, number>;
-}
-
-/** `[[Forest]], [[Hills|the hills]]` -> ["Forest", "Hills"]. */
-function linkNames(text: string | undefined): string[] {
-  if (!text) return [];
-  return [...text.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g)].map((m) => m[1].trim());
-}
-
-/** A type line with `[[Beast|beasts]]` reduced to its link text, as `loadMonster` reports it. */
-function plainType(type: string): string {
-  return type
-    .replace(/\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (_, target: string, label?: string) => label ?? target)
-    .trim();
-}
-
-/** The habitat a monster inherits from its `stat.category` note when it writes none (as `loadMonster` does). */
-function categoryHabitat(ctx: Ctx, category: string | undefined, from: string): string | undefined {
-  const target = linkNames(category)[0];
-  if (!target) return undefined;
-  const file = ctx.vault.resolveLink(target, from);
-  if (!file) return undefined;
-  const body = fencesOf(ctx.vault.readSync(file), "stat.category")[0];
-  if (body === undefined) return undefined;
-  const lines = body.split("\n");
-  const sep = lines.findIndex((l) => l.trim() === "---");
-  try {
-    const yaml = parseYaml(sep >= 0 ? lines.slice(0, sep).join("\n") : body);
-    return yaml && typeof yaml === "object" ? mapCategory(yaml as Record<string, unknown>).habitat : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 /** Orders by distance to the target, then tpkRate, then note ref, then count. */

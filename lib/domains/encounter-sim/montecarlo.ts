@@ -2,14 +2,14 @@ import { simulateTrial } from "./engine";
 import { createSeededRng } from "./rng";
 import type { CombatActor, TrialResult } from "./types";
 
-export interface MonsterGroup {
+export interface ActorGroup {
   actor: CombatActor;
   count: number;
 }
 
 export interface MonteCarloInput {
   party: CombatActor[];
-  monsters: MonsterGroup[];
+  monsters: ActorGroup[];
   seed: number;
   trials: number;
   roundCap: number;
@@ -34,7 +34,7 @@ export const round4 = (x: number): number => Math.round(x * 10000) / 10000;
  * Expand each monster group into distinct combatants. A group of one keeps its
  * name; a larger group gets " 1", " 2", ... so combatants stay distinguishable.
  */
-export function expandMonsters(groups: MonsterGroup[]): CombatActor[] {
+export function expandMonsters(groups: ActorGroup[]): CombatActor[] {
   const out: CombatActor[] = [];
   groups.forEach((group, g) => {
     for (let i = 1; i <= group.count; i++) {
@@ -58,18 +58,18 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap));
 
   const share = (outcome: TrialResult["outcome"]) =>
-    trials === 0 ? 0 : round4(results.filter((r) => r.outcome === outcome).length / trials);
+    round4(results.filter((r) => r.outcome === outcome).length / trials);
   const roundsPerTrial = results.map((r) => (r.outcome === "stalemate" ? roundCap : r.rounds));
   const koRate: Record<string, number> = {};
   for (const p of party) {
-    koRate[p.name] = trials === 0 ? 0 : round4(results.filter((r) => r.knockedOut.includes(p.name)).length / trials);
+    koRate[p.name] = round4(results.filter((r) => r.knockedOut.includes(p.name)).length / trials);
   }
 
   return {
     winRate: share("win"),
     tpkRate: share("tpk"),
     stalemateRate: share("stalemate"),
-    avgRounds: trials === 0 ? 0 : round4(roundsPerTrial.reduce((a, b) => a + b, 0) / trials),
+    avgRounds: round4(roundsPerTrial.reduce((a, b) => a + b, 0) / trials),
     roundsPerTrial,
     hpRemainingPerTrial: results.map((r) => r.partyHpRemaining),
     koRate,
