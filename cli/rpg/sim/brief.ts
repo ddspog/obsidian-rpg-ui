@@ -76,3 +76,12 @@ export function briefJson(value: unknown, depth = 0): string {
   if (entries.length === 0) return "{}";
   return `{\n${entries.map(([k, v]) => `${pad}${JSON.stringify(k)}: ${briefJson(v, depth + 1)}`).join(",\n")}\n${end}}`;
 }
+
+/**
+ * Lets the event loop run (timers, I/O, a test runner's messages) between two
+ * pieces of a long simulation. The sweeps simulate monster after monster with
+ * nothing else awaited, and without this the loop is blocked for the whole
+ * sweep (about 10 s over the bestiary), which a host such as Vitest's worker
+ * cannot wait out.
+ */
+export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));

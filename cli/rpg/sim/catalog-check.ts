@@ -18,6 +18,7 @@ import { diceRange } from "lib/domains/encounter-catalog/words";
 import { runMonteCarlo } from "lib/domains/encounter-sim/montecarlo";
 import type { CombatActor } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
+import { yieldToEventLoop } from "./brief";
 import { MAX_MONSTER_COUNT } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { loadParty } from "./party";
@@ -90,6 +91,7 @@ export async function checkEntries(
 
   const entries = [];
   for (const entry of catalog.entries) {
+    await yieldToEventLoop();
     const due =
       params.force ||
       recheckReason(

@@ -29,7 +29,7 @@ import { classifyFit, outcomeDistance, type Fit } from "lib/domains/encounter-si
 import { compactSummary, runMonteCarlo, type CompactSummary } from "lib/domains/encounter-sim/montecarlo";
 import { isDamaging } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
-import { anyWordIn, groupRef, wordKey } from "./brief";
+import { anyWordIn, groupRef, wordKey, yieldToEventLoop } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { UsageError, type Rank, type SimOptions } from "./flags";
 import {
@@ -183,6 +183,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   //      only known once the note is loaded, so it is counted here and the sweep carries on
   //   6. no-damaging-action: loaded, but nothing it can do hurts the party
   for (const path of bestiaryPaths(ctx)) {
+    await yieldToEventLoop();
     const state = readMonsterNote(ctx, path);
     if (state.kind === "non-monster") {
       exclude("non-monster");
