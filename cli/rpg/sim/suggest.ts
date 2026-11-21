@@ -82,6 +82,8 @@ export interface BriefCandidate {
 
 export interface SuggestDocument {
   target: { difficulty: string; targetTotal: string; benchmark: string; rank: Rank };
+  /** Why there are no candidates, when the reason is the party itself (a benchmark of 0). */
+  note?: string;
   candidates: SuggestCandidate[];
   excluded: Record<string, number>;
 }
@@ -173,8 +175,8 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
 
   // Each note is classified in this order, stopping at the first reason it fails:
   //   1. non-monster / unresolvable: readMonsterNote says so, or the CR is not a CR
-  //   2. filtered: --habitat, --type or --cr misses
-  //   3. cr-0: nothing to add to a total
+  //   2. cr-0: nothing to add to a total (before the filters, so a filtered run still counts it)
+  //   3. filtered: --habitat, --type, --cr or plan's theme words miss
   //   4. out-of-range: one monster (with the base) already above the cap, twice the target total or,
   //      for --rank outcome, 4 x the benchmark (skipped before loading)
   //   5. unresolvable again: loadMonster throws (e.g. a feature ref that resolves to nothing);
@@ -195,6 +197,12 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       cr = parseCr(state.data.cr ?? "");
     } catch {
       exclude("unresolvable");
+      continue;
+    }
+
+    // Nothing to add to a total, whatever the filters say: counted as cr-0 so `excluded` tells it apart.
+    if (cr.num === 0) {
+      exclude("cr-0");
       continue;
     }
 
@@ -221,10 +229,6 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       continue;
     }
 
-    if (cr.num === 0) {
-      exclude("cr-0");
-      continue;
-    }
     if (cmpCr(addCr(baseCr, cr), cap) > 0) {
       exclude("out-of-range");
       continue;
@@ -274,13 +278,19 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   }
 
   found.sort((a, b) => compareCandidates(a, b, targetTotal, options.rank));
+  const ranked = options.fits.length > 0 ? found.filter((c) => options.fits.includes(c.entry.fit)) : found;
+  // A party whose benchmark is 0 has no target to sweep toward: say so rather than return nothing silently.
+  const note =
+    benchmark.num === 0
+      ? "The party's CR benchmark is 0 (too few PCs, or too low a level, for the difficulty note's formula): there is nothing to sweep toward. Use `sim run` on a group you choose."
+      : undefined;
 
   const sortedExcluded: Record<string, number> = {};
   for (const reason of Object.keys(excluded).sort()) {
     sortedExcluded[reason] = excluded[reason as ExclusionReason] as number;
   }
 
-  const kept = found.slice(0, options.limit).map((c) => c.entry);
+  const kept = ranked.slice(0, options.limit).map((c) => c.entry);
   if (options.brief) {
     const groups = (c: SuggestCandidate): string[] =>
       [...(c.base ?? []), c.composition].map((g) => groupRef(ctx, g.note, g.count));
@@ -297,6 +307,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     return {
       doc: {
         target: { difficulty: options.difficulty, targetTotal: formatCr(targetTotal), rank: options.rank },
+        ...(note ? { note } : {}),
         candidates: brief,
       },
     };
@@ -309,6 +320,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       benchmark: formatCr(benchmark),
       rank: options.rank,
     },
+    ...(note ? { note } : {}),
     candidates: kept,
     excluded: sortedExcluded,
   };

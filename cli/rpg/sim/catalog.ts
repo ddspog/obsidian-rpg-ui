@@ -11,6 +11,7 @@
 import {
   addEntry,
   DEFAULT_RECHECK_EVERY_SESSIONS,
+  DEFAULT_REUSE_AFTER_SESSIONS,
   mergeDrafts,
   removeEntry,
   slugId,
@@ -21,10 +22,12 @@ import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import {
   isEligible,
   partitionByFit,
+  recentlyUsed,
   recheckReason,
   type FitContext,
   type FitPartition,
 } from "lib/domains/encounter-catalog/fit-state";
+import { normaliseTags, sameTag } from "lib/domains/encounter-catalog/words";
 import { outcomeDistance } from "lib/domains/encounter-sim/fit";
 import type { Ctx } from "../app";
 import {
@@ -41,8 +44,9 @@ import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { CONFIDENCES, UsageError, type SimOptions } from "./flags";
-import { readMonsterNote } from "./monsters";
+import { linkNames, readMonsterNote } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
+import { listSessions } from "../session/lines";
 
 export interface CatalogDeps {
   /** Today's date as written into `checkedOn`; the only thing the clock is used for. */
@@ -70,9 +74,15 @@ interface EntryView {
     winRate: number;
     tpkRate: number;
     avgHpLost: number;
+    /** The state with every rolled count at its fewest / most. */
+    atMin?: string;
+    atMax?: string;
     /** Why the fit is out of date, when it is. */
     stale?: string;
   };
+  uses?: number;
+  lastUsedSession?: number;
+  scene?: string;
 }
 
 /** An entry as `catalog suggest --brief` prints it: groups as --monster takes them, and the fit flattened. */
@@ -87,6 +97,13 @@ export interface BriefEntryView {
   tpkRate?: number;
   avgHpLost?: number;
   stale?: string;
+  /** The fit with every rolled count at its fewest / most, when a count is rolled. */
+  atMin?: string;
+  atMax?: string;
+  /** The session it was last run at. */
+  lastUsedSession?: number;
+  /** The table row's own words. */
+  scene?: string;
 }
 
 export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
@@ -109,9 +126,12 @@ export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContex
           winRate: entry.fit.winRate,
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
+          ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
         }
       : {}),
     ...(reason ? { stale: reason } : {}),
+    ...(entry.lastUsedSession !== undefined ? { lastUsedSession: entry.lastUsedSession } : {}),
+    ...(entry.source?.text ? { scene: entry.source.text } : {}),
   };
 }
 
@@ -130,9 +150,13 @@ function viewOf(entry: CatalogEntry, ctx: FitContext): EntryView {
           winRate: entry.fit.winRate,
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
+          ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
           ...(reason ? { stale: reason } : {}),
         }
       : null,
+    ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
+    ...(entry.lastUsedSession !== undefined ? { lastUsedSession: entry.lastUsedSession } : {}),
+    ...(entry.source?.text ? { scene: entry.source.text } : {}),
   };
 }
 
@@ -194,6 +218,7 @@ function init(ctx: Ctx, options: SimOptions) {
     difficulty: options.difficulty,
     session: options.session ?? 0,
     recheckEverySessions: options.every ?? DEFAULT_RECHECK_EVERY_SESSIONS,
+    reuseAfterSessions: options.reuseAfter ?? DEFAULT_REUSE_AFTER_SESSIONS,
     entries: [],
   };
   saveCatalog(ctx, path, catalog);
@@ -204,6 +229,7 @@ function init(ctx: Ctx, options: SimOptions) {
     difficulty: catalog.difficulty,
     session: catalog.session,
     recheckEverySessions: catalog.recheckEverySessions,
+    reuseAfterSessions: catalog.reuseAfterSessions,
   };
 }
 
@@ -285,6 +311,7 @@ function emptyCatalog(): Catalog {
     difficulty: "challenging",
     session: 0,
     recheckEverySessions: DEFAULT_RECHECK_EVERY_SESSIONS,
+    reuseAfterSessions: DEFAULT_REUSE_AFTER_SESSIONS,
     entries: [],
   };
 }
@@ -355,6 +382,73 @@ function remove(ctx: Ctx, options: SimOptions) {
   return { catalog: path, removed: ids, remaining: next.entries.length };
 }
 
+function tag(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const changed: Array<{ id: string; tags: string[] }> = [];
+  const entries = catalog.entries.map((entry) => {
+    if (!ids.includes(entry.id)) return entry;
+    const kept = entry.tags.filter((t) => !options.dropTags.some((d) => sameTag(t, d)));
+    const tags = normaliseTags([...kept, ...options.addTags.filter((t) => !kept.some((k) => sameTag(k, t)))]);
+    if (tags.join("\n") === entry.tags.join("\n")) return entry;
+    changed.push({ id: entry.id, tags });
+    return { ...entry, tags };
+  });
+  if (changed.length > 0) saveCatalog(ctx, path, { ...catalog, entries });
+  return { catalog: path, changed, unchanged: ids.filter((id) => !changed.some((c) => c.id === id)) };
+}
+
+function use(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const session = options.session ?? catalog.session;
+  const used: Array<{ id: string; uses: number; lastUsedSession: number }> = [];
+  const entries = catalog.entries.map((entry) => {
+    if (!ids.includes(entry.id)) return entry;
+    const next = { ...entry, uses: (entry.uses ?? 0) + 1, lastUsedSession: session };
+    used.push({ id: entry.id, uses: next.uses, lastUsedSession: session });
+    return next;
+  });
+  saveCatalog(ctx, path, { ...catalog, entries });
+  return {
+    catalog: path,
+    used,
+    offeredAgainFrom: catalog.reuseAfterSessions > 0 ? session + catalog.reuseAfterSessions : session,
+  };
+}
+
+/**
+ * The vault's session notes played by this party: a note `rpg session list` shows
+ * (an `rpg log` and `pcs`), in the party's system folder (so test notes elsewhere
+ * do not count), whose every PC is one of the catalog's.
+ */
+function partySessions(ctx: Ctx, catalog: Catalog): string[] {
+  const party = new Set(catalog.party.pcs);
+  const system = systemFolderOf(catalog.party.pcs[0] ?? "");
+  return listSessions(ctx).filter((path) => {
+    if (system && !path.startsWith(`${system}/`)) return false;
+    const file = ctx.note(path);
+    const pcs = ctx.metadataCache.frontmatterOf(file)?.pcs;
+    if (!Array.isArray(pcs) || pcs.length === 0) return false;
+    return pcs.every((raw) => {
+      const name = linkNames(String(raw))[0] ?? String(raw);
+      const found = ctx.vault.resolveLink(name.replace(/\.md$/i, ""));
+      return found !== null && found !== undefined && party.has(found.path);
+    });
+  });
+}
+
+function session(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const notes = partySessions(ctx, catalog);
+  const next = options.session ?? notes.length;
+  const from = options.session !== undefined ? "set" : "vault";
+  if (next !== catalog.session) saveCatalog(ctx, path, { ...catalog, session: next });
+  return { catalog: path, session: next, was: catalog.session, from, sessions: notes };
+}
+
 async function check(ctx: Ctx, options: SimOptions, now: () => string) {
   const { path, catalog } = existing(ctx, options);
   const { result, party } = await runCheck(ctx, path, catalog, options, now);
@@ -391,15 +485,21 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
   const partition = partitionByFit(catalog, fitContext);
   const stale = needsCheck(partition);
 
-  const eligible = catalog.entries.filter((entry) =>
-    isEligible(entry, fitContext, {
+  let recent = 0;
+  const eligible = catalog.entries.filter((entry) => {
+    const ok = isEligible(entry, fitContext, {
       tags: options.tags,
       anyTags: options.anyTags,
       states: options.states.length > 0 ? options.states : ["fit"],
       includeStale: options.includeStale,
       ...(options.includeDraft ? {} : { reviewed: true }),
-    })
-  );
+    });
+    if (ok && !options.includeUsed && recentlyUsed(entry, fitContext.session, catalog.reuseAfterSessions)) {
+      recent += 1;
+      return false;
+    }
+    return ok;
+  });
   // The closest to the difficulty's aim first.
   const distance = (entry: CatalogEntry): number =>
     entry.fit ? outcomeDistance(entry.fit, fitContext.difficulty) : Number.POSITIVE_INFINITY;
@@ -412,6 +512,7 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
       needsCheck: stale,
       ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
       ...(refreshed ? { refreshed } : {}),
+      ...(recent > 0 ? { recentlyUsed: recent } : {}),
       matched: eligible.length,
       entries: eligible.slice(0, cap).map((entry) => briefViewOf(ctx, entry, fitContext)),
     };
@@ -426,6 +527,7 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
     needsCheck: stale,
     ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
     ...(refreshed ? { refreshed } : {}),
+    ...(recent > 0 ? { recentlyUsed: recent } : {}),
     matched: eligible.length,
     entries: eligible.slice(0, cap).map((entry) => viewOf(entry, fitContext)),
   };
@@ -475,6 +577,12 @@ export function createSimCatalog(deps: CatalogDeps = {}): SimHandler {
         return { doc: confirm(ctx, options) };
       case "remove":
         return { doc: remove(ctx, options) };
+      case "tag":
+        return { doc: tag(ctx, options) };
+      case "use":
+        return { doc: use(ctx, options) };
+      case "session":
+        return { doc: session(ctx, options) };
       case "check":
         return { doc: await check(ctx, options, now) };
       case "suggest":

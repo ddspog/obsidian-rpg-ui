@@ -18,6 +18,7 @@ pcs:
 difficulty: challenging # easy | challenging | deadly
 session: 3 # the party's current session number
 recheckEverySessions: 5 # a fit older than this many sessions is checked again; 0 turns it off
+reuseAfterSessions: 3 # an encounter run at session S is offered again from session S + 3; 0 at once
 ---
 
 # Encounter catalog: The Ashen Four
@@ -36,6 +37,7 @@ source:
   table: arctic-encounters-tier-1
   row: "6"
   book: game-masters-guide
+  text: "A bandit captain and two bandits demand a toll at the frozen ford." # the row's own words
 review: confirmed # draft (read by a machine) | confirmed (read by a person)
 notes: Defusing it without combat takes a DC 11 CHA check.
 fit: # written by `catalog check`; do not edit
@@ -47,10 +49,14 @@ fit: # written by `catalog check`; do not edit
   avgHpLost: 0.47
   checkedOn: 2026-11-21
   checkedAtSession: 3
+uses: 1 # written by `catalog use`
+lastUsedSession: 2
 ```
 ````
 
-`count` is the number of that monster; `dice` (optional) keeps the text a table rolled it with (`1d4 + 1`), the count being its rounded average. `source`, `notes` and `fit` are optional; a missing `review` is `draft`, a missing `id` is made from the name.
+`count` is the number of that monster; `dice` (optional) keeps the text a table rolled it with (`1d4 + 1`), the count being its rounded average. When a count is rolled, `check` also simulates every rolled count at its fewest and at its most and writes the states as `fit.atMin` and `fit.atMax` (a `fit` encounter that is `too-hard` on a high roll says so). `source.text` is the table row's own words (drafts keep it), so a Game Master can dress the encounter without opening the table; `suggest`, `list` and `plan` print it as `scene`. `source`, `notes`, `fit`, `uses` and `lastUsedSession` are optional; a missing `review` is `draft`, a missing `id` is made from the name, a missing `reuseAfterSessions` is 3.
+
+Tags are matched plural or not (`--tag forests` finds `forest`), and `draft` writes one spelling per tag, the bestiary's habitat when one folds alike: a "Forests" table's wolves are tagged `forest`, not `forests` and `forest`.
 
 ## Commands
 
@@ -62,11 +68,14 @@ Every action takes `--catalog <vault path | party name>`; left out, it uses the 
 | `catalog draft <note-or-folder>… [--min-confidence high\|medium\|low] [--accept] [--limit N]`                        | Reads the random-encounter table rows of those notes (or every note under a folder) into draft entries. **Without `--accept` it writes nothing**: it lists the drafts, high confidence first (default 40, with the total), for review. With `--accept` it adds the drafts at or above `--min-confidence` (default `high`) to the catalog, skipping any whose monsters and counts the catalog already has. |
 | `catalog add --name "<n>" --monster "<note>[:<count>]"… [--tag t]…`                                                  | Adds a confirmed entry by hand. An unknown monster note is an error naming it.                                                                                                                                                                                                                                                                                                                            |
 | `catalog confirm <id>…` / `catalog remove <id>…`                                                                     | Flips drafts to confirmed / deletes entries. An unknown id changes nothing.                                                                                                                                                                                                                                                                                                                               |
+| `catalog tag <id>… [--add-tag t]… [--drop-tag t]…`                                                                   | Adds and drops tags (a dropped tag matches plural or not). Reports the entries that changed.                                                                                                                                                                                                                                                                                                              |
+| `catalog use <id>… [--session N]`                                                                                    | Records that the encounters were run (`uses`, `lastUsedSession`, default the catalog's session). `suggest` and `plan` hold an entry back until `reuseAfterSessions` sessions have passed (`--include-used` shows it); `suggest` reports how many as `recentlyUsed`.                                                                                                                                       |
+| `catalog session [--session N]`                                                                                      | Sets the catalog's session: given, or counted from the vault's session notes (`rpg session list`: an `rpg log` and `pcs`) in the party's system folder whose every PC is one of the catalog's. Lists the notes counted.                                                                                                                                                                                   |
 | `catalog check [--session N] [--seed N] [--trials N] [--rounds N] [--force] [--limit N]`                             | Simulates the entries that need it (below) against the party and stamps each with its fit. An entry that cannot load (a broken feature link) is listed in `errors` and skipped.                                                                                                                                                                                                                           |
 | `catalog suggest [--tag t]… [--any-tag t]… [--state s]… [--include-stale] [--include-draft] [--limit N] [--refresh]` | Read-only. The confirmed entries whose current fit is `fit` (or the `--state`s given), every `--tag` matching, closest to the difficulty's aim first, default 10. `needsCheck` and a `hint` say when entries are out of date; `--refresh` runs `check` first.                                                                                                                                             |
 | `catalog list [--tag t]… [--review r] [--state s]… [--limit N]`                                                      | Every entry, compactly, with the staleness of its fit marked.                                                                                                                                                                                                                                                                                                                                             |
 
-A usual run: `init`, `draft <folder>` (read the dry run), `draft <folder> --accept`, `check`, `confirm` the drafts you keep, then `plan` or `suggest` at the table.
+A usual run: `init`, `draft <folder>` (read the dry run), `draft <folder> --accept`, `check`, `confirm` the drafts you keep, then `plan` or `suggest` at the table, `use` what was run, and `session` after each session (then `check`, so fits older than `recheckEverySessions` are simulated again).
 
 `catalog suggest --brief` prints the short form a model reads: each entry's groups as `--monster` takes them (`"Wolf:3"`), its fit flattened (`fit`, `winRate`, `tpkRate`, `avgHpLost`), one entry to a line; the catalog path, party, session and partition are left out (`needsCheck` and the `hint` stay).
 

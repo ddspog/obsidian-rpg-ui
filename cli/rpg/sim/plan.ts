@@ -9,7 +9,7 @@
  */
 
 import type { Catalog, CatalogEntry } from "lib/domains/encounter-catalog/catalog";
-import { isEligible, partitionByFit } from "lib/domains/encounter-catalog/fit-state";
+import { isEligible, partitionByFit, recentlyUsed } from "lib/domains/encounter-catalog/fit-state";
 import { cmpCr, parseCr } from "lib/domains/encounter-sim/difficulty";
 import { outcomeDistance, type Fit } from "lib/domains/encounter-sim/fit";
 import type { Ctx } from "../app";
@@ -39,6 +39,11 @@ export interface PlanOption {
   winRate: number;
   tpkRate: number;
   avgHpLost: number;
+  /** A rolled count's fit at its fewest / most (catalog options whose count is rolled). */
+  atMin?: Fit;
+  atMax?: Fit;
+  /** The table row's own words, to dress the encounter with. */
+  scene?: string;
 }
 
 export interface PlanDocument {
@@ -115,8 +120,14 @@ async function fromCatalog(
   const habitat = options.habitat !== undefined ? wordKey(options.habitat) : undefined;
   const passesMonsters = monsterFilter(ctx, options);
   const words = options.args;
+  let recent = 0;
   const scored = catalog.entries
     .filter((entry) => isEligible(entry, fitContext, { tags: options.tags, anyTags: options.anyTags }))
+    .filter((entry) => {
+      if (options.includeUsed || !recentlyUsed(entry, fitContext.session, catalog.reuseAfterSessions)) return true;
+      recent += 1;
+      return false;
+    })
     .filter((entry) => habitat === undefined || entry.tags.some((t) => wordKey(t) === habitat))
     .filter((entry) => !passesMonsters || passesMonsters(entry))
     .map((entry) => ({ entry, score: themeScore(entry, words) }))
@@ -145,8 +156,18 @@ async function fromCatalog(
       winRate: fit.winRate,
       tpkRate: fit.tpkRate,
       avgHpLost: fit.avgHpLost,
+      ...(fit.atMin !== undefined ? { atMin: fit.atMin, atMax: fit.atMax } : {}),
+      ...(entry.source?.text ? { scene: entry.source.text } : {}),
     };
   });
+  if (recent > 0) {
+    notes.push(
+      `${recent} catalog ${recent === 1 ? "entry was" : "entries were"} run in the last ${catalog.reuseAfterSessions} sessions and not offered (--include-used offers them).`
+    );
+  }
+  if (picked.some((o) => o.atMax !== undefined && o.atMax !== o.fit)) {
+    notes.push("An option's count is rolled: `atMin`/`atMax` give its fit at the fewest and the most.");
+  }
   if (picked.some((o) => o.from === "catalog-draft")) {
     notes.push(
       "catalog-draft options were read from a table and checked, but nobody has confirmed them: `rpg sim catalog confirm <id>` keeps one."

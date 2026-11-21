@@ -8,6 +8,7 @@ import { classifyFit, type Fit, type FitDifficulty } from "../encounter-sim/fit"
 import { round4, type MonteCarloSummary } from "../encounter-sim/montecarlo";
 
 import type { Catalog, CatalogEntry } from "./catalog";
+import { wordKey } from "./words";
 
 export type FitStateName = Fit;
 export type Difficulty = FitDifficulty;
@@ -26,6 +27,9 @@ export interface FitState {
   checkedOn: string;
   /** The catalog's session number at the check. */
   checkedAtSession: number;
+  /** When a count is rolled (dice), the state with every rolled count at its fewest and at its most. */
+  atMin?: FitStateName;
+  atMax?: FitStateName;
 }
 
 /** Why an entry's fit has to be computed again; `null` means it is current. */
@@ -41,9 +45,9 @@ export interface FitContext {
 }
 
 export interface EligibilityFilter {
-  /** Every one of these tags must be on the entry (case-insensitive). */
+  /** Every one of these tags must be on the entry (case-insensitive, plural or not). */
   tags?: string[];
-  /** At least one of these tags must be on the entry (case-insensitive). */
+  /** At least one of these tags must be on the entry (case-insensitive, plural or not). */
   anyTags?: string[];
   /** The fit states that qualify. Default `["fit"]`. */
   states?: FitStateName[];
@@ -118,7 +122,8 @@ export function recheckReason(
   return null;
 }
 
-const lower = (tags: readonly string[]): Set<string> => new Set(tags.map((t) => t.trim().toLowerCase()));
+/** Tags folded so a plural and its singular meet ("forests", "forest"). */
+const lower = (tags: readonly string[]): Set<string> => new Set(tags.map(wordKey));
 
 /**
  * Whether an entry can be offered. A stale or unchecked entry's fit is unknown,
@@ -132,16 +137,32 @@ export function isEligible(entry: CatalogEntry, ctx: FitContext, filter: Eligibi
 
   if (tags && tags.length > 0) {
     const have = lower(entry.tags);
-    if (!tags.every((t) => have.has(t.trim().toLowerCase()))) return false;
+    if (!tags.every((t) => have.has(wordKey(t)))) return false;
   }
   if (anyTags && anyTags.length > 0) {
     const have = lower(entry.tags);
-    if (!anyTags.some((t) => have.has(t.trim().toLowerCase()))) return false;
+    if (!anyTags.some((t) => have.has(wordKey(t)))) return false;
   }
 
   const reason = recheckReason(entry, ctx.stamp, ctx.session, ctx.recheckEverySessions, ctx.difficulty);
   if (reason !== null) return includeStale;
   return entry.fit !== undefined && states.includes(entry.fit.state);
+}
+
+/**
+ * Whether an entry was run too recently to be offered again: run at session S,
+ * it waits until session S + `reuseAfterSessions` (0: never waits).
+ */
+export function recentlyUsed(
+  entry: Pick<CatalogEntry, "lastUsedSession">,
+  session: number,
+  reuseAfterSessions: number
+): boolean {
+  return (
+    entry.lastUsedSession !== undefined &&
+    reuseAfterSessions > 0 &&
+    session - entry.lastUsedSession < reuseAfterSessions
+  );
 }
 
 /** Counts the entries of a catalog by the state of their fit (see FitPartition). */

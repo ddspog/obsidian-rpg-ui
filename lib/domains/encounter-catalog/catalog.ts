@@ -21,6 +21,8 @@ export interface CatalogSource {
   table?: string;
   row?: string;
   book?: string;
+  /** The row's own words (the scene), so a Game Master can dress the encounter without opening the table. */
+  text?: string;
 }
 
 export type ReviewFlag = "draft" | "confirmed";
@@ -35,6 +37,10 @@ export interface CatalogEntry {
   review: ReviewFlag;
   notes?: string;
   fit?: FitState;
+  /** How many times the encounter was run (`catalog use`). */
+  uses?: number;
+  /** The catalog's session number when it was last run. */
+  lastUsedSession?: number;
 }
 
 export interface Catalog {
@@ -44,6 +50,8 @@ export interface Catalog {
   session: number;
   /** A fit older than this many sessions is checked again; 0 turns it off. */
   recheckEverySessions: number;
+  /** An entry run at session S is offered again from session S + this; 0 offers it at once. */
+  reuseAfterSessions: number;
   entries: CatalogEntry[];
 }
 
@@ -56,6 +64,7 @@ export interface MergeResult {
 export const CATALOG_TYPE = "encounter-catalog";
 export const ENTRY_INFO_STRING = "yaml encounter";
 export const DEFAULT_RECHECK_EVERY_SESSIONS = 5;
+export const DEFAULT_REUSE_AFTER_SESSIONS = 3;
 
 const DIFFICULTIES: readonly Difficulty[] = ["easy", "challenging", "deadly"];
 const FIT_STATES = ["fit", "too-easy", "too-hard"] as const;
@@ -166,6 +175,7 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
     if (entry.source.table !== undefined) source.table = entry.source.table;
     if (entry.source.row !== undefined) source.row = entry.source.row;
     if (entry.source.book !== undefined) source.book = entry.source.book;
+    if (entry.source.text !== undefined) source.text = entry.source.text;
     out.source = source;
   }
   out.review = entry.review;
@@ -181,8 +191,12 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
       avgHpLost: f.avgHpLost,
       checkedOn: f.checkedOn,
       checkedAtSession: f.checkedAtSession,
+      ...(f.atMin !== undefined ? { atMin: f.atMin } : {}),
+      ...(f.atMax !== undefined ? { atMax: f.atMax } : {}),
     };
   }
+  if (entry.uses !== undefined) out.uses = entry.uses;
+  if (entry.lastUsedSession !== undefined) out.lastUsedSession = entry.lastUsedSession;
   return out;
 }
 
@@ -198,6 +212,7 @@ export function serializeCatalog(catalog: Catalog): string {
       difficulty: catalog.difficulty,
       session: catalog.session,
       recheckEverySessions: catalog.recheckEverySessions,
+      reuseAfterSessions: catalog.reuseAfterSessions,
     },
     YAML_OPTIONS
   );
@@ -269,11 +284,16 @@ function parseFrontmatter(front: string): Omit<Catalog, "entries"> {
   if (typeof every !== "number" || !Number.isInteger(every) || every < 0) {
     throw new Error("Encounter catalog frontmatter `recheckEverySessions` must be a whole number, 0 or more");
   }
+  const reuse = data.reuseAfterSessions ?? DEFAULT_REUSE_AFTER_SESSIONS;
+  if (typeof reuse !== "number" || !Number.isInteger(reuse) || reuse < 0) {
+    throw new Error("Encounter catalog frontmatter `reuseAfterSessions` must be a whole number, 0 or more");
+  }
   return {
     party: { name, pcs: pcsRaw as string[] },
     difficulty: difficulty as Difficulty,
     session,
     recheckEverySessions: every,
+    reuseAfterSessions: reuse,
   };
 }
 
@@ -316,7 +336,19 @@ function parseFit(raw: unknown, fail: (m: string) => never): FitState {
     if (typeof v !== "number" || !Number.isFinite(v)) return fail(`\`fit.${key}\` must be a number`);
     return v;
   };
+  const bound = (key: "atMin" | "atMax"): FitState["state"] | undefined => {
+    const v = raw[key];
+    if (v === undefined || v === null) return undefined;
+    if (typeof v !== "string" || !(FIT_STATES as readonly string[]).includes(v)) {
+      return fail(`\`fit.${key}\` must be one of ${FIT_STATES.join(", ")}`);
+    }
+    return v as FitState["state"];
+  };
+  const atMin = bound("atMin");
+  const atMax = bound("atMax");
   return {
+    ...(atMin !== undefined ? { atMin } : {}),
+    ...(atMax !== undefined ? { atMax } : {}),
     state: state as FitState["state"],
     stamp,
     difficulty: difficulty as Difficulty,
@@ -362,7 +394,7 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
     const note = str(raw.note);
     if (!note) fail("`source.note` is missing");
     source = { note };
-    for (const key of ["table", "row", "book"] as const) {
+    for (const key of ["table", "row", "book", "text"] as const) {
       const v = str(raw[key]);
       if (raw[key] !== undefined && raw[key] !== null && v === undefined) fail(`\`source.${key}\` must be text`);
       if (v !== undefined) source[key] = v;
@@ -390,6 +422,12 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
     entry.notes = notes;
   }
   if (data.fit !== undefined && data.fit !== null) entry.fit = parseFit(data.fit, fail);
+  for (const key of ["uses", "lastUsedSession"] as const) {
+    const v = data[key];
+    if (v === undefined || v === null) continue;
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) fail(`\`${key}\` must be a whole number, 0 or more`);
+    entry[key] = v;
+  }
   return entry;
 }
 

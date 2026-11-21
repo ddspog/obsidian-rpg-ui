@@ -10,6 +10,8 @@ import { classifyFit, type Fit, type FitDifficulty } from "lib/domains/encounter
 import type { FidelityRecord } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 
+export { anyWordIn, wordForms, wordKey } from "lib/domains/encounter-catalog/words";
+
 const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
 
 /**
@@ -55,33 +57,6 @@ export function skippedByOwner(
     if (skipped.length > 0) out[ownerName(owner)] = skipped;
   }
   return out;
-}
-
-/**
- * A word folded for loose matching: lower case, a plural "s"/"es" dropped, so
- * "Forests" and "forest", "Hills" and "hill" meet (table tags are often plural,
- * catalog and bestiary habitats singular).
- */
-export function wordKey(word: string): string {
-  const w = word.trim().toLowerCase();
-  if (w.length > 4 && /(ches|shes|sses|xes)$/.test(w)) return w.slice(0, -2);
-  if (w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0, -1);
-  return w;
-}
-
-/** The forms a theme word may take in a name: as written, and its singulars ("wolves": wolve, wolf). */
-export function wordForms(word: string): string[] {
-  const w = word.trim().toLowerCase();
-  const forms = new Set([w, wordKey(w)]);
-  if (w.length > 4 && w.endsWith("ves")) forms.add(`${w.slice(0, -3)}f`);
-  if (w.length > 4 && w.endsWith("ies")) forms.add(`${w.slice(0, -3)}y`);
-  return [...forms].filter((f) => f.length > 0);
-}
-
-/** Whether any of `words`, in any of its forms, appears (as a substring) in any of `texts`, ignoring case. */
-export function anyWordIn(words: readonly string[], texts: readonly string[]): boolean {
-  const hay = texts.map((t) => t.toLowerCase());
-  return words.some((word) => wordForms(word).some((form) => hay.some((h) => h.includes(form))));
 }
 
 /**

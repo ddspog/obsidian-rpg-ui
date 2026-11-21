@@ -14,9 +14,11 @@ import {
   type FitPartition,
 } from "lib/domains/encounter-catalog/fit-state";
 import { partyStamp } from "lib/domains/encounter-catalog/party-stamp";
+import { diceRange } from "lib/domains/encounter-catalog/words";
 import { runMonteCarlo } from "lib/domains/encounter-sim/montecarlo";
 import type { CombatActor } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
+import { MAX_MONSTER_COUNT } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { loadParty } from "./party";
 
@@ -108,16 +110,16 @@ export async function checkEntries(
       continue;
     }
 
-    let groups;
+    let groups: Array<{ actor: CombatActor; count: number; dice?: string }>;
     try {
       groups = [];
-      for (const { note, count } of entry.monsters) {
+      for (const { note, count, dice } of entry.monsters) {
         let monster = monsters.get(note);
         if (!monster) {
           monster = await loadMonster(ctx, note);
           monsters.set(note, monster);
         }
-        groups.push({ actor: monster.actor, count });
+        groups.push({ actor: monster.actor, count, ...(dice ? { dice } : {}) });
       }
     } catch (error) {
       errors.push({ id: entry.id, error: (error as Error).message });
@@ -125,18 +127,30 @@ export async function checkEntries(
       continue;
     }
 
-    const summary = runMonteCarlo({
-      party: party.actors,
-      monsters: groups,
-      seed: params.seed,
-      trials: params.trials,
-      roundCap: params.rounds,
-    });
+    const simulate = (counts: number[]) =>
+      runMonteCarlo({
+        party: party.actors,
+        monsters: groups.map((g, i) => ({ actor: g.actor, count: counts[i] })),
+        seed: params.seed,
+        trials: params.trials,
+        roundCap: params.rounds,
+      });
+    const summary = simulate(groups.map((g) => g.count));
+    const fit = fitStateFrom(summary, catalog.difficulty, fitContext.stamp, fitContext.session, params.today);
+    // A rolled count ("1d4 + 1 grimlocks") is stored at its average; the fewest and the most it can be are
+    // simulated too, so a fit that turns too hard on a high roll says so.
+    const ranges = groups.map((g) => (g.dice ? diceRange(g.dice) : null));
+    if (ranges.some((r, i) => r !== null && (r.min !== groups[i].count || r.max !== groups[i].count))) {
+      const at = (pick: "min" | "max") => {
+        const counts = groups.map((g, i) => Math.min(MAX_MONSTER_COUNT, ranges[i]?.[pick] ?? g.count));
+        return fitStateFrom(simulate(counts), catalog.difficulty, fitContext.stamp, fitContext.session, params.today)
+          .state;
+      };
+      fit.atMin = at("min");
+      fit.atMax = at("max");
+    }
     checked += 1;
-    entries.push({
-      ...entry,
-      fit: fitStateFrom(summary, catalog.difficulty, fitContext.stamp, fitContext.session, params.today),
-    });
+    entries.push({ ...entry, fit });
   }
 
   const next: Catalog = { ...catalog, entries };

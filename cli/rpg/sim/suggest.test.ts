@@ -242,7 +242,8 @@ describe("rpg sim suggest", () => {
     // Lost and Mute are in the Forest and reach the load step; the sweep still finds Wolf and Imp.
     expect(Object.keys(countsByNote(doc)).sort()).toEqual(["Imp", "Wolf"]);
     expect(doc.excluded.unresolvable).toBe(2);
-    expect(doc.excluded["cr-0"]).toBeUndefined();
+    // Pup is CR 0: counted as such before the habitat filter, so `excluded` tells it apart.
+    expect(doc.excluded["cr-0"]).toBe(1);
     expect(doc.excluded["out-of-range"]).toBeUndefined();
   });
 
@@ -356,11 +357,13 @@ describe("rpg sim suggest", () => {
   it("reads --habitat case-insensitively, exact on link names", async () => {
     const forest = await suggest("--habitat", "FOREST", "--limit", "100");
     expect(Object.keys(countsByNote(forest.doc)).sort()).toEqual(["Imp", "Wolf"]);
-    // Bear (Swamp), Pup and Giant (no habitat) are filtered; they never reach cr-0 or out-of-range.
+    // Pup is CR 0 (counted before the filters); Bear (Swamp) and Giant (no habitat) are filtered and never
+    // reach out-of-range.
     expect(forest.doc.excluded).toEqual({
+      "cr-0": 1,
       "no-damaging-action": 1,
       "non-monster": 1,
-      filtered: 3,
+      filtered: 2,
       unresolvable: 2,
     });
     // A link name is matched whole, not as a substring.
@@ -385,9 +388,10 @@ describe("rpg sim suggest", () => {
     const half = await suggest("--cr", "1/2", "--limit", "100");
     expect(Object.keys(countsByNote(half.doc))).toEqual(["Wolf"]);
     expect(half.doc.excluded).toEqual({
+      "cr-0": 1,
       "no-damaging-action": 1,
       "non-monster": 1,
-      filtered: 5,
+      filtered: 4,
       unresolvable: 1,
     });
     // 2/4 is the same rational as 1/2.

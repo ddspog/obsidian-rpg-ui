@@ -37,6 +37,7 @@ const catalog = (entries: CatalogEntry[] = [entry()]): Catalog => ({
   difficulty: "challenging",
   session: 3,
   recheckEverySessions: 5,
+  reuseAfterSessions: 3,
   entries,
 });
 
@@ -285,5 +286,34 @@ describe("mergeDrafts", () => {
     expect(added.map((e) => e.id)).toEqual(["goblin-ambush-2"]);
     expect(skipped.map((e) => e.id)).toEqual(["w2"]);
     expect(new Set(merged.entries.map((e) => e.id)).size).toBe(2);
+  });
+});
+
+describe("parseCatalog: the scene, uses and a rolled count's range", () => {
+  it("round-trips the row text, the uses, the reuse interval and atMin/atMax", () => {
+    const base = entry();
+    const full = catalog([
+      {
+        ...base,
+        source: { ...(base.source as NonNullable<CatalogEntry["source"]>), text: 'Goblins leap: "Ambush!"' },
+        fit: { ...(base.fit as NonNullable<CatalogEntry["fit"]>), atMin: "too-easy", atMax: "too-hard" },
+        uses: 2,
+        lastUsedSession: 3,
+      },
+    ]);
+    const back = parseCatalog(serializeCatalog({ ...full, reuseAfterSessions: 0 }));
+    expect(back).toEqual({ ...full, reuseAfterSessions: 0 });
+  });
+
+  it("defaults the reuse interval to 3 and refuses bad values", () => {
+    const text = serializeCatalog(catalog()).replace(/^reuseAfterSessions: 3\n/m, "");
+    expect(parseCatalog(text).reuseAfterSessions).toBe(3);
+    expect(() => parseCatalog(text.replace("session: 3", "session: 3\nreuseAfterSessions: -1"))).toThrow(
+      /reuseAfterSessions/
+    );
+    const bad = serializeCatalog(catalog([entry({ uses: 1 })])).replace("uses: 1", "uses: lots");
+    expect(() => parseCatalog(bad)).toThrow(/`uses` must be a whole number/);
+    const badFit = serializeCatalog(catalog()).replace("checkedAtSession: 3", "checkedAtSession: 3\n  atMax: brutal");
+    expect(() => parseCatalog(badFit)).toThrow(/fit.atMax/);
   });
 });

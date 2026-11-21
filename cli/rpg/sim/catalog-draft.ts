@@ -9,6 +9,7 @@ import type { CatalogEntry, CatalogMonster } from "lib/domains/encounter-catalog
 import { extractEncounter, type CombatLikelihood, type Confidence } from "lib/domains/encounter-catalog/extract-row";
 import { buildMonsterIndex, type MonsterEntry, type MonsterIndex } from "lib/domains/encounter-catalog/monster-index";
 import { tablesOfNote } from "lib/domains/encounter-catalog/table-source";
+import { normaliseTags } from "lib/domains/encounter-catalog/words";
 import type { Ctx } from "../app";
 import { UsageError } from "./flags";
 import { bestiaryPaths, categoryHabitat, linkNames, readMonsterNote } from "./monsters";
@@ -17,6 +18,8 @@ import { bestiaryPaths, categoryHabitat, linkNames, readMonsterNote } from "./mo
 interface Bestiary {
   index: MonsterIndex;
   habitat(note: string): string[];
+  /** Every habitat the bestiary names, lower-cased: the spelling a tag is folded to. */
+  habitats(): ReadonlySet<string>;
 }
 
 const bestiaries = new WeakMap<Ctx, Bestiary>();
@@ -36,8 +39,13 @@ export function bestiaryOf(ctx: Ctx): Bestiary {
     });
   }
   const habitats = new Map<string, string[]>();
+  let vocabulary: Set<string> | undefined;
   const bestiary: Bestiary = {
     index: buildMonsterIndex(entries),
+    habitats() {
+      vocabulary ??= new Set(entries.flatMap((e) => bestiary.habitat(e.note)));
+      return vocabulary;
+    },
     habitat(note) {
       let names = habitats.get(note);
       if (!names) {
@@ -126,7 +134,8 @@ function monstersText(monsters: Array<{ name: string; count: number }>): string 
 
 /** Reads the encounter tables of the given notes into drafts. */
 export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
-  const { index, habitat } = bestiaryOf(ctx);
+  const bestiary = bestiaryOf(ctx);
+  const { index, habitat } = bestiary;
   const scan: DraftScan = { considered: 0, tables: 0, drafts: [], skipped: { "no-monster": 0, "combat-unlikely": 0 } };
   for (const path of notes) {
     const file = ctx.note(path);
@@ -152,7 +161,8 @@ export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
           .filter(Boolean)
           .join(" ");
         const name = `${label} #${row.roll}: ${monstersText(found.monsters.map((m, i) => ({ name: spokenName(m.name), count: monsters[i].count })))}`;
-        const tags = [...new Set([...table.tags, ...monsters.flatMap((m) => habitat(m.note))])];
+        // One spelling per tag: a table's "forests" and a wolf's "forest" become "forest".
+        const tags = normaliseTags([...table.tags, ...monsters.flatMap((m) => habitat(m.note))], bestiary.habitats());
         scan.drafts.push({
           entry: {
             id: "",
@@ -164,6 +174,7 @@ export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
               table: table.slug,
               row: row.roll,
               ...(table.book ? { book: table.book } : {}),
+              text: row.text,
             },
             review: "draft",
           },
