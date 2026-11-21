@@ -167,7 +167,7 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(all.code, all.err).toBe(0);
     expect(Date.now() - started).toBeLessThan(5 * 60_000);
     const doc = JSON.parse(all.out);
-    expect(doc.target).toEqual({ difficulty: "challenging", targetTotal: "1/2", benchmark: "1/2" });
+    expect(doc.target).toEqual({ difficulty: "challenging", targetTotal: "1/2", benchmark: "1/2", rank: "cr" });
     expect(doc.candidates.length).toBeGreaterThan(0);
     expect(doc.candidates.length).toBeLessThanOrEqual(5);
     expect(doc.excluded["cr-0"]).toBeGreaterThan(0);
@@ -184,4 +184,57 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     );
     expect(forest.excluded.filtered).toBeGreaterThan(0);
   }, 400_000);
+
+  it("ranks by outcome over the bestiary: every candidate carries fit and avgHpLost, within the time budget", async () => {
+    const started = Date.now();
+    const result = await sim("suggest", "--rank", "outcome", "--trials", "20", "--limit", "50");
+    expect(result.code, result.err).toBe(0);
+    expect(Date.now() - started).toBeLessThan(5 * 60_000);
+    const doc = JSON.parse(result.out);
+    expect(doc.target).toEqual({ difficulty: "challenging", targetTotal: "1/2", benchmark: "1/2", rank: "outcome" });
+    expect(doc.candidates.length).toBeGreaterThan(0);
+    for (const c of doc.candidates) {
+      expect(["fit", "too-easy", "too-hard"]).toContain(c.fit);
+      expect(c.avgHpLost).toBeGreaterThanOrEqual(0);
+      expect(c.avgHpLost).toBeLessThanOrEqual(1);
+      expect(c.base).toBeUndefined();
+      expect(c.composition.count).toBeLessThanOrEqual(30);
+    }
+    // The wider sweep reaches totals beyond twice the target (1), up to 4 x the benchmark (2).
+    const all = JSON.parse((await sim("suggest", "--rank", "outcome", "--trials", "20", "--limit", "5000")).out);
+    const totals = all.candidates.map((c: { totalCr: string }) => {
+      const [a, b] = c.totalCr.split("/").map(Number);
+      return b ? a / b : a;
+    });
+    expect(Math.max(...totals)).toBeGreaterThan(1);
+    expect(Math.max(...totals)).toBeLessThanOrEqual(2);
+  }, 400_000);
+
+  it("adds a base group to every suggested fight: Hobgoblin with one small kind", async () => {
+    const result = await sim("suggest", "--base", HOBGOBLIN, "--cr", "1/8", "--trials", "20", "--limit", "50");
+    expect(result.code, result.err).toBe(0);
+    const doc = JSON.parse(result.out);
+    expect(doc.candidates.length).toBeGreaterThan(0);
+    for (const c of doc.candidates) {
+      expect(c.base).toHaveLength(1);
+      expect(c.base[0]).toMatchObject({ count: 1, cr: "1/2" });
+      expect(c.base[0].note).toMatch(/Hobgoblin\.md$/);
+      expect(c.composition.cr).toBe("1/8");
+      const [a, b] = c.totalCr.split("/").map(Number);
+      expect(b ? a / b : a).toBeGreaterThanOrEqual(0.5);
+      expect(["fit", "too-easy", "too-hard"]).toContain(c.fit);
+    }
+    // One CR-1/8 monster on top of the Hobgoblin's 1/2: the total is 5/8.
+    expect(
+      doc.candidates.some(
+        (c: { composition: { count: number }; totalCr: string }) => c.composition.count === 1 && c.totalCr === "5/8"
+      )
+    ).toBe(true);
+  }, 400_000);
+
+  it("refuses --base on run with a usage error", async () => {
+    const result = await sim("run", "--monster", HOBGOBLIN, "--base", HOBGOBLIN);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("--monster");
+  });
 });

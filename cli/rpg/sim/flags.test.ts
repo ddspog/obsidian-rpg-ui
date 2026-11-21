@@ -44,6 +44,8 @@ describe("parseSimArgv", () => {
     expect(options).toMatchObject({
       pc: [],
       monsters: [],
+      base: [],
+      rank: "cr",
       seed: 1,
       trials: 200,
       rounds: 20,
@@ -147,6 +149,29 @@ describe("parseSimArgv", () => {
     expect(() => parseSimArgv(["run", "--seed", "1.5"])).toThrow(/--seed/);
     expect(() => parseSimArgv(["run", "--limit=-1"])).toThrow(/--limit.*"-1"/);
     expect(() => parseSimArgv(["run", "--difficulty", "brutal"])).toThrow(/--difficulty.*"brutal"/);
+    expect(() => parseSimArgv(["suggest", "--rank", "fancy"])).toThrow(/--rank.*"fancy"/);
+  });
+
+  it("reads --rank as cr or outcome, case-insensitively", () => {
+    expect(parseSimArgv(["suggest"]).options.rank).toBe("cr");
+    expect(parseSimArgv(["suggest", "--rank", "outcome"]).options.rank).toBe("outcome");
+    expect(parseSimArgv(["suggest", "--rank=CR"]).options.rank).toBe("cr");
+  });
+
+  it("reads --base like --monster, repeatable, naming --base in its errors", () => {
+    const base = (...m: string[]) => parseSimArgv(["suggest", ...m.flatMap((x) => ["--base", x])]).options.base;
+    expect(base("Hobgoblin")).toEqual([{ note: "Hobgoblin", count: 1 }]);
+    expect(base("Hobgoblin:2", "Wolf")).toEqual([
+      { note: "Hobgoblin", count: 2 },
+      { note: "Wolf", count: 1 },
+    ]);
+    expect(base("Goblin: Boss:2")).toEqual([{ note: "Goblin: Boss", count: 2 }]);
+    expect(() => base("Name:abc")).toThrow(/--base "Name:abc"/);
+    expect(() => base("Name:0")).toThrow(/--base "Name:0"/);
+    expect(() => base("Name:101")).toThrow(/--base.*at most 100/);
+    expect(() => base(":2")).toThrow(/--base/);
+    expect(() => base("  ")).toThrow(/--base/);
+    expect(parseSimArgv(["suggest"]).options.base).toEqual([]);
   });
 
   it("maps parseArgs errors to UsageError", () => {
@@ -170,14 +195,22 @@ describe("SIM_HELP", () => {
     expect(SIM_HELP).toMatch(/--limit.*\(default: 20\)/);
   });
 
-  it("covers the table: pc, monster, habitat, type, cr, vault, json, help", () => {
+  it("describes --rank and --base in the help", () => {
+    expect(SIM_HELP).toMatch(/--rank cr\|outcome\s+`suggest`/);
+    expect(SIM_HELP).toMatch(/--rank.*\(default: cr\)/);
+    expect(SIM_HELP).toMatch(/--base "<note>\[:<count>\]"\s+`suggest`/);
+  });
+
+  it("covers the table: pc, monster, base, rank, habitat, type, cr, vault, json, help", () => {
     expect(SIM_FLAGS.map((f) => f.name)).toEqual([
       "pc",
       "monster",
+      "base",
       "seed",
       "trials",
       "rounds",
       "difficulty",
+      "rank",
       "habitat",
       "type",
       "cr",
@@ -221,6 +254,9 @@ describe("simMain usage errors", () => {
     [["run", "--trials", "abc"], "abc"],
     [["run", "--rounds", "0"], "--rounds"],
     [["run", "--difficulty", "brutal"], "brutal"],
+    [["suggest", "--rank", "fancy"], "--rank"],
+    [["suggest", "--base", "Name:abc"], "--base"],
+    [["run", "--monster", "Wolf", "--base", "Orc"], "--monster"],
     [["suggest", "--limit=-1"], "--limit"],
     [["suggest", "--limit", "-1"], "--limit"],
     [["run", "--seed", "-5"], "--seed"],

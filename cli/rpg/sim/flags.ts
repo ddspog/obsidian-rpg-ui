@@ -13,6 +13,10 @@ export type Difficulty = "easy" | "challenging" | "deadly";
 
 export const DIFFICULTIES: readonly Difficulty[] = ["easy", "challenging", "deadly"];
 
+export type Rank = "cr" | "outcome";
+
+export const RANKS: readonly Rank[] = ["cr", "outcome"];
+
 export interface SimFlag {
   name: string;
   kind: "string" | "boolean";
@@ -43,6 +47,15 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     description: "a monster note and how many (count defaults to 1); repeat for each group",
   },
   {
+    name: "base",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: '"<note>[:<count>]"',
+    description:
+      "`suggest`: a group always in the fight (as --monster); one more kind is swept and added to it; repeat for each",
+  },
+  {
     name: "seed",
     kind: "string",
     default: 1,
@@ -69,6 +82,14 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     default: "challenging",
     value: "easy|challenging|deadly",
     description: "the difficulty `suggest` aims for",
+  },
+  {
+    name: "rank",
+    kind: "string",
+    default: "cr",
+    value: "cr|outcome",
+    description:
+      "`suggest`: rank by total CR near the target (cr), or by simulated outcome with a wider sweep (outcome)",
   },
   {
     name: "habitat",
@@ -130,10 +151,13 @@ export interface SimOptions {
   subcommand: string | undefined;
   pc: string[];
   monsters: MonsterGroup[];
+  /** `suggest` only: groups that are always part of the fight. */
+  base: MonsterGroup[];
   seed: number;
   trials: number;
   rounds: number;
   difficulty: Difficulty;
+  rank: Rank;
   habitat?: string;
   type?: string;
   cr?: string;
@@ -159,10 +183,12 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     subcommand,
     pc: [],
     monsters: [],
+    base: [],
     seed: flagDefault<number>("seed"),
     trials: flagDefault<number>("trials"),
     rounds: flagDefault<number>("rounds"),
     difficulty: flagDefault<Difficulty>("difficulty"),
+    rank: flagDefault<Rank>("rank"),
     limit: flagDefault<number>("limit"),
     json: false,
   };
@@ -183,23 +209,23 @@ function integer(flag: string, raw: string, min: number | undefined, what: strin
   return n;
 }
 
-/** `Note:3` -> {note, count}: split at the last colon, no colon means one. */
-export function parseMonster(raw: string): MonsterGroup {
+/** `Note:3` -> {note, count}: split at the last colon, no colon means one. `flag` names the option in errors. */
+export function parseMonster(raw: string, flag = "monster"): MonsterGroup {
   const at = raw.lastIndexOf(":");
   if (at < 0) {
-    if (!raw.trim()) throw new UsageError(`--monster must name a note, got "${raw}".`);
+    if (!raw.trim()) throw new UsageError(`--${flag} must name a note, got "${raw}".`);
     return { note: raw.trim(), count: 1 };
   }
   const note = raw.slice(0, at).trim();
   const suffix = raw.slice(at + 1).trim();
   if (!/^\d+$/.test(suffix) || !Number.isSafeInteger(Number(suffix)) || Number(suffix) < 1) {
     throw new UsageError(
-      `--monster "${raw}": the count "${suffix}" must be a positive integer (use "Name:3" or just "Name").`
+      `--${flag} "${raw}": the count "${suffix}" must be a positive integer (use "Name:3" or just "Name").`
     );
   }
-  if (!note) throw new UsageError(`--monster "${raw}" has no note name.`);
+  if (!note) throw new UsageError(`--${flag} "${raw}" has no note name.`);
   if (Number(suffix) > MAX_MONSTER_COUNT) {
-    throw new UsageError(`--monster "${raw}": the count "${suffix}" must be at most ${MAX_MONSTER_COUNT}.`);
+    throw new UsageError(`--${flag} "${raw}": the count "${suffix}" must be at most ${MAX_MONSTER_COUNT}.`);
   }
   return { note, count: Number(suffix) };
 }
@@ -257,7 +283,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     if (!pc.trim()) throw new UsageError(`--pc needs a note, got an empty value.`);
   }
   options.pc = pcs.map((pc) => pc.trim());
-  options.monsters = ((values.monster as string[] | undefined) ?? []).map(parseMonster);
+  options.monsters = ((values.monster as string[] | undefined) ?? []).map((m) => parseMonster(m));
+  options.base = ((values.base as string[] | undefined) ?? []).map((m) => parseMonster(m, "base"));
 
   if (typeof values.seed === "string") {
     options.seed = integer("seed", values.seed, undefined, "an integer");
@@ -285,6 +312,13 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     }
     options.difficulty = d as Difficulty;
   }
+  if (typeof values.rank === "string") {
+    const r = values.rank.trim().toLowerCase();
+    if (!(RANKS as readonly string[]).includes(r)) {
+      throw new UsageError(`--rank must be one of ${RANKS.join(", ")}, got "${values.rank}".`);
+    }
+    options.rank = r as Rank;
+  }
   if (typeof values.habitat === "string") options.habitat = values.habitat;
   if (typeof values.type === "string") options.type = values.type;
   if (typeof values.cr === "string") options.cr = values.cr;
@@ -299,6 +333,9 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
  * ahead of any runtime error).
  */
 export function validateForSubcommand(subcommand: string, options: SimOptions): void {
+  if (subcommand === "run" && options.base.length > 0) {
+    throw new UsageError("--base is for `suggest`; use --monster to name the groups of a run.");
+  }
   if (subcommand === "run" && options.monsters.length === 0) {
     throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
   }
@@ -336,7 +373,7 @@ export const SIM_HELP = `rpg sim: run an encounter simulation, or suggest encoun
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [flags]
-  rpg sim suggest [--pc <note>]... [flags]
+  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank cr|outcome] [flags]
   rpg sim help
 
 Flags:

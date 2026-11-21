@@ -20,6 +20,8 @@ export interface MonteCarloSummary {
   tpkRate: number;
   stalemateRate: number;
   avgRounds: number;
+  /** The share of the party's total max HP lost at a fight's end, averaged over the trials (0..1). */
+  avgHpLost: number;
   roundsPerTrial: number[];
   hpRemainingPerTrial: number[];
   koRate: Record<string, number>;
@@ -65,13 +67,19 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
     koRate[p.name] = round4(results.filter((r) => r.knockedOut.includes(p.name)).length / trials);
   }
 
+  const partyMaxHp = party.reduce((sum, p) => sum + p.maxHp, 0);
+  const hpRemaining = results.map((r) => r.partyHpRemaining);
+  const meanRemaining = hpRemaining.reduce((a, b) => a + b, 0) / trials;
+  const avgHpLost = partyMaxHp > 0 ? round4(Math.min(1, Math.max(0, 1 - meanRemaining / partyMaxHp))) : 0;
+
   return {
     winRate: share("win"),
     tpkRate: share("tpk"),
     stalemateRate: share("stalemate"),
     avgRounds: round4(roundsPerTrial.reduce((a, b) => a + b, 0) / trials),
+    avgHpLost,
     roundsPerTrial,
-    hpRemainingPerTrial: results.map((r) => r.partyHpRemaining),
+    hpRemainingPerTrial: hpRemaining,
     koRate,
   };
 }
