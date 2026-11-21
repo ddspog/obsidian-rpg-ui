@@ -255,8 +255,13 @@ rpg sim run --monster "Thug:3" --brief
 - Pick from the options in the light of the scene, then put the fight in your
   prep draft and play it from the log as usual. The simulation is prep, not
   play: its numbers never go in the log.
+- An option from the catalog may carry a `scene`: the table row it came
+  from. Use it to set the encounter, in your words. `atMin`/`atMax` say how the
+  fight goes when a rolled count comes out low or high: roll the count in play.
+- Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
+  keeps `plan` from offering it again for a few sessions.
 - Running `plan`, `run` and `catalog suggest` writes nothing. `catalog add`,
-  `confirm`, `check` and `draft --accept` write the catalog note: do them only
+  `confirm`, `use`, `tag`, `session`, `check` and `draft --accept` write the catalog note: do them only
   when the player has said you may keep that catalog.
 
 ## When the player is in Obsidian (the GM link)

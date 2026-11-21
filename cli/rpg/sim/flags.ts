@@ -1,5 +1,9 @@
 import { parseArgs } from "node:util";
-import { DEFAULT_RECHECK_EVERY_SESSIONS, type ReviewFlag } from "lib/domains/encounter-catalog/catalog";
+import {
+  DEFAULT_RECHECK_EVERY_SESSIONS,
+  DEFAULT_REUSE_AFTER_SESSIONS,
+  type ReviewFlag,
+} from "lib/domains/encounter-catalog/catalog";
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
@@ -20,6 +24,11 @@ export type Rank = "cr" | "outcome";
 
 export const RANKS: readonly Rank[] = ["cr", "outcome"];
 
+/** Which tiers of play an encounter may be from: the party's own, it and lower ones, or any. */
+export type TierScope = "same" | "lower" | "all";
+
+export const TIER_SCOPES: readonly TierScope[] = ["same", "lower", "all"];
+
 export const CONFIDENCES: readonly Confidence[] = ["high", "medium", "low"];
 
 export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too-hard"];
@@ -27,7 +36,19 @@ export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too
 export const REVIEW_FLAGS: readonly ReviewFlag[] = ["draft", "confirmed"];
 
 /** The actions of `rpg sim catalog <action>`. */
-export const CATALOG_ACTIONS = ["init", "draft", "add", "confirm", "remove", "check", "suggest", "list"] as const;
+export const CATALOG_ACTIONS = [
+  "init",
+  "draft",
+  "add",
+  "confirm",
+  "remove",
+  "tag",
+  "use",
+  "session",
+  "check",
+  "suggest",
+  "list",
+] as const;
 export type CatalogAction = (typeof CATALOG_ACTIONS)[number];
 
 export interface SimFlag {
@@ -98,12 +119,20 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "the difficulty `suggest` aims for (`catalog init`: the one the catalog's encounters are judged by; `plan`: the catalog's)",
   },
   {
+    name: "tiers",
+    kind: "string",
+    default: "same",
+    value: "same|lower|all",
+    description:
+      "`suggest`, `plan`, `catalog check|suggest|list`: encounters of the party's tier only (same), also lower tiers for story use (lower), or any (all); an untagged entry or a swept monster is in the tier when no monster is above the party's single-monster CR",
+  },
+  {
     name: "rank",
     kind: "string",
-    default: "cr",
+    default: "outcome",
     value: "cr|outcome",
     description:
-      "`suggest`: rank by total CR near the target (cr), or by simulated outcome with a wider sweep (outcome)",
+      "`suggest`: rank by simulated outcome with a wide sweep (outcome), or by total CR near the target (cr)",
   },
   {
     name: "habitat",
@@ -164,12 +193,49 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     description: "`catalog init`: check an entry again after this many sessions (0 turns it off)",
   },
   {
+    name: "reuse-after",
+    kind: "string",
+    default: DEFAULT_REUSE_AFTER_SESSIONS,
+    value: "<n>",
+    description: "`catalog init`: an encounter run at session S is offered again from session S + n (0: at once)",
+  },
+  {
     name: "session",
     kind: "string",
     default: undefined,
     value: "<n>",
     description:
-      "`catalog init|check|suggest`, `plan`: the party's session number (default: 0 on init, else the catalog's own)",
+      "`catalog init|check|suggest|use`, `plan`: the party's session number (default: 0 on init, else the catalog's own); `catalog session`: set it",
+  },
+  {
+    name: "add-tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog tag`: a tag to add to the entries; repeat for each",
+  },
+  {
+    name: "drop-tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog tag`: a tag to take off the entries (plural or not); repeat for each",
+  },
+  {
+    name: "include-used",
+    kind: "boolean",
+    default: false,
+    description: "`catalog suggest`, `plan`: also entries run too recently (see --reuse-after)",
+  },
+  {
+    name: "fit",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "fit|too-easy|too-hard",
+    description: "`suggest`: only candidates with this fit; repeat for each (default: all)",
   },
   {
     name: "tag",
@@ -289,6 +355,7 @@ export interface SimOptions {
   rounds: number;
   difficulty: Difficulty;
   rank: Rank;
+  tiers: TierScope;
   habitat?: string;
   type?: string;
   cr?: string;
@@ -301,7 +368,13 @@ export interface SimOptions {
   catalog?: string;
   name?: string;
   every?: number;
+  reuseAfter?: number;
   session?: number;
+  addTags: string[];
+  dropTags: string[];
+  includeUsed: boolean;
+  /** `suggest`: the fits to keep (empty: all). */
+  fits: FitStateName[];
   tags: string[];
   anyTags: string[];
   states: FitStateName[];
@@ -342,12 +415,17 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     rounds: flagDefault<number>("rounds"),
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
+    tiers: flagDefault<TierScope>("tiers"),
     limit: flagDefault<number>("limit"),
     given: [],
     limitSet: false,
     tags: [],
     anyTags: [],
     states: [],
+    addTags: [],
+    dropTags: [],
+    includeUsed: false,
+    fits: [],
     minConfidence: flagDefault<Confidence>("min-confidence"),
     accept: false,
     force: false,
@@ -493,6 +571,19 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (typeof values.session === "string") {
     options.session = integer("session", values.session, 0, "a non-negative integer");
   }
+  if (typeof values["reuse-after"] === "string") {
+    options.reuseAfter = integer("reuse-after", values["reuse-after"], 0, "a non-negative integer");
+  }
+  options.addTags = tagList("add-tag", values["add-tag"]);
+  options.dropTags = tagList("drop-tag", values["drop-tag"]);
+  options.includeUsed = values["include-used"] === true;
+  options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
+    const fit = raw.trim().toLowerCase();
+    if (!(FIT_STATE_NAMES as readonly string[]).includes(fit)) {
+      throw new UsageError(`--fit must be one of ${FIT_STATE_NAMES.join(", ")}, got "${raw}".`);
+    }
+    return fit as FitStateName;
+  });
   options.tags = tagList("tag", values.tag);
   options.anyTags = tagList("any-tag", values["any-tag"]);
   options.states = ((values.state as string[] | undefined) ?? []).map((raw) => {
@@ -547,6 +638,13 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     }
     options.rank = r as Rank;
   }
+  if (typeof values.tiers === "string") {
+    const t = values.tiers.trim().toLowerCase();
+    if (!(TIER_SCOPES as readonly string[]).includes(t)) {
+      throw new UsageError(`--tiers must be one of ${TIER_SCOPES.join(", ")}, got "${values.tiers}".`);
+    }
+    options.tiers = t as TierScope;
+  }
   if (typeof values.habitat === "string") options.habitat = values.habitat;
   if (typeof values.type === "string") options.type = values.type;
   if (typeof values.cr === "string") options.cr = values.cr;
@@ -559,12 +657,15 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
 
 /** The flags each `catalog` action takes (besides the common ones); any other flag is a usage error. */
 const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
-  init: ["party-name", "pc", "difficulty", "every", "session"],
+  init: ["party-name", "pc", "difficulty", "every", "reuse-after", "session"],
   draft: ["min-confidence", "accept", "limit"],
   add: ["name", "monster", "tag"],
   confirm: [],
   remove: [],
-  check: ["session", "seed", "trials", "rounds", "force", "limit"],
+  tag: ["add-tag", "drop-tag"],
+  use: ["session"],
+  session: ["session"],
+  check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
   suggest: [
     "tag",
     "any-tag",
@@ -578,8 +679,10 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
     "trials",
     "rounds",
     "brief",
+    "include-used",
+    "tiers",
   ],
-  list: ["tag", "any-tag", "state", "review", "limit"],
+  list: ["tag", "any-tag", "state", "review", "limit", "tiers"],
 };
 
 const CATALOG_COMMON_FLAGS = ["catalog", "vault", "json", "help"];
@@ -597,7 +700,7 @@ function validateCatalog(options: SimOptions): void {
   for (const flag of options.given) {
     if (!allowed.has(flag)) throw new UsageError(`--${flag} is not a flag of \`catalog ${known}\`.`);
   }
-  const takesWords = known === "draft" || known === "confirm" || known === "remove";
+  const takesWords = ["draft", "confirm", "remove", "tag", "use"].includes(known);
   if (!takesWords && options.args.length > 0) {
     throw new UsageError(`Unexpected argument "${options.args[0]}" for \`catalog ${known}\`.`);
   }
@@ -613,7 +716,10 @@ function validateCatalog(options: SimOptions): void {
       throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
     }
   }
-  if ((known === "confirm" || known === "remove") && options.args.length === 0) {
+  if (known === "tag" && options.addTags.length + options.dropTags.length === 0) {
+    throw new UsageError("`catalog tag` needs --add-tag or --drop-tag (or both).");
+  }
+  if (["confirm", "remove", "tag", "use"].includes(known) && options.args.length === 0) {
     throw new UsageError(`\`catalog ${known}\` needs at least one entry id.`);
   }
 }
@@ -631,6 +737,8 @@ const PLAN_FLAGS = [
   "limit",
   "catalog",
   "session",
+  "include-used",
+  "tiers",
   "seed",
   "trials",
   "rounds",
@@ -698,16 +806,19 @@ export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan e
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [--brief] [flags]
-  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank cr|outcome] [--brief] [flags]
-  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--difficulty D] [--limit N] [flags]
+  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank outcome|cr] [--tiers T] [--fit F]... [--brief] [flags]
+  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--tiers same|lower|all] [--difficulty D] [--limit N] [flags]
     (the catalog's fit entries first, then the bestiary swept by outcome: N short options, default 3)
-  rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--session N]
+  rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--reuse-after N] [--session N]
   rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept] [--limit N]
   rpg sim catalog add --name "<name>" --monster "<note>[:<count>]"... [--tag <tag>]...
   rpg sim catalog confirm <id>...        (flip drafts to confirmed)
   rpg sim catalog remove <id>...
+  rpg sim catalog tag <id>... [--add-tag <tag>]... [--drop-tag <tag>]...
+  rpg sim catalog use <id>... [--session N]   (the encounter was run: not offered again for --reuse-after sessions)
+  rpg sim catalog session [--session N]  (the party's session: counted from the vault's session notes, or set)
   rpg sim catalog check [--session N] [--force] [--limit N] [--seed N] [--trials N] [--rounds N]
-  rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--limit N] [--brief]
+  rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--include-used] [--limit N] [--brief]
   rpg sim catalog list [--tag <tag>]... [--review draft|confirmed] [--state <state>]... [--limit N]
     (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
   rpg sim help

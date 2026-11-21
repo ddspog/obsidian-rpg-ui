@@ -1,6 +1,8 @@
 /**
  * The encounter catalog of a party: ready-made encounters kept in a vault note,
- * one fenced `yaml encounter` block each, editable by hand. This is the model
+ * one fenced `rpg encounter` block each (`yaml encounter` is still read),
+ * under one `rpg encounter-catalog` block the plugin renders as the board,
+ * editable by hand. This is the model
  * and its markdown form. Pure: no Obsidian and no I/O.
  */
 
@@ -21,6 +23,8 @@ export interface CatalogSource {
   table?: string;
   row?: string;
   book?: string;
+  /** The row's own words (the scene), so a Game Master can dress the encounter without opening the table. */
+  text?: string;
 }
 
 export type ReviewFlag = "draft" | "confirmed";
@@ -35,15 +39,35 @@ export interface CatalogEntry {
   review: ReviewFlag;
   notes?: string;
   fit?: FitState;
+  /** How many times the encounter was run (`catalog use`). */
+  uses?: number;
+  /** The catalog's session number when it was last run. */
+  lastUsedSession?: number;
+}
+
+/** The party as `catalog check` last profiled it: what the board shows without simulating anything. */
+export interface CatalogProfile {
+  size: number;
+  averageLevel: number;
+  tier: number;
+  benchmark: string;
+  /** The single-monster CR range, "1/8-1/2". */
+  singleCr: string;
+  /** The party stamp of that check: an entry whose fit has another stamp is out of date. */
+  stamp: string;
 }
 
 export interface Catalog {
   party: { name: string; pcs: string[] };
+  /** Written by `catalog check`; absent until the first check. */
+  profile?: CatalogProfile;
   difficulty: Difficulty;
   /** The party's current session number. */
   session: number;
   /** A fit older than this many sessions is checked again; 0 turns it off. */
   recheckEverySessions: number;
+  /** An entry run at session S is offered again from session S + this; 0 offers it at once. */
+  reuseAfterSessions: number;
   entries: CatalogEntry[];
 }
 
@@ -54,8 +78,11 @@ export interface MergeResult {
 }
 
 export const CATALOG_TYPE = "encounter-catalog";
-export const ENTRY_INFO_STRING = "yaml encounter";
+export const ENTRY_INFO_STRING = "rpg encounter";
+/** The block the plugin renders as the catalog's board. */
+export const BOARD_INFO_STRING = "rpg encounter-catalog";
 export const DEFAULT_RECHECK_EVERY_SESSIONS = 5;
+export const DEFAULT_REUSE_AFTER_SESSIONS = 3;
 
 const DIFFICULTIES: readonly Difficulty[] = ["easy", "challenging", "deadly"];
 const FIT_STATES = ["fit", "too-easy", "too-hard"] as const;
@@ -116,6 +143,22 @@ export function addEntry(catalog: Catalog, entry: CatalogEntry): Catalog {
   return { ...catalog, entries: [...catalog.entries, entry] };
 }
 
+/** A new catalog with the entry of that id changed by `change`; an id that is not there is an error. */
+export function updateEntry(catalog: Catalog, id: string, change: (entry: CatalogEntry) => CatalogEntry): Catalog {
+  if (!catalog.entries.some((e) => e.id === id)) {
+    throw new Error(`Encounter catalog has no entry with id "${id}"`);
+  }
+  return { ...catalog, entries: catalog.entries.map((e) => (e.id === id ? change(e) : e)) };
+}
+
+/** The entry marked as read by a person. */
+export const confirmed = (entry: CatalogEntry): CatalogEntry => ({ ...entry, review: "confirmed" });
+
+/** The entry marked as run at `session`. */
+export const usedAt =
+  (session: number) =>
+  (entry: CatalogEntry): CatalogEntry => ({ ...entry, uses: (entry.uses ?? 0) + 1, lastUsedSession: session });
+
 /** A new catalog without the entry of that id; an id that is not there is an error. */
 export function removeEntry(catalog: Catalog, id: string): Catalog {
   if (!catalog.entries.some((e) => e.id === id)) {
@@ -166,6 +209,7 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
     if (entry.source.table !== undefined) source.table = entry.source.table;
     if (entry.source.row !== undefined) source.row = entry.source.row;
     if (entry.source.book !== undefined) source.book = entry.source.book;
+    if (entry.source.text !== undefined) source.text = entry.source.text;
     out.source = source;
   }
   out.review = entry.review;
@@ -181,14 +225,18 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
       avgHpLost: f.avgHpLost,
       checkedOn: f.checkedOn,
       checkedAtSession: f.checkedAtSession,
+      ...(f.atMin !== undefined ? { atMin: f.atMin } : {}),
+      ...(f.atMax !== undefined ? { atMax: f.atMax } : {}),
     };
   }
+  if (entry.uses !== undefined) out.uses = entry.uses;
+  if (entry.lastUsedSession !== undefined) out.lastUsedSession = entry.lastUsedSession;
   return out;
 }
 
 const YAML_OPTIONS = { lineWidth: 0 } as const;
 
-/** The catalog as a markdown note: frontmatter, a title, an intro line, one `yaml encounter` block per entry. */
+/** The catalog as a markdown note: frontmatter, a title, an intro line, the board block, one `rpg encounter` block per entry. */
 export function serializeCatalog(catalog: Catalog): string {
   const frontmatter = stringifyYaml(
     {
@@ -198,6 +246,8 @@ export function serializeCatalog(catalog: Catalog): string {
       difficulty: catalog.difficulty,
       session: catalog.session,
       recheckEverySessions: catalog.recheckEverySessions,
+      reuseAfterSessions: catalog.reuseAfterSessions,
+      ...(catalog.profile ? { profile: { ...catalog.profile } } : {}),
     },
     YAML_OPTIONS
   );
@@ -211,6 +261,11 @@ export function serializeCatalog(catalog: Catalog): string {
     "",
     `Ready-made encounters for ${catalog.party.name}, checked against the party by \`rpg sim\` ` +
       `(${catalog.entries.length === 1 ? "1 entry" : `${catalog.entries.length} entries`}, ${confirmed} confirmed). Edit the blocks by hand; the fit is recomputed.`,
+    "",
+    `\`\`\`${BOARD_INFO_STRING}`,
+    // The body names the block, for Obsidian's reading view (which may lose the info string).
+    "view: encounter-catalog",
+    "```",
     "",
   ];
   for (const entry of catalog.entries) {
@@ -269,11 +324,42 @@ function parseFrontmatter(front: string): Omit<Catalog, "entries"> {
   if (typeof every !== "number" || !Number.isInteger(every) || every < 0) {
     throw new Error("Encounter catalog frontmatter `recheckEverySessions` must be a whole number, 0 or more");
   }
+  const reuse = data.reuseAfterSessions ?? DEFAULT_REUSE_AFTER_SESSIONS;
+  if (typeof reuse !== "number" || !Number.isInteger(reuse) || reuse < 0) {
+    throw new Error("Encounter catalog frontmatter `reuseAfterSessions` must be a whole number, 0 or more");
+  }
   return {
     party: { name, pcs: pcsRaw as string[] },
+    ...(data.profile !== undefined && data.profile !== null ? { profile: parseProfile(data.profile) } : {}),
     difficulty: difficulty as Difficulty,
     session,
     recheckEverySessions: every,
+    reuseAfterSessions: reuse,
+  };
+}
+
+/** The frontmatter `profile` `catalog check` writes; a malformed one throws naming the key. */
+function parseProfile(raw: unknown): CatalogProfile {
+  if (!isObj(raw)) throw new Error("Encounter catalog frontmatter `profile` must be a mapping");
+  const whole = (key: string): number => {
+    const v = raw[key];
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+      throw new Error(`Encounter catalog frontmatter \`profile.${key}\` must be a whole number`);
+    }
+    return v;
+  };
+  const text = (key: string): string => {
+    const v = str(raw[key]);
+    if (v === undefined) throw new Error(`Encounter catalog frontmatter \`profile.${key}\` must be text`);
+    return v;
+  };
+  return {
+    size: whole("size"),
+    averageLevel: whole("averageLevel"),
+    tier: whole("tier"),
+    benchmark: text("benchmark"),
+    singleCr: text("singleCr"),
+    stamp: text("stamp"),
   };
 }
 
@@ -316,7 +402,19 @@ function parseFit(raw: unknown, fail: (m: string) => never): FitState {
     if (typeof v !== "number" || !Number.isFinite(v)) return fail(`\`fit.${key}\` must be a number`);
     return v;
   };
+  const bound = (key: "atMin" | "atMax"): FitState["state"] | undefined => {
+    const v = raw[key];
+    if (v === undefined || v === null) return undefined;
+    if (typeof v !== "string" || !(FIT_STATES as readonly string[]).includes(v)) {
+      return fail(`\`fit.${key}\` must be one of ${FIT_STATES.join(", ")}`);
+    }
+    return v as FitState["state"];
+  };
+  const atMin = bound("atMin");
+  const atMax = bound("atMax");
   return {
+    ...(atMin !== undefined ? { atMin } : {}),
+    ...(atMax !== undefined ? { atMax } : {}),
     state: state as FitState["state"],
     stamp,
     difficulty: difficulty as Difficulty,
@@ -362,7 +460,7 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
     const note = str(raw.note);
     if (!note) fail("`source.note` is missing");
     source = { note };
-    for (const key of ["table", "row", "book"] as const) {
+    for (const key of ["table", "row", "book", "text"] as const) {
       const v = str(raw[key]);
       if (raw[key] !== undefined && raw[key] !== null && v === undefined) fail(`\`source.${key}\` must be text`);
       if (v !== undefined) source[key] = v;
@@ -390,7 +488,18 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
     entry.notes = notes;
   }
   if (data.fit !== undefined && data.fit !== null) entry.fit = parseFit(data.fit, fail);
+  for (const key of ["uses", "lastUsedSession"] as const) {
+    const v = data[key];
+    if (v === undefined || v === null) continue;
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) fail(`\`${key}\` must be a whole number, 0 or more`);
+    entry[key] = v;
+  }
   return entry;
+}
+
+/** One entry block's YAML read as an entry (the plugin renders each block on its own). */
+export function parseEntryBlock(yamlText: string): CatalogEntry {
+  return parseEntry(yamlText, 1, new Set());
 }
 
 /**
@@ -406,7 +515,7 @@ export function parseCatalog(text: string): Catalog {
   const taken = new Set<string>();
 
   const lines = body.split("\n");
-  const open = /^(`{3,})\s*yaml\s+encounter\s*$/;
+  const open = /^(`{3,})\s*(?:yaml|rpg)\s+encounter\s*$/;
   for (let i = 0; i < lines.length; i += 1) {
     const match = open.exec(lines[i]);
     if (!match) continue;

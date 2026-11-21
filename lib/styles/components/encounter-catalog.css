@@ -1,0 +1,518 @@
+/* ─── Encounter catalog (rpg encounter-catalog board, rpg encounter rows) ─── */
+/*
+ * The board of a party's encounter catalog: the party header, a strip of how
+ * many encounters fit, then a card per encounter with a gauge of what the
+ * fight costs the party against what the difficulty aims for.
+ * Fit colours follow Obsidian's palette: green fits, blue is too easy,
+ * red too hard, yellow needs a check.
+ */
+
+.rpg-enc-board {
+  --rpg-enc-fit: var(--color-green);
+  --rpg-enc-easy: var(--color-blue);
+  --rpg-enc-hard: var(--color-red);
+  --rpg-enc-check: var(--color-yellow);
+  --rpg-enc-radius: var(--radius-m, 8px);
+
+  display: grid;
+  gap: var(--size-4-3, 0.75rem);
+  margin-block: var(--size-4-2, 0.5rem) var(--size-4-6, 1.5rem);
+  font-family: var(--font-text);
+}
+
+.rpg-enc-board.is-loading {
+  color: var(--text-muted);
+}
+
+.rpg-enc-eyebrow {
+  display: block;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Party header ── */
+.rpg-enc-party {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--size-4-2, 0.5rem) var(--size-4-4, 1rem);
+}
+
+.rpg-enc-party-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rpg-enc-party-name h3 {
+  margin: 0;
+  font-family: var(--font-title, var(--font-text));
+  font-size: 1.5em;
+  line-height: 1.15;
+}
+
+.rpg-enc-pcs {
+  font-size: var(--font-ui-small, 0.85rem);
+  color: var(--text-muted);
+}
+
+.rpg-enc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rpg-enc-chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rpg-enc-chip.is-tier {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: var(--font-semibold, 600);
+}
+
+/* ── The fit strip and its legend ── */
+.rpg-enc-strip {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+}
+
+.rpg-enc-strip-seg {
+  all: unset;
+  display: block;
+  min-width: 6px;
+  height: 100%;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.rpg-enc-strip-seg:hover,
+.rpg-enc-strip-seg.is-active {
+  opacity: 1;
+  transform: scaleY(1.35);
+}
+
+.rpg-enc-strip-seg:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.rpg-enc-strip-seg.is-fit,
+.rpg-enc-legend-item.is-fit i {
+  background: var(--rpg-enc-fit);
+}
+.rpg-enc-strip-seg.is-too-easy,
+.rpg-enc-legend-item.is-too-easy i {
+  background: var(--rpg-enc-easy);
+}
+.rpg-enc-strip-seg.is-too-hard,
+.rpg-enc-legend-item.is-too-hard i {
+  background: var(--rpg-enc-hard);
+}
+.rpg-enc-strip-seg.is-check,
+.rpg-enc-legend-item.is-check i {
+  background: var(--rpg-enc-check);
+}
+
+.rpg-enc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.rpg-enc-legend-item {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-ui-small, 0.85rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rpg-enc-legend-item i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.rpg-enc-legend-item:hover {
+  color: var(--text-normal);
+}
+
+.rpg-enc-legend-item.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.rpg-enc-legend-item:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+}
+
+.rpg-enc-hint,
+.rpg-enc-empty {
+  margin: 0;
+  font-size: var(--font-ui-small, 0.85rem);
+  color: var(--text-muted);
+}
+
+/* ── Tools: search and toggles ── */
+.rpg-enc-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.rpg-enc-search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.rpg-enc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-ui-small, 0.85rem);
+  white-space: nowrap;
+}
+
+.rpg-enc-muted {
+  font-size: var(--font-ui-smaller, 0.75rem);
+  color: var(--text-faint);
+}
+
+/* ── Cards ── */
+.rpg-enc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.rpg-enc-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--rpg-enc-radius);
+  border: 1px solid var(--background-modifier-border);
+  border-top: 3px solid var(--rpg-enc-check);
+  background: var(--background-primary-alt, var(--background-secondary));
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.rpg-enc-card.is-fit {
+  border-top-color: var(--rpg-enc-fit);
+}
+.rpg-enc-card.is-too-easy {
+  border-top-color: var(--rpg-enc-easy);
+}
+.rpg-enc-card.is-too-hard {
+  border-top-color: var(--rpg-enc-hard);
+}
+.rpg-enc-card.is-used {
+  opacity: 0.72;
+}
+
+.rpg-enc-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-s, 0 2px 8px rgb(0 0 0 / 0.08));
+}
+
+.rpg-enc-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rpg-enc-card-title {
+  min-width: 0;
+}
+
+.rpg-enc-card-title h4 {
+  margin: 0;
+  font-size: 1.05em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.rpg-enc-pill {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-weight: var(--font-semibold, 600);
+  white-space: nowrap;
+  color: var(--rpg-enc-check);
+  background: color-mix(in srgb, var(--rpg-enc-check) 14%, transparent);
+}
+.rpg-enc-pill.is-fit {
+  color: var(--rpg-enc-fit);
+  background: color-mix(in srgb, var(--rpg-enc-fit) 14%, transparent);
+}
+.rpg-enc-pill.is-too-easy {
+  color: var(--rpg-enc-easy);
+  background: color-mix(in srgb, var(--rpg-enc-easy) 14%, transparent);
+}
+.rpg-enc-pill.is-too-hard {
+  color: var(--rpg-enc-hard);
+  background: color-mix(in srgb, var(--rpg-enc-hard) 14%, transparent);
+}
+
+.rpg-enc-monsters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rpg-enc-monster {
+  all: unset;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small, 0.85rem);
+  color: var(--link-color, var(--text-accent));
+  cursor: pointer;
+}
+
+.rpg-enc-monster:hover {
+  background: var(--background-modifier-hover);
+}
+
+.rpg-enc-monster:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+}
+
+.rpg-enc-monster small {
+  color: var(--text-muted);
+}
+
+.rpg-enc-scene {
+  margin: 0;
+  font-size: var(--font-ui-small, 0.85rem);
+  font-style: italic;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.rpg-enc-scene.is-open {
+  -webkit-line-clamp: unset;
+  display: block;
+}
+
+/* ── The gauge: share of party HP lost; the band is where it fits, the dash the aim ── */
+.rpg-enc-outcome {
+  display: grid;
+  gap: 4px;
+}
+
+.rpg-enc-outcome.is-dim {
+  opacity: 0.55;
+}
+
+.rpg-enc-gauge {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--background-modifier-border);
+}
+
+.rpg-enc-gauge-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--rpg-enc-fit) 30%, transparent);
+}
+
+.rpg-enc-gauge-aim {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-left: 2px dashed var(--text-muted);
+}
+
+.rpg-enc-gauge-mark {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--rpg-enc-check);
+  border: 2px solid var(--background-primary);
+  box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+.rpg-enc-gauge-mark.is-fit {
+  background: var(--rpg-enc-fit);
+}
+.rpg-enc-gauge-mark.is-too-easy {
+  background: var(--rpg-enc-easy);
+}
+.rpg-enc-gauge-mark.is-too-hard {
+  background: var(--rpg-enc-hard);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rpg-enc-gauge-mark {
+    animation: rpg-enc-slide 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+@keyframes rpg-enc-slide {
+  from {
+    left: 0;
+    opacity: 0;
+  }
+}
+
+.rpg-enc-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.rpg-enc-numbers b {
+  color: var(--text-normal);
+}
+
+.rpg-enc-note {
+  margin: 0;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  color: var(--text-muted);
+}
+
+.rpg-enc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rpg-enc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--background-secondary);
+  font-size: var(--font-ui-smaller, 0.75rem);
+  color: var(--text-muted);
+}
+
+.rpg-enc-tag.is-flag {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  font-weight: var(--font-semibold, 600);
+}
+
+.rpg-enc-tag button {
+  all: unset;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.rpg-enc-tag-input {
+  flex: 1 1 100px;
+  min-width: 0;
+  height: auto;
+  padding: 0 6px;
+  font-size: var(--font-ui-smaller, 0.75rem);
+}
+
+.rpg-enc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.rpg-enc-actions button {
+  padding: 2px 10px;
+  height: auto;
+  font-size: var(--font-ui-small, 0.85rem);
+}
+
+.rpg-enc-source {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  color: var(--text-faint);
+}
+
+.rpg-enc-more {
+  justify-self: center;
+}
+
+/* ── One-line entry rows (`rpg encounter`) ── */
+.rpg-enc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 2px 0;
+  font-size: var(--font-ui-small, 0.85rem);
+}
+
+.rpg-enc-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-yellow);
+  align-self: center;
+}
+.rpg-enc-dot.is-fit {
+  background: var(--color-green);
+}
+.rpg-enc-dot.is-too-easy {
+  background: var(--color-blue);
+}
+.rpg-enc-dot.is-too-hard {
+  background: var(--color-red);
+}
+
+.rpg-enc-row-name {
+  font-weight: var(--font-semibold, 600);
+}
+
+.rpg-enc-row-monsters {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rpg-enc-row-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-variant-numeric: tabular-nums;
+}

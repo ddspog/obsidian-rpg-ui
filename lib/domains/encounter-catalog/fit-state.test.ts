@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import type { Catalog, CatalogEntry } from "./catalog";
-import { type FitContext, fitStateFrom, isEligible, partitionByFit, recheckReason, type FitState } from "./fit-state";
+import {
+  type FitContext,
+  fitStateFrom,
+  isEligible,
+  partitionByFit,
+  recentlyUsed,
+  recheckReason,
+  type FitState,
+} from "./fit-state";
 
 const STAMP = "aaaaaaaaaaaaaaaa";
 
@@ -187,5 +195,22 @@ describe("partitionByFit", () => {
       unchecked: 0,
       draft: 0,
     });
+  });
+});
+
+describe("isEligible: plural tags", () => {
+  it("matches a tag whether it is written plural or not", () => {
+    expect(isEligible(entry({ tags: ["forests"] }), ctx(), { tags: ["forest"] })).toBe(true);
+    expect(isEligible(entry({ tags: ["forest"] }), ctx(), { anyTags: ["Forests"] })).toBe(true);
+  });
+});
+
+describe("recentlyUsed", () => {
+  it("holds an entry back until reuseAfterSessions sessions have passed since its run", () => {
+    expect(recentlyUsed({}, 5, 3)).toBe(false);
+    expect(recentlyUsed({ lastUsedSession: 5 }, 5, 3)).toBe(true);
+    expect(recentlyUsed({ lastUsedSession: 5 }, 7, 3)).toBe(true);
+    expect(recentlyUsed({ lastUsedSession: 5 }, 8, 3)).toBe(false);
+    expect(recentlyUsed({ lastUsedSession: 5 }, 5, 0)).toBe(false);
   });
 });
