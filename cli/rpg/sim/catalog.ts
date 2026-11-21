@@ -38,6 +38,7 @@ import {
 } from "./catalog-store";
 import { checkEntries, loadPartyState, type CheckParams, type CheckResult } from "./catalog-check";
 import { notesOf, scanForDrafts } from "./catalog-draft";
+import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { CONFIDENCES, UsageError, type SimOptions } from "./flags";
 import { readMonsterNote } from "./monsters";
@@ -71,6 +72,46 @@ interface EntryView {
     avgHpLost: number;
     /** Why the fit is out of date, when it is. */
     stale?: string;
+  };
+}
+
+/** An entry as `catalog suggest --brief` prints it: groups as --monster takes them, and the fit flattened. */
+export interface BriefEntryView {
+  id: string;
+  name: string;
+  monsters: string[];
+  tags: string[];
+  review: string;
+  fit?: string;
+  winRate?: number;
+  tpkRate?: number;
+  avgHpLost?: number;
+  stale?: string;
+}
+
+export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
+  const reason = recheckReason(
+    entry,
+    fitContext.stamp,
+    fitContext.session,
+    fitContext.recheckEverySessions,
+    fitContext.difficulty
+  );
+  return {
+    id: entry.id,
+    name: entry.name,
+    monsters: entry.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+    tags: entry.tags,
+    review: entry.review,
+    ...(entry.fit
+      ? {
+          fit: entry.fit.state,
+          winRate: entry.fit.winRate,
+          tpkRate: entry.fit.tpkRate,
+          avgHpLost: entry.fit.avgHpLost,
+        }
+      : {}),
+    ...(reason ? { stale: reason } : {}),
   };
 }
 
@@ -364,6 +405,17 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
     entry.fit ? outcomeDistance(entry.fit, fitContext.difficulty) : Number.POSITIVE_INFINITY;
   eligible.sort((a, b) => distance(a) - distance(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const cap = options.limitSet ? options.limit : DEFAULT_SUGGEST;
+
+  if (options.brief) {
+    return {
+      difficulty: catalog.difficulty,
+      needsCheck: stale,
+      ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
+      ...(refreshed ? { refreshed } : {}),
+      matched: eligible.length,
+      entries: eligible.slice(0, cap).map((entry) => briefViewOf(ctx, entry, fitContext)),
+    };
+  }
 
   return {
     catalog: path,

@@ -1,4 +1,5 @@
 import type { Ctx } from "../app";
+import { briefJson } from "./brief";
 import { parseSimArgv, SIM_HELP, type SimOptions, UsageError, validateForSubcommand } from "./flags";
 
 export type SimHandler = (ctx: Ctx, options: SimOptions) => Promise<{ doc: unknown }>;
@@ -15,6 +16,8 @@ export interface SimDeps {
   suggest: SimHandler;
   /** `rpg sim catalog …` (optional so a harness for run and suggest need not supply it). */
   catalog?: SimHandler;
+  /** `rpg sim plan …` (optional, as catalog). */
+  plan?: SimHandler;
 }
 
 /**
@@ -43,11 +46,14 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
           ? deps.suggest
           : subcommand === "catalog"
             ? deps.catalog
-            : undefined;
-    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run, suggest or catalog).`);
+            : subcommand === "plan"
+              ? deps.plan
+              : undefined;
+    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run, suggest, plan or catalog).`);
     validateForSubcommand(subcommand, options);
     const { doc } = await handler(deps.context(options.vault), options);
-    io.out(JSON.stringify(doc, null, 2));
+    // `plan` and the --brief forms are read by a model: laid out to spend fewer tokens.
+    io.out(options.brief || subcommand === "plan" ? briefJson(doc) : JSON.stringify(doc, null, 2));
     return 0;
   } catch (err) {
     if (err instanceof UsageError) return usage(err.message);

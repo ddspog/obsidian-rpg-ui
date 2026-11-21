@@ -10,7 +10,7 @@
  *   rpg search kobold                      notes whose names match
  *   rpg gm …                               run a session as its Game Master (rpg gm guide)
  *   rpg session …                          a session's files, and its lines of play
- *   rpg sim run|suggest …                  encounter simulator: Monte Carlo party-vs-monster outcomes (rpg sim --help)
+ *   rpg sim run|suggest|plan|catalog …     encounter simulator, suggestions and a party's encounter catalog (rpg sim --help)
  *
  * Reading commands write nothing. `rpg gm` writes a session's log and its GM
  * notebook; `rpg session` its saved lines (and, on switch, its notes).
@@ -76,8 +76,14 @@ Game Master (the session's log and GM notebook are written; rpg gm guide explain
   rpg gm reveal <session> <title>|--all  hidden prep moved into the open notebook
 
 Encounter simulator (seedable Monte Carlo over party notes and bestiary notes; rpg sim --help):
-  rpg sim run --monster "<note>:<count>"… [--pc <note>]… [--seed N] [--trials N] [--rounds N]
-  rpg sim suggest [--difficulty easy|challenging|deadly] [--habitat H] [--type T] [--cr C] [--limit N]
+  rpg sim plan [<theme words>] [--habitat H] [--tag T]… [--limit N]
+                                       a few encounters that fit: the catalog first, then a sweep (start here)
+  rpg sim run --monster "<note>:<count>"… [--pc <note>]… [--brief] [--seed N] [--trials N] [--rounds N]
+  rpg sim suggest [--difficulty easy|challenging|deadly] [--rank cr|outcome] [--base "<note>:<n>"]…
+                  [--habitat H] [--type T] [--cr C] [--limit N] [--brief]
+  rpg sim catalog init|draft|add|confirm|remove|check|suggest|list …
+                                       a party's catalog of ready encounters, each stamped fit, too-easy or
+                                       too-hard for the party (docs/encounter-catalog.md)
 
 Sessions:
   rpg session list                     notes that are sessions

@@ -1,11 +1,12 @@
 /**
  * `rpg sim` — the encounter simulator's entry: wires the sim's own strict flag
- * parse and dispatch to the vault boot and the commands (run, suggest, catalog).
+ * parse and dispatch to the vault boot and the commands (run, suggest, plan, catalog).
  */
 
 import { boot, findVault } from "../app";
 import { simCatalog } from "./catalog";
 import { simMain, type SimIo } from "./dispatch";
+import { simPlan } from "./plan";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
 
@@ -18,5 +19,6 @@ export function simEntry(tokens: string[], io: SimIo): Promise<number> {
     run: simRun,
     suggest: simSuggest,
     catalog: simCatalog,
+    plan: simPlan,
   });
 }

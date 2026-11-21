@@ -25,6 +25,7 @@ import type { SimHandler } from "./dispatch";
 import { UsageError, type SimOptions } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
+import { fitByDifficulty, groupRef, noteRef, skippedByOwner } from "./brief";
 
 interface AbilitySummary {
   score?: number;
@@ -176,6 +177,26 @@ export const simRun: SimHandler = async (ctx, options) => {
   const fidelity: Record<string, FidelityRecord[]> = { ...party.fidelity };
   for (const { monster } of groups) {
     if (!(monster.note in fidelity)) fidelity[monster.note] = monster.fidelity;
+  }
+
+  if (options.brief) {
+    return {
+      doc: {
+        monsters: groups.map(({ monster, count }) => groupRef(ctx, monster.note, count)),
+        party: party.actors.map((a) => a.name),
+        seed: options.seed,
+        trials: options.trials,
+        winRate: summary.winRate,
+        tpkRate: summary.tpkRate,
+        stalemateRate: summary.stalemateRate,
+        avgRounds: summary.avgRounds,
+        avgHpLost: summary.avgHpLost,
+        koRate: summary.koRate,
+        difficulty,
+        fit: fitByDifficulty(summary),
+        skipped: skippedByOwner(fidelity, (owner) => (/\.md$/i.test(owner) ? noteRef(ctx, owner) : owner)),
+      },
+    };
   }
 
   return {
