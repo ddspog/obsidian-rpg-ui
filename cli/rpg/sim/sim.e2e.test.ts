@@ -1,9 +1,11 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { parseCatalog } from "lib/domains/encounter-catalog/catalog";
 import { parseDamage } from "lib/domains/session-log/session-actions";
 import type { Ctx } from "../app";
 import { characterSheet } from "../commands/character";
+import { createSimCatalog } from "./catalog";
 import { simMain } from "./dispatch";
 import { DEFAULT_PARTY } from "./party";
 import { simRun } from "./run";
@@ -47,7 +49,12 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     const code = await simMain(
       tokens,
       { out: (s) => (out += s), err: (s) => (err += s) },
-      { context: () => ctx, run: simRun, suggest: simSuggest }
+      {
+        context: () => ctx,
+        run: simRun,
+        suggest: simSuggest,
+        catalog: createSimCatalog({ now: () => "2026-11-21" }),
+      }
     );
     return { code, out, err };
   }
@@ -230,6 +237,77 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
         (c: { composition: { count: number }; totalCr: string }) => c.composition.count === 1 && c.totalCr === "5/8"
       )
     ).toBe(true);
+  }, 400_000);
+
+  it("keeps an encounter catalog: init, draft the arctic table (dry run, then accept), check, suggest", async () => {
+    const arctic = "tales-of-the-valiant/gm-tools/tables/game-masters-guide/Arctic Encounters.md";
+    const files = () => (readdirSync(ctx.root, { recursive: true, encoding: "utf8" }) as string[]).sort();
+    const catalog = async (...tokens: string[]) => {
+      const result = await sim("catalog", ...tokens);
+      expect(result.code, result.err).toBe(0);
+      return JSON.parse(result.out) as Record<string, any>;
+    };
+
+    const made = await catalog("init", "--party-name", "E2E Party");
+    const path = made.catalog as string;
+    expect(path).toBe("tales-of-the-valiant/gm-tools/encounter-catalog/e2e-party.md");
+    expect(made.pcs).toEqual(DEFAULT_PARTY);
+
+    // A dry run writes nothing.
+    const before = files();
+    const dry = await catalog("draft", arctic, "--catalog", path);
+    expect(files()).toEqual(before);
+    expect(dry.accepted).toBeUndefined();
+    expect(dry.total).toBeGreaterThan(5);
+    const bandits = dry.drafts.find((d: { id: string }) => d.id === "arctic-t1-6-bandit-captain-2-bandit");
+    expect(bandits).toMatchObject({
+      name: "Arctic T1 #6: Bandit Captain + 2 Bandit",
+      monsters: [
+        { note: "Bandit Captain", count: 1 },
+        { note: "Bandit", count: 2 },
+      ],
+      confidence: "high",
+    });
+    expect(bandits.tags).toEqual(expect.arrayContaining(["arctic", "tier-1", "game-masters-guide"]));
+
+    const accepted = await catalog("draft", arctic, "--catalog", path, "--accept");
+    expect(accepted.accepted).toBe(accepted.byConfidence.high);
+    const drafted = parseCatalog(readFileSync(join(ctx.root, path), "utf8")).entries;
+    expect(drafted).toHaveLength(accepted.accepted);
+    expect(drafted.every((e) => e.review === "draft" && !e.fit)).toBe(true);
+
+    const checked = await catalog("check", "--catalog", path, "--trials", "50");
+    expect(checked).toMatchObject({ checked: drafted.length, unchanged: 0, errors: [] });
+    const states = checked.partition.fit + checked.partition.tooEasy + checked.partition.tooHard;
+    expect(states).toBe(drafted.length);
+    const again = await catalog("check", "--catalog", path, "--trials", "50");
+    expect(again).toMatchObject({ checked: 0, unchanged: drafted.length });
+
+    // Nothing is confirmed yet, so the default suggestion is empty; with drafts and every state it is not.
+    expect((await catalog("suggest", "--catalog", path, "--tag", "arctic")).entries).toEqual([]);
+    const suggested = await catalog(
+      "suggest",
+      "--catalog",
+      path,
+      "--tag",
+      "arctic",
+      "--include-draft",
+      "--state",
+      "fit",
+      "--state",
+      "too-easy",
+      "--state",
+      "too-hard",
+      "--limit",
+      "50"
+    );
+    expect(suggested.needsCheck).toBe(0);
+    expect(suggested.hint).toBeUndefined();
+    expect(suggested.entries.length).toBeGreaterThan(0);
+    for (const entry of suggested.entries) {
+      expect(entry.tags).toContain("arctic");
+      expect(["fit", "too-easy", "too-hard"]).toContain(entry.fit.state);
+    }
   }, 400_000);
 
   it("refuses --base on run with a usage error", async () => {

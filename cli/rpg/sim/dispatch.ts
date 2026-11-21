@@ -13,6 +13,8 @@ export interface SimDeps {
   context(vault?: string): Ctx;
   run: SimHandler;
   suggest: SimHandler;
+  /** `rpg sim catalog …` (optional so a harness for run and suggest need not supply it). */
+  catalog?: SimHandler;
 }
 
 /**
@@ -30,8 +32,19 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
       io.out(SIM_HELP);
       return 0;
     }
-    const handler = subcommand === "run" ? deps.run : subcommand === "suggest" ? deps.suggest : undefined;
-    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run or suggest).`);
+    if (subcommand === "catalog" && options.action === "help") {
+      io.out(SIM_HELP);
+      return 0;
+    }
+    const handler =
+      subcommand === "run"
+        ? deps.run
+        : subcommand === "suggest"
+          ? deps.suggest
+          : subcommand === "catalog"
+            ? deps.catalog
+            : undefined;
+    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run, suggest or catalog).`);
     validateForSubcommand(subcommand, options);
     const { doc } = await handler(deps.context(options.vault), options);
     io.out(JSON.stringify(doc, null, 2));
