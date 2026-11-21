@@ -201,7 +201,7 @@ describe("SIM_HELP", () => {
     expect(SIM_HELP).toMatch(/--base "<note>\[:<count>\]"\s+`suggest`/);
   });
 
-  it("covers the table: pc, monster, base, rank, habitat, type, cr, vault, json, help", () => {
+  it("covers the table: pc, monster, base, rank, habitat, type, cr, the catalog flags, vault, json, help", () => {
     expect(SIM_FLAGS.map((f) => f.name)).toEqual([
       "pc",
       "monster",
@@ -215,6 +215,21 @@ describe("SIM_HELP", () => {
       "type",
       "cr",
       "limit",
+      "party-name",
+      "catalog",
+      "name",
+      "every",
+      "session",
+      "tag",
+      "any-tag",
+      "state",
+      "review",
+      "min-confidence",
+      "accept",
+      "force",
+      "refresh",
+      "include-stale",
+      "include-draft",
       "vault",
       "json",
       "help",

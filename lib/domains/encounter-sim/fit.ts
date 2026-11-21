@@ -31,7 +31,7 @@ export const OUTCOME_PROFILES: Readonly<Record<FitDifficulty, OutcomeProfile>> =
 };
 
 /** The most outcomeDistance that still counts as a fit (a heuristic, like the profiles). */
-export const FIT_TOLERANCE = 0.2;
+export const FIT_TOLERANCE = 0.3;
 
 /** The distance of an outcome from a difficulty's profile: HP lost, plus a doubled weight on TPK. */
 export function outcomeDistance(summary: OutcomeSummary, difficulty: FitDifficulty): number {

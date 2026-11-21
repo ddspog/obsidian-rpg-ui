@@ -1,0 +1,315 @@
+import { describe, expect, it } from "vitest";
+
+import { extractEncounter } from "./extract-row";
+import { buildMonsterIndex } from "./monster-index";
+
+const index = buildMonsterIndex([
+  { note: "b/Bandit.md", name: "Bandit", cr: "1/8" },
+  { note: "b/Bandit Captain.md", name: "Bandit Captain", cr: "2" },
+  { note: "b/Cultist.md", name: "Cultist", cr: "1/8" },
+  { note: "b/Cultist, Fanatic.md", name: "Cultist, Fanatic", cr: "2" },
+  { note: "b/Kobold, A.md", name: "Kobold, A", cr: "1/8" },
+  { note: "b/Winter Wolf.md", name: "Winter Wolf", cr: "3" },
+  { note: "b/Wolf.md", name: "Wolf", cr: "1/4" },
+  { note: "b/Wolf, Dire.md", name: "Wolf, Dire", cr: "1" },
+  { note: "b/Werebear.md", name: "Werebear", cr: "5" },
+  { note: "b/Werewolf.md", name: "Werewolf", cr: "3" },
+  { note: "b/Ice Mephit.md", name: "Ice Mephit", cr: "1/2" },
+  { note: "b/Mammoth.md", name: "Mammoth", cr: "6" },
+  { note: "b/Giant, Frost.md", name: "Giant, Frost", cr: "8" },
+  { note: "b/Ghoul.md", name: "Ghoul", cr: "1" },
+  { note: "b/Grimlock.md", name: "Grimlock", cr: "1/4" },
+  { note: "b/Polar Bear.md", name: "Bear, Polar", cr: "2" },
+  { note: "b/Seal.md", name: "Seal", cr: "0" },
+  { note: "b/Moose.md", name: "Moose", cr: "1/2" },
+  { note: "b/Deer.md", name: "Deer", cr: "0" },
+  { note: "b/Shadow.md", name: "Shadow", cr: "1/2" },
+  { note: "b/Adult White Dragon.md", name: "Adult White Dragon", cr: "13" },
+  { note: "b/Swarm of Rats.md", name: "Swarm of Rats", cr: "1/4" },
+  { note: "b/Giant Rat.md", name: "Rat, Giant", cr: "1/8" },
+  { note: "b/Ogre.md", name: "Ogre", cr: "2" },
+  { note: "b/Wyvern.md", name: "Wyvern", cr: "6" },
+  { note: "b/Mimic.md", name: "Mimic", cr: "2" },
+]);
+
+const counts = (text: string) => extractEncounter(text, index).monsters.map((m) => [m.name, m.count] as const);
+
+describe("extractEncounter: the Arctic Encounters rows", () => {
+  it("counts a captain and two bandits (explicit counts, a fight that can be avoided)", () => {
+    const r = extractEncounter(
+      "A bandit captain and two bandits are claiming trapped animals when the PCs arrive. The captain accuses the PCs of stealing their kill and reaches for their weapon. Defusing this situation without combat requires a successful DC 11 CHA (Intimidation or Persuasion) check.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count, m.inferred])).toEqual([
+      ["Bandit Captain", 1, false],
+      ["Bandit", 2, false],
+    ]);
+    expect(r.monsters[1].matchedText).toBe("two bandits");
+    expect(r.monsters[0].note).toBe("b/Bandit Captain.md");
+    expect(r.monsters[0].cr).toBe("2");
+    expect(r.combat).toBe("likely");
+    expect(r.confidence).toBe("high");
+    expect(r.unresolved).toEqual([]);
+  });
+
+  it("reads 'a team of five kobolds'", () => {
+    const r = extractEncounter(
+      "A team of five kobolds who seem woefully ill-prepared for the weather and terrain cross paths with the PCs. Though prepared to attack the PCs in the hope of obtaining warm clothes and rations, the kobolds respond positively to an offer of assistance and a successful DC 10 CHA (Persuasion) check.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Kobold, A", 5]]);
+    expect(r.combat).toBe("likely");
+    expect(r.confidence).toBe("high");
+  });
+
+  it("sums a fanatic cultist group and the cultists, and leaves the dire form of the name alone", () => {
+    const r = extractEncounter(
+      "Two fanatic cultists and six cultists travel the arctic wastes, forcefully converting everyone they meet.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([
+      ["Cultist, Fanatic", 2],
+      ["Cultist", 6],
+    ]);
+  });
+
+  it("counts the wolves once and leaves reinforcements out", () => {
+    const r = extractEncounter(
+      "A pack of four winter wolves prowls the area, hunting for prey, and they regard the PCs as a delicious alternative to moose and deer. If one of the wolves is reduced half its hit point maximum, its keening howl draws another two winter wolves to the area in 1 minute.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Winter Wolf", 4]]);
+    expect(r.reasons.join("\n")).toMatch(/reinforcements not counted/);
+    expect(r.reasons.join("\n")).toMatch(/prey or a comparison/);
+    expect(r.combat).toBe("likely");
+    expect(r.confidence).toBe("high");
+  });
+
+  it("counts three werebears on patrol", () => {
+    const r = extractEncounter(
+      "Three werebears are on patrol. Their village has suffered recently due to bandits.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([
+      ["Werebear", 3],
+      ["Bandit", 2],
+    ]);
+    expect(r.monsters[1].inferred).toBe(true);
+    expect(r.confidence).toBe("medium");
+  });
+
+  it("counts four ice mephits, not the snowballs", () => {
+    const r = extractEncounter(
+      "The PCs find two neatly stacked piles of twenty snowballs—each concealing a chunk of ice—standing 40 feet apart. Seconds later, four ice mephits arrive, two at each stack, and start chucking the snowballs at the PCs and each other. The snowballs have a range of 20 feet and deal 1d3 bludgeoning damage.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Ice Mephit", 4]]);
+    expect(r.unresolved).toEqual([]);
+    expect(r.combat).toBe("likely");
+  });
+
+  it("reads 'an arctic dire wolf' as one wolf and 'the wolf' as the same one", () => {
+    const r = extractEncounter(
+      "An arctic dire wolf returns to its pack with its most recent kill. When it notices the PCs, it drops its prey and growls, ready to attack them. The PCs can avoid combat with the wolf by succeeding on a DC 13 WIS (Animal Handling) or CHA (Intimidation) check.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count, m.inferred])).toEqual([["Wolf, Dire", 1, false]]);
+    expect(r.reasons.join("\n")).toMatch(/already named/);
+    expect(r.combat).toBe("likely");
+    expect(r.confidence).toBe("high");
+  });
+
+  it("leaves a stalked seal out of the encounter", () => {
+    const r = extractEncounter(
+      "The PCs interrupt a polar bear stalking a wounded seal, and it turns its attention to them. A successful DC 10 WIS (Insight) check reveals the bear only wants to scare off competitors and won’t engage in combat unless cornered.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Bear, Polar", 1]]);
+    expect(r.combat).toBe("likely");
+  });
+
+  it("calls the mammoth and frost giant tracks unlikely to be a fight", () => {
+    const r = extractEncounter(
+      "Mixed footprints made by massive quadrupeds and bipeds leave deep impressions in the snow. A successful DC 14 WIS (Survival) check identifies the creatures as two mammoths and four frost giants and determines they passed through an hour ago. A failure on the check misidentifies any or all the above information, depending on the severity of failure.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([
+      ["Mammoth", 2],
+      ["Giant, Frost", 4],
+    ]);
+    expect(r.combat).toBe("unlikely");
+    expect(r.confidence).toBe("low");
+  });
+
+  it("finds no monster in the earthquake", () => {
+    const r = extractEncounter(
+      "A minor earthquake causes the snow to give way, creating 20-foot-deep pits. Each PC must succeed on a DC 13 DEX save or fall into a pit, taking 1d6 bludgeoning damage from the softened fall. Climbing out of a pit without assistance requires a successful DC 11 STR (Athletics) check.",
+      index
+    );
+    expect(r.monsters).toEqual([]);
+    expect(r.unresolved).toEqual([]);
+    expect(r.confidence).toBe("low");
+    expect(r.combat).toBe("unlikely");
+  });
+
+  it("takes '10 of them animate as ghouls' as ten ghouls", () => {
+    const r = extractEncounter(
+      "Dozens of corpses stand mid-stride in a ravine, seemingly flash frozen in place. When the noontime sun touches them, 10 of them animate as ghouls. A successful DC 14 INT (Religion) check notes that powerful necrotic energy fills the ravine.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count, m.inferred])).toEqual([["Ghoul", 10, false]]);
+    expect(r.combat).toBe("likely");
+    expect(r.confidence).toBe("high");
+  });
+
+  it("does not take a shadow cast by something for the Shadow", () => {
+    const r = extractEncounter(
+      "A winged creature’s shadow passes the PCs on its way north. A successful DC 16 INT (Nature) check reveals an adult white dragon as the shadow’s owner. The creature travels to its mountain lair 5 miles distant.",
+      index
+    );
+    expect(r.monsters.map((m) => m.name)).toEqual(["Adult White Dragon"]);
+    expect(r.combat).toBe("unlikely");
+    expect(r.confidence).toBe("low");
+  });
+
+  it("reads a tracked wolf as a trace, not a meeting", () => {
+    const r = extractEncounter(
+      "The PCs come across a hastily abandoned encampment. If the check’s result is 15 or higher, the PC discovers odd tracks combining features of a wolf and a barefoot Humanoid.",
+      index
+    );
+    expect(r.combat).toBe("unlikely");
+    expect(r.confidence).toBe("low");
+  });
+});
+
+describe("extractEncounter: counts", () => {
+  it("keeps the dice and counts their rounded average", () => {
+    const r = extractEncounter("1d4 + 1 grimlocks patrol the region and attack the PCs if detected.", index);
+    expect(r.monsters).toMatchObject([
+      { name: "Grimlock", count: 4, dice: "1d4 + 1", matchedText: "1d4 + 1 grimlocks" },
+    ]);
+    expect(r.confidence).toBe("high");
+  });
+
+  it("reads plain dice, and dice written without spaces", () => {
+    expect(extractEncounter("3d4 kobolds who are bolder than they are smart.", index).monsters).toMatchObject([
+      { count: 8, dice: "3d4" },
+    ]);
+    expect(extractEncounter("1d6+3 kobolds attack.", index).monsters).toMatchObject([{ count: 7, dice: "1d6 + 3" }]);
+  });
+
+  it("reads dice before a swarm and a plus-one creature after it", () => {
+    const r = extractEncounter(
+      "1d6 swarms of rats + 1 giant rat that rise up from the sewers or a midden heap.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count, m.dice])).toEqual([
+      ["Swarm of Rats", 4, "1d6"],
+      ["Rat, Giant", 1, undefined],
+    ]);
+  });
+
+  it("reads 'a priest and 1d4 acolytes'-style mixed counts", () => {
+    const r = extractEncounter("A bandit captain and 1d4 bandits hide in the pass, ready to attack.", index);
+    expect(r.monsters.map((m) => [m.name, m.count, m.dice])).toEqual([
+      ["Bandit Captain", 1, undefined],
+      ["Bandit", 3, "1d4"],
+    ]);
+  });
+
+  it("reads 'a pair of', number words and digits", () => {
+    expect(counts("A pair of ogres attack the PCs.")).toEqual([["Ogre", 2]]);
+    expect(counts("A phalanx of 15 ogres attack.")).toEqual([["Ogre", 15]]);
+    expect(counts("Twelve ogres attack.")).toEqual([["Ogre", 12]]);
+    expect(counts("Twenty ogres attack.")).toEqual([["Ogre", 20]]);
+    expect(counts("A dozen ogres attack.")).toEqual([["Ogre", 12]]);
+  });
+
+  it("skips a modifier between the number and the name", () => {
+    expect(counts("Four hungry, snarling ogres attack.")).toEqual([["Ogre", 2]]); // a comma ends the phrase
+    expect(counts("Four hungry ogres attack.")).toEqual([["Ogre", 4]]);
+    expect(counts("A healthy frost giant tends to their injured frost giant comrade.")).toEqual([["Giant, Frost", 2]]);
+  });
+
+  it("counts a plural with no number as two and says so", () => {
+    const r = extractEncounter("Ogres lurk beneath the bridge, ready to attack.", index);
+    expect(r.monsters).toMatchObject([{ name: "Ogre", count: 2, inferred: true }]);
+    expect(r.reasons.join("\n")).toMatch(/plural with no number/);
+    expect(r.confidence).toBe("medium");
+  });
+
+  it("counts a bare singular as one and says so", () => {
+    const r = extractEncounter("Ogre guards the bridge.", index);
+    expect(r.monsters).toMatchObject([{ name: "Ogre", count: 1, inferred: true }]);
+  });
+
+  it("does not count 'a' before a plural", () => {
+    const r = extractEncounter("A pack of ogres attack.", index);
+    expect(r.monsters).toMatchObject([{ name: "Ogre", count: 2, inferred: true }]);
+  });
+
+  it("sums repeated mentions of the same creature in one sentence", () => {
+    const r = extractEncounter("Two ogres and, further on, six ogres attack the PCs.", index);
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Ogre", 8]]);
+    expect(r.monsters[0].matchedText).toBe("Two ogres; six ogres");
+    expect(r.reasons.join("\n")).toMatch(/2 mentions of Ogre summed to 8/);
+  });
+
+  it("does not add a number from a later sentence to the first group", () => {
+    const r = extractEncounter(
+      "Three werewolves in Humanoid form approach the PCs. If the PCs attack them, the next night, eight werewolves attack the party.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Werewolf", 3]]);
+    expect(r.reasons.join("\n")).toMatch(/later numbers for the same creature not added/);
+  });
+
+  it("leaves out a name that modifies a noun", () => {
+    const r = extractEncounter(
+      "The PCs pass near a wyvern nesting ground. The sound of claws on stone draws the PCs’ attention as five wyverns take to the air to attack them.",
+      index
+    );
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Wyvern", 5]]);
+  });
+
+  it("leaves out what a creature only resembles, and a breeding ground's name", () => {
+    expect(counts("A colossus that resembles an ogre guards the door.")).toEqual([]);
+    expect(counts("The PCs intrude upon a wyvern breeding ground, occupied by six wyverns.")).toEqual([["Wyvern", 6]]);
+  });
+
+  it("does not count a cross-reference in a parenthesis", () => {
+    const r = extractEncounter("Four ogres (use ogre stats, see Chapter 8) emerge from caves and attack.", index);
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Ogre", 4]]);
+  });
+
+  it("reads links and emphasis as their text", () => {
+    expect(counts("Two [[Ogre|ogres]] and a **[[Mimic]]** attack.")).toEqual([
+      ["Ogre", 2],
+      ["Mimic", 1],
+    ]);
+  });
+});
+
+describe("extractEncounter: unresolved", () => {
+  it("lists a number before a plural noun the bestiary does not know", () => {
+    const r = extractEncounter("Five shriekers cling to the ceiling, ready to attack.", index);
+    expect(r.monsters).toEqual([]);
+    expect(r.unresolved).toEqual(["Five shriekers"]);
+    expect(r.confidence).toBe("low");
+  });
+
+  it("caps confidence at medium when something is unresolved next to a resolved creature", () => {
+    const r = extractEncounter("Two ogres and five shriekers attack the PCs.", index);
+    expect(r.monsters.map((m) => m.name)).toEqual(["Ogre"]);
+    expect(r.unresolved).toEqual(["five shriekers"]);
+    expect(r.confidence).toBe("medium");
+  });
+
+  it("ignores rule numbers and measures", () => {
+    const r = extractEncounter(
+      "A successful DC 15 DEX saves the PCs from falling. Pits 20 feet deep, 5 miles distant, 3 rounds, level 5 tiers.",
+      index
+    );
+    expect(r.unresolved).toEqual([]);
+  });
+});

@@ -1,4 +1,7 @@
 import { parseArgs } from "node:util";
+import { DEFAULT_RECHECK_EVERY_SESSIONS, type ReviewFlag } from "lib/domains/encounter-catalog/catalog";
+import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
+import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
 
 /** A wrong flag, value or subcommand of `rpg sim` (exit 1, with the usage). */
@@ -16,6 +19,16 @@ export const DIFFICULTIES: readonly Difficulty[] = ["easy", "challenging", "dead
 export type Rank = "cr" | "outcome";
 
 export const RANKS: readonly Rank[] = ["cr", "outcome"];
+
+export const CONFIDENCES: readonly Confidence[] = ["high", "medium", "low"];
+
+export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too-hard"];
+
+export const REVIEW_FLAGS: readonly ReviewFlag[] = ["draft", "confirmed"];
+
+/** The actions of `rpg sim catalog <action>`. */
+export const CATALOG_ACTIONS = ["init", "draft", "add", "confirm", "remove", "check", "suggest", "list"] as const;
+export type CatalogAction = (typeof CATALOG_ACTIONS)[number];
 
 export interface SimFlag {
   name: string;
@@ -81,7 +94,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: "challenging",
     value: "easy|challenging|deadly",
-    description: "the difficulty `suggest` aims for",
+    description: "the difficulty `suggest` aims for (`catalog init`: the one the catalog's encounters are judged by)",
   },
   {
     name: "rank",
@@ -117,7 +130,113 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: 20,
     value: "<n>",
-    description: "`suggest`: the most candidates to list (0 or more)",
+    description:
+      "`suggest`: the most candidates to list (0 or more); `catalog`: the most entries to check or list (draft: 40, suggest: 10, check and list: all)",
+  },
+  {
+    name: "party-name",
+    kind: "string",
+    default: undefined,
+    value: '"<name>"',
+    description: "`catalog init`: the party's name (the catalog's file is named from it)",
+  },
+  {
+    name: "catalog",
+    kind: "string",
+    default: undefined,
+    value: "<path|party name>",
+    description:
+      "`catalog`: the catalog note, a vault path or a party name (default: the one catalog under <system>/gm-tools/encounter-catalog/)",
+  },
+  {
+    name: "name",
+    kind: "string",
+    default: undefined,
+    value: '"<name>"',
+    description: "`catalog add`: the encounter's name",
+  },
+  {
+    name: "every",
+    kind: "string",
+    default: DEFAULT_RECHECK_EVERY_SESSIONS,
+    value: "<n>",
+    description: "`catalog init`: check an entry again after this many sessions (0 turns it off)",
+  },
+  {
+    name: "session",
+    kind: "string",
+    default: undefined,
+    value: "<n>",
+    description:
+      "`catalog init|check|suggest`: the party's session number (default: 0 on init, else the catalog's own)",
+  },
+  {
+    name: "tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog`: a tag the entry must have; repeat for each (all must match)",
+  },
+  {
+    name: "any-tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog suggest|list`: the entry must have at least one of these tags; repeat for each",
+  },
+  {
+    name: "state",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "fit|too-easy|too-hard",
+    description: "`catalog suggest|list`: the fit states to show; repeat for each (suggest default: fit)",
+  },
+  {
+    name: "review",
+    kind: "string",
+    default: undefined,
+    value: "draft|confirmed",
+    description: "`catalog list`: only entries with this review flag",
+  },
+  {
+    name: "min-confidence",
+    kind: "string",
+    default: "high",
+    value: "high|medium|low",
+    description: "`catalog draft`: with --accept, the lowest confidence that is written to the catalog",
+  },
+  {
+    name: "accept",
+    kind: "boolean",
+    default: false,
+    description: "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; else a dry run",
+  },
+  {
+    name: "force",
+    kind: "boolean",
+    default: false,
+    description: "`catalog check`: simulate every entry again, not only the ones that need it",
+  },
+  {
+    name: "refresh",
+    kind: "boolean",
+    default: false,
+    description: "`catalog suggest`: run `check` first, then suggest",
+  },
+  {
+    name: "include-stale",
+    kind: "boolean",
+    default: false,
+    description: "`catalog suggest`: also entries whose fit is out of date or unchecked",
+  },
+  {
+    name: "include-draft",
+    kind: "boolean",
+    default: false,
+    description: "`catalog suggest`: also entries nobody has confirmed",
   },
   {
     name: "vault",
@@ -147,8 +266,12 @@ export interface MonsterGroup {
 }
 
 export interface SimOptions {
-  /** The subcommand: `run` or `suggest` (others are the dispatcher's to refuse). */
+  /** The subcommand: `run`, `suggest` or `catalog` (others are the dispatcher's to refuse). */
   subcommand: string | undefined;
+  /** `catalog` only: the action (the second bare word). */
+  action?: string;
+  /** `catalog` only: the bare words after the action (notes and folders to draft from, entry ids). */
+  args: string[];
   pc: string[];
   monsters: MonsterGroup[];
   /** `suggest` only: groups that are always part of the fight. */
@@ -162,6 +285,25 @@ export interface SimOptions {
   type?: string;
   cr?: string;
   limit: number;
+  /** The flags that were written on the command line (long names), in no order; `catalog` checks them against its action. */
+  given: string[];
+  /** Whether --limit was given (the catalog actions have defaults of their own). */
+  limitSet: boolean;
+  partyName?: string;
+  catalog?: string;
+  name?: string;
+  every?: number;
+  session?: number;
+  tags: string[];
+  anyTags: string[];
+  states: FitStateName[];
+  review?: ReviewFlag;
+  minConfidence: Confidence;
+  accept: boolean;
+  force: boolean;
+  refresh: boolean;
+  includeStale: boolean;
+  includeDraft: boolean;
   vault?: string;
   json: boolean;
 }
@@ -181,6 +323,7 @@ function flagDefault<T>(name: string): T {
 function defaultOptions(subcommand: string | undefined): SimOptions {
   return {
     subcommand,
+    args: [],
     pc: [],
     monsters: [],
     base: [],
@@ -190,8 +333,29 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
     limit: flagDefault<number>("limit"),
+    given: [],
+    limitSet: false,
+    tags: [],
+    anyTags: [],
+    states: [],
+    minConfidence: flagDefault<Confidence>("min-confidence"),
+    accept: false,
+    force: false,
+    refresh: false,
+    includeStale: false,
+    includeDraft: false,
     json: false,
   };
+}
+
+/** The values of a repeatable tag flag, trimmed; an empty one is refused. */
+function tagList(flag: string, raw: string | boolean | string[] | undefined): string[] {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.map((value) => {
+    const tag = value.trim();
+    if (!tag) throw new UsageError(`--${flag} needs a tag, got an empty value.`);
+    return tag;
+  });
 }
 
 /** Upper bounds that keep a run's memory and time sane (per-trial arrays, one combatant per monster). */
@@ -272,11 +436,17 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   }
   const values = parsed.values as Record<string, string | boolean | string[] | undefined>;
   const [subcommand, ...extra] = parsed.positionals;
-  if (extra.length) {
+  // `catalog` takes an action and then bare words of its own; every other subcommand takes none.
+  const isCatalog = subcommand === "catalog";
+  if (!isCatalog && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
 
   const options = defaultOptions(subcommand);
+  if (isCatalog) {
+    options.action = extra[0];
+    options.args = extra.slice(1);
+  }
 
   const pcs = (values.pc as string[] | undefined) ?? [];
   for (const pc of pcs) {
@@ -304,7 +474,52 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   }
   if (typeof values.limit === "string") {
     options.limit = integer("limit", values.limit, 0, "a non-negative integer");
+    options.limitSet = true;
   }
+  if (typeof values.every === "string") options.every = integer("every", values.every, 0, "a non-negative integer");
+  if (typeof values.session === "string") {
+    options.session = integer("session", values.session, 0, "a non-negative integer");
+  }
+  options.tags = tagList("tag", values.tag);
+  options.anyTags = tagList("any-tag", values["any-tag"]);
+  options.states = ((values.state as string[] | undefined) ?? []).map((raw) => {
+    const state = raw.trim().toLowerCase();
+    if (!(FIT_STATE_NAMES as readonly string[]).includes(state)) {
+      throw new UsageError(`--state must be one of ${FIT_STATE_NAMES.join(", ")}, got "${raw}".`);
+    }
+    return state as FitStateName;
+  });
+  if (typeof values.review === "string") {
+    const review = values.review.trim().toLowerCase();
+    if (!(REVIEW_FLAGS as readonly string[]).includes(review)) {
+      throw new UsageError(`--review must be one of ${REVIEW_FLAGS.join(", ")}, got "${values.review}".`);
+    }
+    options.review = review as ReviewFlag;
+  }
+  if (typeof values["min-confidence"] === "string") {
+    const confidence = values["min-confidence"].trim().toLowerCase();
+    if (!(CONFIDENCES as readonly string[]).includes(confidence)) {
+      throw new UsageError(
+        `--min-confidence must be one of ${CONFIDENCES.join(", ")}, got "${values["min-confidence"]}".`
+      );
+    }
+    options.minConfidence = confidence as Confidence;
+  }
+  for (const flag of ["party-name", "catalog", "name"] as const) {
+    const value = values[flag];
+    if (typeof value === "string" && !value.trim()) throw new UsageError(`--${flag} needs a value, got an empty one.`);
+  }
+  if (typeof values["party-name"] === "string") options.partyName = values["party-name"].trim();
+  if (typeof values.catalog === "string") options.catalog = values.catalog.trim();
+  if (typeof values.name === "string") options.name = values.name.trim();
+  options.given = Object.entries(values)
+    .filter(([, value]) => value !== undefined)
+    .map(([flag]) => flag);
+  options.accept = values.accept === true;
+  options.force = values.force === true;
+  options.refresh = values.refresh === true;
+  options.includeStale = values["include-stale"] === true;
+  options.includeDraft = values["include-draft"] === true;
   if (typeof values.difficulty === "string") {
     const d = values.difficulty.trim().toLowerCase();
     if (!(DIFFICULTIES as readonly string[]).includes(d)) {
@@ -328,6 +543,66 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   return { subcommand, help: false, options };
 }
 
+/** The flags each `catalog` action takes (besides the common ones); any other flag is a usage error. */
+const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
+  init: ["party-name", "pc", "difficulty", "every", "session"],
+  draft: ["min-confidence", "accept", "limit"],
+  add: ["name", "monster", "tag"],
+  confirm: [],
+  remove: [],
+  check: ["session", "seed", "trials", "rounds", "force", "limit"],
+  suggest: [
+    "tag",
+    "any-tag",
+    "state",
+    "include-stale",
+    "include-draft",
+    "limit",
+    "refresh",
+    "session",
+    "seed",
+    "trials",
+    "rounds",
+  ],
+  list: ["tag", "any-tag", "state", "review", "limit"],
+};
+
+const CATALOG_COMMON_FLAGS = ["catalog", "vault", "json", "help"];
+
+function validateCatalog(options: SimOptions): void {
+  const action = options.action;
+  if (action === undefined) {
+    throw new UsageError(`\`catalog\` needs an action: ${CATALOG_ACTIONS.join(", ")}.`);
+  }
+  if (!(CATALOG_ACTIONS as readonly string[]).includes(action)) {
+    throw new UsageError(`Unknown catalog action "${action}" (use ${CATALOG_ACTIONS.join(", ")}).`);
+  }
+  const known = action as CatalogAction;
+  const allowed = new Set([...CATALOG_COMMON_FLAGS, ...CATALOG_FLAGS[known]]);
+  for (const flag of options.given) {
+    if (!allowed.has(flag)) throw new UsageError(`--${flag} is not a flag of \`catalog ${known}\`.`);
+  }
+  const takesWords = known === "draft" || known === "confirm" || known === "remove";
+  if (!takesWords && options.args.length > 0) {
+    throw new UsageError(`Unexpected argument "${options.args[0]}" for \`catalog ${known}\`.`);
+  }
+  if (known === "init" && options.partyName === undefined) {
+    throw new UsageError('--party-name is required: name the party ("The Ashen Four").');
+  }
+  if (known === "draft" && options.args.length === 0) {
+    throw new UsageError("`catalog draft` needs at least one note or folder of the vault to draft from.");
+  }
+  if (known === "add") {
+    if (options.name === undefined) throw new UsageError('--name is required: name the encounter ("Goblin ambush").');
+    if (options.monsters.length === 0) {
+      throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
+    }
+  }
+  if ((known === "confirm" || known === "remove") && options.args.length === 0) {
+    throw new UsageError(`\`catalog ${known}\` needs at least one entry id.`);
+  }
+}
+
 /**
  * What a subcommand needs before it may run, checked before the vault boots (a usage error exits 1,
  * ahead of any runtime error).
@@ -338,6 +613,10 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
   }
   if (subcommand === "run" && options.monsters.length === 0) {
     throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
+  }
+  if (subcommand === "catalog") {
+    validateCatalog(options);
+    return;
   }
   if (subcommand === "suggest" && options.cr !== undefined) {
     try {
@@ -369,11 +648,20 @@ function helpLines(): string {
 }
 
 /** The help of `rpg sim`, written from SIM_FLAGS. */
-export const SIM_HELP = `rpg sim: run an encounter simulation, or suggest encounters
+export const SIM_HELP = `rpg sim: run an encounter simulation, suggest encounters, or keep a catalog of them
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [flags]
   rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank cr|outcome] [flags]
+  rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--session N]
+  rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept] [--limit N]
+  rpg sim catalog add --name "<name>" --monster "<note>[:<count>]"... [--tag <tag>]...
+  rpg sim catalog confirm <id>...        (flip drafts to confirmed)
+  rpg sim catalog remove <id>...
+  rpg sim catalog check [--session N] [--force] [--limit N] [--seed N] [--trials N] [--rounds N]
+  rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--limit N]
+  rpg sim catalog list [--tag <tag>]... [--review draft|confirmed] [--state <state>]... [--limit N]
+    (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
   rpg sim help
 
 Flags:

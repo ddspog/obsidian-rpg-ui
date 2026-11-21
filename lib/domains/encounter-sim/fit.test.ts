@@ -9,7 +9,7 @@ describe("OUTCOME_PROFILES", () => {
       challenging: { toll: 0.5, tpk: 0.05 },
       deadly: { toll: 0.75, tpk: 0.2 },
     });
-    expect(FIT_TOLERANCE).toBe(0.2);
+    expect(FIT_TOLERANCE).toBe(0.3);
   });
 });
 
@@ -28,17 +28,16 @@ describe("outcomeDistance", () => {
 });
 
 describe("classifyFit", () => {
-  it("is fit within 0.2 of the profile, boundary included", () => {
+  it("is fit within 0.3 of the profile, boundary included", () => {
     expect(classifyFit({ avgHpLost: 0.5, tpkRate: 0.05 }, "challenging")).toBe("fit");
-    expect(classifyFit({ avgHpLost: 0.7, tpkRate: 0.05 }, "challenging")).toBe("fit");
-    expect(classifyFit({ avgHpLost: 0.3, tpkRate: 0.05 }, "challenging")).toBe("fit");
-    expect(classifyFit({ avgHpLost: 0.71, tpkRate: 0.05 }, "challenging")).not.toBe("fit");
+    expect(classifyFit({ avgHpLost: 0.8, tpkRate: 0.05 }, "challenging")).toBe("fit");
+    expect(classifyFit({ avgHpLost: 0.2, tpkRate: 0.05 }, "challenging")).toBe("fit");
+    expect(classifyFit({ avgHpLost: 0.81, tpkRate: 0.05 }, "challenging")).not.toBe("fit");
   });
 
   it("is too-easy when it costs less HP than aimed for and kills no more often", () => {
     expect(classifyFit({ avgHpLost: 0.05, tpkRate: 0 }, "challenging")).toBe("too-easy");
     expect(classifyFit({ avgHpLost: 0.1, tpkRate: 0.05 }, "challenging")).toBe("too-easy");
-    expect(classifyFit({ avgHpLost: 0.01, tpkRate: 0 }, "easy")).toBe("too-easy");
     expect(classifyFit({ avgHpLost: 0.1, tpkRate: 0 }, "easy")).toBe("fit");
     expect(classifyFit({ avgHpLost: 0.3, tpkRate: 0 }, "deadly")).toBe("too-easy");
   });
