@@ -159,6 +159,7 @@ beforeAll(async () => {
 
 interface Suggest {
   target: { difficulty: string; targetTotal: string; benchmark: string; rank: string };
+  profile: Record<string, unknown>;
   candidates: Array<{
     composition: { note: string; count: number; cr: string };
     base?: Array<{ note: string; count: number; cr: string }>;
@@ -185,7 +186,19 @@ async function suggestIn(
 ): Promise<{ code: number; doc: Suggest; text: string; err: string }> {
   let text = "";
   let err = "";
-  const tokens = ["suggest", ...PCS.flatMap((n) => ["--pc", pcPath(n)]), "--trials", "6", ...flags];
+  // These specs were written for ranking by CR over the whole bestiary; a spec that passes its own
+  // --rank or --tiers overrides these (parseArgs keeps the last value).
+  const tokens = [
+    "suggest",
+    ...PCS.flatMap((n) => ["--pc", pcPath(n)]),
+    "--trials",
+    "6",
+    "--rank",
+    "cr",
+    "--tiers",
+    "all",
+    ...flags,
+  ];
   const code = await simMain(
     tokens,
     { out: (s) => (text += s), err: (s) => (err += s) },
@@ -650,5 +663,19 @@ describe("rpg sim suggest --base", () => {
     const a = await suggest("--base", "Wolf", "--seed", "3", "--limit", "100");
     const b = await suggest("--base", "Wolf", "--seed", "3", "--limit", "100");
     expect(a.text).toBe(b.text);
+  });
+});
+
+describe("rpg sim suggest: the party's tier", () => {
+  it("leaves out a monster above the party's single-monster CR, unless --tiers all", async () => {
+    const same = await suggest("--rank", "outcome", "--tiers", "same", "--limit", "100");
+    expect(same.code, same.err).toBe(0);
+    expect(same.doc.profile).toEqual({ size: 4, averageLevel: 1, tier: 1, benchmark: "1/2", singleCr: "1/8-1/2" });
+    // Bear and Lost (CR 1) and Giant (CR 5) are above a level-1 party's 1/2.
+    expect(same.doc.excluded["above-tier"]).toBe(3);
+    expect(Object.keys(countsByNote(same.doc))).not.toContain("Bear");
+    const all = await suggest("--rank", "outcome", "--tiers", "all", "--limit", "100");
+    expect(all.doc.excluded["above-tier"]).toBeUndefined();
+    expect(Object.keys(countsByNote(all.doc))).toContain("Bear");
   });
 });

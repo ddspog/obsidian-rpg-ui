@@ -4,12 +4,14 @@
  * groups of 1, 2, 3 ... while the group's total CR stays within twice the
  * target; the candidates closest to the target (then the least deadly) win.
  *
- * Two opt-in features leave that default untouched:
- *   --rank outcome  ranks by the simulated outcome (HP lost, TPK rate) against the
- *                   difficulty's profile instead of by total CR, and sweeps wider
+ * By default (--rank outcome) candidates are ranked by the simulated outcome (HP
+ * lost, TPK rate) against the difficulty's profile, over a wider sweep; --rank cr
+ * ranks by total CR near the target instead. Other options:
+ *   --rank outcome  the default: ranks by outcome and sweeps wider
  *                   (total CR up to 4 x the benchmark, at most 30 of a kind, a kind's
  *                   counts stop once the party is wiped 9 times in 10)
  *   --base          groups that are always in the fight; the sweep adds one more kind
+ *   --tiers         same (default) or lower: no monster above the party's single-monster CR; all: any
  */
 
 import {
@@ -26,6 +28,7 @@ import {
   type Rational,
 } from "lib/domains/encounter-sim/difficulty";
 import { classifyFit, outcomeDistance, type Fit } from "lib/domains/encounter-sim/fit";
+import { partyProfile, profileView } from "lib/domains/encounter-sim/party-profile";
 import { compactSummary, runMonteCarlo, type CompactSummary } from "lib/domains/encounter-sim/montecarlo";
 import { isDamaging } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
@@ -49,6 +52,7 @@ export type ExclusionReason =
   | "unresolvable"
   | "filtered"
   | "cr-0"
+  | "above-tier"
   | "out-of-range"
   | "no-damaging-action";
 
@@ -82,6 +86,8 @@ export interface BriefCandidate {
 
 export interface SuggestDocument {
   target: { difficulty: string; targetTotal: string; benchmark: string; rank: Rank };
+  /** The party's size, average level, tier, benchmark and single-monster CR range. */
+  profile: ReturnType<typeof profileView>;
   /** Why there are no candidates, when the reason is the party itself (a benchmark of 0). */
   note?: string;
   candidates: SuggestCandidate[];
@@ -158,6 +164,9 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   const party = await loadParty(ctx, options.pc.length > 0 ? options.pc : DEFAULT_PARTY);
   const levels = party.actors.map((a) => a.level);
   const benchmark = benchmarkFor(levels);
+  const profile = partyProfile(levels);
+  // --tiers same or lower: no single monster above what a party of this tier can face.
+  const maxSingle = options.tiers === "all" ? undefined : profile.maxSingleCr;
   const targetTotal = targetFor(options.difficulty, benchmark);
   // The largest total CR the sweep goes to (and the largest a single note may add to the base).
   const cap =
@@ -177,7 +186,8 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   //   1. non-monster / unresolvable: readMonsterNote says so, or the CR is not a CR
   //   2. cr-0: nothing to add to a total (before the filters, so a filtered run still counts it)
   //   3. filtered: --habitat, --type, --cr or plan's theme words miss
-  //   4. out-of-range: one monster (with the base) already above the cap, twice the target total or,
+  //   4. above-tier: the monster's CR is above the party's single-monster CR (unless --tiers all)
+  //   4b. out-of-range: one monster (with the base) already above the cap, twice the target total or,
   //      for --rank outcome, 4 x the benchmark (skipped before loading)
   //   5. unresolvable again: loadMonster throws (e.g. a feature ref that resolves to nothing);
   //      only known once the note is loaded, so it is counted here and the sweep carries on
@@ -230,6 +240,10 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       continue;
     }
 
+    if (maxSingle !== undefined && cmpCr(cr, maxSingle) > 0) {
+      exclude("above-tier");
+      continue;
+    }
     if (cmpCr(addCr(baseCr, cr), cap) > 0) {
       exclude("out-of-range");
       continue;
@@ -308,6 +322,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     return {
       doc: {
         target: { difficulty: options.difficulty, targetTotal: formatCr(targetTotal), rank: options.rank },
+        profile: profileView(profile),
         ...(note ? { note } : {}),
         candidates: brief,
       },
@@ -321,6 +336,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       benchmark: formatCr(benchmark),
       rank: options.rank,
     },
+    profile: profileView(profile),
     ...(note ? { note } : {}),
     candidates: kept,
     excluded: sortedExcluded,

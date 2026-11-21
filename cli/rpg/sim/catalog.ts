@@ -28,7 +28,9 @@ import {
   type FitPartition,
 } from "lib/domains/encounter-catalog/fit-state";
 import { normaliseTags, sameTag } from "lib/domains/encounter-catalog/words";
+import type { TierMatch } from "lib/domains/encounter-catalog/tier";
 import { outcomeDistance } from "lib/domains/encounter-sim/fit";
+import { profileView, type PartyProfile } from "lib/domains/encounter-sim/party-profile";
 import type { Ctx } from "../app";
 import {
   catalogExists,
@@ -43,10 +45,11 @@ import { checkEntries, loadPartyState, type CheckParams, type CheckResult } from
 import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
-import { CONFIDENCES, UsageError, type SimOptions } from "./flags";
+import { CONFIDENCES, UsageError, type SimOptions, type TierScope } from "./flags";
 import { linkNames, readMonsterNote } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
 import { listSessions } from "../session/lines";
+import { inScope, tierMatcher } from "./tier-scope";
 
 export interface CatalogDeps {
   /** Today's date as written into `checkedOn`; the only thing the clock is used for. */
@@ -179,7 +182,25 @@ function checkParams(options: SimOptions, now: () => string): CheckParams {
     force: options.force,
     limit: options.limitSet ? options.limit : Infinity,
     today: now(),
+    tiers: options.tiers,
   };
+}
+
+/**
+ * The catalog's entries split by the --tiers rule: those offered to the party
+ * (each with its match, `lower` meaning a lower tier taken for story use) and
+ * how many were left out as another tier's.
+ */
+function byTier(ctx: Ctx, catalog: Catalog, profile: PartyProfile, scope: TierScope) {
+  const matchOf = tierMatcher(ctx, profile);
+  const kept: Array<{ entry: CatalogEntry; match: TierMatch }> = [];
+  let otherTier = 0;
+  for (const entry of catalog.entries) {
+    const match = matchOf(entry);
+    if (inScope(match, scope)) kept.push({ entry, match });
+    else otherTier += 1;
+  }
+  return { kept, otherTier, scoped: { entries: kept.map((k) => k.entry) } };
 }
 
 /** Runs the check and writes the catalog when anything changed; returns the new catalog and the result. */
@@ -457,13 +478,16 @@ async function check(ctx: Ctx, options: SimOptions, now: () => string) {
     party: { name: catalog.party.name, stamp: party.stamp, pcs: party.actors.length },
     session: party.fitContext.session,
     difficulty: catalog.difficulty,
+    profile: profileView(party.profile),
+    tiers: options.tiers,
     seed: options.seed,
     trials: options.trials,
     checked: result.checked,
     unchanged: result.unchanged,
     remaining: result.remaining,
+    otherTier: result.otherTier,
     errors: result.errors,
-    partition: result.partition,
+    partition: partitionByFit(byTier(ctx, result.catalog, party.profile, options.tiers).scoped, party.fitContext),
   };
 }
 
@@ -482,11 +506,14 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
     party = await loadPartyState(ctx, catalog, path, options.session);
   }
   const fitContext = party.fitContext;
-  const partition = partitionByFit(catalog, fitContext);
+  const tiers = byTier(ctx, catalog, party.profile, options.tiers);
+  const below = new Set(tiers.kept.filter((k) => k.match === "lower").map((k) => k.entry.id));
+  // Only the entries of the party's tiers count: another tier's stale entry is not this party's to check.
+  const partition = partitionByFit(tiers.scoped, fitContext);
   const stale = needsCheck(partition);
 
   let recent = 0;
-  const eligible = catalog.entries.filter((entry) => {
+  const eligible = tiers.scoped.entries.filter((entry) => {
     const ok = isEligible(entry, fitContext, {
       tags: options.tags,
       anyTags: options.anyTags,
@@ -506,30 +533,38 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
   eligible.sort((a, b) => distance(a) - distance(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const cap = options.limitSet ? options.limit : DEFAULT_SUGGEST;
 
+  const marked = <T extends object>(entry: CatalogEntry, view: T): T =>
+    below.has(entry.id) ? { ...view, belowTier: true } : view;
+
   if (options.brief) {
     return {
       difficulty: catalog.difficulty,
+      profile: profileView(party.profile),
       needsCheck: stale,
       ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
       ...(refreshed ? { refreshed } : {}),
       ...(recent > 0 ? { recentlyUsed: recent } : {}),
+      ...(tiers.otherTier > 0 ? { otherTier: tiers.otherTier } : {}),
       matched: eligible.length,
-      entries: eligible.slice(0, cap).map((entry) => briefViewOf(ctx, entry, fitContext)),
+      entries: eligible.slice(0, cap).map((entry) => marked(entry, briefViewOf(ctx, entry, fitContext))),
     };
   }
 
   return {
     catalog: path,
     party: catalog.party.name,
+    profile: profileView(party.profile),
     session: fitContext.session,
     difficulty: catalog.difficulty,
+    tiers: options.tiers,
     partition,
     needsCheck: stale,
     ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
     ...(refreshed ? { refreshed } : {}),
     ...(recent > 0 ? { recentlyUsed: recent } : {}),
+    ...(tiers.otherTier > 0 ? { otherTier: tiers.otherTier } : {}),
     matched: eligible.length,
-    entries: eligible.slice(0, cap).map((entry) => viewOf(entry, fitContext)),
+    entries: eligible.slice(0, cap).map((entry) => marked(entry, viewOf(entry, fitContext))),
   };
 }
 
@@ -537,8 +572,10 @@ async function list(ctx: Ctx, options: SimOptions) {
   const { path, catalog } = existing(ctx, options);
   const party = await loadPartyState(ctx, catalog, path);
   const fitContext = party.fitContext;
-  const partition = partitionByFit(catalog, fitContext);
-  const matching = catalog.entries.filter(
+  // `list` shows every entry unless --tiers is written: it is the review of the whole note.
+  const tiers = byTier(ctx, catalog, party.profile, options.given.includes("tiers") ? options.tiers : "all");
+  const partition = partitionByFit(tiers.scoped, fitContext);
+  const matching = tiers.scoped.entries.filter(
     (entry) =>
       isEligible(entry, fitContext, {
         tags: options.tags,

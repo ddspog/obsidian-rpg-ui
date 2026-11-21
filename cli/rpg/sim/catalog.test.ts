@@ -215,6 +215,9 @@ const files = (): string[] => (readdirSync(root, { recursive: true, encoding: "u
 
 const PARTY_PCS = PCS.flatMap((n) => ["--pc", pcPath(n)]);
 
+/** The fixture party's profile: four level-1 PCs. */
+const TIER1 = { size: 4, averageLevel: 1, tier: 1, benchmark: "1/2", singleCr: "1/8-1/2" };
+
 /** A new catalog of the four PCs (file `fixture/gm-tools/encounter-catalog/<kebab name>.md`). */
 async function init(name: string, ...extra: string[]): Promise<string> {
   const made = await sim("init", "--party-name", name, ...PARTY_PCS, ...extra);
@@ -921,6 +924,7 @@ describe("--brief", () => {
     expect(brief.code, brief.err).toBe(0);
     expect(brief.doc).toEqual({
       difficulty: "challenging",
+      profile: TIER1,
       needsCheck: 1,
       hint: expect.stringContaining("catalog check"),
       matched: 1,
@@ -959,6 +963,7 @@ describe("plan", () => {
     expect(plan.code, plan.err).toBe(0);
     expect(plan.doc).toEqual({
       party: PCS,
+      profile: TIER1,
       difficulty: "challenging",
       catalog: path,
       options: [
@@ -1177,5 +1182,54 @@ describe("suggest: --fit and a benchmark of 0", () => {
     expect(two.doc.note).toContain("benchmark is 0");
     const brief = await simAll("suggest", "--pc", pcPath("Aria"), "--pc", pcPath("Bram"), "--brief");
     expect(brief.doc.note).toContain("benchmark is 0");
+  });
+});
+
+describe("the party's tier", () => {
+  it("checks, suggests and plans only the party's tier unless --tiers says otherwise", async () => {
+    const path = await seeded("Tiered");
+    // Untagged with a CR 2 ogre (above a level-1 party's 1/2), and tagged tier 2: both another tier's.
+    expect(
+      (await sim("add", "--name", "Ogre by hand", "--monster", `${BESTIARY}/Ogre.md`, "--catalog", path)).code
+    ).toBe(0);
+    expect(
+      (
+        await sim(
+          "add",
+          "--name",
+          "Wolves of tier 2",
+          "--monster",
+          `${BESTIARY}/Wolf.md:2`,
+          "--tag",
+          "tier-2",
+          "--catalog",
+          path
+        )
+      ).code
+    ).toBe(0);
+
+    const checked = await sim("check", "--catalog", path);
+    expect(checked.doc).toMatchObject({ checked: 0, otherTier: 2, profile: TIER1, tiers: "same" });
+    expect(byId(path, "ogre-by-hand")?.fit).toBeUndefined();
+
+    const suggested = await sim("suggest", "--catalog", path, "--include-draft", "--state", "too-hard");
+    expect(suggested.doc).toMatchObject({ otherTier: 2, needsCheck: 1 });
+    expect(suggested.doc.entries.map((e: { id: string }) => e.id)).toEqual(["forest-t1-3-ogre"]);
+
+    const plan = await simAll("plan", "--catalog", path, "--limit", "1");
+    expect(plan.doc.notes).toEqual(
+      expect.arrayContaining([expect.stringContaining("2 catalog entries are from another tier")])
+    );
+
+    const all = await sim("check", "--catalog", path, "--tiers", "all");
+    expect(all.doc).toMatchObject({ checked: 2, otherTier: 0 });
+    expect(byId(path, "ogre-by-hand")?.fit?.state).toBe("too-hard");
+  });
+
+  it("lists every entry unless --tiers is written", async () => {
+    const path = await seeded("Tier List");
+    await sim("add", "--name", "Ogre by hand", "--monster", `${BESTIARY}/Ogre.md`, "--catalog", path);
+    expect((await sim("list", "--catalog", path)).doc.matched).toBe(5);
+    expect((await sim("list", "--catalog", path, "--tiers", "same")).doc.matched).toBe(4);
   });
 });

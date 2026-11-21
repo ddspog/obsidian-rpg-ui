@@ -88,6 +88,27 @@ A usual run: `init`, `draft <folder>` (read the dry run), `draft <folder> --acce
 
 Each option has its `monsters` as `--monster` takes them (pass them to `sim run` or `catalog add` as they are), its `fit` and the measured `winRate`, `tpkRate` and `avgHpLost`. `notes` says what the caller should know: catalog entries left out because their fit is stale (run `catalog check`), drafts to confirm, a swept group that can be kept with `catalog add`, a party whose CR benchmark is 0 (nothing to sweep toward), or a sweep that found nothing. `plan` writes nothing. The sweep costs what `suggest --rank outcome` does (about 20 s over the whole bestiary for the four stock characters, 2 to 3 s with a habitat or theme words); it is skipped when the catalog fills the options.
 
+## The party's tier
+
+Every command that offers encounters first profiles the party (`lib/domains/encounter-sim/party-profile.ts`):
+
+- its size and average level (levels summed, divided by the number of PCs, rounded down);
+- its tier of play: 1 for levels 1–4, 2 for 5–10, 3 for 11–16, 4 for 17–20;
+- its challenging benchmark;
+- the CR range of a single challenging monster, from the Monster Vault's _Challenging Benchmarks by Average Level_ table.
+
+The profile is printed as `profile`, for example `{ "size": 4, "averageLevel": 1, "tier": 1, "benchmark": "1/2", "singleCr": "1/8-1/2" }`.
+
+`--tiers` decides which encounters belong:
+
+- **`same`** (the default): an entry drafted from a table belongs when one of its `tier-N` tags is the party's tier (a "Tier 3–4" table tags both). An entry without a tier tag, such as one added by hand, belongs when none of its monsters is above the party's max single-monster CR. In `suggest` and in the sweep of `plan`, a monster above that CR is left out and counted as `above-tier`.
+- **`lower`**: also lower tiers, for story reasons (they give less XP). Such an entry is marked `belowTier`.
+- **`all`**: every tier.
+
+`check` simulates only the entries in scope and reports the others as `otherTier`. `suggest` and `plan` count only in-scope entries when they say what needs a check. `list` shows every entry unless `--tiers` is written.
+
+The random-encounter tables are written for a party of four (`TABLE_PARTY_SIZE`). The simulator always uses the real PCs, so an entry's fit is already measured for the party's real size.
+
 ## How fit and staleness work
 
 `check` runs the Monte Carlo of `rpg sim run` (seed 1, 200 trials by default) for the entry's monsters against the catalog's PCs, and classifies the outcome against the difficulty with the same heuristic as `suggest --rank outcome` (`lib/domains/encounter-sim/fit.ts`): `fit` when the share of party HP lost and the TPK rate are near the difficulty's profile, `too-easy` when the fight costs less than aimed for, `too-hard` otherwise. The result is stored with the party's **stamp**, a digest of everything the simulator reads of the PCs (level, AC, HP, ability modifiers, spell slots, every modelled action). An entry is checked again when:

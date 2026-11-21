@@ -24,6 +24,11 @@ export type Rank = "cr" | "outcome";
 
 export const RANKS: readonly Rank[] = ["cr", "outcome"];
 
+/** Which tiers of play an encounter may be from: the party's own, it and lower ones, or any. */
+export type TierScope = "same" | "lower" | "all";
+
+export const TIER_SCOPES: readonly TierScope[] = ["same", "lower", "all"];
+
 export const CONFIDENCES: readonly Confidence[] = ["high", "medium", "low"];
 
 export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too-hard"];
@@ -114,12 +119,20 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "the difficulty `suggest` aims for (`catalog init`: the one the catalog's encounters are judged by; `plan`: the catalog's)",
   },
   {
+    name: "tiers",
+    kind: "string",
+    default: "same",
+    value: "same|lower|all",
+    description:
+      "`suggest`, `plan`, `catalog check|suggest|list`: encounters of the party's tier only (same), also lower tiers for story use (lower), or any (all); an untagged entry or a swept monster is in the tier when no monster is above the party's single-monster CR",
+  },
+  {
     name: "rank",
     kind: "string",
-    default: "cr",
+    default: "outcome",
     value: "cr|outcome",
     description:
-      "`suggest`: rank by total CR near the target (cr), or by simulated outcome with a wider sweep (outcome)",
+      "`suggest`: rank by simulated outcome with a wide sweep (outcome), or by total CR near the target (cr)",
   },
   {
     name: "habitat",
@@ -342,6 +355,7 @@ export interface SimOptions {
   rounds: number;
   difficulty: Difficulty;
   rank: Rank;
+  tiers: TierScope;
   habitat?: string;
   type?: string;
   cr?: string;
@@ -401,6 +415,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     rounds: flagDefault<number>("rounds"),
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
+    tiers: flagDefault<TierScope>("tiers"),
     limit: flagDefault<number>("limit"),
     given: [],
     limitSet: false,
@@ -623,6 +638,13 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     }
     options.rank = r as Rank;
   }
+  if (typeof values.tiers === "string") {
+    const t = values.tiers.trim().toLowerCase();
+    if (!(TIER_SCOPES as readonly string[]).includes(t)) {
+      throw new UsageError(`--tiers must be one of ${TIER_SCOPES.join(", ")}, got "${values.tiers}".`);
+    }
+    options.tiers = t as TierScope;
+  }
   if (typeof values.habitat === "string") options.habitat = values.habitat;
   if (typeof values.type === "string") options.type = values.type;
   if (typeof values.cr === "string") options.cr = values.cr;
@@ -643,7 +665,7 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   tag: ["add-tag", "drop-tag"],
   use: ["session"],
   session: ["session"],
-  check: ["session", "seed", "trials", "rounds", "force", "limit"],
+  check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
   suggest: [
     "tag",
     "any-tag",
@@ -658,8 +680,9 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
     "rounds",
     "brief",
     "include-used",
+    "tiers",
   ],
-  list: ["tag", "any-tag", "state", "review", "limit"],
+  list: ["tag", "any-tag", "state", "review", "limit", "tiers"],
 };
 
 const CATALOG_COMMON_FLAGS = ["catalog", "vault", "json", "help"];
@@ -715,6 +738,7 @@ const PLAN_FLAGS = [
   "catalog",
   "session",
   "include-used",
+  "tiers",
   "seed",
   "trials",
   "rounds",
@@ -782,8 +806,8 @@ export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan e
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [--brief] [flags]
-  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank cr|outcome] [--fit F]... [--brief] [flags]
-  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--difficulty D] [--limit N] [flags]
+  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank outcome|cr] [--tiers T] [--fit F]... [--brief] [flags]
+  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--tiers same|lower|all] [--difficulty D] [--limit N] [flags]
     (the catalog's fit entries first, then the bestiary swept by outcome: N short options, default 3)
   rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--reuse-after N] [--session N]
   rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept] [--limit N]

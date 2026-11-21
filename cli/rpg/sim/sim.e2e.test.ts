@@ -170,7 +170,8 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
 
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {
     const started = Date.now();
-    const all = await sim("suggest", "--trials", "20", "--limit", "5");
+    // This spec is about ranking by CR (no longer the default) over the whole bestiary.
+    const all = await sim("suggest", "--rank", "cr", "--tiers", "all", "--trials", "20", "--limit", "5");
     expect(all.code, all.err).toBe(0);
     expect(Date.now() - started).toBeLessThan(5 * 60_000);
     const doc = JSON.parse(all.out);
@@ -180,14 +181,18 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(doc.excluded["cr-0"]).toBeGreaterThan(0);
     expect(doc.excluded["non-monster"]).toBeGreaterThan(0);
 
-    const half = JSON.parse((await sim("suggest", "--trials", "20", "--cr", "1/2", "--limit", "500")).out);
+    const half = JSON.parse(
+      (await sim("suggest", "--rank", "cr", "--trials", "20", "--cr", "1/2", "--limit", "500")).out
+    );
     expect(half.candidates.length).toBeGreaterThan(0);
     for (const c of half.candidates) expect(c.composition.cr).toBe("1/2");
 
-    const forest = JSON.parse((await sim("suggest", "--trials", "20", "--habitat", "Forest", "--limit", "500")).out);
+    const forest = JSON.parse(
+      (await sim("suggest", "--rank", "cr", "--trials", "20", "--habitat", "Forest", "--limit", "500")).out
+    );
     expect(forest.candidates.length).toBeGreaterThan(0);
     expect(forest.candidates.length).toBeLessThan(
-      JSON.parse((await sim("suggest", "--trials", "20", "--limit", "500")).out).candidates.length + 1
+      JSON.parse((await sim("suggest", "--rank", "cr", "--trials", "20", "--limit", "500")).out).candidates.length + 1
     );
     expect(forest.excluded.filtered).toBeGreaterThan(0);
   }, 400_000);
@@ -218,7 +223,19 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
   }, 400_000);
 
   it("adds a base group to every suggested fight: Hobgoblin with one small kind", async () => {
-    const result = await sim("suggest", "--base", HOBGOBLIN, "--cr", "1/8", "--trials", "20", "--limit", "50");
+    const result = await sim(
+      "suggest",
+      "--rank",
+      "cr",
+      "--base",
+      HOBGOBLIN,
+      "--cr",
+      "1/8",
+      "--trials",
+      "20",
+      "--limit",
+      "50"
+    );
     expect(result.code, result.err).toBe(0);
     const doc = JSON.parse(result.out);
     expect(doc.candidates.length).toBeGreaterThan(0);
@@ -276,11 +293,12 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(drafted).toHaveLength(accepted.accepted);
     expect(drafted.every((e) => e.review === "draft" && !e.fit)).toBe(true);
 
-    const checked = await catalog("check", "--catalog", path, "--trials", "50");
+    // The arctic table has rows of all four tiers: --tiers all checks every one.
+    const checked = await catalog("check", "--catalog", path, "--trials", "50", "--tiers", "all");
     expect(checked).toMatchObject({ checked: drafted.length, unchanged: 0, errors: [] });
     const states = checked.partition.fit + checked.partition.tooEasy + checked.partition.tooHard;
     expect(states).toBe(drafted.length);
-    const again = await catalog("check", "--catalog", path, "--trials", "50");
+    const again = await catalog("check", "--catalog", path, "--trials", "50", "--tiers", "all");
     expect(again).toMatchObject({ checked: 0, unchanged: drafted.length });
 
     // Nothing is confirmed yet, so the default suggestion is empty; with drafts and every state it is not.
