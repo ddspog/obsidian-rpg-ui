@@ -14,7 +14,14 @@ export interface EncounterBoardProps {
   /** Opens a note (a monster). */
   openNote: (path: string) => void;
   onConfirm: (id: string) => void;
-  onUsed: (id: string) => void;
+  /** Prepare the encounter in the party's latest session log (Start Combat then offers it). */
+  onPrepare: (id: string) => void;
+  /** Take a prepared encounter back out of the log. */
+  onUnprepare: (id: string) => void;
+  /** The entries prepared and not fought yet, by id, with the session note they are prepared in. */
+  prepared: Map<string, string>;
+  /** The session note Prepare writes to; none means there is nowhere to prepare. */
+  sessionName?: string;
   onTags: (id: string, tags: string[]) => void;
   /** Copies a command for the terminal. */
   onCopy: (text: string) => void;
@@ -167,9 +174,12 @@ function Card({
   board,
   highlight,
   settle,
+  preparedIn,
+  canPrepare,
   openNote,
   onConfirm,
-  onUsed,
+  onPrepare,
+  onUnprepare,
   onTags,
 }: {
   card: BoardCard;
@@ -177,7 +187,10 @@ function Card({
   /** The one draft the board points at: its Confirm is the accent button. */
   highlight: boolean;
   settle: boolean;
-} & Pick<EncounterBoardProps, "openNote" | "onConfirm" | "onUsed" | "onTags">) {
+  /** The session note it is prepared in, when it is. */
+  preparedIn?: string;
+  canPrepare: boolean;
+} & Pick<EncounterBoardProps, "openNote" | "onConfirm" | "onPrepare" | "onUnprepare" | "onTags">) {
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
   const [allTags, setAllTags] = React.useState(false);
@@ -288,10 +301,26 @@ function Card({
             Confirm
           </button>
         )}
-        {!card.usedRecently && (
-          <button type="button" className="rpg-enc-action" onClick={() => onUsed(card.id)}>
-            Ran it
-          </button>
+        {preparedIn ? (
+          <>
+            <span className="rpg-enc-prepared">
+              <span className="rpg-enc-prepared-state">prepared</span> in {preparedIn}
+            </span>
+            <button type="button" className="rpg-enc-action" onClick={() => onUnprepare(card.id)}>
+              Unprepare
+            </button>
+          </>
+        ) : (
+          !card.usedRecently &&
+          canPrepare && (
+            <button
+              type="button"
+              className={`rpg-enc-action${highlight && !card.draft ? " mod-cta" : ""}`}
+              onClick={() => onPrepare(card.id)}
+            >
+              Prepare
+            </button>
+          )
         )}
         <button type="button" className="rpg-enc-action" onClick={() => setEditing(!editing)}>
           {editing ? "Done" : "Tags"}
@@ -343,7 +372,8 @@ export function EncounterBoard(props: EncounterBoardProps) {
   const cards = board.cards.filter((c) => matches(c, filter) && (drafts || !c.draft) && search(c, words));
   const active = cards.filter((c) => !c.usedRecently);
   const resting = cards.filter((c) => c.usedRecently);
-  const pick = active.find((c) => c.draft && c.status === "fit")?.id;
+  // The card the board points at: the best fit not prepared yet (its Confirm, else its Prepare, is the accent).
+  const pick = active.find((c) => c.status === "fit" && !props.prepared.has(c.id))?.id;
   const profile = board.profile;
   const share = (n: number) => `${total > 0 ? (n / total) * 100 : 0}%`;
 
@@ -486,7 +516,10 @@ export function EncounterBoard(props: EncounterBoardProps) {
               settle={!settled.current.has(card.id)}
               openNote={props.openNote}
               onConfirm={props.onConfirm}
-              onUsed={props.onUsed}
+              preparedIn={props.prepared.get(card.id)}
+              canPrepare={!!props.sessionName}
+              onPrepare={props.onPrepare}
+              onUnprepare={props.onUnprepare}
               onTags={props.onTags}
             />
           ))}
@@ -512,7 +545,10 @@ export function EncounterBoard(props: EncounterBoardProps) {
                 settle={false}
                 openNote={props.openNote}
                 onConfirm={props.onConfirm}
-                onUsed={props.onUsed}
+                preparedIn={props.prepared.get(card.id)}
+                canPrepare={!!props.sessionName}
+                onPrepare={props.onPrepare}
+                onUnprepare={props.onUnprepare}
                 onTags={props.onTags}
               />
             ))}

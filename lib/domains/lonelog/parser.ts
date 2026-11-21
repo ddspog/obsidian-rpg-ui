@@ -267,7 +267,7 @@ function parseLine(line: string): LonelogEntry | null {
   // strips to "", so it never reaches prose).
   if (line.startsWith("[")) {
     const isKnownTagLine =
-      /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L|Init|Pos|Mv|Group|Mark):/.test(line);
+      /^\[(?:#)?(?:Inv|Wealth|PC|N|F|R|Clock|Track|Dial|Timer|Thread|E|L|Init|Pos|Mv|Group|Mark|Enc):/.test(line);
     const isDialOpLine = /^\[[A-Z][A-Z0-9]*(?:[:=+-]\s*\d+|\?)\]/.test(line);
     const isPcOpLine = /^\[[^\]|/:]+\/[^\]|/:]+?\s*(?:[=+-]\s*\d+|\?)\]$/.test(line);
     if (isKnownTagLine || isDialOpLine || isPcOpLine) {

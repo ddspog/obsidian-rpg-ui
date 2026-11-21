@@ -1,3 +1,4 @@
+import { parseEncounterTag } from "../session-log/prepared-encounter";
 import type {
   PersistentTag,
   DialOpTag,
@@ -11,7 +12,7 @@ import type {
 
 /** Kinds recognized by the tag grammar — shared by extraction and stripping. */
 const TAG_KINDS =
-  "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R|Init|Pos|Mv|Time|Weather|Group|Mark";
+  "N|L|E|Clock|Track|Dial|Timer|Thread|PC|F|Faction|Party|Inv|Wealth|R|Init|Pos|Mv|Time|Weather|Group|Mark|Enc";
 
 /** A tag's body: anything up to its closing `]`, where a `[[wikilink]]` counts
  *  as one piece so its own brackets don't end the tag (`[Inv:[[Rope]]+1]`), and
@@ -305,6 +306,11 @@ export function extractTags(text: string): PersistentTag[] {
       case "Mark": {
         const mark = parseMarkTag(content);
         if (mark) tags.push(mark);
+        break;
+      }
+      case "Enc": {
+        const enc = parseEncounterTag(content);
+        if (enc) tags.push({ kind: "encounter", ...enc });
         break;
       }
       case "Faction":

@@ -272,7 +272,13 @@ export function serializeCatalog(catalog: Catalog): string {
       "> Edit a block by hand; `rpg sim catalog check` measures it again."
     );
     for (const entry of catalog.entries) {
-      const block = [`\`\`\`${ENTRY_INFO_STRING}`, stringifyYaml(entryObject(entry), YAML_OPTIONS).trimEnd(), "```"];
+      // The block id after it lets a link open this entry: `[[catalog#^forests-t1-9-8-baboon]]`.
+      const block = [
+        `\`\`\`${ENTRY_INFO_STRING}`,
+        stringifyYaml(entryObject(entry), YAML_OPTIONS).trimEnd(),
+        "```",
+        `^${entry.id}`,
+      ];
       lines.push(">", ...block.flatMap((l) => l.split("\n")).map((l) => (l ? `> ${l}` : ">")));
     }
     lines.push("");

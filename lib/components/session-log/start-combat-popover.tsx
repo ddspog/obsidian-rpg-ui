@@ -30,6 +30,7 @@ import {
   type Surprise,
 } from "../../domains/session-log/start-combat";
 import { SidebarEntry } from "./sidebar-entry";
+import { foeLines, formatEncounterTag, type PreparedEncounter } from "../../domains/session-log/prepared-encounter";
 import { squareName, type SquareMap } from "../../domains/battlemap/square-map";
 import type { MapChoice, MapTools } from "../../domains/battlemap/map-tools";
 import type { HeaderMap } from "../../domains/session-log";
@@ -52,6 +53,10 @@ interface StartCombatPopoverProps {
   /** The battle maps to choose from, and pictures to make one of. */
   mapTools?: MapTools;
   sourcePath?: string;
+  /** Encounters prepared in this log from the catalog and not fought yet, the latest last. */
+  prepared?: PreparedEncounter[];
+  /** The scene the fight starts in (`S02`), written on the prepared encounter it uses. */
+  scene?: string;
   /** The block to append — and a new picture map to keep in the log's header. */
   onResolve: (text: string, headerMap?: HeaderMap) => void;
   onCancel: () => void;
@@ -79,6 +84,8 @@ export function StartCombatPopover({
   lookupCreature,
   mapTools,
   sourcePath = "",
+  prepared,
+  scene,
   onResolve,
   onCancel,
 }: StartCombatPopoverProps) {
@@ -91,7 +98,13 @@ export function StartCombatPopover({
   const [inFight, setInFight] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(party.map((p) => [p, true]))
   );
-  const [foeText, setFoeText] = useState("");
+  // The latest prepared encounter is preselected: its foes fill the list.
+  const [encounter, setEncounter] = useState<PreparedEncounter | undefined>(prepared?.[prepared.length - 1]);
+  const [foeText, setFoeText] = useState(() => (encounter ? foeLines(encounter.foes).join("\n") : ""));
+  const pickEncounter = (p: PreparedEncounter | undefined) => {
+    setEncounter(p);
+    setFoeText(p ? foeLines(p.foes).join("\n") : "");
+  };
   const [creatures, setCreatures] = useState<Record<string, CreatureInfo>>({});
   // Each combatant's d20, by name — rolled the moment they join the fight.
   const [faces, setFaces] = useState<Record<string, number>>({});
@@ -221,7 +234,16 @@ export function StartCombatPopover({
     setFaces((f) => ({ ...f, ...Object.fromEntries(names.filter((n) => f[n] == null).map((n) => [n, rollD20()])) }));
   }, [unrolledKey]);
 
-  const text = startCombatText({ question, narration, combatants, surprise, map: mapName.trim() || undefined });
+  const text = startCombatText({
+    question,
+    narration,
+    combatants,
+    surprise,
+    map: mapName.trim() || undefined,
+    ...(encounter
+      ? { encounter: formatEncounterTag({ link: encounter.link, foes: encounter.foes, state: "fought", scene }) }
+      : {}),
+  });
   const items = useMemo(() => {
     const built = buildSidebarItems(groupIntoProse(parseLonelog(text)));
     return resolveRef ? withActorRefs(built, resolveRef) : built;
@@ -430,6 +452,25 @@ export function StartCombatPopover({
             </label>
           ))}
         </fieldset>
+
+        {prepared && prepared.length > 0 && (
+          <fieldset className="placeholder-field combat-prepared">
+            <legend className="placeholder-label">Prepared from the catalog</legend>
+            <div className="combat-prepared-list">
+              {prepared.map((p) => (
+                <button
+                  key={p.target}
+                  type="button"
+                  className={`combat-prepared-pick${encounter?.target === p.target ? " is-on" : ""}`}
+                  aria-pressed={encounter?.target === p.target}
+                  onClick={() => pickEncounter(encounter?.target === p.target ? undefined : p)}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <label className="placeholder-field">
           <span className="placeholder-label">Foes — one per line</span>

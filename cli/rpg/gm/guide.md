@@ -259,9 +259,12 @@ rpg sim run --monster "Thug:3" --brief
   from. Use it to set the encounter, in your words. `atMin`/`atMax` say how the
   fight goes when a rolled count comes out low or high: roll the count in play.
 - Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
-  keeps `plan` from offering it again for a few sessions.
+  keeps `plan` from offering it again for a few sessions. When the player
+  plays in Obsidian, `rpg sim catalog prepare <id>` readies it instead: a
+  `[Enc:…|prepared]` line in the session log that the Start Combat card offers,
+  the run being recorded when the fight starts from it.
 - Running `plan`, `run` and `catalog suggest` writes nothing. `catalog add`,
-  `confirm`, `use`, `tag`, `session`, `check` and `draft --accept` write the catalog note: do them only
+  `confirm`, `use`, `tag`, `session`, `check` and `draft --accept` write the catalog note (`prepare` the session note): do them only
   when the player has said you may keep that catalog.
 
 ## When the player is in Obsidian (the GM link)

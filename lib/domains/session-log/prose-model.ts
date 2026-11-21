@@ -12,6 +12,7 @@
  * sidebar card and the scroll target all reference one shared id.
  */
 
+import { encounterTagsIn } from "./prepared-encounter";
 import { actionTarget, leadingActionCall } from "./action-call";
 import { parseSceneMarker } from "lib/domains/lonelog/parser";
 import { answerFateCheck, answerFateQuestion, fateCheckModifier, fateThreshold } from "lib/domains/gm/fate-chart";
@@ -59,7 +60,17 @@ export type ProseNode =
   /** A journey starts (`[TRAVEL: [[Map]]]`): its map goes here. */
   | { kind: "travel"; sourceId: number }
   /** A journey ends (`[/TRAVEL: arrive … | … | outcome …]`): when, its numbers, what came of it. */
-  | { kind: "arrival"; sourceId: number; arrive?: string; stats: string[]; outcome?: string };
+  | { kind: "arrival"; sourceId: number; arrive?: string; stats: string[]; outcome?: string }
+  /** An encounter prepared from the catalog (`[Enc:…|prepared]`): a quiet chip, "fought" once a fight used it. */
+  | {
+      kind: "prepared";
+      sourceId: number;
+      name: string;
+      link: string;
+      foes: string;
+      fought: boolean;
+      foughtIn?: string;
+    };
 
 /**
  * A creature's name as the prose margin shows it, short: a statblock's `Kobold,
@@ -95,6 +106,10 @@ export interface ProseScene {
  */
 export function assembleProse(segments: ProseSegment[]): ProseScene[] {
   const scenes: ProseScene[] = [];
+  // Which prepared encounters a fight used: a fought `[Enc:]` tag anywhere in the log (it rides on the
+  // fight's opening line, whatever segment that became). The segments' own text holds the tags whole.
+  const fought = new Map<string, string | undefined>();
+  for (const t of encounterTagsIn(JSON.stringify(segments))) if (t.state === "fought") fought.set(t.target, t.scene);
   let current: ProseScene = { head: null, nodes: [] };
   let lastParagraph: Extract<ProseNode, { kind: "paragraph" }> | null = null;
   let joinNext = false;
@@ -251,9 +266,24 @@ export function assembleProse(segments: ProseSegment[]): ProseScene[] {
         for (const c of seg.consequences) consumeConclusion(c.conclusion, seg.sourceIndex);
         break;
 
-      case "standalone-consequence":
+      case "standalone-consequence": {
+        for (const t of seg.entry.tags ?? []) {
+          if (t.kind !== "encounter" || t.state !== "prepared") continue;
+          const used = fought.has(t.target);
+          into().push({
+            kind: "prepared",
+            sourceId: seg.sourceIndex,
+            name: t.name,
+            link: t.link,
+            foes: t.foes,
+            fought: used,
+            ...(used && fought.get(t.target) ? { foughtIn: fought.get(t.target) } : {}),
+          });
+          breakFlow();
+        }
         consumeConclusion(seg.entry.conclusion, seg.sourceIndex);
         break;
+      }
 
       case "dialogue":
         into().push({
@@ -593,6 +623,12 @@ function tagPill(tag: PersistentTag): SidebarPill {
     }
     case "mark":
       return { name: tag.name, value: tag.end ? "ends" : tag.until ? `until ${tag.until}` : tag.spec, kind: "mark" };
+    case "encounter":
+      return {
+        name: tag.name,
+        value: tag.state === "fought" ? `fought${tag.scene ? ` ${tag.scene}` : ""}` : "prepared",
+        kind: "encounter",
+      };
   }
 }
 

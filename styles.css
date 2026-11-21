@@ -15487,6 +15487,83 @@ body.is-mobile .rpg-draft :is(.rpg-draft-add, .rpg-draft-link, .rpg-draft-quiet,
     white-space: normal;
   }
 }
+.lonelog-prepared {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0.6rem 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-m, 8px);
+  border: 1px dashed color-mix(in srgb, var(--color-green) 45%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green) 6%, transparent);
+  font-size: var(--font-ui-small, 0.85rem);
+}
+.lonelog-prepared.is-fought {
+  border-color: var(--background-modifier-border);
+  background: transparent;
+  color: var(--text-muted);
+}
+.lonelog-prepared-state {
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-weight: var(--font-semibold, 600);
+  color: color-mix(in srgb, var(--color-green) 50%, var(--text-normal));
+}
+.lonelog-prepared.is-fought .lonelog-prepared-state {
+  color: var(--text-muted);
+}
+.lonelog-prepared-name,
+.lonelog-prepared-name p {
+  display: inline;
+  margin: 0;
+  font-weight: var(--font-semibold, 600);
+}
+.lonelog-prepared-foes {
+  color: var(--text-muted);
+}
+.combat-prepared {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.combat-prepared-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+button.combat-prepared-pick {
+  height: auto;
+  min-height: 28px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-size: var(--font-ui-small, 0.85rem);
+}
+button.combat-prepared-pick.is-on {
+  border: 1px solid color-mix(in srgb, var(--color-green) 55%, var(--text-normal));
+  background: color-mix(in srgb, var(--color-green) 14%, var(--background-primary));
+  font-weight: var(--font-semibold, 600);
+}
+.is-mobile button.combat-prepared-pick {
+  min-height: 44px;
+}
+.rpg-enc-prepared {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-ui-small, 0.85rem);
+  color: var(--text-muted);
+}
+.rpg-enc-prepared-state {
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: var(--font-ui-smaller, 0.75rem);
+  font-weight: var(--font-semibold, 600);
+  color: color-mix(in srgb, var(--color-green) 50%, var(--text-normal));
+}
 
 /* lib/styles/components/gm-link.css */
 .rpg-gm-setup .rpg-gm-lede {

@@ -50,6 +50,9 @@ import { CONFIDENCES, UsageError, type SimOptions, type TierScope } from "./flag
 import { linkNames, readMonsterNote } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
 import { listSessions } from "../session/lines";
+import { readNote, writeNote } from "../write";
+import { noteRef } from "./brief";
+import { appendToLog, foesText, formatEncounterTag } from "lib/domains/session-log/prepared-encounter";
 import { inScope, tierMatcher } from "./tier-scope";
 
 export interface CatalogDeps {
@@ -475,6 +478,39 @@ function session(ctx: Ctx, options: SimOptions) {
   return { catalog: path, session: next, was: catalog.session, from, sessions: notes };
 }
 
+/**
+ * Prepares entries in the party's latest session log: one `[Enc:…|prepared]` line each, which the
+ * Start Combat card offers (see lib/domains/session-log/prepared-encounter.ts).
+ */
+function prepare(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const sessions = partySessions(ctx, catalog).sort();
+  const latest = sessions[sessions.length - 1];
+  if (!latest) {
+    throw new UsageError("No session note of this party to prepare in (a note with an rpg log and the party's pcs).");
+  }
+  let text = readNote(ctx.root, latest) ?? "";
+  const self = path.replace(/\.md$/i, "");
+  const done: Array<{ id: string; line: string }> = [];
+  for (const id of ids) {
+    const entry = catalog.entries.find((e) => e.id === id) as CatalogEntry;
+    const title = entry.name.replace(/^.+? #\d+: /, "").replace(/[[\]|]/g, "");
+    const line = formatEncounterTag({
+      link: `[[${self}#^${id}|${title}]]`,
+      foes: foesText(entry.monsters.map((m) => ({ link: noteRef(ctx, m.note), count: m.count }))),
+      state: "prepared",
+    });
+    const next = appendToLog(text, line);
+    if (next === null) throw new UsageError(`"${latest}" has no rpg log block to prepare in.`);
+    text = next;
+    done.push({ id, line });
+  }
+  writeNote(ctx.root, latest, text);
+  return { catalog: path, session: latest, prepared: done };
+}
+
 async function check(ctx: Ctx, options: SimOptions, now: () => string) {
   const { path, catalog } = existing(ctx, options);
   const { result, party } = await runCheck(ctx, path, catalog, options, now);
@@ -625,6 +661,8 @@ export function createSimCatalog(deps: CatalogDeps = {}): SimHandler {
         return { doc: use(ctx, options) };
       case "session":
         return { doc: session(ctx, options) };
+      case "prepare":
+        return { doc: prepare(ctx, options) };
       case "check":
         return { doc: await check(ctx, options, now) };
       case "suggest":

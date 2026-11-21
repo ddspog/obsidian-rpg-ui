@@ -72,6 +72,8 @@ describe("serializeCatalog", () => {
     // The entries sit in a folded callout under the board.
     expect(text.match(/^> ```rpg encounter$/gm)).toHaveLength(2);
     expect(text).toContain("> [!abstract]- 2 entries as written");
+    // Each entry carries a block id, so a link can open it.
+    expect(text).toContain("> ```\n> ^goblin-ambush\n");
     expect(text.match(/^```rpg encounter-catalog\nview: encounter-catalog\n```$/gm)).toHaveLength(1);
     expect(text.indexOf("rpg encounter-catalog")).toBeLessThan(text.indexOf("```rpg encounter\n"));
     expect(text).toContain("difficulty: challenging");

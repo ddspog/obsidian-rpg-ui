@@ -44,6 +44,7 @@ export const CATALOG_ACTIONS = [
   "remove",
   "tag",
   "use",
+  "prepare",
   "session",
   "check",
   "suggest",
@@ -664,6 +665,7 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   remove: [],
   tag: ["add-tag", "drop-tag"],
   use: ["session"],
+  prepare: [],
   session: ["session"],
   check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
   suggest: [
@@ -700,7 +702,7 @@ function validateCatalog(options: SimOptions): void {
   for (const flag of options.given) {
     if (!allowed.has(flag)) throw new UsageError(`--${flag} is not a flag of \`catalog ${known}\`.`);
   }
-  const takesWords = ["draft", "confirm", "remove", "tag", "use"].includes(known);
+  const takesWords = ["draft", "confirm", "remove", "tag", "use", "prepare"].includes(known);
   if (!takesWords && options.args.length > 0) {
     throw new UsageError(`Unexpected argument "${options.args[0]}" for \`catalog ${known}\`.`);
   }
@@ -719,7 +721,7 @@ function validateCatalog(options: SimOptions): void {
   if (known === "tag" && options.addTags.length + options.dropTags.length === 0) {
     throw new UsageError("`catalog tag` needs --add-tag or --drop-tag (or both).");
   }
-  if (["confirm", "remove", "tag", "use"].includes(known) && options.args.length === 0) {
+  if (["confirm", "remove", "tag", "use", "prepare"].includes(known) && options.args.length === 0) {
     throw new UsageError(`\`catalog ${known}\` needs at least one entry id.`);
   }
 }
@@ -816,6 +818,7 @@ Usage:
   rpg sim catalog remove <id>...
   rpg sim catalog tag <id>... [--add-tag <tag>]... [--drop-tag <tag>]...
   rpg sim catalog use <id>... [--session N]   (the encounter was run: not offered again for --reuse-after sessions)
+  rpg sim catalog prepare <id>...       (an [Enc:] line in the party's latest session log; Start Combat offers it)
   rpg sim catalog session [--session N]  (the party's session: counted from the vault's session notes, or set)
   rpg sim catalog check [--session N] [--force] [--limit N] [--seed N] [--trials N] [--rounds N]
   rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--include-used] [--limit N] [--brief]

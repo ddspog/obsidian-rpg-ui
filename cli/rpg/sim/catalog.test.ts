@@ -1233,3 +1233,20 @@ describe("the party's tier", () => {
     expect((await sim("list", "--catalog", path, "--tiers", "same")).doc.matched).toBe(4);
   });
 });
+
+describe("catalog prepare", () => {
+  it("writes an [Enc:] line into the party's latest session log, which Start Combat offers", async () => {
+    const path = await seeded("Preparing");
+    const done = await sim("prepare", "forest-t1-2-3-wolf", "--catalog", path);
+    expect(done.code, done.err).toBe(0);
+    const line = `[Enc:[[${path.replace(/\.md$/, "")}#^forest-t1-2-3-wolf|3 Wolf]]|3 [[Wolf]]|prepared]`;
+    expect(done.doc).toEqual({
+      catalog: path,
+      session: "fixture/sessions/01. Into the Woods.md",
+      prepared: [{ id: "forest-t1-2-3-wolf", line }],
+    });
+    const note = read("fixture/sessions/01. Into the Woods.md");
+    expect(note).toContain(`Hello.\n${line}\n\`\`\``);
+    expect((await sim("prepare", "nope", "--catalog", path)).code).toBe(1);
+  });
+});

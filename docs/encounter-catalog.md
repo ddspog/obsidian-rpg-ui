@@ -70,6 +70,7 @@ Every action takes `--catalog <vault path | party name>`; left out, it uses the 
 | `catalog confirm <id>…` / `catalog remove <id>…`                                                                     | Flips drafts to confirmed / deletes entries. An unknown id changes nothing.                                                                                                                                                                                                                                                                                                                               |
 | `catalog tag <id>… [--add-tag t]… [--drop-tag t]…`                                                                   | Adds and drops tags (a dropped tag matches plural or not). Reports the entries that changed.                                                                                                                                                                                                                                                                                                              |
 | `catalog use <id>… [--session N]`                                                                                    | Records that the encounters were run (`uses`, `lastUsedSession`, default the catalog's session). `suggest` and `plan` hold an entry back until `reuseAfterSessions` sessions have passed (`--include-used` shows it); `suggest` reports how many as `recentlyUsed`.                                                                                                                                       |
+| `catalog prepare <id>…`                                                                                              | Writes a prepared line for each entry (`[Enc:[[<catalog>#^<id>\|Name]]\|<foes>\|prepared]`) at the end of the `rpg log` of the party's latest session note (below). Records nothing in the catalog: the run is recorded when a fight starts from it.                                                                                                                                                      |
 | `catalog session [--session N]`                                                                                      | Sets the catalog's session: given, or counted from the vault's session notes (`rpg session list`: an `rpg log` and `pcs`) in the party's system folder whose every PC is one of the catalog's. Lists the notes counted.                                                                                                                                                                                   |
 | `catalog check [--session N] [--seed N] [--trials N] [--rounds N] [--force] [--limit N]`                             | Simulates the entries that need it (below) against the party and stamps each with its fit. An entry that cannot load (a broken feature link) is listed in `errors` and skipped.                                                                                                                                                                                                                           |
 | `catalog suggest [--tag t]… [--any-tag t]… [--state s]… [--include-stale] [--include-draft] [--limit N] [--refresh]` | Read-only. The confirmed entries whose current fit is `fit` (or the `--state`s given), every `--tag` matching, closest to the difficulty's aim first, default 10. `needsCheck` and a `hint` say when entries are out of date; `--refresh` runs `check` first.                                                                                                                                             |
@@ -101,11 +102,25 @@ The note opens with an `rpg encounter-catalog` block (body `view: encounter-cata
   - a gauge of the share of party HP the fight costs, with the band where it fits and a dashed line at the difficulty's aim;
   - the wipe and win rates;
   - what a high or low roll does to a rolled count.
-- **Card actions:** **Confirm** (drafts only), **Ran it** (`catalog use`), and **Tags**. Each action writes the note.
+- **Card actions:** **Confirm** (drafts only), **Prepare**, and **Tags**. Confirm and Tags write the catalog note; Prepare writes the party's latest session note (below). A prepared card says where ("prepared in 01. Journey…") and offers **Unprepare**.
 
 Each entry is an `rpg encounter` block that renders as one line, so its YAML shows only in source mode. The note keeps the entries in a folded callout under the board ("N entries as written"); open it to edit one by hand. The parser reads entries inside or outside the callout. `yaml encounter` blocks from before are still read, and are rewritten as `rpg encounter` on the next write.
 
 The board does not simulate. It judges staleness against the `profile` that `catalog check` writes to the frontmatter: the party's size, level, tier, benchmark, single-monster CR and stamp. Run `rpg sim catalog check` after the party changes. In the board, an entry with no tier tag counts as the party's tier, because the board does not read monster CRs; the CLI's `--tiers` does.
+
+## Prepared encounters
+
+**Prepare** readies an encounter for the table: it adds one Lonelog line at the end of the `rpg log` of the party's latest session note (the last, by path, of the notes in the catalog's system folder whose `pcs` are all the catalog's PCs and that hold an `rpg log`), with an Undo on its notice:
+
+```
+[Enc:[[tales-of-the-valiant/gm-tools/encounter-catalog/ashen-four#^forests-t1-9-8-baboon|8 Baboons]]|8 [[Baboon]]|prepared]
+```
+
+The tag holds the link to the entry (its block id, `^<id>`, written under each entry's fence), the foes as `count [[note]]` joined by `; `, and a state. The session log shows it as a quiet chip: the encounter's name (a link to the entry), its foes, and "prepared".
+
+**Start Combat** lists the log's prepared encounters above its foes, the latest picked: picking one fills the foe box (one line a foe, numbered when there are several). Starting the fight appends the same tag with `fought S02` (the log's current scene) to the fight's opening `?` line, so the log stays append-only; from then on the prepared chip reads "fought in S02" and the encounter is no longer offered. When the log is saved, the plugin records the run in the catalog (`uses`, `lastUsedSession`, as `catalog use` does), so `suggest` and `plan` hold it back for `reuseAfterSessions`.
+
+**Unprepare** takes the prepared line back out (only while it is unfought). `rpg sim catalog prepare <id>` writes the same line from the CLI (`lib/domains/session-log/prepared-encounter.ts` is shared).
 
 ## The party's tier
 

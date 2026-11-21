@@ -16,10 +16,17 @@ import {
   parseEntryBlock,
   serializeCatalog,
   updateEntry,
-  usedAt,
   type Catalog,
 } from "lib/domains/encounter-catalog/catalog";
 import { normaliseTags } from "lib/domains/encounter-catalog/words";
+import {
+  appendToLog,
+  catalogRefOf,
+  foesText,
+  formatEncounterTag,
+  preparedEncounters,
+  removePrepared,
+} from "lib/domains/session-log/prepared-encounter";
 import { BaseView } from "lib/views/BaseView";
 import { ReactMarkdown } from "lib/views/ReactMarkdown";
 
@@ -27,17 +34,63 @@ const openIn = (app: App, sourcePath: string) => (path: string) => {
   void app.workspace.openLinkText(path.replace(/\.md$/i, ""), sourcePath, false);
 };
 
+/**
+ * The party's latest session note: a note in the party's system folder with an
+ * `rpg log` and `pcs` that are all the catalog's PCs (as `rpg sim catalog session`
+ * counts them), the last by path (session notes are numbered).
+ */
+async function latestSession(app: App, catalog: Catalog): Promise<TFile | null> {
+  const party = new Set(catalog.party.pcs);
+  const system = catalog.party.pcs[0]?.split("/")[0] ?? "";
+  const found: TFile[] = [];
+  for (const file of app.vault.getMarkdownFiles()) {
+    if (system && !file.path.startsWith(`${system}/`)) continue;
+    const pcs = app.metadataCache.getFileCache(file)?.frontmatter?.pcs;
+    if (!Array.isArray(pcs) || pcs.length === 0) continue;
+    const all = pcs.every((raw) => {
+      const name = String(raw)
+        .replace(/^\[\[|\]\]$/g, "")
+        .split("|")[0];
+      const dest = app.metadataCache.getFirstLinkpathDest(name, file.path);
+      return !!dest && party.has(dest.path);
+    });
+    if (!all) continue;
+    if (/^`{3,}\s*rpg\s+log\b/m.test(await app.vault.cachedRead(file))) found.push(file);
+  }
+  found.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return found[found.length - 1] ?? null;
+}
+
+/** The link to a catalog entry from another note: its block, shown by its title. */
+const entryLink = (catalogPath: string, id: string, title: string) =>
+  `[[${catalogPath.replace(/\.md$/i, "")}#^${id}|${title.replace(/[[\]|]/g, "")}]]`;
+
 function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
   const [catalog, setCatalog] = React.useState<Catalog | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [lowerTiers, setLowerTiers] = React.useState(false);
+  // Where Prepare writes, and what is prepared there (entry id → the session note's name).
+  const [session, setSession] = React.useState<TFile | null>(null);
+  const [prepared, setPrepared] = React.useState<Map<string, string>>(new Map());
 
   const load = React.useCallback(async () => {
     const file = app.vault.getAbstractFileByPath(sourcePath);
     if (!(file instanceof TFile)) return;
     try {
-      setCatalog(parseCatalog(await app.vault.cachedRead(file)));
+      const next = parseCatalog(await app.vault.cachedRead(file));
+      setCatalog(next);
       setError(null);
+      const latest = await latestSession(app, next);
+      setSession(latest);
+      const ids = new Map<string, string>();
+      if (latest) {
+        const self = sourcePath.replace(/\.md$/i, "");
+        for (const p of preparedEncounters(await app.vault.cachedRead(latest))) {
+          const ref = catalogRefOf(p.target);
+          if (!p.fought && ref && ref.note === self) ids.set(ref.id, latest.basename);
+        }
+      }
+      setPrepared(ids);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -45,12 +98,28 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
 
   React.useEffect(() => {
     void load();
-    // The board's own block never changes, so Obsidian does not re-render it when an entry does.
+    // The board's own block never changes, so Obsidian does not re-render it when an entry does; a
+    // session note changing may prepare or fight one of its encounters.
     const ref = app.vault.on("modify", (f) => {
-      if (f.path === sourcePath) void load();
+      if (f.path === sourcePath || f.path === session?.path) void load();
     });
     return () => app.vault.offref(ref);
-  }, [app, sourcePath, load]);
+  }, [app, sourcePath, load, session?.path]);
+
+  /** Writes the session note's text through `change`; false when it could not. */
+  const writeSession = React.useCallback(
+    async (change: (text: string) => string | null): Promise<boolean> => {
+      if (!session) return false;
+      let ok = false;
+      await app.vault.process(session, (text) => {
+        const next = change(text);
+        ok = next !== null;
+        return next ?? text;
+      });
+      return ok;
+    },
+    [app, session]
+  );
 
   /** Writes a change to the note; `undo`, when given, is offered on the notice that says it was done. */
   const write = React.useCallback(
@@ -88,25 +157,49 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
       lowerTiers={lowerTiers}
       onLowerTiers={setLowerTiers}
       onConfirm={(id) => void write((c) => updateEntry(c, id, confirmed), "Encounter confirmed")}
-      onUsed={(id) => {
-        const before = catalog.entries.find((e) => e.id === id);
-        void write(
-          (c) => updateEntry(c, id, usedAt(c.session)),
-          `Ran in session ${catalog.session}. It rests until session ${catalog.session + catalog.reuseAfterSessions}.`,
-          // Undo puts back what the entry had: its count of runs and the session of its last one.
-          (c) =>
-            updateEntry(c, id, (e) => {
-              const { uses: _u, lastUsedSession: _l, ...rest } = e;
-              void _u;
-              void _l;
-              return {
-                ...rest,
-                ...(before?.uses !== undefined ? { uses: before.uses } : {}),
-                ...(before?.lastUsedSession !== undefined ? { lastUsedSession: before.lastUsedSession } : {}),
-              };
-            })
-        );
-      }}
+      prepared={prepared}
+      sessionName={session?.basename}
+      onPrepare={(id) =>
+        void (async () => {
+          const entry = catalog.entries.find((e) => e.id === id);
+          const card = board.cards.find((c) => c.id === id);
+          if (!entry || !session) {
+            new Notice("Encounter catalog: no session note of this party to prepare it in.");
+            return;
+          }
+          const monsters = entry.monsters.map((m) => {
+            const f = app.vault.getAbstractFileByPath(m.note);
+            const link = f instanceof TFile ? app.metadataCache.fileToLinktext(f, session.path, true) : m.note;
+            return { link, count: m.count };
+          });
+          const target = `${sourcePath.replace(/\.md$/i, "")}#^${id}`;
+          const line = formatEncounterTag({
+            link: entryLink(sourcePath, id, card?.title ?? entry.name),
+            foes: foesText(monsters),
+            state: "prepared",
+          });
+          if (!(await writeSession((text) => appendToLog(text, line)))) {
+            new Notice(`Encounter catalog: ${session.basename} has no rpg log to prepare it in.`);
+            return;
+          }
+          const message = document.createDocumentFragment();
+          message.appendText(`Prepared in ${session.basename}: Start Combat will offer it. `);
+          const button = message.createEl("button", { text: "Undo", cls: "rpg-enc-undo" });
+          const notice = new Notice(message, 8000);
+          button.addEventListener("click", () => {
+            notice.hide();
+            void writeSession((text) => removePrepared(text, target));
+          });
+        })()
+      }
+      onUnprepare={(id) =>
+        void (async () => {
+          const target = `${sourcePath.replace(/\.md$/i, "")}#^${id}`;
+          if (await writeSession((text) => removePrepared(text, target))) {
+            new Notice(`Taken out of ${session?.basename ?? "the session"}.`);
+          }
+        })()
+      }
       onCopy={(text) => {
         navigator.clipboard.writeText(text).then(
           () => new Notice(`Copied: ${text}`),
@@ -120,11 +213,19 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
   );
 }
 
+/**
+ * Whether a block's body is an entry rather than the board. Reading view can name a block by the
+ * nearest `rpg` fence above it, which for the entries folded in the callout is the board's own: the
+ * body decides.
+ */
+const isEntryBody = (source: string): boolean => /^\s*monsters\s*:/m.test(source);
+
 export class EncounterCatalogView extends BaseView {
   public codeblock = "encounter-catalog";
 
-  public render(_source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
-    ctx.addChild(new BoardMarkdown(el, this.app, ctx.sourcePath));
+  public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
+    if (isEntryBody(source)) ctx.addChild(new EntryMarkdown(el, this.app, source, ctx.sourcePath));
+    else ctx.addChild(new BoardMarkdown(el, this.app, ctx.sourcePath));
   }
 }
 
@@ -162,7 +263,9 @@ export class EncounterEntryView extends BaseView {
   public codeblock = "encounter";
 
   public render(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
-    ctx.addChild(new EntryMarkdown(el, this.app, source, ctx.sourcePath));
+    if (!isEntryBody(source) && /view\s*:\s*encounter-catalog/.test(source)) {
+      ctx.addChild(new BoardMarkdown(el, this.app, ctx.sourcePath));
+    } else ctx.addChild(new EntryMarkdown(el, this.app, source, ctx.sourcePath));
   }
 }
 

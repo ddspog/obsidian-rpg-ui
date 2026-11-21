@@ -102,6 +102,14 @@ import type { PartyTerrain } from "lib/components/session-log/placeholder-popove
 import { collectInventoryChanges } from "lib/domains/session-log/inventory-changes";
 import { BottomDrawer } from "lib/components/session-log/bottom-drawer";
 import { SessionActionsPanel } from "lib/components/session-log/session-actions-panel";
+import {
+  catalogRefOf,
+  currentScene,
+  encounterTagsIn,
+  preparedEncounters,
+  type PreparedEncounter,
+} from "lib/domains/session-log/prepared-encounter";
+import { parseCatalog, serializeCatalog, updateEntry, usedAt } from "lib/domains/encounter-catalog/catalog";
 import { extractCardsFromEntity, extractResourcesFromEntity } from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
@@ -2153,9 +2161,32 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
       await this.baseView.app.vault.modify(file as any, updatedContent);
+      const written = staged.text;
       this.staged = { text: "", maps: [] };
+      // A fight started from a prepared encounter: its catalog records the run, so the encounter rests.
+      await this.recordFoughtEncounters(written);
     } catch (error) {
       console.error("Error editing log:", error);
+    }
+  }
+
+  /** Each fought `[Enc:]` tag in `text` marks its catalog entry as run (in the catalog's own session). */
+  private async recordFoughtEncounters(text: string): Promise<void> {
+    const { vault, metadataCache } = this.baseView.app;
+    for (const tag of encounterTagsIn(text)) {
+      if (tag.state !== "fought") continue;
+      const ref = catalogRefOf(tag.target);
+      const file = ref ? metadataCache.getFirstLinkpathDest(ref.note, this.filePath) : null;
+      if (!ref || !(file instanceof TFile)) continue;
+      try {
+        await vault.process(file, (note) => {
+          const catalog = parseCatalog(note);
+          if (!catalog.entries.some((e) => e.id === ref.id)) return note;
+          return serializeCatalog(updateEntry(catalog, ref.id, usedAt(catalog.session)));
+        });
+      } catch (error) {
+        console.error("rpg log: could not record the fought encounter in its catalog:", error);
+      }
     }
   }
 
@@ -2379,6 +2410,8 @@ class SessionLogMarkdown extends ReactMarkdown {
           sheetDone={this.sheetDone}
           onSheetDone={this.markDone}
           onAppendText={handleAppendText}
+          prepared={preparedEncounters(this.stagedSource()).filter((p) => !p.fought)}
+          scene={currentScene(this.stagedSource())}
           onChoice={(selected, at) => void this.onChoicePick(selected, at)}
           onSave={(edits) => this.editLogBody(edits.scenes, edits.dice)}
           stagedCount={this.staged.text ? 1 : 0}
@@ -2461,6 +2494,9 @@ interface SessionLogRootProps {
   /** Remember changes seen on their sheets. */
   onSheetDone: (ids: string[]) => void;
   onAppendText: (text: string, headerMap?: HeaderMap) => void;
+  /** Encounters prepared from the catalog in this log and not fought yet; the scene now. */
+  prepared?: PreparedEncounter[];
+  scene?: string;
   /** A GM step dropdown pick — inserts the chosen step line into the note. */
   onChoice: (selected: string, at?: ChoiceAt) => void;
   onSave: (edits: {
@@ -2573,6 +2609,8 @@ function SessionLogRoot({
   sheetDone,
   onSheetDone,
   onAppendText,
+  prepared,
+  scene,
   onChoice,
   onSave,
   stagedCount,
@@ -4124,6 +4162,8 @@ function SessionLogRoot({
                 consumableState={consumableState}
                 entities={entityNames}
                 onAppendText={onAppendText}
+                {...(prepared ? { prepared } : {})}
+                {...(scene ? { scene } : {})}
                 onSpend={handleSpend}
                 sourcePath={sourcePath}
                 resolveRef={resolveRef}
