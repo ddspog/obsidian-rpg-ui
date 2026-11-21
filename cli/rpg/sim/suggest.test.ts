@@ -2,6 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { classifyFit, outcomeDistance } from "lib/domains/encounter-sim/fit";
 import type { Ctx } from "../app";
 import { simMain } from "./dispatch";
 import { simSuggest } from "./suggest";
@@ -32,6 +33,8 @@ interface FixtureMonster {
   cr: string | number;
   habitat?: string;
   refs: string[];
+  hp?: number;
+  ac?: number;
 }
 
 function monsterNote(name: string, m: FixtureMonster): string {
@@ -43,8 +46,8 @@ function monsterNote(name: string, m: FixtureMonster): string {
     `cr: "${m.cr}"`,
     ...(m.habitat ? [`habitat: "${m.habitat}"`] : []),
     "stats:",
-    '  ac: "12"',
-    '  hp: "9 (2d8)"',
+    `  ac: "${m.ac ?? 12}"`,
+    `  hp: "${m.hp ?? 9} (2d8)"`,
     '  speed: "30 ft."',
     "abilities:",
     "  str: 1",
@@ -78,7 +81,48 @@ const MONSTERS: Record<string, FixtureMonster> = {
 const PCS = ["Aria", "Bram", "Cora", "Dax"];
 const pcPath = (name: string) => `fixture/pcs/${name}.md`;
 
+/** Monsters whose strength has nothing to do with their CR: a harmless CR 1/2, a brute of CR 1/4, ... */
+const OUTCOME_TRAITS = [
+  "```rpg feature.details",
+  'name: "Nibble"',
+  "type: action",
+  "---",
+  "*Melee Weapon Attack:* +0 to hit, reach 5 ft., one target. *Hit:* 1 (1d2) piercing damage.",
+  "```",
+  "```rpg feature.details",
+  'name: "Flail"',
+  "type: action",
+  "---",
+  "*Melee Weapon Attack:* -5 to hit, reach 5 ft., one target. *Hit:* 1 (1d2) piercing damage.",
+  "```",
+  "```rpg feature.details",
+  'name: "Maul"',
+  "type: action",
+  "---",
+  "*Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 7 (2d6) bludgeoning damage.",
+  "```",
+  "```rpg feature.details",
+  'name: "Annihilate"',
+  "type: action",
+  "---",
+  "*Melee Weapon Attack:* +20 to hit, reach 5 ft., one target. *Hit:* 60 (10d10 + 5) force damage.",
+  "```",
+  "",
+].join("\n");
+
+const OUTCOME_MONSTERS: Record<string, FixtureMonster> = {
+  // On the CR target (1/2) but harmless: costs the party next to nothing.
+  Weakling: { type: "Small [[Beast]]", cr: "1/2", hp: 1, ac: 5, refs: ["@[[Traits]]#Nibble"] },
+  // Far below the CR target (1/4) but a real fight.
+  Brute: { type: "Large [[Beast]]", cr: "1/4", hp: 40, ac: 15, refs: ["@[[Traits]]#Maul"] },
+  // A tiny CR whose first copy already wipes the party.
+  Doom: { type: "Huge [[Fiend]]", cr: "1/8", hp: 500, ac: 12, refs: ["@[[Traits]]#Annihilate"] },
+  // A tiny CR that never hurts anyone: counts run to the hard cap.
+  Mote: { type: "Tiny [[Beast]]", cr: "1/32", hp: 1, ac: 5, refs: ["@[[Traits]]#Flail"] },
+};
+
 let ctx: Ctx;
+let outcomeCtx: Ctx;
 
 beforeAll(async () => {
   await initSystemLoader();
@@ -97,24 +141,48 @@ beforeAll(async () => {
   put(root, note("NoCr"), "# NoCr\n```rpg stat.monster\nname: NoCr\nstats:\n  ac: 12\n  hp: 5\n```\n");
   put(root, "elsewhere/Outsider.md", monsterNote("Outsider", { type: "Beast", cr: 1, refs: [BITE] }));
   ctx = makeCtx(root);
+
+  // A second vault whose monsters differ in strength, not only in CR, for the outcome ranking.
+  const outcomeRoot = mkdtempSync(join(tmpdir(), "rpg-suggest-outcome-"));
+  put(outcomeRoot, "fixture/config/index.ts", FIXTURE_SYSTEM);
+  for (const name of PCS) {
+    put(
+      outcomeRoot,
+      pcPath(name),
+      pcNote({ name, ac: 14, hp: 11, actions: [weapon("Staff", "+3 (STR)", "1d6+1 bludgeoning")] })
+    );
+  }
+  put(outcomeRoot, "Traits.md", TRAITS + OUTCOME_TRAITS);
+  for (const [name, m] of Object.entries(OUTCOME_MONSTERS)) put(outcomeRoot, note(name), monsterNote(name, m));
+  outcomeCtx = makeCtx(outcomeRoot);
 }, 120_000);
 
 interface Suggest {
-  target: { difficulty: string; targetTotal: string; benchmark: string };
+  target: { difficulty: string; targetTotal: string; benchmark: string; rank: string };
   candidates: Array<{
     composition: { note: string; count: number; cr: string };
+    base?: Array<{ note: string; count: number; cr: string }>;
     totalCr: string;
     label: string;
     winRate: number;
     tpkRate: number;
     stalemateRate: number;
     avgRounds: number;
+    avgHpLost: number;
     koRate: Record<string, number>;
+    fit: string;
   }>;
   excluded: Record<string, number>;
 }
 
-async function suggest(...flags: string[]): Promise<{ code: number; doc: Suggest; text: string; err: string }> {
+async function suggest(...flags: string[]) {
+  return suggestIn(ctx, ...flags);
+}
+
+async function suggestIn(
+  where: Ctx,
+  ...flags: string[]
+): Promise<{ code: number; doc: Suggest; text: string; err: string }> {
   let text = "";
   let err = "";
   const tokens = ["suggest", ...PCS.flatMap((n) => ["--pc", pcPath(n)]), "--trials", "6", ...flags];
@@ -122,7 +190,7 @@ async function suggest(...flags: string[]): Promise<{ code: number; doc: Suggest
     tokens,
     { out: (s) => (text += s), err: (s) => (err += s) },
     {
-      context: () => ctx,
+      context: () => where,
       run: async () => {
         throw new Error("run is not under test");
       },
@@ -186,7 +254,7 @@ describe("rpg sim suggest", () => {
     ] as const) {
       const { doc } = await suggest("--difficulty", difficulty, "--limit", "100");
       // Four level-1 PCs: a benchmark of 1/2.
-      expect(doc.target).toEqual({ difficulty, targetTotal, benchmark: "1/2" });
+      expect(doc.target).toEqual({ difficulty, targetTotal, benchmark: "1/2", rank: "cr" });
     }
     // The default difficulty is challenging.
     expect((await suggest()).doc.target.difficulty).toBe("challenging");
@@ -260,7 +328,18 @@ describe("rpg sim suggest", () => {
     const { doc, text } = await suggest("--limit", "100");
     for (const c of doc.candidates) {
       expect(Object.keys(c).sort()).toEqual(
-        ["avgRounds", "composition", "koRate", "label", "stalemateRate", "tpkRate", "totalCr", "winRate"].sort()
+        [
+          "avgHpLost",
+          "avgRounds",
+          "composition",
+          "fit",
+          "koRate",
+          "label",
+          "stalemateRate",
+          "tpkRate",
+          "totalCr",
+          "winRate",
+        ].sort()
       );
       expect(Object.keys(c.composition).sort()).toEqual(["count", "cr", "note"]);
       expect(Object.keys(c.koRate).sort()).toEqual([...PCS].sort());
@@ -342,6 +421,230 @@ describe("rpg sim suggest", () => {
     const a = await suggest("--seed", "7", "--limit", "100");
     const b = await suggest("--seed", "7", "--limit", "100");
     expect(a.code).toBe(0);
+    expect(a.text).toBe(b.text);
+  });
+});
+
+const stem = (note: string) => note.split("/").pop()!.replace(/\.md$/, "");
+type Candidate = Suggest["candidates"][number];
+const find = (doc: Suggest, name: string, count: number): number =>
+  doc.candidates.findIndex((c) => stem(c.composition.note) === name && c.composition.count === count);
+
+describe("rpg sim suggest --rank outcome", () => {
+  it("adds avgHpLost and fit to every candidate, in both rank modes, and the rank to the target", async () => {
+    for (const rank of ["cr", "outcome"]) {
+      const { doc } = await suggest("--rank", rank, "--limit", "100");
+      expect(doc.target.rank).toBe(rank);
+      expect(doc.candidates.length).toBeGreaterThan(0);
+      for (const c of doc.candidates) {
+        expect(c.avgHpLost).toBeGreaterThanOrEqual(0);
+        expect(c.avgHpLost).toBeLessThanOrEqual(1);
+        expect(c.fit).toBe(classifyFit(c, "challenging"));
+        expect(c.base).toBeUndefined();
+      }
+    }
+  });
+
+  it("labels fit against the difficulty asked for", async () => {
+    const challenging = (await suggest("--rank", "outcome", "--limit", "100")).doc;
+    const deadly = (await suggest("--rank", "outcome", "--difficulty", "deadly", "--limit", "100")).doc;
+    expect(new Set(challenging.candidates.map((c) => c.fit))).toEqual(new Set(["too-easy", "too-hard"]));
+    for (const c of deadly.candidates) expect(c.fit).toBe(classifyFit(c, "deadly"));
+    // The same fight is judged by the difficulty asked for: Imp x3 costs about 40% of the HP and wipes
+    // the party now and then, which is too hard for an easy encounter.
+    const easy = (await suggest("--rank", "outcome", "--difficulty", "easy", "--limit", "100")).doc;
+    const fitOf = (doc: Suggest) => doc.candidates[find(doc, "Imp", 3)].fit;
+    expect(fitOf(easy)).toBe("too-hard");
+    expect(fitOf(deadly)).toBe(classifyFit(deadly.candidates[find(deadly, "Imp", 3)], "deadly"));
+  });
+
+  it("sorts by distance to the outcome profile, then tpkRate, then note ref, then count", async () => {
+    const { doc } = await suggest("--rank", "outcome", "--limit", "100");
+    const distance = (c: Candidate) => Math.round(outcomeDistance(c, "challenging") * 1e9) / 1e9;
+    const expected = [...doc.candidates].sort(
+      (a, b) =>
+        distance(a) - distance(b) ||
+        a.tpkRate - b.tpkRate ||
+        (a.composition.note < b.composition.note ? -1 : a.composition.note > b.composition.note ? 1 : 0) ||
+        a.composition.count - b.composition.count
+    );
+    expect(doc.candidates).toEqual(expected);
+    expect(doc.candidates.length).toBeGreaterThan(7);
+  });
+
+  it("ranks by outcome where CR order and outcome order differ", async () => {
+    // Weakling (CR 1/2, harmless) sits on the CR target; Brute (CR 1/4) is a real fight.
+    const cr = (await suggestIn(outcomeCtx, "--limit", "200")).doc;
+    const outcome = (await suggestIn(outcomeCtx, "--rank", "outcome", "--limit", "200")).doc;
+    expect(find(cr, "Weakling", 1)).toBeLessThan(find(cr, "Brute", 1));
+    expect(find(outcome, "Brute", 1)).toBeLessThan(find(outcome, "Weakling", 1));
+    // The default ranking keeps its CR order: the leading candidates all sit on the target total.
+    expect(cr.candidates.slice(0, 2).every((c) => c.totalCr === "1/2")).toBe(true);
+    expect(outcome.candidates[0].fit).toBe("fit");
+  });
+
+  it("widens the sweep to 4 x the benchmark, past the default's twice the target", async () => {
+    const wide = (await suggest("--rank", "outcome", "--limit", "100")).doc;
+    const narrow = (await suggest("--limit", "100")).doc;
+    // Default: totals stop at 1 (twice the 1/2 target); outcome: up to 2 (4 x the benchmark of 1/2).
+    expect(Math.max(...narrow.candidates.map((c) => num(c.totalCr)))).toBe(1);
+    expect(Math.max(...wide.candidates.map((c) => num(c.totalCr)))).toBe(2);
+    expect(find(narrow, "Bear", 2)).toBe(-1);
+    expect(find(wide, "Bear", 2)).toBeGreaterThanOrEqual(0);
+    expect(find(wide, "Wolf", 4)).toBeGreaterThanOrEqual(0);
+    for (const c of wide.candidates) expect(num(c.totalCr)).toBeLessThanOrEqual(2);
+    // A note whose single CR is above the wider cap is still out of range (the Giant, CR 5).
+    expect(wide.excluded["out-of-range"]).toBe(1);
+  });
+
+  it("stops a kind's counts once a probe's tpkRate reaches 0.9", async () => {
+    const wide = (await suggest("--rank", "outcome", "--limit", "100")).doc;
+    // Imp would sweep to 8 (total 2); it stops at the first count that wipes the party 9 times in 10.
+    const imps = wide.candidates.filter((c) => stem(c.composition.note) === "Imp");
+    const counts = imps.map((c) => c.composition.count).sort((a, b) => a - b);
+    expect(counts).toEqual(range(counts.length));
+    expect(counts.length).toBeLessThan(8);
+    expect(imps.filter((c) => c.tpkRate >= 0.9)).toHaveLength(1);
+    expect(Math.max(...counts)).toBe(counts.length);
+    expect(imps.find((c) => c.composition.count === counts.length)!.tpkRate).toBeGreaterThanOrEqual(0.9);
+
+    // Doom (CR 1/8) wipes the party alone: one candidate in outcome mode, the full sweep in the default.
+    const doom = (await suggestIn(outcomeCtx, "--rank", "outcome", "--limit", "200")).doc;
+    expect(doom.candidates.filter((c) => stem(c.composition.note) === "Doom").map((c) => c.composition.count)).toEqual([
+      1,
+    ]);
+    const plain = (await suggestIn(outcomeCtx, "--limit", "200")).doc;
+    expect(countsByNote(plain).Doom).toEqual(range(8));
+  });
+
+  it("holds a kind to 30 monsters", async () => {
+    // Mote (CR 1/32) would fit 64 under the cap of 2; the default sweeps to its own cap of 1 (32).
+    const doc = (await suggestIn(outcomeCtx, "--rank", "outcome", "--limit", "500")).doc;
+    expect(countsByNote(doc).Mote).toEqual(range(30));
+    const plain = (await suggestIn(outcomeCtx, "--limit", "500")).doc;
+    expect(countsByNote(plain).Mote).toEqual(range(32));
+  });
+
+  it("keeps the excluded reasons as the default has them", async () => {
+    const { doc } = await suggest("--rank", "outcome", "--limit", "100");
+    expect(doc.excluded).toEqual({
+      "cr-0": 1,
+      "no-damaging-action": 1,
+      "non-monster": 1,
+      "out-of-range": 1,
+      unresolvable: 2,
+    });
+  });
+
+  it("is deterministic for a seed", async () => {
+    const a = await suggest("--rank", "outcome", "--seed", "7", "--limit", "100");
+    const b = await suggest("--rank", "outcome", "--seed", "7", "--limit", "100");
+    expect(a.code).toBe(0);
+    expect(a.text).toBe(b.text);
+    const c = await suggest("--rank", "outcome", "--seed", "8", "--limit", "100");
+    expect(c.text).not.toBe(a.text);
+  });
+});
+
+describe("rpg sim suggest --base", () => {
+  const wolf = note("Wolf");
+
+  it("keeps the base in every fight and adds one swept kind, totalling the base and n x CR", async () => {
+    const { code, doc } = await suggest("--base", "Wolf", "--limit", "100");
+    expect(code).toBe(0);
+    // Base 1/2; cap 1 (twice the target): Wolf x1 and Imp x1, x2 fit; Bear (1/2 + 1) and Giant do not.
+    expect(
+      doc.candidates.map((c) => `${stem(c.composition.note)} x${c.composition.count} ${c.totalCr}`).sort()
+    ).toEqual(["Imp x1 3/4", "Imp x2 1", "Wolf x1 1"]);
+    for (const c of doc.candidates) {
+      expect(c.base).toEqual([{ note: wolf, count: 1, cr: "1/2" }]);
+      expect(Object.keys(c.composition).sort()).toEqual(["count", "cr", "note"]);
+      expect(num(c.totalCr)).toBeCloseTo(0.5 + c.composition.count * num(c.composition.cr), 10);
+      expect(c.label).toBe(num(c.totalCr) < 0.5 ? "below" : num(c.totalCr) === 0.5 ? "at" : "above");
+    }
+    // A note that cannot be added to the base within the cap is out of range, before it is loaded.
+    expect(doc.excluded["out-of-range"]).toBe(3);
+  });
+
+  it("fights the base too: more base means a harder fight", async () => {
+    const plain = (await suggest("--limit", "100")).doc;
+    const based = (await suggest("--base", "Wolf", "--limit", "100")).doc;
+    const imp1 = (doc: Suggest) => doc.candidates[find(doc, "Imp", 1)];
+    expect(imp1(based).avgHpLost).toBeGreaterThan(imp1(plain).avgHpLost);
+  });
+
+  it("orders by CR distance of the total, then tpkRate, note and count", async () => {
+    const { doc } = await suggest("--base", "Wolf", "--limit", "100");
+    const rows = doc.candidates.map((c) => ({
+      distance: Math.abs(num(c.totalCr) - 0.5),
+      tpk: c.tpkRate,
+      note: c.composition.note,
+      count: c.composition.count,
+    }));
+    const sorted = [...rows].sort(
+      (a, b) =>
+        a.distance - b.distance ||
+        a.tpk - b.tpk ||
+        (a.note < b.note ? -1 : a.note > b.note ? 1 : 0) ||
+        a.count - b.count
+    );
+    expect(rows).toEqual(sorted);
+    expect(rows[0].distance).toBe(0.25);
+  });
+
+  it("takes a count, sums several groups, and lets the swept kind be the base's own note", async () => {
+    const counted = (await suggest("--base", "Imp:2", "--limit", "100")).doc;
+    expect(counted.candidates.every((c) => c.base?.[0].count === 2 && c.base[0].cr === "1/4")).toBe(true);
+    // Base 1/2 again; Wolf (same note as nothing here) and Imp, whose own group stays apart from the base's.
+    expect(find(counted, "Imp", 2)).toBeGreaterThanOrEqual(0);
+    expect(counted.candidates[find(counted, "Imp", 2)].totalCr).toBe("1");
+
+    const two = (await suggest("--base", "Imp:2", "--base", "Imp", "--limit", "100")).doc;
+    expect(two.candidates.every((c) => c.base?.length === 2)).toBe(true);
+    // Base total 3/4: Imp x1 (1) is the only one left under the cap of 1.
+    expect(two.candidates.map((c) => `${stem(c.composition.note)} x${c.composition.count} ${c.totalCr}`)).toEqual([
+      "Imp x1 1",
+    ]);
+  });
+
+  it("works with --rank outcome, whose cap counts the base", async () => {
+    const { doc } = await suggest("--base", "Imp:2", "--rank", "outcome", "--limit", "100");
+    expect(doc.candidates.length).toBeGreaterThan(0);
+    // Base 1/2, cap 2: Bear x1 (3/2) fits, Bear x2 (5/2) does not; Wolf goes to x3 (2).
+    expect(find(doc, "Bear", 1)).toBeGreaterThanOrEqual(0);
+    expect(find(doc, "Bear", 2)).toBe(-1);
+    expect(Math.max(...doc.candidates.map((c) => num(c.totalCr)))).toBeLessThanOrEqual(2);
+    for (const c of doc.candidates) expect(c.fit).toBe(classifyFit(c, "challenging"));
+  });
+
+  it("throws a runtime error naming an unresolvable base note", async () => {
+    await expect(suggest("--base", "Nowhere At All")).rejects.toThrow(/Nowhere At All/);
+    await expect(suggest("--base", "Lost")).rejects.toThrow();
+  });
+
+  it("is refused by `run` with a usage error that points to --monster", async () => {
+    let err = "";
+    const code = await simMain(
+      ["run", "--monster", "Wolf", "--base", "Wolf"],
+      { out: () => undefined, err: (s) => (err += s) },
+      {
+        context: () => {
+          throw new Error("the vault must not boot");
+        },
+        run: async () => {
+          throw new Error("run must not start");
+        },
+        suggest: simSuggest,
+      }
+    );
+    expect(code).toBe(1);
+    expect(err).toContain("--base");
+    expect(err).toContain("--monster");
+  });
+
+  it("is deterministic for a seed", async () => {
+    const a = await suggest("--base", "Wolf", "--seed", "3", "--limit", "100");
+    const b = await suggest("--base", "Wolf", "--seed", "3", "--limit", "100");
     expect(a.text).toBe(b.text);
   });
 });

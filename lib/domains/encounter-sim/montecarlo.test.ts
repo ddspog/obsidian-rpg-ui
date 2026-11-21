@@ -65,6 +65,32 @@ describe("runMonteCarlo", () => {
     expect(s.roundsPerTrial).toEqual([7, 7, 7, 7, 7]);
   });
 
+  it("reports avgHpLost as the share of the party's max HP lost, in [0,1], from hpRemainingPerTrial", () => {
+    const s = runMonteCarlo(input);
+    const maxHp = party.reduce((sum, p) => sum + p.maxHp, 0);
+    const mean = s.hpRemainingPerTrial.reduce((a, b) => a + b, 0) / s.hpRemainingPerTrial.length;
+    expect(s.avgHpLost).toBe(round4(1 - mean / maxHp));
+    expect(s.avgHpLost).toBeGreaterThanOrEqual(0);
+    expect(s.avgHpLost).toBeLessThanOrEqual(1);
+    expect(round4(s.avgHpLost)).toBe(s.avgHpLost);
+  });
+
+  it("reports no HP lost when nobody can hurt anybody, and all of it in a sure TPK", () => {
+    const mute = (side: "party" | "monsters", key: string) => actor({ key, name: key, side, actions: [] });
+    const quiet = runMonteCarlo({
+      party: [mute("party", "p")],
+      monsters: [{ actor: mute("monsters", "m"), count: 1 }],
+      seed: 1,
+      trials: 5,
+      roundCap: 3,
+    });
+    expect(quiet.avgHpLost).toBe(0);
+    const killer = actor({ key: "k", name: "K", side: "monsters", maxHp: 500, actions: [sword(30, "50")] });
+    const wipe = runMonteCarlo({ ...input, monsters: [{ actor: killer, count: 3 }] });
+    expect(wipe.tpkRate).toBe(1);
+    expect(wipe.avgHpLost).toBe(1);
+  });
+
   it("is deterministic for a seed and changes with another seed", () => {
     const a = runMonteCarlo(input);
     const b = runMonteCarlo({ ...input });
@@ -100,6 +126,6 @@ describe("expandMonsters", () => {
 describe("compactSummary", () => {
   it("drops the per-trial arrays", () => {
     const c = compactSummary(runMonteCarlo(input));
-    expect(Object.keys(c).sort()).toEqual(["avgRounds", "koRate", "stalemateRate", "tpkRate", "winRate"]);
+    expect(Object.keys(c).sort()).toEqual(["avgHpLost", "avgRounds", "koRate", "stalemateRate", "tpkRate", "winRate"]);
   });
 });
