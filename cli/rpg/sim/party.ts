@@ -85,6 +85,11 @@ function leadingBonus(hit: unknown): number | undefined {
   return m[1] === "-" ? -value : value;
 }
 
+/** The circle a spell action is cast at; 0 for a cantrip. */
+function circleOf(action: ModelledAction): number {
+  return "circle" in action ? action.circle : 0;
+}
+
 /** A spell fence's circle label ("1st-Circle", "Cantrip") as a number, or undefined. */
 function circleOfLabel(label: unknown): number | undefined {
   if (typeof label === "number" && Number.isFinite(label)) return label;
@@ -249,7 +254,8 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
         );
       }
       fidelity.push(result.fidelity);
-      if (result.action) (spell.circle === 0 ? cantrips : slotted).push(result.action);
+      // The note's own circle decides both the action and its bucket (an upcast listing is cast at its base circle).
+      if (result.action) (circleOf(result.action) === 0 ? cantrips : slotted).push(result.action);
     }
   }
 

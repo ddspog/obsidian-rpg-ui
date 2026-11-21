@@ -168,6 +168,10 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
   };
 }
 
+/** Upper bounds that keep a run's memory and time sane (per-trial arrays, one combatant per monster). */
+export const MAX_TRIALS = 100_000;
+export const MAX_MONSTER_COUNT = 100;
+
 const INTEGER = /^[+-]?\d+$/;
 
 function integer(flag: string, raw: string, min: number | undefined, what: string): number {
@@ -194,6 +198,9 @@ export function parseMonster(raw: string): MonsterGroup {
     );
   }
   if (!note) throw new UsageError(`--monster "${raw}" has no note name.`);
+  if (Number(suffix) > MAX_MONSTER_COUNT) {
+    throw new UsageError(`--monster "${raw}": the count "${suffix}" must be at most ${MAX_MONSTER_COUNT}.`);
+  }
   return { note, count: Number(suffix) };
 }
 
@@ -261,6 +268,9 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   }
   if (typeof values.trials === "string") {
     options.trials = integer("trials", values.trials, 1, "a positive integer");
+    if (options.trials > MAX_TRIALS) {
+      throw new UsageError(`--trials must be at most ${MAX_TRIALS}, got "${values.trials}".`);
+    }
   }
   if (typeof values.rounds === "string") {
     options.rounds = integer("rounds", values.rounds, 1, "a positive integer");
