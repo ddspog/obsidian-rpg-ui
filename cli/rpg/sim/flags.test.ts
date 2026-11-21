@@ -31,6 +31,7 @@ async function drive(tokens: string[], handlers: { run?: SimHandler; suggest?: S
       },
       run: handlers.run ?? stub("run"),
       suggest: handlers.suggest ?? stub("suggest"),
+      plan: stub("plan"),
     }
   );
   return h;
@@ -184,6 +185,20 @@ describe("parseSimArgv", () => {
   });
 });
 
+describe("parseSimArgv: plan and --brief", () => {
+  it("takes plan's bare words as theme words, split on spaces", () => {
+    const { subcommand, options } = parseSimArgv(["plan", "goblin ambush", "night", "--habitat", "forest"]);
+    expect(subcommand).toBe("plan");
+    expect(options.args).toEqual(["goblin", "ambush", "night"]);
+    expect(options.habitat).toBe("forest");
+    expect(options.brief).toBe(false);
+  });
+
+  it("reads --brief", () => {
+    expect(parseSimArgv(["run", "--monster", "Wolf", "--brief"]).options.brief).toBe(true);
+  });
+});
+
 describe("SIM_HELP", () => {
   it("lists every flag with its default, from the table", () => {
     for (const flag of SIM_FLAGS) expect(SIM_HELP).toContain(`--${flag.name}`);
@@ -230,6 +245,7 @@ describe("SIM_HELP", () => {
       "refresh",
       "include-stale",
       "include-draft",
+      "brief",
       "vault",
       "json",
       "help",
@@ -281,6 +297,10 @@ describe("simMain usage errors", () => {
     [["run", "--monster", "Name:"], "Name:"],
     [["frobnicate"], "frobnicate"],
     [["run", "extra"], "extra"],
+    [["suggest", "extra"], "extra"],
+    [["plan", "--rank", "outcome"], "--rank is not a flag of `plan`"],
+    [["plan", "--pc", "A", "--catalog", "B"], "--pc and --catalog"],
+    [["plan", "--cr", "big"], "--cr"],
   ])("returns 1 for %j with a message naming %s on stderr", async (tokens, named) => {
     const h = await drive(tokens);
     expect(h.code).toBe(1);

@@ -26,7 +26,9 @@ your lines where the player's Obsidian shows them.
 5. **Established facts hold.** What the log says happened, happened. Check
    before you contradict it.
 6. **Stay in the session's files.** You write the session's log and your
-   notebook, through these commands, and nothing else in the vault.
+   notebook, through these commands, and nothing else in the vault (the one
+   exception: the party's encounter catalog, once the player has said you may
+   keep it; see "Building an encounter").
 
 ## At the start, every time
 
@@ -226,6 +228,36 @@ roll for them: read each one's statblock (`rpg lookup`), write its turn as
 the earlier fights in this log are written, and roll with
 `rpg gm roll <s> "d20+4" --label "Attack" --into log`. The brief shows who
 stands where, the round, and who is next.
+
+## Building an encounter
+
+When you prep a fight, or a card has given you foes and you want to know what
+they will do to this party, measure it; do not guess from CR, and do not read
+the bestiary to find candidates. `rpg sim` simulates the party against the
+foes many times and answers in a few lines:
+
+```sh
+rpg sim plan [<theme words>] [--habitat forest] [--tag <tag>]…
+            # three options that fit: the party's catalog first, then the bestiary swept
+rpg sim run --monster "Thug:3" --brief
+            # one group you made by hand: win and TPK rates, HP lost, and its fit for easy, challenging and deadly
+```
+
+- `plan` reads the party's **encounter catalog** when there is one (its party,
+  its difficulty); with no catalog it uses the stock party, so pass the
+  session's PCs with `--pc <note>` (one per PC). Its `notes` say what to do
+  next: a stale catalog, a draft to confirm, a group to keep.
+- An option's `monsters` are written as `--monster` takes them: pass them to
+  `sim run` as they are, add more foes, try again.
+- `fit` means the measured cost (HP lost, TPK rate) suits the difficulty;
+  `too-easy` and `too-hard` say which way it misses. `skipped` lists what the
+  simulation could not model (control spells, riders, reactions): weigh it.
+- Pick from the options in the light of the scene, then put the fight in your
+  prep draft and play it from the log as usual. The simulation is prep, not
+  play: its numbers never go in the log.
+- Running `plan`, `run` and `catalog suggest` writes nothing. `catalog add`,
+  `confirm`, `check` and `draft --accept` write the catalog note: do them only
+  when the player has said you may keep that catalog.
 
 ## When the player is in Obsidian (the GM link)
 

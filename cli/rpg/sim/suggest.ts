@@ -29,6 +29,7 @@ import { classifyFit, outcomeDistance, type Fit } from "lib/domains/encounter-si
 import { compactSummary, runMonteCarlo, type CompactSummary } from "lib/domains/encounter-sim/montecarlo";
 import { isDamaging } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
+import { anyWordIn, groupRef, wordKey } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { UsageError, type Rank, type SimOptions } from "./flags";
 import {
@@ -65,6 +66,18 @@ export interface SuggestCandidate extends CompactSummary {
   totalCr: string;
   label: DifficultyLabel;
   fit: Fit;
+}
+
+/** A candidate as `--brief` prints it: its groups as --monster takes them, and the outcome. */
+export interface BriefCandidate {
+  monsters: string[];
+  totalCr: string;
+  label: DifficultyLabel;
+  fit: Fit;
+  winRate: number;
+  tpkRate: number;
+  avgHpLost: number;
+  avgRounds: number;
 }
 
 export interface SuggestDocument {
@@ -108,7 +121,10 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       throw new UsageError(`--cr "${options.cr}" is not a CR (use a whole number or a fraction like 1/2).`);
     }
   }
-  const habitatFilter = options.habitat?.trim().toLowerCase();
+  const habitatFilter = options.habitat !== undefined ? wordKey(options.habitat) : undefined;
+  // Theme words (only `plan` passes any; `suggest` takes no bare words): a monster is kept when one of
+  // them is in its name, type or category.
+  const keywords = options.args;
   const typeFilter = options.type?.trim().toLowerCase();
 
   // The base groups are loaded once, before the party: a misspelt base note is reported first, naming it.
@@ -184,12 +200,19 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
 
     if (habitatFilter !== undefined) {
       const habitat = linkNames(state.data.habitat ?? categoryHabitat(ctx, state.data.category, state.file.path));
-      if (!habitat.some((h) => h.toLowerCase() === habitatFilter)) {
+      if (!habitat.some((h) => wordKey(h) === habitatFilter)) {
         exclude("filtered");
         continue;
       }
     }
     if (typeFilter !== undefined && !plainType(state.data.type).toLowerCase().includes(typeFilter)) {
+      exclude("filtered");
+      continue;
+    }
+    if (
+      keywords.length > 0 &&
+      !anyWordIn(keywords, [state.file.basename, plainType(state.data.type ?? ""), ...linkNames(state.data.category)])
+    ) {
       exclude("filtered");
       continue;
     }
@@ -257,6 +280,28 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     sortedExcluded[reason] = excluded[reason as ExclusionReason] as number;
   }
 
+  const kept = found.slice(0, options.limit).map((c) => c.entry);
+  if (options.brief) {
+    const groups = (c: SuggestCandidate): string[] =>
+      [...(c.base ?? []), c.composition].map((g) => groupRef(ctx, g.note, g.count));
+    const brief: BriefCandidate[] = kept.map((c) => ({
+      monsters: groups(c),
+      totalCr: c.totalCr,
+      label: c.label,
+      fit: c.fit,
+      winRate: c.winRate,
+      tpkRate: c.tpkRate,
+      avgHpLost: c.avgHpLost,
+      avgRounds: c.avgRounds,
+    }));
+    return {
+      doc: {
+        target: { difficulty: options.difficulty, targetTotal: formatCr(targetTotal), rank: options.rank },
+        candidates: brief,
+      },
+    };
+  }
+
   const doc: SuggestDocument = {
     target: {
       difficulty: options.difficulty,
@@ -264,7 +309,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       benchmark: formatCr(benchmark),
       rank: options.rank,
     },
-    candidates: found.slice(0, options.limit).map((c) => c.entry),
+    candidates: kept,
     excluded: sortedExcluded,
   };
   return { doc };

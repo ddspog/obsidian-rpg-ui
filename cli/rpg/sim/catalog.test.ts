@@ -15,6 +15,9 @@ import type { Ctx } from "../app";
 import { createSimCatalog } from "./catalog";
 import { spokenName } from "./catalog-draft";
 import { simMain } from "./dispatch";
+import { simPlan } from "./plan";
+import { simRun } from "./run";
+import { simSuggest } from "./suggest";
 import { FIXTURE_SYSTEM, initSystemLoader, makeCtx, pcNote, put, weapon } from "./test-support";
 
 const BESTIARY = "tales-of-the-valiant/worldbuilding/bestiary";
@@ -806,5 +809,219 @@ describe("spokenName", () => {
     expect(spokenName("Rat, Swarm of Rats")).toBe("Swarm of Rats");
     expect(spokenName("Bandit Captain")).toBe("Bandit Captain");
     expect(spokenName("Bat (Giant)")).toBe("Bat (Giant)");
+  });
+});
+
+/** `rpg sim <tokens>` with every handler wired; the output of plan and the brief forms is one JSON document too. */
+async function simAll(...tokens: string[]): Promise<Ran & { out: string }> {
+  let out = "";
+  let err = "";
+  const code = await simMain(
+    tokens,
+    { out: (s) => (out += s), err: (s) => (err += s) },
+    {
+      context: () => ctx,
+      run: simRun,
+      suggest: simSuggest,
+      catalog: createSimCatalog({ now: () => clock.value }),
+      plan: simPlan,
+    }
+  );
+  return { code, doc: out ? JSON.parse(out) : {}, err, out };
+}
+
+describe("--brief", () => {
+  it("run: the groups as --monster takes them, the rates, the fit for each difficulty, and no per-trial arrays", async () => {
+    const full = await simAll("run", "--monster", "Wolf:3", ...PARTY_PCS);
+    const brief = await simAll("run", "--monster", "Wolf:3", ...PARTY_PCS, "--brief");
+    expect(brief.code, brief.err).toBe(0);
+    expect(Object.keys(brief.doc)).toEqual([
+      "monsters",
+      "party",
+      "seed",
+      "trials",
+      "winRate",
+      "tpkRate",
+      "stalemateRate",
+      "avgRounds",
+      "avgHpLost",
+      "koRate",
+      "difficulty",
+      "fit",
+      "skipped",
+    ]);
+    expect(brief.doc.monsters).toEqual(["Wolf:3"]);
+    expect(brief.doc.party).toEqual(PCS);
+    // The same simulation as the full document.
+    for (const key of ["winRate", "tpkRate", "avgRounds", "koRate", "difficulty"]) {
+      expect(brief.doc[key]).toEqual(full.doc[key]);
+    }
+    // 39% of HP lost and a 7% TPK rate is within reach of easy's aim and of challenging's.
+    expect(brief.doc.fit).toEqual({ easy: "fit", challenging: "fit", deadly: "too-easy" });
+    expect(brief.doc.skipped).toEqual({});
+    expect(brief.out.length).toBeLessThan(full.out.length / 4);
+  });
+
+  it("run: one of a kind is written without a count, and the brief layout is valid JSON, one item to a line", async () => {
+    const brief = await simAll("run", "--monster", "Wolf", "--monster", "Rat:2", ...PARTY_PCS, "--brief");
+    expect(brief.doc.monsters).toEqual(["Wolf", "Rat:2"]);
+    expect(brief.out).toContain('  "monsters": [\n    "Wolf",\n    "Rat:2"\n  ],');
+  });
+
+  it("suggest: each candidate as its groups and outcome", async () => {
+    const brief = await simAll("suggest", ...PARTY_PCS, "--rank", "outcome", "--limit", "2", "--brief");
+    expect(brief.code, brief.err).toBe(0);
+    expect(brief.doc.target).toEqual({ difficulty: "challenging", targetTotal: "1/2", rank: "outcome" });
+    expect(brief.doc.candidates).toHaveLength(2);
+    for (const c of brief.doc.candidates) {
+      expect(Object.keys(c)).toEqual([
+        "monsters",
+        "totalCr",
+        "label",
+        "fit",
+        "winRate",
+        "tpkRate",
+        "avgHpLost",
+        "avgRounds",
+      ]);
+      expect(c.monsters[0]).toMatch(/^(Wolf|Rat|Ogre)(:\d+)?$/);
+    }
+  });
+
+  it("catalog suggest: entries with their groups and a flat fit", async () => {
+    const path = await seeded("Brief Suggest");
+    const brief = await simAll("catalog", "suggest", "--catalog", path, "--include-draft", "--brief");
+    expect(brief.code, brief.err).toBe(0);
+    expect(brief.doc).toEqual({
+      difficulty: "challenging",
+      needsCheck: 1,
+      hint: expect.stringContaining("catalog check"),
+      matched: 1,
+      entries: [
+        {
+          id: "forest-t1-2-3-wolf",
+          name: "Forest T1 #2: 3 Wolf",
+          monsters: ["Wolf:3"],
+          tags: ["forest", "tier-1", "test-guide", "hills"],
+          review: "draft",
+          fit: "fit",
+          winRate: 0.93,
+          tpkRate: 0.07,
+          avgHpLost: 0.3924,
+        },
+      ],
+    });
+  });
+
+  it("is refused by the catalog actions that do not print a suggestion", async () => {
+    const path = await init("Brief List");
+    const list = await simAll("catalog", "list", "--catalog", path, "--brief");
+    expect(list.code).toBe(1);
+    expect(list.err).toContain("--brief is not a flag of `catalog list`");
+  });
+});
+
+describe("plan", () => {
+  it("offers the catalog's confirmed fit entries first, and writes nothing", async () => {
+    const path = await seeded("Plan Confirmed");
+    await sim("confirm", "forest-t1-2-3-wolf", "--catalog", path);
+    const before = files();
+    const text = read(path);
+    const plan = await simAll("plan", "--catalog", path, "--limit", "1");
+    expect(plan.code, plan.err).toBe(0);
+    expect(plan.doc).toEqual({
+      party: PCS,
+      difficulty: "challenging",
+      catalog: path,
+      options: [
+        {
+          from: "catalog",
+          id: "forest-t1-2-3-wolf",
+          name: "Forest T1 #2: 3 Wolf",
+          monsters: ["Wolf:3"],
+          tags: ["forest", "tier-1", "test-guide", "hills"],
+          fit: "fit",
+          winRate: 0.93,
+          tpkRate: 0.07,
+          avgHpLost: 0.3924,
+        },
+      ],
+      // The wraith's entry could not be checked.
+      notes: [expect.stringContaining("1 catalog entry was not offered")],
+    });
+    expect(files()).toEqual(before);
+    expect(read(path)).toBe(text);
+  });
+
+  it("fills up to --limit (3) with swept fit groups, never one the catalog already offered", async () => {
+    const path = await seeded("Plan Fill");
+    const plan = await simAll("plan", "--catalog", path);
+    expect(plan.code, plan.err).toBe(0);
+    const options = plan.doc.options as Array<Record<string, any>>;
+    expect(options).toHaveLength(3);
+    expect(options[0]).toMatchObject({ from: "catalog-draft", monsters: ["Wolf:3"] });
+    for (const option of options.slice(1)) {
+      expect(option).toMatchObject({ from: "sweep", fit: "fit" });
+      expect(option.monsters).not.toEqual(["Wolf:3"]);
+      expect(option.totalCr).toBeDefined();
+    }
+    expect(plan.doc.notes).toEqual(
+      expect.arrayContaining([expect.stringContaining("catalog confirm"), expect.stringContaining("catalog add")])
+    );
+    // Each option can be run as it is.
+    const again = await simAll("run", ...options[1].monsters.flatMap((m: string) => ["--monster", m]), ...PARTY_PCS);
+    expect(again.code, again.err).toBe(0);
+  });
+
+  it("matches theme words and --habitat (plural or not) against the catalog's entries", async () => {
+    const path = await seeded("Plan Theme");
+    const wolf = await simAll("plan", "wolves", "--catalog", path, "--limit", "1");
+    expect(wolf.doc.options[0]).toMatchObject({ from: "catalog-draft", id: "forest-t1-2-3-wolf" });
+    const hills = await simAll("plan", "--habitat", "Hills", "--catalog", path, "--limit", "1");
+    expect(hills.doc.options[0]).toMatchObject({ id: "forest-t1-2-3-wolf" });
+    const forests = await simAll("plan", "--habitat", "forests", "--catalog", path, "--limit", "1");
+    expect(forests.doc.options[0]).toMatchObject({ id: "forest-t1-2-3-wolf" });
+    const swamp = await simAll("plan", "--habitat", "swamp", "--catalog", path, "--limit", "1");
+    expect(swamp.doc.options.every((o: { from: string }) => o.from === "sweep")).toBe(true);
+  });
+
+  it("sweeps again without the theme words when no monster they name fits", async () => {
+    const path = await seeded("Plan Ogre");
+    const plan = await simAll("plan", "ogre", "--catalog", path, "--limit", "2", "--tag", "swamp");
+    expect(plan.code, plan.err).toBe(0);
+    expect(plan.doc.notes).toEqual(expect.arrayContaining([expect.stringContaining("theme words (ogre)")]));
+    expect(plan.doc.options.length).toBeGreaterThan(0);
+    for (const option of plan.doc.options) expect(option.monsters.join()).not.toContain("Ogre");
+  });
+
+  it("does not offer a catalog judged at another difficulty", async () => {
+    const path = await seeded("Plan Deadly");
+    const plan = await simAll("plan", "--catalog", path, "--difficulty", "deadly", "--limit", "2");
+    expect(plan.code, plan.err).toBe(0);
+    expect(plan.doc.difficulty).toBe("deadly");
+    expect(plan.doc.notes[0]).toContain("for challenging, not deadly");
+    expect(plan.doc.options.every((o: { from: string }) => o.from === "sweep")).toBe(true);
+  });
+
+  it("with --pc reads no catalog; --pc with --catalog, and a flag of another command, are usage errors", async () => {
+    const plan = await simAll("plan", ...PARTY_PCS, "--limit", "1");
+    expect(plan.code, plan.err).toBe(0);
+    expect(plan.doc.catalog).toBeNull();
+    expect(plan.doc.options).toHaveLength(1);
+    expect(plan.doc.options[0].from).toBe("sweep");
+
+    const both = await simAll("plan", "--pc", pcPath("Aria"), "--catalog", "x");
+    expect(both.code).toBe(1);
+    expect(both.err).toContain("--pc and --catalog");
+    const rank = await simAll("plan", "--rank", "cr");
+    expect(rank.code).toBe(1);
+    expect(rank.err).toContain("--rank is not a flag of `plan`");
+  });
+
+  it("says why there is nothing to sweep when the party's benchmark is 0", async () => {
+    const plan = await simAll("plan", "--pc", pcPath("Aria"), "--pc", pcPath("Bram"));
+    expect(plan.code, plan.err).toBe(0);
+    expect(plan.doc.options).toEqual([]);
+    expect(plan.doc.notes).toEqual([expect.stringContaining("benchmark is 0")]);
   });
 });
