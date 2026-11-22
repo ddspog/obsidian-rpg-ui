@@ -72,6 +72,8 @@ export interface TemplateApplies {
   maxSize?: string;
   /** Conditions it cannot check ("that worships the Void"). */
   other: string[];
+  /** Only an NPC written "Humanoid (Any Lineage)" (a lineage's NPC features). */
+  anyLineage?: boolean;
 }
 
 export const CREATURE_TYPES = [
@@ -231,7 +233,7 @@ export function templateNouns(name: string): string[] {
 }
 
 const BOILERPLATE =
-  /^(the (creature|dragon)('s)? gains the following|make the following adjustments|the dragon gains the following|the greatwyrm's .*change in the following ways)/i;
+  /^(the (creature|dragon)('s)? gains (?:one of )?the following|make the following adjustments|the dragon gains the following|the greatwyrm's .*change in the following ways)/i;
 
 /** Parse a template note. `name` is the note's name. */
 export function parseMonsterTemplate(name: string, noteText: string): MonsterTemplate {
@@ -306,7 +308,7 @@ export function parseMonsterTemplate(name: string, noteText: string): MonsterTem
       const text = selfNamed(sub(m[2].trim()), nouns);
       const optional = /^\s*[-*]\s+\*\*/.test(p);
       const alters =
-        /^If (?:the [a-z' ]+?|it) (?:has the|dealt|deals damage with)\b/i.test(m[2].trim()) ||
+        /^If (?:the [a-z' ]+?|it) (?:has (?:the|a|an)|dealt|deals damage with)\b/i.test(m[2].trim()) ||
         /^The [a-z' -]+?'s [A-Z][\w ]+ now\b/.test(m[2].trim());
       const feature: TemplateFeature = {
         name: fname,
@@ -422,6 +424,7 @@ export function templateFits(
 ): { fits: boolean; unmet: string[]; unchecked: string[] } {
   const type = plainText(creature.type).toLowerCase();
   const unmet: string[] = [];
+  if (applies.anyLineage && !/any lineage/.test(type)) unmet.push("a Humanoid (Any Lineage) NPC");
   if (applies.types.length && !applies.types.some((ty) => new RegExp(`\\b${ty}\\b`).test(type))) {
     unmet.push(`a ${applies.types.join(", ")}`);
   }
@@ -462,6 +465,16 @@ export function evaluateFormula(formula: string, ctx: FormulaContext): number | 
     const n = Math.max(Number(dice[2] ?? 1), Math.floor(ctx.cr / 2));
     return `${Math.floor((n * (Number(dice[1]) + 1)) / 2)} (${n}d${dice[1]})`;
   }
+  // "a number of d6s equal to the creature's PB", "… d8s equal to half the creature's PB, rounded up"
+  const perPb = f.match(/number of d(\d+)s equal to (half )?(?:the [a-z' ]+?'s )?pb(?:, rounded (up|down))?/);
+  if (perPb) {
+    const raw = perPb[2] ? ctx.pb / 2 : ctx.pb;
+    const n = Math.max(1, perPb[3] === "up" ? Math.ceil(raw) : Math.floor(raw));
+    return `${Math.floor((n * (Number(perPb[1]) + 1)) / 2)} (${n}d${perPb[1]})`;
+  }
+  // "the creature's CR times 5, minimum of 5"
+  const times = f.match(/cr times (\d+)(?:, minimum of (\d+))?/);
+  if (times) return Math.max(Number(times[2] ?? 0), Math.round(ctx.cr * Number(times[1])));
   // Words the feature keeps as they are: "[damage of the attack's type]".
   if (/^damage of the attack's type$/.test(f)) return "damage of the attack's type";
   const mod = (k: string) => ctx.abilities[k] ?? 0;

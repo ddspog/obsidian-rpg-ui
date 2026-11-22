@@ -31,6 +31,7 @@ import { BESTIARY_PREFIX, crNumber, loadMonster } from "./monsters";
 
 const SYSTEM = BESTIARY_PREFIX.split("/")[0];
 export const TEMPLATES_FOLDER = `${BESTIARY_PREFIX}templates/`;
+const LINEAGE_NOTES = `${SYSTEM}/worldbuilding/traits/lineages/`;
 export const TEMPLATE_FEATURES_NOTE = `${SYSTEM}/worldbuilding/traits/features/Monster Template Traits`;
 const SOURCE =
   'From **Tales of the Valiant** "Game Master\'s Guide", "Monster Vault 2" and "Labyrinth Worldbook" by **Kobold Press**.';
@@ -51,11 +52,13 @@ export function loadTemplates(ctx: Ctx): LoadedTemplate[] {
   return ctx.vault
     .getMarkdownFiles()
     .map((f) => f.path)
-    .filter((p) => p.startsWith(TEMPLATES_FOLDER))
+    .filter((p) => p.startsWith(TEMPLATES_FOLDER) || p.startsWith(LINEAGE_NOTES))
     .sort()
-    .map((path) => {
-      const name = path.slice(TEMPLATES_FOLDER.length).replace(/\.md$/, "");
+    .flatMap((path) => {
       const text = readNote(ctx.root, path) ?? "";
+      // A lineage note is a template only with its block (`rpg sim lineages --write`).
+      if (path.startsWith(LINEAGE_NOTES) && !fencesOf(text, "stat.template").length) return [];
+      const name = path.split("/").pop()!.replace(/\.md$/, "");
       const template = parseMonsterTemplate(name, text);
       const fence = fencesOf(text, "stat.template")[0];
       let block = templateBlockOf(template, TEMPLATE_FEATURES_NOTE);
@@ -69,7 +72,7 @@ export function loadTemplates(ctx: Ctx): LoadedTemplate[] {
           // A block that does not parse: the prose stands.
         }
       }
-      return { path, name, template, block, hasBlock: fence !== undefined, text };
+      return [{ path, name: block.name || name, template, block, hasBlock: fence !== undefined, text }];
     })
     .filter((t) => t.block.changes.length > 0 || t.block.features.length > 0);
 }
@@ -115,7 +118,7 @@ export function withTemplateBlock(text: string, block: TemplateBlock): string {
 /** The template's features note, as it should read now. */
 export function featuresNoteText(templates: LoadedTemplate[]): string {
   return templateFeaturesNote(
-    templates.map((t) => t.template),
+    templates.filter((t) => t.block.kind !== "lineage").map((t) => t.template),
     SOURCE
   );
 }
@@ -152,6 +155,8 @@ export const simTemplates: SimHandler = async (ctx: Ctx, options: SimOptions) =>
     // Each note's block: written where it has none, rewritten from its prose only with --force.
     let kept = 0;
     for (const t of templates) {
+      // A lineage's block is written by `rpg sim lineages`.
+      if (t.block.kind === "lineage") continue;
       if (t.hasBlock && !options.force) {
         kept++;
         continue;

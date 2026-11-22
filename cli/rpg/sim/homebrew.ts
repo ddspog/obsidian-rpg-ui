@@ -4,8 +4,8 @@
  * describes, kept as a draft in `<system>/worldbuilding/bestiary/homebrew/`:
  *
  * - reflavoured: a new name, and with `--type` / `--habitat` a new type line or habitat;
- * - a role template (`--role controller|leader|soldier|striker`): the features the
- *   template gives (Game Master's Guide Role Template Traits), with the numbers for its CR;
+ * - a role template (`--role controller|leader|soldier|striker`): the Role (…) template note
+ *   applied, as `--template` applies any other, and the role written;
  * - a new CR (`--cr`): HP and AC moved by the Creature Statistics by Challenge Rating
  *   table, features that pick their numbers by CR re-picked. Attack damage written as
  *   plain text cannot be rescaled: the damage per round to aim for is reported instead.
@@ -36,8 +36,6 @@ import { UsageError, type SimOptions } from "./flags";
 import { crNumber, loadMonster } from "./monsters";
 import { featuresNoteText, findTemplate, loadTemplates, TEMPLATE_FEATURES_NOTE, TEMPLATES_FOLDER } from "./templates";
 
-const TEMPLATE_NOTE = "tales-of-the-valiant/worldbuilding/traits/features/Game Master's Guide Role Template Traits";
-
 /** The subrole a role template leans to (the book's example for it). */
 const TEMPLATE_SUBROLE: Record<MonsterRole, Subrole> = {
   controller: "hexer",
@@ -45,53 +43,6 @@ const TEMPLATE_SUBROLE: Record<MonsterRole, Subrole> = {
   soldier: "guardian",
   striker: "ambusher",
 };
-
-/** The proficiency bonus of a CR. */
-export function pbOf(cr: number): number {
-  return cr < 5 ? 2 : cr < 9 ? 3 : cr < 13 ? 4 : cr < 17 ? 5 : cr < 21 ? 6 : cr < 25 ? 7 : cr < 29 ? 8 : 9;
-}
-
-/** Tactical Commands' "Hold On": d4s equal to half the CR, rounded down, at least one. */
-export function holdOn(cr: number): string {
-  const n = Math.max(1, Math.floor(cr / 2));
-  return `${Math.floor(n * 2.5)} (${n}d4)`;
-}
-
-/** The feature refs a role template adds, with the parameters its CR and abilities call for. */
-export function templateRefs(
-  role: MonsterRole,
-  cr: number,
-  abilities: Record<string, number>
-): Array<Record<string, unknown>> {
-  const ref = (name: string, params: Record<string, unknown> = {}) => ({
-    ref: `@[[${TEMPLATE_NOTE}]]#${name}`,
-    ...params,
-  });
-  switch (role) {
-    case "controller": {
-      // The highest of INT, WIS and CHA; save DC 10 + that modifier (the Spellcasting Template).
-      const [ability, mod] = (["int", "wis", "cha"] as const)
-        .map((k) => [k, abilities[k] ?? 0] as const)
-        .reduce((best, a) => (a[1] > best[1] ? a : best));
-      return [
-        ref("Spellcasting Multiattack"),
-        ref("Controller: Spellcasting", {
-          ability: ability.toUpperCase(),
-          dc: 10 + mod,
-          at_will: "choose up to three abjuration, enchantment or transmutation spells",
-          three_day: "choose up to three",
-          one_day: "choose up to two",
-        }),
-      ];
-    }
-    case "leader":
-      return [ref("Inspiring Leader"), ref("Tactical Commands", { hold_on: holdOn(cr) })];
-    case "soldier":
-      return [ref("Warrior's Advance"), ref("Protect Ally")];
-    case "striker":
-      return [ref("Shrouded Step"), ref("Ambushing Strike (Recharge 5–6)", { pb: pbOf(cr) })];
-  }
-}
 
 /** A stat line with its leading number replaced, its note kept: "17 (natural armor)" → "19 (natural armor)". */
 function withNumber(line: unknown, n: number): string {
@@ -158,16 +109,19 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
   const asked = options.roles[0];
   const askedSub = parseSubrole(asked);
   const role = askedSub ? roleOfSubrole(askedSub) : parseRole(asked);
+  let roleAdded: string[] = [];
+  const templateNotes = role || options.template ? loadTemplates(ctx) : [];
   if (role) {
-    const abilities = (data.abilities as Record<string, number>) ?? {};
-    next.features = [
-      ...((next.features as unknown[]) ?? (data.features as unknown[]) ?? []),
-      ...templateRefs(role, cr, abilities),
-    ];
+    const name = `Role (${role[0].toUpperCase()}${role.slice(1)})`;
+    const t = findTemplate(templateNotes, name);
+    if (!t) throw new UsageError(`No "${name}" template note in ${TEMPLATES_FOLDER}.`);
+    const applied = applyTemplateBlock(next, t.block, { baseFeatures: base.features, cr });
+    Object.assign(next, applied.data);
+    roleAdded = applied.added;
+    notes.push(...applied.manual.map((m) => `${name}: ${m}`));
     next.role = role;
     next.subrole = askedSub ?? TEMPLATE_SUBROLE[role];
-    if (role === "controller")
-      notes.push("Choose the controller's spells (abjuration, enchantment, transmutation) in its Spellcasting ref.");
+    if (role === "controller") notes.push("Choose the controller's spells (abjuration, enchantment, transmutation).");
   } else {
     delete next.role;
     delete next.subrole;
@@ -176,7 +130,7 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
   // A creature template (Zombie, Shadow, Element-Infused…): its statistics and features.
   let templated: Record<string, unknown> | undefined;
   if (options.template) {
-    const templates = loadTemplates(ctx);
+    const templates = templateNotes;
     const t = findTemplate(templates, options.template);
     if (!t) {
       throw new UsageError(
@@ -258,7 +212,10 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
     name,
     basePath,
     baseName: base.name,
-    templates: [role, templated?.name as string | undefined].filter((t): t is string => !!t),
+    templates: [
+      role ? `Role (${role[0].toUpperCase()}${role.slice(1)})` : undefined,
+      templated?.name as string | undefined,
+    ].filter((t): t is string => !!t),
     data: next,
     rest,
   });
@@ -281,7 +238,7 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
       cr: { from: base.cr, to: CR_TEXT(cr) },
       hp: { from: base.actor.maxHp, to: hp },
       ac: { from: base.actor.armorClass, to: ac },
-      ...(role ? { template: role, added: templateRefs(role, cr, {}).map((r) => String(r.ref).split("#")[1]) } : {}),
+      ...(role ? { template: role, added: roleAdded } : {}),
       ...(templated ? { creatureTemplate: templated } : {}),
       notes,
       statblock: body,

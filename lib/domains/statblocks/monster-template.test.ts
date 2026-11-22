@@ -230,6 +230,9 @@ describe("evaluateFormula", () => {
     expect(f("Size")).toBeUndefined();
     expect(f("a number of d4s equal to one half the leader's CR, rounded down, minimum of 1")).toBe("10 (4d4)");
     expect(f("damage of the attack's type")).toBe("damage of the attack's type");
+    expect(f("a number of d6s equal to the creature's PB")).toBe("14 (4d6)");
+    expect(f("a number of d8s equal to half the creature's PB, rounded up")).toBe("9 (2d8)");
+    expect(f("the creature's CR times 5, minimum of 5")).toBe(45);
   });
 });
 

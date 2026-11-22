@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { boot } from "../app";
 import { simMain } from "./dispatch";
 import { parseSimArgv, validateForSubcommand } from "./flags";
-import { holdOn, pbOf, simHomebrew, templateRefs } from "./homebrew";
+import { simHomebrew } from "./homebrew";
 import { simTemplates, TEMPLATE_FEATURES_NOTE } from "./templates";
 import { simEquivalents, simRoles, withRole } from "./roles";
 
@@ -76,6 +76,17 @@ const SKELETON = [
   "",
 ].join("\n");
 
+const LEADER = [
+  "# Role (Leader)",
+  "This template can be applied to any creature, but a leader must be able to communicate with its allies.",
+  "## Traits",
+  "***Inspiring Leader.*** While the leader is conscious, each friendly creature within 10 feet of the leader is resistant to the charmed and frightened conditions.",
+  "## Bonus Actions",
+  "***Tactical Commands.*** The leader shouts one of the following commands at up to two friendly creatures.",
+  "- **Hold On.** Each target gains # [a number of d4s equal to one half the leader’s CR, rounded down, minimum of 1] temporary HP.",
+  "",
+].join("\n");
+
 function vault() {
   const root = mkdtempSync(join(tmpdir(), "rpg-sim-roles-"));
   const put = (path: string, text: string) => {
@@ -89,6 +100,7 @@ function vault() {
   put(`${BESTIARY}/beasts/Ripper.md`, monster("Ripper", "1", 25, 12, ["Rend"]));
   put(`${BESTIARY}/beasts/Weaver.md`, monster("Weaver", "1", 40, 14, ["Bite", "Web"]));
   put(`${BESTIARY}/templates/Skeleton.md`, SKELETON);
+  put(`${BESTIARY}/templates/Role (Leader).md`, LEADER);
   return { root, ctx: boot(root) };
 }
 
@@ -187,14 +199,6 @@ describe("rpg sim equivalents", () => {
 });
 
 describe("rpg sim homebrew", () => {
-  it("knows a role template's numbers by CR", () => {
-    expect([pbOf(1), pbOf(5), pbOf(13), pbOf(30)]).toEqual([2, 3, 5, 9]);
-    expect([holdOn(1), holdOn(4), holdOn(10)]).toEqual(["2 (1d4)", "5 (2d4)", "12 (5d4)"]);
-    const controller = templateRefs("controller", 3, { int: 1, wis: 3, cha: 0 });
-    expect(controller[1]).toMatchObject({ ability: "WIS", dc: 13 });
-    expect(templateRefs("striker", 9, {}).map((r) => r.pb ?? null)).toEqual([null, 4]);
-  });
-
   it("makes a new creature from a statblock: a new CR, a role template, written only with --write", async () => {
     const { root, ctx } = vault();
     const dry = (
@@ -212,7 +216,7 @@ describe("rpg sim homebrew", () => {
     expect(dry.added).toEqual(["Inspiring Leader", "Tactical Commands"]);
     expect(dry.statblock).toMatch(/name: Grave Hound/);
     expect(dry.statblock).toMatch(/role: leader\nsubrole: commander/);
-    expect(dry.statblock).toMatch(/hold_on: 2 \(1d4\)/);
+    expect(dry.statblock).toMatch(/Role \(Leader\): Tactical Commands"\n {4}f1: 2 \(1d4\)/);
 
     await simHomebrew(
       ctx,
@@ -238,9 +242,11 @@ describe("rpg sim homebrew --template and rpg sim templates", () => {
         notes: string[];
       };
     };
-    expect(doc.templates).toEqual([
-      expect.objectContaining({ template: "Skeleton", fits: true, features: ["Undead Resilience", "Rattle"] }),
-    ]);
+    expect(doc.templates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ template: "Skeleton", fits: true, features: ["Undead Resilience", "Rattle"] }),
+      ])
+    );
     expect(doc.notes.join(" ")).toMatch(/--write writes/);
     await simTemplates(ctx, options("templates", "--write"));
     expect(readFileSync(join(root, `${TEMPLATE_FEATURES_NOTE}.md`), "utf8")).toContain('id: "Skeleton: Rattle"');

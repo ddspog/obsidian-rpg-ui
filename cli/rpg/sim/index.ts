@@ -12,6 +12,7 @@ import { simPlan } from "./plan";
 import { simEquivalents, simRoles } from "./roles";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
+import { simLineages } from "./lineages";
 import { simTemplates } from "./templates";
 
 export type { SimIo };
@@ -29,5 +30,6 @@ export function simEntry(tokens: string[], io: SimIo): Promise<number> {
     build: simBuild,
     homebrew: simHomebrew,
     templates: simTemplates,
+    lineages: simLineages,
   });
 }

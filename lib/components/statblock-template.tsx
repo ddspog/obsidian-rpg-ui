@@ -66,19 +66,21 @@ export function StatblockTemplate({ block, sourcePath = "" }: StatblockTemplateP
   const changes = block.changes.filter((c) => c.stat !== "abilities" && c.stat !== "note");
   const abilities = block.changes.find((c) => c.stat === "abilities");
   const notes = block.changes.filter((c) => c.stat === "note");
-  const appliesTo = [
-    block.applies.types.length
-      ? block.applies.types.map((t) => t[0].toUpperCase() + t.slice(1)).join(" · ")
-      : "Any creature",
-    ...block.applies.other,
-  ].join(", ");
+  const appliesTo = block.applies.anyLineage
+    ? "Humanoid (Any Lineage) NPCs"
+    : [
+        block.applies.types.length
+          ? block.applies.types.map((t) => t[0].toUpperCase() + t.slice(1)).join(" · ")
+          : "Any creature",
+        ...block.applies.other,
+      ].join(", ");
 
   return (
     <article className="rpg-statblock rpg-statblock-monster rpg-statblock-template">
       <header className="rpg-statblock-header">
         <h3>{block.name}</h3>
         <span className="rpg-statblock-header-meta">
-          <span className="rpg-statblock-kind">Template</span>
+          <span className="rpg-statblock-kind">{block.kind === "lineage" ? "Lineage" : "Template"}</span>
         </span>
       </header>
       <p className="rpg-statblock-subtitle">
@@ -146,12 +148,20 @@ export function StatblockTemplate({ block, sourcePath = "" }: StatblockTemplateP
               <tbody>
                 <tr>
                   {ABILITY_KEYS.map((k) => {
-                    const map = abilities.stat === "abilities" ? (abilities.atLeast ?? abilities.atMost ?? {}) : {};
+                    const map =
+                      abilities.stat === "abilities"
+                        ? (abilities.plus ?? abilities.atLeast ?? abilities.atMost ?? {})
+                        : {};
                     const v = map[k];
-                    const op = abilities.stat === "abilities" && abilities.atLeast ? "≥" : "≤";
+                    const op =
+                      abilities.stat === "abilities" && abilities.plus
+                        ? ""
+                        : abilities.stat === "abilities" && abilities.atLeast
+                          ? "≥"
+                          : "≤";
                     return (
                       <td key={k} className={v === undefined ? "rpg-sheet-same" : "rpg-sheet-change"}>
-                        {v === undefined ? "—" : `${op} ${v >= 0 ? `+${v}` : `−${-v}`}`}
+                        {v === undefined ? "—" : `${op}${op ? " " : ""}${v >= 0 ? `+${v}` : `−${-v}`}`}
                       </td>
                     );
                   })}
@@ -256,7 +266,9 @@ function TryOn({
       return;
     }
     setBase(loaded);
-    setSaveName(`${loaded.name} ${block.name.replace(/\s*\(.*\)$/, "")}`);
+    // A lineage goes before the NPC ("Dwarf Guard"), a template after the creature ("Owlbear Zombie").
+    const label = block.name.replace(/\s*\(.*\)$/, "").replace(/\s*ᴷ$/, "");
+    setSaveName(block.kind === "lineage" ? `${label} ${loaded.name}` : `${loaded.name} ${label}`);
   };
 
   React.useEffect(() => {
@@ -387,7 +399,7 @@ function TryOn({
               <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} />
             </label>
             <button type="button" className="mod-cta" onClick={() => void save()} disabled={!saveName.trim()}>
-              Save as homebrew
+              {block.kind === "lineage" ? "Save as NPC" : "Save as homebrew"}
             </button>
             {saved ? (
               <a className="rpg-sheet-saved" onClick={() => openNote(saved)}>

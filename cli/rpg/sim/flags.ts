@@ -933,7 +933,7 @@ const HOMEBREW_FLAGS = [
   "help",
 ];
 
-/** The flags `templates` takes. */
+/** The flags `templates` and `lineages` take. */
 const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
 
 /** The flags `build` takes. */
@@ -1025,6 +1025,11 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
     if ((options.choose !== undefined || options.traits.length) && options.template === undefined)
       throw new UsageError("--choose and --trait go with --template.");
   }
+  if (subcommand === "lineages") {
+    for (const flag of options.given) {
+      if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`lineages\`.`);
+    }
+  }
   if (subcommand === "templates") {
     for (const flag of options.given) {
       if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`templates\`.`);
@@ -1103,6 +1108,9 @@ Usage:
   rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--template T [--choose O] [--trait F]...] [--cr C] [--type "<type line>"] [--habitat H] [--write]
     (a new creature from a statblock: reflavoured, a role template, a creature template, a new CR;
      a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim lineages [--write [--force]]
+    (lineages as templates for Humanoid (Any Lineage) NPCs: the Monster Vault's NPC Features rows and the lineage
+     notes' traits reworded; --write writes each one's stat.template block and the Lineage NPC Traits note)
   rpg sim templates ["<base note>"] [--write]
     (the creature templates in worldbuilding/bestiary/templates/, what each changes, and with a note which fit it;
      --write writes their features note, worldbuilding/traits/features/Monster Template Traits)

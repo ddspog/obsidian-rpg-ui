@@ -1866,6 +1866,8 @@ export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;
 /** A creature template as a `rpg stat.template` block holds it (see the plugin's template-block.ts). */
 export interface TemplateBlockData {
   name: string;
+  /** A lineage: what a Humanoid (Any Lineage) NPC gains to be of it. */
+  kind?: "lineage";
   appliesText: string;
   applies: {
     types: string[];
@@ -1876,6 +1878,7 @@ export interface TemplateBlockData {
     minCr?: number;
     maxCr?: number;
     maxSize?: string;
+    anyLineage?: boolean;
   };
   choose?: Array<{ key: string; damage: string[] }>;
   chooseText?: string;
@@ -1888,6 +1891,7 @@ export interface TemplateBlockData {
     optional?: boolean;
     choice?: string;
     defence?: string;
+    ref?: string;
   }>;
   alters?: Array<{ name: string; text: string }>;
   rules?: string[];

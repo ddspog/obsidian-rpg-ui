@@ -35,7 +35,7 @@ export type TemplateChange =
   | { stat: "tag"; add?: string; remove?: string }
   | { stat: "hp"; percent?: number; flat?: number; upToCr?: number }
   | { stat: "ac"; plus?: number; natural?: number; dex?: boolean }
-  | { stat: "cr"; plus: number; max?: number }
+  | { stat: "cr"; plus?: number; max?: number; atLeast?: number }
   | {
       stat: DefenceKey;
       damage?: string[];
@@ -56,8 +56,19 @@ export type TemplateChange =
       /** Telepathy only when it understands a language. */
       ifSpeaks?: boolean;
     }
-  | { stat: "abilities"; atLeast?: Record<string, number>; atMost?: Record<string, number> }
+  | {
+      stat: "abilities";
+      atLeast?: Record<string, number>;
+      atMost?: Record<string, number>;
+      plus?: Record<string, number>;
+    }
   | { stat: "speed"; delta: number; only?: string; floor?: number; ifChoice?: string }
+  /** A speed it gains, equal to its walking speed ("fly", with "(hover)"), or of its own range. */
+  | { stat: "speed"; gain: string; hover?: boolean; range?: number }
+  /** Its walking speed set. */
+  | { stat: "speed"; walk: number }
+  /** Its size: a step larger or smaller, or a size it becomes. */
+  | { stat: "size"; steps?: number; to?: string }
   | { stat: "stealth" | "perception"; plusPb: true }
   | { stat: "note"; label: string; text: string };
 
@@ -65,6 +76,8 @@ export type TemplateChange =
 export interface TemplateBlockFeature {
   /** The id in the features note ("Zombie: Undead Fortitude"). */
   id: string;
+  /** A ref of its own, in place of the features note's (a lineage's feature from its humanoid's statblock). */
+  ref?: string;
   name: string;
   type: TemplateFeatureType;
   /** The book's words for each of its numbers (`f1`…). */
@@ -79,6 +92,8 @@ export interface TemplateBlockFeature {
 
 export interface TemplateBlock {
   name: string;
+  /** A lineage: what a "Humanoid (Any Lineage)" NPC gains to be of it. */
+  kind?: "lineage";
   appliesText: string;
   applies: TemplateApplies;
   choose?: TemplateChoice[];
@@ -220,6 +235,8 @@ export function changesOfLine(label: string, rawText: string): TemplateChange[] 
     const plus = low.match(/increases by (\d+)/);
     const nat = low.match(/natural armor class of (\d+) \+ dex modifier/);
     if (plus) return [{ stat: "ac", plus: Number(plus[1]) }];
+    const minus = low.match(/decreases by (\d+)/);
+    if (minus) return [{ stat: "ac", plus: -Number(minus[1]) }];
     if (nat) return [{ stat: "ac", natural: Number(nat[1]) }];
     if (/dex reduces/.test(low)) return [{ stat: "ac", dex: true }];
     return note();
@@ -269,7 +286,7 @@ export function changesOfLine(label: string, rawText: string): TemplateChange[] 
   }
   if (lab === "languages") {
     if (/learns one language|chosen humanoid|choose one/.test(low)) return note();
-    if (/understands (?:all )?(?:the )?languages it knew in life/.test(low) && /can't speak/.test(low))
+    if (/understands (?:all )?(?:the )?languages it knew(?: in life)?\b/.test(low) && /can't speak/.test(low))
       out.push({ stat: "languages", mute: true });
     else if (/understands the languages of its creator but can't speak/.test(low))
       out.push({ stat: "languages", set: "understands the languages of its creator but can't speak" });
@@ -288,6 +305,13 @@ export function changesOfLine(label: string, rawText: string): TemplateChange[] 
   }
   if (lab === "abilities") {
     const head = text.split(/\.\s+If /)[0];
+    // "Its STR and CON modifiers increase by 1."
+    const by = low.match(/modifiers? (increase|decrease)s? by (\d+)/);
+    if (by) {
+      const n = (by[1] === "increase" ? 1 : -1) * Number(by[2]);
+      const keys = [...head.matchAll(/\b(STR|DEX|CON|INT|WIS|CHA)\b/g)].map((m) => m[1].toLowerCase());
+      if (keys.length) return [{ stat: "abilities", plus: Object.fromEntries(keys.map((k) => [k, n])) }];
+    }
     const atLeast = /already higher|is higher than/.test(low);
     const atMost = /already lower/.test(low);
     if (atLeast === atMost || /chosen humanoid/.test(low)) return note();
@@ -315,6 +339,23 @@ export function changesOfLine(label: string, rawText: string): TemplateChange[] 
       ];
     }
     if (fly) return [{ stat: "speed", delta: Number(fly[1]), only: "fly" }];
+    const gain = low.match(
+      /gains an? (fly|flying|swim|swimming|climb|climbing|burrow|burrowing)(?:ing)? speed equal to its walking speed/
+    );
+    if (gain) {
+      const mode = gain[1].replace(/ing$/, "").replace(/^flyi?$/, "fly");
+      return [{ stat: "speed", gain: mode === "fl" ? "fly" : mode, ...(/hover/.test(low) ? { hover: true } : {}) }];
+    }
+    return note();
+  }
+  if (lab === "size") {
+    const to = text.match(/becomes (Tiny|Small|Medium|Large|Huge|Gargantuan)/i);
+    if (to) return [{ stat: "size", to: to[1][0].toUpperCase() + to[1].slice(1).toLowerCase() }];
+    const step = low.match(/(increases|decreases) by (one|two|\d+) (?:size )?categor/);
+    if (step) {
+      const n = step[2] === "one" ? 1 : step[2] === "two" ? 2 : Number(step[2]);
+      return [{ stat: "size", steps: step[1] === "increases" ? n : -n }];
+    }
     return note();
   }
   if ((lab === "stealth" || lab === "perception") && /increases by an amount equal to its pb/.test(low)) {
@@ -359,6 +400,7 @@ export function parseTemplateBlock(raw: Record<string, unknown>): TemplateBlock 
   const applies = (raw.applies as TemplateApplies | undefined) ?? { types: [], other: [] };
   return {
     name: String(raw.name ?? ""),
+    ...(raw.kind === "lineage" ? { kind: "lineage" as const } : {}),
     appliesText: String(raw.appliesText ?? ""),
     applies: { ...applies, types: arr<string>(applies.types), other: arr<string>(applies.other) },
     ...(Array.isArray(raw.choose) ? { choose: raw.choose as TemplateChoice[] } : {}),
@@ -422,7 +464,9 @@ export function describeChange(c: TemplateChange): ChangeWords {
           ? { label: "Armor Class", text: `${c.natural} + DEX`, tone: "up", note: "natural armor, if higher" }
           : { label: "Armor Class", text: "falls with DEX", tone: "down" };
     case "cr":
-      return { label: "Challenge", text: `+${c.plus}`, tone: "up", ...(c.max ? { note: `up to CR ${c.max}` } : {}) };
+      return c.atLeast !== undefined
+        ? { label: "Challenge", text: `at least ${crText(c.atLeast)}`, tone: "up" }
+        : { label: "Challenge", text: `+${c.plus}`, tone: "up", ...(c.max ? { note: `up to CR ${c.max}` } : {}) };
     case "resistant":
     case "immune":
     case "vulnerable": {
@@ -459,6 +503,14 @@ export function describeChange(c: TemplateChange): ChangeWords {
         ...(c.ifSpeaks ? { note: "if it understands a language" } : {}),
       };
     case "abilities": {
+      if (c.plus)
+        return {
+          label: "Abilities",
+          text: Object.entries(c.plus)
+            .map(([k, v]) => `${k.toUpperCase()} ${sign(v)}`)
+            .join(", "),
+          tone: Object.values(c.plus).some((v) => v < 0) ? "down" : "up",
+        };
       const map = c.atLeast ?? c.atMost ?? {};
       const op = c.atLeast ? "≥" : "≤";
       return {
@@ -469,7 +521,22 @@ export function describeChange(c: TemplateChange): ChangeWords {
         tone: c.atLeast ? "up" : "down",
       };
     }
+    case "size": {
+      const n = Math.abs(c.steps ?? 1);
+      return {
+        label: "Size",
+        text: c.to ? `becomes ${c.to}` : `${n === 1 ? "one" : n} size ${(c.steps ?? 0) > 0 ? "larger" : "smaller"}`,
+        tone: c.to ? "same" : (c.steps ?? 0) > 0 ? "up" : "down",
+      };
+    }
     case "speed":
+      if ("walk" in c) return { label: "Speed", text: `walking ${c.walk} ft.`, tone: "same" };
+      if ("gain" in c)
+        return {
+          label: "Speed",
+          text: `+ ${c.gain} ${c.range !== undefined ? `${c.range} ft.` : "equal to walking"}${c.hover ? " (hover)" : ""}`,
+          tone: "up",
+        };
       return {
         label: "Speed",
         text: `${c.only ? `${c.only} ` : "each "}${sign(c.delta)} ft.`,
@@ -605,15 +672,29 @@ export function applyTemplateBlock(
       case "ac":
         if (c.plus !== undefined) {
           stats.ac = withLeadingNumber(stats.ac, (n) => n + (c.plus ?? 0));
-          applied.push(`AC +${c.plus}`);
+          applied.push(`AC ${fmt(c.plus)}`);
         } else if (c.natural !== undefined) naturalAc = c.natural;
         else if (c.dex) acFromDex = true;
         break;
-      case "cr":
-        cr = Math.min(c.max ?? 30, cr + c.plus);
-        data.cr = String(cr);
-        applied.push(`CR ${options.cr} → ${cr}`);
+      case "cr": {
+        if (c.atLeast !== undefined) {
+          if (cr < c.atLeast) {
+            applied.push(`CR ${crText(cr)} → ${crText(c.atLeast)}`);
+            cr = c.atLeast;
+            data.cr = crText(cr);
+          }
+          break;
+        }
+        // Up the CR ladder: 1/4 → 1/2 → 1 → 2 …
+        const ladder = [0, 0.125, 0.25, 0.5, ...Array.from({ length: 30 }, (_, i) => i + 1)];
+        const at = ladder.findIndex((v) => v >= cr);
+        const next =
+          ladder[Math.min(ladder.length - 1, Math.max(0, (at < 0 ? ladder.length - 1 : at) + (c.plus ?? 0)))];
+        cr = Math.min(c.max ?? 30, next);
+        data.cr = crText(cr);
+        applied.push(`CR ${crText(options.cr)} → ${crText(cr)}`);
         break;
+      }
       case "resistant":
       case "immune":
       case "vulnerable": {
@@ -676,6 +757,11 @@ export function applyTemplateBlock(
         break;
       }
       case "abilities": {
+        for (const [k, v] of Object.entries(c.plus ?? {})) {
+          const was = abilities[k] ?? 0;
+          abilities[k] = was + v;
+          applied.push(`${k.toUpperCase()} ${fmt(was)} → ${fmt(abilities[k])}`);
+        }
         const atLeast = !!c.atLeast;
         for (const [k, v] of Object.entries(c.atLeast ?? c.atMost ?? {})) {
           const was = abilities[k] ?? 0;
@@ -684,7 +770,37 @@ export function applyTemplateBlock(
         }
         break;
       }
+      case "size": {
+        const sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
+        const at = sizes.findIndex((z) => new RegExp(`\\b${z}\\b`, "i").test(type));
+        if (at < 0) {
+          byHand("Size", describeChange(c).text);
+          break;
+        }
+        const to = c.to ?? sizes[Math.max(0, Math.min(5, at + (c.steps ?? 0)))];
+        type = type.replace(new RegExp(`\\b${sizes[at]}\\b`, "i"), to);
+        applied.push(`size: ${to}`);
+        break;
+      }
       case "speed": {
+        if ("walk" in c) {
+          const speed = String(stats.speed ?? "");
+          stats.speed = /^\s*\d+ ft\./.test(speed) ? speed.replace(/^\s*\d+ ft\./, `${c.walk} ft.`) : `${c.walk} ft.`;
+          applied.push(`walking ${c.walk} ft.`);
+          break;
+        }
+        if ("gain" in c) {
+          const speed = String(stats.speed ?? "");
+          if (new RegExp(`\\b${c.gain}\\b`).test(speed)) break;
+          const walk = c.range !== undefined ? String(c.range) : speed.match(/^\s*(\d+) ft\./)?.[1];
+          if (!walk) {
+            byHand("Speed", describeChange(c).text);
+            break;
+          }
+          stats.speed = `${speed}, ${c.gain} ${walk} ft.${c.hover ? " (hover)" : ""}`;
+          applied.push(`${c.gain} ${walk} ft.`);
+          break;
+        }
         if (c.ifChoice) {
           if (!chosen) break;
           if (chosen.key !== c.ifChoice) break;
@@ -773,7 +889,7 @@ export function applyTemplateBlock(
       if (v !== undefined) params[k] = v;
       else manual.push(`${f.name}: fill in "${formula}" (the ref's ${k}).`);
     }
-    refs.push({ ref: `@[[${block.featureNote}]]#${f.id}`, ...params });
+    refs.push({ ref: f.ref ?? `@[[${block.featureNote}]]#${f.id}`, ...params });
     added.push(f.name);
     // A Resilience trait is named on the defence line it grants, as the book's statblocks do.
     if (f.defence) addDefence(f.defence, { damage: [], conditions: [], other: [f.name] });
@@ -842,6 +958,10 @@ const STAT_ORDER = [
   "languages",
 ];
 const statOrder = (k: string) => (STAT_ORDER.includes(k) ? STAT_ORDER.indexOf(k) : STAT_ORDER.length);
+
+function crText(cr: number): string {
+  return cr === 0.125 ? "1/8" : cr === 0.25 ? "1/4" : cr === 0.5 ? "1/2" : String(cr);
+}
 
 function fmt(n: number): string {
   return n >= 0 ? `+${n}` : String(n);
