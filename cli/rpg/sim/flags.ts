@@ -217,6 +217,15 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "`catalog init|check|suggest|use`, `plan`: the party's session number (default: 0 on init, else the catalog's own); `catalog session`: set it",
   },
   {
+    name: "only",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<id>",
+    description:
+      "`catalog draft`: with --accept, write only these drafts (whatever their confidence), the ones a review kept; repeat for each",
+  },
+  {
     name: "add-tag",
     kind: "string",
     multiple: true,
@@ -471,6 +480,8 @@ export interface SimOptions {
   session?: number;
   addTags: string[];
   dropTags: string[];
+  /** `catalog draft --accept`: only these draft ids. */
+  only: string[];
   includeUsed: boolean;
   /** `suggest`: the fits to keep (empty: all). */
   fits: FitStateName[];
@@ -545,6 +556,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     states: [],
     addTags: [],
     dropTags: [],
+    only: [],
     includeUsed: false,
     fits: [],
     minConfidence: flagDefault<Confidence>("min-confidence"),
@@ -714,6 +726,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     options.reuseAfter = integer("reuse-after", values["reuse-after"], 0, "a non-negative integer");
   }
   options.addTags = tagList("add-tag", values["add-tag"]);
+  options.only = ((values.only as string[] | undefined) ?? []).map((v) => v.trim()).filter(Boolean);
   options.dropTags = tagList("drop-tag", values["drop-tag"]);
   options.includeUsed = values["include-used"] === true;
   options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
@@ -826,7 +839,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
 /** The flags each `catalog` action takes (besides the common ones); any other flag is a usage error. */
 const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   init: ["party-name", "pc", "difficulty", "every", "reuse-after", "session"],
-  draft: ["min-confidence", "accept", "limit"],
+  draft: ["min-confidence", "accept", "only", "limit"],
   add: ["name", "monster", "tag"],
   confirm: [],
   remove: [],
@@ -885,6 +898,9 @@ function validateCatalog(options: SimOptions): void {
     if (options.monsters.length === 0) {
       throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
     }
+  }
+  if (known === "draft" && options.only.length > 0 && !options.accept) {
+    throw new UsageError("--only goes with --accept: it names the drafts to write.");
   }
   if (known === "tag" && options.addTags.length + options.dropTags.length === 0) {
     throw new UsageError("`catalog tag` needs --add-tag or --drop-tag (or both).");
@@ -1083,7 +1099,8 @@ Usage:
   rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--tiers same|lower|all] [--difficulty D] [--limit N] [flags]
     (the catalog's fit entries first, then the bestiary swept by outcome: N short options, default 3)
   rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--reuse-after N] [--session N]
-  rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept] [--limit N]
+  rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept [--only <id>]...] [--limit N]
+    (a dry run lists each draft with its scene and reasons; --accept --only <id> writes the ones a review kept)
   rpg sim catalog add --name "<name>" --monster "<note>[:<count>]"... [--tag <tag>]...
   rpg sim catalog confirm <id>...        (flip drafts to confirmed)
   rpg sim catalog remove <id>...

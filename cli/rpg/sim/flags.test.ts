@@ -244,6 +244,7 @@ describe("SIM_HELP", () => {
       "every",
       "reuse-after",
       "session",
+      "only",
       "add-tag",
       "drop-tag",
       "include-used",

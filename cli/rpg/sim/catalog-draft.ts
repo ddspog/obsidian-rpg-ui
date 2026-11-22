@@ -11,6 +11,7 @@ import { buildMonsterIndex, type MonsterEntry, type MonsterIndex } from "lib/dom
 import { tablesOfNote } from "lib/domains/encounter-catalog/table-source";
 import { normaliseTags } from "lib/domains/encounter-catalog/words";
 import type { Ctx } from "../app";
+import { bestiaryAliases } from "./aliases";
 import { UsageError } from "./flags";
 import { bestiaryPaths, categoryHabitat, linkNames, readMonsterNote } from "./monsters";
 
@@ -41,7 +42,7 @@ export function bestiaryOf(ctx: Ctx): Bestiary {
   const habitats = new Map<string, string[]>();
   let vocabulary: Set<string> | undefined;
   const bestiary: Bestiary = {
-    index: buildMonsterIndex(entries),
+    index: buildMonsterIndex(entries, bestiaryAliases(ctx).aliases),
     habitats() {
       vocabulary ??= new Set(entries.flatMap((e) => bestiary.habitat(e.note)));
       return vocabulary;

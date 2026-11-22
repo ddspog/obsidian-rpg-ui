@@ -315,6 +315,7 @@ function draft(ctx: Ctx, options: SimOptions) {
       name: d.entry.name,
       monsters: d.entry.monsters.map((m) => ({ note: baseName(m.note), count: m.count })),
       tags: d.entry.tags,
+      ...(d.entry.source?.text ? { scene: d.entry.source.text } : {}),
       confidence: d.confidence,
       combat: d.combat,
       reasons: d.reasons,
@@ -325,11 +326,17 @@ function draft(ctx: Ctx, options: SimOptions) {
 
   if (options.accept && path) {
     const min = rankOf(options.minConfidence);
-    const accepted = drafts.filter((d) => rankOf(d.confidence) >= min).map((d) => d.entry);
+    const only = new Set(options.only);
+    const unknown = options.only.filter((id) => !drafts.some((d) => d.entry.id === id));
+    if (unknown.length > 0) throw new UsageError(`--only names no draft of these notes: ${unknown.join(", ")}.`);
+    const accepted = drafts
+      .filter((d) => (only.size > 0 ? only.has(d.entry.id) : rankOf(d.confidence) >= min))
+      .map((d) => d.entry);
     const result = mergeDrafts(catalog, accepted);
     if (result.added.length > 0) saveCatalog(ctx, path, result.catalog);
     doc.catalog = path;
-    doc.minConfidence = options.minConfidence;
+    if (only.size > 0) doc.only = [...only];
+    else doc.minConfidence = options.minConfidence;
     doc.accepted = result.added.length;
   }
   return doc;

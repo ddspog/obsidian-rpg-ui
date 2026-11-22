@@ -341,6 +341,7 @@ describe("catalog draft", () => {
       name: "Forest T1 #1: 2 Rat",
       monsters: [{ note: "Rat", count: 2 }],
       tags: ["forest", "tier-1", "test-guide", "swamp"],
+      scene: expect.any(String),
       confidence: "high",
       combat: "likely",
       reasons: [],

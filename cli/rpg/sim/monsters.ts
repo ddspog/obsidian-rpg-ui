@@ -24,6 +24,7 @@ import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature, StatMonsterData } from "lib/domains/statblocks/types";
 import type { Ctx } from "../app";
 import { fencesOf } from "../fences";
+import { bestiaryNoteNamed } from "./aliases";
 import type { TFile } from "../obsidian-node";
 
 /** Where the bestiary lives in the vault. */
@@ -81,7 +82,14 @@ function findFile(ctx: Ctx, ref: string): TFile | null {
   try {
     return ctx.note(ref);
   } catch {
-    return null;
+    // A spoken name or an alias: "Goblin" for `Goblin, A`, "warden robot" for `Robot Warden`.
+    const named = bestiaryNoteNamed(ctx, ref);
+    if (!named) return null;
+    try {
+      return ctx.note(named);
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -96,7 +104,12 @@ export function readMonsterNote(ctx: Ctx, path: string): MonsterNoteState {
     return { kind: "unresolvable", why: `cannot read "${file.path}": ${(e as Error).message}` };
   }
   const fences = fencesOf(text, "stat.monster");
-  if (fences.length === 0) return { kind: "non-monster" };
+  if (fences.length === 0) {
+    // "Goblin" may find the lineage note first: a name, not a path, is also looked up in the bestiary.
+    const named = !path.includes("/") ? bestiaryNoteNamed(ctx, path) : undefined;
+    if (named && named !== file.path) return readMonsterNote(ctx, named);
+    return { kind: "non-monster" };
+  }
   let yaml: unknown;
   try {
     yaml = parseYaml(yamlOf(fences[0]));
@@ -212,7 +225,8 @@ function actionsAndFidelity(
 export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster> {
   const file = findFile(ctx, ref);
   if (!file) throw new Error(`No monster note "${ref}"`);
-  const state = readMonsterNote(ctx, file.path);
+  // A name ("Goblin") reads through readMonsterNote, which looks past a note of the same name that is no monster.
+  const state = readMonsterNote(ctx, ref.includes("/") ? file.path : ref);
   if (state.kind === "non-monster") throw new Error(`"${ref}" is not a monster note (no stat.monster block)`);
   if (state.kind === "unresolvable") throw new Error(`"${ref}" cannot be read as a monster: ${state.why}`);
 
