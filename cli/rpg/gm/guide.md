@@ -267,6 +267,10 @@ rpg sim run --monster "Thug:3" --brief
 words>` fills the Monster Vault's encounter models (a single big monster, a
   boss and lieutenants, a matched set, a horde) with monsters of the right
   roles and says which fit. Name the one you pick and give it a scene.
+- A creature the bestiary lacks: `rpg sim homebrew "<base>" --name "<new>"
+[--role R] [--cr C]` makes one from a statblock (a role template, a new CR,
+  a new flavour); it is a dry run until `--write`, which needs the player's
+  leave like any other write.
 - Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
   keeps `plan` from offering it again for a few sessions. When the player
   plays in Obsidian, `rpg sim catalog prepare <id>` readies it instead: a

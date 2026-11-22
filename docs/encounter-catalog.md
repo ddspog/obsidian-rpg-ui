@@ -153,7 +153,15 @@ The pool is the bestiary with its roles, kept to the theme words (matched agains
 
 On the testing vault (the stock level-1 party, challenging) a run takes about 30 s, most of it reading the bestiary's roles: with no theme it offered 3 Alley Sprites, 5 Alligators and 4 Axe Beaks; with `goblin`, 4 Goblins (matched set) and 2 Hobgoblins (double trouble); with `undead`, 4 Giant Owl Grims and 4 Fades. A level-1 party's benchmark (1/2) leaves little room for a boss and lieutenants: the models open up with level.
 
-Not built yet: new creatures (a template applied to a statblock, a lineage's NPC features at another CR, a reflavoured monster) saved to `worldbuilding/bestiary/homebrew/` as drafts.
+## A new creature: `rpg sim homebrew`
+
+`rpg sim homebrew "<base note>" --name "<new name>" [--role controller|leader|soldier|striker] [--cr C] [--type "<type line>"] [--habitat H] [--write]` makes a creature from a bestiary statblock, as the Game Master's Guide's "Modifying a Stat Block" describes (`cli/rpg/sim/homebrew.ts`):
+
+- **Reflavoured:** the new name, and `--type` / `--habitat` for a new type line or habitat.
+- **A role template** (Game Master's Guide pp. 221–223, transcribed in the vault as `worldbuilding/traits/features/Game Master's Guide Role Template Traits.md`): controller adds Spellcasting Multiattack and a Spellcasting whose spells are left for the GM to choose (abjuration, enchantment, transmutation; the ability is the highest of INT, WIS, CHA, the save DC 10 + its modifier); leader adds Inspiring Leader and Tactical Commands (Hold On: d4s equal to half the CR, at least one); soldier adds Warrior's Advance and Protect Ally; striker adds Shrouded Step and Ambushing Strike (an extra equal to the proficiency bonus). `role:` and the template's subrole are written.
+- **A new CR:** HP scaled by the CR table's HP for the new CR over the old, AC moved by the table's difference; features that pick their numbers by CR (the newer NPC lineage features, `auto: "cr"`) re-pick them, a numeric `tier` on a reference being dropped. Attack damage written as plain text cannot be rescaled: the output gives the damage per round now and the table's for the new CR, to rewrite by hand.
+
+It is a dry run that prints the statblock; `--write` writes `<system>/worldbuilding/bestiary/homebrew/<name>.md` (`homebrew: draft`, `based-on`, `template`), never over a note that exists. The new creature is in the bestiary at once: `roles`, `build`, `adjust` and `sim run` use it. Features kept from the base that name it ("the wolf's Perception") are reported, to reword by hand. Not built yet: the other templates (shadow, skeleton, zombie, lich, lycanthrope, clockwork and thread-bound constructs; Monster Vault 2's eight), whose rules are prose to turn into data first.
 
 ## Monster roles and equivalents
 

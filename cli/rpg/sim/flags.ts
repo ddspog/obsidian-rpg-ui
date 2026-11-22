@@ -162,7 +162,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: undefined,
     value: "<cr>",
-    description: "`suggest`, `plan`: only monsters of exactly this CR (e.g. 1/2)",
+    description: "`suggest`, `plan`: only monsters of exactly this CR (e.g. 1/2); `homebrew`: the new creature's CR",
   },
   {
     name: "limit",
@@ -192,7 +192,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: undefined,
     value: '"<name>"',
-    description: "`catalog add`: the encounter's name",
+    description: "`catalog add`: the encounter's name; `homebrew`: the new creature's",
   },
   {
     name: "every",
@@ -352,7 +352,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "boolean",
     default: false,
     description:
-      "`roles`: write each guess at or above --min-confidence as `role:` in its statblock (never over a written role); else a dry run",
+      "`roles`: write each guess at or above --min-confidence as `role:` in its statblock (never over a written role); `homebrew`: write the new creature's note; else a dry run",
   },
   {
     name: "set",
@@ -625,7 +625,11 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   // `catalog` takes an action and then bare words of its own, `plan` theme words; the others take none.
   const isCatalog = subcommand === "catalog";
   const takesWords =
-    subcommand === "plan" || subcommand === "roles" || subcommand === "equivalents" || subcommand === "build";
+    subcommand === "plan" ||
+    subcommand === "roles" ||
+    subcommand === "equivalents" ||
+    subcommand === "build" ||
+    subcommand === "homebrew";
   if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
@@ -876,6 +880,9 @@ const PLAN_FLAGS = [
   "help",
 ];
 
+/** The flags `homebrew` takes. */
+const HOMEBREW_FLAGS = ["name", "role", "cr", "type", "habitat", "write", "vault", "json", "help"];
+
 /** The flags `build` takes. */
 const BUILD_FLAGS = [
   "pc",
@@ -954,6 +961,15 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
   }
   if (subcommand === "plan") validatePlan(options);
   if (subcommand === "roles" || subcommand === "equivalents") validateRoles(subcommand, options);
+  if (subcommand === "homebrew") {
+    for (const flag of options.given) {
+      if (!HOMEBREW_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`homebrew\`.`);
+    }
+    if (options.args.length !== 1)
+      throw new UsageError("`homebrew` needs one monster note to start from (quote a name with spaces).");
+    if (options.name === undefined) throw new UsageError('--name is required: name the new creature ("Ash Wolf").');
+    if (options.roles.length > 1) throw new UsageError("`homebrew` takes one --role.");
+  }
   if (subcommand === "build") {
     for (const flag of options.given) {
       if (!BUILD_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`build\`.`);
@@ -962,7 +978,7 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
       throw new UsageError("--pc and --catalog: a catalog has its own party; pass one or the other.");
     }
   }
-  if ((subcommand === "suggest" || subcommand === "plan") && options.cr !== undefined) {
+  if ((subcommand === "suggest" || subcommand === "plan" || subcommand === "homebrew") && options.cr !== undefined) {
     try {
       parseCr(options.cr);
     } catch {
@@ -1022,6 +1038,8 @@ Usage:
      soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)
   rpg sim build [<theme words>] [--model single|double|boss|matched|horde]... [--habitat H] [--type T] [--limit N] [--accept [--pick N]]
     (new encounters from the Monster Vault's encounter models, filled by role and simulated; name them and write the scene)
+  rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--cr C] [--type "<type line>"] [--habitat H] [--write]
+    (a new creature from a statblock: reflavoured, a role template, a new CR; a draft in worldbuilding/bestiary/homebrew/)
   rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
     (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help

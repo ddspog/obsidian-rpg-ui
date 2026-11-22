@@ -23,6 +23,8 @@ export interface SimDeps {
   equivalents?: SimHandler;
   /** `rpg sim build …`. */
   build?: SimHandler;
+  /** `rpg sim homebrew …`. */
+  homebrew?: SimHandler;
 }
 
 /**
@@ -59,10 +61,12 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
                   ? deps.equivalents
                   : subcommand === "build"
                     ? deps.build
-                    : undefined;
+                    : subcommand === "homebrew"
+                      ? deps.homebrew
+                      : undefined;
     if (!handler) {
       return usage(
-        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, catalog, roles or equivalents).`
+        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, catalog, roles or equivalents).`
       );
     }
     validateForSubcommand(subcommand, options);

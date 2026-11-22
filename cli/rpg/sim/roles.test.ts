@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { boot } from "../app";
 import { simMain } from "./dispatch";
 import { parseSimArgv, validateForSubcommand } from "./flags";
+import { holdOn, pbOf, simHomebrew, templateRefs } from "./homebrew";
 import { simEquivalents, simRoles, withRole } from "./roles";
 
 const BESTIARY = "tales-of-the-valiant/worldbuilding/bestiary";
@@ -163,6 +164,48 @@ describe("rpg sim equivalents", () => {
     expect(await simMain(["build", "--steps", "2"], io, deps)).toBe(1);
     expect(out.join("\n")).toMatch(
       /--role must be one of controller, leader, soldier, striker or one of their subroles/
+    );
+  });
+});
+
+describe("rpg sim homebrew", () => {
+  it("knows a role template's numbers by CR", () => {
+    expect([pbOf(1), pbOf(5), pbOf(13), pbOf(30)]).toEqual([2, 3, 5, 9]);
+    expect([holdOn(1), holdOn(4), holdOn(10)]).toEqual(["2 (1d4)", "5 (2d4)", "12 (5d4)"]);
+    const controller = templateRefs("controller", 3, { int: 1, wis: 3, cha: 0 });
+    expect(controller[1]).toMatchObject({ ability: "WIS", dc: 13 });
+    expect(templateRefs("striker", 9, {}).map((r) => r.pb ?? null)).toEqual([null, 4]);
+  });
+
+  it("makes a new creature from a statblock: a new CR, a role template, written only with --write", async () => {
+    const { root, ctx } = vault();
+    const dry = (
+      await simHomebrew(ctx, options("homebrew", "Hound", "--name", "Grave Hound", "--role", "leader", "--cr", "3"))
+    ).doc as {
+      note: string;
+      written: boolean;
+      hp: { from: number; to: number };
+      ac: { from: number; to: number };
+      added: string[];
+      statblock: string;
+    };
+    expect(dry).toMatchObject({ written: false, hp: { from: 70, to: 140 }, ac: { from: 17, to: 17 } });
+    expect(dry.note).toBe("tales-of-the-valiant/worldbuilding/bestiary/homebrew/Grave Hound.md");
+    expect(dry.added).toEqual(["Inspiring Leader", "Tactical Commands"]);
+    expect(dry.statblock).toMatch(/name: Grave Hound/);
+    expect(dry.statblock).toMatch(/role: leader\nsubrole: commander/);
+    expect(dry.statblock).toMatch(/hold_on: 2 \(1d4\)/);
+
+    await simHomebrew(
+      ctx,
+      options("homebrew", "Hound", "--name", "Grave Hound", "--role", "leader", "--cr", "3", "--write")
+    );
+    const written = readFileSync(join(root, dry.note), "utf8");
+    expect(written).toMatch(/homebrew: draft/);
+    expect(written).toMatch(/based-on: "\[\[tales-of-the-valiant\/worldbuilding\/bestiary\/beasts\/Hound\|Hound\]\]"/);
+    expect(written).toMatch(/```rpg stat\.monster\nname: Grave Hound/);
+    await expect(simHomebrew(ctx, options("homebrew", "Hound", "--name", "Grave Hound", "--write"))).rejects.toThrow(
+      /exists/
     );
   });
 });
