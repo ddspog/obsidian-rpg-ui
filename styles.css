@@ -23023,6 +23023,7 @@ p.rpg-statblock-subtitle {
   --rpg-role-striker: #f08a93;
 }
 .rpg-statblock-monster .rpg-statblock-header {
+  align-items: center;
   flex-wrap: wrap;
   row-gap: 2px;
 }
@@ -23033,7 +23034,7 @@ p.rpg-statblock-subtitle {
 }
 .rpg-statblock-header-meta {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   margin-left: auto;
   flex: 0 0 auto;
@@ -23060,10 +23061,12 @@ p.rpg-statblock-subtitle {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   height: auto;
   min-height: 0;
-  padding: 1px 7px 2px;
+  padding: 3px 7px 2px;
   margin: 0;
   border-radius: 3px;
   border: 1px solid color-mix(in srgb, var(--background-primary, #fff) 55%, transparent);

@@ -98,6 +98,7 @@ p.rpg-statblock-subtitle {
 /* Name first; role and CR together at the end of the first line, dropping under
    the name as one when the card is too narrow for both. */
 .rpg-statblock-monster .rpg-statblock-header {
+  align-items: center;
   flex-wrap: wrap;
   row-gap: 2px;
 }
@@ -110,7 +111,7 @@ p.rpg-statblock-subtitle {
 
 .rpg-statblock-header-meta {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   margin-left: auto;
   flex: 0 0 auto;
@@ -139,10 +140,13 @@ p.rpg-statblock-subtitle {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  line-height: 1.2;
+  /* Capitals centred in the chip: a line box of 1 has the descender room below them, so a pixel more on top. */
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   height: auto;
   min-height: 0;
-  padding: 1px 7px 2px;
+  padding: 3px 7px 2px;
   margin: 0;
   border-radius: 3px;
   border: 1px solid color-mix(in srgb, var(--background-primary, #fff) 55%, transparent);
