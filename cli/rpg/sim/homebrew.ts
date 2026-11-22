@@ -24,7 +24,8 @@ import {
   type MonsterRole,
   type Subrole,
 } from "lib/domains/encounter-sim/monster-role";
-import { applyTemplate } from "lib/domains/statblocks/apply-template";
+import { applyTemplateBlock } from "lib/domains/statblocks/template-block";
+import { homebrewNoteText, homebrewPath } from "lib/domains/statblocks/homebrew-note";
 import { templateFits } from "lib/domains/statblocks/monster-template";
 import type { Ctx } from "../app";
 import { fencesOf } from "../fences";
@@ -182,18 +183,18 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
         `No template "${options.template}" in ${TEMPLATES_FOLDER} (${templates.map((x) => x.name).join(", ") || "none"}).`
       );
     }
-    const fit = templateFits(t.appliesTo, {
+    const fit = templateFits(t.block.applies, {
       name: base.name,
       type: base.monsterType,
       cr,
       int: Number((data.abilities as Record<string, unknown> | undefined)?.int ?? 0) || 0,
     });
-    if (!fit.fits) notes.push(`${t.name} is for ${fit.unmet.join("; ")}: ${base.name} is not (${t.appliesText}).`);
+    if (!fit.fits)
+      notes.push(`${t.name} is for ${fit.unmet.join("; ")}: ${base.name} is not (${t.block.appliesText}).`);
     if (fit.unchecked.length) notes.push(`${t.name} asks for a creature ${fit.unchecked.join(", ")}: check it.`);
-    const applied = applyTemplate(next, t, {
+    const applied = applyTemplateBlock(next, t.block, {
       choice: options.choose,
       picks: options.traits,
-      featureNote: TEMPLATE_FEATURES_NOTE,
       baseFeatures: base.features,
       cr,
     });
@@ -251,24 +252,16 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
   }
 
   const system = basePath.split("/")[0];
-  const outPath = `${system}/worldbuilding/bestiary/homebrew/${name.replace(/[\\/:*?"<>|#^[\]]/g, "")}.md`;
+  const outPath = homebrewPath(system, name);
   const body = `${stringifyYaml(next, { lineWidth: 0 }).trimEnd()}${rest ? `\n${rest}` : ""}`;
-  const note = [
-    "---",
-    "cssclasses:",
-    "  - note-statblock",
-    "homebrew: draft",
-    `based-on: "[[${basePath.replace(/\.md$/, "")}|${base.name}]]"`,
-    ...(role || templated
-      ? ["templates:", ...[role, templated?.name].filter(Boolean).map((t) => `  - ${JSON.stringify(t)}`)]
-      : []),
-    "---",
-    `# ${name}`,
-    "```rpg stat.monster",
-    body,
-    "```",
-    "",
-  ].join("\n");
+  const note = homebrewNoteText({
+    name,
+    basePath,
+    baseName: base.name,
+    templates: [role, templated?.name as string | undefined].filter((t): t is string => !!t),
+    data: next,
+    rest,
+  });
 
   let written = false;
   if (options.write) {

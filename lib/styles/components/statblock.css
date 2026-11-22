@@ -433,3 +433,170 @@ p.rpg-statblock-subtitle {
 .markdown-embed.rpg-single-block-note > .markdown-embed-title {
   display: none;
 }
+
+/* ─── Template and summon sheets ─────────────────────────────────────────── */
+/* A template is a statblock of changes; a summon a statblock filled from who
+   calls it. Both share the bar of controls under the type line. */
+
+.rpg-statblock-kind {
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--background-primary, #fff);
+  border: 1px solid color-mix(in srgb, var(--background-primary, #fff) 70%, transparent);
+  border-radius: 3px;
+  padding: 2px 6px 1px;
+  white-space: nowrap;
+}
+
+.rpg-sheet-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 6px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--statblock-title) 9%, transparent);
+  font-family: var(--font-interface);
+  font-size: 0.82em;
+}
+
+.rpg-sheet-seg {
+  display: inline-flex;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--background-primary);
+}
+
+.rpg-sheet-seg button {
+  font: inherit;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-normal);
+  padding: 4px 10px;
+  min-height: 28px;
+  height: auto;
+  cursor: pointer;
+}
+
+.rpg-sheet-seg button.is-option {
+  text-transform: capitalize;
+}
+
+.rpg-sheet-seg button[aria-pressed="true"] {
+  background: var(--statblock-title);
+  color: var(--background-primary, #fff);
+}
+
+.rpg-sheet-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 14em;
+  min-width: 0;
+}
+
+.rpg-sheet-pick input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: inherit;
+}
+
+.rpg-sheet-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rpg-sheet-change.is-up {
+  color: var(--color-green);
+}
+
+.rpg-sheet-change.is-down {
+  color: var(--color-red);
+}
+
+.rpg-sheet-note,
+.rpg-sheet-same,
+.rpg-sheet-hint {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.rpg-sheet-fit {
+  color: var(--color-green);
+}
+
+.rpg-sheet-unfit,
+.rpg-sheet-error {
+  color: var(--color-red);
+}
+
+.rpg-sheet-byhand {
+  margin: 8px 0;
+  font-size: 0.9em;
+}
+
+.rpg-sheet-byhand summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.rpg-sheet-byhand ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.rpg-sheet-tryon .rpg-statblock {
+  margin-top: 6px;
+}
+
+.rpg-sheet-saved {
+  cursor: pointer;
+}
+
+/* Try on: what the template changed, and what it was. */
+.rpg-statblock .rpg-statblock-changed {
+  color: var(--statblock-title);
+  font-weight: 600;
+}
+
+.rpg-statblock-was {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-size: 0.88em;
+}
+
+.rpg-statblock-added {
+  border-left: 3px solid var(--color-green);
+  padding-left: 8px;
+}
+
+/* A summon's number worked out from a formula: tap (or hover) to see it. */
+.rpg-formula {
+  border-bottom: 1.5px dashed currentColor;
+  font-weight: 600;
+  cursor: help;
+}
+
+.rpg-formula.is-open::after {
+  content: " = " attr(data-formula);
+  font-family: var(--font-interface);
+  font-weight: 400;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--statblock-title) 9%, transparent);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 2px;
+}
+
+.rpg-formula:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}

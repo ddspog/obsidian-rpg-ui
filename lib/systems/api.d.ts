@@ -1855,9 +1855,79 @@ export interface StatblockMonsterProps {
   role?: string;
   /** Its subrole as written (`subrole:`), e.g. ambusher, healer, rank-and-file. */
   subrole?: string;
+  /** No role chip. */
+  hideRole?: boolean;
+  /** A kind shown in the title bar ("Summon"). */
+  kind?: string;
 }
 
 export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;
+
+/** A creature template as a `rpg stat.template` block holds it (see the plugin's template-block.ts). */
+export interface TemplateBlockData {
+  name: string;
+  appliesText: string;
+  applies: {
+    types: string[];
+    other: string[];
+    trueDragon?: boolean;
+    ages?: string[];
+    minInt?: number;
+    minCr?: number;
+    maxCr?: number;
+    maxSize?: string;
+  };
+  choose?: Array<{ key: string; damage: string[] }>;
+  chooseText?: string;
+  changes: Array<{ stat: string; [key: string]: unknown }>;
+  features: Array<{
+    id: string;
+    name: string;
+    type: string;
+    formulas?: Record<string, string>;
+    optional?: boolean;
+    choice?: string;
+    defence?: string;
+  }>;
+  alters?: Array<{ name: string; text: string }>;
+  rules?: string[];
+  loses?: string;
+  featureNote: string;
+}
+
+/** A `stat.template` block's YAML read into a template. */
+export declare function parseTemplateBlock(raw: Record<string, unknown>): TemplateBlockData;
+
+/** The template sheet: its changes, and Try on (the template on a creature of the bestiary, Save as homebrew). */
+export declare const StatblockTemplate: FunctionComponent<{ block: TemplateBlockData; sourcePath?: string }>;
+
+/** A summon as a `rpg stat.summon` block holds it (see the plugin's summon.ts). */
+export interface SummonBlockData {
+  name: string;
+  type: string;
+  summoner?: string;
+  params: Array<{
+    name: string;
+    label?: string;
+    default?: number;
+    min?: number;
+    max?: number;
+    ordinal?: boolean;
+    from?: string;
+  }>;
+  forms: Array<{ name: string; stats?: Record<string, string>; features?: Array<Record<string, unknown>> }>;
+  stats: Record<string, string>;
+  abilities: Record<string, number>;
+  features: Array<Record<string, unknown>>;
+  apply?: { templates: string[]; types?: string[]; ac?: string; damage?: string; tempHp?: string };
+  text?: string;
+}
+
+/** A `stat.summon` block's YAML read into a summon. */
+export declare function parseSummonBlock(raw: Record<string, unknown>): SummonBlockData;
+
+/** The summon sheet: numbers filled for the summoner, the circle and the form, each formula on a tap. */
+export declare const StatblockSummon: FunctionComponent<{ block: SummonBlockData; sourcePath?: string }>;
 
 /** Map a creature note's frontmatter/fence into structured monster data. */
 export declare function mapMonster(self: Record<string, unknown>): StatMonsterData;

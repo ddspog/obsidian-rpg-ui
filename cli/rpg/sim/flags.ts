@@ -311,7 +311,8 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     name: "force",
     kind: "boolean",
     default: false,
-    description: "`catalog check`: simulate every entry again, not only the ones that need it",
+    description:
+      "`catalog check`: simulate every entry again, not only the ones that need it; `templates --write`: write every template note's stat.template block again from its prose",
   },
   {
     name: "refresh",
@@ -933,7 +934,7 @@ const HOMEBREW_FLAGS = [
 ];
 
 /** The flags `templates` takes. */
-const TEMPLATES_FLAGS = ["write", "vault", "json", "help"];
+const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
 
 /** The flags `build` takes. */
 const BUILD_FLAGS = [

@@ -383,7 +383,10 @@ export function choicesOf(text: string): TemplateChoice[] {
 export function appliesOf(text: string): TemplateApplies {
   const t = plainText(text).toLowerCase();
   const out: TemplateApplies = { types: [], other: [] };
-  const what = t.replace(/^.*?applied (?:only )?to\s+/, "").replace(/\.$/, "");
+  const full = t.replace(/^.*?applied (?:only )?to\s+/, "").replace(/\.$/, "");
+  // "any creature, but a leader must be able to communicate with its allies": the condition is one.
+  const but = full.match(/,\s*but\s+(.+)$/);
+  const what = but ? full.slice(0, but.index) : full;
   if (/true dragon/.test(what)) {
     out.trueDragon = true;
     out.types = ["dragon"];
@@ -408,7 +411,7 @@ export function appliesOf(text: string): TemplateApplies {
     .slice(1)
     .map((s) => s.replace(/^(and\s+)/, "").trim())
     .filter((s) => !/int of|cr of|cr no higher/.test(s));
-  out.other = rest;
+  out.other = but ? [...rest, but[1]] : rest;
   return out;
 }
 
@@ -448,9 +451,19 @@ export interface FormulaContext {
   perception?: number;
 }
 
-/** A book formula's value, or undefined for one that needs a person ("[Size]", "[Beast]"). */
-export function evaluateFormula(formula: string, ctx: FormulaContext): number | undefined {
+/** A book formula's value (a number, or dice such as "5 (2d4)"), or undefined for one that needs a person ("[Size]", "[Beast]"). */
+export function evaluateFormula(formula: string, ctx: FormulaContext): number | string | undefined {
   const f = plainText(formula).toLowerCase();
+  // "a number of d4s equal to one half the leader's CR, rounded down, minimum of 1"
+  const dice = f.match(
+    /number of d(\d+)s equal to (?:one )?half (?:the [a-z' ]+?'s )?cr, rounded down(?:, minimum of (\d+))?/
+  );
+  if (dice) {
+    const n = Math.max(Number(dice[2] ?? 1), Math.floor(ctx.cr / 2));
+    return `${Math.floor((n * (Number(dice[1]) + 1)) / 2)} (${n}d${dice[1]})`;
+  }
+  // Words the feature keeps as they are: "[damage of the attack's type]".
+  if (/^damage of the attack's type$/.test(f)) return "damage of the attack's type";
   const mod = (k: string) => ctx.abilities[k] ?? 0;
   const pct = f.match(/(\d+) percent of (?:its |the [a-z' ]+?'s )?(hp maximum|cr)/);
   if (pct) {

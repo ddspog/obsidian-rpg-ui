@@ -50,9 +50,15 @@ export function normalizeStatValue(raw: unknown): string {
   return String(raw);
 }
 
+/** What a sheet marks on a statblock: the values a template changed, and what they were. */
+export interface StatMarks {
+  changed: string[];
+  was: Record<string, unknown>;
+}
+
 export function StatValue({ value, sourcePath }: { value: unknown; sourcePath?: string }) {
   const str = normalizeStatValue(value);
-  if (/\[\[/.test(str)) {
+  if (/\[\[|class="rpg-formula"/.test(str)) {
     return <Markdown source={str} sourcePath={sourcePath} />;
   }
   return <>{str}</>;
@@ -114,6 +120,13 @@ export function HabitatTreasureLine({
 }
 
 export function FeatureEntry({ feature, sourcePath }: { feature: ResolvedStatFeature; sourcePath?: string }) {
+  if (feature.added) {
+    return (
+      <div className="rpg-statblock-added">
+        <FeatureEntry feature={{ ...feature, added: false }} sourcePath={sourcePath} />
+      </div>
+    );
+  }
   if (!feature.name) {
     if (!feature.text) return null;
     return (
@@ -142,10 +155,12 @@ export function FeatureEntry({ feature, sourcePath }: { feature: ResolvedStatFea
 export function AbilitiesTable({
   abilities,
   unknown,
+  marks,
 }: {
   abilities: AbilityScores;
   /** Scores not known (an import could not read them): "—" in place of a modifier. */
   unknown?: Array<keyof AbilityScores>;
+  marks?: StatMarks;
 }) {
   const keys = ["str", "dex", "con", "int", "wis", "cha"] as const;
   return (
@@ -165,7 +180,17 @@ export function AbilitiesTable({
                 —
               </td>
             ) : (
-              <td key={k}>{formatModifier(abilities[k])}</td>
+              <td
+                key={k}
+                className={marks?.changed.includes(`abilities.${k}`) ? "rpg-statblock-changed" : undefined}
+                title={
+                  marks?.changed.includes(`abilities.${k}`)
+                    ? `was ${formatModifier(Number(marks.was[`abilities.${k}`] ?? 0))}`
+                    : undefined
+                }
+              >
+                {formatModifier(abilities[k])}
+              </td>
             )
           )}
         </tr>
@@ -218,10 +243,27 @@ export function renderStatEntries(
   entries: [string, unknown][],
   labels: Record<string, string>,
   paired: Set<string>,
-  sourcePath?: string
+  sourcePath?: string,
+  marks?: StatMarks
 ): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
   let i = 0;
+  // A value a template changed: marked, with the one it had struck beside it.
+  const dd = (key: string, value: unknown) => {
+    const changed = marks?.changed.includes(key);
+    const was = marks?.was[key];
+    return (
+      <dd className={changed ? "rpg-statblock-changed" : undefined}>
+        <StatValue value={value} sourcePath={sourcePath} />
+        {changed && was !== undefined && normalizeStatValue(was) && normalizeStatValue(was) !== "—" ? (
+          <>
+            {" "}
+            <s className="rpg-statblock-was">{normalizeStatValue(was)}</s>
+          </>
+        ) : null}
+      </dd>
+    );
+  };
 
   while (i < entries.length) {
     const [key, value] = entries[i];
@@ -230,15 +272,11 @@ export function renderStatEntries(
         <div key={`pair-${i}`} className="rpg-statblock-stats-pair">
           <div>
             <dt>{labels[key] ?? key}</dt>
-            <dd>
-              <StatValue value={value} sourcePath={sourcePath} />
-            </dd>
+            {dd(key, value)}
           </div>
           <div>
             <dt>{labels[entries[i + 1][0]] ?? entries[i + 1][0]}</dt>
-            <dd>
-              <StatValue value={entries[i + 1][1]} sourcePath={sourcePath} />
-            </dd>
+            {dd(entries[i + 1][0], entries[i + 1][1])}
           </div>
         </div>
       );
@@ -247,9 +285,7 @@ export function renderStatEntries(
       elements.push(
         <div key={key}>
           <dt>{labels[key] ?? key}</dt>
-          <dd>
-            <StatValue value={value} sourcePath={sourcePath} />
-          </dd>
+          {dd(key, value)}
         </div>
       );
       i++;

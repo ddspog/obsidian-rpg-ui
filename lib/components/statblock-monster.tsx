@@ -11,6 +11,7 @@ import {
   HabitatTreasureLine,
   InlineWikilinks,
   renderStatEntries,
+  type StatMarks,
 } from "./statblock-shared";
 
 export interface StatblockMonsterProps {
@@ -40,6 +41,14 @@ export interface StatblockMonsterProps {
   role?: string;
   /** Its subrole as written (`subrole:`). */
   subrole?: string;
+  /** Values to mark as changed, with what they were (a template sheet's Try on). */
+  marks?: StatMarks;
+  /** No role chip (a summon, whose role its caller decides). */
+  hideRole?: boolean;
+  /** A kind shown in the title bar ("Summon"). */
+  kind?: string;
+  /** Controls shown under the type line (a summon's circle, form, summoner). */
+  controls?: React.ReactNode;
 }
 
 const STAT_LABELS: Record<string, string> = {
@@ -74,18 +83,24 @@ export function StatblockMonster({
   sourcePath,
   role,
   subrole,
+  marks,
+  kind,
+  controls,
+  hideRole,
 }: StatblockMonsterProps) {
   const { traits, sections } = React.useMemo(() => groupFeatures(features), [features]);
   // A guess needs the features: until they are resolved only a written role shows.
   const guesses = settingsStore.getSettings()?.statblockRoleGuesses ?? "sure";
   const shown = React.useMemo(() => {
     const found =
-      role || features.length > 0 ? statblockRole({ name, type, cr, stats, features, role, subrole }) : undefined;
+      !hideRole && (role || features.length > 0)
+        ? statblockRole({ name, type, cr, stats, features, role, subrole })
+        : undefined;
     // A guess shows as the settings say: every one, the fairly sure ones, or none.
     if (!found || found.written) return found;
     if (guesses === "none" || (guesses === "sure" && found.confidence === "low")) return undefined;
     return found;
-  }, [name, type, cr, stats, features, role, subrole, guesses]);
+  }, [name, type, cr, stats, features, role, subrole, guesses, hideRole]);
   const [explained, setExplained] = React.useState(false);
   // A long name: the role chip leaves the title bar for the type line, so the name keeps the bar.
   const [roleBelow, setRoleBelow] = React.useState(false);
@@ -174,6 +189,7 @@ export function StatblockMonster({
           </h3>
           {/* Role and CR stay together; when the name would wrap beside them, the role moves to the type line. */}
           <span className="rpg-statblock-header-meta">
+            {kind ? <span className="rpg-statblock-kind">{kind}</span> : null}
             {shown && !roleBelow ? roleChip : null}
             {cr ? (
               <span className="rpg-statblock-cr" ref={crRef}>
@@ -184,7 +200,7 @@ export function StatblockMonster({
         </header>
       )}
 
-      <p className="rpg-statblock-subtitle">
+      <p className={`rpg-statblock-subtitle${marks?.changed.includes("type") ? " rpg-statblock-changed" : ""}`}>
         <em>
           <InlineWikilinks text={type} />
         </em>
@@ -204,11 +220,13 @@ export function StatblockMonster({
         </p>
       ) : null}
 
+      {controls}
+
       <dl className="rpg-statblock-stats">
-        {renderStatEntries(Object.entries(displayStats), STAT_LABELS, PAIRED_STATS, sourcePath)}
+        {renderStatEntries(Object.entries(displayStats), STAT_LABELS, PAIRED_STATS, sourcePath, marks)}
       </dl>
 
-      <AbilitiesTable abilities={abilities} unknown={unknownAbilities} />
+      <AbilitiesTable abilities={abilities} unknown={unknownAbilities} marks={marks} />
 
       <FeatureSections traits={traits} sections={sections} sourcePath={sourcePath} />
 

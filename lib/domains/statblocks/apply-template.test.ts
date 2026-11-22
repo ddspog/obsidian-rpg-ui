@@ -136,9 +136,7 @@ describe("applyTemplate", () => {
     );
     const none = applyTemplate(OWLBEAR, infused, { featureNote: NOTE, cr: 3, baseFeatures: [] });
     expect(none.manual[0]).toMatch(/^Choose with --choose: air \(lightning or thunder\), fire \(acid or fire\)/);
-    expect(none.manual).toContain(
-      "Resistant: The creature is resistant to the type of damage you didn't choose. In addition, it is resistant to the charmed condition."
-    );
+    expect(none.manual).toContain("Resistant: + the other damage of your choice");
 
     const air = applyTemplate(OWLBEAR, infused, { choice: "thunder", featureNote: NOTE, cr: 3, baseFeatures: [] });
     expect(air.choice).toEqual({ key: "air", damage: "thunder" });

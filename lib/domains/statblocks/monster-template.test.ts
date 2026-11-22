@@ -166,6 +166,14 @@ describe("template terms", () => {
     });
   });
 
+  it('keeps a condition after "but" whole', () => {
+    expect(
+      appliesOf(
+        "This template can be applied to any creature, but a leader must be able to communicate with its allies."
+      )
+    ).toMatchObject({ types: [], other: ["a leader must be able to communicate with its allies"] });
+  });
+
   it("checks a creature against them", () => {
     const dragon = appliesOf("This template can be applied to any ancient true dragon.");
     expect(templateFits(dragon, { name: "Ancient Red Dragon", type: "Gargantuan Dragon", cr: 24, int: 4 }).fits).toBe(
@@ -220,6 +228,8 @@ describe("evaluateFormula", () => {
     expect(f("the same DC as its Frightful Presence or similar feature")).toBe(16);
     expect(f("creature's PB")).toBe(4);
     expect(f("Size")).toBeUndefined();
+    expect(f("a number of d4s equal to one half the leader's CR, rounded down, minimum of 1")).toBe("10 (4d4)");
+    expect(f("damage of the attack's type")).toBe("damage of the attack's type");
   });
 });
 

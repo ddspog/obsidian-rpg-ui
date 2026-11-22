@@ -337,6 +337,14 @@ export async function evaluateSystemBundle(
 
           const statblockGroupComponent = require("../components/statblock-group");
 
+          const statblockTemplateComponent = require("../components/statblock-template");
+
+          const statblockSummonComponent = require("../components/statblock-summon");
+
+          const templateBlockDomain = require("../domains/statblocks/template-block");
+
+          const summonDomain = require("../domains/statblocks/summon");
+
           const monsterFields = require("../domains/statblocks/monster-fields");
 
           const statblockResolver = require("../domains/statblocks/resolve-features");
@@ -399,6 +407,10 @@ export async function evaluateSystemBundle(
             StatblockCategory: statblockGroupComponent.StatblockCategory,
             StatblockGroup: statblockGroupComponent.StatblockGroup,
             mapMonster: monsterFields.mapMonster,
+            StatblockTemplate: statblockTemplateComponent.StatblockTemplate,
+            StatblockSummon: statblockSummonComponent.StatblockSummon,
+            parseTemplateBlock: templateBlockDomain.parseTemplateBlock,
+            parseSummonBlock: summonDomain.parseSummonBlock,
             mapCategory: monsterFields.mapCategory,
             mapGroup: monsterFields.mapGroup,
             resolveStatFeatures: statblockResolver.resolveStatFeatures,

@@ -81,6 +81,8 @@ export interface ResolvedStatFeature {
   params?: Record<string, unknown>;
   /** Where it's described — a note, and the block in it (`Humanoid Traits#Mining Pick`). */
   source?: string;
+  /** Added by a template (a sheet's Try on marks it). */
+  added?: boolean;
 }
 
 export type StatFeatureCategory = "action" | "bonus" | "reaction" | "legendary";
