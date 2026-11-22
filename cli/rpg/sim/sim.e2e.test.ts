@@ -5,8 +5,10 @@ import { parseCatalog } from "lib/domains/encounter-catalog/catalog";
 import { parseDamage } from "lib/domains/session-log/session-actions";
 import type { Ctx } from "../app";
 import { characterSheet } from "../commands/character";
+import { simCalibrate } from "./calibrate";
 import { createSimCatalog } from "./catalog";
 import { simMain } from "./dispatch";
+import { parseSimArgv } from "./flags";
 import { DEFAULT_PARTY } from "./party";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
@@ -64,6 +66,21 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(result.code, result.err).toBe(0);
     return { text: result.out, doc: JSON.parse(result.out) as Record<string, any> };
   };
+
+  it("calibrate sets the logged kobold fight against the simulator's run of it", async () => {
+    const { doc } = await simCalibrate(ctx, parseSimArgv(["calibrate", "tales-of-the-valiant/binder"]).options);
+    const d = doc as Record<string, any>;
+    const fight = d.fights.find((f: any) => f.map === "Clearing");
+    expect(fight.foes).toHaveLength(4);
+    expect(fight.pcs).toHaveLength(4);
+    expect(fight.actual.rounds).toBe(2);
+    expect(fight.actual.knockedOut).toEqual([]);
+    expect(fight.actual.hpLost).toBeGreaterThan(0.1);
+    expect(fight.actual.hpLost).toBeLessThan(0.4);
+    expect(fight.percentile).toBeGreaterThanOrEqual(0);
+    expect(fight.percentile).toBeLessThanOrEqual(1);
+    expect(d.notes.join(" ")).toMatch(/too few to tune/);
+  }, 120_000);
 
   it("is byte-identical for one seed, differs for another, and finishes 200 trials inside 30 seconds", async () => {
     const started = Date.now();

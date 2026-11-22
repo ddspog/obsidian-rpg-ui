@@ -577,3 +577,51 @@ describe("simulateTrial: termination", () => {
     expect(simulateTrial(actors, script(neutral(2)), 4)).toMatchObject({ outcome: "stalemate", rounds: 4 });
   });
 });
+
+describe("use limits and the size of an area", () => {
+  const breath = (extra: Partial<SaveAction>): SaveAction => ({
+    kind: "save",
+    name: "Breath (Recharge 6)",
+    dc: 30,
+    ability: "dex",
+    damage: { expr: "10" },
+    onSuccess: "none",
+    area: true,
+    circle: 0,
+    ...extra,
+  });
+
+  it("does not breathe again until the recharge comes up", () => {
+    const pc = actor({ name: "Tank", side: "party", hp: 1000 });
+    const dragon = actor({
+      name: "Dragon",
+      side: "monsters",
+      hp: 1000,
+      init: 5,
+      actions: [breath({ limit: { recharge: 6 } })],
+    });
+    // The dragon acts first; its recharge d6 always shows 1, so it breathes once in five rounds.
+    const r = simulateTrial([pc, dragon], () => face(1, 6) / 1, 5);
+    expect(r.outcome).toBe("stalemate");
+    expect(r.partyHpRemaining).toBe(990);
+  });
+
+  it("uses a once-a-day action once", () => {
+    const pc = actor({ name: "Tank", side: "party", hp: 1000 });
+    const dragon = actor({
+      name: "Dragon",
+      side: "monsters",
+      hp: 1000,
+      init: 5,
+      actions: [breath({ limit: { perDay: 1 } })],
+    });
+    expect(simulateTrial([pc, dragon], createSeededRng(3), 5).partyHpRemaining).toBe(990);
+  });
+
+  it("catches as many as its size says", () => {
+    const party = ["A", "B", "C", "D"].map((name) => actor({ name, side: "party", hp: 100 }));
+    const dragon = actor({ name: "Dragon", side: "monsters", hp: 1000, init: 5, actions: [breath({ targets: 2 })] });
+    const r = simulateTrial([...party, dragon], createSeededRng(1), 1);
+    expect(r.partyHpRemaining).toBe(400 - 20);
+  });
+});

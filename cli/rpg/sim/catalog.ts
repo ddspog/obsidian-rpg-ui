@@ -85,6 +85,8 @@ interface EntryView {
     /** The state with every rolled count at its fewest / most. */
     atMin?: string;
     atMax?: string;
+    /** Near the fit's edge even after a longer run: another seed may call it the other way. */
+    borderline?: boolean;
     /** Why the fit is out of date, when it is. */
     stale?: string;
   };
@@ -108,6 +110,8 @@ export interface BriefEntryView {
   /** The fit with every rolled count at its fewest / most, when a count is rolled. */
   atMin?: string;
   atMax?: string;
+  /** Near the fit's edge: another seed may call it the other way. */
+  borderline?: boolean;
   /** The session it was last run at. */
   lastUsedSession?: number;
   /** The table row's own words. */
@@ -135,6 +139,7 @@ export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContex
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
           ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
+          ...(entry.fit.borderline ? { borderline: true } : {}),
         }
       : {}),
     ...(reason ? { stale: reason } : {}),
@@ -159,6 +164,7 @@ function viewOf(entry: CatalogEntry, ctx: FitContext): EntryView {
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
           ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
+          ...(entry.fit.borderline ? { borderline: true } : {}),
           ...(reason ? { stale: reason } : {}),
         }
       : null,
@@ -608,6 +614,7 @@ async function check(ctx: Ctx, options: SimOptions, now: () => string) {
     seed: options.seed,
     trials: options.trials,
     checked: result.checked,
+    ...(result.borderlineRuns > 0 ? { borderlineRuns: result.borderlineRuns, borderline: result.borderline } : {}),
     unchanged: result.unchanged,
     remaining: result.remaining,
     otherTier: result.otherTier,

@@ -30,6 +30,10 @@ export interface FitState {
   /** When a count is rolled (dice), the state with every rolled count at its fewest and at its most. */
   atMin?: FitStateName;
   atMax?: FitStateName;
+  /** The trials the state rests on, when not the default (a borderline entry is run again with more). */
+  trials?: number;
+  /** Still within two standard errors of the fit's edge after the longer run: another seed may call it the other way. */
+  borderline?: boolean;
 }
 
 /** Why an entry's fit has to be computed again; `null` means it is current. */

@@ -18,6 +18,7 @@ import {
   type MultiattackAction,
   type SaveAction,
   type SkipReason,
+  type UseLimit,
   type WeaponAttackAction,
 } from "./types";
 
@@ -85,10 +86,31 @@ function saveFrom(name: string, text: string): SaveAction | null {
     dc: parseInt(save[1], 10),
     ability,
     damage,
-    onSuccess: /half as much damage/i.test(text) ? "half" : "none",
+    onSuccess: /half (?:as much|the) damage/i.test(text) ? "half" : "none",
     area: /\b(?:each|all|every) creatures?\b/i.test(text),
+    ...areaTargets(text),
     circle: 0,
   };
+}
+
+/** The creatures an area catches, by its size (the usual targets-in-area table); none when it gives no size. */
+export function areaTargets(text: string): { targets?: number } {
+  const m = text.match(/(\d+)-foot(?:-radius)?\s+(cone|cube|square|line|sphere|cylinder|radius|emanation|burst)/i);
+  if (!m) return {};
+  const size = parseInt(m[1], 10);
+  const shape = m[2].toLowerCase();
+  const per = shape === "cone" ? 10 : shape === "line" ? 30 : 5;
+  return { targets: Math.max(1, Math.ceil(size / per)) };
+}
+
+/** "(Recharge 5-6)", "(Recharge 6)", "(2/Day)" in a feature's name or its first words. */
+export function useLimitOf(name: string, text: string): UseLimit | undefined {
+  const where = `${name} ${text.slice(0, 40)}`;
+  const recharge = where.match(/\(Recharge (\d)(?:\s*[-\u2013]\s*\d)?\)/i);
+  if (recharge) return { recharge: parseInt(recharge[1], 10) };
+  const perDay = where.match(/\((\d+)\/Day\)/i);
+  if (perDay) return { perDay: parseInt(perDay[1], 10) };
+  return undefined;
 }
 
 /**
@@ -107,10 +129,13 @@ export function classifyMonsterFeature(feature: MonsterFeatureInput): MonsterFea
     const multiattack = parseMultiattack(text);
     return multiattack ? { multiattack } : UNSUPPORTED;
   }
+  // "Two kobolds within 5 feet of each other can combine their actions": it needs a partner the engine does not pair.
+  if (/\bcombine their actions\b/i.test(text)) return UNSUPPORTED;
+  const limit = useLimitOf(name, text);
   const attack = attackFrom(name, text);
-  if (attack) return { action: attack };
+  if (attack) return { action: limit ? { ...attack, limit } : attack };
   const save = saveFrom(name, text);
-  if (save) return { action: save };
+  if (save) return { action: limit ? { ...save, limit } : save };
   return UNSUPPORTED;
 }
 

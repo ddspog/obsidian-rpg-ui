@@ -20,12 +20,19 @@ export interface DamageSpec {
   type?: string;
 }
 
+/** How often a monster's action comes round: "(Recharge 5-6)" (back on a d6 of `recharge` or more at the start of its turn) or "(2/Day)". */
+export interface UseLimit {
+  recharge?: number;
+  perDay?: number;
+}
+
 /** One weapon attack: `+hitBonus` against AC, then `damage`. */
 export interface WeaponAttackAction {
   kind: "weapon";
   name: string;
   hitBonus: number;
   damage: DamageSpec;
+  limit?: UseLimit;
 }
 
 /** A multiattack: several weapon swings taken as one action. */
@@ -44,7 +51,7 @@ export interface SpellAttackAction {
   circle: number;
 }
 
-/** A save-based effect, area (every living enemy) or single-target. */
+/** A save-based effect, area or single-target. */
 export interface SaveAction {
   kind: "save";
   name: string;
@@ -53,7 +60,14 @@ export interface SaveAction {
   damage: DamageSpec;
   onSuccess: "half" | "none";
   area: boolean;
+  /**
+   * How many creatures an area catches, from its size by the usual table (a cone: its length / 10; a cube
+   * or square: its side / 5; a sphere, cylinder or radius: its radius / 5; a line: its length / 30; rounded
+   * up). Absent: every living enemy.
+   */
+  targets?: number;
   circle: number;
+  limit?: UseLimit;
 }
 
 /** A healing option; `expr` is the full roll including the casting modifier. */

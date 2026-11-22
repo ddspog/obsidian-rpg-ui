@@ -29,6 +29,8 @@ export interface SimDeps {
   templates?: SimHandler;
   /** `rpg sim lineages …`. */
   lineages?: SimHandler;
+  /** `rpg sim calibrate …`. */
+  calibrate?: SimHandler;
 }
 
 /**
@@ -71,10 +73,12 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
                         ? deps.templates
                         : subcommand === "lineages"
                           ? deps.lineages
-                          : undefined;
+                          : subcommand === "calibrate"
+                            ? deps.calibrate
+                            : undefined;
     if (!handler) {
       return usage(
-        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, templates, lineages, catalog, roles or equivalents).`
+        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, templates, lineages, calibrate, catalog, roles or equivalents).`
       );
     }
     validateForSubcommand(subcommand, options);

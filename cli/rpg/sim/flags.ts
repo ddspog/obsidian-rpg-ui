@@ -675,7 +675,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     subcommand === "equivalents" ||
     subcommand === "build" ||
     subcommand === "homebrew" ||
-    subcommand === "templates";
+    subcommand === "templates" ||
+    subcommand === "calibrate";
   if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
@@ -949,6 +950,9 @@ const HOMEBREW_FLAGS = [
   "help",
 ];
 
+/** The flags `calibrate` takes. */
+const CALIBRATE_FLAGS = ["seed", "trials", "rounds", "difficulty", "vault", "json", "help"];
+
 /** The flags `templates` and `lineages` take. */
 const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
 
@@ -1041,6 +1045,11 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
     if ((options.choose !== undefined || options.traits.length) && options.template === undefined)
       throw new UsageError("--choose and --trait go with --template.");
   }
+  if (subcommand === "calibrate") {
+    for (const flag of options.given) {
+      if (!CALIBRATE_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`calibrate\`.`);
+    }
+  }
   if (subcommand === "lineages") {
     for (const flag of options.given) {
       if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`lineages\`.`);
@@ -1125,6 +1134,9 @@ Usage:
   rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--template T [--choose O] [--trait F]...] [--cr C] [--type "<type line>"] [--habitat H] [--write]
     (a new creature from a statblock: reflavoured, a role template, a creature template, a new CR;
      a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim calibrate [<session note or folder>...] [--seed N] [--trials N] [--rounds N] [--difficulty D]
+    (each fight logged in the session notes against the simulator's run of the same fight: HP lost, rounds,
+     knockouts, and where the real fight falls among the simulated ones; read-only)
   rpg sim lineages [--write [--force]]
     (lineages as templates for Humanoid (Any Lineage) NPCs: the Monster Vault's NPC Features rows and the lineage
      notes' traits reworded; --write writes each one's stat.template block and the Lineage NPC Traits note)

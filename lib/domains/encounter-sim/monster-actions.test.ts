@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bindMultiattack, classifyMonsterFeature } from "./monster-actions";
+import { areaTargets, bindMultiattack, classifyMonsterFeature, useLimitOf } from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
 
 // Real prose from the Tales of the Valiant Monster Vault notes (feature.details bodies).
@@ -87,8 +87,28 @@ describe("classifyMonsterFeature: save area effects", () => {
         damage: { expr: "12d8", type: "lightning" },
         onSuccess: "half",
         area: true,
+        targets: 1,
         circle: 0,
+        limit: { recharge: 5 },
       },
+    });
+  });
+
+  it("reads a use limit and the size of an area", () => {
+    expect(useLimitOf("Fire Breath (Recharge 6)", "")).toEqual({ recharge: 6 });
+    expect(useLimitOf("Stinking Cloud (1/Day)", "")).toEqual({ perDay: 1 });
+    expect(useLimitOf("Bite", "")).toBeUndefined();
+    expect(areaTargets("in a 15-foot cone")).toEqual({ targets: 2 });
+    expect(areaTargets("in a 20-foot-radius sphere")).toEqual({ targets: 4 });
+    expect(areaTargets("in a 60-foot line that is 5 feet wide")).toEqual({ targets: 2 });
+    expect(areaTargets("each creature within 10 feet")).toEqual({});
+  });
+
+  it("leaves a feature that needs a partner unsupported", () => {
+    const text =
+      "Two kobolds within 5 feet of each other can combine their actions to split the earth in a 20-foot line. Each creature in that line must make a DC 13 Dexterity saving throw, taking 7 (2d6) bludgeoning damage.";
+    expect(classifyMonsterFeature({ name: "Small but Fierce", type: "action", text })).toEqual({
+      skip: "unsupported-feature",
     });
   });
 

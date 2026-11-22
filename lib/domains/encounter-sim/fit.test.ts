@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyFit, FIT_TOLERANCE, OUTCOME_PROFILES, outcomeDistance } from "./fit";
+import { classifyFit, FIT_TOLERANCE, fitMargin, OUTCOME_PROFILES, outcomeDistance } from "./fit";
 
 describe("OUTCOME_PROFILES", () => {
   it("holds the three profiles", () => {
@@ -47,5 +47,22 @@ describe("classifyFit", () => {
     expect(classifyFit({ avgHpLost: 0.4, tpkRate: 0.5 }, "challenging")).toBe("too-hard");
     expect(classifyFit({ avgHpLost: 0.6, tpkRate: 0 }, "easy")).toBe("too-hard");
     expect(classifyFit({ avgHpLost: 1, tpkRate: 1 }, "deadly")).toBe("too-hard");
+  });
+});
+
+describe("fitMargin", () => {
+  it("calls a fit near the tolerance borderline, and a clear one not", () => {
+    // challenging: toll 0.5, tpk 0.05; distance 0.25 + 2 * 0.02 = 0.29, just inside 0.3
+    const near = fitMargin({ avgHpLost: 0.25, tpkRate: 0.07 }, "challenging", { trials: 200, hpLostStdDev: 0.2 });
+    expect(near.distance).toBeCloseTo(0.29, 6);
+    expect(near.borderline).toBe(true);
+    const clear = fitMargin({ avgHpLost: 0.5, tpkRate: 0.05 }, "challenging", { trials: 200, hpLostStdDev: 0.2 });
+    expect(clear.borderline).toBe(false);
+  });
+
+  it("narrows with more trials", () => {
+    const at = (trials: number) =>
+      fitMargin({ avgHpLost: 0.3, tpkRate: 0.05 }, "challenging", { trials, hpLostStdDev: 0.2 }).stdErr;
+    expect(at(800)).toBeCloseTo(at(200) / 2, 6);
   });
 });

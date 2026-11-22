@@ -233,6 +233,8 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
       checkedAtSession: f.checkedAtSession,
       ...(f.atMin !== undefined ? { atMin: f.atMin } : {}),
       ...(f.atMax !== undefined ? { atMax: f.atMax } : {}),
+      ...(f.trials !== undefined ? { trials: f.trials } : {}),
+      ...(f.borderline ? { borderline: true } : {}),
     };
   }
   if (entry.uses !== undefined) out.uses = entry.uses;
@@ -430,9 +432,12 @@ function parseFit(raw: unknown, fail: (m: string) => never): FitState {
   };
   const atMin = bound("atMin");
   const atMax = bound("atMax");
+  const trials = typeof raw.trials === "number" && Number.isFinite(raw.trials) ? raw.trials : undefined;
   return {
     ...(atMin !== undefined ? { atMin } : {}),
     ...(atMax !== undefined ? { atMax } : {}),
+    ...(trials !== undefined ? { trials } : {}),
+    ...(raw.borderline === true ? { borderline: true } : {}),
     state: state as FitState["state"],
     stamp,
     difficulty: difficulty as Difficulty,

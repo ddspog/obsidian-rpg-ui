@@ -15,6 +15,7 @@ import {
 } from "lib/domains/encounter-catalog/fit-state";
 import { partyStamp } from "lib/domains/encounter-catalog/party-stamp";
 import { diceRange } from "lib/domains/encounter-catalog/words";
+import { fitMargin } from "lib/domains/encounter-sim/fit";
 import { runMonteCarlo } from "lib/domains/encounter-sim/montecarlo";
 import { partyProfile, type PartyProfile } from "lib/domains/encounter-sim/party-profile";
 import type { CombatActor } from "lib/domains/encounter-sim/types";
@@ -57,6 +58,10 @@ export async function loadPartyState(
   };
 }
 
+/** A borderline entry is run again with this many times the trials, up to the most below. */
+export const BORDERLINE_FACTOR = 4;
+export const MAX_BORDERLINE_TRIALS = 2000;
+
 export interface CheckParams {
   seed: number;
   trials: number;
@@ -79,6 +84,10 @@ export interface CheckResult {
   /** Entries that need a check but were left for the next run by `limit`. */
   remaining: number;
   errors: Array<{ id: string; error: string }>;
+  /** Entries run again with more trials because their first run sat near the fit's edge. */
+  borderlineRuns: number;
+  /** Entries still near the edge after that (marked `borderline` in their fit). */
+  borderline: number;
   /** Entries of another tier of play, not simulated (see --tiers). */
   otherTier: number;
   partition: FitPartition;
@@ -95,6 +104,7 @@ export async function checkEntries(
   const monsters = new Map<string, LoadedMonster>();
   const errors: CheckResult["errors"] = [];
   let checked = 0;
+  let borderlineRuns = 0;
   let unchanged = 0;
   let remaining = 0;
   let otherTier = 0;
@@ -146,16 +156,31 @@ export async function checkEntries(
       continue;
     }
 
-    const simulate = (counts: number[]) =>
+    const simulate = (counts: number[], trials = params.trials) =>
       runMonteCarlo({
         party: party.actors,
         monsters: groups.map((g, i) => ({ actor: g.actor, count: counts[i] })),
         seed: params.seed,
-        trials: params.trials,
+        trials,
         roundCap: params.rounds,
       });
-    const summary = simulate(groups.map((g) => g.count));
+    let summary = simulate(groups.map((g) => g.count));
+    let trials = params.trials;
+    // Near the fit's edge another seed could call it the other way: run it again with more trials (item 24).
+    if (fitMargin(summary, catalog.difficulty, { trials, hpLostStdDev: summary.hpLostStdDev }).borderline) {
+      trials = Math.min(MAX_BORDERLINE_TRIALS, params.trials * BORDERLINE_FACTOR);
+      if (trials > params.trials)
+        summary = simulate(
+          groups.map((g) => g.count),
+          trials
+        );
+      borderlineRuns += 1;
+    }
     const fit = fitStateFrom(summary, catalog.difficulty, fitContext.stamp, fitContext.session, params.today);
+    if (trials !== params.trials) fit.trials = trials;
+    if (fitMargin(summary, catalog.difficulty, { trials, hpLostStdDev: summary.hpLostStdDev }).borderline) {
+      fit.borderline = true;
+    }
     // A rolled count ("1d4 + 1 grimlocks") is stored at its average; the fewest and the most it can be are
     // simulated too, so a fit that turns too hard on a high roll says so.
     const ranges = groups.map((g) => (g.dice ? diceRange(g.dice) : null));
@@ -176,6 +201,8 @@ export async function checkEntries(
   return {
     catalog: next,
     checked,
+    borderlineRuns,
+    borderline: entries.filter((e) => e.fit?.borderline).length,
     unchanged,
     remaining,
     errors,

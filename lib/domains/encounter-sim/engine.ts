@@ -23,14 +23,25 @@ import type {
  *       (doubled on a natural 20; none for a flat amount);
  *     - save: the damage dice once (rolled once per cast and applied to every
  *       target, halved per target that saves), then one `d20` per target, in
- *       initiative order (a non-area save has one target).
+ *       initiative order (a non-area save has one target; an area as many as
+ *       its size catches, the first living enemies in initiative order).
+ *  3. At the start of a combatant's turn, one `d6` per action of its that is
+ *     waiting to recharge, in action order (none for an actor with no
+ *     "(Recharge …)" action, so their draws are as before).
  */
 
 interface Combatant {
   actor: CombatActor;
   hp: number;
   slots: number[];
+  /** Actions used and waiting for their recharge roll. */
+  spent: Set<ModelledAction>;
+  /** Uses left of the "(N/Day)" actions. */
+  usesLeft: Map<ModelledAction, number>;
 }
+
+const limitOf = (action: ModelledAction) =>
+  action.kind === "weapon" || action.kind === "save" ? action.limit : undefined;
 
 /** A slotted action (circle above 0) is only available while a slot remains. */
 function hasSlot(c: Combatant, circle: number): boolean {
@@ -42,6 +53,9 @@ function spendSlot(c: Combatant, circle: number): void {
 }
 
 function isAvailable(c: Combatant, action: ModelledAction): boolean {
+  if (c.spent.has(action)) return false;
+  const perDay = limitOf(action)?.perDay;
+  if (perDay !== undefined && (c.usesLeft.get(action) ?? perDay) <= 0) return false;
   switch (action.kind) {
     case "spell-attack":
     case "save":
@@ -65,7 +79,9 @@ function valueOf(action: ModelledAction, livingEnemies: number): number {
     case "multiattack":
       return action.swings.reduce((sum, swing) => sum + averageOf(swing.damage.expr), 0);
     case "save":
-      return averageOf(action.damage.expr) * (action.area ? livingEnemies : 1);
+      return (
+        averageOf(action.damage.expr) * (action.area ? Math.min(action.targets ?? livingEnemies, livingEnemies) : 1)
+      );
     default:
       return 0;
   }
@@ -77,6 +93,8 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
     actor,
     hp: actor.maxHp,
     slots: [...actor.slots],
+    spent: new Set<ModelledAction>(),
+    usesLeft: new Map<ModelledAction, number>(),
   }));
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
@@ -126,7 +144,9 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
   };
 
   const castSave = (caster: Combatant, action: SaveAction): void => {
-    const targets = action.area ? enemiesOf(caster) : [pickTarget(caster)].filter((t): t is Combatant => !!t);
+    const targets = action.area
+      ? enemiesOf(caster).slice(0, action.targets ?? Infinity)
+      : [pickTarget(caster)].filter((t): t is Combatant => !!t);
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
@@ -163,6 +183,11 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
 
   /** Take one action; true when it was a damaging one (win and TPK are checked after those). */
   const takeTurn = (c: Combatant): boolean => {
+    // Recharge rolls first: a d6 for each spent action, back on its number or more.
+    for (const action of c.actor.actions) {
+      if (!c.spent.has(action)) continue;
+      if (Math.floor(rng() * 6) + 1 >= (limitOf(action)?.recharge ?? 7)) c.spent.delete(action);
+    }
     const heal = healFor(c);
     if (heal) {
       let target: Combatant | undefined;
@@ -195,6 +220,9 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
     }
     if (!best) return false; // nothing damaging or healing: pass
     spendSlot(c, circleOf(best));
+    const limit = limitOf(best);
+    if (limit?.recharge !== undefined) c.spent.add(best);
+    if (limit?.perDay !== undefined) c.usesLeft.set(best, (c.usesLeft.get(best) ?? limit.perDay) - 1);
     useDamaging(c, best);
     return true;
   };
