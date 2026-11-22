@@ -75,6 +75,63 @@ p.rpg-statblock-subtitle {
   white-space: nowrap;
 }
 
+/* ─── Monster: Monster Vault role chip (header) and subrole (type line) ─── */
+/* A written role is a solid chip in the role's colour; a guessed one is an
+   outline with "?", and its subrole is faint, so a guess never reads as settled. */
+
+.rpg-statblock-monster .rpg-statblock-header h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rpg-statblock-role {
+  --rpg-role: var(--statblock-title);
+  align-self: center;
+  flex: 0 0 auto;
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: var(--background-primary, #fff);
+  color: var(--rpg-role);
+  border: 1px solid var(--background-primary, #fff);
+  white-space: nowrap;
+  cursor: help;
+}
+
+.rpg-statblock-role--controller {
+  --rpg-role: var(--color-cyan, #1f7a74);
+}
+.rpg-statblock-role--leader {
+  --rpg-role: var(--color-orange, #a86a12);
+}
+.rpg-statblock-role--soldier {
+  --rpg-role: var(--color-blue, #3d5a8c);
+}
+.rpg-statblock-role--striker {
+  --rpg-role: var(--color-red, #b0333f);
+}
+
+.rpg-statblock-role.is-guess {
+  background: transparent;
+  color: var(--background-primary, #fff);
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.rpg-statblock-subrole {
+  font-size: 0.92em;
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.rpg-statblock-subrole.is-guess {
+  color: var(--text-faint);
+}
+
 /* ─── Habitat / Treasure line (stat.group + ungrouped stat.monster) ────── */
 /* Two content-sized columns on one row: Habitat (left, flexible — wraps its
    list internally) and Treasure (right, hugs its content). Stays a single row

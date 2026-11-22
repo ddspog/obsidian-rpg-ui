@@ -7,6 +7,8 @@ import {
   equivalentsOf,
   guessRole,
   parseRole,
+  parseSubrole,
+  roleOfSubrole,
   type RoleInput,
   type RoleProfile,
 } from "./monster-role";
@@ -45,6 +47,36 @@ describe("the CR table", () => {
 });
 
 describe("guessRole", () => {
+  it("puts a striker that is legendary in solo, and a summoner under leader", () => {
+    const dragon = guessRole(
+      monster({
+        cr: 10,
+        hp: 200,
+        ac: 18,
+        actions: [{ kind: "weapon", name: "Bite", hitBonus: 10, damage: { expr: "16d10+6" } }],
+        features: [
+          { name: "Legendary Resistance (3/Day)", type: "trait", text: "If it fails a saving throw, it can succeed." },
+        ],
+      })
+    );
+    expect(dragon).toMatchObject({ role: "striker", subrole: "solo" });
+    expect(dragon.tags).toContain("legendary");
+    // Summoning picks the subrole; it is the "Shaman" in the name that makes it a leader.
+    const caller = guessRole(
+      monster({
+        name: "Bone Shaman",
+        features: [
+          {
+            name: "Call the Dead",
+            type: "action",
+            text: "The necromancer summons 1d4 zombies, which act as its allies.",
+          },
+        ],
+      })
+    );
+    expect(caller).toMatchObject({ role: "leader", subrole: "summoner" });
+  });
+
   it("takes a role its name says outright, surely", () => {
     const g = guessRole(monster({ name: "Worg Soldier" }));
     expect(g).toMatchObject({ role: "soldier", confidence: "high" });
@@ -67,7 +99,7 @@ describe("guessRole", () => {
         ],
       })
     );
-    expect(commander.role).toBe("leader");
+    expect(commander).toMatchObject({ role: "leader", subrole: "commander" });
     const wolf = guessRole(
       monster({
         cr: 0.25,
@@ -98,8 +130,7 @@ describe("guessRole", () => {
         ],
       })
     );
-    expect(gaze).toMatchObject({ role: "controller" });
-    expect(gaze.subroles).toContain("area");
+    expect(gaze).toMatchObject({ role: "controller", subrole: "disabler" });
     const brave = guessRole(
       monster({
         features: [
@@ -126,19 +157,24 @@ describe("guessRole", () => {
         ],
       })
     );
-    expect(g.role).toBe("striker");
-    expect(g.subroles).toContain("ambusher");
+    expect(g).toMatchObject({ role: "striker", subrole: "ambusher" });
     expect(g.ratios.dpr).toBeGreaterThan(1.5);
   });
 
   it("reads a soldier from hit points and armour above its CR", () => {
-    const g = guessRole(monster({ hp: 70, ac: 17 }));
-    expect(g.role).toBe("soldier");
+    expect(guessRole(monster({ hp: 70, ac: 17 }))).toMatchObject({ role: "soldier", subrole: "brute" });
+    expect(guessRole(monster({ cr: 0.25, hp: 11, ac: 12 }))).toMatchObject({
+      role: "soldier",
+      subrole: "rank-and-file",
+    });
   });
 
   it("reads roles written loosely", () => {
     expect(parseRole("Strikers")).toBe("striker");
     expect(parseRole("brute")).toBeUndefined();
+    expect(parseSubrole("Rank and file")).toBe("rank-and-file");
+    expect(parseSubrole("ambushers")).toBe("ambusher");
+    expect(roleOfSubrole("summoner")).toBe("leader");
   });
 });
 
@@ -148,12 +184,13 @@ describe("equivalentsOf", () => {
     name: "X",
     cr: 1,
     role: "soldier",
-    subroles: [],
+    subrole: "guardian",
+    tags: [],
     ratios: { hp: 1, dpr: 1 },
     ...over,
   });
 
-  it("keeps the same role within the CR steps, closest first, another family before the same one", () => {
+  it("keeps the same role within the CR steps, the same subrole first, another family before the same one", () => {
     const target = base({ note: "wolf", name: "Wolf", family: "beasts" });
     const pool = [
       target,
@@ -161,11 +198,12 @@ describe("equivalentsOf", () => {
       base({ note: "orc", name: "Orc", family: "humanoids" }),
       base({ note: "far", name: "Ogre", cr: 2, family: "giants" }),
       base({ note: "huge", name: "Giant", cr: 5 }),
-      base({ note: "mage", name: "Mage", role: "controller" }),
+      base({ note: "mage", name: "Mage", role: "controller", subrole: "hexer" }),
+      base({ note: "brute", name: "Bruiser", subrole: "brute" }),
     ];
     const found = equivalentsOf(target, pool);
-    expect(found.map((e) => e.name)).toEqual(["Orc", "Jackal", "Ogre"]);
+    expect(found.map((e) => e.name)).toEqual(["Orc", "Jackal", "Ogre", "Bruiser"]);
     expect(found.find((e) => e.name === "Ogre")?.crSteps).toBe(1);
-    expect(equivalentsOf(target, pool, { maxSteps: 0 }).map((e) => e.name)).toEqual(["Orc", "Jackal"]);
+    expect(equivalentsOf(target, pool, { maxSteps: 0 }).map((e) => e.name)).toEqual(["Orc", "Jackal", "Bruiser"]);
   });
 });

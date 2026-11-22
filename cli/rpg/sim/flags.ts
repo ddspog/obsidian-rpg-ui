@@ -7,7 +7,13 @@ import {
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
-import { MONSTER_ROLES, parseRole, type MonsterRole } from "lib/domains/encounter-sim/monster-role";
+import {
+  MONSTER_ROLES,
+  parseRole,
+  parseSubrole,
+  type MonsterRole,
+  type Subrole,
+} from "lib/domains/encounter-sim/monster-role";
 
 /** A wrong flag, value or subcommand of `rpg sim` (exit 1, with the usage). */
 export class UsageError extends Error {
@@ -319,9 +325,9 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     multiple: true,
     default: [],
-    value: "controller|leader|soldier|striker",
+    value: "<role|subrole>",
     description:
-      "`roles`: only monsters of this role; repeat for each; `equivalents`: look for this role instead of the monster's own",
+      "`roles`: only monsters of this role (controller, leader, soldier, striker) or subrole (ambusher, healer…); repeat for each; `equivalents`: look for this role or subrole instead of the monster's own",
   },
   {
     name: "write",
@@ -335,8 +341,9 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     multiple: true,
     default: [],
-    value: '"<note>=<role>"',
-    description: "`roles`: write this role in the monster's statblock (over any written one); repeat for each",
+    value: '"<note>=<role>/<subrole>"',
+    description:
+      "`roles`: write this role and subrole in the monster's statblock (over any written; the role alone, or the subrole alone with its role implied); repeat for each",
   },
   {
     name: "steps",
@@ -422,8 +429,8 @@ export interface SimOptions {
   json: boolean;
   /** `run`, `suggest`, `catalog suggest`: print the short form (see brief.ts). */
   brief: boolean;
-  /** `roles`: the roles to list; `equivalents`: the role to look for. */
-  roles: MonsterRole[];
+  /** `roles`: the roles or subroles to list; `equivalents`: the role or subrole to look for. */
+  roles: Array<MonsterRole | Subrole>;
   /** `roles`: `<note>=<role>` to write. */
   set: string[];
   /** `roles`: write the guesses. */
@@ -700,8 +707,10 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.json = values.json === true;
   options.brief = values.brief === true;
   options.roles = ((values.role as string[] | undefined) ?? []).map((raw) => {
-    const role = parseRole(raw);
-    if (!role) throw new UsageError(`--role must be one of ${MONSTER_ROLES.join(", ")}, got "${raw}".`);
+    const role = parseRole(raw) ?? parseSubrole(raw);
+    if (!role) {
+      throw new UsageError(`--role must be one of ${MONSTER_ROLES.join(", ")} or one of their subroles, got "${raw}".`);
+    }
     return role;
   });
   options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
@@ -913,7 +922,9 @@ Usage:
     (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
   rpg sim roles [<note>...] [--role R]... [--habitat H] [--type T] [--cr C] [--limit N] [--write [--min-confidence C]]
     (each monster's role, controller|leader|soldier|striker: written in its statblock or guessed, least sure first)
-  rpg sim roles --set "<note>=<role>"...   (write roles in statblocks)
+  rpg sim roles --set "<note>=<role>/<subrole>"...   (write roles in statblocks)
+    (subroles: controller hexer|disabler|zoner|mover; leader commander|healer|warder|summoner;
+     soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)
   rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
     (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help

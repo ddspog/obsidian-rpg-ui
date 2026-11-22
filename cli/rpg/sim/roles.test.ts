@@ -85,8 +85,10 @@ describe("withRole", () => {
   it("writes role: after cr:, and replaces one already written", () => {
     const once = withRole(note, "striker")!;
     expect(once).toContain('cr: "1"\nrole: "striker"\nstats:');
-    expect(withRole(once, "leader")).toContain('role: "leader"\nstats:');
-    expect(withRole(once, "leader")).not.toContain("striker");
+    const both = withRole(once, "leader", "healer")!;
+    expect(both).toContain('cr: "1"\nrole: "leader"\nsubrole: "healer"\nstats:');
+    expect(both).not.toContain("striker");
+    expect(withRole(both, "soldier")).not.toContain("subrole");
     expect(withRole("no statblock", "leader")).toBeNull();
   });
 });
@@ -116,12 +118,23 @@ describe("rpg sim roles", () => {
 
   it("writes a role it is told with --set, and reads it back as written", async () => {
     const { root, ctx } = vault();
-    await simRoles(ctx, options("roles", "--set", "Hound=leader"));
-    expect(readFileSync(join(root, BESTIARY, "beasts/Hound.md"), "utf8")).toContain('role: "leader"');
-    const { doc } = (await simRoles(boot(root), options("roles", "Hound"))) as {
-      doc: { list: Array<{ role: string; written?: boolean; guessed?: string }> };
+    await simRoles(ctx, options("roles", "--set", "Hound=healer", "--set", "Mastiff=soldier/guardian"));
+    expect(readFileSync(join(root, BESTIARY, "beasts/Hound.md"), "utf8")).toContain(
+      'role: "leader"\nsubrole: "healer"'
+    );
+    const { doc } = (await simRoles(boot(root), options("roles", "Hound", "Mastiff"))) as {
+      doc: { list: Array<{ monster: string; role: string; subrole: string; written?: boolean; guessed?: string }> };
     };
-    expect(doc.list[0]).toMatchObject({ role: "leader", written: true, guessed: "soldier" });
+    expect(doc.list.find((m) => m.monster === "Hound")).toMatchObject({
+      role: "leader",
+      subrole: "healer",
+      written: true,
+      guessed: "soldier/brute",
+    });
+    expect(doc.list.find((m) => m.monster === "Mastiff")).toMatchObject({ subrole: "guardian", written: true });
+    await expect(simRoles(ctx, options("roles", "--set", "Hound=leader/ambusher"))).rejects.toThrow(
+      /each under its own role/
+    );
   });
 });
 
@@ -145,7 +158,9 @@ describe("rpg sim equivalents", () => {
     };
     expect(await simMain(["equivalents"], io, deps)).toBe(1);
     expect(await simMain(["roles", "--trials", "3"], io, deps)).toBe(1);
-    expect(await simMain(["roles", "--role", "brute"], io, deps)).toBe(1);
-    expect(out.join("\n")).toMatch(/--role must be one of controller, leader, soldier, striker/);
+    expect(await simMain(["roles", "--role", "tank"], io, deps)).toBe(1);
+    expect(out.join("\n")).toMatch(
+      /--role must be one of controller, leader, soldier, striker or one of their subroles/
+    );
   });
 });

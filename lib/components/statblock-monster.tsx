@@ -1,4 +1,6 @@
 import * as React from "react";
+import { SUBROLE_MEANING } from "../domains/encounter-sim/monster-role";
+import { statblockRole } from "../domains/encounter-sim/statblock-role";
 import { Markdown } from "./markdown";
 import type { AbilityScores, ResolvedStatFeature } from "../domains/statblocks/types";
 import {
@@ -33,6 +35,10 @@ export interface StatblockMonsterProps {
   body?: string;
   hideTitle?: boolean;
   sourcePath?: string;
+  /** Monster Vault role as written (`role:`); without it the card shows a guess, marked as one. */
+  role?: string;
+  /** Its subrole as written (`subrole:`). */
+  subrole?: string;
 }
 
 const STAT_LABELS: Record<string, string> = {
@@ -65,8 +71,20 @@ export function StatblockMonster({
   body,
   hideTitle,
   sourcePath,
+  role,
+  subrole,
 }: StatblockMonsterProps) {
   const { traits, sections } = React.useMemo(() => groupFeatures(features), [features]);
+  // A guess needs the features: until they are resolved only a written role shows.
+  const shown = React.useMemo(
+    () => (role || features.length > 0 ? statblockRole({ name, type, cr, stats, features, role, subrole }) : undefined),
+    [name, type, cr, stats, features, role, subrole]
+  );
+  const roleLabel = shown ? shown.role[0].toUpperCase() + shown.role.slice(1) : "";
+  const roleTitle = shown
+    ? `${roleLabel}, ${shown.subrole.replace(/-/g, " ")}: ${SUBROLE_MEANING[shown.subrole]}.` +
+      (shown.written ? "" : ` Guessed from the statblock (${shown.confidence} confidence); not written in it yet.`)
+    : "";
 
   const description = body ? (
     <section className="rpg-statblock-desc">
@@ -90,6 +108,16 @@ export function StatblockMonster({
       {!hideTitle && (
         <header className="rpg-statblock-header">
           <h3>{name}</h3>
+          {shown ? (
+            <span
+              className={`rpg-statblock-role rpg-statblock-role--${shown.role}${shown.written ? "" : " is-guess"}`}
+              title={roleTitle}
+              aria-label={roleTitle}
+            >
+              {roleLabel}
+              {shown.written ? "" : "?"}
+            </span>
+          ) : null}
           {cr ? <span className="rpg-statblock-cr">CR {cr}</span> : null}
         </header>
       )}
@@ -98,6 +126,12 @@ export function StatblockMonster({
         <em>
           <InlineWikilinks text={type} />
         </em>
+        {shown ? (
+          <span className={`rpg-statblock-subrole${shown.written ? "" : " is-guess"}`} title={roleTitle}>
+            {" · "}
+            {shown.subrole.replace(/-/g, " ")}
+          </span>
+        ) : null}
       </p>
 
       <dl className="rpg-statblock-stats">

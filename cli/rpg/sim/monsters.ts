@@ -18,7 +18,7 @@ import {
   type SkipReason,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
-import { parseRole, type MonsterRole } from "lib/domains/encounter-sim/monster-role";
+import { parseRole, parseSubrole, type MonsterRole, type Subrole } from "lib/domains/encounter-sim/monster-role";
 import { mapCategory, mapMonster } from "lib/domains/statblocks/monster-fields";
 import { resolveStatFeatures } from "lib/domains/statblocks/resolve-features";
 import type { ResolvedStatFeature, StatMonsterData } from "lib/domains/statblocks/types";
@@ -53,6 +53,8 @@ export interface LoadedMonster {
   speedText: string;
   /** The role written in the statblock (`role:`), when it has one. */
   role?: MonsterRole;
+  /** The subrole written in the statblock (`subrole:`), when it has one. */
+  subrole?: Subrole;
 }
 
 /** Every markdown note under the bestiary, in the vault's order. */
@@ -257,5 +259,6 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     features: resolved.map((f, i) => ({ name: f.name?.trim() || refs[i], type: f.type, text: f.text })),
     speedText: data.stats.speed ?? "",
     ...(parseRole(state.yaml.role) ? { role: parseRole(state.yaml.role) } : {}),
+    ...(parseSubrole(state.yaml.subrole) ? { subrole: parseSubrole(state.yaml.subrole) } : {}),
   };
 }

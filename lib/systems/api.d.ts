@@ -1818,6 +1818,9 @@ export interface StatMonsterData {
   cr?: string;
   habitat?: string;
   treasure?: string;
+  /** Monster Vault role and subrole, when written in the statblock. */
+  role?: string;
+  subrole?: string;
   /** Link to a `stat.category` note. Categorized monsters inherit its habitat/
    *  treasure when fetched (own value wins) and hide their own habitat line. */
   category?: string;
@@ -1848,6 +1851,10 @@ export interface StatblockMonsterProps {
   body?: string;
   hideTitle?: boolean;
   sourcePath?: string;
+  /** Monster Vault role as written (`role:`): controller, leader, soldier or striker. Without it the card shows a guess, marked as one. */
+  role?: string;
+  /** Its subrole as written (`subrole:`), e.g. ambusher, healer, rank-and-file. */
+  subrole?: string;
 }
 
 export declare const StatblockMonster: FunctionComponent<StatblockMonsterProps>;

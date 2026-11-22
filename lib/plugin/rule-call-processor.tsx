@@ -1169,6 +1169,8 @@ function StatblockMonsterCallInline({
     features: resolved,
     body: data.text,
     sourcePath,
+    role: data.role,
+    subrole: data.subrole,
   });
 }
 
