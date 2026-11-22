@@ -24,7 +24,7 @@ import {
   type MonsterRole,
   type Subrole,
 } from "lib/domains/encounter-sim/monster-role";
-import { applyTemplateBlock } from "lib/domains/statblocks/template-block";
+import { applyTemplateBlock, choosesHumanoid } from "lib/domains/statblocks/template-block";
 import { homebrewNoteText, homebrewPath } from "lib/domains/statblocks/homebrew-note";
 import { templateFits } from "lib/domains/statblocks/monster-template";
 import type { Ctx } from "../app";
@@ -146,7 +146,16 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
     if (!fit.fits)
       notes.push(`${t.name} is for ${fit.unmet.join("; ")}: ${base.name} is not (${t.block.appliesText}).`);
     if (fit.unchecked.length) notes.push(`${t.name} asks for a creature ${fit.unchecked.join(", ")}: check it.`);
+    // "Choose a Humanoid" (the Lycanthrope): --choose names a lineage.
+    const lineage =
+      choosesHumanoid(t.block) && options.choose
+        ? templates.find((x) => x.block.kind === "lineage" && findTemplate([x], options.choose!))
+        : undefined;
+    if (choosesHumanoid(t.block) && options.choose && !lineage)
+      notes.push(`No lineage "${options.choose}": \`rpg sim lineages\` lists them.`);
     const applied = applyTemplateBlock(next, t.block, {
+      lineage: lineage?.block,
+      baseName: base.name,
       choice: options.choose,
       picks: options.traits,
       baseFeatures: base.features,

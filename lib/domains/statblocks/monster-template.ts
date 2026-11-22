@@ -451,6 +451,11 @@ export interface FormulaContext {
   dcs: number[];
   /** The DC of a feature by a word in its name ("breath", "frightful"). */
   dcOf: (word: string) => number | undefined;
+  /** The creature's size and what it is ("Huge", "giant elk"): the Lycanthrope's [Size] [Beast]. */
+  size?: string;
+  creature?: string;
+  /** The damage dice of a feature by a word in its name ("breath" → "18d10"). */
+  diceOf?: (word: string) => string | undefined;
   perception?: number;
 }
 
@@ -475,6 +480,20 @@ export function evaluateFormula(formula: string, ctx: FormulaContext): number | 
   // "the creature's CR times 5, minimum of 5"
   const times = f.match(/cr times (\d+)(?:, minimum of (\d+))?/);
   if (times) return Math.max(Number(times[2] ?? 0), Math.round(ctx.cr * Number(times[1])));
+  // The Lycanthrope's Change Shape: "[Size] [Beast]", "[Size, which is Medium or Large for most Humanoids]".
+  if (f === "size" && ctx.size) return ctx.size;
+  if (f === "beast" && ctx.creature) return ctx.creature;
+  if (/^size, which is medium or large/.test(f) && ctx.size)
+    return /tiny|small|medium/i.test(ctx.size) ? "Medium" : "Large";
+  // "[half the damage of its own breath weapon]": half the dice of the creature's breath.
+  const half = f.match(/half the damage of its (?:own )?(\w+)/);
+  if (half && ctx.diceOf) {
+    const dice = ctx.diceOf(half[1])?.match(/^(\d+)d(\d+)$/);
+    if (dice) {
+      const n = Math.max(1, Math.floor(Number(dice[1]) / 2));
+      return `${Math.floor((n * (Number(dice[2]) + 1)) / 2)} (${n}d${dice[2]})`;
+    }
+  }
   // Words the feature keeps as they are: "[damage of the attack's type]".
   if (/^damage of the attack's type$/.test(f)) return "damage of the attack's type";
   const mod = (k: string) => ctx.abilities[k] ?? 0;

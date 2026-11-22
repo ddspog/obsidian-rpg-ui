@@ -233,6 +233,9 @@ describe("evaluateFormula", () => {
     expect(f("a number of d6s equal to the creature's PB")).toBe("14 (4d6)");
     expect(f("a number of d8s equal to half the creature's PB, rounded up")).toBe("9 (2d8)");
     expect(f("the creature's CR times 5, minimum of 5")).toBe(45);
+    expect(evaluateFormula("half the damage of its own breath weapon", { ...ctx, diceOf: () => "18d10" })).toBe(
+      "49 (9d10)"
+    );
   });
 });
 

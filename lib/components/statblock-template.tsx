@@ -12,6 +12,7 @@ import { homebrewNoteText, homebrewPath } from "../domains/statblocks/homebrew-n
 import { resolveStatFeatures } from "../domains/statblocks/resolve-features";
 import {
   applyTemplateBlock,
+  choosesHumanoid,
   describeChange,
   type ApplyTemplateResult,
   type TemplateBlock,
@@ -22,6 +23,8 @@ import { mapMonster } from "../domains/statblocks/monster-fields";
 import {
   bestiaryOf,
   createNote,
+  lineagesOf,
+  loadTemplateBlock,
   loadCreature,
   openNote,
   systemRootOf,
@@ -245,6 +248,24 @@ function TryOn({
   setPicks: (p: string[]) => void;
 }) {
   const creatures = React.useMemo(() => bestiaryOf(sourcePath), [sourcePath]);
+  // "Choose a Humanoid" (the Lycanthrope): a lineage to choose.
+  const humanoid = choosesHumanoid(block);
+  const lineages = React.useMemo(() => (humanoid ? lineagesOf(sourcePath) : []), [humanoid, sourcePath]);
+  const [lineagePath, setLineagePath] = React.useState("");
+  const [lineage, setLineage] = React.useState<TemplateBlock | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!lineagePath) {
+      setLineage(null);
+      return;
+    }
+    void loadTemplateBlock(lineagePath, sourcePath).then((b) => {
+      if (!cancelled) setLineage(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lineagePath, sourcePath]);
   const [query, setQuery] = React.useState("");
   const [base, setBase] = React.useState<LoadedCreature | null>(null);
   const [result, setResult] = React.useState<ApplyTemplateResult | null>(null);
@@ -277,6 +298,8 @@ function TryOn({
     const r = applyTemplateBlock(base.data, block, {
       choice,
       picks,
+      lineage: lineage ?? undefined,
+      baseName: base.name,
       baseFeatures: base.features.map((f) => ({ name: f.name ?? "", text: f.text })),
       cr,
     });
@@ -295,7 +318,7 @@ function TryOn({
     return () => {
       cancelled = true;
     };
-  }, [base, block, choice, picks]);
+  }, [base, block, choice, picks, lineage]);
 
   const fit = base
     ? templateFits(block.applies, {
@@ -361,6 +384,21 @@ function TryOn({
           </span>
         ) : null}
       </div>
+      {humanoid ? (
+        <div className="rpg-sheet-bar">
+          <label className="rpg-sheet-check">
+            <span>Humanoid</span>
+            <select className="dropdown" value={lineagePath} onChange={(e) => setLineagePath(e.target.value)}>
+              <option value="">—</option>
+              {lineages.map((l) => (
+                <option key={l.path} value={l.path.replace(/\.md$/, "")}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
       {optional.length ? (
         <div className="rpg-sheet-bar" role="group" aria-label="Features to choose">
           {optional.map((f) => (

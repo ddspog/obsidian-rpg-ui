@@ -27,6 +27,18 @@ export interface CreatureEntry {
   name: string;
 }
 
+/** The system's lineage templates for NPCs (`bestiary/templates/lineages/`), by name. */
+export function lineagesOf(fromPath: string): CreatureEntry[] {
+  const app = appOf();
+  if (!app) return [];
+  const prefix = `${systemRootOf(fromPath)}/worldbuilding/bestiary/templates/lineages/`;
+  return app.vault
+    .getMarkdownFiles()
+    .filter((f) => f.path.startsWith(prefix))
+    .map((f) => ({ path: f.path, name: f.basename }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** The system's bestiary notes, the template notes left out, by name. */
 export function bestiaryOf(fromPath: string): CreatureEntry[] {
   const app = appOf();

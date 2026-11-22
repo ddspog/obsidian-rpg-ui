@@ -4,9 +4,11 @@
  * The Monster Vault's NPC Features table gives a row a humanoid (its features
  * taken from its own statblock); the other lineage notes give their traits,
  * reworded for a statblock. `--write` writes each one's `rpg stat.template`
- * block (kind `lineage`): into its lineage note, or for a humanoid with no
- * lineage note into `<system>/worldbuilding/bestiary/templates/lineages/`; and
- * the features note of the reworded traits (`Lineage NPC Traits`).
+ * block (kind `lineage`) as a note of its own in
+ * `<system>/worldbuilding/bestiary/templates/lineages/` (linking its lineage
+ * note, which stays as the book wrote it: the compendium's lineages and the
+ * NPC side do not mix), and the features note of the reworded traits
+ * (`Lineage NPC Traits`).
  */
 
 import {
@@ -34,14 +36,6 @@ export const LINEAGE_FEATURES_NOTE = `${SYSTEM}/worldbuilding/traits/features/Li
 const NPC_APPENDIX = `${SYSTEM}/compendium/rules/monster-vault/Appendix, NPCs.md`;
 const SOURCE = "From the lineages of **Tales of the Valiant** books by **Kobold Press**, reworded for statblocks.";
 
-/** A note with its `stat.template` block in place of the one it has, or after its end. */
-export function withLineageBlock(text: string, block: TemplateBlock): string {
-  const fence = templateFence(block);
-  const existing = /^```+\s*rpg\s+stat\.template\b[^\n]*\n[\s\S]*?\n```+\s*$/m;
-  if (existing.test(text)) return text.replace(existing, () => fence);
-  return `${text.trimEnd()}\n## As an NPC\nWhat a Humanoid (Any Lineage) NPC statblock gains to be of this lineage: try it on an NPC, or save the result as a new one.\n${fence}\n`;
-}
-
 /** A humanoid's statblock note by the table's name ("Goblin, Hobgoblin" → "Hobgoblin"). */
 function statblockOf(ctx: Ctx, humanoid: string): string | undefined {
   const parts = humanoid.split(",").map((s) => s.trim());
@@ -67,6 +61,11 @@ export interface LineageEntry {
   name: string;
   /** The note its block goes into. */
   path: string;
+  /** Its lineage note, when it has one. */
+  lineageNote?: string;
+  /** Its humanoid's statblock, when it comes from the NPC Features table. */
+  statblock?: string;
+  source: string;
   block: TemplateBlock;
   from: "npc-features" | "lineage-note";
   noteLineage?: NoteLineage;
@@ -96,11 +95,14 @@ export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
     const path = statblockOf(ctx, row.humanoid);
     let features: Array<{ name: string; ref: string; type?: string }> = [];
     let cr: number | undefined;
+    let dc: number | undefined;
     if (path) {
       const { data } = readStatblock(ctx, path);
       const refs = Array.isArray(data.features) ? (data.features as StatFeatureRef[]) : [];
       const resolved = await resolveStatFeatures(refs, path, { name: String(data.name ?? "").toLowerCase() });
       features = refs.map((r, i) => ({ name: resolved[i]?.name ?? "", ref: r.ref, type: resolved[i]?.type }));
+      const dcs = resolved.flatMap((f) => [...(f.text ?? "").matchAll(/\bDC (\d+)/g)].map((m) => Number(m[1])));
+      if (dcs.length) dc = Math.max(...dcs);
       cr = data.cr !== undefined ? crNumber(String(data.cr)) : undefined;
     }
     const block = lineageFromNpcRow({
@@ -109,13 +111,17 @@ export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
       actions: row.actions,
       features,
       cr,
+      dc,
       source: "Monster Vault",
     });
     if (!path) block.rules = [...(block.rules ?? []), `No ${row.humanoid} statblock found to take its features from.`];
     const own = noteFor(block.name);
     out.push({
       name: block.name,
-      path: own ?? `${TEMPLATES_FOLDER}lineages/${block.name}.md`,
+      path: `${TEMPLATES_FOLDER}lineages/${block.name}.md`,
+      ...(own ? { lineageNote: own } : {}),
+      ...(path ? { statblock: path } : {}),
+      source: 'From **Tales of the Valiant** "Monster Vault" (Appendix, NPCs: NPC Features) by **Kobold Press**.',
       block,
       from: "npc-features",
     });
@@ -129,7 +135,16 @@ export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
       LINEAGE_FEATURES_NOTE
     );
     if (!nl || (nl.block.changes.length <= 1 && !nl.features.length)) continue;
-    out.push({ name: nl.block.name, path: p, block: nl.block, from: "lineage-note", noteLineage: nl });
+    const source = (readNote(ctx.root, p) ?? "").match(/^source: (.+)$/m)?.[1] ?? SOURCE;
+    out.push({
+      name: nl.block.name,
+      path: `${TEMPLATES_FOLDER}lineages/${nl.block.name}.md`,
+      lineageNote: p,
+      source,
+      block: nl.block,
+      from: "lineage-note",
+      noteLineage: nl,
+    });
   }
   return out;
 }
@@ -153,18 +168,21 @@ export const simLineages: SimHandler = async (ctx: Ctx, options: SimOptions) => 
         kept++;
         continue;
       }
-      const next =
-        text === null
-          ? [
-              "---",
-              `source: From **Tales of the Valiant** "Monster Vault" (NPC Features) by **Kobold Press**.`,
-              "---",
-              `# ${l.name}`,
-              `What a Humanoid (Any Lineage) NPC statblock gains to be a ${l.name.toLowerCase()}, as the Monster Vault's NPC Features table gives it; its traits and actions are the ${l.name.toLowerCase()} statblock's own. Try it on an NPC, or save the result as a new one.`,
-              templateFence(l.block),
-              "",
-            ].join("\n")
-          : withLineageBlock(text, l.block);
+      const link = (p: string) => `[[${p.replace(/\.md$/, "")}|${p.split("/").pop()!.replace(/\.md$/, "")}]]`;
+      const from = l.lineageNote
+        ? `the ${link(l.lineageNote)} lineage's traits${l.from === "npc-features" ? ", as the Monster Vault's NPC Features table gives them" : " in a statblock's words"}`
+        : `the Monster Vault's NPC Features table`;
+      const next = [
+        "---",
+        `source: ${l.source}`,
+        "npc-lineage: true",
+        ...(l.lineageNote ? [`lineage: "${link(l.lineageNote)}"`] : []),
+        "---",
+        `# ${l.name}`,
+        `What a Humanoid (Any Lineage) NPC statblock gains to be ${/^[aeiou]/i.test(l.name) ? "an" : "a"} ${l.name.replace(/\s*ᴷ$/, "").toLowerCase()}: ${from}${l.statblock ? `, its traits and actions the ${link(l.statblock)} statblock's own` : ""}. Try it on an NPC, or save the result as a new one.`,
+        templateFence(l.block),
+        "",
+      ].join("\n");
       if (next !== text) {
         writeNote(ctx.root, l.path, next);
         written.push(l.name);

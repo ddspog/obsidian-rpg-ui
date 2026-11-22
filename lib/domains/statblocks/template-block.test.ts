@@ -4,10 +4,12 @@ import { parseMonsterTemplate } from "./monster-template";
 import {
   applyTemplateBlock,
   changesOfLine,
+  choosesHumanoid,
   describeChange,
   parseTemplateBlock,
   templateBlockData,
   templateBlockOf,
+  type TemplateBlock,
 } from "./template-block";
 
 describe("changesOfLine", () => {
@@ -100,5 +102,60 @@ describe("template blocks", () => {
     ]);
     expect(r.changed).toEqual(expect.arrayContaining(["hp", "immune", "type"]));
     expect(r.manual.join(" ")).toMatch(/It loses Amphibious/);
+  });
+});
+
+describe("a chosen Humanoid", () => {
+  it("applies a lineage where the template asks for one (the Lycanthrope)", () => {
+    const lycan = parseMonsterTemplate(
+      "Lycanthrope",
+      [
+        "# Lycanthrope",
+        "This template can be applied to any Beast.",
+        "## Statistics",
+        "Choose a Humanoid, then make the following adjustments to the Beast’s statistics.",
+        "",
+        "**Size and Type.** Its type changes to Humanoid, and it has the Shapechanger tag.",
+        "",
+        "**Senses.** If the chosen Humanoid has a special sense, such as darkvision, the creature gains that sense.",
+        "",
+        "**Abilities.** Replace the creature’s existing INT, WIS, and CHA modifiers with the chosen Humanoid’s INT, WIS, and CHA modifiers or with +0, if the chosen Humanoid is a PC lineage.",
+        "## Bonus Actions",
+        "***Change Shape.*** The lycanthrope transforms into a [Size] [Beast], or back into its true form.",
+      ].join("\n")
+    );
+    const block = templateBlockOf(lycan, "Monster Template Traits");
+    expect(choosesHumanoid(block)).toBe(true);
+    const dwarf: TemplateBlock = {
+      name: "Dwarf",
+      kind: "lineage",
+      appliesText: "",
+      applies: { types: ["humanoid"], other: [], anyLineage: true },
+      changes: [
+        { stat: "tag", remove: "Any Lineage", add: "Dwarf" },
+        { stat: "senses", add: "darkvision", range: 60, atLeast: true },
+        { stat: "resistant", damage: ["poison"] },
+      ],
+      features: [{ id: "Dwarf: Dwarven Resilience", name: "Dwarven Resilience", type: "trait" }],
+      featureNote: "Lineage NPC Traits",
+    };
+    const r = applyTemplateBlock(
+      {
+        name: "Elk, Giant",
+        type: "Huge Beast",
+        stats: { hp: "60", senses: "—" },
+        abilities: { int: -2, wis: 1, cha: -2 },
+      },
+      block,
+      { cr: 2, baseFeatures: [], lineage: dwarf, baseName: "Elk, Giant" }
+    );
+    expect(r.data.type).toBe("Huge Humanoid (Shapechanger, Dwarf)");
+    expect(r.data.stats).toMatchObject({ senses: "darkvision 60 ft.", resistant: "poison" });
+    expect(r.data.abilities).toMatchObject({ int: 0, wis: 1, cha: 0 });
+    expect(r.data.features).toEqual([
+      { ref: "@[[Monster Template Traits]]#Lycanthrope: Change Shape", f1: "Huge", f2: "giant elk" },
+      { ref: "@[[Lineage NPC Traits]]#Dwarf: Dwarven Resilience" },
+    ]);
+    expect(r.manual.join(" ")).not.toMatch(/Senses:|Abilities:|Choose a Humanoid/);
   });
 });

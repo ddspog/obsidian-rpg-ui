@@ -205,7 +205,7 @@ export function changesOfLine(label: string, rawText: string): TemplateChange[] 
   if (/type/.test(lab)) {
     const to = text.match(/type changes to ([A-Z][a-z]+)/);
     if (to) out.push({ stat: "type", to: to[1] });
-    for (const tag of text.matchAll(/gains the ([A-Z][a-z]+) tag/g)) out.push({ stat: "tag", add: tag[1] });
+    for (const tag of text.matchAll(/(?:gains|has) the ([A-Z][a-z]+) tag/g)) out.push({ stat: "tag", add: tag[1] });
     if (/\bsize\b/.test(lab)) out.push({ stat: "note", label: "Size", text });
     return out.length ? out : note();
   }
@@ -563,6 +563,17 @@ export interface ApplyTemplateOptions {
   baseFeatures: Array<{ name: string; text: string }>;
   /** Its CR as a number. */
   cr: number;
+  /** What the creature was ("Elk, Giant"), when its name has already changed. */
+  baseName?: string;
+  /** The Humanoid a template asks to choose ("Choose a Humanoid", the Lycanthrope): a lineage block. */
+  lineage?: TemplateBlock;
+}
+
+/** Whether a template asks for a Humanoid to be chosen (the Lycanthrope). */
+export function choosesHumanoid(block: TemplateBlock): boolean {
+  return /\bchoose a humanoid\b|chosen humanoid/i.test(
+    [block.chooseText ?? "", ...block.changes.map((c) => (c.stat === "note" ? c.text : ""))].join(" ")
+  );
 }
 
 export interface ApplyTemplateResult {
@@ -617,7 +628,7 @@ export function applyTemplateBlock(
     manual.push(
       `Choose with --choose: ${block.choose.map((c) => `${c.key} (${c.damage.join(" or ")})`).join(", ")}${options.choice ? ` ("${options.choice}" is none of them)` : ""}.`
     );
-  } else if (block.chooseText && !block.choose?.length) {
+  } else if (block.chooseText && !block.choose?.length && !(options.lineage && choosesHumanoid(block))) {
     manual.push(block.chooseText);
   }
 
@@ -639,7 +650,26 @@ export function applyTemplateBlock(
   let naturalAc: number | undefined;
   const byHand = (label: string, text: string) => manual.push(`${label}: ${text}`);
 
-  for (const c of block.changes) {
+  // A chosen Humanoid (a lineage block): its senses, resistances and traits, and its tag; the
+  // book's lines on it ("If the chosen Humanoid has a special sense…") are carried out by it.
+  const lineage = options.lineage && choosesHumanoid(block) ? options.lineage : undefined;
+  const lineageName = lineage?.name.replace(/\s*ᴷ$/, "");
+  const changes: TemplateChange[] = lineage
+    ? [
+        ...block.changes.filter(
+          (c) => !(c.stat === "note" && /^(senses|abilities)$/i.test(c.label) && /chosen humanoid/i.test(c.text))
+        ),
+        { stat: "tag", add: lineageName! },
+        ...lineage.changes.filter(
+          (c) => c.stat === "senses" || c.stat === "resistant" || c.stat === "immune" || c.stat === "vulnerable"
+        ),
+        // "… or with +0, if the chosen Humanoid is a PC lineage. If the creature's is higher, keep it."
+        { stat: "abilities", atLeast: { int: 0, wis: 0, cha: 0 } },
+      ]
+    : block.changes;
+  if (lineage) applied.push(`humanoid form: ${lineageName}`);
+
+  for (const c of changes) {
     switch (c.stat) {
       case "type":
         type = withType(type, c.to);
@@ -865,6 +895,15 @@ export function applyTemplateBlock(
       const m = f?.text.match(/\bDC (\d+)/);
       return m ? Number(m[1]) : undefined;
     },
+    size: String(input.type ?? "").match(/\b(Tiny|Small|Medium|Large|Huge|Gargantuan)\b/i)?.[1],
+    creature:
+      String(options.baseName ?? input.name ?? "")
+        .replace(/^(.+?), (.+)$/, "$2 $1")
+        .toLowerCase() || undefined,
+    diceOf: (word) => {
+      const f = options.baseFeatures.find((x) => new RegExp(word, "i").test(x.name));
+      return f?.text.match(/\(\s*(\d+d\d+)/)?.[1];
+    },
     perception: Number.isFinite(Number(stats.pas_perception)) ? Number(stats.pas_perception) : undefined,
   };
   const optional = block.features.filter((f) => f.optional);
@@ -897,6 +936,12 @@ export function applyTemplateBlock(
   if (optional.length && picks.length === 0) {
     manual.push(`Choose features with --trait: ${optional.map((f) => f.name).join(", ")}.`);
   }
+  // The chosen Humanoid's traits and actions, from its lineage block.
+  for (const f of lineage?.features ?? []) {
+    if (baseNames.has(f.name.toLowerCase())) continue;
+    refs.push({ ref: f.ref ?? `@[[${lineage!.featureNote}]]#${f.id}` });
+    added.push(f.name);
+  }
   for (const a of block.alters ?? []) {
     manual.push(`${a.name} (changes a feature it has): ${a.text.replace(/\{\{ self\.name\(\) \}\}/g, "creature")}`);
   }
@@ -904,6 +949,7 @@ export function applyTemplateBlock(
   const gated = block.features.filter((f) => f.choice).map((f) => f.name);
   for (const rule of block.rules ?? []) {
     if (chosen && gated.some((k) => rule.includes(k))) continue;
+    if (lineage && /traits that are inherent to the chosen humanoid/i.test(rule)) continue;
     manual.push(rule);
   }
 

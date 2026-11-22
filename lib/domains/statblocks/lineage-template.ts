@@ -58,6 +58,8 @@ export function lineageFromNpcRow(args: {
   features: StatblockFeatureRef[];
   /** The lowest CR of the humanoid: an NPC made of it is at least that. */
   cr?: number;
+  /** The highest save DC of the humanoid's statblock: an NPC made of it raises its own to it. */
+  dc?: number;
   /** Where the row comes from, for the note. */
   source: string;
 }): TemplateBlock {
@@ -82,7 +84,7 @@ export function lineageFromNpcRow(args: {
   };
 
   for (const raw of strip(args.traits).split(/,\s*(?![^(]*\))/)) {
-    const seg = raw.trim();
+    const seg = raw.trim().replace(/(traits?)\.$/, "$1");
     if (!seg || seg === "__") continue;
     const low = seg.toLowerCase();
     const def = low.match(/^(resistant|vulnerable|immune) to (.+)$/);
@@ -128,7 +130,9 @@ export function lineageFromNpcRow(args: {
   }
   if (args.cr !== undefined) changes.push({ stat: "cr", atLeast: args.cr });
   rules.push(
-    `Increase any save DCs to match those in the ${lineage}'s own statblock, if they are higher (Monster Vault, NPC Features).`
+    args.dc
+      ? `Raise its save DCs to at least ${args.dc}, the ${lineage.toLowerCase()} statblock's (Monster Vault, NPC Features).`
+      : `Raise any save DCs to match those in the ${lineage}'s own statblock, if they are higher (Monster Vault, NPC Features).`
   );
   return {
     name: lineage,
