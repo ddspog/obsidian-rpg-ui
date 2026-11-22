@@ -625,3 +625,63 @@ describe("use limits and the size of an area", () => {
     expect(r.partyHpRemaining).toBe(400 - 20);
   });
 });
+
+describe("conditions and riders", () => {
+  const hitAll = (name: string, extra: Partial<WeaponAttackAction> = {}): WeaponAttackAction => ({
+    kind: "weapon",
+    name,
+    hitBonus: 100,
+    damage: { expr: "1" },
+    ...extra,
+  });
+
+  it("a stunned creature loses its turn until its next turn ends", () => {
+    const stunner = actor({
+      name: "Stunner",
+      side: "party",
+      hp: 100,
+      init: 10,
+      actions: [hitAll("Stun", { inflicts: { condition: "stunned", lasts: "end" } })],
+    });
+    const brute = actor({
+      name: "Brute",
+      side: "monsters",
+      hp: 100,
+      actions: [hitAll("Club", { damage: { expr: "10" } })],
+    });
+    // The stunner acts first each round and stuns the brute again: the brute never acts.
+    const r = simulateTrial([stunner, brute], createSeededRng(5), 3);
+    expect(r.partyHpRemaining).toBe(100);
+  });
+
+  it("a mark rider adds its damage to every hit on the marked target, and a use marks it", () => {
+    const ranger = actor({ name: "Ranger", side: "party", hp: 100, init: 10, actions: [hitAll("Bow")] });
+    ranger.riders = [{ name: "Mark", damage: "2", kind: "mark", uses: 1 }];
+    const dummy = actor({ name: "Dummy", side: "monsters", hp: 9 });
+    // 1 + 2 a hit: 9 HP falls in three rounds with the mark, nine without.
+    expect(simulateTrial([ranger, dummy], createSeededRng(2), 10).rounds).toBe(3);
+  });
+
+  it("spreads a monster's picks when its focus is below 1", () => {
+    const weak = { ...actor({ name: "Weak", side: "party", hp: 10 }) };
+    const strong = actor({ name: "Strong", side: "party", hp: 1000 });
+    const brute = actor({
+      name: "Brute",
+      side: "monsters",
+      hp: 10000,
+      init: 10,
+      actions: [hitAll("Club", { damage: { expr: "5" } })],
+    });
+    const koRate = (focus: number) => {
+      const rng = createSeededRng(9);
+      let kos = 0;
+      for (let t = 0; t < 200; t++)
+        if (simulateTrial([weak, strong, brute], rng, 2, { monsterFocus: focus }).knockedOut.includes("Weak")) kos++;
+      return kos / 200;
+    };
+    // Focus fire drops the weak PC in two rounds whenever both blows land (a natural 1 misses); at random, only when both find it.
+    expect(koRate(1)).toBeGreaterThan(0.85);
+    expect(koRate(0)).toBeGreaterThan(0.1);
+    expect(koRate(0)).toBeLessThan(0.45);
+  });
+});

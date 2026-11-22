@@ -13,7 +13,15 @@ export interface MonteCarloInput {
   seed: number;
   trials: number;
   roundCap: number;
+  /** The share of a monster's target picks that go to the most hurt PC (default MONSTER_FOCUS). */
+  monsterFocus?: number;
 }
+
+/**
+ * Monsters take the most hurt PC for half their picks and a random one for the rest: always on the weakest
+ * (1) made fights much harder than the logged play (see `rpg sim calibrate`). A heuristic, like the profiles.
+ */
+export const MONSTER_FOCUS = 0.5;
 
 export interface MonteCarloSummary {
   winRate: number;
@@ -59,7 +67,8 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   ];
 
   const results: TrialResult[] = [];
-  for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap));
+  const options = { monsterFocus: input.monsterFocus ?? MONSTER_FOCUS };
+  for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap, options));
 
   const share = (outcome: TrialResult["outcome"]) =>
     round4(results.filter((r) => r.outcome === outcome).length / trials);

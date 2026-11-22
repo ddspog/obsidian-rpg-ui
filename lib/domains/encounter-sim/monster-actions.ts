@@ -17,6 +17,9 @@ import {
   type ModelledAction,
   type MultiattackAction,
   type SaveAction,
+  type Inflict,
+  MODELLED_CONDITIONS,
+  type ModelledCondition,
   type SkipReason,
   type UseLimit,
   type WeaponAttackAction,
@@ -63,6 +66,51 @@ function abilityKey(word: string): AbilityKey | null {
   return (ABILITY_KEYS as readonly string[]).includes(key) ? (key as AbilityKey) : null;
 }
 
+const CONDITION = `(${MODELLED_CONDITIONS.join("|")})`;
+
+/** How long a condition from prose lasts: its own words, else prone until it stands, restrained the fight. */
+function lastsOf(condition: ModelledCondition, text: string): Inflict["lasts"] {
+  if (/until the end of (?:its|the target'?s?|the creature'?s?) next turn/i.test(text)) return "end";
+  if (/\b(?:for )?1 minute\b/i.test(text)) return "fight";
+  if (condition === "prone") return "start";
+  return condition === "restrained" ? "fight" : "end";
+}
+
+/**
+ * The condition a hit's prose puts on the target: "must succeed on a DC 13 Strength saving throw or be knocked
+ * prone" (a save of its own), "the target is poisoned until the end of its next turn" (on the hit). A save to
+ * end it each turn ("repeat the saving throw at the end of each of its turns", "escape DC 13") is kept.
+ */
+export function inflictOfHit(text: string): Inflict | undefined {
+  const saved = text.match(
+    new RegExp(`DC\\s*(\\d+)\\s+(\\w+)\\s+saving throw[^.]*?\\bor (?:be |become )?(?:knocked )?${CONDITION}\\b`, "i")
+  );
+  if (saved) {
+    const ability = abilityKey(saved[2]);
+    const condition = saved[3].toLowerCase() as ModelledCondition;
+    if (ability) return { condition, save: { ability, dc: parseInt(saved[1], 10) }, lasts: lastsOf(condition, text) };
+  }
+  const plainHit = text.match(new RegExp(`\\b(?:target|it) is (?:also )?(?:knocked )?${CONDITION}\\b`, "i"));
+  if (!plainHit) return undefined;
+  const condition = plainHit[1].toLowerCase() as ModelledCondition;
+  const escape = text.match(/escape DC\s*(\d+)/i);
+  return {
+    condition,
+    lasts: lastsOf(condition, text),
+    ...(escape ? { save: { ability: "str" as AbilityKey, dc: parseInt(escape[1], 10) } } : {}),
+  };
+}
+
+/** The condition a failed save brings: "On a failed save, a creature takes 7 (2d6) damage and is knocked prone". */
+export function inflictOfSave(text: string): Inflict | undefined {
+  const m = text.match(
+    new RegExp(`\\b(?:and is|and be|is|be|becomes?|becoming) (?:also )?(?:knocked )?${CONDITION}\\b`, "i")
+  );
+  if (!m) return undefined;
+  const condition = m[1].toLowerCase() as ModelledCondition;
+  return { condition, lasts: lastsOf(condition, text) };
+}
+
 function attackFrom(name: string, text: string): WeaponAttackAction | null {
   const hit = text.match(/([+-]?\d+)\s+to hit/i);
   if (!hit) return null;
@@ -70,7 +118,8 @@ function attackFrom(name: string, text: string): WeaponAttackAction | null {
   if (afterHit === undefined) return null;
   const damage = damageFrom(afterHit);
   if (!damage) return null;
-  return { kind: "weapon", name, hitBonus: parseInt(hit[1], 10), damage };
+  const inflicts = inflictOfHit(afterHit);
+  return { kind: "weapon", name, hitBonus: parseInt(hit[1], 10), damage, ...(inflicts ? { inflicts } : {}) };
 }
 
 function saveFrom(name: string, text: string): SaveAction | null {
@@ -90,6 +139,10 @@ function saveFrom(name: string, text: string): SaveAction | null {
     area: /\b(?:each|all|every) creatures?\b/i.test(text),
     ...areaTargets(text),
     circle: 0,
+    ...((): { inflicts?: Inflict } => {
+      const inflicts = inflictOfSave(text);
+      return inflicts ? { inflicts } : {};
+    })(),
   };
 }
 

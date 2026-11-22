@@ -13,9 +13,14 @@ import {
   type AbilityKey,
   type AbilityStat,
   type CombatActor,
+  type DamageRider,
   type FidelityRecord,
+  type Inflict,
   isDamaging,
+  MODELLED_CONDITIONS,
   type ModelledAction,
+  type ModelledCondition,
+  type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
 import { parseDamage } from "lib/domains/session-log/session-actions";
 import { splitFenceBody } from "lib/utils/fence-split";
@@ -38,12 +43,74 @@ export interface LoadedParty {
   fidelity: Record<string, FidelityRecord[]>;
 }
 
-/** What a sheet action carries that a weapon attack needs. */
+/** What a sheet action carries that the simulator reads. */
 interface SheetAction {
   name?: unknown;
   origin?: unknown;
+  bucket?: unknown;
   hit?: unknown;
   damage?: unknown;
+  /** "CON 14": the save the action asks for. */
+  save?: unknown;
+  /** The condition it puts on its target: `{ condition, on, note }`. */
+  inflicts?: unknown;
+  /** A feature's extra damage on hits: `{ damage: "1d4 origin", cost, mark }`. */
+  rider?: unknown;
+}
+
+const SAVE_TEXT = /^\s*(STR|DEX|CON|INT|WIS|CHA)\s+(\d+)\s*$/i;
+
+/**
+ * The condition a sheet action inflicts, as the engine plays it, or undefined (no condition, or one the engine
+ * does not model, such as pinned). A spell attack that also asks for a save lands it on a failed save; a save
+ * action's own save decides it. How long: "until the end of its next turn", "1 minute" (the fight, a save each
+ * turn), prone until it stands.
+ */
+export function inflictOfSheet(raw: SheetAction, action: ModelledAction): Inflict | undefined {
+  if (!isRecord(raw.inflicts)) return undefined;
+  const condition = String(raw.inflicts.condition ?? "").toLowerCase() as ModelledCondition;
+  if (!(MODELLED_CONDITIONS as readonly string[]).includes(condition)) return undefined;
+  const note = String(raw.inflicts.note ?? "");
+  const lasts: Inflict["lasts"] =
+    condition === "prone"
+      ? "start"
+      : /\b1\s*m(?:in(?:ute)?)?\b|\(1m\)|minute/i.test(note) || condition === "restrained"
+        ? "fight"
+        : "end";
+  const m = typeof raw.save === "string" ? raw.save.match(SAVE_TEXT) : null;
+  const save = m ? { ability: m[1].toLowerCase().slice(0, 3) as AbilityKey, dc: parseInt(m[2], 10) } : undefined;
+  if (action.kind === "save") return { condition, lasts, ...(lasts === "fight" && save ? { save } : {}) };
+  return { condition, lasts, ...(save ? { save } : {}) };
+}
+
+/** A feature's extra damage, from its sheet rider and its text ("a number of times equal to your PB"). */
+export function riderOfSheet(
+  raw: SheetAction,
+  featureText: string,
+  pb: number,
+  mods: Record<AbilityKey, number>
+): DamageRider | undefined {
+  if (!isRecord(raw.rider) || typeof raw.name !== "string") return undefined;
+  const dice = String(raw.rider.damage ?? "").match(/^\s*(\d*d\d+(?:\s*[+-]\s*\d+)?)/i)?.[1];
+  if (!dice || !isRollable(dice)) return undefined;
+  let uses: number | undefined;
+  if (/equal to your (?:PB|proficiency bonus)/i.test(featureText)) uses = pb;
+  else {
+    const mod = featureText.match(
+      /equal to your (STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier/i
+    );
+    if (mod) uses = Math.max(1, mods[mod[1].toLowerCase().slice(0, 3) as AbilityKey]);
+    else {
+      const times = featureText.match(/\b(once|twice|(\d+) times)\b[^.]*\b(?:long|short) rest/i);
+      if (times) uses = times[1] === "once" ? 1 : times[1] === "twice" ? 2 : parseInt(times[2], 10);
+    }
+  }
+  return {
+    name: raw.name,
+    damage: dice.replace(/\s+/g, ""),
+    kind: raw.rider.mark ? "mark" : "once-a-turn",
+    ...(uses !== undefined ? { uses } : {}),
+  };
 }
 
 /** One spell as the character's spell lists name it, with where it was listed. */
@@ -124,12 +191,29 @@ function weaponAttacksOf(sheet: CharacterSheet): ModelledAction[] {
     const hitBonus = leadingBonus(raw.hit);
     const damage = parseDamage(typeof raw.damage === "string" ? raw.damage : undefined);
     if (hitBonus === undefined || !damage || !isRollable(damage.dice)) continue;
-    out.push({
+    const weapon: WeaponAttackAction = {
       kind: "weapon",
       name: raw.name,
       hitBonus,
       damage: { expr: damage.dice, ...(damage.type ? { type: damage.type } : {}) },
-    });
+    };
+    const inflicts = inflictOfSheet(raw, weapon);
+    out.push(inflicts ? { ...weapon, inflicts } : weapon);
+  }
+  // Two-Weapon Fighting: the off-hand swing comes with the main one, as a bonus action.
+  const twoWeapon = (sheet.actions as SheetAction[]).some((a) => a.name === "Two-Weapon Fighting");
+  if (twoWeapon) {
+    for (const offHand of out.filter((a) => a.kind === "weapon" && / \(Off-hand\)$/i.test(a.name))) {
+      const main = out.find((a) => a.kind === "weapon" && a.name === offHand.name.replace(/ \(Off-hand\)$/i, "")) as
+        | WeaponAttackAction
+        | undefined;
+      if (main)
+        out.push({
+          kind: "multiattack",
+          name: `${main.name} and off-hand`,
+          swings: [main, offHand as WeaponAttackAction],
+        });
+    }
   }
   return out;
 }
@@ -255,11 +339,27 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       }
       fidelity.push(result.fidelity);
       // The note's own circle decides both the action and its bucket (an upcast listing is cast at its base circle).
-      if (result.action) (circleOf(result.action) === 0 ? cantrips : slotted).push(result.action);
+      if (result.action) {
+        const raw = (sheet.actions as SheetAction[]).find((a) => a.name === input.name);
+        const inflicts =
+          raw && result.action.kind !== "heal" && result.action.kind !== "multiattack"
+            ? inflictOfSheet(raw, result.action)
+            : undefined;
+        const action = inflicts ? ({ ...result.action, inflicts } as ModelledAction) : result.action;
+        (circleOf(action) === 0 ? cantrips : slotted).push(action);
+      }
     }
   }
 
   const actions = [...weapons, ...slotted, ...cantrips];
+  const mods = Object.fromEntries(ABILITY_KEYS.map((k) => [k, abilities[k].modifier])) as Record<AbilityKey, number>;
+  const featureText = (name: string) =>
+    (sheet.features ?? []).flatMap((s) => s.features ?? []).find((f) => f.name === name)?.text ?? "";
+  const riders = (sheet.actions as SheetAction[]).flatMap((a) => {
+    const rider = riderOfSheet(a, featureText(String(a.name ?? "")), proficiencyBonus, mods);
+    if (rider) fidelity.push({ name: rider.name, owner: name, status: "modelled" });
+    return rider ? [rider] : [];
+  });
   if (!actions.some(isDamaging)) {
     fidelity.push({ name, owner: name, status: "skipped", reason: "no-damaging-action" });
   }
@@ -277,6 +377,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       abilities,
       slots,
       actions,
+      ...(riders.length ? { riders } : {}),
     },
     fidelity,
   };

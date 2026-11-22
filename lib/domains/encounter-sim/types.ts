@@ -20,6 +20,42 @@ export interface DamageSpec {
   type?: string;
 }
 
+/** The conditions the engine plays: what they do to attacks and turns (see engine.ts). */
+export const MODELLED_CONDITIONS = [
+  "blinded",
+  "prone",
+  "restrained",
+  "poisoned",
+  "frightened",
+  "stunned",
+  "paralyzed",
+  "incapacitated",
+] as const;
+export type ModelledCondition = (typeof MODELLED_CONDITIONS)[number];
+
+/**
+ * A condition an action puts on its target: on a hit (or a failed save of the action itself), unless it
+ * gives a save of its own. It lasts until the start of the target's next turn ("start": prone, it stands),
+ * the end of its next turn ("end"), or the fight ("fight": a save at the end of each of its turns ends it,
+ * when it has one).
+ */
+export interface Inflict {
+  condition: ModelledCondition;
+  save?: { ability: AbilityKey; dc: number };
+  lasts: "start" | "end" | "fight";
+}
+
+/**
+ * Extra damage a PC's feature adds to its hits: "mark" (Mystic Mark: a use marks the target, and every hit
+ * on a marked target deals it), else once a turn on the first hit (a Sneak Attack). `uses` absent: no limit.
+ */
+export interface DamageRider {
+  name: string;
+  damage: string;
+  kind: "mark" | "once-a-turn";
+  uses?: number;
+}
+
 /** How often a monster's action comes round: "(Recharge 5-6)" (back on a d6 of `recharge` or more at the start of its turn) or "(2/Day)". */
 export interface UseLimit {
   recharge?: number;
@@ -33,6 +69,7 @@ export interface WeaponAttackAction {
   hitBonus: number;
   damage: DamageSpec;
   limit?: UseLimit;
+  inflicts?: Inflict;
 }
 
 /** A multiattack: several weapon swings taken as one action. */
@@ -49,6 +86,7 @@ export interface SpellAttackAction {
   hitBonus: number;
   damage: DamageSpec;
   circle: number;
+  inflicts?: Inflict;
 }
 
 /** A save-based effect, area or single-target. */
@@ -68,6 +106,7 @@ export interface SaveAction {
   targets?: number;
   circle: number;
   limit?: UseLimit;
+  inflicts?: Inflict;
 }
 
 /** A healing option; `expr` is the full roll including the casting modifier. */
@@ -96,6 +135,8 @@ export interface CombatActor {
   slots: number[];
   /** In fixed order: weapon attacks, slotted spells, cantrips (PCs); feature order (monsters). */
   actions: ModelledAction[];
+  /** Extra damage its features add to its hits (PCs). */
+  riders?: DamageRider[];
 }
 
 export const SKIP_REASONS = [

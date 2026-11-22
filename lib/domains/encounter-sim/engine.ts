@@ -1,6 +1,8 @@
 import { averageOf, d20, rollExpr, type Rng } from "./rng";
 import type {
   CombatActor,
+  Inflict,
+  ModelledCondition,
   HealAction,
   ModelledAction,
   SaveAction,
@@ -28,7 +30,38 @@ import type {
  *  3. At the start of a combatant's turn, one `d6` per action of its that is
  *     waiting to recharge, in action order (none for an actor with no
  *     "(Recharge …)" action, so their draws are as before).
+ *  4. With advantage or disadvantage on an attack (conditions, below), a second
+ *     `d20` right after the first.
+ *  5. A condition with a save of its own: one `d20` when it would land, and one
+ *     at the end of each of the target's turns while a fight-long one lasts.
+ *  6. With `monsterFocus` below 1, a monster picking a target draws once (and
+ *     once more for the random target); at 1 (the default) it draws nothing.
+ *  7. A rider's damage dice, after its hit's.
+ *
+ * Conditions (types.ts `Inflict`): blinded, prone, restrained, poisoned and
+ * frightened give the creature disadvantage on its attacks; blinded, prone,
+ * restrained, stunned and paralyzed give attacks against it advantage; stunned,
+ * paralyzed and incapacitated lose it its turns. Advantage and disadvantage
+ * cancel.
  */
+
+const DISADVANTAGED: ReadonlySet<ModelledCondition> = new Set([
+  "blinded",
+  "prone",
+  "restrained",
+  "poisoned",
+  "frightened",
+]);
+const EXPOSED: ReadonlySet<ModelledCondition> = new Set(["blinded", "prone", "restrained", "stunned", "paralyzed"]);
+const NO_TURN: ReadonlySet<ModelledCondition> = new Set(["stunned", "paralyzed", "incapacitated"]);
+
+export interface TrialOptions {
+  /**
+   * The share of a monster's target picks that go to the party's most hurt member; the rest go to a living
+   * PC at random. 1 (the default) is the old focus fire.
+   */
+  monsterFocus?: number;
+}
 
 interface Combatant {
   actor: CombatActor;
@@ -38,6 +71,13 @@ interface Combatant {
   spent: Set<ModelledAction>;
   /** Uses left of the "(N/Day)" actions. */
   usesLeft: Map<ModelledAction, number>;
+  /** Conditions on it now, with how they end. */
+  conditions: Map<ModelledCondition, Pick<Inflict, "lasts" | "save">>;
+  /** Uses left of each rider (by index), and whom a "mark" rider marks. */
+  riderUses: number[];
+  marked: Array<Combatant | undefined>;
+  /** A once-a-turn rider already dealt this turn. */
+  riderDone: boolean;
 }
 
 const limitOf = (action: ModelledAction) =>
@@ -71,7 +111,14 @@ function circleOf(action: ModelledAction): number {
 }
 
 /** Average damage used to choose an action; accuracy and save outcomes are ignored. */
+/** What a condition adds to an action's worth when choosing: a little, so that at equal damage the one that also hinders is taken. */
+const INFLICT_VALUE = 2;
+
 function valueOf(action: ModelledAction, livingEnemies: number): number {
+  return damageValueOf(action, livingEnemies) + ("inflicts" in action && action.inflicts ? INFLICT_VALUE : 0);
+}
+
+function damageValueOf(action: ModelledAction, livingEnemies: number): number {
   switch (action.kind) {
     case "weapon":
     case "spell-attack":
@@ -87,7 +134,13 @@ function valueOf(action: ModelledAction, livingEnemies: number): number {
   }
 }
 
-export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number): TrialResult {
+export function simulateTrial(
+  actors: CombatActor[],
+  rng: Rng,
+  roundCap: number,
+  options: TrialOptions = {}
+): TrialResult {
+  const focus = options.monsterFocus ?? 1;
   // Fresh state: full HP, a copy of the slots.
   const state: Combatant[] = actors.map((actor) => ({
     actor,
@@ -95,6 +148,10 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
     slots: [...actor.slots],
     spent: new Set<ModelledAction>(),
     usesLeft: new Map<ModelledAction, number>(),
+    conditions: new Map(),
+    riderUses: (actor.riders ?? []).map((r) => r.uses ?? Infinity),
+    marked: (actor.riders ?? []).map(() => undefined),
+    riderDone: false,
   }));
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
@@ -116,13 +173,49 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
   const enemiesOf = (c: Combatant) => order.filter((o) => o.actor.side !== c.actor.side && living(o));
   const alliesOf = (c: Combatant) => order.filter((o) => o.actor.side === c.actor.side && living(o));
 
-  /** The living enemy with the lowest current HP; ties go to initiative order. */
+  /**
+   * The living enemy with the lowest current HP (ties go to initiative order). A monster does so for a
+   * `monsterFocus` share of its picks; otherwise it takes a living PC at random.
+   */
   const pickTarget = (c: Combatant): Combatant | undefined => {
+    const enemies = enemiesOf(c);
+    if (c.actor.side === "monsters" && focus < 1 && enemies.length > 1 && rng() >= focus) {
+      return enemies[Math.min(enemies.length - 1, Math.floor(rng() * enemies.length))];
+    }
     let best: Combatant | undefined;
-    for (const enemy of enemiesOf(c)) {
+    for (const enemy of enemies) {
       if (!best || enemy.hp < best.hp) best = enemy;
     }
     return best;
+  };
+
+  const has = (c: Combatant, set: ReadonlySet<ModelledCondition>) => [...c.conditions.keys()].some((k) => set.has(k));
+
+  /** A condition lands, unless the target makes the save it gives. */
+  const inflict = (target: Combatant, how: Inflict | undefined): void => {
+    if (!how || !living(target)) return;
+    if (how.save && d20(rng) + target.actor.abilities[how.save.ability].saveModifier >= how.save.dc) return;
+    target.conditions.set(how.condition, { lasts: how.lasts, ...(how.save ? { save: how.save } : {}) });
+  };
+
+  /** A feature's extra damage on a hit: a mark (a use marks the target) or once a turn. */
+  const riderDamage = (attacker: Combatant, target: Combatant, crit: boolean): number => {
+    let total = 0;
+    (attacker.actor.riders ?? []).forEach((rider, i) => {
+      if (rider.kind === "mark") {
+        if (attacker.marked[i] !== target || !living(attacker.marked[i]!)) {
+          if (attacker.riderUses[i] <= 0) return;
+          attacker.riderUses[i] -= 1;
+          attacker.marked[i] = target;
+        }
+        total += rollExpr(rider.damage, crit, rng);
+      } else if (!attacker.riderDone && attacker.riderUses[i] > 0) {
+        attacker.riderUses[i] -= 1;
+        attacker.riderDone = true;
+        total += rollExpr(rider.damage, crit, rng);
+      }
+    });
+    return total;
   };
 
   const damage = (target: Combatant, amount: number) => {
@@ -136,10 +229,18 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
   const swing = (attacker: Combatant, action: WeaponAttackAction | SpellAttackAction): boolean => {
     const target = pickTarget(attacker);
     if (!target) return false;
-    const natural = d20(rng);
+    const advantage = has(target, EXPOSED);
+    const disadvantage = has(attacker, DISADVANTAGED);
+    let natural = d20(rng);
+    if (advantage !== disadvantage) {
+      const second = d20(rng);
+      natural = advantage ? Math.max(natural, second) : Math.min(natural, second);
+    }
     const hit = natural === 20 || (natural !== 1 && natural + action.hitBonus >= target.actor.armorClass);
     if (!hit) return false;
-    damage(target, rollExpr(action.damage.expr, natural === 20, rng));
+    const crit = natural === 20;
+    damage(target, rollExpr(action.damage.expr, crit, rng) + riderDamage(attacker, target, crit));
+    inflict(target, action.inflicts);
     return true;
   };
 
@@ -153,6 +254,13 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
       const save = d20(rng) + target.actor.abilities[action.ability].saveModifier;
       const success = save >= action.dc;
       damage(target, success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage);
+      // The action's own save decides its condition: it lands on a failure.
+      // A fight-long one is saved against each turn with its own save, else the action's.
+      if (!success && action.inflicts && living(target)) {
+        const { condition, lasts } = action.inflicts;
+        const again = action.inflicts.save ?? { ability: action.ability, dc: action.dc };
+        target.conditions.set(condition, { lasts, ...(lasts === "fight" ? { save: again } : {}) });
+      }
     }
   };
 
@@ -234,10 +342,29 @@ export function simulateTrial(actors: CombatActor[], rng: Rng, roundCap: number)
     knockedOut: state.filter((c) => c.actor.side === "party" && !living(c)).map((c) => c.actor.name),
   });
 
+  /** Its turn begins: what lasts to its turn's start ends; true when a condition takes its turn. */
+  const startTurn = (c: Combatant): boolean => {
+    c.riderDone = false;
+    for (const [k, v] of c.conditions) if (v.lasts === "start") c.conditions.delete(k);
+    return has(c, NO_TURN);
+  };
+  /** Its turn ends: what lasts to its end ends, and it saves against what lasts the fight. */
+  const endTurn = (c: Combatant): void => {
+    for (const [k, v] of c.conditions) {
+      if (v.lasts === "end") c.conditions.delete(k);
+      else if (v.lasts === "fight" && v.save) {
+        if (d20(rng) + c.actor.abilities[v.save.ability].saveModifier >= v.save.dc) c.conditions.delete(k);
+      }
+    }
+  };
+
   for (let round = 1; round <= roundCap; round++) {
     for (const c of order) {
       if (!living(c)) continue;
-      if (!takeTurn(c)) continue;
+      const lost = startTurn(c);
+      const acted = !lost && takeTurn(c);
+      endTurn(c);
+      if (!acted) continue;
       if (monstersDown()) return result("win", round);
       if (partyDown()) return result("tpk", round);
     }

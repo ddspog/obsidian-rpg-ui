@@ -41,8 +41,21 @@ function damageOf(damage: { expr: string; type?: string }): Record<string, strin
   return { damage: damage.expr, ...(damage.type ? { damageType: damage.type } : {}) };
 }
 
-/** A modelled action as its name, kind and the numbers that drive it. */
+/** A modelled action as its name, kind and the numbers that drive it, with its condition, use limit and area size. */
 function summariseAction(action: ModelledAction): ActionSummary {
+  const base = summariseBase(action);
+  const extra: ActionSummary = {};
+  if ("inflicts" in action && action.inflicts) {
+    const { condition, save, lasts } = action.inflicts;
+    extra.inflicts = `${condition} (${lasts}${save ? `, ${save.ability.toUpperCase()} ${save.dc}` : ""})`;
+  }
+  if ("limit" in action && action.limit?.recharge !== undefined) extra.recharge = action.limit.recharge;
+  if ("limit" in action && action.limit?.perDay !== undefined) extra.perDay = action.limit.perDay;
+  if (action.kind === "save" && action.targets !== undefined) extra.targets = action.targets;
+  return { ...base, ...extra };
+}
+
+function summariseBase(action: ModelledAction): ActionSummary {
   switch (action.kind) {
     case "weapon":
       return { name: action.name, kind: action.kind, hitBonus: action.hitBonus, ...damageOf(action.damage) };
@@ -102,6 +115,13 @@ function summariseParty(actor: CombatActor) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.riders?.length
+      ? {
+          riders: actor.riders.map(
+            (r) => `${r.name}: +${r.damage} (${r.kind}${r.uses !== undefined ? `, ${r.uses} uses` : ""})`
+          ),
+        }
+      : {}),
   };
 }
 

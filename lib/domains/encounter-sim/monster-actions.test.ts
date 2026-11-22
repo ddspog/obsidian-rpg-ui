@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { areaTargets, bindMultiattack, classifyMonsterFeature, useLimitOf } from "./monster-actions";
+import {
+  areaTargets,
+  bindMultiattack,
+  classifyMonsterFeature,
+  inflictOfHit,
+  inflictOfSave,
+  useLimitOf,
+} from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
 
 // Real prose from the Tales of the Valiant Monster Vault notes (feature.details bodies).
@@ -229,5 +236,41 @@ describe("bindMultiattack", () => {
       skip: "unsupported-feature",
     });
     expect(bindMultiattack({ count: 2, attacks: ["Bite"] }, new Map())).toEqual({ skip: "unsupported-feature" });
+  });
+});
+
+describe("conditions in monster prose", () => {
+  it("reads a hit's condition with its own save", () => {
+    expect(
+      inflictOfHit(
+        "7 (1d8 + 3) bludgeoning damage. If the target is a creature, it must succeed on a DC 13 Strength saving throw or be knocked prone."
+      )
+    ).toEqual({ condition: "prone", save: { ability: "str", dc: 13 }, lasts: "start" });
+  });
+
+  it("reads a condition a hit brings, and how long", () => {
+    expect(
+      inflictOfHit("5 (1d6 + 2) piercing damage, and the target is poisoned until the end of its next turn.")
+    ).toEqual({
+      condition: "poisoned",
+      lasts: "end",
+    });
+    expect(inflictOfHit("6 (1d8 + 2) bludgeoning damage, and the target is grappled (escape DC 13).")).toBeUndefined();
+    expect(inflictOfHit("8 (1d10 + 3) slashing damage.")).toBeUndefined();
+  });
+
+  it("reads what a failed save brings", () => {
+    expect(
+      inflictOfSave(
+        "Each creature in that line must make a DC 13 Dexterity saving throw. On a failure, a creature takes 7 (2d6) bludgeoning damage and is knocked prone."
+      )
+    ).toEqual({ condition: "prone", lasts: "start" });
+    expect(
+      classifyMonsterFeature({
+        name: "Frightful Shriek",
+        type: "action",
+        text: "Each creature within 30 feet must succeed on a DC 12 Wisdom saving throw, taking 5 (2d4) psychic damage on a failed save and becoming frightened for 1 minute.",
+      }).action
+    ).toMatchObject({ kind: "save", inflicts: { condition: "frightened", lasts: "fight" } });
   });
 });

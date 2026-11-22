@@ -616,7 +616,7 @@ describe("catalog suggest", () => {
         monsters: [{ note: "Wolf", count: 3 }],
         tags: ["forest", "tier-1", "test-guide", "hills"],
         review: "draft",
-        fit: { state: "fit", winRate: 0.93, tpkRate: 0.07, avgHpLost: 0.3924 },
+        fit: { state: "fit", winRate: 0.915, tpkRate: 0.085, avgHpLost: 0.4099 },
         scene: "A pack of three wolves stalks the PCs and attacks.",
       },
     ]);
@@ -925,8 +925,8 @@ describe("--brief", () => {
     for (const key of ["winRate", "tpkRate", "avgRounds", "koRate", "difficulty"]) {
       expect(brief.doc[key]).toEqual(full.doc[key]);
     }
-    // 39% of HP lost and a 7% TPK rate is within reach of easy's aim and of challenging's.
-    expect(brief.doc.fit).toEqual({ easy: "fit", challenging: "fit", deadly: "too-easy" });
+    // 41% of HP lost and an 8.5% TPK rate is within reach of challenging's aim, past easy's.
+    expect(brief.doc.fit).toEqual({ easy: "too-hard", challenging: "fit", deadly: "too-easy" });
     expect(brief.doc.skipped).toEqual({});
     expect(brief.out.length).toBeLessThan(full.out.length / 4);
   });
@@ -975,9 +975,9 @@ describe("--brief", () => {
           tags: ["forest", "tier-1", "test-guide", "hills"],
           review: "draft",
           fit: "fit",
-          winRate: 0.93,
-          tpkRate: 0.07,
-          avgHpLost: 0.3924,
+          winRate: 0.915,
+          tpkRate: 0.085,
+          avgHpLost: 0.4099,
           scene: "A pack of three wolves stalks the PCs and attacks.",
         },
       ],
@@ -1013,9 +1013,9 @@ describe("plan", () => {
           monsters: ["Wolf:3"],
           tags: ["forest", "tier-1", "test-guide", "hills"],
           fit: "fit",
-          winRate: 0.93,
-          tpkRate: 0.07,
-          avgHpLost: 0.3924,
+          winRate: 0.915,
+          tpkRate: 0.085,
+          avgHpLost: 0.4099,
           scene: "A pack of three wolves stalks the PCs and attacks.",
         },
       ],
