@@ -7,9 +7,17 @@ const block = '```rpg stat.monster\nname: "Troll"\n```';
 
 describe("singleBlockNote", () => {
   it("is a title and one rpg block, frontmatter and blank lines aside", () => {
-    expect(singleBlockNote(`${fm}# Troll\n${block}\n`)).toEqual({ single: true, meta: "stat.monster", heading: "Troll" });
+    expect(singleBlockNote(`${fm}# Troll\n${block}\n`)).toEqual({
+      single: true,
+      meta: "stat.monster",
+      heading: "Troll",
+    });
     expect(singleBlockNote(`${fm}\n${block}\n\n`)).toEqual({ single: true, meta: "stat.monster" });
-    expect(singleBlockNote(`# Troll\n\n${block.replace(/```/g, "````")}`)).toEqual({ single: true, meta: "stat.monster", heading: "Troll" });
+    expect(singleBlockNote(`# Troll\n\n${block.replace(/```/g, "````")}`)).toEqual({
+      single: true,
+      meta: "stat.monster",
+      heading: "Troll",
+    });
   });
 
   it("keeps lore after the block", () => {
@@ -21,8 +29,18 @@ describe("singleBlockNote", () => {
   });
 
   it("knows the blocks that print their own name", () => {
-    expect(["stat.monster", "item.magic", "spell", "feature.details"].map(namesItself)).toEqual([true, true, true, true]);
-    expect(["rule.content", "table.weather-gods", "map", undefined].map(namesItself)).toEqual([false, false, false, false]);
+    expect(["stat.monster", "item.magic", "spell", "feature.details"].map(namesItself)).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(["rule.content", "table.weather-gods", "map", undefined].map(namesItself)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 
   it("is not when there is an introduction, a second block or another kind of block", () => {

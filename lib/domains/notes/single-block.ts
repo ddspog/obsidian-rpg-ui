@@ -33,7 +33,11 @@ export function singleBlockNote(text: string): SingleBlock {
   if (!open) return { single: false };
   const fence = open[1];
   i++;
-  while (i < lines.length && !(lines[i].startsWith(fence[0].repeat(fence.length)) && lines[i].trim().replace(/[`~]/g, "") === "")) i++;
+  while (
+    i < lines.length &&
+    !(lines[i].startsWith(fence[0].repeat(fence.length)) && lines[i].trim().replace(/[`~]/g, "") === "")
+  )
+    i++;
   if (i >= lines.length) return { single: false };
   i++;
   const another = lines.slice(i).some((l) => /^(`{3,}|~{3,})\s*rpg\b/.test(l));
