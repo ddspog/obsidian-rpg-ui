@@ -1,3 +1,4 @@
+import { applyDefences, immuneTo } from "./defences";
 import { averageOf, d20, rollExpr, type Rng } from "./rng";
 import type {
   CombatActor,
@@ -111,11 +112,27 @@ function circleOf(action: ModelledAction): number {
 }
 
 /** Average damage used to choose an action; accuracy and save outcomes are ignored. */
-/** What a condition adds to an action's worth when choosing: a little, so that at equal damage the one that also hinders is taken. */
-const INFLICT_VALUE = 2;
+/**
+ * What a condition is worth when choosing an action, in points of damage a target, before the chance it lands
+ * (taken as one half): a lost turn most, then advantage against it and disadvantage on its attacks. Tunable
+ * heuristics, like the fit's profiles.
+ */
+const CONDITION_WORTH: Record<ModelledCondition, number> = {
+  stunned: 10,
+  paralyzed: 10,
+  incapacitated: 8,
+  restrained: 5,
+  blinded: 5,
+  prone: 3,
+  poisoned: 3,
+  frightened: 3,
+};
 
 function valueOf(action: ModelledAction, livingEnemies: number): number {
-  return damageValueOf(action, livingEnemies) + ("inflicts" in action && action.inflicts ? INFLICT_VALUE : 0);
+  const damage = damageValueOf(action, livingEnemies);
+  if (!("inflicts" in action) || !action.inflicts) return damage;
+  const targets = action.kind === "save" && action.area ? Math.min(action.targets ?? livingEnemies, livingEnemies) : 1;
+  return damage + 0.5 * CONDITION_WORTH[action.inflicts.condition] * targets;
 }
 
 function damageValueOf(action: ModelledAction, livingEnemies: number): number {
@@ -193,8 +210,13 @@ export function simulateTrial(
 
   /** A condition lands, unless the target makes the save it gives. */
   const inflict = (target: Combatant, how: Inflict | undefined): void => {
-    if (!how || !living(target)) return;
-    if (how.save && d20(rng) + target.actor.abilities[how.save.ability].saveModifier >= how.save.dc) return;
+    if (!how || !living(target) || immuneTo(target.actor.defences, how.condition)) return;
+    if (how.save) {
+      let roll = d20(rng);
+      // Resistant to a condition: advantage on the save against it.
+      if (target.actor.defences?.conditionResistant.includes(how.condition)) roll = Math.max(roll, d20(rng));
+      if (roll + target.actor.abilities[how.save.ability].saveModifier >= how.save.dc) return;
+    }
     target.conditions.set(how.condition, { lasts: how.lasts, ...(how.save ? { save: how.save } : {}) });
   };
 
@@ -218,8 +240,9 @@ export function simulateTrial(
     return total;
   };
 
-  const damage = (target: Combatant, amount: number) => {
-    target.hp = Math.max(0, target.hp - amount);
+  /** Damage of a type, less what the target's defences take off ("weapon": a weapon's bludgeoning, piercing or slashing is nonmagical). */
+  const damage = (target: Combatant, amount: number, type?: string, weapon = false) => {
+    target.hp = Math.max(0, target.hp - applyDefences(amount, type, target.actor.defences, weapon));
   };
 
   const monstersDown = () => order.every((c) => c.actor.side !== "monsters" || !living(c));
@@ -239,7 +262,10 @@ export function simulateTrial(
     const hit = natural === 20 || (natural !== 1 && natural + action.hitBonus >= target.actor.armorClass);
     if (!hit) return false;
     const crit = natural === 20;
-    damage(target, rollExpr(action.damage.expr, crit, rng) + riderDamage(attacker, target, crit));
+    const weapon = action.kind === "weapon";
+    damage(target, rollExpr(action.damage.expr, crit, rng), action.damage.type, weapon);
+    // A rider's damage is of its weapon's type ("1d4 origin").
+    damage(target, riderDamage(attacker, target, crit), action.damage.type, weapon);
     inflict(target, action.inflicts);
     return true;
   };
@@ -253,10 +279,19 @@ export function simulateTrial(
     for (const target of targets) {
       const save = d20(rng) + target.actor.abilities[action.ability].saveModifier;
       const success = save >= action.dc;
-      damage(target, success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage);
+      damage(
+        target,
+        success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage,
+        action.damage.type
+      );
       // The action's own save decides its condition: it lands on a failure.
       // A fight-long one is saved against each turn with its own save, else the action's.
-      if (!success && action.inflicts && living(target)) {
+      if (
+        !success &&
+        action.inflicts &&
+        living(target) &&
+        !immuneTo(target.actor.defences, action.inflicts.condition)
+      ) {
         const { condition, lasts } = action.inflicts;
         const again = action.inflicts.save ?? { ability: action.ability, dc: action.dc };
         target.conditions.set(condition, { lasts, ...(lasts === "fight" ? { save: again } : {}) });
@@ -283,37 +318,44 @@ export function simulateTrial(
     }
   };
 
-  const healFor = (c: Combatant): HealAction | undefined => {
-    const heal = c.actor.actions.find((a): a is HealAction => a.kind === "heal" && isAvailable(c, a));
+  const healFor = (c: Combatant, bonus = false): HealAction | undefined => {
+    const heal = c.actor.actions.find(
+      (a): a is HealAction => a.kind === "heal" && !!a.bonus === bonus && isAvailable(c, a)
+    );
     if (!heal) return undefined;
     return alliesOf(c).some((a) => 2 * a.hp < a.actor.maxHp) ? heal : undefined;
   };
 
   /** Take one action; true when it was a damaging one (win and TPK are checked after those). */
+  /** Heals the most hurt ally below half its HP with the heal given; false when none is that hurt. */
+  const healAlly = (c: Combatant, heal: HealAction): boolean => {
+    let target: Combatant | undefined;
+    let missing = -1;
+    for (const ally of alliesOf(c)) {
+      if (2 * ally.hp >= ally.actor.maxHp) continue;
+      const gap = ally.actor.maxHp - ally.hp;
+      if (gap > missing || (gap === missing && target && ally.hp < target.hp)) {
+        target = ally;
+        missing = gap;
+      }
+    }
+    if (!target) return false;
+    target.hp = Math.min(target.actor.maxHp, target.hp + rollExpr(heal.expr, false, rng));
+    spendSlot(c, circleOf(heal));
+    return true;
+  };
+
   const takeTurn = (c: Combatant): boolean => {
     // Recharge rolls first: a d6 for each spent action, back on its number or more.
     for (const action of c.actor.actions) {
       if (!c.spent.has(action)) continue;
       if (Math.floor(rng() * 6) + 1 >= (limitOf(action)?.recharge ?? 7)) c.spent.delete(action);
     }
+    // A bonus-action heal comes on top of the action; an action heal takes the turn.
+    const bonusHeal = healFor(c, true);
+    if (bonusHeal) healAlly(c, bonusHeal);
     const heal = healFor(c);
-    if (heal) {
-      let target: Combatant | undefined;
-      let missing = -1;
-      for (const ally of alliesOf(c)) {
-        if (2 * ally.hp >= ally.actor.maxHp) continue;
-        const gap = ally.actor.maxHp - ally.hp;
-        if (gap > missing || (gap === missing && target && ally.hp < target.hp)) {
-          target = ally;
-          missing = gap;
-        }
-      }
-      if (target) {
-        target.hp = Math.min(target.actor.maxHp, target.hp + rollExpr(heal.expr, false, rng));
-        spendSlot(c, circleOf(heal));
-        return false;
-      }
-    }
+    if (heal && healAlly(c, heal)) return false;
 
     const livingEnemies = enemiesOf(c).length;
     let best: ModelledAction | undefined;

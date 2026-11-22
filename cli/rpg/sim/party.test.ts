@@ -397,12 +397,15 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
     expect(byName("Kowyn").slots[0]).toBe(druid!.slots[0]);
   });
 
-  it("skips Entangle as a control spell", () => {
-    expect(record("Kowyn", "Entangle")).toEqual({
-      name: "Entangle",
-      owner: "Kowyn",
-      status: "skipped",
-      reason: "control-spell",
+  it("models Entangle as a control spell: a save that deals nothing and restrains", () => {
+    expect(record("Kowyn", "Entangle")).toEqual({ name: "Entangle", owner: "Kowyn", status: "modelled" });
+    expect(byName("Kowyn").actions.find((a) => a.name === "Entangle")).toMatchObject({
+      kind: "save",
+      ability: "str",
+      dc: 14,
+      damage: { expr: "0" },
+      targets: 4,
+      inflicts: { condition: "restrained", lasts: "fight" },
     });
   });
 

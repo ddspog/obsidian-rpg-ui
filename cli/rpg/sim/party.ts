@@ -6,6 +6,7 @@
  */
 
 import { parse } from "yaml";
+import { areaTargets } from "lib/domains/encounter-sim/monster-actions";
 import { isRollable } from "lib/domains/encounter-sim/rng";
 import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "lib/domains/encounter-sim/spell-actions";
 import {
@@ -81,6 +82,31 @@ export function inflictOfSheet(raw: SheetAction, action: ModelledAction): Inflic
   const save = m ? { ability: m[1].toLowerCase().slice(0, 3) as AbilityKey, dc: parseInt(m[2], 10) } : undefined;
   if (action.kind === "save") return { condition, lasts, ...(lasts === "fight" && save ? { save } : {}) };
   return { condition, lasts, ...(save ? { save } : {}) };
+}
+
+/** A damage-free spell the sheet gives a modelled condition and a save for, as a save action that deals nothing. */
+function controlSpell(sheet: CharacterSheet, spell: string, circle: number): ModelledAction | undefined {
+  const raw = (sheet.actions as SheetAction[]).find((a) => a.name === spell);
+  if (!raw || raw.damage !== undefined) return undefined;
+  const m = typeof raw.save === "string" ? raw.save.match(SAVE_TEXT) : null;
+  if (!m) return undefined;
+  const save: ModelledAction = {
+    kind: "save",
+    name: spell,
+    dc: parseInt(m[2], 10),
+    ability: m[1].toLowerCase().slice(0, 3) as AbilityKey,
+    damage: { expr: "0" },
+    onSuccess: "none",
+    area: true,
+    ...areaTargets(
+      `${String((raw.inflicts as { note?: unknown } | undefined)?.note ?? "")} ${String((raw as { range?: unknown }).range ?? "")}`
+    ),
+    circle,
+  };
+  const inflicts = inflictOfSheet(raw, save);
+  if (!inflicts) return undefined;
+  if (save.kind === "save" && save.targets === undefined) save.targets = 1;
+  return { ...save, inflicts } as ModelledAction;
 }
 
 /** A feature's extra damage, from its sheet rider and its text ("a number of times equal to your PB"). */
@@ -287,6 +313,7 @@ function readSpell(ctx: Ctx, link: string, listedCircle: number, owner: string, 
     ...(typeof data.summary === "string" ? { summary: data.summary } : {}),
     ...(text !== undefined ? { text } : {}),
     circle: circleOfLabel(data.circle) ?? listedCircle,
+    ...(typeof data.casting === "string" ? { casting: data.casting } : {}),
   };
 }
 
@@ -336,6 +363,14 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
         throw new Error(
           `Cannot load PC "${ref}": spell "${input.name}" needs a casting modifier but caster "${source}" has no usable casting ability on the sheet.`
         );
+      }
+      // A control spell with no damage the sheet gives a condition for (Entangle: restrained on a failed STR
+      // save) is a save action that deals nothing and hinders.
+      const control = !result.action ? controlSpell(sheet, input.name, input.circle ?? 0) : undefined;
+      if (control) {
+        slotted.push(control);
+        fidelity.push({ name: input.name, owner: name, status: "modelled" });
+        continue;
       }
       fidelity.push(result.fidelity);
       // The note's own circle decides both the action and its bucket (an upcast listing is cast at its base circle).

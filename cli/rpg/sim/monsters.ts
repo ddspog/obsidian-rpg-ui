@@ -6,6 +6,7 @@
  */
 
 import { parse as parseYaml } from "yaml";
+import { defencesOf, noDefences } from "lib/domains/encounter-sim/defences";
 import { classifyMonsterFeature, bindMultiattack } from "lib/domains/encounter-sim/monster-actions";
 import {
   ABILITY_KEYS,
@@ -80,7 +81,13 @@ function leadingInt(text: string | undefined): number | null {
 
 function findFile(ctx: Ctx, ref: string): TFile | null {
   try {
-    return ctx.note(ref);
+    const file = ctx.note(ref);
+    // A bare name ("Zombie") may find a template note first: a creature of the bestiary of that name wins.
+    if (!ref.includes("/") && file.path.startsWith(`${BESTIARY_PREFIX}templates/`)) {
+      const named = bestiaryNoteNamed(ctx, ref);
+      if (named && named !== file.path) return ctx.note(named);
+    }
+    return file;
   } catch {
     // A spoken name or an alias: "Goblin" for `Goblin, A`, "warden robot" for `Robot Warden`.
     const named = bestiaryNoteNamed(ctx, ref);
@@ -261,6 +268,13 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     slots: [],
     actions,
   };
+  // Resistances and the like: the lines' types and conditions, and the text of the traits they name.
+  const stats = data.stats as Record<string, unknown>;
+  const defences = defencesOf(
+    { resistant: stats.resistant, immune: stats.immune, vulnerable: stats.vulnerable },
+    (trait) => resolved.find((f) => f.name?.trim().toLowerCase() === trait.trim().toLowerCase())?.text
+  );
+  if (!noDefences(defences)) actor.defences = defences;
   return {
     note: file.path,
     name,

@@ -148,7 +148,9 @@ function saveFrom(name: string, text: string): SaveAction | null {
 
 /** The creatures an area catches, by its size (the usual targets-in-area table); none when it gives no size. */
 export function areaTargets(text: string): { targets?: number } {
-  const m = text.match(/(\d+)-foot(?:-radius)?\s+(cone|cube|square|line|sphere|cylinder|radius|emanation|burst)/i);
+  const m = text.match(
+    /(\d+)[- ](?:foot|feet|ft\.?)(?:-radius)?\s+(cone|cube|square|line|sphere|cylinder|radius|emanation|burst)/i
+  );
   if (!m) return {};
   const size = parseInt(m[1], 10);
   const shape = m[2].toLowerCase();

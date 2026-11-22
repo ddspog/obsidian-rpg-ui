@@ -23,6 +23,8 @@ export interface SpellOptionInput {
   text?: string;
   /** 0 = cantrip. Falls back to `roll.circle`, then 0, when absent. */
   circle?: number;
+  /** The fence's `casting:` ("1 bonus action"). */
+  casting?: string;
 }
 
 /** The character numbers a modelled spell derives its bonus and DC from. */
@@ -167,7 +169,13 @@ export function resolveSpellOption(
       if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
       if (form.kind === "heal") {
         return {
-          action: { kind: "heal", name, expr: healExpr(damage.expr, numbers.castingModifier), circle },
+          action: {
+            kind: "heal",
+            name,
+            expr: healExpr(damage.expr, numbers.castingModifier),
+            circle,
+            ...(isBonus(spell.casting) ? { bonus: true } : {}),
+          },
           fidelity: modelled,
         };
       }
@@ -184,5 +192,25 @@ export function resolveSpellOption(
     }
   }
 
+  // A heal its text gives ("regains hit points equal to 1d4 + your spellcasting ability modifier").
+  const heal = text.match(
+    /regains?\s+(?:a number of\s+)?hit points equal to\s+(\d*d\d+)(\s*\+\s*your spellcasting ability modifier)?/i
+  );
+  if (heal && isRollable(heal[1])) {
+    if (!numbers) return { fidelity: { name, owner, status: "modelled" }, needsCastingModifier: true };
+    return {
+      action: {
+        kind: "heal",
+        name,
+        expr: heal[2] ? healExpr(heal[1], numbers.castingModifier) : heal[1],
+        circle,
+        ...(isBonus(spell.casting) ? { bonus: true } : {}),
+      },
+      fidelity: { name, owner, status: "modelled" },
+    };
+  }
+
   return skipFromText(name, owner, text);
 }
+
+const isBonus = (casting: string | undefined) => /\bbonus action\b/i.test(casting ?? "");

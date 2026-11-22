@@ -685,3 +685,46 @@ describe("conditions and riders", () => {
     expect(koRate(0)).toBeLessThan(0.45);
   });
 });
+
+describe("defences in play", () => {
+  it("an immune creature takes no damage of that type and no condition it is immune to", () => {
+    const fire: WeaponAttackAction = {
+      kind: "weapon",
+      name: "Firebrand",
+      hitBonus: 100,
+      damage: { expr: "5", type: "fire" },
+      inflicts: { condition: "prone", lasts: "start" },
+    };
+    const pc = actor({ name: "Fire", side: "party", hp: 100, init: 10, actions: [fire] });
+    const elemental = actor({ name: "Elemental", side: "monsters", hp: 20 });
+    elemental.defences = {
+      resistant: [],
+      immune: ["fire"],
+      vulnerable: [],
+      conditionImmune: ["prone"],
+      conditionResistant: [],
+    };
+    expect(simulateTrial([pc, elemental], createSeededRng(4), 3).outcome).toBe("stalemate");
+  });
+
+  it("a resistant creature takes half", () => {
+    const pc = actor({ name: "Cold", side: "party", hp: 100, init: 10, actions: [weapon("10", 100)] });
+    pc.actions = [{ ...(pc.actions[0] as WeaponAttackAction), damage: { expr: "10", type: "cold" } }];
+    const troll = actor({ name: "Troll", side: "monsters", hp: 10 });
+    troll.defences = { resistant: ["cold"], immune: [], vulnerable: [], conditionImmune: [], conditionResistant: [] };
+    expect(simulateTrial([pc, troll], createSeededRng(4), 5).rounds).toBe(2);
+  });
+});
+
+describe("a bonus-action heal", () => {
+  it("heals and still attacks in the same turn", () => {
+    const word: HealAction = { kind: "heal", name: "Healing Word", expr: "5", circle: 0, bonus: true };
+    const cleric = actor({ name: "Cleric", side: "party", hp: 20, init: 10, actions: [word, weapon("3", 100)] });
+    const hurt = actor({ name: "Hurt", side: "party", hp: 16 });
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, init: 20, actions: [weapon("10", 100)] });
+    const dummy = actor({ name: "Dummy", side: "monsters", hp: 3 });
+    // The brute hits Hurt (16 -> 6, below half); the cleric heals it to 11 and kills the dummy; the brute is left.
+    const r = simulateTrial([cleric, hurt, brute, dummy], () => face(15), 1);
+    expect(r.partyHpRemaining).toBe(20 + 11);
+  });
+});

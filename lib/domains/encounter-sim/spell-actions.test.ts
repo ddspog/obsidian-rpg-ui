@@ -599,3 +599,20 @@ describe("resolveSpellOption: circle", () => {
     expect(resolveSpellOption(spell, NUMBERS, OWNER).action).toMatchObject({ circle: 1 });
   });
 });
+
+describe("a heal its text gives", () => {
+  it("reads Healing Word as a bonus-action heal with the casting modifier", () => {
+    const result = resolveSpellOption(
+      {
+        name: "Healing Word",
+        casting: "1 bonus action",
+        circle: 1,
+        text: "A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier.",
+      },
+      NUMBERS,
+      "Jacqui"
+    );
+    expect(result.action).toEqual({ kind: "heal", name: "Healing Word", expr: "1d4+4", circle: 1, bonus: true });
+    expect(result.fidelity.status).toBe("modelled");
+  });
+});

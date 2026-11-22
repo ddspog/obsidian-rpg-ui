@@ -56,6 +56,19 @@ export interface DamageRider {
   uses?: number;
 }
 
+/**
+ * What a creature shrugs off: damage types it is resistant, immune or vulnerable to ("nonmagical" for
+ * bludgeoning, piercing and slashing from weapons), and the conditions it is immune or resistant to
+ * (resistant: advantage on the save against it). See defences.ts.
+ */
+export interface Defences {
+  resistant: string[];
+  immune: string[];
+  vulnerable: string[];
+  conditionImmune: string[];
+  conditionResistant: string[];
+}
+
 /** How often a monster's action comes round: "(Recharge 5-6)" (back on a d6 of `recharge` or more at the start of its turn) or "(2/Day)". */
 export interface UseLimit {
   recharge?: number;
@@ -115,6 +128,8 @@ export interface HealAction {
   name: string;
   expr: string;
   circle: number;
+  /** Cast as a bonus action (Healing Word): it comes on top of the turn's action. */
+  bonus?: boolean;
 }
 
 export type ModelledAction = WeaponAttackAction | MultiattackAction | SpellAttackAction | SaveAction | HealAction;
@@ -137,6 +152,8 @@ export interface CombatActor {
   actions: ModelledAction[];
   /** Extra damage its features add to its hits (PCs). */
   riders?: DamageRider[];
+  /** Its resistances, immunities and vulnerabilities. */
+  defences?: Defences;
 }
 
 export const SKIP_REASONS = [

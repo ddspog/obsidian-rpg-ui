@@ -154,14 +154,9 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(small.doc.difficulty).toEqual({ totalCr: "1/8", benchmark: "1/2", label: "below" });
   }, 120_000);
 
-  it("reports Entangle and Sanctuary as control spells and Tactical Analysis as unsupported", async () => {
+  it("models Entangle, reports Sanctuary as a control spell and Tactical Analysis as unsupported", async () => {
     const { doc } = await run("--monster", HOBGOBLIN, "--trials", "5");
-    expect(doc.fidelity.Kowyn).toContainEqual({
-      name: "Entangle",
-      owner: "Kowyn",
-      status: "skipped",
-      reason: "control-spell",
-    });
+    expect(doc.fidelity.Kowyn).toContainEqual({ name: "Entangle", owner: "Kowyn", status: "modelled" });
     expect(doc.fidelity["Jacqui Ilitul"]).toContainEqual({
       name: "Sanctuary",
       owner: "Jacqui Ilitul",

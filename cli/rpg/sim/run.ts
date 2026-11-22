@@ -138,6 +138,9 @@ function summariseGroup(monster: LoadedMonster, count: number) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.defences
+      ? { defences: Object.fromEntries(Object.entries(actor.defences).filter(([, list]) => list.length > 0)) }
+      : {}),
   };
 }
 
