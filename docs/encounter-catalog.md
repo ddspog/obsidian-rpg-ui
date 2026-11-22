@@ -122,6 +122,21 @@ The tag holds the link to the entry (its block id, `^<id>`, written under each e
 
 **Unprepare** takes the prepared line back out (only while it is unfought). `rpg sim catalog prepare <id>` writes the same line from the CLI (`lib/domains/session-log/prepared-encounter.ts` is shared).
 
+## Adjusting an encounter: `catalog adjust`
+
+`rpg sim catalog adjust [<id>…] [--state too-hard|too-easy]… [--limit N] [--accept [--pick N]] [--trials N]` takes entries that do not fit the catalog's party (the ids named, or with none the party tier's `too-hard` and `too-easy` entries, at most `--limit`, default 5; entries already adjusted are left out) and tries changes on each (`lib/domains/encounter-catalog/adjust.ts`):
+
+- **Counts:** fewer of a group (easier) or more (harder).
+- **Swaps:** a group for one of its equivalents (same role, the same subrole first; down the CR ladder when easier, up when harder; the same kind of creature first, so a humanoid stands in for a humanoid), at its count, one fewer, or one or two more.
+- **Minions or a leader** (harder): two to six rank-and-file soldiers, or one leader, from the monsters the party can face alone, the entry's habitat first.
+- **A group less** (easier), when there are several.
+
+Every change is simulated against the party; the ones that fit are ranked by closeness to the difficulty's aim, a count change before a swap, a swap before a new or lost group when they are near. When no single change fits, a second change is tried on the three nearest attempts, each the way it missed; when still none fits, the nearest attempt is reported as `closest`, to show which way to go. Terrain and tactics cannot be simulated, so each entry also gets `tactics` in words (a choke point, letting the foes flee, an ambush…).
+
+It is a dry run: `--accept` adds the best change of each entry (or `--pick N`) as a new **draft** with `adjustedFrom: <id>`, `adjustment: "<what changed>"`, the original's tags plus `adjusted`, its source and scene, and its fit. The original stays as it was, so the catalog grows: an encounter table written for four PCs gets versions for a party of two or six. Not built yet: templates (they need a statblock rewritten).
+
+On the testing vault, for the stock party of four at challenging, the first eight entries that did not fit all found a fitting change, for example 7 Kobolds instead of 5, 1 Druid instead of 2, 3 Glass Mephits instead of 4 Ice Mephits. For a party of two, 53 of 58 checked entries were too hard; the first five all found one, the Bandit Captain fight without the captain among them. About 30 s for eight entries at 100 trials, most of it reading the bestiary's roles once.
+
 ## Monster roles and equivalents
 
 The Monster Vault sorts monsters into four roles ("Monster Roles and Tactics"), each split here into subroles (the tree the owner chose):

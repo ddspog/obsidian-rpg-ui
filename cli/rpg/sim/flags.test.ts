@@ -254,6 +254,7 @@ describe("SIM_HELP", () => {
       "review",
       "min-confidence",
       "accept",
+      "pick",
       "force",
       "refresh",
       "include-stale",

@@ -71,6 +71,22 @@ function familyOf(note: string): string {
   return note.slice(BESTIARY_PREFIX.length).split("/").slice(0, -1).join("/");
 }
 
+/** A monster as the equivalents search compares it. */
+export function roleProfileOf(m: RoledMonster): RoleProfile {
+  return {
+    note: m.note,
+    name: m.name,
+    cr: crNumber(m.cr),
+    role: m.role,
+    subrole: m.subrole,
+    tags: m.guess.tags,
+    ratios: m.guess.ratios,
+    type: m.type,
+    habitat: m.habitat,
+    family: familyOf(m.note),
+  };
+}
+
 function roled(monster: LoadedMonster): RoledMonster {
   const guess = guessRole({
     name: monster.name,
@@ -280,18 +296,7 @@ export async function simEquivalents(ctx: Ctx, options: SimOptions): Promise<{ d
   const [target] = (await roledBestiary(ctx, {}, [noteOf(ctx, ref)])).monsters;
   if (!target) throw new UsageError(`"${ref}" is not a monster note.`);
   const { monsters } = await roledBestiary(ctx, options);
-  const profile = (m: RoledMonster): RoleProfile => ({
-    note: m.note,
-    name: m.name,
-    cr: crNumber(m.cr),
-    role: m.role,
-    subrole: m.subrole,
-    tags: m.guess.tags,
-    ratios: m.guess.ratios,
-    type: m.type,
-    habitat: m.habitat,
-    family: familyOf(m.note),
-  });
+  const profile = roleProfileOf;
   // --role names a role (its best subrole for this monster) or a subrole to look for instead.
   const asked = options.roles[0];
   const askedSub = parseSubrole(asked);

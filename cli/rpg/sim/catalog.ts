@@ -42,6 +42,7 @@ import {
   saveCatalog,
   systemFolderOf,
 } from "./catalog-store";
+import { adjustEntry, adjustedEntry, adjustPool } from "./catalog-adjust";
 import { checkEntries, loadPartyState, type CheckParams, type CheckResult } from "./catalog-check";
 import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
@@ -511,6 +512,82 @@ function prepare(ctx: Ctx, options: SimOptions) {
   return { catalog: path, session: latest, prepared: done };
 }
 
+/**
+ * `catalog adjust`: the entries named (or, with none, those of the party's tier whose fit is one of
+ * --state, default too-hard and too-easy, at most --limit, default 5) tried with changes; with
+ * --accept the best fitting change of each (or --pick) is added as a draft.
+ */
+async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const party = await loadPartyState(ctx, catalog, path, options.session);
+  const states = options.states.length ? options.states : (["too-hard", "too-easy"] as const);
+  const chosen = ids.length
+    ? catalog.entries.filter((e) => ids.includes(e.id))
+    : byTier(ctx, catalog, party.profile, options.tiers)
+        .kept.map((k) => k.entry)
+        .filter((e) => e.fit && (states as readonly string[]).includes(e.fit.state) && !e.adjustedFrom)
+        .slice(0, options.limitSet ? options.limit : 5);
+  const pool = await adjustPool(ctx);
+  const params = { seed: options.seed, trials: options.trials, rounds: options.rounds, today: now() };
+  let next = catalog;
+  const results = [];
+  for (const entry of chosen) {
+    const r = await adjustEntry(ctx, catalog, party, entry, pool, params);
+    let added: string | undefined;
+    const pick = r.fitting[options.pick - 1];
+    if (options.accept && pick) {
+      const draftEntry = adjustedEntry(next, entry, pick);
+      next = addEntry(next, draftEntry);
+      added = draftEntry.id;
+    }
+    results.push({
+      id: r.id,
+      fit: r.from.state,
+      avgHpLost: r.from.avgHpLost,
+      tpkRate: r.from.tpkRate,
+      ...(r.direction ? { make: r.direction } : {}),
+      tried: r.tried,
+      options: r.fitting.slice(0, 3).map((t, i) => ({
+        pick: i + 1,
+        change: t.candidate.label,
+        monsters: t.candidate.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+        avgHpLost: t.fit.avgHpLost,
+        tpkRate: t.fit.tpkRate,
+        winRate: t.fit.winRate,
+      })),
+      ...(r.fitting.length > 3 ? { moreOptions: r.fitting.length - 3 } : {}),
+      ...(r.closest
+        ? {
+            closest: {
+              change: r.closest.candidate.label,
+              monsters: r.closest.candidate.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+              fit: r.closest.fit.state,
+              avgHpLost: r.closest.fit.avgHpLost,
+              tpkRate: r.closest.fit.tpkRate,
+            },
+          }
+        : {}),
+      ...(r.direction ? { tactics: r.tactics } : {}),
+      ...(added ? { added } : {}),
+    });
+  }
+  if (next !== catalog) saveCatalog(ctx, path, next);
+  return {
+    catalog: path,
+    party: { name: catalog.party.name, size: party.actors.length, tier: party.profile.tier },
+    difficulty: catalog.difficulty,
+    adjusted: results,
+    ...(results.length === 0
+      ? { note: "No entry to adjust: name ids, or check the catalog first so entries have a fit." }
+      : {}),
+    ...(options.accept
+      ? {}
+      : { hint: "A dry run: --accept adds the best option of each as a draft (--pick N another)." }),
+  };
+}
+
 async function check(ctx: Ctx, options: SimOptions, now: () => string) {
   const { path, catalog } = existing(ctx, options);
   const { result, party } = await runCheck(ctx, path, catalog, options, now);
@@ -663,6 +740,8 @@ export function createSimCatalog(deps: CatalogDeps = {}): SimHandler {
         return { doc: session(ctx, options) };
       case "prepare":
         return { doc: prepare(ctx, options) };
+      case "adjust":
+        return { doc: await adjust(ctx, options, now) };
       case "check":
         return { doc: await check(ctx, options, now) };
       case "suggest":

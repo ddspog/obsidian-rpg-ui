@@ -258,6 +258,11 @@ rpg sim run --monster "Thug:3" --brief
 - An option from the catalog may carry a `scene`: the table row it came
   from. Use it to set the encounter, in your words. `atMin`/`atMax` say how the
   fight goes when a rolled count comes out low or high: roll the count in play.
+- An entry that does not fit the party (too easy, too hard, a party of two
+  against a table written for four): `rpg sim catalog adjust <id>` tries
+  counts, swaps for equivalents, minions or a leader, and says which fit, with
+  tactics in words. It writes nothing; `--accept` (when the player allows the
+  catalog) adds the best as a draft linked to the original.
 - Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
   keeps `plan` from offering it again for a few sessions. When the player
   plays in Obsidian, `rpg sim catalog prepare <id>` readies it instead: a

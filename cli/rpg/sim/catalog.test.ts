@@ -561,6 +561,44 @@ describe("catalog check", () => {
   });
 });
 
+describe("catalog adjust", () => {
+  it("tries changes on an entry that does not fit, and with --accept adds the best as a draft linked to it", async () => {
+    const path = await init("Adjusting");
+    await sim("draft", FOREST, "--catalog", path, "--accept");
+    await sim("check", "--catalog", path);
+    const dry = await sim("adjust", "forest-t1-1-2-rat", "--catalog", path, "--trials", "60");
+    expect(dry.code, dry.err).toBe(0);
+    const rat = dry.doc.adjusted[0];
+    expect(rat).toMatchObject({ id: "forest-t1-1-2-rat", fit: "too-easy", make: "harder" });
+    expect(rat.tried).toBeGreaterThan(0);
+    expect(rat.tactics.join(" ")).toMatch(/ambush/);
+    expect(dry.doc.hint).toMatch(/--accept/);
+    expect(byId(path, "forest-t1-1-2-rat-adjusted-count")).toBeUndefined();
+
+    if (rat.options.length > 0) {
+      const accepted = await sim("adjust", "forest-t1-1-2-rat", "--catalog", path, "--trials", "60", "--accept");
+      const added = accepted.doc.adjusted[0].added;
+      expect(added).toMatch(/^forest-t1-1-2-rat-adjusted-/);
+      expect(byId(path, added)).toMatchObject({
+        review: "draft",
+        adjustedFrom: "forest-t1-1-2-rat",
+        adjustment: rat.options[0].change,
+        fit: { state: "fit" },
+      });
+      expect(byId(path, added)?.tags).toContain("adjusted");
+    } else {
+      expect(rat.closest).toBeDefined();
+    }
+  });
+
+  it("names an id the catalog does not have", async () => {
+    const path = await init("Adjust Missing");
+    const r = await sim("adjust", "nope", "--catalog", path);
+    expect(r.code).toBe(1);
+    expect(r.err).toMatch(/No entry with id "nope"/);
+  });
+});
+
 describe("catalog suggest", () => {
   it("returns the fit entries that match every --tag, leaving drafts out unless asked", async () => {
     const path = await seeded("Suggesting");

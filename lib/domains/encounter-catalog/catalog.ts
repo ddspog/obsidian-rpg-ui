@@ -43,6 +43,10 @@ export interface CatalogEntry {
   uses?: number;
   /** The catalog's session number when it was last run. */
   lastUsedSession?: number;
+  /** The entry this one was adjusted from (`catalog adjust`), by id. */
+  adjustedFrom?: string;
+  /** What the adjustment changed, in words ("3 Wolf instead of 5"). */
+  adjustment?: string;
 }
 
 /** The party as `catalog check` last profiled it: what the board shows without simulating anything. */
@@ -213,6 +217,8 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
     out.source = source;
   }
   out.review = entry.review;
+  if (entry.adjustedFrom !== undefined) out.adjustedFrom = entry.adjustedFrom;
+  if (entry.adjustment !== undefined) out.adjustment = entry.adjustment;
   if (entry.notes !== undefined) out.notes = entry.notes;
   if (entry.fit) {
     const f = entry.fit;
@@ -498,6 +504,13 @@ function parseEntry(yamlText: string, index: number, taken: Set<string>): Catalo
     const notes = str(data.notes);
     if (notes === undefined) fail("`notes` must be text");
     entry.notes = notes;
+  }
+  for (const key of ["adjustedFrom", "adjustment"] as const) {
+    const v = data[key];
+    if (v === undefined || v === null) continue;
+    const text = str(v);
+    if (text === undefined) fail(`\`${key}\` must be text`);
+    entry[key] = text;
   }
   if (data.fit !== undefined && data.fit !== null) entry.fit = parseFit(data.fit, fail);
   for (const key of ["uses", "lastUsedSession"] as const) {

@@ -52,6 +52,7 @@ export const CATALOG_ACTIONS = [
   "tag",
   "use",
   "prepare",
+  "adjust",
   "session",
   "check",
   "suggest",
@@ -287,7 +288,15 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     name: "accept",
     kind: "boolean",
     default: false,
-    description: "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; else a dry run",
+    description:
+      "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; `catalog adjust`: write the best adjustment (or --pick) as a new draft; else a dry run",
+  },
+  {
+    name: "pick",
+    kind: "string",
+    default: 1,
+    value: "<n>",
+    description: "`catalog adjust`: with --accept, which of the fitting adjustments to keep (1 is the best)",
   },
   {
     name: "force",
@@ -456,6 +465,8 @@ export interface SimOptions {
   confidences: Confidence[];
   /** `roles`: add each monster's stats and features. */
   features: boolean;
+  /** `catalog adjust`: which fitting adjustment `--accept` keeps (1-based). */
+  pick: number;
 }
 
 export interface ParsedSim {
@@ -507,6 +518,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     steps: flagDefault<number>("steps"),
     confidences: [],
     features: false,
+    pick: flagDefault<number>("pick"),
   };
 }
 
@@ -737,6 +749,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
   options.write = values.write === true;
   options.features = values.features === true;
+  if (typeof values.pick === "string") options.pick = integer("pick", values.pick, 1, "a positive integer");
   options.confidences = ((values.confidence as string[] | undefined) ?? []).map((raw) => {
     const c = raw.trim().toLowerCase();
     if (!(CONFIDENCES as readonly string[]).includes(c)) {
@@ -759,6 +772,7 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   tag: ["add-tag", "drop-tag"],
   use: ["session"],
   prepare: [],
+  adjust: ["state", "limit", "accept", "pick", "seed", "trials", "rounds", "session"],
   session: ["session"],
   check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
   suggest: [
@@ -795,7 +809,7 @@ function validateCatalog(options: SimOptions): void {
   for (const flag of options.given) {
     if (!allowed.has(flag)) throw new UsageError(`--${flag} is not a flag of \`catalog ${known}\`.`);
   }
-  const takesWords = ["draft", "confirm", "remove", "tag", "use", "prepare"].includes(known);
+  const takesWords = ["draft", "confirm", "remove", "tag", "use", "prepare", "adjust"].includes(known);
   if (!takesWords && options.args.length > 0) {
     throw new UsageError(`Unexpected argument "${options.args[0]}" for \`catalog ${known}\`.`);
   }
@@ -946,6 +960,8 @@ Usage:
   rpg sim catalog tag <id>... [--add-tag <tag>]... [--drop-tag <tag>]...
   rpg sim catalog use <id>... [--session N]   (the encounter was run: not offered again for --reuse-after sessions)
   rpg sim catalog prepare <id>...       (an [Enc:] line in the party's latest session log; Start Combat offers it)
+  rpg sim catalog adjust [<id>...] [--state too-hard|too-easy]... [--limit N] [--accept [--pick N]]
+    (tries counts, equivalent swaps, minions, a leader or a group less on entries that do not fit; --accept adds the best as a draft linked to its original)
   rpg sim catalog session [--session N]  (the party's session: counted from the vault's session notes, or set)
   rpg sim catalog check [--session N] [--force] [--limit N] [--seed N] [--trials N] [--rounds N]
   rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--include-used] [--limit N] [--brief]

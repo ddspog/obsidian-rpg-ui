@@ -123,7 +123,7 @@ describe("parseSimArgv: catalog", () => {
 
 describe("validateForSubcommand: catalog", () => {
   it("needs a known action", () => {
-    refuses([], /needs an action: init, draft, add, confirm, remove, tag, use, prepare, session, check, suggest, list/);
+    refuses([], /needs an action: init, draft, add, confirm, remove, tag, use, prepare, adjust, session, check, suggest, list/);
     refuses(["frobnicate"], /Unknown catalog action "frobnicate"/);
   });
 
