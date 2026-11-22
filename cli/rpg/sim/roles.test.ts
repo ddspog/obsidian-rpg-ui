@@ -159,6 +159,8 @@ describe("rpg sim equivalents", () => {
     expect(await simMain(["equivalents"], io, deps)).toBe(1);
     expect(await simMain(["roles", "--trials", "3"], io, deps)).toBe(1);
     expect(await simMain(["roles", "--role", "tank"], io, deps)).toBe(1);
+    expect(await simMain(["build", "--model", "army"], io, deps)).toBe(1);
+    expect(await simMain(["build", "--steps", "2"], io, deps)).toBe(1);
     expect(out.join("\n")).toMatch(
       /--role must be one of controller, leader, soldier, striker or one of their subroles/
     );

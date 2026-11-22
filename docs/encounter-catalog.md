@@ -137,6 +137,24 @@ It is a dry run: `--accept` adds the best change of each entry (or `--pick N`) a
 
 On the testing vault, for the stock party of four at challenging, the first eight entries that did not fit all found a fitting change, for example 7 Kobolds instead of 5, 1 Druid instead of 2, 3 Glass Mephits instead of 4 Ice Mephits. For a party of two, 53 of 58 checked entries were too hard; the first five all found one, the Bandit Captain fight without the captain among them. About 30 s for eight entries at 100 trials, most of it reading the bestiary's roles once.
 
+## Building a new encounter: `rpg sim build`
+
+`rpg sim build [<theme words>] [--model single|double|boss|matched|horde]… [--habitat H] [--type T] [--limit N] [--accept [--pick N]]` makes new encounters from the Monster Vault's encounter models ("Combat Encounter Models"), for the catalog's party (or `--pc`) and difficulty (`lib/domains/encounter-catalog/build.ts`, `cli/rpg/sim/build.ts`):
+
+| Model                | Built from                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single big monster   | one monster with a CR near the party's challenging benchmark, a legendary one or a striker/solo first                                               |
+| Double trouble       | two of a kind, each about half the benchmark (not leaders)                                                                                          |
+| Boss and lieutenants | a leader, controller or solo of about half the benchmark, and two to six soldiers or strikers sharing the other half                                |
+| Matched set of foes  | as many soldiers or strikers as PCs, each about a quarter of the PCs' level (half from 5th level), no stronger than one the party can take on alone |
+| Horde of minions     | six to thirty rank-and-file soldiers adding up to the benchmark                                                                                     |
+
+The pool is the bestiary with its roles, kept to the theme words (matched against a monster's name, type, habitat and family folder), `--habitat` and `--type`. Each model is filled with the monsters nearest the CR it calls for, its largest group also tried one fewer and one more (not a single or a double); every candidate is simulated, and the ones that fit come back best first, at most two a model and one size of an encounter (`--limit`, default 5). The name and the scene are the Game Master's to write. `--accept` (with a catalog) keeps the best, or `--pick N`, as a draft tagged `built` and its model, stamped for the party.
+
+On the testing vault (the stock level-1 party, challenging) a run takes about 30 s, most of it reading the bestiary's roles: with no theme it offered 3 Alley Sprites, 5 Alligators and 4 Axe Beaks; with `goblin`, 4 Goblins (matched set) and 2 Hobgoblins (double trouble); with `undead`, 4 Giant Owl Grims and 4 Fades. A level-1 party's benchmark (1/2) leaves little room for a boss and lieutenants: the models open up with level.
+
+Not built yet: new creatures (a template applied to a statblock, a lineage's NPC features at another CR, a reflavoured monster) saved to `worldbuilding/bestiary/homebrew/` as drafts.
+
 ## Monster roles and equivalents
 
 The Monster Vault sorts monsters into four roles ("Monster Roles and Tactics"), each split here into subroles (the tree the owner chose):

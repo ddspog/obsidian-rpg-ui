@@ -263,6 +263,10 @@ rpg sim run --monster "Thug:3" --brief
   counts, swaps for equivalents, minions or a leader, and says which fit, with
   tactics in words. It writes nothing; `--accept` (when the player allows the
   catalog) adds the best as a draft linked to the original.
+- Nothing in the catalog or the sweep suits the scene: `rpg sim build <theme
+words>` fills the Monster Vault's encounter models (a single big monster, a
+  boss and lieutenants, a matched set, a horde) with monsters of the right
+  roles and says which fit. Name the one you pick and give it a scene.
 - Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
   keeps `plan` from offering it again for a few sessions. When the player
   plays in Obsidian, `rpg sim catalog prepare <id>` readies it instead: a

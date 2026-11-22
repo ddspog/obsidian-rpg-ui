@@ -292,6 +292,15 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; `catalog adjust`: write the best adjustment (or --pick) as a new draft; else a dry run",
   },
   {
+    name: "model",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "single|double|boss|matched|horde",
+    description:
+      "`build`: only this encounter model (single big monster, double trouble, boss and lieutenants, matched set of foes, horde of minions); repeat for each (default: all)",
+  },
+  {
     name: "pick",
     kind: "string",
     default: 1,
@@ -465,8 +474,10 @@ export interface SimOptions {
   confidences: Confidence[];
   /** `roles`: add each monster's stats and features. */
   features: boolean;
-  /** `catalog adjust`: which fitting adjustment `--accept` keeps (1-based). */
+  /** `catalog adjust`, `build`: which option `--accept` keeps (1-based). */
   pick: number;
+  /** `build`: the encounter models to fill. */
+  models: string[];
 }
 
 export interface ParsedSim {
@@ -519,6 +530,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     confidences: [],
     features: false,
     pick: flagDefault<number>("pick"),
+    models: [],
   };
 }
 
@@ -612,7 +624,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   const [subcommand, ...extra] = parsed.positionals;
   // `catalog` takes an action and then bare words of its own, `plan` theme words; the others take none.
   const isCatalog = subcommand === "catalog";
-  const takesWords = subcommand === "plan" || subcommand === "roles" || subcommand === "equivalents";
+  const takesWords =
+    subcommand === "plan" || subcommand === "roles" || subcommand === "equivalents" || subcommand === "build";
   if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
@@ -621,7 +634,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (isCatalog) {
     options.action = extra[0];
     options.args = extra.slice(1);
-  } else if (subcommand === "plan") {
+  } else if (subcommand === "plan" || subcommand === "build") {
     options.args = extra.flatMap((word) => word.split(/\s+/)).filter((word) => word.length > 0);
   } else if (takesWords) {
     options.args = extra.map((word) => word.trim()).filter((word) => word.length > 0);
@@ -750,6 +763,13 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.write = values.write === true;
   options.features = values.features === true;
   if (typeof values.pick === "string") options.pick = integer("pick", values.pick, 1, "a positive integer");
+  options.models = ((values.model as string[] | undefined) ?? []).map((raw) => {
+    const m = raw.trim().toLowerCase();
+    if (!["single", "double", "boss", "matched", "horde"].includes(m)) {
+      throw new UsageError(`--model must be one of single, double, boss, matched, horde, got "${raw}".`);
+    }
+    return m;
+  });
   options.confidences = ((values.confidence as string[] | undefined) ?? []).map((raw) => {
     const c = raw.trim().toLowerCase();
     if (!(CONFIDENCES as readonly string[]).includes(c)) {
@@ -856,6 +876,25 @@ const PLAN_FLAGS = [
   "help",
 ];
 
+/** The flags `build` takes. */
+const BUILD_FLAGS = [
+  "pc",
+  "catalog",
+  "difficulty",
+  "habitat",
+  "type",
+  "model",
+  "limit",
+  "accept",
+  "pick",
+  "seed",
+  "trials",
+  "rounds",
+  "vault",
+  "json",
+  "help",
+];
+
 /** The flags `roles` and `equivalents` take. */
 const ROLES_FLAGS = [
   "role",
@@ -915,6 +954,14 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
   }
   if (subcommand === "plan") validatePlan(options);
   if (subcommand === "roles" || subcommand === "equivalents") validateRoles(subcommand, options);
+  if (subcommand === "build") {
+    for (const flag of options.given) {
+      if (!BUILD_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`build\`.`);
+    }
+    if (options.pc.length > 0 && options.catalog !== undefined) {
+      throw new UsageError("--pc and --catalog: a catalog has its own party; pass one or the other.");
+    }
+  }
   if ((subcommand === "suggest" || subcommand === "plan") && options.cr !== undefined) {
     try {
       parseCr(options.cr);
@@ -973,6 +1020,8 @@ Usage:
   rpg sim roles --set "<note>=<role>/<subrole>"...   (write roles in statblocks)
     (subroles: controller hexer|disabler|zoner|mover; leader commander|healer|warder|summoner;
      soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)
+  rpg sim build [<theme words>] [--model single|double|boss|matched|horde]... [--habitat H] [--type T] [--limit N] [--accept [--pick N]]
+    (new encounters from the Monster Vault's encounter models, filled by role and simulated; name them and write the scene)
   rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
     (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help
