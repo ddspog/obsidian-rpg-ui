@@ -23027,10 +23027,32 @@ p.rpg-statblock-subtitle {
   flex-wrap: wrap;
   row-gap: 2px;
 }
+.rpg-statblock-monster .rpg-statblock-header {
+  position: relative;
+}
 .rpg-statblock-monster .rpg-statblock-header h3 {
   flex: 1 1 10em;
   min-width: 0;
   text-indent: 0;
+}
+.rpg-statblock-name-probe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.rpg-statblock-monster .rpg-statblock-subtitle button.rpg-statblock-role {
+  font-size: 0.7em;
+  margin: 0 0 0 6px;
+  vertical-align: 1px;
+  border-color: transparent;
+}
+.rpg-statblock-monster .rpg-statblock-subtitle button.rpg-statblock-role.is-guess {
+  background: color-mix(in srgb, var(--rpg-role) 14%, transparent);
+  border-color: var(--rpg-role);
+  color: var(--rpg-role);
 }
 .rpg-statblock-header-meta {
   display: inline-flex;

@@ -87,6 +87,12 @@ export function StatblockMonster({
     return found;
   }, [name, type, cr, stats, features, role, subrole, guesses]);
   const [explained, setExplained] = React.useState(false);
+  // A long name: the role chip leaves the title bar for the type line, so the name keeps the bar.
+  const [roleBelow, setRoleBelow] = React.useState(false);
+  const headerRef = React.useRef<HTMLElement>(null);
+  const probeRef = React.useRef<HTMLSpanElement>(null);
+  const crRef = React.useRef<HTMLSpanElement>(null);
+  const chipWidth = React.useRef(0);
   const noteId = React.useId();
   const roleLabel = shown ? shown.role[0].toUpperCase() + shown.role.slice(1) : "";
   const subroleLabel = shown ? shown.subrole.replace(/-/g, " ") : "";
@@ -97,6 +103,46 @@ export function StatblockMonster({
         ? ""
         : ` Guessed from the statblock (${shown.confidence} confidence), not written in it: settle it with rpg sim roles --set "${name}=${shown.role}/${shown.subrole}".`)
     : "";
+
+  const roleChip = shown ? (
+    <button
+      type="button"
+      className={`rpg-statblock-role rpg-statblock-role--${shown.role}${shown.written ? "" : " is-guess"}`}
+      aria-expanded={explained}
+      aria-controls={noteId}
+      title={roleNote}
+      onClick={() => setExplained((v) => !v)}
+      ref={(el) => {
+        if (el && !roleBelow) chipWidth.current = el.offsetWidth;
+      }}
+    >
+      {roleLabel}
+      {shown.written ? null : (
+        <span aria-hidden="true" className="rpg-statblock-role-q">
+          ?
+        </span>
+      )}
+      {shown.written ? null : <span className="rpg-sr-only"> (guessed)</span>}
+    </button>
+  ) : null;
+
+  React.useLayoutEffect(() => {
+    const header = headerRef.current;
+    const probe = probeRef.current;
+    if (!header || !probe || !shown) return;
+    const measure = () => {
+      const style = getComputedStyle(header);
+      const inner = header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const cr = crRef.current?.offsetWidth ?? 0;
+      // Name, gap, chip, gap, CR: the gaps are the header's (12px) and the group's (8px).
+      const room = inner - cr - (chipWidth.current ? chipWidth.current + 8 : 0) - 12;
+      setRoleBelow(probe.offsetWidth > room);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [shown, name, cr]);
 
   const description = body ? (
     <section className="rpg-statblock-desc">
@@ -118,29 +164,22 @@ export function StatblockMonster({
   return (
     <article className="rpg-statblock rpg-statblock-monster">
       {!hideTitle && (
-        <header className="rpg-statblock-header">
-          <h3>{name}</h3>
-          {/* Role and CR stay together; on a narrow card they drop under the name as one. */}
+        <header className="rpg-statblock-header" ref={headerRef}>
+          <h3>
+            {name}
+            {/* The name on one line, unseen: measured to know whether it fits beside the role and CR. */}
+            <span className="rpg-statblock-name-probe" aria-hidden="true" ref={probeRef}>
+              {name}
+            </span>
+          </h3>
+          {/* Role and CR stay together; when the name would wrap beside them, the role moves to the type line. */}
           <span className="rpg-statblock-header-meta">
-            {shown ? (
-              <button
-                type="button"
-                className={`rpg-statblock-role rpg-statblock-role--${shown.role}${shown.written ? "" : " is-guess"}`}
-                aria-expanded={explained}
-                aria-controls={noteId}
-                title={roleNote}
-                onClick={() => setExplained((v) => !v)}
-              >
-                {roleLabel}
-                {shown.written ? null : (
-                  <span aria-hidden="true" className="rpg-statblock-role-q">
-                    ?
-                  </span>
-                )}
-                {shown.written ? null : <span className="rpg-sr-only"> (guessed)</span>}
-              </button>
+            {shown && !roleBelow ? roleChip : null}
+            {cr ? (
+              <span className="rpg-statblock-cr" ref={crRef}>
+                CR {cr}
+              </span>
             ) : null}
-            {cr ? <span className="rpg-statblock-cr">CR {cr}</span> : null}
           </span>
         </header>
       )}
@@ -149,6 +188,7 @@ export function StatblockMonster({
         <em>
           <InlineWikilinks text={type} />
         </em>
+        {shown && roleBelow ? roleChip : null}
         {shown ? (
           <span className={`rpg-statblock-subrole rpg-statblock-subrole--${shown.role}`}>
             <span className="rpg-statblock-subrole-dot" aria-hidden="true">
