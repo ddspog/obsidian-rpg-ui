@@ -105,6 +105,8 @@ export interface RoleGuess {
   ratios: { hp: number; ac: number; dpr: number };
   /** How much each subrole was pointed to (for a written role without a subrole). */
   subroleScores: Record<Subrole, number>;
+  /** When the scores were too close and a signature feature decided instead: which rule. */
+  rule?: string;
 }
 
 /** The subrole of `role` the guess leans to most (the tree's first on a tie). */
@@ -317,6 +319,123 @@ function speedOf(text: string): { walk: number; fly: number } {
   return { walk: walk ? Number(walk[1]) : 0, fly: fly ? Number(fly[1]) : 0 };
 }
 
+/**
+ * Signature rules: what decides an unsure guess (the scores within 0.5 of each other). They were
+ * drawn from a review of the 439 unsure guesses of the testing vault (2026-11-22), where the
+ * scores' pick was changed for about half: a monster's job shows in one feature it is built
+ * around more than in its numbers. First match wins; none, and the scores' pick stands.
+ */
+type SignatureInput = {
+  names: string;
+  name: string;
+  type: string;
+  cr: number;
+  hpRatio: number;
+  tags: Set<MonsterTag>;
+  sub: Record<Subrole, number>;
+  /** The share of its attacks that are ranged only. */
+  rangedShare: number;
+};
+
+const SIGNATURES: Array<{
+  rule: string;
+  role: MonsterRole;
+  subrole: Subrole;
+  test: (m: SignatureInput) => boolean;
+}> = [
+  {
+    rule: "legendary, fights alone",
+    role: "striker",
+    subrole: "solo",
+    test: (m) => m.tags.has("legendary") && !m.tags.has("caster"),
+  },
+  {
+    rule: "brings allies",
+    role: "leader",
+    subrole: "summoner",
+    test: (m) =>
+      /\b(Create (?!Water\b)\w+ (?:Elemental|Specter|Undead)|Call (?:Mechadrons|Servitors|Siege Fire)|Animate (?:Trees|Mushrooms|Chains|Dead)|Summon \w+|Reanimated Servants|Quick Creation|Grave Allies|\w+ Servitors|Bound Minion)\b/.test(
+        m.names
+      ),
+  },
+  {
+    rule: "heals others",
+    role: "leader",
+    subrole: "healer",
+    test: (m) => /\b(Healing (?:Touch|Prayer|Unguent|Sap|Hiss|Fungus|Draught)|Repair)\b/.test(m.names),
+  },
+  {
+    rule: "commands others",
+    role: "leader",
+    subrole: "commander",
+    test: (m) =>
+      /\b(Command(?:er|ing)?|Orders|Rally|Inspir\w+|Call to Arms|Empower Follower|Mighty Commander|Aura of (?:Authority|Royalty)|Unsha\w+ Command|Leader’s|Pack Leader)\b/.test(
+        m.names
+      ),
+  },
+  {
+    rule: "fights from hiding",
+    role: "striker",
+    subrole: "ambusher",
+    test: (m) =>
+      /\b(\w+ Camouflage|Invisibility|Earth Glide|Shadow Stealth|Surprise Attack|Sneak Attack|Ambush\w*)\b/.test(
+        m.names
+      ),
+  },
+  {
+    rule: "charges in",
+    role: "striker",
+    subrole: "bruiser",
+    test: (m) => /\b(Pounce|Diving Pounce|Charge|Trampling Charge|Rampage|Brutal)\b/.test(m.names),
+  },
+  { rule: "a dragon's bite and breath", role: "striker", subrole: "bruiser", test: (m) => /\bDragon\b/.test(m.type) },
+  {
+    rule: "hits and slips away",
+    role: "striker",
+    subrole: "skirmisher",
+    test: (m) =>
+      /\b(Incorporeal Movement|Shadow Step|Moonlight Step|Flyby|Hit and Run|Reality Skip|Teleport|Lightning Leap)\b/.test(
+        m.names
+      ),
+  },
+  {
+    rule: "holds its prey",
+    role: "soldier",
+    subrole: "pinner",
+    test: (m) => /\b(Constrict|Swallow|Squeeze|Smother|Strangle|Grappler|Engulf|Death Roll|Tentacles)\b/.test(m.names),
+  },
+  { rule: "webs the ground", role: "controller", subrole: "zoner", test: (m) => /\bWeb\b/.test(m.names) },
+  { rule: "small and plain: fought in numbers", role: "soldier", subrole: "rank-and-file", test: (m) => m.cr <= 1 },
+  {
+    rule: "big and plain",
+    role: "soldier",
+    subrole: "brute",
+    test: (m) => /\b(Beast|Giant|Construct)\b/.test(m.type) && m.hpRatio >= 0.95,
+  },
+];
+
+/** The signature rule an unsure monster matches, if any. */
+export function signatureOf(
+  input: RoleInput,
+  tags: Set<MonsterTag>,
+  hpRatio: number,
+  sub: Record<Subrole, number>,
+  rangedShare = 0
+): { rule: string; role: MonsterRole; subrole: Subrole } | undefined {
+  const m: SignatureInput = {
+    names: input.features.map((f) => f.name).join("; "),
+    name: input.name,
+    type: input.type ?? "",
+    cr: input.cr,
+    hpRatio,
+    tags,
+    sub,
+    rangedShare,
+  };
+  const hit = SIGNATURES.find((s) => s.test(m));
+  return hit ? { rule: hit.rule, role: hit.role, subrole: hit.subrole } : undefined;
+}
+
 /** The role and subrole a statblock reads as, with why and how sure. */
 export function guessRole(input: RoleInput): RoleGuess {
   const bench = crBenchmark(input.cr);
@@ -484,12 +603,25 @@ export function guessRole(input: RoleInput): RoleGuess {
   const margin = scores[top] - scores[second];
   const confidence: RoleConfidence = named || margin >= 1.2 ? "high" : margin >= 0.5 ? "medium" : "low";
   // Ties go to the earlier subrole of the tree (its default first).
-  const subrole = bestSubrole({ subroleScores: sub }, top);
+  let role: MonsterRole = top;
+  let subrole = bestSubrole({ subroleScores: sub }, top);
+  // Too close to call on the scores: a signature feature decides, the scores' pick becoming the runner-up.
+  const signature =
+    confidence === "low" ? signatureOf(input, tags, ratios.hp, sub, attacks > 0 ? rangedOnly / attacks : 0) : undefined;
+  let alt: MonsterRole | undefined = margin < 0.6 && !named ? second : undefined;
+  if (signature) {
+    if (signature.role !== top) alt = top;
+    role = signature.role;
+    subrole = signature.subrole;
+    reasons.unshift([99, `${role}: ${signature.rule} (decides a close call)`]);
+  }
+  if (alt === role) alt = undefined;
   return {
-    role: top,
+    role,
     subrole,
     confidence,
-    ...(margin < 0.6 && !named ? { alt: second } : {}),
+    ...(alt ? { alt } : {}),
+    ...(signature ? { rule: signature.rule } : {}),
     tags: MONSTER_TAGS.filter((t) => tags.has(t)),
     scores: Object.fromEntries(MONSTER_ROLES.map((r) => [r, Math.round(scores[r] * 100) / 100])) as Record<
       MonsterRole,

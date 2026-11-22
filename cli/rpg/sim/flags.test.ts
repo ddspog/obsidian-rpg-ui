@@ -262,6 +262,8 @@ describe("SIM_HELP", () => {
       "role",
       "write",
       "set",
+      "confidence",
+      "features",
       "steps",
       "vault",
       "json",

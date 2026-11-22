@@ -47,6 +47,9 @@ export interface RoledMonster {
   role: MonsterRole;
   /** Its subrole: the written one, else the guess's within its role. */
   subrole: Subrole;
+  /** The statblock as the guess read it (for `--features`). */
+  stats: { ac: number; hp: number; speed: string };
+  features: LoadedMonster["features"];
   /** Where the role comes from. */
   from: "written" | "guess";
   guess: RoleGuess;
@@ -94,6 +97,8 @@ function roled(monster: LoadedMonster): RoledMonster {
           : guess.subrole,
     from: monster.role ? "written" : "guess",
     guess,
+    stats: { ac: monster.actor.armorClass, hp: monster.actor.maxHp, speed: monster.speedText },
+    features: monster.features,
   };
 }
 
@@ -158,7 +163,13 @@ export function withRole(text: string, role: MonsterRole, subrole?: Subrole): st
   return [...lines.slice(0, open + 1), ...body, ...lines.slice(close)].join("\n");
 }
 
-function entry(ctx: Ctx, m: RoledMonster) {
+/** A feature as a dossier line: its name, kind and prose, cut short. */
+function featureLine(f: RoledMonster["features"][number]): string {
+  const text = f.text.replace(/[*_]+/g, "").replace(/\s+/g, " ").trim();
+  return `${f.name}${f.type ? ` (${f.type})` : ""}: ${text.length > 320 ? `${text.slice(0, 317)}...` : text}`;
+}
+
+function entry(ctx: Ctx, m: RoledMonster, features = false) {
   return {
     monster: noteRef(ctx, m.note),
     cr: m.cr,
@@ -170,10 +181,14 @@ function entry(ctx: Ctx, m: RoledMonster) {
       : {}),
     confidence: m.guess.confidence,
     ...(m.guess.alt ? { alt: m.guess.alt } : {}),
+    ...(m.guess.rule ? { rule: m.guess.rule } : {}),
     tags: m.guess.tags,
     why: m.guess.reasons,
     vsCr: m.guess.ratios,
     scores: m.guess.scores,
+    ...(features
+      ? { type: m.type, ...m.stats, features: m.features.filter((f) => f.text.trim()).map(featureLine) }
+      : {}),
   };
 }
 
@@ -222,6 +237,10 @@ export async function simRoles(ctx: Ctx, options: SimOptions): Promise<{ doc: un
   const wanted = new Set<string>(options.roles);
   const kept = monsters
     .filter((m) => wanted.size === 0 || wanted.has(m.role) || wanted.has(m.subrole))
+    .filter(
+      (m) =>
+        options.confidences.length === 0 || (m.from === "guess" && options.confidences.includes(m.guess.confidence))
+    )
     .sort(
       (a, b) =>
         CONFIDENCE_ORDER[b.guess.confidence] - CONFIDENCE_ORDER[a.guess.confidence] ||
@@ -249,7 +268,7 @@ export async function simRoles(ctx: Ctx, options: SimOptions): Promise<{ doc: un
       ...(unreadable ? { unreadable } : {}),
       ...(written ? { written: written.length } : {}),
       // Least sure first: what a person should look at.
-      list: kept.slice(0, limit).map((m) => entry(ctx, m)),
+      list: kept.slice(0, limit).map((m) => entry(ctx, m, options.features)),
       ...(limit < kept.length ? { more: kept.length - limit } : {}),
     },
   };

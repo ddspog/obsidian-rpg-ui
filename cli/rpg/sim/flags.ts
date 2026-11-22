@@ -346,6 +346,21 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "`roles`: write this role and subrole in the monster's statblock (over any written; the role alone, or the subrole alone with its role implied); repeat for each",
   },
   {
+    name: "confidence",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "high|medium|low",
+    description: "`roles`: only guesses of this confidence (a written role counts as none); repeat for each",
+  },
+  {
+    name: "features",
+    kind: "boolean",
+    default: false,
+    description:
+      "`roles`: add each monster's stats and features as prose (a dossier for a person or a model to decide the role from)",
+  },
+  {
     name: "steps",
     kind: "string",
     default: 1,
@@ -437,6 +452,10 @@ export interface SimOptions {
   write: boolean;
   /** `equivalents`: CR ladder steps to look. */
   steps: number;
+  /** `roles`: the guess confidences to keep (empty: all). */
+  confidences: Confidence[];
+  /** `roles`: add each monster's stats and features. */
+  features: boolean;
 }
 
 export interface ParsedSim {
@@ -486,6 +505,8 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     set: [],
     write: false,
     steps: flagDefault<number>("steps"),
+    confidences: [],
+    features: false,
   };
 }
 
@@ -715,6 +736,14 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   });
   options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
   options.write = values.write === true;
+  options.features = values.features === true;
+  options.confidences = ((values.confidence as string[] | undefined) ?? []).map((raw) => {
+    const c = raw.trim().toLowerCase();
+    if (!(CONFIDENCES as readonly string[]).includes(c)) {
+      throw new UsageError(`--confidence must be one of ${CONFIDENCES.join(", ")}, got "${raw}".`);
+    }
+    return c as Confidence;
+  });
   if (typeof values.steps === "string") options.steps = integer("steps", values.steps, 0, "a non-negative integer");
 
   return { subcommand, help: false, options };
@@ -819,6 +848,8 @@ const ROLES_FLAGS = [
   "write",
   "set",
   "min-confidence",
+  "confidence",
+  "features",
   "habitat",
   "type",
   "cr",
@@ -922,6 +953,7 @@ Usage:
     (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
   rpg sim roles [<note>...] [--role R]... [--habitat H] [--type T] [--cr C] [--limit N] [--write [--min-confidence C]]
     (each monster's role, controller|leader|soldier|striker: written in its statblock or guessed, least sure first)
+  rpg sim roles --confidence low --features   (the unsure guesses with each statblock as prose, to decide them)
   rpg sim roles --set "<note>=<role>/<subrole>"...   (write roles in statblocks)
     (subroles: controller hexer|disabler|zoner|mover; leader commander|healer|warder|summoner;
      soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)

@@ -77,6 +77,26 @@ describe("guessRole", () => {
     expect(caller).toMatchObject({ role: "leader", subrole: "summoner" });
   });
 
+  it("lets a signature feature decide a close call", () => {
+    const cat = guessRole(
+      monster({
+        cr: 0.25,
+        hp: 15,
+        ac: 12,
+        features: [
+          {
+            name: "Pounce",
+            type: "trait",
+            text: "If the cat moves at least 20 feet straight toward a creature and then hits it, the target must succeed on a DC 12 STR save or be knocked prone.",
+          },
+        ],
+      })
+    );
+    expect(cat.confidence).toBe("low");
+    expect(cat).toMatchObject({ role: "striker", subrole: "bruiser", rule: "charges in" });
+    expect(cat.reasons[0]).toMatch(/decides a close call/);
+  });
+
   it("takes a role its name says outright, surely", () => {
     const g = guessRole(monster({ name: "Worg Soldier" }));
     expect(g).toMatchObject({ role: "soldier", confidence: "high" });

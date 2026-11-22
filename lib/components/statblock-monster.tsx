@@ -1,6 +1,7 @@
 import * as React from "react";
 import { SUBROLE_MEANING } from "../domains/encounter-sim/monster-role";
 import { statblockRole } from "../domains/encounter-sim/statblock-role";
+import { settingsStore } from "../services/settings-store";
 import { Markdown } from "./markdown";
 import type { AbilityScores, ResolvedStatFeature } from "../domains/statblocks/types";
 import {
@@ -76,14 +77,25 @@ export function StatblockMonster({
 }: StatblockMonsterProps) {
   const { traits, sections } = React.useMemo(() => groupFeatures(features), [features]);
   // A guess needs the features: until they are resolved only a written role shows.
-  const shown = React.useMemo(
-    () => (role || features.length > 0 ? statblockRole({ name, type, cr, stats, features, role, subrole }) : undefined),
-    [name, type, cr, stats, features, role, subrole]
-  );
+  const guesses = settingsStore.getSettings()?.statblockRoleGuesses ?? "sure";
+  const shown = React.useMemo(() => {
+    const found =
+      role || features.length > 0 ? statblockRole({ name, type, cr, stats, features, role, subrole }) : undefined;
+    // A guess shows as the settings say: every one, the fairly sure ones, or none.
+    if (!found || found.written) return found;
+    if (guesses === "none" || (guesses === "sure" && found.confidence === "low")) return undefined;
+    return found;
+  }, [name, type, cr, stats, features, role, subrole, guesses]);
+  const [explained, setExplained] = React.useState(false);
+  const noteId = React.useId();
   const roleLabel = shown ? shown.role[0].toUpperCase() + shown.role.slice(1) : "";
-  const roleTitle = shown
-    ? `${roleLabel}, ${shown.subrole.replace(/-/g, " ")}: ${SUBROLE_MEANING[shown.subrole]}.` +
-      (shown.written ? "" : ` Guessed from the statblock (${shown.confidence} confidence); not written in it yet.`)
+  const subroleLabel = shown ? shown.subrole.replace(/-/g, " ") : "";
+  // Shown on a tap (a phone has no hover): what the role means and, for a guess, how to settle it.
+  const roleNote = shown
+    ? `${roleLabel}, ${subroleLabel}: ${SUBROLE_MEANING[shown.subrole]}.` +
+      (shown.written
+        ? ""
+        : ` Guessed from the statblock (${shown.confidence} confidence), not written in it: settle it with rpg sim roles --set "${name}=${shown.role}/${shown.subrole}".`)
     : "";
 
   const description = body ? (
@@ -108,17 +120,28 @@ export function StatblockMonster({
       {!hideTitle && (
         <header className="rpg-statblock-header">
           <h3>{name}</h3>
-          {shown ? (
-            <span
-              className={`rpg-statblock-role rpg-statblock-role--${shown.role}${shown.written ? "" : " is-guess"}`}
-              title={roleTitle}
-              aria-label={roleTitle}
-            >
-              {roleLabel}
-              {shown.written ? "" : "?"}
-            </span>
-          ) : null}
-          {cr ? <span className="rpg-statblock-cr">CR {cr}</span> : null}
+          {/* Role and CR stay together; on a narrow card they drop under the name as one. */}
+          <span className="rpg-statblock-header-meta">
+            {shown ? (
+              <button
+                type="button"
+                className={`rpg-statblock-role rpg-statblock-role--${shown.role}${shown.written ? "" : " is-guess"}`}
+                aria-expanded={explained}
+                aria-controls={noteId}
+                title={roleNote}
+                onClick={() => setExplained((v) => !v)}
+              >
+                {roleLabel}
+                {shown.written ? null : (
+                  <span aria-hidden="true" className="rpg-statblock-role-q">
+                    ?
+                  </span>
+                )}
+                {shown.written ? null : <span className="rpg-sr-only"> (guessed)</span>}
+              </button>
+            ) : null}
+            {cr ? <span className="rpg-statblock-cr">CR {cr}</span> : null}
+          </span>
         </header>
       )}
 
@@ -127,12 +150,19 @@ export function StatblockMonster({
           <InlineWikilinks text={type} />
         </em>
         {shown ? (
-          <span className={`rpg-statblock-subrole${shown.written ? "" : " is-guess"}`} title={roleTitle}>
-            {" · "}
-            {shown.subrole.replace(/-/g, " ")}
+          <span className={`rpg-statblock-subrole rpg-statblock-subrole--${shown.role}`}>
+            <span className="rpg-statblock-subrole-dot" aria-hidden="true">
+              {" · "}
+            </span>
+            {subroleLabel}
           </span>
         ) : null}
       </p>
+      {shown && explained ? (
+        <p id={noteId} className="rpg-statblock-role-note">
+          {roleNote}
+        </p>
+      ) : null}
 
       <dl className="rpg-statblock-stats">
         {renderStatEntries(Object.entries(displayStats), STAT_LABELS, PAIRED_STATS, sourcePath)}

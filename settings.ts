@@ -168,6 +168,10 @@ export interface DndUIToolkitSettings {
   hexDefaultPack: string;
   /** Outline every hex on hex maps. */
   hexGridLines: boolean;
+  /** Monster role chips for roles a statblock does not write: every guess, the fairly sure ones, or none. */
+  statblockRoleGuesses: "all" | "sure" | "none";
+  /** Hide a note's title (its `# heading` and the inline title) when the note is only one `rpg` block. */
+  hideSingleBlockTitle: boolean;
   /** Hex coordinates when a map's head doesn't say: off, in the hover tooltip, or always drawn. */
   hexCoords: "off" | "hover" | "always";
   /** Multiplier on hex map place and region label size. */
@@ -222,6 +226,8 @@ export const DEFAULT_SETTINGS: DndUIToolkitSettings = {
   battleTokenFolder: "z54. Tokens",
   hexDefaultPack: "basic",
   hexGridLines: false,
+  statblockRoleGuesses: "sure",
+  hideSingleBlockTitle: true,
   hexCoords: "hover",
   hexLabelScale: 1,
   hexMapMaxHeight: 75,

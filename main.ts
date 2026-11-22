@@ -68,6 +68,7 @@ import { buildRuleCallProcessor, setupGlobalTableMerger } from "lib/plugin/rule-
 import { setProcessFencesRegistry } from "lib/plugin/process-rpg-fences";
 import { ValueResolver, setActiveValueResolver } from "lib/domains/rules/value-resolver-api";
 import { setImageResolverApp } from "lib/domains/rules/image-resolver-api";
+import { buildSingleBlockTitleProcessor } from "lib/plugin/single-block-title";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
@@ -829,6 +830,10 @@ export default class DndUIToolkitPlugin extends Plugin {
         getStyles: () => this.settings.folderLinkStyles,
         getStylesVersion: () => this.folderLinkStylesVersion,
       })
+    );
+
+    this.registerMarkdownPostProcessor(
+      buildSingleBlockTitleProcessor({ app: this.app, enabled: () => this.settings.hideSingleBlockTitle })
     );
 
     this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
