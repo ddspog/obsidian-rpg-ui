@@ -356,7 +356,11 @@ export async function resolveStatFeatures(
     const text = substituteText(feature.text ?? "", mergedParams, selfProps);
 
     results.push({
-      name: feature.name,
+      // A name may carry a number too ("Overdrive ({{f1}} HP or Fewer)").
+      name:
+        feature.name && feature.name.includes("{{")
+          ? substituteText(feature.name, mergedParams, selfProps)
+          : feature.name,
       type: feature.type,
       text,
       params: mergedParams,

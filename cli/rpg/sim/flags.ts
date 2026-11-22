@@ -355,6 +355,31 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "`roles`: write each guess at or above --min-confidence as `role:` in its statblock (never over a written role); `homebrew`: write the new creature's note; else a dry run",
   },
   {
+    name: "template",
+    kind: "string",
+    default: undefined,
+    value: '"<template>"',
+    description:
+      "`homebrew`: apply this creature template (a note in <system>/worldbuilding/bestiary/templates/: Zombie, Skeleton, Shadow…); `rpg sim templates` lists them",
+  },
+  {
+    name: "choose",
+    kind: "string",
+    default: undefined,
+    value: "<option>",
+    description:
+      "`homebrew --template`: the option the template asks for (an element, a season, a damage type: fire, summer, air:thunder)",
+  },
+  {
+    name: "trait",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: '"<feature>"',
+    description:
+      "`homebrew --template`: a feature to choose from the template's list (Demon Caller's Stench…); repeat for each",
+  },
+  {
     name: "set",
     kind: "string",
     multiple: true,
@@ -466,6 +491,12 @@ export interface SimOptions {
   roles: Array<MonsterRole | Subrole>;
   /** `roles`: `<note>=<role>` to write. */
   set: string[];
+  /** `homebrew`: the creature template to apply. */
+  template?: string;
+  /** `homebrew --template`: the template's option. */
+  choose?: string;
+  /** `homebrew --template`: features chosen from its list. */
+  traits: string[];
   /** `roles`: write the guesses. */
   write: boolean;
   /** `equivalents`: CR ladder steps to look. */
@@ -525,6 +556,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     brief: false,
     roles: [],
     set: [],
+    traits: [],
     write: false,
     steps: flagDefault<number>("steps"),
     confidences: [],
@@ -629,7 +661,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     subcommand === "roles" ||
     subcommand === "equivalents" ||
     subcommand === "build" ||
-    subcommand === "homebrew";
+    subcommand === "homebrew" ||
+    subcommand === "templates";
   if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
@@ -764,6 +797,9 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     return role;
   });
   options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
+  if (typeof values.template === "string") options.template = values.template.trim();
+  if (typeof values.choose === "string") options.choose = values.choose.trim();
+  options.traits = ((values.trait as string[] | undefined) ?? []).map((raw) => raw.trim()).filter(Boolean);
   options.write = values.write === true;
   options.features = values.features === true;
   if (typeof values.pick === "string") options.pick = integer("pick", values.pick, 1, "a positive integer");
@@ -881,7 +917,23 @@ const PLAN_FLAGS = [
 ];
 
 /** The flags `homebrew` takes. */
-const HOMEBREW_FLAGS = ["name", "role", "cr", "type", "habitat", "write", "vault", "json", "help"];
+const HOMEBREW_FLAGS = [
+  "name",
+  "role",
+  "template",
+  "choose",
+  "trait",
+  "cr",
+  "type",
+  "habitat",
+  "write",
+  "vault",
+  "json",
+  "help",
+];
+
+/** The flags `templates` takes. */
+const TEMPLATES_FLAGS = ["write", "vault", "json", "help"];
 
 /** The flags `build` takes. */
 const BUILD_FLAGS = [
@@ -969,6 +1021,15 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
       throw new UsageError("`homebrew` needs one monster note to start from (quote a name with spaces).");
     if (options.name === undefined) throw new UsageError('--name is required: name the new creature ("Ash Wolf").');
     if (options.roles.length > 1) throw new UsageError("`homebrew` takes one --role.");
+    if ((options.choose !== undefined || options.traits.length) && options.template === undefined)
+      throw new UsageError("--choose and --trait go with --template.");
+  }
+  if (subcommand === "templates") {
+    for (const flag of options.given) {
+      if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`templates\`.`);
+    }
+    if (options.args.length > 1)
+      throw new UsageError("`templates` takes at most one monster note to check them against.");
   }
   if (subcommand === "build") {
     for (const flag of options.given) {
@@ -1038,8 +1099,12 @@ Usage:
      soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)
   rpg sim build [<theme words>] [--model single|double|boss|matched|horde]... [--habitat H] [--type T] [--limit N] [--accept [--pick N]]
     (new encounters from the Monster Vault's encounter models, filled by role and simulated; name them and write the scene)
-  rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--cr C] [--type "<type line>"] [--habitat H] [--write]
-    (a new creature from a statblock: reflavoured, a role template, a new CR; a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--template T [--choose O] [--trait F]...] [--cr C] [--type "<type line>"] [--habitat H] [--write]
+    (a new creature from a statblock: reflavoured, a role template, a creature template, a new CR;
+     a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim templates ["<base note>"] [--write]
+    (the creature templates in worldbuilding/bestiary/templates/, what each changes, and with a note which fit it;
+     --write writes their features note, worldbuilding/traits/features/Monster Template Traits)
   rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
     (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help

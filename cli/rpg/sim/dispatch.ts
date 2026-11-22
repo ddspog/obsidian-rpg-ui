@@ -25,6 +25,8 @@ export interface SimDeps {
   build?: SimHandler;
   /** `rpg sim homebrew …`. */
   homebrew?: SimHandler;
+  /** `rpg sim templates …`. */
+  templates?: SimHandler;
 }
 
 /**
@@ -63,17 +65,21 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
                     ? deps.build
                     : subcommand === "homebrew"
                       ? deps.homebrew
-                      : undefined;
+                      : subcommand === "templates"
+                        ? deps.templates
+                        : undefined;
     if (!handler) {
       return usage(
-        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, catalog, roles or equivalents).`
+        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, templates, catalog, roles or equivalents).`
       );
     }
     validateForSubcommand(subcommand, options);
     const { doc } = await handler(deps.context(options.vault), options);
     // `plan` and the --brief forms are read by a model: laid out to spend fewer tokens.
     io.out(
-      options.brief || subcommand === "plan" || subcommand === "build" ? briefJson(doc) : JSON.stringify(doc, null, 2)
+      options.brief || subcommand === "plan" || subcommand === "build" || subcommand === "templates"
+        ? briefJson(doc)
+        : JSON.stringify(doc, null, 2)
     );
     return 0;
   } catch (err) {

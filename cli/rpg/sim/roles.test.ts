@@ -6,6 +6,7 @@ import { boot } from "../app";
 import { simMain } from "./dispatch";
 import { parseSimArgv, validateForSubcommand } from "./flags";
 import { holdOn, pbOf, simHomebrew, templateRefs } from "./homebrew";
+import { simTemplates, TEMPLATE_FEATURES_NOTE } from "./templates";
 import { simEquivalents, simRoles, withRole } from "./roles";
 
 const BESTIARY = "tales-of-the-valiant/worldbuilding/bestiary";
@@ -59,6 +60,22 @@ function monster(name: string, cr: string, hp: number, ac: number, refs: string[
   ].join("\n");
 }
 
+const SKELETON = [
+  "# Skeleton",
+  "This template can be applied to any Beast with a skeleton. When a creature becomes a skeleton, it retains its statistics, except as described here.",
+  "## Statistics",
+  "**Type.** The creature’s type changes to Undead.",
+  "",
+  "**Vulnerable.** The skeleton is vulnerable to bludgeoning damage.",
+  "",
+  "**Hit Points.** The creature’s hit points are reduced by 10 percent (rounded up).",
+  "## Traits",
+  "***Undead Resilience.*** The skeleton is immune to poison damage.",
+  "## Reactions",
+  "***Rattle.*** Each creature within 5 feet of the skeleton must succeed on a DC # [10 + the creature’s CON modifier] WIS save.",
+  "",
+].join("\n");
+
 function vault() {
   const root = mkdtempSync(join(tmpdir(), "rpg-sim-roles-"));
   const put = (path: string, text: string) => {
@@ -71,6 +88,7 @@ function vault() {
   put(`${BESTIARY}/humanoids/Guard.md`, monster("Guard", "1", 65, 17, ["Bite"]));
   put(`${BESTIARY}/beasts/Ripper.md`, monster("Ripper", "1", 25, 12, ["Rend"]));
   put(`${BESTIARY}/beasts/Weaver.md`, monster("Weaver", "1", 40, 14, ["Bite", "Web"]));
+  put(`${BESTIARY}/templates/Skeleton.md`, SKELETON);
   return { root, ctx: boot(root) };
 }
 
@@ -207,5 +225,56 @@ describe("rpg sim homebrew", () => {
     await expect(simHomebrew(ctx, options("homebrew", "Hound", "--name", "Grave Hound", "--write"))).rejects.toThrow(
       /exists/
     );
+  });
+});
+
+describe("rpg sim homebrew --template and rpg sim templates", () => {
+  it("lists the templates, which fit a creature, and writes their features note", async () => {
+    const { root, ctx } = vault();
+    const { doc } = (await simTemplates(ctx, options("templates", "Hound"))) as {
+      doc: {
+        creature: string;
+        templates: Array<{ template: string; fits: boolean; features: string[] }>;
+        notes: string[];
+      };
+    };
+    expect(doc.templates).toEqual([
+      expect.objectContaining({ template: "Skeleton", fits: true, features: ["Undead Resilience", "Rattle"] }),
+    ]);
+    expect(doc.notes.join(" ")).toMatch(/--write writes/);
+    await simTemplates(ctx, options("templates", "--write"));
+    expect(readFileSync(join(root, `${TEMPLATE_FEATURES_NOTE}.md`), "utf8")).toContain('id: "Skeleton: Rattle"');
+  });
+
+  it("applies a template to a new creature: its statistics, and its features with their numbers", async () => {
+    const { root, ctx } = vault();
+    const { doc } = (await simHomebrew(
+      ctx,
+      options("homebrew", "Hound", "--name", "Bone Hound", "--template", "skeleton", "--write")
+    )) as {
+      doc: {
+        hp: { to: number };
+        creatureTemplate: { name: string; added: string[] };
+        statblock: string;
+        notes: string[];
+      };
+    };
+    expect(doc.hp.to).toBe(63);
+    expect(doc.creatureTemplate).toMatchObject({ name: "Skeleton", added: ["Undead Resilience", "Rattle"] });
+    expect(doc.statblock).toMatch(/type: Medium \[\[Undead\]\]/);
+    expect(doc.statblock).toMatch(/vulnerable: bludgeoning/);
+    expect(doc.statblock).toMatch(/immune: Undead Resilience/);
+    expect(doc.statblock).toContain(`ref: "@[[${TEMPLATE_FEATURES_NOTE}]]#Skeleton: Rattle"\n    f1: 12`);
+    const note = readFileSync(join(root, `${BESTIARY}/homebrew/Bone Hound.md`), "utf8");
+    expect(note).toContain('templates:\n  - "Skeleton"');
+    // The features note its refs point to is written with it.
+    expect(readFileSync(join(root, `${TEMPLATE_FEATURES_NOTE}.md`), "utf8")).toContain(
+      'id: "Skeleton: Undead Resilience"'
+    );
+    await expect(simHomebrew(ctx, options("homebrew", "Hound", "--name", "X", "--template", "lich"))).rejects.toThrow(
+      /No template "lich".*Skeleton/
+    );
+    expect(() => options("homebrew", "Hound", "--name", "X", "--choose", "fire")).toThrow(/go with --template/);
+    expect(() => options("templates", "--trials", "3")).toThrow(/not a flag of `templates`/);
   });
 });

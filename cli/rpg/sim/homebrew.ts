@@ -24,6 +24,8 @@ import {
   type MonsterRole,
   type Subrole,
 } from "lib/domains/encounter-sim/monster-role";
+import { applyTemplate } from "lib/domains/statblocks/apply-template";
+import { templateFits } from "lib/domains/statblocks/monster-template";
 import type { Ctx } from "../app";
 import { fencesOf } from "../fences";
 import { readNote, writeNote } from "../write";
@@ -31,6 +33,7 @@ import { noteRef } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { UsageError, type SimOptions } from "./flags";
 import { crNumber, loadMonster } from "./monsters";
+import { featuresNoteText, findTemplate, loadTemplates, TEMPLATE_FEATURES_NOTE, TEMPLATES_FOLDER } from "./templates";
 
 const TEMPLATE_NOTE = "tales-of-the-valiant/worldbuilding/traits/features/Game Master's Guide Role Template Traits";
 
@@ -97,6 +100,18 @@ function withNumber(line: unknown, n: number): string {
 
 const CR_TEXT = (cr: number) => (cr === 0.125 ? "1/8" : cr === 0.25 ? "1/4" : cr === 0.5 ? "1/2" : String(cr));
 
+/** A note's `stat.monster` block: its YAML, and the prose after its `---` line. */
+export function readStatblock(ctx: Ctx, path: string, ref = path): { data: Record<string, unknown>; rest: string } {
+  const text = readNote(ctx.root, path) ?? "";
+  const fence = fencesOf(text, "stat.monster")[0];
+  if (fence === undefined) throw new UsageError(`"${ref}" has no rpg stat.monster block.`);
+  const lines = fence.split("\n");
+  const sep = lines.findIndex((l) => l.trim() === "---");
+  const yamlText = sep >= 0 ? lines.slice(0, sep).join("\n") : fence;
+  const rest = sep >= 0 ? lines.slice(sep).join("\n") : "";
+  return { data: (parseYaml(yamlText) as Record<string, unknown>) ?? {}, rest };
+}
+
 export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   const baseRef = options.args[0];
   let basePath: string;
@@ -106,20 +121,13 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
     throw new UsageError(`No monster note "${baseRef}".`);
   }
   const name = options.name!;
-  const text = readNote(ctx.root, basePath) ?? "";
-  const fence = fencesOf(text, "stat.monster")[0];
-  if (fence === undefined) throw new UsageError(`"${baseRef}" has no rpg stat.monster block.`);
-  const sep = fence.split("\n").findIndex((l) => l.trim() === "---");
-  const yamlText = sep >= 0 ? fence.split("\n").slice(0, sep).join("\n") : fence;
-  const rest = sep >= 0 ? fence.split("\n").slice(sep).join("\n") : "";
-  const data = parseYaml(yamlText) as Record<string, unknown>;
+  const { data, rest } = readStatblock(ctx, basePath, baseRef);
   const base = await loadMonster(ctx, basePath);
   const baseCr = crNumber(base.cr);
   const cr = options.cr !== undefined ? crNumber(options.cr) : baseCr;
 
   const next: Record<string, unknown> = { ...data, name };
   const notes: string[] = [];
-  if (options.type) next.type = options.type;
   if (options.habitat) next.habitat = options.habitat;
   const stats = { ...((data.stats as Record<string, unknown>) ?? {}) };
 
@@ -164,6 +172,54 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
     delete next.subrole;
   }
 
+  // A creature template (Zombie, Shadow, Element-Infused…): its statistics and features.
+  let templated: Record<string, unknown> | undefined;
+  if (options.template) {
+    const templates = loadTemplates(ctx);
+    const t = findTemplate(templates, options.template);
+    if (!t) {
+      throw new UsageError(
+        `No template "${options.template}" in ${TEMPLATES_FOLDER} (${templates.map((x) => x.name).join(", ") || "none"}).`
+      );
+    }
+    const fit = templateFits(t.appliesTo, {
+      name: base.name,
+      type: base.monsterType,
+      cr,
+      int: Number((data.abilities as Record<string, unknown> | undefined)?.int ?? 0) || 0,
+    });
+    if (!fit.fits) notes.push(`${t.name} is for ${fit.unmet.join("; ")}: ${base.name} is not (${t.appliesText}).`);
+    if (fit.unchecked.length) notes.push(`${t.name} asks for a creature ${fit.unchecked.join(", ")}: check it.`);
+    const applied = applyTemplate(next, t, {
+      choice: options.choose,
+      picks: options.traits,
+      featureNote: TEMPLATE_FEATURES_NOTE,
+      baseFeatures: base.features,
+      cr,
+    });
+    Object.assign(next, applied.data);
+    const st = next.stats as Record<string, unknown>;
+    hp = parseInt(String(st.hp ?? hp), 10) || hp;
+    ac = parseInt(String(st.ac ?? ac), 10) || ac;
+    if (next.cr !== undefined && crNumber(String(next.cr)) !== cr) next.cr = CR_TEXT(crNumber(String(next.cr)));
+    if (readNote(ctx.root, `${TEMPLATE_FEATURES_NOTE}.md`) !== featuresNoteText(templates)) {
+      if (options.write) writeNote(ctx.root, `${TEMPLATE_FEATURES_NOTE}.md`, featuresNoteText(templates));
+      notes.push(
+        options.write
+          ? `Wrote the template features note (${TEMPLATE_FEATURES_NOTE}.md) its refs point to.`
+          : `--write also writes the template features note (${TEMPLATE_FEATURES_NOTE}.md) its refs point to.`
+      );
+    }
+    templated = {
+      name: t.name,
+      ...(applied.choice ? { choice: `${applied.choice.key} (${applied.choice.damage})` } : {}),
+      applied: applied.applied,
+      added: applied.added,
+      byHand: applied.manual,
+    };
+  }
+  if (options.type) next.type = options.type;
+
   // Damage written as plain numbers does not scale with the CR: say what to aim for.
   const guess = guessRole({
     name,
@@ -203,7 +259,9 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
     "  - note-statblock",
     "homebrew: draft",
     `based-on: "[[${basePath.replace(/\.md$/, "")}|${base.name}]]"`,
-    ...(role ? [`template: ${role}`] : []),
+    ...(role || templated
+      ? ["templates:", ...[role, templated?.name].filter(Boolean).map((t) => `  - ${JSON.stringify(t)}`)]
+      : []),
     "---",
     `# ${name}`,
     "```rpg stat.monster",
@@ -231,6 +289,7 @@ export const simHomebrew: SimHandler = async (ctx: Ctx, options: SimOptions) => 
       hp: { from: base.actor.maxHp, to: hp },
       ac: { from: base.actor.armorClass, to: ac },
       ...(role ? { template: role, added: templateRefs(role, cr, {}).map((r) => String(r.ref).split("#")[1]) } : {}),
+      ...(templated ? { creatureTemplate: templated } : {}),
       notes,
       statblock: body,
     },
