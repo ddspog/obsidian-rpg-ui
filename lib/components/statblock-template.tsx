@@ -250,7 +250,17 @@ function TryOn({
   const creatures = React.useMemo(() => bestiaryOf(sourcePath), [sourcePath]);
   // "Choose a Humanoid" (the Lycanthrope): a lineage to choose.
   const humanoid = choosesHumanoid(block);
-  const lineages = React.useMemo(() => (humanoid ? lineagesOf(sourcePath) : []), [humanoid, sourcePath]);
+  const [lineages, setLineages] = React.useState<Array<{ path: string; name: string }>>([]);
+  React.useEffect(() => {
+    let cancelled = false;
+    if (humanoid)
+      void lineagesOf(sourcePath).then((l) => {
+        if (!cancelled) setLineages(l);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [humanoid, sourcePath]);
   const [lineagePath, setLineagePath] = React.useState("");
   const [lineage, setLineage] = React.useState<TemplateBlock | null>(null);
   React.useEffect(() => {

@@ -4,11 +4,11 @@
  * The Monster Vault's NPC Features table gives a row a humanoid (its features
  * taken from its own statblock); the other lineage notes give their traits,
  * reworded for a statblock. `--write` writes each one's `rpg stat.template`
- * block (kind `lineage`) as a note of its own in
- * `<system>/worldbuilding/bestiary/templates/lineages/` (linking its lineage
- * note, which stays as the book wrote it: the compendium's lineages and the
- * NPC side do not mix), and the features note of the reworded traits
- * (`Lineage NPC Traits`).
+ * block (kind `lineage`, `id: npc`) at the end of its lineage note, so one
+ * record holds both and a list of lineages leaves the NPC part out with
+ * `.omit(npc)`; a humanoid with no lineage note gets a note in
+ * `<system>/worldbuilding/bestiary/templates/lineages/`. Also the features
+ * note of the reworded traits (`Lineage NPC Traits`).
  */
 
 import {
@@ -35,6 +35,18 @@ export const LINEAGES_FOLDER = `${SYSTEM}/worldbuilding/traits/lineages/`;
 export const LINEAGE_FEATURES_NOTE = `${SYSTEM}/worldbuilding/traits/features/Lineage NPC Traits`;
 const NPC_APPENDIX = `${SYSTEM}/compendium/rules/monster-vault/Appendix, NPCs.md`;
 const SOURCE = "From the lineages of **Tales of the Valiant** books by **Kobold Press**, reworded for statblocks.";
+
+/** The lineage's NPC block, with the id a list of lineages omits (`.omit(npc)`). */
+export function npcFence(block: TemplateBlock): string {
+  return templateFence(block).replace(/^```rpg stat\.template\n/, "```rpg stat.template\nid: npc\n");
+}
+
+/** A lineage note with its NPC block in place of the one it has, or at its end. */
+export function withNpcBlock(text: string, fence: string): string {
+  const existing = /^```+\s*rpg\s+stat\.template\b[^\n]*\n[\s\S]*?\n```+[ \t]*$/m;
+  if (existing.test(text)) return text.replace(existing, () => fence);
+  return `${text.trimEnd()}\n${fence}\n`;
+}
 
 /** A humanoid's statblock note by the table's name ("Goblin, Hobgoblin" → "Hobgoblin"). */
 function statblockOf(ctx: Ctx, humanoid: string): string | undefined {
@@ -118,7 +130,7 @@ export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
     const own = noteFor(block.name);
     out.push({
       name: block.name,
-      path: `${TEMPLATES_FOLDER}lineages/${block.name}.md`,
+      path: own ?? `${TEMPLATES_FOLDER}lineages/${block.name}.md`,
       ...(own ? { lineageNote: own } : {}),
       ...(path ? { statblock: path } : {}),
       source: 'From **Tales of the Valiant** "Monster Vault" (Appendix, NPCs: NPC Features) by **Kobold Press**.',
@@ -138,7 +150,7 @@ export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
     const source = (readNote(ctx.root, p) ?? "").match(/^source: (.+)$/m)?.[1] ?? SOURCE;
     out.push({
       name: nl.block.name,
-      path: `${TEMPLATES_FOLDER}lineages/${nl.block.name}.md`,
+      path: p,
       lineageNote: p,
       source,
       block: nl.block,
@@ -168,21 +180,21 @@ export const simLineages: SimHandler = async (ctx: Ctx, options: SimOptions) => 
         kept++;
         continue;
       }
-      const link = (p: string) => `[[${p.replace(/\.md$/, "")}|${p.split("/").pop()!.replace(/\.md$/, "")}]]`;
-      const from = l.lineageNote
-        ? `the ${link(l.lineageNote)} lineage's traits${l.from === "npc-features" ? ", as the Monster Vault's NPC Features table gives them" : " in a statblock's words"}`
-        : `the Monster Vault's NPC Features table`;
-      const next = [
-        "---",
-        `source: ${l.source}`,
-        "npc-lineage: true",
-        ...(l.lineageNote ? [`lineage: "${link(l.lineageNote)}"`] : []),
-        "---",
-        `# ${l.name}`,
-        `What a Humanoid (Any Lineage) NPC statblock gains to be ${/^[aeiou]/i.test(l.name) ? "an" : "a"} ${l.name.replace(/\s*ᴷ$/, "").toLowerCase()}: ${from}${l.statblock ? `, its traits and actions the ${link(l.statblock)} statblock's own` : ""}. Try it on an NPC, or save the result as a new one.`,
-        templateFence(l.block),
-        "",
-      ].join("\n");
+      // In the lineage's own note: its NPC block (id npc), which a list of lineages leaves out with `.omit(npc)`.
+      const fence = npcFence(l.block);
+      const next =
+        text !== null
+          ? withNpcBlock(text, fence)
+          : [
+              "---",
+              `source: ${l.source}`,
+              "npc-lineage: true",
+              "---",
+              `# ${l.name}`,
+              `What a Humanoid (Any Lineage) NPC statblock gains to be ${/^[aeiou]/i.test(l.name) ? "an" : "a"} ${l.name.replace(/\s*ᴷ$/, "").toLowerCase()}, as the Monster Vault's NPC Features table gives it${l.statblock ? `, its traits and actions the [[${l.statblock.replace(/\.md$/, "")}|${l.name}]] statblock's own` : ""}. Try it on an NPC, or save the result as a new one.`,
+              fence,
+              "",
+            ].join("\n");
       if (next !== text) {
         writeNote(ctx.root, l.path, next);
         written.push(l.name);

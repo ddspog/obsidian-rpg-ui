@@ -27,16 +27,26 @@ export interface CreatureEntry {
   name: string;
 }
 
-/** The system's lineage templates for NPCs (`bestiary/templates/lineages/`), by name. */
-export function lineagesOf(fromPath: string): CreatureEntry[] {
+/**
+ * The system's lineages for NPCs: the lineage notes that hold an NPC block (a `stat.template`
+ * of kind lineage), and the humanoids' notes in `bestiary/templates/lineages/`, by name.
+ */
+export async function lineagesOf(fromPath: string): Promise<CreatureEntry[]> {
   const app = appOf();
   if (!app) return [];
-  const prefix = `${systemRootOf(fromPath)}/worldbuilding/bestiary/templates/lineages/`;
-  return app.vault
-    .getMarkdownFiles()
-    .filter((f) => f.path.startsWith(prefix))
-    .map((f) => ({ path: f.path, name: f.basename }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const root = systemRootOf(fromPath);
+  const own = `${root}/worldbuilding/traits/lineages/`;
+  const humanoids = `${root}/worldbuilding/bestiary/templates/lineages/`;
+  const out: CreatureEntry[] = [];
+  for (const f of app.vault.getMarkdownFiles()) {
+    if (f.path.startsWith(humanoids)) out.push({ path: f.path, name: f.basename });
+    else if (f.path.startsWith(own) && /```+\s*rpg\s+stat\.template\b/.test(await app.vault.cachedRead(f)))
+      out.push({
+        path: f.path,
+        name: f.basename.replace(/\s*\((.+?) Variant\)$/, "").replace(/^.+ Lineage Variant,\s*/, ""),
+      });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** The system's bestiary notes, the template notes left out, by name. */

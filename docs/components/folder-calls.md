@@ -14,6 +14,7 @@ A call on a folder shows each note in it through a view, and sweeps its subfolde
 | `.highlight()`  | Marks notes from another source than the calling note's.                                                               |
 | `.paginate(n)`  | Shows `n` notes a page. `.paginate(0)` shows them all at once.                                                         |
 | `.facets(a, b)` | The fields offered as selects to narrow the list (`rarity`, `type`, `cr`, `circle`, `school`…).                        |
+| `.omit(id)`     | Leaves out the notes' `rpg` blocks whose YAML has `id: <id>` (a lineage's NPC block: `.omit(npc)`).                    |
 
 ## Pages and filters
 
@@ -34,5 +35,5 @@ phone**) when it finds more than that, with:
 
 When nothing matches, the call says so and offers **Clear filters**.
 
-`.paginate(n)` sets another page size, `.paginate(0)` turns paging off, and `.facets(…)` chooses the fields. These options (and `.shallow()`, `.highlight()`) can also come after the view: `.stat().paginate(4)`.
+`.paginate(n)` sets another page size, `.paginate(0)` turns paging off, and `.facets(…)` chooses the fields. These options (and `.shallow()`, `.highlight()`, `.omit(id)`) can also come after the view: `.stat().paginate(4)`.
 Calls that list notes as lines (rows of a list) are not paged unless they ask with `.paginate(n)`.
