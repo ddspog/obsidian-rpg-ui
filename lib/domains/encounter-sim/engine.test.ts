@@ -6,6 +6,7 @@ import {
   ABILITY_KEYS,
   type AbilityKey,
   type AbilityStat,
+  type BuffAction,
   type CombatActor,
   type CombatSide,
   type HealAction,
@@ -726,5 +727,24 @@ describe("a bonus-action heal", () => {
     // The brute hits Hurt (16 -> 6, below half); the cleric heals it to 11 and kills the dummy; the brute is left.
     const r = simulateTrial([cleric, hurt, brute, dummy], () => face(15), 1);
     expect(r.partyHpRemaining).toBe(20 + 11);
+  });
+});
+
+describe("buffs", () => {
+  it("a +AC buff makes a hit that would land miss, and is cast where it helps", () => {
+    const shield: BuffAction = { kind: "buff", name: "Shield of Faith", circle: 0, on: "allies", targets: 1, ac: 10 };
+    const cleric = actor({ name: "Cleric", side: "party", hp: 100, ac: 10, init: 10, actions: [shield] });
+    // The brute hits AC 10 on any d20 but a 1; with +10 AC it needs a 20, the d20 shows 15.
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, actions: [weapon("5", 0)] });
+    const r = simulateTrial([cleric, brute], () => face(15), 3);
+    expect(r.partyHpRemaining).toBe(100);
+  });
+
+  it("a debuff takes its die from the enemy's attacks", () => {
+    const bane: BuffAction = { kind: "buff", name: "Bane", circle: 0, on: "enemies", targets: 1, attackDie: "-10" };
+    const priest = actor({ name: "Priest", side: "party", hp: 100, ac: 15, init: 10, actions: [bane] });
+    // +0 and a 15 hits AC 15; less 10 it misses.
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, actions: [weapon("5", 0)] });
+    expect(simulateTrial([priest, brute], () => face(15), 3).partyHpRemaining).toBe(100);
   });
 });

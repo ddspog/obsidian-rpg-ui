@@ -239,6 +239,11 @@ export function resolveSpellOption(
         fidelity: { name, owner, status: "modelled" },
       };
     }
+    // A buff or debuff its words give (Bane's roll names only a "penalty" die).
+    if (!damage) {
+      const buff = buffFromText(spell, numbers, owner);
+      if (buff) return buff;
+    }
     // Otherwise a roll that imposes a save or an effect is a control spell the engine does not play.
     if (!damage && (roll.save !== undefined || (Array.isArray(roll.effects) && roll.effects.length > 0))) {
       return skipped(name, owner, "control-spell");
@@ -275,6 +280,9 @@ export function resolveSpellOption(
       fidelity: { name, owner, status: "modelled" },
     };
   }
+
+  const buff = buffFromText(spell, numbers, owner);
+  if (buff) return buff;
 
   return skipFromText(name, owner, text);
 }
@@ -337,4 +345,59 @@ export function spellFromText(
   });
   if (!("roll" in derived)) return undefined;
   return resolveSpellOption({ ...spell, roll: derived.roll as unknown as Record<string, unknown> }, numbers, owner);
+}
+
+const COUNT_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+
+/**
+ * A buff or a debuff read from a spell's words: "roll a d4 and add the number rolled to the attack roll or save"
+ * (Bless, on allies), "…and subtract the number rolled…" (Bane, on enemies, who keep it off with the save the
+ * spell names), "a +2 bonus to AC" (Shield of Faith). Its targets: "up to three creatures", one by default, or
+ * as many as an aura's size catches. Undefined when the words give neither a die to attacks or saves nor AC.
+ */
+export function buffFromText(
+  spell: SpellOptionInput,
+  numbers: SpellNumbers | undefined,
+  owner: string
+): SpellOptionResult | undefined {
+  const text = `${spell.summary ?? ""} ${spell.text ?? ""}`.replace(/[*_]+/g, "").replace(/\s+/g, " ");
+  const die = text.match(
+    /roll an? (d\d+) and (add|subtract) the number rolled (?:from|to) (?:the |its |that )?([^.]*)/i
+  );
+  const ac = text.match(/\+(\d+) bonus to (?:its |their |your )?AC\b/i);
+  if (!die && !ac) return undefined;
+  const onWhat = die?.[3].toLowerCase() ?? "";
+  const attack = die && /attack roll/.test(onWhat);
+  const save = die && /\bsav(?:e|ing throw)/.test(onWhat);
+  if (die && !attack && !save && !ac) return undefined;
+  const negative = die?.[2].toLowerCase() === "subtract";
+  const sign = negative ? "-" : "+";
+  const count = text.match(/up to (\w+) creatures?/i);
+  const sized = areaTargets(`${spell.range ?? ""} ${text}`).targets;
+  const targets = count
+    ? (COUNT_WORDS[count[1].toLowerCase()] ?? (parseInt(count[1], 10) || 1))
+    : /\baura\b|\beach creature\b|\bcreatures? of your choice in\b/i.test(text) && sized
+      ? sized
+      : 1;
+  const saveMatch = negative
+    ? text.match(
+        /must succeed on an? (STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) sav/i
+      )
+    : null;
+  if (!numbers) return { fidelity: { name: spell.name, owner, status: "modelled" }, needsCastingModifier: true };
+  const ability = saveMatch ? abilityKeyOf(saveMatch[1]) : undefined;
+  return {
+    action: {
+      kind: "buff",
+      name: spell.name,
+      circle: spell.circle ?? 0,
+      on: negative ? "enemies" : "allies",
+      targets,
+      ...(attack ? { attackDie: `${sign}1${die![1]}` } : {}),
+      ...(save ? { saveDie: `${sign}1${die![1]}` } : {}),
+      ...(ac ? { ac: parseInt(ac[1], 10) } : {}),
+      ...(ability ? { save: { ability, dc: 8 + numbers.proficiencyBonus + numbers.castingModifier } } : {}),
+    },
+    fidelity: { name: spell.name, owner, status: "modelled" },
+  };
 }

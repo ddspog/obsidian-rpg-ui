@@ -88,6 +88,17 @@ function summariseBase(action: ModelledAction): ActionSummary {
       };
     case "heal":
       return { name: action.name, kind: action.kind, circle: action.circle, heal: action.expr };
+    case "buff":
+      return {
+        name: action.name,
+        kind: action.kind,
+        circle: action.circle,
+        on: action.on,
+        targets: action.targets,
+        ...(action.attackDie ? { attackDie: action.attackDie } : {}),
+        ...(action.saveDie ? { saveDie: action.saveDie } : {}),
+        ...(action.ac ? { ac: action.ac } : {}),
+      };
   }
 }
 

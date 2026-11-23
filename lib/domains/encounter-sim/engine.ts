@@ -1,6 +1,7 @@
 import { applyDefences, immuneTo } from "./defences";
 import { averageOf, d20, rollExpr, type Rng } from "./rng";
 import type {
+  BuffAction,
   CombatActor,
   Inflict,
   ModelledCondition,
@@ -79,6 +80,8 @@ interface Combatant {
   marked: Array<Combatant | undefined>;
   /** A once-a-turn rider already dealt this turn. */
   riderDone: boolean;
+  /** Buffs and debuffs on it, by the spell's name: dice to its attacks and saves, a bonus to its AC. */
+  buffs: Map<string, Pick<BuffAction, "attackDie" | "saveDie" | "ac">>;
 }
 
 const limitOf = (action: ModelledAction) =>
@@ -93,6 +96,9 @@ function spendSlot(c: Combatant, circle: number): void {
   if (circle > 0) c.slots[circle - 1] = (c.slots[circle - 1] ?? 0) - 1;
 }
 
+/** A buff's worth when choosing, a target: about what a d4 on every roll or +2 AC saves or adds in a fight. */
+const BUFF_WORTH = 3;
+
 function isAvailable(c: Combatant, action: ModelledAction): boolean {
   if (c.spent.has(action)) return false;
   const perDay = limitOf(action)?.perDay;
@@ -101,6 +107,7 @@ function isAvailable(c: Combatant, action: ModelledAction): boolean {
     case "spell-attack":
     case "save":
     case "heal":
+    case "buff":
       return hasSlot(c, action.circle);
     default:
       return true;
@@ -108,7 +115,9 @@ function isAvailable(c: Combatant, action: ModelledAction): boolean {
 }
 
 function circleOf(action: ModelledAction): number {
-  return action.kind === "spell-attack" || action.kind === "save" || action.kind === "heal" ? action.circle : 0;
+  return action.kind === "spell-attack" || action.kind === "save" || action.kind === "heal" || action.kind === "buff"
+    ? action.circle
+    : 0;
 }
 
 /** Average damage used to choose an action; accuracy and save outcomes are ignored. */
@@ -169,6 +178,7 @@ export function simulateTrial(
     riderUses: (actor.riders ?? []).map((r) => r.uses ?? Infinity),
     marked: (actor.riders ?? []).map(() => undefined),
     riderDone: false,
+    buffs: new Map(),
   }));
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
@@ -208,6 +218,20 @@ export function simulateTrial(
 
   const has = (c: Combatant, set: ReadonlySet<ModelledCondition>) => [...c.conditions.keys()].some((k) => set.has(k));
 
+  /** What its buffs add to a roll ("-1d4" takes away); no draws without buffs. */
+  const buffRoll = (c: Combatant, which: "attackDie" | "saveDie"): number => {
+    let total = 0;
+    for (const b of c.buffs.values()) {
+      const die = b[which];
+      if (!die) continue;
+      const negative = die.trim().startsWith("-");
+      const roll = rollExpr(die.replace(/^\s*[+-]\s*/, ""), false, rng);
+      total += negative ? -roll : roll;
+    }
+    return total;
+  };
+  const acOf = (c: Combatant) => c.actor.armorClass + [...c.buffs.values()].reduce((sum, b) => sum + (b.ac ?? 0), 0);
+
   /** A condition lands, unless the target makes the save it gives. */
   const inflict = (target: Combatant, how: Inflict | undefined): void => {
     if (!how || !living(target) || immuneTo(target.actor.defences, how.condition)) return;
@@ -215,7 +239,8 @@ export function simulateTrial(
       let roll = d20(rng);
       // Resistant to a condition: advantage on the save against it.
       if (target.actor.defences?.conditionResistant.includes(how.condition)) roll = Math.max(roll, d20(rng));
-      if (roll + target.actor.abilities[how.save.ability].saveModifier >= how.save.dc) return;
+      if (roll + target.actor.abilities[how.save.ability].saveModifier + buffRoll(target, "saveDie") >= how.save.dc)
+        return;
     }
     target.conditions.set(how.condition, { lasts: how.lasts, ...(how.save ? { save: how.save } : {}) });
   };
@@ -259,7 +284,8 @@ export function simulateTrial(
       const second = d20(rng);
       natural = advantage ? Math.max(natural, second) : Math.min(natural, second);
     }
-    const hit = natural === 20 || (natural !== 1 && natural + action.hitBonus >= target.actor.armorClass);
+    const hit =
+      natural === 20 || (natural !== 1 && natural + action.hitBonus + buffRoll(attacker, "attackDie") >= acOf(target));
     if (!hit) return false;
     const crit = natural === 20;
     const weapon = action.kind === "weapon";
@@ -277,7 +303,7 @@ export function simulateTrial(
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
-      const save = d20(rng) + target.actor.abilities[action.ability].saveModifier;
+      const save = d20(rng) + target.actor.abilities[action.ability].saveModifier + buffRoll(target, "saveDie");
       const success = save >= action.dc;
       damage(
         target,
@@ -299,6 +325,22 @@ export function simulateTrial(
     }
   };
 
+  /** Who a buff would land on now: allies or enemies without it, the most hurt (allies) or the first (enemies). */
+  const buffTargets = (c: Combatant, action: BuffAction): Combatant[] => {
+    const pool = (action.on === "allies" ? alliesOf(c) : enemiesOf(c)).filter((t) => !t.buffs.has(action.name));
+    return pool.slice(0, action.targets);
+  };
+  const castBuff = (c: Combatant, action: BuffAction): void => {
+    for (const t of buffTargets(c, action)) {
+      if (action.save && d20(rng) + t.actor.abilities[action.save.ability].saveModifier >= action.save.dc) continue;
+      t.buffs.set(action.name, {
+        ...(action.attackDie ? { attackDie: action.attackDie } : {}),
+        ...(action.saveDie ? { saveDie: action.saveDie } : {}),
+        ...(action.ac ? { ac: action.ac } : {}),
+      });
+    }
+  };
+
   /** Resolve a damaging action. */
   const useDamaging = (c: Combatant, action: ModelledAction): void => {
     switch (action.kind) {
@@ -312,6 +354,9 @@ export function simulateTrial(
         break;
       case "save":
         castSave(c, action);
+        break;
+      case "buff":
+        castBuff(c, action);
         break;
       default:
         break;
@@ -362,7 +407,8 @@ export function simulateTrial(
     let bestValue = -Infinity;
     for (const action of c.actor.actions) {
       if (action.kind === "heal" || !isAvailable(c, action)) continue;
-      const value = valueOf(action, livingEnemies);
+      const value =
+        action.kind === "buff" ? BUFF_WORTH * buffTargets(c, action).length : valueOf(action, livingEnemies);
       if (value > bestValue) {
         best = action;
         bestValue = value;

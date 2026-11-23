@@ -132,7 +132,30 @@ export interface HealAction {
   bonus?: boolean;
 }
 
-export type ModelledAction = WeaponAttackAction | MultiattackAction | SpellAttackAction | SaveAction | HealAction;
+/**
+ * A buff or a debuff for the fight: a die added to (or, signed "-1d4", taken from) attack rolls and saves, or a
+ * bonus to AC, on up to `targets` allies (Bless, Shield of Faith) or enemies (Bane, which a save keeps off).
+ */
+export interface BuffAction {
+  kind: "buff";
+  name: string;
+  circle: number;
+  on: "allies" | "enemies";
+  targets: number;
+  attackDie?: string;
+  saveDie?: string;
+  ac?: number;
+  /** The save an enemy makes to keep it off. */
+  save?: { ability: AbilityKey; dc: number };
+}
+
+export type ModelledAction =
+  | WeaponAttackAction
+  | MultiattackAction
+  | SpellAttackAction
+  | SaveAction
+  | HealAction
+  | BuffAction;
 
 export type CombatSide = "party" | "monsters";
 
@@ -186,5 +209,5 @@ export interface TrialResult {
 
 /** An action that deals damage (as opposed to a heal). */
 export function isDamaging(action: ModelledAction): boolean {
-  return action.kind !== "heal";
+  return action.kind !== "heal" && action.kind !== "buff";
 }

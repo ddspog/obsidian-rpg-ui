@@ -511,10 +511,50 @@ describe("resolveSpellOption: skipped classifications", () => {
     expect(resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason).toBe("control-spell");
   });
 
-  it("skips a roll-less spell about attack rolls and saves (Bless) as buff", () => {
+  it("models Bless as a buff: a d4 on the attacks and saves of up to three allies", () => {
     const result = resolveSpellOption(BLESS, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Bless", owner: OWNER, status: "skipped", reason: "buff" });
+    expect(result.action).toEqual({
+      kind: "buff",
+      name: "Bless",
+      circle: 1,
+      on: "allies",
+      targets: 3,
+      attackDie: "+1d4",
+      saveDie: "+1d4",
+    });
+    expect(result.fidelity).toEqual({ name: "Bless", owner: OWNER, status: "modelled" });
+  });
+
+  it("models Bane as a debuff on enemies that a save keeps off, and Shield of Faith as +2 AC", () => {
+    expect(
+      resolveSpellOption(
+        {
+          name: "Bane",
+          circle: 1,
+          text: "Up to three creatures of your choice that you can see within range must succeed on a CHA save or become cursed. When a cursed target makes an attack roll or a save before the spell ends, the target must roll a d4 and subtract the number rolled from the attack roll or save.",
+        },
+        NUMBERS,
+        OWNER
+      ).action
+    ).toMatchObject({
+      kind: "buff",
+      on: "enemies",
+      targets: 3,
+      attackDie: "-1d4",
+      saveDie: "-1d4",
+      save: { ability: "cha", dc: 14 },
+    });
+    expect(
+      resolveSpellOption(
+        {
+          name: "Shield of Faith",
+          circle: 1,
+          text: "A shimmering field surrounds a creature, granting it a +2 bonus to AC for the duration.",
+        },
+        NUMBERS,
+        OWNER
+      ).action
+    ).toMatchObject({ kind: "buff", on: "allies", targets: 1, ac: 2 });
   });
 
   it("recognises armor class and AC wording as buff", () => {
@@ -556,7 +596,7 @@ describe("resolveSpellOption: skipped classifications", () => {
   });
 
   it("only ever reports reasons from the fixed vocabulary", () => {
-    for (const spell of [SANCTUARY, BLESS, GUIDANCE, SPEAK_WITH_ANIMALS]) {
+    for (const spell of [SANCTUARY, GUIDANCE, SPEAK_WITH_ANIMALS]) {
       const reason = resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason;
       expect(SKIP_REASONS).toContain(reason);
     }
@@ -567,7 +607,7 @@ describe("resolveSpellOption: without casting-modifier numbers", () => {
   it("still classifies skipped spells", () => {
     expect(resolveSpellOption(ENTANGLE, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(SANCTUARY, undefined, OWNER).fidelity.reason).toBe("control-spell");
-    expect(resolveSpellOption(BLESS, undefined, OWNER).fidelity.reason).toBe("buff");
+    expect(resolveSpellOption(BLESS, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(GUIDANCE, undefined, OWNER).fidelity.reason).toBe("utility-spell");
     expect(resolveSpellOption(SPEAK_WITH_ANIMALS, undefined, OWNER).needsCastingModifier).toBeUndefined();
   });
