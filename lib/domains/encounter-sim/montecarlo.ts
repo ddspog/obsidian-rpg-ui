@@ -1,6 +1,6 @@
 import { simulateTrial } from "./engine";
 import { createSeededRng } from "./rng";
-import type { CombatActor, TrialResult } from "./types";
+import type { CombatActor, TrialResult, TrialRules } from "./types";
 
 export interface ActorGroup {
   actor: CombatActor;
@@ -15,6 +15,8 @@ export interface MonteCarloInput {
   roundCap: number;
   /** The share of a monster's target picks that go to the most hurt PC (default MONSTER_FOCUS). */
   monsterFocus?: number;
+  /** The rules beyond the dice (positions, death saves, a lair); none when absent. */
+  rules?: TrialRules;
 }
 
 /**
@@ -35,9 +37,15 @@ export interface MonteCarloSummary {
   roundsPerTrial: number[];
   hpRemainingPerTrial: number[];
   koRate: Record<string, number>;
+  /** With death saves: the share of trials each PC died in, and in which anyone did. */
+  deathRate?: Record<string, number>;
+  anyDeathRate?: number;
 }
 
-export type CompactSummary = Omit<MonteCarloSummary, "roundsPerTrial" | "hpRemainingPerTrial" | "hpLostStdDev">;
+export type CompactSummary = Omit<
+  MonteCarloSummary,
+  "roundsPerTrial" | "hpRemainingPerTrial" | "hpLostStdDev" | "deathRate"
+>;
 
 /** Four decimal places, as the JSON contract states. */
 export const round4 = (x: number): number => Math.round(x * 10000) / 10000;
@@ -67,7 +75,7 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   ];
 
   const results: TrialResult[] = [];
-  const options = { monsterFocus: input.monsterFocus ?? MONSTER_FOCUS };
+  const options = { monsterFocus: input.monsterFocus ?? MONSTER_FOCUS, ...(input.rules ? { rules: input.rules } : {}) };
   for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap, options));
 
   const share = (outcome: TrialResult["outcome"]) =>
@@ -77,6 +85,15 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   for (const p of party) {
     koRate[p.name] = round4(results.filter((r) => r.knockedOut.includes(p.name)).length / trials);
   }
+  // With death saves: how often each PC died, and how often anyone did.
+  const deaths = input.rules?.deathSaves
+    ? {
+        deathRate: Object.fromEntries(
+          party.map((p) => [p.name, round4(results.filter((r) => r.dead?.includes(p.name)).length / trials)])
+        ),
+        anyDeathRate: round4(results.filter((r) => (r.dead?.length ?? 0) > 0).length / trials),
+      }
+    : {};
 
   const partyMaxHp = party.reduce((sum, p) => sum + p.maxHp, 0);
   const hpRemaining = results.map((r) => r.partyHpRemaining);
@@ -96,14 +113,16 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
     roundsPerTrial,
     hpRemainingPerTrial: hpRemaining,
     koRate,
+    ...deaths,
   };
 }
 
 /** The summary without its per-trial arrays, for suggest. */
 export function compactSummary(summary: MonteCarloSummary): CompactSummary {
-  const { roundsPerTrial: _r, hpRemainingPerTrial: _h, hpLostStdDev: _s, ...rest } = summary;
+  const { roundsPerTrial: _r, hpRemainingPerTrial: _h, hpLostStdDev: _s, deathRate: _d, ...rest } = summary;
   void _r;
   void _h;
   void _s;
+  void _d;
   return rest;
 }

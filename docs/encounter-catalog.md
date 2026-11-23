@@ -253,6 +253,50 @@ The profile is printed as `profile`, for example `{ "size": 4, "averageLevel": 1
 
 The random-encounter tables are written for a party of four. The simulator always uses the real PCs, so an entry's fit is already measured for the party's real size.
 
+## The rules of a fight: space, bonus actions, lairs, ammunition, concentration, death saves
+
+Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog's `check`, `suggest --refresh` and `adjust`) plays by these rules (`TrialRules` in `lib/domains/encounter-sim/types.ts`, built by `rulesOf` in `cli/rpg/sim/flags.ts`; `run` prints them under `rules`). The engine leaves each off when it is absent, which is the abstract fight it played before.
+
+- **Space** (`--distance <feet>`, default 30): the sides start that far apart on a line, and creatures that would rather act at range stand 10 feet further back (a flier among them starts aloft).
+  - A melee action needs its reach: "reach 10 ft." in a statblock, "10 ft." on a sheet. A creature moves its speed to get there, and a bonus Dash doubles it. With nothing in reach it Dashes toward the nearest enemy.
+  - A ranged attack needs its range, the normal one ("range 80/320 ft." is 80). A spell uses its range ("Self (15-foot cone)" is 15, "Touch" melee), and a monster's area uses "within 30 feet" or its cone's or line's length.
+  - An action whose reach nothing says reaches anyone, as before.
+  - Fighting next to an enemy:
+    - A ranged attack with an enemy within 5 feet has disadvantage, unless the attacker slips away with a bonus Disengage.
+    - It can also step back, which gives each enemy whose reach it leaves an opportunity attack (that enemy's best melee swing, with its reaction). It steps back when those swings would cost less than the disadvantage.
+    - Flyby leaves without them.
+  - A creature acting at range backs off, after acting, from a melee enemy that could reach it next turn ("kiting"). A melee creature with someone already in reach strikes there rather than walking off to another target.
+  - A flier acting at range stays aloft, out of reach of melee from creatures that cannot fly.
+  - Speeds come from the statblock ("30 ft., fly 60 ft.") and the sheet; Flyby from a feature of that name.
+- **Bonus actions:**
+  - A statblock's `bonus` features: "takes the Disengage or Hide action" (Nimble Escape) gives those moves, and Cunning Action on a sheet gives Dash, Disengage and Hide.
+  - Hide is a Stealth roll (the statblock's passive Stealth less 10, or the sheet's skill) against the best passive Perception of the enemies. It works only at range with no enemy next to the creature, and success gives advantage on its next attack.
+  - A bonus feature that is an attack or a save is made after the action, on an enemy in reach. A bonus-action heal (Healing Word) also spends the bonus action.
+- **Lair actions** (`--lair`): a legendary creature's category note ("Red Dragons") lists its "Lair Actions". On initiative 20 (losing ties) it takes the one worth most, never the same one two rounds running, and it reaches anyone in the lair. A save with no damage that only hinders ("or be knocked prone") hinders. A wyrmling of the family keeps no lair.
+- **Ammunition:** a ranged weapon on a sheet spends shots counted from the inventory: arrows for a bow, bolts for a crossbow, bullets for a sling, needles for a blowgun, in containers too. With none left it is not used. Monsters have what they need.
+- **Concentration:**
+  - A spell whose duration says "Concentration" holds what it left: a buff (Bless), or a condition it put on a target (Hold Person, Entangle).
+  - That effect ends when the caster drops to 0 HP or casts another concentration spell. It also ends when the caster takes damage and fails a CON save (DC 10 or half the damage, whichever is more).
+- **Catalog fits:** a fit is stamped with the rules it was simulated by (the party stamp takes them in). Another `--distance` or `--lair` on `catalog check` re-simulates every entry. The PCs' actions now carry their reach, so a catalog checked before these rules is re-simulated by its next `check`.
+- **Death saves** (always on):
+  - A PC at 0 HP rolls at the start of its turn. 10 or more is a success; a natural 1 is two failures; a natural 20 brings it back with 1 HP. Three failures and it dies; three successes and it is stable.
+  - Healing goes to a fallen ally first. With no heal at hand, a PC stabilises an ally about to die (two failures) with a DC 10 Medicine check (WIS) as its action.
+  - Monsters leave a fallen PC be.
+  - `run` reports each PC's `deathRate` and the `anyDeathRate`. `suggest`, `plan` and `--brief` give the `anyDeathRate` only.
+
+Measured on the default level-1 party (400 trials, the new rules against the abstract fight):
+
+- **Most fights:** a little cheaper.
+  - Goblin ×4 cost 18% of the party's HP instead of 26%, Hobgoblin ×2 19% instead of 27%.
+  - A Giant Eagle cost 23% instead of 35%.
+  - Kobold ×5 cost 18% instead of 22%.
+- **A big brute:** won much more often.
+  - An Ogre: 65% instead of 23%. Its 10-foot Bowling Sweep catches only the PCs next to it once the casters stand back, and death saves bring a fallen PC back now and then.
+  - A Bandit Captain: 66% instead of 46%.
+- **Death:** a PC dies in 0.25% to 8% of those fights (`anyDeathRate`).
+- **The logged kobold fight** (`calibrate`): now at the 8th percentile of the simulated, against the 3rd before (predicted HP lost 75%, against 83% before and 22% in play).
+- **Speed:** `suggest` takes about 1.5 times as long (15 s against 10 s for the default sweep).
+
 ## Calibration: the simulator against real play
 
 `rpg sim calibrate [<session note or folder>…] [--seed N] [--trials N] [--rounds N] [--difficulty D]` (`cli/rpg/sim/calibrate.ts`, read-only) reads every fight a session log records (`[COMBAT]` … `[/COMBAT]`): its foes (the `[F:…]` tags first written since the fight before, "Fat [[Kobold, A]]" counted as a `Kobold, A`), the party (the note's `pcs`), the party's HP as the fight opened and closed (from the sheets, less what the log did, as the log block folds it), its rounds and who dropped. It simulates the same fight and places the real one among the simulated: `hpLost` against `avgHpLost` and its spread (`z`), the share of simulated fights that cost no more than the real one (`percentile`), and the fit each would get. Across fights, a mean percentile that stays low says the simulator makes fights harder than play finds them (high: easier). With fewer than 10 fights it says the outcome profiles should not be tuned from them.
@@ -308,5 +352,5 @@ Drafts are guesses made by `extractEncounter` (`lib/domains/encounter-catalog/ex
 - **Templates:** "(use mage with the Void-blessed template)", "a giant ape with the bramble creature template" keep the template on the creature (`template:` on the entry's monster), when the vault has a template note of that name (`rpg sim templates` lists them) or the aliases note names one under `templates:` (`bramble creature: Bramble Beast`); else the reason says it was simulated without it and the draft is medium. Two templates offered ("the skeleton or zombie template") keep none. The simulator applies it before the fight, as `rpg sim homebrew --template` does: `--monster "Mule with Zombie:2"` takes the same form. The board shows it after the name; a prepared line's foes link the base creature.
 - Names the bestiary lacks ("five shriekers") are listed as `unresolved` and make the draft medium.
 - Rows that are not combat but a skill challenge, a hazard or a roleplay scene are not entries at all.
-- A fit is only as good as the simulator: wards (Sanctuary), speed and action changes (Haste, Slow), opportunity attacks and reactions other than an AC one, positioning and lair actions are left out (see the `fidelity` of `rpg sim run`). Conditions that ride on damage are played (below).
+- A fit is only as good as the simulator: wards (Sanctuary), speed and action changes (Haste, Slow), reactions other than an AC one and an opportunity attack, terrain, cover and a second dimension are left out (see the `fidelity` of `rpg sim run`). Space, opportunity attacks, flight, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
 - Tags come from the table (environment, tier, CR band, book) and the monsters' habitats, lower-cased, so a "Forests" table has `forests` and its wolves' `forest`; `--tag` matches whole tags, case-insensitively.

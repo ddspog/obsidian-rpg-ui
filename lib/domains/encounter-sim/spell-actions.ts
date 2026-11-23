@@ -15,6 +15,7 @@ import {
   type Inflict,
   MODELLED_CONDITIONS,
   type ModelledAction,
+  type Reach,
   type ModelledCondition,
   type SkipReason,
 } from "./types";
@@ -138,6 +139,40 @@ function modelledFormOf(roll: Record<string, unknown>, damage: DamageSpec): Mode
  * `needsCastingModifier` and no action. Skipped classifications never do.
  */
 export function resolveSpellOption(
+  spell: SpellOptionInput,
+  numbers: SpellNumbers | undefined,
+  owner: string
+): SpellOptionResult {
+  const result = resolveSpellAction(spell, numbers, owner);
+  const action = result.action;
+  if (!action || (action.kind !== "spell-attack" && action.kind !== "save" && action.kind !== "buff")) return result;
+  // Where it reaches (its range) and whether it holds concentration (its duration).
+  const melee = spell.roll && isRecord(spell.roll) && spell.roll.form === "melee";
+  const reach = action.kind === "buff" ? undefined : melee ? { melee: 5 } : spellReach(spell.range);
+  const concentration = /\bconcentration\b/i.test(spell.duration ?? "");
+  return {
+    ...result,
+    action: {
+      ...action,
+      ...(reach ? { reach } : {}),
+      ...(concentration ? { concentration: true } : {}),
+    } as ModelledAction,
+  };
+}
+
+/** A spell's range as a reach: "60 feet" 60, "Touch" melee 5, "Self (15-foot cone)" 15, "Self" or none anywhere. */
+export function spellReach(range: string | undefined): Reach | undefined {
+  if (!range) return undefined;
+  if (/^\s*touch\b/i.test(range)) return { melee: 5 };
+  const self = range.match(/^\s*self\s*\((\d+)[- ](?:foot|feet|ft)/i);
+  if (self) return { range: parseInt(self[1], 10) };
+  const feet = range.match(/^\s*(\d+)\s*(?:feet|foot|ft)/i);
+  if (feet) return { range: parseInt(feet[1], 10) };
+  const miles = range.match(/^\s*(\d+)\s*miles?/i);
+  return miles ? { range: parseInt(miles[1], 10) * 5280 } : undefined;
+}
+
+function resolveSpellAction(
   spell: SpellOptionInput,
   numbers: SpellNumbers | undefined,
   owner: string

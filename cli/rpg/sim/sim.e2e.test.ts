@@ -26,6 +26,7 @@ const R5_KEYS = [
   "seed",
   "trials",
   "roundCap",
+  "rules",
   "winRate",
   "tpkRate",
   "stalemateRate",
@@ -33,6 +34,8 @@ const R5_KEYS = [
   "roundsPerTrial",
   "hpRemainingPerTrial",
   "koRate",
+  "deathRate",
+  "anyDeathRate",
   "difficulty",
   "fidelity",
 ];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { SKIP_REASONS } from "./types";
-import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "./spell-actions";
+import { resolveSpellOption, spellReach, type SpellNumbers, type SpellOptionInput } from "./spell-actions";
 
 /** Kowyn-shaped numbers: proficiency +2, casting modifier +4, level 3. */
 const NUMBERS: SpellNumbers = { proficiencyBonus: 2, castingModifier: 4, characterLevel: 3 };
@@ -738,5 +738,30 @@ describe("a spell read from its prose", () => {
         "Each target must make a CHA save. Whenever a target that fails this save makes an attack roll, it must roll a d4 and subtract the number rolled."
       )
     ).toBeUndefined();
+  });
+});
+
+describe("spell reach and concentration", () => {
+  it("reads a spell's range as its reach", () => {
+    expect(spellReach("60 feet")).toEqual({ range: 60 });
+    expect(spellReach("Touch")).toEqual({ melee: 5 });
+    expect(spellReach("Self (15-foot cone)")).toEqual({ range: 15 });
+    expect(spellReach("Self")).toBeUndefined();
+    expect(spellReach(undefined)).toBeUndefined();
+  });
+
+  it("marks a concentration spell's action, and gives it the spell's reach", () => {
+    const hold = resolveSpellOption(
+      {
+        name: "Hold Person",
+        circle: 2,
+        range: "60 feet",
+        duration: "Concentration, up to 1 minute",
+        text: "Choose a Humanoid that you can see within range. The target must succeed on a WIS save or be paralyzed for the duration.",
+      },
+      { proficiencyBonus: 2, castingModifier: 3, characterLevel: 3 },
+      "Caster"
+    );
+    expect(hold.action).toMatchObject({ kind: "save", reach: { range: 60 }, concentration: true });
   });
 });

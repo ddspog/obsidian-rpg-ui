@@ -231,6 +231,8 @@ describe("SIM_HELP", () => {
       "seed",
       "trials",
       "rounds",
+      "distance",
+      "lair",
       "difficulty",
       "tiers",
       "rank",

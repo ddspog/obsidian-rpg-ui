@@ -343,6 +343,7 @@ describe("rpg sim suggest", () => {
     for (const c of doc.candidates) {
       expect(Object.keys(c).sort()).toEqual(
         [
+          "anyDeathRate",
           "avgHpLost",
           "avgRounds",
           "composition",
@@ -465,14 +466,17 @@ describe("rpg sim suggest --rank outcome", () => {
   it("labels fit against the difficulty asked for", async () => {
     const challenging = (await suggest("--rank", "outcome", "--limit", "100")).doc;
     const deadly = (await suggest("--rank", "outcome", "--difficulty", "deadly", "--limit", "100")).doc;
-    expect(new Set(challenging.candidates.map((c) => c.fit))).toEqual(new Set(["too-easy", "too-hard"]));
+    // The sweep runs from too easy to too hard, each candidate judged by the difficulty asked for.
+    const fits = new Set(challenging.candidates.map((c) => c.fit));
+    expect(fits.has("too-easy") && fits.has("too-hard")).toBe(true);
+    for (const c of challenging.candidates) expect(c.fit).toBe(classifyFit(c, "challenging"));
     for (const c of deadly.candidates) expect(c.fit).toBe(classifyFit(c, "deadly"));
-    // The same fight is judged by the difficulty asked for: Imp x3 costs about 40% of the HP and wipes
-    // the party now and then, which is too hard for an easy encounter.
+    // The same fight is judged by the difficulty asked for: Imp x4 costs about 70% of the HP and wipes the
+    // party now and then, which is too hard for an easy encounter.
     const easy = (await suggest("--rank", "outcome", "--difficulty", "easy", "--limit", "100")).doc;
-    const fitOf = (doc: Suggest) => doc.candidates[find(doc, "Imp", 3)].fit;
+    const fitOf = (doc: Suggest) => doc.candidates[find(doc, "Imp", 4)].fit;
     expect(fitOf(easy)).toBe("too-hard");
-    expect(fitOf(deadly)).toBe(classifyFit(deadly.candidates[find(deadly, "Imp", 3)], "deadly"));
+    expect(fitOf(deadly)).toBe(classifyFit(deadly.candidates[find(deadly, "Imp", 4)], "deadly"));
   });
 
   it("sorts by distance to the outcome profile, then tpkRate, then note ref, then count", async () => {

@@ -19,6 +19,8 @@ import {
   type CombatSide,
   type Inflict,
   type ModelledAction,
+  type Reach,
+  type TrialRules,
   type WeaponAttackAction,
 } from "./types";
 
@@ -55,7 +57,17 @@ function weapon(rng: Rng, i: number): WeaponAttackAction {
     damage: { expr: dice(rng), type: pick(rng, DAMAGE_TYPES) },
     ...(Object.keys(limit).length ? { limit } : {}),
     ...(condition ? { inflicts: condition } : {}),
+    ...reachOf(rng),
+    ...(chance(rng, 0.1) ? { ammo: int(rng, 0, 4) } : {}),
   };
+}
+
+/** Where an action reaches: melee 5 or 10, a range, or nothing said (anywhere). */
+function reachOf(rng: Rng): { reach?: Reach } {
+  const r = rng();
+  if (r < 0.4) return { reach: { melee: pick(rng, [5, 10]) } };
+  if (r < 0.75) return { reach: { range: pick(rng, [15, 30, 60, 150]) } };
+  return {};
 }
 
 function action(rng: Rng, i: number, caster: boolean): ModelledAction {
@@ -77,6 +89,9 @@ function action(rng: Rng, i: number, caster: boolean): ModelledAction {
       area: chance(rng, 0.5),
       ...(chance(rng, 0.5) ? { targets: int(rng, 1, 4) } : {}),
       circle,
+      ...reachOf(rng),
+      ...(chance(rng, 0.3) ? { inflicts: { condition: pick(rng, MODELLED_CONDITIONS), lasts: "fight" as const } } : {}),
+      ...(chance(rng, 0.3) ? { concentration: true } : {}),
     };
   if (roll < 0.9)
     return { kind: "heal", name: `Mend ${i}`, expr: dice(rng), circle, ...(chance(rng, 0.5) ? { bonus: true } : {}) };
@@ -87,6 +102,7 @@ function action(rng: Rng, i: number, caster: boolean): ModelledAction {
     on: pick(rng, ["allies", "enemies"] as const),
     targets: int(rng, 1, 3),
     ...(chance(rng, 0.5) ? { attackDie: "1d4" } : { ac: 2 }),
+    ...(chance(rng, 0.5) ? { concentration: true } : {}),
   };
 }
 
@@ -131,8 +147,17 @@ function creature(rng: Rng, name: string, side: CombatSide): CombatActor {
       ? {
           legendaryResistance: int(rng, 1, 3),
           legendary: { points: 3, actions: [{ action: weapon(rng, 9), cost: 1 }] },
+          ...(chance(rng, 0.5) ? { lair: [action(rng, 20, false), action(rng, 22, false)] } : {}),
         }
       : {}),
+    // Moving and hiding: speeds (0 included), flight, Flyby, bonus moves and actions, Stealth and Perception.
+    speed: pick(rng, [0, 10, 25, 30, 40]),
+    ...(chance(rng, 0.2) ? { fly: pick(rng, [30, 60]) } : {}),
+    ...(chance(rng, 0.1) ? { flyby: true } : {}),
+    ...(chance(rng, 0.3) ? { bonusMoves: [pick(rng, ["dash", "disengage", "hide"] as const)] } : {}),
+    ...(chance(rng, 0.15) ? { bonusActions: [weapon(rng, 30)] } : {}),
+    stealth: int(rng, -1, 8),
+    passivePerception: int(rng, 8, 16),
   };
 }
 
@@ -148,13 +173,33 @@ const snapshot = (actors: CombatActor[]) => JSON.stringify(actors);
 
 describe("engine properties over random fights", () => {
   it(`ends every trial by the round cap, with an outcome its HP agrees with (${CASES} fights)`, () => {
+    for (let c = 1; c <= CASES; c++) check(c);
+  });
+
+  it(`keeps them with the rules on: positions, death saves, a lair (${CASES} fights)`, () => {
     for (let c = 1; c <= CASES; c++) {
+      const pick3 = createSeededRng(c * 31);
+      const rules: TrialRules = {
+        ...(pick3() < 0.8 ? { distance: Math.floor(pick3() * 80) } : {}),
+        ...(pick3() < 0.7 ? { deathSaves: true } : {}),
+        ...(pick3() < 0.3 ? { lair: true } : {}),
+      };
+      check(c, rules);
+    }
+  });
+
+  function check(c: number, rules?: TrialRules) {
+    {
       const actors = fight(c);
       const before = snapshot(actors);
       const party = actors.filter((a) => a.side === "party");
       const maxHp = party.reduce((sum, a) => sum + a.maxHp, 0);
-      const result = simulateTrial(actors, createSeededRng(c * 7919), ROUND_CAP, { monsterFocus: 0.5 });
-      const where = `fight ${c}`;
+      const result = simulateTrial(actors, createSeededRng(c * 7919), ROUND_CAP, {
+        monsterFocus: 0.5,
+        ...(rules ? { rules } : {}),
+      });
+      const where = `fight ${c} ${JSON.stringify(rules ?? {})}`;
+      for (const name of result.dead ?? []) expect(result.knockedOut, where).toContain(name);
       expect(result.rounds, where).toBeGreaterThanOrEqual(1);
       expect(result.rounds, where).toBeLessThanOrEqual(ROUND_CAP);
       expect(result.partyHpRemaining, where).toBeGreaterThanOrEqual(0);
@@ -176,7 +221,7 @@ describe("engine properties over random fights", () => {
       // The actors are the fight's description, not its state: slots, uses and HP are the trial's own.
       expect(snapshot(actors), where).toBe(before);
     }
-  });
+  }
 
   it("gives one result for one seed, and the rates of a run sum to one", () => {
     for (let c = 1; c <= 40; c++) {

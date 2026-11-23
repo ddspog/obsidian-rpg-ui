@@ -22,7 +22,7 @@ import {
 } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import type { SimHandler } from "./dispatch";
-import { UsageError, type SimOptions } from "./flags";
+import { rulesOf, UsageError, type SimOptions } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import { fitByDifficulty, groupRef, noteRef, skippedByOwner } from "./brief";
@@ -207,6 +207,7 @@ export const simRun: SimHandler = async (ctx, options) => {
     seed: options.seed,
     trials: options.trials,
     roundCap: options.rounds,
+    rules: rulesOf(options),
   });
 
   let totalCr: Rational = { num: 0, den: 1 };
@@ -236,6 +237,7 @@ export const simRun: SimHandler = async (ctx, options) => {
         avgRounds: summary.avgRounds,
         avgHpLost: summary.avgHpLost,
         koRate: summary.koRate,
+        ...(summary.anyDeathRate !== undefined ? { anyDeathRate: summary.anyDeathRate } : {}),
         difficulty,
         fit: fitByDifficulty(summary),
         skipped: skippedByOwner(fidelity, (owner) => (/\.md(?: with .+)?$/i.test(owner) ? noteRef(ctx, owner) : owner)),
@@ -250,6 +252,7 @@ export const simRun: SimHandler = async (ctx, options) => {
       seed: options.seed,
       trials: options.trials,
       roundCap: options.rounds,
+      rules: rulesOf(options),
       winRate: summary.winRate,
       tpkRate: summary.tpkRate,
       stalemateRate: summary.stalemateRate,
@@ -257,6 +260,7 @@ export const simRun: SimHandler = async (ctx, options) => {
       roundsPerTrial: summary.roundsPerTrial,
       hpRemainingPerTrial: summary.hpRemainingPerTrial,
       koRate: summary.koRate,
+      ...(summary.deathRate ? { deathRate: summary.deathRate, anyDeathRate: summary.anyDeathRate } : {}),
       difficulty,
       fidelity,
     },

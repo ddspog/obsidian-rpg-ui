@@ -7,6 +7,7 @@ import {
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
+import type { TrialRules } from "lib/domains/encounter-sim/types";
 import {
   MONSTER_ROLES,
   parseRole,
@@ -118,6 +119,20 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     default: 20,
     value: "<n>",
     description: "the round cap of a fight (a positive integer)",
+  },
+  {
+    name: "distance",
+    kind: "string",
+    default: 30,
+    value: "<feet>",
+    description:
+      "how far apart the sides start, in feet: melee needs its reach, creatures move their speed, ranged attacks next to an enemy have disadvantage or draw opportunity attacks",
+  },
+  {
+    name: "lair",
+    kind: "boolean",
+    default: false,
+    description: "the fight is in a lair: a monster with lair actions (its category note's) uses one on initiative 20",
   },
   {
     name: "difficulty",
@@ -461,6 +476,10 @@ export interface SimOptions {
   seed: number;
   trials: number;
   rounds: number;
+  /** How far apart the sides start, in feet (positions). */
+  distance: number;
+  /** The fight is in a lair. */
+  lair: boolean;
   difficulty: Difficulty;
   rank: Rank;
   tiers: TierScope;
@@ -545,6 +564,8 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     seed: flagDefault<number>("seed"),
     trials: flagDefault<number>("trials"),
     rounds: flagDefault<number>("rounds"),
+    distance: flagDefault<number>("distance"),
+    lair: false,
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
     tiers: flagDefault<TierScope>("tiers"),
@@ -716,6 +737,9 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (typeof values.rounds === "string") {
     options.rounds = integer("rounds", values.rounds, 1, "a positive integer");
   }
+  if (typeof values.distance === "string") {
+    options.distance = integer("distance", values.distance, 0, "a whole number of feet, 0 or more");
+  }
   if (typeof values.limit === "string") {
     options.limit = integer("limit", values.limit, 0, "a non-negative integer");
     options.limitSet = true;
@@ -731,6 +755,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.only = ((values.only as string[] | undefined) ?? []).map((v) => v.trim()).filter(Boolean);
   options.dropTags = tagList("drop-tag", values["drop-tag"]);
   options.includeUsed = values["include-used"] === true;
+  options.lair = values.lair === true;
   options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
     const fit = raw.trim().toLowerCase();
     if (!(FIT_STATE_NAMES as readonly string[]).includes(fit)) {
@@ -848,9 +873,9 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   tag: ["add-tag", "drop-tag"],
   use: ["session"],
   prepare: [],
-  adjust: ["state", "limit", "accept", "pick", "seed", "trials", "rounds", "session"],
+  adjust: ["state", "limit", "accept", "pick", "seed", "trials", "rounds", "distance", "lair", "session"],
   session: ["session"],
-  check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
+  check: ["session", "seed", "trials", "rounds", "distance", "lair", "force", "limit", "tiers"],
   suggest: [
     "tag",
     "any-tag",
@@ -863,6 +888,8 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
     "seed",
     "trials",
     "rounds",
+    "distance",
+    "lair",
     "brief",
     "include-used",
     "tiers",
@@ -930,6 +957,8 @@ const PLAN_FLAGS = [
   "seed",
   "trials",
   "rounds",
+  "distance",
+  "lair",
   "vault",
   "json",
   "help",
@@ -952,7 +981,7 @@ const HOMEBREW_FLAGS = [
 ];
 
 /** The flags `calibrate` takes. */
-const CALIBRATE_FLAGS = ["seed", "trials", "rounds", "difficulty", "vault", "json", "help"];
+const CALIBRATE_FLAGS = ["seed", "trials", "rounds", "distance", "lair", "difficulty", "vault", "json", "help"];
 
 /** The flags `templates` and `lineages` take. */
 const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
@@ -971,6 +1000,8 @@ const BUILD_FLAGS = [
   "seed",
   "trials",
   "rounds",
+  "distance",
+  "lair",
   "vault",
   "json",
   "help",
@@ -1159,3 +1190,11 @@ Usage:
 Flags:
 ${helpLines()}
 `;
+
+/**
+ * The rules every simulation of the CLI plays by: positions from `--distance`, death saves, and a lair with
+ * `--lair` (types.ts `TrialRules`).
+ */
+export function rulesOf(options: Pick<SimOptions, "distance" | "lair">): TrialRules {
+  return { distance: options.distance, deathSaves: true, ...(options.lair ? { lair: true } : {}) };
+}

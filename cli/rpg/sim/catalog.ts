@@ -47,7 +47,7 @@ import { checkEntries, loadPartyState, type CheckParams, type CheckResult } from
 import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
-import { CONFIDENCES, UsageError, type SimOptions, type TierScope } from "./flags";
+import { CONFIDENCES, rulesOf, UsageError, type SimOptions, type TierScope } from "./flags";
 import { linkNames, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
 import { listSessions } from "../session/lines";
@@ -192,6 +192,7 @@ function checkParams(options: SimOptions, now: () => string): CheckParams {
     seed: options.seed,
     trials: options.trials,
     rounds: options.rounds,
+    rules: rulesOf(options),
     force: options.force,
     limit: options.limitSet ? options.limit : Infinity,
     today: now(),
@@ -226,7 +227,7 @@ async function runCheck(
 ): Promise<{ catalog: Catalog; result: CheckResult; party: Awaited<ReturnType<typeof loadPartyState>> }> {
   const session = options.session ?? catalog.session;
   const withSession: Catalog = { ...catalog, session };
-  const party = await loadPartyState(ctx, withSession, path);
+  const party = await loadPartyState(ctx, withSession, path, session, rulesOf(options));
   const result = await checkEntries(ctx, withSession, party, checkParams(options, now));
   // The party as checked, for the board in Obsidian (which does not simulate).
   const profile: CatalogProfile = { ...profileView(party.profile), stamp: party.stamp };
@@ -536,7 +537,7 @@ async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
   const { path, catalog } = existing(ctx, options);
   const ids = [...new Set(options.args)];
   requireIds(catalog, path, ids);
-  const party = await loadPartyState(ctx, catalog, path, options.session);
+  const party = await loadPartyState(ctx, catalog, path, options.session, rulesOf(options));
   const states = options.states.length ? options.states : (["too-hard", "too-easy"] as const);
   const chosen = ids.length
     ? catalog.entries.filter((e) => ids.includes(e.id))
@@ -545,7 +546,13 @@ async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
         .filter((e) => e.fit && (states as readonly string[]).includes(e.fit.state) && !e.adjustedFrom)
         .slice(0, options.limitSet ? options.limit : 5);
   const pool = await adjustPool(ctx);
-  const params = { seed: options.seed, trials: options.trials, rounds: options.rounds, today: now() };
+  const params = {
+    seed: options.seed,
+    trials: options.trials,
+    rounds: options.rounds,
+    rules: rulesOf(options),
+    today: now(),
+  };
   let next = catalog;
   const results = [];
   for (const entry of chosen) {
@@ -637,7 +644,7 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
     party = run.party;
     refreshed = { checked: run.result.checked, errors: run.result.errors, remaining: run.result.remaining };
   } else {
-    party = await loadPartyState(ctx, catalog, path, options.session);
+    party = await loadPartyState(ctx, catalog, path, options.session, rulesOf(options));
   }
   const fitContext = party.fitContext;
   const tiers = byTier(ctx, catalog, party.profile, options.tiers);
@@ -704,7 +711,7 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
 
 async function list(ctx: Ctx, options: SimOptions) {
   const { path, catalog } = existing(ctx, options);
-  const party = await loadPartyState(ctx, catalog, path);
+  const party = await loadPartyState(ctx, catalog, path, undefined, rulesOf(options));
   const fitContext = party.fitContext;
   // `list` shows every entry unless --tiers is written: it is the review of the whole note.
   const tiers = byTier(ctx, catalog, party.profile, options.given.includes("tiers") ? options.tiers : "all");

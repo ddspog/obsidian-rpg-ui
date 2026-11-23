@@ -3,11 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   acReactionOf,
   areaTargets,
+  attackReach,
   bindMultiattack,
+  bonusMovesOf,
   classifyMonsterFeature,
   inflictOfHit,
   inflictOfSave,
+  parseLairActions,
   parseMonsterSpellcasting,
+  saveReach,
   useLimitOf,
 } from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
@@ -33,6 +37,7 @@ describe("classifyMonsterFeature: attacks", () => {
         name: "Longsword",
         hitBonus: 3,
         damage: { expr: "1d8+1", type: "slashing" },
+        reach: { melee: 5 },
       },
     });
   });
@@ -44,13 +49,20 @@ describe("classifyMonsterFeature: attacks", () => {
         name: "Longbow",
         hitBonus: 3,
         damage: { expr: "1d8+1", type: "piercing" },
+        reach: { range: 150 },
       },
     });
   });
 
   it("reads flat damage: a +4 attack dealing a flat 1 piercing", () => {
     expect(classifyMonsterFeature({ name: "Bite", type: "action", text: MIMIC_BITE })).toEqual({
-      action: { kind: "weapon", name: "Bite", hitBonus: 4, damage: { expr: "1", type: "piercing" } },
+      action: {
+        kind: "weapon",
+        name: "Bite",
+        hitBonus: 4,
+        damage: { expr: "1", type: "piercing" },
+        reach: { melee: 5 },
+      },
     });
   });
 
@@ -62,6 +74,8 @@ describe("classifyMonsterFeature: attacks", () => {
       name: "Dagger",
       hitBonus: 7,
       damage: { expr: "1d4+4", type: "piercing" },
+      // It can throw, but it closes in.
+      reach: { melee: 5 },
     });
   });
 
@@ -97,6 +111,7 @@ describe("classifyMonsterFeature: save area effects", () => {
         onSuccess: "half",
         area: true,
         targets: 1,
+        reach: { range: 30 },
         circle: 0,
         limit: { recharge: 5 },
       },
@@ -186,8 +201,23 @@ describe("classifyMonsterFeature: skips", () => {
     });
   });
 
-  it("skips bonus, trait and reaction features, even attack-shaped ones", () => {
-    for (const type of ["bonus", "trait", "reaction"]) {
+  it("reads a bonus action's attack, and the moves a bonus action gives", () => {
+    expect(classifyMonsterFeature({ name: "Longsword", type: "bonus", text: LONGSWORD }).bonus).toMatchObject({
+      kind: "weapon",
+      hitBonus: 3,
+      reach: { melee: 5 },
+    });
+    expect(
+      classifyMonsterFeature({
+        name: "Nimble Escape",
+        type: "bonus",
+        text: "The goblin takes the Disengage or Hide action.",
+      })
+    ).toEqual({ bonusMoves: ["disengage", "hide"] });
+  });
+
+  it("skips trait and reaction features, even attack-shaped ones, and a bonus action it cannot play", () => {
+    for (const type of ["trait", "reaction"]) {
       expect(classifyMonsterFeature({ name: "Longsword", type, text: LONGSWORD })).toEqual({
         skip: "unsupported-feature",
       });
@@ -369,5 +399,48 @@ describe("reactions and Legendary Resistance", () => {
         text: "The veteran adds 2 to its AC against one melee attack that would hit it.",
       })
     ).toMatchObject({ reaction: { ac: 2 } });
+  });
+});
+
+describe("reach, bonus moves and lair actions", () => {
+  it("reads where an attack reaches", () => {
+    expect(attackReach("*Melee Weapon Attack:* +5 to hit, reach 10 ft., one target.")).toEqual({ melee: 10 });
+    expect(attackReach("_Ranged Weapon Attack:_ +4 to hit, range 80/320 ft., one target.")).toEqual({ range: 80 });
+    expect(attackReach("*Melee or Ranged Weapon Attack:* +4 to hit, reach 5 ft. or range 20/60 ft.")).toEqual({
+      melee: 5,
+    });
+    expect(attackReach("+4 to hit, one target.")).toBeUndefined();
+  });
+
+  it("reads how far a save effect reaches from its user", () => {
+    expect(saveReach("a point it can see within 120 feet of it")).toEqual({ range: 120 });
+    expect(saveReach("The dragon exhales fire in a 30-foot cone.")).toEqual({ range: 30 });
+    expect(saveReach("Each creature in the area must make a DC 13 DEX save.")).toBeUndefined();
+  });
+
+  it("reads the moves a bonus action gives", () => {
+    expect(bonusMovesOf("The goblin takes the Disengage or Hide action.")).toEqual(["disengage", "hide"]);
+    expect(bonusMovesOf("It can take the Dash, Disengage, or Hide action.")).toEqual(["dash", "disengage", "hide"]);
+    expect(bonusMovesOf("The hobgoblin briefly studies one creature.")).toEqual([]);
+  });
+
+  it("reads a lair's actions from its note, and leaves out what it cannot play", () => {
+    const note = [
+      "## A Red Dragon's Lair",
+      "### Lair Actions",
+      "On initiative count 20 (losing initiative ties), the dragon can take a lair action:",
+      "- **Collapse.** Each creature in a 20-foot square area must succeed on a DC 15 DEX save or be knocked prone.",
+      "- **Swirling Ash.** Each creature within 30 feet of that point must make a DC 15 CON save. On a failure, a",
+      "creature takes 10 (3d6) fire damage.",
+      "- **Whispers.** The dragon speaks into every mind in the lair.",
+      "### Regional Effects",
+      "- **Heat.** Water near the lair is hot.",
+    ].join("\n");
+    const lair = parseLairActions(note);
+    expect(lair.map((a) => a.name)).toEqual(["Collapse", "Swirling Ash"]);
+    expect(lair[0]).toMatchObject({ kind: "save", dc: 15, ability: "dex", damage: { expr: "0" } });
+    expect(lair[0]).toMatchObject({ inflicts: { condition: "prone" } });
+    expect(lair[1]).toMatchObject({ kind: "save", ability: "con", damage: { expr: "3d6", type: "fire" } });
+    expect(parseLairActions("# A note with no lair")).toEqual([]);
   });
 });

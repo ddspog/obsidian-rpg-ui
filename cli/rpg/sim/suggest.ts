@@ -34,7 +34,7 @@ import { isDamaging } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import { anyWordIn, groupRef, wordKey, yieldToEventLoop } from "./brief";
 import type { SimHandler } from "./dispatch";
-import { UsageError, type Rank, type SimOptions } from "./flags";
+import { rulesOf, UsageError, type Rank, type SimOptions } from "./flags";
 import {
   bestiaryPaths,
   categoryHabitat,
@@ -274,6 +274,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
         seed: options.seed,
         trials: options.trials,
         roundCap: options.rounds,
+        rules: rulesOf(options),
       });
       const compact = compactSummary(summary);
       found.push({

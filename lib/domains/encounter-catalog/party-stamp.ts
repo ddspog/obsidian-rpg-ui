@@ -4,7 +4,7 @@
  * out of date. Pure TypeScript (no node:crypto), so it runs in Obsidian too.
  */
 
-import { ABILITY_KEYS, type CombatActor } from "../encounter-sim/types";
+import { ABILITY_KEYS, type CombatActor, type TrialRules } from "../encounter-sim/types";
 
 /** JSON with every object's keys sorted and undefined left out, so insertion order never matters. */
 function canonical(value: unknown): string {
@@ -46,7 +46,7 @@ function digest(text: string): string {
  * bonus, armor class, max HP, initiative modifier, every ability's modifier and
  * save modifier, spell slots and every action's full shape.
  */
-export function partyStamp(actors: CombatActor[]): string {
+export function partyStamp(actors: CombatActor[], rules?: TrialRules): string {
   const shape = actors.map((actor) => ({
     name: actor.name,
     level: actor.level,
@@ -62,5 +62,7 @@ export function partyStamp(actors: CombatActor[]): string {
     slots: actor.slots,
     actions: actor.actions,
   }));
-  return digest(canonical(shape));
+  // The rules a fit was simulated by (space, a lair): another --distance or --lair is another fit. None given, the
+  // stamp is the party's alone, as it was before the rules.
+  return digest(canonical(rules && Object.keys(rules).length ? { party: shape, rules } : shape));
 }

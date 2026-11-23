@@ -83,6 +83,19 @@ export interface WeaponAttackAction {
   damage: DamageSpec;
   limit?: UseLimit;
   inflicts?: Inflict;
+  /** Where it reaches (see `Reach`); absent: anywhere. */
+  reach?: Reach;
+  /** Shots it has (a bow's arrows, from the sheet's inventory); absent: as many as it needs. */
+  ammo?: number;
+}
+
+/**
+ * Where an action reaches, once the fight has positions (`TrialRules.distance`): a melee action a target
+ * within `melee` feet, a ranged one within `range` feet (a self-centred area: its size). Absent: anywhere.
+ */
+export interface Reach {
+  melee?: number;
+  range?: number;
 }
 
 /** A multiattack: several weapon swings taken as one action. */
@@ -100,6 +113,9 @@ export interface SpellAttackAction {
   damage: DamageSpec;
   circle: number;
   inflicts?: Inflict;
+  reach?: Reach;
+  /** A concentration spell: what it leaves on its targets ends with the caster's concentration. */
+  concentration?: boolean;
 }
 
 /** A save-based effect, area or single-target. */
@@ -120,6 +136,8 @@ export interface SaveAction {
   circle: number;
   limit?: UseLimit;
   inflicts?: Inflict;
+  reach?: Reach;
+  concentration?: boolean;
 }
 
 /** A healing option; `expr` is the full roll including the casting modifier. */
@@ -147,6 +165,7 @@ export interface BuffAction {
   ac?: number;
   /** The save an enemy makes to keep it off. */
   save?: { ability: AbilityKey; dc: number };
+  concentration?: boolean;
 }
 
 export type ModelledAction =
@@ -186,6 +205,40 @@ export interface CombatActor {
   legendaryResistance?: number;
   /** Legendary actions: the points it has a round (3) and what each costs. */
   legendary?: { points: number; actions: Array<{ action: ModelledAction; cost: number }> };
+  /** Its walking speed and flying speed, in feet (with positions; absent: 30 and none). */
+  speed?: number;
+  fly?: number;
+  /** It leaves an enemy's reach without an opportunity attack (Flyby). */
+  flyby?: boolean;
+  /** What its bonus action can do besides a bonus heal (Cunning Action, Nimble Escape). */
+  bonusMoves?: BonusMove[];
+  /** Attacks and other actions its bonus action takes (a monster's "Bonus Actions"). */
+  bonusActions?: ModelledAction[];
+  /** Its Stealth modifier and passive Perception, for hiding and finding the hidden. */
+  stealth?: number;
+  passivePerception?: number;
+  /** Its lair's actions, used on initiative 20 when the fight is in its lair (`TrialRules.lair`). */
+  lair?: ModelledAction[];
+}
+
+export type BonusMove = "disengage" | "hide" | "dash";
+
+/**
+ * The rules a trial is played by, beyond the dice. Each is off when absent, which is the abstract fight the
+ * engine played first (everyone in reach, a PC at 0 HP out).
+ */
+export interface TrialRules {
+  /**
+   * Positions: the sides start this many feet apart on a line (creatures that would rather act at range stand
+   * 10 feet further back), melee needs its reach and a creature moves its speed, a ranged attack with an enemy
+   * within 5 feet has disadvantage or steps back and draws opportunity attacks, a flier acting at range stays
+   * aloft out of reach of those that cannot fly.
+   */
+  distance?: number;
+  /** PCs at 0 HP make death saves; damage while down is a failure; three failures and they die. */
+  deathSaves?: boolean;
+  /** The fight is in a lair: its owner's lair actions come on initiative 20. */
+  lair?: boolean;
 }
 
 export const SKIP_REASONS = [
@@ -214,6 +267,8 @@ export interface TrialResult {
   partyHpRemaining: number;
   /** Names of party members at 0 HP at trial end. */
   knockedOut: string[];
+  /** Names of party members who died (three failed death saves), with `deathSaves`. */
+  dead?: string[];
 }
 
 /** An action that deals damage (as opposed to a heal). */

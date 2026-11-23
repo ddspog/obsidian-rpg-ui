@@ -19,7 +19,7 @@ import { anyWordIn, groupRef, wordKey } from "./brief";
 import { loadPartyState } from "./catalog-check";
 import { findCatalogs, loadCatalog, resolveCatalogPath } from "./catalog-store";
 import type { SimHandler } from "./dispatch";
-import type { Difficulty, SimOptions } from "./flags";
+import { rulesOf, type Difficulty, type SimOptions } from "./flags";
 import { plainType, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import { inScope, tierMatcher } from "./tier-scope";
@@ -115,7 +115,7 @@ async function fromCatalog(
   limit: number
 ): Promise<CatalogPick> {
   const notes: string[] = [];
-  const party = await loadPartyState(ctx, catalog, path, options.session);
+  const party = await loadPartyState(ctx, catalog, path, options.session, rulesOf(options));
   const fitContext = party.fitContext;
   const matchOf = tierMatcher(ctx, party.profile);
   const matches = new Map(catalog.entries.map((e) => [e.id, matchOf(e)] as const));
