@@ -116,6 +116,8 @@ export interface SpellAttackAction {
   reach?: Reach;
   /** A concentration spell: what it leaves on its targets ends with the caster's concentration. */
   concentration?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /** A save-based effect, area or single-target. */
@@ -138,6 +140,8 @@ export interface SaveAction {
   inflicts?: Inflict;
   reach?: Reach;
   concentration?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /** A healing option; `expr` is the full roll including the casting modifier. */
@@ -148,6 +152,8 @@ export interface HealAction {
   circle: number;
   /** Cast as a bonus action (Healing Word): it comes on top of the turn's action. */
   bonus?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /**
@@ -166,6 +172,46 @@ export interface BuffAction {
   /** The save an enemy makes to keep it off. */
   save?: { ability: AbilityKey; dc: number };
   concentration?: boolean;
+  /** Haste and Slow: speed times this, a bonus to DEX saves (or advantage on them). */
+  speedFactor?: number;
+  dexSave?: number;
+  dexAdvantage?: boolean;
+  /** Haste: one more weapon swing a turn; lethargy (a lost turn) when it ends. */
+  extraAttack?: boolean;
+  lethargy?: boolean;
+  /** Slow: no reactions, one attack a turn and an action or a bonus action, a save at the end of each turn. */
+  noReactions?: boolean;
+  oneAttack?: boolean;
+  repeatSave?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
+}
+
+/**
+ * A reaction the engine plays besides an AC one (`CombatActor.reaction`) and an opportunity attack:
+ * - "counter": when hit, an attack back at the attacker (Counterattack, Reflexive Strike);
+ * - "retaliate": when damaged, damage (or a save against it) back on the attacker (Hellish Rebuke, Defensive Kick);
+ * - "disadvantage": when attacked, the attack has disadvantage (Distressed Dance, Fin Flare);
+ * - "halve": when hit, the damage is halved (Uncanny Dodge, Defensive Huddle);
+ * - "counterspell": an enemy's spell (up to `upTo` circle) fails.
+ * One reaction a round, shared with the AC reaction and opportunity attacks.
+ */
+export interface Reaction {
+  kind: "counter" | "retaliate" | "disadvantage" | "halve" | "counterspell";
+  name: string;
+  attack?: WeaponAttackAction;
+  damage?: DamageSpec;
+  save?: { ability: AbilityKey; dc: number };
+  onSuccess?: "half" | "none";
+  inflicts?: Inflict;
+  /** Only against an attacker or caster within this many feet (with positions). */
+  within?: number;
+  /** Only against melee attacks. */
+  meleeOnly?: boolean;
+  limit?: UseLimit;
+  /** The spell slot it spends (Hellish Rebuke 1, Counterspell 3); 0 or absent: none. */
+  circle?: number;
+  upTo?: number;
 }
 
 export type ModelledAction =
@@ -219,6 +265,8 @@ export interface CombatActor {
   passivePerception?: number;
   /** Its lair's actions, used on initiative 20 when the fight is in its lair (`TrialRules.lair`). */
   lair?: ModelledAction[];
+  /** Reactions besides the AC one (see `Reaction`). */
+  reactions?: Reaction[];
 }
 
 export type BonusMove = "disengage" | "hide" | "dash";
@@ -239,6 +287,12 @@ export interface TrialRules {
   deathSaves?: boolean;
   /** The fight is in a lair: its owner's lair actions come on initiative 20. */
   lair?: boolean;
+  /** Difficult terrain everywhere: moving on the ground costs double (fliers aloft are spared). */
+  difficult?: boolean;
+  /** Cover for a side's creatures not next to an enemy: +2 (half) or +5 (three-quarters) to AC against ranged attacks and to DEX saves. */
+  cover?: Partial<Record<CombatSide, number>>;
+  /** High ground: that side's back line stands on a ledge this many feet up; climbing to it costs double. */
+  highGround?: { side: CombatSide; height: number };
 }
 
 export const SKIP_REASONS = [

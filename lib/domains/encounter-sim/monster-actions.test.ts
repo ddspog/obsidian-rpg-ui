@@ -11,6 +11,7 @@ import {
   inflictOfSave,
   parseLairActions,
   parseMonsterSpellcasting,
+  reactionFrom,
   saveReach,
   useLimitOf,
 } from "./monster-actions";
@@ -442,5 +443,85 @@ describe("reach, bonus moves and lair actions", () => {
     expect(lair[0]).toMatchObject({ inflicts: { condition: "prone" } });
     expect(lair[1]).toMatchObject({ kind: "save", ability: "con", damage: { expr: "3d6", type: "fire" } });
     expect(parseLairActions("# A note with no lair")).toEqual([]);
+  });
+});
+
+describe("reactionFrom", () => {
+  it("reads a counterattack, naming its attack or not", () => {
+    expect(
+      reactionFrom(
+        "Reflexive Strike",
+        "When the warlord is hit by an attack roll, it can make one Battle Axe attack against the attacker."
+      )
+    ).toMatchObject({ kind: "counter", attackRef: "Battle Axe" });
+    expect(
+      reactionFrom(
+        "Counterattack (Recharge 6)",
+        "When a creature the alseid can see hits it with an attack, the alseid can make one melee or ranged attack against the attacker."
+      )
+    ).toEqual({ kind: "counter", name: "Counterattack (Recharge 6)", limit: { recharge: 6 } });
+  });
+
+  it("reads damage back, with a save or without", () => {
+    expect(
+      reactionFrom(
+        "Blasphemous Word",
+        "When a creature the void angel can see hits it with an attack, the angel can utter a dark word. The attacker takes 4 (1d8) necrotic damage."
+      )
+    ).toMatchObject({ kind: "retaliate", damage: { expr: "1d8", type: "necrotic" } });
+    expect(
+      reactionFrom(
+        "Stunning Jolt",
+        "When a creature within 5 feet of it hits it with a melee attack, the creature must succeed on a DC 15 CON save or be stunned until the end of its next turn."
+      )
+    ).toMatchObject({
+      kind: "retaliate",
+      within: 5,
+      meleeOnly: true,
+      save: { ability: "con", dc: 15 },
+      inflicts: { condition: "stunned" },
+    });
+  });
+
+  it("reads disadvantage, halving and a counterspell", () => {
+    expect(
+      reactionFrom(
+        "Fin Flare",
+        "When a creature the xypth can see attacks it, the xypth flares its fins. The attacker has disadvantage on the attack roll."
+      )
+    ).toMatchObject({ kind: "disadvantage" });
+    expect(
+      reactionFrom(
+        "Huddle",
+        "When a creature the ankylosaurus can see hits it with a weapon attack, it halves the attack's damage against it."
+      )
+    ).toMatchObject({ kind: "halve" });
+    expect(
+      reactionFrom(
+        "Counter Spell",
+        "When a creature the archmage can see within 30 feet of it casts a spell, the archmage can counter the spell, interrupting the casting."
+      )
+    ).toMatchObject({ kind: "counterspell", within: 30, upTo: 3 });
+  });
+
+  it("leaves out a reaction that protects another, or halves only some damage", () => {
+    expect(
+      reactionFrom(
+        "Protective Scoop",
+        "When a friendly creature within 5 feet of it is the target of an attack, it scoops it up."
+      )
+    ).toBeUndefined();
+    expect(
+      reactionFrom(
+        "Energy Absorption",
+        "Whenever the trail snail takes acid, cold, fire, lightning, or thunder damage, it can halve the damage taken."
+      )
+    ).toBeUndefined();
+    expect(
+      reactionFrom(
+        "Self-Destruct",
+        "If the servant takes damage that would reduce its HP to 0, it can explode. Each creature within 15 feet must make a DEX save; on a success, a creature takes only half damage."
+      )?.kind
+    ).not.toBe("halve");
   });
 });

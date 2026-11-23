@@ -7,11 +7,13 @@
 
 import { parse as parseYaml } from "yaml";
 import { defencesOf, noDefences } from "lib/domains/encounter-sim/defences";
+import { averageOf } from "lib/domains/encounter-sim/rng";
 import {
   classifyMonsterFeature,
   bindMultiattack,
   parseLairActions,
   type MonsterSpellcasting,
+  type ParsedReaction,
 } from "lib/domains/encounter-sim/monster-actions";
 import {
   reactionOfSpell,
@@ -29,6 +31,7 @@ import {
   type CombatActor,
   type FidelityRecord,
   type ModelledAction,
+  type Reaction,
   type SkipReason,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
@@ -207,6 +210,7 @@ interface Classified {
   legendaryResistance?: number;
   bonus?: ModelledAction;
   bonusMoves?: BonusMove[];
+  otherReaction?: ParsedReaction;
   skip?: SkipReason;
 }
 
@@ -222,6 +226,7 @@ function actionsAndFidelity(
   legendaryResistance?: number;
   bonusActions: ModelledAction[];
   bonusMoves: BonusMove[];
+  reactions: Reaction[];
 } {
   // Pass 1: classify every feature; the attacks are collected by name for the Multiattack.
   const classified: Classified[] = features.map((f, i) => {
@@ -251,7 +256,25 @@ function actionsAndFidelity(
   let legendaryResistance: number | undefined;
   const bonusActions: ModelledAction[] = [];
   const bonusMoves: BonusMove[] = [];
+  const reactions: Reaction[] = [];
+  /** Its best weapon attack: the one a counterattack makes when its words name none of them. */
+  const bestAttack = () => {
+    let best: WeaponAttackAction | undefined;
+    for (const a of attacks.values()) if (!best || averageOf(a.damage.expr) > averageOf(best.damage.expr)) best = a;
+    return best;
+  };
   for (const c of classified) {
+    // A reaction besides an AC one: a counterattack bound to its own attack, damage back, and the like.
+    if (c.otherReaction) {
+      const { attackRef, ...reaction } = c.otherReaction;
+      const attack =
+        reaction.kind === "counter" ? ((attackRef ? attackNamed(attackRef) : undefined) ?? bestAttack()) : undefined;
+      if (reaction.kind !== "counter" || attack) {
+        reactions.push(attack ? { ...reaction, attack } : reaction);
+        fidelity.push({ name: c.name, owner, status: "modelled" });
+      } else fidelity.push({ name: c.name, owner, status: "skipped", reason: "unsupported-feature" });
+      continue;
+    }
     // A bonus action: the moves it gives (Nimble Escape), or an attack or save of its own.
     if (c.bonusMoves) {
       for (const m of c.bonusMoves) if (!bonusMoves.includes(m)) bonusMoves.push(m);
@@ -298,7 +321,7 @@ function actionsAndFidelity(
   if (!actions.some(isDamaging)) {
     fidelity.push({ name: owner, owner, status: "skipped", reason: "no-damaging-action" });
   }
-  return { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves };
+  return { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves, reactions };
 }
 
 /** "30 ft., fly 60 ft. (hover)": the walking and flying speeds, in feet. */
@@ -481,11 +504,8 @@ async function monsterOf(
     }
   }
 
-  const { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves } = actionsAndFidelity(
-    resolved,
-    refs,
-    file.path
-  );
+  const { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves, reactions } =
+    actionsAndFidelity(resolved, refs, file.path);
   for (const ref of missing) {
     fidelity.push({
       name: ref.split("#").pop() ?? ref,
@@ -548,6 +568,7 @@ async function monsterOf(
   if (resolved.some((f) => /^fly-?by$/i.test(f.name?.trim() ?? ""))) actor.flyby = true;
   if (bonusActions.length) actor.bonusActions = bonusActions;
   if (bonusMoves.length) actor.bonusMoves = bonusMoves;
+  if (reactions.length) actor.reactions = reactions;
   const passive = (key: string) => {
     const n = parseInt(String((data.stats as Record<string, unknown>)[key] ?? ""), 10);
     return Number.isFinite(n) ? n : undefined;

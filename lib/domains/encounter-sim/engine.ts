@@ -1,6 +1,7 @@
 import { applyDefences, immuneTo } from "./defences";
 import { averageOf, d20, rollExpr, type Rng } from "./rng";
 import type {
+  AbilityKey,
   BuffAction,
   BonusMove,
   CombatActor,
@@ -8,6 +9,7 @@ import type {
   ModelledCondition,
   HealAction,
   ModelledAction,
+  Reaction,
   SaveAction,
   SpellAttackAction,
   TrialResult,
@@ -92,17 +94,24 @@ interface Combatant {
   marked: Array<Combatant | undefined>;
   /** A once-a-turn rider already dealt this turn. */
   riderDone: boolean;
-  /** Buffs and debuffs on it, by the spell's name: dice to its attacks and saves, a bonus to its AC. */
-  buffs: Map<string, Pick<BuffAction, "attackDie" | "saveDie" | "ac">>;
+  /** Buffs and debuffs on it, by the spell's name: dice to its attacks and saves, a bonus to its AC, Haste and Slow. */
+  buffs: Map<string, Buff>;
   /** Legendary action points left this round. */
   legendaryLeft: number;
   /** Its reaction is spent until its next turn. */
   reactionUsed: boolean;
   /** Legendary Resistance uses left. */
   lrLeft: number;
-  /** Where it stands on the line (with positions), and whether it is aloft (a flier acting at range). */
+  /**
+   * Where it stands on the line (with positions), how high (`z`: a ledge, or a flier's height), and whether it is
+   * aloft (flying, with nothing under it: it falls when it cannot keep flying).
+   */
   x: number;
+  z: number;
   aloft: boolean;
+  /** Its reactions (`CombatActor.reactions`) waiting for a recharge, and the uses left of those with a daily limit. */
+  reactionSpent: Set<Reaction>;
+  reactionUses: Map<Reaction, number>;
   /** Hidden (a bonus-action Hide): its next attack has advantage. */
   hidden: boolean;
   /** Its bonus action is spent this turn. */
@@ -121,6 +130,30 @@ interface Combatant {
   lastLair?: ModelledAction;
 }
 
+/** A buff as it rests on a creature: the spell's effects, and its repeated save (Slow). */
+type Buff = Pick<
+  BuffAction,
+  | "attackDie"
+  | "saveDie"
+  | "ac"
+  | "speedFactor"
+  | "dexSave"
+  | "dexAdvantage"
+  | "extraAttack"
+  | "noReactions"
+  | "oneAttack"
+  | "save"
+  | "repeatSave"
+>;
+
+/** How high a flier hovers when it acts at range: out of reach of a 10- or 15-foot reach. */
+const ALTITUDE = 20;
+/**
+ * How far behind its side's back line a creature can go: the fight's room has walls. Without them a creature
+ * that shoots and backs away is never caught.
+ */
+const ROOM_BEHIND = 30;
+
 const limitOf = (action: ModelledAction) =>
   action.kind === "weapon" || action.kind === "save" ? action.limit : undefined;
 
@@ -138,6 +171,9 @@ const REACTION_BUFF = "\u0000reaction";
 
 /** A buff's worth when choosing, a target: about what a d4 on every roll or +2 AC saves or adds in a fight. */
 const BUFF_WORTH = 3;
+/** Haste and Slow do more: an attack more (or one at most) a turn, speed, AC and DEX saves. */
+const buffWorth = (action: BuffAction) =>
+  action.extraAttack || action.oneAttack || action.speedFactor ? 3 * BUFF_WORTH : BUFF_WORTH;
 
 function isAvailable(c: Combatant, action: ModelledAction): boolean {
   if (c.spent.has(action)) return false;
@@ -319,7 +355,10 @@ export function simulateTrial(
     reactionUsed: false,
     lrLeft: actor.legendaryResistance ?? 0,
     x: 0,
+    z: 0,
     aloft: false,
+    reactionSpent: new Set<Reaction>(),
+    reactionUses: new Map<Reaction, number>(),
     hidden: false,
     bonusUsed: false,
     disengaged: false,
@@ -335,8 +374,13 @@ export function simulateTrial(
       const atRange = prefersRange(c.actor);
       const back = atRange ? 10 : 0;
       c.x = c.actor.side === "party" ? -back : distance + back;
+      // The back line of the side holding the high ground stands on its ledge.
+      if (atRange && rules.highGround?.side === c.actor.side) c.z = rules.highGround.height;
       // A flier that would rather act at range starts aloft.
-      c.aloft = atRange && !!c.actor.fly;
+      if (atRange && c.actor.fly) {
+        c.aloft = true;
+        c.z = Math.max(c.z, ALTITUDE);
+      }
     }
   }
 
@@ -376,28 +420,47 @@ export function simulateTrial(
   };
 
   // ---- Space -------------------------------------------------------------------------------------------
-  const gap = (a: Combatant, b: Combatant) => Math.abs(a.x - b.x);
-  const speedOf = (c: Combatant) => Math.max(c.actor.speed ?? 30, c.actor.fly ?? 0);
-  /** Within `feet` of it on the ground: an aloft flier is out of a grounded creature's melee. */
-  const near = (a: Combatant, b: Combatant, feet: number) =>
-    gap(a, b) <= feet && (a.aloft === b.aloft || !!a.actor.fly);
+  /** Feet between two creatures: along the line or up, whichever is more (a grid's way). */
+  const gap = (a: Combatant, b: Combatant) => Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z));
+  /** Its speed: walking, or flying when it flies, times what Haste and Slow make of it. */
+  const speedOf = (c: Combatant) => {
+    let speed = Math.max(c.actor.speed ?? 30, c.actor.fly ?? 0);
+    for (const b of c.buffs.values()) if (b.speedFactor) speed *= b.speedFactor;
+    return speed;
+  };
+  /** Moving on the ground costs double in difficult terrain; a flier is spared. */
+  const costFactor = (c: Combatant) => (rules.difficult && !c.actor.fly ? 2 : 1);
+  const near = (a: Combatant, b: Combatant, feet: number) => gap(a, b) <= feet;
   /** An enemy within 5 feet that can act: a ranged attack has disadvantage, and leaving draws its swing. */
-  const engagedBy = (c: Combatant) =>
-    positions ? enemiesOf(c).filter((e) => !has(e, NO_TURN) && near(e, c, 5) && near(c, e, 5)) : [];
+  const engagedBy = (c: Combatant) => (positions ? enemiesOf(c).filter((e) => !has(e, NO_TURN) && near(e, c, 5)) : []);
 
   /** Where `c` stands to reach `t` with `reach` feet: on its own side of `t`. */
   const spotFor = (c: Combatant, t: Combatant, reach: number) => (c.x <= t.x ? t.x - reach : t.x + reach);
-  /** Feet `c` must move to reach `t` with a melee `reach` (Infinity: it cannot, `t` being aloft out of reach). */
+  /**
+   * The movement `c` spends to reach `t` with a melee `reach`: along the line, and up or down to it (a flier flies,
+   * a walker climbs to a ledge at double cost; one aloft is out of a walker's reach), doubled in difficult
+   * terrain. Infinity: it cannot.
+   */
   const moveNeeded = (c: Combatant, t: Combatant, reach: number) => {
-    if (t.aloft && !c.actor.fly) return Infinity;
-    return Math.max(0, gap(c, t) - reach);
+    const along = Math.max(0, Math.abs(c.x - t.x) - reach);
+    const up = Math.max(0, Math.abs(c.z - t.z) - reach);
+    let climb = 0;
+    if (up > 0) {
+      if (c.actor.fly) climb = up;
+      else if (t.aloft) return Infinity;
+      else climb = 2 * up;
+    }
+    return (along + climb) * costFactor(c);
   };
+  /** The height `c` ends at to reach `t`: its own when `t` is within reach of it, else `t`'s. */
+  const heightFor = (c: Combatant, t: Combatant, reach: number) =>
+    Math.abs(c.z - t.z) <= reach ? { z: c.z, aloft: c.aloft } : { z: t.z, aloft: t.aloft && !!c.actor.fly };
 
   /** Opportunity attacks on `c` leaving the reach of enemies it was next to (unless it disengaged or flies by). */
   const provoke = (c: Combatant, before: Combatant[]) => {
     if (c.disengaged || c.actor.flyby) return;
     for (const e of before) {
-      if (!living(e) || !living(c) || e.reactionUsed || has(e, NO_TURN)) continue;
+      if (!living(e) || !living(c) || !canReact(e) || has(e, NO_TURN)) continue;
       const swingWith = opportunitySwing(e.actor);
       const reach = swingWith?.reach?.melee ?? 5;
       if (!swingWith || near(e, c, reach)) continue;
@@ -405,16 +468,51 @@ export function simulateTrial(
       swing(e, swingWith, c);
     }
   };
-  /** Moves `c` to `x` (and up or down), drawing opportunity attacks from the enemies whose reach it leaves. */
-  const moveTo = (c: Combatant, x: number, aloft = c.aloft) => {
-    if (!positions || (x === c.x && aloft === c.aloft)) return;
+  /** Moves `c` to `x` (and to height `z`), drawing opportunity attacks from the enemies whose reach it leaves. */
+  const moveTo = (c: Combatant, wanted: number, z = c.z, aloft = c.aloft) => {
+    // The room's walls: no further back than ROOM_BEHIND behind its side's back line.
+    const x =
+      c.actor.side === "party" ? Math.max(wanted, -10 - ROOM_BEHIND) : Math.min(wanted, distance + 10 + ROOM_BEHIND);
+    if (!positions || (x === c.x && z === c.z && aloft === c.aloft)) return;
     const before = enemiesOf(c).filter((e) => {
       const reach = opportunitySwing(e.actor)?.reach?.melee ?? 5;
       return near(e, c, reach);
     });
     c.x = x;
-    c.aloft = aloft;
+    c.z = z;
+    c.aloft = aloft && z > 0;
     provoke(c, before);
+  };
+  /** A flier that cannot keep flying (prone, stunned, paralyzed, restrained) falls: 1d6 a 10 feet, and lands prone. */
+  const FALLS: ReadonlySet<ModelledCondition> = new Set([
+    "prone",
+    "stunned",
+    "paralyzed",
+    "restrained",
+    "incapacitated",
+  ]);
+  const fall = (c: Combatant) => {
+    if (!c.aloft || c.z <= 0) return;
+    const dice = Math.min(20, Math.floor(c.z / 10));
+    c.z = 0;
+    c.aloft = false;
+    if (dice > 0) damage(c, rollExpr(`${dice}d6`, false, rng), "bludgeoning");
+    if (living(c)) c.conditions.set("prone", { lasts: "start" });
+  };
+
+  /** Cover a creature not next to an enemy has from the ground (`rules.cover`), and half cover from a creature between. */
+  const sideCover = (t: Combatant) =>
+    positions && rules.cover?.[t.actor.side] && engagedBy(t).length === 0 ? rules.cover[t.actor.side]! : 0;
+  const coverFrom = (a: Combatant, t: Combatant) => {
+    if (!positions) return 0;
+    const lo = Math.min(a.x, t.x);
+    const hi = Math.max(a.x, t.x);
+    // A creature standing between them on the line, low enough to be in the way, is half cover.
+    const between = order.some(
+      (o) =>
+        o !== a && o !== t && living(o) && o.x > lo && o.x < hi && o.z <= Math.max(a.z, t.z) && !(t.aloft && o.z < t.z)
+    );
+    return Math.max(sideCover(t), between ? 2 : 0);
   };
 
   /**
@@ -439,7 +537,11 @@ export function simulateTrial(
     const reach = meleeReach(action);
     if (reach !== undefined) return moveNeeded(c, t, reach) <= budget;
     const range = rangeOf(action);
-    return range === undefined || gap(c, t) <= range + budget;
+    if (range === undefined) return true;
+    // It can close in along the line; up or down only if it flies (a walker on a ledge stays at its height).
+    const along = Math.max(0, Math.abs(c.x - t.x) - budget / costFactor(c));
+    const up = c.actor.fly ? Math.max(0, Math.abs(c.z - t.z) - budget) : Math.abs(c.z - t.z);
+    return Math.max(along, up) <= range;
   };
 
   /** What its buffs add to a roll ("-1d4" takes away); no draws without buffs. */
@@ -455,12 +557,79 @@ export function simulateTrial(
     return total;
   };
   const acOf = (c: Combatant) => c.actor.armorClass + [...c.buffs.values()].reduce((sum, b) => sum + (b.ac ?? 0), 0);
+  const hasBuff = (c: Combatant, key: "extraAttack" | "noReactions" | "oneAttack") => {
+    for (const b of c.buffs.values()) if (b[key]) return true;
+    return false;
+  };
+  /**
+   * A save's total: the d20 (a second with Haste's advantage on a DEX save), the modifier, the buffs' dice, and on a
+   * DEX save the buffs' bonus (Slow's −2) and the cover it stands behind.
+   */
+  const saveTotal = (t: Combatant, ability: AbilityKey, first = d20(rng)): number => {
+    let roll = first;
+    const dex = ability === "dex";
+    if (t.buffs.size === 0) return roll + t.actor.abilities[ability].saveModifier + (dex ? sideCover(t) : 0);
+    if (dex && [...t.buffs.values()].some((b) => b.dexAdvantage)) roll = Math.max(roll, d20(rng));
+    let total = roll + t.actor.abilities[ability].saveModifier + buffRoll(t, "saveDie");
+    if (dex) {
+      for (const b of t.buffs.values()) total += b.dexSave ?? 0;
+      total += sideCover(t);
+    }
+    return total;
+  };
 
   /** A failed save it turns into a success with Legendary Resistance, while it has uses. */
   const resists = (target: Combatant): boolean => {
     if (target.lrLeft <= 0) return false;
     target.lrLeft -= 1;
     return true;
+  };
+
+  // ---- Reactions ---------------------------------------------------------------------------------------
+  /** Its reaction is free: not spent this round, and no Slow on it. */
+  const canReact = (c: Combatant) => !c.reactionUsed && !hasBuff(c, "noReactions");
+  const reactionReady = (c: Combatant, r: Reaction, other: Combatant) =>
+    living(c) &&
+    canReact(c) &&
+    !has(c, NO_TURN) &&
+    hasSlot(c, r.circle ?? 0) &&
+    !c.reactionSpent.has(r) &&
+    (r.limit?.perDay === undefined || (c.reactionUses.get(r) ?? r.limit.perDay) > 0) &&
+    (!positions || r.within === undefined || gap(c, other) <= r.within);
+  /** The first of its reactions of a kind it can take now against `other` (`melee`: the attack is a melee one). */
+  const readyReaction = (c: Combatant, kind: Reaction["kind"], other: Combatant, melee = true) =>
+    c.actor.reactions &&
+    c.actor.reactions.find((r) => r.kind === kind && (!r.meleeOnly || melee) && reactionReady(c, r, other));
+  const spendReaction = (c: Combatant, r: Reaction) => {
+    c.reactionUsed = true;
+    spendSlot(c, r.circle ?? 0);
+    if (r.limit?.recharge !== undefined) c.reactionSpent.add(r);
+    if (r.limit?.perDay !== undefined) c.reactionUses.set(r, (c.reactionUses.get(r) ?? r.limit.perDay) - 1);
+  };
+  /** Damage, a save or a condition back on the creature that struck it (Hellish Rebuke, Defensive Kick). */
+  const retaliate = (c: Combatant, r: Reaction, foe: Combatant) => {
+    spendReaction(c, r);
+    const success = r.save ? saveTotal(foe, r.save.ability) >= r.save.dc || resists(foe) : false;
+    let taken = 0;
+    if (r.damage) {
+      const rolled = rollExpr(r.damage.expr, false, rng);
+      taken = damage(foe, success ? (r.onSuccess === "half" ? Math.floor(rolled / 2) : 0) : rolled, r.damage.type);
+    }
+    if (!success && r.inflicts && living(foe) && !immuneTo(foe.actor.defences, r.inflicts.condition))
+      setCondition(foe, r.inflicts.condition, { lasts: r.inflicts.lasts });
+    checkConcentration(foe, taken);
+  };
+  /** After it was hit: an attack back (Counterattack), else damage back (Hellish Rebuke). */
+  const answerHit = (target: Combatant, attacker: Combatant, melee: boolean) => {
+    if (!living(target) || !living(attacker)) return;
+    const counter = readyReaction(target, "counter", attacker, melee);
+    if (counter?.attack && (!positions || canReach(target, counter.attack, attacker, 0))) {
+      spendReaction(target, counter);
+      swing(target, counter.attack, attacker);
+      return;
+    }
+    const back = readyReaction(target, "retaliate", attacker, melee);
+    if (back) retaliate(target, back, attacker);
   };
 
   // ---- Concentration -----------------------------------------------------------------------------------
@@ -478,6 +647,7 @@ export function simulateTrial(
     const dc = Math.max(10, Math.floor(taken / 2));
     if (d20(rng) + c.actor.abilities.con.saveModifier + buffRoll(c, "saveDie") < dc) endConcentration(c);
   };
+  /** A condition lands (held by the concentration being cast, if any); a flier it grounds falls. */
   const setCondition = (target: Combatant, condition: ModelledCondition, how: Pick<Inflict, "lasts" | "save">) => {
     target.conditions.set(condition, how);
     if (holding) {
@@ -486,6 +656,7 @@ export function simulateTrial(
         if (target.conditions.get(condition) === entry) target.conditions.delete(condition);
       });
     }
+    if (FALLS.has(condition)) fall(target);
   };
 
   /** A condition lands, unless the target makes the save it gives. */
@@ -495,8 +666,7 @@ export function simulateTrial(
       let roll = d20(rng);
       // Resistant to a condition: advantage on the save against it.
       if (target.actor.defences?.conditionResistant.includes(how.condition)) roll = Math.max(roll, d20(rng));
-      if (roll + target.actor.abilities[how.save.ability].saveModifier + buffRoll(target, "saveDie") >= how.save.dc)
-        return;
+      if (saveTotal(target, how.save.ability, roll) >= how.save.dc) return;
     }
     setCondition(target, how.condition, { lasts: how.lasts, ...(how.save ? { save: how.save } : {}) });
   };
@@ -537,7 +707,11 @@ export function simulateTrial(
   const monstersDown = () => livingOn("monsters").length === 0;
   const partyDown = () => livingOn("party").length === 0;
 
-  /** d20 + bonus vs AC; a natural 20 always hits and doubles dice, a natural 1 always misses. */
+  /**
+   * d20 + bonus vs AC (and the cover a ranged attack meets); a natural 20 always hits and doubles dice, a natural
+   * 1 always misses. The target may react: disadvantage on the attack, its AC raised, the damage halved, then an
+   * attack or damage back.
+   */
   const swing = (
     attacker: Combatant,
     action: WeaponAttackAction | SpellAttackAction,
@@ -546,9 +720,17 @@ export function simulateTrial(
   ): boolean => {
     const target = chosen ?? pickTarget(attacker);
     if (!target) return false;
+    const melee = action.reach?.melee !== undefined || (action.reach === undefined && action.kind === "weapon");
     const advantage = has(target, EXPOSED) || attacker.hidden;
-    const disadvantage = has(attacker, DISADVANTAGED) || hindered;
+    let disadvantage = has(attacker, DISADVANTAGED) || hindered;
     attacker.hidden = false;
+    if (!disadvantage) {
+      const shy = readyReaction(target, "disadvantage", attacker, melee);
+      if (shy) {
+        spendReaction(target, shy);
+        disadvantage = true;
+      }
+    }
     let natural = d20(rng);
     if (advantage !== disadvantage) {
       const second = d20(rng);
@@ -556,11 +738,12 @@ export function simulateTrial(
     }
     if (attacker.ammoLeft.has(action)) attacker.ammoLeft.set(action, attacker.ammoLeft.get(action)! - 1);
     const total = natural + action.hitBonus + buffRoll(attacker, "attackDie");
-    let hit = natural === 20 || (natural !== 1 && total >= acOf(target));
+    const ac = acOf(target) + (rangeOf(action) !== undefined ? coverFrom(attacker, target) : 0);
+    let hit = natural === 20 || (natural !== 1 && total >= ac);
     // A reaction that raises its AC turns a hit it can beat into a miss (not a natural 20), once a round.
     const reaction = target.actor.reaction;
-    if (hit && natural !== 20 && reaction && !target.reactionUsed && hasSlot(target, reaction.circle)) {
-      if (total < acOf(target) + reaction.ac) {
+    if (hit && natural !== 20 && reaction && canReact(target) && hasSlot(target, reaction.circle)) {
+      if (total < ac + reaction.ac) {
         target.reactionUsed = true;
         spendSlot(target, reaction.circle);
         if (reaction.untilTurn) target.buffs.set(REACTION_BUFF, { ac: reaction.ac });
@@ -570,11 +753,16 @@ export function simulateTrial(
     if (!hit) return false;
     const crit = natural === 20;
     const weapon = action.kind === "weapon";
-    let taken = damage(target, rollExpr(action.damage.expr, crit, rng), action.damage.type, weapon);
+    // Uncanny Dodge and the like: the hit's damage halved.
+    const halve = readyReaction(target, "halve", attacker, melee);
+    if (halve) spendReaction(target, halve);
+    const cut = (n: number) => (halve ? Math.floor(n / 2) : n);
+    let taken = damage(target, cut(rollExpr(action.damage.expr, crit, rng)), action.damage.type, weapon);
     // A rider's damage is of its weapon's type ("1d4 origin").
-    taken += damage(target, riderDamage(attacker, target, crit), action.damage.type, weapon);
+    taken += damage(target, cut(riderDamage(attacker, target, crit)), action.damage.type, weapon);
     inflict(target, action.inflicts);
     checkConcentration(target, taken);
+    answerHit(target, attacker, melee);
     return true;
   };
 
@@ -588,8 +776,7 @@ export function simulateTrial(
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
-      const save = d20(rng) + target.actor.abilities[action.ability].saveModifier + buffRoll(target, "saveDie");
-      const success = save >= action.dc || resists(target);
+      const success = saveTotal(target, action.ability) >= action.dc || resists(target);
       const taken = damage(
         target,
         success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage,
@@ -608,6 +795,11 @@ export function simulateTrial(
         setCondition(target, condition, { lasts, ...(lasts === "fight" ? { save: again } : {}) });
       }
       checkConcentration(target, taken);
+      // Damaged by a creature: damage back, if it can reach (Hellish Rebuke).
+      if (taken > 0 && living(target)) {
+        const back = readyReaction(target, "retaliate", caster, false);
+        if (back) retaliate(target, back, caster);
+      }
     }
   };
 
@@ -618,29 +810,49 @@ export function simulateTrial(
   };
   const castBuff = (c: Combatant, action: BuffAction): void => {
     for (const t of buffTargets(c, action)) {
-      if (
-        action.save &&
-        (d20(rng) + t.actor.abilities[action.save.ability].saveModifier >= action.save.dc || resists(t))
-      )
-        continue;
-      const buff = {
+      if (action.save && (saveTotal(t, action.save.ability) >= action.save.dc || resists(t))) continue;
+      const buff: Buff = {
         ...(action.attackDie ? { attackDie: action.attackDie } : {}),
         ...(action.saveDie ? { saveDie: action.saveDie } : {}),
         ...(action.ac ? { ac: action.ac } : {}),
+        ...(action.speedFactor ? { speedFactor: action.speedFactor } : {}),
+        ...(action.dexSave ? { dexSave: action.dexSave } : {}),
+        ...(action.dexAdvantage ? { dexAdvantage: true } : {}),
+        ...(action.extraAttack ? { extraAttack: true } : {}),
+        ...(action.noReactions ? { noReactions: true } : {}),
+        ...(action.oneAttack ? { oneAttack: true } : {}),
+        ...(action.repeatSave && action.save ? { repeatSave: true, save: action.save } : {}),
       };
       t.buffs.set(action.name, buff);
       if (holding)
         holding.push(() => {
-          if (t.buffs.get(action.name) === buff) t.buffs.delete(action.name);
+          if (t.buffs.get(action.name) !== buff) return;
+          t.buffs.delete(action.name);
+          // Haste's lethargy: it cannot move or act until after its next turn.
+          if (action.lethargy && living(t)) t.conditions.set("incapacitated", { lasts: "end" });
         });
     }
   };
 
+  /** An enemy within its reach counters a spell being cast (Counterspell), if the spell is of a circle it stops. */
+  const countered = (c: Combatant, action: ModelledAction): boolean => {
+    const circle = "spell" in action ? action.spell : undefined;
+    if (circle === undefined) return false;
+    for (const e of enemiesOf(c)) {
+      const r = readyReaction(e, "counterspell", c, false);
+      if (!r || circle > (r.upTo ?? 3)) continue;
+      spendReaction(e, r);
+      return true;
+    }
+    return false;
+  };
+
   /**
    * Resolve an action: the swings on `target` (each swing of a multiattack re-picks among the enemies in reach),
-   * a save, a buff. A ranged swing next to an enemy has disadvantage (`hindered`).
+   * a save, a buff. A ranged swing next to an enemy has disadvantage (`hindered`). A spell may be countered.
    */
   const useDamaging = (c: Combatant, action: ModelledAction, target?: Combatant, hindered = false): void => {
+    if (countered(c, action)) return;
     if (concentrates(action)) {
       endConcentration(c);
       holding = [];
@@ -650,9 +862,11 @@ export function simulateTrial(
       case "spell-attack":
         swing(c, action, target, hindered);
         break;
-      case "multiattack":
-        // Each swing re-picks the lowest-HP living enemy in reach (a swing with none left does nothing).
-        for (const s of action.swings) {
+      case "multiattack": {
+        // Each swing re-picks the lowest-HP living enemy in reach (a swing with none left does nothing); under
+        // Slow, one swing only.
+        const swings = hasBuff(c, "oneAttack") ? action.swings.slice(0, 1) : action.swings;
+        for (const s of swings) {
           const next =
             positions || target
               ? (pickTarget(c, (t) => canReach(c, s, t, 0)) ?? (target && living(target) ? target : undefined))
@@ -661,6 +875,7 @@ export function simulateTrial(
           swing(c, s, next, hindered);
         }
         break;
+      }
       case "save":
         castSave(c, action);
         break;
@@ -759,7 +974,8 @@ export function simulateTrial(
   /** What it would do with `action` now: its target, the feet it would move, and how much it is worth. */
   const planFor = (c: Combatant, action: ModelledAction) => {
     const livingEnemies = enemiesOf(c).length;
-    const base = action.kind === "buff" ? BUFF_WORTH * buffTargets(c, action).length : valueOf(action, livingEnemies);
+    const base =
+      action.kind === "buff" ? buffWorth(action) * buffTargets(c, action).length : valueOf(action, livingEnemies);
     if (!positions) return { value: base, budget: 0 };
     const speed = speedOf(c);
     const canDash = !c.bonusUsed && !!c.actor.bonusMoves?.includes("dash");
@@ -793,9 +1009,10 @@ export function simulateTrial(
       const inReach = enemiesOf(c).some((t) => canReach(c, action, t, 0));
       const target = pickTarget(c, (t) => canReach(c, action, t, inReach ? 0 : plan.budget));
       if (!target) return;
-      const needed = moveNeeded(c, target, reach);
-      if (needed > 0) moveTo(c, spotFor(c, target, reach), target.aloft);
-      else if (c.aloft && !target.aloft) moveTo(c, c.x, false);
+      // Along the line to its reach, and up or down to it (a flier flies there, a walker climbs).
+      const x = Math.abs(c.x - target.x) > reach ? spotFor(c, target, reach) : c.x;
+      const height = heightFor(c, target, reach);
+      moveTo(c, x, height.z, height.aloft);
       if (!living(c)) return;
       return useDamaging(c, action, target);
     }
@@ -814,11 +1031,13 @@ export function simulateTrial(
       const worth = isAttack(action) ? 0.35 * valueOf(action, enemiesOf(c).length) : 0;
       if (c.disengaged || c.actor.flyby || cost < worth || c.actor.fly) {
         const away = c.actor.side === "party" ? -1 : 1;
-        moveTo(c, c.x + away * Math.min(speedOf(c), 10), !!c.actor.fly);
+        const step = Math.min(speedOf(c) / costFactor(c), 10);
+        if (c.actor.fly) moveTo(c, c.x + away * step, Math.max(c.z, ALTITUDE), true);
+        else moveTo(c, c.x + away * step);
         hindered = false;
       }
     } else if (c.actor.fly && !c.aloft) {
-      moveTo(c, c.x, true);
+      moveTo(c, c.x, Math.max(c.z, ALTITUDE), true);
     }
     if (!living(c)) return;
     // Out of range: it closes in first.
@@ -849,7 +1068,7 @@ export function simulateTrial(
     const range = rangeOf(action) ?? Infinity;
     const farthest = Math.max(...enemiesOf(c).map((e) => gap(c, e)));
     const room = Math.max(0, range - farthest);
-    const step = Math.min(speedOf(c), room);
+    const step = Math.min(speedOf(c) / costFactor(c), room);
     if (step > 0) moveTo(c, c.x + away * step);
   };
 
@@ -859,10 +1078,13 @@ export function simulateTrial(
     let nearest: Combatant | undefined;
     for (const e of enemiesOf(c)) if (!nearest || gap(c, e) < gap(c, nearest)) nearest = e;
     if (!nearest) return;
-    const budget = 2 * speedOf(c);
+    const budget = (2 * speedOf(c)) / costFactor(c);
     const spot = spotFor(c, nearest, 5);
     const toward = spot > c.x ? 1 : -1;
-    moveTo(c, Math.abs(spot - c.x) <= budget ? spot : c.x + toward * budget, nearest.aloft && !!c.actor.fly);
+    const x = Math.abs(spot - c.x) <= budget ? spot : c.x + toward * budget;
+    // A flier rises to an enemy above it; a walker climbs only once it is there to strike.
+    if (c.actor.fly && nearest.z > c.z) moveTo(c, x, nearest.z, nearest.aloft);
+    else moveTo(c, x);
   };
 
   /** A bonus action that attacks (a monster's "Bonus Actions"), on an enemy already in reach. */
@@ -898,6 +1120,12 @@ export function simulateTrial(
       if (!c.spent.has(action)) continue;
       if (Math.floor(rng() * 6) + 1 >= (limitOf(action)?.recharge ?? 7)) c.spent.delete(action);
     }
+    // And for each reaction waiting on its recharge (Counterattack (Recharge 6)).
+    for (const r of c.reactionSpent) {
+      if (Math.floor(rng() * 6) + 1 >= (r.limit?.recharge ?? 7)) c.reactionSpent.delete(r);
+    }
+    // Slow: an action or a bonus action, not both.
+    if (hasBuff(c, "oneAttack")) c.bonusUsed = true;
     // A bonus-action heal comes on top of the action; an action heal takes the turn.
     const bonusHeal = healFor(c, true);
     if (bonusHeal && !c.bonusUsed && healAlly(c, bonusHeal)) c.bonusUsed = true;
@@ -927,7 +1155,26 @@ export function simulateTrial(
     }
     act(c, best, bestPlan);
     bonusAttack(c);
+    hastedSwing(c);
     return true;
+  };
+
+  /** Haste's extra action: one weapon attack, its best swing on an enemy in reach. */
+  const hastedSwing = (c: Combatant) => {
+    if (!living(c) || !hasBuff(c, "extraAttack") || hasBuff(c, "oneAttack")) return;
+    let best: WeaponAttackAction | undefined;
+    for (const a of c.actor.actions)
+      for (const s of swingsOf(a))
+        if (
+          s.kind === "weapon" &&
+          isAvailable(c, s) &&
+          (!best || averageOf(s.damage.expr) > averageOf(best.damage.expr))
+        )
+          best = s;
+    if (!best) return;
+    const target = pickTarget(c, (t) => canReach(c, best!, t, 0));
+    if (!target) return;
+    swing(c, best, target, positions && rangeOf(best) !== undefined && engagedBy(c).length > 0);
   };
 
   const result = (outcome: TrialResult["outcome"], rounds: number): TrialResult => ({
@@ -958,6 +1205,10 @@ export function simulateTrial(
       else if (v.lasts === "fight" && v.save) {
         if (d20(rng) + c.actor.abilities[v.save.ability].saveModifier >= v.save.dc) c.conditions.delete(k);
       }
+    }
+    // Slow and the like: a save at the end of each of its turns ends it.
+    for (const [name, b] of c.buffs) {
+      if (b.repeatSave && b.save && saveTotal(c, b.save.ability) >= b.save.dc) c.buffs.delete(name);
     }
   };
 
@@ -1023,8 +1274,7 @@ export function simulateTrial(
         : [pickTarget(owner)].filter((t): t is Combatant => !!t);
       const rolledDamage = rollExpr(action.damage.expr, false, rng);
       for (const target of targets) {
-        const save = d20(rng) + target.actor.abilities[action.ability].saveModifier + buffRoll(target, "saveDie");
-        const success = save >= action.dc || resists(target);
+        const success = saveTotal(target, action.ability) >= action.dc || resists(target);
         const taken = damage(
           target,
           success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage,
@@ -1036,7 +1286,7 @@ export function simulateTrial(
           living(target) &&
           !immuneTo(target.actor.defences, action.inflicts.condition)
         )
-          target.conditions.set(action.inflicts.condition, { lasts: action.inflicts.lasts });
+          setCondition(target, action.inflicts.condition, { lasts: action.inflicts.lasts });
         checkConcentration(target, taken);
       }
     } else if (action.kind === "weapon" || action.kind === "spell-attack") {

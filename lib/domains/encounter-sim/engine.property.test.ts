@@ -20,6 +20,7 @@ import {
   type Inflict,
   type ModelledAction,
   type Reach,
+  type Reaction,
   type TrialRules,
   type WeaponAttackAction,
 } from "./types";
@@ -77,7 +78,14 @@ function action(rng: Rng, i: number, caster: boolean): ModelledAction {
   if (roll < 0.5)
     return { kind: "multiattack", name: `Multiattack ${i}`, swings: [weapon(rng, i), weapon(rng, i + 1)] };
   if (roll < 0.65)
-    return { kind: "spell-attack", name: `Bolt ${i}`, hitBonus: int(rng, 2, 9), damage: { expr: dice(rng) }, circle };
+    return {
+      kind: "spell-attack",
+      name: `Bolt ${i}`,
+      hitBonus: int(rng, 2, 9),
+      damage: { expr: dice(rng) },
+      circle,
+      ...(chance(rng, 0.5) ? { spell: circle } : {}),
+    };
   if (roll < 0.8)
     return {
       kind: "save",
@@ -103,6 +111,18 @@ function action(rng: Rng, i: number, caster: boolean): ModelledAction {
     targets: int(rng, 1, 3),
     ...(chance(rng, 0.5) ? { attackDie: "1d4" } : { ac: 2 }),
     ...(chance(rng, 0.5) ? { concentration: true } : {}),
+    ...(chance(rng, 0.3)
+      ? { speedFactor: 2, dexAdvantage: true, extraAttack: true, lethargy: true }
+      : chance(rng, 0.3)
+        ? {
+            speedFactor: 0.5,
+            dexSave: -2,
+            noReactions: true,
+            oneAttack: true,
+            repeatSave: true,
+            save: { ability: "wis" as const, dc: 13 },
+          }
+        : {}),
   };
 }
 
@@ -158,7 +178,35 @@ function creature(rng: Rng, name: string, side: CombatSide): CombatActor {
     ...(chance(rng, 0.15) ? { bonusActions: [weapon(rng, 30)] } : {}),
     stealth: int(rng, -1, 8),
     passivePerception: int(rng, 8, 16),
+    ...(chance(rng, 0.3) ? { reactions: [reaction(rng)] } : {}),
   };
+}
+
+/** A reaction of any kind the engine plays. */
+function reaction(rng: Rng): Reaction {
+  const kind = pick(rng, ["counter", "retaliate", "disadvantage", "halve", "counterspell"] as const);
+  const limit = chance(rng, 0.3) ? { limit: chance(rng, 0.5) ? { recharge: 6 } : { perDay: 2 } } : {};
+  const within = chance(rng, 0.4) ? { within: pick(rng, [5, 30, 60]) } : {};
+  switch (kind) {
+    case "counter":
+      return { kind, name: "Counter", attack: weapon(rng, 40), ...limit, ...within };
+    case "retaliate":
+      return {
+        kind,
+        name: "Rebuke",
+        damage: { expr: dice(rng), type: "fire" },
+        ...(chance(rng, 0.5)
+          ? { save: { ability: "dex" as const, dc: int(rng, 10, 16) }, onSuccess: "half" as const }
+          : {}),
+        ...(chance(rng, 0.3) ? { inflicts: { condition: "prone" as const, lasts: "start" as const } } : {}),
+        ...limit,
+        ...within,
+      };
+    case "counterspell":
+      return { kind, name: "Counter Spell", upTo: int(rng, 1, 5), ...within };
+    default:
+      return { kind, name: kind, ...limit, ...within, ...(chance(rng, 0.3) ? { meleeOnly: true } : {}) };
+  }
 }
 
 /** One random fight: 1–4 PCs against 1–5 monsters. */
@@ -183,6 +231,11 @@ describe("engine properties over random fights", () => {
         ...(pick3() < 0.8 ? { distance: Math.floor(pick3() * 80) } : {}),
         ...(pick3() < 0.7 ? { deathSaves: true } : {}),
         ...(pick3() < 0.3 ? { lair: true } : {}),
+        ...(pick3() < 0.3 ? { difficult: true } : {}),
+        ...(pick3() < 0.3 ? { cover: { party: 2, monsters: 5 } } : {}),
+        ...(pick3() < 0.3
+          ? { highGround: { side: pick3() < 0.5 ? ("party" as const) : ("monsters" as const), height: 15 } }
+          : {}),
       };
       check(c, rules);
     }

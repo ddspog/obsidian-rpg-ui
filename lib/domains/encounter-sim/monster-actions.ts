@@ -20,6 +20,7 @@ import {
   type Inflict,
   type BonusMove,
   type Reach,
+  type Reaction,
   MODELLED_CONDITIONS,
   type ModelledCondition,
   type SkipReason,
@@ -53,6 +54,8 @@ export interface MonsterFeatureClass {
   multiattack?: ParsedMultiattack;
   /** A Spellcasting action: the spells it casts, to be resolved against the vault's spell notes. */
   spellcasting?: MonsterSpellcasting;
+  /** A reaction besides an AC one: a counterattack (its attack named in `attackRef`), damage back, and the like. */
+  otherReaction?: ParsedReaction;
   /** A bonus action: an attack or save it makes with it, or the moves it gives (Nimble Escape). */
   bonus?: ModelledAction;
   bonusMoves?: BonusMove[];
@@ -298,7 +301,9 @@ export function classifyMonsterFeature(feature: MonsterFeatureInput): MonsterFea
   if (lr) return { legendaryResistance: parseInt(lr[1], 10), skip: "unsupported-feature" };
   if (feature.type?.trim().toLowerCase() === "reaction") {
     const reaction = acReactionOf(text);
-    return reaction ? { reaction, skip: "unsupported-feature" } : UNSUPPORTED;
+    if (reaction) return { reaction, skip: "unsupported-feature" };
+    const other = reactionFrom(name, text);
+    return other ? { otherReaction: other } : UNSUPPORTED;
   }
   if (feature.type?.trim().toLowerCase() === "legendary") {
     const cost = parseInt(name.match(/\(Costs (\d+) Actions?\)/i)?.[1] ?? "1", 10);
@@ -423,4 +428,98 @@ function hinderingSave(name: string, text: string): SaveAction | null {
     circle: 0,
     inflicts,
   };
+}
+
+const DAMAGE_WORDS = [
+  "acid",
+  "cold",
+  "fire",
+  "force",
+  "lightning",
+  "necrotic",
+  "poison",
+  "psychic",
+  "radiant",
+  "thunder",
+];
+
+/** A reaction as read from a statblock: a counterattack names its attack (`attackRef`), bound by the loader. */
+export type ParsedReaction = Reaction & { attackRef?: string };
+
+/**
+ * A reaction besides an AC one, read from its words (Monster Vault and Game Master's Guide phrasing):
+ * - "can counter the spell", "countering it": counterspell (of the "Nth circle or lower" it says, else 3rd);
+ * - "can make one Battle Axe attack against the attacker": counter (`attackRef`: the attack, or none for "one
+ *   melee or ranged attack");
+ * - "halves the attack's damage": halve; "the attacker has disadvantage on the attack roll": disadvantage;
+ * - "the attacker takes 5 (1d10) fire damage", "must succeed on a DC 13 DEX save or take …": retaliate.
+ * A reaction that protects another creature, or moves, is left out.
+ */
+export function reactionFrom(name: string, text: string): ParsedReaction | undefined {
+  const flat = text.replace(/[*_]+/g, "").replace(/\s+/g, " ");
+  if (/\bfriendly creature\b|\ban ally\b|\bwilling creature\b/i.test(flat)) return undefined;
+  const limit = useLimitOf(name, flat);
+  const trigger = flat.split(/(?<=\.)\s/)[0] ?? flat;
+  const within = trigger.match(/\bwithin (\d+) (?:feet|ft)/i);
+  const base = {
+    name,
+    ...(limit ? { limit } : {}),
+    ...(within ? { within: parseInt(within[1], 10) } : {}),
+    ...(/\bmelee attack\b/i.test(trigger) ? { meleeOnly: true } : {}),
+  };
+  if (/\bcounter(?:s|ing)? (?:the|that|it|its)\b|interrupting the casting/i.test(flat) && /\bspell\b/i.test(trigger)) {
+    const upTo = flat.match(/(\d)(?:st|nd|rd|th) (?:circle|level) or lower/i);
+    return { kind: "counterspell", ...base, upTo: upTo ? parseInt(upTo[1], 10) : 3 };
+  }
+  const hitTrigger = /\b(?:hits?|is hit|attacks?|damages?|deals damage to|misses?)\b/i.test(trigger);
+  if (!hitTrigger) return undefined;
+  const counter = flat.match(
+    /\bmakes? (?:one|a|an) (.+?) attack (?:roll )?against (?:the attacker|that creature|the creature|it\b)/i
+  );
+  if (counter) {
+    const ref = counter[1].replace(/^(?:single|melee or ranged|melee|ranged|weapon)\s*/i, "").trim();
+    return { kind: "counter", ...base, ...(ref && !/^(?:weapon|melee|ranged)$/i.test(ref) ? { attackRef: ref } : {}) };
+  }
+  // Halving every hit's damage; one that halves only some types ("takes acid, cold … damage") is left out.
+  const typed = new RegExp(`\\b(?:${DAMAGE_WORDS.join("|")})\\b`, "i").test(trigger);
+  if (
+    !typed &&
+    /\bhalves? the (?:attack[\u2019']s )?damage\b|\b(?:it|the \w+) takes only half (?:the )?damage\b/i.test(flat)
+  )
+    return { kind: "halve", ...base };
+  if (
+    /\b(?:attacker|creature) has disadvantage on (?:the|that) attack|imposes? disadvantage on the attack roll/i.test(
+      flat
+    )
+  )
+    return { kind: "disadvantage", ...base };
+  const save = saveFrom(name, flat);
+  if (save && !save.area)
+    return {
+      kind: "retaliate",
+      ...base,
+      damage: save.damage,
+      save: { ability: save.ability, dc: save.dc },
+      onSuccess: save.onSuccess,
+      ...(save.inflicts ? { inflicts: save.inflicts } : {}),
+    };
+  const plainDamage = flat.match(
+    /\b(?:attacker|creature|it) takes \d+ \((\d+d\d+(?:\s*[+\u2212-]\s*\d+)?)\) (\w+) damage/i
+  );
+  if (plainDamage)
+    return {
+      kind: "retaliate",
+      ...base,
+      damage: { expr: plainDamage[1].replace(/\s+/g, "").replace("\u2212", "-"), type: plainDamage[2].toLowerCase() },
+    };
+  const hinder = hinderingSave(name, flat);
+  if (hinder && !hinder.area)
+    return {
+      kind: "retaliate",
+      ...base,
+      save: { ability: hinder.ability, dc: hinder.dc },
+      onSuccess: "none",
+      ...(hinder.inflicts ? { inflicts: hinder.inflicts } : {}),
+    };
+  return undefined;
 }

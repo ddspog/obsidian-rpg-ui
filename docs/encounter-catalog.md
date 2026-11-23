@@ -268,6 +268,29 @@ Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog
   - A creature acting at range backs off, after acting, from a melee enemy that could reach it next turn ("kiting"). A melee creature with someone already in reach strikes there rather than walking off to another target.
   - A flier acting at range stays aloft, out of reach of melee from creatures that cannot fly.
   - Speeds come from the statblock ("30 ft., fly 60 ft.") and the sheet; Flyby from a feature of that name.
+- **Terrain** (`--terrain difficult`): moving on the ground costs double everywhere; a flier is spared. The fight's room has walls: no creature backs away more than 30 feet behind its side's back line.
+- **Cover:**
+  - A creature standing between a ranged attacker and its target (on the line, low enough to be in the way) gives the target half cover, +2 AC against that attack.
+  - `--cover <side>:half|three-quarters` (repeatable, `party` or `monsters`) gives that side's creatures who are not next to an enemy +2 or +5 to AC against ranged attacks and to DEX saves.
+  - The higher of the two counts; cover does not stack.
+- **Height:**
+  - Every creature has a height. Distance is along the line or up, whichever is more, so a melee reach and a range count height too.
+  - A flier acting at range hovers 20 feet up. A 10- or 15-foot reach does not reach it; a 25-foot one, or a ranged attack, does.
+  - A flier that is knocked prone, or stunned, paralyzed, restrained or incapacitated, falls: 1d6 bludgeoning a 10 feet, and it lands prone.
+  - `--high-ground <side>:<feet>` puts that side's back line on a ledge that high. A walker climbs to it at double cost; a walker on it stays at its height, so a 15-foot cone cast from a 20-foot ledge reaches no one below.
+- **Haste and Slow** (and spells that read like them, `timeEffectsOf` in `spell-actions.ts`):
+  - **Haste:** doubles the target's speed, gives +2 AC and advantage on DEX saves, and one weapon swing more each turn. When it ends (the caster's concentration), the target loses its next turn.
+  - **Slow** (up to six enemies, a WIS save, another at the end of each of their turns):
+    - halves speed, and gives −2 to AC and DEX saves;
+    - removes reactions;
+    - limits each turn to one attack, and to an action or a bonus action, not both.
+- **Reactions** (one a round, shared with the AC reaction and opportunity attacks; `reactionFrom` in `monster-actions.ts`, `spellReactionOf` in `spell-actions.ts`). Of the vault's 375 monster reactions, 77 are read as one of these five kinds; the AC ones (Parry) were already played.
+  - **Strike back:** when hit, an attack back at the attacker (Counterattack, Reflexive Strike: the attack it names, else its best one).
+  - **Damage back:** when hit or damaged, damage or a save back on the attacker (Blasphemous Word, Stunning Jolt; Hellish Rebuke on a PC's sheet, with its slot).
+  - **Disadvantage:** the attack against it has disadvantage (Fin Flare, Curl Up).
+  - **Halve:** a hit's damage halved (Defensive Huddle).
+  - **Counterspell:** a spell of its circle or lower fails (Counter Spell; Counterspell on a sheet). A spell's actions carry its circle (`spell`), so a monster's spells cast at no slot are known for what they are.
+  - Each keeps its trigger's reach ("within 5 feet"), melee only when it says so, and its recharge or uses a day. A reaction that protects another creature or moves it is left out.
 - **Bonus actions:**
   - A statblock's `bonus` features: "takes the Disengage or Hide action" (Nimble Escape) gives those moves, and Cunning Action on a sheet gives Dash, Disengage and Hide.
   - Hide is a Stealth roll (the statblock's passive Stealth less 10, or the sheet's skill) against the best passive Perception of the enemies. It works only at range with no enemy next to the creature, and success gives advantage on its next attack.
@@ -296,6 +319,16 @@ Measured on the default level-1 party (400 trials, the new rules against the abs
 - **Death:** a PC dies in 0.25% to 8% of those fights (`anyDeathRate`).
 - **The logged kobold fight** (`calibrate`): now at the 8th percentile of the simulated, against the 3rd before (predicted HP lost 75%, against 83% before and 22% in play).
 - **Speed:** `suggest` takes about 1.5 times as long (15 s against 10 s for the default sweep).
+
+Then terrain, cover, height, Haste and Slow, and reactions, against the fight just before them:
+
+- **Most fights** moved a few points: Hobgoblin ×2 22% of HP instead of 19%, a Giant Eagle 24% instead of 23%.
+- **The Bandit Captain** is won 57% of the time instead of 66%. A monster standing between gives half cover against the party's spells and bolts, and Kowyn's Toxic Plume now needs its 15-foot cone.
+- **The flags,** on Goblin ×4:
+  - `--distance 60` or `--terrain difficult` nearly doubles the HP lost (37% against 19%): the goblins shoot while the party's melee crosses.
+  - `--high-ground party:20` costs 23% (Kowyn's 15-foot Thunderwave reaches no one from the ledge).
+- **The logged kobold fight:** barely moves (8th percentile).
+- **Speed:** `suggest` takes 17.6 s against 15.8 s.
 
 ## Calibration: the simulator against real play
 
@@ -352,5 +385,5 @@ Drafts are guesses made by `extractEncounter` (`lib/domains/encounter-catalog/ex
 - **Templates:** "(use mage with the Void-blessed template)", "a giant ape with the bramble creature template" keep the template on the creature (`template:` on the entry's monster), when the vault has a template note of that name (`rpg sim templates` lists them) or the aliases note names one under `templates:` (`bramble creature: Bramble Beast`); else the reason says it was simulated without it and the draft is medium. Two templates offered ("the skeleton or zombie template") keep none. The simulator applies it before the fight, as `rpg sim homebrew --template` does: `--monster "Mule with Zombie:2"` takes the same form. The board shows it after the name; a prepared line's foes link the base creature.
 - Names the bestiary lacks ("five shriekers") are listed as `unresolved` and make the draft medium.
 - Rows that are not combat but a skill challenge, a hazard or a roleplay scene are not entries at all.
-- A fit is only as good as the simulator: wards (Sanctuary), speed and action changes (Haste, Slow), reactions other than an AC one and an opportunity attack, terrain, cover and a second dimension are left out (see the `fidelity` of `rpg sim run`). Space, opportunity attacks, flight, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
+- A fit is only as good as the simulator: wards (Sanctuary), reactions that protect another creature or move it, and the map's shape beyond a line, a ledge and walls are left out (see the `fidelity` of `rpg sim run`). Space, terrain, cover, height, opportunity attacks and the other reactions, flight, Haste and Slow, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
 - Tags come from the table (environment, tier, CR band, book) and the monsters' habitats, lower-cased, so a "Forests" table has `forests` and its wolves' `forest`; `--tag` matches whole tags, case-insensitively.

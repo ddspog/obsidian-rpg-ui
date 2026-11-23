@@ -132,6 +132,9 @@ The **GM link** (off by default: `gmLinkEnabled`, Settings › General › GM li
 - **Ammunition:** `ammo`, from `ammunitionFor`.
 - **Concentration:** a `concentration` spell's buff or condition ends on a failed CON save after damage.
 - **Death saves:** on. A PC is brought back by a heal first, stabilised by an ally at two failures, and `deathRate`/`anyDeathRate` are reported.
+- **Terrain** (`--terrain difficult`), **cover** (`--cover <side>:half|three-quarters`, and half cover from a creature between), **height** (a `z` per creature: fliers hover 20 ft up and fall when grounded; `--high-ground <side>:<feet>`), and walls 30 ft behind each back line.
+- **Haste and Slow:** `BuffAction` fields read by `timeEffectsOf`.
+- **Reactions** (`CombatActor.reactions`, `Reaction`: counter, retaliate, disadvantage, halve, counterspell): read by `reactionFrom` from statblocks and `spellReactionOf` from PC spells (Hellish Rebuke, Counterspell); a spell's actions carry its circle as `spell`.
 
 See "The rules of a fight" in `docs/encounter-catalog.md`; `engine.rules.test.ts` shows each rule.
 

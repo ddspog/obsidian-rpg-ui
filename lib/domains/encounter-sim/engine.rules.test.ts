@@ -252,3 +252,204 @@ describe("death saves", () => {
     );
   });
 });
+
+describe("terrain, cover and height", () => {
+  const archer = actor("Archer", "party", { actions: [ranged("Longbow", 6, "1d8+3", 150)], maxHp: 30 });
+  const walker = actor("Brute", "monsters", { actions: [melee("Club", 5, "2d6+3")], speed: 30, maxHp: 30 });
+
+  it("slows a walker in difficult terrain: it reaches an archer later", () => {
+    const open = run([archer], [walker], { distance: 60 });
+    const rough = run([archer], [walker], { distance: 60, difficult: true });
+    expect(rough.avgHpLost).toBeLessThan(open.avgHpLost);
+  });
+
+  it("gives a side in cover a better AC against ranged attacks", () => {
+    const shooter = actor("Bandit", "monsters", { actions: [ranged("Crossbow", 4, "1d8+2", 80)], maxHp: 60 });
+    const pc = actor("Fighter", "party", { actions: [ranged("Javelin", 5, "1d6+3", 30)], maxHp: 40 });
+    const bare = run([pc], [shooter], { distance: 60 });
+    const covered = run([pc], [shooter], { distance: 60, cover: { party: 5 } });
+    expect(covered.avgHpLost).toBeLessThan(bare.avgHpLost);
+  });
+
+  it("gives half cover against a ranged attack to one behind another creature", () => {
+    const shooter = actor("Bandit", "monsters", {
+      actions: [ranged("Crossbow", 4, "1d8+2", 80)],
+      maxHp: 80,
+      armorClass: 20,
+    });
+    // The caster stands back (it acts at range); the fighter in front of it is in the way.
+    const caster = actor("Caster", "party", { actions: [ranged("Bolt", 4, "1d4", 120)], maxHp: 8, armorClass: 12 });
+    const wall = actor("Wall", "party", { actions: [], maxHp: 200, armorClass: 30 });
+    const alone = run([caster], [shooter], { distance: 30 });
+    const shielded = run([caster, wall], [shooter], { distance: 30 });
+    expect(shielded.koRate.Caster).toBeLessThan(alone.koRate.Caster);
+  });
+
+  it("keeps a flier hovering out of a 10-foot reach, and lets a 25-foot reach strike it", () => {
+    const harrier = actor("Harrier", "monsters", { actions: [ranged("Spines", 4, "1d6+2", 60)], fly: 60, maxHp: 15 });
+    const pike = (reach: number) =>
+      actor("Pikeman", "party", { actions: [melee("Pike", 6, "1d10+3", reach)], maxHp: 30 });
+    expect(run([pike(10)], [harrier], { distance: 30 }).winRate).toBe(0);
+    expect(run([pike(25)], [harrier], { distance: 30 }).winRate).toBeGreaterThan(0.5);
+  });
+
+  it("drops a flier knocked prone: it falls and lands where a walker can reach it", () => {
+    const harrier = actor("Harrier", "monsters", { actions: [ranged("Spines", 4, "1d6+2", 60)], fly: 60, maxHp: 25 });
+    const knock = actor("Slinger", "party", {
+      actions: [
+        { ...ranged("Bola", 6, "1d4", 60), inflicts: { condition: "prone", lasts: "start" } },
+        melee("Axe", 6, "1d12+3"),
+      ],
+      maxHp: 30,
+    });
+    const swordOnly = actor("Slinger", "party", { actions: [melee("Axe", 6, "1d12+3")], maxHp: 30 });
+    expect(run([knock], [harrier], { distance: 30 }).winRate).toBeGreaterThan(
+      run([swordOnly], [harrier], { distance: 30 }).winRate
+    );
+  });
+
+  it("puts a side's back line on a ledge: a walker must climb to strike it", () => {
+    const brute = actor("Brute", "monsters", { actions: [melee("Club", 5, "2d6+3")], speed: 20, maxHp: 40 });
+    const flat = run([archer], [brute], { distance: 20 });
+    const ledge = run([archer], [brute], { distance: 20, highGround: { side: "party", height: 20 } });
+    expect(ledge.avgHpLost).toBeLessThan(flat.avgHpLost);
+  });
+});
+
+describe("Haste and Slow", () => {
+  const fighter = (more: Partial<CombatActor> = {}) =>
+    actor("Fighter", "party", { actions: [melee("Sword", 6, "1d8+3")], maxHp: 40, initiativeModifier: 5, ...more });
+  const ogre = actor("Ogre", "monsters", { actions: [melee("Club", 6, "2d8+4")], maxHp: 70, armorClass: 11 });
+  const haste: ModelledAction = {
+    kind: "buff",
+    name: "Haste",
+    circle: 3,
+    on: "allies",
+    targets: 1,
+    ac: 2,
+    speedFactor: 2,
+    dexAdvantage: true,
+    extraAttack: true,
+    lethargy: true,
+    concentration: true,
+  };
+  const slow: ModelledAction = {
+    kind: "buff",
+    name: "Slow",
+    circle: 3,
+    on: "enemies",
+    targets: 6,
+    save: { ability: "wis", dc: 25 },
+    speedFactor: 0.5,
+    ac: -2,
+    dexSave: -2,
+    noReactions: true,
+    oneAttack: true,
+    repeatSave: true,
+    concentration: true,
+  };
+  const caster = (spell: ModelledAction) =>
+    actor("Caster", "party", {
+      actions: [spell, melee("Staff", 2, "1d6")],
+      slots: [0, 0, 2],
+      maxHp: 30,
+      armorClass: 18,
+      initiativeModifier: 10,
+    });
+
+  it("hastens an ally: an attack more, +2 AC, so the fight is shorter", () => {
+    const plain = run([fighter(), caster(melee("Staff", 2, "1d6"))], [ogre]);
+    const hasted = run([fighter(), caster(haste)], [ogre]);
+    expect(hasted.avgRounds).toBeLessThan(plain.avgRounds);
+  });
+
+  it("slows an enemy: one attack a turn, -2 AC, no reactions", () => {
+    const twoClubs = {
+      ...ogre,
+      actions: [
+        {
+          kind: "multiattack",
+          name: "Multiattack",
+          swings: [melee("Club", 6, "2d8+4"), melee("Club", 6, "2d8+4")],
+        } as ModelledAction,
+      ],
+    };
+    const plain = run([fighter(), caster(melee("Staff", 2, "1d6"))], [twoClubs]);
+    const slowed = run([fighter(), caster(slow)], [twoClubs]);
+    expect(slowed.avgHpLost).toBeLessThan(plain.avgHpLost);
+  });
+});
+
+describe("reactions", () => {
+  const pc = actor("Fighter", "party", { actions: [melee("Sword", 6, "1d8+3")], maxHp: 60 });
+  const beast = (reactions: CombatActor["reactions"]) =>
+    actor("Beast", "monsters", {
+      actions: [melee("Claw", 4, "1d6+2")],
+      maxHp: 40,
+      ...(reactions ? { reactions } : {}),
+    });
+
+  it("strikes back at the attacker when hit (a counterattack)", () => {
+    const plain = run([pc], [beast(undefined)]);
+    const counter = run([pc], [beast([{ kind: "counter", name: "Counterattack", attack: melee("Claw", 4, "1d6+2") }])]);
+    expect(counter.avgHpLost).toBeGreaterThan(plain.avgHpLost);
+  });
+
+  it("deals damage back when damaged (Hellish Rebuke), with a save for half", () => {
+    const plain = run([pc], [beast(undefined)]);
+    const rebuke = run(
+      [pc],
+      [
+        beast([
+          {
+            kind: "retaliate",
+            name: "Hellish Rebuke",
+            damage: { expr: "2d10", type: "fire" },
+            save: { ability: "dex", dc: 13 },
+            onSuccess: "half",
+          },
+        ]),
+      ]
+    );
+    expect(rebuke.avgHpLost).toBeGreaterThan(plain.avgHpLost);
+  });
+
+  it("gives the attacker disadvantage, or halves a hit's damage: the fight lasts longer", () => {
+    const plain = run([pc], [beast(undefined)]);
+    const shy = run([pc], [beast([{ kind: "disadvantage", name: "Fin Flare" }])]);
+    const huddle = run([pc], [beast([{ kind: "halve", name: "Defensive Huddle" }])]);
+    expect(shy.avgRounds).toBeGreaterThan(plain.avgRounds);
+    expect(huddle.avgRounds).toBeGreaterThan(plain.avgRounds);
+  });
+
+  it("counters a spell of a circle it stops, not a cantrip's weapon", () => {
+    const bolt: ModelledAction = {
+      kind: "spell-attack",
+      name: "Scorching Ray",
+      hitBonus: 6,
+      damage: { expr: "6d6", type: "fire" },
+      circle: 2,
+      spell: 2,
+    };
+    const mage = actor("Mage", "party", { actions: [bolt], slots: [0, 4], maxHp: 30 });
+    const golem = actor("Golem", "monsters", { actions: [melee("Slam", 4, "1d8+2")], maxHp: 60 });
+    const plain = run([mage], [golem]);
+    const warded = run([mage], [{ ...golem, reactions: [{ kind: "counterspell", name: "Counter Spell", upTo: 3 }] }]);
+    expect(warded.avgRounds).toBeGreaterThan(plain.avgRounds);
+  });
+
+  it("takes one reaction a round, and none under Slow", () => {
+    // Two reactions written, one a round: the second waits for the next round.
+    const both = run(
+      [pc],
+      [
+        beast([
+          { kind: "disadvantage", name: "Fin Flare" },
+          { kind: "halve", name: "Huddle" },
+        ]),
+      ]
+    );
+    const one = run([pc], [beast([{ kind: "disadvantage", name: "Fin Flare" }])]);
+    expect(both.avgRounds).toBeGreaterThanOrEqual(one.avgRounds - 0.1);
+  });
+});

@@ -12,6 +12,7 @@ import {
   reactionOfSpell,
   resolveSpellOption,
   spellReach,
+  spellReactionOf,
   type SpellNumbers,
   type SpellOptionInput,
 } from "lib/domains/encounter-sim/spell-actions";
@@ -29,6 +30,7 @@ import {
   type ModelledAction,
   type ModelledCondition,
   type Reach,
+  type Reaction,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
 import { parseDamage } from "lib/domains/session-log/session-actions";
@@ -428,6 +430,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
 
   const slotted: ModelledAction[] = [];
   let reaction: CombatActor["reaction"];
+  const reactions: Reaction[] = [];
   const cantrips: ModelledAction[] = [];
   const slots: number[] = [];
   for (const [source, spells] of spellListsOf(ctx, sheet.note, ref)) {
@@ -452,6 +455,17 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
         fidelity.push({ name: input.name, owner: name, status: "modelled" });
         continue;
       }
+      // Hellish Rebuke, Counterspell: a reaction of another kind; any other reaction spell is no action either.
+      if (/\breaction\b/i.test(input.casting ?? "")) {
+        const other = spellReactionOf(input, numbers);
+        if (other) reactions.push(other);
+        fidelity.push(
+          other
+            ? { name: input.name, owner: name, status: "modelled" }
+            : { name: input.name, owner: name, status: "skipped", reason: "unsupported-feature" }
+        );
+        continue;
+      }
       const result = resolveSpellOption(input, numbers, name);
       if (result.needsCastingModifier) {
         throw new Error(
@@ -461,7 +475,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       // A control spell with no damage the sheet gives a condition for (Entangle: restrained on a failed STR
       // save) is a save action that deals nothing and hinders.
       const found = !result.action ? controlSpell(sheet, input.name, input.circle ?? 0) : undefined;
-      const reach = found ? spellReach(input.range) : undefined;
+      const reach = found ? spellReach(input.range, input.text) : undefined;
       const control =
         found &&
         ({
@@ -516,6 +530,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       actions,
       ...(riders.length ? { riders } : {}),
       ...(reaction ? { reaction } : {}),
+      ...(reactions.length ? { reactions } : {}),
       ...movesOf(sheet),
     },
     fidelity,

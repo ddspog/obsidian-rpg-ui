@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Ctx } from "../app";
 import { type SimHandler, simMain } from "./dispatch";
-import { parseSimArgv, SIM_FLAGS, SIM_HELP, type SimOptions, UsageError } from "./flags";
+import { parseSimArgv, rulesOf, SIM_FLAGS, SIM_HELP, type SimOptions, UsageError } from "./flags";
 
 const CTX = { root: "stub" } as unknown as Ctx;
 
@@ -233,6 +233,9 @@ describe("SIM_HELP", () => {
       "rounds",
       "distance",
       "lair",
+      "terrain",
+      "cover",
+      "high-ground",
       "difficulty",
       "tiers",
       "rank",
@@ -439,5 +442,36 @@ describe("simMain handlers", () => {
     expect(a.code).toBe(0);
     expect(b.code).toBe(0);
     expect(a.out).toEqual(b.out);
+  });
+});
+
+describe("the rules of a fight from the flags", () => {
+  it("reads terrain, cover and high ground into the rules", () => {
+    const options = parseSimArgv([
+      "run",
+      "--monster",
+      "Wolf",
+      "--terrain",
+      "difficult",
+      "--cover",
+      "party:half",
+      "--cover",
+      "monsters:three-quarters",
+      "--high-ground",
+      "monsters:15",
+    ]);
+    expect(rulesOf(options.options)).toEqual({
+      distance: 30,
+      deathSaves: true,
+      difficult: true,
+      cover: { party: 2, monsters: 5 },
+      highGround: { side: "monsters", height: 15 },
+    });
+  });
+
+  it("refuses a cover, terrain or high ground it cannot read", () => {
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--cover", "party:lots"])).toThrow(/--cover/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--terrain", "swamp"])).toThrow(/--terrain/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--high-ground", "up"])).toThrow(/--high-ground/);
   });
 });
