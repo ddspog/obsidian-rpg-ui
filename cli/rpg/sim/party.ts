@@ -8,7 +8,12 @@
 import { parse } from "yaml";
 import { areaTargets } from "lib/domains/encounter-sim/monster-actions";
 import { isRollable } from "lib/domains/encounter-sim/rng";
-import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "lib/domains/encounter-sim/spell-actions";
+import {
+  reactionOfSpell,
+  resolveSpellOption,
+  type SpellNumbers,
+  type SpellOptionInput,
+} from "lib/domains/encounter-sim/spell-actions";
 import {
   ABILITY_KEYS,
   type AbilityKey,
@@ -349,6 +354,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
   for (const weapon of weapons) fidelity.push({ name: weapon.name, owner: name, status: "modelled" });
 
   const slotted: ModelledAction[] = [];
+  let reaction: CombatActor["reaction"];
   const cantrips: ModelledAction[] = [];
   const slots: number[] = [];
   for (const [source, spells] of spellListsOf(ctx, sheet.note, ref)) {
@@ -366,6 +372,13 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
     }
     for (const spell of spells) {
       const input = readSpell(ctx, spell.link, spell.circle, name, source);
+      // A reaction that raises AC (Shield) is the PC's reaction, not an action.
+      const asReaction = reactionOfSpell(input);
+      if (asReaction) {
+        reaction ??= asReaction;
+        fidelity.push({ name: input.name, owner: name, status: "modelled" });
+        continue;
+      }
       const result = resolveSpellOption(input, numbers, name);
       if (result.needsCastingModifier) {
         throw new Error(
@@ -421,6 +434,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       slots,
       actions,
       ...(riders.length ? { riders } : {}),
+      ...(reaction ? { reaction } : {}),
     },
     fidelity,
   };

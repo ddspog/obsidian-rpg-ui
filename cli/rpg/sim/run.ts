@@ -149,6 +149,8 @@ function summariseGroup(monster: LoadedMonster, count: number) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.reaction ? { reaction: `${actor.reaction.name}: +${actor.reaction.ac} AC` } : {}),
+    ...(actor.legendaryResistance ? { legendaryResistance: actor.legendaryResistance } : {}),
     ...(actor.legendary
       ? {
           legendary: {

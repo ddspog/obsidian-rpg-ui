@@ -760,3 +760,36 @@ describe("legendary actions", () => {
     expect(r.partyHpRemaining).toBe(300 - 30);
   });
 });
+
+describe("reactions and Legendary Resistance", () => {
+  it("a Parry turns a hit it can beat into a miss, once a round", () => {
+    const two = { kind: "multiattack" as const, name: "Two", swings: [weapon("50", 0), weapon("50", 0)] };
+    const fight = (parry: boolean) => {
+      const veteran = actor({ name: "Veteran", side: "monsters", hp: 60, ac: 10 });
+      if (parry) veteran.reaction = { name: "Parry", ac: 10, untilTurn: false, circle: 0 };
+      const pc = actor({ name: "PC", side: "party", hp: 100, init: 10, actions: [two] });
+      // A 15 hits AC 10 but not 20: with the Parry the first of the two 50s misses, and 60 HP stand.
+      return simulateTrial([pc, veteran], () => face(15), 1).outcome;
+    };
+    expect(fight(false)).toBe("win");
+    expect(fight(true)).toBe("stalemate");
+  });
+
+  it("Legendary Resistance turns failed saves into successes while it has uses", () => {
+    const blast: SaveAction = {
+      kind: "save",
+      name: "Blast",
+      dc: 30,
+      ability: "dex",
+      damage: { expr: "10" },
+      onSuccess: "none",
+      area: false,
+      circle: 0,
+    };
+    const mage = actor({ name: "Mage", side: "party", hp: 100, init: 10, actions: [blast] });
+    const dragon = actor({ name: "Dragon", side: "monsters", hp: 25 });
+    dragon.legendaryResistance = 2;
+    // Two failed saves resisted, the third lands: 10 damage a round from round 3, down in round 5.
+    expect(simulateTrial([mage, dragon], () => face(10), 10).rounds).toBe(5);
+  });
+});

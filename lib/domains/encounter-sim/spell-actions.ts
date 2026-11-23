@@ -360,6 +360,8 @@ export function buffFromText(
   numbers: SpellNumbers | undefined,
   owner: string
 ): SpellOptionResult | undefined {
+  // A reaction (Shield) is no action to take on a turn: see reactionOfSpell.
+  if (/\breaction\b/i.test(spell.casting ?? "")) return undefined;
   const text = `${spell.summary ?? ""} ${spell.text ?? ""}`.replace(/[*_]+/g, "").replace(/\s+/g, " ");
   const die = text.match(
     /roll an? (d\d+) and (add|subtract) the number rolled (?:from|to) (?:the |its |that )?([^.]*)/i
@@ -399,5 +401,20 @@ export function buffFromText(
       ...(ability ? { save: { ability, dc: 8 + numbers.proficiencyBonus + numbers.castingModifier } } : {}),
     },
     fidelity: { name: spell.name, owner, status: "modelled" },
+  };
+}
+
+/** A reaction spell that raises the caster's AC when hit (Shield: "+5 bonus to AC" until its next turn). */
+export function reactionOfSpell(
+  spell: SpellOptionInput
+): { name: string; ac: number; untilTurn: boolean; circle: number } | undefined {
+  if (!/\breaction\b/i.test(spell.casting ?? "")) return undefined;
+  const m = `${spell.summary ?? ""} ${spell.text ?? ""}`.match(/\+(\d+) bonus to AC\b/i);
+  if (!m) return undefined;
+  return {
+    name: spell.name,
+    ac: parseInt(m[1], 10),
+    untilTurn: /until the start of your next turn/i.test(spell.text ?? ""),
+    circle: spell.circle ?? 0,
   };
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  acReactionOf,
   areaTargets,
   bindMultiattack,
   classifyMonsterFeature,
@@ -332,5 +333,41 @@ describe("the Monster Vault's short saves and legendary actions", () => {
         text: "The dragon automatically detects every creature within 60 feet.",
       })
     ).toEqual({ skip: "unsupported-feature" });
+  });
+});
+
+describe("reactions and Legendary Resistance", () => {
+  it("reads a reaction that raises the creature's own AC, not one that shields another", () => {
+    expect(acReactionOf("The veteran adds 2 to its AC against one melee attack that would hit it.")).toEqual({
+      ac: 2,
+      untilTurn: false,
+    });
+    expect(
+      acReactionOf(
+        "When a creature the fenrosk can see attacks it, the fenrosk can curl into a tight ball, increasing its AC by 2 until the start of its next turn."
+      )
+    ).toEqual({ ac: 2, untilTurn: true });
+    expect(
+      acReactionOf(
+        "When a friendly creature the guard can see within 5 feet of it is the target of an attack, the friendly creature adds 2 to its AC against that attack."
+      )
+    ).toBeUndefined();
+  });
+
+  it("reads Legendary Resistance's uses and a Parry from a reaction feature", () => {
+    expect(
+      classifyMonsterFeature({
+        name: "Legendary Resistance (3/Day)",
+        type: "trait",
+        text: "If the dragon fails a save, it can choose to succeed instead.",
+      })
+    ).toMatchObject({ legendaryResistance: 3 });
+    expect(
+      classifyMonsterFeature({
+        name: "Parry",
+        type: "reaction",
+        text: "The veteran adds 2 to its AC against one melee attack that would hit it.",
+      })
+    ).toMatchObject({ reaction: { ac: 2 } });
   });
 });

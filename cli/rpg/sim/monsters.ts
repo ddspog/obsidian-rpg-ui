@@ -12,7 +12,12 @@ import {
   bindMultiattack,
   type MonsterSpellcasting,
 } from "lib/domains/encounter-sim/monster-actions";
-import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "lib/domains/encounter-sim/spell-actions";
+import {
+  reactionOfSpell,
+  resolveSpellOption,
+  type SpellNumbers,
+  type SpellOptionInput,
+} from "lib/domains/encounter-sim/spell-actions";
 import { pbOfCr } from "lib/domains/statblocks/template-block";
 import {
   ABILITY_KEYS,
@@ -194,6 +199,8 @@ interface Classified {
   action?: ModelledAction;
   multiattack?: ReturnType<typeof classifyMonsterFeature>["multiattack"];
   legendary?: ReturnType<typeof classifyMonsterFeature>["legendary"];
+  reaction?: ReturnType<typeof classifyMonsterFeature>["reaction"];
+  legendaryResistance?: number;
   skip?: SkipReason;
 }
 
@@ -205,6 +212,8 @@ function actionsAndFidelity(
   actions: ModelledAction[];
   fidelity: FidelityRecord[];
   legendary: Array<{ action: ModelledAction; cost: number }>;
+  reaction?: CombatActor["reaction"];
+  legendaryResistance?: number;
 } {
   // Pass 1: classify every feature; the attacks are collected by name for the Multiattack.
   const classified: Classified[] = features.map((f, i) => {
@@ -230,7 +239,19 @@ function actionsAndFidelity(
           .toLowerCase() === want
     );
   };
+  let reaction: CombatActor["reaction"];
+  let legendaryResistance: number | undefined;
   for (const c of classified) {
+    if (c.reaction && !reaction) {
+      reaction = { name: c.name, ac: c.reaction.ac, untilTurn: c.reaction.untilTurn, circle: 0 };
+      fidelity.push({ name: c.name, owner, status: "modelled" });
+      continue;
+    }
+    if (c.legendaryResistance) {
+      legendaryResistance = c.legendaryResistance;
+      fidelity.push({ name: c.name, owner, status: "modelled" });
+      continue;
+    }
     if (c.legendary) {
       const use = c.legendary.action ?? (c.legendary.attackRef ? attackNamed(c.legendary.attackRef) : undefined);
       if (use) {
@@ -256,7 +277,7 @@ function actionsAndFidelity(
   if (!actions.some(isDamaging)) {
     fidelity.push({ name: owner, owner, status: "skipped", reason: "no-damaging-action" });
   }
-  return { actions, fidelity, legendary };
+  return { actions, fidelity, legendary, reaction, legendaryResistance };
 }
 
 /** Legendary actions a round: the usual three. */
@@ -296,13 +317,14 @@ function monsterSpells(
   abilities: CombatActor["abilities"],
   cr: number,
   owner: string
-): { actions: ModelledAction[]; fidelity: FidelityRecord[] } {
+): { actions: ModelledAction[]; fidelity: FidelityRecord[]; reaction?: CombatActor["reaction"] } {
   const pb = pbOfCr(cr);
   const castingModifier =
     casting.dc !== undefined ? casting.dc - 8 - pb : casting.ability ? abilities[casting.ability].modifier : 0;
   const numbers: SpellNumbers = { proficiencyBonus: pb, castingModifier, characterLevel: Math.max(1, Math.round(cr)) };
   const actions: ModelledAction[] = [];
   const fidelity: FidelityRecord[] = [];
+  let reaction: CombatActor["reaction"];
   for (const list of casting.lists) {
     for (const spell of list.spells) {
       const note = spellNoteNamed(ctx, spell);
@@ -315,6 +337,12 @@ function monsterSpells(
         input = readSpell(ctx, note, 0, owner, "Spellcasting");
       } catch {
         fidelity.push({ name: spell, owner, status: "skipped", reason: "monster-spellcasting" });
+        continue;
+      }
+      const asReaction = reactionOfSpell(input);
+      if (asReaction) {
+        reaction ??= { ...asReaction, circle: 0 };
+        fidelity.push({ name: input.name, owner, status: "modelled" });
         continue;
       }
       const result = resolveSpellOption(input, numbers, owner);
@@ -336,7 +364,7 @@ function monsterSpells(
       } else actions.push(action);
     }
   }
-  return { actions, fidelity };
+  return { actions, fidelity, ...(reaction ? { reaction } : {}) };
 }
 
 /** A bestiary note as a combatant. Throws naming the note (or the note and feature ref) it cannot load. */
@@ -362,7 +390,8 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     }
   });
 
-  const { actions, fidelity, legendary } = actionsAndFidelity(resolved, refs, file.path);
+  const { actions, fidelity, legendary, reaction, legendaryResistance } = actionsAndFidelity(resolved, refs, file.path);
+  let spellReaction: CombatActor["reaction"];
   // Spellcasting: each spell of its lists read from the vault's spell notes, at its uses a day.
   const crNum = crNumber(data.cr ?? "0");
   for (const f of resolved) {
@@ -374,6 +403,7 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     if (!spellcasting) continue;
     const cast = monsterSpells(ctx, spellcasting, abilitiesOf(data), crNum, file.path);
     actions.push(...cast.actions);
+    spellReaction ??= cast.reaction;
     // The Spellcasting feature's own skip is replaced by a record per spell.
     const at = fidelity.findIndex((r) => r.reason === "monster-spellcasting");
     if (at >= 0) fidelity.splice(at, 1);
@@ -406,6 +436,8 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
   if (!noDefences(defences)) actor.defences = defences;
   // Legendary actions: 3 points a round, the usual number (the notes do not write another).
   if (legendary.length) actor.legendary = { points: LEGENDARY_POINTS, actions: legendary };
+  if (reaction ?? spellReaction) actor.reaction = reaction ?? spellReaction;
+  if (legendaryResistance) actor.legendaryResistance = legendaryResistance;
   return {
     note: file.path,
     name,

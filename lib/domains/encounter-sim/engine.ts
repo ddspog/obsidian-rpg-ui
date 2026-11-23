@@ -84,6 +84,10 @@ interface Combatant {
   buffs: Map<string, Pick<BuffAction, "attackDie" | "saveDie" | "ac">>;
   /** Legendary action points left this round. */
   legendaryLeft: number;
+  /** Its reaction is spent until its next turn. */
+  reactionUsed: boolean;
+  /** Legendary Resistance uses left. */
+  lrLeft: number;
 }
 
 const limitOf = (action: ModelledAction) =>
@@ -97,6 +101,9 @@ function hasSlot(c: Combatant, circle: number): boolean {
 function spendSlot(c: Combatant, circle: number): void {
   if (circle > 0) c.slots[circle - 1] = (c.slots[circle - 1] ?? 0) - 1;
 }
+
+/** The buff an AC reaction that lasts to its next turn leaves (the Shield spell). */
+const REACTION_BUFF = "\u0000reaction";
 
 /** A buff's worth when choosing, a target: about what a d4 on every roll or +2 AC saves or adds in a fight. */
 const BUFF_WORTH = 3;
@@ -182,6 +189,8 @@ export function simulateTrial(
     riderDone: false,
     buffs: new Map(),
     legendaryLeft: actor.legendary?.points ?? 0,
+    reactionUsed: false,
+    lrLeft: actor.legendaryResistance ?? 0,
   }));
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
@@ -235,6 +244,13 @@ export function simulateTrial(
   };
   const acOf = (c: Combatant) => c.actor.armorClass + [...c.buffs.values()].reduce((sum, b) => sum + (b.ac ?? 0), 0);
 
+  /** A failed save it turns into a success with Legendary Resistance, while it has uses. */
+  const resists = (target: Combatant): boolean => {
+    if (target.lrLeft <= 0) return false;
+    target.lrLeft -= 1;
+    return true;
+  };
+
   /** A condition lands, unless the target makes the save it gives. */
   const inflict = (target: Combatant, how: Inflict | undefined): void => {
     if (!how || !living(target) || immuneTo(target.actor.defences, how.condition)) return;
@@ -287,8 +303,18 @@ export function simulateTrial(
       const second = d20(rng);
       natural = advantage ? Math.max(natural, second) : Math.min(natural, second);
     }
-    const hit =
-      natural === 20 || (natural !== 1 && natural + action.hitBonus + buffRoll(attacker, "attackDie") >= acOf(target));
+    const total = natural + action.hitBonus + buffRoll(attacker, "attackDie");
+    let hit = natural === 20 || (natural !== 1 && total >= acOf(target));
+    // A reaction that raises its AC turns a hit it can beat into a miss (not a natural 20), once a round.
+    const reaction = target.actor.reaction;
+    if (hit && natural !== 20 && reaction && !target.reactionUsed && hasSlot(target, reaction.circle)) {
+      if (total < acOf(target) + reaction.ac) {
+        target.reactionUsed = true;
+        spendSlot(target, reaction.circle);
+        if (reaction.untilTurn) target.buffs.set(REACTION_BUFF, { ac: reaction.ac });
+        hit = false;
+      }
+    }
     if (!hit) return false;
     const crit = natural === 20;
     const weapon = action.kind === "weapon";
@@ -307,7 +333,7 @@ export function simulateTrial(
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
       const save = d20(rng) + target.actor.abilities[action.ability].saveModifier + buffRoll(target, "saveDie");
-      const success = save >= action.dc;
+      const success = save >= action.dc || resists(target);
       damage(
         target,
         success ? (action.onSuccess === "half" ? Math.floor(rolledDamage / 2) : 0) : rolledDamage,
@@ -335,7 +361,11 @@ export function simulateTrial(
   };
   const castBuff = (c: Combatant, action: BuffAction): void => {
     for (const t of buffTargets(c, action)) {
-      if (action.save && d20(rng) + t.actor.abilities[action.save.ability].saveModifier >= action.save.dc) continue;
+      if (
+        action.save &&
+        (d20(rng) + t.actor.abilities[action.save.ability].saveModifier >= action.save.dc || resists(t))
+      )
+        continue;
       t.buffs.set(action.name, {
         ...(action.attackDie ? { attackDie: action.attackDie } : {}),
         ...(action.saveDie ? { saveDie: action.saveDie } : {}),
@@ -437,6 +467,8 @@ export function simulateTrial(
   const startTurn = (c: Combatant): boolean => {
     c.riderDone = false;
     c.legendaryLeft = c.actor.legendary?.points ?? 0;
+    c.reactionUsed = false;
+    c.buffs.delete(REACTION_BUFF);
     for (const [k, v] of c.conditions) if (v.lasts === "start") c.conditions.delete(k);
     return has(c, NO_TURN);
   };

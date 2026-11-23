@@ -43,6 +43,10 @@ export interface LegendaryFeature {
 
 export interface MonsterFeatureClass {
   action?: ModelledAction;
+  /** A reaction that raises its own AC against a hit. */
+  reaction?: { ac: number; untilTurn: boolean };
+  /** "Legendary Resistance (3/Day)": its uses. */
+  legendaryResistance?: number;
   legendary?: LegendaryFeature;
   multiattack?: ParsedMultiattack;
   /** A Spellcasting action: the spells it casts, to be resolved against the vault's spell notes. */
@@ -235,6 +239,12 @@ export function classifyMonsterFeature(feature: MonsterFeatureInput): MonsterFea
     const spellcasting = parseMonsterSpellcasting(feature.text);
     return spellcasting ? { spellcasting, skip: "monster-spellcasting" } : { skip: "monster-spellcasting" };
   }
+  const lr = name.match(/^Legendary Resistance \((\d+)\/Day\)/i);
+  if (lr) return { legendaryResistance: parseInt(lr[1], 10), skip: "unsupported-feature" };
+  if (feature.type?.trim().toLowerCase() === "reaction") {
+    const reaction = acReactionOf(text);
+    return reaction ? { reaction, skip: "unsupported-feature" } : UNSUPPORTED;
+  }
   if (feature.type?.trim().toLowerCase() === "legendary") {
     const cost = parseInt(name.match(/\(Costs (\d+) Actions?\)/i)?.[1] ?? "1", 10);
     const ref = text.match(/\bmakes (?:an?|one) (.+?) attack\b/i);
@@ -287,4 +297,18 @@ export function bindMultiattack(
     if (averageOf(candidate.damage.expr) > averageOf(best.damage.expr)) best = candidate;
   }
   return { kind: "multiattack", name, swings: Array.from({ length: parsed.count }, () => best) };
+}
+
+/**
+ * A reaction that raises the creature's own AC against a hit: "adds 2 to its AC against one melee attack that
+ * would hit it", "increasing its AC by 2 until the start of its next turn". One that shields another creature
+ * (a guard's, a unicorn's) is not this.
+ */
+export function acReactionOf(text: string): { ac: number; untilTurn: boolean } | undefined {
+  const flat = text.replace(/[*_]+/g, "").replace(/\s+/g, " ");
+  const m = flat.match(/\b(?:adds?|add) (\d+) to its AC\b|\bincreasing its AC by (\d+)\b/i);
+  if (!m) return undefined;
+  if (!/\b(?:attacks? it|would hit it|is hit by an attack|hit by an attack)\b/i.test(flat)) return undefined;
+  if (/\bfriendly creature\b|\bcreature within \d+ feet of (?:it|the)\b/i.test(flat)) return undefined;
+  return { ac: parseInt(m[1] ?? m[2], 10), untilTurn: /until the start of its next turn/i.test(flat) };
 }

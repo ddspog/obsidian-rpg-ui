@@ -177,6 +177,13 @@ export interface CombatActor {
   riders?: DamageRider[];
   /** Its resistances, immunities and vulnerabilities. */
   defences?: Defences;
+  /**
+   * A reaction that raises its AC against a hit (Parry: "adds 2 to its AC against one melee attack that would
+   * hit it"; the Shield spell: +5 until the start of its next turn, a slot of its circle), once a round.
+   */
+  reaction?: { name: string; ac: number; untilTurn: boolean; circle: number };
+  /** Legendary Resistance: failed saves it turns into successes, a day. */
+  legendaryResistance?: number;
   /** Legendary actions: the points it has a round (3) and what each costs. */
   legendary?: { points: number; actions: Array<{ action: ModelledAction; cost: number }> };
 }
