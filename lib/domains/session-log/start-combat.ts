@@ -69,6 +69,8 @@ export function startCombatText(opts: {
   /** The battle map the fight is on, as the marker names it: a note's link
    *  (`[[Kobold Ambush]]`) or a map in the log's header (`Clearing`). */
   map?: string;
+  /** The prepared encounter the fight is started from, as a fought tag (`[Enc:…|fought S02]`). */
+  encounter?: string;
 }): string {
   const foes = opts.combatants.filter((c) => c.foe);
   const foeTags = foes.map((f) => ` [F:${f.name}${f.hp != null ? `|HP ${f.hp}` : ""}]`).join("");
@@ -77,7 +79,7 @@ export function startCombatText(opts: {
     .map((c, i) => ({ c, i }))
     .sort((a, b) => (initiativeTotal(b.c) ?? -Infinity) - (initiativeTotal(a.c) ?? -Infinity) || a.i - b.i)
     .map(({ c }) => c);
-  const lines = [`? ${opts.question.trim()}${foeTags}`];
+  const lines = [`? ${opts.question.trim()}${foeTags}${opts.encounter ? ` ${opts.encounter}` : ""}`];
   if (opts.narration?.trim()) lines.push(`=> ${opts.narration.trim()}`);
   // The surprised side, each tagged with the condition.
   if (opts.surprise === "party" || opts.surprise === "foes") {

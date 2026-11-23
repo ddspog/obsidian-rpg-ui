@@ -14,6 +14,13 @@ export interface TableRow {
   text: string;
   /** The other cells, one each. */
   cells: string[];
+  /**
+   * The names the row sets in bold, when it is prose that bolds the creatures it means (an adventure's
+   * keyed area): a creature it names only in passing ("the Honey Queen") is not one of them.
+   */
+  named?: string[];
+  /** The creatures a map's tokens link, by note name, with how many tokens each: no words to read. */
+  linked?: Array<{ name: string; count: number }>;
 }
 
 export interface TableSource {
@@ -60,7 +67,7 @@ export function kebab(text: string): string {
 }
 
 /** Heading or title text as plain words: emphasis, links and trailing `#`s dropped. */
-function plainHeading(text: string): string {
+export function plainHeading(text: string): string {
   return text
     .replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g, "$2")
     .replace(/\[\[([^\]]*)\]\]/g, "$1")
@@ -68,7 +75,7 @@ function plainHeading(text: string): string {
     .trim();
 }
 
-function frontmatterOf(text: string): Record<string, unknown> {
+export function frontmatterOf(text: string): Record<string, unknown> {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!m) return {};
   try {

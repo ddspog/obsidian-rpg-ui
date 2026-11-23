@@ -50,8 +50,9 @@ export function boot(root: string): Ctx {
   const dataPath = join(root, ".obsidian", "plugins", "obsidian-rpg-ui", "data.json");
   const settings = existsSync(dataPath) ? (JSON.parse(readFileSync(dataPath, "utf8")) as Record<string, unknown>) : {};
 
+  // The registry is the plugin's singleton (lib/ reads it): the vault booted last is the one it answers for,
+  // as `globalThis.app` is. Two vaults in one process work one after the other, not side by side.
   const registry = SystemRegistry.getInstance();
-  registry.initialize(vault as never);
   const mappings = new Map<string, string>();
   for (const m of (settings.systemMappings as Array<{ folderPaths?: string[]; systemFolderPath?: string }>) ?? []) {
     for (const folder of m.folderPaths ?? []) if (m.systemFolderPath) mappings.set(folder, m.systemFolderPath);
@@ -62,7 +63,7 @@ export function boot(root: string): Ctx {
     for (const name of readdirSync(root))
       if (existsSync(join(root, name, "config", "index.ts"))) mappings.set(name, `${name}/config`);
   // Mappings are set without preloading: a command loads only the system it needs.
-  (registry as unknown as { folderMappings: Map<string, string> }).folderMappings = mappings;
+  registry.resetForVault(vault as never, mappings);
 
   return {
     root,

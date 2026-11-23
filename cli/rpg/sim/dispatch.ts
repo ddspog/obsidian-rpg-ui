@@ -18,6 +18,21 @@ export interface SimDeps {
   catalog?: SimHandler;
   /** `rpg sim plan …` (optional, as catalog). */
   plan?: SimHandler;
+  /** `rpg sim roles …` and `rpg sim equivalents …` (optional, as catalog). */
+  roles?: SimHandler;
+  equivalents?: SimHandler;
+  /** `rpg sim build …`. */
+  build?: SimHandler;
+  /** `rpg sim homebrew …`. */
+  homebrew?: SimHandler;
+  /** `rpg sim templates …`. */
+  templates?: SimHandler;
+  /** `rpg sim lineages …`. */
+  lineages?: SimHandler;
+  /** `rpg sim calibrate …`. */
+  calibrate?: SimHandler;
+  /** `rpg sim spells …`. */
+  spells?: SimHandler;
 }
 
 /**
@@ -48,12 +63,36 @@ export async function simMain(tokens: string[], io: SimIo, deps: SimDeps): Promi
             ? deps.catalog
             : subcommand === "plan"
               ? deps.plan
-              : undefined;
-    if (!handler) return usage(`Unknown subcommand "${subcommand}" (use run, suggest, plan or catalog).`);
+              : subcommand === "roles"
+                ? deps.roles
+                : subcommand === "equivalents"
+                  ? deps.equivalents
+                  : subcommand === "build"
+                    ? deps.build
+                    : subcommand === "homebrew"
+                      ? deps.homebrew
+                      : subcommand === "templates"
+                        ? deps.templates
+                        : subcommand === "lineages"
+                          ? deps.lineages
+                          : subcommand === "calibrate"
+                            ? deps.calibrate
+                            : subcommand === "spells"
+                              ? deps.spells
+                              : undefined;
+    if (!handler) {
+      return usage(
+        `Unknown subcommand "${subcommand}" (use run, suggest, plan, build, homebrew, templates, lineages, calibrate, spells, catalog, roles or equivalents).`
+      );
+    }
     validateForSubcommand(subcommand, options);
     const { doc } = await handler(deps.context(options.vault), options);
     // `plan` and the --brief forms are read by a model: laid out to spend fewer tokens.
-    io.out(options.brief || subcommand === "plan" ? briefJson(doc) : JSON.stringify(doc, null, 2));
+    io.out(
+      options.brief || subcommand === "plan" || subcommand === "build" || subcommand === "templates"
+        ? briefJson(doc)
+        : JSON.stringify(doc, null, 2)
+    );
     return 0;
   } catch (err) {
     if (err instanceof UsageError) return usage(err.message);

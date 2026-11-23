@@ -23,6 +23,7 @@ import { PartyPopover, type LootSource, type PartyCardKind } from "./party-popov
 import { memberTerrainStack, partyTerrainStack } from "../../domains/session-log/terrain-cards";
 import type { PartyMember } from "../../domains/session-log/party-cards";
 import { StartCombatPopover, type CreatureInfo } from "./start-combat-popover";
+import type { PreparedEncounter } from "../../domains/session-log/prepared-encounter";
 import type { FormulaVars } from "../../domains/session-log/formula";
 import type { MapTools } from "../../domains/battlemap/map-tools";
 import type { HeaderMap } from "../../domains/session-log";
@@ -57,6 +58,9 @@ interface SessionActionsPanelProps {
   entities: string[];
   /** Append to the log — with a new map for its header, from Start Combat. */
   onAppendText: (text: string, headerMap?: HeaderMap) => void;
+  /** Encounters prepared from the catalog in this log and not fought yet, and the scene now. */
+  prepared?: PreparedEncounter[];
+  scene?: string;
   onSpend: (cardId: string) => void;
   /** The note the log lives in — links in a card's preview resolve against it. */
   sourcePath?: string;
@@ -242,6 +246,8 @@ export function SessionActionsPanel({
   consumableState,
   entities,
   onAppendText,
+  prepared,
+  scene,
   onSpend,
   sourcePath,
   resolveRef,
@@ -808,6 +814,8 @@ export function SessionActionsPanel({
           lookupCreature={lookupCreature}
           mapTools={mapTools}
           sourcePath={sourcePath}
+          {...(prepared ? { prepared } : {})}
+          {...(scene ? { scene } : {})}
           onResolve={handleResolve}
           onCancel={() => setActiveCard(null)}
         />

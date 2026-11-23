@@ -234,12 +234,20 @@ const ref = (e: MonsterEntry): MonsterRef => ({
   ...(e.cr !== undefined ? { cr: e.cr } : {}),
 });
 
+/** Another name for a bestiary note, kept by a person: "warden robot" for `Robot Warden`. */
+export interface MonsterAlias {
+  /** The words as a text says them, singular ("warden robot"); the plural answers too. */
+  phrase: string;
+  /** The vault path of the note it names (one of the entries). */
+  note: string;
+}
+
 /**
  * Builds the index. Notes that normalise to the same name share one entry:
  * the one without the `ᴷ` suffix wins, then the shortest path; the rest are
- * its `alternatives`.
+ * its `alternatives`. An alias names the entry of its note, before any name.
  */
-export function buildMonsterIndex(entries: MonsterEntry[]): MonsterIndex {
+export function buildMonsterIndex(entries: MonsterEntry[], aliases: MonsterAlias[] = []): MonsterIndex {
   const groups = new Map<string, { forms: Form[]; notes: MonsterEntry[] }>();
   for (const e of entries) {
     const forms = formsOf(e.name);
@@ -278,6 +286,20 @@ export function buildMonsterIndex(entries: MonsterEntry[]): MonsterIndex {
       for (const plural of pluralPhrases(form.words)) register(plural, entry, true, form.priority * 2);
     }
   }
+  for (const alias of aliases) {
+    const entry = index.entries.find((e) => e.note === alias.note || e.alternatives.some((a) => a.note === alias.note));
+    const words = wordsOf(alias.phrase);
+    if (!entry || words.length === 0) continue;
+    const named =
+      entry.note === alias.note ? entry : { ...entry, ...ref(entries.find((e) => e.note === alias.note) ?? entry) };
+    // An alias is a person's word: it wins over a name the bestiary would give the same words.
+    taken.delete(words.join(" "));
+    register(words, named, false, -1);
+    for (const plural of pluralPhrases(words)) {
+      taken.delete(plural.join(" "));
+      register(plural, named, true, -1);
+    }
+  }
   return index;
 }
 
@@ -288,7 +310,7 @@ export function lookupName(index: MonsterIndex, phrase: string): MonsterMatch | 
 }
 
 // Between two words of one name there is only space or a hyphen.
-const NAME_GAP = /^[\s\-\u2013]*$/;
+const NAME_GAP = /^[\s\-\u2013\u2019']*$/;
 
 /**
  * Every creature a text names, longest name first and none overlapping:

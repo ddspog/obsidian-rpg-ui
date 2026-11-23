@@ -1264,3 +1264,18 @@ body.is-mobile {
 .is-mobile button.clickable-icon.rpg-block-review__toggle {
   min-height: 32px;
 }
+
+/* The encounter catalog board: thumb-sized targets at the table. */
+.is-mobile .rpg-enc-board {
+  --rpg-enc-target: 44px;
+}
+.is-mobile .rpg-enc-board .rpg-enc-key {
+  margin-left: 0;
+}
+.is-mobile .rpg-enc-board .rpg-enc-toggle input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
+.is-mobile .rpg-enc-board button.rpg-enc-tag-more {
+  min-height: 32px;
+}

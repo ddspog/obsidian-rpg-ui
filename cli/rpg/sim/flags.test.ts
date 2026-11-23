@@ -46,7 +46,8 @@ describe("parseSimArgv", () => {
       pc: [],
       monsters: [],
       base: [],
-      rank: "cr",
+      rank: "outcome",
+      tiers: "same",
       seed: 1,
       trials: 200,
       rounds: 20,
@@ -154,9 +155,14 @@ describe("parseSimArgv", () => {
   });
 
   it("reads --rank as cr or outcome, case-insensitively", () => {
-    expect(parseSimArgv(["suggest"]).options.rank).toBe("cr");
+    expect(parseSimArgv(["suggest"]).options.rank).toBe("outcome");
     expect(parseSimArgv(["suggest", "--rank", "outcome"]).options.rank).toBe("outcome");
     expect(parseSimArgv(["suggest", "--rank=CR"]).options.rank).toBe("cr");
+  });
+
+  it("reads --tiers as same, lower or all, and refuses anything else", () => {
+    expect(parseSimArgv(["plan", "--tiers", "LOWER"]).options.tiers).toBe("lower");
+    expect(() => parseSimArgv(["plan", "--tiers", "near"])).toThrow(/--tiers must be one of same, lower, all/);
   });
 
   it("reads --base like --monster, repeatable, naming --base in its errors", () => {
@@ -212,7 +218,8 @@ describe("SIM_HELP", () => {
 
   it("describes --rank and --base in the help", () => {
     expect(SIM_HELP).toMatch(/--rank cr\|outcome\s+`suggest`/);
-    expect(SIM_HELP).toMatch(/--rank.*\(default: cr\)/);
+    expect(SIM_HELP).toMatch(/--rank.*\(default: outcome\)/);
+    expect(SIM_HELP).toMatch(/--tiers same\|lower\|all.*\(default: same\)/);
     expect(SIM_HELP).toMatch(/--base "<note>\[:<count>\]"\s+`suggest`/);
   });
 
@@ -225,6 +232,7 @@ describe("SIM_HELP", () => {
       "trials",
       "rounds",
       "difficulty",
+      "tiers",
       "rank",
       "habitat",
       "type",
@@ -234,18 +242,35 @@ describe("SIM_HELP", () => {
       "catalog",
       "name",
       "every",
+      "reuse-after",
       "session",
+      "only",
+      "add-tag",
+      "drop-tag",
+      "include-used",
+      "fit",
       "tag",
       "any-tag",
       "state",
       "review",
       "min-confidence",
       "accept",
+      "model",
+      "pick",
       "force",
       "refresh",
       "include-stale",
       "include-draft",
       "brief",
+      "role",
+      "write",
+      "template",
+      "choose",
+      "trait",
+      "set",
+      "confidence",
+      "features",
+      "steps",
       "vault",
       "json",
       "help",

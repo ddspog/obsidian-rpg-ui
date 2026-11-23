@@ -9,21 +9,25 @@
  */
 
 import type { Catalog, CatalogEntry } from "lib/domains/encounter-catalog/catalog";
-import { isEligible, partitionByFit } from "lib/domains/encounter-catalog/fit-state";
+import { isEligible, partitionByFit, recentlyUsed } from "lib/domains/encounter-catalog/fit-state";
 import { cmpCr, parseCr } from "lib/domains/encounter-sim/difficulty";
+import type { TierMatch } from "lib/domains/encounter-catalog/tier";
 import { outcomeDistance, type Fit } from "lib/domains/encounter-sim/fit";
+import { partyProfile, profileView } from "lib/domains/encounter-sim/party-profile";
 import type { Ctx } from "../app";
 import { anyWordIn, groupRef, wordKey } from "./brief";
 import { loadPartyState } from "./catalog-check";
 import { findCatalogs, loadCatalog, resolveCatalogPath } from "./catalog-store";
 import type { SimHandler } from "./dispatch";
 import type { Difficulty, SimOptions } from "./flags";
-import { plainType, readMonsterNote } from "./monsters";
-import { DEFAULT_PARTY } from "./party";
+import { plainType, readMonsterNote, withTemplate } from "./monsters";
+import { DEFAULT_PARTY, loadParty } from "./party";
+import { inScope, tierMatcher } from "./tier-scope";
 import { simSuggest, type SuggestCandidate, type SuggestDocument } from "./suggest";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 
 /** How many options `plan` gives when --limit is not written. */
-export const DEFAULT_PLAN_OPTIONS = 3;
+const DEFAULT_PLAN_OPTIONS = 3;
 
 export interface PlanOption {
   /** `catalog` (confirmed), `catalog-draft` (read from a table, not confirmed yet) or `sweep` (the bestiary). */
@@ -39,10 +43,19 @@ export interface PlanOption {
   winRate: number;
   tpkRate: number;
   avgHpLost: number;
+  /** A rolled count's fit at its fewest / most (catalog options whose count is rolled). */
+  atMin?: Fit;
+  atMax?: Fit;
+  /** The table row's own words, to dress the encounter with. */
+  scene?: string;
+  /** From a lower tier than the party's (offered only with --tiers lower): less XP than the party's own. */
+  belowTier?: true;
 }
 
 export interface PlanDocument {
   party: string[];
+  /** Size, average level, tier, benchmark and single-monster CR range. */
+  profile: ReturnType<typeof profileView>;
   difficulty: Difficulty;
   /** The catalog read, or null when there is none (or --pc named a party of its own). */
   catalog: string | null;
@@ -51,7 +64,7 @@ export interface PlanDocument {
   notes: string[];
 }
 
-const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
+const stemOf = noteStem;
 
 /** The groups of an option in one order, to tell two options of the same monsters apart from different ones. */
 const keyOf = (monsters: string[]): string => [...monsters].sort().join(" + ");
@@ -104,7 +117,16 @@ async function fromCatalog(
   const notes: string[] = [];
   const party = await loadPartyState(ctx, catalog, path, options.session);
   const fitContext = party.fitContext;
-  const partition = partitionByFit(catalog, fitContext);
+  const matchOf = tierMatcher(ctx, party.profile);
+  const matches = new Map(catalog.entries.map((e) => [e.id, matchOf(e)] as const));
+  const inTier = catalog.entries.filter((e) => inScope(matches.get(e.id) as TierMatch, options.tiers));
+  const otherTier = catalog.entries.length - inTier.length;
+  if (otherTier > 0) {
+    notes.push(
+      `${otherTier} catalog ${otherTier === 1 ? "entry is" : "entries are"} from another tier than the party's (tier ${party.profile.tier}) and ${otherTier === 1 ? "was" : "were"} not offered${options.tiers === "same" ? " (--tiers lower adds lower tiers, for story use)" : ""}.`
+    );
+  }
+  const partition = partitionByFit({ entries: inTier }, fitContext);
   const stale = partition.stale + partition.unchecked;
   if (stale > 0) {
     notes.push(
@@ -115,8 +137,14 @@ async function fromCatalog(
   const habitat = options.habitat !== undefined ? wordKey(options.habitat) : undefined;
   const passesMonsters = monsterFilter(ctx, options);
   const words = options.args;
-  const scored = catalog.entries
+  let recent = 0;
+  const scored = inTier
     .filter((entry) => isEligible(entry, fitContext, { tags: options.tags, anyTags: options.anyTags }))
+    .filter((entry) => {
+      if (options.includeUsed || !recentlyUsed(entry, fitContext.session, catalog.reuseAfterSessions)) return true;
+      recent += 1;
+      return false;
+    })
     .filter((entry) => habitat === undefined || entry.tags.some((t) => wordKey(t) === habitat))
     .filter((entry) => !passesMonsters || passesMonsters(entry))
     .map((entry) => ({ entry, score: themeScore(entry, words) }))
@@ -139,14 +167,25 @@ async function fromCatalog(
       from: entry.review === "confirmed" ? "catalog" : "catalog-draft",
       id: entry.id,
       name: entry.name,
-      monsters: entry.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+      monsters: entry.monsters.map((m) => groupRef(ctx, withTemplate(m.note, m.template), m.count)),
       tags: entry.tags,
       fit: fit.state,
       winRate: fit.winRate,
       tpkRate: fit.tpkRate,
       avgHpLost: fit.avgHpLost,
+      ...(fit.atMin !== undefined ? { atMin: fit.atMin, atMax: fit.atMax } : {}),
+      ...(entry.source?.text ? { scene: entry.source.text } : {}),
+      ...(matches.get(entry.id) === "lower" ? { belowTier: true as const } : {}),
     };
   });
+  if (recent > 0) {
+    notes.push(
+      `${recent} catalog ${recent === 1 ? "entry was" : "entries were"} run in the last ${catalog.reuseAfterSessions} sessions and not offered (--include-used offers them).`
+    );
+  }
+  if (picked.some((o) => o.atMax !== undefined && o.atMax !== o.fit)) {
+    notes.push("An option's count is rolled: `atMin`/`atMax` give its fit at the fewest and the most.");
+  }
   if (picked.some((o) => o.from === "catalog-draft")) {
     notes.push(
       "catalog-draft options were read from a table and checked, but nobody has confirmed them: `rpg sim catalog confirm <id>` keeps one."
@@ -252,7 +291,12 @@ export const simPlan: SimHandler = async (ctx, options) => {
     picked.push(...found);
   }
 
-  const party = (pcs.length > 0 ? pcs : DEFAULT_PARTY).map(stemOf);
-  const doc: PlanDocument = { party, difficulty, catalog: path ?? null, options: picked, notes };
+  const refs = pcs.length > 0 ? pcs : DEFAULT_PARTY;
+  const party = refs.map(stemOf);
+  const profile = profileView(partyProfile((await loadParty(ctx, refs)).actors.map((a) => a.level)));
+  if (picked.some((o) => o.belowTier)) {
+    notes.push("A belowTier option is from a lower tier than the party's: fine for the story, worth less XP.");
+  }
+  const doc: PlanDocument = { party, profile, difficulty, catalog: path ?? null, options: picked, notes };
   return { doc };
 };

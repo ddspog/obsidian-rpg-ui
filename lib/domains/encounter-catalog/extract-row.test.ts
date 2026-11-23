@@ -80,7 +80,7 @@ describe("extractEncounter: the Arctic Encounters rows", () => {
     );
     expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Winter Wolf", 4]]);
     expect(r.reasons.join("\n")).toMatch(/reinforcements not counted/);
-    expect(r.reasons.join("\n")).toMatch(/prey or a comparison/);
+    expect(r.reasons.join("\n")).toMatch(/prey, the sought or a likeness/);
     expect(r.combat).toBe("likely");
     expect(r.confidence).toBe("high");
   });
@@ -311,5 +311,241 @@ describe("extractEncounter: unresolved", () => {
       index
     );
     expect(r.unresolved).toEqual([]);
+  });
+});
+
+describe("extractEncounter: the GM's Guide rows read wrong before", () => {
+  const big = buildMonsterIndex([
+    { note: "b/Lion.md", name: "Lion", cr: "1" },
+    { note: "b/Hyena.md", name: "Hyena", cr: "0" },
+    { note: "b/Gnoll.md", name: "Gnoll", cr: "1/2" },
+    { note: "b/Hyena, Giant.md", name: "Hyena, Giant", cr: "1" },
+    { note: "b/Baboon.md", name: "Baboon", cr: "0" },
+    { note: "b/Wyrdling.md", name: "Wyrdling", cr: "1/2" },
+    { note: "b/Guard.md", name: "Guard", cr: "1/8" },
+    { note: "b/Shadow.md", name: "Shadow", cr: "1/2" },
+    { note: "b/Spy.md", name: "Spy", cr: "1" },
+    { note: "b/Centaur.md", name: "Centaur", cr: "2" },
+    { note: "b/Mage.md", name: "Mage", cr: "6" },
+    { note: "b/Archmage.md", name: "Archmage", cr: "12" },
+    { note: "b/Young Brass Dragon.md", name: "Young Brass Dragon", cr: "6" },
+    { note: "b/Jackal.md", name: "Jackal", cr: "0" },
+    { note: "b/Selang.md", name: "Selang", cr: "2" },
+    { note: "b/Void Piper.md", name: "Void Piper", cr: "4" },
+    { note: "b/Insect, Giant Wasp.md", name: "Insect, Giant Wasp", cr: "1/2" },
+    { note: "b/Honey Bee, Giant.md", name: "Honey Bee, Giant", cr: "0" },
+    { note: "b/Insect, Swarm of Insects.md", name: "Insect, Swarm of Insects", cr: "1/2" },
+    { note: "b/Honey Bee, Swarm of Bees.md", name: "Honey Bee, Swarm of Bees", cr: "1/2" },
+    { note: "b/Mule.md", name: "Mule", cr: "1/8" },
+    { note: "b/Stirge.md", name: "Stirge", cr: "1/8" },
+    { note: "b/Giant, Frost.md", name: "Giant, Frost", cr: "8" },
+    { note: "b/Insect, Giant Fire Beetle.md", name: "Insect, Giant Fire Beetle", cr: "0" },
+    { note: "b/Darkmantle.md", name: "Darkmantle", cr: "1/2" },
+    { note: "b/Unearthed.md", name: "Unearthed", cr: "3" },
+    { note: "b/Mummy Lord.md", name: "Mummy Lord", cr: "15" },
+    { note: "b/Will-o’-Wisp.md", name: "Will-o’-Wisp", cr: "2" },
+  ]);
+  const read = (text: string) => extractEncounter(text, big);
+  const got = (text: string) => read(text).monsters.map((m) => [m.name, m.count] as const);
+
+  it("keeps a hunting party's members: 'hunting party' is no verb", () => {
+    expect(
+      got("A hunting party of five lions stalks the PCs, trailed by 10 hyenas waiting to steal their kill.")
+    ).toEqual([
+      ["Lion", 5],
+      ["Hyena", 10],
+    ]);
+  });
+
+  it("reads a gnoll hunting party as no gnoll, and the two that come later", () => {
+    expect(
+      got(
+        "The sound of war drums echoes over the sand as a gnoll hunting party catches the scent of the PCs. At the start of each round for the next minute, two gnolls and 1d4 giant hyenas crest the dune and attack the party."
+      )
+    ).toEqual([
+      ["Gnoll", 2],
+      ["Hyena, Giant", 3],
+    ]);
+  });
+
+  it("drops a row whose creatures don't fight", () => {
+    const r = read(
+      "Eight baboons keep pace with the PCs. They keep their distance, staying at least 20 feet away at all times, and don’t fight, but they hoot and howl loudly."
+    );
+    expect(r.combat).toBe("unlikely");
+    expect(r.reasons.join("\n")).toMatch(/denied/);
+    // a denial with a condition still reads as a fight
+    expect(
+      read("Three darkmantles hide overhead. They don’t attack any creatures that leave them food.").combat
+    ).not.toBe("unlikely");
+  });
+
+  it("reads a trio as three", () => {
+    expect(got("A trio of wyrdlings are confounded by the threads of fate and attack.")).toEqual([["Wyrdling", 3]]);
+  });
+
+  it("does not take everyday words for creatures", () => {
+    expect(got("Two iron golems guard the arch and attack. The city guards race toward the building.")).toEqual([]);
+    expect(got("Three duergar hide in the shadows and attack.")).toEqual([]);
+    expect(got("A hungry lion spies the PCs and attacks.")).toEqual([["Lion", 1]]);
+    expect(got("The winds have unearthed a doorway, and a mummy lord emerges to attack.")).toEqual([["Mummy Lord", 1]]);
+    expect(got("Three shadows hide against the stone and attack.")).toEqual([["Shadow", 3]]);
+  });
+
+  it("leaves out the sought, the dead and the absent", () => {
+    expect(got("Five centaurs gallop in search of a spy who stole from them, and attack.")).toEqual([["Centaur", 5]]);
+    expect(got("The PCs find the corpse of a young brass dragon. Six jackals lurk nearby and attack.")).toEqual([
+      ["Jackal", 6],
+    ]);
+    expect(
+      got("A dying mule lies by the road. Four stirges erupt from the hay; the mule twitches as they attack.")
+    ).toEqual([["Stirge", 4]]);
+  });
+
+  it("reads 'the haughty mages' as the archmages named", () => {
+    expect(got("Three elf archmages search the wastes. The haughty mages attack anyone who refuses them.")).toEqual([
+      ["Archmage", 3],
+    ]);
+  });
+
+  it("reads two names side by side as one creature", () => {
+    expect(got("Five selangs and a void piper selang attack the PCs.")).toEqual([
+      ["Selang", 5],
+      ["Void Piper", 1],
+    ]);
+  });
+
+  it("takes the stats a parenthesis names", () => {
+    expect(
+      got(
+        "The PCs are beset by four giant bees (use giant wasp) and five swarms of bees (use swarm of insects), and attack."
+      )
+    ).toEqual([
+      ["Insect, Giant Wasp", 4],
+      ["Insect, Swarm of Insects", 5],
+    ]);
+  });
+
+  it("finds the number of a group named with none", () => {
+    expect(
+      got(
+        "A spire crawls with dozens of giant fire beetles. Eight of them stop their work to attack any creatures near."
+      )
+    ).toEqual([["Insect, Giant Fire Beetle", 8]]);
+  });
+
+  it("keeps another of a kind after a possessive", () => {
+    expect(got("A healthy frost giant tends to their injured frost giant comrade and attacks.")).toEqual([
+      ["Giant, Frost", 2],
+    ]);
+  });
+
+  it("marks a rank as a doubt", () => {
+    const r = read("A frost giant chieftain attacks the PCs.");
+    expect(r.monsters.map((m) => [m.name, m.count])).toEqual([["Giant, Frost", 1]]);
+    expect(r.confidence).toBe("medium");
+  });
+
+  it("matches a name written with an apostrophe and hyphens", () => {
+    expect(got("Those following the lights are led astray by six will-o’-wisps.")).toEqual([["Will-o’-Wisp", 6]]);
+  });
+});
+
+describe("extractEncounter: the Labyrinth and campaign builder rows", () => {
+  const idx = buildMonsterIndex([
+    { note: "b/Derro.md", name: "Derro", cr: "1/4" },
+    { note: "b/Ghost.md", name: "Ghost", cr: "4" },
+    { note: "b/Noble.md", name: "Noble", cr: "1/8" },
+    { note: "b/Frog, Giant.md", name: "Frog, Giant", cr: "1/4" },
+    { note: "b/Mummy.md", name: "Mummy", cr: "3" },
+    { note: "b/Mummy Lord.md", name: "Mummy Lord", cr: "15" },
+    { note: "b/Bandit.md", name: "Bandit", cr: "1/8" },
+    { note: "b/Assassin.md", name: "Assassin", cr: "8" },
+    { note: "b/Skeleton.md", name: "Skeleton", cr: "1/4" },
+    { note: "b/Knight.md", name: "Knight", cr: "3" },
+  ]);
+  const got = (text: string) => extractEncounter(text, idx).monsters.map((m) => [m.name, m.count] as const);
+
+  it("does not count a creature another book has, written with its book in brackets", () => {
+    expect(got("A derro shadow antipaladin [ToB1] and twelve derro attack the ship.")).toEqual([["Derro", 12]]);
+    expect(got("A ghost knight templar [ToB3] leads four ghost knights [ToB1] to attack.")).toEqual([]);
+  });
+
+  it("reads 'twenty-four', 'two dozen' and 'three of its'", () => {
+    expect(got("A vampire attacks with twenty-four nobles.")).toEqual([["Noble", 24]]);
+    expect(got("Two dozen void frogs (use giant frog with the void template) croak and attack.")).toEqual([
+      ["Frog, Giant", 24],
+    ]);
+    expect(got("A mummy lord and three of its servitor mummies awaken and attack.")).toEqual([
+      ["Mummy Lord", 1],
+      ["Mummy", 3],
+    ]);
+  });
+
+  it("does not count a creature that names a group ('a bandit gang', 'a skeleton crew')", () => {
+    expect(got("A ravenfolk bandit gang (an assassin and eight bandits) attacks.")).toEqual([
+      ["Assassin", 1],
+      ["Bandit", 8],
+    ]);
+    expect(got("A tired knight hails the party from a small ship with a skeleton crew, and attacks.")).toEqual([
+      ["Knight", 1],
+    ]);
+  });
+});
+
+describe("extractEncounter: templates and prose", () => {
+  const idx = buildMonsterIndex([
+    { note: "b/Frog, Giant.md", name: "Frog, Giant", cr: "1/4" },
+    { note: "b/Mage.md", name: "Mage", cr: "6" },
+    { note: "b/Cultist.md", name: "Cultist", cr: "1/8" },
+    { note: "b/Ape, Giant.md", name: "Ape, Giant", cr: "7" },
+    { note: "b/Duxt.md", name: "Duxt", cr: "2" },
+    { note: "b/Bee, Giant Honey.md", name: "Bee, Giant Honey", cr: "1/2" },
+  ]);
+
+  it("keeps the template a row names after the creature", () => {
+    const found = extractEncounter(
+      "A mage (use mage with the Void-blessed template, see Chapter 8) leads eight cultists.",
+      idx
+    ).monsters;
+    expect(found.map((m) => [m.name, m.count, m.template])).toEqual([
+      ["Mage", 1, "Void-blessed"],
+      ["Cultist", 8, undefined],
+    ]);
+    expect(extractEncounter("A giant ape with the bramble creature template patrols.", idx).monsters[0].template).toBe(
+      "bramble creature"
+    );
+  });
+
+  it("reads '(use the statistics of a wolf)' as the creature the count goes to", () => {
+    const wolves = buildMonsterIndex([{ note: "b/Wolf.md", name: "Wolf", cr: "1/4" }]);
+    const text = "Five awakened wolves (use the statistics of a wolf, except its INT is +0) lurk in the fog.";
+    expect(
+      extractEncounter(text, wolves, { prose: { named: ["wolf"] } }).monsters.map((m) => [m.name, m.count])
+    ).toEqual([["Wolf", 5]]);
+  });
+
+  it("takes no template when two are offered", () => {
+    expect(
+      extractEncounter("Giant frogs with the skeleton or zombie template.", idx).monsters[0].template
+    ).toBeUndefined();
+  });
+
+  it("reads a creature named again in prose as the same one, not one more", () => {
+    const text =
+      "A fey by the name of Duxt lives here. Duxt bursts out of his den, with a lone giant honey bee. If Duxt is killed, the bee stops.";
+    const got = extractEncounter(text, idx, { prose: { named: ["Duxt", "giant honey bee"] } }).monsters;
+    expect(got.map((m) => [m.name, m.count])).toEqual([
+      ["Duxt", 1],
+      ["Bee, Giant Honey", 1],
+    ]);
+  });
+
+  it("sums the mentions in bold in prose, and reads the others as the same creatures", () => {
+    const text = "Two cultists rest here. A third cultist keeps watch at the door. The cultists fight together.";
+    const got = (named: string[]) =>
+      extractEncounter(text, idx, { prose: { named } }).monsters.map((m) => [m.name, m.count]);
+    expect(got(["cultists", "cultist"])).toEqual([["Cultist", 3]]);
+    expect(got(["cultists"])).toEqual([["Cultist", 2]]);
   });
 });

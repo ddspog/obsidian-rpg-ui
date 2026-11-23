@@ -23,6 +23,10 @@ export interface StatMonsterData {
   habitat?: string;
   /** Treasure line, e.g. `None` / `Individual`. */
   treasure?: string;
+  /** Monster Vault role: controller, leader, soldier or striker (`rpg sim roles` guesses and writes it). */
+  role?: string;
+  /** Its subrole under that role (ambusher, healer…). */
+  subrole?: string;
   /** Link to a `stat.category` note (e.g. `[[Bears]]`). When set, the monster
    *  inherits habitat/treasure from the category and renders neither. */
   category?: string;
@@ -77,6 +81,8 @@ export interface ResolvedStatFeature {
   params?: Record<string, unknown>;
   /** Where it's described — a note, and the block in it (`Humanoid Traits#Mining Pick`). */
   source?: string;
+  /** Added by a template (a sheet's Try on marks it). */
+  added?: boolean;
 }
 
 export type StatFeatureCategory = "action" | "bonus" | "reaction" | "legendary";

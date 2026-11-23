@@ -68,6 +68,7 @@ import { buildRuleCallProcessor, setupGlobalTableMerger } from "lib/plugin/rule-
 import { setProcessFencesRegistry } from "lib/plugin/process-rpg-fences";
 import { ValueResolver, setActiveValueResolver } from "lib/domains/rules/value-resolver-api";
 import { setImageResolverApp } from "lib/domains/rules/image-resolver-api";
+import { buildSingleBlockTitleProcessor } from "lib/plugin/single-block-title";
 import { buildFolderLinkProcessor } from "lib/plugin/folder-link-processor";
 import { buildFolderLinkEditorExtension } from "lib/plugin/folder-link-editor-extension";
 import { FolderLinkStyleManager } from "lib/plugin/folder-link-style-manager";
@@ -129,6 +130,14 @@ export default class DndUIToolkitPlugin extends Plugin {
       const windowDoc = leaf.view.containerEl.ownerDocument;
       if (windowDoc) apply(windowDoc.documentElement);
     });
+  }
+
+  /** Whether a note is an encounter catalog (its frontmatter `type`), from Obsidian's cache. */
+  private isEncounterCatalog(path: string): boolean {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    return (
+      file instanceof TFile && this.app.metadataCache.getFileCache(file)?.frontmatter?.type === "encounter-catalog"
+    );
   }
 
   async onload() {
@@ -347,9 +356,17 @@ export default class DndUIToolkitPlugin extends Plugin {
         // A review written into the block (by the PDF import): taken off its body, and shown at its top.
         const { reviews, source } = takeBlockReview(rawSource);
         if (reviews.length) watchBlockReview(el, reviews, ctx);
-        const meta = extractMeta(ctx, el, source);
+        let meta = extractMeta(ctx, el, source);
+        // In an encounter catalog every rpg block but the board is an entry; Obsidian sometimes hands a
+        // section over cut short (an entry's first line alone), which no reading of its keys can place.
+        if (!meta && this.isEncounterCatalog(ctx.sourcePath)) meta = "encounter";
         if (!meta) {
-          console.error("DnD UI Toolkit: Failed to extract meta from rpg block");
+          // An empty body with no readable type (Obsidian hands some folded sections over that way):
+          // nothing to draw, and nothing wrong to report.
+          if (!source.trim()) return;
+          console.error(
+            `DnD UI Toolkit: Failed to extract meta from rpg block (it starts: ${JSON.stringify(source.slice(0, 60))})`
+          );
           el.innerHTML = '<div class="notice">Error: rpg block missing meta type (e.g., rpg attributes)</div>';
           return;
         }
@@ -813,6 +830,10 @@ export default class DndUIToolkitPlugin extends Plugin {
         getStyles: () => this.settings.folderLinkStyles,
         getStylesVersion: () => this.folderLinkStylesVersion,
       })
+    );
+
+    this.registerMarkdownPostProcessor(
+      buildSingleBlockTitleProcessor({ app: this.app, enabled: () => this.settings.hideSingleBlockTitle })
     );
 
     this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {

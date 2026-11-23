@@ -90,7 +90,7 @@ function splitSection(raw: string): { path: string; section?: string } {
  * Chain steps that only set an option, which a call may also write after its view
  * (`.stat().paginate(4)` as `.paginate(4).stat()`).
  */
-const TRAILING_OPTIONS = new Set(["paginate", "facets", "shallow", "highlight"]);
+const TRAILING_OPTIONS = new Set(["paginate", "facets", "shallow", "highlight", "omit"]);
 
 /** The view (the last segment that is not a trailing option) and the chain steps around it. */
 function terminalOf(segments: ChainSegment[]): { terminal: ChainSegment; chain: ChainSegment[] } {

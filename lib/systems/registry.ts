@@ -30,6 +30,18 @@ export class SystemRegistry {
     this.vault = vault;
   }
 
+  /**
+   * Points the registry at another vault (the CLI's `boot`, a spec's fixture vault): its mappings, and none of
+   * the systems the last vault loaded, which are cached by folder path and would answer for this one.
+   * Nothing is preloaded: a command loads only the system it needs.
+   */
+  public resetForVault(vault: Vault, mappings: Map<string, string>): void {
+    this.vault = vault;
+    this.folderMappings = new Map(mappings);
+    this.systemCache.clear();
+    this.isLoading.clear();
+  }
+
   public setFolderMappings(mappings: Map<string, string>): void {
     this.folderMappings = new Map(mappings);
     this.systemCache.clear();

@@ -5,12 +5,14 @@ import { parseCatalog } from "lib/domains/encounter-catalog/catalog";
 import { parseDamage } from "lib/domains/session-log/session-actions";
 import type { Ctx } from "../app";
 import { characterSheet } from "../commands/character";
+import { simCalibrate } from "./calibrate";
 import { createSimCatalog } from "./catalog";
 import { simMain } from "./dispatch";
+import { parseSimArgv } from "./flags";
 import { DEFAULT_PARTY } from "./party";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
-import { copyVaultWithClassStems, initSystemLoader, makeCtx } from "./test-support";
+import { copyVault, initSystemLoader, makeCtx } from "./test-support";
 
 // The whole simulator over the real PCs and bestiary, when the testing vault is beside the plugin (as in CI).
 const VAULT = process.env.RPG_VAULT_ROOT ?? resolve(__dirname, "../../../../testing-vault");
@@ -40,7 +42,7 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
 
   beforeAll(async () => {
     await initSystemLoader();
-    ctx = makeCtx(copyVaultWithClassStems(VAULT, SYSTEM_DIR, DEFAULT_PARTY));
+    ctx = makeCtx(copyVault(VAULT, SYSTEM_DIR));
   }, 240_000);
 
   async function sim(...tokens: string[]) {
@@ -64,6 +66,21 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(result.code, result.err).toBe(0);
     return { text: result.out, doc: JSON.parse(result.out) as Record<string, any> };
   };
+
+  it("calibrate sets the logged kobold fight against the simulator's run of it", async () => {
+    const { doc } = await simCalibrate(ctx, parseSimArgv(["calibrate", "tales-of-the-valiant/binder"]).options);
+    const d = doc as Record<string, any>;
+    const fight = d.fights.find((f: any) => f.map === "Clearing");
+    expect(fight.foes).toHaveLength(4);
+    expect(fight.pcs).toHaveLength(4);
+    expect(fight.actual.rounds).toBe(2);
+    expect(fight.actual.knockedOut).toEqual([]);
+    expect(fight.actual.hpLost).toBeGreaterThan(0.1);
+    expect(fight.actual.hpLost).toBeLessThan(0.4);
+    expect(fight.percentile).toBeGreaterThanOrEqual(0);
+    expect(fight.percentile).toBeLessThanOrEqual(1);
+    expect(d.notes.join(" ")).toMatch(/too few to tune/);
+  }, 120_000);
 
   it("is byte-identical for one seed, differs for another, and finishes 200 trials inside 30 seconds", async () => {
     const started = Date.now();
@@ -137,14 +154,9 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(small.doc.difficulty).toEqual({ totalCr: "1/8", benchmark: "1/2", label: "below" });
   }, 120_000);
 
-  it("reports Entangle and Sanctuary as control spells and Tactical Analysis as unsupported", async () => {
+  it("models Entangle, reports Sanctuary as a control spell and Tactical Analysis as unsupported", async () => {
     const { doc } = await run("--monster", HOBGOBLIN, "--trials", "5");
-    expect(doc.fidelity.Kowyn).toContainEqual({
-      name: "Entangle",
-      owner: "Kowyn",
-      status: "skipped",
-      reason: "control-spell",
-    });
+    expect(doc.fidelity.Kowyn).toContainEqual({ name: "Entangle", owner: "Kowyn", status: "modelled" });
     expect(doc.fidelity["Jacqui Ilitul"]).toContainEqual({
       name: "Sanctuary",
       owner: "Jacqui Ilitul",
@@ -160,17 +172,32 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     });
   }, 120_000);
 
-  it("reports a spellcasting monster's Spellcasting feature as skipped", async () => {
+  it("casts a spellcasting monster's spells from the vault's spell notes", async () => {
     const { doc } = await run("--monster", "Hobgoblin Conjurer", "--trials", "5");
     const ref = doc.monsters[0].note as string;
-    expect(doc.fidelity[ref]).toContainEqual(
-      expect.objectContaining({ name: "Spellcasting", status: "skipped", reason: "monster-spellcasting" })
+    // Web: a DEX save or restrained, once a day.
+    expect(doc.monsters[0].actions).toContainEqual(expect.objectContaining({ name: "Web", kind: "save", perDay: 1 }));
+    expect(doc.fidelity[ref]).toContainEqual({ name: "Web", owner: ref, status: "modelled" });
+    expect(doc.fidelity[ref]).toContainEqual(expect.objectContaining({ name: "Light", reason: "utility-spell" }));
+  }, 120_000);
+
+  // Void is a template note the vault's main branch has (CI checks the vault out at main).
+  it("applies a template named after the creature: Void on a Mule", async () => {
+    const plain = (await run("--monster", "Mule", "--trials", "5")).doc.monsters[0];
+    const { doc } = await run("--monster", "Mule with Void", "--trials", "5");
+    const voided = doc.monsters[0];
+    expect(voided.note).toMatch(/Mule\.md with Void$/);
+    expect(voided.name).toBe(`${plain.name} (Void)`);
+    expect(voided.hp).not.toBe(plain.hp);
+    await expect(sim("run", "--monster", "Mule with Nothing Such", "--trials", "5")).rejects.toThrow(
+      /No template "Nothing Such"/
     );
   }, 120_000);
 
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {
     const started = Date.now();
-    const all = await sim("suggest", "--trials", "20", "--limit", "5");
+    // This spec is about ranking by CR (no longer the default) over the whole bestiary.
+    const all = await sim("suggest", "--rank", "cr", "--tiers", "all", "--trials", "20", "--limit", "5");
     expect(all.code, all.err).toBe(0);
     expect(Date.now() - started).toBeLessThan(5 * 60_000);
     const doc = JSON.parse(all.out);
@@ -180,14 +207,18 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(doc.excluded["cr-0"]).toBeGreaterThan(0);
     expect(doc.excluded["non-monster"]).toBeGreaterThan(0);
 
-    const half = JSON.parse((await sim("suggest", "--trials", "20", "--cr", "1/2", "--limit", "500")).out);
+    const half = JSON.parse(
+      (await sim("suggest", "--rank", "cr", "--trials", "20", "--cr", "1/2", "--limit", "500")).out
+    );
     expect(half.candidates.length).toBeGreaterThan(0);
     for (const c of half.candidates) expect(c.composition.cr).toBe("1/2");
 
-    const forest = JSON.parse((await sim("suggest", "--trials", "20", "--habitat", "Forest", "--limit", "500")).out);
+    const forest = JSON.parse(
+      (await sim("suggest", "--rank", "cr", "--trials", "20", "--habitat", "Forest", "--limit", "500")).out
+    );
     expect(forest.candidates.length).toBeGreaterThan(0);
     expect(forest.candidates.length).toBeLessThan(
-      JSON.parse((await sim("suggest", "--trials", "20", "--limit", "500")).out).candidates.length + 1
+      JSON.parse((await sim("suggest", "--rank", "cr", "--trials", "20", "--limit", "500")).out).candidates.length + 1
     );
     expect(forest.excluded.filtered).toBeGreaterThan(0);
   }, 400_000);
@@ -218,7 +249,19 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
   }, 400_000);
 
   it("adds a base group to every suggested fight: Hobgoblin with one small kind", async () => {
-    const result = await sim("suggest", "--base", HOBGOBLIN, "--cr", "1/8", "--trials", "20", "--limit", "50");
+    const result = await sim(
+      "suggest",
+      "--rank",
+      "cr",
+      "--base",
+      HOBGOBLIN,
+      "--cr",
+      "1/8",
+      "--trials",
+      "20",
+      "--limit",
+      "50"
+    );
     expect(result.code, result.err).toBe(0);
     const doc = JSON.parse(result.out);
     expect(doc.candidates.length).toBeGreaterThan(0);
@@ -276,11 +319,12 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(drafted).toHaveLength(accepted.accepted);
     expect(drafted.every((e) => e.review === "draft" && !e.fit)).toBe(true);
 
-    const checked = await catalog("check", "--catalog", path, "--trials", "50");
+    // The arctic table has rows of all four tiers: --tiers all checks every one.
+    const checked = await catalog("check", "--catalog", path, "--trials", "50", "--tiers", "all");
     expect(checked).toMatchObject({ checked: drafted.length, unchanged: 0, errors: [] });
     const states = checked.partition.fit + checked.partition.tooEasy + checked.partition.tooHard;
     expect(states).toBe(drafted.length);
-    const again = await catalog("check", "--catalog", path, "--trials", "50");
+    const again = await catalog("check", "--catalog", path, "--trials", "50", "--tiers", "all");
     expect(again).toMatchObject({ checked: 0, unchanged: drafted.length });
 
     // Nothing is confirmed yet, so the default suggestion is empty; with drafts and every state it is not.
@@ -308,6 +352,32 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
       expect(entry.tags).toContain("arctic");
       expect(["fit", "too-easy", "too-hard"]).toContain(entry.fit.state);
     }
+
+    // An adventure's keyed areas: the bold creatures of each *Creatures.* paragraph, keyed by the area.
+    const heist = await catalog(
+      "draft",
+      "tales-of-the-valiant/worldbuilding/adventures/griffon-heist/Part 2, The Still Tower.md",
+      "--catalog",
+      path
+    );
+    expect(heist.drafts).toContainEqual(
+      expect.objectContaining({
+        name: "Part 2: The Still Tower #B3: Goblin Captain + Hobgoblin Conjurer + 4 Goblin",
+        confidence: "high",
+      })
+    );
+    // A map's linked tokens, the PCs' names left out.
+    const ambush = await catalog("draft", "tales-of-the-valiant/atlas/maps/Kobold Ambush.md", "--catalog", path);
+    expect(ambush.drafts[0]).toMatchObject({ name: "Kobold Ambush #map: Tinkerer Kobold + Elite Kobold + 2 Kobold" });
+    // A template a row names is kept on the creature.
+    const voidT2 = await catalog(
+      "draft",
+      "tales-of-the-valiant/gm-tools/tables/labyrinth-worldbook/Near Void Encounters (Tier 2).md",
+      "--catalog",
+      path
+    );
+    const mage = voidT2.drafts.find((d: { name: string }) => d.name.includes("Mage (Void-Blessed)"));
+    expect(mage.monsters).toContainEqual({ note: "Mage with Void-Blessed", count: 1 });
   }, 400_000);
 
   it("refuses --base on run with a usage error", async () => {

@@ -6,6 +6,7 @@ import {
   ABILITY_KEYS,
   type AbilityKey,
   type AbilityStat,
+  type BuffAction,
   type CombatActor,
   type CombatSide,
   type HealAction,
@@ -575,5 +576,220 @@ describe("simulateTrial: termination", () => {
   it("passes when a combatant has only a heal and nobody needs it", () => {
     const actors = [pc("Healer", { actions: [heal("5")] }), mon("Dummy")];
     expect(simulateTrial(actors, script(neutral(2)), 4)).toMatchObject({ outcome: "stalemate", rounds: 4 });
+  });
+});
+
+describe("use limits and the size of an area", () => {
+  const breath = (extra: Partial<SaveAction>): SaveAction => ({
+    kind: "save",
+    name: "Breath (Recharge 6)",
+    dc: 30,
+    ability: "dex",
+    damage: { expr: "10" },
+    onSuccess: "none",
+    area: true,
+    circle: 0,
+    ...extra,
+  });
+
+  it("does not breathe again until the recharge comes up", () => {
+    const pc = actor({ name: "Tank", side: "party", hp: 1000 });
+    const dragon = actor({
+      name: "Dragon",
+      side: "monsters",
+      hp: 1000,
+      init: 5,
+      actions: [breath({ limit: { recharge: 6 } })],
+    });
+    // The dragon acts first; its recharge d6 always shows 1, so it breathes once in five rounds.
+    const r = simulateTrial([pc, dragon], () => face(1, 6) / 1, 5);
+    expect(r.outcome).toBe("stalemate");
+    expect(r.partyHpRemaining).toBe(990);
+  });
+
+  it("uses a once-a-day action once", () => {
+    const pc = actor({ name: "Tank", side: "party", hp: 1000 });
+    const dragon = actor({
+      name: "Dragon",
+      side: "monsters",
+      hp: 1000,
+      init: 5,
+      actions: [breath({ limit: { perDay: 1 } })],
+    });
+    expect(simulateTrial([pc, dragon], createSeededRng(3), 5).partyHpRemaining).toBe(990);
+  });
+
+  it("catches as many as its size says", () => {
+    const party = ["A", "B", "C", "D"].map((name) => actor({ name, side: "party", hp: 100 }));
+    const dragon = actor({ name: "Dragon", side: "monsters", hp: 1000, init: 5, actions: [breath({ targets: 2 })] });
+    const r = simulateTrial([...party, dragon], createSeededRng(1), 1);
+    expect(r.partyHpRemaining).toBe(400 - 20);
+  });
+});
+
+describe("conditions and riders", () => {
+  const hitAll = (name: string, extra: Partial<WeaponAttackAction> = {}): WeaponAttackAction => ({
+    kind: "weapon",
+    name,
+    hitBonus: 100,
+    damage: { expr: "1" },
+    ...extra,
+  });
+
+  it("a stunned creature loses its turn until its next turn ends", () => {
+    const stunner = actor({
+      name: "Stunner",
+      side: "party",
+      hp: 100,
+      init: 10,
+      actions: [hitAll("Stun", { inflicts: { condition: "stunned", lasts: "end" } })],
+    });
+    const brute = actor({
+      name: "Brute",
+      side: "monsters",
+      hp: 100,
+      actions: [hitAll("Club", { damage: { expr: "10" } })],
+    });
+    // The stunner acts first each round and stuns the brute again: the brute never acts.
+    const r = simulateTrial([stunner, brute], createSeededRng(5), 3);
+    expect(r.partyHpRemaining).toBe(100);
+  });
+
+  it("a mark rider adds its damage to every hit on the marked target, and a use marks it", () => {
+    const ranger = actor({ name: "Ranger", side: "party", hp: 100, init: 10, actions: [hitAll("Bow")] });
+    ranger.riders = [{ name: "Mark", damage: "2", kind: "mark", uses: 1 }];
+    const dummy = actor({ name: "Dummy", side: "monsters", hp: 9 });
+    // 1 + 2 a hit: 9 HP falls in three rounds with the mark, nine without.
+    expect(simulateTrial([ranger, dummy], createSeededRng(2), 10).rounds).toBe(3);
+  });
+
+  it("spreads a monster's picks when its focus is below 1", () => {
+    const weak = { ...actor({ name: "Weak", side: "party", hp: 10 }) };
+    const strong = actor({ name: "Strong", side: "party", hp: 1000 });
+    const brute = actor({
+      name: "Brute",
+      side: "monsters",
+      hp: 10000,
+      init: 10,
+      actions: [hitAll("Club", { damage: { expr: "5" } })],
+    });
+    const koRate = (focus: number) => {
+      const rng = createSeededRng(9);
+      let kos = 0;
+      for (let t = 0; t < 200; t++)
+        if (simulateTrial([weak, strong, brute], rng, 2, { monsterFocus: focus }).knockedOut.includes("Weak")) kos++;
+      return kos / 200;
+    };
+    // Focus fire drops the weak PC in two rounds whenever both blows land (a natural 1 misses); at random, only when both find it.
+    expect(koRate(1)).toBeGreaterThan(0.85);
+    expect(koRate(0)).toBeGreaterThan(0.1);
+    expect(koRate(0)).toBeLessThan(0.45);
+  });
+});
+
+describe("defences in play", () => {
+  it("an immune creature takes no damage of that type and no condition it is immune to", () => {
+    const fire: WeaponAttackAction = {
+      kind: "weapon",
+      name: "Firebrand",
+      hitBonus: 100,
+      damage: { expr: "5", type: "fire" },
+      inflicts: { condition: "prone", lasts: "start" },
+    };
+    const pc = actor({ name: "Fire", side: "party", hp: 100, init: 10, actions: [fire] });
+    const elemental = actor({ name: "Elemental", side: "monsters", hp: 20 });
+    elemental.defences = {
+      resistant: [],
+      immune: ["fire"],
+      vulnerable: [],
+      conditionImmune: ["prone"],
+      conditionResistant: [],
+    };
+    expect(simulateTrial([pc, elemental], createSeededRng(4), 3).outcome).toBe("stalemate");
+  });
+
+  it("a resistant creature takes half", () => {
+    const pc = actor({ name: "Cold", side: "party", hp: 100, init: 10, actions: [weapon("10", 100)] });
+    pc.actions = [{ ...(pc.actions[0] as WeaponAttackAction), damage: { expr: "10", type: "cold" } }];
+    const troll = actor({ name: "Troll", side: "monsters", hp: 10 });
+    troll.defences = { resistant: ["cold"], immune: [], vulnerable: [], conditionImmune: [], conditionResistant: [] };
+    expect(simulateTrial([pc, troll], createSeededRng(4), 5).rounds).toBe(2);
+  });
+});
+
+describe("a bonus-action heal", () => {
+  it("heals and still attacks in the same turn", () => {
+    const word: HealAction = { kind: "heal", name: "Healing Word", expr: "5", circle: 0, bonus: true };
+    const cleric = actor({ name: "Cleric", side: "party", hp: 20, init: 10, actions: [word, weapon("3", 100)] });
+    const hurt = actor({ name: "Hurt", side: "party", hp: 16 });
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, init: 20, actions: [weapon("10", 100)] });
+    const dummy = actor({ name: "Dummy", side: "monsters", hp: 3 });
+    // The brute hits Hurt (16 -> 6, below half); the cleric heals it to 11 and kills the dummy; the brute is left.
+    const r = simulateTrial([cleric, hurt, brute, dummy], () => face(15), 1);
+    expect(r.partyHpRemaining).toBe(20 + 11);
+  });
+});
+
+describe("buffs", () => {
+  it("a +AC buff makes a hit that would land miss, and is cast where it helps", () => {
+    const shield: BuffAction = { kind: "buff", name: "Shield of Faith", circle: 0, on: "allies", targets: 1, ac: 10 };
+    const cleric = actor({ name: "Cleric", side: "party", hp: 100, ac: 10, init: 10, actions: [shield] });
+    // The brute hits AC 10 on any d20 but a 1; with +10 AC it needs a 20, the d20 shows 15.
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, actions: [weapon("5", 0)] });
+    const r = simulateTrial([cleric, brute], () => face(15), 3);
+    expect(r.partyHpRemaining).toBe(100);
+  });
+
+  it("a debuff takes its die from the enemy's attacks", () => {
+    const bane: BuffAction = { kind: "buff", name: "Bane", circle: 0, on: "enemies", targets: 1, attackDie: "-10" };
+    const priest = actor({ name: "Priest", side: "party", hp: 100, ac: 15, init: 10, actions: [bane] });
+    // +0 and a 15 hits AC 15; less 10 it misses.
+    const brute = actor({ name: "Brute", side: "monsters", hp: 100, actions: [weapon("5", 0)] });
+    expect(simulateTrial([priest, brute], () => face(15), 3).partyHpRemaining).toBe(100);
+  });
+});
+
+describe("legendary actions", () => {
+  it("spends its points after the other creatures' turns, and gets them back at its own", () => {
+    const tail = weapon("10", 100, "Tail");
+    const boss = actor({ name: "Boss", side: "monsters", hp: 1000, init: 20, actions: [] });
+    boss.legendary = { points: 3, actions: [{ action: tail, cost: 1 }] };
+    const party = ["A", "B", "C"].map((name) => actor({ name, side: "party", hp: 100 }));
+    // One round: the boss has no action of its own; after each of the three PCs' turns it lashes its tail.
+    const r = simulateTrial([boss, ...party], () => face(15), 1);
+    expect(r.partyHpRemaining).toBe(300 - 30);
+  });
+});
+
+describe("reactions and Legendary Resistance", () => {
+  it("a Parry turns a hit it can beat into a miss, once a round", () => {
+    const two = { kind: "multiattack" as const, name: "Two", swings: [weapon("50", 0), weapon("50", 0)] };
+    const fight = (parry: boolean) => {
+      const veteran = actor({ name: "Veteran", side: "monsters", hp: 60, ac: 10 });
+      if (parry) veteran.reaction = { name: "Parry", ac: 10, untilTurn: false, circle: 0 };
+      const pc = actor({ name: "PC", side: "party", hp: 100, init: 10, actions: [two] });
+      // A 15 hits AC 10 but not 20: with the Parry the first of the two 50s misses, and 60 HP stand.
+      return simulateTrial([pc, veteran], () => face(15), 1).outcome;
+    };
+    expect(fight(false)).toBe("win");
+    expect(fight(true)).toBe("stalemate");
+  });
+
+  it("Legendary Resistance turns failed saves into successes while it has uses", () => {
+    const blast: SaveAction = {
+      kind: "save",
+      name: "Blast",
+      dc: 30,
+      ability: "dex",
+      damage: { expr: "10" },
+      onSuccess: "none",
+      area: false,
+      circle: 0,
+    };
+    const mage = actor({ name: "Mage", side: "party", hp: 100, init: 10, actions: [blast] });
+    const dragon = actor({ name: "Dragon", side: "monsters", hp: 25 });
+    dragon.legendaryResistance = 2;
+    // Two failed saves resisted, the third lands: 10 damage a round from round 3, down in round 5.
+    expect(simulateTrial([mage, dragon], () => face(10), 10).rounds).toBe(5);
   });
 });

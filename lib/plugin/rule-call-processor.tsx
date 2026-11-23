@@ -29,6 +29,7 @@
  * Render is sync — view functions return ReactNode, not Promise.
  */
 
+import { omitFences, omittedIds } from "../domains/references/omit-fences";
 import {
   App,
   Component,
@@ -377,7 +378,7 @@ function resolveCall(
     .then(([raw, _]) => {
       if (isUnloaded()) return;
 
-      let cleaned = stripLocalFences(raw);
+      let cleaned = stripLocalFences(raw, call);
       if (call.section) {
         cleaned = sliceToSection(cleaned, call.section);
       }
@@ -960,8 +961,9 @@ function extractTableBlocks(text: string): Array<{ name: string; fenceMarkdown: 
  * (see-also pointers + author prose) don't follow the file into an
  * import.
  */
-function stripLocalFences(text: string): string {
-  return text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
+function stripLocalFences(text: string, call?: { chain: ChainSegment[] }): string {
+  const local = text.replace(/```rpg\s+rule\.(related|notes)\s*\n[\s\S]*?```\s*\n?/g, "");
+  return call ? omitFences(local, omittedIds(call.chain)) : local;
 }
 
 function findContentBlockById(text: string, id: string): string | null {
@@ -1169,6 +1171,8 @@ function StatblockMonsterCallInline({
     features: resolved,
     body: data.text,
     sourcePath,
+    role: data.role,
+    subrole: data.subrole,
   });
 }
 
@@ -1527,7 +1531,7 @@ function resolveFolderCall(
           (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
         const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         for (const { file: f, raw } of entries) {
-          const cleaned = stripLocalFences(raw);
+          const cleaned = stripLocalFences(raw, call);
           if (call.chain.length > 0) {
             const chainFm =
               (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
@@ -1589,7 +1593,7 @@ function resolveFolderCall(
         span.textContent = "";
         const bareNodes: React.ReactNode[] = [];
         for (const { file: f, raw } of entries) {
-          const cleaned = stripLocalFences(raw);
+          const cleaned = stripLocalFences(raw, call);
           if (call.chain.length > 0) {
             const chainFm =
               (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
@@ -1644,7 +1648,7 @@ function resolveFolderCall(
         const callerSource = normalizeSource(callerFm.source ? String(callerFm.source) : "");
         const blockId = typeof call.args[0] === "string" ? call.args[0] : undefined;
         for (const { file: f, raw } of entries) {
-          const cleaned = stripLocalFences(raw);
+          const cleaned = stripLocalFences(raw, call);
           const fileFm =
             (deps.app.metadataCache.getCache(f.path)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const resolved = blockId ? resolveTabBlockFields(cleaned, fileFm, f.basename, blockId) : null;
@@ -1696,7 +1700,7 @@ function resolveFolderCall(
       // What each note is told apart by in the pager: its name and its fields.
       const itemData = new Map<string, { name: string; data: Record<string, unknown> }>();
       for (const { file: f, raw } of entries) {
-        const cleaned = stripLocalFences(raw);
+        const cleaned = stripLocalFences(raw, call);
 
         // Apply chain operations (filter, block)
         let chainHeadingLevel: number | undefined;
@@ -1975,7 +1979,7 @@ function resolveFolderCall(
             (deps.app.metadataCache.getCache(ctx.sourcePath)?.frontmatter as Record<string, unknown> | undefined) ?? {};
           const tableCallerSource = normalizeSource(tableCallerFm.source ? String(tableCallerFm.source) : "");
           for (const { file: f, raw } of entries) {
-            const cleaned = stripLocalFences(raw);
+            const cleaned = stripLocalFences(raw, call);
 
             // Apply chain filter
             if (call.chain.length > 0) {

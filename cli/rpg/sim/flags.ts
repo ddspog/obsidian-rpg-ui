@@ -1,8 +1,19 @@
 import { parseArgs } from "node:util";
-import { DEFAULT_RECHECK_EVERY_SESSIONS, type ReviewFlag } from "lib/domains/encounter-catalog/catalog";
+import {
+  DEFAULT_RECHECK_EVERY_SESSIONS,
+  DEFAULT_REUSE_AFTER_SESSIONS,
+  type ReviewFlag,
+} from "lib/domains/encounter-catalog/catalog";
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
+import {
+  MONSTER_ROLES,
+  parseRole,
+  parseSubrole,
+  type MonsterRole,
+  type Subrole,
+} from "lib/domains/encounter-sim/monster-role";
 
 /** A wrong flag, value or subcommand of `rpg sim` (exit 1, with the usage). */
 export class UsageError extends Error {
@@ -20,6 +31,11 @@ export type Rank = "cr" | "outcome";
 
 export const RANKS: readonly Rank[] = ["cr", "outcome"];
 
+/** Which tiers of play an encounter may be from: the party's own, it and lower ones, or any. */
+export type TierScope = "same" | "lower" | "all";
+
+export const TIER_SCOPES: readonly TierScope[] = ["same", "lower", "all"];
+
 export const CONFIDENCES: readonly Confidence[] = ["high", "medium", "low"];
 
 export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too-hard"];
@@ -27,7 +43,21 @@ export const FIT_STATE_NAMES: readonly FitStateName[] = ["fit", "too-easy", "too
 export const REVIEW_FLAGS: readonly ReviewFlag[] = ["draft", "confirmed"];
 
 /** The actions of `rpg sim catalog <action>`. */
-export const CATALOG_ACTIONS = ["init", "draft", "add", "confirm", "remove", "check", "suggest", "list"] as const;
+export const CATALOG_ACTIONS = [
+  "init",
+  "draft",
+  "add",
+  "confirm",
+  "remove",
+  "tag",
+  "use",
+  "prepare",
+  "adjust",
+  "session",
+  "check",
+  "suggest",
+  "list",
+] as const;
 export type CatalogAction = (typeof CATALOG_ACTIONS)[number];
 
 export interface SimFlag {
@@ -98,12 +128,20 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "the difficulty `suggest` aims for (`catalog init`: the one the catalog's encounters are judged by; `plan`: the catalog's)",
   },
   {
+    name: "tiers",
+    kind: "string",
+    default: "same",
+    value: "same|lower|all",
+    description:
+      "`suggest`, `plan`, `catalog check|suggest|list`: encounters of the party's tier only (same), also lower tiers for story use (lower), or any (all); an untagged entry or a swept monster is in the tier when no monster is above the party's single-monster CR",
+  },
+  {
     name: "rank",
     kind: "string",
-    default: "cr",
+    default: "outcome",
     value: "cr|outcome",
     description:
-      "`suggest`: rank by total CR near the target (cr), or by simulated outcome with a wider sweep (outcome)",
+      "`suggest`: rank by simulated outcome with a wide sweep (outcome), or by total CR near the target (cr)",
   },
   {
     name: "habitat",
@@ -124,7 +162,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: undefined,
     value: "<cr>",
-    description: "`suggest`, `plan`: only monsters of exactly this CR (e.g. 1/2)",
+    description: "`suggest`, `plan`: only monsters of exactly this CR (e.g. 1/2); `homebrew`: the new creature's CR",
   },
   {
     name: "limit",
@@ -154,7 +192,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: undefined,
     value: '"<name>"',
-    description: "`catalog add`: the encounter's name",
+    description: "`catalog add`: the encounter's name; `homebrew`: the new creature's",
   },
   {
     name: "every",
@@ -164,12 +202,58 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     description: "`catalog init`: check an entry again after this many sessions (0 turns it off)",
   },
   {
+    name: "reuse-after",
+    kind: "string",
+    default: DEFAULT_REUSE_AFTER_SESSIONS,
+    value: "<n>",
+    description: "`catalog init`: an encounter run at session S is offered again from session S + n (0: at once)",
+  },
+  {
     name: "session",
     kind: "string",
     default: undefined,
     value: "<n>",
     description:
-      "`catalog init|check|suggest`, `plan`: the party's session number (default: 0 on init, else the catalog's own)",
+      "`catalog init|check|suggest|use`, `plan`: the party's session number (default: 0 on init, else the catalog's own); `catalog session`: set it",
+  },
+  {
+    name: "only",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<id>",
+    description:
+      "`catalog draft`: with --accept, write only these drafts (whatever their confidence), the ones a review kept; repeat for each",
+  },
+  {
+    name: "add-tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog tag`: a tag to add to the entries; repeat for each",
+  },
+  {
+    name: "drop-tag",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<tag>",
+    description: "`catalog tag`: a tag to take off the entries (plural or not); repeat for each",
+  },
+  {
+    name: "include-used",
+    kind: "boolean",
+    default: false,
+    description: "`catalog suggest`, `plan`: also entries run too recently (see --reuse-after)",
+  },
+  {
+    name: "fit",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "fit|too-easy|too-hard",
+    description: "`suggest`: only candidates with this fit; repeat for each (default: all)",
   },
   {
     name: "tag",
@@ -213,13 +297,31 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     name: "accept",
     kind: "boolean",
     default: false,
-    description: "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; else a dry run",
+    description:
+      "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; `catalog adjust`: write the best adjustment (or --pick) as a new draft; else a dry run",
+  },
+  {
+    name: "model",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "single|double|boss|matched|horde",
+    description:
+      "`build`: only this encounter model (single big monster, double trouble, boss and lieutenants, matched set of foes, horde of minions); repeat for each (default: all)",
+  },
+  {
+    name: "pick",
+    kind: "string",
+    default: 1,
+    value: "<n>",
+    description: "`catalog adjust`: with --accept, which of the fitting adjustments to keep (1 is the best)",
   },
   {
     name: "force",
     kind: "boolean",
     default: false,
-    description: "`catalog check`: simulate every entry again, not only the ones that need it",
+    description:
+      "`catalog check`: simulate every entry again, not only the ones that need it; `templates --write`: write every template note's stat.template block again from its prose",
   },
   {
     name: "refresh",
@@ -245,6 +347,78 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     default: false,
     description:
       "`run`, `suggest`, `catalog suggest`: the short answer a model needs (groups as --monster takes them, no per-trial arrays or statblocks)",
+  },
+  {
+    name: "role",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<role|subrole>",
+    description:
+      "`roles`: only monsters of this role (controller, leader, soldier, striker) or subrole (ambusher, healer…); repeat for each; `equivalents`: look for this role or subrole instead of the monster's own",
+  },
+  {
+    name: "write",
+    kind: "boolean",
+    default: false,
+    description:
+      "`roles`: write each guess at or above --min-confidence as `role:` in its statblock (never over a written role); `homebrew`: write the new creature's note; else a dry run",
+  },
+  {
+    name: "template",
+    kind: "string",
+    default: undefined,
+    value: '"<template>"',
+    description:
+      "`homebrew`: apply this creature template (a note in <system>/worldbuilding/bestiary/templates/: Zombie, Skeleton, Shadow…); `rpg sim templates` lists them",
+  },
+  {
+    name: "choose",
+    kind: "string",
+    default: undefined,
+    value: "<option>",
+    description:
+      "`homebrew --template`: the option the template asks for (an element, a season, a damage type: fire, summer, air:thunder)",
+  },
+  {
+    name: "trait",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: '"<feature>"',
+    description:
+      "`homebrew --template`: a feature to choose from the template's list (Demon Caller's Stench…); repeat for each",
+  },
+  {
+    name: "set",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: '"<note>=<role>/<subrole>"',
+    description:
+      "`roles`: write this role and subrole in the monster's statblock (over any written; the role alone, or the subrole alone with its role implied); repeat for each",
+  },
+  {
+    name: "confidence",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "high|medium|low",
+    description: "`roles`: only guesses of this confidence (a written role counts as none); repeat for each",
+  },
+  {
+    name: "features",
+    kind: "boolean",
+    default: false,
+    description:
+      "`roles`: add each monster's stats and features as prose (a dossier for a person or a model to decide the role from)",
+  },
+  {
+    name: "steps",
+    kind: "string",
+    default: 1,
+    value: "<n>",
+    description: "`equivalents`: how many steps of the CR ladder (… 1/4, 1/2, 1, 2 …) from the monster's CR to look",
   },
   {
     name: "vault",
@@ -289,6 +463,7 @@ export interface SimOptions {
   rounds: number;
   difficulty: Difficulty;
   rank: Rank;
+  tiers: TierScope;
   habitat?: string;
   type?: string;
   cr?: string;
@@ -301,7 +476,15 @@ export interface SimOptions {
   catalog?: string;
   name?: string;
   every?: number;
+  reuseAfter?: number;
   session?: number;
+  addTags: string[];
+  dropTags: string[];
+  /** `catalog draft --accept`: only these draft ids. */
+  only: string[];
+  includeUsed: boolean;
+  /** `suggest`: the fits to keep (empty: all). */
+  fits: FitStateName[];
   tags: string[];
   anyTags: string[];
   states: FitStateName[];
@@ -316,6 +499,28 @@ export interface SimOptions {
   json: boolean;
   /** `run`, `suggest`, `catalog suggest`: print the short form (see brief.ts). */
   brief: boolean;
+  /** `roles`: the roles or subroles to list; `equivalents`: the role or subrole to look for. */
+  roles: Array<MonsterRole | Subrole>;
+  /** `roles`: `<note>=<role>` to write. */
+  set: string[];
+  /** `homebrew`: the creature template to apply. */
+  template?: string;
+  /** `homebrew --template`: the template's option. */
+  choose?: string;
+  /** `homebrew --template`: features chosen from its list. */
+  traits: string[];
+  /** `roles`: write the guesses. */
+  write: boolean;
+  /** `equivalents`: CR ladder steps to look. */
+  steps: number;
+  /** `roles`: the guess confidences to keep (empty: all). */
+  confidences: Confidence[];
+  /** `roles`: add each monster's stats and features. */
+  features: boolean;
+  /** `catalog adjust`, `build`: which option `--accept` keeps (1-based). */
+  pick: number;
+  /** `build`: the encounter models to fill. */
+  models: string[];
 }
 
 export interface ParsedSim {
@@ -342,12 +547,18 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     rounds: flagDefault<number>("rounds"),
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
+    tiers: flagDefault<TierScope>("tiers"),
     limit: flagDefault<number>("limit"),
     given: [],
     limitSet: false,
     tags: [],
     anyTags: [],
     states: [],
+    addTags: [],
+    dropTags: [],
+    only: [],
+    includeUsed: false,
+    fits: [],
     minConfidence: flagDefault<Confidence>("min-confidence"),
     accept: false,
     force: false,
@@ -356,6 +567,15 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     includeDraft: false,
     json: false,
     brief: false,
+    roles: [],
+    set: [],
+    traits: [],
+    write: false,
+    steps: flagDefault<number>("steps"),
+    confidences: [],
+    features: false,
+    pick: flagDefault<number>("pick"),
+    models: [],
   };
 }
 
@@ -449,7 +669,16 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   const [subcommand, ...extra] = parsed.positionals;
   // `catalog` takes an action and then bare words of its own, `plan` theme words; the others take none.
   const isCatalog = subcommand === "catalog";
-  if (!isCatalog && subcommand !== "plan" && extra.length) {
+  const takesWords =
+    subcommand === "plan" ||
+    subcommand === "roles" ||
+    subcommand === "equivalents" ||
+    subcommand === "build" ||
+    subcommand === "homebrew" ||
+    subcommand === "templates" ||
+    subcommand === "calibrate" ||
+    subcommand === "spells";
+  if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
 
@@ -457,8 +686,10 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (isCatalog) {
     options.action = extra[0];
     options.args = extra.slice(1);
-  } else if (subcommand === "plan") {
+  } else if (subcommand === "plan" || subcommand === "build") {
     options.args = extra.flatMap((word) => word.split(/\s+/)).filter((word) => word.length > 0);
+  } else if (takesWords) {
+    options.args = extra.map((word) => word.trim()).filter((word) => word.length > 0);
   }
 
   const pcs = (values.pc as string[] | undefined) ?? [];
@@ -493,6 +724,20 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (typeof values.session === "string") {
     options.session = integer("session", values.session, 0, "a non-negative integer");
   }
+  if (typeof values["reuse-after"] === "string") {
+    options.reuseAfter = integer("reuse-after", values["reuse-after"], 0, "a non-negative integer");
+  }
+  options.addTags = tagList("add-tag", values["add-tag"]);
+  options.only = ((values.only as string[] | undefined) ?? []).map((v) => v.trim()).filter(Boolean);
+  options.dropTags = tagList("drop-tag", values["drop-tag"]);
+  options.includeUsed = values["include-used"] === true;
+  options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
+    const fit = raw.trim().toLowerCase();
+    if (!(FIT_STATE_NAMES as readonly string[]).includes(fit)) {
+      throw new UsageError(`--fit must be one of ${FIT_STATE_NAMES.join(", ")}, got "${raw}".`);
+    }
+    return fit as FitStateName;
+  });
   options.tags = tagList("tag", values.tag);
   options.anyTags = tagList("any-tag", values["any-tag"]);
   options.states = ((values.state as string[] | undefined) ?? []).map((raw) => {
@@ -547,24 +792,65 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     }
     options.rank = r as Rank;
   }
+  if (typeof values.tiers === "string") {
+    const t = values.tiers.trim().toLowerCase();
+    if (!(TIER_SCOPES as readonly string[]).includes(t)) {
+      throw new UsageError(`--tiers must be one of ${TIER_SCOPES.join(", ")}, got "${values.tiers}".`);
+    }
+    options.tiers = t as TierScope;
+  }
   if (typeof values.habitat === "string") options.habitat = values.habitat;
   if (typeof values.type === "string") options.type = values.type;
   if (typeof values.cr === "string") options.cr = values.cr;
   if (typeof values.vault === "string") options.vault = values.vault;
   options.json = values.json === true;
   options.brief = values.brief === true;
+  options.roles = ((values.role as string[] | undefined) ?? []).map((raw) => {
+    const role = parseRole(raw) ?? parseSubrole(raw);
+    if (!role) {
+      throw new UsageError(`--role must be one of ${MONSTER_ROLES.join(", ")} or one of their subroles, got "${raw}".`);
+    }
+    return role;
+  });
+  options.set = ((values.set as string[] | undefined) ?? []).map((raw) => raw.trim());
+  if (typeof values.template === "string") options.template = values.template.trim();
+  if (typeof values.choose === "string") options.choose = values.choose.trim();
+  options.traits = ((values.trait as string[] | undefined) ?? []).map((raw) => raw.trim()).filter(Boolean);
+  options.write = values.write === true;
+  options.features = values.features === true;
+  if (typeof values.pick === "string") options.pick = integer("pick", values.pick, 1, "a positive integer");
+  options.models = ((values.model as string[] | undefined) ?? []).map((raw) => {
+    const m = raw.trim().toLowerCase();
+    if (!["single", "double", "boss", "matched", "horde"].includes(m)) {
+      throw new UsageError(`--model must be one of single, double, boss, matched, horde, got "${raw}".`);
+    }
+    return m;
+  });
+  options.confidences = ((values.confidence as string[] | undefined) ?? []).map((raw) => {
+    const c = raw.trim().toLowerCase();
+    if (!(CONFIDENCES as readonly string[]).includes(c)) {
+      throw new UsageError(`--confidence must be one of ${CONFIDENCES.join(", ")}, got "${raw}".`);
+    }
+    return c as Confidence;
+  });
+  if (typeof values.steps === "string") options.steps = integer("steps", values.steps, 0, "a non-negative integer");
 
   return { subcommand, help: false, options };
 }
 
 /** The flags each `catalog` action takes (besides the common ones); any other flag is a usage error. */
 const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
-  init: ["party-name", "pc", "difficulty", "every", "session"],
-  draft: ["min-confidence", "accept", "limit"],
+  init: ["party-name", "pc", "difficulty", "every", "reuse-after", "session"],
+  draft: ["min-confidence", "accept", "only", "limit"],
   add: ["name", "monster", "tag"],
   confirm: [],
   remove: [],
-  check: ["session", "seed", "trials", "rounds", "force", "limit"],
+  tag: ["add-tag", "drop-tag"],
+  use: ["session"],
+  prepare: [],
+  adjust: ["state", "limit", "accept", "pick", "seed", "trials", "rounds", "session"],
+  session: ["session"],
+  check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
   suggest: [
     "tag",
     "any-tag",
@@ -578,8 +864,10 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
     "trials",
     "rounds",
     "brief",
+    "include-used",
+    "tiers",
   ],
-  list: ["tag", "any-tag", "state", "review", "limit"],
+  list: ["tag", "any-tag", "state", "review", "limit", "tiers"],
 };
 
 const CATALOG_COMMON_FLAGS = ["catalog", "vault", "json", "help"];
@@ -597,7 +885,7 @@ function validateCatalog(options: SimOptions): void {
   for (const flag of options.given) {
     if (!allowed.has(flag)) throw new UsageError(`--${flag} is not a flag of \`catalog ${known}\`.`);
   }
-  const takesWords = known === "draft" || known === "confirm" || known === "remove";
+  const takesWords = ["draft", "confirm", "remove", "tag", "use", "prepare", "adjust"].includes(known);
   if (!takesWords && options.args.length > 0) {
     throw new UsageError(`Unexpected argument "${options.args[0]}" for \`catalog ${known}\`.`);
   }
@@ -613,7 +901,13 @@ function validateCatalog(options: SimOptions): void {
       throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
     }
   }
-  if ((known === "confirm" || known === "remove") && options.args.length === 0) {
+  if (known === "draft" && options.only.length > 0 && !options.accept) {
+    throw new UsageError("--only goes with --accept: it names the drafts to write.");
+  }
+  if (known === "tag" && options.addTags.length + options.dropTags.length === 0) {
+    throw new UsageError("`catalog tag` needs --add-tag or --drop-tag (or both).");
+  }
+  if (["confirm", "remove", "tag", "use", "prepare"].includes(known) && options.args.length === 0) {
     throw new UsageError(`\`catalog ${known}\` needs at least one entry id.`);
   }
 }
@@ -631,6 +925,8 @@ const PLAN_FLAGS = [
   "limit",
   "catalog",
   "session",
+  "include-used",
+  "tiers",
   "seed",
   "trials",
   "rounds",
@@ -638,6 +934,80 @@ const PLAN_FLAGS = [
   "json",
   "help",
 ];
+
+/** The flags `homebrew` takes. */
+const HOMEBREW_FLAGS = [
+  "name",
+  "role",
+  "template",
+  "choose",
+  "trait",
+  "cr",
+  "type",
+  "habitat",
+  "write",
+  "vault",
+  "json",
+  "help",
+];
+
+/** The flags `calibrate` takes. */
+const CALIBRATE_FLAGS = ["seed", "trials", "rounds", "difficulty", "vault", "json", "help"];
+
+/** The flags `templates` and `lineages` take. */
+const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
+
+/** The flags `build` takes. */
+const BUILD_FLAGS = [
+  "pc",
+  "catalog",
+  "difficulty",
+  "habitat",
+  "type",
+  "model",
+  "limit",
+  "accept",
+  "pick",
+  "seed",
+  "trials",
+  "rounds",
+  "vault",
+  "json",
+  "help",
+];
+
+/** The flags `roles` and `equivalents` take. */
+const ROLES_FLAGS = [
+  "role",
+  "write",
+  "set",
+  "min-confidence",
+  "confidence",
+  "features",
+  "habitat",
+  "type",
+  "cr",
+  "limit",
+  "vault",
+  "json",
+  "help",
+];
+const EQUIVALENTS_FLAGS = ["role", "steps", "habitat", "type", "limit", "vault", "json", "help"];
+
+function validateRoles(subcommand: "roles" | "equivalents", options: SimOptions): void {
+  const allowed = subcommand === "roles" ? ROLES_FLAGS : EQUIVALENTS_FLAGS;
+  for (const flag of options.given) {
+    if (!allowed.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`${subcommand}\`.`);
+  }
+  if (subcommand === "equivalents") {
+    if (options.args.length !== 1)
+      throw new UsageError("`equivalents` needs one monster note (quote a name with spaces).");
+    if (options.roles.length > 1) throw new UsageError("`equivalents` takes one --role.");
+  }
+  if (subcommand === "roles" && options.set.length && (options.write || options.args.length)) {
+    throw new UsageError("--set writes the roles it names: pass it without --write or notes.");
+  }
+}
 
 function validatePlan(options: SimOptions): void {
   for (const flag of options.given) {
@@ -664,7 +1034,49 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
     return;
   }
   if (subcommand === "plan") validatePlan(options);
-  if ((subcommand === "suggest" || subcommand === "plan") && options.cr !== undefined) {
+  if (subcommand === "roles" || subcommand === "equivalents") validateRoles(subcommand, options);
+  if (subcommand === "homebrew") {
+    for (const flag of options.given) {
+      if (!HOMEBREW_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`homebrew\`.`);
+    }
+    if (options.args.length !== 1)
+      throw new UsageError("`homebrew` needs one monster note to start from (quote a name with spaces).");
+    if (options.name === undefined) throw new UsageError('--name is required: name the new creature ("Ash Wolf").');
+    if (options.roles.length > 1) throw new UsageError("`homebrew` takes one --role.");
+    if ((options.choose !== undefined || options.traits.length) && options.template === undefined)
+      throw new UsageError("--choose and --trait go with --template.");
+  }
+  if (subcommand === "spells") {
+    for (const flag of options.given) {
+      if (![...TEMPLATES_FLAGS, "limit"].includes(flag)) throw new UsageError(`--${flag} is not a flag of \`spells\`.`);
+    }
+  }
+  if (subcommand === "calibrate") {
+    for (const flag of options.given) {
+      if (!CALIBRATE_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`calibrate\`.`);
+    }
+  }
+  if (subcommand === "lineages") {
+    for (const flag of options.given) {
+      if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`lineages\`.`);
+    }
+  }
+  if (subcommand === "templates") {
+    for (const flag of options.given) {
+      if (!TEMPLATES_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`templates\`.`);
+    }
+    if (options.args.length > 1)
+      throw new UsageError("`templates` takes at most one monster note to check them against.");
+  }
+  if (subcommand === "build") {
+    for (const flag of options.given) {
+      if (!BUILD_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`build\`.`);
+    }
+    if (options.pc.length > 0 && options.catalog !== undefined) {
+      throw new UsageError("--pc and --catalog: a catalog has its own party; pass one or the other.");
+    }
+  }
+  if ((subcommand === "suggest" || subcommand === "plan" || subcommand === "homebrew") && options.cr !== undefined) {
     try {
       parseCr(options.cr);
     } catch {
@@ -694,22 +1106,54 @@ function helpLines(): string {
 }
 
 /** The help of `rpg sim`, written from SIM_FLAGS. */
-export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan encounters, or keep a catalog of them
+export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan encounters, keep a catalog of them, or read monster roles
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [--brief] [flags]
-  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank cr|outcome] [--brief] [flags]
-  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--difficulty D] [--limit N] [flags]
+  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank outcome|cr] [--tiers T] [--fit F]... [--brief] [flags]
+  rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--tiers same|lower|all] [--difficulty D] [--limit N] [flags]
     (the catalog's fit entries first, then the bestiary swept by outcome: N short options, default 3)
-  rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--session N]
-  rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept] [--limit N]
+  rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--reuse-after N] [--session N]
+  rpg sim catalog draft <note-or-folder>... [--min-confidence high|medium|low] [--accept [--only <id>]...] [--limit N]
+    (a dry run lists each draft with its scene and reasons; --accept --only <id> writes the ones a review kept)
   rpg sim catalog add --name "<name>" --monster "<note>[:<count>]"... [--tag <tag>]...
   rpg sim catalog confirm <id>...        (flip drafts to confirmed)
   rpg sim catalog remove <id>...
+  rpg sim catalog tag <id>... [--add-tag <tag>]... [--drop-tag <tag>]...
+  rpg sim catalog use <id>... [--session N]   (the encounter was run: not offered again for --reuse-after sessions)
+  rpg sim catalog prepare <id>...       (an [Enc:] line in the party's latest session log; Start Combat offers it)
+  rpg sim catalog adjust [<id>...] [--state too-hard|too-easy]... [--limit N] [--accept [--pick N]]
+    (tries counts, equivalent swaps, minions, a leader or a group less on entries that do not fit; --accept adds the best as a draft linked to its original)
+  rpg sim catalog session [--session N]  (the party's session: counted from the vault's session notes, or set)
   rpg sim catalog check [--session N] [--force] [--limit N] [--seed N] [--trials N] [--rounds N]
-  rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--limit N] [--brief]
+  rpg sim catalog suggest [--tag <tag>]... [--any-tag <tag>]... [--state <state>]... [--refresh] [--include-used] [--limit N] [--brief]
   rpg sim catalog list [--tag <tag>]... [--review draft|confirmed] [--state <state>]... [--limit N]
     (every catalog action takes --catalog <path|party name>; the catalog is a vault note, see docs/encounter-catalog.md)
+  rpg sim roles [<note>...] [--role R]... [--habitat H] [--type T] [--cr C] [--limit N] [--write [--min-confidence C]]
+    (each monster's role, controller|leader|soldier|striker: written in its statblock or guessed, least sure first)
+  rpg sim roles --confidence low --features   (the unsure guesses with each statblock as prose, to decide them)
+  rpg sim roles --set "<note>=<role>/<subrole>"...   (write roles in statblocks)
+    (subroles: controller hexer|disabler|zoner|mover; leader commander|healer|warder|summoner;
+     soldier rank-and-file|guardian|brute|pinner; striker bruiser|skirmisher|ambusher|artillery|solo)
+  rpg sim build [<theme words>] [--model single|double|boss|matched|horde]... [--habitat H] [--type T] [--limit N] [--accept [--pick N]]
+    (new encounters from the Monster Vault's encounter models, filled by role and simulated; name them and write the scene)
+  rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--template T [--choose O] [--trait F]...] [--cr C] [--type "<type line>"] [--habitat H] [--write]
+    (a new creature from a statblock: reflavoured, a role template, a creature template, a new CR;
+     a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim spells [<spell note or folder>...] [--write] [--limit N]
+    (a roll: for each spell note that has none, read from its text, for the sheet, the log's cards and the
+     simulator; a dry run lists them, --write puts them in the notes; a note with a roll: is never touched)
+  rpg sim calibrate [<session note or folder>...] [--seed N] [--trials N] [--rounds N] [--difficulty D]
+    (each fight logged in the session notes against the simulator's run of the same fight: HP lost, rounds,
+     knockouts, and where the real fight falls among the simulated ones; read-only)
+  rpg sim lineages [--write [--force]]
+    (lineages as templates for Humanoid (Any Lineage) NPCs: the Monster Vault's NPC Features rows and the lineage
+     notes' traits reworded; --write writes each one's stat.template block and the Lineage NPC Traits note)
+  rpg sim templates ["<base note>"] [--write]
+    (the creature templates in worldbuilding/bestiary/templates/, what each changes, and with a note which fit it;
+     --write writes their features note, worldbuilding/traits/features/Monster Template Traits)
+  rpg sim equivalents "<note>" [--role R] [--steps N] [--habitat H] [--type T] [--limit N]
+    (monsters of the same role near its CR, another family first: to swap it for another setting)
   rpg sim help
 
 Flags:

@@ -190,3 +190,20 @@ describe("findMentions", () => {
     expect(findMentions(index, "A minor earthquake causes the snow to give way")).toEqual([]);
   });
 });
+
+describe("aliases", () => {
+  it("answers to an alias and its plural, before the bestiary's own names", () => {
+    const index = buildMonsterIndex(
+      [
+        { note: "b/Robot Warden.md", name: "Robot Warden" },
+        { note: "b/Horse, Riding.md", name: "Horse, Riding" },
+      ],
+      [
+        { phrase: "warden robot", note: "b/Robot Warden.md" },
+        { phrase: "horse", note: "b/Horse, Riding.md" },
+      ]
+    );
+    expect(lookupName(index, "warden robots")).toMatchObject({ note: "b/Robot Warden.md", plural: true });
+    expect(lookupName(index, "Horse")).toMatchObject({ note: "b/Horse, Riding.md", plural: false });
+  });
+});

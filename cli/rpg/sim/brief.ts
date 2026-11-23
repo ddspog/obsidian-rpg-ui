@@ -9,14 +9,20 @@
 import { classifyFit, type Fit, type FitDifficulty } from "lib/domains/encounter-sim/fit";
 import type { FidelityRecord } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 
-const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
+export { anyWordIn, wordForms, wordKey } from "lib/domains/encounter-catalog/words";
+
+const stemOf = noteStem;
 
 /**
  * The shortest reference to a note that resolves back to it: its name when the
  * name alone finds that note, else its vault path without `.md`.
  */
 export function noteRef(ctx: Ctx, path: string): string {
+  // "…/Mage.md with Void-Blessed": the creature's reference, then its template.
+  const templated = path.match(/^(.+?\.md) with (.+)$/i);
+  if (templated) return `${noteRef(ctx, templated[1])} with ${templated[2]}`;
   const stem = stemOf(path);
   const found = ctx.vault.getFileByPath(`${stem}.md`) ?? ctx.vault.resolveLink(stem);
   return found?.path === path ? stem : path.replace(/\.md$/i, "");
@@ -58,33 +64,6 @@ export function skippedByOwner(
 }
 
 /**
- * A word folded for loose matching: lower case, a plural "s"/"es" dropped, so
- * "Forests" and "forest", "Hills" and "hill" meet (table tags are often plural,
- * catalog and bestiary habitats singular).
- */
-export function wordKey(word: string): string {
-  const w = word.trim().toLowerCase();
-  if (w.length > 4 && /(ches|shes|sses|xes)$/.test(w)) return w.slice(0, -2);
-  if (w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0, -1);
-  return w;
-}
-
-/** The forms a theme word may take in a name: as written, and its singulars ("wolves": wolve, wolf). */
-export function wordForms(word: string): string[] {
-  const w = word.trim().toLowerCase();
-  const forms = new Set([w, wordKey(w)]);
-  if (w.length > 4 && w.endsWith("ves")) forms.add(`${w.slice(0, -3)}f`);
-  if (w.length > 4 && w.endsWith("ies")) forms.add(`${w.slice(0, -3)}y`);
-  return [...forms].filter((f) => f.length > 0);
-}
-
-/** Whether any of `words`, in any of its forms, appears (as a substring) in any of `texts`, ignoring case. */
-export function anyWordIn(words: readonly string[], texts: readonly string[]): boolean {
-  const hay = texts.map((t) => t.toLowerCase());
-  return words.some((word) => wordForms(word).some((form) => hay.some((h) => h.includes(form))));
-}
-
-/**
  * JSON laid out for a reader that pays per token: the document's keys one to a
  * line, the items of a list or map under them one to a line, and anything
  * deeper written on that line. Still one valid JSON document.
@@ -101,3 +80,12 @@ export function briefJson(value: unknown, depth = 0): string {
   if (entries.length === 0) return "{}";
   return `{\n${entries.map(([k, v]) => `${pad}${JSON.stringify(k)}: ${briefJson(v, depth + 1)}`).join(",\n")}\n${end}}`;
 }
+
+/**
+ * Lets the event loop run (timers, I/O, a test runner's messages) between two
+ * pieces of a long simulation. The sweeps simulate monster after monster with
+ * nothing else awaited, and without this the loop is blocked for the whole
+ * sweep (about 10 s over the bestiary), which a host such as Vitest's worker
+ * cannot wait out.
+ */
+export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));

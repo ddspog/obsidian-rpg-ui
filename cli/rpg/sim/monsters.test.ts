@@ -261,14 +261,9 @@ describe.skipIf(!existsSync(join(VAULT, HOBGOBLIN)))("the vault's bestiary", () 
     expect(m.fidelity.every((r) => r.owner === HOBGOBLIN)).toBe(true);
   });
 
-  it("skips the Hobgoblin Conjurer's Spellcasting as monster-spellcasting", async () => {
+  it("reads the Hobgoblin Conjurer's Spellcasting: a record a spell, its cantrips skipped as utility", async () => {
     const m = await loadMonster(ctx, CONJURER);
-    const casting = m.fidelity.find((r) => r.name === "Spellcasting");
-    expect(casting).toEqual({
-      name: "Spellcasting",
-      owner: CONJURER,
-      status: "skipped",
-      reason: "monster-spellcasting",
-    });
+    expect(m.fidelity.find((r) => r.name === "Spellcasting")).toBeUndefined();
+    expect(m.fidelity.filter((r) => r.reason === "utility-spell").length).toBeGreaterThan(0);
   });
 });

@@ -310,6 +310,21 @@ function ProseNodeView({ node, ...props }: NodeViewProps & { node: ProseNode }) 
         <span className="lonelog-travel-anchor" ref={(el) => registerAnchor(node.sourceId, el)} />
       );
 
+    case "prepared":
+      // An encounter readied from the catalog: a quiet line, not play. Once a fight starts from it, it says so.
+      return (
+        <aside
+          className={`lonelog-prepared${node.fought ? " is-fought" : ""}`}
+          ref={(el) => registerAnchor(node.sourceId, el)}
+        >
+          <span className="lonelog-prepared-state">
+            {node.fought ? `fought${node.foughtIn ? ` in ${node.foughtIn}` : ""}` : "prepared"}
+          </span>
+          <Markdown source={node.link} sourcePath={sourcePath} className="lonelog-prepared-name" />
+          <span className="lonelog-prepared-foes">{node.foes.replace(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, "$1")}</span>
+        </aside>
+      );
+
     case "arrival":
       // A journey's end: when, how far and long, what came of it.
       return (

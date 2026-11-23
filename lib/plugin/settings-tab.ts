@@ -204,6 +204,7 @@ export class DndSettingsTab extends PluginSettingTab {
         break;
       case "content":
         this.renderSystems(panel);
+        this.renderStatblocks(panel);
         this.renderFolderLinks(panel);
         break;
       case "appearance":
@@ -532,6 +533,38 @@ export class DndSettingsTab extends PluginSettingTab {
         button.setButtonText("Add").onClick(() => {
           this.plugin.settings.systemMappings.push({ folderPaths: [], systemFolderPath: "" });
           this.display();
+        })
+      );
+  }
+
+  /** Statblocks and single-block notes. */
+  private renderStatblocks(panel: HTMLElement): void {
+    const containerEl = createSection(panel, "content:statblocks", "Statblocks and block notes", { open: false }).body;
+    new Setting(containerEl)
+      .setName("Guessed monster roles")
+      .setDesc(
+        'A statblock with no role written in it shows the role guessed from its numbers and features, marked with a "?". Choose which guesses to show.'
+      )
+      .addDropdown((d) =>
+        d
+          .addOption("sure", "Fairly sure and sure guesses")
+          .addOption("all", "Every guess")
+          .addOption("none", "No guesses (written roles only)")
+          .setValue(this.plugin.settings.statblockRoleGuesses)
+          .onChange(async (v) => {
+            this.plugin.settings.statblockRoleGuesses = v as "all" | "sure" | "none";
+            await this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName("Hide the title of single-block notes")
+      .setDesc(
+        "A note that is only a heading and one rpg block (a statblock, say) shows the block alone: in reading view, in hover previews and where it is embedded. A note with any other text keeps its title."
+      )
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.hideSingleBlockTitle).onChange(async (v) => {
+          this.plugin.settings.hideSingleBlockTitle = v;
+          await this.plugin.saveSettings();
         })
       );
   }

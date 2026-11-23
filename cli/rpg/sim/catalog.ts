@@ -11,21 +11,27 @@
 import {
   addEntry,
   DEFAULT_RECHECK_EVERY_SESSIONS,
+  DEFAULT_REUSE_AFTER_SESSIONS,
   mergeDrafts,
   removeEntry,
   slugId,
   type Catalog,
   type CatalogEntry,
+  type CatalogProfile,
 } from "lib/domains/encounter-catalog/catalog";
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import {
   isEligible,
   partitionByFit,
+  recentlyUsed,
   recheckReason,
   type FitContext,
   type FitPartition,
 } from "lib/domains/encounter-catalog/fit-state";
+import { normaliseTags, noteStem, sameTag } from "lib/domains/encounter-catalog/words";
+import type { TierMatch } from "lib/domains/encounter-catalog/tier";
 import { outcomeDistance } from "lib/domains/encounter-sim/fit";
+import { profileView, type PartyProfile } from "lib/domains/encounter-sim/party-profile";
 import type { Ctx } from "../app";
 import {
   catalogExists,
@@ -36,13 +42,19 @@ import {
   saveCatalog,
   systemFolderOf,
 } from "./catalog-store";
+import { adjustEntry, adjustedEntry, adjustPool } from "./catalog-adjust";
 import { checkEntries, loadPartyState, type CheckParams, type CheckResult } from "./catalog-check";
 import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
-import { CONFIDENCES, UsageError, type SimOptions } from "./flags";
-import { readMonsterNote } from "./monsters";
+import { CONFIDENCES, UsageError, type SimOptions, type TierScope } from "./flags";
+import { linkNames, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
+import { listSessions } from "../session/lines";
+import { readNote, writeNote } from "../write";
+import { noteRef } from "./brief";
+import { appendToLog, foesText, formatEncounterTag } from "lib/domains/session-log/prepared-encounter";
+import { inScope, tierMatcher } from "./tier-scope";
 
 export interface CatalogDeps {
   /** Today's date as written into `checkedOn`; the only thing the clock is used for. */
@@ -55,7 +67,9 @@ const DEFAULT_SUGGEST = 10;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-const baseName = (note: string): string => (note.split("/").pop() ?? note).replace(/\.md$/i, "");
+const baseName = noteStem;
+/** A catalog monster's reference, its template after it: "Mage with Void-Blessed". */
+const refOf = (m: { note: string; template?: string }): string => withTemplate(m.note, m.template);
 
 const rankOf = (confidence: Confidence): number => CONFIDENCES.length - CONFIDENCES.indexOf(confidence);
 
@@ -70,9 +84,17 @@ interface EntryView {
     winRate: number;
     tpkRate: number;
     avgHpLost: number;
+    /** The state with every rolled count at its fewest / most. */
+    atMin?: string;
+    atMax?: string;
+    /** Near the fit's edge even after a longer run: another seed may call it the other way. */
+    borderline?: boolean;
     /** Why the fit is out of date, when it is. */
     stale?: string;
   };
+  uses?: number;
+  lastUsedSession?: number;
+  scene?: string;
 }
 
 /** An entry as `catalog suggest --brief` prints it: groups as --monster takes them, and the fit flattened. */
@@ -87,9 +109,18 @@ export interface BriefEntryView {
   tpkRate?: number;
   avgHpLost?: number;
   stale?: string;
+  /** The fit with every rolled count at its fewest / most, when a count is rolled. */
+  atMin?: string;
+  atMax?: string;
+  /** Near the fit's edge: another seed may call it the other way. */
+  borderline?: boolean;
+  /** The session it was last run at. */
+  lastUsedSession?: number;
+  /** The table row's own words. */
+  scene?: string;
 }
 
-export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
+function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
   const reason = recheckReason(
     entry,
     fitContext.stamp,
@@ -100,7 +131,7 @@ export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContex
   return {
     id: entry.id,
     name: entry.name,
-    monsters: entry.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+    monsters: entry.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
     tags: entry.tags,
     review: entry.review,
     ...(entry.fit
@@ -109,9 +140,13 @@ export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContex
           winRate: entry.fit.winRate,
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
+          ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
+          ...(entry.fit.borderline ? { borderline: true } : {}),
         }
       : {}),
     ...(reason ? { stale: reason } : {}),
+    ...(entry.lastUsedSession !== undefined ? { lastUsedSession: entry.lastUsedSession } : {}),
+    ...(entry.source?.text ? { scene: entry.source.text } : {}),
   };
 }
 
@@ -121,7 +156,7 @@ function viewOf(entry: CatalogEntry, ctx: FitContext): EntryView {
   return {
     id: entry.id,
     name: entry.name,
-    monsters: entry.monsters.map((m) => ({ note: baseName(m.note), count: m.count })),
+    monsters: entry.monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })),
     tags: entry.tags,
     review: entry.review,
     fit: entry.fit
@@ -130,9 +165,14 @@ function viewOf(entry: CatalogEntry, ctx: FitContext): EntryView {
           winRate: entry.fit.winRate,
           tpkRate: entry.fit.tpkRate,
           avgHpLost: entry.fit.avgHpLost,
+          ...(entry.fit.atMin !== undefined ? { atMin: entry.fit.atMin, atMax: entry.fit.atMax } : {}),
+          ...(entry.fit.borderline ? { borderline: true } : {}),
           ...(reason ? { stale: reason } : {}),
         }
       : null,
+    ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
+    ...(entry.lastUsedSession !== undefined ? { lastUsedSession: entry.lastUsedSession } : {}),
+    ...(entry.source?.text ? { scene: entry.source.text } : {}),
   };
 }
 
@@ -155,7 +195,25 @@ function checkParams(options: SimOptions, now: () => string): CheckParams {
     force: options.force,
     limit: options.limitSet ? options.limit : Infinity,
     today: now(),
+    tiers: options.tiers,
   };
+}
+
+/**
+ * The catalog's entries split by the --tiers rule: those offered to the party
+ * (each with its match, `lower` meaning a lower tier taken for story use) and
+ * how many were left out as another tier's.
+ */
+function byTier(ctx: Ctx, catalog: Catalog, profile: PartyProfile, scope: TierScope) {
+  const matchOf = tierMatcher(ctx, profile);
+  const kept: Array<{ entry: CatalogEntry; match: TierMatch }> = [];
+  let otherTier = 0;
+  for (const entry of catalog.entries) {
+    const match = matchOf(entry);
+    if (inScope(match, scope)) kept.push({ entry, match });
+    else otherTier += 1;
+  }
+  return { kept, otherTier, scoped: { entries: kept.map((k) => k.entry) } };
 }
 
 /** Runs the check and writes the catalog when anything changed; returns the new catalog and the result. */
@@ -170,8 +228,12 @@ async function runCheck(
   const withSession: Catalog = { ...catalog, session };
   const party = await loadPartyState(ctx, withSession, path);
   const result = await checkEntries(ctx, withSession, party, checkParams(options, now));
-  if (result.checked > 0 || session !== catalog.session) saveCatalog(ctx, path, result.catalog);
-  return { catalog: result.catalog, result, party };
+  // The party as checked, for the board in Obsidian (which does not simulate).
+  const profile: CatalogProfile = { ...profileView(party.profile), stamp: party.stamp };
+  const next: Catalog = { ...result.catalog, profile };
+  const profileChanged = JSON.stringify(catalog.profile ?? null) !== JSON.stringify(profile);
+  if (result.checked > 0 || session !== catalog.session || profileChanged) saveCatalog(ctx, path, next);
+  return { catalog: next, result: { ...result, catalog: next }, party };
 }
 
 // ---------------------------------------------------------------- actions
@@ -194,6 +256,7 @@ function init(ctx: Ctx, options: SimOptions) {
     difficulty: options.difficulty,
     session: options.session ?? 0,
     recheckEverySessions: options.every ?? DEFAULT_RECHECK_EVERY_SESSIONS,
+    reuseAfterSessions: options.reuseAfter ?? DEFAULT_REUSE_AFTER_SESSIONS,
     entries: [],
   };
   saveCatalog(ctx, path, catalog);
@@ -204,6 +267,7 @@ function init(ctx: Ctx, options: SimOptions) {
     difficulty: catalog.difficulty,
     session: catalog.session,
     recheckEverySessions: catalog.recheckEverySessions,
+    reuseAfterSessions: catalog.reuseAfterSessions,
   };
 }
 
@@ -257,8 +321,9 @@ function draft(ctx: Ctx, options: SimOptions) {
     drafts: drafts.slice(0, cap).map((d) => ({
       id: d.entry.id,
       name: d.entry.name,
-      monsters: d.entry.monsters.map((m) => ({ note: baseName(m.note), count: m.count })),
+      monsters: d.entry.monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })),
       tags: d.entry.tags,
+      ...(d.entry.source?.text ? { scene: d.entry.source.text } : {}),
       confidence: d.confidence,
       combat: d.combat,
       reasons: d.reasons,
@@ -269,11 +334,17 @@ function draft(ctx: Ctx, options: SimOptions) {
 
   if (options.accept && path) {
     const min = rankOf(options.minConfidence);
-    const accepted = drafts.filter((d) => rankOf(d.confidence) >= min).map((d) => d.entry);
+    const only = new Set(options.only);
+    const unknown = options.only.filter((id) => !drafts.some((d) => d.entry.id === id));
+    if (unknown.length > 0) throw new UsageError(`--only names no draft of these notes: ${unknown.join(", ")}.`);
+    const accepted = drafts
+      .filter((d) => (only.size > 0 ? only.has(d.entry.id) : rankOf(d.confidence) >= min))
+      .map((d) => d.entry);
     const result = mergeDrafts(catalog, accepted);
     if (result.added.length > 0) saveCatalog(ctx, path, result.catalog);
     doc.catalog = path;
-    doc.minConfidence = options.minConfidence;
+    if (only.size > 0) doc.only = [...only];
+    else doc.minConfidence = options.minConfidence;
     doc.accepted = result.added.length;
   }
   return doc;
@@ -285,6 +356,7 @@ function emptyCatalog(): Catalog {
     difficulty: "challenging",
     session: 0,
     recheckEverySessions: DEFAULT_RECHECK_EVERY_SESSIONS,
+    reuseAfterSessions: DEFAULT_REUSE_AFTER_SESSIONS,
     entries: [],
   };
 }
@@ -312,7 +384,7 @@ function add(ctx: Ctx, options: SimOptions) {
   saveCatalog(ctx, path, addEntry(catalog, entry));
   return {
     catalog: path,
-    added: { id: entry.id, name, monsters: monsters.map((m) => ({ note: baseName(m.note), count: m.count })) },
+    added: { id: entry.id, name, monsters: monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })) },
   };
 }
 
@@ -355,6 +427,182 @@ function remove(ctx: Ctx, options: SimOptions) {
   return { catalog: path, removed: ids, remaining: next.entries.length };
 }
 
+function tag(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const changed: Array<{ id: string; tags: string[] }> = [];
+  const entries = catalog.entries.map((entry) => {
+    if (!ids.includes(entry.id)) return entry;
+    const kept = entry.tags.filter((t) => !options.dropTags.some((d) => sameTag(t, d)));
+    const tags = normaliseTags([...kept, ...options.addTags.filter((t) => !kept.some((k) => sameTag(k, t)))]);
+    if (tags.join("\n") === entry.tags.join("\n")) return entry;
+    changed.push({ id: entry.id, tags });
+    return { ...entry, tags };
+  });
+  if (changed.length > 0) saveCatalog(ctx, path, { ...catalog, entries });
+  return { catalog: path, changed, unchanged: ids.filter((id) => !changed.some((c) => c.id === id)) };
+}
+
+function use(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const session = options.session ?? catalog.session;
+  const used: Array<{ id: string; uses: number; lastUsedSession: number }> = [];
+  const entries = catalog.entries.map((entry) => {
+    if (!ids.includes(entry.id)) return entry;
+    const next = { ...entry, uses: (entry.uses ?? 0) + 1, lastUsedSession: session };
+    used.push({ id: entry.id, uses: next.uses, lastUsedSession: session });
+    return next;
+  });
+  saveCatalog(ctx, path, { ...catalog, entries });
+  return {
+    catalog: path,
+    used,
+    offeredAgainFrom: catalog.reuseAfterSessions > 0 ? session + catalog.reuseAfterSessions : session,
+  };
+}
+
+/**
+ * The vault's session notes played by this party: a note `rpg session list` shows
+ * (an `rpg log` and `pcs`), in the party's system folder (so test notes elsewhere
+ * do not count), whose every PC is one of the catalog's.
+ */
+function partySessions(ctx: Ctx, catalog: Catalog): string[] {
+  const party = new Set(catalog.party.pcs);
+  const system = systemFolderOf(catalog.party.pcs[0] ?? "");
+  return listSessions(ctx).filter((path) => {
+    if (system && !path.startsWith(`${system}/`)) return false;
+    const file = ctx.note(path);
+    const pcs = ctx.metadataCache.frontmatterOf(file)?.pcs;
+    if (!Array.isArray(pcs) || pcs.length === 0) return false;
+    return pcs.every((raw) => {
+      const name = linkNames(String(raw))[0] ?? String(raw);
+      const found = ctx.vault.resolveLink(name.replace(/\.md$/i, ""));
+      return found !== null && found !== undefined && party.has(found.path);
+    });
+  });
+}
+
+function session(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const notes = partySessions(ctx, catalog);
+  const next = options.session ?? notes.length;
+  const from = options.session !== undefined ? "set" : "vault";
+  if (next !== catalog.session) saveCatalog(ctx, path, { ...catalog, session: next });
+  return { catalog: path, session: next, was: catalog.session, from, sessions: notes };
+}
+
+/**
+ * Prepares entries in the party's latest session log: one `[Enc:…|prepared]` line each, which the
+ * Start Combat card offers (see lib/domains/session-log/prepared-encounter.ts).
+ */
+function prepare(ctx: Ctx, options: SimOptions) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const sessions = partySessions(ctx, catalog).sort();
+  const latest = sessions[sessions.length - 1];
+  if (!latest) {
+    throw new UsageError("No session note of this party to prepare in (a note with an rpg log and the party's pcs).");
+  }
+  let text = readNote(ctx.root, latest) ?? "";
+  const self = path.replace(/\.md$/i, "");
+  const done: Array<{ id: string; line: string }> = [];
+  for (const id of ids) {
+    const entry = catalog.entries.find((e) => e.id === id) as CatalogEntry;
+    const title = entry.name.replace(/^.+? #\d+: /, "").replace(/[[\]|]/g, "");
+    const line = formatEncounterTag({
+      link: `[[${self}#^${id}|${title}]]`,
+      foes: foesText(entry.monsters.map((m) => ({ link: noteRef(ctx, m.note), count: m.count }))),
+      state: "prepared",
+    });
+    const next = appendToLog(text, line);
+    if (next === null) throw new UsageError(`"${latest}" has no rpg log block to prepare in.`);
+    text = next;
+    done.push({ id, line });
+  }
+  writeNote(ctx.root, latest, text);
+  return { catalog: path, session: latest, prepared: done };
+}
+
+/**
+ * `catalog adjust`: the entries named (or, with none, those of the party's tier whose fit is one of
+ * --state, default too-hard and too-easy, at most --limit, default 5) tried with changes; with
+ * --accept the best fitting change of each (or --pick) is added as a draft.
+ */
+async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
+  const { path, catalog } = existing(ctx, options);
+  const ids = [...new Set(options.args)];
+  requireIds(catalog, path, ids);
+  const party = await loadPartyState(ctx, catalog, path, options.session);
+  const states = options.states.length ? options.states : (["too-hard", "too-easy"] as const);
+  const chosen = ids.length
+    ? catalog.entries.filter((e) => ids.includes(e.id))
+    : byTier(ctx, catalog, party.profile, options.tiers)
+        .kept.map((k) => k.entry)
+        .filter((e) => e.fit && (states as readonly string[]).includes(e.fit.state) && !e.adjustedFrom)
+        .slice(0, options.limitSet ? options.limit : 5);
+  const pool = await adjustPool(ctx);
+  const params = { seed: options.seed, trials: options.trials, rounds: options.rounds, today: now() };
+  let next = catalog;
+  const results = [];
+  for (const entry of chosen) {
+    const r = await adjustEntry(ctx, catalog, party, entry, pool, params);
+    let added: string | undefined;
+    const pick = r.fitting[options.pick - 1];
+    if (options.accept && pick) {
+      const draftEntry = adjustedEntry(next, entry, pick);
+      next = addEntry(next, draftEntry);
+      added = draftEntry.id;
+    }
+    results.push({
+      id: r.id,
+      fit: r.from.state,
+      avgHpLost: r.from.avgHpLost,
+      tpkRate: r.from.tpkRate,
+      ...(r.direction ? { make: r.direction } : {}),
+      tried: r.tried,
+      options: r.fitting.slice(0, 3).map((t, i) => ({
+        pick: i + 1,
+        change: t.candidate.label,
+        monsters: t.candidate.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
+        avgHpLost: t.fit.avgHpLost,
+        tpkRate: t.fit.tpkRate,
+        winRate: t.fit.winRate,
+      })),
+      ...(r.fitting.length > 3 ? { moreOptions: r.fitting.length - 3 } : {}),
+      ...(r.closest
+        ? {
+            closest: {
+              change: r.closest.candidate.label,
+              monsters: r.closest.candidate.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
+              fit: r.closest.fit.state,
+              avgHpLost: r.closest.fit.avgHpLost,
+              tpkRate: r.closest.fit.tpkRate,
+            },
+          }
+        : {}),
+      ...(r.direction ? { tactics: r.tactics } : {}),
+      ...(added ? { added } : {}),
+    });
+  }
+  if (next !== catalog) saveCatalog(ctx, path, next);
+  return {
+    catalog: path,
+    party: { name: catalog.party.name, size: party.actors.length, tier: party.profile.tier },
+    difficulty: catalog.difficulty,
+    adjusted: results,
+    ...(results.length === 0
+      ? { note: "No entry to adjust: name ids, or check the catalog first so entries have a fit." }
+      : {}),
+    ...(options.accept
+      ? {}
+      : { hint: "A dry run: --accept adds the best option of each as a draft (--pick N another)." }),
+  };
+}
+
 async function check(ctx: Ctx, options: SimOptions, now: () => string) {
   const { path, catalog } = existing(ctx, options);
   const { result, party } = await runCheck(ctx, path, catalog, options, now);
@@ -363,13 +611,17 @@ async function check(ctx: Ctx, options: SimOptions, now: () => string) {
     party: { name: catalog.party.name, stamp: party.stamp, pcs: party.actors.length },
     session: party.fitContext.session,
     difficulty: catalog.difficulty,
+    profile: profileView(party.profile),
+    tiers: options.tiers,
     seed: options.seed,
     trials: options.trials,
     checked: result.checked,
+    ...(result.borderlineRuns > 0 ? { borderlineRuns: result.borderlineRuns, borderline: result.borderline } : {}),
     unchanged: result.unchanged,
     remaining: result.remaining,
+    otherTier: result.otherTier,
     errors: result.errors,
-    partition: result.partition,
+    partition: partitionByFit(byTier(ctx, result.catalog, party.profile, options.tiers).scoped, party.fitContext),
   };
 }
 
@@ -388,46 +640,65 @@ async function suggest(ctx: Ctx, options: SimOptions, now: () => string) {
     party = await loadPartyState(ctx, catalog, path, options.session);
   }
   const fitContext = party.fitContext;
-  const partition = partitionByFit(catalog, fitContext);
+  const tiers = byTier(ctx, catalog, party.profile, options.tiers);
+  const below = new Set(tiers.kept.filter((k) => k.match === "lower").map((k) => k.entry.id));
+  // Only the entries of the party's tiers count: another tier's stale entry is not this party's to check.
+  const partition = partitionByFit(tiers.scoped, fitContext);
   const stale = needsCheck(partition);
 
-  const eligible = catalog.entries.filter((entry) =>
-    isEligible(entry, fitContext, {
+  let recent = 0;
+  const eligible = tiers.scoped.entries.filter((entry) => {
+    const ok = isEligible(entry, fitContext, {
       tags: options.tags,
       anyTags: options.anyTags,
       states: options.states.length > 0 ? options.states : ["fit"],
       includeStale: options.includeStale,
       ...(options.includeDraft ? {} : { reviewed: true }),
-    })
-  );
+    });
+    if (ok && !options.includeUsed && recentlyUsed(entry, fitContext.session, catalog.reuseAfterSessions)) {
+      recent += 1;
+      return false;
+    }
+    return ok;
+  });
   // The closest to the difficulty's aim first.
   const distance = (entry: CatalogEntry): number =>
     entry.fit ? outcomeDistance(entry.fit, fitContext.difficulty) : Number.POSITIVE_INFINITY;
   eligible.sort((a, b) => distance(a) - distance(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const cap = options.limitSet ? options.limit : DEFAULT_SUGGEST;
 
+  const marked = <T extends object>(entry: CatalogEntry, view: T): T =>
+    below.has(entry.id) ? { ...view, belowTier: true } : view;
+
   if (options.brief) {
     return {
       difficulty: catalog.difficulty,
+      profile: profileView(party.profile),
       needsCheck: stale,
       ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
       ...(refreshed ? { refreshed } : {}),
+      ...(recent > 0 ? { recentlyUsed: recent } : {}),
+      ...(tiers.otherTier > 0 ? { otherTier: tiers.otherTier } : {}),
       matched: eligible.length,
-      entries: eligible.slice(0, cap).map((entry) => briefViewOf(ctx, entry, fitContext)),
+      entries: eligible.slice(0, cap).map((entry) => marked(entry, briefViewOf(ctx, entry, fitContext))),
     };
   }
 
   return {
     catalog: path,
     party: catalog.party.name,
+    profile: profileView(party.profile),
     session: fitContext.session,
     difficulty: catalog.difficulty,
+    tiers: options.tiers,
     partition,
     needsCheck: stale,
     ...(stale > 0 ? { hint: CHECK_HINT(stale) } : {}),
     ...(refreshed ? { refreshed } : {}),
+    ...(recent > 0 ? { recentlyUsed: recent } : {}),
+    ...(tiers.otherTier > 0 ? { otherTier: tiers.otherTier } : {}),
     matched: eligible.length,
-    entries: eligible.slice(0, cap).map((entry) => viewOf(entry, fitContext)),
+    entries: eligible.slice(0, cap).map((entry) => marked(entry, viewOf(entry, fitContext))),
   };
 }
 
@@ -435,8 +706,10 @@ async function list(ctx: Ctx, options: SimOptions) {
   const { path, catalog } = existing(ctx, options);
   const party = await loadPartyState(ctx, catalog, path);
   const fitContext = party.fitContext;
-  const partition = partitionByFit(catalog, fitContext);
-  const matching = catalog.entries.filter(
+  // `list` shows every entry unless --tiers is written: it is the review of the whole note.
+  const tiers = byTier(ctx, catalog, party.profile, options.given.includes("tiers") ? options.tiers : "all");
+  const partition = partitionByFit(tiers.scoped, fitContext);
+  const matching = tiers.scoped.entries.filter(
     (entry) =>
       isEligible(entry, fitContext, {
         tags: options.tags,
@@ -475,6 +748,16 @@ export function createSimCatalog(deps: CatalogDeps = {}): SimHandler {
         return { doc: confirm(ctx, options) };
       case "remove":
         return { doc: remove(ctx, options) };
+      case "tag":
+        return { doc: tag(ctx, options) };
+      case "use":
+        return { doc: use(ctx, options) };
+      case "session":
+        return { doc: session(ctx, options) };
+      case "prepare":
+        return { doc: prepare(ctx, options) };
+      case "adjust":
+        return { doc: await adjust(ctx, options, now) };
       case "check":
         return { doc: await check(ctx, options, now) };
       case "suggest":

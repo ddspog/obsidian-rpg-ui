@@ -4,11 +4,13 @@
  *
  *   initSystemLoader()   call once in a top-level `beforeAll` (bundles the system loader)
  *   makeCtx(root)        boots `root` as the CLI does, then swaps `ctx.systemFor` for a loader
- *                        that works under vitest
+ *                        that works under vitest. The registry and `globalThis.app` are the
+ *                        process's: the vault booted last is the live one, so a spec that boots
+ *                        several fixture vaults uses each before booting the next.
  *   FIXTURE_SYSTEM       written to `fixture/config/index.ts` of a temp vault
  *   pcNote / spellNote / put   markdown builders and a file writer
  */
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
@@ -141,24 +143,14 @@ export function put(root: string, path: string, text: string): void {
 }
 
 /**
- * A copy of the real vault's system folder (images left out), for specs that run over the real
- * PCs and bestiary: the vault is never touched, and the PCs' class links are written by stem. The
- * vault's notes link `[[tales-of-the-valiant/.../Druid]]` by path, which the vault's own
- * character.tsx `linkStem` does not reduce to the class name, so the sheet loses its class and
- * casters; the stem form is what the sheet resolves.
+ * A copy of the real vault's system folder (images left out), for specs that write to it (a catalog,
+ * a session note): the vault is never touched. A spec that only reads boots the vault in place.
  */
-export function copyVaultWithClassStems(vault: string, systemDir: string, pcRefs: string[]): string {
+export function copyVault(vault: string, systemDir: string): string {
   const root = mkdtempSync(join(tmpdir(), "rpg-sim-vault-"));
   cpSync(join(vault, systemDir), join(root, systemDir), {
     recursive: true,
     filter: (src) => !/\.(webp|png|jpe?g|gif|svg|pdf|mp3|mp4)$/i.test(src),
   });
-  for (const ref of pcRefs) {
-    const path = join(root, ref);
-    writeFileSync(
-      path,
-      readFileSync(path, "utf8").replace(/\[\[tales-of-the-valiant\/[^\]]*\/([^/\]]+)\]\]/g, "[[$1]]")
-    );
-  }
   return root;
 }

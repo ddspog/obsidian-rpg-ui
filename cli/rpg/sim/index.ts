@@ -6,9 +6,16 @@
 import { boot, findVault } from "../app";
 import { simCatalog } from "./catalog";
 import { simMain, type SimIo } from "./dispatch";
+import { simBuild } from "./build";
+import { simHomebrew } from "./homebrew";
 import { simPlan } from "./plan";
+import { simEquivalents, simRoles } from "./roles";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
+import { simCalibrate } from "./calibrate";
+import { simLineages } from "./lineages";
+import { simSpells } from "./spells";
+import { simTemplates } from "./templates";
 
 export type { SimIo };
 
@@ -20,5 +27,13 @@ export function simEntry(tokens: string[], io: SimIo): Promise<number> {
     suggest: simSuggest,
     catalog: simCatalog,
     plan: simPlan,
+    roles: simRoles,
+    equivalents: simEquivalents,
+    build: simBuild,
+    homebrew: simHomebrew,
+    templates: simTemplates,
+    lineages: simLineages,
+    calibrate: simCalibrate,
+    spells: simSpells,
   });
 }

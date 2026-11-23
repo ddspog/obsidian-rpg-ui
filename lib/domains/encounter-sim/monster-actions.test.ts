@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { bindMultiattack, classifyMonsterFeature } from "./monster-actions";
+import {
+  acReactionOf,
+  areaTargets,
+  bindMultiattack,
+  classifyMonsterFeature,
+  inflictOfHit,
+  inflictOfSave,
+  parseMonsterSpellcasting,
+  useLimitOf,
+} from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
 
 // Real prose from the Tales of the Valiant Monster Vault notes (feature.details bodies).
@@ -87,8 +96,28 @@ describe("classifyMonsterFeature: save area effects", () => {
         damage: { expr: "12d8", type: "lightning" },
         onSuccess: "half",
         area: true,
+        targets: 1,
         circle: 0,
+        limit: { recharge: 5 },
       },
+    });
+  });
+
+  it("reads a use limit and the size of an area", () => {
+    expect(useLimitOf("Fire Breath (Recharge 6)", "")).toEqual({ recharge: 6 });
+    expect(useLimitOf("Stinking Cloud (1/Day)", "")).toEqual({ perDay: 1 });
+    expect(useLimitOf("Bite", "")).toBeUndefined();
+    expect(areaTargets("in a 15-foot cone")).toEqual({ targets: 2 });
+    expect(areaTargets("in a 20-foot-radius sphere")).toEqual({ targets: 4 });
+    expect(areaTargets("in a 60-foot line that is 5 feet wide")).toEqual({ targets: 2 });
+    expect(areaTargets("each creature within 10 feet")).toEqual({});
+  });
+
+  it("leaves a feature that needs a partner unsupported", () => {
+    const text =
+      "Two kobolds within 5 feet of each other can combine their actions to split the earth in a 20-foot line. Each creature in that line must make a DC 13 Dexterity saving throw, taking 7 (2d6) bludgeoning damage.";
+    expect(classifyMonsterFeature({ name: "Small but Fierce", type: "action", text })).toEqual({
+      skip: "unsupported-feature",
     });
   });
 
@@ -125,8 +154,9 @@ describe("classifyMonsterFeature: multiattack", () => {
 });
 
 describe("classifyMonsterFeature: skips", () => {
-  it("skips Spellcasting and Innate Spellcasting by name", () => {
+  it("reads Spellcasting's list for the loader, and skips a spellcasting feature with none", () => {
     expect(classifyMonsterFeature({ name: "Spellcasting", type: "action", text: CONJURER_SPELLS })).toEqual({
+      spellcasting: { ability: "int", dc: 13, lists: [{ spells: ["light", "mage hand", "prestidigitation"] }] },
       skip: "monster-spellcasting",
     });
     expect(classifyMonsterFeature({ name: "Innate Spellcasting", type: "trait", text: "Anything." })).toEqual({
@@ -134,14 +164,30 @@ describe("classifyMonsterFeature: skips", () => {
     });
   });
 
-  it("skips by the 'casts one of the following spells' prose whatever the name", () => {
-    expect(classifyMonsterFeature({ name: "Arcane Gift", type: "action", text: CONJURER_SPELLS })).toEqual({
-      skip: "monster-spellcasting",
+  it("knows spellcasting by the 'casts one of the following spells' prose whatever the name", () => {
+    expect(
+      classifyMonsterFeature({ name: "Arcane Gift", type: "action", text: CONJURER_SPELLS }).spellcasting
+    ).toBeDefined();
+  });
+
+  it("reads uses a day, wikilinked names and parentheses", () => {
+    expect(
+      parseMonsterSpellcasting(
+        "The priest casts one of the following spells, using WIS as the spellcasting ability (spell save DC 13).\n\nAt will: *[[guidance]], [[lux|Lux]]*\n\n3/day each: *[[bane]]*, *invisibility* (self only)\n\n1/day: *[[dispel magic]]*"
+      )
+    ).toEqual({
+      ability: "wis",
+      dc: 13,
+      lists: [
+        { spells: ["guidance", "lux"] },
+        { perDay: 3, spells: ["bane", "invisibility"] },
+        { perDay: 1, spells: ["dispel magic"] },
+      ],
     });
   });
 
-  it("skips bonus, trait, legendary and reaction features, even attack-shaped ones", () => {
-    for (const type of ["bonus", "trait", "legendary", "reaction"]) {
+  it("skips bonus, trait and reaction features, even attack-shaped ones", () => {
+    for (const type of ["bonus", "trait", "reaction"]) {
       expect(classifyMonsterFeature({ name: "Longsword", type, text: LONGSWORD })).toEqual({
         skip: "unsupported-feature",
       });
@@ -209,5 +255,119 @@ describe("bindMultiattack", () => {
       skip: "unsupported-feature",
     });
     expect(bindMultiattack({ count: 2, attacks: ["Bite"] }, new Map())).toEqual({ skip: "unsupported-feature" });
+  });
+});
+
+describe("conditions in monster prose", () => {
+  it("reads a hit's condition with its own save", () => {
+    expect(
+      inflictOfHit(
+        "7 (1d8 + 3) bludgeoning damage. If the target is a creature, it must succeed on a DC 13 Strength saving throw or be knocked prone."
+      )
+    ).toEqual({ condition: "prone", save: { ability: "str", dc: 13 }, lasts: "start" });
+  });
+
+  it("reads a condition a hit brings, and how long", () => {
+    expect(
+      inflictOfHit("5 (1d6 + 2) piercing damage, and the target is poisoned until the end of its next turn.")
+    ).toEqual({
+      condition: "poisoned",
+      lasts: "end",
+    });
+    expect(inflictOfHit("6 (1d8 + 2) bludgeoning damage, and the target is grappled (escape DC 13).")).toBeUndefined();
+    expect(inflictOfHit("8 (1d10 + 3) slashing damage.")).toBeUndefined();
+  });
+
+  it("reads what a failed save brings", () => {
+    expect(
+      inflictOfSave(
+        "Each creature in that line must make a DC 13 Dexterity saving throw. On a failure, a creature takes 7 (2d6) bludgeoning damage and is knocked prone."
+      )
+    ).toEqual({ condition: "prone", lasts: "start" });
+    expect(
+      classifyMonsterFeature({
+        name: "Frightful Shriek",
+        type: "action",
+        text: "Each creature within 30 feet must succeed on a DC 12 Wisdom saving throw, taking 5 (2d4) psychic damage on a failed save and becoming frightened for 1 minute.",
+      }).action
+    ).toMatchObject({ kind: "save", inflicts: { condition: "frightened", lasts: "fight" } });
+  });
+});
+
+describe("the Monster Vault's short saves and legendary actions", () => {
+  const WING =
+    "The dragon beats its wings. Each creature within 15 feet of the dragon must succeed on a DC 23 DEX save or take 22 (4d6 + 8) bludgeoning damage and be knocked prone.";
+
+  it("reads 'a DC 23 DEX save' like 'a Dexterity saving throw'", () => {
+    expect(
+      classifyMonsterFeature({
+        name: "Fire Breath (Recharge 5–6)",
+        type: "action",
+        text: "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 DEX save, taking 63 (18d6) fire damage on a failed save, or half as much damage on a successful one.",
+      }).action
+    ).toMatchObject({
+      kind: "save",
+      dc: 21,
+      ability: "dex",
+      damage: { expr: "18d6", type: "fire" },
+      targets: 6,
+      limit: { recharge: 5 },
+    });
+  });
+
+  it("reads a legendary action with its cost: its own save, or one of the monster's attacks", () => {
+    expect(
+      classifyMonsterFeature({ name: "Wing Attack (Costs 2 Actions)", type: "legendary", text: WING })
+    ).toMatchObject({
+      legendary: { cost: 2, action: { kind: "save", dc: 23, ability: "dex", inflicts: { condition: "prone" } } },
+    });
+    expect(
+      classifyMonsterFeature({ name: "Tail Attack", type: "legendary", text: "The dragon makes a Tail attack." })
+    ).toMatchObject({
+      legendary: { cost: 1, attackRef: "Tail" },
+    });
+    expect(
+      classifyMonsterFeature({
+        name: "Detect",
+        type: "legendary",
+        text: "The dragon automatically detects every creature within 60 feet.",
+      })
+    ).toEqual({ skip: "unsupported-feature" });
+  });
+});
+
+describe("reactions and Legendary Resistance", () => {
+  it("reads a reaction that raises the creature's own AC, not one that shields another", () => {
+    expect(acReactionOf("The veteran adds 2 to its AC against one melee attack that would hit it.")).toEqual({
+      ac: 2,
+      untilTurn: false,
+    });
+    expect(
+      acReactionOf(
+        "When a creature the fenrosk can see attacks it, the fenrosk can curl into a tight ball, increasing its AC by 2 until the start of its next turn."
+      )
+    ).toEqual({ ac: 2, untilTurn: true });
+    expect(
+      acReactionOf(
+        "When a friendly creature the guard can see within 5 feet of it is the target of an attack, the friendly creature adds 2 to its AC against that attack."
+      )
+    ).toBeUndefined();
+  });
+
+  it("reads Legendary Resistance's uses and a Parry from a reaction feature", () => {
+    expect(
+      classifyMonsterFeature({
+        name: "Legendary Resistance (3/Day)",
+        type: "trait",
+        text: "If the dragon fails a save, it can choose to succeed instead.",
+      })
+    ).toMatchObject({ legendaryResistance: 3 });
+    expect(
+      classifyMonsterFeature({
+        name: "Parry",
+        type: "reaction",
+        text: "The veteran adds 2 to its AC against one melee attack that would hit it.",
+      })
+    ).toMatchObject({ reaction: { ac: 2 } });
   });
 });

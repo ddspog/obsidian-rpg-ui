@@ -129,6 +129,25 @@ const MEADOW_TABLE = [
   "",
 ].join("\n");
 
+// A plural environment ("forests") and a rolled count.
+const FORESTS = "fixture/gm-tools/more-tables/Forests Encounters.md";
+const FORESTS_TABLE = [
+  "# Forests Encounters",
+  "",
+  "```rpg table.forests-encounters",
+  "|d4*|ENCOUNTER|",
+  "|---|---|",
+  "|1|1d4 + 1 wolves leap out of the brush and attack the PCs.|",
+  "```",
+  "",
+].join("\n");
+
+/** A session note as `rpg session list` sees one: `pcs` and an `rpg log`. */
+const sessionNote = (pcs: string[]) =>
+  ["---", "pcs:", ...pcs.map((p) => `  - "[[${p}]]"`), "---", "# Session", "```rpg log", "Hello.", "```", ""].join(
+    "\n"
+  );
+
 let root: string;
 let ctx: Ctx;
 const clock = { value: "2026-11-21" };
@@ -153,6 +172,11 @@ beforeAll(async () => {
   for (const [name, m] of Object.entries(MONSTERS)) put(root, `${BESTIARY}/${name}.md`, monsterNote(name, m));
   put(root, FOREST, FOREST_TABLE);
   put(root, MEADOW, MEADOW_TABLE);
+  put(root, FORESTS, FORESTS_TABLE);
+  put(root, "fixture/sessions/01. Into the Woods.md", sessionNote(["Aria", "Bram"]));
+  put(root, "fixture/sessions/01. Edda's Errand.md", sessionNote(["Aria", "Edda"]));
+  // Outside the party's system folder: a test note, not one of its sessions.
+  put(root, "Sandbox/Session Test.md", sessionNote(["Aria", "Bram"]));
   ctx = makeCtx(root);
 }, 120_000);
 
@@ -191,6 +215,9 @@ const files = (): string[] => (readdirSync(root, { recursive: true, encoding: "u
 
 const PARTY_PCS = PCS.flatMap((n) => ["--pc", pcPath(n)]);
 
+/** The fixture party's profile: four level-1 PCs. */
+const TIER1 = { size: 4, averageLevel: 1, tier: 1, benchmark: "1/2", singleCr: "1/8-1/2" };
+
 /** A new catalog of the four PCs (file `fixture/gm-tools/encounter-catalog/<kebab name>.md`). */
 async function init(name: string, ...extra: string[]): Promise<string> {
   const made = await sim("init", "--party-name", name, ...PARTY_PCS, ...extra);
@@ -222,6 +249,7 @@ describe("catalog init", () => {
       difficulty: "challenging",
       session: 0,
       recheckEverySessions: 5,
+      reuseAfterSessions: 3,
     });
     const catalog = parseCatalog(read(made.doc.catalog));
     expect(catalog).toEqual({
@@ -229,6 +257,7 @@ describe("catalog init", () => {
       difficulty: "challenging",
       session: 0,
       recheckEverySessions: 5,
+      reuseAfterSessions: 3,
       entries: [],
     });
   });
@@ -312,6 +341,7 @@ describe("catalog draft", () => {
       name: "Forest T1 #1: 2 Rat",
       monsters: [{ note: "Rat", count: 2 }],
       tags: ["forest", "tier-1", "test-guide", "swamp"],
+      scene: expect.any(String),
       confidence: "high",
       combat: "likely",
       reasons: [],
@@ -532,6 +562,44 @@ describe("catalog check", () => {
   });
 });
 
+describe("catalog adjust", () => {
+  it("tries changes on an entry that does not fit, and with --accept adds the best as a draft linked to it", async () => {
+    const path = await init("Adjusting");
+    await sim("draft", FOREST, "--catalog", path, "--accept");
+    await sim("check", "--catalog", path);
+    const dry = await sim("adjust", "forest-t1-1-2-rat", "--catalog", path, "--trials", "60");
+    expect(dry.code, dry.err).toBe(0);
+    const rat = dry.doc.adjusted[0];
+    expect(rat).toMatchObject({ id: "forest-t1-1-2-rat", fit: "too-easy", make: "harder" });
+    expect(rat.tried).toBeGreaterThan(0);
+    expect(rat.tactics.join(" ")).toMatch(/ambush/);
+    expect(dry.doc.hint).toMatch(/--accept/);
+    expect(byId(path, "forest-t1-1-2-rat-adjusted-count")).toBeUndefined();
+
+    if (rat.options.length > 0) {
+      const accepted = await sim("adjust", "forest-t1-1-2-rat", "--catalog", path, "--trials", "60", "--accept");
+      const added = accepted.doc.adjusted[0].added;
+      expect(added).toMatch(/^forest-t1-1-2-rat-adjusted-/);
+      expect(byId(path, added)).toMatchObject({
+        review: "draft",
+        adjustedFrom: "forest-t1-1-2-rat",
+        adjustment: rat.options[0].change,
+        fit: { state: "fit" },
+      });
+      expect(byId(path, added)?.tags).toContain("adjusted");
+    } else {
+      expect(rat.closest).toBeDefined();
+    }
+  });
+
+  it("names an id the catalog does not have", async () => {
+    const path = await init("Adjust Missing");
+    const r = await sim("adjust", "nope", "--catalog", path);
+    expect(r.code).toBe(1);
+    expect(r.err).toMatch(/No entry with id "nope"/);
+  });
+});
+
 describe("catalog suggest", () => {
   it("returns the fit entries that match every --tag, leaving drafts out unless asked", async () => {
     const path = await seeded("Suggesting");
@@ -548,7 +616,8 @@ describe("catalog suggest", () => {
         monsters: [{ note: "Wolf", count: 3 }],
         tags: ["forest", "tier-1", "test-guide", "hills"],
         review: "draft",
-        fit: { state: "fit", winRate: 0.93, tpkRate: 0.07, avgHpLost: 0.3924 },
+        fit: { state: "fit", winRate: 0.915, tpkRate: 0.085, avgHpLost: 0.4099 },
+        scene: "A pack of three wolves stalks the PCs and attacks.",
       },
     ]);
     expect(shown.doc.partition).toEqual({ fit: 1, tooEasy: 1, tooHard: 1, stale: 0, unchecked: 1, draft: 4 });
@@ -856,8 +925,8 @@ describe("--brief", () => {
     for (const key of ["winRate", "tpkRate", "avgRounds", "koRate", "difficulty"]) {
       expect(brief.doc[key]).toEqual(full.doc[key]);
     }
-    // 39% of HP lost and a 7% TPK rate is within reach of easy's aim and of challenging's.
-    expect(brief.doc.fit).toEqual({ easy: "fit", challenging: "fit", deadly: "too-easy" });
+    // 41% of HP lost and an 8.5% TPK rate is within reach of challenging's aim, past easy's.
+    expect(brief.doc.fit).toEqual({ easy: "too-hard", challenging: "fit", deadly: "too-easy" });
     expect(brief.doc.skipped).toEqual({});
     expect(brief.out.length).toBeLessThan(full.out.length / 4);
   });
@@ -894,6 +963,7 @@ describe("--brief", () => {
     expect(brief.code, brief.err).toBe(0);
     expect(brief.doc).toEqual({
       difficulty: "challenging",
+      profile: TIER1,
       needsCheck: 1,
       hint: expect.stringContaining("catalog check"),
       matched: 1,
@@ -905,9 +975,10 @@ describe("--brief", () => {
           tags: ["forest", "tier-1", "test-guide", "hills"],
           review: "draft",
           fit: "fit",
-          winRate: 0.93,
-          tpkRate: 0.07,
-          avgHpLost: 0.3924,
+          winRate: 0.915,
+          tpkRate: 0.085,
+          avgHpLost: 0.4099,
+          scene: "A pack of three wolves stalks the PCs and attacks.",
         },
       ],
     });
@@ -931,6 +1002,7 @@ describe("plan", () => {
     expect(plan.code, plan.err).toBe(0);
     expect(plan.doc).toEqual({
       party: PCS,
+      profile: TIER1,
       difficulty: "challenging",
       catalog: path,
       options: [
@@ -941,9 +1013,10 @@ describe("plan", () => {
           monsters: ["Wolf:3"],
           tags: ["forest", "tier-1", "test-guide", "hills"],
           fit: "fit",
-          winRate: 0.93,
-          tpkRate: 0.07,
-          avgHpLost: 0.3924,
+          winRate: 0.915,
+          tpkRate: 0.085,
+          avgHpLost: 0.4099,
+          scene: "A pack of three wolves stalks the PCs and attacks.",
         },
       ],
       // The wraith's entry could not be checked.
@@ -1023,5 +1096,196 @@ describe("plan", () => {
     expect(plan.code, plan.err).toBe(0);
     expect(plan.doc.options).toEqual([]);
     expect(plan.doc.notes).toEqual([expect.stringContaining("benchmark is 0")]);
+  });
+});
+
+describe("catalog tag", () => {
+  it("adds and drops tags (plural or not), and says which entries did not change", async () => {
+    const path = await seeded("Tagging");
+    const done = await sim(
+      "tag",
+      "forest-t1-2-3-wolf",
+      "forest-t1-1-2-rat",
+      "--add-tag",
+      "Ambush",
+      "--drop-tag",
+      "Hills",
+      "--catalog",
+      path
+    );
+    expect(done.code, done.err).toBe(0);
+    // In the catalog's order (the rat's row comes first).
+    expect(done.doc.changed).toEqual([
+      { id: "forest-t1-1-2-rat", tags: ["forest", "tier-1", "test-guide", "swamp", "ambush"] },
+      { id: "forest-t1-2-3-wolf", tags: ["forest", "tier-1", "test-guide", "ambush"] },
+    ]);
+    expect(byId(path, "forest-t1-2-3-wolf")?.tags).toEqual(["forest", "tier-1", "test-guide", "ambush"]);
+    const again = await sim("tag", "forest-t1-2-3-wolf", "--add-tag", "ambushes", "--catalog", path);
+    expect(again.doc).toMatchObject({ changed: [], unchanged: ["forest-t1-2-3-wolf"] });
+  });
+
+  it("needs ids that exist and a tag to add or drop", async () => {
+    const path = await init("Tag Errors");
+    expect((await sim("tag", "nope", "--add-tag", "x", "--catalog", path)).code).toBe(1);
+    const none = await sim("tag", "nope", "--catalog", path);
+    expect(none.code).toBe(1);
+    expect(none.err).toContain("--add-tag or --drop-tag");
+  });
+});
+
+describe("catalog use", () => {
+  it("records a run, and suggest and plan hold the entry back for --reuse-after sessions", async () => {
+    const path = await seeded("Reuse");
+    await sim("confirm", "forest-t1-2-3-wolf", "--catalog", path);
+    const used = await sim("use", "forest-t1-2-3-wolf", "--catalog", path);
+    expect(used.code, used.err).toBe(0);
+    expect(used.doc).toEqual({
+      catalog: path,
+      used: [{ id: "forest-t1-2-3-wolf", uses: 1, lastUsedSession: 0 }],
+      offeredAgainFrom: 3,
+    });
+    expect(byId(path, "forest-t1-2-3-wolf")).toMatchObject({ uses: 1, lastUsedSession: 0 });
+
+    const held = await sim("suggest", "--catalog", path);
+    expect(held.doc).toMatchObject({ matched: 0, recentlyUsed: 1 });
+    const shown = await sim("suggest", "--catalog", path, "--include-used");
+    expect(shown.doc.entries[0]).toMatchObject({ id: "forest-t1-2-3-wolf", uses: 1, lastUsedSession: 0 });
+
+    const plan = await simAll("plan", "--catalog", path, "--limit", "1");
+    expect(plan.doc.options[0].from).toBe("sweep");
+    expect(plan.doc.notes).toEqual(expect.arrayContaining([expect.stringContaining("run in the last 3 sessions")]));
+  });
+});
+
+describe("catalog session", () => {
+  it("counts the vault's session notes played by the party only, and can be set", async () => {
+    const path = await init("Session Count");
+    const counted = await sim("session", "--catalog", path);
+    expect(counted.code, counted.err).toBe(0);
+    // Edda is not in the party, and the Sandbox note is outside the party's system folder.
+    expect(counted.doc).toEqual({
+      catalog: path,
+      session: 1,
+      was: 0,
+      from: "vault",
+      sessions: ["fixture/sessions/01. Into the Woods.md"],
+    });
+    expect(parseCatalog(read(path)).session).toBe(1);
+    const set = await sim("session", "--session", "7", "--catalog", path);
+    expect(set.doc).toMatchObject({ session: 7, was: 1, from: "set" });
+    expect(parseCatalog(read(path)).session).toBe(7);
+  });
+});
+
+describe("draft and check: one tag spelling, the scene, a rolled count", () => {
+  it("folds a table's plural to the bestiary's habitat, keeps the row, and checks the fewest and most", async () => {
+    const path = await init("Rolled");
+    const drafted = await sim("draft", FORESTS, "--catalog", path, "--accept", "--min-confidence", "low");
+    expect(drafted.code, drafted.err).toBe(0);
+    const [entry] = entriesOf(path);
+    expect(entry.tags).toEqual(["forest", "hills"]);
+    expect(entry.source?.text).toBe("1d4 + 1 wolves leap out of the brush and attack the PCs.");
+    expect(entry.monsters).toEqual([{ note: `${BESTIARY}/Wolf.md`, count: 4, dice: "1d4 + 1" }]);
+
+    const checked = await sim("check", "--catalog", path);
+    expect(checked.code, checked.err).toBe(0);
+    const fit = entriesOf(path)[0].fit;
+    expect(fit?.atMin).toMatch(/^(fit|too-easy|too-hard)$/);
+    expect(fit?.atMax).toBe("too-hard");
+    const brief = await simAll(
+      "catalog",
+      "suggest",
+      "--catalog",
+      path,
+      "--include-draft",
+      "--state",
+      "too-hard",
+      "--brief"
+    );
+    expect(brief.doc.entries[0]).toMatchObject({ atMax: "too-hard", scene: expect.stringContaining("wolves leap") });
+  });
+});
+
+describe("suggest: --fit and a benchmark of 0", () => {
+  it("keeps only the fits asked for", async () => {
+    const hard = await simAll("suggest", ...PARTY_PCS, "--fit", "too-hard", "--limit", "100");
+    expect(hard.code, hard.err).toBe(0);
+    expect(hard.doc.candidates.length).toBeGreaterThan(0);
+    expect(hard.doc.candidates.every((c: { fit: string }) => c.fit === "too-hard")).toBe(true);
+    expect((await simAll("suggest", "--fit", "brutal")).code).toBe(1);
+  });
+
+  it("says why a party with a benchmark of 0 gets nothing", async () => {
+    const two = await simAll("suggest", "--pc", pcPath("Aria"), "--pc", pcPath("Bram"));
+    expect(two.doc.candidates).toEqual([]);
+    expect(two.doc.note).toContain("benchmark is 0");
+    const brief = await simAll("suggest", "--pc", pcPath("Aria"), "--pc", pcPath("Bram"), "--brief");
+    expect(brief.doc.note).toContain("benchmark is 0");
+  });
+});
+
+describe("the party's tier", () => {
+  it("checks, suggests and plans only the party's tier unless --tiers says otherwise", async () => {
+    const path = await seeded("Tiered");
+    // Untagged with a CR 2 ogre (above a level-1 party's 1/2), and tagged tier 2: both another tier's.
+    expect(
+      (await sim("add", "--name", "Ogre by hand", "--monster", `${BESTIARY}/Ogre.md`, "--catalog", path)).code
+    ).toBe(0);
+    expect(
+      (
+        await sim(
+          "add",
+          "--name",
+          "Wolves of tier 2",
+          "--monster",
+          `${BESTIARY}/Wolf.md:2`,
+          "--tag",
+          "tier-2",
+          "--catalog",
+          path
+        )
+      ).code
+    ).toBe(0);
+
+    const checked = await sim("check", "--catalog", path);
+    expect(checked.doc).toMatchObject({ checked: 0, otherTier: 2, profile: TIER1, tiers: "same" });
+    expect(byId(path, "ogre-by-hand")?.fit).toBeUndefined();
+
+    const suggested = await sim("suggest", "--catalog", path, "--include-draft", "--state", "too-hard");
+    expect(suggested.doc).toMatchObject({ otherTier: 2, needsCheck: 1 });
+    expect(suggested.doc.entries.map((e: { id: string }) => e.id)).toEqual(["forest-t1-3-ogre"]);
+
+    const plan = await simAll("plan", "--catalog", path, "--limit", "1");
+    expect(plan.doc.notes).toEqual(
+      expect.arrayContaining([expect.stringContaining("2 catalog entries are from another tier")])
+    );
+
+    const all = await sim("check", "--catalog", path, "--tiers", "all");
+    expect(all.doc).toMatchObject({ checked: 2, otherTier: 0 });
+    expect(byId(path, "ogre-by-hand")?.fit?.state).toBe("too-hard");
+  });
+
+  it("lists every entry unless --tiers is written", async () => {
+    const path = await seeded("Tier List");
+    await sim("add", "--name", "Ogre by hand", "--monster", `${BESTIARY}/Ogre.md`, "--catalog", path);
+    expect((await sim("list", "--catalog", path)).doc.matched).toBe(5);
+    expect((await sim("list", "--catalog", path, "--tiers", "same")).doc.matched).toBe(4);
+  });
+});
+
+describe("catalog prepare", () => {
+  it("writes an [Enc:] line into the party's latest session log, which Start Combat offers", async () => {
+    const path = await seeded("Preparing");
+    const done = await sim("prepare", "forest-t1-2-3-wolf", "--catalog", path);
+    expect(done.code, done.err).toBe(0);
+    const line = `[Enc:[[${path.replace(/\.md$/, "")}#^forest-t1-2-3-wolf|3 Wolf]]|3 [[Wolf]]|prepared]`;
+    expect(done.doc).toEqual({
+      catalog: path,
+      session: "fixture/sessions/01. Into the Woods.md",
+      prepared: [{ id: "forest-t1-2-3-wolf", line }],
+    });
+    const note = read("fixture/sessions/01. Into the Woods.md");
+    expect(note).toContain(`Hello.\n${line}\n\`\`\``);
+    expect((await sim("prepare", "nope", "--catalog", path)).code).toBe(1);
   });
 });

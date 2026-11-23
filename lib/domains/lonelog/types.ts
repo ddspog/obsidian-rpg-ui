@@ -254,7 +254,23 @@ export type PersistentTag =
   | TimeTag
   | WeatherTag
   | GroupTag
-  | MarkTag;
+  | MarkTag
+  | EncounterTagEntry;
+
+/**
+ * An encounter prepared from a party's catalog, or fought from one:
+ * `[Enc:[[catalog#^id|Name]]|8 [[Baboon]]|prepared]` (see
+ * lib/domains/session-log/prepared-encounter.ts).
+ */
+export interface EncounterTagEntry {
+  kind: "encounter";
+  link: string;
+  target: string;
+  name: string;
+  foes: string;
+  state: "prepared" | "fought";
+  scene?: string;
+}
 
 /**
  * Who travels together (hex-map-design §14.2). One tag, a small verb each:

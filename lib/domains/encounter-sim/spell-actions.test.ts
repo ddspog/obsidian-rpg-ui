@@ -308,7 +308,7 @@ describe("resolveSpellOption: spell attacks", () => {
     expect(result.action).toMatchObject({ damage: { expr: "3d8" }, circle: 1 });
   });
 
-  it("models a cantrip with circle 0 (Magnetobolt), save rider ignored", () => {
+  it("models a cantrip with circle 0 (Magnetobolt), its save rider as the condition a hit brings", () => {
     const result = resolveSpellOption(MAGNETOBOLT, NUMBERS, OWNER);
     expect(result.action).toEqual({
       kind: "spell-attack",
@@ -316,6 +316,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "force" },
       circle: 0,
+      inflicts: { condition: "prone", lasts: "start", save: { ability: "str", dc: 14 } },
     });
   });
 
@@ -329,7 +330,7 @@ describe("resolveSpellOption: spell attacks", () => {
     expect(at(20)).toMatchObject({ damage: { expr: "4d6", type: "radiant" } });
   });
 
-  it("treats Luminous Bolt's save-and-effects rider as ignored: a spell attack, not a save", () => {
+  it("reads Luminous Bolt's save-and-effects rider as the condition its hit brings: a spell attack, not a save", () => {
     const result = resolveSpellOption(LUMINOUS_BOLT, NUMBERS, OWNER);
     expect(result.action).toEqual({
       kind: "spell-attack",
@@ -337,6 +338,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "radiant" },
       circle: 0,
+      inflicts: { condition: "blinded", lasts: "end", save: { ability: "con", dc: 14 } },
     });
     expect(result.fidelity.status).toBe("modelled");
   });
@@ -381,6 +383,7 @@ describe("resolveSpellOption: save actions", () => {
       damage: { expr: "2d8", type: "thunder" },
       onSuccess: "half",
       area: true,
+      targets: 3,
       circle: 1,
     });
     expect(result.fidelity).toEqual({ name: "Thunderwave", owner: OWNER, status: "modelled" });
@@ -486,10 +489,15 @@ describe("resolveSpellOption: healing", () => {
 });
 
 describe("resolveSpellOption: skipped classifications", () => {
-  it("skips Entangle (save and effects, no damage) as control-spell", () => {
+  it("models Entangle (save and a condition, no damage) as a save that deals nothing and restrains", () => {
     const result = resolveSpellOption(ENTANGLE, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "skipped", reason: "control-spell" });
+    expect(result.action).toMatchObject({
+      kind: "save",
+      ability: "str",
+      damage: { expr: "0" },
+      inflicts: { condition: "restrained" },
+    });
+    expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "modelled" });
   });
 
   it("skips Sanctuary (save, no damage, no effects) as control-spell", () => {
@@ -503,10 +511,50 @@ describe("resolveSpellOption: skipped classifications", () => {
     expect(resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason).toBe("control-spell");
   });
 
-  it("skips a roll-less spell about attack rolls and saves (Bless) as buff", () => {
+  it("models Bless as a buff: a d4 on the attacks and saves of up to three allies", () => {
     const result = resolveSpellOption(BLESS, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Bless", owner: OWNER, status: "skipped", reason: "buff" });
+    expect(result.action).toEqual({
+      kind: "buff",
+      name: "Bless",
+      circle: 1,
+      on: "allies",
+      targets: 3,
+      attackDie: "+1d4",
+      saveDie: "+1d4",
+    });
+    expect(result.fidelity).toEqual({ name: "Bless", owner: OWNER, status: "modelled" });
+  });
+
+  it("models Bane as a debuff on enemies that a save keeps off, and Shield of Faith as +2 AC", () => {
+    expect(
+      resolveSpellOption(
+        {
+          name: "Bane",
+          circle: 1,
+          text: "Up to three creatures of your choice that you can see within range must succeed on a CHA save or become cursed. When a cursed target makes an attack roll or a save before the spell ends, the target must roll a d4 and subtract the number rolled from the attack roll or save.",
+        },
+        NUMBERS,
+        OWNER
+      ).action
+    ).toMatchObject({
+      kind: "buff",
+      on: "enemies",
+      targets: 3,
+      attackDie: "-1d4",
+      saveDie: "-1d4",
+      save: { ability: "cha", dc: 14 },
+    });
+    expect(
+      resolveSpellOption(
+        {
+          name: "Shield of Faith",
+          circle: 1,
+          text: "A shimmering field surrounds a creature, granting it a +2 bonus to AC for the duration.",
+        },
+        NUMBERS,
+        OWNER
+      ).action
+    ).toMatchObject({ kind: "buff", on: "allies", targets: 1, ac: 2 });
   });
 
   it("recognises armor class and AC wording as buff", () => {
@@ -548,7 +596,7 @@ describe("resolveSpellOption: skipped classifications", () => {
   });
 
   it("only ever reports reasons from the fixed vocabulary", () => {
-    for (const spell of [ENTANGLE, SANCTUARY, BLESS, GUIDANCE, SPEAK_WITH_ANIMALS]) {
+    for (const spell of [SANCTUARY, GUIDANCE, SPEAK_WITH_ANIMALS]) {
       const reason = resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason;
       expect(SKIP_REASONS).toContain(reason);
     }
@@ -557,9 +605,9 @@ describe("resolveSpellOption: skipped classifications", () => {
 
 describe("resolveSpellOption: without casting-modifier numbers", () => {
   it("still classifies skipped spells", () => {
-    expect(resolveSpellOption(ENTANGLE, undefined, OWNER).fidelity.reason).toBe("control-spell");
+    expect(resolveSpellOption(ENTANGLE, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(SANCTUARY, undefined, OWNER).fidelity.reason).toBe("control-spell");
-    expect(resolveSpellOption(BLESS, undefined, OWNER).fidelity.reason).toBe("buff");
+    expect(resolveSpellOption(BLESS, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(GUIDANCE, undefined, OWNER).fidelity.reason).toBe("utility-spell");
     expect(resolveSpellOption(SPEAK_WITH_ANIMALS, undefined, OWNER).needsCastingModifier).toBeUndefined();
   });
@@ -597,5 +645,98 @@ describe("resolveSpellOption: circle", () => {
   it("falls back to the roll's circle when the input has none", () => {
     const spell = { ...ICICLE_JAVELIN, circle: undefined };
     expect(resolveSpellOption(spell, NUMBERS, OWNER).action).toMatchObject({ circle: 1 });
+  });
+});
+
+describe("a heal its text gives", () => {
+  it("reads Healing Word as a bonus-action heal with the casting modifier", () => {
+    const result = resolveSpellOption(
+      {
+        name: "Healing Word",
+        casting: "1 bonus action",
+        circle: 1,
+        text: "A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier.",
+      },
+      NUMBERS,
+      "Jacqui"
+    );
+    expect(result.action).toEqual({ kind: "heal", name: "Healing Word", expr: "1d4+4", circle: 1, bonus: true });
+    expect(result.fidelity.status).toBe("modelled");
+  });
+});
+
+describe("a spell read from its prose", () => {
+  const read = (name: string, text: string, extra: Partial<SpellOptionInput> = {}) =>
+    resolveSpellOption({ name, text, ...extra }, NUMBERS, "Caster").action;
+
+  it("reads a spell attack and scales a cantrip by level", () => {
+    expect(
+      read(
+        "Fire Bolt",
+        "Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage.\n\nThis spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
+        { circle: 0 }
+      )
+    ).toEqual({
+      kind: "spell-attack",
+      name: "Fire Bolt",
+      hitBonus: 6,
+      damage: { expr: "1d10", type: "fire" },
+      circle: 0,
+    });
+    expect(
+      resolveSpellOption(
+        {
+          name: "Fire Bolt",
+          circle: 0,
+          text: "Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10).",
+        },
+        { ...NUMBERS, characterLevel: 11 },
+        "Caster"
+      ).action
+    ).toMatchObject({ damage: { expr: "3d10" } });
+  });
+
+  it("reads an area save with half damage", () => {
+    expect(
+      read(
+        "Burning Hands",
+        "Each creature in a 15-foot cone must make a DEX save. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one.",
+        { circle: 1 }
+      )
+    ).toEqual({
+      kind: "save",
+      name: "Burning Hands",
+      dc: 14,
+      ability: "dex",
+      damage: { expr: "3d6", type: "fire" },
+      onSuccess: "half",
+      area: true,
+      targets: 2,
+      circle: 1,
+    });
+  });
+
+  it("reads a save that only hinders, for as long as the spell lasts", () => {
+    expect(
+      read(
+        "Hold",
+        "Choose a Humanoid that you can see within range. The target must succeed on a WIS save or be paralyzed for the duration.",
+        { circle: 2, duration: "Concentration, up to 1 minute" }
+      )
+    ).toMatchObject({
+      kind: "save",
+      ability: "wis",
+      damage: { expr: "0" },
+      inflicts: { condition: "paralyzed", lasts: "fight" },
+    });
+  });
+
+  it("takes no debuff die for damage", () => {
+    expect(
+      read(
+        "Bane",
+        "Each target must make a CHA save. Whenever a target that fails this save makes an attack roll, it must roll a d4 and subtract the number rolled."
+      )
+    ).toBeUndefined();
   });
 });

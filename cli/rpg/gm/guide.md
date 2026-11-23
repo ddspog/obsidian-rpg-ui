@@ -255,8 +255,31 @@ rpg sim run --monster "Thug:3" --brief
 - Pick from the options in the light of the scene, then put the fight in your
   prep draft and play it from the log as usual. The simulation is prep, not
   play: its numbers never go in the log.
+- An option from the catalog may carry a `scene`: the table row it came
+  from. Use it to set the encounter, in your words. `atMin`/`atMax` say how the
+  fight goes when a rolled count comes out low or high: roll the count in play.
+- An entry that does not fit the party (too easy, too hard, a party of two
+  against a table written for four): `rpg sim catalog adjust <id>` tries
+  counts, swaps for equivalents, minions or a leader, and says which fit, with
+  tactics in words. It writes nothing; `--accept` (when the player allows the
+  catalog) adds the best as a draft linked to the original.
+- Nothing in the catalog or the sweep suits the scene: `rpg sim build <theme
+words>` fills the Monster Vault's encounter models (a single big monster, a
+  boss and lieutenants, a matched set, a horde) with monsters of the right
+  roles and says which fit. Name the one you pick and give it a scene.
+- A creature the bestiary lacks: `rpg sim homebrew "<base>" --name "<new>"
+[--role R] [--template T] [--cr C]` makes one from a statblock (a role
+  template; a creature template such as Zombie, Shadow or Fey Champion, listed
+  by `rpg sim templates "<base>"`; a new CR; a new flavour); it is a dry run
+  until `--write`, which needs the player's leave like any other write. Read
+  its `byHand` list: what the template leaves to you.
+- Once an encounter from the catalog has been run, `rpg sim catalog use <id>`
+  keeps `plan` from offering it again for a few sessions. When the player
+  plays in Obsidian, `rpg sim catalog prepare <id>` readies it instead: a
+  `[Enc:…|prepared]` line in the session log that the Start Combat card offers,
+  the run being recorded when the fight starts from it.
 - Running `plan`, `run` and `catalog suggest` writes nothing. `catalog add`,
-  `confirm`, `check` and `draft --accept` write the catalog note: do them only
+  `confirm`, `use`, `tag`, `session`, `check` and `draft --accept` write the catalog note (`prepare` the session note): do them only
   when the player has said you may keep that catalog.
 
 ## When the player is in Obsidian (the GM link)

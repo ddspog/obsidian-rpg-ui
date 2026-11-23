@@ -111,12 +111,21 @@ function looksLikeLonelog(lines: string[]): boolean {
 }
 
 export function detectMetaFromSource(source: string): string | null {
+  // A block inside a callout can reach us with the callout's `> ` still on its lines (every line, or
+  // every line but the first, which Obsidian may have taken it off).
+  const filled = source.split("\n").filter((l) => l.trim());
+  if (filled.length > 1 && filled.slice(1).every((l) => /^\s*>/.test(l))) {
+    source = source.replace(/^\s*>[ \t]?/gm, "");
+  }
   // `rpg figure.mermaid` — checked first: a leading mermaid diagram
   // declaration is unambiguous and appears in no other block type's body.
   if (looksLikeMermaidFigure(source)) return "figure.mermaid";
 
   // `rpg draft` — its head always starts with `draft:` (its title).
   if (/^\s*draft\s*:/.test(source.split("\n").find((l) => l.trim()) ?? "")) return "draft";
+
+  // `rpg encounter-catalog` — the board's body names itself.
+  if (/^\s*view\s*:\s*encounter-catalog\s*$/m.test(source)) return "encounter-catalog";
 
   // Parse only the top-level keys by scanning for "key:" at the start of lines
   // (no YAML library needed — avoids circular dependency and is fast)
@@ -125,6 +134,10 @@ export function detectMetaFromSource(source: string): string | null {
     const m = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:/);
     if (m) topLevelKeys.add(m[1]);
   }
+
+  // `rpg encounter` — an encounter catalog entry: its monsters with a review flag or an id. Before the
+  // checks below, which would read its `name` and `tags` as another block's.
+  if (topLevelKeys.has("monsters") && (topLevelKeys.has("review") || topLevelKeys.has("id"))) return "encounter";
 
   // ── Fence-mode blocks (YAML header + `---` + markdown/nested fences) ──
   // Must run FIRST: the body after `---` can contain nested rpg fences

@@ -14,7 +14,6 @@ import { characterSheet } from "../commands/character";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import {
   basic,
-  copyVaultWithClassStems,
   FIXTURE_SYSTEM,
   initSystemLoader,
   makeCtx,
@@ -64,7 +63,8 @@ const SPELLS: Record<string, string> = {
   "Hold Roots": spellNote(
     "Hold Roots",
     "1st-Circle",
-    { form: "save", circle: 1, save: { ability: "STR", on_success: "negates restrained" }, effects: ["restrained"] },
+    // Grappled is a condition the engine does not play: a control spell it skips.
+    { form: "save", circle: 1, save: { ability: "STR", on_success: "negates grappled" }, effects: ["grappled"] },
     "Weeds grasp at a creature."
   ),
 };
@@ -348,9 +348,8 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
   const record = (owner: string, name: string) => party.fidelity[owner].find((r) => r.name === name);
 
   beforeAll(async () => {
-    // The vault is copied (never touched) with the PCs' class links written by stem: see test-support.
-    const root = copyVaultWithClassStems(VAULT, SYSTEM_DIR, DEFAULT_PARTY);
-    ctx = makeCtx(root);
+    // Read-only: loading a party writes nothing, so the vault is read in place.
+    ctx = makeCtx(VAULT);
     party = await loadParty(ctx, DEFAULT_PARTY);
   }, 180_000);
 
@@ -397,12 +396,15 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
     expect(byName("Kowyn").slots[0]).toBe(druid!.slots[0]);
   });
 
-  it("skips Entangle as a control spell", () => {
-    expect(record("Kowyn", "Entangle")).toEqual({
-      name: "Entangle",
-      owner: "Kowyn",
-      status: "skipped",
-      reason: "control-spell",
+  it("models Entangle as a control spell: a save that deals nothing and restrains", () => {
+    expect(record("Kowyn", "Entangle")).toEqual({ name: "Entangle", owner: "Kowyn", status: "modelled" });
+    expect(byName("Kowyn").actions.find((a) => a.name === "Entangle")).toMatchObject({
+      kind: "save",
+      ability: "str",
+      dc: 14,
+      damage: { expr: "0" },
+      targets: 4,
+      inflicts: { condition: "restrained", lasts: "fight" },
     });
   });
 

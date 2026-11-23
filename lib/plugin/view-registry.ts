@@ -9,6 +9,7 @@ import { InitiativeView } from "lib/views/InitiativeView";
 import { InventoryView } from "lib/views/InventoryView";
 import { FeaturesView } from "lib/views/FeaturesView";
 import { DraftView } from "lib/views/DraftView";
+import { EncounterCatalogView, EncounterEntryView } from "lib/views/EncounterCatalogView";
 import { FeatureGMView } from "lib/views/FeatureGMView";
 import { SessionLogView } from "lib/views/SessionLogView";
 import { ShowView } from "lib/views/ShowView";
@@ -38,6 +39,8 @@ export function createViews(app: App, kv: KeyValueStore): BaseView[] {
     new FeaturesView(app),
     new FeatureGMView(app),
     new DraftView(app),
+    new EncounterCatalogView(app),
+    new EncounterEntryView(app),
     new ShowView(app),
 
     // System definition blocks (read-only display)

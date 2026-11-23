@@ -41,8 +41,21 @@ function damageOf(damage: { expr: string; type?: string }): Record<string, strin
   return { damage: damage.expr, ...(damage.type ? { damageType: damage.type } : {}) };
 }
 
-/** A modelled action as its name, kind and the numbers that drive it. */
+/** A modelled action as its name, kind and the numbers that drive it, with its condition, use limit and area size. */
 function summariseAction(action: ModelledAction): ActionSummary {
+  const base = summariseBase(action);
+  const extra: ActionSummary = {};
+  if ("inflicts" in action && action.inflicts) {
+    const { condition, save, lasts } = action.inflicts;
+    extra.inflicts = `${condition} (${lasts}${save ? `, ${save.ability.toUpperCase()} ${save.dc}` : ""})`;
+  }
+  if ("limit" in action && action.limit?.recharge !== undefined) extra.recharge = action.limit.recharge;
+  if ("limit" in action && action.limit?.perDay !== undefined) extra.perDay = action.limit.perDay;
+  if (action.kind === "save" && action.targets !== undefined) extra.targets = action.targets;
+  return { ...base, ...extra };
+}
+
+function summariseBase(action: ModelledAction): ActionSummary {
   switch (action.kind) {
     case "weapon":
       return { name: action.name, kind: action.kind, hitBonus: action.hitBonus, ...damageOf(action.damage) };
@@ -75,6 +88,17 @@ function summariseAction(action: ModelledAction): ActionSummary {
       };
     case "heal":
       return { name: action.name, kind: action.kind, circle: action.circle, heal: action.expr };
+    case "buff":
+      return {
+        name: action.name,
+        kind: action.kind,
+        circle: action.circle,
+        on: action.on,
+        targets: action.targets,
+        ...(action.attackDie ? { attackDie: action.attackDie } : {}),
+        ...(action.saveDie ? { saveDie: action.saveDie } : {}),
+        ...(action.ac ? { ac: action.ac } : {}),
+      };
   }
 }
 
@@ -102,6 +126,13 @@ function summariseParty(actor: CombatActor) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.riders?.length
+      ? {
+          riders: actor.riders.map(
+            (r) => `${r.name}: +${r.damage} (${r.kind}${r.uses !== undefined ? `, ${r.uses} uses` : ""})`
+          ),
+        }
+      : {}),
   };
 }
 
@@ -118,6 +149,19 @@ function summariseGroup(monster: LoadedMonster, count: number) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.reaction ? { reaction: `${actor.reaction.name}: +${actor.reaction.ac} AC` } : {}),
+    ...(actor.legendaryResistance ? { legendaryResistance: actor.legendaryResistance } : {}),
+    ...(actor.legendary
+      ? {
+          legendary: {
+            points: actor.legendary.points,
+            actions: actor.legendary.actions.map((l) => ({ ...summariseAction(l.action), cost: l.cost })),
+          },
+        }
+      : {}),
+    ...(actor.defences
+      ? { defences: Object.fromEntries(Object.entries(actor.defences).filter(([, list]) => list.length > 0)) }
+      : {}),
   };
 }
 
@@ -194,7 +238,7 @@ export const simRun: SimHandler = async (ctx, options) => {
         koRate: summary.koRate,
         difficulty,
         fit: fitByDifficulty(summary),
-        skipped: skippedByOwner(fidelity, (owner) => (/\.md$/i.test(owner) ? noteRef(ctx, owner) : owner)),
+        skipped: skippedByOwner(fidelity, (owner) => (/\.md(?: with .+)?$/i.test(owner) ? noteRef(ctx, owner) : owner)),
       },
     };
   }

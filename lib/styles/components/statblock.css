@@ -75,6 +75,159 @@ p.rpg-statblock-subtitle {
   white-space: nowrap;
 }
 
+/* ─── Monster: Monster Vault role chip (header) and subrole (type line) ─── */
+/* The plugin's own role colours (the theme's accents were too light for small
+   text: 2.2–4:1). Each passes 4.5:1 as text on the page and as a fill under
+   page-coloured text, light and dark. The chip is a small ribbon in its role's
+   colour; a guess is a pale tint of it with a dashed edge and "?". */
+
+.rpg-statblock-monster {
+  --rpg-role-controller: #0f6e69;
+  --rpg-role-leader: #95560a;
+  --rpg-role-soldier: #2c5394;
+  --rpg-role-striker: #b0283c;
+}
+
+.theme-dark .rpg-statblock-monster {
+  --rpg-role-controller: #5fc4bb;
+  --rpg-role-leader: #e0a64a;
+  --rpg-role-soldier: #8fb0e6;
+  --rpg-role-striker: #f08a93;
+}
+
+/* Name first; role and CR together at the end of the first line, dropping under
+   the name as one when the card is too narrow for both. */
+.rpg-statblock-monster .rpg-statblock-header {
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.rpg-statblock-monster .rpg-statblock-header {
+  position: relative;
+}
+
+.rpg-statblock-monster .rpg-statblock-header h3 {
+  flex: 1 1 10em;
+  min-width: 0;
+  text-indent: 0;
+}
+
+/* The name on one line, unseen, to measure (statblock-monster.tsx). */
+.rpg-statblock-name-probe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* A long name keeps the bar: the role chip sits on the type line instead, before the subrole. */
+.rpg-statblock-monster .rpg-statblock-subtitle button.rpg-statblock-role {
+  font-size: 0.7em;
+  margin: 0 0 0 6px;
+  vertical-align: 1px;
+  border-color: transparent;
+}
+
+.rpg-statblock-monster .rpg-statblock-subtitle button.rpg-statblock-role.is-guess {
+  background: color-mix(in srgb, var(--rpg-role) 14%, transparent);
+  border-color: var(--rpg-role);
+  color: var(--rpg-role);
+}
+
+.rpg-statblock-header-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.rpg-statblock-role--controller,
+.rpg-statblock-subrole--controller {
+  --rpg-role: var(--rpg-role-controller);
+}
+.rpg-statblock-role--leader,
+.rpg-statblock-subrole--leader {
+  --rpg-role: var(--rpg-role-leader);
+}
+.rpg-statblock-role--soldier,
+.rpg-statblock-subrole--soldier {
+  --rpg-role: var(--rpg-role-soldier);
+}
+.rpg-statblock-role--striker,
+.rpg-statblock-subrole--striker {
+  --rpg-role: var(--rpg-role-striker);
+}
+
+.rpg-statblock-monster button.rpg-statblock-role {
+  font: inherit;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* Capitals centred in the chip: a line box of 1 has the descender room below them, so a pixel more on top. */
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  height: auto;
+  min-height: 0;
+  padding: 3px 7px 2px;
+  margin: 0;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--background-primary, #fff) 55%, transparent);
+  background: var(--rpg-role);
+  color: var(--background-primary, #fff);
+  box-shadow: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rpg-statblock-monster button.rpg-statblock-role.is-guess {
+  background: color-mix(in srgb, var(--rpg-role) 45%, transparent);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--background-primary, #fff) 75%, transparent);
+}
+
+.rpg-statblock-monster button.rpg-statblock-role:focus-visible {
+  outline: 2px solid var(--background-primary, #fff);
+  outline-offset: 1px;
+}
+
+.rpg-statblock-role-q {
+  margin-left: 1px;
+}
+
+.rpg-statblock-subrole {
+  font-size: 0.92em;
+  color: var(--text-muted);
+}
+
+.rpg-statblock-subrole-dot {
+  color: var(--rpg-role);
+  font-weight: 700;
+}
+
+.rpg-statblock-role-note {
+  margin: 0 0 6px;
+  padding: 4px 8px;
+  font-size: 0.88em;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--rpg-role-soldier) 6%, transparent);
+  border-radius: 4px;
+}
+
+.rpg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* ─── Habitat / Treasure line (stat.group + ungrouped stat.monster) ────── */
 /* Two content-sized columns on one row: Habitat (left, flexible — wraps its
    list internally) and Treasure (right, hugs its content). Stays a single row
@@ -270,4 +423,180 @@ p.rpg-statblock-subtitle {
   border: none;
   border-radius: 0;
   box-shadow: none;
+}
+
+/* ─── A note that is only one rpg block: no title over it ────────────────── */
+/* (lib/plugin/single-block-title.ts marks the heading and the view.) */
+.rpg-single-block-title,
+.rpg-single-block-note > .inline-title,
+.rpg-single-block-note .mod-header > .inline-title,
+.markdown-embed.rpg-single-block-note > .markdown-embed-title {
+  display: none;
+}
+
+/* ─── Template and summon sheets ─────────────────────────────────────────── */
+/* A template is a statblock of changes; a summon a statblock filled from who
+   calls it. Both share the bar of controls under the type line. */
+
+.rpg-statblock-kind {
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--background-primary, #fff);
+  border: 1px solid color-mix(in srgb, var(--background-primary, #fff) 70%, transparent);
+  border-radius: 3px;
+  padding: 2px 6px 1px;
+  white-space: nowrap;
+}
+
+.rpg-sheet-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 6px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--statblock-title) 9%, transparent);
+  font-family: var(--font-interface);
+  font-size: 0.82em;
+}
+
+.rpg-sheet-seg {
+  display: inline-flex;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--background-primary);
+}
+
+.rpg-sheet-seg button {
+  font: inherit;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-normal);
+  padding: 4px 10px;
+  min-height: 28px;
+  height: auto;
+  cursor: pointer;
+}
+
+.rpg-sheet-seg button.is-option {
+  text-transform: capitalize;
+}
+
+.rpg-sheet-seg button[aria-pressed="true"] {
+  background: var(--statblock-title);
+  color: var(--background-primary, #fff);
+}
+
+.rpg-sheet-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 14em;
+  min-width: 0;
+}
+
+.rpg-sheet-pick input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: inherit;
+}
+
+.rpg-sheet-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rpg-sheet-change.is-up {
+  color: var(--color-green);
+}
+
+.rpg-sheet-change.is-down {
+  color: var(--color-red);
+}
+
+.rpg-sheet-note,
+.rpg-sheet-same,
+.rpg-sheet-hint {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.rpg-sheet-fit {
+  color: var(--color-green);
+}
+
+.rpg-sheet-unfit,
+.rpg-sheet-error {
+  color: var(--color-red);
+}
+
+.rpg-sheet-byhand {
+  margin: 8px 0;
+  font-size: 0.9em;
+}
+
+.rpg-sheet-byhand summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.rpg-sheet-byhand ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.rpg-sheet-tryon .rpg-statblock {
+  margin-top: 6px;
+}
+
+.rpg-sheet-saved {
+  cursor: pointer;
+}
+
+/* Try on: what the template changed, and what it was. */
+.rpg-statblock .rpg-statblock-changed {
+  color: var(--statblock-title);
+  font-weight: 600;
+}
+
+.rpg-statblock-was {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-size: 0.88em;
+}
+
+.rpg-statblock-added {
+  border-left: 3px solid var(--color-green);
+  padding-left: 8px;
+}
+
+/* A summon's number worked out from a formula: tap (or hover) to see it. */
+.rpg-formula {
+  border-bottom: 1.5px dashed currentColor;
+  font-weight: 600;
+  cursor: help;
+}
+
+.rpg-formula.is-open::after {
+  content: " = " attr(data-formula);
+  font-family: var(--font-interface);
+  font-weight: 400;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--statblock-title) 9%, transparent);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 2px;
+}
+
+.rpg-formula:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
 }

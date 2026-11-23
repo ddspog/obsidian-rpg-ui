@@ -13,7 +13,15 @@ export interface MonteCarloInput {
   seed: number;
   trials: number;
   roundCap: number;
+  /** The share of a monster's target picks that go to the most hurt PC (default MONSTER_FOCUS). */
+  monsterFocus?: number;
 }
+
+/**
+ * Monsters take the most hurt PC for half their picks and a random one for the rest: always on the weakest
+ * (1) made fights much harder than the logged play (see `rpg sim calibrate`). A heuristic, like the profiles.
+ */
+export const MONSTER_FOCUS = 0.5;
 
 export interface MonteCarloSummary {
   winRate: number;
@@ -22,12 +30,14 @@ export interface MonteCarloSummary {
   avgRounds: number;
   /** The share of the party's total max HP lost at a fight's end, averaged over the trials (0..1). */
   avgHpLost: number;
+  /** The standard deviation, over the trials, of the share of the party's HP lost: how far one fight strays from the average. */
+  hpLostStdDev: number;
   roundsPerTrial: number[];
   hpRemainingPerTrial: number[];
   koRate: Record<string, number>;
 }
 
-export type CompactSummary = Omit<MonteCarloSummary, "roundsPerTrial" | "hpRemainingPerTrial">;
+export type CompactSummary = Omit<MonteCarloSummary, "roundsPerTrial" | "hpRemainingPerTrial" | "hpLostStdDev">;
 
 /** Four decimal places, as the JSON contract states. */
 export const round4 = (x: number): number => Math.round(x * 10000) / 10000;
@@ -57,7 +67,8 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   ];
 
   const results: TrialResult[] = [];
-  for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap));
+  const options = { monsterFocus: input.monsterFocus ?? MONSTER_FOCUS };
+  for (let t = 0; t < trials; t++) results.push(simulateTrial(combatants, rng, roundCap, options));
 
   const share = (outcome: TrialResult["outcome"]) =>
     round4(results.filter((r) => r.outcome === outcome).length / trials);
@@ -71,6 +82,9 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
   const hpRemaining = results.map((r) => r.partyHpRemaining);
   const meanRemaining = hpRemaining.reduce((a, b) => a + b, 0) / trials;
   const avgHpLost = partyMaxHp > 0 ? round4(Math.min(1, Math.max(0, 1 - meanRemaining / partyMaxHp))) : 0;
+  const lost = hpRemaining.map((h) => (partyMaxHp > 0 ? 1 - h / partyMaxHp : 0));
+  const meanLost = lost.reduce((a, b) => a + b, 0) / trials;
+  const hpLostStdDev = round4(Math.sqrt(lost.reduce((a, b) => a + (b - meanLost) ** 2, 0) / Math.max(1, trials - 1)));
 
   return {
     winRate: share("win"),
@@ -78,6 +92,7 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
     stalemateRate: share("stalemate"),
     avgRounds: round4(roundsPerTrial.reduce((a, b) => a + b, 0) / trials),
     avgHpLost,
+    hpLostStdDev,
     roundsPerTrial,
     hpRemainingPerTrial: hpRemaining,
     koRate,
@@ -86,8 +101,9 @@ export function runMonteCarlo(input: MonteCarloInput): MonteCarloSummary {
 
 /** The summary without its per-trial arrays, for suggest. */
 export function compactSummary(summary: MonteCarloSummary): CompactSummary {
-  const { roundsPerTrial: _r, hpRemainingPerTrial: _h, ...rest } = summary;
+  const { roundsPerTrial: _r, hpRemainingPerTrial: _h, hpLostStdDev: _s, ...rest } = summary;
   void _r;
   void _h;
+  void _s;
   return rest;
 }

@@ -57,14 +57,27 @@ function extractFirstFeatureDetails(contents: string): FeatureDetailsBody | null
   return parseFeatureDetailsBlock(m[1]);
 }
 
+/** A note's feature blocks by name and by id, read once per note text (a features note holds hundreds). */
+const FEATURES_BY_TEXT = new Map<string, Map<string, FeatureDetailsBody>>();
+const FEATURES_BY_TEXT_MAX = 200;
+
 function extractFeatureByName(contents: string, blockName: string): FeatureDetailsBody | null {
-  const re = /```+\s*rpg\s+feature\.details\s*\n([\s\S]*?)```+/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(contents)) !== null) {
-    const feature = parseFeatureDetailsBlock(m[1]);
-    if (feature?.name === blockName || feature?.id === blockName) return feature;
+  let byName = FEATURES_BY_TEXT.get(contents);
+  if (!byName) {
+    byName = new Map();
+    const re = /```+\s*rpg\s+feature\.details\s*\n([\s\S]*?)```+/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(contents)) !== null) {
+      const feature = parseFeatureDetailsBlock(m[1]);
+      if (!feature) continue;
+      // The first block of a name or id wins, as the scan in order did.
+      if (feature.name && !byName.has(feature.name)) byName.set(feature.name, feature);
+      if (feature.id && !byName.has(feature.id)) byName.set(feature.id, feature);
+    }
+    if (FEATURES_BY_TEXT.size >= FEATURES_BY_TEXT_MAX) FEATURES_BY_TEXT.clear();
+    FEATURES_BY_TEXT.set(contents, byName);
   }
-  return null;
+  return byName.get(blockName) ?? null;
 }
 
 /** Parse `@[[File]]#BlockName` or `@[[File]]` or `[[File#Heading]]` or `[[File]]`. */
@@ -356,7 +369,11 @@ export async function resolveStatFeatures(
     const text = substituteText(feature.text ?? "", mergedParams, selfProps);
 
     results.push({
-      name: feature.name,
+      // A name may carry a number too ("Overdrive ({{f1}} HP or Fewer)").
+      name:
+        feature.name && feature.name.includes("{{")
+          ? substituteText(feature.name, mergedParams, selfProps)
+          : feature.name,
       type: feature.type,
       text,
       params: mergedParams,
