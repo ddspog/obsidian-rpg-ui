@@ -33,8 +33,17 @@ export interface MonsterFeatureInput {
   text: string;
 }
 
+/** A legendary action: what it does (an action of its own, or one of the monster's attacks by name) and its cost. */
+export interface LegendaryFeature {
+  cost: number;
+  action?: ModelledAction;
+  /** "The dragon makes a Tail attack.": the monster's attack it uses. */
+  attackRef?: string;
+}
+
 export interface MonsterFeatureClass {
   action?: ModelledAction;
+  legendary?: LegendaryFeature;
   multiattack?: ParsedMultiattack;
   /** A Spellcasting action: the spells it casts, to be resolved against the vault's spell notes. */
   spellcasting?: MonsterSpellcasting;
@@ -125,7 +134,10 @@ function lastsOf(condition: ModelledCondition, text: string): Inflict["lasts"] {
  */
 export function inflictOfHit(text: string): Inflict | undefined {
   const saved = text.match(
-    new RegExp(`DC\\s*(\\d+)\\s+(\\w+)\\s+saving throw[^.]*?\\bor (?:be |become )?(?:knocked )?${CONDITION}\\b`, "i")
+    new RegExp(
+      `DC\\s*(\\d+)\\s+(\\w+)\\s+sav(?:e|ing throw)\\b[^.]*?\\bor (?:be |become )?(?:knocked )?${CONDITION}\\b`,
+      "i"
+    )
   );
   if (saved) {
     const ability = abilityKey(saved[2]);
@@ -165,7 +177,8 @@ function attackFrom(name: string, text: string): WeaponAttackAction | null {
 }
 
 function saveFrom(name: string, text: string): SaveAction | null {
-  const save = text.match(/DC\s*(\d+)\s+(\w+)\s+saving throw/i);
+  // "a DC 16 Dexterity saving throw" or, the Monster Vault's way, "a DC 23 DEX save".
+  const save = text.match(/DC\s*(\d+)\s+(\w+)\s+sav(?:e|ing throw)\b/i);
   if (!save) return null;
   const ability = abilityKey(save[2]);
   if (!ability) return null;
@@ -221,6 +234,13 @@ export function classifyMonsterFeature(feature: MonsterFeatureInput): MonsterFea
   if (/^(innate )?spellcasting$/i.test(name) || /casts one of the following spells/i.test(text)) {
     const spellcasting = parseMonsterSpellcasting(feature.text);
     return spellcasting ? { spellcasting, skip: "monster-spellcasting" } : { skip: "monster-spellcasting" };
+  }
+  if (feature.type?.trim().toLowerCase() === "legendary") {
+    const cost = parseInt(name.match(/\(Costs (\d+) Actions?\)/i)?.[1] ?? "1", 10);
+    const ref = text.match(/\bmakes (?:an?|one) (.+?) attack\b/i);
+    if (ref) return { legendary: { cost, attackRef: ref[1].trim() }, skip: "unsupported-feature" };
+    const own = attackFrom(name, text) ?? saveFrom(name, text);
+    return own ? { legendary: { cost, action: own } } : UNSUPPORTED;
   }
   if (feature.type?.trim().toLowerCase() !== "action") return UNSUPPORTED;
   if (/multiattack/i.test(name)) {

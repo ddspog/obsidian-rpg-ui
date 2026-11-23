@@ -177,6 +177,8 @@ export interface CombatActor {
   riders?: DamageRider[];
   /** Its resistances, immunities and vulnerabilities. */
   defences?: Defences;
+  /** Legendary actions: the points it has a round (3) and what each costs. */
+  legendary?: { points: number; actions: Array<{ action: ModelledAction; cost: number }> };
 }
 
 export const SKIP_REASONS = [

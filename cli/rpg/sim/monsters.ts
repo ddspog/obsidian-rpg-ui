@@ -193,6 +193,7 @@ interface Classified {
   name: string;
   action?: ModelledAction;
   multiattack?: ReturnType<typeof classifyMonsterFeature>["multiattack"];
+  legendary?: ReturnType<typeof classifyMonsterFeature>["legendary"];
   skip?: SkipReason;
 }
 
@@ -200,7 +201,11 @@ function actionsAndFidelity(
   features: ResolvedStatFeature[],
   refs: string[],
   owner: string
-): { actions: ModelledAction[]; fidelity: FidelityRecord[] } {
+): {
+  actions: ModelledAction[];
+  fidelity: FidelityRecord[];
+  legendary: Array<{ action: ModelledAction; cost: number }>;
+} {
   // Pass 1: classify every feature; the attacks are collected by name for the Multiattack.
   const classified: Classified[] = features.map((f, i) => {
     const name = f.name?.trim() || refs[i];
@@ -214,7 +219,26 @@ function actionsAndFidelity(
   // Pass 2: bind each Multiattack to those attacks, and keep it all in feature-ref order.
   const actions: ModelledAction[] = [];
   const fidelity: FidelityRecord[] = [];
+  const legendary: Array<{ action: ModelledAction; cost: number }> = [];
+  const attackNamed = (ref: string) => {
+    const want = ref.toLowerCase();
+    return [...attacks.values()].find(
+      (a) =>
+        a.name
+          .replace(/\s*\(.*\)\s*$/, "")
+          .trim()
+          .toLowerCase() === want
+    );
+  };
   for (const c of classified) {
+    if (c.legendary) {
+      const use = c.legendary.action ?? (c.legendary.attackRef ? attackNamed(c.legendary.attackRef) : undefined);
+      if (use) {
+        legendary.push({ action: { ...use, name: c.name } as ModelledAction, cost: c.legendary.cost });
+        fidelity.push({ name: c.name, owner, status: "modelled" });
+      } else fidelity.push({ name: c.name, owner, status: "skipped", reason: "unsupported-feature" });
+      continue;
+    }
     let action = c.action;
     let skip = c.skip;
     if (c.multiattack) {
@@ -232,8 +256,11 @@ function actionsAndFidelity(
   if (!actions.some(isDamaging)) {
     fidelity.push({ name: owner, owner, status: "skipped", reason: "no-damaging-action" });
   }
-  return { actions, fidelity };
+  return { actions, fidelity, legendary };
 }
+
+/** Legendary actions a round: the usual three. */
+export const LEGENDARY_POINTS = 3;
 
 const SPELLS_FOLDER = `${BESTIARY_PREFIX.split("/")[0]}/worldbuilding/spells/`;
 
@@ -335,7 +362,7 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     }
   });
 
-  const { actions, fidelity } = actionsAndFidelity(resolved, refs, file.path);
+  const { actions, fidelity, legendary } = actionsAndFidelity(resolved, refs, file.path);
   // Spellcasting: each spell of its lists read from the vault's spell notes, at its uses a day.
   const crNum = crNumber(data.cr ?? "0");
   for (const f of resolved) {
@@ -377,6 +404,8 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     (trait) => resolved.find((f) => f.name?.trim().toLowerCase() === trait.trim().toLowerCase())?.text
   );
   if (!noDefences(defences)) actor.defences = defences;
+  // Legendary actions: 3 points a round, the usual number (the notes do not write another).
+  if (legendary.length) actor.legendary = { points: LEGENDARY_POINTS, actions: legendary };
   return {
     note: file.path,
     name,

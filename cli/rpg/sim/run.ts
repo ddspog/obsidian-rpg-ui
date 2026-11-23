@@ -149,6 +149,14 @@ function summariseGroup(monster: LoadedMonster, count: number) {
     initiative: actor.initiativeModifier,
     abilities: summariseAbilities(actor),
     actions: actor.actions.map(summariseAction),
+    ...(actor.legendary
+      ? {
+          legendary: {
+            points: actor.legendary.points,
+            actions: actor.legendary.actions.map((l) => ({ ...summariseAction(l.action), cost: l.cost })),
+          },
+        }
+      : {}),
     ...(actor.defences
       ? { defences: Object.fromEntries(Object.entries(actor.defences).filter(([, list]) => list.length > 0)) }
       : {}),

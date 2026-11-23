@@ -185,8 +185,8 @@ describe("classifyMonsterFeature: skips", () => {
     });
   });
 
-  it("skips bonus, trait, legendary and reaction features, even attack-shaped ones", () => {
-    for (const type of ["bonus", "trait", "legendary", "reaction"]) {
+  it("skips bonus, trait and reaction features, even attack-shaped ones", () => {
+    for (const type of ["bonus", "trait", "reaction"]) {
       expect(classifyMonsterFeature({ name: "Longsword", type, text: LONGSWORD })).toEqual({
         skip: "unsupported-feature",
       });
@@ -290,5 +290,47 @@ describe("conditions in monster prose", () => {
         text: "Each creature within 30 feet must succeed on a DC 12 Wisdom saving throw, taking 5 (2d4) psychic damage on a failed save and becoming frightened for 1 minute.",
       }).action
     ).toMatchObject({ kind: "save", inflicts: { condition: "frightened", lasts: "fight" } });
+  });
+});
+
+describe("the Monster Vault's short saves and legendary actions", () => {
+  const WING =
+    "The dragon beats its wings. Each creature within 15 feet of the dragon must succeed on a DC 23 DEX save or take 22 (4d6 + 8) bludgeoning damage and be knocked prone.";
+
+  it("reads 'a DC 23 DEX save' like 'a Dexterity saving throw'", () => {
+    expect(
+      classifyMonsterFeature({
+        name: "Fire Breath (Recharge 5–6)",
+        type: "action",
+        text: "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 DEX save, taking 63 (18d6) fire damage on a failed save, or half as much damage on a successful one.",
+      }).action
+    ).toMatchObject({
+      kind: "save",
+      dc: 21,
+      ability: "dex",
+      damage: { expr: "18d6", type: "fire" },
+      targets: 6,
+      limit: { recharge: 5 },
+    });
+  });
+
+  it("reads a legendary action with its cost: its own save, or one of the monster's attacks", () => {
+    expect(
+      classifyMonsterFeature({ name: "Wing Attack (Costs 2 Actions)", type: "legendary", text: WING })
+    ).toMatchObject({
+      legendary: { cost: 2, action: { kind: "save", dc: 23, ability: "dex", inflicts: { condition: "prone" } } },
+    });
+    expect(
+      classifyMonsterFeature({ name: "Tail Attack", type: "legendary", text: "The dragon makes a Tail attack." })
+    ).toMatchObject({
+      legendary: { cost: 1, attackRef: "Tail" },
+    });
+    expect(
+      classifyMonsterFeature({
+        name: "Detect",
+        type: "legendary",
+        text: "The dragon automatically detects every creature within 60 feet.",
+      })
+    ).toEqual({ skip: "unsupported-feature" });
   });
 });

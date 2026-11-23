@@ -82,6 +82,8 @@ interface Combatant {
   riderDone: boolean;
   /** Buffs and debuffs on it, by the spell's name: dice to its attacks and saves, a bonus to its AC. */
   buffs: Map<string, Pick<BuffAction, "attackDie" | "saveDie" | "ac">>;
+  /** Legendary action points left this round. */
+  legendaryLeft: number;
 }
 
 const limitOf = (action: ModelledAction) =>
@@ -179,6 +181,7 @@ export function simulateTrial(
     marked: (actor.riders ?? []).map(() => undefined),
     riderDone: false,
     buffs: new Map(),
+    legendaryLeft: actor.legendary?.points ?? 0,
   }));
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
@@ -433,6 +436,7 @@ export function simulateTrial(
   /** Its turn begins: what lasts to its turn's start ends; true when a condition takes its turn. */
   const startTurn = (c: Combatant): boolean => {
     c.riderDone = false;
+    c.legendaryLeft = c.actor.legendary?.points ?? 0;
     for (const [k, v] of c.conditions) if (v.lasts === "start") c.conditions.delete(k);
     return has(c, NO_TURN);
   };
@@ -446,15 +450,48 @@ export function simulateTrial(
     }
   };
 
+  /**
+   * After another creature's turn, a legendary creature may spend its points: the affordable legendary action
+   * worth the most a point, once a turn, until its points run out (they come back at its own turn). True when
+   * one was taken.
+   */
+  const legendaryAfter = (just: Combatant): boolean => {
+    let acted = false;
+    for (const m of order) {
+      if (m === just || !living(m) || !m.actor.legendary || m.legendaryLeft <= 0 || has(m, NO_TURN)) continue;
+      const livingEnemies = enemiesOf(m).length;
+      let best: { action: ModelledAction; cost: number } | undefined;
+      let bestRate = 0;
+      for (const option of m.actor.legendary.actions) {
+        if (option.cost > m.legendaryLeft || !isAvailable(m, option.action)) continue;
+        const rate = valueOf(option.action, livingEnemies) / option.cost;
+        if (rate > bestRate) {
+          best = option;
+          bestRate = rate;
+        }
+      }
+      if (!best) continue;
+      m.legendaryLeft -= best.cost;
+      useDamaging(m, best.action);
+      acted = true;
+    }
+    return acted;
+  };
+
   for (let round = 1; round <= roundCap; round++) {
     for (const c of order) {
       if (!living(c)) continue;
       const lost = startTurn(c);
       const acted = !lost && takeTurn(c);
       endTurn(c);
-      if (!acted) continue;
-      if (monstersDown()) return result("win", round);
-      if (partyDown()) return result("tpk", round);
+      if (acted) {
+        if (monstersDown()) return result("win", round);
+        if (partyDown()) return result("tpk", round);
+      }
+      if (legendaryAfter(c)) {
+        if (monstersDown()) return result("win", round);
+        if (partyDown()) return result("tpk", round);
+      }
     }
   }
   return result("stalemate", roundCap);

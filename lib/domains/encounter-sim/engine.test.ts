@@ -748,3 +748,15 @@ describe("buffs", () => {
     expect(simulateTrial([priest, brute], () => face(15), 3).partyHpRemaining).toBe(100);
   });
 });
+
+describe("legendary actions", () => {
+  it("spends its points after the other creatures' turns, and gets them back at its own", () => {
+    const tail = weapon("10", 100, "Tail");
+    const boss = actor({ name: "Boss", side: "monsters", hp: 1000, init: 20, actions: [] });
+    boss.legendary = { points: 3, actions: [{ action: tail, cost: 1 }] };
+    const party = ["A", "B", "C"].map((name) => actor({ name, side: "party", hp: 100 }));
+    // One round: the boss has no action of its own; after each of the three PCs' turns it lashes its tail.
+    const r = simulateTrial([boss, ...party], () => face(15), 1);
+    expect(r.partyHpRemaining).toBe(300 - 30);
+  });
+});
