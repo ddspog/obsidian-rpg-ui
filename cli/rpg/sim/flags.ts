@@ -676,7 +676,8 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     subcommand === "build" ||
     subcommand === "homebrew" ||
     subcommand === "templates" ||
-    subcommand === "calibrate";
+    subcommand === "calibrate" ||
+    subcommand === "spells";
   if (!isCatalog && !takesWords && extra.length) {
     throw new UsageError(`Unexpected argument "${extra[0]}".`);
   }
@@ -1045,6 +1046,11 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
     if ((options.choose !== undefined || options.traits.length) && options.template === undefined)
       throw new UsageError("--choose and --trait go with --template.");
   }
+  if (subcommand === "spells") {
+    for (const flag of options.given) {
+      if (![...TEMPLATES_FLAGS, "limit"].includes(flag)) throw new UsageError(`--${flag} is not a flag of \`spells\`.`);
+    }
+  }
   if (subcommand === "calibrate") {
     for (const flag of options.given) {
       if (!CALIBRATE_FLAGS.includes(flag)) throw new UsageError(`--${flag} is not a flag of \`calibrate\`.`);
@@ -1134,6 +1140,9 @@ Usage:
   rpg sim homebrew "<base note>" --name "<new name>" [--role R] [--template T [--choose O] [--trait F]...] [--cr C] [--type "<type line>"] [--habitat H] [--write]
     (a new creature from a statblock: reflavoured, a role template, a creature template, a new CR;
      a draft in worldbuilding/bestiary/homebrew/)
+  rpg sim spells [<spell note or folder>...] [--write] [--limit N]
+    (a roll: for each spell note that has none, read from its text, for the sheet, the log's cards and the
+     simulator; a dry run lists them, --write puts them in the notes; a note with a roll: is never touched)
   rpg sim calibrate [<session note or folder>...] [--seed N] [--trials N] [--rounds N] [--difficulty D]
     (each fight logged in the session notes against the simulator's run of the same fight: HP lost, rounds,
      knockouts, and where the real fight falls among the simulated ones; read-only)

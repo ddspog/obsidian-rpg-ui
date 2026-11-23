@@ -14,6 +14,7 @@ import { simRun } from "./run";
 import { simSuggest } from "./suggest";
 import { simCalibrate } from "./calibrate";
 import { simLineages } from "./lineages";
+import { simSpells } from "./spells";
 import { simTemplates } from "./templates";
 
 export type { SimIo };
@@ -33,5 +34,6 @@ export function simEntry(tokens: string[], io: SimIo): Promise<number> {
     templates: simTemplates,
     lineages: simLineages,
     calibrate: simCalibrate,
+    spells: simSpells,
   });
 }

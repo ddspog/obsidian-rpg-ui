@@ -4,6 +4,7 @@
  * modelled form, otherwise a skipped option with a reason (R9, R10). Pure data
  * in, pure data out; no Obsidian and no I/O.
  */
+import { deriveSpellRoll } from "lib/domains/spells/derive-roll";
 import { areaTargets } from "./monster-actions";
 import { isRollable } from "./rng";
 import {
@@ -165,6 +166,9 @@ export function resolveSpellOption(
         if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
         const dc = plainNumber(save?.dc) ?? 8 + numbers.proficiencyBonus + numbers.castingModifier;
         const onSuccess = typeof save?.on_success === "string" && /^\s*half/i.test(save.on_success) ? "half" : "none";
+        const sized = areaTargets(`${String(roll.range ?? spell.range ?? "")} ${text}`);
+        const area = AREA_PATTERN.test(text) || (sized.targets ?? 0) > 1;
+        const inflicts = inflictOfRoll(roll, spell.duration);
         return {
           action: {
             kind: "save",
@@ -173,8 +177,10 @@ export function resolveSpellOption(
             ability,
             damage,
             onSuccess,
-            area: AREA_PATTERN.test(text),
+            area,
+            ...(area ? sized : {}),
             circle,
+            ...(inflicts ? { inflicts } : {}),
           },
           fidelity: modelled,
         };
@@ -193,21 +199,64 @@ export function resolveSpellOption(
         };
       }
       const hitBonus = plainNumber(roll.to_hit) ?? numbers.proficiencyBonus + numbers.castingModifier;
+      // A spell attack whose hit also asks for a save brings its condition on a failed one (Luminous Bolt).
+      const attackSave = isRecord(roll.save) ? abilityKeyOf(roll.save.ability) : undefined;
+      const inflicts = attackSave
+        ? inflictOfRoll(roll, spell.duration, {
+            ability: attackSave,
+            dc:
+              plainNumber(roll.save && isRecord(roll.save) ? roll.save.dc : undefined) ??
+              8 + numbers.proficiencyBonus + numbers.castingModifier,
+          })
+        : undefined;
       return {
-        action: { kind: "spell-attack", name, hitBonus, damage, circle },
+        action: { kind: "spell-attack", name, hitBonus, damage, circle, ...(inflicts ? { inflicts } : {}) },
         fidelity: modelled,
       };
     }
 
-    // No modelled damage: a roll that imposes a save or an effect is a control spell.
+    // No damage: a save that brings a condition the engine plays (Hold) is a save that deals nothing.
+    const save = isRecord(roll.save) ? roll.save : undefined;
+    const ability = abilityKeyOf(save?.ability);
+    const inflicts = inflictOfRoll(roll, spell.duration);
+    if (!damage && ability && inflicts) {
+      if (!numbers) return { fidelity: { name, owner, status: "modelled" }, needsCastingModifier: true };
+      const sized = areaTargets(`${String(roll.range ?? spell.range ?? "")} ${text}`);
+      const area = AREA_PATTERN.test(text) || (sized.targets ?? 0) > 1;
+      return {
+        action: {
+          kind: "save",
+          name,
+          dc: plainNumber(save?.dc) ?? 8 + numbers.proficiencyBonus + numbers.castingModifier,
+          ability,
+          damage: { expr: "0" },
+          onSuccess: "none",
+          area,
+          ...(area ? sized : {}),
+          circle,
+          inflicts,
+        },
+        fidelity: { name, owner, status: "modelled" },
+      };
+    }
+    // Otherwise a roll that imposes a save or an effect is a control spell the engine does not play.
     if (!damage && (roll.save !== undefined || (Array.isArray(roll.effects) && roll.effects.length > 0))) {
       return skipped(name, owner, "control-spell");
     }
   }
 
-  // A spell its prose describes well enough: an attack, a save with damage, a save with a condition.
-  const fromText = spellFromText(spell, numbers, owner);
-  if (fromText) return fromText;
+  // No `roll:`: the one its prose gives (lib/domains/spells/derive-roll.ts), resolved like a written one.
+  if (!roll) {
+    const derived = deriveSpellRoll({ text: spell.text ?? "", circle, range: spell.range, duration: spell.duration });
+    if ("roll" in derived) {
+      const result = resolveSpellOption(
+        { ...spell, roll: derived.roll as unknown as Record<string, unknown> },
+        numbers,
+        owner
+      );
+      if (result.action || result.needsCastingModifier) return result;
+    }
+  }
 
   // A heal its text gives ("regains hit points equal to 1d4 + your spellcasting ability modifier").
   const heal = text.match(
@@ -248,95 +297,44 @@ const DAMAGE_TYPE_WORDS = [
   "thunder",
 ];
 
-const ABILITY_WORD = "(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)";
-const CONDITION_WORD = `(${MODELLED_CONDITIONS.join("|")})`;
-
-/** The dice at a character level from "increases by 1d8 when you reach 5th level (2d8), 11th level (3d8)…". */
-function scaledDice(text: string, base: string, level: number | undefined): string {
-  if (level === undefined) return base;
-  let dice = base;
-  for (const m of text.matchAll(/(\d+)(?:st|nd|rd|th) level \((\d+d\d+)\)/gi)) {
-    if (parseInt(m[1], 10) <= level) dice = m[2];
-  }
-  return dice;
+/** The condition a roll's `effects` name, as the engine plays it, with how long it lasts. */
+function inflictOfRoll(
+  roll: Record<string, unknown>,
+  duration: string | undefined,
+  save?: { ability: AbilityKey; dc: number }
+): Inflict | undefined {
+  const effects = Array.isArray(roll.effects) ? roll.effects : [];
+  const condition = effects
+    .map((e) =>
+      (typeof e === "string" ? e : isRecord(e) && typeof e.label === "string" ? e.label : "").trim().toLowerCase()
+    )
+    .find((e): e is ModelledCondition => (MODELLED_CONDITIONS as readonly string[]).includes(e));
+  if (!condition) return undefined;
+  const notes = typeof roll.notes === "string" ? roll.notes : "";
+  const lasts: Inflict["lasts"] =
+    condition === "prone"
+      ? "start"
+      : /minute|hour|concentration|for the duration/i.test(`${notes} ${duration ?? ""}`)
+        ? "fight"
+        : "end";
+  return { condition, lasts, ...(save ? { save } : {}) };
 }
 
 /**
- * A spell read from its prose, for the notes with no `roll:` (most of a compendium's): "Make a ranged spell
- * attack … takes 1d10 fire damage" (an attack), "must make a DEX save … takes 3d6 fire damage on a failed save,
- * or half as much" (a save, an area when "each creature in a 15-foot cone"), "must succeed on a WIS save or be
- * paralyzed" (a condition, with or without damage). Undefined when it reads as none of these.
+ * A spell read from its prose (no `roll:`): the roll `deriveSpellRoll` gives it, resolved like a written one.
+ * Undefined when its words give none.
  */
 export function spellFromText(
   spell: SpellOptionInput,
   numbers: SpellNumbers | undefined,
   owner: string
 ): SpellOptionResult | undefined {
-  const text = (spell.text ?? "").replace(/[*_]+/g, "").replace(/\s+/g, " ");
-  const { name } = spell;
-  const circle = spell.circle ?? 0;
-  // A damage roll counts with a damage type ("takes 3d6 fire damage"), not a die a debuff subtracts (Bane).
-  const damageMatch = [...text.matchAll(/takes? (\d+d\d+)(?: \+ \d+)? (\w+) damage/gi)].find((m) =>
-    DAMAGE_TYPE_WORDS.includes(m[2].toLowerCase())
-  );
-  const level = numbers?.characterLevel;
-  const damage: DamageSpec | undefined = damageMatch
-    ? {
-        expr: circle === 0 ? scaledDice(text, damageMatch[1], level) : damageMatch[1],
-        type: damageMatch[2].toLowerCase(),
-      }
-    : undefined;
-  const modelled: FidelityRecord = { name, owner, status: "modelled" };
-
-  if (/\bmake an? (?:ranged|melee) spell attack\b/i.test(text) && damage) {
-    if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
-    return {
-      action: {
-        kind: "spell-attack",
-        name,
-        hitBonus: numbers.proficiencyBonus + numbers.castingModifier,
-        damage,
-        circle,
-      },
-      fidelity: modelled,
-    };
-  }
-
-  const save = text.match(
-    new RegExp(`(?:must (?:make|succeed on)|makes?) an? ${ABILITY_WORD} sav(?:e|ing throw)`, "i")
-  );
-  if (!save) return undefined;
-  const ability = abilityKeyOf(save[1]);
-  if (!ability) return undefined;
-  const condition = text.match(
-    new RegExp(`\\b(?:or be|or become|is|are|be) (?:also )?(?:knocked )?${CONDITION_WORD}\\b`, "i")
-  );
-  const lasts: Inflict["lasts"] | undefined = condition
-    ? condition[1].toLowerCase() === "prone"
-      ? "start"
-      : /minute|hour|concentration/i.test(spell.duration ?? "") || /\bfor (?:the duration|1 minute)\b/i.test(text)
-        ? "fight"
-        : "end"
-    : undefined;
-  if (!damage && !condition) return undefined;
-  if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
-  const area = /\b(?:each|every|all) creatures?\b/i.test(text);
-  const size = areaTargets(`${text} ${spell.range ?? ""}`);
-  return {
-    action: {
-      kind: "save",
-      name,
-      dc: 8 + numbers.proficiencyBonus + numbers.castingModifier,
-      ability,
-      damage: damage ?? { expr: "0" },
-      onSuccess: /half (?:as much|the) damage|half as much/i.test(text) ? "half" : "none",
-      area,
-      ...(area ? size : {}),
-      circle,
-      ...(condition && lasts
-        ? { inflicts: { condition: condition[1].toLowerCase() as ModelledCondition, lasts } }
-        : {}),
-    },
-    fidelity: modelled,
-  };
+  const derived = deriveSpellRoll({
+    text: spell.text ?? "",
+    circle: spell.circle,
+    range: spell.range,
+    duration: spell.duration,
+  });
+  if (!("roll" in derived)) return undefined;
+  return resolveSpellOption({ ...spell, roll: derived.roll as unknown as Record<string, unknown> }, numbers, owner);
 }

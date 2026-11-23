@@ -308,7 +308,7 @@ describe("resolveSpellOption: spell attacks", () => {
     expect(result.action).toMatchObject({ damage: { expr: "3d8" }, circle: 1 });
   });
 
-  it("models a cantrip with circle 0 (Magnetobolt), save rider ignored", () => {
+  it("models a cantrip with circle 0 (Magnetobolt), its save rider as the condition a hit brings", () => {
     const result = resolveSpellOption(MAGNETOBOLT, NUMBERS, OWNER);
     expect(result.action).toEqual({
       kind: "spell-attack",
@@ -316,6 +316,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "force" },
       circle: 0,
+      inflicts: { condition: "prone", lasts: "start", save: { ability: "str", dc: 14 } },
     });
   });
 
@@ -329,7 +330,7 @@ describe("resolveSpellOption: spell attacks", () => {
     expect(at(20)).toMatchObject({ damage: { expr: "4d6", type: "radiant" } });
   });
 
-  it("treats Luminous Bolt's save-and-effects rider as ignored: a spell attack, not a save", () => {
+  it("reads Luminous Bolt's save-and-effects rider as the condition its hit brings: a spell attack, not a save", () => {
     const result = resolveSpellOption(LUMINOUS_BOLT, NUMBERS, OWNER);
     expect(result.action).toEqual({
       kind: "spell-attack",
@@ -337,6 +338,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "radiant" },
       circle: 0,
+      inflicts: { condition: "blinded", lasts: "end", save: { ability: "con", dc: 14 } },
     });
     expect(result.fidelity.status).toBe("modelled");
   });
@@ -381,6 +383,7 @@ describe("resolveSpellOption: save actions", () => {
       damage: { expr: "2d8", type: "thunder" },
       onSuccess: "half",
       area: true,
+      targets: 3,
       circle: 1,
     });
     expect(result.fidelity).toEqual({ name: "Thunderwave", owner: OWNER, status: "modelled" });
@@ -486,10 +489,15 @@ describe("resolveSpellOption: healing", () => {
 });
 
 describe("resolveSpellOption: skipped classifications", () => {
-  it("skips Entangle (save and effects, no damage) as control-spell", () => {
+  it("models Entangle (save and a condition, no damage) as a save that deals nothing and restrains", () => {
     const result = resolveSpellOption(ENTANGLE, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "skipped", reason: "control-spell" });
+    expect(result.action).toMatchObject({
+      kind: "save",
+      ability: "str",
+      damage: { expr: "0" },
+      inflicts: { condition: "restrained" },
+    });
+    expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "modelled" });
   });
 
   it("skips Sanctuary (save, no damage, no effects) as control-spell", () => {
@@ -548,7 +556,7 @@ describe("resolveSpellOption: skipped classifications", () => {
   });
 
   it("only ever reports reasons from the fixed vocabulary", () => {
-    for (const spell of [ENTANGLE, SANCTUARY, BLESS, GUIDANCE, SPEAK_WITH_ANIMALS]) {
+    for (const spell of [SANCTUARY, BLESS, GUIDANCE, SPEAK_WITH_ANIMALS]) {
       const reason = resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason;
       expect(SKIP_REASONS).toContain(reason);
     }
@@ -557,7 +565,7 @@ describe("resolveSpellOption: skipped classifications", () => {
 
 describe("resolveSpellOption: without casting-modifier numbers", () => {
   it("still classifies skipped spells", () => {
-    expect(resolveSpellOption(ENTANGLE, undefined, OWNER).fidelity.reason).toBe("control-spell");
+    expect(resolveSpellOption(ENTANGLE, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(SANCTUARY, undefined, OWNER).fidelity.reason).toBe("control-spell");
     expect(resolveSpellOption(BLESS, undefined, OWNER).fidelity.reason).toBe("buff");
     expect(resolveSpellOption(GUIDANCE, undefined, OWNER).fidelity.reason).toBe("utility-spell");

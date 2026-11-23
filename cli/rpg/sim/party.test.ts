@@ -64,7 +64,8 @@ const SPELLS: Record<string, string> = {
   "Hold Roots": spellNote(
     "Hold Roots",
     "1st-Circle",
-    { form: "save", circle: 1, save: { ability: "STR", on_success: "negates restrained" }, effects: ["restrained"] },
+    // Grappled is a condition the engine does not play: a control spell it skips.
+    { form: "save", circle: 1, save: { ability: "STR", on_success: "negates grappled" }, effects: ["grappled"] },
     "Weeds grasp at a creature."
   ),
 };
