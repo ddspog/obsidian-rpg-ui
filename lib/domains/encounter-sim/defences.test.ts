@@ -22,6 +22,19 @@ describe("defencesOf", () => {
     expect(applyDefences(10, "slashing", d, false)).toBe(10);
   });
 
+  it("keeps a nonmagical defence to the weapon types it names", () => {
+    const d = defencesOf({ resistant: "fire, piercing damage from nonmagical attacks" }, () => undefined);
+    expect(d.resistant).toEqual(["fire", "nonmagical-piercing"]);
+    expect(applyDefences(10, "piercing", d, true)).toBe(5);
+    expect(applyDefences(10, "slashing", d, true)).toBe(10);
+    expect(applyDefences(10, "piercing", d, false)).toBe(10);
+    const t = defencesOf(
+      { resistant: "Thorn Hide" },
+      () => "It is resistant to piercing damage from nonmagical attacks."
+    );
+    expect(t.resistant).toEqual(["nonmagical-piercing"]);
+  });
+
   it("reads what a named trait grants from its text", () => {
     const text: Record<string, string> = {
       "Construct Resilience":

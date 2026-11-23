@@ -25,6 +25,18 @@ const add = (list: string[], items: string[]) => {
 
 /** "bludgeoning, piercing, and slashing damage from nonmagical attacks": the three, from weapons only. */
 const NONMAGICAL = /damage from nonmagical/i;
+const WEAPON_TYPES = ["bludgeoning", "piercing", "slashing"];
+
+/**
+ * The entries a nonmagical defence is kept as: "nonmagical" for all three weapon types, else one
+ * "nonmagical-<type>" a type it names ("piercing damage from nonmagical attacks" is piercing only).
+ */
+function nonmagicalEntries(words: string): string[] {
+  const named = WEAPON_TYPES.filter((t) => new RegExp(`\\b${t}\\b`, "i").test(words));
+  return named.length === 0 || named.length === WEAPON_TYPES.length
+    ? ["nonmagical"]
+    : named.map((t) => `nonmagical-${t}`);
+}
 
 /**
  * What one sentence of a trait grants: "is resistant to cold and fire damage", "immune to poison and psychic
@@ -40,10 +52,12 @@ function fromText(text: string, out: Defences): void {
       const words = m[2].toLowerCase();
       const damage = DAMAGE_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words));
       const conditions = CONDITIONS.filter((c) => new RegExp(`\\b${c}\\b`).test(words));
-      if (NONMAGICAL.test(words)) add(kind === "immune" ? out.immune : out.resistant, ["nonmagical"]);
+      if (NONMAGICAL.test(words)) add(kind === "immune" ? out.immune : out.resistant, nonmagicalEntries(words));
       // Damage types count when the words speak of damage; a list of conditions alone grants no damage defence.
       if (/\bdamage\b/.test(words) || conditions.length === 0) {
-        add(kind === "immune" ? out.immune : kind === "resistant" ? out.resistant : out.vulnerable, damage);
+        // The weapon types of a nonmagical defence are not plain ones.
+        const plain = NONMAGICAL.test(words) ? damage.filter((t) => !WEAPON_TYPES.includes(t)) : damage;
+        add(kind === "immune" ? out.immune : kind === "resistant" ? out.resistant : out.vulnerable, plain);
       }
       if (kind === "immune") add(out.conditionImmune, conditions);
       if (kind === "resistant") add(out.conditionResistant, conditions);
@@ -64,9 +78,12 @@ export function defencesOf(
     const parsed = parseDefences(lines[kind]);
     // "bludgeoning, piercing, and slashing damage from nonmagical attacks" is one defence, not three plain ones.
     const nonmagical = parsed.damage.some((d) => NONMAGICAL.test(d));
-    const damage = parsed.damage
-      .filter((d) => !(nonmagical && ["bludgeoning", "piercing", "slashing"].includes(d)))
-      .map((d) => (NONMAGICAL.test(d) ? "nonmagical" : d));
+    const damage = nonmagical
+      ? [
+          ...parsed.damage.filter((d) => !NONMAGICAL.test(d) && !WEAPON_TYPES.includes(d)),
+          ...nonmagicalEntries(parsed.damage.filter((d) => WEAPON_TYPES.includes(d) || NONMAGICAL.test(d)).join(", ")),
+        ]
+      : parsed.damage;
     add(kind === "immune" ? out.immune : kind === "resistant" ? out.resistant : out.vulnerable, damage);
     if (kind === "immune") add(out.conditionImmune, parsed.conditions);
     if (kind === "resistant") add(out.conditionResistant, parsed.conditions);
@@ -85,8 +102,8 @@ export function noDefences(d: Defences | undefined): boolean {
 
 /**
  * The damage a creature takes of a type: none when immune, half (rounded down) when resistant, double when
- * vulnerable. "nonmagical" covers bludgeoning, piercing and slashing from a weapon (a PC's weapons count as
- * nonmagical; the simulator does not know a magic weapon).
+ * vulnerable. "nonmagical" covers bludgeoning, piercing and slashing from a weapon, "nonmagical-piercing" the
+ * one type (a PC's weapons count as nonmagical; the simulator does not know a magic weapon).
  */
 export function applyDefences(
   amount: number,
@@ -96,10 +113,11 @@ export function applyDefences(
 ): number {
   if (!d || !type || amount <= 0) return amount;
   const t = type.toLowerCase();
-  const bps = weapon && ["bludgeoning", "piercing", "slashing"].includes(t);
-  if (d.immune.includes(t) || (bps && d.immune.includes("nonmagical"))) return 0;
+  const bps = weapon && WEAPON_TYPES.includes(t);
+  const nonmagical = (list: string[]) => bps && (list.includes("nonmagical") || list.includes(`nonmagical-${t}`));
+  if (d.immune.includes(t) || nonmagical(d.immune)) return 0;
   let out = amount;
-  if (d.resistant.includes(t) || (bps && d.resistant.includes("nonmagical"))) out = Math.floor(out / 2);
+  if (d.resistant.includes(t) || nonmagical(d.resistant)) out = Math.floor(out / 2);
   if (d.vulnerable.includes(t)) out *= 2;
   return out;
 }

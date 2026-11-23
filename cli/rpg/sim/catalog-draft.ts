@@ -25,7 +25,7 @@ import { normaliseTags } from "lib/domains/encounter-catalog/words";
 import type { Ctx } from "../app";
 import { bestiaryAliases, bestiaryNoteNamed } from "./aliases";
 import { UsageError } from "./flags";
-import { findTemplate, loadTemplates, type LoadedTemplate } from "./templates";
+import { loadTemplates, templateNamed, type LoadedTemplate } from "./templates";
 import { bestiaryPaths, categoryHabitat, linkNames, readMonsterNote } from "./monsters";
 
 /** The bestiary as the draft reads it: the name index and each note's habitat names. */
@@ -228,9 +228,11 @@ export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
         // A template the text names ("with the void template") is applied when the vault has its note.
         let confidence = found.confidence;
         const monsters: CatalogMonster[] = found.monsters.map((m) => {
-          const template = m.template ? findTemplate(templates(), m.template)?.name : undefined;
+          const template = m.template ? templateNamed(ctx, m.template, templates())?.name : undefined;
           if (m.template && !template) {
-            found.reasons.push(`no template note "${m.template}": ${m.name} simulated without it`);
+            found.reasons.push(
+              `no template note "${m.template}" (or name for one under \`templates:\` in Bestiary aliases): ${m.name} simulated without it`
+            );
             if (confidence === "high") confidence = "medium";
           }
           return {

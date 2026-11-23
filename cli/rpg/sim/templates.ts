@@ -26,6 +26,7 @@ import { fencesOf } from "../fences";
 import { readNote, writeNote } from "../write";
 import type { SimHandler } from "./dispatch";
 import { UsageError, type SimOptions } from "./flags";
+import { bestiaryAliases } from "./aliases";
 import { readStatblock } from "./homebrew";
 import { BESTIARY_PREFIX, crNumber, loadMonster } from "./monsters";
 
@@ -91,6 +92,15 @@ export function findTemplate<T extends { name: string }>(templates: T[], name: s
   return (
     templates.find((t) => t.name.toLowerCase() === name.toLowerCase()) ?? templates.find((t) => key(t.name) === want)
   );
+}
+
+/**
+ * The template note a name stands for: the note of that name, else the one the aliases note's `templates:`
+ * gives it ("bramble creature" is Bramble Beast).
+ */
+export function templateNamed(ctx: Ctx, name: string, templates = loadTemplates(ctx)): LoadedTemplate | undefined {
+  const other = bestiaryAliases(ctx).templates[name.trim().toLowerCase()];
+  return findTemplate(templates, name) ?? (other ? findTemplate(templates, other) : undefined);
 }
 
 /** The `rpg stat.template` fence a block is written as. */

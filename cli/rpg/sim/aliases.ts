@@ -34,6 +34,8 @@ function notePaths(ctx: Ctx): string[] {
 
 export interface AliasRead {
   aliases: MonsterAlias[];
+  /** Other names for template notes (`templates:`), lower-cased: "bramble creature" → "Bramble Beast". */
+  templates: Record<string, string>;
   /** Aliases whose note was not found, as written. */
   unknown: string[];
 }
@@ -44,7 +46,7 @@ const reads = new WeakMap<Ctx, AliasRead>();
 export function bestiaryAliases(ctx: Ctx): AliasRead {
   const cached = reads.get(ctx);
   if (cached) return cached;
-  const out: AliasRead = { aliases: [], unknown: [] };
+  const out: AliasRead = { aliases: [], templates: {}, unknown: [] };
   reads.set(ctx, out);
   const file = ctx.vault.getMarkdownFiles().find((f) => f.path === ALIASES_NOTE);
   if (!file) return out;
@@ -57,6 +59,17 @@ export function bestiaryAliases(ctx: Ctx): AliasRead {
       data = parseYaml(m[2]);
     } catch {
       continue;
+    }
+    // `templates:` names template notes the way a book does ("the bramble creature template").
+    const named = (data as { templates?: unknown } | null)?.templates;
+    if (named && typeof named === "object" && !Array.isArray(named)) {
+      for (const [phrase, target] of Object.entries(named as Record<string, unknown>)) {
+        const name = String(target ?? "")
+          .replace(/^\[\[|\]\]$/g, "")
+          .split("|")[0]
+          .trim();
+        if (name) out.templates[phrase.trim().toLowerCase()] = name;
+      }
     }
     const map = (data as { aliases?: unknown } | null)?.aliases;
     if (!map || typeof map !== "object" || Array.isArray(map)) continue;

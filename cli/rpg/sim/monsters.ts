@@ -393,8 +393,8 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
 
   // A template: the base creature's features worked into it, as `rpg sim homebrew --template` does.
   // Loaded when asked for: templates.ts reads this module's constants as it loads.
-  const { findTemplate, loadTemplates, TEMPLATES_FOLDER } = await import("./templates");
-  const t = findTemplate(loadTemplates(ctx), template);
+  const { templateNamed, TEMPLATES_FOLDER } = await import("./templates");
+  const t = templateNamed(ctx, template);
   if (!t) throw new Error(`No template "${template}" in ${TEMPLATES_FOLDER} (\`rpg sim templates\` lists them)`);
   const base = await monsterOf(ctx, state.file, state.yaml);
   const applied = applyTemplateBlock({ ...state.yaml }, t.block, {
