@@ -181,13 +181,14 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(doc.fidelity[ref]).toContainEqual(expect.objectContaining({ name: "Light", reason: "utility-spell" }));
   }, 120_000);
 
-  it("applies a template named after the creature: Zombie on a Mule", async () => {
+  // Void is a template note the vault's main branch has (CI checks the vault out at main).
+  it("applies a template named after the creature: Void on a Mule", async () => {
     const plain = (await run("--monster", "Mule", "--trials", "5")).doc.monsters[0];
-    const { doc } = await run("--monster", "Mule with Zombie", "--trials", "5");
-    const zombie = doc.monsters[0];
-    expect(zombie.note).toMatch(/Mule\.md with Zombie$/);
-    expect(zombie.name).toBe(`${plain.name} (Zombie)`);
-    expect(zombie.maxHp ?? zombie.hp).not.toBe(plain.maxHp ?? plain.hp);
+    const { doc } = await run("--monster", "Mule with Void", "--trials", "5");
+    const voided = doc.monsters[0];
+    expect(voided.note).toMatch(/Mule\.md with Void$/);
+    expect(voided.name).toBe(`${plain.name} (Void)`);
+    expect(voided.hp).not.toBe(plain.hp);
     await expect(sim("run", "--monster", "Mule with Nothing Such", "--trials", "5")).rejects.toThrow(
       /No template "Nothing Such"/
     );

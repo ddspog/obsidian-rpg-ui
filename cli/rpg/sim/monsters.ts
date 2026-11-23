@@ -402,7 +402,7 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     baseFeatures: base.features,
     cr: crNumber(base.cr),
   });
-  const monster = await monsterOf(ctx, state.file, applied.data);
+  const monster = await monsterOf(ctx, state.file, applied.data, { templated: true });
   const key = withTemplate(state.file.path, t.name);
   return {
     ...monster,
@@ -414,7 +414,12 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
 }
 
 /** The simulator's creature from a statblock's YAML (a note's own, or one a template changed). */
-async function monsterOf(ctx: Ctx, file: TFile, yaml: Record<string, unknown>): Promise<LoadedMonster> {
+async function monsterOf(
+  ctx: Ctx,
+  file: TFile,
+  yaml: Record<string, unknown>,
+  options: { templated?: boolean } = {}
+): Promise<LoadedMonster> {
   const data = mapMonster(yaml);
   const refs = data.features.map((f) => f.ref);
   // resolveStatFeatures reads the global `app`, which the last boot() set: point it at this vault.
@@ -423,13 +428,33 @@ async function monsterOf(ctx: Ctx, file: TFile, yaml: Record<string, unknown>): 
   if (resolved.length !== refs.length) {
     throw new Error(`Monster "${file.path}": its feature refs could not be resolved (no app to resolve them with)`);
   }
+  // A template's feature the vault's features note lacks is left out (and reported), not a broken creature.
+  const missing: string[] = [];
   resolved.forEach((feature, i) => {
     if (!feature.text.trim() && !feature.type) {
-      throw new Error(`Monster "${file.path}": feature ref "${refs[i]}" did not resolve (note or block not found)`);
+      if (options.templated && /Monster Template Traits/.test(refs[i])) missing.push(refs[i]);
+      else
+        throw new Error(`Monster "${file.path}": feature ref "${refs[i]}" did not resolve (note or block not found)`);
     }
   });
+  if (missing.length) {
+    for (let i = resolved.length - 1; i >= 0; i--) {
+      if (missing.includes(refs[i])) {
+        resolved.splice(i, 1);
+        refs.splice(i, 1);
+      }
+    }
+  }
 
   const { actions, fidelity, legendary, reaction, legendaryResistance } = actionsAndFidelity(resolved, refs, file.path);
+  for (const ref of missing) {
+    fidelity.push({
+      name: ref.split("#").pop() ?? ref,
+      owner: file.path,
+      status: "skipped",
+      reason: "unsupported-feature",
+    });
+  }
   let spellReaction: CombatActor["reaction"];
   // Spellcasting: each spell of its lists read from the vault's spell notes, at its uses a day.
   const crNum = crNumber(data.cr ?? "0");
