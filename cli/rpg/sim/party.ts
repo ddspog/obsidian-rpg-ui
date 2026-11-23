@@ -284,7 +284,13 @@ function spellListsOf(ctx: Ctx, notePath: string, ref: string): Map<string, List
 }
 
 /** The spell note's `rpg spell` fence as the resolver reads it, or an error naming the note. */
-function readSpell(ctx: Ctx, link: string, listedCircle: number, owner: string, source: string): SpellOptionInput {
+export function readSpell(
+  ctx: Ctx,
+  link: string,
+  listedCircle: number,
+  owner: string,
+  source: string
+): SpellOptionInput {
   let file;
   try {
     file = ctx.note(link);
@@ -314,6 +320,8 @@ function readSpell(ctx: Ctx, link: string, listedCircle: number, owner: string, 
     ...(text !== undefined ? { text } : {}),
     circle: circleOfLabel(data.circle) ?? listedCircle,
     ...(typeof data.casting === "string" ? { casting: data.casting } : {}),
+    ...(typeof data.range === "string" ? { range: data.range } : {}),
+    ...(typeof data.duration === "string" ? { duration: data.duration } : {}),
   };
 }
 

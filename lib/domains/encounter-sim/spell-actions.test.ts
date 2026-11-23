@@ -616,3 +616,79 @@ describe("a heal its text gives", () => {
     expect(result.fidelity.status).toBe("modelled");
   });
 });
+
+describe("a spell read from its prose", () => {
+  const read = (name: string, text: string, extra: Partial<SpellOptionInput> = {}) =>
+    resolveSpellOption({ name, text, ...extra }, NUMBERS, "Caster").action;
+
+  it("reads a spell attack and scales a cantrip by level", () => {
+    expect(
+      read(
+        "Fire Bolt",
+        "Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage.\n\nThis spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
+        { circle: 0 }
+      )
+    ).toEqual({
+      kind: "spell-attack",
+      name: "Fire Bolt",
+      hitBonus: 6,
+      damage: { expr: "1d10", type: "fire" },
+      circle: 0,
+    });
+    expect(
+      resolveSpellOption(
+        {
+          name: "Fire Bolt",
+          circle: 0,
+          text: "Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10).",
+        },
+        { ...NUMBERS, characterLevel: 11 },
+        "Caster"
+      ).action
+    ).toMatchObject({ damage: { expr: "3d10" } });
+  });
+
+  it("reads an area save with half damage", () => {
+    expect(
+      read(
+        "Burning Hands",
+        "Each creature in a 15-foot cone must make a DEX save. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one.",
+        { circle: 1 }
+      )
+    ).toEqual({
+      kind: "save",
+      name: "Burning Hands",
+      dc: 14,
+      ability: "dex",
+      damage: { expr: "3d6", type: "fire" },
+      onSuccess: "half",
+      area: true,
+      targets: 2,
+      circle: 1,
+    });
+  });
+
+  it("reads a save that only hinders, for as long as the spell lasts", () => {
+    expect(
+      read(
+        "Hold",
+        "Choose a Humanoid that you can see within range. The target must succeed on a WIS save or be paralyzed for the duration.",
+        { circle: 2, duration: "Concentration, up to 1 minute" }
+      )
+    ).toMatchObject({
+      kind: "save",
+      ability: "wis",
+      damage: { expr: "0" },
+      inflicts: { condition: "paralyzed", lasts: "fight" },
+    });
+  });
+
+  it("takes no debuff die for damage", () => {
+    expect(
+      read(
+        "Bane",
+        "Each target must make a CHA save. Whenever a target that fails this save makes an attack roll, it must roll a d4 and subtract the number rolled."
+      )
+    ).toBeUndefined();
+  });
+});

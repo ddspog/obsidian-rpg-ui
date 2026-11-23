@@ -7,7 +7,13 @@
 
 import { parse as parseYaml } from "yaml";
 import { defencesOf, noDefences } from "lib/domains/encounter-sim/defences";
-import { classifyMonsterFeature, bindMultiattack } from "lib/domains/encounter-sim/monster-actions";
+import {
+  classifyMonsterFeature,
+  bindMultiattack,
+  type MonsterSpellcasting,
+} from "lib/domains/encounter-sim/monster-actions";
+import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "lib/domains/encounter-sim/spell-actions";
+import { pbOfCr } from "lib/domains/statblocks/template-block";
 import {
   ABILITY_KEYS,
   isDamaging,
@@ -26,6 +32,7 @@ import type { ResolvedStatFeature, StatMonsterData } from "lib/domains/statblock
 import type { Ctx } from "../app";
 import { fencesOf } from "../fences";
 import { bestiaryNoteNamed } from "./aliases";
+import { readSpell } from "./party";
 import type { TFile } from "../obsidian-node";
 
 /** Where the bestiary lives in the vault. */
@@ -228,6 +235,83 @@ function actionsAndFidelity(
   return { actions, fidelity };
 }
 
+const SPELLS_FOLDER = `${BESTIARY_PREFIX.split("/")[0]}/worldbuilding/spells/`;
+
+const spellIndexes = new WeakMap<Ctx, Map<string, string>>();
+const spellKey = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[\u2019']/g, "'")
+    .replace(/\s*ᴷ$/, "")
+    .trim();
+
+/** The spell note of a name as a monster's list writes it ("hold person" is `Hold Person`), or undefined. */
+function spellNoteNamed(ctx: Ctx, name: string): string | undefined {
+  let index = spellIndexes.get(ctx);
+  if (!index) {
+    index = new Map();
+    for (const f of ctx.vault.getMarkdownFiles()) {
+      if (f.path.startsWith(SPELLS_FOLDER) && !index.has(spellKey(f.basename))) index.set(spellKey(f.basename), f.path);
+    }
+    spellIndexes.set(ctx, index);
+  }
+  return index.get(spellKey(name));
+}
+
+/**
+ * A monster's spells as actions: each list's spells read from their notes (the `roll:` or the prose) with the
+ * numbers that give its stated DC (casting modifier = DC - 8 - PB of its CR), at will or a number of times a
+ * day (as `limit.perDay`, the engine's), cast at circle 0 since a monster has no slots.
+ */
+function monsterSpells(
+  ctx: Ctx,
+  casting: MonsterSpellcasting,
+  abilities: CombatActor["abilities"],
+  cr: number,
+  owner: string
+): { actions: ModelledAction[]; fidelity: FidelityRecord[] } {
+  const pb = pbOfCr(cr);
+  const castingModifier =
+    casting.dc !== undefined ? casting.dc - 8 - pb : casting.ability ? abilities[casting.ability].modifier : 0;
+  const numbers: SpellNumbers = { proficiencyBonus: pb, castingModifier, characterLevel: Math.max(1, Math.round(cr)) };
+  const actions: ModelledAction[] = [];
+  const fidelity: FidelityRecord[] = [];
+  for (const list of casting.lists) {
+    for (const spell of list.spells) {
+      const note = spellNoteNamed(ctx, spell);
+      if (!note) {
+        fidelity.push({ name: spell, owner, status: "skipped", reason: "monster-spellcasting" });
+        continue;
+      }
+      let input: SpellOptionInput;
+      try {
+        input = readSpell(ctx, note, 0, owner, "Spellcasting");
+      } catch {
+        fidelity.push({ name: spell, owner, status: "skipped", reason: "monster-spellcasting" });
+        continue;
+      }
+      const result = resolveSpellOption(input, numbers, owner);
+      fidelity.push(result.fidelity);
+      if (!result.action || result.action.kind === "heal") continue;
+      const action = { ...result.action, circle: 0 } as ModelledAction;
+      if (list.perDay !== undefined && (action.kind === "save" || action.kind === "weapon")) {
+        actions.push({ ...action, limit: { perDay: list.perDay } });
+      } else if (list.perDay !== undefined && action.kind === "spell-attack") {
+        // A limited spell attack is played as a weapon swing with the same numbers and a daily limit.
+        actions.push({
+          kind: "weapon",
+          name: action.name,
+          hitBonus: action.hitBonus,
+          damage: action.damage,
+          limit: { perDay: list.perDay },
+          ...(action.inflicts ? { inflicts: action.inflicts } : {}),
+        });
+      } else actions.push(action);
+    }
+  }
+  return { actions, fidelity };
+}
+
 /** A bestiary note as a combatant. Throws naming the note (or the note and feature ref) it cannot load. */
 export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster> {
   const file = findFile(ctx, ref);
@@ -252,6 +336,24 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
   });
 
   const { actions, fidelity } = actionsAndFidelity(resolved, refs, file.path);
+  // Spellcasting: each spell of its lists read from the vault's spell notes, at its uses a day.
+  const crNum = crNumber(data.cr ?? "0");
+  for (const f of resolved) {
+    const spellcasting = classifyMonsterFeature({
+      name: f.name?.trim() ?? "",
+      type: f.type,
+      text: f.text,
+    }).spellcasting;
+    if (!spellcasting) continue;
+    const cast = monsterSpells(ctx, spellcasting, abilitiesOf(data), crNum, file.path);
+    actions.push(...cast.actions);
+    // The Spellcasting feature's own skip is replaced by a record per spell.
+    const at = fidelity.findIndex((r) => r.reason === "monster-spellcasting");
+    if (at >= 0) fidelity.splice(at, 1);
+    fidelity.push(...cast.fidelity);
+    const none = fidelity.findIndex((r) => r.reason === "no-damaging-action");
+    if (none >= 0 && actions.some(isDamaging)) fidelity.splice(none, 1);
+  }
   const abilities = abilitiesOf(data);
   const cr = data.cr ?? "0";
   const name = data.name || file.basename;

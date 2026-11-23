@@ -6,6 +6,7 @@ import {
   classifyMonsterFeature,
   inflictOfHit,
   inflictOfSave,
+  parseMonsterSpellcasting,
   useLimitOf,
 } from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
@@ -152,8 +153,9 @@ describe("classifyMonsterFeature: multiattack", () => {
 });
 
 describe("classifyMonsterFeature: skips", () => {
-  it("skips Spellcasting and Innate Spellcasting by name", () => {
+  it("reads Spellcasting's list for the loader, and skips a spellcasting feature with none", () => {
     expect(classifyMonsterFeature({ name: "Spellcasting", type: "action", text: CONJURER_SPELLS })).toEqual({
+      spellcasting: { ability: "int", dc: 13, lists: [{ spells: ["light", "mage hand", "prestidigitation"] }] },
       skip: "monster-spellcasting",
     });
     expect(classifyMonsterFeature({ name: "Innate Spellcasting", type: "trait", text: "Anything." })).toEqual({
@@ -161,9 +163,25 @@ describe("classifyMonsterFeature: skips", () => {
     });
   });
 
-  it("skips by the 'casts one of the following spells' prose whatever the name", () => {
-    expect(classifyMonsterFeature({ name: "Arcane Gift", type: "action", text: CONJURER_SPELLS })).toEqual({
-      skip: "monster-spellcasting",
+  it("knows spellcasting by the 'casts one of the following spells' prose whatever the name", () => {
+    expect(
+      classifyMonsterFeature({ name: "Arcane Gift", type: "action", text: CONJURER_SPELLS }).spellcasting
+    ).toBeDefined();
+  });
+
+  it("reads uses a day, wikilinked names and parentheses", () => {
+    expect(
+      parseMonsterSpellcasting(
+        "The priest casts one of the following spells, using WIS as the spellcasting ability (spell save DC 13).\n\nAt will: *[[guidance]], [[lux|Lux]]*\n\n3/day each: *[[bane]]*, *invisibility* (self only)\n\n1/day: *[[dispel magic]]*"
+      )
+    ).toEqual({
+      ability: "wis",
+      dc: 13,
+      lists: [
+        { spells: ["guidance", "lux"] },
+        { perDay: 3, spells: ["bane", "invisibility"] },
+        { perDay: 1, spells: ["dispel magic"] },
+      ],
     });
   });
 

@@ -4,13 +4,17 @@
  * modelled form, otherwise a skipped option with a reason (R9, R10). Pure data
  * in, pure data out; no Obsidian and no I/O.
  */
+import { areaTargets } from "./monster-actions";
 import { isRollable } from "./rng";
 import {
   ABILITY_KEYS,
   type AbilityKey,
   type DamageSpec,
   type FidelityRecord,
+  type Inflict,
+  MODELLED_CONDITIONS,
   type ModelledAction,
+  type ModelledCondition,
   type SkipReason,
 } from "./types";
 
@@ -25,6 +29,10 @@ export interface SpellOptionInput {
   circle?: number;
   /** The fence's `casting:` ("1 bonus action"). */
   casting?: string;
+  /** The fence's `range:` ("Self (15-foot cone)"), for an area's size. */
+  range?: string;
+  /** The fence's `duration:` ("Concentration, up to 1 minute"), for how long a condition lasts. */
+  duration?: string;
 }
 
 /** The character numbers a modelled spell derives its bonus and DC from. */
@@ -139,7 +147,12 @@ export function resolveSpellOption(
   const circle = spell.circle ?? plainNumber(roll?.circle) ?? 0;
 
   if (roll && isRecord(roll)) {
-    const damage = damageAt(roll, numbers?.characterLevel);
+    const rolled = damageAt(roll, numbers?.characterLevel);
+    // A die of another kind ("penalty": Bane's, subtracted from attacks) is no damage.
+    const damage =
+      rolled && (!rolled.type || rolled.type === "healing" || DAMAGE_TYPE_WORDS.includes(rolled.type))
+        ? rolled
+        : undefined;
     const form = damage ? modelledFormOf(roll, damage) : undefined;
 
     if (damage && form) {
@@ -192,6 +205,10 @@ export function resolveSpellOption(
     }
   }
 
+  // A spell its prose describes well enough: an attack, a save with damage, a save with a condition.
+  const fromText = spellFromText(spell, numbers, owner);
+  if (fromText) return fromText;
+
   // A heal its text gives ("regains hit points equal to 1d4 + your spellcasting ability modifier").
   const heal = text.match(
     /regains?\s+(?:a number of\s+)?hit points equal to\s+(\d*d\d+)(\s*\+\s*your spellcasting ability modifier)?/i
@@ -214,3 +231,112 @@ export function resolveSpellOption(
 }
 
 const isBonus = (casting: string | undefined) => /\bbonus action\b/i.test(casting ?? "");
+
+const DAMAGE_TYPE_WORDS = [
+  "acid",
+  "bludgeoning",
+  "cold",
+  "fire",
+  "force",
+  "lightning",
+  "necrotic",
+  "piercing",
+  "poison",
+  "psychic",
+  "radiant",
+  "slashing",
+  "thunder",
+];
+
+const ABILITY_WORD = "(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)";
+const CONDITION_WORD = `(${MODELLED_CONDITIONS.join("|")})`;
+
+/** The dice at a character level from "increases by 1d8 when you reach 5th level (2d8), 11th level (3d8)…". */
+function scaledDice(text: string, base: string, level: number | undefined): string {
+  if (level === undefined) return base;
+  let dice = base;
+  for (const m of text.matchAll(/(\d+)(?:st|nd|rd|th) level \((\d+d\d+)\)/gi)) {
+    if (parseInt(m[1], 10) <= level) dice = m[2];
+  }
+  return dice;
+}
+
+/**
+ * A spell read from its prose, for the notes with no `roll:` (most of a compendium's): "Make a ranged spell
+ * attack … takes 1d10 fire damage" (an attack), "must make a DEX save … takes 3d6 fire damage on a failed save,
+ * or half as much" (a save, an area when "each creature in a 15-foot cone"), "must succeed on a WIS save or be
+ * paralyzed" (a condition, with or without damage). Undefined when it reads as none of these.
+ */
+export function spellFromText(
+  spell: SpellOptionInput,
+  numbers: SpellNumbers | undefined,
+  owner: string
+): SpellOptionResult | undefined {
+  const text = (spell.text ?? "").replace(/[*_]+/g, "").replace(/\s+/g, " ");
+  const { name } = spell;
+  const circle = spell.circle ?? 0;
+  // A damage roll counts with a damage type ("takes 3d6 fire damage"), not a die a debuff subtracts (Bane).
+  const damageMatch = [...text.matchAll(/takes? (\d+d\d+)(?: \+ \d+)? (\w+) damage/gi)].find((m) =>
+    DAMAGE_TYPE_WORDS.includes(m[2].toLowerCase())
+  );
+  const level = numbers?.characterLevel;
+  const damage: DamageSpec | undefined = damageMatch
+    ? {
+        expr: circle === 0 ? scaledDice(text, damageMatch[1], level) : damageMatch[1],
+        type: damageMatch[2].toLowerCase(),
+      }
+    : undefined;
+  const modelled: FidelityRecord = { name, owner, status: "modelled" };
+
+  if (/\bmake an? (?:ranged|melee) spell attack\b/i.test(text) && damage) {
+    if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
+    return {
+      action: {
+        kind: "spell-attack",
+        name,
+        hitBonus: numbers.proficiencyBonus + numbers.castingModifier,
+        damage,
+        circle,
+      },
+      fidelity: modelled,
+    };
+  }
+
+  const save = text.match(
+    new RegExp(`(?:must (?:make|succeed on)|makes?) an? ${ABILITY_WORD} sav(?:e|ing throw)`, "i")
+  );
+  if (!save) return undefined;
+  const ability = abilityKeyOf(save[1]);
+  if (!ability) return undefined;
+  const condition = text.match(
+    new RegExp(`\\b(?:or be|or become|is|are|be) (?:also )?(?:knocked )?${CONDITION_WORD}\\b`, "i")
+  );
+  const lasts: Inflict["lasts"] | undefined = condition
+    ? condition[1].toLowerCase() === "prone"
+      ? "start"
+      : /minute|hour|concentration/i.test(spell.duration ?? "") || /\bfor (?:the duration|1 minute)\b/i.test(text)
+        ? "fight"
+        : "end"
+    : undefined;
+  if (!damage && !condition) return undefined;
+  if (!numbers) return { fidelity: modelled, needsCastingModifier: true };
+  const area = /\b(?:each|every|all) creatures?\b/i.test(text);
+  const size = areaTargets(`${text} ${spell.range ?? ""}`);
+  return {
+    action: {
+      kind: "save",
+      name,
+      dc: 8 + numbers.proficiencyBonus + numbers.castingModifier,
+      ability,
+      damage: damage ?? { expr: "0" },
+      onSuccess: /half (?:as much|the) damage|half as much/i.test(text) ? "half" : "none",
+      area,
+      ...(area ? size : {}),
+      circle,
+      ...(condition && lasts
+        ? { inflicts: { condition: condition[1].toLowerCase() as ModelledCondition, lasts } }
+        : {}),
+    },
+    fidelity: modelled,
+  };
+}

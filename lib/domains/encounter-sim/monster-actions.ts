@@ -36,7 +36,49 @@ export interface MonsterFeatureInput {
 export interface MonsterFeatureClass {
   action?: ModelledAction;
   multiattack?: ParsedMultiattack;
+  /** A Spellcasting action: the spells it casts, to be resolved against the vault's spell notes. */
+  spellcasting?: MonsterSpellcasting;
   skip?: SkipReason;
+}
+
+/** "casts one of the following spells, using CHA … (spell save DC 17)": the ability, the DC and the lists. */
+export interface MonsterSpellcasting {
+  ability?: AbilityKey;
+  dc?: number;
+  attack?: number;
+  /** Each list with its uses a day (absent: at will). */
+  lists: Array<{ perDay?: number; spells: string[] }>;
+}
+
+/**
+ * A monster's spell list from its Spellcasting prose: "At will: *dancing lights, minor illusion*", "3/day each:
+ * *hold person*, *invisibility* (self only)", "1/day: *slow*". Names lower-cased as written, a parenthesis dropped.
+ */
+export function parseMonsterSpellcasting(text: string): MonsterSpellcasting | undefined {
+  const flat = text.replace(/!\[\[[^\]]*\]\]/g, " ");
+  const ability = flat.match(
+    /using (STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)\b/i
+  );
+  const dc = flat.match(/spell save DC\s*(\d+)/i);
+  const attack = flat.match(/([+-]\d+) to hit with spell attacks/i);
+  const lists: MonsterSpellcasting["lists"] = [];
+  for (const m of flat.matchAll(/(At will|(\d+)\s*\/\s*day(?: each)?)\s*:\s*([^\n]+)/gi)) {
+    const spells = m[3]
+      .replace(/\([^)]*\)/g, "")
+      .replace(/\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (_m, target: string, shown?: string) => shown ?? target)
+      .replace(/[*_]/g, "")
+      .split(/,/)
+      .map((n) => n.trim().toLowerCase())
+      .filter(Boolean);
+    if (spells.length) lists.push({ ...(m[2] ? { perDay: parseInt(m[2], 10) } : {}), spells });
+  }
+  if (!lists.length) return undefined;
+  return {
+    ...(ability ? { ability: abilityKey(ability[1]) ?? undefined } : {}),
+    ...(dc ? { dc: parseInt(dc[1], 10) } : {}),
+    ...(attack ? { attack: parseInt(attack[1], 10) } : {}),
+    lists,
+  };
 }
 
 const UNSUPPORTED: MonsterFeatureClass = { skip: "unsupported-feature" };
@@ -177,7 +219,8 @@ export function classifyMonsterFeature(feature: MonsterFeatureInput): MonsterFea
   const name = feature.name.trim();
   const text = plain(feature.text);
   if (/^(innate )?spellcasting$/i.test(name) || /casts one of the following spells/i.test(text)) {
-    return { skip: "monster-spellcasting" };
+    const spellcasting = parseMonsterSpellcasting(feature.text);
+    return spellcasting ? { spellcasting, skip: "monster-spellcasting" } : { skip: "monster-spellcasting" };
   }
   if (feature.type?.trim().toLowerCase() !== "action") return UNSUPPORTED;
   if (/multiattack/i.test(name)) {

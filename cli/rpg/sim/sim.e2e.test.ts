@@ -172,12 +172,13 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     });
   }, 120_000);
 
-  it("reports a spellcasting monster's Spellcasting feature as skipped", async () => {
+  it("casts a spellcasting monster's spells from the vault's spell notes", async () => {
     const { doc } = await run("--monster", "Hobgoblin Conjurer", "--trials", "5");
     const ref = doc.monsters[0].note as string;
-    expect(doc.fidelity[ref]).toContainEqual(
-      expect.objectContaining({ name: "Spellcasting", status: "skipped", reason: "monster-spellcasting" })
-    );
+    // Web: a DEX save or restrained, once a day.
+    expect(doc.monsters[0].actions).toContainEqual(expect.objectContaining({ name: "Web", kind: "save", perDay: 1 }));
+    expect(doc.fidelity[ref]).toContainEqual({ name: "Web", owner: ref, status: "modelled" });
+    expect(doc.fidelity[ref]).toContainEqual(expect.objectContaining({ name: "Light", reason: "utility-spell" }));
   }, 120_000);
 
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {
