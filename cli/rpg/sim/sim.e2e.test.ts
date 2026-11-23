@@ -26,6 +26,7 @@ const R5_KEYS = [
   "seed",
   "trials",
   "roundCap",
+  "rules",
   "winRate",
   "tpkRate",
   "stalemateRate",
@@ -33,6 +34,8 @@ const R5_KEYS = [
   "roundsPerTrial",
   "hpRemainingPerTrial",
   "koRate",
+  "deathRate",
+  "anyDeathRate",
   "difficulty",
   "fidelity",
 ];
@@ -192,6 +195,19 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     await expect(sim("run", "--monster", "Mule with Nothing Such", "--trials", "5")).rejects.toThrow(
       /No template "Nothing Such"/
     );
+  }, 120_000);
+
+  it("fights on a battle map: the monsters its tokens link, everyone on their token", async () => {
+    const { doc } = await run("--map", "Kobold Ambush", "--trials", "20");
+    expect(doc.rules.map).toBe("Kobold Ambush");
+    expect(doc.monsters.length).toBeGreaterThan(0);
+    expect(doc.winRate + doc.tpkRate + doc.stalemateRate).toBeCloseTo(1, 5);
+    const plain = await run(
+      ...doc.monsters.flatMap((m: { note: string; count: number }) => ["--monster", `${m.note}:${m.count}`]),
+      "--trials",
+      "20"
+    );
+    expect(plain.doc.rules.map).toBeUndefined();
   }, 120_000);
 
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {

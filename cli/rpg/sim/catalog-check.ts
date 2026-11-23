@@ -18,7 +18,7 @@ import { diceRange } from "lib/domains/encounter-catalog/words";
 import { fitMargin } from "lib/domains/encounter-sim/fit";
 import { runMonteCarlo } from "lib/domains/encounter-sim/montecarlo";
 import { partyProfile, type PartyProfile } from "lib/domains/encounter-sim/party-profile";
-import type { CombatActor } from "lib/domains/encounter-sim/types";
+import type { CombatActor, TrialRules } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import { yieldToEventLoop } from "./brief";
 import { MAX_MONSTER_COUNT, type TierScope } from "./flags";
@@ -40,11 +40,12 @@ export async function loadPartyState(
   ctx: Ctx,
   catalog: Catalog,
   path: string,
-  session = catalog.session
+  session = catalog.session,
+  rules?: TrialRules
 ): Promise<PartyState> {
   if (catalog.party.pcs.length === 0) throw new Error(`Catalog "${path}" lists no PCs (its \`pcs\` is empty).`);
   const { actors } = await loadParty(ctx, catalog.party.pcs);
-  const stamp = partyStamp(actors);
+  const stamp = partyStamp(actors, rules);
   return {
     actors,
     stamp,
@@ -66,6 +67,8 @@ export interface CheckParams {
   seed: number;
   trials: number;
   rounds: number;
+  /** The rules the fights are played by (flags.ts `rulesOf`). */
+  rules?: TrialRules;
   /** Simulate every entry, not only those that need it. */
   force: boolean;
   /** The most entries to simulate (default all). */
@@ -164,6 +167,7 @@ export async function checkEntries(
         seed: params.seed,
         trials,
         roundCap: params.rounds,
+        ...(params.rules ? { rules: params.rules } : {}),
       });
     let summary = simulate(groups.map((g) => g.count));
     let trials = params.trials;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Ctx } from "../app";
 import { type SimHandler, simMain } from "./dispatch";
-import { parseSimArgv, SIM_FLAGS, SIM_HELP, type SimOptions, UsageError } from "./flags";
+import { parseSimArgv, rulesOf, SIM_FLAGS, SIM_HELP, type SimOptions, UsageError } from "./flags";
 
 const CTX = { root: "stub" } as unknown as Ctx;
 
@@ -202,6 +202,7 @@ describe("parseSimArgv: plan and --brief", () => {
 
   it("reads --brief", () => {
     expect(parseSimArgv(["run", "--monster", "Wolf", "--brief"]).options.brief).toBe(true);
+    expect(parseSimArgv(["run", "--map", " Kobold Ambush "]).options.map).toBe("Kobold Ambush");
   });
 });
 
@@ -231,6 +232,12 @@ describe("SIM_HELP", () => {
       "seed",
       "trials",
       "rounds",
+      "distance",
+      "lair",
+      "terrain",
+      "cover",
+      "map",
+      "high-ground",
       "difficulty",
       "tiers",
       "rank",
@@ -326,6 +333,7 @@ describe("simMain usage errors", () => {
     [["plan", "--rank", "outcome"], "--rank is not a flag of `plan`"],
     [["plan", "--pc", "A", "--catalog", "B"], "--pc and --catalog"],
     [["plan", "--cr", "big"], "--cr"],
+    [["suggest", "--map", "Cave"], "--map is a flag of `run` only"],
   ])("returns 1 for %j with a message naming %s on stderr", async (tokens, named) => {
     const h = await drive(tokens);
     expect(h.code).toBe(1);
@@ -437,5 +445,36 @@ describe("simMain handlers", () => {
     expect(a.code).toBe(0);
     expect(b.code).toBe(0);
     expect(a.out).toEqual(b.out);
+  });
+});
+
+describe("the rules of a fight from the flags", () => {
+  it("reads terrain, cover and high ground into the rules", () => {
+    const options = parseSimArgv([
+      "run",
+      "--monster",
+      "Wolf",
+      "--terrain",
+      "difficult",
+      "--cover",
+      "party:half",
+      "--cover",
+      "monsters:three-quarters",
+      "--high-ground",
+      "monsters:15",
+    ]);
+    expect(rulesOf(options.options)).toEqual({
+      distance: 30,
+      deathSaves: true,
+      difficult: true,
+      cover: { party: 2, monsters: 5 },
+      highGround: { side: "monsters", height: 15 },
+    });
+  });
+
+  it("refuses a cover, terrain or high ground it cannot read", () => {
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--cover", "party:lots"])).toThrow(/--cover/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--terrain", "swamp"])).toThrow(/--terrain/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--high-ground", "up"])).toThrow(/--high-ground/);
   });
 });

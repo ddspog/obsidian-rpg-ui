@@ -7,10 +7,13 @@
 
 import { parse as parseYaml } from "yaml";
 import { defencesOf, noDefences } from "lib/domains/encounter-sim/defences";
+import { averageOf } from "lib/domains/encounter-sim/rng";
 import {
   classifyMonsterFeature,
   bindMultiattack,
+  parseLairActions,
   type MonsterSpellcasting,
+  type ParsedReaction,
 } from "lib/domains/encounter-sim/monster-actions";
 import {
   reactionOfSpell,
@@ -24,9 +27,11 @@ import {
   isDamaging,
   type AbilityKey,
   type AbilityStat,
+  type BonusMove,
   type CombatActor,
   type FidelityRecord,
   type ModelledAction,
+  type Reaction,
   type SkipReason,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
@@ -203,6 +208,9 @@ interface Classified {
   legendary?: ReturnType<typeof classifyMonsterFeature>["legendary"];
   reaction?: ReturnType<typeof classifyMonsterFeature>["reaction"];
   legendaryResistance?: number;
+  bonus?: ModelledAction;
+  bonusMoves?: BonusMove[];
+  otherReaction?: ParsedReaction;
   skip?: SkipReason;
 }
 
@@ -216,6 +224,9 @@ function actionsAndFidelity(
   legendary: Array<{ action: ModelledAction; cost: number }>;
   reaction?: CombatActor["reaction"];
   legendaryResistance?: number;
+  bonusActions: ModelledAction[];
+  bonusMoves: BonusMove[];
+  reactions: Reaction[];
 } {
   // Pass 1: classify every feature; the attacks are collected by name for the Multiattack.
   const classified: Classified[] = features.map((f, i) => {
@@ -243,7 +254,38 @@ function actionsAndFidelity(
   };
   let reaction: CombatActor["reaction"];
   let legendaryResistance: number | undefined;
+  const bonusActions: ModelledAction[] = [];
+  const bonusMoves: BonusMove[] = [];
+  const reactions: Reaction[] = [];
+  /** Its best weapon attack: the one a counterattack makes when its words name none of them. */
+  const bestAttack = () => {
+    let best: WeaponAttackAction | undefined;
+    for (const a of attacks.values()) if (!best || averageOf(a.damage.expr) > averageOf(best.damage.expr)) best = a;
+    return best;
+  };
   for (const c of classified) {
+    // A reaction besides an AC one: a counterattack bound to its own attack, damage back, and the like.
+    if (c.otherReaction) {
+      const { attackRef, ...reaction } = c.otherReaction;
+      const attack =
+        reaction.kind === "counter" ? ((attackRef ? attackNamed(attackRef) : undefined) ?? bestAttack()) : undefined;
+      if (reaction.kind !== "counter" || attack) {
+        reactions.push(attack ? { ...reaction, attack } : reaction);
+        fidelity.push({ name: c.name, owner, status: "modelled" });
+      } else fidelity.push({ name: c.name, owner, status: "skipped", reason: "unsupported-feature" });
+      continue;
+    }
+    // A bonus action: the moves it gives (Nimble Escape), or an attack or save of its own.
+    if (c.bonusMoves) {
+      for (const m of c.bonusMoves) if (!bonusMoves.includes(m)) bonusMoves.push(m);
+      fidelity.push({ name: c.name, owner, status: "modelled" });
+      continue;
+    }
+    if (c.bonus) {
+      bonusActions.push(c.bonus);
+      fidelity.push({ name: c.name, owner, status: "modelled" });
+      continue;
+    }
     if (c.reaction && !reaction) {
       reaction = { name: c.name, ac: c.reaction.ac, untilTurn: c.reaction.untilTurn, circle: 0 };
       fidelity.push({ name: c.name, owner, status: "modelled" });
@@ -279,7 +321,23 @@ function actionsAndFidelity(
   if (!actions.some(isDamaging)) {
     fidelity.push({ name: owner, owner, status: "skipped", reason: "no-damaging-action" });
   }
-  return { actions, fidelity, legendary, reaction, legendaryResistance };
+  return { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves, reactions };
+}
+
+/** "30 ft., fly 60 ft. (hover)": the walking and flying speeds, in feet. */
+export function speedsOf(text: string): { walk: number; fly?: number } {
+  const walk = parseInt(text.match(/^\s*(\d+)/)?.[1] ?? "30", 10);
+  const fly = text.match(/\bfly(?:ing)? (\d+)/i)?.[1];
+  return { walk, ...(fly ? { fly: parseInt(fly, 10) } : {}) };
+}
+
+/** The lair actions of a monster's category note (`category: "[[Red Dragons]]"`), or none. */
+function lairOf(ctx: Ctx, category: unknown): ModelledAction[] {
+  const name = linkNames(typeof category === "string" ? category : undefined)[0];
+  if (!name) return [];
+  const file = ctx.vault.resolveLink(name);
+  if (!file) return [];
+  return parseLairActions(ctx.vault.readSync(file));
 }
 
 /** Legendary actions a round: the usual three. */
@@ -446,7 +504,8 @@ async function monsterOf(
     }
   }
 
-  const { actions, fidelity, legendary, reaction, legendaryResistance } = actionsAndFidelity(resolved, refs, file.path);
+  const { actions, fidelity, legendary, reaction, legendaryResistance, bonusActions, bonusMoves, reactions } =
+    actionsAndFidelity(resolved, refs, file.path);
   for (const ref of missing) {
     fidelity.push({
       name: ref.split("#").pop() ?? ref,
@@ -502,6 +561,29 @@ async function monsterOf(
   if (legendary.length) actor.legendary = { points: LEGENDARY_POINTS, actions: legendary };
   if (reaction ?? spellReaction) actor.reaction = reaction ?? spellReaction;
   if (legendaryResistance) actor.legendaryResistance = legendaryResistance;
+  // Where it moves and how it hides: its speeds, Flyby, its passive Stealth and Perception.
+  const speeds = speedsOf(String(data.stats.speed ?? ""));
+  actor.speed = speeds.walk;
+  if (speeds.fly) actor.fly = speeds.fly;
+  if (resolved.some((f) => /^fly-?by$/i.test(f.name?.trim() ?? ""))) actor.flyby = true;
+  if (bonusActions.length) actor.bonusActions = bonusActions;
+  if (bonusMoves.length) actor.bonusMoves = bonusMoves;
+  if (reactions.length) actor.reactions = reactions;
+  const passive = (key: string) => {
+    const n = parseInt(String((data.stats as Record<string, unknown>)[key] ?? ""), 10);
+    return Number.isFinite(n) ? n : undefined;
+  };
+  const stealth = passive("pas_stealth");
+  if (stealth !== undefined) actor.stealth = stealth - 10;
+  const perception = passive("pas_perception");
+  if (perception !== undefined) actor.passivePerception = perception;
+  // Its lair's actions, from its category note's "Lair Actions" (used when the fight is in its lair): a
+  // legendary creature's only, as a wyrmling of the family keeps no lair.
+  const lair = legendary.length ? lairOf(ctx, data.category) : [];
+  if (lair.length) {
+    actor.lair = lair;
+    for (const a of lair) fidelity.push({ name: `Lair: ${a.name}`, owner: file.path, status: "modelled" });
+  }
   return {
     note: file.path,
     name,

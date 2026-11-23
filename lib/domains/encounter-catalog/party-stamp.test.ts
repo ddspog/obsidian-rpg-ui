@@ -136,3 +136,15 @@ describe("partyStamp", () => {
     expect(partyStamp([a, b])).not.toBe(partyStamp([a]));
   });
 });
+
+describe("partyStamp: the rules", () => {
+  it("changes with the rules a fit was simulated by, and is the party's alone without them", () => {
+    const party = [pc()];
+    const plain = partyStamp(party);
+    expect(partyStamp(party, {})).toBe(plain);
+    const spaced = partyStamp(party, { distance: 30, deathSaves: true });
+    expect(spaced).not.toBe(plain);
+    expect(partyStamp(party, { distance: 60, deathSaves: true })).not.toBe(spaced);
+    expect(partyStamp(party, { distance: 30, deathSaves: true, lair: true })).not.toBe(spaced);
+  });
+});

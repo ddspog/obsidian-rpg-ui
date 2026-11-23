@@ -83,6 +83,19 @@ export interface WeaponAttackAction {
   damage: DamageSpec;
   limit?: UseLimit;
   inflicts?: Inflict;
+  /** Where it reaches (see `Reach`); absent: anywhere. */
+  reach?: Reach;
+  /** Shots it has (a bow's arrows, from the sheet's inventory); absent: as many as it needs. */
+  ammo?: number;
+}
+
+/**
+ * Where an action reaches, once the fight has positions (`TrialRules.distance`): a melee action a target
+ * within `melee` feet, a ranged one within `range` feet (a self-centred area: its size). Absent: anywhere.
+ */
+export interface Reach {
+  melee?: number;
+  range?: number;
 }
 
 /** A multiattack: several weapon swings taken as one action. */
@@ -100,6 +113,11 @@ export interface SpellAttackAction {
   damage: DamageSpec;
   circle: number;
   inflicts?: Inflict;
+  reach?: Reach;
+  /** A concentration spell: what it leaves on its targets ends with the caster's concentration. */
+  concentration?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /** A save-based effect, area or single-target. */
@@ -120,6 +138,10 @@ export interface SaveAction {
   circle: number;
   limit?: UseLimit;
   inflicts?: Inflict;
+  reach?: Reach;
+  concentration?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /** A healing option; `expr` is the full roll including the casting modifier. */
@@ -130,6 +152,8 @@ export interface HealAction {
   circle: number;
   /** Cast as a bonus action (Healing Word): it comes on top of the turn's action. */
   bonus?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
 }
 
 /**
@@ -147,6 +171,73 @@ export interface BuffAction {
   ac?: number;
   /** The save an enemy makes to keep it off. */
   save?: { ability: AbilityKey; dc: number };
+  concentration?: boolean;
+  /** Haste and Slow: speed times this, a bonus to DEX saves (or advantage on them). */
+  speedFactor?: number;
+  dexSave?: number;
+  dexAdvantage?: boolean;
+  /** Haste: one more weapon swing a turn; lethargy (a lost turn) when it ends. */
+  extraAttack?: boolean;
+  lethargy?: boolean;
+  /** Slow: no reactions, one attack a turn and an action or a bonus action, a save at the end of each turn. */
+  noReactions?: boolean;
+  oneAttack?: boolean;
+  repeatSave?: boolean;
+  /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
+  spell?: number;
+}
+
+/**
+ * A reaction the engine plays besides an AC one (`CombatActor.reaction`) and an opportunity attack:
+ * - "counter": when hit, an attack back at the attacker (Counterattack, Reflexive Strike);
+ * - "retaliate": when damaged, damage (or a save against it) back on the attacker (Hellish Rebuke, Defensive Kick);
+ * - "disadvantage": when attacked, the attack has disadvantage (Distressed Dance, Fin Flare);
+ * - "halve": when hit, the damage is halved (Uncanny Dodge, Defensive Huddle);
+ * - "counterspell": an enemy's spell (up to `upTo` circle) fails;
+ * - "protect": an ally within `within` feet (5) is attacked: +`ac` to its AC against that attack, or (no `ac`)
+ *   the attack has disadvantage (Protector's Parry, Protective Interference);
+ * - "move": on `trigger`, it moves `feet` (half its speed when absent) away from the attacker, or `toward` an enemy
+ *   that came near, drawing no opportunity attack (Nimble Dodge, Rescue Step, Slithering Pursuit).
+ * One reaction a round, shared with the AC reaction and opportunity attacks.
+ */
+export interface Reaction {
+  kind: "counter" | "retaliate" | "disadvantage" | "halve" | "counterspell" | "protect" | "move";
+  name: string;
+  attack?: WeaponAttackAction;
+  damage?: DamageSpec;
+  save?: { ability: AbilityKey; dc: number };
+  onSuccess?: "half" | "none";
+  inflicts?: Inflict;
+  /** Only against an attacker or caster within this many feet (with positions). */
+  within?: number;
+  /** Only against melee attacks. */
+  meleeOnly?: boolean;
+  limit?: UseLimit;
+  /** The spell slot it spends (Hellish Rebuke 1, Counterspell 3); 0 or absent: none. */
+  circle?: number;
+  upTo?: number;
+  /** protect: the AC it adds to the ally's. */
+  ac?: number;
+  /** move: what sets it off, how far, and which way. */
+  trigger?: "missed" | "hit" | "attacked" | "damaged" | "approached";
+  feet?: number;
+  toward?: boolean;
+}
+
+/**
+ * A battle map the fight is played on (`TrialRules.map`), from an `rpg map` block: square cells of `scale` feet,
+ * row by row. A cell may block movement and sight (a wall, a cliff: fliers pass over it), cost double to cross, or
+ * give cover (2 or 5) to a creature it lies between an attacker and, or that stands in it. Creatures start on
+ * the squares given for their actor's key (a monster group's copies take them in order).
+ */
+export interface BattleGrid {
+  scale: number;
+  cols: number;
+  rows: number;
+  blocked: boolean[];
+  difficult: boolean[];
+  cover: number[];
+  starts: Record<string, Array<{ col: number; row: number }>>;
 }
 
 export type ModelledAction =
@@ -186,6 +277,50 @@ export interface CombatActor {
   legendaryResistance?: number;
   /** Legendary actions: the points it has a round (3) and what each costs. */
   legendary?: { points: number; actions: Array<{ action: ModelledAction; cost: number }> };
+  /** Its walking speed and flying speed, in feet (with positions; absent: 30 and none). */
+  speed?: number;
+  fly?: number;
+  /** It leaves an enemy's reach without an opportunity attack (Flyby). */
+  flyby?: boolean;
+  /** What its bonus action can do besides a bonus heal (Cunning Action, Nimble Escape). */
+  bonusMoves?: BonusMove[];
+  /** Attacks and other actions its bonus action takes (a monster's "Bonus Actions"). */
+  bonusActions?: ModelledAction[];
+  /** Its Stealth modifier and passive Perception, for hiding and finding the hidden. */
+  stealth?: number;
+  passivePerception?: number;
+  /** Its lair's actions, used on initiative 20 when the fight is in its lair (`TrialRules.lair`). */
+  lair?: ModelledAction[];
+  /** Reactions besides the AC one (see `Reaction`). */
+  reactions?: Reaction[];
+}
+
+export type BonusMove = "disengage" | "hide" | "dash";
+
+/**
+ * The rules a trial is played by, beyond the dice. Each is off when absent, which is the abstract fight the
+ * engine played first (everyone in reach, a PC at 0 HP out).
+ */
+export interface TrialRules {
+  /**
+   * Positions: the sides start this many feet apart on a line (creatures that would rather act at range stand
+   * 10 feet further back), melee needs its reach and a creature moves its speed, a ranged attack with an enemy
+   * within 5 feet has disadvantage or steps back and draws opportunity attacks, a flier acting at range stays
+   * aloft out of reach of those that cannot fly.
+   */
+  distance?: number;
+  /** PCs at 0 HP make death saves; damage while down is a failure; three failures and they die. */
+  deathSaves?: boolean;
+  /** The fight is in a lair: its owner's lair actions come on initiative 20. */
+  lair?: boolean;
+  /** Difficult terrain everywhere: moving on the ground costs double (fliers aloft are spared). */
+  difficult?: boolean;
+  /** Cover for a side's creatures not next to an enemy: +2 (half) or +5 (three-quarters) to AC against ranged attacks and to DEX saves. */
+  cover?: Partial<Record<CombatSide, number>>;
+  /** High ground: that side's back line stands on a ledge this many feet up; climbing to it costs double. */
+  highGround?: { side: CombatSide; height: number };
+  /** A battle map: the fight is on its grid (positions are on, whatever `distance` says). */
+  map?: BattleGrid;
 }
 
 export const SKIP_REASONS = [
@@ -214,6 +349,8 @@ export interface TrialResult {
   partyHpRemaining: number;
   /** Names of party members at 0 HP at trial end. */
   knockedOut: string[];
+  /** Names of party members who died (three failed death saves), with `deathSaves`. */
+  dead?: string[];
 }
 
 /** An action that deals damage (as opposed to a heal). */

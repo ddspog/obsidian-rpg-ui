@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { SKIP_REASONS } from "./types";
-import { resolveSpellOption, type SpellNumbers, type SpellOptionInput } from "./spell-actions";
+import {
+  resolveSpellOption,
+  spellReach,
+  spellReactionOf,
+  type SpellNumbers,
+  type SpellOptionInput,
+} from "./spell-actions";
 
 /** Kowyn-shaped numbers: proficiency +2, casting modifier +4, level 3. */
 const NUMBERS: SpellNumbers = { proficiencyBonus: 2, castingModifier: 4, characterLevel: 3 };
@@ -298,6 +304,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "3d8", type: "cold" },
       circle: 1,
+      spell: 1,
     });
     expect(result.fidelity).toEqual({ name: "Icicle Javelin º", owner: OWNER, status: "modelled" });
     expect(result.needsCastingModifier).toBeUndefined();
@@ -316,6 +323,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "force" },
       circle: 0,
+      spell: 0,
       inflicts: { condition: "prone", lasts: "start", save: { ability: "str", dc: 14 } },
     });
   });
@@ -338,6 +346,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d6", type: "radiant" },
       circle: 0,
+      spell: 0,
       inflicts: { condition: "blinded", lasts: "end", save: { ability: "con", dc: 14 } },
     });
     expect(result.fidelity.status).toBe("modelled");
@@ -351,6 +360,7 @@ describe("resolveSpellOption: spell attacks", () => {
       hitBonus: 6,
       damage: { expr: "1d10", type: "cold" },
       circle: 1,
+      spell: 1,
     });
   });
 
@@ -385,6 +395,7 @@ describe("resolveSpellOption: save actions", () => {
       area: true,
       targets: 3,
       circle: 1,
+      spell: 1,
     });
     expect(result.fidelity).toEqual({ name: "Thunderwave", owner: OWNER, status: "modelled" });
   });
@@ -412,6 +423,7 @@ describe("resolveSpellOption: save actions", () => {
       onSuccess: "none",
       area: false,
       circle: 0,
+      spell: 0,
     });
   });
 
@@ -459,7 +471,7 @@ describe("resolveSpellOption: save actions", () => {
 describe("resolveSpellOption: healing", () => {
   it("models Cure Wounds as a heal: dice plus the casting modifier", () => {
     const result = resolveSpellOption(CURE_WOUNDS, NUMBERS, OWNER);
-    expect(result.action).toEqual({ kind: "heal", name: "Cure Wounds", expr: "1d8+4", circle: 1 });
+    expect(result.action).toEqual({ kind: "heal", name: "Cure Wounds", expr: "1d8+4", circle: 1, spell: 1 });
     expect(result.fidelity).toEqual({ name: "Cure Wounds", owner: OWNER, status: "modelled" });
   });
 
@@ -517,6 +529,7 @@ describe("resolveSpellOption: skipped classifications", () => {
       kind: "buff",
       name: "Bless",
       circle: 1,
+      spell: 1,
       on: "allies",
       targets: 3,
       attackDie: "+1d4",
@@ -660,7 +673,14 @@ describe("a heal its text gives", () => {
       NUMBERS,
       "Jacqui"
     );
-    expect(result.action).toEqual({ kind: "heal", name: "Healing Word", expr: "1d4+4", circle: 1, bonus: true });
+    expect(result.action).toEqual({
+      kind: "heal",
+      name: "Healing Word",
+      expr: "1d4+4",
+      circle: 1,
+      spell: 1,
+      bonus: true,
+    });
     expect(result.fidelity.status).toBe("modelled");
   });
 });
@@ -682,6 +702,7 @@ describe("a spell read from its prose", () => {
       hitBonus: 6,
       damage: { expr: "1d10", type: "fire" },
       circle: 0,
+      spell: 0,
     });
     expect(
       resolveSpellOption(
@@ -713,6 +734,7 @@ describe("a spell read from its prose", () => {
       area: true,
       targets: 2,
       circle: 1,
+      spell: 1,
     });
   });
 
@@ -738,5 +760,105 @@ describe("a spell read from its prose", () => {
         "Each target must make a CHA save. Whenever a target that fails this save makes an attack roll, it must roll a d4 and subtract the number rolled."
       )
     ).toBeUndefined();
+  });
+});
+
+describe("spell reach and concentration", () => {
+  it("reads a spell's range as its reach", () => {
+    expect(spellReach("60 feet")).toEqual({ range: 60 });
+    expect(spellReach("Touch")).toEqual({ melee: 5 });
+    expect(spellReach("Self (15-foot cone)")).toEqual({ range: 15 });
+    expect(spellReach("Self")).toBeUndefined();
+    expect(spellReach("Self", "Each creature in a 15-foot cone must make a CON save.")).toEqual({ range: 15 });
+    expect(spellReach(undefined)).toBeUndefined();
+  });
+
+  it("marks a concentration spell's action, and gives it the spell's reach", () => {
+    const hold = resolveSpellOption(
+      {
+        name: "Hold Person",
+        circle: 2,
+        range: "60 feet",
+        duration: "Concentration, up to 1 minute",
+        text: "Choose a Humanoid that you can see within range. The target must succeed on a WIS save or be paralyzed for the duration.",
+      },
+      { proficiencyBonus: 2, castingModifier: 3, characterLevel: 3 },
+      "Caster"
+    );
+    expect(hold.action).toMatchObject({ kind: "save", reach: { range: 60 }, concentration: true });
+  });
+});
+
+describe("Haste, Slow and reaction spells", () => {
+  const HASTE =
+    "Until the spell ends, the target's speed is doubled, it gains a +2 bonus to AC, it has advantage on DEX saves, and it gains an additional action on each of its turns. That action can be used only to take the Attack (one weapon attack only), Dash, Disengage, Hide, or Use an Object action. When the spell ends, the target can't move or take actions until after its next turn, as a wave of lethargy sweeps over it.";
+  const SLOW =
+    "You alter time around up to six creatures of your choice in a 40-foot cube within range. Each target must succeed on a WIS save or be affected by this spell for the duration. An affected target's speed is halved, it takes a −2 penalty to AC and DEX saves, and it can't use reactions. On its turn, it can use either an action or a bonus action, not both. It can't make more than one melee or ranged attack during its turn. A creature affected by this spell makes another WIS save at the end of its turn, ending the effect on itself on a success.";
+
+  it("reads Haste and Slow as buffs of what they do", () => {
+    const haste = resolveSpellOption(
+      { name: "Haste", circle: 3, text: HASTE, duration: "Concentration, up to 1 minute" },
+      NUMBERS,
+      OWNER
+    );
+    expect(haste.action).toMatchObject({
+      kind: "buff",
+      on: "allies",
+      targets: 1,
+      ac: 2,
+      speedFactor: 2,
+      dexAdvantage: true,
+      extraAttack: true,
+      lethargy: true,
+      concentration: true,
+    });
+    const slow = resolveSpellOption(
+      { name: "Slow", circle: 3, text: SLOW, duration: "Concentration, up to 1 minute" },
+      NUMBERS,
+      OWNER
+    );
+    expect(slow.action).toMatchObject({
+      kind: "buff",
+      on: "enemies",
+      targets: 6,
+      ac: -2,
+      dexSave: -2,
+      speedFactor: 0.5,
+      noReactions: true,
+      oneAttack: true,
+      repeatSave: true,
+      save: { ability: "wis" },
+    });
+  });
+
+  it("reads Hellish Rebuke and Counterspell as reactions", () => {
+    const rebuke = spellReactionOf(
+      {
+        name: "Hellish Rebuke",
+        circle: 1,
+        casting: "1 reaction, when damaged by a creature within 60 feet of you that you can see",
+        text: "The creature must make a DEX save. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one.",
+      },
+      NUMBERS
+    );
+    expect(rebuke).toMatchObject({
+      kind: "retaliate",
+      circle: 1,
+      within: 60,
+      save: { ability: "dex", dc: 14 },
+      onSuccess: "half",
+      damage: { expr: "2d10", type: "fire" },
+    });
+    const counter = spellReactionOf(
+      {
+        name: "Counterspell",
+        circle: 3,
+        casting: "1 reaction, when you see a creature within 60 feet of you casting a spell",
+        text: "",
+      },
+      NUMBERS
+    );
+    expect(counter).toEqual({ kind: "counterspell", name: "Counterspell", circle: 3, upTo: 3, within: 60 });
+    expect(spellReactionOf({ name: "Fire Bolt", circle: 0, casting: "1 action", text: "" }, NUMBERS)).toBeUndefined();
   });
 });

@@ -253,6 +253,93 @@ The profile is printed as `profile`, for example `{ "size": 4, "averageLevel": 1
 
 The random-encounter tables are written for a party of four. The simulator always uses the real PCs, so an entry's fit is already measured for the party's real size.
 
+## The rules of a fight: space, maps, bonus actions, lairs, ammunition, concentration, death saves
+
+Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog's `check`, `suggest --refresh` and `adjust`) plays by these rules (`TrialRules` in `lib/domains/encounter-sim/types.ts`, built by `rulesOf` in `cli/rpg/sim/flags.ts`; `run` prints them under `rules`). The engine leaves each off when it is absent, which is the abstract fight it played before.
+
+- **Space** (`--distance <feet>`, default 30): the sides start that far apart on a line, and creatures that would rather act at range stand 10 feet further back (a flier among them starts aloft).
+  - A melee action needs its reach: "reach 10 ft." in a statblock, "10 ft." on a sheet. A creature moves its speed to get there, and a bonus Dash doubles it. With nothing in reach it Dashes toward the nearest enemy.
+  - A ranged attack needs its range, the normal one ("range 80/320 ft." is 80). A spell uses its range ("Self (15-foot cone)" is 15, "Touch" melee), and a monster's area uses "within 30 feet" or its cone's or line's length.
+  - An action whose reach nothing says reaches anyone, as before.
+  - Fighting next to an enemy:
+    - A ranged attack with an enemy within 5 feet has disadvantage, unless the attacker slips away with a bonus Disengage.
+    - It can also step back, which gives each enemy whose reach it leaves an opportunity attack (that enemy's best melee swing, with its reaction). It steps back when those swings would cost less than the disadvantage.
+    - Flyby leaves without them.
+  - A creature acting at range backs off, after acting, from a melee enemy that could reach it next turn ("kiting"). A melee creature with someone already in reach strikes there rather than walking off to another target.
+  - A flier acting at range stays aloft, out of reach of melee from creatures that cannot fly.
+  - Speeds come from the statblock ("30 ft., fly 60 ft.") and the sheet; Flyby from a feature of that name.
+- **Terrain** (`--terrain difficult`): moving on the ground costs double everywhere; a flier is spared. The fight's room has walls: no creature backs away more than 30 feet behind its side's back line.
+- **Cover:**
+  - A creature standing between a ranged attacker and its target (on the line, low enough to be in the way) gives the target half cover, +2 AC against that attack.
+  - `--cover <side>:half|three-quarters` (repeatable, `party` or `monsters`) gives that side's creatures who are not next to an enemy +2 or +5 to AC against ranged attacks and to DEX saves.
+  - The higher of the two counts; cover does not stack.
+- **Height:**
+  - Every creature has a height. Distance is along the line or up, whichever is more, so a melee reach and a range count height too.
+  - A flier acting at range hovers 20 feet up. A 10- or 15-foot reach does not reach it; a 25-foot one, or a ranged attack, does.
+  - A flier that is knocked prone, or stunned, paralyzed, restrained or incapacitated, falls: 1d6 bludgeoning a 10 feet, and it lands prone.
+  - `--high-ground <side>:<feet>` puts that side's back line on a ledge that high. A walker climbs to it at double cost; a walker on it stays at its height, so a 15-foot cone cast from a 20-foot ledge reaches no one below.
+- **Haste and Slow** (and spells that read like them, `timeEffectsOf` in `spell-actions.ts`):
+  - **Haste:** doubles the target's speed, gives +2 AC and advantage on DEX saves, and one weapon swing more each turn. When it ends (the caster's concentration), the target loses its next turn.
+  - **Slow** (up to six enemies, a WIS save, another at the end of each of their turns):
+    - halves speed, and gives −2 to AC and DEX saves;
+    - removes reactions;
+    - limits each turn to one attack, and to an action or a bonus action, not both.
+- **Reactions** (one a round, shared with the AC reaction and opportunity attacks; `reactionFrom` in `monster-actions.ts`, `spellReactionOf` in `spell-actions.ts`). Of the vault's 375 monster reactions, 99 are read as one of these seven kinds (move 21, protect 3, counter 13, damage back 47, disadvantage 8, counterspell 5, halve 2); the AC ones (Parry) were already played.
+  - **Strike back:** when hit, an attack back at the attacker (Counterattack, Reflexive Strike: the attack it names, else its best one).
+  - **Damage back:** when hit or damaged, damage or a save back on the attacker (Blasphemous Word, Stunning Jolt; Hellish Rebuke on a PC's sheet, with its slot).
+  - **Disadvantage:** the attack against it has disadvantage (Fin Flare, Curl Up).
+  - **Halve:** a hit's damage halved (Defensive Huddle).
+  - **Counterspell:** a spell of its circle or lower fails (Counter Spell; Counterspell on a sheet). A spell's actions carry its circle (`spell`), so a monster's spells cast at no slot are known for what they are.
+  - **Protect:** an ally within its reach (5 feet unless it says) is attacked: its AC raised against that attack (Protector's Parry, "adds 2 to its AC") or disadvantage on the roll (Protective Interference).
+  - **Move away:** when missed, hit or damaged, it moves (half its speed, the feet it says, or a teleport) away from the attacker without drawing opportunity attacks (Nimble Dodge, Rescue Step). A multiattack's next swing finds it out of reach.
+  - **Move toward:** an enemy moves within its reach (30 feet unless it says), and it closes in (Slithering Pursuit).
+  - Each keeps its trigger's reach ("within 5 feet"), melee only when it says so, and its recharge or uses a day. A move that guards a ward (Defensive Transport) is left out.
+- **A battle map** (`run --map <note>`, `battleGrid` in `cli/rpg/sim/battlemap.ts`, `BattleGrid` in `types.ts`): the fight is played on the note's `rpg map` instead of a line.
+  - Squares of the map's scale (5 feet). A legend that `blocks` (or gives total cover) is a wall, `difficult` costs double, half and three-quarters cover give +2 and +5. An image map with no grid sizes itself from its tokens.
+  - Everyone starts on their token: a PC by its full name or first word, a monster by the note its `[[link]]` names (so with no `--monster`, the monsters are the map's tokens). Anyone without one stands on the free square nearest its side.
+  - Moving finds the cheapest path around walls (a diagonal is 5 feet). Nobody is reached or shot through a wall; the squares between, and the one the target stands in, give their cover, and a creature in between half cover.
+  - An area is aimed at an enemy and catches the enemies nearest it, up to its targets-in-area count.
+  - The walls 30 feet behind each line are not used on a map.
+  - In the vault: Kobold Ambush (the four PCs on their tokens) is won 54% of the time with 72% of the HP lost; the same kobolds on the line 46% and 75%. The logged fight lost 22%.
+- **Bonus actions:**
+  - A statblock's `bonus` features: "takes the Disengage or Hide action" (Nimble Escape) gives those moves, and Cunning Action on a sheet gives Dash, Disengage and Hide.
+  - Hide is a Stealth roll (the statblock's passive Stealth less 10, or the sheet's skill) against the best passive Perception of the enemies. It works only at range with no enemy next to the creature, and success gives advantage on its next attack.
+  - A bonus feature that is an attack or a save is made after the action, on an enemy in reach. A bonus-action heal (Healing Word) also spends the bonus action.
+- **Lair actions** (`--lair`): a legendary creature's category note ("Red Dragons") lists its "Lair Actions". On initiative 20 (losing ties) it takes the one worth most, never the same one two rounds running, and it reaches anyone in the lair. A save with no damage that only hinders ("or be knocked prone") hinders. A wyrmling of the family keeps no lair.
+- **Ammunition:** a ranged weapon on a sheet spends shots counted from the inventory: arrows for a bow, bolts for a crossbow, bullets for a sling, needles for a blowgun, in containers too. With none left it is not used. Monsters have what they need.
+- **Concentration:**
+  - A spell whose duration says "Concentration" holds what it left: a buff (Bless), or a condition it put on a target (Hold Person, Entangle).
+  - That effect ends when the caster drops to 0 HP or casts another concentration spell. It also ends when the caster takes damage and fails a CON save (DC 10 or half the damage, whichever is more).
+- **Catalog fits:** a fit is stamped with the rules it was simulated by (the party stamp takes them in). Another `--distance` or `--lair` on `catalog check` re-simulates every entry. The PCs' actions now carry their reach, so a catalog checked before these rules is re-simulated by its next `check`.
+- **Death saves** (always on):
+  - A PC at 0 HP rolls at the start of its turn. 10 or more is a success; a natural 1 is two failures; a natural 20 brings it back with 1 HP. Three failures and it dies; three successes and it is stable.
+  - Healing goes to a fallen ally first. With no heal at hand, a PC stabilises an ally about to die (two failures) with a DC 10 Medicine check (WIS) as its action.
+  - Monsters leave a fallen PC be.
+  - `run` reports each PC's `deathRate` and the `anyDeathRate`. `suggest`, `plan` and `--brief` give the `anyDeathRate` only.
+
+Measured on the default level-1 party (400 trials, the new rules against the abstract fight):
+
+- **Most fights:** a little cheaper.
+  - Goblin ×4 cost 18% of the party's HP instead of 26%, Hobgoblin ×2 19% instead of 27%.
+  - A Giant Eagle cost 23% instead of 35%.
+  - Kobold ×5 cost 18% instead of 22%.
+- **A big brute:** won much more often.
+  - An Ogre: 65% instead of 23%. Its 10-foot Bowling Sweep catches only the PCs next to it once the casters stand back, and death saves bring a fallen PC back now and then.
+  - A Bandit Captain: 66% instead of 46%.
+- **Death:** a PC dies in 0.25% to 8% of those fights (`anyDeathRate`).
+- **The logged kobold fight** (`calibrate`): now at the 8th percentile of the simulated, against the 3rd before (predicted HP lost 75%, against 83% before and 22% in play).
+- **Speed:** `suggest` takes about 1.5 times as long (15 s against 10 s for the default sweep).
+
+Then terrain, cover, height, Haste and Slow, and reactions, against the fight just before them:
+
+- **Most fights** moved a few points: Hobgoblin ×2 22% of HP instead of 19%, a Giant Eagle 24% instead of 23%.
+- **The Bandit Captain** is won 57% of the time instead of 66%. A monster standing between gives half cover against the party's spells and bolts, and Kowyn's Toxic Plume now needs its 15-foot cone.
+- **The flags,** on Goblin ×4:
+  - `--distance 60` or `--terrain difficult` nearly doubles the HP lost (37% against 19%): the goblins shoot while the party's melee crosses.
+  - `--high-ground party:20` costs 23% (Kowyn's 15-foot Thunderwave reaches no one from the ledge).
+- **The logged kobold fight:** barely moves (8th percentile).
+- **Speed:** `suggest` takes 17.6 s against 15.8 s.
+
 ## Calibration: the simulator against real play
 
 `rpg sim calibrate [<session note or folder>…] [--seed N] [--trials N] [--rounds N] [--difficulty D]` (`cli/rpg/sim/calibrate.ts`, read-only) reads every fight a session log records (`[COMBAT]` … `[/COMBAT]`): its foes (the `[F:…]` tags first written since the fight before, "Fat [[Kobold, A]]" counted as a `Kobold, A`), the party (the note's `pcs`), the party's HP as the fight opened and closed (from the sheets, less what the log did, as the log block folds it), its rounds and who dropped. It simulates the same fight and places the real one among the simulated: `hpLost` against `avgHpLost` and its spread (`z`), the share of simulated fights that cost no more than the real one (`percentile`), and the fit each would get. Across fights, a mean percentile that stays low says the simulator makes fights harder than play finds them (high: easier). With fewer than 10 fights it says the outcome profiles should not be tuned from them.
@@ -308,5 +395,5 @@ Drafts are guesses made by `extractEncounter` (`lib/domains/encounter-catalog/ex
 - **Templates:** "(use mage with the Void-blessed template)", "a giant ape with the bramble creature template" keep the template on the creature (`template:` on the entry's monster), when the vault has a template note of that name (`rpg sim templates` lists them) or the aliases note names one under `templates:` (`bramble creature: Bramble Beast`); else the reason says it was simulated without it and the draft is medium. Two templates offered ("the skeleton or zombie template") keep none. The simulator applies it before the fight, as `rpg sim homebrew --template` does: `--monster "Mule with Zombie:2"` takes the same form. The board shows it after the name; a prepared line's foes link the base creature.
 - Names the bestiary lacks ("five shriekers") are listed as `unresolved` and make the draft medium.
 - Rows that are not combat but a skill challenge, a hazard or a roleplay scene are not entries at all.
-- A fit is only as good as the simulator: wards (Sanctuary), speed and action changes (Haste, Slow), opportunity attacks and reactions other than an AC one, positioning and lair actions are left out (see the `fidelity` of `rpg sim run`). Conditions that ride on damage are played (below).
+- A fit is only as good as the simulator: wards (Sanctuary) are left out (see the `fidelity` of `rpg sim run`), and only `run --map` plays a map's shape; the rest fight on a line with a ledge and walls. Space, terrain, cover, height, opportunity attacks and reactions (protecting an ally and moving included), flight, Haste and Slow, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
 - Tags come from the table (environment, tier, CR band, book) and the monsters' habitats, lower-cased, so a "Forests" table has `forests` and its wolves' `forest`; `--tag` matches whole tags, case-insensitively.

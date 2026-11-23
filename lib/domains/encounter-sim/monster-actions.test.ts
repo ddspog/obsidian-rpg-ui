@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   acReactionOf,
   areaTargets,
+  attackReach,
   bindMultiattack,
+  bonusMovesOf,
   classifyMonsterFeature,
   inflictOfHit,
   inflictOfSave,
+  parseLairActions,
   parseMonsterSpellcasting,
+  reactionFrom,
+  saveReach,
   useLimitOf,
 } from "./monster-actions";
 import type { WeaponAttackAction } from "./types";
@@ -33,6 +38,7 @@ describe("classifyMonsterFeature: attacks", () => {
         name: "Longsword",
         hitBonus: 3,
         damage: { expr: "1d8+1", type: "slashing" },
+        reach: { melee: 5 },
       },
     });
   });
@@ -44,13 +50,20 @@ describe("classifyMonsterFeature: attacks", () => {
         name: "Longbow",
         hitBonus: 3,
         damage: { expr: "1d8+1", type: "piercing" },
+        reach: { range: 150 },
       },
     });
   });
 
   it("reads flat damage: a +4 attack dealing a flat 1 piercing", () => {
     expect(classifyMonsterFeature({ name: "Bite", type: "action", text: MIMIC_BITE })).toEqual({
-      action: { kind: "weapon", name: "Bite", hitBonus: 4, damage: { expr: "1", type: "piercing" } },
+      action: {
+        kind: "weapon",
+        name: "Bite",
+        hitBonus: 4,
+        damage: { expr: "1", type: "piercing" },
+        reach: { melee: 5 },
+      },
     });
   });
 
@@ -62,6 +75,8 @@ describe("classifyMonsterFeature: attacks", () => {
       name: "Dagger",
       hitBonus: 7,
       damage: { expr: "1d4+4", type: "piercing" },
+      // It can throw, but it closes in.
+      reach: { melee: 5 },
     });
   });
 
@@ -97,6 +112,7 @@ describe("classifyMonsterFeature: save area effects", () => {
         onSuccess: "half",
         area: true,
         targets: 1,
+        reach: { range: 30 },
         circle: 0,
         limit: { recharge: 5 },
       },
@@ -186,8 +202,23 @@ describe("classifyMonsterFeature: skips", () => {
     });
   });
 
-  it("skips bonus, trait and reaction features, even attack-shaped ones", () => {
-    for (const type of ["bonus", "trait", "reaction"]) {
+  it("reads a bonus action's attack, and the moves a bonus action gives", () => {
+    expect(classifyMonsterFeature({ name: "Longsword", type: "bonus", text: LONGSWORD }).bonus).toMatchObject({
+      kind: "weapon",
+      hitBonus: 3,
+      reach: { melee: 5 },
+    });
+    expect(
+      classifyMonsterFeature({
+        name: "Nimble Escape",
+        type: "bonus",
+        text: "The goblin takes the Disengage or Hide action.",
+      })
+    ).toEqual({ bonusMoves: ["disengage", "hide"] });
+  });
+
+  it("skips trait and reaction features, even attack-shaped ones, and a bonus action it cannot play", () => {
+    for (const type of ["trait", "reaction"]) {
       expect(classifyMonsterFeature({ name: "Longsword", type, text: LONGSWORD })).toEqual({
         skip: "unsupported-feature",
       });
@@ -369,5 +400,165 @@ describe("reactions and Legendary Resistance", () => {
         text: "The veteran adds 2 to its AC against one melee attack that would hit it.",
       })
     ).toMatchObject({ reaction: { ac: 2 } });
+  });
+});
+
+describe("reach, bonus moves and lair actions", () => {
+  it("reads where an attack reaches", () => {
+    expect(attackReach("*Melee Weapon Attack:* +5 to hit, reach 10 ft., one target.")).toEqual({ melee: 10 });
+    expect(attackReach("_Ranged Weapon Attack:_ +4 to hit, range 80/320 ft., one target.")).toEqual({ range: 80 });
+    expect(attackReach("*Melee or Ranged Weapon Attack:* +4 to hit, reach 5 ft. or range 20/60 ft.")).toEqual({
+      melee: 5,
+    });
+    expect(attackReach("+4 to hit, one target.")).toBeUndefined();
+  });
+
+  it("reads how far a save effect reaches from its user", () => {
+    expect(saveReach("a point it can see within 120 feet of it")).toEqual({ range: 120 });
+    expect(saveReach("The dragon exhales fire in a 30-foot cone.")).toEqual({ range: 30 });
+    expect(saveReach("Each creature in the area must make a DC 13 DEX save.")).toBeUndefined();
+  });
+
+  it("reads the moves a bonus action gives", () => {
+    expect(bonusMovesOf("The goblin takes the Disengage or Hide action.")).toEqual(["disengage", "hide"]);
+    expect(bonusMovesOf("It can take the Dash, Disengage, or Hide action.")).toEqual(["dash", "disengage", "hide"]);
+    expect(bonusMovesOf("The hobgoblin briefly studies one creature.")).toEqual([]);
+  });
+
+  it("reads a lair's actions from its note, and leaves out what it cannot play", () => {
+    const note = [
+      "## A Red Dragon's Lair",
+      "### Lair Actions",
+      "On initiative count 20 (losing initiative ties), the dragon can take a lair action:",
+      "- **Collapse.** Each creature in a 20-foot square area must succeed on a DC 15 DEX save or be knocked prone.",
+      "- **Swirling Ash.** Each creature within 30 feet of that point must make a DC 15 CON save. On a failure, a",
+      "creature takes 10 (3d6) fire damage.",
+      "- **Whispers.** The dragon speaks into every mind in the lair.",
+      "### Regional Effects",
+      "- **Heat.** Water near the lair is hot.",
+    ].join("\n");
+    const lair = parseLairActions(note);
+    expect(lair.map((a) => a.name)).toEqual(["Collapse", "Swirling Ash"]);
+    expect(lair[0]).toMatchObject({ kind: "save", dc: 15, ability: "dex", damage: { expr: "0" } });
+    expect(lair[0]).toMatchObject({ inflicts: { condition: "prone" } });
+    expect(lair[1]).toMatchObject({ kind: "save", ability: "con", damage: { expr: "3d6", type: "fire" } });
+    expect(parseLairActions("# A note with no lair")).toEqual([]);
+  });
+});
+
+describe("reactionFrom", () => {
+  it("reads a counterattack, naming its attack or not", () => {
+    expect(
+      reactionFrom(
+        "Reflexive Strike",
+        "When the warlord is hit by an attack roll, it can make one Battle Axe attack against the attacker."
+      )
+    ).toMatchObject({ kind: "counter", attackRef: "Battle Axe" });
+    expect(
+      reactionFrom(
+        "Counterattack (Recharge 6)",
+        "When a creature the alseid can see hits it with an attack, the alseid can make one melee or ranged attack against the attacker."
+      )
+    ).toEqual({ kind: "counter", name: "Counterattack (Recharge 6)", limit: { recharge: 6 } });
+  });
+
+  it("reads damage back, with a save or without", () => {
+    expect(
+      reactionFrom(
+        "Blasphemous Word",
+        "When a creature the void angel can see hits it with an attack, the angel can utter a dark word. The attacker takes 4 (1d8) necrotic damage."
+      )
+    ).toMatchObject({ kind: "retaliate", damage: { expr: "1d8", type: "necrotic" } });
+    expect(
+      reactionFrom(
+        "Stunning Jolt",
+        "When a creature within 5 feet of it hits it with a melee attack, the creature must succeed on a DC 15 CON save or be stunned until the end of its next turn."
+      )
+    ).toMatchObject({
+      kind: "retaliate",
+      within: 5,
+      meleeOnly: true,
+      save: { ability: "con", dc: 15 },
+      inflicts: { condition: "stunned" },
+    });
+  });
+
+  it("reads disadvantage, halving and a counterspell", () => {
+    expect(
+      reactionFrom(
+        "Fin Flare",
+        "When a creature the xypth can see attacks it, the xypth flares its fins. The attacker has disadvantage on the attack roll."
+      )
+    ).toMatchObject({ kind: "disadvantage" });
+    expect(
+      reactionFrom(
+        "Huddle",
+        "When a creature the ankylosaurus can see hits it with a weapon attack, it halves the attack's damage against it."
+      )
+    ).toMatchObject({ kind: "halve" });
+    expect(
+      reactionFrom(
+        "Counter Spell",
+        "When a creature the archmage can see within 30 feet of it casts a spell, the archmage can counter the spell, interrupting the casting."
+      )
+    ).toMatchObject({ kind: "counterspell", within: 30, upTo: 3 });
+  });
+
+  it("reads a reaction that protects an ally: its AC raised, or disadvantage", () => {
+    expect(
+      reactionFrom(
+        "Protector's Parry",
+        "When a friendly creature the guard can see within 5 feet of it is the target of an attack, the guard can interpose its weapon between the creature and the attacker. The friendly creature adds 2 to its AC against that attack."
+      )
+    ).toMatchObject({ kind: "protect", within: 5, ac: 2 });
+    const spoil = reactionFrom(
+      "Protective Interference",
+      "When a friendly creature the shadow fey guardian can see within 5 feet of it is the target of an attack, the guardian can impose disadvantage on the attack roll."
+    );
+    expect(spoil).toMatchObject({ kind: "protect", within: 5 });
+    expect(spoil?.ac).toBeUndefined();
+  });
+
+  it("reads a reaction that moves: away when missed or hurt, toward an enemy that moves", () => {
+    expect(
+      reactionFrom(
+        "Nimble Dodge",
+        "When a creature the musculi can see misses it with an attack, the musculi can move up to half its speed without provoking opportunity attacks."
+      )
+    ).toMatchObject({ kind: "move", trigger: "missed" });
+    expect(
+      reactionFrom(
+        "Rescue Step",
+        "When Mott takes damage from an attack, he can teleport up to 30 feet to an unoccupied space he can see."
+      )
+    ).toMatchObject({ kind: "move", trigger: "damaged", feet: 30 });
+    expect(
+      reactionFrom(
+        "Slithering Pursuit",
+        "When a hostile creature the spawn can see within 30 feet of it moves, the spawn can move up to half its speed toward that creature. This movement doesn't provoke opportunity attacks."
+      )
+    ).toMatchObject({ kind: "move", trigger: "approached", toward: true, within: 30 });
+    // A move to guard its ward is not a move of its own.
+    expect(
+      reactionFrom(
+        "Defensive Transport",
+        "When the barquil's ward takes damage from an attack or effect the barquil can see, the barquil can teleport up to 30 feet toward the ward into an unoccupied space."
+      )?.kind
+    ).not.toBe("move");
+  });
+
+  it("leaves out a reaction that halves only some damage", () => {
+    expect(
+      reactionFrom(
+        "Energy Absorption",
+        "Whenever the trail snail takes acid, cold, fire, lightning, or thunder damage, it can halve the damage taken."
+      )
+    ).toBeUndefined();
+    expect(
+      reactionFrom(
+        "Self-Destruct",
+        "If the servant takes damage that would reduce its HP to 0, it can explode. Each creature within 15 feet must make a DEX save; on a success, a creature takes only half damage."
+      )?.kind
+    ).not.toBe("halve");
   });
 });

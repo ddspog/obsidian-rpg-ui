@@ -26,7 +26,7 @@ import { fencesOf } from "../fences";
 import { listSessions } from "../session/lines";
 import { notesOf } from "./catalog-draft";
 import type { SimHandler } from "./dispatch";
-import type { SimOptions } from "./flags";
+import { rulesOf, type SimOptions } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { loadParty } from "./party";
 
@@ -195,6 +195,7 @@ export const simCalibrate: SimHandler = async (ctx: Ctx, options: SimOptions) =>
           seed: options.seed,
           trials: options.trials,
           roundCap: options.rounds,
+          rules: rulesOf(options),
         });
         const simMax = actors.reduce((a, p) => a + p.maxHp, 0);
         const lostPerTrial = sim.hpRemainingPerTrial.map((h) => (simMax > 0 ? 1 - h / simMax : 0));

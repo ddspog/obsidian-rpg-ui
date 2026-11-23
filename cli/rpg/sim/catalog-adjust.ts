@@ -20,7 +20,7 @@ import { fitStateFrom, type FitState } from "lib/domains/encounter-catalog/fit-s
 import { outcomeDistance } from "lib/domains/encounter-sim/fit";
 import { equivalentsOf } from "lib/domains/encounter-sim/monster-role";
 import { runMonteCarlo } from "lib/domains/encounter-sim/montecarlo";
-import type { CombatActor } from "lib/domains/encounter-sim/types";
+import type { CombatActor, TrialRules } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import { yieldToEventLoop } from "./brief";
 import type { PartyState } from "./catalog-check";
@@ -32,6 +32,7 @@ export interface AdjustParams {
   seed: number;
   trials: number;
   rounds: number;
+  rules?: TrialRules;
   today: string;
 }
 
@@ -112,6 +113,7 @@ export async function adjustEntry(
       seed: params.seed,
       trials: params.trials,
       roundCap: params.rounds,
+      ...(params.rules ? { rules: params.rules } : {}),
     });
     return {
       fit: fitStateFrom(summary, catalog.difficulty, party.stamp, party.fitContext.session, params.today),

@@ -27,7 +27,7 @@ import type { Ctx } from "../app";
 import { groupRef, yieldToEventLoop } from "./brief";
 import { findCatalogs, loadCatalog, resolveCatalogPath, saveCatalog } from "./catalog-store";
 import type { SimHandler } from "./dispatch";
-import { MAX_MONSTER_COUNT, UsageError, type SimOptions } from "./flags";
+import { MAX_MONSTER_COUNT, rulesOf, UsageError, type SimOptions } from "./flags";
 import { crNumber, loadMonster, type LoadedMonster } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import { roledBestiary, type RoledMonster } from "./roles";
@@ -102,6 +102,7 @@ export const simBuild: SimHandler = async (ctx: Ctx, options: SimOptions) => {
         seed: options.seed,
         trials: options.trials,
         roundCap: options.rounds,
+        rules: rulesOf(options),
       });
       if (classifyFit(s, difficulty) !== "fit") continue;
       tried.push({
@@ -157,7 +158,7 @@ export const simBuild: SimHandler = async (ctx: Ctx, options: SimOptions) => {
           tags,
           review: "draft",
           notes: `Built by rpg sim build (${MODEL_LABEL[chosen.c.model].toLowerCase()}). Give it a name and a scene.`,
-          fit: fitStateFrom(summary, difficulty, partyStamp(party.actors), catalog.session, today),
+          fit: fitStateFrom(summary, difficulty, partyStamp(party.actors, rulesOf(options)), catalog.session, today),
         })
       );
       added = id;

@@ -10,11 +10,14 @@ import { isRollable } from "./rng";
 import {
   ABILITY_KEYS,
   type AbilityKey,
+  type BuffAction,
   type DamageSpec,
   type FidelityRecord,
   type Inflict,
   MODELLED_CONDITIONS,
   type ModelledAction,
+  type Reach,
+  type Reaction,
   type ModelledCondition,
   type SkipReason,
 } from "./types";
@@ -138,6 +141,50 @@ function modelledFormOf(roll: Record<string, unknown>, damage: DamageSpec): Mode
  * `needsCastingModifier` and no action. Skipped classifications never do.
  */
 export function resolveSpellOption(
+  spell: SpellOptionInput,
+  numbers: SpellNumbers | undefined,
+  owner: string
+): SpellOptionResult {
+  const result = resolveSpellAction(spell, numbers, owner);
+  const action = result.action;
+  if (!action) return result;
+  if (action.kind === "heal") return { ...result, action: { ...action, spell: spell.circle ?? action.circle } };
+  if (action.kind !== "spell-attack" && action.kind !== "save" && action.kind !== "buff") return result;
+  // Where it reaches (its range) and whether it holds concentration (its duration).
+  const melee = spell.roll && isRecord(spell.roll) && spell.roll.form === "melee";
+  const reach = action.kind === "buff" ? undefined : melee ? { melee: 5 } : spellReach(spell.range, spell.text);
+  const concentration = /\bconcentration\b/i.test(spell.duration ?? "");
+  return {
+    ...result,
+    action: {
+      ...action,
+      ...(reach ? { reach } : {}),
+      ...(concentration ? { concentration: true } : {}),
+      spell: spell.circle ?? action.circle,
+    } as ModelledAction,
+  };
+}
+
+/**
+ * A spell's range as a reach: "60 feet" 60, "Touch" melee 5, "Self (15-foot cone)" 15; "Self" the area its text
+ * gives ("each creature in a 15-foot cone"), else anywhere; none anywhere.
+ */
+export function spellReach(range: string | undefined, text = ""): Reach | undefined {
+  if (!range) return undefined;
+  if (/^\s*self\s*$/i.test(range)) {
+    const area = text.match(/(\d+)[- ](?:foot|feet|ft\.?)[- ](?:-radius )?(cone|line|cube|radius|sphere|emanation)/i);
+    return area ? { range: parseInt(area[1], 10) } : undefined;
+  }
+  if (/^\s*touch\b/i.test(range)) return { melee: 5 };
+  const self = range.match(/^\s*self\s*\((\d+)[- ](?:foot|feet|ft)/i);
+  if (self) return { range: parseInt(self[1], 10) };
+  const feet = range.match(/^\s*(\d+)\s*(?:feet|foot|ft)/i);
+  if (feet) return { range: parseInt(feet[1], 10) };
+  const miles = range.match(/^\s*(\d+)\s*miles?/i);
+  return miles ? { range: parseInt(miles[1], 10) * 5280 } : undefined;
+}
+
+function resolveSpellAction(
   spell: SpellOptionInput,
   numbers: SpellNumbers | undefined,
   owner: string
@@ -336,6 +383,33 @@ const COUNT_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4,
  * spell names), "a +2 bonus to AC" (Shield of Faith). Its targets: "up to three creatures", one by default, or
  * as many as an aura's size catches. Undefined when the words give neither a die to attacks or saves nor AC.
  */
+/**
+ * What a spell like Haste or Slow does to its target, read from its words: "speed is doubled" (or halved), "+2 bonus
+ * to AC" (or "−2 penalty to AC and DEX saves"), "advantage on DEX saves", "an additional action … (one weapon
+ * attack only)", lethargy when it ends; "can't use reactions", "can't make more than one melee or ranged attack",
+ * "another WIS save at the end of its turn". `hinders`: it is cast on enemies. Undefined when it says none of it.
+ */
+export function timeEffectsOf(text: string): { effects: Partial<BuffAction>; hinders: boolean } | undefined {
+  const effects: Partial<BuffAction> = {};
+  if (/speed is doubled/i.test(text)) effects.speedFactor = 2;
+  if (/speed is halved/i.test(text)) effects.speedFactor = 0.5;
+  if (/advantage on (?:DEX|Dexterity) sav/i.test(text)) effects.dexAdvantage = true;
+  const penalty = text.match(/[\u2212-](\d+) penalty to AC and (?:DEX|Dexterity) sav/i);
+  if (penalty) {
+    effects.ac = -parseInt(penalty[1], 10);
+    effects.dexSave = -parseInt(penalty[1], 10);
+  }
+  if (/additional action on each of its turns/i.test(text) && /one weapon attack/i.test(text))
+    effects.extraAttack = true;
+  if (/wave of lethargy|can[\u2019']t move or take actions until after its next turn/i.test(text))
+    effects.lethargy = true;
+  if (/can[\u2019']t use reactions/i.test(text)) effects.noReactions = true;
+  if (/more than one melee or ranged attack|either an action or a bonus action/i.test(text)) effects.oneAttack = true;
+  if (/another (?:\w+ )?sav\w* at the end of (?:each of )?its turns?/i.test(text)) effects.repeatSave = true;
+  if (!effects.speedFactor && !effects.extraAttack && !effects.oneAttack && !effects.noReactions) return undefined;
+  return { effects, hinders: !!effects.oneAttack || effects.speedFactor === 0.5 || !!penalty };
+}
+
 export function buffFromText(
   spell: SpellOptionInput,
   numbers: SpellNumbers | undefined,
@@ -348,12 +422,14 @@ export function buffFromText(
     /roll an? (d\d+) and (add|subtract) the number rolled (?:from|to) (?:the |its |that )?([^.]*)/i
   );
   const ac = text.match(/\+(\d+) bonus to (?:its |their |your )?AC\b/i);
-  if (!die && !ac) return undefined;
+  // Haste and Slow, by what they do: speed, AC and DEX saves, actions, reactions.
+  const time = timeEffectsOf(text);
+  if (!die && !ac && !time) return undefined;
   const onWhat = die?.[3].toLowerCase() ?? "";
   const attack = die && /attack roll/.test(onWhat);
   const save = die && /\bsav(?:e|ing throw)/.test(onWhat);
   if (die && !attack && !save && !ac) return undefined;
-  const negative = die?.[2].toLowerCase() === "subtract";
+  const negative = die?.[2].toLowerCase() === "subtract" || !!time?.hinders;
   const sign = negative ? "-" : "+";
   const count = text.match(/up to (\w+) creatures?/i);
   const sized = areaTargets(`${spell.range ?? ""} ${text}`).targets;
@@ -380,6 +456,7 @@ export function buffFromText(
       ...(save ? { saveDie: `${sign}1${die![1]}` } : {}),
       ...(ac ? { ac: parseInt(ac[1], 10) } : {}),
       ...(ability ? { save: { ability, dc: 8 + numbers.proficiencyBonus + numbers.castingModifier } } : {}),
+      ...(time?.effects ?? {}),
     },
     fidelity: { name: spell.name, owner, status: "modelled" },
   };
@@ -397,5 +474,34 @@ export function reactionOfSpell(
     ac: parseInt(m[1], 10),
     untilTurn: /until the start of your next turn/i.test(spell.text ?? ""),
     circle: spell.circle ?? 0,
+  };
+}
+
+/**
+ * A reaction spell besides an AC one, as a `Reaction`: one cast "when damaged by a creature" that deals damage
+ * (Hellish Rebuke: the save and damage of its roll, back on the attacker), or one that interrupts a spell being
+ * cast (Counterspell: it stops a spell of its own circle or lower). Undefined for any other spell.
+ */
+export function spellReactionOf(spell: SpellOptionInput, numbers: SpellNumbers | undefined): Reaction | undefined {
+  const casting = spell.casting ?? "";
+  if (!/\breaction\b/i.test(casting)) return undefined;
+  const circle = spell.circle ?? 0;
+  const within = casting.match(/within (\d+) feet/i);
+  const reach = within ? { within: parseInt(within[1], 10) } : {};
+  const text = `${spell.summary ?? ""} ${spell.text ?? ""}`;
+  if (/casting a spell/i.test(casting) || /interrupt a creature in the process of casting a spell/i.test(text))
+    return { kind: "counterspell", name: spell.name, circle, upTo: Math.max(circle, 3), ...reach };
+  if (!/\bwhen (?:you are )?damaged\b|\bwhen you take damage\b/i.test(casting) || !numbers) return undefined;
+  const action = resolveSpellAction(spell, numbers, "").action;
+  if (!action || action.kind !== "save") return undefined;
+  return {
+    kind: "retaliate",
+    name: spell.name,
+    circle,
+    damage: action.damage,
+    save: { ability: action.ability, dc: action.dc },
+    onSuccess: action.onSuccess,
+    ...(action.inflicts ? { inflicts: action.inflicts } : {}),
+    ...reach,
   };
 }

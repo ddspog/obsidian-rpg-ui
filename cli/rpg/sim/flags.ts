@@ -7,6 +7,7 @@ import {
 import type { Confidence } from "lib/domains/encounter-catalog/extract-row";
 import type { FitStateName } from "lib/domains/encounter-catalog/fit-state";
 import { parseCr } from "lib/domains/encounter-sim/difficulty";
+import type { TrialRules } from "lib/domains/encounter-sim/types";
 import {
   MONSTER_ROLES,
   parseRole,
@@ -118,6 +119,51 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     default: 20,
     value: "<n>",
     description: "the round cap of a fight (a positive integer)",
+  },
+  {
+    name: "distance",
+    kind: "string",
+    default: 30,
+    value: "<feet>",
+    description:
+      "how far apart the sides start, in feet: melee needs its reach, creatures move their speed, ranged attacks next to an enemy have disadvantage or draw opportunity attacks",
+  },
+  {
+    name: "lair",
+    kind: "boolean",
+    default: false,
+    description: "the fight is in a lair: a monster with lair actions (its category note's) uses one on initiative 20",
+  },
+  {
+    name: "terrain",
+    kind: "string",
+    default: undefined,
+    value: "difficult",
+    description: "difficult terrain: moving on the ground costs double (fliers aloft are spared)",
+  },
+  {
+    name: "cover",
+    kind: "string",
+    multiple: true,
+    default: [],
+    value: "<side>:half|three-quarters",
+    description:
+      "cover for a side (party or monsters) not in melee: +2 or +5 to AC against ranged attacks and to DEX saves; repeatable",
+  },
+  {
+    name: "map",
+    kind: "string",
+    default: undefined,
+    value: "<note>",
+    description:
+      "`run` only: fight on the note's rpg map (its walls, cover and difficult ground, everyone on their token); with no --monster, the monsters its tokens link",
+  },
+  {
+    name: "high-ground",
+    kind: "string",
+    default: undefined,
+    value: "<side>:<feet>",
+    description: "that side's back line stands on a ledge this high; climbing to it costs double",
   },
   {
     name: "difficulty",
@@ -461,6 +507,16 @@ export interface SimOptions {
   seed: number;
   trials: number;
   rounds: number;
+  /** How far apart the sides start, in feet (positions). */
+  distance: number;
+  /** The fight is in a lair. */
+  lair: boolean;
+  /** `run --map`: the note of the battle map to fight on. */
+  map?: string;
+  /** Difficult terrain, cover by side, and a side's high ground. */
+  difficult: boolean;
+  cover: Partial<Record<"party" | "monsters", number>>;
+  highGround?: { side: "party" | "monsters"; height: number };
   difficulty: Difficulty;
   rank: Rank;
   tiers: TierScope;
@@ -545,6 +601,10 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     seed: flagDefault<number>("seed"),
     trials: flagDefault<number>("trials"),
     rounds: flagDefault<number>("rounds"),
+    distance: flagDefault<number>("distance"),
+    lair: false,
+    difficult: false,
+    cover: {},
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
     tiers: flagDefault<TierScope>("tiers"),
@@ -716,6 +776,9 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (typeof values.rounds === "string") {
     options.rounds = integer("rounds", values.rounds, 1, "a positive integer");
   }
+  if (typeof values.distance === "string") {
+    options.distance = integer("distance", values.distance, 0, "a whole number of feet, 0 or more");
+  }
   if (typeof values.limit === "string") {
     options.limit = integer("limit", values.limit, 0, "a non-negative integer");
     options.limitSet = true;
@@ -731,6 +794,30 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.only = ((values.only as string[] | undefined) ?? []).map((v) => v.trim()).filter(Boolean);
   options.dropTags = tagList("drop-tag", values["drop-tag"]);
   options.includeUsed = values["include-used"] === true;
+  options.lair = values.lair === true;
+  if (typeof values.map === "string" && values.map.trim()) options.map = values.map.trim();
+  if (typeof values.terrain === "string") {
+    if (values.terrain.trim().toLowerCase() !== "difficult")
+      throw new UsageError(`--terrain must be "difficult", got "${values.terrain}".`);
+    options.difficult = true;
+  }
+  for (const raw of (values.cover as string[] | undefined) ?? []) {
+    const m = raw
+      .trim()
+      .toLowerCase()
+      .match(/^(party|monsters):(half|three-quarters|3\/4|1\/2)$/);
+    if (!m) throw new UsageError(`--cover takes <side>:half|three-quarters (party or monsters), got "${raw}".`);
+    options.cover[m[1] as "party" | "monsters"] = m[2] === "half" || m[2] === "1/2" ? 2 : 5;
+  }
+  if (typeof values["high-ground"] === "string") {
+    const m = values["high-ground"]
+      .trim()
+      .toLowerCase()
+      .match(/^(party|monsters):(\d+)$/);
+    if (!m)
+      throw new UsageError(`--high-ground takes <side>:<feet> (party or monsters), got "${values["high-ground"]}".`);
+    options.highGround = { side: m[1] as "party" | "monsters", height: parseInt(m[2], 10) };
+  }
   options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
     const fit = raw.trim().toLowerCase();
     if (!(FIT_STATE_NAMES as readonly string[]).includes(fit)) {
@@ -848,9 +935,36 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
   tag: ["add-tag", "drop-tag"],
   use: ["session"],
   prepare: [],
-  adjust: ["state", "limit", "accept", "pick", "seed", "trials", "rounds", "session"],
+  adjust: [
+    "state",
+    "limit",
+    "accept",
+    "pick",
+    "seed",
+    "trials",
+    "rounds",
+    "distance",
+    "lair",
+    "terrain",
+    "cover",
+    "high-ground",
+    "session",
+  ],
   session: ["session"],
-  check: ["session", "seed", "trials", "rounds", "force", "limit", "tiers"],
+  check: [
+    "session",
+    "seed",
+    "trials",
+    "rounds",
+    "distance",
+    "lair",
+    "terrain",
+    "cover",
+    "high-ground",
+    "force",
+    "limit",
+    "tiers",
+  ],
   suggest: [
     "tag",
     "any-tag",
@@ -863,6 +977,11 @@ const CATALOG_FLAGS: Record<CatalogAction, readonly string[]> = {
     "seed",
     "trials",
     "rounds",
+    "distance",
+    "lair",
+    "terrain",
+    "cover",
+    "high-ground",
     "brief",
     "include-used",
     "tiers",
@@ -930,6 +1049,11 @@ const PLAN_FLAGS = [
   "seed",
   "trials",
   "rounds",
+  "distance",
+  "lair",
+  "terrain",
+  "cover",
+  "high-ground",
   "vault",
   "json",
   "help",
@@ -952,7 +1076,20 @@ const HOMEBREW_FLAGS = [
 ];
 
 /** The flags `calibrate` takes. */
-const CALIBRATE_FLAGS = ["seed", "trials", "rounds", "difficulty", "vault", "json", "help"];
+const CALIBRATE_FLAGS = [
+  "seed",
+  "trials",
+  "rounds",
+  "distance",
+  "lair",
+  "terrain",
+  "cover",
+  "high-ground",
+  "difficulty",
+  "vault",
+  "json",
+  "help",
+];
 
 /** The flags `templates` and `lineages` take. */
 const TEMPLATES_FLAGS = ["write", "force", "vault", "json", "help"];
@@ -971,6 +1108,11 @@ const BUILD_FLAGS = [
   "seed",
   "trials",
   "rounds",
+  "distance",
+  "lair",
+  "terrain",
+  "cover",
+  "high-ground",
   "vault",
   "json",
   "help",
@@ -1026,9 +1168,10 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
   if (subcommand === "run" && options.base.length > 0) {
     throw new UsageError("--base is for `suggest`; use --monster to name the groups of a run.");
   }
-  if (subcommand === "run" && options.monsters.length === 0) {
-    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
+  if (subcommand === "run" && options.monsters.length === 0 && !options.map) {
+    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3"), or give --map.');
   }
+  if (options.map && subcommand !== "run") throw new UsageError("--map is a flag of `run` only.");
   if (subcommand === "catalog") {
     validateCatalog(options);
     return;
@@ -1159,3 +1302,20 @@ Usage:
 Flags:
 ${helpLines()}
 `;
+
+/**
+ * The rules every simulation of the CLI plays by: positions from `--distance`, death saves, and a lair with
+ * `--lair` (types.ts `TrialRules`).
+ */
+export function rulesOf(
+  options: Pick<SimOptions, "distance" | "lair"> & Partial<Pick<SimOptions, "difficult" | "cover" | "highGround">>
+): TrialRules {
+  return {
+    distance: options.distance,
+    deathSaves: true,
+    ...(options.lair ? { lair: true } : {}),
+    ...(options.difficult ? { difficult: true } : {}),
+    ...(options.cover && Object.keys(options.cover).length ? { cover: options.cover } : {}),
+    ...(options.highGround ? { highGround: options.highGround } : {}),
+  };
+}

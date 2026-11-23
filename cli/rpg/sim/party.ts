@@ -6,11 +6,13 @@
  */
 
 import { parse } from "yaml";
-import { areaTargets } from "lib/domains/encounter-sim/monster-actions";
+import { areaTargets, bonusMovesOf } from "lib/domains/encounter-sim/monster-actions";
 import { isRollable } from "lib/domains/encounter-sim/rng";
 import {
   reactionOfSpell,
   resolveSpellOption,
+  spellReach,
+  spellReactionOf,
   type SpellNumbers,
   type SpellOptionInput,
 } from "lib/domains/encounter-sim/spell-actions";
@@ -18,6 +20,7 @@ import {
   ABILITY_KEYS,
   type AbilityKey,
   type AbilityStat,
+  type BonusMove,
   type CombatActor,
   type DamageRider,
   type FidelityRecord,
@@ -26,6 +29,8 @@ import {
   MODELLED_CONDITIONS,
   type ModelledAction,
   type ModelledCondition,
+  type Reach,
+  type Reaction,
   type WeaponAttackAction,
 } from "lib/domains/encounter-sim/types";
 import { parseDamage } from "lib/domains/session-log/session-actions";
@@ -62,6 +67,9 @@ interface SheetAction {
   inflicts?: unknown;
   /** A feature's extra damage on hits: `{ damage: "1d4 origin", cost, mark }`. */
   rider?: unknown;
+  /** "melee" or "ranged", and its reach or range ("5 ft.", "80/320 ft."). */
+  attackForm?: unknown;
+  range?: unknown;
 }
 
 const SAVE_TEXT = /^\s*(STR|DEX|CON|INT|WIS|CHA)\s+(\d+)\s*$/i;
@@ -214,6 +222,40 @@ function abilitiesOf(sheet: CharacterSheet, ref: string): Record<AbilityKey, Abi
   return out;
 }
 
+/** A sheet weapon's reach: "5 ft." melee 5, a ranged one's "80/320 ft." range 80. */
+function weaponReach(raw: SheetAction): Reach | undefined {
+  const range = typeof raw.range === "string" ? raw.range : "";
+  const feet = parseInt(range.match(/(\d+)/)?.[1] ?? "", 10);
+  if (raw.attackForm === "ranged") return Number.isFinite(feet) ? { range: feet } : { range: 30 };
+  if (raw.attackForm === "melee") return { melee: Number.isFinite(feet) ? feet : 5 };
+  return undefined;
+}
+
+/** The ammunition a ranged weapon of this name uses (arrows for a bow, bolts for a crossbow…). */
+const AMMUNITION: Array<[RegExp, RegExp]> = [
+  [/\bbow\b|longbow|shortbow/i, /\barrows?\b/i],
+  [/crossbow/i, /\bbolts?\b/i],
+  [/\bsling\b/i, /\b(?:sling )?bullets?\b/i],
+  [/blowgun/i, /\bneedles?\b/i],
+];
+
+/** How many shots the inventory holds for a ranged weapon (every matching item, in containers too); none for a weapon that needs none. */
+export function ammunitionFor(weapon: string, inventory: unknown): number | undefined {
+  const kind = AMMUNITION.find(([w]) => w.test(weapon))?.[1];
+  if (!kind) return undefined;
+  let total = 0;
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (!node || typeof node !== "object") return;
+    const item = node as Record<string, unknown>;
+    if (typeof item.name === "string" && kind.test(item.name)) total += typeof item.qty === "number" ? item.qty : 1;
+    walk(item.contents);
+    walk(item.items);
+  };
+  walk(inventory);
+  return total;
+}
+
 /** The weapon attacks of a sheet, with a parseable hit bonus and damage, in the sheet's order. */
 function weaponAttacksOf(sheet: CharacterSheet): ModelledAction[] {
   const out: ModelledAction[] = [];
@@ -222,12 +264,16 @@ function weaponAttacksOf(sheet: CharacterSheet): ModelledAction[] {
     const hitBonus = leadingBonus(raw.hit);
     const damage = parseDamage(typeof raw.damage === "string" ? raw.damage : undefined);
     if (hitBonus === undefined || !damage || !isRollable(damage.dice)) continue;
+    const reach = weaponReach(raw);
     const weapon: WeaponAttackAction = {
       kind: "weapon",
       name: raw.name,
       hitBonus,
       damage: { expr: damage.dice, ...(damage.type ? { type: damage.type } : {}) },
+      ...(reach ? { reach } : {}),
     };
+    const ammo = reach?.range !== undefined ? ammunitionFor(raw.name, sheet.inventory) : undefined;
+    if (ammo !== undefined) weapon.ammo = ammo;
     const inflicts = inflictOfSheet(raw, weapon);
     out.push(inflicts ? { ...weapon, inflicts } : weapon);
   }
@@ -330,6 +376,35 @@ export function readSpell(
   };
 }
 
+/** Where a PC moves and how it hides: speeds, bonus moves (Cunning Action), Stealth and passive Perception. */
+function movesOf(sheet: CharacterSheet): Partial<CombatActor> {
+  const out: Partial<CombatActor> = {};
+  const speed = sheet.speed as { value?: unknown; type?: unknown } | undefined;
+  if (typeof speed?.value === "number") {
+    if (speed.type === "flying") out.fly = speed.value;
+    else out.speed = speed.value;
+  }
+  const moves: BonusMove[] = [];
+  for (const a of sheet.actions as SheetAction[]) {
+    if (a.bucket !== "bonus" || typeof a.name !== "string") continue;
+    const text = [
+      a.name,
+      (sheet.features ?? []).flatMap((s) => s.features ?? []).find((f) => f.name === a.name)?.text ?? "",
+    ].join(" ");
+    for (const m of /cunning action/i.test(a.name)
+      ? (["dash", "disengage", "hide"] as BonusMove[])
+      : bonusMovesOf(text))
+      if (!moves.includes(m)) moves.push(m);
+  }
+  if (moves.length) out.bonusMoves = moves;
+  const skill = (name: string) => sheet.skills.find((k) => k.skill === name);
+  const stealth = skill("Stealth")?.modifier;
+  if (stealth !== undefined) out.stealth = stealth;
+  const perception = skill("Perception")?.passive;
+  if (perception !== undefined) out.passivePerception = perception;
+  return out;
+}
+
 /** Resolve one PC note into its actor and fidelity records. */
 async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; fidelity: FidelityRecord[] }> {
   let sheet: CharacterSheet;
@@ -355,6 +430,7 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
 
   const slotted: ModelledAction[] = [];
   let reaction: CombatActor["reaction"];
+  const reactions: Reaction[] = [];
   const cantrips: ModelledAction[] = [];
   const slots: number[] = [];
   for (const [source, spells] of spellListsOf(ctx, sheet.note, ref)) {
@@ -379,6 +455,17 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
         fidelity.push({ name: input.name, owner: name, status: "modelled" });
         continue;
       }
+      // Hellish Rebuke, Counterspell: a reaction of another kind; any other reaction spell is no action either.
+      if (/\breaction\b/i.test(input.casting ?? "")) {
+        const other = spellReactionOf(input, numbers);
+        if (other) reactions.push(other);
+        fidelity.push(
+          other
+            ? { name: input.name, owner: name, status: "modelled" }
+            : { name: input.name, owner: name, status: "skipped", reason: "unsupported-feature" }
+        );
+        continue;
+      }
       const result = resolveSpellOption(input, numbers, name);
       if (result.needsCastingModifier) {
         throw new Error(
@@ -387,7 +474,15 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       }
       // A control spell with no damage the sheet gives a condition for (Entangle: restrained on a failed STR
       // save) is a save action that deals nothing and hinders.
-      const control = !result.action ? controlSpell(sheet, input.name, input.circle ?? 0) : undefined;
+      const found = !result.action ? controlSpell(sheet, input.name, input.circle ?? 0) : undefined;
+      const reach = found ? spellReach(input.range, input.text) : undefined;
+      const control =
+        found &&
+        ({
+          ...found,
+          ...(reach ? { reach } : {}),
+          ...(/\bconcentration\b/i.test(input.duration ?? "") ? { concentration: true } : {}),
+        } as ModelledAction);
       if (control) {
         slotted.push(control);
         fidelity.push({ name: input.name, owner: name, status: "modelled" });
@@ -435,6 +530,8 @@ async function loadActor(ctx: Ctx, ref: string): Promise<{ actor: CombatActor; f
       actions,
       ...(riders.length ? { riders } : {}),
       ...(reaction ? { reaction } : {}),
+      ...(reactions.length ? { reactions } : {}),
+      ...movesOf(sheet),
     },
     fidelity,
   };

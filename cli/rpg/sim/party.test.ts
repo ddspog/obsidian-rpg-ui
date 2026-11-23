@@ -11,7 +11,7 @@ import {
 import { parseDamage } from "lib/domains/session-log/session-actions";
 import type { Ctx } from "../app";
 import { characterSheet } from "../commands/character";
-import { DEFAULT_PARTY, loadParty } from "./party";
+import { ammunitionFor, DEFAULT_PARTY, loadParty } from "./party";
 import {
   basic,
   FIXTURE_SYSTEM,
@@ -207,6 +207,8 @@ describe("loadParty over a fixture vault", () => {
         name: w.name,
         hitBonus: parseInt(w.hit, 10),
         damage: { expr: parseDamage(w.damage)!.dice, type: parseDamage(w.damage)!.type },
+        // A melee weapon reaches 5 feet unless its range says more.
+        reach: { melee: 5 },
       }))
     );
     expect(weapons.map((w) => (w as { hitBonus: number }).hitBonus)).toEqual([2, -1]);
@@ -430,5 +432,25 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
         else expect(r.reason).toBeUndefined();
       }
     }
+  });
+});
+
+describe("ammunitionFor", () => {
+  const inventory = {
+    items: [
+      { name: "[[Longbow]]" },
+      { name: "[[Quiver]]", contents: [{ name: "[[Arrows]]", qty: 19 }] },
+      { name: "[[Pouch]]", contents: [{ name: "[[Crossbow Bolts]]", qty: 10 }, "[[Arrow]]"] },
+    ],
+  };
+
+  it("counts the shots the inventory holds for a ranged weapon, in containers too", () => {
+    expect(ammunitionFor("Longbow", inventory)).toBe(19);
+    expect(ammunitionFor("Crossbow, light", inventory)).toBe(10);
+    expect(ammunitionFor("Sling", inventory)).toBe(0);
+  });
+
+  it("needs none for a weapon that shoots no ammunition", () => {
+    expect(ammunitionFor("Dagger", inventory)).toBeUndefined();
   });
 });
