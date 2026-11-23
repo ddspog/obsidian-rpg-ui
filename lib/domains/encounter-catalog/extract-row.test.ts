@@ -450,3 +450,45 @@ describe("extractEncounter: the GM's Guide rows read wrong before", () => {
     expect(got("Those following the lights are led astray by six will-o’-wisps.")).toEqual([["Will-o’-Wisp", 6]]);
   });
 });
+
+describe("extractEncounter: the Labyrinth and campaign builder rows", () => {
+  const idx = buildMonsterIndex([
+    { note: "b/Derro.md", name: "Derro", cr: "1/4" },
+    { note: "b/Ghost.md", name: "Ghost", cr: "4" },
+    { note: "b/Noble.md", name: "Noble", cr: "1/8" },
+    { note: "b/Frog, Giant.md", name: "Frog, Giant", cr: "1/4" },
+    { note: "b/Mummy.md", name: "Mummy", cr: "3" },
+    { note: "b/Mummy Lord.md", name: "Mummy Lord", cr: "15" },
+    { note: "b/Bandit.md", name: "Bandit", cr: "1/8" },
+    { note: "b/Assassin.md", name: "Assassin", cr: "8" },
+    { note: "b/Skeleton.md", name: "Skeleton", cr: "1/4" },
+    { note: "b/Knight.md", name: "Knight", cr: "3" },
+  ]);
+  const got = (text: string) => extractEncounter(text, idx).monsters.map((m) => [m.name, m.count] as const);
+
+  it("does not count a creature another book has, written with its book in brackets", () => {
+    expect(got("A derro shadow antipaladin [ToB1] and twelve derro attack the ship.")).toEqual([["Derro", 12]]);
+    expect(got("A ghost knight templar [ToB3] leads four ghost knights [ToB1] to attack.")).toEqual([]);
+  });
+
+  it("reads 'twenty-four', 'two dozen' and 'three of its'", () => {
+    expect(got("A vampire attacks with twenty-four nobles.")).toEqual([["Noble", 24]]);
+    expect(got("Two dozen void frogs (use giant frog with the void template) croak and attack.")).toEqual([
+      ["Frog, Giant", 24],
+    ]);
+    expect(got("A mummy lord and three of its servitor mummies awaken and attack.")).toEqual([
+      ["Mummy Lord", 1],
+      ["Mummy", 3],
+    ]);
+  });
+
+  it("does not count a creature that names a group ('a bandit gang', 'a skeleton crew')", () => {
+    expect(got("A ravenfolk bandit gang (an assassin and eight bandits) attacks.")).toEqual([
+      ["Assassin", 1],
+      ["Bandit", 8],
+    ]);
+    expect(got("A tired knight hails the party from a small ship with a skeleton crew, and attacks.")).toEqual([
+      ["Knight", 1],
+    ]);
+  });
+});

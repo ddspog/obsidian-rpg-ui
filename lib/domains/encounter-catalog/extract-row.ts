@@ -192,6 +192,7 @@ const NON_CREATURE = new Set([
 
 /** A noun a singular creature name can be a modifier of: "wyvern nesting ground", "gnoll hunting party", "in wolf form", "wolf-shaped" (plural ones are subjects: "wyverns nest"). */
 const MODIFIER_FOLLOW = new Set([
+  "army",
   "band",
   "bones",
   "breeding",
@@ -203,25 +204,33 @@ const MODIFIER_FOLLOW = new Set([
   "clan",
   "claw",
   "claws",
+  "crew",
+  "cult",
   "den",
   "droppings",
   "egg",
   "eggs",
   "feather",
   "feathers",
+  "fleet",
   "form",
   "forms",
+  "gang",
   "goods",
   "ground",
   "grounds",
   "guise",
   "headed",
+  "horde",
   "hunting",
   "lair",
+  "legion",
   "like",
   "nest",
   "nesting",
+  "pack",
   "party",
+  "patrol",
   "pelt",
   "raiding",
   "shape",
@@ -229,6 +238,7 @@ const MODIFIER_FOLLOW = new Set([
   "ship",
   "sized",
   "skull",
+  "squad",
   "statue",
   "statues",
   "teeth",
@@ -236,6 +246,7 @@ const MODIFIER_FOLLOW = new Set([
   "territory",
   "tooth",
   "tribe",
+  "troop",
   "vessel",
   "village",
   "wagon",
@@ -413,6 +424,9 @@ const DEAD_WORDS = /\b(?:dead|dying|slain|deceased|lifeless)\b/i;
 /** Bestiary names that are everyday words: a mention counts only with a number ("three shadows"), not "in the shadows", "city guards", "spies the PCs". */
 const COMMON_WORD_NAMES = new Set(["shadow", "guard", "scout", "spy", "scavenger", "peer", "unearthed"]);
 
+/** A creature of another book right after a name: "… antipaladin [ToB1]", "ghost knights [ToB1]", "[CC]", "[BoET]". */
+const OTHER_BOOK = /^(?:[\s-]+[\p{L}\u2019'-]+){0,3}\s*\[(?:ToB|TOB|CC|BoET|ToH|CoS)\d*\]/u;
+
 /** A rank after a creature: "a frost giant chieftain" is a frost giant, maybe a stronger one. */
 const RANK_FOLLOW = new Set([
   "chieftain",
@@ -433,6 +447,8 @@ const RANK_FOLLOW = new Set([
   "boss",
   "warlord",
   "sorcerer",
+  "queen",
+  "templar",
 ]);
 
 /** Determiners: a creature with none and no number before it ("to guard", "have unearthed") is a word, not a creature. */
@@ -546,6 +562,17 @@ function readCount(text: string, tokens: Token[], k: number, plural: boolean, co
     }
     const n = numberOf(tok);
     if (n !== null) {
+      // "twenty-four nobles": the tens before a hyphen add to the units.
+      const tens = i > 0 ? numberOf(tokens[i - 1]) : null;
+      if (
+        tens !== null &&
+        tens >= 20 &&
+        tens % 10 === 0 &&
+        n < 10 &&
+        /^-$/.test(text.slice(tokens[i - 1].end, tok.start))
+      ) {
+        return { count: tens + n, explicit: true, from: i - 1, reinforcement: reinforcement(i - 1) };
+      }
       return { count: n, explicit: true, from: i, reinforcement: reinforcement(i) };
     }
     if (tok.norm === "a" || tok.norm === "an") {
@@ -572,6 +599,11 @@ function readCount(text: string, tokens: Token[], k: number, plural: boolean, co
     if (tok.norm === "dozen") {
       const times = i > 0 ? numberOf(tokens[i - 1]) : null;
       return { count: 12 * (times ?? 1), explicit: true, from: times !== null ? i - 1 : i };
+    }
+    // "three of its servitor mummies", "two of the three hags": the number before "of".
+    if (["the", "its", "their", "his", "her"].includes(tok.norm) && i > 1 && tokens[i - 1].norm === "of") {
+      const n = numberOf(tokens[i - 2]);
+      if (n !== null && !NOT_A_COUNT.has(tokens[i - 2].norm)) return { count: n, explicit: true, from: i - 2 };
     }
     if (STOP_WORDS.has(tok.norm)) return null;
     // "two iron golems guard": a plural noun ends the phrase, the number is its own.
@@ -625,6 +657,8 @@ interface Found {
   modifier: boolean;
   /** Followed by a rank ("frost giant chieftain"): the creature, maybe a stronger one. */
   rank?: string;
+  /** The head of a creature another book has ("shadow antipaladin [ToB1]"): not counted. */
+  otherBook?: boolean;
   /** Read as part of the creature named next to it ("void piper selang", "merchant commoners"). */
   mergedInto?: Found;
   /** Its stats are another's ("four giant bees (use giant wasp)"). */
@@ -804,7 +838,17 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
         DEAD_WORDS.test(text.slice(phraseStart, mention.start)),
       sentence: (text.slice(0, mention.start).match(/[.!?]\s/g) ?? []).length,
       modifier: !mention.plural && nextJoined && MODIFIER_FOLLOW.has(next.norm),
-      ...(!mention.plural && nextJoined && RANK_FOLLOW.has(next.norm) ? { rank: next.raw } : {}),
+      ...(!mention.plural && nextJoined && RANK_FOLLOW.has(next.norm)
+        ? { rank: next.raw }
+        : !mention.plural &&
+            nextJoined &&
+            tokens[last + 2] &&
+            joined(text, next, tokens[last + 2]) &&
+            RANK_FOLLOW.has(tokens[last + 2].norm)
+          ? { rank: `${next.raw} ${tokens[last + 2].raw}` }
+          : {}),
+      // "a derro shadow antipaladin [ToB1]": a creature of another book, not the bestiary's.
+      ...(OTHER_BOOK.test(after) ? { otherBook: true } : {}),
       mention,
       count,
       guess: mention.plural ? 2 : 1,
@@ -824,6 +868,11 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
     for (let i = at, seen = 0; i >= 0 && seen < 5; i--, seen++) {
       const t = tokens[i];
       if (STOP_WORDS.has(t.norm) && !["a", "an", "of"].includes(t.norm)) break;
+      if (t.norm === "dozen") {
+        const times = i > 0 ? numberOf(tokens[i - 1]) : null;
+        count = { count: 12 * (times ?? 1), explicit: true, from: times !== null ? i - 1 : i };
+        break;
+      }
       const n = t.kind === "dice" ? diceAverage(t.norm) : numberOf(t);
       if (n !== null) {
         count = { count: n, ...(t.kind === "dice" ? { dice: t.norm } : {}), explicit: true, from: i };
@@ -883,6 +932,10 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
     const { mention } = f;
     if (f.mergedInto || f.replacedBy) {
       named.push(mention);
+      continue;
+    }
+    if (f.otherBook) {
+      reasons.push(`"${f.phrase}" names a creature of another book: not counted`);
       continue;
     }
     if (f.modifier) {
