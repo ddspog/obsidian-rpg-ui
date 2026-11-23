@@ -328,25 +328,6 @@ function inflictOfRoll(
   return { condition, lasts, ...(save ? { save } : {}) };
 }
 
-/**
- * A spell read from its prose (no `roll:`): the roll `deriveSpellRoll` gives it, resolved like a written one.
- * Undefined when its words give none.
- */
-export function spellFromText(
-  spell: SpellOptionInput,
-  numbers: SpellNumbers | undefined,
-  owner: string
-): SpellOptionResult | undefined {
-  const derived = deriveSpellRoll({
-    text: spell.text ?? "",
-    circle: spell.circle,
-    range: spell.range,
-    duration: spell.duration,
-  });
-  if (!("roll" in derived)) return undefined;
-  return resolveSpellOption({ ...spell, roll: derived.roll as unknown as Record<string, unknown> }, numbers, owner);
-}
-
 const COUNT_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
 
 /**

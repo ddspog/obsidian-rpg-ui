@@ -7,9 +7,6 @@
 
 import { benchmarkFor, formatCr, parseCr, type Rational } from "./difficulty";
 
-/** The party size the random-encounter tables are written for. */
-export const TABLE_PARTY_SIZE = 4;
-
 export type Tier = 1 | 2 | 3 | 4;
 
 /** The tier of play of an average level: 1 (levels 1–4), 2 (5–10), 3 (11–16), 4 (17–20). */

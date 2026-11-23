@@ -9,6 +9,7 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 import type { Difficulty, FitState } from "./fit-state";
+import { noteStem } from "./words";
 
 export interface CatalogMonster {
   /** The bestiary note, as the simulator reads it (a vault path or a link target). */
@@ -103,10 +104,7 @@ const kebab = (text: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const baseName = (note: string): string => {
-  const last = note.split("/").pop() ?? note;
-  return last.replace(/\.md$/i, "");
-};
+const baseName = noteStem;
 
 /**
  * A stable kebab-case id from a name; with no usable name, from the monsters

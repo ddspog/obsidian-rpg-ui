@@ -114,7 +114,7 @@ export function templateFence(block: TemplateBlock): string {
  * A template note with its block written in: in place of the one it has, or
  * after the introduction (before its first tab or section heading).
  */
-export function withTemplateBlock(text: string, block: TemplateBlock): string {
+function withTemplateBlock(text: string, block: TemplateBlock): string {
   const fence = templateFence(block);
   const existing = /^```+\s*rpg\s+stat\.template\b[^\n]*\n[\s\S]*?\n```+\s*$/m;
   if (existing.test(text)) return text.replace(existing, () => fence);

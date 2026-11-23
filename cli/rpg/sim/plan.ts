@@ -24,9 +24,10 @@ import { plainType, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import { inScope, tierMatcher } from "./tier-scope";
 import { simSuggest, type SuggestCandidate, type SuggestDocument } from "./suggest";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 
 /** How many options `plan` gives when --limit is not written. */
-export const DEFAULT_PLAN_OPTIONS = 3;
+const DEFAULT_PLAN_OPTIONS = 3;
 
 export interface PlanOption {
   /** `catalog` (confirmed), `catalog-draft` (read from a table, not confirmed yet) or `sweep` (the bestiary). */
@@ -63,7 +64,7 @@ export interface PlanDocument {
   notes: string[];
 }
 
-const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
+const stemOf = noteStem;
 
 /** The groups of an option in one order, to tell two options of the same monsters apart from different ones. */
 const keyOf = (monsters: string[]): string => [...monsters].sort().join(" + ");

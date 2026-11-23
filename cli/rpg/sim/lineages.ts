@@ -37,12 +37,12 @@ const NPC_APPENDIX = `${SYSTEM}/compendium/rules/monster-vault/Appendix, NPCs.md
 const SOURCE = "From the lineages of **Tales of the Valiant** books by **Kobold Press**, reworded for statblocks.";
 
 /** The lineage's NPC block, with the id a list of lineages omits (`.omit(npc)`). */
-export function npcFence(block: TemplateBlock): string {
+function npcFence(block: TemplateBlock): string {
   return templateFence(block).replace(/^```rpg stat\.template\n/, "```rpg stat.template\nid: npc\n");
 }
 
 /** A lineage note with its NPC block in place of the one it has, or at its end. */
-export function withNpcBlock(text: string, fence: string): string {
+function withNpcBlock(text: string, fence: string): string {
   const existing = /^```+\s*rpg\s+stat\.template\b[^\n]*\n[\s\S]*?\n```+[ \t]*$/m;
   if (existing.test(text)) return text.replace(existing, () => fence);
   return `${text.trimEnd()}\n${fence}\n`;
@@ -84,7 +84,7 @@ export interface LineageEntry {
 }
 
 /** Every lineage, from the NPC Features table first, then the lineage notes. */
-export async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
+async function loadLineages(ctx: Ctx): Promise<LineageEntry[]> {
   const out: LineageEntry[] = [];
   const lineageNotes = ctx.vault
     .getMarkdownFiles()

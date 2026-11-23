@@ -115,7 +115,7 @@ function controlSpell(sheet: CharacterSheet, spell: string, circle: number): Mod
 }
 
 /** A feature's extra damage, from its sheet rider and its text ("a number of times equal to your PB"). */
-export function riderOfSheet(
+function riderOfSheet(
   raw: SheetAction,
   featureText: string,
   pb: number,

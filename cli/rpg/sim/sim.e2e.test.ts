@@ -12,7 +12,7 @@ import { parseSimArgv } from "./flags";
 import { DEFAULT_PARTY } from "./party";
 import { simRun } from "./run";
 import { simSuggest } from "./suggest";
-import { copyVaultWithClassStems, initSystemLoader, makeCtx } from "./test-support";
+import { copyVault, initSystemLoader, makeCtx } from "./test-support";
 
 // The whole simulator over the real PCs and bestiary, when the testing vault is beside the plugin (as in CI).
 const VAULT = process.env.RPG_VAULT_ROOT ?? resolve(__dirname, "../../../../testing-vault");
@@ -42,7 +42,7 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
 
   beforeAll(async () => {
     await initSystemLoader();
-    ctx = makeCtx(copyVaultWithClassStems(VAULT, SYSTEM_DIR, DEFAULT_PARTY));
+    ctx = makeCtx(copyVault(VAULT, SYSTEM_DIR));
   }, 240_000);
 
   async function sim(...tokens: string[]) {

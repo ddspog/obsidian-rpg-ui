@@ -415,7 +415,7 @@ const SIGNATURES: Array<{
 ];
 
 /** The signature rule an unsure monster matches, if any. */
-export function signatureOf(
+function signatureOf(
   input: RoleInput,
   tags: Set<MonsterTag>,
   hpRatio: number,

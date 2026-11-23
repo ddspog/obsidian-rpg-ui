@@ -283,7 +283,7 @@ function actionsAndFidelity(
 }
 
 /** Legendary actions a round: the usual three. */
-export const LEGENDARY_POINTS = 3;
+const LEGENDARY_POINTS = 3;
 
 const SPELLS_FOLDER = `${BESTIARY_PREFIX.split("/")[0]}/worldbuilding/spells/`;
 
@@ -371,7 +371,7 @@ function monsterSpells(
 
 /** A bestiary note as a combatant. Throws naming the note (or the note and feature ref) it cannot load. */
 /** "Mage with Void-Blessed": the creature and the template note to apply to it ("Mage" alone has none). */
-export function splitTemplate(ref: string): { note: string; template?: string } {
+function splitTemplate(ref: string): { note: string; template?: string } {
   const m = ref.match(/^(.+?)\s+with\s+(?:the\s+)?(.+?)(?:\s+template)?$/i);
   return m ? { note: m[1].trim(), template: m[2].trim() } : { note: ref };
 }

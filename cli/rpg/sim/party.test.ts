@@ -14,7 +14,6 @@ import { characterSheet } from "../commands/character";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import {
   basic,
-  copyVaultWithClassStems,
   FIXTURE_SYSTEM,
   initSystemLoader,
   makeCtx,
@@ -349,9 +348,8 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
   const record = (owner: string, name: string) => party.fidelity[owner].find((r) => r.name === name);
 
   beforeAll(async () => {
-    // The vault is copied (never touched) with the PCs' class links written by stem: see test-support.
-    const root = copyVaultWithClassStems(VAULT, SYSTEM_DIR, DEFAULT_PARTY);
-    ctx = makeCtx(root);
+    // Read-only: loading a party writes nothing, so the vault is read in place.
+    ctx = makeCtx(VAULT);
     party = await loadParty(ctx, DEFAULT_PARTY);
   }, 180_000);
 

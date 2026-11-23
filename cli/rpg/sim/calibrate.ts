@@ -31,7 +31,7 @@ import { loadMonster, type LoadedMonster } from "./monsters";
 import { loadParty } from "./party";
 
 /** Fewer fights than this cannot move the outcome profiles: the summary says so. */
-export const FIGHTS_TO_TUNE = 10;
+const FIGHTS_TO_TUNE = 10;
 
 const linkTarget = (ref: string) =>
   ref

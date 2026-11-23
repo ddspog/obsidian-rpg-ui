@@ -150,11 +150,7 @@ function monstersText(monsters: Array<{ name: string; count: number }>): string 
  * Prose that bolds the creatures it means (an adventure's keyed area) keeps only those: "the Honey Queen"
  * named in passing, or "Ghost Knights" as a band's name, is not in the fight.
  */
-export function keepNamed(
-  found: ExtractedEncounter,
-  named: string[] | undefined,
-  index: MonsterIndex
-): ExtractedEncounter {
+function keepNamed(found: ExtractedEncounter, named: string[] | undefined, index: MonsterIndex): ExtractedEncounter {
   if (!named) return found;
   const notes = new Set(named.flatMap((phrase) => findMentions(index, phrase).map((m) => m.note)));
   const kept = found.monsters.filter((m) => notes.has(m.note));

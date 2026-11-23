@@ -40,7 +40,7 @@ function variantLines(map: Record<string, unknown>, indent: string): string[] {
 }
 
 /** A roll as YAML lines for a spell fence, the vault's way (variants one flow line a circle or level). */
-export function rollYaml(roll: RollAspect): string {
+function rollYaml(roll: RollAspect): string {
   const { upcast, leveled, ...rest } = roll;
   const lines = [
     "# roll: read from the spell's text by `rpg sim spells`; check it, then delete this line",

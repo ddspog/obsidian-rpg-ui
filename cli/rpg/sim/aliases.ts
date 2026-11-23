@@ -15,12 +15,13 @@ import {
   type MonsterIndex,
 } from "lib/domains/encounter-catalog/monster-index";
 import type { Ctx } from "../app";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 
 export const ALIASES_NOTE = "tales-of-the-valiant/gm-tools/encounter-catalog/Bestiary aliases.md";
 
 const BESTIARY = "tales-of-the-valiant/worldbuilding/bestiary/";
 
-const basename = (path: string) => path.split("/").pop()!.replace(/\.md$/, "");
+const basename = noteStem;
 
 /** The bestiary's notes by their file names (no note is read). */
 function notePaths(ctx: Ctx): string[] {

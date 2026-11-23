@@ -28,7 +28,7 @@ import {
   type FitContext,
   type FitPartition,
 } from "lib/domains/encounter-catalog/fit-state";
-import { normaliseTags, sameTag } from "lib/domains/encounter-catalog/words";
+import { normaliseTags, noteStem, sameTag } from "lib/domains/encounter-catalog/words";
 import type { TierMatch } from "lib/domains/encounter-catalog/tier";
 import { outcomeDistance } from "lib/domains/encounter-sim/fit";
 import { profileView, type PartyProfile } from "lib/domains/encounter-sim/party-profile";
@@ -67,7 +67,7 @@ const DEFAULT_SUGGEST = 10;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-const baseName = (note: string): string => (note.split("/").pop() ?? note).replace(/\.md(?= with |$)/i, "");
+const baseName = noteStem;
 /** A catalog monster's reference, its template after it: "Mage with Void-Blessed". */
 const refOf = (m: { note: string; template?: string }): string => withTemplate(m.note, m.template);
 
@@ -120,7 +120,7 @@ export interface BriefEntryView {
   scene?: string;
 }
 
-export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
+function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContext): BriefEntryView {
   const reason = recheckReason(
     entry,
     fitContext.stamp,

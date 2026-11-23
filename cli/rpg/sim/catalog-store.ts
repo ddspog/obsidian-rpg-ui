@@ -14,7 +14,7 @@ import { readNote, writeNote } from "../write";
 import { UsageError } from "./flags";
 
 /** The folder, inside a system's folder, that holds its encounter catalogs. */
-export const CATALOG_SUBFOLDER = "gm-tools/encounter-catalog";
+const CATALOG_SUBFOLDER = "gm-tools/encounter-catalog";
 
 /** The first path segment of a vault path: the system folder ("tales-of-the-valiant"), or "" for a root note. */
 export function systemFolderOf(path: string): string {
@@ -23,7 +23,7 @@ export function systemFolderOf(path: string): string {
 }
 
 /** The default folder of a system's catalogs. */
-export function catalogFolder(systemFolder: string): string {
+function catalogFolder(systemFolder: string): string {
   return systemFolder ? `${systemFolder}/${CATALOG_SUBFOLDER}` : CATALOG_SUBFOLDER;
 }
 

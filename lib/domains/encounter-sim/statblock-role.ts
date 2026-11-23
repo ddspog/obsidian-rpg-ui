@@ -48,7 +48,7 @@ function crValue(cr: string | undefined): number {
 const leadingInt = (text: string | undefined): number => Number(/^\s*(\d+)/.exec(text ?? "")?.[1] ?? 0);
 
 /** The actions the simulator would model, from resolved features (for damage per round). */
-export function modelledActions(features: StatblockRoleInput["features"]): ModelledAction[] {
+function modelledActions(features: StatblockRoleInput["features"]): ModelledAction[] {
   const classified = features.map((f) => {
     const name = f.name?.trim() || "";
     return { name, ...classifyMonsterFeature({ name, type: f.type, text: f.text }) };

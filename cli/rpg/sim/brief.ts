@@ -9,10 +9,11 @@
 import { classifyFit, type Fit, type FitDifficulty } from "lib/domains/encounter-sim/fit";
 import type { FidelityRecord } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 
 export { anyWordIn, wordForms, wordKey } from "lib/domains/encounter-catalog/words";
 
-const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
+const stemOf = noteStem;
 
 /**
  * The shortest reference to a note that resolves back to it: its name when the

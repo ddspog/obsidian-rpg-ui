@@ -73,3 +73,11 @@ export function diceRange(dice: string): { min: number; max: number } | null {
   if (n < 1 || sides < 1) return null;
   return { min: Math.max(1, n + flat), max: Math.max(1, n * sides + flat) };
 }
+
+/**
+ * A note's name from its vault path: `…/Wolf, Dire.md` is "Wolf, Dire". A creature with its template
+ * ("…/Mage.md with Void-Blessed") keeps the template: "Mage with Void-Blessed".
+ */
+export function noteStem(path: string): string {
+  return (path.split("/").pop() ?? path).replace(/\.md(?= with |$)/i, "");
+}

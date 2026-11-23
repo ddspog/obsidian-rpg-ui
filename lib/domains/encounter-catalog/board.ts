@@ -10,6 +10,7 @@ import { FIT_TOLERANCE, OUTCOME_PROFILES, outcomeDistance, type OutcomeProfile }
 import type { Catalog, CatalogEntry, CatalogProfile } from "./catalog";
 import { recentlyUsed, recheckReason, type RecheckReason } from "./fit-state";
 import { entryTiers, type TierMatch } from "./tier";
+import { noteStem } from "./words";
 
 /** A card's state: the stored fit when it is current, else why it is not. */
 export type CardStatus = "fit" | "too-easy" | "too-hard" | "stale" | "unchecked";
@@ -83,7 +84,7 @@ export interface BoardOptions {
   tiers?: "same" | "lower" | "all";
 }
 
-const nameOf = (note: string): string => (note.split("/").pop() ?? note).replace(/\.md$/i, "");
+const nameOf = noteStem;
 
 /**
  * An entry's tier against the profiled party, by its tier tags. An untagged entry counts as the

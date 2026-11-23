@@ -29,6 +29,20 @@ interface ParsedExpr {
  * is in the way (words, a dice group with no sides).
  */
 function parseExpr(expr: string): ParsedExpr | null {
+  // A fight rolls and weighs the same few expressions thousands of times: each is read once.
+  const known = PARSED.get(expr);
+  if (known !== undefined) return known;
+  const parsed = readExpr(expr);
+  if (PARSED.size >= PARSED_MAX) PARSED.clear();
+  PARSED.set(expr, parsed);
+  return parsed;
+}
+
+/** Parsed expressions by their text (results are never changed, so they are shared). */
+const PARSED = new Map<string, ParsedExpr | null>();
+const PARSED_MAX = 10_000;
+
+function readExpr(expr: string): ParsedExpr | null {
   const text = expr.replace(/\s+/g, "").replace(/[\u2212\u2013]/g, "-");
   if (!text || !/^[+-]?(\d*d\d+|\d+)([+-](\d*d\d+|\d+))*$/i.test(text)) return null;
   const parsed: ParsedExpr = { dice: [], bonus: 0 };

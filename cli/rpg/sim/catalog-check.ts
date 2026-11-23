@@ -59,8 +59,8 @@ export async function loadPartyState(
 }
 
 /** A borderline entry is run again with this many times the trials, up to the most below. */
-export const BORDERLINE_FACTOR = 4;
-export const MAX_BORDERLINE_TRIALS = 2000;
+const BORDERLINE_FACTOR = 4;
+const MAX_BORDERLINE_TRIALS = 2000;
 
 export interface CheckParams {
   seed: number;
