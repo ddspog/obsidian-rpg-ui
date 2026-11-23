@@ -193,11 +193,15 @@ export interface BuffAction {
  * - "retaliate": when damaged, damage (or a save against it) back on the attacker (Hellish Rebuke, Defensive Kick);
  * - "disadvantage": when attacked, the attack has disadvantage (Distressed Dance, Fin Flare);
  * - "halve": when hit, the damage is halved (Uncanny Dodge, Defensive Huddle);
- * - "counterspell": an enemy's spell (up to `upTo` circle) fails.
+ * - "counterspell": an enemy's spell (up to `upTo` circle) fails;
+ * - "protect": an ally within `within` feet (5) is attacked: +`ac` to its AC against that attack, or (no `ac`)
+ *   the attack has disadvantage (Protector's Parry, Protective Interference);
+ * - "move": on `trigger`, it moves `feet` (half its speed when absent) away from the attacker, or `toward` an enemy
+ *   that came near, drawing no opportunity attack (Nimble Dodge, Rescue Step, Slithering Pursuit).
  * One reaction a round, shared with the AC reaction and opportunity attacks.
  */
 export interface Reaction {
-  kind: "counter" | "retaliate" | "disadvantage" | "halve" | "counterspell";
+  kind: "counter" | "retaliate" | "disadvantage" | "halve" | "counterspell" | "protect" | "move";
   name: string;
   attack?: WeaponAttackAction;
   damage?: DamageSpec;
@@ -212,6 +216,28 @@ export interface Reaction {
   /** The spell slot it spends (Hellish Rebuke 1, Counterspell 3); 0 or absent: none. */
   circle?: number;
   upTo?: number;
+  /** protect: the AC it adds to the ally's. */
+  ac?: number;
+  /** move: what sets it off, how far, and which way. */
+  trigger?: "missed" | "hit" | "attacked" | "damaged" | "approached";
+  feet?: number;
+  toward?: boolean;
+}
+
+/**
+ * A battle map the fight is played on (`TrialRules.map`), from an `rpg map` block: square cells of `scale` feet,
+ * row by row. A cell may block movement and sight (a wall, a cliff: fliers pass over it), cost double to cross, or
+ * give cover (2 or 5) to a creature it lies between an attacker and, or that stands in it. Creatures start on
+ * the squares given for their actor's key (a monster group's copies take them in order).
+ */
+export interface BattleGrid {
+  scale: number;
+  cols: number;
+  rows: number;
+  blocked: boolean[];
+  difficult: boolean[];
+  cover: number[];
+  starts: Record<string, Array<{ col: number; row: number }>>;
 }
 
 export type ModelledAction =
@@ -293,6 +319,8 @@ export interface TrialRules {
   cover?: Partial<Record<CombatSide, number>>;
   /** High ground: that side's back line stands on a ledge this many feet up; climbing to it costs double. */
   highGround?: { side: CombatSide; height: number };
+  /** A battle map: the fight is on its grid (positions are on, whatever `distance` says). */
+  map?: BattleGrid;
 }
 
 export const SKIP_REASONS = [

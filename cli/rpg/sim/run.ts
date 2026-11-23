@@ -22,6 +22,7 @@ import {
 } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import type { SimHandler } from "./dispatch";
+import { battleGrid, loadBattleMap, monstersOfMap } from "./battlemap";
 import { rulesOf, UsageError, type SimOptions } from "./flags";
 import { loadMonster, type LoadedMonster } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
@@ -189,9 +190,12 @@ async function loadGroups(ctx: Ctx, options: SimOptions): Promise<Array<{ monste
 }
 
 export const simRun: SimHandler = async (ctx, options) => {
-  if (options.monsters.length === 0) {
-    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
+  // A battle map: its tokens give the monsters when --monster names none.
+  const battle = options.map ? loadBattleMap(ctx, options.map) : undefined;
+  if (options.monsters.length === 0 && !battle) {
+    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3"), or give --map.');
   }
+  if (battle && options.monsters.length === 0) options = { ...options, monsters: monstersOfMap(ctx, battle) };
 
   // Monsters first: a misspelt monster note is reported without loading the whole party.
   const groups = await loadGroups(ctx, options);
@@ -201,13 +205,21 @@ export const simRun: SimHandler = async (ctx, options) => {
     throw new UsageError("--pc: the party is empty; name at least one PC note.");
   }
 
+  const rules = rulesOf(options);
+  if (battle)
+    rules.map = battleGrid(
+      ctx,
+      battle,
+      party.actors,
+      groups.map(({ monster }) => ({ note: monster.note }))
+    );
   const summary = runMonteCarlo({
     party: party.actors,
     monsters: groups.map(({ monster, count }) => ({ actor: monster.actor, count })),
     seed: options.seed,
     trials: options.trials,
     roundCap: options.rounds,
-    rules: rulesOf(options),
+    rules,
   });
 
   let totalCr: Rational = { num: 0, den: 1 };
@@ -252,7 +264,7 @@ export const simRun: SimHandler = async (ctx, options) => {
       seed: options.seed,
       trials: options.trials,
       roundCap: options.rounds,
-      rules: rulesOf(options),
+      rules: battle ? { ...rulesOf(options), map: battle.map.title ?? battle.note } : rulesOf(options),
       winRate: summary.winRate,
       tpkRate: summary.tpkRate,
       stalemateRate: summary.stalemateRate,

@@ -151,6 +151,14 @@ export const SIM_FLAGS: readonly SimFlag[] = [
       "cover for a side (party or monsters) not in melee: +2 or +5 to AC against ranged attacks and to DEX saves; repeatable",
   },
   {
+    name: "map",
+    kind: "string",
+    default: undefined,
+    value: "<note>",
+    description:
+      "`run` only: fight on the note's rpg map (its walls, cover and difficult ground, everyone on their token); with no --monster, the monsters its tokens link",
+  },
+  {
     name: "high-ground",
     kind: "string",
     default: undefined,
@@ -503,6 +511,8 @@ export interface SimOptions {
   distance: number;
   /** The fight is in a lair. */
   lair: boolean;
+  /** `run --map`: the note of the battle map to fight on. */
+  map?: string;
   /** Difficult terrain, cover by side, and a side's high ground. */
   difficult: boolean;
   cover: Partial<Record<"party" | "monsters", number>>;
@@ -785,6 +795,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   options.dropTags = tagList("drop-tag", values["drop-tag"]);
   options.includeUsed = values["include-used"] === true;
   options.lair = values.lair === true;
+  if (typeof values.map === "string" && values.map.trim()) options.map = values.map.trim();
   if (typeof values.terrain === "string") {
     if (values.terrain.trim().toLowerCase() !== "difficult")
       throw new UsageError(`--terrain must be "difficult", got "${values.terrain}".`);
@@ -1157,9 +1168,10 @@ export function validateForSubcommand(subcommand: string, options: SimOptions): 
   if (subcommand === "run" && options.base.length > 0) {
     throw new UsageError("--base is for `suggest`; use --monster to name the groups of a run.");
   }
-  if (subcommand === "run" && options.monsters.length === 0) {
-    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3").');
+  if (subcommand === "run" && options.monsters.length === 0 && !options.map) {
+    throw new UsageError('--monster is required: name at least one monster note ("Note" or "Note:3"), or give --map.');
   }
+  if (options.map && subcommand !== "run") throw new UsageError("--map is a flag of `run` only.");
   if (subcommand === "catalog") {
     validateCatalog(options);
     return;

@@ -253,7 +253,7 @@ The profile is printed as `profile`, for example `{ "size": 4, "averageLevel": 1
 
 The random-encounter tables are written for a party of four. The simulator always uses the real PCs, so an entry's fit is already measured for the party's real size.
 
-## The rules of a fight: space, bonus actions, lairs, ammunition, concentration, death saves
+## The rules of a fight: space, maps, bonus actions, lairs, ammunition, concentration, death saves
 
 Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog's `check`, `suggest --refresh` and `adjust`) plays by these rules (`TrialRules` in `lib/domains/encounter-sim/types.ts`, built by `rulesOf` in `cli/rpg/sim/flags.ts`; `run` prints them under `rules`). The engine leaves each off when it is absent, which is the abstract fight it played before.
 
@@ -284,13 +284,23 @@ Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog
     - halves speed, and gives −2 to AC and DEX saves;
     - removes reactions;
     - limits each turn to one attack, and to an action or a bonus action, not both.
-- **Reactions** (one a round, shared with the AC reaction and opportunity attacks; `reactionFrom` in `monster-actions.ts`, `spellReactionOf` in `spell-actions.ts`). Of the vault's 375 monster reactions, 77 are read as one of these five kinds; the AC ones (Parry) were already played.
+- **Reactions** (one a round, shared with the AC reaction and opportunity attacks; `reactionFrom` in `monster-actions.ts`, `spellReactionOf` in `spell-actions.ts`). Of the vault's 375 monster reactions, 99 are read as one of these seven kinds (move 21, protect 3, counter 13, damage back 47, disadvantage 8, counterspell 5, halve 2); the AC ones (Parry) were already played.
   - **Strike back:** when hit, an attack back at the attacker (Counterattack, Reflexive Strike: the attack it names, else its best one).
   - **Damage back:** when hit or damaged, damage or a save back on the attacker (Blasphemous Word, Stunning Jolt; Hellish Rebuke on a PC's sheet, with its slot).
   - **Disadvantage:** the attack against it has disadvantage (Fin Flare, Curl Up).
   - **Halve:** a hit's damage halved (Defensive Huddle).
   - **Counterspell:** a spell of its circle or lower fails (Counter Spell; Counterspell on a sheet). A spell's actions carry its circle (`spell`), so a monster's spells cast at no slot are known for what they are.
-  - Each keeps its trigger's reach ("within 5 feet"), melee only when it says so, and its recharge or uses a day. A reaction that protects another creature or moves it is left out.
+  - **Protect:** an ally within its reach (5 feet unless it says) is attacked: its AC raised against that attack (Protector's Parry, "adds 2 to its AC") or disadvantage on the roll (Protective Interference).
+  - **Move away:** when missed, hit or damaged, it moves (half its speed, the feet it says, or a teleport) away from the attacker without drawing opportunity attacks (Nimble Dodge, Rescue Step). A multiattack's next swing finds it out of reach.
+  - **Move toward:** an enemy moves within its reach (30 feet unless it says), and it closes in (Slithering Pursuit).
+  - Each keeps its trigger's reach ("within 5 feet"), melee only when it says so, and its recharge or uses a day. A move that guards a ward (Defensive Transport) is left out.
+- **A battle map** (`run --map <note>`, `battleGrid` in `cli/rpg/sim/battlemap.ts`, `BattleGrid` in `types.ts`): the fight is played on the note's `rpg map` instead of a line.
+  - Squares of the map's scale (5 feet). A legend that `blocks` (or gives total cover) is a wall, `difficult` costs double, half and three-quarters cover give +2 and +5. An image map with no grid sizes itself from its tokens.
+  - Everyone starts on their token: a PC by its full name or first word, a monster by the note its `[[link]]` names (so with no `--monster`, the monsters are the map's tokens). Anyone without one stands on the free square nearest its side.
+  - Moving finds the cheapest path around walls (a diagonal is 5 feet). Nobody is reached or shot through a wall; the squares between, and the one the target stands in, give their cover, and a creature in between half cover.
+  - An area is aimed at an enemy and catches the enemies nearest it, up to its targets-in-area count.
+  - The walls 30 feet behind each line are not used on a map.
+  - In the vault: Kobold Ambush (the four PCs on their tokens) is won 54% of the time with 72% of the HP lost; the same kobolds on the line 46% and 75%. The logged fight lost 22%.
 - **Bonus actions:**
   - A statblock's `bonus` features: "takes the Disengage or Hide action" (Nimble Escape) gives those moves, and Cunning Action on a sheet gives Dash, Disengage and Hide.
   - Hide is a Stealth roll (the statblock's passive Stealth less 10, or the sheet's skill) against the best passive Perception of the enemies. It works only at range with no enemy next to the creature, and success gives advantage on its next attack.
@@ -385,5 +395,5 @@ Drafts are guesses made by `extractEncounter` (`lib/domains/encounter-catalog/ex
 - **Templates:** "(use mage with the Void-blessed template)", "a giant ape with the bramble creature template" keep the template on the creature (`template:` on the entry's monster), when the vault has a template note of that name (`rpg sim templates` lists them) or the aliases note names one under `templates:` (`bramble creature: Bramble Beast`); else the reason says it was simulated without it and the draft is medium. Two templates offered ("the skeleton or zombie template") keep none. The simulator applies it before the fight, as `rpg sim homebrew --template` does: `--monster "Mule with Zombie:2"` takes the same form. The board shows it after the name; a prepared line's foes link the base creature.
 - Names the bestiary lacks ("five shriekers") are listed as `unresolved` and make the draft medium.
 - Rows that are not combat but a skill challenge, a hazard or a roleplay scene are not entries at all.
-- A fit is only as good as the simulator: wards (Sanctuary), reactions that protect another creature or move it, and the map's shape beyond a line, a ledge and walls are left out (see the `fidelity` of `rpg sim run`). Space, terrain, cover, height, opportunity attacks and the other reactions, flight, Haste and Slow, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
+- A fit is only as good as the simulator: wards (Sanctuary) are left out (see the `fidelity` of `rpg sim run`), and only `run --map` plays a map's shape; the rest fight on a line with a ledge and walls. Space, terrain, cover, height, opportunity attacks and reactions (protecting an ally and moving included), flight, Haste and Slow, bonus actions, lair actions, ammunition, concentration and death saves are played (above). So are the conditions that ride on damage (below).
 - Tags come from the table (environment, tier, CR band, book) and the monsters' habitats, lower-cased, so a "Forests" table has `forests` and its wolves' `forest`; `--tag` matches whole tags, case-insensitively.

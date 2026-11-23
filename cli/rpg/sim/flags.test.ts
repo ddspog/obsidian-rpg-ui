@@ -202,6 +202,7 @@ describe("parseSimArgv: plan and --brief", () => {
 
   it("reads --brief", () => {
     expect(parseSimArgv(["run", "--monster", "Wolf", "--brief"]).options.brief).toBe(true);
+    expect(parseSimArgv(["run", "--map", " Kobold Ambush "]).options.map).toBe("Kobold Ambush");
   });
 });
 
@@ -235,6 +236,7 @@ describe("SIM_HELP", () => {
       "lair",
       "terrain",
       "cover",
+      "map",
       "high-ground",
       "difficulty",
       "tiers",
@@ -331,6 +333,7 @@ describe("simMain usage errors", () => {
     [["plan", "--rank", "outcome"], "--rank is not a flag of `plan`"],
     [["plan", "--pc", "A", "--catalog", "B"], "--pc and --catalog"],
     [["plan", "--cr", "big"], "--cr"],
+    [["suggest", "--map", "Cave"], "--map is a flag of `run` only"],
   ])("returns 1 for %j with a message naming %s on stderr", async (tokens, named) => {
     const h = await drive(tokens);
     expect(h.code).toBe(1);

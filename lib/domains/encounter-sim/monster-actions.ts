@@ -457,7 +457,6 @@ export type ParsedReaction = Reaction & { attackRef?: string };
  */
 export function reactionFrom(name: string, text: string): ParsedReaction | undefined {
   const flat = text.replace(/[*_]+/g, "").replace(/\s+/g, " ");
-  if (/\bfriendly creature\b|\ban ally\b|\bwilling creature\b/i.test(flat)) return undefined;
   const limit = useLimitOf(name, flat);
   const trigger = flat.split(/(?<=\.)\s/)[0] ?? flat;
   const within = trigger.match(/\bwithin (\d+) (?:feet|ft)/i);
@@ -470,6 +469,48 @@ export function reactionFrom(name: string, text: string): ParsedReaction | undef
   if (/\bcounter(?:s|ing)? (?:the|that|it|its)\b|interrupting the casting/i.test(flat) && /\bspell\b/i.test(trigger)) {
     const upTo = flat.match(/(\d)(?:st|nd|rd|th) (?:circle|level) or lower/i);
     return { kind: "counterspell", ...base, upTo: upTo ? parseInt(upTo[1], 10) : 3 };
+  }
+  // Protecting an ally next to it: its AC against the attack, or disadvantage on it.
+  if (
+    /\b(?:friendly creature|an ally|another creature|creature within \d+ feet of (?:it|the \w+))\b/i.test(trigger) &&
+    /\b(?:target of an attack|is hit|is attacked|targeted)\b/i.test(trigger)
+  ) {
+    const plus = flat.match(/\badds? (\d+) to (?:its|their|the (?:target|creature)[\u2019']s) AC\b/i);
+    const around = trigger.match(/\bwithin (\d+) (?:feet|ft)/i);
+    const near = { name, ...(limit ? { limit } : {}), within: around ? parseInt(around[1], 10) : 5 };
+    if (plus) return { kind: "protect", ...near, ac: parseInt(plus[1], 10) };
+    if (/\bdisadvantage on the attack\b/i.test(flat)) return { kind: "protect", ...near };
+    return undefined;
+  }
+  if (/\bfriendly creature\b|\ban ally\b|\bwilling creature\b/i.test(flat)) return undefined;
+  // Moving: away when missed, attacked or damaged (Nimble Dodge, Rescue Step), toward one that came near.
+  const move = flat.match(
+    /\b(?:move|moves) up to (half )?its speed|\bmove up to (\d+) feet|\bteleports?(?:,? along with [^,]+,)? (?:up to )?(\d+) feet|\bteleports?\b[^.]*?within (\d+) feet/i
+  );
+  if (move && !/\badd \d+ to its AC\b/i.test(flat) && !/\bward\b/i.test(trigger)) {
+    const feet = move[2] ?? move[3] ?? move[4];
+    const toward = /\btoward (?:the|that|a|one) (?:creature|hostile)/i.test(flat) && !/\baway\b/i.test(flat);
+    // What sets it off is something done to it, or an enemy coming near; nothing else ("reduces a creature to 0 HP").
+    const self = "(?:it|him|her|the [\\w\u2019'-]+(?: [\\w\u2019'-]+)?|[A-Z][\\w\u2019'-]+(?: [A-Z][\\w\u2019'-]+)?)";
+    const trigger_ = new RegExp(`\\bmisses ${self}\\b`).test(trigger)
+      ? "missed"
+      : toward && /\b(?:moves?|enters?)\b[^.]*\bwithin\b|\bmoves\b/i.test(trigger)
+        ? "approached"
+        : new RegExp(`\\b${self} takes damage\\b|\\bdeals damage to ${self}\\b|\\bdamages ${self}\\b`).test(trigger)
+          ? "damaged"
+          : new RegExp(`\\bhits ${self}\\b|\\b${self} is hit\\b`).test(trigger)
+            ? "hit"
+            : new RegExp(`\\b(?:attacks|targets) ${self}\\b|\\b${self} is (?:attacked|targeted)\\b`).test(trigger)
+              ? "attacked"
+              : undefined;
+    if (trigger_)
+      return {
+        kind: "move",
+        ...base,
+        trigger: trigger_,
+        ...(feet ? { feet: parseInt(feet, 10) } : move[1] ? {} : {}),
+        ...(toward ? { toward: true } : {}),
+      };
   }
   const hitTrigger = /\b(?:hits?|is hit|attacks?|damages?|deals damage to|misses?)\b/i.test(trigger);
   if (!hitTrigger) return undefined;

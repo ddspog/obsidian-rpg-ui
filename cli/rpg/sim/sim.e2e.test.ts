@@ -197,6 +197,19 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     );
   }, 120_000);
 
+  it("fights on a battle map: the monsters its tokens link, everyone on their token", async () => {
+    const { doc } = await run("--map", "Kobold Ambush", "--trials", "20");
+    expect(doc.rules.map).toBe("Kobold Ambush");
+    expect(doc.monsters.length).toBeGreaterThan(0);
+    expect(doc.winRate + doc.tpkRate + doc.stalemateRate).toBeCloseTo(1, 5);
+    const plain = await run(
+      ...doc.monsters.flatMap((m: { note: string; count: number }) => ["--monster", `${m.note}:${m.count}`]),
+      "--trials",
+      "20"
+    );
+    expect(plain.doc.rules.map).toBeUndefined();
+  }, 120_000);
+
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {
     const started = Date.now();
     // This spec is about ranking by CR (no longer the default) over the whole bestiary.

@@ -504,13 +504,50 @@ describe("reactionFrom", () => {
     ).toMatchObject({ kind: "counterspell", within: 30, upTo: 3 });
   });
 
-  it("leaves out a reaction that protects another, or halves only some damage", () => {
+  it("reads a reaction that protects an ally: its AC raised, or disadvantage", () => {
     expect(
       reactionFrom(
-        "Protective Scoop",
-        "When a friendly creature within 5 feet of it is the target of an attack, it scoops it up."
+        "Protector's Parry",
+        "When a friendly creature the guard can see within 5 feet of it is the target of an attack, the guard can interpose its weapon between the creature and the attacker. The friendly creature adds 2 to its AC against that attack."
       )
-    ).toBeUndefined();
+    ).toMatchObject({ kind: "protect", within: 5, ac: 2 });
+    const spoil = reactionFrom(
+      "Protective Interference",
+      "When a friendly creature the shadow fey guardian can see within 5 feet of it is the target of an attack, the guardian can impose disadvantage on the attack roll."
+    );
+    expect(spoil).toMatchObject({ kind: "protect", within: 5 });
+    expect(spoil?.ac).toBeUndefined();
+  });
+
+  it("reads a reaction that moves: away when missed or hurt, toward an enemy that moves", () => {
+    expect(
+      reactionFrom(
+        "Nimble Dodge",
+        "When a creature the musculi can see misses it with an attack, the musculi can move up to half its speed without provoking opportunity attacks."
+      )
+    ).toMatchObject({ kind: "move", trigger: "missed" });
+    expect(
+      reactionFrom(
+        "Rescue Step",
+        "When Mott takes damage from an attack, he can teleport up to 30 feet to an unoccupied space he can see."
+      )
+    ).toMatchObject({ kind: "move", trigger: "damaged", feet: 30 });
+    expect(
+      reactionFrom(
+        "Slithering Pursuit",
+        "When a hostile creature the spawn can see within 30 feet of it moves, the spawn can move up to half its speed toward that creature. This movement doesn't provoke opportunity attacks."
+      )
+    ).toMatchObject({ kind: "move", trigger: "approached", toward: true, within: 30 });
+    // A move to guard its ward is not a move of its own.
+    expect(
+      reactionFrom(
+        "Defensive Transport",
+        "When the barquil's ward takes damage from an attack or effect the barquil can see, the barquil can teleport up to 30 feet toward the ward into an unoccupied space."
+      )?.kind
+    ).not.toBe("move");
+  });
+
+  it("leaves out a reaction that halves only some damage", () => {
     expect(
       reactionFrom(
         "Energy Absorption",

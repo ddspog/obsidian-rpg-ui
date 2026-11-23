@@ -2,6 +2,7 @@ import { applyDefences, immuneTo } from "./defences";
 import { averageOf, d20, rollExpr, type Rng } from "./rng";
 import type {
   AbilityKey,
+  BattleGrid,
   BuffAction,
   BonusMove,
   CombatActor,
@@ -107,6 +108,8 @@ interface Combatant {
    * aloft (flying, with nothing under it: it falls when it cannot keep flying).
    */
   x: number;
+  /** Across the map (with a battle map only; 0 on the line). */
+  y: number;
   z: number;
   aloft: boolean;
   /** Its reactions (`CombatActor.reactions`) waiting for a recharge, and the uses left of those with a daily limit. */
@@ -328,6 +331,58 @@ function prefersRange(actor: CombatActor): boolean {
 
 const NONE: Combatant[] = [];
 
+/**
+ * Each creature on its start square of the map (a group's copies take their actor's squares in order); one with
+ * none goes on the free square nearest its side's first placed creature, else at its side's edge (the party
+ * the bottom row, the monsters the top), the middle column.
+ */
+function placeOnGrid(state: Combatant[], grid: BattleGrid): void {
+  const taken = new Set<number>();
+  const used = new Map<string, number>();
+  const free = (col: number, row: number) =>
+    col >= 0 &&
+    row >= 0 &&
+    col < grid.cols &&
+    row < grid.rows &&
+    !grid.blocked[row * grid.cols + col] &&
+    !taken.has(row * grid.cols + col);
+  const nearestFree = (col: number, row: number) => {
+    for (let r = 0; r < Math.max(grid.cols, grid.rows); r++)
+      for (let dc = -r; dc <= r; dc++)
+        for (let dr = -r; dr <= r; dr++)
+          if (Math.max(Math.abs(dc), Math.abs(dr)) === r && free(col + dc, row + dr))
+            return { col: col + dc, row: row + dr };
+    return { col, row };
+  };
+  const put = (c: Combatant, q: { col: number; row: number }) => {
+    taken.add(q.row * grid.cols + q.col);
+    c.x = q.col * grid.scale;
+    c.y = q.row * grid.scale;
+  };
+  const unplaced: Combatant[] = [];
+  for (const c of state) {
+    const key = c.actor.key.split("#")[0];
+    const squares = grid.starts[key] ?? [];
+    const n = used.get(key) ?? 0;
+    if (n < squares.length) {
+      used.set(key, n + 1);
+      put(c, nearestFree(squares[n].col, squares[n].row));
+    } else unplaced.push(c);
+  }
+  const anchors = new Map<string, { col: number; row: number }>();
+  for (const c of state)
+    if (!unplaced.includes(c) && !anchors.has(c.actor.side))
+      anchors.set(c.actor.side, { col: Math.round(c.x / grid.scale), row: Math.round(c.y / grid.scale) });
+  for (const c of unplaced) {
+    const anchor = anchors.get(c.actor.side) ?? {
+      col: Math.floor(grid.cols / 2),
+      row: c.actor.side === "party" ? grid.rows - 1 : 0,
+    };
+    put(c, nearestFree(anchor.col, anchor.row));
+    anchors.set(c.actor.side, anchor);
+  }
+}
+
 export function simulateTrial(
   actors: CombatActor[],
   rng: Rng,
@@ -336,7 +391,8 @@ export function simulateTrial(
 ): TrialResult {
   const focus = options.monsterFocus ?? 1;
   const rules = options.rules ?? {};
-  const positions = rules.distance !== undefined;
+  const grid = rules.map;
+  const positions = rules.distance !== undefined || !!grid;
   const distance = Math.max(0, rules.distance ?? 0);
 
   // Fresh state: full HP, a copy of the slots.
@@ -355,6 +411,7 @@ export function simulateTrial(
     reactionUsed: false,
     lrLeft: actor.legendaryResistance ?? 0,
     x: 0,
+    y: 0,
     z: 0,
     aloft: false,
     reactionSpent: new Set<Reaction>(),
@@ -383,6 +440,9 @@ export function simulateTrial(
       }
     }
   }
+
+  // On a battle map: each creature on its start square (a group's copies in order), else near its side's.
+  if (grid) placeOnGrid(state, grid);
 
   // Initiative: one d20 then one tiebreak draw per combatant, in actor order.
   const rolled = state.map((combatant, index) => {
@@ -421,7 +481,7 @@ export function simulateTrial(
 
   // ---- Space -------------------------------------------------------------------------------------------
   /** Feet between two creatures: along the line or up, whichever is more (a grid's way). */
-  const gap = (a: Combatant, b: Combatant) => Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z));
+  const gap = (a: Combatant, b: Combatant) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
   /** Its speed: walking, or flying when it flies, times what Haste and Slow make of it. */
   const speedOf = (c: Combatant) => {
     let speed = Math.max(c.actor.speed ?? 30, c.actor.fly ?? 0);
@@ -431,6 +491,113 @@ export function simulateTrial(
   /** Moving on the ground costs double in difficult terrain; a flier is spared. */
   const costFactor = (c: Combatant) => (rules.difficult && !c.actor.fly ? 2 : 1);
   const near = (a: Combatant, b: Combatant, feet: number) => gap(a, b) <= feet;
+
+  // ---- The battle map ------------------------------------------------------------------------------------
+  const scale = grid?.scale ?? 5;
+  const cellOf = (c: Combatant) => ({ col: Math.round(c.x / scale), row: Math.round(c.y / scale) });
+  const indexOf = (col: number, row: number) => row * (grid?.cols ?? 0) + col;
+  const inside = (col: number, row: number) => !!grid && col >= 0 && row >= 0 && col < grid.cols && row < grid.rows;
+  /** Squares between two squares (not the ends), along the line between their centres. */
+  const squaresBetween = (a: { col: number; row: number }, b: { col: number; row: number }) => {
+    const out: Array<{ col: number; row: number }> = [];
+    const steps = Math.max(Math.abs(b.col - a.col), Math.abs(b.row - a.row));
+    for (let i = 1; i < steps; i++) {
+      out.push({
+        col: Math.round(a.col + ((b.col - a.col) * i) / steps),
+        row: Math.round(a.row + ((b.row - a.row) * i) / steps),
+      });
+    }
+    return out;
+  };
+  /** A clear line between them: no square that blocks sight in between (one above the ground sees over). */
+  const sight = (a: Combatant, b: Combatant) =>
+    !grid ||
+    a.z > 0 ||
+    b.z > 0 ||
+    squaresBetween(cellOf(a), cellOf(b)).every((q) => !grid.blocked[indexOf(q.col, q.row)]);
+  const sightFrom = (q: { col: number; row: number }, t: Combatant, z = 0) =>
+    !grid || z > 0 || t.z > 0 || squaresBetween(q, cellOf(t)).every((p) => !grid.blocked[indexOf(p.col, p.row)]);
+  /** Who stands on each square now (the living, on the ground or not). */
+  const occupied = () => {
+    const at = new Map<number, Combatant>();
+    for (const o of order) if (living(o)) at.set(indexOf(cellOf(o).col, cellOf(o).row), o);
+    return at;
+  };
+  /**
+   * What it costs `c` to reach each square from where it stands: 8 ways, a square's `scale` feet (double where it is
+   * difficult, or everywhere in difficult terrain; a flier is spared), around squares that block (a flier passes
+   * over) and through no enemy. Kept until someone moves.
+   */
+  let moved = 0;
+  const costCache = new Map<Combatant, { at: number; cost: Float64Array }>();
+  const costsFrom = (c: Combatant): Float64Array => {
+    const known = costCache.get(c);
+    if (known && known.at === moved) return known.cost;
+    const g = grid!;
+    const cost = new Float64Array(g.cols * g.rows).fill(Infinity);
+    const flies = !!c.actor.fly;
+    const at = occupied();
+    const start = cellOf(c);
+    if (!inside(start.col, start.row)) return cost;
+    cost[indexOf(start.col, start.row)] = 0;
+    const queue: number[] = [indexOf(start.col, start.row)];
+    while (queue.length) {
+      // The cheapest square first (a small grid: a linear pick is enough).
+      let pick = 0;
+      for (let i = 1; i < queue.length; i++) if (cost[queue[i]] < cost[queue[pick]]) pick = i;
+      const here = queue.splice(pick, 1)[0];
+      const col = here % g.cols;
+      const row = Math.floor(here / g.cols);
+      for (let dc = -1; dc <= 1; dc++)
+        for (let dr = -1; dr <= 1; dr++) {
+          if (!dc && !dr) continue;
+          const nc = col + dc;
+          const nr = row + dr;
+          if (!inside(nc, nr)) continue;
+          const i = indexOf(nc, nr);
+          if (g.blocked[i] && !flies) continue;
+          const there = at.get(i);
+          if (there && there.actor.side !== c.actor.side) continue;
+          const step = g.scale * (!flies && (g.difficult[i] || rules.difficult) ? 2 : 1);
+          if (cost[here] + step < cost[i]) {
+            if (cost[i] === Infinity) queue.push(i);
+            cost[i] = cost[here] + step;
+          }
+        }
+    }
+    costCache.set(c, { at: moved, cost });
+    return cost;
+  };
+  /** The squares `c` could end on within `budget` feet (not one another creature stands on), with their cost. */
+  const squaresWithin = (c: Combatant, budget: number) => {
+    const cost = costsFrom(c);
+    const at = occupied();
+    const out: Array<{ col: number; row: number; cost: number }> = [];
+    for (let i = 0; i < cost.length; i++) {
+      if (cost[i] > budget) continue;
+      const there = at.get(i);
+      if (there && there !== c) continue;
+      out.push({ col: i % grid!.cols, row: Math.floor(i / grid!.cols), cost: cost[i] });
+    }
+    return out;
+  };
+  /** Feet between a square and a creature (along the map; height counts as on the line). */
+  const fromSquare = (q: { col: number; row: number }, t: Combatant, z = 0) =>
+    Math.max(Math.abs(q.col * scale - t.x), Math.abs(q.row * scale - t.y), Math.abs(z - t.z));
+  /** Where `c` goes to strike `t` with `reach`: the cheapest square in reach within `budget`, else the nearest it gets. */
+  const squareToward = (c: Combatant, t: Combatant, reach: number, budget: number) => {
+    let best: { col: number; row: number; cost: number } | undefined;
+    let bestGap = Infinity;
+    for (const q of squaresWithin(c, budget)) {
+      const g = fromSquare(q, t, c.z);
+      const key = g <= reach ? 0 : g;
+      if (key < bestGap || (key === bestGap && best && q.cost < best.cost)) {
+        best = q;
+        bestGap = key;
+      }
+    }
+    return best;
+  };
   /** An enemy within 5 feet that can act: a ranged attack has disadvantage, and leaving draws its swing. */
   const engagedBy = (c: Combatant) => (positions ? enemiesOf(c).filter((e) => !has(e, NO_TURN) && near(e, c, 5)) : []);
 
@@ -442,6 +609,27 @@ export function simulateTrial(
    * terrain. Infinity: it cannot.
    */
   const moveNeeded = (c: Combatant, t: Combatant, reach: number) => {
+    if (grid) {
+      // The cheapest square within reach of it (height as on the line: a walker cannot reach one aloft).
+      if (Math.abs(c.z - t.z) > reach && !c.actor.fly && t.aloft) return Infinity;
+      const cost = costsFrom(c);
+      const at = occupied();
+      const r = Math.floor(reach / scale);
+      const tc = cellOf(t);
+      let best = Infinity;
+      for (let dc = -r; dc <= r; dc++)
+        for (let dr = -r; dr <= r; dr++) {
+          const col = tc.col + dc;
+          const row = tc.row + dr;
+          if (!inside(col, row)) continue;
+          const i = indexOf(col, row);
+          const there = at.get(i);
+          if (there && there !== c) continue;
+          best = Math.min(best, cost[i]);
+        }
+      const up = Math.max(0, Math.abs(c.z - t.z) - reach);
+      return best + (up > 0 ? (c.actor.fly ? up : 2 * up) : 0);
+    }
     const along = Math.max(0, Math.abs(c.x - t.x) - reach);
     const up = Math.max(0, Math.abs(c.z - t.z) - reach);
     let climb = 0;
@@ -469,20 +657,29 @@ export function simulateTrial(
     }
   };
   /** Moves `c` to `x` (and to height `z`), drawing opportunity attacks from the enemies whose reach it leaves. */
-  const moveTo = (c: Combatant, wanted: number, z = c.z, aloft = c.aloft) => {
-    // The room's walls: no further back than ROOM_BEHIND behind its side's back line.
-    const x =
-      c.actor.side === "party" ? Math.max(wanted, -10 - ROOM_BEHIND) : Math.min(wanted, distance + 10 + ROOM_BEHIND);
-    if (!positions || (x === c.x && z === c.z && aloft === c.aloft)) return;
+  const moveTo = (c: Combatant, wanted: number, z = c.z, aloft = c.aloft, y = c.y) => {
+    // The room's walls (on the line): no further back than ROOM_BEHIND behind its side's back line.
+    const x = grid
+      ? wanted
+      : c.actor.side === "party"
+        ? Math.max(wanted, -10 - ROOM_BEHIND)
+        : Math.min(wanted, distance + 10 + ROOM_BEHIND);
+    if (!positions || (x === c.x && y === c.y && z === c.z && aloft === c.aloft)) return;
+    moved += 1;
     const before = enemiesOf(c).filter((e) => {
       const reach = opportunitySwing(e.actor)?.reach?.melee ?? 5;
       return near(e, c, reach);
     });
     c.x = x;
+    c.y = y;
     c.z = z;
     c.aloft = aloft && z > 0;
     provoke(c, before);
+    if (living(c)) pursuers(c);
   };
+  /** Moves `c` onto a square of the map (at height `z`). */
+  const moveToSquare = (c: Combatant, q: { col: number; row: number }, z = c.z, aloft = c.aloft) =>
+    moveTo(c, q.col * scale, z, aloft, q.row * scale);
   /** A flier that cannot keep flying (prone, stunned, paralyzed, restrained) falls: 1d6 a 10 feet, and lands prone. */
   const FALLS: ReadonlySet<ModelledCondition> = new Set([
     "prone",
@@ -505,6 +702,21 @@ export function simulateTrial(
     positions && rules.cover?.[t.actor.side] && engagedBy(t).length === 0 ? rules.cover[t.actor.side]! : 0;
   const coverFrom = (a: Combatant, t: Combatant) => {
     if (!positions) return 0;
+    if (grid) {
+      // Squares along the line (and the target's own) that give cover, and creatures standing in the way.
+      const line = squaresBetween(cellOf(a), cellOf(t));
+      let cover = Math.max(sideCover(t), grid.cover[indexOf(cellOf(t).col, cellOf(t).row)] ?? 0);
+      for (const q of line) cover = Math.max(cover, grid.cover[indexOf(q.col, q.row)] ?? 0);
+      const at = occupied();
+      if (
+        line.some((q) => {
+          const o = at.get(indexOf(q.col, q.row));
+          return !!o && o !== a && o !== t && o.z <= Math.max(a.z, t.z);
+        })
+      )
+        cover = Math.max(cover, 2);
+      return cover;
+    }
     const lo = Math.min(a.x, t.x);
     const hi = Math.max(a.x, t.x);
     // A creature standing between them on the line, low enough to be in the way, is half cover.
@@ -538,6 +750,12 @@ export function simulateTrial(
     if (reach !== undefined) return moveNeeded(c, t, reach) <= budget;
     const range = rangeOf(action);
     if (range === undefined) return true;
+    if (grid) {
+      // In range and in sight from where it stands, or from a square it can reach.
+      if (gap(c, t) <= range && sight(c, t)) return true;
+      if (budget <= 0) return false;
+      return squaresWithin(c, budget).some((q) => fromSquare(q, t, c.z) <= range);
+    }
     // It can close in along the line; up or down only if it flies (a walker on a ledge stays at its height).
     const along = Math.max(0, Math.abs(c.x - t.x) - budget / costFactor(c));
     const up = c.actor.fly ? Math.max(0, Math.abs(c.z - t.z) - budget) : Math.abs(c.z - t.z);
@@ -630,6 +848,62 @@ export function simulateTrial(
     }
     const back = readyReaction(target, "retaliate", attacker, melee);
     if (back) retaliate(target, back, attacker);
+  };
+
+  /** A reaction's move, drawing no opportunity attack: `feet` (half its speed) away from `from`, or toward it. */
+  const reactMove = (c: Combatant, r: Reaction, from: Combatant) => {
+    if (!positions || !living(c)) return;
+    spendReaction(c, r);
+    const feet = r.feet ?? Math.floor(speedOf(c) / 2);
+    const was = c.disengaged;
+    c.disengaged = true;
+    if (grid) {
+      const squares = squaresWithin(c, feet);
+      const score = (q: { col: number; row: number }) => (r.toward ? -1 : 1) * fromSquare(q, from, c.z);
+      const best = squares.sort((a, b) => score(b) - score(a) || a.cost - b.cost)[0];
+      if (best) moveToSquare(c, best);
+    } else {
+      const sign = (r.toward ? 1 : -1) * Math.sign(from.x - c.x || (c.actor.side === "party" ? 1 : -1));
+      const step = r.toward ? Math.min(feet, Math.max(0, Math.abs(from.x - c.x) - 5)) : feet;
+      moveTo(c, c.x + sign * step);
+    }
+    c.disengaged = was;
+  };
+  /** After an attack on it: a move it reacts with (Nimble Dodge when missed, Rescue Step when damaged). */
+  const dodgeAfter = (target: Combatant, attacker: Combatant, outcome: "missed" | "hit" | "damaged") => {
+    const r = target.actor.reactions?.find(
+      (x) =>
+        x.kind === "move" &&
+        !x.toward &&
+        (x.trigger === outcome || x.trigger === "attacked" || (outcome === "damaged" && x.trigger === "hit")) &&
+        reactionReady(target, x, attacker)
+    );
+    if (r) reactMove(target, r, attacker);
+  };
+  /** An enemy came near: those that react by closing in on it do (Slithering Pursuit). */
+  const pursuers = (mover: Combatant) => {
+    for (const e of enemiesOf(mover)) {
+      const r = e.actor.reactions?.find(
+        (x) =>
+          x.kind === "move" && x.toward && x.trigger === "approached" && reactionReady(e, x, mover) && gap(e, mover) > 5
+      );
+      if (r && gap(e, mover) <= (r.within ?? 30)) reactMove(e, r, mover);
+    }
+  };
+  /** An ally next to the target that protects it (Protector's Parry: its AC; Protective Interference: disadvantage). */
+  const protector = (target: Combatant, attacker: Combatant, withAc: boolean) => {
+    for (const ally of alliesOf(target)) {
+      if (ally === target) continue;
+      const r = ally.actor.reactions?.find(
+        (x) =>
+          x.kind === "protect" &&
+          !!x.ac === withAc &&
+          reactionReady(ally, x, attacker) &&
+          (!positions || gap(ally, target) <= (x.within ?? 5))
+      );
+      if (r) return { ally, r };
+    }
+    return undefined;
   };
 
   // ---- Concentration -----------------------------------------------------------------------------------
@@ -729,6 +1003,12 @@ export function simulateTrial(
       if (shy) {
         spendReaction(target, shy);
         disadvantage = true;
+      } else {
+        const guard = protector(target, attacker, false);
+        if (guard) {
+          spendReaction(guard.ally, guard.r);
+          disadvantage = true;
+        }
       }
     }
     let natural = d20(rng);
@@ -750,7 +1030,18 @@ export function simulateTrial(
         hit = false;
       }
     }
-    if (!hit) return false;
+    // An ally's shield: its AC raised against this attack (not a natural 20).
+    if (hit && natural !== 20) {
+      const guard = protector(target, attacker, true);
+      if (guard && total < ac + (guard.r.ac ?? 0)) {
+        spendReaction(guard.ally, guard.r);
+        hit = false;
+      }
+    }
+    if (!hit) {
+      dodgeAfter(target, attacker, "missed");
+      return false;
+    }
     const crit = natural === 20;
     const weapon = action.kind === "weapon";
     // Uncanny Dodge and the like: the hit's damage halved.
@@ -763,15 +1054,18 @@ export function simulateTrial(
     inflict(target, action.inflicts);
     checkConcentration(target, taken);
     answerHit(target, attacker, melee);
+    dodgeAfter(target, attacker, taken > 0 ? "damaged" : "hit");
     return true;
   };
 
   const castSave = (caster: Combatant, action: SaveAction): void => {
     const inRange = (t: Combatant) => canReach(caster, action, t, 0);
     const targets = action.area
-      ? enemiesOf(caster)
-          .filter(inRange)
-          .slice(0, action.targets ?? Infinity)
+      ? grid
+        ? areaOnGrid(caster, action, inRange)
+        : enemiesOf(caster)
+            .filter(inRange)
+            .slice(0, action.targets ?? Infinity)
       : [pickTarget(caster, inRange)].filter((t): t is Combatant => !!t);
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
@@ -801,6 +1095,16 @@ export function simulateTrial(
         if (back) retaliate(target, back, caster);
       }
     }
+  };
+
+  /** On a map, an area catches the enemies nearest the one it is aimed at (its size's worth), in range and sight. */
+  const areaOnGrid = (caster: Combatant, action: SaveAction, inRange: (t: Combatant) => boolean) => {
+    const aim = pickTarget(caster, inRange);
+    if (!aim) return [];
+    return enemiesOf(caster)
+      .filter(inRange)
+      .sort((a, b) => gap(a, aim) - gap(b, aim))
+      .slice(0, action.targets ?? Infinity);
   };
 
   /** Who a buff would land on now: allies or enemies without it, the most hurt (allies) or the first (enemies). */
@@ -869,7 +1173,8 @@ export function simulateTrial(
         for (const s of swings) {
           const next =
             positions || target
-              ? (pickTarget(c, (t) => canReach(c, s, t, 0)) ?? (target && living(target) ? target : undefined))
+              ? (pickTarget(c, (t) => canReach(c, s, t, 0)) ??
+                (target && living(target) && (!positions || canReach(c, s, target, 0)) ? target : undefined))
               : undefined;
           if (positions && !next) break;
           swing(c, s, next, hindered);
@@ -1009,10 +1314,15 @@ export function simulateTrial(
       const inReach = enemiesOf(c).some((t) => canReach(c, action, t, 0));
       const target = pickTarget(c, (t) => canReach(c, action, t, inReach ? 0 : plan.budget));
       if (!target) return;
-      // Along the line to its reach, and up or down to it (a flier flies there, a walker climbs).
-      const x = Math.abs(c.x - target.x) > reach ? spotFor(c, target, reach) : c.x;
+      // Along the line (or a path on the map) to its reach, and up or down to it (a flier flies, a walker climbs).
       const height = heightFor(c, target, reach);
-      moveTo(c, x, height.z, height.aloft);
+      if (grid) {
+        const q = squareToward(c, target, reach, plan.budget);
+        if (q) moveToSquare(c, q, height.z, height.aloft);
+      } else {
+        const x = Math.abs(c.x - target.x) > reach ? spotFor(c, target, reach) : c.x;
+        moveTo(c, x, height.z, height.aloft);
+      }
       if (!living(c)) return;
       return useDamaging(c, action, target);
     }
@@ -1030,11 +1340,21 @@ export function simulateTrial(
       }, 0);
       const worth = isAttack(action) ? 0.35 * valueOf(action, enemiesOf(c).length) : 0;
       if (c.disengaged || c.actor.flyby || cost < worth || c.actor.fly) {
-        const away = c.actor.side === "party" ? -1 : 1;
-        const step = Math.min(speedOf(c) / costFactor(c), 10);
-        if (c.actor.fly) moveTo(c, c.x + away * step, Math.max(c.z, ALTITUDE), true);
-        else moveTo(c, c.x + away * step);
-        hindered = false;
+        if (grid) {
+          // The nearest square with no enemy next to it (a flier also rises).
+          const clear = squaresWithin(c, speedOf(c))
+            .filter((q) => enemiesOf(c).every((e) => fromSquare(q, e, c.z) > 5))
+            .sort((a, b) => a.cost - b.cost)[0];
+          if (clear) moveToSquare(c, clear, c.actor.fly ? Math.max(c.z, ALTITUDE) : c.z, !!c.actor.fly);
+          else if (c.actor.fly) moveTo(c, c.x, Math.max(c.z, ALTITUDE), true);
+          hindered = !clear && !c.actor.fly && hindered;
+        } else {
+          const away = c.actor.side === "party" ? -1 : 1;
+          const step = Math.min(speedOf(c) / costFactor(c), 10);
+          if (c.actor.fly) moveTo(c, c.x + away * step, Math.max(c.z, ALTITUDE), true);
+          else moveTo(c, c.x + away * step);
+          hindered = false;
+        }
       }
     } else if (c.actor.fly && !c.aloft) {
       moveTo(c, c.x, Math.max(c.z, ALTITUDE), true);
@@ -1043,7 +1363,15 @@ export function simulateTrial(
     // Out of range: it closes in first.
     const range = rangeOf(action) ?? Infinity;
     const target = pickTarget(c, (t) => canReach(c, action, t, plan.budget));
-    if (target && gap(c, target) > range) {
+    if (grid && target && (gap(c, target) > range || !sight(c, target))) {
+      // To a square it can shoot from, as far from its enemies as it can.
+      const spots = squaresWithin(c, plan.budget).filter(
+        (q) => fromSquare(q, target, c.z) <= range && sightFrom(q, target, c.z)
+      );
+      const safest = (q: { col: number; row: number }) => Math.min(...enemiesOf(c).map((e) => fromSquare(q, e, c.z)));
+      const spot = spots.sort((a, b) => safest(b) - safest(a) || a.cost - b.cost)[0];
+      if (spot) moveToSquare(c, spot);
+    } else if (target && gap(c, target) > range) {
       const toward = target.x > c.x ? 1 : -1;
       moveTo(c, c.x + toward * (gap(c, target) - range));
     }
@@ -1064,6 +1392,24 @@ export function simulateTrial(
       return reach !== undefined && !has(e, NO_TURN) && moveNeeded(e, c, reach) <= 2 * speedOf(e);
     });
     if (!threats.length) return;
+    if (grid) {
+      // The square within its speed farthest from the threats that still has an enemy in range and in sight.
+      const range = rangeOf(action) ?? Infinity;
+      const safest = (q: { col: number; row: number }) => Math.min(...threats.map((e) => fromSquare(q, e, c.z)));
+      const here = cellOf(c);
+      let best = { ...here, cost: 0 };
+      let bestScore = safest(here);
+      for (const q of squaresWithin(c, speedOf(c))) {
+        if (!enemiesOf(c).some((e) => fromSquare(q, e, c.z) <= range && sightFrom(q, e, c.z))) continue;
+        const score = safest(q);
+        if (score > bestScore) {
+          best = q;
+          bestScore = score;
+        }
+      }
+      if (best.col !== here.col || best.row !== here.row) moveToSquare(c, best);
+      return;
+    }
     const away = c.actor.side === "party" ? -1 : 1;
     const range = rangeOf(action) ?? Infinity;
     const farthest = Math.max(...enemiesOf(c).map((e) => gap(c, e)));
@@ -1078,6 +1424,12 @@ export function simulateTrial(
     let nearest: Combatant | undefined;
     for (const e of enemiesOf(c)) if (!nearest || gap(c, e) < gap(c, nearest)) nearest = e;
     if (!nearest) return;
+    if (grid) {
+      const q = squareToward(c, nearest, 5, 2 * speedOf(c));
+      if (q)
+        moveToSquare(c, q, c.actor.fly && nearest.z > c.z ? nearest.z : c.z, c.actor.fly ? nearest.aloft : c.aloft);
+      return;
+    }
     const budget = (2 * speedOf(c)) / costFactor(c);
     const spot = spotFor(c, nearest, 5);
     const toward = spot > c.x ? 1 : -1;

@@ -134,7 +134,8 @@ The **GM link** (off by default: `gmLinkEnabled`, Settings › General › GM li
 - **Death saves:** on. A PC is brought back by a heal first, stabilised by an ally at two failures, and `deathRate`/`anyDeathRate` are reported.
 - **Terrain** (`--terrain difficult`), **cover** (`--cover <side>:half|three-quarters`, and half cover from a creature between), **height** (a `z` per creature: fliers hover 20 ft up and fall when grounded; `--high-ground <side>:<feet>`), and walls 30 ft behind each back line.
 - **Haste and Slow:** `BuffAction` fields read by `timeEffectsOf`.
-- **Reactions** (`CombatActor.reactions`, `Reaction`: counter, retaliate, disadvantage, halve, counterspell): read by `reactionFrom` from statblocks and `spellReactionOf` from PC spells (Hellish Rebuke, Counterspell); a spell's actions carry its circle as `spell`.
+- **Reactions** (`CombatActor.reactions`, `Reaction`: counter, retaliate, disadvantage, halve, counterspell, protect (an ally's AC or disadvantage), move (away when missed/hit/damaged, toward an enemy that moves)): read by `reactionFrom` from statblocks and `spellReactionOf` from PC spells (Hellish Rebuke, Counterspell); a spell's actions carry its circle as `spell`.
+- **A battle map** (`run --map <note>`, `TrialRules.map`: a `BattleGrid` built by `battleGrid` in `cli/rpg/sim/battlemap.ts` from the note's `rpg map`): squares, walls, difficult ground and cover from the legend, everyone on their token (no `--monster`: the monsters the tokens link), paths around walls, line of sight, areas catching the enemies nearest the aim.
 
 See "The rules of a fight" in `docs/encounter-catalog.md`; `engine.rules.test.ts` shows each rule.
 

@@ -12,6 +12,7 @@ import {
   ABILITY_KEYS,
   type AbilityKey,
   type AbilityStat,
+  type BattleGrid,
   type CombatActor,
   type CombatSide,
   type ModelledAction,
@@ -451,5 +452,144 @@ describe("reactions", () => {
     );
     const one = run([pc], [beast([{ kind: "disadvantage", name: "Fin Flare" }])]);
     expect(both.avgRounds).toBeGreaterThanOrEqual(one.avgRounds - 0.1);
+  });
+});
+
+describe("a battle map", () => {
+  /** A map from rows of characters: "#" blocks, "~" is difficult, "^" is half cover, "%" three-quarters. */
+  function grid(rows: string[], starts: BattleGrid["starts"]): BattleGrid {
+    const cells = rows.flatMap((r) => [...r]);
+    return {
+      scale: 5,
+      cols: rows[0].length,
+      rows: rows.length,
+      blocked: cells.map((c) => c === "#"),
+      difficult: cells.map((c) => c === "~"),
+      cover: cells.map((c) => (c === "^" ? 2 : c === "%" ? 5 : 0)),
+      starts,
+    };
+  }
+  const archer = actor("Archer", "party", { actions: [ranged("Longbow", 6, "1d8+3", 150)], maxHp: 30, speed: 0 });
+  const shooter = actor("Bandit", "monsters", { actions: [ranged("Crossbow", 6, "1d8+3", 150)], maxHp: 30, speed: 0 });
+  const both = (map: BattleGrid) => run([archer], [shooter], { map });
+
+  it("puts everyone on their start square, and a wall between them stops the shots", () => {
+    const open = grid(["..........", "..........", ".........."], {
+      Archer: [{ col: 0, row: 1 }],
+      Bandit: [{ col: 9, row: 1 }],
+    });
+    const walled = grid(["....#.....", "....#.....", "....#....."], {
+      Archer: [{ col: 0, row: 1 }],
+      Bandit: [{ col: 9, row: 1 }],
+    });
+    expect(both(open).stalemateRate).toBe(0);
+    // Neither can move (speed 0) nor see past the wall: nobody is hurt.
+    expect(both(walled)).toMatchObject({ stalemateRate: 1, avgHpLost: 0 });
+  });
+
+  it("gives cover from the squares between and the one the target stands in", () => {
+    const starts = { Archer: [{ col: 0, row: 0 }], Bandit: [{ col: 9, row: 0 }] };
+    const bare = both(grid([".........."], starts));
+    const rocks = both(grid(["........%%"], starts));
+    expect(rocks.avgRounds).toBeGreaterThan(bare.avgRounds);
+  });
+
+  it("walks a melee creature around a wall, and difficult ground slows it", () => {
+    // A post that does not fight back: every square more the brute walks is a round less of blows.
+    const brute = actor("Brute", "monsters", { actions: [melee("Club", 6, "2d6+3")], maxHp: 30, speed: 20 });
+    const post = actor("Post", "party", { actions: [], maxHp: 300, armorClass: 10, speed: 0 });
+    const starts = { Post: [{ col: 0, row: 0 }], Brute: [{ col: 11, row: 0 }] };
+    const fight = (rows: string[]) => run([post], [brute], { map: grid(rows, starts) });
+    const open = fight(Array(11).fill("............"));
+    const around = fight([...Array(10).fill("......#....."), "............"]);
+    const mud = fight(Array(11).fill("..~~~~~~~~.."));
+    expect(around.avgHpLost).toBeLessThan(open.avgHpLost);
+    expect(mud.avgHpLost).toBeLessThan(open.avgHpLost);
+  });
+
+  it("catches the enemies nearest the one an area is aimed at", () => {
+    const blast: ModelledAction = {
+      kind: "save",
+      name: "Fireball",
+      dc: 30,
+      ability: "dex",
+      damage: { expr: "20" },
+      onSuccess: "none",
+      area: true,
+      targets: 2,
+      circle: 0,
+      reach: { range: 150 },
+    };
+    const mage = actor("Mage", "party", { actions: [blast], maxHp: 30, speed: 0 });
+    const goblin = (n: string) => actor(n, "monsters", { actions: [], maxHp: 20, speed: 0 });
+    const starts = {
+      Mage: [{ col: 0, row: 0 }],
+      A: [{ col: 9, row: 0 }],
+      B: [{ col: 9, row: 1 }],
+      C: [{ col: 2, row: 4 }],
+    };
+    const r = simulateTrial([mage, goblin("A"), goblin("B"), goblin("C")], createSeededRng(1), 3, {
+      rules: { map: grid(["..........", "..........", "..........", "..........", ".........."], starts) },
+    });
+    // Two casts of 20 kill A and B (side by side) first, then C; three rounds are enough for all three.
+    expect(r.outcome).toBe("win");
+  });
+});
+
+describe("reactions that protect or move", () => {
+  const pc = actor("Fighter", "party", { actions: [melee("Sword", 6, "1d8+3")], maxHp: 60 });
+  const ward = (reactions?: CombatActor["reactions"]) =>
+    actor("Ward", "monsters", { actions: [melee("Claw", 4, "1d6+2")], maxHp: 20, ...(reactions ? { reactions } : {}) });
+
+  it("guards an ally next to it: its AC raised, or disadvantage on the attack", () => {
+    const guard = (reactions?: CombatActor["reactions"]) =>
+      actor("Guard", "monsters", {
+        actions: [melee("Spear", 4, "1d6+2")],
+        maxHp: 20,
+        ...(reactions ? { reactions } : {}),
+      });
+    const fight = (reactions?: CombatActor["reactions"]) => run([pc], [ward(), guard(reactions)], undefined, 2000);
+    const alone = fight();
+    const parried = fight([{ kind: "protect", name: "Protector's Parry", within: 5, ac: 2 }]);
+    const spoiled = fight([{ kind: "protect", name: "Protective Interference", within: 5 }]);
+    expect(parried.avgRounds).toBeGreaterThan(alone.avgRounds);
+    expect(spoiled.avgRounds).toBeGreaterThan(alone.avgRounds);
+  });
+
+  it("dodges away when missed, drawing no opportunity attack: a second swing finds it out of reach", () => {
+    const twice = actor("Fighter", "party", {
+      actions: [
+        { kind: "multiattack", name: "Multiattack", swings: [melee("Sword", 6, "1d8+3"), melee("Sword", 6, "1d8+3")] },
+      ],
+      maxHp: 60,
+    });
+    const plain = run([twice], [ward()], { distance: 0 }, 2000);
+    const nimble = run(
+      [twice],
+      [ward([{ kind: "move", name: "Nimble Dodge", trigger: "missed", feet: 15 }])],
+      { distance: 0 },
+      2000
+    );
+    expect(nimble.avgRounds).toBeGreaterThan(plain.avgRounds);
+  });
+
+  it("closes in on an enemy that comes near", () => {
+    const archer = actor("Archer", "party", { actions: [ranged("Longbow", 6, "1d8+3", 150)], maxHp: 30 });
+    const lurker = (reactions?: CombatActor["reactions"]) =>
+      actor("Lurker", "monsters", {
+        actions: [melee("Bite", 5, "2d6+3")],
+        maxHp: 30,
+        speed: 10,
+        ...(reactions ? { reactions } : {}),
+      });
+    const plain = run([archer], [lurker()], { distance: 20 });
+    const pursuing = run(
+      [archer],
+      [lurker([{ kind: "move", name: "Slithering Pursuit", trigger: "approached", toward: true, within: 30 }])],
+      {
+        distance: 20,
+      }
+    );
+    expect(pursuing.avgHpLost).toBeGreaterThanOrEqual(plain.avgHpLost);
   });
 });
