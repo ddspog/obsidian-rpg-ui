@@ -18,7 +18,7 @@ import {
   type SpellNumbers,
   type SpellOptionInput,
 } from "lib/domains/encounter-sim/spell-actions";
-import { pbOfCr } from "lib/domains/statblocks/template-block";
+import { applyTemplateBlock, pbOfCr } from "lib/domains/statblocks/template-block";
 import {
   ABILITY_KEYS,
   isDamaging,
@@ -69,6 +69,8 @@ export interface LoadedMonster {
   role?: MonsterRole;
   /** The subrole written in the statblock (`subrole:`), when it has one. */
   subrole?: Subrole;
+  /** The template note applied to it ("Mage with Void-Blessed"), when one was. */
+  template?: string;
 }
 
 /** Every markdown note under the bestiary, in the vault's order. */
@@ -368,19 +370,56 @@ function monsterSpells(
 }
 
 /** A bestiary note as a combatant. Throws naming the note (or the note and feature ref) it cannot load. */
-export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster> {
-  const file = findFile(ctx, ref);
-  if (!file) throw new Error(`No monster note "${ref}"`);
-  // A name ("Goblin") reads through readMonsterNote, which looks past a note of the same name that is no monster.
-  const state = readMonsterNote(ctx, ref.includes("/") ? file.path : ref);
-  if (state.kind === "non-monster") throw new Error(`"${ref}" is not a monster note (no stat.monster block)`);
-  if (state.kind === "unresolvable") throw new Error(`"${ref}" cannot be read as a monster: ${state.why}`);
+/** "Mage with Void-Blessed": the creature and the template note to apply to it ("Mage" alone has none). */
+export function splitTemplate(ref: string): { note: string; template?: string } {
+  const m = ref.match(/^(.+?)\s+with\s+(?:the\s+)?(.+?)(?:\s+template)?$/i);
+  return m ? { note: m[1].trim(), template: m[2].trim() } : { note: ref };
+}
 
-  const { data } = state;
+/** A creature and a template as the one reference the simulator loads: "Mage with Void-Blessed". */
+export function withTemplate(note: string, template: string | undefined): string {
+  return template ? `${note} with ${template}` : note;
+}
+
+export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster> {
+  const { note: baseRef, template } = splitTemplate(ref);
+  const file = findFile(ctx, baseRef);
+  if (!file) throw new Error(`No monster note "${baseRef}"`);
+  // A name ("Goblin") reads through readMonsterNote, which looks past a note of the same name that is no monster.
+  const state = readMonsterNote(ctx, baseRef.includes("/") ? file.path : baseRef);
+  if (state.kind === "non-monster") throw new Error(`"${baseRef}" is not a monster note (no stat.monster block)`);
+  if (state.kind === "unresolvable") throw new Error(`"${baseRef}" cannot be read as a monster: ${state.why}`);
+  if (!template) return monsterOf(ctx, state.file, state.yaml);
+
+  // A template: the base creature's features worked into it, as `rpg sim homebrew --template` does.
+  // Loaded when asked for: templates.ts reads this module's constants as it loads.
+  const { findTemplate, loadTemplates, TEMPLATES_FOLDER } = await import("./templates");
+  const t = findTemplate(loadTemplates(ctx), template);
+  if (!t) throw new Error(`No template "${template}" in ${TEMPLATES_FOLDER} (\`rpg sim templates\` lists them)`);
+  const base = await monsterOf(ctx, state.file, state.yaml);
+  const applied = applyTemplateBlock({ ...state.yaml }, t.block, {
+    baseName: base.name,
+    baseFeatures: base.features,
+    cr: crNumber(base.cr),
+  });
+  const monster = await monsterOf(ctx, state.file, applied.data);
+  const key = withTemplate(state.file.path, t.name);
+  return {
+    ...monster,
+    note: key,
+    name: `${base.name} (${t.name})`,
+    actor: { ...monster.actor, key, name: `${base.name} (${t.name})` },
+    template: t.name,
+  };
+}
+
+/** The simulator's creature from a statblock's YAML (a note's own, or one a template changed). */
+async function monsterOf(ctx: Ctx, file: TFile, yaml: Record<string, unknown>): Promise<LoadedMonster> {
+  const data = mapMonster(yaml);
   const refs = data.features.map((f) => f.ref);
   // resolveStatFeatures reads the global `app`, which the last boot() set: point it at this vault.
   (globalThis as Record<string, unknown>).app = ctx.app;
-  const resolved = await resolveStatFeatures(data.features, file.path, state.yaml);
+  const resolved = await resolveStatFeatures(data.features, file.path, yaml);
   if (resolved.length !== refs.length) {
     throw new Error(`Monster "${file.path}": its feature refs could not be resolved (no app to resolve them with)`);
   }
@@ -449,7 +488,7 @@ export async function loadMonster(ctx: Ctx, ref: string): Promise<LoadedMonster>
     fidelity,
     features: resolved.map((f, i) => ({ name: f.name?.trim() || refs[i], type: f.type, text: f.text })),
     speedText: data.stats.speed ?? "",
-    ...(parseRole(state.yaml.role) ? { role: parseRole(state.yaml.role) } : {}),
-    ...(parseSubrole(state.yaml.subrole) ? { subrole: parseSubrole(state.yaml.subrole) } : {}),
+    ...(parseRole(yaml.role) ? { role: parseRole(yaml.role) } : {}),
+    ...(parseSubrole(yaml.subrole) ? { subrole: parseSubrole(yaml.subrole) } : {}),
   };
 }

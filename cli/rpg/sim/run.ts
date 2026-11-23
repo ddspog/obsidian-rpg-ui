@@ -238,7 +238,7 @@ export const simRun: SimHandler = async (ctx, options) => {
         koRate: summary.koRate,
         difficulty,
         fit: fitByDifficulty(summary),
-        skipped: skippedByOwner(fidelity, (owner) => (/\.md$/i.test(owner) ? noteRef(ctx, owner) : owner)),
+        skipped: skippedByOwner(fidelity, (owner) => (/\.md(?: with .+)?$/i.test(owner) ? noteRef(ctx, owner) : owner)),
       },
     };
   }

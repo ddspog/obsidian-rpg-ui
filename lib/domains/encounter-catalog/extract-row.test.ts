@@ -492,3 +492,60 @@ describe("extractEncounter: the Labyrinth and campaign builder rows", () => {
     ]);
   });
 });
+
+describe("extractEncounter: templates and prose", () => {
+  const idx = buildMonsterIndex([
+    { note: "b/Frog, Giant.md", name: "Frog, Giant", cr: "1/4" },
+    { note: "b/Mage.md", name: "Mage", cr: "6" },
+    { note: "b/Cultist.md", name: "Cultist", cr: "1/8" },
+    { note: "b/Ape, Giant.md", name: "Ape, Giant", cr: "7" },
+    { note: "b/Duxt.md", name: "Duxt", cr: "2" },
+    { note: "b/Bee, Giant Honey.md", name: "Bee, Giant Honey", cr: "1/2" },
+  ]);
+
+  it("keeps the template a row names after the creature", () => {
+    const found = extractEncounter(
+      "A mage (use mage with the Void-blessed template, see Chapter 8) leads eight cultists.",
+      idx
+    ).monsters;
+    expect(found.map((m) => [m.name, m.count, m.template])).toEqual([
+      ["Mage", 1, "Void-blessed"],
+      ["Cultist", 8, undefined],
+    ]);
+    expect(extractEncounter("A giant ape with the bramble creature template patrols.", idx).monsters[0].template).toBe(
+      "bramble creature"
+    );
+  });
+
+  it("reads '(use the statistics of a wolf)' as the creature the count goes to", () => {
+    const wolves = buildMonsterIndex([{ note: "b/Wolf.md", name: "Wolf", cr: "1/4" }]);
+    const text = "Five awakened wolves (use the statistics of a wolf, except its INT is +0) lurk in the fog.";
+    expect(
+      extractEncounter(text, wolves, { prose: { named: ["wolf"] } }).monsters.map((m) => [m.name, m.count])
+    ).toEqual([["Wolf", 5]]);
+  });
+
+  it("takes no template when two are offered", () => {
+    expect(
+      extractEncounter("Giant frogs with the skeleton or zombie template.", idx).monsters[0].template
+    ).toBeUndefined();
+  });
+
+  it("reads a creature named again in prose as the same one, not one more", () => {
+    const text =
+      "A fey by the name of Duxt lives here. Duxt bursts out of his den, with a lone giant honey bee. If Duxt is killed, the bee stops.";
+    const got = extractEncounter(text, idx, { prose: { named: ["Duxt", "giant honey bee"] } }).monsters;
+    expect(got.map((m) => [m.name, m.count])).toEqual([
+      ["Duxt", 1],
+      ["Bee, Giant Honey", 1],
+    ]);
+  });
+
+  it("sums the mentions in bold in prose, and reads the others as the same creatures", () => {
+    const text = "Two cultists rest here. A third cultist keeps watch at the door. The cultists fight together.";
+    const got = (named: string[]) =>
+      extractEncounter(text, idx, { prose: { named } }).monsters.map((m) => [m.name, m.count]);
+    expect(got(["cultists", "cultist"])).toEqual([["Cultist", 3]]);
+    expect(got(["cultists"])).toEqual([["Cultist", 2]]);
+  });
+});

@@ -5,14 +5,27 @@
  * and hands the drafts back for a person (or a model) to review.
  */
 
+import { areasOfNote } from "lib/domains/encounter-catalog/area-source";
+import { mapsOfNote } from "lib/domains/encounter-catalog/map-source";
 import type { CatalogEntry, CatalogMonster } from "lib/domains/encounter-catalog/catalog";
-import { extractEncounter, type CombatLikelihood, type Confidence } from "lib/domains/encounter-catalog/extract-row";
-import { buildMonsterIndex, type MonsterEntry, type MonsterIndex } from "lib/domains/encounter-catalog/monster-index";
+import {
+  extractEncounter,
+  type CombatLikelihood,
+  type Confidence,
+  type ExtractedEncounter,
+} from "lib/domains/encounter-catalog/extract-row";
+import {
+  buildMonsterIndex,
+  findMentions,
+  type MonsterEntry,
+  type MonsterIndex,
+} from "lib/domains/encounter-catalog/monster-index";
 import { tablesOfNote } from "lib/domains/encounter-catalog/table-source";
 import { normaliseTags } from "lib/domains/encounter-catalog/words";
 import type { Ctx } from "../app";
-import { bestiaryAliases } from "./aliases";
+import { bestiaryAliases, bestiaryNoteNamed } from "./aliases";
 import { UsageError } from "./flags";
+import { findTemplate, loadTemplates, type LoadedTemplate } from "./templates";
 import { bestiaryPaths, categoryHabitat, linkNames, readMonsterNote } from "./monsters";
 
 /** The bestiary as the draft reads it: the name index and each note's habitat names. */
@@ -133,18 +146,77 @@ function monstersText(monsters: Array<{ name: string; count: number }>): string 
   return monsters.map((m) => (m.count === 1 ? m.name : `${m.count} ${m.name}`)).join(" + ");
 }
 
+/**
+ * Prose that bolds the creatures it means (an adventure's keyed area) keeps only those: "the Honey Queen"
+ * named in passing, or "Ghost Knights" as a band's name, is not in the fight.
+ */
+export function keepNamed(
+  found: ExtractedEncounter,
+  named: string[] | undefined,
+  index: MonsterIndex
+): ExtractedEncounter {
+  if (!named) return found;
+  const notes = new Set(named.flatMap((phrase) => findMentions(index, phrase).map((m) => m.note)));
+  const kept = found.monsters.filter((m) => notes.has(m.note));
+  const dropped = found.monsters.filter((m) => !notes.has(m.note)).map((m) => m.name);
+  if (!dropped.length) return found;
+  return {
+    ...found,
+    monsters: kept,
+    reasons: [...found.reasons, `not in bold, so named in passing: ${dropped.join(", ")}`],
+  };
+}
+
+/** A map's linked tokens as an encounter: each link a bestiary note, a link to anything else left unresolved. */
+function tokensEncounter(ctx: Ctx, linked: Array<{ name: string; count: number }>): ExtractedEncounter {
+  const monsters: ExtractedEncounter["monsters"] = [];
+  const unresolved: string[] = [];
+  const paths = bestiaryPaths(ctx);
+  for (const l of linked) {
+    // A link names its note: the bestiary note of that name, else whatever the name stands for.
+    const note =
+      paths.find((p) => p === `${l.name}.md` || p.endsWith(`/${l.name}.md`)) ?? bestiaryNoteNamed(ctx, l.name);
+    if (note) monsters.push({ note, name: l.name, count: l.count, matchedText: `[[${l.name}]]`, inferred: false });
+    else unresolved.push(l.name);
+  }
+  return {
+    monsters,
+    unresolved,
+    combat: "likely",
+    confidence: unresolved.length ? "medium" : "high",
+    reasons: [
+      "the map's tokens, each link a bestiary note",
+      ...(unresolved.length ? [`linked tokens not in the bestiary: ${unresolved.join(", ")}`] : []),
+    ],
+  };
+}
+
 /** Reads the encounter tables of the given notes into drafts. */
 export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
   const bestiary = bestiaryOf(ctx);
   const { index, habitat } = bestiary;
+  let loaded: LoadedTemplate[] | undefined;
+  const templates = () => (loaded ??= loadTemplates(ctx));
   const scan: DraftScan = { considered: 0, tables: 0, drafts: [], skipped: { "no-monster": 0, "combat-unlikely": 0 } };
   for (const path of notes) {
     const file = ctx.note(path);
-    for (const table of tablesOfNote(file.path, ctx.vault.readSync(file))) {
+    const text = ctx.vault.readSync(file);
+    // Random-encounter tables, and an adventure's keyed areas (`*Creatures.*` paragraphs).
+    for (const table of [
+      ...tablesOfNote(file.path, text),
+      ...areasOfNote(file.path, text),
+      ...mapsOfNote(file.path, text),
+    ]) {
       scan.tables += 1;
       for (const row of table.rows) {
         scan.considered += 1;
-        const found = extractEncounter(row.text, index);
+        const found = row.linked
+          ? tokensEncounter(ctx, row.linked)
+          : keepNamed(
+              extractEncounter(row.text, index, row.named ? { prose: { named: row.named } } : {}),
+              row.named,
+              index
+            );
         if (found.monsters.length === 0) {
           scan.skipped["no-monster"] += 1;
           continue;
@@ -153,15 +225,30 @@ export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
           scan.skipped["combat-unlikely"] += 1;
           continue;
         }
-        const monsters: CatalogMonster[] = found.monsters.map((m) => ({
-          note: m.note,
-          count: Math.max(1, Math.round(m.count)),
-          ...(m.dice ? { dice: m.dice } : {}),
-        }));
+        // A template the text names ("with the void template") is applied when the vault has its note.
+        let confidence = found.confidence;
+        const monsters: CatalogMonster[] = found.monsters.map((m) => {
+          const template = m.template ? findTemplate(templates(), m.template)?.name : undefined;
+          if (m.template && !template) {
+            found.reasons.push(`no template note "${m.template}": ${m.name} simulated without it`);
+            if (confidence === "high") confidence = "medium";
+          }
+          return {
+            note: m.note,
+            count: Math.max(1, Math.round(m.count)),
+            ...(m.dice ? { dice: m.dice } : {}),
+            ...(template ? { template } : {}),
+          };
+        });
         const label = [table.environment ? titleCase(table.environment) : table.title, tierLabel(table.tags)]
           .filter(Boolean)
           .join(" ");
-        const name = `${label} #${row.roll}: ${monstersText(found.monsters.map((m, i) => ({ name: spokenName(m.name), count: monsters[i].count })))}`;
+        const name = `${label} #${row.roll}: ${monstersText(
+          found.monsters.map((m, i) => ({
+            name: monsters[i].template ? `${spokenName(m.name)} (${monsters[i].template})` : spokenName(m.name),
+            count: monsters[i].count,
+          }))
+        )}`;
         // One spelling per tag: a table's "forests" and a wolf's "forest" become "forest".
         const tags = normaliseTags([...table.tags, ...monsters.flatMap((m) => habitat(m.note))], bestiary.habitats());
         scan.drafts.push({
@@ -179,7 +266,7 @@ export function scanForDrafts(ctx: Ctx, notes: string[]): DraftScan {
             },
             review: "draft",
           },
-          confidence: found.confidence,
+          confidence,
           combat: found.combat,
           reasons: found.reasons,
           unresolved: found.unresolved,

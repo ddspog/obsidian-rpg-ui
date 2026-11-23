@@ -20,6 +20,8 @@ export interface ExtractedMonster {
   matchedText: string;
   /** True when some part of the count is a guess ("the wolves" with no number is 2). */
   inferred: boolean;
+  /** The template the text puts on it, as written: "void" for "giant frog with the void template". */
+  template?: string;
 }
 
 export type CombatLikelihood = "likely" | "possible" | "unlikely";
@@ -663,6 +665,8 @@ interface Found {
   mergedInto?: Found;
   /** Its stats are another's ("four giant bees (use giant wasp)"). */
   replacedBy?: Found;
+  /** The template written after it ("with the void template"). */
+  template?: string;
 }
 
 function looksPlural(word: string): boolean {
@@ -792,7 +796,21 @@ function laterOfThem(text: string, tokens: Token[], from: number): CountRead | n
 }
 
 /** The count of each creature the line names, whether it reads like a fight, and how far to trust it. */
-export function extractEncounter(rawText: string, index: MonsterIndex): ExtractedEncounter {
+export interface ExtractOptions {
+  /**
+   * The text is prose about one group (an adventure's keyed area), not a table row: a creature named again
+   * is the same creature ("Duxt … Duxt" is one Duxt). The names it sets in bold (`named`, as written) are
+   * where each creature comes in: those mentions are summed ("two duelists … a third duelist"), the rest
+   * are echoes. With no bold mention of a creature, its largest count stands.
+   */
+  prose?: { named: string[] };
+}
+
+export function extractEncounter(
+  rawText: string,
+  index: MonsterIndex,
+  options: ExtractOptions = {}
+): ExtractedEncounter {
   const text = plainText(rawText);
   const lower = text.toLowerCase();
   const reasons: string[] = [];
@@ -862,7 +880,13 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
   found.forEach((f, fi) => {
     const open = text.lastIndexOf("(", f.mention.start);
     if (open < 0 || !inParenthesis(text, f.mention.start)) return;
-    if (!/^\(\s*use\s+(?:an?\s+|the\s+)?$/i.test(text.slice(open, f.mention.start))) return;
+    // "(use giant wasp)", "(use the statistics of a wolf, except …)".
+    if (
+      !/^\(\s*use\s+(?:the\s+(?:statistics|stats)\s+(?:of|for)\s+)?(?:an?\s+|the\s+)?$/i.test(
+        text.slice(open, f.mention.start)
+      )
+    )
+      return;
     let at = tokens.findIndex((t) => t.start >= open) - 1;
     let count: CountRead | null = null;
     for (let i = at, seen = 0; i >= 0 && seen < 5; i--, seen++) {
@@ -896,6 +920,16 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
     f.anaphoric = false;
     reasons.push(`"${f.phrase}": the stats named in the parenthesis`);
   });
+
+  // "use mage with the Void-blessed template", "a giant ape with the bramble creature template": one template, named.
+  for (const f of found) {
+    const m = text
+      .slice(f.mention.end)
+      .match(/^\s+(?:modified\s+)?with\s+the\s+([\p{L}\u2019'-]+(?:\s+[\p{L}\u2019'-]+){0,2}?)\s+template\b(?!s)/iu);
+    if (!m || /\b(?:or|and)\b/i.test(m[1])) continue;
+    f.template = m[1].trim();
+    reasons.push(`"${f.mention.text}" with the ${f.template} template`);
+  }
 
   // Two names side by side are one creature: "void piper selang" is a Void Piper, "merchant commoners" are commoners.
   for (let i = 0; i + 1 < found.length; i++) {
@@ -1003,7 +1037,17 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
     counted.find(
       (c) => c !== f && (c.mention.note === f.mention.note || (f.anaphoric && refersTo(f.mention, c.mention)))
     );
-  const echoes = kept.filter((f) => !f.count && echoOf(f));
+  // Each bold name stands for one mention: the first mention whose words it is takes it.
+  const unnamed = (options.prose?.named ?? []).map((n) => n.toLowerCase());
+  const takeNamed = (words: string): boolean => {
+    const at = unnamed.indexOf(words.toLowerCase());
+    if (at < 0) return false;
+    unnamed.splice(at, 1);
+    return true;
+  };
+  const bold = new Set(options.prose ? kept.filter((f) => takeNamed(f.mention.text)) : []);
+  // In prose a bold name is a creature coming in ("a third duelist"), not an echo of the counted ones.
+  const echoes = kept.filter((f) => !f.count && echoOf(f) && !bold.has(f));
   for (const f of echoes) {
     const c = echoOf(f);
     reasons.push(`"${f.phrase}" read as the "${c?.phrase}" counted`);
@@ -1042,7 +1086,10 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
     // A later sentence with a number of its own ("...the next night, eight werewolves attack") is a follow-up, not more of the first group.
     const lead = group[0];
     if (lead.count?.explicit) {
-      const later = group.filter((f) => f !== lead && f.sentence > lead.sentence && f.count?.explicit);
+      // (In prose a later bold name is one more coming in: "a third duelist keeps watch".)
+      const later = group.filter(
+        (f) => f !== lead && f.sentence > lead.sentence && f.count?.explicit && !(bold.has(f) && bold.has(lead))
+      );
       if (later.length > 0) {
         reasons.push(`later numbers for the same creature not added: ${later.map((f) => `"${f.phrase}"`).join(", ")}`);
         group = group.filter((f) => !later.includes(f));
@@ -1066,7 +1113,16 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
       }
     }
     const first = group[0].mention;
-    if (group.length > 1) {
+    if (group.length > 1 && options.prose) {
+      const named = group.filter((f) => bold.has(f));
+      const amount = (f: Found) => f.count?.count ?? f.guess;
+      total = named.length ? named.reduce((sum, f) => sum + amount(f), 0) : Math.max(...group.map(amount));
+      reasons.push(
+        named.length > 1
+          ? `${named.length} mentions of ${first.name} in bold summed to ${total}, the rest read as the same ones`
+          : `${group.length} mentions of ${first.name} read as the same ${total}`
+      );
+    } else if (group.length > 1) {
       reasons.push(`${group.length} mentions of ${first.name} summed to ${total}`);
     }
     const dice = group.length === 1 ? group[0].count?.dice : undefined;
@@ -1078,6 +1134,7 @@ export function extractEncounter(rawText: string, index: MonsterIndex): Extracte
       ...(dice ? { dice } : {}),
       matchedText: group.map((f) => f.phrase).join("; "),
       inferred,
+      ...(group.find((f) => f.template) ? { template: group.find((f) => f.template)!.template } : {}),
     });
   }
 

@@ -22,7 +22,7 @@ import type { CombatActor } from "lib/domains/encounter-sim/types";
 import type { Ctx } from "../app";
 import { yieldToEventLoop } from "./brief";
 import { MAX_MONSTER_COUNT, type TierScope } from "./flags";
-import { loadMonster, type LoadedMonster } from "./monsters";
+import { loadMonster, withTemplate, type LoadedMonster } from "./monsters";
 import { loadParty } from "./party";
 import { inScope, tierMatcher } from "./tier-scope";
 
@@ -142,7 +142,8 @@ export async function checkEntries(
     let groups: Array<{ actor: CombatActor; count: number; dice?: string }>;
     try {
       groups = [];
-      for (const { note, count, dice } of entry.monsters) {
+      for (const { note: base, count, dice, template } of entry.monsters) {
+        const note = withTemplate(base, template);
         let monster = monsters.get(note);
         if (!monster) {
           monster = await loadMonster(ctx, note);

@@ -20,7 +20,7 @@ import { loadPartyState } from "./catalog-check";
 import { findCatalogs, loadCatalog, resolveCatalogPath } from "./catalog-store";
 import type { SimHandler } from "./dispatch";
 import type { Difficulty, SimOptions } from "./flags";
-import { plainType, readMonsterNote } from "./monsters";
+import { plainType, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
 import { inScope, tierMatcher } from "./tier-scope";
 import { simSuggest, type SuggestCandidate, type SuggestDocument } from "./suggest";
@@ -166,7 +166,7 @@ async function fromCatalog(
       from: entry.review === "confirmed" ? "catalog" : "catalog-draft",
       id: entry.id,
       name: entry.name,
-      monsters: entry.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+      monsters: entry.monsters.map((m) => groupRef(ctx, withTemplate(m.note, m.template), m.count)),
       tags: entry.tags,
       fit: fit.state,
       winRate: fit.winRate,

@@ -19,6 +19,9 @@ const stemOf = (path: string): string => (path.split("/").pop() ?? path).replace
  * name alone finds that note, else its vault path without `.md`.
  */
 export function noteRef(ctx: Ctx, path: string): string {
+  // "…/Mage.md with Void-Blessed": the creature's reference, then its template.
+  const templated = path.match(/^(.+?\.md) with (.+)$/i);
+  if (templated) return `${noteRef(ctx, templated[1])} with ${templated[2]}`;
   const stem = stemOf(path);
   const found = ctx.vault.getFileByPath(`${stem}.md`) ?? ctx.vault.resolveLink(stem);
   return found?.path === path ? stem : path.replace(/\.md$/i, "");

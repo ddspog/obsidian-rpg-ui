@@ -181,6 +181,18 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
     expect(doc.fidelity[ref]).toContainEqual(expect.objectContaining({ name: "Light", reason: "utility-spell" }));
   }, 120_000);
 
+  it("applies a template named after the creature: Zombie on a Mule", async () => {
+    const plain = (await run("--monster", "Mule", "--trials", "5")).doc.monsters[0];
+    const { doc } = await run("--monster", "Mule with Zombie", "--trials", "5");
+    const zombie = doc.monsters[0];
+    expect(zombie.note).toMatch(/Mule\.md with Zombie$/);
+    expect(zombie.name).toBe(`${plain.name} (Zombie)`);
+    expect(zombie.maxHp ?? zombie.hp).not.toBe(plain.maxHp ?? plain.hp);
+    await expect(sim("run", "--monster", "Mule with Nothing Such", "--trials", "5")).rejects.toThrow(
+      /No template "Nothing Such"/
+    );
+  }, 120_000);
+
   it("suggests encounters across the bestiary, narrowed by --habitat and --cr, within the time budget", async () => {
     const started = Date.now();
     // This spec is about ranking by CR (no longer the default) over the whole bestiary.
@@ -339,6 +351,32 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("rpg
       expect(entry.tags).toContain("arctic");
       expect(["fit", "too-easy", "too-hard"]).toContain(entry.fit.state);
     }
+
+    // An adventure's keyed areas: the bold creatures of each *Creatures.* paragraph, keyed by the area.
+    const heist = await catalog(
+      "draft",
+      "tales-of-the-valiant/worldbuilding/adventures/griffon-heist/Part 2, The Still Tower.md",
+      "--catalog",
+      path
+    );
+    expect(heist.drafts).toContainEqual(
+      expect.objectContaining({
+        name: "Part 2: The Still Tower #B3: Goblin Captain + Hobgoblin Conjurer + 4 Goblin",
+        confidence: "high",
+      })
+    );
+    // A map's linked tokens, the PCs' names left out.
+    const ambush = await catalog("draft", "tales-of-the-valiant/atlas/maps/Kobold Ambush.md", "--catalog", path);
+    expect(ambush.drafts[0]).toMatchObject({ name: "Kobold Ambush #map: Tinkerer Kobold + Elite Kobold + 2 Kobold" });
+    // A template a row names is kept on the creature.
+    const voidT2 = await catalog(
+      "draft",
+      "tales-of-the-valiant/gm-tools/tables/labyrinth-worldbook/Near Void Encounters (Tier 2).md",
+      "--catalog",
+      path
+    );
+    const mage = voidT2.drafts.find((d: { name: string }) => d.name.includes("Mage (Void-Blessed)"));
+    expect(mage.monsters).toContainEqual({ note: "Mage with Void-Blessed", count: 1 });
   }, 400_000);
 
   it("refuses --base on run with a usage error", async () => {

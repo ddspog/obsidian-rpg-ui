@@ -48,7 +48,7 @@ import { notesOf, scanForDrafts } from "./catalog-draft";
 import { groupRef } from "./brief";
 import type { SimHandler } from "./dispatch";
 import { CONFIDENCES, UsageError, type SimOptions, type TierScope } from "./flags";
-import { linkNames, readMonsterNote } from "./monsters";
+import { linkNames, readMonsterNote, withTemplate } from "./monsters";
 import { DEFAULT_PARTY } from "./party";
 import { listSessions } from "../session/lines";
 import { readNote, writeNote } from "../write";
@@ -67,7 +67,9 @@ const DEFAULT_SUGGEST = 10;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-const baseName = (note: string): string => (note.split("/").pop() ?? note).replace(/\.md$/i, "");
+const baseName = (note: string): string => (note.split("/").pop() ?? note).replace(/\.md(?= with |$)/i, "");
+/** A catalog monster's reference, its template after it: "Mage with Void-Blessed". */
+const refOf = (m: { note: string; template?: string }): string => withTemplate(m.note, m.template);
 
 const rankOf = (confidence: Confidence): number => CONFIDENCES.length - CONFIDENCES.indexOf(confidence);
 
@@ -129,7 +131,7 @@ export function briefViewOf(ctx: Ctx, entry: CatalogEntry, fitContext: FitContex
   return {
     id: entry.id,
     name: entry.name,
-    monsters: entry.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+    monsters: entry.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
     tags: entry.tags,
     review: entry.review,
     ...(entry.fit
@@ -154,7 +156,7 @@ function viewOf(entry: CatalogEntry, ctx: FitContext): EntryView {
   return {
     id: entry.id,
     name: entry.name,
-    monsters: entry.monsters.map((m) => ({ note: baseName(m.note), count: m.count })),
+    monsters: entry.monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })),
     tags: entry.tags,
     review: entry.review,
     fit: entry.fit
@@ -319,7 +321,7 @@ function draft(ctx: Ctx, options: SimOptions) {
     drafts: drafts.slice(0, cap).map((d) => ({
       id: d.entry.id,
       name: d.entry.name,
-      monsters: d.entry.monsters.map((m) => ({ note: baseName(m.note), count: m.count })),
+      monsters: d.entry.monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })),
       tags: d.entry.tags,
       ...(d.entry.source?.text ? { scene: d.entry.source.text } : {}),
       confidence: d.confidence,
@@ -382,7 +384,7 @@ function add(ctx: Ctx, options: SimOptions) {
   saveCatalog(ctx, path, addEntry(catalog, entry));
   return {
     catalog: path,
-    added: { id: entry.id, name, monsters: monsters.map((m) => ({ note: baseName(m.note), count: m.count })) },
+    added: { id: entry.id, name, monsters: monsters.map((m) => ({ note: baseName(refOf(m)), count: m.count })) },
   };
 }
 
@@ -565,7 +567,7 @@ async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
       options: r.fitting.slice(0, 3).map((t, i) => ({
         pick: i + 1,
         change: t.candidate.label,
-        monsters: t.candidate.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+        monsters: t.candidate.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
         avgHpLost: t.fit.avgHpLost,
         tpkRate: t.fit.tpkRate,
         winRate: t.fit.winRate,
@@ -575,7 +577,7 @@ async function adjust(ctx: Ctx, options: SimOptions, now: () => string) {
         ? {
             closest: {
               change: r.closest.candidate.label,
-              monsters: r.closest.candidate.monsters.map((m) => groupRef(ctx, m.note, m.count)),
+              monsters: r.closest.candidate.monsters.map((m) => groupRef(ctx, refOf(m), m.count)),
               fit: r.closest.fit.state,
               avgHpLost: r.closest.fit.avgHpLost,
               tpkRate: r.closest.fit.tpkRate,

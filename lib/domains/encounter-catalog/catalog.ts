@@ -16,6 +16,8 @@ export interface CatalogMonster {
   count: number;
   /** The dice the source rolled the count with, as text ("1d4+1"). */
   dice?: string;
+  /** A template note applied to the creature ("Void-Blessed" on a Mage): the simulator applies it first. */
+  template?: string;
 }
 
 export interface CatalogSource {
@@ -204,6 +206,7 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
     monsters: entry.monsters.map((m) => {
       const monster: Record<string, unknown> = { note: m.note, count: m.count };
       if (m.dice !== undefined) monster.dice = m.dice;
+      if (m.template !== undefined) monster.template = m.template;
       return monster;
     }),
     tags: entry.tags,
@@ -399,6 +402,11 @@ function parseMonsters(raw: unknown, fail: (m: string) => never): CatalogMonster
       return fail(`monster "${note}" has a \`dice\` that is not text`);
     }
     if (dice !== undefined) monster.dice = dice;
+    const template = str(item.template);
+    if (item.template !== undefined && item.template !== null && template === undefined) {
+      return fail(`monster "${note}" has a \`template\` that is not text`);
+    }
+    if (template !== undefined) monster.template = template;
     return monster;
   });
 }

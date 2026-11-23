@@ -122,7 +122,7 @@ export function cardOf(entry: CatalogEntry, catalog: Catalog, tier: TierMatch): 
     id: entry.id,
     name: entry.name,
     monsters: entry.monsters.map((m) => ({
-      name: nameOf(m.note),
+      name: m.template ? `${nameOf(m.note)} (${m.template})` : nameOf(m.note),
       note: m.note,
       count: m.count,
       ...(m.dice ? { dice: m.dice } : {}),
