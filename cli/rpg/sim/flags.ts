@@ -166,6 +166,21 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     description: "that side's back line stands on a ledge this high; climbing to it costs double",
   },
   {
+    name: "surprise",
+    kind: "string",
+    default: undefined,
+    value: "party|monsters",
+    description: "that side is caught unready: its first round's turns are skipped",
+  },
+  {
+    name: "resources",
+    kind: "string",
+    default: undefined,
+    value: "<share>",
+    description:
+      "the party starts at this share of its hit points and spell slots (0.75 for a day that already cost a quarter); the spent share counts into the HP lost",
+  },
+  {
     name: "difficulty",
     kind: "string",
     default: "challenging",
@@ -517,6 +532,10 @@ export interface SimOptions {
   difficult: boolean;
   cover: Partial<Record<"party" | "monsters", number>>;
   highGround?: { side: "party" | "monsters"; height: number };
+  /** The side caught unready (its first round's turns are skipped). */
+  surprise?: "party" | "monsters";
+  /** The share of its hit points and spell slots the party starts with (the day so far); absent or 1: full. */
+  resources?: number;
   difficulty: Difficulty;
   rank: Rank;
   tiers: TierScope;
@@ -817,6 +836,23 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     if (!m)
       throw new UsageError(`--high-ground takes <side>:<feet> (party or monsters), got "${values["high-ground"]}".`);
     options.highGround = { side: m[1] as "party" | "monsters", height: parseInt(m[2], 10) };
+  }
+  if (typeof values.surprise === "string") {
+    const s = values.surprise.trim().toLowerCase();
+    if (s !== "party" && s !== "monsters") {
+      throw new UsageError(`--surprise must be party or monsters, got "${values.surprise}".`);
+    }
+    options.surprise = s;
+  }
+  if (typeof values.resources === "string") {
+    const raw = values.resources.trim();
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0 || n > 1) {
+      throw new UsageError(
+        `--resources must be a share greater than 0 and at most 1 (like 0.75), got "${values.resources}".`
+      );
+    }
+    options.resources = n;
   }
   options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
     const fit = raw.trim().toLowerCase();
@@ -1304,11 +1340,13 @@ ${helpLines()}
 `;
 
 /**
- * The rules every simulation of the CLI plays by: positions from `--distance`, death saves, and a lair with
- * `--lair` (types.ts `TrialRules`).
+ * The rules every simulation of the CLI plays by: positions from `--distance`, death saves, a lair with
+ * `--lair`, a caught-unready side with `--surprise`, and a party already spent with `--resources`
+ * (types.ts `TrialRules`).
  */
 export function rulesOf(
-  options: Pick<SimOptions, "distance" | "lair"> & Partial<Pick<SimOptions, "difficult" | "cover" | "highGround">>
+  options: Pick<SimOptions, "distance" | "lair"> &
+    Partial<Pick<SimOptions, "difficult" | "cover" | "highGround" | "surprise" | "resources">>
 ): TrialRules {
   return {
     distance: options.distance,
@@ -1317,5 +1355,7 @@ export function rulesOf(
     ...(options.difficult ? { difficult: true } : {}),
     ...(options.cover && Object.keys(options.cover).length ? { cover: options.cover } : {}),
     ...(options.highGround ? { highGround: options.highGround } : {}),
+    ...(options.surprise ? { surprised: options.surprise } : {}),
+    ...(options.resources !== undefined ? { resources: options.resources } : {}),
   };
 }

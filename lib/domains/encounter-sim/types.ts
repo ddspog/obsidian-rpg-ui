@@ -81,6 +81,8 @@ export interface WeaponAttackAction {
   name: string;
   hitBonus: number;
   damage: DamageSpec;
+  /** The hit's other damage groups ("plus 7 (2d6) poison damage"), each of its own type, never weapon damage. */
+  extra?: DamageSpec[];
   limit?: UseLimit;
   inflicts?: Inflict;
   /** Where it reaches (see `Reach`); absent: anywhere. */
@@ -114,6 +116,8 @@ export interface SpellAttackAction {
   circle: number;
   inflicts?: Inflict;
   reach?: Reach;
+  /** Cast above its circle: the damage at each higher circle (the note's `upcast`), when it scales. */
+  upcast?: Record<number, DamageSpec>;
   /** A concentration spell: what it leaves on its targets ends with the caster's concentration. */
   concentration?: boolean;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
@@ -140,6 +144,8 @@ export interface SaveAction {
   inflicts?: Inflict;
   reach?: Reach;
   concentration?: boolean;
+  /** Cast above its circle: the damage at each higher circle (the note's `upcast`), when it scales. */
+  upcast?: Record<number, DamageSpec>;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
   spell?: number;
 }
@@ -321,6 +327,13 @@ export interface TrialRules {
   highGround?: { side: CombatSide; height: number };
   /** A battle map: the fight is on its grid (positions are on, whatever `distance` says). */
   map?: BattleGrid;
+  /** The side caught unready skips its first round's turns. */
+  surprised?: CombatSide;
+  /**
+   * The party starts at this share of its hit points and spell slots (0 < f ≤ 1), the "third fight of the
+   * day"; absent or 1 is full. The shares lost already count into a trial's HP lost.
+   */
+  resources?: number;
 }
 
 export const SKIP_REASONS = [

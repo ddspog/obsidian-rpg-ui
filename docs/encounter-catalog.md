@@ -316,6 +316,10 @@ Every simulation (`run`, `suggest`, `plan`, `build`, `calibrate` and the catalog
   - Healing goes to a fallen ally first. With no heal at hand, a PC stabilises an ally about to die (two failures) with a DC 10 Medicine check (WIS) as its action.
   - Monsters leave a fallen PC be.
   - `run` reports each PC's `deathRate` and the `anyDeathRate`. `suggest`, `plan` and `--brief` give the `anyDeathRate` only.
+- **Surprise** (`--surprise party|monsters`): the side caught unready watches the first round go by (its condition saves still tick). Many table rows are ambushes; this is the cheap stand-in for them.
+- **The day so far** (`--resources <share>`): the party starts at a share of its hit points and spell slots (`0.75` for a day that already cost a quarter), and a trial's HP lost counts the spent share too — so a fit read that way says how the "third fight of the day" goes, against the same full-day aims.
+- **Upcasting:** a slotted save or spell attack whose note scales (`upcast` on its `roll:`) is cast at the highest open circle it scales to, else at its own circle, or the first open one above it when that is spent. A spell without `upcast` needs its own circle's slot; heals and buffs are cast at their circle. A cantrip scales by character level as before.
+- **Read from the statblocks better (not a rule):** a Multiattack plays the mix its text writes ("two Spiked Club attacks and one Shield Smash attack" is two of the club and one of the smash, not three of the strongest; a choice clause, "two Scimitar or Shortbow attacks", stays the best); a feature body holding several full definitions of its own is split at its `***…***.` headings (the Orc Warlord's whole melee is one such "trait"); a hit's "plus 7 (2d6) poison damage" groups after the first are kept, each of its own type; and a save is an area when its prose says "each/all/every creature" or names a shape otherwise ("a creature in the cone" still catches the cone's share).
 
 Measured on the default level-1 party (400 trials, the new rules against the abstract fight):
 

@@ -305,14 +305,22 @@ describe("resolveSpellOption: spell attacks", () => {
       damage: { expr: "3d8", type: "cold" },
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "4d8", type: "cold" },
+        3: { expr: "5d8", type: "cold" },
+      },
     });
     expect(result.fidelity).toEqual({ name: "Icicle Javelin º", owner: OWNER, status: "modelled" });
     expect(result.needsCastingModifier).toBeUndefined();
   });
 
-  it("ignores upcast: damage stays at the base circle", () => {
-    const result = resolveSpellOption(ICICLE_JAVELIN, NUMBERS, OWNER);
-    expect(result.action).toMatchObject({ damage: { expr: "3d8" }, circle: 1 });
+  it("carries the note's upcast: each higher circle's damage (the engine picks where to cast it)", () => {
+    const action = resolveSpellOption(ICICLE_JAVELIN, NUMBERS, OWNER).action;
+    expect(action).toMatchObject({ kind: "spell-attack", damage: { expr: "3d8" }, circle: 1 });
+    expect(action && "upcast" in action ? action.upcast : undefined).toEqual({
+      2: { expr: "4d8", type: "cold" },
+      3: { expr: "5d8", type: "cold" },
+    });
   });
 
   it("models a cantrip with circle 0 (Magnetobolt), its save rider as the condition a hit brings", () => {
@@ -361,6 +369,10 @@ describe("resolveSpellOption: spell attacks", () => {
       damage: { expr: "1d10", type: "cold" },
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "2d10", type: "cold" },
+        3: { expr: "2d10", type: "cold" },
+      },
     });
   });
 
@@ -396,6 +408,10 @@ describe("resolveSpellOption: save actions", () => {
       targets: 3,
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "3d8", type: "thunder" },
+        3: { expr: "4d8", type: "thunder" },
+      },
     });
     expect(result.fidelity).toEqual({ name: "Thunderwave", owner: OWNER, status: "modelled" });
   });

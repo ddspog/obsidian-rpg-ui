@@ -12,6 +12,7 @@ import {
   classifyMonsterFeature,
   bindMultiattack,
   parseLairActions,
+  splitAttackBodies,
   type MonsterSpellcasting,
   type ParsedReaction,
 } from "lib/domains/encounter-sim/monster-actions";
@@ -228,10 +229,19 @@ function actionsAndFidelity(
   bonusMoves: BonusMove[];
   reactions: Reaction[];
 } {
-  // Pass 1: classify every feature; the attacks are collected by name for the Multiattack.
-  const classified: Classified[] = features.map((f, i) => {
+  // Pass 1: classify every feature; the attacks are collected by name for the Multiattack. A body with
+  // several definitions of its own (a warlord's "Stalwart" is Multiattack + two attacks) is split first.
+  const classified: Classified[] = features.flatMap((f, i) => {
     const name = f.name?.trim() || refs[i];
-    return { name, ...classifyMonsterFeature({ name, type: f.type, text: f.text }) };
+    const type = f.type?.trim().toLowerCase();
+    const parts =
+      type === "action" || type === "trait"
+        ? (splitAttackBodies(name, f.text) ?? [{ name, type: f.type, text: f.text }])
+        : [{ name, type: f.type, text: f.text }];
+    return parts.map((p) => ({
+      name: p.name,
+      ...classifyMonsterFeature({ name: p.name, type: p.type, text: p.text }),
+    }));
   });
   const attacks = new Map<string, WeaponAttackAction>();
   for (const c of classified) {

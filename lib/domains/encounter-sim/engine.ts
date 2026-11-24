@@ -165,6 +165,19 @@ function hasSlot(c: Combatant, circle: number): boolean {
   return circle <= 0 || (c.slots[circle - 1] ?? 0) > 0;
 }
 
+/** A spell that scales by circle can go through any open slot of its own circle or a higher one. */
+function anySlotFrom(c: Combatant, circle: number): boolean {
+  for (let k = Math.max(1, circle); k <= c.slots.length; k++) {
+    if ((c.slots[k - 1] ?? 0) > 0) return true;
+  }
+  return circle <= 0;
+}
+
+/** An action that knows its higher-circle forms (the spell's `upcast`). */
+function scalesUp(action: ModelledAction): action is SaveAction | SpellAttackAction {
+  return (action.kind === "save" || action.kind === "spell-attack") && action.upcast !== undefined;
+}
+
 function spendSlot(c: Combatant, circle: number): void {
   if (circle > 0) c.slots[circle - 1] = (c.slots[circle - 1] ?? 0) - 1;
 }
@@ -186,6 +199,7 @@ function isAvailable(c: Combatant, action: ModelledAction): boolean {
   switch (action.kind) {
     case "spell-attack":
     case "save":
+      return scalesUp(action) ? anySlotFrom(c, circleOf(action)) : hasSlot(c, circleOf(action));
     case "heal":
     case "buff":
       return hasSlot(c, action.circle);
@@ -227,6 +241,7 @@ function valueOf(action: ModelledAction, livingEnemies: number): number {
 function damageValueOf(action: ModelledAction, livingEnemies: number): number {
   switch (action.kind) {
     case "weapon":
+      return averageOf(action.damage.expr) + (action.extra ?? []).reduce((s, x) => s + averageOf(x.expr), 0);
     case "spell-attack":
       return averageOf(action.damage.expr);
     case "multiattack":
@@ -395,11 +410,17 @@ export function simulateTrial(
   const positions = rules.distance !== undefined || !!grid;
   const distance = Math.max(0, rules.distance ?? 0);
 
-  // Fresh state: full HP, a copy of the slots.
+  // Fresh state: full HP and slots, or a share of them for the party when the day has already cost some.
   const state: Combatant[] = actors.map((actor) => ({
     actor,
-    hp: actor.maxHp,
-    slots: [...actor.slots],
+    hp:
+      actor.side === "party" && rules.resources !== undefined
+        ? Math.max(1, Math.floor(actor.maxHp * rules.resources))
+        : actor.maxHp,
+    slots:
+      actor.side === "party" && rules.resources !== undefined
+        ? actor.slots.map((s) => Math.floor(s * (rules.resources as number)))
+        : [...actor.slots],
     spent: new Set<ModelledAction>(),
     usesLeft: new Map<ModelledAction, number>(),
     conditions: new Map(),
@@ -1049,8 +1070,13 @@ export function simulateTrial(
     if (halve) spendReaction(target, halve);
     const cut = (n: number) => (halve ? Math.floor(n / 2) : n);
     let taken = damage(target, cut(rollExpr(action.damage.expr, crit, rng)), action.damage.type, weapon);
-    // A rider's damage is of its weapon's type ("1d4 origin").
+    // A rider's damage is of its weapon's type ("1d4 origin"); a hit's "plus" groups keep their own.
     taken += damage(target, cut(riderDamage(attacker, target, crit)), action.damage.type, weapon);
+    if (action.kind === "weapon" && action.extra) {
+      for (const extra of action.extra) {
+        taken += damage(target, cut(rollExpr(extra.expr, crit, rng)), extra.type);
+      }
+    }
     inflict(target, action.inflicts);
     checkConcentration(target, taken);
     answerHit(target, attacker, melee);
@@ -1299,12 +1325,41 @@ export function simulateTrial(
     return { value: hindered ? base * 0.65 : base, budget: speed };
   };
 
+  /**
+   * A spell that scales by circle is paid with the highest open slot that has a damage override (a caster
+   * spends its best on a fight); one that does not, or whose overrides' slots are spent, with its own
+   * circle — and when that is out, with the first open one above it (a higher slot still casts it).
+   */
+  const prepareCast = (c: Combatant, action: ModelledAction): { action: ModelledAction; circle: number } => {
+    const base = circleOf(action);
+    if (base > 0 && scalesUp(action)) {
+      const open = (k: number) => (c.slots[k - 1] ?? 0) > 0;
+      let highest: number | undefined;
+      for (const key of Object.keys(action.upcast!)) {
+        const k = Number(key);
+        if (k > base && open(k) && (highest === undefined || k > highest)) highest = k;
+      }
+      if (highest !== undefined) {
+        return { action: { ...action, damage: action.upcast![highest] }, circle: highest };
+      }
+      if (!open(base)) {
+        for (let k = base + 1; k <= c.slots.length; k++) {
+          if (open(k)) return { action, circle: k };
+        }
+      }
+    }
+    return { action, circle: base };
+  };
+
   /** Runs `action`: moves into reach (melee) or out of the way (at range), then acts. */
   const act = (c: Combatant, action: ModelledAction, plan: ReturnType<typeof planFor>) => {
-    spendSlot(c, circleOf(action));
+    const cast = prepareCast(c, action);
+    spendSlot(c, cast.circle);
+    // Recharge and per-day limits remember the action as listed, not its upcast form.
     const limit = limitOf(action);
     if (limit?.recharge !== undefined) c.spent.add(action);
     if (limit?.perDay !== undefined) c.usesLeft.set(action, (c.usesLeft.get(action) ?? limit.perDay) - 1);
+    action = cast.action;
     if (!positions) return useDamaging(c, action);
 
     const reach = meleeReach(action);
@@ -1663,7 +1718,8 @@ export function simulateTrial(
         if (!living(c)) continue;
       }
       const lost = startTurn(c);
-      const acted = !lost && takeTurn(c);
+      // A surprised side watches the first round go by (its condition saves still tick).
+      const acted = !lost && !(round === 1 && rules.surprised === c.actor.side) && takeTurn(c);
       endTurn(c);
       if (acted) {
         const end = ended();

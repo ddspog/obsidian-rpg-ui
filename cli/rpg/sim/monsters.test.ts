@@ -60,6 +60,18 @@ const TRAITS = [
   "---",
   "The wolf howls at the moon.",
   "```",
+  "```rpg feature.details",
+  'name: "Stalwart"',
+  "type: trait",
+  "---",
+  "As the hound.",
+  "",
+  "***Multiattack***. The warlord makes two Longsword attacks and one Skull Club attack, or it makes three Longbow attacks.",
+  "",
+  "***Longsword***. *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) slashing damage.",
+  "",
+  "***Skull Club***. *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 9 (2d4 + 4) piercing damage.",
+  "```",
   "",
 ].join("\n");
 
@@ -89,6 +101,7 @@ function fixtureVault(): Ctx {
   put(`${BESTIARY}/NoCr.md`, "# NoCr\n```rpg stat.monster\nname: NoCr\nstats:\n  ac: 12\n  hp: 5\n```\n");
   put(`${BESTIARY}/NoAc.md`, '# NoAc\n```rpg stat.monster\nname: NoAc\ncr: 1\nstats:\n  hp: "5"\n```\n');
   put(`${BESTIARY}/NoHp.md`, '# NoHp\n```rpg stat.monster\nname: NoHp\ncr: 1\nstats:\n  ac: "12"\n```\n');
+  put(`${BESTIARY}/Warlord.md`, monsterNote("Warlord", "cr: 4", [ref("Stalwart")]));
   put("elsewhere/Other.md", "# Other\n");
   return boot(root);
 }
@@ -171,6 +184,24 @@ describe("loadMonster", () => {
     const [multi, bite] = m.actor.actions;
     expect(multi.kind === "multiattack" && multi.swings).toEqual([bite, bite]);
     expect(bite).toMatchObject({ hitBonus: 4, damage: { type: "piercing" } });
+  });
+
+  it("reads a body holding several attacks as its own actions, and plays the multiattack's written mix", async () => {
+    // The "Stalwart" trait is one body holding a Multiattack sentence and two full attacks (the Orc Warlord's way).
+    const m = await loadMonster(ctx, "Warlord");
+    const kinds = m.actor.actions.map((a) => (a.kind === "multiattack" ? "multiattack" : a.name));
+    expect(kinds).toEqual(["multiattack", "Longsword", "Skull Club"]);
+    const multi = m.actor.actions[0];
+    expect(multi.kind).toBe("multiattack");
+    if (multi.kind !== "multiattack") return;
+    // Two longsword swings and one skull club, as written — not three of the strongest.
+    expect(multi.swings.map((s) => [s.name, s.damage.expr])).toEqual([
+      ["Longsword", "2d8+4"],
+      ["Longsword", "2d8+4"],
+      ["Skull Club", "2d4+4"],
+    ]);
+    // Every part reports itself modelled; the "As the hound." lead-in records nothing.
+    expect(m.fidelity.every((r) => r.status === "modelled")).toBe(true);
   });
 
   it("records every feature ref once, modelled or skipped", async () => {

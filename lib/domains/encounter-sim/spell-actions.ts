@@ -115,6 +115,19 @@ function healExpr(roll: string, castingModifier: number): string {
   return castingModifier > 0 ? `${compact}+${castingModifier}` : `${compact}${castingModifier}`;
 }
 
+/** The roll's `upcast` overrides as the engine reads them: each higher circle's damage, when it carries one. */
+function upcastMapOf(roll: Record<string, unknown>): Record<number, DamageSpec> | undefined {
+  if (!isRecord(roll.upcast)) return undefined;
+  const out: Record<number, DamageSpec> = {};
+  for (const [key, value] of Object.entries(roll.upcast)) {
+    const circle = Number(key);
+    if (!Number.isInteger(circle) || circle < 1 || !isRecord(value)) continue;
+    const damage = damageSpecOf(value.damage);
+    if (damage) out[circle] = damage;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function skipped(name: string, owner: string, reason: SkipReason): SpellOptionResult {
   return { fidelity: { name, owner, status: "skipped", reason } };
 }
@@ -216,6 +229,7 @@ function resolveSpellAction(
         const sized = areaTargets(`${String(roll.range ?? spell.range ?? "")} ${text}`);
         const area = AREA_PATTERN.test(text) || (sized.targets ?? 0) > 1;
         const inflicts = inflictOfRoll(roll, spell.duration);
+        const upcast = circle > 0 ? upcastMapOf(roll) : undefined;
         return {
           action: {
             kind: "save",
@@ -228,6 +242,7 @@ function resolveSpellAction(
             ...(area ? sized : {}),
             circle,
             ...(inflicts ? { inflicts } : {}),
+            ...(upcast ? { upcast } : {}),
           },
           fidelity: modelled,
         };
@@ -256,8 +271,17 @@ function resolveSpellAction(
               8 + numbers.proficiencyBonus + numbers.castingModifier,
           })
         : undefined;
+      const upcast = circle > 0 ? upcastMapOf(roll) : undefined;
       return {
-        action: { kind: "spell-attack", name, hitBonus, damage, circle, ...(inflicts ? { inflicts } : {}) },
+        action: {
+          kind: "spell-attack",
+          name,
+          hitBonus,
+          damage,
+          circle,
+          ...(inflicts ? { inflicts } : {}),
+          ...(upcast ? { upcast } : {}),
+        },
         fidelity: modelled,
       };
     }

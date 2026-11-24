@@ -165,6 +165,15 @@ describe("parseSimArgv", () => {
     expect(() => parseSimArgv(["plan", "--tiers", "near"])).toThrow(/--tiers must be one of same, lower, all/);
   });
 
+  it("reads --surprise and --resources, and refuses bad values", () => {
+    expect(parseSimArgv(["run", "--monster", "Wolf", "--surprise", "MONSTERS"]).options.surprise).toBe("monsters");
+    expect(parseSimArgv(["run", "--monster", "Wolf", "--resources", "0.5"]).options.resources).toBe(0.5);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--surprise", "us"])).toThrow(/--surprise/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--resources", "0"])).toThrow(/--resources/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--resources", "1.5"])).toThrow(/--resources/);
+    expect(() => parseSimArgv(["run", "--monster", "Wolf", "--resources", "half"])).toThrow(/--resources/);
+  });
+
   it("reads --base like --monster, repeatable, naming --base in its errors", () => {
     const base = (...m: string[]) => parseSimArgv(["suggest", ...m.flatMap((x) => ["--base", x])]).options.base;
     expect(base("Hobgoblin")).toEqual([{ note: "Hobgoblin", count: 1 }]);
@@ -238,6 +247,8 @@ describe("SIM_HELP", () => {
       "cover",
       "map",
       "high-ground",
+      "surprise",
+      "resources",
       "difficulty",
       "tiers",
       "rank",

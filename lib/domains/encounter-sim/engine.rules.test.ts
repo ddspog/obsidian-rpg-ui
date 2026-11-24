@@ -16,6 +16,7 @@ import {
   type CombatActor,
   type CombatSide,
   type ModelledAction,
+  type SpellAttackAction,
   type TrialRules,
   type WeaponAttackAction,
 } from "./types";
@@ -591,5 +592,106 @@ describe("reactions that protect or move", () => {
       }
     );
     expect(pursuing.avgHpLost).toBeGreaterThanOrEqual(plain.avgHpLost);
+  });
+});
+
+describe("surprise and a day's attrition", () => {
+  const guard = actor("Guard", "party", { actions: [melee("Spear", 6, "1d8+3")], maxHp: 30 });
+  const wolf = actor("Wolf", "monsters", { actions: [melee("Bite", 5, "2d6+2")], maxHp: 14 });
+
+  it("skips the surprised side's first round: an ambush costs less, being jumped costs more", () => {
+    const fair = run([guard], [wolf]);
+    const ambush = run([guard], [wolf], { surprised: "monsters" });
+    const jumped = run([guard], [wolf], { surprised: "party" });
+    expect(ambush.avgHpLost).toBeLessThan(fair.avgHpLost);
+    expect(jumped.avgHpLost).toBeGreaterThan(fair.avgHpLost);
+  });
+
+  it("starts the party at a share of its hit points, the spent share already lost", () => {
+    const full = run([guard], [wolf]);
+    const spent = run([guard], [wolf], { resources: 0.5 });
+    expect(spent.avgHpLost).toBeGreaterThan(full.avgHpLost);
+    expect(spent.avgHpLost).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("shares the day's slots out too: a spent caster runs dry and cannot finish the fight", () => {
+    const beam: SpellAttackAction = {
+      kind: "spell-attack",
+      name: "Beam",
+      hitBonus: 8,
+      damage: { expr: "2d6" },
+      circle: 1,
+    };
+    const mage = (slots: number[]) => actor("Mage", "party", { actions: [beam], slots, maxHp: 16 });
+    const bruiser = actor("Bruiser", "monsters", {
+      actions: [melee("Club", 5, "1d4")],
+      maxHp: 25,
+      armorClass: 10,
+    });
+    const full = run([mage([4])], [bruiser]);
+    const spent = run([mage([4])], [bruiser], { resources: 0.25 });
+    // One bolt (2d6) never fells the bruiser; four usually do.
+    expect(spent.winRate).toBe(0);
+    expect(full.winRate).toBeGreaterThan(0.5);
+  });
+});
+
+describe("upcasting", () => {
+  const beam = (slots: number[], upcast?: Record<number, { expr: string; type?: string }>): CombatActor =>
+    actor("Cultist", "party", {
+      actions: [
+        {
+          kind: "spell-attack",
+          name: "Beam",
+          hitBonus: 8,
+          damage: { expr: "1d10" },
+          circle: 1,
+          ...(upcast ? { upcast } : {}),
+        },
+      ],
+      slots,
+      maxHp: 16,
+    });
+  const bully = actor("Bully", "monsters", { actions: [melee("Club", 5, "1d4")], maxHp: 18, armorClass: 10 });
+
+  it("casts at the highest open circle the note scales to", () => {
+    // Two 1d10 casts cannot fell the bully; one 3d10 usually nearly can, the follow-up 1d10 finishes it.
+    const plain = run([beam([1, 1])], [bully]);
+    const scaled = run([beam([1, 1], { 2: { expr: "3d10" } })], [bully]);
+    expect(scaled.winRate).toBeGreaterThan(plain.winRate);
+  });
+
+  it("still casts through a higher open slot when its own circle is spent (a scaling note)", () => {
+    const dry = beam([0, 1]);
+    const scaled = beam([0, 1], { 2: { expr: "5d10" } });
+    // Without an upcast the slot of its own circle is gone: it never casts (no damage action to take).
+    expect(run([dry], [bully]).winRate).toBe(0);
+    // One 5d10 cast at the second circle fells the bully, almost always.
+    expect(run([scaled], [bully]).winRate).toBeGreaterThan(0.5);
+  });
+});
+
+describe("a hit's extra damage", () => {
+  const sting = actor("Scorpion", "monsters", {
+    actions: [{ ...melee("Sting", 5, "1d4+2"), extra: [{ expr: "2d8", type: "poison" }] }],
+    maxHp: 14,
+  });
+  const plainSting = actor("Scorpion", "monsters", {
+    actions: [melee("Sting", 5, "1d4+2")],
+    maxHp: 14,
+  });
+  const squire = actor("Squire", "party", { actions: [melee("Sword", 6, "1d8+3")], maxHp: 30 });
+  const warded = actor("Squire", "party", {
+    actions: [melee("Sword", 6, "1d8+3")],
+    maxHp: 30,
+    defences: { resistant: [], immune: ["poison"], vulnerable: [], conditionImmune: [], conditionResistant: [] },
+  });
+
+  it("lands of its own type, and not on a creature immune to it", () => {
+    const stung = run([squire], [sting]);
+    const scratched = run([squire], [plainSting]);
+    expect(stung.avgHpLost).toBeGreaterThan(scratched.avgHpLost);
+    const shrugged = run([warded], [sting]);
+    expect(shrugged.avgHpLost).toBeLessThan(stung.avgHpLost);
   });
 });
