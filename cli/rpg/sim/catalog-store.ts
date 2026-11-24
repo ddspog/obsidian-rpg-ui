@@ -7,7 +7,13 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { CATALOG_TYPE, parseCatalog, serializeCatalog, type Catalog } from "lib/domains/encounter-catalog/catalog";
+import {
+  CATALOG_TYPE,
+  parseCatalog,
+  proseZonesOf,
+  serializeCatalog,
+  type Catalog,
+} from "lib/domains/encounter-catalog/catalog";
 import { kebab } from "lib/domains/encounter-catalog/table-source";
 import type { Ctx } from "../app";
 import { readNote, writeNote } from "../write";
@@ -116,9 +122,10 @@ export function loadCatalog(ctx: Ctx, path: string): Catalog {
   }
 }
 
-/** Writes the catalog note (the old text is backed up under `.rpg-backups/cli` first). */
+/** Writes the catalog note (the old text is backed up under `.rpg-backups/cli` first). The note's free prose is kept. */
 export function saveCatalog(ctx: Ctx, path: string, catalog: Catalog): void {
-  writeNote(ctx.root, path, serializeCatalog(catalog));
+  const prior = readNote(ctx.root, path);
+  writeNote(ctx.root, path, serializeCatalog(catalog, prior === null ? undefined : proseZonesOf(prior)));
 }
 
 export const catalogExists = (ctx: Ctx, path: string): boolean => existsSync(join(ctx.root, path));

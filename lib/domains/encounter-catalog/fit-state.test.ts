@@ -62,8 +62,30 @@ describe("fitStateFrom", () => {
       winRate: 0.93,
       tpkRate: 0.05,
       avgHpLost: 0.52,
+      fits: { easy: "too-hard", challenging: "fit", deadly: "too-easy" },
       checkedOn: "2026-11-21",
       checkedAtSession: 4,
+    });
+  });
+
+  it("classifies the one simulation against every difficulty (the stored trio)", () => {
+    // The first spec's fight: harder judged easy, on the mark challenging, too easy judged deadly.
+    expect(fitStateFrom({ winRate: 0.93, tpkRate: 0.05, avgHpLost: 0.52 }, "challenging", STAMP, 1, "d").fits).toEqual({
+      easy: "too-hard",
+      challenging: "fit",
+      deadly: "too-easy",
+    });
+    // Near a free win: fit for the easy profile, too easy for the harder two.
+    expect(fitStateFrom({ winRate: 1, tpkRate: 0, avgHpLost: 0.05 }, "challenging", STAMP, 1, "d").fits).toEqual({
+      easy: "fit",
+      challenging: "too-easy",
+      deadly: "too-easy",
+    });
+    // Nearly a wipe: too hard however you judge it.
+    expect(fitStateFrom({ winRate: 0.05, tpkRate: 0.8, avgHpLost: 0.99 }, "easy", STAMP, 1, "d").fits).toEqual({
+      easy: "too-hard",
+      challenging: "too-hard",
+      deadly: "too-hard",
     });
   });
 
