@@ -12,6 +12,10 @@
  *                   counts stop once the party is wiped 9 times in 10)
  *   --base          groups that are always in the fight; the sweep adds one more kind
  *   --tiers         same (default) or lower: no monster above the party's single-monster CR; all: any
+ *   <theme words>   only monsters whose name, type, family (category link) or
+ *                   source book (the note's frontmatter) names one
+ *   --accept        a catalog needed: the best shown candidate (or --pick N) is
+ *                   kept as a draft entry, its fit the one just simulated
  */
 
 import {
@@ -31,8 +35,13 @@ import { classifyFit, outcomeDistance, type Fit } from "lib/domains/encounter-si
 import { partyProfile, profileView } from "lib/domains/encounter-sim/party-profile";
 import { compactSummary, runMonteCarlo, type CompactSummary } from "lib/domains/encounter-sim/montecarlo";
 import { isDamaging } from "lib/domains/encounter-sim/types";
+import { addEntry, slugId, type Catalog, type CatalogMonster } from "lib/domains/encounter-catalog/catalog";
+import { fitStateFrom } from "lib/domains/encounter-catalog/fit-state";
+import { partyStamp } from "lib/domains/encounter-catalog/party-stamp";
+import { noteStem } from "lib/domains/encounter-catalog/words";
 import type { Ctx } from "../app";
 import { anyWordIn, groupRef, wordKey, yieldToEventLoop } from "./brief";
+import { findCatalogs, loadCatalog, resolveCatalogPath, saveCatalog } from "./catalog-store";
 import type { SimHandler } from "./dispatch";
 import { rulesOf, UsageError, type Rank, type SimOptions } from "./flags";
 import {
@@ -42,6 +51,7 @@ import {
   loadMonster,
   plainType,
   readMonsterNote,
+  withTemplate,
   type LoadedMonster,
 } from "./monsters";
 import { DEFAULT_PARTY, loadParty } from "./party";
@@ -92,6 +102,8 @@ export interface SuggestDocument {
   note?: string;
   candidates: SuggestCandidate[];
   excluded: Record<string, number>;
+  /** The draft --accept kept in the catalog: its id, name and groups as --monster takes them. */
+  added?: { id: string; name: string; monsters: string[] };
 }
 
 /** The wider sweep of `--rank outcome`: total CR up to this many times the benchmark. */
@@ -130,10 +142,28 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     }
   }
   const habitatFilter = options.habitat !== undefined ? wordKey(options.habitat) : undefined;
-  // Theme words (only `plan` passes any; `suggest` takes no bare words): a monster is kept when one of
-  // them is in its name, type or category.
+  // Theme words ("suggest wolf scout"): a monster is kept when one of them is in its name, type,
+  // family (its category link) or source book (the note's frontmatter).
   const keywords = options.args;
   const typeFilter = options.type?.trim().toLowerCase();
+
+  // --accept writes a draft into the party's catalog, so the sweep answers the catalog's own party
+  // and difficulty (unless flags say otherwise). Without --accept, the sweep is the party it was given.
+  let catalogPath: string | undefined;
+  let catalog: Catalog | undefined;
+  if (
+    options.accept &&
+    options.pc.length === 0 &&
+    (options.catalog !== undefined || findCatalogs(ctx.root).length > 0)
+  ) {
+    catalogPath = resolveCatalogPath(ctx, options.catalog);
+    catalog = loadCatalog(ctx, catalogPath);
+  }
+  if (options.accept && !catalog) {
+    throw new UsageError(
+      '--accept keeps an encounter in a catalog: make one with `rpg sim catalog init --party-name "<name>"`.'
+    );
+  }
 
   // The base groups are loaded once, before the party: a misspelt base note is reported first, naming it.
   const baseGroups: Array<{ monster: LoadedMonster; count: number; cr: Rational }> = [];
@@ -161,13 +191,16 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   }));
 
   // The party is loaded once and shared by every trial of every candidate.
-  const party = await loadParty(ctx, options.pc.length > 0 ? options.pc : DEFAULT_PARTY);
+  const refs = catalog ? catalog.party.pcs : options.pc.length > 0 ? options.pc : DEFAULT_PARTY;
+  const party = await loadParty(ctx, refs);
   const levels = party.actors.map((a) => a.level);
   const benchmark = benchmarkFor(levels);
   const profile = partyProfile(levels);
   // --tiers same or lower: no single monster above what a party of this tier can face.
   const maxSingle = options.tiers === "all" ? undefined : profile.maxSingleCr;
-  const targetTotal = targetFor(options.difficulty, benchmark);
+  // The difficulty the sweep is judged by: the catalog's when --accept reads one and no flag overrides it.
+  const difficulty = catalog && !options.given.includes("difficulty") ? catalog.difficulty : options.difficulty;
+  const targetTotal = targetFor(difficulty, benchmark);
   // The largest total CR the sweep goes to (and the largest a single note may add to the base).
   const cap =
     options.rank === "outcome"
@@ -228,12 +261,18 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       exclude("filtered");
       continue;
     }
-    if (
-      keywords.length > 0 &&
-      !anyWordIn(keywords, [state.file.basename, plainType(state.data.type ?? ""), ...linkNames(state.data.category)])
-    ) {
-      exclude("filtered");
-      continue;
+    if (keywords.length > 0) {
+      const source = ctx.metadataCache.frontmatterOf(state.file)?.source;
+      const texts = [
+        state.file.basename,
+        plainType(state.data.type ?? ""),
+        ...linkNames(state.data.category),
+        ...(typeof source === "string" ? [source] : []),
+      ];
+      if (!anyWordIn(keywords, texts)) {
+        exclude("filtered");
+        continue;
+      }
     }
     if (crFilter !== undefined && cmpCr(cr, crFilter) !== 0) {
       exclude("filtered");
@@ -279,14 +318,14 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
       const compact = compactSummary(summary);
       found.push({
         total,
-        outcome: Math.round(outcomeDistance(compact, options.difficulty) * 1e9) / 1e9,
+        outcome: Math.round(outcomeDistance(compact, difficulty) * 1e9) / 1e9,
         entry: {
           composition: { note: monster.note, count, cr: formatCr(cr) },
           ...(options.base.length > 0 ? { base: baseSummary } : {}),
           totalCr: formatCr(total),
           label: labelEncounter(levels, total).label,
           ...compact,
-          fit: classifyFit(compact, options.difficulty),
+          fit: classifyFit(compact, difficulty),
         },
       });
       if (options.rank === "outcome" && compact.tpkRate >= OUTCOME_STOP_TPK) break;
@@ -296,7 +335,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   found.sort((a, b) => compareCandidates(a, b, targetTotal, options.rank));
   const ranked = options.fits.length > 0 ? found.filter((c) => options.fits.includes(c.entry.fit)) : found;
   // A party whose benchmark is 0 has no target to sweep toward: say so rather than return nothing silently.
-  const note =
+  let note =
     benchmark.num === 0
       ? "The party's CR benchmark is 0 (too few PCs, or too low a level, for the difficulty note's formula): there is nothing to sweep toward. Use `sim run` on a group you choose."
       : undefined;
@@ -307,6 +346,65 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
   }
 
   const kept = ranked.slice(0, options.limit).map((c) => c.entry);
+  if (keywords.length > 0 && kept.length === 0) {
+    note =
+      (note ? `${note} ` : "") +
+      `Nothing swept names the theme words (${keywords.join(", ")}): they are read against a monster's name, type, family and source book.`;
+  }
+
+  // --accept: the best shown candidate (or --pick) becomes a draft of the catalog, as `build --accept` does.
+  let added: { id: string; name: string; monsters: string[] } | undefined;
+  if (options.accept && catalog && catalogPath) {
+    const chosen = kept[options.pick - 1];
+    if (!chosen) {
+      note = (note ? `${note} ` : "") + `No candidate ${options.pick} to keep (--pick 1 is the best shown).`;
+    } else {
+      // The entry keeps the note the sweep loaded and, for a --base group with a template, the template apart.
+      const monsters: CatalogMonster[] = [
+        ...baseGroups.map(({ monster, count }) => {
+          if (monster.template) {
+            const suffix = ` with ${monster.template}`;
+            const base = monster.note.endsWith(suffix) ? monster.note.slice(0, -suffix.length) : monster.note;
+            return { note: base, count, template: monster.template };
+          }
+          return { note: monster.note, count };
+        }),
+        { note: chosen.composition.note, count: chosen.composition.count },
+      ];
+      const name = monsters
+        .map((m) => {
+          const stem = noteStem(m.template ? withTemplate(m.note, m.template) : m.note);
+          return m.count === 1 ? stem : `${m.count} ${stem}`;
+        })
+        .join(" + ");
+      const entry = {
+        id: slugId(
+          name,
+          monsters,
+          catalog.entries.map((e) => e.id)
+        ),
+        name,
+        monsters,
+        tags: [...new Set(["suggested", ...(options.habitat ? [options.habitat] : []), ...options.args])],
+        review: "draft" as const,
+        notes: `Kept from a bestiary sweep (rpg sim suggest --rank ${options.rank}). Give it a name and a scene.`,
+        fit: fitStateFrom(
+          chosen,
+          difficulty,
+          partyStamp(party.actors, rulesOf(options)),
+          catalog.session,
+          new Date().toISOString().slice(0, 10)
+        ),
+      };
+      saveCatalog(ctx, catalogPath, addEntry(catalog, entry));
+      added = {
+        id: entry.id,
+        name,
+        monsters: monsters.map((m) => groupRef(ctx, withTemplate(m.note, m.template), m.count)),
+      };
+    }
+  }
+
   if (options.brief) {
     const groups = (c: SuggestCandidate): string[] =>
       [...(c.base ?? []), c.composition].map((g) => groupRef(ctx, g.note, g.count));
@@ -322,17 +420,18 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     }));
     return {
       doc: {
-        target: { difficulty: options.difficulty, targetTotal: formatCr(targetTotal), rank: options.rank },
+        target: { difficulty, targetTotal: formatCr(targetTotal), rank: options.rank },
         profile: profileView(profile),
         ...(note ? { note } : {}),
         candidates: brief,
+        ...(added ? { added } : {}),
       },
     };
   }
 
   const doc: SuggestDocument = {
     target: {
-      difficulty: options.difficulty,
+      difficulty,
       targetTotal: formatCr(targetTotal),
       benchmark: formatCr(benchmark),
       rank: options.rank,
@@ -341,6 +440,7 @@ export const simSuggest: SimHandler = async (ctx: Ctx, options: SimOptions) => {
     ...(note ? { note } : {}),
     candidates: kept,
     excluded: sortedExcluded,
+    ...(added ? { added } : {}),
   };
   return { doc };
 };

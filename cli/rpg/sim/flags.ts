@@ -344,7 +344,7 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "boolean",
     default: false,
     description:
-      "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; `catalog adjust`: write the best adjustment (or --pick) as a new draft; else a dry run",
+      "`catalog draft`: write the drafts (at or above --min-confidence) to the catalog; `catalog adjust`, `build`, `suggest`: write the best (or --pick) as a new draft; else a dry run",
   },
   {
     name: "model",
@@ -360,7 +360,8 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     kind: "string",
     default: 1,
     value: "<n>",
-    description: "`catalog adjust`: with --accept, which of the fitting adjustments to keep (1 is the best)",
+    description:
+      "`catalog adjust`, `build`, `suggest`: with --accept, which of the shown options to keep (1 is the best)",
   },
   {
     name: "force",
@@ -498,7 +499,7 @@ export interface SimOptions {
   subcommand: string | undefined;
   /** `catalog` only: the action (the second bare word). */
   action?: string;
-  /** `catalog`: the bare words after the action (notes and folders to draft from, entry ids); `plan`: the theme words. */
+  /** `catalog`: the bare words after the action (notes and folders to draft from, entry ids); `plan`, `build`, `suggest`: theme words. */
   args: string[];
   pc: string[];
   monsters: MonsterGroup[];
@@ -727,10 +728,11 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   }
   const values = parsed.values as Record<string, string | boolean | string[] | undefined>;
   const [subcommand, ...extra] = parsed.positionals;
-  // `catalog` takes an action and then bare words of its own, `plan` theme words; the others take none.
+  // `catalog` takes an action and then bare words of its own, `plan` and `suggest` theme words; the others take none.
   const isCatalog = subcommand === "catalog";
   const takesWords =
     subcommand === "plan" ||
+    subcommand === "suggest" ||
     subcommand === "roles" ||
     subcommand === "equivalents" ||
     subcommand === "build" ||
@@ -746,7 +748,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
   if (isCatalog) {
     options.action = extra[0];
     options.args = extra.slice(1);
-  } else if (subcommand === "plan" || subcommand === "build") {
+  } else if (subcommand === "plan" || subcommand === "build" || subcommand === "suggest") {
     options.args = extra.flatMap((word) => word.split(/\s+/)).filter((word) => word.length > 0);
   } else if (takesWords) {
     options.args = extra.map((word) => word.trim()).filter((word) => word.length > 0);
@@ -1253,7 +1255,8 @@ export const SIM_HELP = `rpg sim: run an encounter simulation, suggest or plan e
 
 Usage:
   rpg sim run --monster "<note>[:<count>]" [--pc <note>]... [--brief] [flags]
-  rpg sim suggest [--pc <note>]... [--base "<note>[:<count>]"]... [--rank outcome|cr] [--tiers T] [--fit F]... [--brief] [flags]
+  rpg sim suggest [<theme words>] [--pc <note>]... [--base "<note>[:<count>]"]... [--rank outcome|cr] [--tiers T] [--fit F]... [--brief] [--accept [--pick N]] [flags]
+    (theme words match a monster's name, type, family and source book; --accept keeps a candidate in the catalog as a draft)
   rpg sim plan [<theme words>] [--habitat H] [--tag <tag>]... [--tiers same|lower|all] [--difficulty D] [--limit N] [flags]
     (the catalog's fit entries first, then the bestiary swept by outcome: N short options, default 3)
   rpg sim catalog init --party-name "<name>" [--pc <note>]... [--difficulty D] [--every N] [--reuse-after N] [--session N]

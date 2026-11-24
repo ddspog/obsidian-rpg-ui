@@ -200,6 +200,13 @@ describe("parseSimArgv: plan and --brief", () => {
     expect(options.brief).toBe(false);
   });
 
+  it("takes suggest's bare words as theme words too, split on spaces", () => {
+    const { subcommand, options } = parseSimArgv(["suggest", "goblin ambush", "--rank", "cr", "--accept"]);
+    expect(subcommand).toBe("suggest");
+    expect(options.args).toEqual(["goblin", "ambush"]);
+    expect(options.accept).toBe(true);
+  });
+
   it("reads --brief", () => {
     expect(parseSimArgv(["run", "--monster", "Wolf", "--brief"]).options.brief).toBe(true);
     expect(parseSimArgv(["run", "--map", " Kobold Ambush "]).options.map).toBe("Kobold Ambush");
@@ -329,7 +336,6 @@ describe("simMain usage errors", () => {
     [["run", "--monster", "Name:"], "Name:"],
     [["frobnicate"], "frobnicate"],
     [["run", "extra"], "extra"],
-    [["suggest", "extra"], "extra"],
     [["plan", "--rank", "outcome"], "--rank is not a flag of `plan`"],
     [["plan", "--pc", "A", "--catalog", "B"], "--pc and --catalog"],
     [["plan", "--cr", "big"], "--cr"],
