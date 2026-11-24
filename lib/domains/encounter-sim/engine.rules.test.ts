@@ -13,9 +13,12 @@ import {
   type AbilityKey,
   type AbilityStat,
   type BattleGrid,
+  type BuffAction,
   type CombatActor,
   type CombatSide,
+  type HealAction,
   type ModelledAction,
+  type SaveAction,
   type SpellAttackAction,
   type TrialRules,
   type WeaponAttackAction,
@@ -693,5 +696,67 @@ describe("a hit's extra damage", () => {
     expect(stung.avgHpLost).toBeGreaterThan(scratched.avgHpLost);
     const shrugged = run([warded], [sting]);
     expect(shrugged.avgHpLost).toBeLessThan(stung.avgHpLost);
+  });
+});
+
+describe("a monster healer", () => {
+  const fighter = actor("Fighter", "party", { actions: [melee("Sword", 6, "1d8+2")], maxHp: 30 });
+  // A frail brute, so it is the one hurt first (and healed); a big acolyte, so it is not the target.
+  const brute = actor("Brute", "monsters", { actions: [melee("Club", 5, "1d6+2")], maxHp: 16 });
+  const mend: HealAction = { kind: "heal", name: "Mend", expr: "2d8+3", circle: 0, limit: { perDay: 2 } };
+  const acolyte = (heal?: HealAction) =>
+    actor("Acolyte", "monsters", { actions: [melee("Slap", 3, "1d4"), ...(heal ? [heal] : [])], maxHp: 40 });
+
+  it("mends the hurt of its own side, twice a day: the fight costs the party more", () => {
+    // A healer buys its brute back: the party pays more of its HP, and wins less, than without it.
+    const mended = run([fighter], [brute, acolyte(mend)]);
+    const unmended = run([fighter], [brute, acolyte()]);
+    expect(mended.avgHpLost).toBeGreaterThan(unmended.avgHpLost);
+    expect(mended.winRate).toBeLessThanOrEqual(unmended.winRate);
+  });
+});
+
+describe("a ward of Sanctuary", () => {
+  // A ward nothing can beat (DC 21 with the brute's +0): it turns every attack aside, until the
+  // warded creature fights back (its ward falls); the warden casts again next round.
+  const sanctuary: BuffAction = {
+    kind: "buff",
+    name: "Sanctuary",
+    circle: 0,
+    on: "allies",
+    targets: 1,
+    ward: { ability: "wis", dc: 21 },
+  };
+  // The slow tank is always warded (the brute acts first), the Chaplain big enough not to be picked.
+  const tank = actor("Tank", "party", {
+    actions: [melee("Sword", 6, "1d8+3")],
+    maxHp: 20,
+    initiativeModifier: -1,
+  });
+  const chaplain = (actions: ModelledAction[]) => actor("Chaplain", "party", { actions, maxHp: 40 });
+  const slap = melee("Slap", 3, "1d4");
+
+  it("turns a brute's swings aside on its failed save, and the ward breaks on the warded creature's counterattack", () => {
+    const brute = actor("Brute", "monsters", { actions: [melee("Club", 5, "1d6+3")], maxHp: 34 });
+    const warded = run([tank, chaplain([sanctuary, slap])], [brute]);
+    const plain = run([tank, chaplain([slap])], [brute]);
+    expect(warded.koRate["Tank"]).toBeLessThan(plain.koRate["Tank"]);
+  });
+
+  it("sends or loses a single-target spell against the warded, instead of harming them", () => {
+    const gaze: SaveAction = {
+      kind: "save",
+      name: "Gaze",
+      dc: 13,
+      ability: "con",
+      damage: { expr: "3d6" },
+      onSuccess: "none",
+      area: false,
+      circle: 0,
+    };
+    const gazer = actor("Gazer", "monsters", { actions: [gaze], maxHp: 34 });
+    const warded = run([tank, chaplain([sanctuary, slap])], [gazer]);
+    const plain = run([tank, chaplain([slap])], [gazer]);
+    expect(warded.koRate["Tank"]).toBeLessThan(plain.koRate["Tank"]);
   });
 });

@@ -417,9 +417,9 @@ function monsterSpells(
       }
       const result = resolveSpellOption(input, numbers, owner);
       fidelity.push(result.fidelity);
-      if (!result.action || result.action.kind === "heal") continue;
+      if (!result.action) continue;
       const action = { ...result.action, circle: 0 } as ModelledAction;
-      if (list.perDay !== undefined && (action.kind === "save" || action.kind === "weapon")) {
+      if (list.perDay !== undefined && (action.kind === "save" || action.kind === "weapon" || action.kind === "heal")) {
         actions.push({ ...action, limit: { perDay: list.perDay } });
       } else if (list.perDay !== undefined && action.kind === "spell-attack") {
         // A limited spell attack is played as a weapon swing with the same numbers and a daily limit.

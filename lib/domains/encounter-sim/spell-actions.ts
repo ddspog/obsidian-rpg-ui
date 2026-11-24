@@ -448,7 +448,11 @@ export function buffFromText(
   const ac = text.match(/\+(\d+) bonus to (?:its |their |your )?AC\b/i);
   // Haste and Slow, by what they do: speed, AC and DEX saves, actions, reactions.
   const time = timeEffectsOf(text);
-  if (!die && !ac && !time) return undefined;
+  // A ward of Sanctuary: anything that would target the warded creature with an attack saves first, or loses it.
+  const wardAbility = /targets (?:a|the) warded creature\b/i.test(text)
+    ? abilityKeyOf(text.match(/must (?:first )?make an? (\w+) sav/i)?.[1])
+    : undefined;
+  if (!die && !ac && !time && !wardAbility) return undefined;
   const onWhat = die?.[3].toLowerCase() ?? "";
   const attack = die && /attack roll/.test(onWhat);
   const save = die && /\bsav(?:e|ing throw)/.test(onWhat);
@@ -469,6 +473,7 @@ export function buffFromText(
     : null;
   if (!numbers) return { fidelity: { name: spell.name, owner, status: "modelled" }, needsCastingModifier: true };
   const ability = saveMatch ? abilityKeyOf(saveMatch[1]) : undefined;
+  const dc = 8 + numbers.proficiencyBonus + numbers.castingModifier;
   return {
     action: {
       kind: "buff",
@@ -479,7 +484,8 @@ export function buffFromText(
       ...(attack ? { attackDie: `${sign}1${die![1]}` } : {}),
       ...(save ? { saveDie: `${sign}1${die![1]}` } : {}),
       ...(ac ? { ac: parseInt(ac[1], 10) } : {}),
-      ...(ability ? { save: { ability, dc: 8 + numbers.proficiencyBonus + numbers.castingModifier } } : {}),
+      ...(wardAbility ? { ward: { ability: wardAbility, dc } } : {}),
+      ...(ability ? { save: { ability, dc } } : {}),
       ...(time?.effects ?? {}),
     },
     fidelity: { name: spell.name, owner, status: "modelled" },

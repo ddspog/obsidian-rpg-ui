@@ -410,8 +410,12 @@ describe.skipIf(!existsSync(join(VAULT, SYSTEM_DIR, "config", "index.ts")))("the
     });
   });
 
-  it("skips Jacqui's Sanctuary as a control spell and models Cure Wounds as a heal", () => {
-    expect(record("Jacqui Ilitul", "Sanctuary")).toMatchObject({ status: "skipped", reason: "control-spell" });
+  it("models Jacqui's Sanctuary as a ward (attackers save first or lose the attack) and Cure Wounds as a heal", () => {
+    expect(record("Jacqui Ilitul", "Sanctuary")).toMatchObject({ status: "modelled" });
+    expect(byName("Jacqui Ilitul").actions.find((a) => a.name === "Sanctuary")).toMatchObject({
+      kind: "buff",
+      ward: { ability: "wis" },
+    });
     expect(record("Jacqui Ilitul", "Cure Wounds")).toMatchObject({ status: "modelled" });
     expect(byName("Jacqui Ilitul").actions.find((a) => a.name === "Cure Wounds")).toMatchObject({
       kind: "heal",

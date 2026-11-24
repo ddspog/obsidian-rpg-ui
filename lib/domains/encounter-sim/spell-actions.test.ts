@@ -528,10 +528,18 @@ describe("resolveSpellOption: skipped classifications", () => {
     expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "modelled" });
   });
 
-  it("skips Sanctuary (save, no damage, no effects) as control-spell", () => {
+  it("models Sanctuary as a ward on an ally: attackers save first, or lose the attack", () => {
     const result = resolveSpellOption(SANCTUARY, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Sanctuary", owner: OWNER, status: "skipped", reason: "control-spell" });
+    expect(result.action).toEqual({
+      kind: "buff",
+      name: "Sanctuary",
+      circle: 1,
+      spell: 1,
+      on: "allies",
+      targets: 1,
+      ward: { ability: "wis", dc: 14 },
+    });
+    expect(result.fidelity).toEqual({ name: "Sanctuary", owner: OWNER, status: "modelled" });
   });
 
   it("skips an effects-only roll as control-spell", () => {
@@ -625,7 +633,7 @@ describe("resolveSpellOption: skipped classifications", () => {
   });
 
   it("only ever reports reasons from the fixed vocabulary", () => {
-    for (const spell of [SANCTUARY, GUIDANCE, SPEAK_WITH_ANIMALS]) {
+    for (const spell of [GUIDANCE, SPEAK_WITH_ANIMALS]) {
       const reason = resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason;
       expect(SKIP_REASONS).toContain(reason);
     }
@@ -635,7 +643,7 @@ describe("resolveSpellOption: skipped classifications", () => {
 describe("resolveSpellOption: without casting-modifier numbers", () => {
   it("still classifies skipped spells", () => {
     expect(resolveSpellOption(ENTANGLE, undefined, OWNER).needsCastingModifier).toBe(true);
-    expect(resolveSpellOption(SANCTUARY, undefined, OWNER).fidelity.reason).toBe("control-spell");
+    expect(resolveSpellOption(SANCTUARY, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(BLESS, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(GUIDANCE, undefined, OWNER).fidelity.reason).toBe("utility-spell");
     expect(resolveSpellOption(SPEAK_WITH_ANIMALS, undefined, OWNER).needsCastingModifier).toBeUndefined();

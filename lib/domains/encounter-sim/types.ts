@@ -158,6 +158,7 @@ export interface HealAction {
   circle: number;
   /** Cast as a bonus action (Healing Word): it comes on top of the turn's action. */
   bonus?: boolean;
+  limit?: UseLimit;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
   spell?: number;
 }
@@ -178,6 +179,8 @@ export interface BuffAction {
   /** The save an enemy makes to keep it off. */
   save?: { ability: AbilityKey; dc: number };
   concentration?: boolean;
+  /** A ward against being attacked (Sanctuary): a creature attacking it must save or lose the attack. */
+  ward?: { ability: AbilityKey; dc: number };
   /** Haste and Slow: speed times this, a bonus to DEX saves (or advantage on them). */
   speedFactor?: number;
   dexSave?: number;

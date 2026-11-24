@@ -139,6 +139,7 @@ type Buff = Pick<
   | "attackDie"
   | "saveDie"
   | "ac"
+  | "ward"
   | "speedFactor"
   | "dexSave"
   | "dexAdvantage"
@@ -158,7 +159,7 @@ const ALTITUDE = 20;
 const ROOM_BEHIND = 30;
 
 const limitOf = (action: ModelledAction) =>
-  action.kind === "weapon" || action.kind === "save" ? action.limit : undefined;
+  action.kind === "weapon" || action.kind === "save" || action.kind === "heal" ? action.limit : undefined;
 
 /** A slotted action (circle above 0) is only available while a slot remains. */
 function hasSlot(c: Combatant, circle: number): boolean {
@@ -1015,6 +1016,9 @@ export function simulateTrial(
   ): boolean => {
     const target = chosen ?? pickTarget(attacker);
     if (!target) return false;
+    // A ward of Sanctuary: any creature that attacks the warded one first saves, or the attack is lost.
+    const ward = wardedBy(target);
+    if (ward && !resists(attacker) && saveTotal(attacker, ward.ability) < ward.dc) return false;
     const melee = action.reach?.melee !== undefined || (action.reach === undefined && action.kind === "weapon");
     const advantage = has(target, EXPOSED) || attacker.hidden;
     let disadvantage = has(attacker, DISADVANTAGED) || hindered;
@@ -1084,6 +1088,9 @@ export function simulateTrial(
     return true;
   };
 
+  /** A ward of Sanctuary on it, if any (one buff carries it). */
+  const wardedBy = (t: Combatant) => [...t.buffs.values()].find((b) => b.ward)?.ward;
+
   const castSave = (caster: Combatant, action: SaveAction): void => {
     const inRange = (t: Combatant) => canReach(caster, action, t, 0);
     const targets = action.area
@@ -1092,7 +1099,15 @@ export function simulateTrial(
         : enemiesOf(caster)
             .filter(inRange)
             .slice(0, action.targets ?? Infinity)
-      : [pickTarget(caster, inRange)].filter((t): t is Combatant => !!t);
+      : (() => {
+          const first = pickTarget(caster, inRange);
+          if (!first) return [];
+          // A ward is no cover against an area; against one target the caster saves or takes the spell elsewhere.
+          const ward = wardedBy(first);
+          if (!ward || resists(caster) || saveTotal(caster, ward.ability) >= ward.dc) return [first];
+          const other = pickTarget(caster, (t) => inRange(t) && t !== first && !wardedBy(t));
+          return other ? [other] : [];
+        })();
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
@@ -1145,6 +1160,7 @@ export function simulateTrial(
         ...(action.attackDie ? { attackDie: action.attackDie } : {}),
         ...(action.saveDie ? { saveDie: action.saveDie } : {}),
         ...(action.ac ? { ac: action.ac } : {}),
+        ...(action.ward ? { ward: action.ward } : {}),
         ...(action.speedFactor ? { speedFactor: action.speedFactor } : {}),
         ...(action.dexSave ? { dexSave: action.dexSave } : {}),
         ...(action.dexAdvantage ? { dexAdvantage: true } : {}),
@@ -1183,6 +1199,10 @@ export function simulateTrial(
    */
   const useDamaging = (c: Combatant, action: ModelledAction, target?: Combatant, hindered = false): void => {
     if (countered(c, action)) return;
+    // A warded creature (Sanctuary) keeps its ward only while it leaves its enemies alone.
+    if (action.kind !== "buff" || action.on === "enemies") {
+      for (const [name, b] of c.buffs) if (b.ward) c.buffs.delete(name);
+    }
     if (concentrates(action)) {
       endConcentration(c);
       holding = [];
@@ -1268,6 +1288,9 @@ export function simulateTrial(
       target.deathSuccesses = 0;
     }
     spendSlot(c, circleOf(heal));
+    const limit = limitOf(heal);
+    if (limit?.recharge !== undefined) c.spent.add(heal);
+    if (limit?.perDay !== undefined) c.usesLeft.set(heal, (c.usesLeft.get(heal) ?? limit.perDay) - 1);
     return true;
   };
 
