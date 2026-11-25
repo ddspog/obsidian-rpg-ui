@@ -115,6 +115,19 @@ function healExpr(roll: string, castingModifier: number): string {
   return castingModifier > 0 ? `${compact}+${castingModifier}` : `${compact}${castingModifier}`;
 }
 
+/** The roll's `upcast` overrides as the engine reads them: each higher circle's damage, when it carries one. */
+function upcastMapOf(roll: Record<string, unknown>): Record<number, DamageSpec> | undefined {
+  if (!isRecord(roll.upcast)) return undefined;
+  const out: Record<number, DamageSpec> = {};
+  for (const [key, value] of Object.entries(roll.upcast)) {
+    const circle = Number(key);
+    if (!Number.isInteger(circle) || circle < 1 || !isRecord(value)) continue;
+    const damage = damageSpecOf(value.damage);
+    if (damage) out[circle] = damage;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function skipped(name: string, owner: string, reason: SkipReason): SpellOptionResult {
   return { fidelity: { name, owner, status: "skipped", reason } };
 }
@@ -216,6 +229,7 @@ function resolveSpellAction(
         const sized = areaTargets(`${String(roll.range ?? spell.range ?? "")} ${text}`);
         const area = AREA_PATTERN.test(text) || (sized.targets ?? 0) > 1;
         const inflicts = inflictOfRoll(roll, spell.duration);
+        const upcast = circle > 0 ? upcastMapOf(roll) : undefined;
         return {
           action: {
             kind: "save",
@@ -228,6 +242,7 @@ function resolveSpellAction(
             ...(area ? sized : {}),
             circle,
             ...(inflicts ? { inflicts } : {}),
+            ...(upcast ? { upcast } : {}),
           },
           fidelity: modelled,
         };
@@ -256,8 +271,17 @@ function resolveSpellAction(
               8 + numbers.proficiencyBonus + numbers.castingModifier,
           })
         : undefined;
+      const upcast = circle > 0 ? upcastMapOf(roll) : undefined;
       return {
-        action: { kind: "spell-attack", name, hitBonus, damage, circle, ...(inflicts ? { inflicts } : {}) },
+        action: {
+          kind: "spell-attack",
+          name,
+          hitBonus,
+          damage,
+          circle,
+          ...(inflicts ? { inflicts } : {}),
+          ...(upcast ? { upcast } : {}),
+        },
         fidelity: modelled,
       };
     }
@@ -424,7 +448,11 @@ export function buffFromText(
   const ac = text.match(/\+(\d+) bonus to (?:its |their |your )?AC\b/i);
   // Haste and Slow, by what they do: speed, AC and DEX saves, actions, reactions.
   const time = timeEffectsOf(text);
-  if (!die && !ac && !time) return undefined;
+  // A ward of Sanctuary: anything that would target the warded creature with an attack saves first, or loses it.
+  const wardAbility = /targets (?:a|the) warded creature\b/i.test(text)
+    ? abilityKeyOf(text.match(/must (?:first )?make an? (\w+) sav/i)?.[1])
+    : undefined;
+  if (!die && !ac && !time && !wardAbility) return undefined;
   const onWhat = die?.[3].toLowerCase() ?? "";
   const attack = die && /attack roll/.test(onWhat);
   const save = die && /\bsav(?:e|ing throw)/.test(onWhat);
@@ -445,6 +473,7 @@ export function buffFromText(
     : null;
   if (!numbers) return { fidelity: { name: spell.name, owner, status: "modelled" }, needsCastingModifier: true };
   const ability = saveMatch ? abilityKeyOf(saveMatch[1]) : undefined;
+  const dc = 8 + numbers.proficiencyBonus + numbers.castingModifier;
   return {
     action: {
       kind: "buff",
@@ -455,7 +484,8 @@ export function buffFromText(
       ...(attack ? { attackDie: `${sign}1${die![1]}` } : {}),
       ...(save ? { saveDie: `${sign}1${die![1]}` } : {}),
       ...(ac ? { ac: parseInt(ac[1], 10) } : {}),
-      ...(ability ? { save: { ability, dc: 8 + numbers.proficiencyBonus + numbers.castingModifier } } : {}),
+      ...(wardAbility ? { ward: { ability: wardAbility, dc } } : {}),
+      ...(ability ? { save: { ability, dc } } : {}),
       ...(time?.effects ?? {}),
     },
     fidelity: { name: spell.name, owner, status: "modelled" },

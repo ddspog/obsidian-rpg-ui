@@ -81,6 +81,8 @@ export interface WeaponAttackAction {
   name: string;
   hitBonus: number;
   damage: DamageSpec;
+  /** The hit's other damage groups ("plus 7 (2d6) poison damage"), each of its own type, never weapon damage. */
+  extra?: DamageSpec[];
   limit?: UseLimit;
   inflicts?: Inflict;
   /** Where it reaches (see `Reach`); absent: anywhere. */
@@ -114,6 +116,8 @@ export interface SpellAttackAction {
   circle: number;
   inflicts?: Inflict;
   reach?: Reach;
+  /** Cast above its circle: the damage at each higher circle (the note's `upcast`), when it scales. */
+  upcast?: Record<number, DamageSpec>;
   /** A concentration spell: what it leaves on its targets ends with the caster's concentration. */
   concentration?: boolean;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
@@ -140,6 +144,8 @@ export interface SaveAction {
   inflicts?: Inflict;
   reach?: Reach;
   concentration?: boolean;
+  /** Cast above its circle: the damage at each higher circle (the note's `upcast`), when it scales. */
+  upcast?: Record<number, DamageSpec>;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
   spell?: number;
 }
@@ -152,6 +158,7 @@ export interface HealAction {
   circle: number;
   /** Cast as a bonus action (Healing Word): it comes on top of the turn's action. */
   bonus?: boolean;
+  limit?: UseLimit;
   /** From a spell of this circle (0: a cantrip): a counterspell can stop it. */
   spell?: number;
 }
@@ -172,6 +179,8 @@ export interface BuffAction {
   /** The save an enemy makes to keep it off. */
   save?: { ability: AbilityKey; dc: number };
   concentration?: boolean;
+  /** A ward against being attacked (Sanctuary): a creature attacking it must save or lose the attack. */
+  ward?: { ability: AbilityKey; dc: number };
   /** Haste and Slow: speed times this, a bonus to DEX saves (or advantage on them). */
   speedFactor?: number;
   dexSave?: number;
@@ -321,6 +330,20 @@ export interface TrialRules {
   highGround?: { side: CombatSide; height: number };
   /** A battle map: the fight is on its grid (positions are on, whatever `distance` says). */
   map?: BattleGrid;
+  /** The side caught unready skips its first round's turns. */
+  surprised?: CombatSide;
+  /**
+   * A beaten side scatters: a monster below half its HP with half or more of its side down quits the
+   * fight at its turn (enemies in reach get the opportunity swing as it runs). A lone monster stays;
+   * what fled is out of the fight, never returns, and never counts as down. PCs never flee: the
+   * party's morale is the players'.
+   */
+  morale?: boolean;
+  /**
+   * The party starts at this share of its hit points and spell slots (0 < f ≤ 1), the "third fight of the
+   * day"; absent or 1 is full. The shares lost already count into a trial's HP lost.
+   */
+  resources?: number;
 }
 
 export const SKIP_REASONS = [

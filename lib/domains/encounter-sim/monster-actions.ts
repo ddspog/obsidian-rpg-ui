@@ -188,6 +188,21 @@ export function inflictOfSave(text: string): Inflict | undefined {
   return { condition, lasts: lastsOf(condition, text) };
 }
 
+/**
+ * The other damage groups a hit carries after the first one: "5 (1d6 + 2) piercing damage plus 7 (2d6)
+ * poison damage", "11 (2d8 + 2) slashing damage plus 3 fire damage". Each keeps its own type. Only a
+ * "plus" group with a readable roll counts (a conditional one, "if it is a fiend", is read plain).
+ */
+export function extraDamagesOf(afterHit: string): DamageSpec[] {
+  const out: DamageSpec[] = [];
+  for (const m of afterHit.matchAll(/(?:^|,\s*|\s+)plus\s+(?:(\d+)\s+\(([^)]+)\)|(\d+))\s+([a-z]+)\s+damage/gi)) {
+    const expr = m[2] ?? m[3] ?? m[1];
+    if (m[2] && !isRollable(m[2])) continue;
+    out.push({ expr, type: m[4].toLowerCase() });
+  }
+  return out;
+}
+
 function attackFrom(name: string, text: string): WeaponAttackAction | null {
   const hit = text.match(/([+-]?\d+)\s+to hit/i);
   if (!hit) return null;
@@ -197,11 +212,13 @@ function attackFrom(name: string, text: string): WeaponAttackAction | null {
   if (!damage) return null;
   const inflicts = inflictOfHit(afterHit);
   const reach = attackReach(text);
+  const extra = extraDamagesOf(afterHit);
   return {
     kind: "weapon",
     name,
     hitBonus: parseInt(hit[1], 10),
     damage,
+    ...(extra.length ? { extra } : {}),
     ...(inflicts ? { inflicts } : {}),
     ...(reach ? { reach } : {}),
   };
@@ -242,6 +259,7 @@ function saveFrom(name: string, text: string): SaveAction | null {
   if (!ability) return null;
   const damage = damageFrom(text.slice(save.index! + save[0].length));
   if (!damage) return null;
+  const shaped = areaTargets(text);
   return {
     kind: "save",
     name,
@@ -249,8 +267,11 @@ function saveFrom(name: string, text: string): SaveAction | null {
     ability,
     damage,
     onSuccess: /half (?:as much|the) damage/i.test(text) ? "half" : "none",
-    area: /\b(?:each|all|every) creatures?\b/i.test(text),
-    ...areaTargets(text),
+    // An area is named by its creatures or by its shape ("in a 30-foot cone"), not only by "each/all/every
+    // creature": a breath worded "a creature in the cone" still catches the cone's share.
+    area:
+      /\b(?:each|all|every) creatures?\b/i.test(text) || (/\bcreatures?\b/i.test(text) && shaped.targets !== undefined),
+    ...shaped,
     ...((): { reach?: Reach } => {
       const reach = saveReach(text);
       return reach ? { reach } : {};
@@ -343,9 +364,41 @@ function nameKey(name: string): string {
 }
 
 /**
- * A Multiattack bound to the monster's own attacks: `count` swings, each the
- * named alternative with the highest average damage (ties to the first listed).
- * Without a single named attack the monster has, it is unsupported.
+ * A feature body holding several definitions of its own, as one feature each, so every part classifies
+ * on its own ("***Multiattack***. The orc warlord makes two Longsword attacks and one Skull Club attack,
+ * or it makes three Longbow attacks. ***Longsword***. *Melee Weapon Attack:* … ***Skull Club***. …" is
+ * the Orc Warlord's whole melee — one body; lycanthropes write two form-locked attacks the same way).
+ * Split at the `***Name***.` headings; the text before the first one takes the feature's own name. A
+ * part without an action's words (the "As the orc." lead-in) is dropped; fewer than two with them is no
+ * split at all. Every part is returned as an `action`, whatever the body claimed.
+ */
+export function splitAttackBodies(
+  name: string,
+  text: string
+): Array<{ name: string; type: string; text: string }> | undefined {
+  // A sub-heading is written "***Longsword***." or "***Hand Crossbow (Humanoid or Hybrid Form Only).***".
+  const marks = [...text.matchAll(/\*\*\*([^*]+?)\.?\*\*\*\.?\s*/g)];
+  if (marks.length === 0) return undefined;
+  const segments: Array<{ name: string; text: string }> = [];
+  const lead = text.slice(0, marks[0].index).trim();
+  if (lead) segments.push({ name, text: lead });
+  marks.forEach((mark, i) => {
+    segments.push({
+      name: mark[1].replace(/\.$/, "").trim(),
+      text: text.slice(mark.index! + mark[0].length, i + 1 < marks.length ? marks[i + 1].index : undefined).trim(),
+    });
+  });
+  const actsOn = (t: string) => /Weapon Attack:|saving throw|\bmakes\b[^.]{0,80}\battacks?\b/i.test(t);
+  const acting = segments.filter((s) => actsOn(s.text));
+  if (acting.length < 2) return undefined;
+  return acting.map((s) => ({ ...s, type: "action" }));
+}
+
+/**
+ * A Multiattack bound to the monster's own attacks: the fixed mix when the wording counts each attack
+ * ("two Spiked Club attacks and one Shield Smash attack"), else `count` swings of the named alternative
+ * with the highest average damage (ties to the first listed). Without a single named attack the monster
+ * has, it is unsupported.
  */
 export function bindMultiattack(
   parsed: ParsedMultiattack,
@@ -359,6 +412,16 @@ export function bindMultiattack(
     if (found) bound.push(found);
   }
   if (bound.length === 0 || parsed.count < 1) return { skip: "unsupported-feature" };
+  // The written mix, kept when every counted attack resolves.
+  if (parsed.picks) {
+    const swings: WeaponAttackAction[] = [];
+    for (const pick of parsed.picks) {
+      const found = attacks.find((a) => nameKey(a.name) === nameKey(pick.name));
+      if (!found) return { skip: "unsupported-feature" };
+      for (let i = 0; i < pick.count; i++) swings.push(found);
+    }
+    return { kind: "multiattack", name, swings };
+  }
   let best = bound[0];
   for (const candidate of bound.slice(1)) {
     if (averageOf(candidate.damage.expr) > averageOf(best.damage.expr)) best = candidate;

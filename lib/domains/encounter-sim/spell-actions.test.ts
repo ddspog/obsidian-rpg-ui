@@ -305,14 +305,22 @@ describe("resolveSpellOption: spell attacks", () => {
       damage: { expr: "3d8", type: "cold" },
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "4d8", type: "cold" },
+        3: { expr: "5d8", type: "cold" },
+      },
     });
     expect(result.fidelity).toEqual({ name: "Icicle Javelin º", owner: OWNER, status: "modelled" });
     expect(result.needsCastingModifier).toBeUndefined();
   });
 
-  it("ignores upcast: damage stays at the base circle", () => {
-    const result = resolveSpellOption(ICICLE_JAVELIN, NUMBERS, OWNER);
-    expect(result.action).toMatchObject({ damage: { expr: "3d8" }, circle: 1 });
+  it("carries the note's upcast: each higher circle's damage (the engine picks where to cast it)", () => {
+    const action = resolveSpellOption(ICICLE_JAVELIN, NUMBERS, OWNER).action;
+    expect(action).toMatchObject({ kind: "spell-attack", damage: { expr: "3d8" }, circle: 1 });
+    expect(action && "upcast" in action ? action.upcast : undefined).toEqual({
+      2: { expr: "4d8", type: "cold" },
+      3: { expr: "5d8", type: "cold" },
+    });
   });
 
   it("models a cantrip with circle 0 (Magnetobolt), its save rider as the condition a hit brings", () => {
@@ -361,6 +369,10 @@ describe("resolveSpellOption: spell attacks", () => {
       damage: { expr: "1d10", type: "cold" },
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "2d10", type: "cold" },
+        3: { expr: "2d10", type: "cold" },
+      },
     });
   });
 
@@ -396,6 +408,10 @@ describe("resolveSpellOption: save actions", () => {
       targets: 3,
       circle: 1,
       spell: 1,
+      upcast: {
+        2: { expr: "3d8", type: "thunder" },
+        3: { expr: "4d8", type: "thunder" },
+      },
     });
     expect(result.fidelity).toEqual({ name: "Thunderwave", owner: OWNER, status: "modelled" });
   });
@@ -512,10 +528,18 @@ describe("resolveSpellOption: skipped classifications", () => {
     expect(result.fidelity).toEqual({ name: "Entangle", owner: OWNER, status: "modelled" });
   });
 
-  it("skips Sanctuary (save, no damage, no effects) as control-spell", () => {
+  it("models Sanctuary as a ward on an ally: attackers save first, or lose the attack", () => {
     const result = resolveSpellOption(SANCTUARY, NUMBERS, OWNER);
-    expect(result.action).toBeUndefined();
-    expect(result.fidelity).toEqual({ name: "Sanctuary", owner: OWNER, status: "skipped", reason: "control-spell" });
+    expect(result.action).toEqual({
+      kind: "buff",
+      name: "Sanctuary",
+      circle: 1,
+      spell: 1,
+      on: "allies",
+      targets: 1,
+      ward: { ability: "wis", dc: 14 },
+    });
+    expect(result.fidelity).toEqual({ name: "Sanctuary", owner: OWNER, status: "modelled" });
   });
 
   it("skips an effects-only roll as control-spell", () => {
@@ -609,7 +633,7 @@ describe("resolveSpellOption: skipped classifications", () => {
   });
 
   it("only ever reports reasons from the fixed vocabulary", () => {
-    for (const spell of [SANCTUARY, GUIDANCE, SPEAK_WITH_ANIMALS]) {
+    for (const spell of [GUIDANCE, SPEAK_WITH_ANIMALS]) {
       const reason = resolveSpellOption(spell, NUMBERS, OWNER).fidelity.reason;
       expect(SKIP_REASONS).toContain(reason);
     }
@@ -619,7 +643,7 @@ describe("resolveSpellOption: skipped classifications", () => {
 describe("resolveSpellOption: without casting-modifier numbers", () => {
   it("still classifies skipped spells", () => {
     expect(resolveSpellOption(ENTANGLE, undefined, OWNER).needsCastingModifier).toBe(true);
-    expect(resolveSpellOption(SANCTUARY, undefined, OWNER).fidelity.reason).toBe("control-spell");
+    expect(resolveSpellOption(SANCTUARY, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(BLESS, undefined, OWNER).needsCastingModifier).toBe(true);
     expect(resolveSpellOption(GUIDANCE, undefined, OWNER).fidelity.reason).toBe("utility-spell");
     expect(resolveSpellOption(SPEAK_WITH_ANIMALS, undefined, OWNER).needsCastingModifier).toBeUndefined();

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  extraDamagesOf,
+  splitAttackBodies,
   acReactionOf,
   areaTargets,
   attackReach,
@@ -67,7 +69,7 @@ describe("classifyMonsterFeature: attacks", () => {
     });
   });
 
-  it("reads 'Melee or Ranged' phrasing and keeps the first damage group of a 'plus' pair", () => {
+  it("reads 'Melee or Ranged' phrasing, and keeps every damage group of a 'plus' pair", () => {
     const text =
       "*Melee or Ranged Weapon Attack:* +7 to hit, reach 5 ft. or range 20/60 ft., one target. *Hit:* 6 (1d4 + 4) piercing damage plus 7 (2d6) poison damage.";
     expect(classifyMonsterFeature({ name: "Dagger", type: "action", text }).action).toEqual({
@@ -75,9 +77,15 @@ describe("classifyMonsterFeature: attacks", () => {
       name: "Dagger",
       hitBonus: 7,
       damage: { expr: "1d4+4", type: "piercing" },
+      extra: [{ expr: "2d6", type: "poison" }],
       // It can throw, but it closes in.
       reach: { melee: 5 },
     });
+  });
+
+  it("keeps a flat 'plus' group too, and skips one the engine cannot roll", () => {
+    expect(extraDamagesOf("11 (2d8 + 2) slashing damage plus 4 fire damage")).toEqual([{ expr: "4", type: "fire" }]);
+    expect(extraDamagesOf("5 (1d6 + 2) piercing damage")).toEqual([]);
   });
 
   it("reads a flat first group even when dice follow it", () => {
@@ -99,6 +107,24 @@ describe("classifyMonsterFeature: attacks", () => {
 });
 
 describe("classifyMonsterFeature: save area effects", () => {
+  it("reads a shape as an area even without 'each creature', and keeps a named single target single", () => {
+    // A breath worded "a creature in the cone" still catches the cone's share (3 of a 30-foot cone).
+    const cone = classifyMonsterFeature({
+      name: "Fire Breath (Recharge 6)",
+      type: "action",
+      text: "The dragon exhales fire in a 30-foot cone. A creature in the cone must make a DC 16 DEX save, taking 12d8 fire damage on a failure, or half as much damage on a success.",
+    }).action;
+    expect(cone).toMatchObject({ kind: "save", area: true, targets: 3, ability: "dex", dc: 16 });
+    // One creature, no shape word: a single target, as before.
+    const single = classifyMonsterFeature({
+      name: "Beguile (1/Day)",
+      type: "action",
+      text: "One creature within 60 feet of it must succeed on a DC 14 Wisdom saving throw or take 18 (4d8) psychic damage.",
+    }).action;
+    expect(single).toMatchObject({ kind: "save", area: false });
+    expect(single).not.toHaveProperty("targets");
+  });
+
   it("reads Lightning Breath: DC 16 DEX, 12d8 lightning, half on success, area", () => {
     expect(
       classifyMonsterFeature({ name: "Lightning Breath (Recharge 5–6)", type: "action", text: LIGHTNING_BREATH })
@@ -286,6 +312,92 @@ describe("bindMultiattack", () => {
       skip: "unsupported-feature",
     });
     expect(bindMultiattack({ count: 2, attacks: ["Bite"] }, new Map())).toEqual({ skip: "unsupported-feature" });
+  });
+
+  it("plays the written mix when every counted attack is there", () => {
+    const club: WeaponAttackAction = {
+      ...longsword,
+      name: "Spiked Club",
+      damage: { expr: "2d6+2", type: "bludgeoning" },
+    };
+    const smash: WeaponAttackAction = {
+      ...longsword,
+      name: "Shield Smash",
+      damage: { expr: "1d6+2", type: "bludgeoning" },
+    };
+    const bound = bindMultiattack(
+      {
+        count: 3,
+        attacks: ["Spiked Club", "Shield Smash", "Javelin"],
+        picks: [
+          { name: "Spiked Club", count: 2 },
+          { name: "Shield Smash", count: 1 },
+        ],
+      },
+      { "Spiked Club": club, "Shield Smash": smash, Longsword: longsword }
+    );
+    // The stronger Javelin alternative stays out: the first wording is the mix.
+    expect(bound).toEqual({ kind: "multiattack", name: "Multiattack", swings: [club, club, smash] });
+  });
+
+  it("is unsupported when the written mix names an attack the monster lacks", () => {
+    expect(
+      bindMultiattack(
+        {
+          count: 3,
+          attacks: ["Bite", "Claw"],
+          picks: [
+            { name: "Bite", count: 1 },
+            { name: "Claw", count: 2 },
+          ],
+        },
+        { Claw: longsword }
+      )
+    ).toEqual({ skip: "unsupported-feature" });
+  });
+});
+
+describe("splitAttackBodies", () => {
+  // The Orc Warlord's "Stalwart": one body holding its whole melee (a Multiattack and two attacks).
+  const STALWART =
+    "As the orc.\n\n***Multiattack***. The orc warlord makes two Longsword attacks and one Skull Club attack, or it makes three Longbow attacks.\n\n***Longsword***. *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) slashing damage.\n\n***Skull Club***. *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 9 (2d4 + 4) piercing damage.";
+
+  it("splits a body of several definitions, the lead-in prose dropped", () => {
+    expect(splitAttackBodies("Stalwart", STALWART)).toEqual([
+      {
+        name: "Multiattack",
+        type: "action",
+        text: "The orc warlord makes two Longsword attacks and one Skull Club attack, or it makes three Longbow attacks.",
+      },
+      {
+        name: "Longsword",
+        type: "action",
+        text: "*Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) slashing damage.",
+      },
+      {
+        name: "Skull Club",
+        type: "action",
+        text: "*Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 9 (2d4 + 4) piercing damage.",
+      },
+    ]);
+  });
+
+  it("names a cue-carrying lead-in after the feature (the lycanthrope's two forms)", () => {
+    const parts = splitAttackBodies(
+      "Shortsword (Humanoid or Hybrid Form Only)",
+      "*Melee Weapon Attack:* +4 to hit, reach 5 ft., one target. *Hit:* 5 (1d6 + 2) piercing damage.\n\n***Hand Crossbow (Humanoid or Hybrid Form Only).*** *Ranged Weapon Attack:* +4 to hit, range 30/120 ft., one target. *Hit:* 5 (1d6 + 2) piercing damage."
+    );
+    expect(parts?.map((p) => p.name)).toEqual([
+      "Shortsword (Humanoid or Hybrid Form Only)",
+      "Hand Crossbow (Humanoid or Hybrid Form Only)",
+    ]);
+  });
+
+  it("is no split for one attack or for a body without headings", () => {
+    expect(
+      splitAttackBodies("Bite", "*Melee Weapon Attack:* +4 to hit, reach 5 ft. *Hit:* 5 (1d6 + 2) piercing.")
+    ).toBeUndefined();
+    expect(splitAttackBodies("Stalwart", "As the orc.")).toBeUndefined();
   });
 });
 

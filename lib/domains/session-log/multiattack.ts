@@ -20,6 +20,12 @@
 export interface MultiattackSpec {
   count: number;
   attacks: string[];
+  /**
+   * The fixed mix, when the first wording counts every attack one by one ("makes two Spiked Club
+   * attacks and one Shield Smash attack"): each attack with its count, adding up to `count`. Absent
+   * for a free mix ("two Scimitar or Shortbow attacks" may be picked in any share).
+   */
+  picks?: Array<{ name: string; count: number }>;
 }
 
 const NUMBERS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
@@ -37,17 +43,29 @@ export function parseMultiattack(text: string): MultiattackSpec | undefined {
   const [first, ...others] = whole.split(/,?\s+or\s+(?:it|they|the [\w' -]+?)\s+makes\s+/i);
   let count = 0;
   const attacks: string[] = [];
+  const picks: Array<{ name: string; count: number }> = [];
+  let fixed = true;
   for (const body of [first, ...others]) {
     const counted = body === first;
     for (const m of body.matchAll(/\b(one|two|three|four|five|six|\d+)\s+(.+?)\s+attacks?\b/gi)) {
-      if (counted) count += NUMBERS[m[1].toLowerCase()] ?? parseInt(m[1], 10);
-      for (const name of m[2].split(/\s*,\s*|\s+or\s+/i)) {
-        const n = name.replace(/^(?:with\s+)?(?:its|their|a|an)\s+/i, "").trim();
-        if (n && !attacks.some((a) => a.toLowerCase() === n.toLowerCase())) attacks.push(n);
+      const n = (NUMBERS[m[1].toLowerCase()] ?? parseInt(m[1], 10)) as number;
+      if (counted) count += n;
+      const names = m[2].split(/\s*,\s*|\s+or\s+/i);
+      // A clause naming a choice ("two Scimitar or Shortbow attacks") makes the mix free.
+      if (counted && names.length > 1) fixed = false;
+      if (counted && names.length === 1) {
+        picks.push({ name: names[0].replace(/^(?:with\s+)?(?:its|their|a|an)\s+/i, "").trim(), count: n });
+      }
+      for (const name of names) {
+        const cleaned = name.replace(/^(?:with\s+)?(?:its|their|a|an)\s+/i, "").trim();
+        if (cleaned && !attacks.some((a) => a.toLowerCase() === cleaned.toLowerCase())) attacks.push(cleaned);
       }
     }
   }
-  return count > 0 ? { count, attacks } : undefined;
+  if (count === 0) return undefined;
+  const fixedMix =
+    fixed && picks.length > 0 && picks.every((p) => p.name) && picks.reduce((s, p) => s + p.count, 0) === count;
+  return { count, attacks, ...(fixedMix ? { picks } : {}) };
 }
 
 /** One attack of a Multiattack, as picked: its card's template, and at whom. */

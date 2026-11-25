@@ -13,9 +13,13 @@ import {
   type AbilityKey,
   type AbilityStat,
   type BattleGrid,
+  type BuffAction,
   type CombatActor,
   type CombatSide,
+  type HealAction,
   type ModelledAction,
+  type SaveAction,
+  type SpellAttackAction,
   type TrialRules,
   type WeaponAttackAction,
 } from "./types";
@@ -591,5 +595,186 @@ describe("reactions that protect or move", () => {
       }
     );
     expect(pursuing.avgHpLost).toBeGreaterThanOrEqual(plain.avgHpLost);
+  });
+});
+
+describe("morale: a beaten side scatters", () => {
+  const fighter = actor("Fighter", "party", { actions: [melee("Sword", 8, "2d6+4")], maxHp: 40, armorClass: 15 });
+  const bandit = () => actor("Bandit", "monsters", { actions: [melee("Shiv", 5, "1d6+1")], maxHp: 11 });
+
+  it("turns flight into mercy: the wounded run once the side is beaten, and the fight ends early", () => {
+    const toTheDeath = run([fighter], [bandit(), bandit(), bandit(), bandit()]);
+    const moraleUp = run([fighter], [bandit(), bandit(), bandit(), bandit()], { morale: true });
+    expect(moraleUp.avgHpLost).toBeLessThan(toTheDeath.avgHpLost);
+    expect(moraleUp.avgRounds).toBeLessThanOrEqual(toTheDeath.avgRounds);
+    expect(moraleUp.winRate).toBeGreaterThanOrEqual(toTheDeath.winRate);
+  });
+
+  it("changes nothing when no monster ever quits (the rule stays off the lone and the unhurt)", () => {
+    const lone = actor("Bully", "monsters", { actions: [melee("Club", 5, "1d6+2")], maxHp: 40 });
+    expect(run([fighter], [lone], { morale: true })).toEqual(run([fighter], [lone]));
+  });
+});
+
+describe("surprise and a day's attrition", () => {
+  const guard = actor("Guard", "party", { actions: [melee("Spear", 6, "1d8+3")], maxHp: 30 });
+  const wolf = actor("Wolf", "monsters", { actions: [melee("Bite", 5, "2d6+2")], maxHp: 14 });
+
+  it("skips the surprised side's first round: an ambush costs less, being jumped costs more", () => {
+    const fair = run([guard], [wolf]);
+    const ambush = run([guard], [wolf], { surprised: "monsters" });
+    const jumped = run([guard], [wolf], { surprised: "party" });
+    expect(ambush.avgHpLost).toBeLessThan(fair.avgHpLost);
+    expect(jumped.avgHpLost).toBeGreaterThan(fair.avgHpLost);
+  });
+
+  it("starts the party at a share of its hit points, the spent share already lost", () => {
+    const full = run([guard], [wolf]);
+    const spent = run([guard], [wolf], { resources: 0.5 });
+    expect(spent.avgHpLost).toBeGreaterThan(full.avgHpLost);
+    expect(spent.avgHpLost).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("shares the day's slots out too: a spent caster runs dry and cannot finish the fight", () => {
+    const beam: SpellAttackAction = {
+      kind: "spell-attack",
+      name: "Beam",
+      hitBonus: 8,
+      damage: { expr: "2d6" },
+      circle: 1,
+    };
+    const mage = (slots: number[]) => actor("Mage", "party", { actions: [beam], slots, maxHp: 16 });
+    const bruiser = actor("Bruiser", "monsters", {
+      actions: [melee("Club", 5, "1d4")],
+      maxHp: 25,
+      armorClass: 10,
+    });
+    const full = run([mage([4])], [bruiser]);
+    const spent = run([mage([4])], [bruiser], { resources: 0.25 });
+    // One bolt (2d6) never fells the bruiser; four usually do.
+    expect(spent.winRate).toBe(0);
+    expect(full.winRate).toBeGreaterThan(0.5);
+  });
+});
+
+describe("upcasting", () => {
+  const beam = (slots: number[], upcast?: Record<number, { expr: string; type?: string }>): CombatActor =>
+    actor("Cultist", "party", {
+      actions: [
+        {
+          kind: "spell-attack",
+          name: "Beam",
+          hitBonus: 8,
+          damage: { expr: "1d10" },
+          circle: 1,
+          ...(upcast ? { upcast } : {}),
+        },
+      ],
+      slots,
+      maxHp: 16,
+    });
+  const bully = actor("Bully", "monsters", { actions: [melee("Club", 5, "1d4")], maxHp: 18, armorClass: 10 });
+
+  it("casts at the highest open circle the note scales to", () => {
+    // Two 1d10 casts cannot fell the bully; one 3d10 usually nearly can, the follow-up 1d10 finishes it.
+    const plain = run([beam([1, 1])], [bully]);
+    const scaled = run([beam([1, 1], { 2: { expr: "3d10" } })], [bully]);
+    expect(scaled.winRate).toBeGreaterThan(plain.winRate);
+  });
+
+  it("still casts through a higher open slot when its own circle is spent (a scaling note)", () => {
+    const dry = beam([0, 1]);
+    const scaled = beam([0, 1], { 2: { expr: "5d10" } });
+    // Without an upcast the slot of its own circle is gone: it never casts (no damage action to take).
+    expect(run([dry], [bully]).winRate).toBe(0);
+    // One 5d10 cast at the second circle fells the bully, almost always.
+    expect(run([scaled], [bully]).winRate).toBeGreaterThan(0.5);
+  });
+});
+
+describe("a hit's extra damage", () => {
+  const sting = actor("Scorpion", "monsters", {
+    actions: [{ ...melee("Sting", 5, "1d4+2"), extra: [{ expr: "2d8", type: "poison" }] }],
+    maxHp: 14,
+  });
+  const plainSting = actor("Scorpion", "monsters", {
+    actions: [melee("Sting", 5, "1d4+2")],
+    maxHp: 14,
+  });
+  const squire = actor("Squire", "party", { actions: [melee("Sword", 6, "1d8+3")], maxHp: 30 });
+  const warded = actor("Squire", "party", {
+    actions: [melee("Sword", 6, "1d8+3")],
+    maxHp: 30,
+    defences: { resistant: [], immune: ["poison"], vulnerable: [], conditionImmune: [], conditionResistant: [] },
+  });
+
+  it("lands of its own type, and not on a creature immune to it", () => {
+    const stung = run([squire], [sting]);
+    const scratched = run([squire], [plainSting]);
+    expect(stung.avgHpLost).toBeGreaterThan(scratched.avgHpLost);
+    const shrugged = run([warded], [sting]);
+    expect(shrugged.avgHpLost).toBeLessThan(stung.avgHpLost);
+  });
+});
+
+describe("a monster healer", () => {
+  const fighter = actor("Fighter", "party", { actions: [melee("Sword", 6, "1d8+2")], maxHp: 30 });
+  // A frail brute, so it is the one hurt first (and healed); a big acolyte, so it is not the target.
+  const brute = actor("Brute", "monsters", { actions: [melee("Club", 5, "1d6+2")], maxHp: 16 });
+  const mend: HealAction = { kind: "heal", name: "Mend", expr: "2d8+3", circle: 0, limit: { perDay: 2 } };
+  const acolyte = (heal?: HealAction) =>
+    actor("Acolyte", "monsters", { actions: [melee("Slap", 3, "1d4"), ...(heal ? [heal] : [])], maxHp: 40 });
+
+  it("mends the hurt of its own side, twice a day: the fight costs the party more", () => {
+    // A healer buys its brute back: the party pays more of its HP, and wins less, than without it.
+    const mended = run([fighter], [brute, acolyte(mend)]);
+    const unmended = run([fighter], [brute, acolyte()]);
+    expect(mended.avgHpLost).toBeGreaterThan(unmended.avgHpLost);
+    expect(mended.winRate).toBeLessThanOrEqual(unmended.winRate);
+  });
+});
+
+describe("a ward of Sanctuary", () => {
+  // A ward nothing can beat (DC 21 with the brute's +0): it turns every attack aside, until the
+  // warded creature fights back (its ward falls); the warden casts again next round.
+  const sanctuary: BuffAction = {
+    kind: "buff",
+    name: "Sanctuary",
+    circle: 0,
+    on: "allies",
+    targets: 1,
+    ward: { ability: "wis", dc: 21 },
+  };
+  // The slow tank is always warded (the brute acts first), the Chaplain big enough not to be picked.
+  const tank = actor("Tank", "party", {
+    actions: [melee("Sword", 6, "1d8+3")],
+    maxHp: 20,
+    initiativeModifier: -1,
+  });
+  const chaplain = (actions: ModelledAction[]) => actor("Chaplain", "party", { actions, maxHp: 40 });
+  const slap = melee("Slap", 3, "1d4");
+
+  it("turns a brute's swings aside on its failed save, and the ward breaks on the warded creature's counterattack", () => {
+    const brute = actor("Brute", "monsters", { actions: [melee("Club", 5, "1d6+3")], maxHp: 34 });
+    const warded = run([tank, chaplain([sanctuary, slap])], [brute]);
+    const plain = run([tank, chaplain([slap])], [brute]);
+    expect(warded.koRate["Tank"]).toBeLessThan(plain.koRate["Tank"]);
+  });
+
+  it("sends or loses a single-target spell against the warded, instead of harming them", () => {
+    const gaze: SaveAction = {
+      kind: "save",
+      name: "Gaze",
+      dc: 13,
+      ability: "con",
+      damage: { expr: "3d6" },
+      onSuccess: "none",
+      area: false,
+      circle: 0,
+    };
+    const gazer = actor("Gazer", "monsters", { actions: [gaze], maxHp: 34 });
+    const warded = run([tank, chaplain([sanctuary, slap])], [gazer]);
+    const plain = run([tank, chaplain([slap])], [gazer]);
+    expect(warded.koRate["Tank"]).toBeLessThan(plain.koRate["Tank"]);
   });
 });

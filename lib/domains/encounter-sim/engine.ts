@@ -131,6 +131,8 @@ interface Combatant {
   dead: boolean;
   /** The lair action it took last round (not taken two rounds running). */
   lastLair?: ModelledAction;
+  /** It fled the fight on a morale check (`rules.morale`): out of the fight, not down. */
+  fled: boolean;
 }
 
 /** A buff as it rests on a creature: the spell's effects, and its repeated save (Slow). */
@@ -139,6 +141,7 @@ type Buff = Pick<
   | "attackDie"
   | "saveDie"
   | "ac"
+  | "ward"
   | "speedFactor"
   | "dexSave"
   | "dexAdvantage"
@@ -158,11 +161,24 @@ const ALTITUDE = 20;
 const ROOM_BEHIND = 30;
 
 const limitOf = (action: ModelledAction) =>
-  action.kind === "weapon" || action.kind === "save" ? action.limit : undefined;
+  action.kind === "weapon" || action.kind === "save" || action.kind === "heal" ? action.limit : undefined;
 
 /** A slotted action (circle above 0) is only available while a slot remains. */
 function hasSlot(c: Combatant, circle: number): boolean {
   return circle <= 0 || (c.slots[circle - 1] ?? 0) > 0;
+}
+
+/** A spell that scales by circle can go through any open slot of its own circle or a higher one. */
+function anySlotFrom(c: Combatant, circle: number): boolean {
+  for (let k = Math.max(1, circle); k <= c.slots.length; k++) {
+    if ((c.slots[k - 1] ?? 0) > 0) return true;
+  }
+  return circle <= 0;
+}
+
+/** An action that knows its higher-circle forms (the spell's `upcast`). */
+function scalesUp(action: ModelledAction): action is SaveAction | SpellAttackAction {
+  return (action.kind === "save" || action.kind === "spell-attack") && action.upcast !== undefined;
 }
 
 function spendSlot(c: Combatant, circle: number): void {
@@ -186,6 +202,7 @@ function isAvailable(c: Combatant, action: ModelledAction): boolean {
   switch (action.kind) {
     case "spell-attack":
     case "save":
+      return scalesUp(action) ? anySlotFrom(c, circleOf(action)) : hasSlot(c, circleOf(action));
     case "heal":
     case "buff":
       return hasSlot(c, action.circle);
@@ -227,6 +244,7 @@ function valueOf(action: ModelledAction, livingEnemies: number): number {
 function damageValueOf(action: ModelledAction, livingEnemies: number): number {
   switch (action.kind) {
     case "weapon":
+      return averageOf(action.damage.expr) + (action.extra ?? []).reduce((s, x) => s + averageOf(x.expr), 0);
     case "spell-attack":
       return averageOf(action.damage.expr);
     case "multiattack":
@@ -395,11 +413,17 @@ export function simulateTrial(
   const positions = rules.distance !== undefined || !!grid;
   const distance = Math.max(0, rules.distance ?? 0);
 
-  // Fresh state: full HP, a copy of the slots.
+  // Fresh state: full HP and slots, or a share of them for the party when the day has already cost some.
   const state: Combatant[] = actors.map((actor) => ({
     actor,
-    hp: actor.maxHp,
-    slots: [...actor.slots],
+    hp:
+      actor.side === "party" && rules.resources !== undefined
+        ? Math.max(1, Math.floor(actor.maxHp * rules.resources))
+        : actor.maxHp,
+    slots:
+      actor.side === "party" && rules.resources !== undefined
+        ? actor.slots.map((s) => Math.floor(s * (rules.resources as number)))
+        : [...actor.slots],
     spent: new Set<ModelledAction>(),
     usesLeft: new Map<ModelledAction, number>(),
     conditions: new Map(),
@@ -423,6 +447,7 @@ export function simulateTrial(
     deathFails: 0,
     deathSuccesses: 0,
     dead: false,
+    fled: false,
   }));
 
   // Positions: the party at 0 facing the monsters at `distance`; who would rather act at range stands 10 back.
@@ -460,7 +485,7 @@ export function simulateTrial(
   const order = rolled.map((r) => r.combatant);
   const initiativeOf = rules.lair ? new Map(rolled.map((r) => [r.combatant, r.total])) : undefined;
 
-  const living = (c: Combatant) => c.hp > 0;
+  const living = (c: Combatant) => c.hp > 0 && !c.fled;
   // The living of each side, in initiative order, rebuilt only when someone falls or gets up (`alive` changes).
   let alive = 0;
   const sides = new Map<string, { at: number; list: Combatant[] }>();
@@ -994,6 +1019,9 @@ export function simulateTrial(
   ): boolean => {
     const target = chosen ?? pickTarget(attacker);
     if (!target) return false;
+    // A ward of Sanctuary: any creature that attacks the warded one first saves, or the attack is lost.
+    const ward = wardedBy(target);
+    if (ward && !resists(attacker) && saveTotal(attacker, ward.ability) < ward.dc) return false;
     const melee = action.reach?.melee !== undefined || (action.reach === undefined && action.kind === "weapon");
     const advantage = has(target, EXPOSED) || attacker.hidden;
     let disadvantage = has(attacker, DISADVANTAGED) || hindered;
@@ -1049,14 +1077,22 @@ export function simulateTrial(
     if (halve) spendReaction(target, halve);
     const cut = (n: number) => (halve ? Math.floor(n / 2) : n);
     let taken = damage(target, cut(rollExpr(action.damage.expr, crit, rng)), action.damage.type, weapon);
-    // A rider's damage is of its weapon's type ("1d4 origin").
+    // A rider's damage is of its weapon's type ("1d4 origin"); a hit's "plus" groups keep their own.
     taken += damage(target, cut(riderDamage(attacker, target, crit)), action.damage.type, weapon);
+    if (action.kind === "weapon" && action.extra) {
+      for (const extra of action.extra) {
+        taken += damage(target, cut(rollExpr(extra.expr, crit, rng)), extra.type);
+      }
+    }
     inflict(target, action.inflicts);
     checkConcentration(target, taken);
     answerHit(target, attacker, melee);
     dodgeAfter(target, attacker, taken > 0 ? "damaged" : "hit");
     return true;
   };
+
+  /** A ward of Sanctuary on it, if any (one buff carries it). */
+  const wardedBy = (t: Combatant) => [...t.buffs.values()].find((b) => b.ward)?.ward;
 
   const castSave = (caster: Combatant, action: SaveAction): void => {
     const inRange = (t: Combatant) => canReach(caster, action, t, 0);
@@ -1066,7 +1102,15 @@ export function simulateTrial(
         : enemiesOf(caster)
             .filter(inRange)
             .slice(0, action.targets ?? Infinity)
-      : [pickTarget(caster, inRange)].filter((t): t is Combatant => !!t);
+      : (() => {
+          const first = pickTarget(caster, inRange);
+          if (!first) return [];
+          // A ward is no cover against an area; against one target the caster saves or takes the spell elsewhere.
+          const ward = wardedBy(first);
+          if (!ward || resists(caster) || saveTotal(caster, ward.ability) >= ward.dc) return [first];
+          const other = pickTarget(caster, (t) => inRange(t) && t !== first && !wardedBy(t));
+          return other ? [other] : [];
+        })();
     // Damage is rolled once per cast and applied to every target (halved per target that saves).
     const rolledDamage = rollExpr(action.damage.expr, false, rng);
     for (const target of targets) {
@@ -1119,6 +1163,7 @@ export function simulateTrial(
         ...(action.attackDie ? { attackDie: action.attackDie } : {}),
         ...(action.saveDie ? { saveDie: action.saveDie } : {}),
         ...(action.ac ? { ac: action.ac } : {}),
+        ...(action.ward ? { ward: action.ward } : {}),
         ...(action.speedFactor ? { speedFactor: action.speedFactor } : {}),
         ...(action.dexSave ? { dexSave: action.dexSave } : {}),
         ...(action.dexAdvantage ? { dexAdvantage: true } : {}),
@@ -1157,6 +1202,10 @@ export function simulateTrial(
    */
   const useDamaging = (c: Combatant, action: ModelledAction, target?: Combatant, hindered = false): void => {
     if (countered(c, action)) return;
+    // A warded creature (Sanctuary) keeps its ward only while it leaves its enemies alone.
+    if (action.kind !== "buff" || action.on === "enemies") {
+      for (const [name, b] of c.buffs) if (b.ward) c.buffs.delete(name);
+    }
     if (concentrates(action)) {
       endConcentration(c);
       holding = [];
@@ -1242,6 +1291,9 @@ export function simulateTrial(
       target.deathSuccesses = 0;
     }
     spendSlot(c, circleOf(heal));
+    const limit = limitOf(heal);
+    if (limit?.recharge !== undefined) c.spent.add(heal);
+    if (limit?.perDay !== undefined) c.usesLeft.set(heal, (c.usesLeft.get(heal) ?? limit.perDay) - 1);
     return true;
   };
 
@@ -1299,12 +1351,41 @@ export function simulateTrial(
     return { value: hindered ? base * 0.65 : base, budget: speed };
   };
 
+  /**
+   * A spell that scales by circle is paid with the highest open slot that has a damage override (a caster
+   * spends its best on a fight); one that does not, or whose overrides' slots are spent, with its own
+   * circle — and when that is out, with the first open one above it (a higher slot still casts it).
+   */
+  const prepareCast = (c: Combatant, action: ModelledAction): { action: ModelledAction; circle: number } => {
+    const base = circleOf(action);
+    if (base > 0 && scalesUp(action)) {
+      const open = (k: number) => (c.slots[k - 1] ?? 0) > 0;
+      let highest: number | undefined;
+      for (const key of Object.keys(action.upcast!)) {
+        const k = Number(key);
+        if (k > base && open(k) && (highest === undefined || k > highest)) highest = k;
+      }
+      if (highest !== undefined) {
+        return { action: { ...action, damage: action.upcast![highest] }, circle: highest };
+      }
+      if (!open(base)) {
+        for (let k = base + 1; k <= c.slots.length; k++) {
+          if (open(k)) return { action, circle: k };
+        }
+      }
+    }
+    return { action, circle: base };
+  };
+
   /** Runs `action`: moves into reach (melee) or out of the way (at range), then acts. */
   const act = (c: Combatant, action: ModelledAction, plan: ReturnType<typeof planFor>) => {
-    spendSlot(c, circleOf(action));
+    const cast = prepareCast(c, action);
+    spendSlot(c, cast.circle);
+    // Recharge and per-day limits remember the action as listed, not its upcast form.
     const limit = limitOf(action);
     if (limit?.recharge !== undefined) c.spent.add(action);
     if (limit?.perDay !== undefined) c.usesLeft.set(action, (c.usesLeft.get(action) ?? limit.perDay) - 1);
+    action = cast.action;
     if (!positions) return useDamaging(c, action);
 
     const reach = meleeReach(action);
@@ -1466,11 +1547,45 @@ export function simulateTrial(
     );
   };
 
+  // ---- Morale ---------------------------------------------------------------------------------------
+  /** How many monsters the fight opened with (the morale half-mark). */
+  const monstersAtStart = state.filter((c) => c.actor.side === "monsters").length;
+
+  /**
+   * A beaten side scatters (`rules.morale`): a monster below half its max HP with half or more of its
+   * side down quits the fight at its turn. A lone monster has no one to scatter with and stays in.
+   */
+  const shouldFlee = (c: Combatant): boolean =>
+    rules.morale === true &&
+    c.actor.side === "monsters" &&
+    c.hp * 2 < c.actor.maxHp &&
+    (monstersAtStart - livingOn("monsters").length) * 2 >= monstersAtStart;
+
+  /** It quits: enemies in reach get the opportunity swing as it runs, and it is out of the fight. */
+  const fleeNow = (c: Combatant): void => {
+    if (positions) {
+      for (const e of engagedBy(c)) {
+        if (e.reactionUsed) continue;
+        const s = opportunitySwing(e.actor);
+        if (!s) continue;
+        e.reactionUsed = true;
+        swing(e, s, c);
+      }
+    }
+    c.fled = true;
+    alive += 1; // who is alive changed, as a knockout's does
+  };
+
   const takeTurn = (c: Combatant): boolean => {
     // Recharge rolls first: a d6 for each spent action, back on its number or more.
     for (const action of c.actor.actions) {
       if (!c.spent.has(action)) continue;
       if (Math.floor(rng() * 6) + 1 >= (limitOf(action)?.recharge ?? 7)) c.spent.delete(action);
+    }
+    // Morale: a beaten side scatters (the check spends the turn either way).
+    if (shouldFlee(c)) {
+      fleeNow(c);
+      return false;
     }
     // And for each reaction waiting on its recharge (Counterattack (Recharge 6)).
     for (const r of c.reactionSpent) {
@@ -1663,12 +1778,12 @@ export function simulateTrial(
         if (!living(c)) continue;
       }
       const lost = startTurn(c);
-      const acted = !lost && takeTurn(c);
+      // A surprised side watches the first round go by (its condition saves still tick).
+      if (!lost && !(round === 1 && rules.surprised === c.actor.side)) takeTurn(c);
       endTurn(c);
-      if (acted) {
-        const end = ended();
-        if (end) return result(end, round);
-      }
+      // A flight ends a fight with no action taken, so the check runs after every turn, not only acted ones.
+      const end = ended();
+      if (end) return result(end, round);
       if (legendaryAfter(c)) {
         const end = ended();
         if (end) return result(end, round);
