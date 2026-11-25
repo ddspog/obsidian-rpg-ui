@@ -18,7 +18,12 @@ node cli/dist/rpg.cjs --help
 The vault is found by itself (the one the plugin sits in). Elsewhere, pass
 `--vault <path>` or set `RPG_VAULT`. The commands below write nothing: the
 CLI's vault refuses every write. `rpg gm` (a session's log and GM notebook)
-and `rpg session` (its saved lines) do write: see `docs/game-master.md`.
+and `rpg session` (its saved lines) do write: see `docs/game-master.md`. So do
+the catalog's keepers (`rpg sim catalog init|draft --accept|add|adjust
+--accept`, `sim suggest --accept`, `sim roles --write`, `sim spells --write`,
+`sim templates --write`, `sim homebrew --write`): they write through
+`cli/rpg/write.ts` (the old text is backed up first); everything else in sim
+is read-only.
 
 With no plugin settings in the vault (a clone: the plugin's folder is not in
 git), a top folder holding `config/index.ts` is taken as the system of its own
@@ -35,6 +40,28 @@ notes.
 | `rpg search <words>`                                     | Notes whose paths hold all the words.                                                                                                                                                                                                                                                                                                                                    |
 
 Add `--json` to any command for JSON instead of Markdown.
+
+## The encounter simulator: `rpg sim`
+
+A seeded Monte Carlo of party vs monsters, so an LLM can measure an
+encounter instead of eyeballing CR: `run` fights the groups you name,
+`suggest` sweeps the bestiary, `plan` and the catalog keep the measured ones
+per party (`docs/encounter-catalog.md` is the catalog's own page, with the
+rules of a fight and what is modelled). Everything answers as one JSON
+document; `--brief` is the short form a model reads at the table, and
+`rpg sim --help` lists every flag with its default.
+
+| Command                                                                                                                         | What it gives                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rpg sim run --monster "<note>[:<n>]"… [--pc <note>]…`                                                                          | The fight, fought: win/TPK/stalemate rates, rounds and HP per trial, KO and death rates, the ToV difficulty label, and a `fidelity` list of what was modelled or skipped. A map with `--map <note>`; the day so far with `--resources <share>`; an ambush with `--surprise party\|monsters`; space, lairs and weather with `--distance`, `--lair`, `--terrain`, `--cover`, `--high-ground`. |
+| `rpg sim suggest [<theme words>] [--rank outcome\|cr] [--tiers same\|lower\|all] [--base "<note>[:<n>]"]… [--fit s]… [--brief]` | The bestiary swept by outcome: each candidate's fit (`fit`, `too-easy`, `too-hard`) and `avgHpLost`, best first. Theme words match a monster's name, type, family and source book; `--accept [--pick N]` keeps one in the catalog as a draft.                                                                                                                                               |
+| `rpg sim plan [<theme words>] [--tag t]… [--habitat H] [--limit N]`                                                             | The one call at the table: the catalog's current `fit` entries first, a `suggest` sweep to fill three options, `notes` on what to do next. Writes nothing.                                                                                                                                                                                                                                  |
+| `rpg sim build [<theme words>] [--model single\|double\|boss\|matched\|horde]… [--accept [--pick N]]`                           | New encounters from the Monster Vault's models, filled by role and simulated.                                                                                                                                                                                                                                                                                                               |
+| `rpg sim homebrew "<base note>" --name "<n>" [--role R] [--template T] [--cr C] [--write]`                                      | A new creature: reflavoured, a role template, a creature template (`rpg sim templates` lists them; `rpg sim lineages` the lineage ones), a new CR; `rpg stat.template` / `stat.summon` blocks are the read/write of it.                                                                                                                                                                     |
+| `rpg sim roles [<note>…] [--write]`, `rpg sim equivalents "<note>" [--role R] [--steps N]`                                      | Monster roles (controller/leader/soldier/striker and subroles), written or guessed; equivalents by role near a CR.                                                                                                                                                                                                                                                                          |
+| `rpg sim spells [<note-or-folder>…] [--write]`                                                                                  | A `roll:` for each spell note that has none, read from its text — the sheet, the log's cards and the simulator share it.                                                                                                                                                                                                                                                                    |
+| `rpg sim calibrate [<session note or folder>…]`                                                                                 | The simulator against real play: each logged fight ([COMBAT]…[/COMBAT], its [F:…] foes) placed among the simulated ones. Read-only.                                                                                                                                                                                                                                                         |
+| `rpg sim catalog <action>`                                                                                                      | The per-party encounter catalog (init, draft, add, confirm, remove, tag, use, prepare, adjust, session, check, suggest, list): `docs/encounter-catalog.md`.                                                                                                                                                                                                                                 |
 
 ## Playing with an LLM
 
