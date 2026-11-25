@@ -6,7 +6,7 @@ There is one catalog per party. It lives at `<system folder>/gm-tools/encounter-
 
 ## The file
 
-Frontmatter names the party and the rules its entries are checked by; each entry is one fenced `yaml encounter` block.
+Frontmatter names the party and the rules its entries are checked by; each entry is one fenced `yaml encounter` block. Every write — `check`, `add`, `tag`, `confirm`, the board's Confirm and Tags — renews the note from the parsed model, except what a person wrote outside the entry blocks: text between the board and the entries, between entries, and in the tail stays where it was (`proseZonesOf` in `lib/domains/encounter-catalog/catalog.ts`), and a removed entry's prose is carried to the callout's end rather than away.
 
 ````markdown
 ---
@@ -381,7 +381,7 @@ With these the logged kobold fight is predicted at 80% HP lost and a 62% TPK; th
 
 ## How fit and staleness work
 
-`check` runs the Monte Carlo of `rpg sim run` (seed 1, 200 trials by default) for the entry's monsters against the catalog's PCs, and classifies the outcome against the difficulty with the same heuristic as `suggest --rank outcome` (`lib/domains/encounter-sim/fit.ts`): `fit` when the share of party HP lost and the TPK rate are near the difficulty's profile, `too-easy` when the fight costs less than aimed for, `too-hard` otherwise. The result is stored with the party's **stamp**, a digest of everything the simulator reads of the PCs (level, AC, HP, ability modifiers, spell slots, every modelled action). An entry is checked again when:
+`check` runs the Monte Carlo of `rpg sim run` (seed 1, 200 trials by default) for the entry's monsters against the catalog's PCs, and classifies the outcome against the difficulty with the same heuristic as `suggest --rank outcome` (`lib/domains/encounter-sim/fit.ts`): `fit` when the share of party HP lost and the TPK rate are near the difficulty's profile, `too-easy` when the fight costs less than aimed for, `too-hard` otherwise. The result is stored with the party's **stamp**, a digest of everything the simulator reads of the PCs (level, AC, HP, ability modifiers, spell slots, every modelled action). The same one simulation is classified against all three difficulty profiles, and the trio is stored too (`fits:` — easy, challenging, deadly — beside `state`): reading them side by side costs no more sims. An entry is checked again when:
 
 - it has no fit yet (`no-fit`);
 - the party changed, i.e. its stamp differs (`party-changed`): a PC levelled, gained an attack, changed a note;

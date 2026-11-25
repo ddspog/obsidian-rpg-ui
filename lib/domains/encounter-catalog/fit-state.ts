@@ -27,6 +27,8 @@ export interface FitState {
   checkedOn: string;
   /** The catalog's session number at the check. */
   checkedAtSession: number;
+  /** The state against every difficulty, classified on the same simulation (the trio a GM chooses among). */
+  fits?: Record<Difficulty, FitStateName>;
   /** When a count is rolled (dice), the state with every rolled count at its fewest and at its most. */
   atMin?: FitStateName;
   atMax?: FitStateName;
@@ -94,6 +96,7 @@ export function fitStateFrom(
   const winRate = round4(summary.winRate);
   const tpkRate = round4(summary.tpkRate);
   const avgHpLost = round4(summary.avgHpLost);
+  // The one simulation classifies against every difficulty: the trio is stored, the entry's own first.
   return {
     state: classifyFit({ avgHpLost, tpkRate }, difficulty),
     stamp,
@@ -101,6 +104,11 @@ export function fitStateFrom(
     winRate,
     tpkRate,
     avgHpLost,
+    fits: {
+      easy: classifyFit({ avgHpLost, tpkRate }, "easy"),
+      challenging: classifyFit({ avgHpLost, tpkRate }, "challenging"),
+      deadly: classifyFit({ avgHpLost, tpkRate }, "deadly"),
+    },
     checkedOn: nowIso,
     checkedAtSession: session,
   };

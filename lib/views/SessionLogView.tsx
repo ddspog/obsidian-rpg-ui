@@ -109,7 +109,13 @@ import {
   preparedEncounters,
   type PreparedEncounter,
 } from "lib/domains/session-log/prepared-encounter";
-import { parseCatalog, serializeCatalog, updateEntry, usedAt } from "lib/domains/encounter-catalog/catalog";
+import {
+  parseCatalog,
+  proseZonesOf,
+  serializeCatalog,
+  updateEntry,
+  usedAt,
+} from "lib/domains/encounter-catalog/catalog";
 import { extractCardsFromEntity, extractResourcesFromEntity } from "lib/services/session-feature-loader";
 import { buildGMStacks, buildGMStacksFromFeatures } from "lib/domains/session-log/gm-cards";
 import { buildCardStacks } from "lib/domains/session-log/extract-cards";
@@ -2182,7 +2188,7 @@ class SessionLogMarkdown extends ReactMarkdown {
         await vault.process(file, (note) => {
           const catalog = parseCatalog(note);
           if (!catalog.entries.some((e) => e.id === ref.id)) return note;
-          return serializeCatalog(updateEntry(catalog, ref.id, usedAt(catalog.session)));
+          return serializeCatalog(updateEntry(catalog, ref.id, usedAt(catalog.session)), proseZonesOf(note));
         });
       } catch (error) {
         console.error("rpg log: could not record the fought encounter in its catalog:", error);

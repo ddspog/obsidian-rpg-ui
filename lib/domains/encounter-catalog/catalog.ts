@@ -232,6 +232,7 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
       avgHpLost: f.avgHpLost,
       checkedOn: f.checkedOn,
       checkedAtSession: f.checkedAtSession,
+      ...(f.fits !== undefined ? { fits: { ...f.fits } } : {}),
       ...(f.atMin !== undefined ? { atMin: f.atMin } : {}),
       ...(f.atMax !== undefined ? { atMax: f.atMax } : {}),
       ...(f.trials !== undefined ? { trials: f.trials } : {}),
@@ -246,7 +247,101 @@ function entryObject(entry: CatalogEntry): Record<string, unknown> {
 const YAML_OPTIONS = { lineWidth: 0 } as const;
 
 /** The catalog as a markdown note: frontmatter, a title, an intro line, the board block, one `rpg encounter` block per entry. */
-export function serializeCatalog(catalog: Catalog): string {
+/**
+ * The free text a person wrote anywhere but in an entry's own block: before or after the entries
+ * callout, or inside it between entries (keyed by the entry it follows). `serializeCatalog` given it
+ * writes it back, so a check or one write renews the entries without losing the prose. An entry
+ * removed carries its prose to the callout's end rather than away.
+ */
+export interface CatalogProse {
+  /** Between the board block and the entries callout. */
+  beforeEntries: string[];
+  /** After the callout's last line: the note's tail. */
+  afterEntries: string[];
+  /** Inside the callout before the first entry. */
+  head: string[];
+  /** Inside the callout after the entry of this id. */
+  afterEntry: Record<string, string[]>;
+}
+
+const trimBlankEdges = (lines: string[]): string[] => {
+  let first = 0;
+  let last = lines.length;
+  while (first < last && lines[first].trim() === "") first += 1;
+  while (last > first && lines[last - 1].trim() === "") last -= 1;
+  return lines.slice(first, last);
+};
+
+/** The free-text zones of a catalog note (see CatalogProse), as line arrays. Pure. */
+export function proseZonesOf(text: string): CatalogProse {
+  const prose: CatalogProse = { beforeEntries: [], afterEntries: [], head: [], afterEntry: {} };
+  const { body } = splitFrontmatter(text.replace(/\r\n?/g, "\n"));
+  const lines = body.split("\n");
+
+  // The board block, when written, ends the note's head (frontmatter, the title, the board).
+  let boardEnd = lines.findIndex((l) => /^`{3,}\s*rpg\s+encounter-catalog\s*$/.test(l));
+  if (boardEnd >= 0) {
+    const fence = /^(`+)/.exec(lines[boardEnd])![1];
+    boardEnd += 1;
+    while (boardEnd < lines.length && !new RegExp(`^${fence}\\s*$`).test(lines[boardEnd])) boardEnd += 1;
+  }
+
+  // The entries callout: the first callout after the board that holds an entry fence.
+  let calloutAt = -1;
+  let calloutEnd = lines.length;
+  let i = boardEnd + 1;
+  while (i >= 0 && i < lines.length) {
+    if (/^>\s*\[!/.test(lines[i])) {
+      let j = i;
+      while (j + 1 < lines.length && lines[j + 1].startsWith(">")) j += 1;
+      if (/`{3,}\s*(?:yaml|rpg)\s+encounter\s*$/m.test(lines.slice(i, j + 1).join("\n"))) {
+        calloutAt = i;
+        calloutEnd = j + 1;
+        break;
+      }
+      i = j + 1;
+    } else {
+      i += 1;
+    }
+  }
+
+  if (calloutAt < 0) {
+    prose.beforeEntries = trimBlankEdges(lines.slice(boardEnd + 1));
+    return prose;
+  }
+  prose.beforeEntries = trimBlankEdges(lines.slice(boardEnd + 1, calloutAt));
+  prose.afterEntries = trimBlankEdges(lines.slice(calloutEnd));
+
+  // Inside the callout, unquoted: prose buckets by the entry they follow (head before the first).
+  let bucket = prose.head;
+  let fence: string | null = null;
+  for (const line of lines.slice(calloutAt, calloutEnd).map((l) => l.replace(/^>[ \t]?/, ""))) {
+    if (fence !== null) {
+      if (new RegExp(`^${fence}\`*\\s*$`).test(line)) fence = null; // the entry block's own close
+      continue;
+    }
+    if (/^`{3,}\s*(?:yaml|rpg)\s+encounter\s*$/.test(line)) {
+      fence = (/^(`+)/.exec(line) ?? ["```"])[1];
+      continue;
+    }
+    if (/^\[!/.test(line)) continue; // the callout's header line
+    if (line.startsWith("Edit a block by hand;")) continue; // the generated hint
+    const marker = /^\^(\S+)\s*$/.exec(line);
+    if (marker) {
+      bucket = prose.afterEntry[marker[1]] ??= [];
+      continue;
+    }
+    bucket.push(line);
+  }
+  prose.head = trimBlankEdges(prose.head);
+  for (const [id, kept] of Object.entries(prose.afterEntry)) {
+    prose.afterEntry[id] = trimBlankEdges(kept);
+    if (prose.afterEntry[id].length === 0) delete prose.afterEntry[id];
+  }
+  return prose;
+}
+
+export function serializeCatalog(catalog: Catalog, prose?: CatalogProse): string {
   const frontmatter = stringifyYaml(
     {
       type: CATALOG_TYPE,
@@ -273,6 +368,7 @@ export function serializeCatalog(catalog: Catalog): string {
     "```",
     "",
   ];
+  if (prose && prose.beforeEntries.length > 0) lines.push(...prose.beforeEntries, "");
   if (catalog.entries.length > 0) {
     // The entries as written, folded away under the board (which shows them): open the callout to edit one.
     const n = catalog.entries.length;
@@ -280,6 +376,11 @@ export function serializeCatalog(catalog: Catalog): string {
       `> [!abstract]- ${n === 1 ? "1 entry" : `${n} entries`} as written`,
       "> Edit a block by hand; `rpg sim catalog check` measures it again."
     );
+    // Callout-local prose lines, as quoted callout lines like the blocks'.
+    const quote = (chunk: string[]) => {
+      lines.push(...chunk.flatMap((l) => l.split("\n")).map((l) => (l ? `> ${l}` : ">")));
+    };
+    if (prose && prose.head.length > 0) quote(prose.head);
     for (const entry of catalog.entries) {
       // The block id after it lets a link open this entry: `[[catalog#^forests-t1-9-8-baboon]]`.
       const block = [
@@ -289,9 +390,23 @@ export function serializeCatalog(catalog: Catalog): string {
         `^${entry.id}`,
       ];
       lines.push(">", ...block.flatMap((l) => l.split("\n")).map((l) => (l ? `> ${l}` : ">")));
+      const keptAfter = prose?.afterEntry[entry.id];
+      if (prose && keptAfter && keptAfter.length > 0) quote(keptAfter);
+    }
+    if (prose) {
+      // Prose that followed an entry the catalog no longer has goes at the end, not away.
+      const orphans = Object.keys(prose.afterEntry).filter((id) => !catalog.entries.some((e) => e.id === id));
+      for (const id of orphans) {
+        lines.push(">");
+        quote(prose.afterEntry[id]);
+      }
     }
     lines.push("");
+  } else if (prose && (prose.head.length > 0 || Object.keys(prose.afterEntry).length > 0)) {
+    // No callout to sit in: the callout-local prose rides above the entries instead.
+    lines.push(...prose.head, ...Object.values(prose.afterEntry).flat(), "");
   }
+  if (prose && prose.afterEntries.length > 0) lines.push(...prose.afterEntries, "");
   return lines.join("\n");
 }
 
@@ -439,10 +554,25 @@ function parseFit(raw: unknown, fail: (m: string) => never): FitState {
   const atMin = bound("atMin");
   const atMax = bound("atMax");
   const trials = typeof raw.trials === "number" && Number.isFinite(raw.trials) ? raw.trials : undefined;
+  // The state against every difficulty, when the check wrote it: each a known state.
+  let fits: FitState["fits"];
+  if (raw.fits !== undefined && raw.fits !== null) {
+    if (!isObj(raw.fits)) return fail("`fit.fits` must be a mapping of difficulty to state");
+    fits = {} as Record<Difficulty, FitState["state"]>;
+    for (const key of DIFFICULTIES) {
+      const v = (raw.fits as Obj)[key];
+      if (v === undefined || v === null) continue;
+      if (typeof v !== "string" || !(FIT_STATES as readonly string[]).includes(v)) {
+        return fail(`\`fit.fits.${key}\` must be one of ${FIT_STATES.join(", ")}`);
+      }
+      fits[key] = v as FitState["state"];
+    }
+  }
   return {
     ...(atMin !== undefined ? { atMin } : {}),
     ...(atMax !== undefined ? { atMax } : {}),
     ...(trials !== undefined ? { trials } : {}),
+    ...(fits !== undefined ? { fits } : {}),
     ...(raw.borderline === true ? { borderline: true } : {}),
     state: state as FitState["state"],
     stamp,

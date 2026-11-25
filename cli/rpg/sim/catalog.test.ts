@@ -6,7 +6,7 @@
  * the root again (the vault caches what it has read).
  */
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -756,6 +756,28 @@ describe("catalog add, confirm, remove and list", () => {
     // The same name gets a suffixed id.
     const again = await sim("add", "--catalog", path, "--name", "Wolf Pack & Cub", "--monster", "Wolf");
     expect(again.doc.added.id).toBe("wolf-pack-cub-2");
+  });
+
+  it("keeps the note's hand-written prose when a write renews the entries", async () => {
+    const path = await init("Prose Kept");
+    await sim("add", "--catalog", path, "--name", "Wolf Pack", "--monster", "Wolf:3");
+    const file = join(root, path);
+    writeFileSync(
+      file,
+      readFileSync(file, "utf8")
+        .replace(
+          "> [!abstract]- 1 entry as written",
+          "The pack table we actually play.\n\n> [!abstract]- 1 entry as written"
+        )
+        .replace("> ^wolf-pack\n", "> ^wolf-pack\n> Kowyn owes them a favour.\n")
+        .concat("At the bottom, by hand.\n")
+    );
+    const written = await sim("tag", "--catalog", path, "wolf-pack", "--add-tag", "forest");
+    expect(written.code, written.err).toBe(0);
+    const text = readFileSync(file, "utf8");
+    expect(text).toContain("The pack table we actually play.");
+    expect(text).toContain("> Kowyn owes them a favour.");
+    expect(text).toContain("At the bottom, by hand.");
   });
 
   it("fails naming a monster note that does not exist or is not a monster", async () => {

@@ -14,6 +14,7 @@ import {
   confirmed,
   parseCatalog,
   parseEntryBlock,
+  proseZonesOf,
   serializeCatalog,
   updateEntry,
   type Catalog,
@@ -127,7 +128,7 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
       const file = app.vault.getAbstractFileByPath(sourcePath);
       if (!(file instanceof TFile)) return;
       try {
-        await app.vault.process(file, (text) => serializeCatalog(change(parseCatalog(text))));
+        await app.vault.process(file, (text) => serializeCatalog(change(parseCatalog(text)), proseZonesOf(text)));
         if (!undo) {
           new Notice(done);
           return;
@@ -138,7 +139,7 @@ function BoardHost({ app, sourcePath }: { app: App; sourcePath: string }) {
         const notice = new Notice(message, 8000);
         button.addEventListener("click", () => {
           notice.hide();
-          void app.vault.process(file, (text) => serializeCatalog(undo(parseCatalog(text))));
+          void app.vault.process(file, (text) => serializeCatalog(undo(parseCatalog(text)), proseZonesOf(text)));
         });
       } catch (e) {
         new Notice(`Encounter catalog: ${e instanceof Error ? e.message : String(e)}`);

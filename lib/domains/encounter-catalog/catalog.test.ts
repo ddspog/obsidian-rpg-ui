@@ -7,6 +7,7 @@ import {
   mergeDrafts,
   parseCatalog,
   parseEntryBlock,
+  proseZonesOf,
   removeEntry,
   serializeCatalog,
   slugId,
@@ -27,6 +28,7 @@ const entry = (over: Partial<CatalogEntry> = {}): CatalogEntry => ({
     winRate: 0.9,
     tpkRate: 0.05,
     avgHpLost: 0.52,
+    fits: { easy: "too-hard", challenging: "fit", deadly: "too-easy" },
     checkedOn: "2026-11-21T10:00:00.000Z",
     checkedAtSession: 3,
   },
@@ -91,6 +93,44 @@ describe("serializeCatalog", () => {
       "review: confirmed",
     ]);
     expect(text).not.toContain("undefined");
+  });
+});
+
+describe("prose zones (the note's free text survives a rewrite)", () => {
+  const two = () =>
+    catalog([entry(), entry({ id: "wolves", name: "Wolves: a pack", fit: undefined, review: "draft" })]);
+
+  it("keeps prose between the board and the callout, between entries, and in the tail", () => {
+    const written = serializeCatalog(two());
+    const authored = written
+      .replace(
+        "> [!abstract]- 2 entries as written",
+        "My own words above the entries.\n\n> [!abstract]- 2 entries as written"
+      )
+      .replace("> ^goblin-ambush\n", "> ^goblin-ambush\n> A word after the goblins.\n")
+      .replace("> ^wolves\n", "> ^wolves\n> Watch the druid.\n")
+      .concat("Bottom of the page.\n");
+    // The model ignores the prose, the rewrite keeps it.
+    expect(parseCatalog(authored)).toEqual(parseCatalog(written));
+    const rewritten = serializeCatalog(parseCatalog(authored), proseZonesOf(authored));
+    expect(rewritten).toContain("My own words above the entries.");
+    const afterGoblins = rewritten.indexOf("> A word after the goblins.");
+    expect(afterGoblins).toBeGreaterThan(rewritten.indexOf("> ^goblin-ambush"));
+    expect(afterGoblins).toBeLessThan(rewritten.indexOf("> ```rpg encounter\n> id: wolves"));
+    expect(rewritten).toContain("> Watch the druid.");
+    expect(rewritten.trimEnd().endsWith("Bottom of the page.")).toBe(true);
+  });
+
+  it("carries a removed entry's prose to the callout's end, not away", () => {
+    const written = serializeCatalog(two()).replace("> ^wolves\n", "> ^wolves\n> Watch the druid.\n");
+    const withoutWolves = removeEntry(parseCatalog(written), "wolves");
+    const rewritten = serializeCatalog(withoutWolves, proseZonesOf(written));
+    expect(rewritten).not.toContain("> ^wolves");
+    expect(rewritten).toContain("> Watch the druid.");
+  });
+
+  it("writes the same note as before when no zones are given", () => {
+    expect(serializeCatalog(two(), undefined)).toBe(serializeCatalog(two()));
   });
 });
 
