@@ -1,9 +1,11 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { classifyFit, outcomeDistance } from "lib/domains/encounter-sim/fit";
+import { parseCatalog } from "lib/domains/encounter-catalog/catalog";
 import type { Ctx } from "../app";
+import { createSimCatalog } from "./catalog";
 import { simMain } from "./dispatch";
 import { simSuggest } from "./suggest";
 import { FIXTURE_SYSTEM, initSystemLoader, makeCtx, pcNote, put, weapon } from "./test-support";
@@ -32,6 +34,10 @@ interface FixtureMonster {
   type: string;
   cr: string | number;
   habitat?: string;
+  /** The family the theme words are read against (the statblock's category link). */
+  category?: string;
+  /** The note's frontmatter `source:` (the book the theme words are read against). */
+  source?: string;
   refs: string[];
   hp?: number;
   ac?: number;
@@ -39,12 +45,14 @@ interface FixtureMonster {
 
 function monsterNote(name: string, m: FixtureMonster): string {
   return [
+    ...(m.source ? ["---", `source: 'From **Fixture** "${m.source}" by **Nobody**.'`, "---"] : []),
     `# ${name}`,
     "```rpg stat.monster",
     `name: "${name}"`,
     `type: "${m.type}"`,
     `cr: "${m.cr}"`,
     ...(m.habitat ? [`habitat: "${m.habitat}"`] : []),
+    ...(m.category ? [`category: "[[${m.category}]]"`] : []),
     "stats:",
     `  ac: "${m.ac ?? 12}"`,
     `  hp: "${m.hp ?? 9} (2d8)"`,
@@ -67,9 +75,22 @@ const BITE = "@[[Traits]]#Bite";
 const SMELL = "@[[Traits]]#Keen Smell";
 
 const MONSTERS: Record<string, FixtureMonster> = {
-  Wolf: { type: "Medium [[Beast]]", cr: "1/2", habitat: "[[Hills]], [[Forest]]", refs: [BITE] },
-  Bear: { type: "Large [[Beast]]", cr: 1, habitat: "[[Swamp]]", refs: [BITE] },
-  Imp: { type: "Small [[Fiend]]", cr: "1/4", habitat: "[[Forest]]", refs: [BITE] },
+  Wolf: {
+    type: "Medium [[Beast]]",
+    cr: "1/2",
+    habitat: "[[Hills]], [[Forest]]",
+    category: "Woodland Pack",
+    refs: [BITE],
+  },
+  Bear: { type: "Large [[Beast]]", cr: 1, habitat: "[[Swamp]]", source: "Creature Codex", refs: [BITE] },
+  Imp: {
+    type: "Small [[Fiend]]",
+    cr: "1/4",
+    habitat: "[[Forest]]",
+    category: "Hellspawn",
+    source: "Monster Vault",
+    refs: [BITE],
+  },
   Pup: { type: "Tiny [[Beast]]", cr: 0, refs: [BITE] },
   // Over twice the challenging target; its feature ref is broken, so loading it would count it unresolvable.
   Giant: { type: "Huge [[Giant]]", cr: 5, refs: ["@[[Nowhere]]#Stomp"] },
@@ -121,12 +142,13 @@ const OUTCOME_MONSTERS: Record<string, FixtureMonster> = {
   Mote: { type: "Tiny [[Beast]]", cr: "1/32", hp: 1, ac: 5, refs: ["@[[Traits]]#Flail"] },
 };
 
+let root: string;
 let ctx: Ctx;
 let outcomeCtx: Ctx;
 
 beforeAll(async () => {
   await initSystemLoader();
-  const root = mkdtempSync(join(tmpdir(), "rpg-suggest-"));
+  root = mkdtempSync(join(tmpdir(), "rpg-suggest-"));
   put(root, "fixture/config/index.ts", FIXTURE_SYSTEM);
   for (const name of PCS) {
     put(
@@ -160,6 +182,10 @@ beforeAll(async () => {
 interface Suggest {
   target: { difficulty: string; targetTotal: string; benchmark: string; rank: string };
   profile: Record<string, unknown>;
+  /** Set when the party has no benchmark, theme words match nothing, or --accept finds no candidate. */
+  note?: string;
+  /** The draft --accept kept in the catalog. */
+  added?: { id: string; name: string; monsters: string[] };
   candidates: Array<{
     composition: { note: string; count: number; cr: string };
     base?: Array<{ note: string; count: number; cr: string }>;
@@ -258,6 +284,24 @@ describe("rpg sim suggest", () => {
     // Pup is CR 0: counted as such before the habitat filter, so `excluded` tells it apart.
     expect(doc.excluded["cr-0"]).toBe(1);
     expect(doc.excluded["out-of-range"]).toBeUndefined();
+  });
+
+  it("keeps only monsters whose name, family or source book names a theme word", async () => {
+    // A name word: only the Wolf note.
+    expect(Object.keys(countsByNote((await suggest("wolf")).doc))).toEqual(["Wolf"]);
+    // A family word: Imp's category link is [[Hellspawn]], nothing else matches.
+    expect(Object.keys(countsByNote((await suggest("hellspawn")).doc))).toEqual(["Imp"]);
+    // A source-book word: Bear's frontmatter names the Creature Codex.
+    expect(Object.keys(countsByNote((await suggest("codex")).doc))).toEqual(["Bear"]);
+    // Plural or not ("hellspawn" and "Hellspawn"), and several words keep a word each.
+    expect(Object.keys(countsByNote((await suggest("Codexes")).doc))).toEqual(["Bear"]);
+    expect(Object.keys(countsByNote((await suggest("codex", "hellspawn")).doc)).sort()).toEqual(["Bear", "Imp"]);
+  });
+
+  it("says so when nothing swept names the theme words", async () => {
+    const { doc } = await suggest("xyzzy");
+    expect(doc.candidates).toEqual([]);
+    expect(doc.note).toContain("xyzzy");
   });
 
   it("maps easy, challenging and deadly to the benchmark times 1/2, 1 and 2", async () => {
@@ -681,5 +725,108 @@ describe("rpg sim suggest: the party's tier", () => {
     const all = await suggest("--rank", "outcome", "--tiers", "all", "--limit", "100");
     expect(all.doc.excluded["above-tier"]).toBeUndefined();
     expect(Object.keys(countsByNote(all.doc))).toContain("Bear");
+  });
+});
+
+/** A suggest run driven straight: no --pc (the catalog's party when --accept reads one). */
+async function suggestFree(...flags: string[]): Promise<{ code: number; doc: Suggest; text: string; err: string }> {
+  let text = "";
+  let err = "";
+  const code = await simMain(
+    ["suggest", "--trials", "6", "--rank", "cr", "--tiers", "all", ...flags],
+    { out: (s) => (text += s), err: (s) => (err += s) },
+    {
+      context: () => ctx,
+      run: async () => {
+        throw new Error("run is not under test");
+      },
+      suggest: simSuggest,
+    }
+  );
+  return { code, doc: text ? (JSON.parse(text) as Suggest) : ({} as Suggest), text, err };
+}
+
+/** A catalog action over the fixture vault (init writes the catalog note; a fixed date keeps the fit stable). */
+async function catalog(...tokens: string[]): Promise<{ code: number; doc: Record<string, any>; err: string }> {
+  let out = "";
+  let err = "";
+  const code = await simMain(
+    ["catalog", ...tokens],
+    { out: (s) => (out += s), err: (s) => (err += s) },
+    {
+      context: () => ctx,
+      run: async () => {
+        throw new Error("run is not under test");
+      },
+      suggest: async () => {
+        throw new Error("the bestiary suggest is not under test here");
+      },
+      catalog: createSimCatalog({ now: () => "2026-11-24" }),
+    }
+  );
+  return { code, doc: out ? JSON.parse(out) : {}, err };
+}
+
+const PARTY = PCS.flatMap((n) => ["--pc", pcPath(n)]);
+
+/** A catalog of the fixture PCs under a unique name; returns its vault path. */
+async function initCatalog(name: string): Promise<string> {
+  const made = await catalog("init", "--party-name", name, ...PARTY);
+  expect(made.code, made.err).toBe(0);
+  return made.doc.catalog as string;
+}
+
+const entryOf = (path: string, id: string) =>
+  parseCatalog(readFileSync(join(root, path), "utf8")).entries.find((e) => e.id === id);
+
+describe("rpg sim suggest --accept", () => {
+  it("keeps the best shown candidate as a draft of the catalog, with the fit it simulated", async () => {
+    const path = await initCatalog("Sweep Kept");
+    const { code, doc, err } = await suggestFree("--limit", "5", "--accept");
+    expect(code, err).toBe(0);
+    expect(doc.added).toBeDefined();
+    const entry = entryOf(path, doc.added!.id);
+    expect(entry?.review).toBe("draft");
+    expect(entry?.tags).toContain("suggested");
+    expect(entry?.fit?.state).toBeDefined();
+    expect(entry?.fit?.difficulty).toBe("challenging");
+    // The accepted entry is the first candidate shown, its one group (no --base was given).
+    expect(entry?.monsters).toEqual([
+      { note: doc.candidates[0].composition.note, count: doc.candidates[0].composition.count },
+    ]);
+    expect(doc.added!.monsters).toHaveLength(1);
+  });
+
+  it("--pick keeps the Nth shown candidate instead", async () => {
+    const path = await initCatalog("Sweep Picked");
+    const { code, doc, err } = await suggestFree("--limit", "5", "--accept", "--pick", "2", "--catalog", path);
+    expect(code, err).toBe(0);
+    expect(doc.candidates.length).toBeGreaterThanOrEqual(2);
+    expect(entryOf(path, doc.added!.id)?.monsters).toEqual([
+      { note: doc.candidates[1].composition.note, count: doc.candidates[1].composition.count },
+    ]);
+  });
+
+  it("tags the draft with the theme words it was found by", async () => {
+    const path = await initCatalog("Sweep Themed");
+    const { code, doc, err } = await suggestFree("wolf", "--accept", "--catalog", path);
+    expect(code, err).toBe(0);
+    expect(doc.candidates.every((c) => c.composition.note.includes("Wolf"))).toBe(true);
+    expect(entryOf(path, doc.added!.id)?.tags).toEqual(expect.arrayContaining(["suggested", "wolf"]));
+  });
+
+  it("keeps nothing and says so when there is no candidate N to pick", async () => {
+    const path = await initCatalog("Sweep Empty");
+    const { code, doc, err } = await suggestFree("--limit", "1", "--accept", "--pick", "9", "--catalog", path);
+    expect(code, err).toBe(0);
+    expect(doc.added).toBeUndefined();
+    expect(doc.note).toContain("No candidate 9");
+    expect(parseCatalog(readFileSync(join(root, path), "utf8")).entries).toHaveLength(0);
+  });
+
+  it("refuses when --pc names a party of its own, so no catalog is read", async () => {
+    const { code, err } = await suggest("--accept", "--limit", "1");
+    expect(code).toBe(1);
+    expect(err).toContain("catalog init");
   });
 });

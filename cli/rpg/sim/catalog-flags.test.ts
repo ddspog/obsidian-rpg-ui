@@ -117,7 +117,8 @@ describe("parseSimArgv: catalog", () => {
 
   it("still refuses a bare word after any other subcommand", () => {
     expect(() => parseSimArgv(["run", "extra"])).toThrow(/Unexpected argument "extra"/);
-    expect(() => parseSimArgv(["suggest", "extra"])).toThrow(/Unexpected argument "extra"/);
+    // `suggest` and `plan` take their bare words as theme words (they do not throw here).
+    expect(parseSimArgv(["suggest", "extra"]).options.args).toEqual(["extra"]);
   });
 });
 
