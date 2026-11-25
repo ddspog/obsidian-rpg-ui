@@ -4,7 +4,7 @@
  * out of date. Pure TypeScript (no node:crypto), so it runs in Obsidian too.
  */
 
-import { ABILITY_KEYS, type CombatActor, type TrialRules } from "../encounter-sim/types";
+import { ABILITY_KEYS, type AbilityKey, type CombatActor, type TrialRules } from "../encounter-sim/types";
 
 /** JSON with every object's keys sorted and undefined left out, so insertion order never matters. */
 function canonical(value: unknown): string {
@@ -42,12 +42,27 @@ function digest(text: string): string {
 }
 
 /**
- * The stamp of a party: its actors in order, each by name, level, proficiency
- * bonus, armor class, max HP, initiative modifier, every ability's modifier and
- * save modifier, spell slots and every action's full shape.
+ * What the stamp reads of an actor: every field that decides a fight, so a
+ * changed rider, defence, reaction or movement speed re-checks the catalog.
+ * Left out: `key` (a note path or instance id) and `side`, which the engine
+ * does not play, and of an ability the raw score (only modifiers are rolled).
+ * The `-?` mapped type makes the literal below name every other field of
+ * CombatActor, so a new one fails the type check until it is stamped here or
+ * consciously added to the exclusion.
+ */
+type StampedActor = {
+  [K in Exclude<keyof CombatActor, "key" | "side" | "abilities">]-?: CombatActor[K];
+} & {
+  abilities: Array<{ key: AbilityKey; modifier: number | undefined; saveModifier: number | undefined }>;
+};
+
+/**
+ * The stamp of a party: its actors in order, each with everything the
+ * simulator reads of it, plus the rules the trials ran by. Fields an actor
+ * does not carry vanish in `canonical`, so a plain party keeps its old stamp.
  */
 export function partyStamp(actors: CombatActor[], rules?: TrialRules): string {
-  const shape = actors.map((actor) => ({
+  const shape: StampedActor[] = actors.map((actor) => ({
     name: actor.name,
     level: actor.level,
     proficiencyBonus: actor.proficiencyBonus,
@@ -61,6 +76,20 @@ export function partyStamp(actors: CombatActor[], rules?: TrialRules): string {
     })),
     slots: actor.slots,
     actions: actor.actions,
+    riders: actor.riders,
+    defences: actor.defences,
+    reaction: actor.reaction,
+    legendaryResistance: actor.legendaryResistance,
+    legendary: actor.legendary,
+    speed: actor.speed,
+    fly: actor.fly,
+    flyby: actor.flyby,
+    bonusMoves: actor.bonusMoves,
+    bonusActions: actor.bonusActions,
+    stealth: actor.stealth,
+    passivePerception: actor.passivePerception,
+    lair: actor.lair,
+    reactions: actor.reactions,
   }));
   // The rules a fit was simulated by (space, a lair): another --distance or --lair is another fit. None given, the
   // stamp is the party's alone, as it was before the rules.

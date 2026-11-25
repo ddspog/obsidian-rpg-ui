@@ -90,6 +90,10 @@ describe("partyStamp", () => {
     expect(partyStamp([b])).toBe(partyStamp([a]));
   });
 
+  it("reads a field left out and a field undefined the same", () => {
+    expect(partyStamp([pc({ riders: undefined, reactions: undefined })])).toBe(partyStamp([pc()]));
+  });
+
   it("changes with each field class", () => {
     const base = partyStamp([pc()]);
     const variants: Record<string, CombatActor> = {
@@ -119,6 +123,42 @@ describe("partyStamp", () => {
         actions: [pc().actions[0], { ...(pc().actions[1] as object), dc: 14 } as CombatActor["actions"][number]],
       }),
       actionRemoved: pc({ actions: pc().actions.slice(0, 1) }),
+      rider: pc({ riders: [{ name: "Mystic Mark", damage: "1d4", kind: "mark", uses: 2 }] }),
+      defences: pc({
+        defences: { resistant: ["fire"], immune: [], vulnerable: [], conditionImmune: [], conditionResistant: [] },
+      }),
+      acReaction: pc({ reaction: { name: "Shield", ac: 5, untilTurn: true, circle: 1 } }),
+      reactions: pc({ reactions: [{ kind: "halve", name: "Uncanny Dodge" }] }),
+      legendaryResistance: pc({ legendaryResistance: 3 }),
+      legendary: pc({
+        legendary: {
+          points: 3,
+          actions: [{ action: { kind: "weapon", name: "Tail", hitBonus: 8, damage: { expr: "2d8+5" } }, cost: 2 }],
+        },
+      }),
+      speed: pc({ speed: 40 }),
+      flySpeed: pc({ fly: 60 }),
+      flyby: pc({ flyby: true }),
+      bonusMoves: pc({ bonusMoves: ["dash"] }),
+      bonusActions: pc({
+        bonusActions: [{ kind: "weapon", name: "Off-hand", hitBonus: 5, damage: { expr: "1d6" } }],
+      }),
+      stealth: pc({ stealth: 4 }),
+      passivePerception: pc({ passivePerception: 12 }),
+      lair: pc({
+        lair: [
+          {
+            kind: "save",
+            name: "Tremor",
+            dc: 15,
+            ability: "dex",
+            damage: { expr: "0" },
+            onSuccess: "none",
+            area: true,
+            circle: 0,
+          },
+        ],
+      }),
     };
     const seen = new Set([base]);
     for (const [label, actor] of Object.entries(variants)) {
