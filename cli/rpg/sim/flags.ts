@@ -173,6 +173,13 @@ export const SIM_FLAGS: readonly SimFlag[] = [
     description: "that side is caught unready: its first round's turns are skipped",
   },
   {
+    name: "morale",
+    kind: "boolean",
+    default: false,
+    description:
+      "a beaten side scatters: a monster below half its HP with half or more of its side down quits the fight (never returns); PCs never flee",
+  },
+  {
     name: "resources",
     kind: "string",
     default: undefined,
@@ -534,6 +541,8 @@ export interface SimOptions {
   highGround?: { side: "party" | "monsters"; height: number };
   /** The side caught unready (its first round's turns are skipped). */
   surprise?: "party" | "monsters";
+  /** A beaten side scatters (monsters fleeing). */
+  morale: boolean;
   /** The share of its hit points and spell slots the party starts with (the day so far); absent or 1: full. */
   resources?: number;
   difficulty: Difficulty;
@@ -623,6 +632,7 @@ function defaultOptions(subcommand: string | undefined): SimOptions {
     distance: flagDefault<number>("distance"),
     lair: false,
     difficult: false,
+    morale: false,
     cover: {},
     difficulty: flagDefault<Difficulty>("difficulty"),
     rank: flagDefault<Rank>("rank"),
@@ -854,6 +864,7 @@ export function parseSimArgv(tokens: string[]): ParsedSim {
     }
     options.resources = n;
   }
+  options.morale = values.morale === true;
   options.fits = ((values.fit as string[] | undefined) ?? []).map((raw) => {
     const fit = raw.trim().toLowerCase();
     if (!(FIT_STATE_NAMES as readonly string[]).includes(fit)) {
@@ -1346,7 +1357,7 @@ ${helpLines()}
  */
 export function rulesOf(
   options: Pick<SimOptions, "distance" | "lair"> &
-    Partial<Pick<SimOptions, "difficult" | "cover" | "highGround" | "surprise" | "resources">>
+    Partial<Pick<SimOptions, "difficult" | "cover" | "highGround" | "surprise" | "resources" | "morale">>
 ): TrialRules {
   return {
     distance: options.distance,
@@ -1357,5 +1368,6 @@ export function rulesOf(
     ...(options.highGround ? { highGround: options.highGround } : {}),
     ...(options.surprise ? { surprised: options.surprise } : {}),
     ...(options.resources !== undefined ? { resources: options.resources } : {}),
+    ...(options.morale ? { morale: true } : {}),
   };
 }

@@ -131,6 +131,8 @@ interface Combatant {
   dead: boolean;
   /** The lair action it took last round (not taken two rounds running). */
   lastLair?: ModelledAction;
+  /** It fled the fight on a morale check (`rules.morale`): out of the fight, not down. */
+  fled: boolean;
 }
 
 /** A buff as it rests on a creature: the spell's effects, and its repeated save (Slow). */
@@ -445,6 +447,7 @@ export function simulateTrial(
     deathFails: 0,
     deathSuccesses: 0,
     dead: false,
+    fled: false,
   }));
 
   // Positions: the party at 0 facing the monsters at `distance`; who would rather act at range stands 10 back.
@@ -482,7 +485,7 @@ export function simulateTrial(
   const order = rolled.map((r) => r.combatant);
   const initiativeOf = rules.lair ? new Map(rolled.map((r) => [r.combatant, r.total])) : undefined;
 
-  const living = (c: Combatant) => c.hp > 0;
+  const living = (c: Combatant) => c.hp > 0 && !c.fled;
   // The living of each side, in initiative order, rebuilt only when someone falls or gets up (`alive` changes).
   let alive = 0;
   const sides = new Map<string, { at: number; list: Combatant[] }>();
@@ -1544,11 +1547,45 @@ export function simulateTrial(
     );
   };
 
+  // ---- Morale ---------------------------------------------------------------------------------------
+  /** How many monsters the fight opened with (the morale half-mark). */
+  const monstersAtStart = state.filter((c) => c.actor.side === "monsters").length;
+
+  /**
+   * A beaten side scatters (`rules.morale`): a monster below half its max HP with half or more of its
+   * side down quits the fight at its turn. A lone monster has no one to scatter with and stays in.
+   */
+  const shouldFlee = (c: Combatant): boolean =>
+    rules.morale === true &&
+    c.actor.side === "monsters" &&
+    c.hp * 2 < c.actor.maxHp &&
+    (monstersAtStart - livingOn("monsters").length) * 2 >= monstersAtStart;
+
+  /** It quits: enemies in reach get the opportunity swing as it runs, and it is out of the fight. */
+  const fleeNow = (c: Combatant): void => {
+    if (positions) {
+      for (const e of engagedBy(c)) {
+        if (e.reactionUsed) continue;
+        const s = opportunitySwing(e.actor);
+        if (!s) continue;
+        e.reactionUsed = true;
+        swing(e, s, c);
+      }
+    }
+    c.fled = true;
+    alive += 1; // who is alive changed, as a knockout's does
+  };
+
   const takeTurn = (c: Combatant): boolean => {
     // Recharge rolls first: a d6 for each spent action, back on its number or more.
     for (const action of c.actor.actions) {
       if (!c.spent.has(action)) continue;
       if (Math.floor(rng() * 6) + 1 >= (limitOf(action)?.recharge ?? 7)) c.spent.delete(action);
+    }
+    // Morale: a beaten side scatters (the check spends the turn either way).
+    if (shouldFlee(c)) {
+      fleeNow(c);
+      return false;
     }
     // And for each reaction waiting on its recharge (Counterattack (Recharge 6)).
     for (const r of c.reactionSpent) {
@@ -1742,12 +1779,11 @@ export function simulateTrial(
       }
       const lost = startTurn(c);
       // A surprised side watches the first round go by (its condition saves still tick).
-      const acted = !lost && !(round === 1 && rules.surprised === c.actor.side) && takeTurn(c);
+      if (!lost && !(round === 1 && rules.surprised === c.actor.side)) takeTurn(c);
       endTurn(c);
-      if (acted) {
-        const end = ended();
-        if (end) return result(end, round);
-      }
+      // A flight ends a fight with no action taken, so the check runs after every turn, not only acted ones.
+      const end = ended();
+      if (end) return result(end, round);
       if (legendaryAfter(c)) {
         const end = ended();
         if (end) return result(end, round);

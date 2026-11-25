@@ -333,6 +333,13 @@ export interface TrialRules {
   /** The side caught unready skips its first round's turns. */
   surprised?: CombatSide;
   /**
+   * A beaten side scatters: a monster below half its HP with half or more of its side down quits the
+   * fight at its turn (enemies in reach get the opportunity swing as it runs). A lone monster stays;
+   * what fled is out of the fight, never returns, and never counts as down. PCs never flee: the
+   * party's morale is the players'.
+   */
+  morale?: boolean;
+  /**
    * The party starts at this share of its hit points and spell slots (0 < f ≤ 1), the "third fight of the
    * day"; absent or 1 is full. The shares lost already count into a trial's HP lost.
    */

@@ -598,6 +598,24 @@ describe("reactions that protect or move", () => {
   });
 });
 
+describe("morale: a beaten side scatters", () => {
+  const fighter = actor("Fighter", "party", { actions: [melee("Sword", 8, "2d6+4")], maxHp: 40, armorClass: 15 });
+  const bandit = () => actor("Bandit", "monsters", { actions: [melee("Shiv", 5, "1d6+1")], maxHp: 11 });
+
+  it("turns flight into mercy: the wounded run once the side is beaten, and the fight ends early", () => {
+    const toTheDeath = run([fighter], [bandit(), bandit(), bandit(), bandit()]);
+    const moraleUp = run([fighter], [bandit(), bandit(), bandit(), bandit()], { morale: true });
+    expect(moraleUp.avgHpLost).toBeLessThan(toTheDeath.avgHpLost);
+    expect(moraleUp.avgRounds).toBeLessThanOrEqual(toTheDeath.avgRounds);
+    expect(moraleUp.winRate).toBeGreaterThanOrEqual(toTheDeath.winRate);
+  });
+
+  it("changes nothing when no monster ever quits (the rule stays off the lone and the unhurt)", () => {
+    const lone = actor("Bully", "monsters", { actions: [melee("Club", 5, "1d6+2")], maxHp: 40 });
+    expect(run([fighter], [lone], { morale: true })).toEqual(run([fighter], [lone]));
+  });
+});
+
 describe("surprise and a day's attrition", () => {
   const guard = actor("Guard", "party", { actions: [melee("Spear", 6, "1d8+3")], maxHp: 30 });
   const wolf = actor("Wolf", "monsters", { actions: [melee("Bite", 5, "2d6+2")], maxHp: 14 });

@@ -167,6 +167,8 @@ describe("parseSimArgv", () => {
 
   it("reads --surprise and --resources, and refuses bad values", () => {
     expect(parseSimArgv(["run", "--monster", "Wolf", "--surprise", "MONSTERS"]).options.surprise).toBe("monsters");
+    expect(parseSimArgv(["run", "--monster", "Wolf", "--morale"]).options.morale).toBe(true);
+    expect(parseSimArgv(["run", "--monster", "Wolf"]).options.morale).toBe(false);
     expect(parseSimArgv(["run", "--monster", "Wolf", "--resources", "0.5"]).options.resources).toBe(0.5);
     expect(() => parseSimArgv(["run", "--monster", "Wolf", "--surprise", "us"])).toThrow(/--surprise/);
     expect(() => parseSimArgv(["run", "--monster", "Wolf", "--resources", "0"])).toThrow(/--resources/);
@@ -248,6 +250,7 @@ describe("SIM_HELP", () => {
       "map",
       "high-ground",
       "surprise",
+      "morale",
       "resources",
       "difficulty",
       "tiers",
