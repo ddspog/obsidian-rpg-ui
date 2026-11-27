@@ -37,13 +37,15 @@ describe("rolling a card in its preview", () => {
   it("writes the rolled die into its line, and the result after it", () => {
     const base = read(card, { Insight: 4 });
     const source = "d: d20+[[Insight]]= vs DC 10 ->";
+    // A roll records the RESULT — the face plus the actor's modifier (Insight 4) —
+    // so a face of 11 writes `=15`, not the bare face.
     const rolled = applySwapsToBody(
       card,
       pendingTermSwaps(base, { [dieEditKey(source, "d20+[[Insight]]=", 0)]: "11" })
     );
-    expect(rolled.split("\n")[1]).toBe("d: d20+[[Insight]]=11 vs DC 10 ->");
+    expect(rolled.split("\n")[1]).toBe("d: d20+[[Insight]]=15 vs DC 10 ->");
     expect(fillDerivedResults(rolled, read(rolled, { Insight: 4 }))).toBe(
-      "@(Talon) Checking if the Kobold is lying\nd: d20+[[Insight]]=11 vs DC 10 -> Success\n=> I watched him."
+      "@(Talon) Checking if the Kobold is lying\nd: d20+[[Insight]]=15 vs DC 10 -> Success\n=> I watched him."
     );
   });
 
@@ -52,9 +54,31 @@ describe("rolling a card in its preview", () => {
     expect(applySwapsToBody(card, pendingTermSwaps(base, {}))).toBe(card);
   });
 
+  it("re-rolling a written [[Name]] die records the new result, not the bare face", () => {
+    // `d20+[[Insight]]=11` reads as result 11 (face 7 at Insight 4). A re-roll to a
+    // face of 14 must write the new result 18, or the modifier is lost on save.
+    const rolledCard = "@(Talon) Checking\nd: d20+[[Insight]]=11 vs DC 10 -> Success\n=> watched.";
+    const base = read(rolledCard, { Insight: 4 });
+    const source = "d: d20+[[Insight]]=11 vs DC 10 -> Success";
+    const swapped = pendingTermSwaps(base, { [dieEditKey(source, "d20+[[Insight]]=11", 0)]: "14" });
+    expect(applySwapsToBody(rolledCard, swapped).split("\n")[1]).toBe("d: d20+[[Insight]]=18 vs DC 10 -> Success");
+  });
+
   it("shows the judged result in the Log too, for a hand-written check left blank", () => {
     const [item] = read("@(Talon) Look\nd: d20+[[Perception]]=4 vs DC 12 ->", { Perception: 3 });
     expect(item.rows.find((r) => r.derivedResult)?.content).toBe("d20+[[Perception]]=4 vs DC 12 → Failure");
+  });
+
+  it("a party line writes every character's die, not just a mis-parsed first one", () => {
+    const card = "@(Party) Checks\nd: Talon | d20+5=18; Kowyn | d20+3=12 vs DC 15\n=> results.";
+    const base = read(card);
+    const source = "d: Talon | d20+5=18; Kowyn | d20+3=12 vs DC 15";
+    // Re-roll both: Talon face 20 (result 25), Kowyn face 10 (result 13).
+    const swapped = pendingTermSwaps(base, {
+      [dieEditKey(source, "d20+5=18", 0)]: "20",
+      [dieEditKey(source, "d20+3=12", 0)]: "10",
+    });
+    expect(applySwapsToBody(card, swapped).split("\n")[1]).toBe("d: Talon | d20+5=25; Kowyn | d20+3=13 vs DC 15");
   });
 });
 

@@ -8,7 +8,7 @@
  * and a card's preview (written on Append).
  */
 
-import { combineTermValue, editableTerms, parseFormula, setTermRaw, termSlotInitial, termSlots } from "./formula";
+import { combineTermValue, editableTerms, parseFormulaLine, setTermRaw, termSlotInitial, termSlots } from "./formula";
 import { dieEditKey, type SidebarItem } from "./prose-model";
 
 export interface TokenSwap {
@@ -23,22 +23,32 @@ export interface TokenSwap {
  * Each term whose edited slots combine to a different value than it has now
  * becomes a swap on its source line. A term with no pending slot is skipped, so
  * a pool's blank per-die boxes never clobber its recorded total.
+ *
+ * The line is parsed the way the Log's own inputs read it — `parseFormulaLine`,
+ * with the row's context (`vars`, `refs`) — so the write-back agrees with what
+ * the reader sees and edits:
+ *   - a `[[Name]]` modifier resolves to the actor's value, so the note records
+ *     the RESULT (face + modifier), not the bare face;
+ *   - a party line (`Talon | d20+5=18; Kowyn | d20+3=12`) yields every check's
+ *     die, so each character's roll is written, not just a mis-parsed first one.
  */
 export function pendingTermSwaps(items: SidebarItem[], dieEdits: Record<string, string>): TokenSwap[] {
   const out: TokenSwap[] = [];
   for (const item of items) {
     for (const row of item.rows) {
       if (!(row.detail || row.rollable) || !row.source) continue;
-      const formula = parseFormula(row.content);
-      if (!formula) continue;
-      for (const term of editableTerms(formula)) {
-        const nth = row.sourceNth ?? 0;
-        const keys = Array.from({ length: termSlots(term) }, (_, i) => dieEditKey(row.source!, term.raw, i, nth));
-        if (!keys.some((k) => k in dieEdits)) continue; // untouched
-        const slots = keys.map((k, i) => dieEdits[k] ?? termSlotInitial(term, i));
-        const next = combineTermValue(term, slots);
-        const original = term.value != null ? String(term.value) : "";
-        if (next !== original) out.push({ line: row.source, from: term.raw, to: setTermRaw(term, next), nth });
+      const formulas = parseFormulaLine(row.content, { vars: row.vars, refs: row.refs });
+      if (!formulas) continue;
+      for (const formula of formulas) {
+        for (const term of editableTerms(formula)) {
+          const nth = row.sourceNth ?? 0;
+          const keys = Array.from({ length: termSlots(term) }, (_, i) => dieEditKey(row.source!, term.raw, i, nth));
+          if (!keys.some((k) => k in dieEdits)) continue; // untouched
+          const slots = keys.map((k, i) => dieEdits[k] ?? termSlotInitial(term, i));
+          const next = combineTermValue(term, slots);
+          const original = term.value != null ? String(term.value) : "";
+          if (next !== original) out.push({ line: row.source, from: term.raw, to: setTermRaw(term, next), nth });
+        }
       }
     }
   }
