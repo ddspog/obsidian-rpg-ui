@@ -236,6 +236,29 @@ S3 Morning
     const segs = groupIntoProse(parseLonelog(`S1 Road\n@(Party) Walk`));
     expect(sceneWeather(segs, [segs[0].sourceIndex])).toEqual([null]);
   });
+
+  it("a tag that re-states the carried weather is no change", async () => {
+    const { sceneWeather } = await import("./travel");
+    const { assembleProse } = await import("./prose-model");
+    const segs = groupIntoProse(
+      parseLonelog(`S1 Road
+@(Party) Walk
+=> Rain [Weather: Autumn · rain]
+S2 Camp
+@(Party) Rest
+=> Still raining [Weather: Autumn · rain]
+S3 Morning
+@(Party) Walk`)
+    );
+    const scenes = assembleProse(segs);
+    const w = sceneWeather(
+      segs,
+      scenes.map((s) => s.head?.startId ?? null)
+    );
+    expect(w[0]).toEqual({ parts: ["Autumn", "rain"], changed: true, from: null });
+    expect(w[1]).toEqual({ parts: ["Autumn", "rain"], changed: false, from: null });
+    expect(w[2]).toEqual({ parts: ["Autumn", "rain"], changed: false, from: null });
+  });
 });
 
 describe("asBelieved", () => {
