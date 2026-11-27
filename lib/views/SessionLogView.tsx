@@ -2143,7 +2143,8 @@ class SessionLogMarkdown extends ReactMarkdown {
         return;
       }
 
-      let content = await this.baseView.app.vault.read(file);
+      const onDisk = await this.baseView.app.vault.read(file);
+      let content = onDisk;
       // What a card staged is written first, so the edits below find its lines.
       const staged = this.staged;
       if (staged.text || staged.maps.length > 0) {
@@ -2162,7 +2163,8 @@ class SessionLogMarkdown extends ReactMarkdown {
           (_m, h, b, c) => `${h}${resolveGmBody(b, this.gmFeatures, this.stepCtx)}${c}`
         );
       }
-      if (updatedContent === content) {
+      // A card's staged lines count as a change too: compare with what is on disk.
+      if (updatedContent === onDisk) {
         console.warn("rpg log: no edited lines matched; nothing saved");
         return;
       }
