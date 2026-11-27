@@ -8,14 +8,7 @@
  * and a card's preview (written on Append).
  */
 
-import {
-  combineTermValue,
-  editableTerms,
-  parseFormulaLine,
-  setTermRaw,
-  termSlotInitial,
-  termSlots,
-} from "./formula";
+import { combineTermValue, editableTerms, parseFormulaLine, setTermRaw, termSlotInitial, termSlots } from "./formula";
 import { dieEditKey, type SidebarItem } from "./prose-model";
 
 export interface TokenSwap {
