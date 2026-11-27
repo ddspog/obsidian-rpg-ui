@@ -517,7 +517,8 @@ export interface SceneWeather {
 /**
  * The weather along the scenes: for each scene (`starts[i]`, the source index it opens at; null for
  * the untitled stretch before the first), the last `[Weather: …]` in force by its end. A scene with a
- * tag of its own changed it; one without carries the weather in. Null where no weather is known yet.
+ * tag of its own changed it — unless the tag merely re-states what it opened with; one without a tag
+ * carries the weather in. Null where no weather is known yet.
  */
 export function sceneWeather(segments: ProseSegment[], starts: Array<number | null>): Array<SceneWeather | null> {
   const marks: Array<[number, string[]]> = [];
@@ -533,8 +534,12 @@ export function sceneWeather(segments: ProseSegment[], starts: Array<number | nu
     const inside = marks.filter(([at]) => at >= from && at < next);
     const carried = before.length ? before[before.length - 1][1] : null;
     if (inside.length === 0) return carried ? { parts: carried, changed: false, from: null } : null;
+    const parts = inside[inside.length - 1][1];
+    // A tag that re-states the weather the scene opened with changed nothing,
+    // so it reads as carried, not as a change (no "rain →" of its own word).
+    if (carried && parts.join("\n") === carried.join("\n")) return { parts, changed: false, from: null };
     return {
-      parts: inside[inside.length - 1][1],
+      parts,
       changed: true,
       from: carried ?? (inside.length > 1 ? inside[0][1] : null),
     };
