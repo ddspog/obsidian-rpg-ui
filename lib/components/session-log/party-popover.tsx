@@ -34,8 +34,17 @@ import {
 import type { LootDestination } from "../../domains/session-log/loot-destinations";
 import { TERRAIN_RULES, WEATHER as WEATHER_EFFECTS } from "../../domains/hexmap/terrain";
 import type { PartyTerrain } from "./placeholder-popover";
+import {
+  checksHint,
+  checksOf,
+  fitSkill,
+  roleRule,
+  ROLES_NOTE,
+  TRAVEL_CHECK_NOTE,
+} from "../../domains/session-log/travel-roles";
 import { useCardShell } from "./card-shell";
 import { NoteCombobox, type NoteOption } from "./note-combobox";
+import { RuleLink } from "./rule-link";
 import { SidebarEntry } from "./sidebar-entry";
 
 export type PartyCardKind =
@@ -113,16 +122,29 @@ const WEATHER = {
 const DEFAULT_ROLES: TravelRole[] = [
   { role: "Leader", who: "", skill: "Persuasion" },
   { role: "Outrider", who: "", skill: "Survival" },
-  { role: "Quartermaster", who: "", skill: "Survival" },
+  { role: "Quartermaster", who: "", skill: "Athletics" },
   { role: "Sentry", who: "", skill: "Perception" },
 ];
 
-/** The last journey's picks in a log, by role (browser storage: a convenience, empty when it fails). */
-function readRoles(key: string): Record<string, string> {
+/** A role's remembered pick: who took it and the check they made. */
+interface RolePick {
+  who?: string;
+  skill?: string;
+}
+
+/** The last journey's picks in a log, by role (browser storage: a convenience, empty when it fails). An older
+ *  entry kept only who. */
+function readRoles(key: string): Record<string, RolePick> {
   try {
     const raw = window.localStorage.getItem(key);
     const parsed: unknown = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).map(([role, v]) => [
+        role,
+        typeof v === "string" ? { who: v } : v && typeof v === "object" ? (v as RolePick) : {},
+      ])
+    );
   } catch {
     return {};
   }
@@ -130,7 +152,10 @@ function readRoles(key: string): Record<string, string> {
 
 function writeRoles(key: string, roles: TravelRole[]): void {
   try {
-    window.localStorage.setItem(key, JSON.stringify(Object.fromEntries(roles.map((r) => [r.role, r.who]))));
+    window.localStorage.setItem(
+      key,
+      JSON.stringify(Object.fromEntries(roles.map((r) => [r.role, { who: r.who, skill: r.skill }])))
+    );
   } catch {
     // Storage refused: the picks are just not remembered.
   }
@@ -257,8 +282,9 @@ export function PartyPopover({
   const [roles, setRoles] = useState<TravelRole[]>(() => {
     const last = readRoles(rolesKey);
     return DEFAULT_ROLES.map((r) => {
-      const who = last[r.role];
-      return { ...r, who: who && names.includes(who) ? who : "" };
+      const { who, skill } = last[r.role] ?? {};
+      // A remembered check the role may not make (Survival for a Quartermaster) goes back to the role's own.
+      return { ...r, who: who && names.includes(who) ? who : "", skill: fitSkill(r.role, skill ?? r.skill) };
     });
   });
   useEffect(() => {
@@ -704,35 +730,45 @@ export function PartyPopover({
                   <span>Who</span>
                   <span>Check</span>
                 </div>
-                {roles.map((r, i) => (
-                  <div key={i} className="placeholder-party-role">
-                    {/* The role's name is its label; it can be renamed in place. */}
-                    <input
-                      className="placeholder-party-role-name"
-                      value={r.role}
-                      aria-label={`Rename the ${r.role || "role"}`}
-                      title="Rename"
-                      onChange={(e) =>
-                        setRoles((all) => all.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))
-                      }
-                    />
-                    {select(
-                      r.who,
-                      names,
-                      (v) => setRoles((all) => all.map((x, j) => (j === i ? { ...x, who: v } : x))),
-                      {
-                        none: "— who —",
-                        label: `Who is ${r.role || "in the role"}`,
-                      }
-                    )}
-                    {select(
-                      r.skill,
-                      SKILLS,
-                      (v) => setRoles((all) => all.map((x, j) => (j === i ? { ...x, skill: v } : x))),
-                      { label: `${r.role || "The role"}'s check` }
-                    )}
-                  </div>
-                ))}
+                {roles.map((r, i) => {
+                  const rule = roleRule(r.role);
+                  const setRole = (patch: Partial<TravelRole>) =>
+                    setRoles((all) => all.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+                  return (
+                    <React.Fragment key={i}>
+                      <div className="placeholder-party-role">
+                        {/* The role's name is its label; it can be renamed in place. A new name the rules give other checks
+            puts the check back to its first. */}
+                        <input
+                          className="placeholder-party-role-name"
+                          value={r.role}
+                          aria-label={`Rename the ${r.role || "role"}`}
+                          title="Rename"
+                          onChange={(e) => setRole({ role: e.target.value, skill: fitSkill(e.target.value, r.skill) })}
+                        />
+                        {select(r.who, names, (v) => setRole({ who: v }), {
+                          none: "— who —",
+                          label: `Who is ${r.role || "in the role"}`,
+                        })}
+                        {select(r.skill, checksOf(r.role) ?? SKILLS, (v) => setRole({ skill: v }), {
+                          label: `${r.role || "The role"}'s check`,
+                        })}
+                      </div>
+                      {/* What the rules allow it, and its Role Ability: guidance, set apart from the fields. */}
+                      {rule && <p className="placeholder-party-role-rule">{checksHint(rule)}</p>}
+                    </React.Fragment>
+                  );
+                })}
+                <p className="placeholder-party-rules">
+                  <span>Rules:</span>
+                  <RuleLink note={ROLES_NOTE} sourcePath={sourcePath}>
+                    Roles
+                  </RuleLink>
+                  <span aria-hidden="true">·</span>
+                  <RuleLink note={TRAVEL_CHECK_NOTE} sourcePath={sourcePath}>
+                    Group Travel Check
+                  </RuleLink>
+                </p>
               </fieldset>
               {field(
                 "Encounter if the d100 is under",

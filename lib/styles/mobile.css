@@ -1190,6 +1190,13 @@ body.is-mobile {
     display: contents;
   }
 
+  /* A rules link is a thumb's height. */
+  .is-sheet a.placeholder-rule-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+  }
+
   /* One height for every field of a row, the one-choice text included. */
   .is-sheet :is(.placeholder-input, .placeholder-select, .placeholder-static) {
     min-height: 2.75rem;
