@@ -834,6 +834,7 @@ export function SessionActionsPanel({
           {...(party.sinceLongRest != null ? { sinceLongRest: party.sinceLongRest } : {})}
           {...(party.clock ? { clock: party.clock } : {})}
           {...(terrain ? { ground: terrain } : {})}
+          {...(sourcePath ? { sourcePath } : {})}
           onCompose={(text, summary) =>
             // Its lines, played as any card: previewed, rolled, an outcome to add.
             setActiveCard({

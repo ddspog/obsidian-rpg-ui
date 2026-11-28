@@ -500,7 +500,7 @@ textarea.combat-foes {
   margin: 0;
   padding: 0;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 5px;
+  border-radius: var(--radius-s);
   overflow: hidden;
 }
 
@@ -567,7 +567,7 @@ textarea.combat-foes {
   margin: 0;
   padding: 0.5rem 0.6rem 0.55rem;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 5px;
+  border-radius: var(--radius-s);
 }
 
 .combat-new-map > legend {
@@ -600,7 +600,7 @@ textarea.combat-foes {
   margin: 0;
   padding: 0.4rem 0.6rem 0.45rem;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 5px;
+  border-radius: var(--radius-s);
 }
 
 .placeholder-riders > legend {
@@ -833,7 +833,7 @@ button.placeholder-party-flag {
 .placeholder-preview-entries {
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--background-secondary);
   font-size: 1em;
 }
@@ -1123,13 +1123,13 @@ button.placeholder-party-flag {
   background: transparent;
   box-shadow: none;
   color: var(--text-muted);
-  font-size: 1.35rem;
+  font-size: var(--font-ui-large);
   line-height: 1;
   cursor: pointer;
 }
 
 .lonelog-placeholder-popover button.placeholder-close:hover {
-  background: light-dark(#e3d9c2, #3a342c);
+  background: var(--log-hover);
   color: var(--text-normal);
 }
 
@@ -1189,7 +1189,7 @@ button.placeholder-party-flag {
 .lonelog-placeholder-popover .target-toggle {
   border: 1px solid var(--log-rule);
   border-radius: 6px;
-  background: light-dark(color-mix(in srgb, white 55%, #ece4d3), color-mix(in srgb, black 25%, #24201c));
+  background: var(--log-field);
   box-shadow: none;
   color: var(--text-normal);
 }
@@ -1239,7 +1239,7 @@ button.placeholder-party-flag {
 }
 
 .lonelog-placeholder-popover button.placeholder-cancel:hover {
-  background: light-dark(#e3d9c2, #3a342c);
+  background: var(--log-hover);
 }
 
 /* ── The preview: the Log's own rows, under a dashed rule for the entry still to come ── */
@@ -1293,7 +1293,7 @@ button.placeholder-party-flag {
 }
 
 .lonelog-placeholder-popover .placeholder-preview-raw pre {
-  background: light-dark(#e3d9c2, #2e2923);
+  background: var(--log-code);
 }
 
 /* A pick by terrain: the party's ground, with a button back to its choice when another is picked. */
@@ -1325,4 +1325,198 @@ button.placeholder-party-flag {
 
 .placeholder-terrain-reset:hover {
   text-decoration: underline;
+}
+
+/* ═══ UI review: a dropdown reads as one, and the party's cards share the drawer's layout ═══ */
+
+/* Every dropdown carries a chevron at its right (the field look's background shorthand dropped Obsidian's),
+   drawn in the muted ink so it follows the theme; text keeps clear of it. */
+.lonelog-placeholder-popover .placeholder-select {
+  appearance: none;
+  padding-right: 2rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) 52%,
+    calc(100% - 0.75rem) 52%;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* A choice still to make ("— who —") is set in the placeholder's ink. */
+.lonelog-placeholder-popover .placeholder-select.is-unset {
+  color: var(--text-faint);
+}
+
+/* A dropdown with one choice is that choice, as plain text on the field's line. */
+.lonelog-placeholder-popover .placeholder-static {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 2.25rem;
+  min-width: 0;
+  padding-inline: 0.7rem;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+/* The party's cards measure their own width: the roles stack and the stage's fields pair up when narrow. */
+.lonelog-placeholder-popover.is-party {
+  container-type: inline-size;
+}
+
+/* A journey's roles: one grid, its columns named once above (Role, Who, Check). */
+fieldset.placeholder-party-roles {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.4rem 0.5rem;
+  align-items: center;
+}
+
+.placeholder-party-roles-head,
+.placeholder-party-role {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.placeholder-party-roles-head > span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* The role's name is the row's label (uppercase signpost); renaming it is there, quietly, on hover and focus. */
+.lonelog-placeholder-popover input.placeholder-party-role-name {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.25rem;
+  margin: 0 0 0 -0.4rem;
+  padding: 0 0.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+}
+
+.lonelog-placeholder-popover input.placeholder-party-role-name:hover {
+  border-color: var(--log-rule);
+}
+
+.lonelog-placeholder-popover input.placeholder-party-role-name:focus {
+  border-color: var(--log-ink);
+  outline: 2px solid color-mix(in srgb, var(--log-ink) 25%, transparent);
+  outline-offset: 1px;
+  background: var(--log-field);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.placeholder-party-role > :is(.placeholder-select, .placeholder-static) {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Narrow (a phone's sheet, a narrow pane): each role is its label, then who and the check side by side at
+   one height; the column names go, since each row says what it is. Miles and terrain pair up, then pace
+   and DC. */
+@container (max-width: 30rem) {
+  fieldset.placeholder-party-roles {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+
+  .placeholder-party-roles-head {
+    display: none;
+  }
+
+  .placeholder-party-role {
+    row-gap: 0.15rem;
+  }
+
+  .placeholder-party-role + .placeholder-party-role {
+    margin-top: 0.4rem;
+  }
+
+  .lonelog-placeholder-popover input.placeholder-party-role-name {
+    grid-column: 1 / -1;
+    min-height: 1.75rem;
+  }
+
+  .is-party .placeholder-party-inline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Next and Cancel: at least 32px to hit in the drawer. */
+.lonelog-placeholder-popover:not(.is-sheet) button:is(.placeholder-submit, .placeholder-cancel) {
+  min-height: 2rem;
+}
+
+/* A narrow window on a phone's interface that isn't a sheet (a tablet, a trip edge forcing is-mobile): the
+   head scrolls away with the fields, so the fields get the room; the buttons stay pinned. */
+body.is-mobile .lonelog-placeholder-popover:not(.is-sheet) .placeholder-head {
+  position: static;
+}
+
+/* A party card's head is one line: its name, what it does, the clock, the close. */
+.lonelog-placeholder-popover.is-party .placeholder-head > .placeholder-clock {
+  flex: none;
+  flex-basis: auto;
+  order: 2;
+  margin: 0;
+}
+
+.lonelog-placeholder-popover.is-party .placeholder-head > button.placeholder-close {
+  order: 3;
+  margin-left: auto;
+}
+
+.lonelog-placeholder-popover.is-party .placeholder-preview {
+  align-content: start;
+}
+
+/* Wide: a party card stays at two columns (its fields want the width more than its buttons want a column of
+   their own), the buttons under what it adds to the log. */
+@container (min-width: 64rem) {
+  .lonelog-placeholder-popover.is-party .placeholder-form:has(> .placeholder-fields:not(:empty)) {
+    grid-template-columns: minmax(22rem, 1.3fr) minmax(18rem, 1fr);
+    grid-template-areas:
+      "head head"
+      "fields result";
+    column-gap: 1.5rem;
+  }
+
+  .lonelog-placeholder-popover.is-party .placeholder-form > .placeholder-result {
+    display: flex;
+  }
+
+  .lonelog-placeholder-popover.is-party .placeholder-result > .placeholder-preview {
+    align-self: auto;
+    margin-inline: 0;
+    padding-inline: 0;
+    border-inline: none;
+  }
+
+  .lonelog-placeholder-popover.is-party:not(.is-sheet) .placeholder-result > .placeholder-buttons {
+    flex-direction: row;
+    align-self: auto;
+  }
+}
+
+/* What the preview says of the entry (its time, the roles skipped): tight lines, not paragraphs. */
+.lonelog-placeholder-popover p.placeholder-preview-hint {
+  margin: 0;
 }
