@@ -5628,6 +5628,46 @@ body.is-mobile .lonelog-placeholder-popover:not(.is-sheet) .placeholder-head {
 .lonelog-placeholder-popover p.placeholder-preview-hint {
   margin: 0;
 }
+.lonelog-placeholder-popover p.placeholder-party-role-rule {
+  grid-column: 2 / -1;
+  margin: -0.1rem 0 0.25rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--log-ink) 9%, transparent);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+.lonelog-placeholder-popover p.placeholder-party-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  grid-column: 1 / -1;
+  gap: 0 0.4rem;
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.lonelog-placeholder-popover a.placeholder-rule-link {
+  color: var(--log-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--log-ink) 45%, transparent);
+  text-underline-offset: 0.2em;
+}
+.lonelog-placeholder-popover a.placeholder-rule-link:hover {
+  text-decoration-color: currentColor;
+}
+@container (max-width: 30rem) {
+  .lonelog-placeholder-popover p.placeholder-party-role-rule {
+    grid-column: 1 / -1;
+    margin-top: 0.2rem;
+  }
+}
+@container (min-width: 30rem) {
+  .lonelog-placeholder-popover.is-party:not(.is-sheet) .placeholder-result > .placeholder-buttons {
+    margin-top: auto;
+  }
+}
 
 /* lib/styles/components/loadout-cards.css */
 .rpg-loadouts {
@@ -25040,6 +25080,11 @@ body.is-mobile {
   }
   .is-sheet .placeholder-result {
     display: contents;
+  }
+  .is-sheet a.placeholder-rule-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
   }
   .is-sheet :is(.placeholder-input, .placeholder-select, .placeholder-static) {
     min-height: 2.75rem;

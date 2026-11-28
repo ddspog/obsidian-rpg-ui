@@ -1520,3 +1520,56 @@ body.is-mobile .lonelog-placeholder-popover:not(.is-sheet) .placeholder-head {
 .lonelog-placeholder-popover p.placeholder-preview-hint {
   margin: 0;
 }
+
+/* ═══ A journey's roles as the rules give them ═══ */
+
+/* What the rules allow a role and its Role Ability: a quiet tint of the link ink under the row's fields, so it
+   reads as the rules speaking, not as another field. */
+.lonelog-placeholder-popover p.placeholder-party-role-rule {
+  grid-column: 2 / -1;
+  margin: -0.1rem 0 0.25rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--log-ink) 9%, transparent);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
+/* The rules themselves, a hover away: links in the log's ink, underlined. */
+.lonelog-placeholder-popover p.placeholder-party-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  grid-column: 1 / -1;
+  gap: 0 0.4rem;
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.lonelog-placeholder-popover a.placeholder-rule-link {
+  color: var(--log-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--log-ink) 45%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.lonelog-placeholder-popover a.placeholder-rule-link:hover {
+  text-decoration-color: currentColor;
+}
+
+@container (max-width: 30rem) {
+  .lonelog-placeholder-popover p.placeholder-party-role-rule {
+    grid-column: 1 / -1;
+    margin-top: 0.2rem;
+  }
+}
+
+/* Two columns: the buttons sit at the foot of the result column (as tall as the fields beside it), so when the
+   fields outrun the preview the bar still ends the card, and pins there while it scrolls. */
+@container (min-width: 30rem) {
+  .lonelog-placeholder-popover.is-party:not(.is-sheet) .placeholder-result > .placeholder-buttons {
+    margin-top: auto;
+  }
+}
