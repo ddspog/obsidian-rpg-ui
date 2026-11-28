@@ -15,6 +15,10 @@
   --log-surface: light-dark(#ece4d3, #24201c);
   --log-rule: light-dark(#cdbf9f, #4a4238);
   --log-ink: light-dark(#4b2f9a, #cdbfff);
+  /* A field on the parchment (a lighter leaf of it), a control's hover, and a code block. */
+  --log-field: light-dark(color-mix(in srgb, white 55%, #ece4d3), color-mix(in srgb, black 25%, #24201c));
+  --log-hover: light-dark(#e3d9c2, #3a342c);
+  --log-code: light-dark(#e3d9c2, #2e2923);
   color: light-dark(#231a0c, #e3dcce);
 }
 

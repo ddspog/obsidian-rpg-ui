@@ -9,6 +9,7 @@ import {
   shop,
   shortRest,
   travel,
+  travelPlan,
   weather,
   type PartyMember,
 } from "./party-cards";
@@ -127,6 +128,41 @@ describe("travel", () => {
       "d: Encounter (under 25) | d100=",
       "=> {{outcome?}} [Time: +4h]",
     ]);
+  });
+
+  it("says the hours and which roles are skipped for having no one in them", () => {
+    const plan = travelPlan({
+      destination: "Wisdom's Path",
+      miles: 12,
+      pace: "slow",
+      dc: 14,
+      roles: [
+        { role: "Leader", who: "", skill: "Persuasion" },
+        { role: "Outrider", who: "Talon", skill: "Survival" },
+        { role: "Sentry", who: "", skill: "Perception" },
+      ],
+      timeFactor: 2,
+    });
+    // 12 miles at 18 a day (2.25 an hour) is about 5h; unpleasant weather doubles it.
+    expect(plan.hours).toBe(11);
+    expect(plan.skipped).toEqual(["Leader", "Sentry"]);
+    expect(plan.text.split("\n")).toEqual([
+      "@(Party) Travels to Wisdom's Path — 12 miles, slow pace",
+      "d(Talon): Outrider | d20+[[Survival]]= vs DC 14 ->",
+      "=> {{outcome?}} [Time: +11h]",
+    ]);
+  });
+
+  it("has no time without miles, and writes no check when no one is assigned", () => {
+    const plan = travelPlan({
+      destination: "the next stop",
+      pace: "normal",
+      dc: 14,
+      roles: [{ role: "Sentry", who: "", skill: "Perception" }],
+    });
+    expect(plan.hours).toBeUndefined();
+    expect(plan.skipped).toEqual(["Sentry"]);
+    expect(plan.text).toBe("@(Party) Travels to the next stop — normal pace\n=> {{outcome?}}");
   });
 });
 

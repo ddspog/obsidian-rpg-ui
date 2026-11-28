@@ -180,8 +180,16 @@ export interface TravelRole {
 /** Miles a day by pace (Player's Guide); a stage's hours follow from its distance. */
 export const PACE_MILES_PER_DAY: Record<string, number> = { fast: 30, normal: 24, slow: 18 };
 
-/** One stage of a journey: where to, how far, the ground, the pace, the checks its roles make. */
-export function travel(opts: {
+/** What a stage on the road comes to: its lines, the hours it takes, and the roles skipped for want of someone in them. */
+export interface TravelPlan {
+  text: string;
+  /** Hours on the road (from the miles, the pace and the weather), when the miles are known. */
+  hours?: number;
+  /** Roles no one takes: they write no check. */
+  skipped: string[];
+}
+
+export interface TravelOptions {
   destination: string;
   miles?: number;
   terrain?: string;
@@ -191,19 +199,32 @@ export function travel(opts: {
   encounterUnder?: number;
   /** The weather's effect on time (Campaign Builder: ×2 in unpleasant weather and worse, ×½ ideal). */
   timeFactor?: number;
-}): string {
+}
+
+/** One stage of a journey: where to, how far, the ground, the pace, the checks its roles make. */
+export function travelPlan(opts: TravelOptions): TravelPlan {
   const perHour = PACE_MILES_PER_DAY[opts.pace] / 8;
   const hours = opts.miles ? Math.max(1, Math.round((opts.miles / perHour) * (opts.timeFactor ?? 1))) : undefined;
   const what = [opts.miles ? `${opts.miles} miles` : "", opts.terrain ?? "", `${opts.pace} pace`]
     .filter(Boolean)
     .join(", ");
   const lines = [`@(Party) Travels to ${opts.destination} — ${what}`];
-  for (const r of opts.roles.filter((x) => x.who)) {
+  const skipped: string[] = [];
+  for (const r of opts.roles) {
+    if (!r.who) {
+      if (r.role.trim()) skipped.push(r.role.trim());
+      continue;
+    }
     lines.push(`d(${r.who}): ${r.role} | d20+[[${r.skill}]]= vs DC ${opts.dc} ->`);
   }
   if (opts.encounterUnder) lines.push(`d: Encounter (under ${opts.encounterUnder}) | d100=`);
   lines.push(`=> {{outcome?}}${hours ? ` [Time: +${hours}h]` : ""}`);
-  return lines.join("\n");
+  return { text: lines.join("\n"), ...(hours ? { hours } : {}), skipped };
+}
+
+/** A stage's lines (see `travelPlan`). */
+export function travel(opts: TravelOptions): string {
+  return travelPlan(opts).text;
 }
 
 /** The weather now: season, temperature, wind, sky — a running tag. */

@@ -10,7 +10,10 @@ import { makeSamples } from "./samples";
 
 const SESSION = "Simulator/Session.md";
 
-const noteOf = (block: string) => `---\ngm: "[[00. GM Screen]]"\n---\n# Simulator\n\n\`\`\`rpg log\n${block}\n\`\`\`\n`;
+// The vault's party plays in it (`pcs:`), so the Party's cards (rests, the road, loot) are there too.
+const PCS = ["Jacqui Ilitul", "Kowyn", "Lilith", "Talon Pallton"].map((n) => `  - "[[${n}]]"`).join("\n");
+const noteOf = (block: string) =>
+  `---\npcs:\n${PCS}\ngm: "[[00. GM Screen]]"\n---\n# Simulator\n\n\`\`\`rpg log\n${block}\n\`\`\`\n`;
 const blockOf = (note: string) => note.match(/```rpg log\n([\s\S]*?)\n?```/)?.[1] ?? "";
 
 export default defineSimulator({

@@ -7,8 +7,11 @@
  */
 
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SessionFeatureCard } from "../../domains/session-log/card-types";
+import { parseLonelog } from "../../domains/lonelog/parser";
+import { groupIntoProse } from "../../domains/session-log/prose-grouper";
+import { buildSidebarItems } from "../../domains/session-log/prose-model";
 import {
   endSession,
   groupCheck,
@@ -17,11 +20,12 @@ import {
   luck,
   shop,
   shortRest,
-  travel,
+  travelPlan,
   weather,
   lootPaths,
   type ItemPrice,
   type LootRow,
+  PACE_MILES_PER_DAY,
   type LootTarget,
   type PartyMember,
   type ShopRow,
@@ -30,7 +34,9 @@ import {
 import type { LootDestination } from "../../domains/session-log/loot-destinations";
 import { TERRAIN_RULES, WEATHER as WEATHER_EFFECTS } from "../../domains/hexmap/terrain";
 import type { PartyTerrain } from "./placeholder-popover";
+import { useCardShell } from "./card-shell";
 import { NoteCombobox, type NoteOption } from "./note-combobox";
+import { SidebarEntry } from "./sidebar-entry";
 
 export type PartyCardKind =
   | "short-rest"
@@ -69,6 +75,8 @@ export interface PartyPopoverProps {
   /** Where the party stands (the travel map's ground, its region's population, the weather): a
    *  stage on the road starts on its terrain and navigation DC. */
   ground?: PartyTerrain;
+  /** The note the log lives in: links in the preview resolve from it, and a journey's roles are remembered by it. */
+  sourcePath?: string;
   onCompose: (text: string, summary?: string) => void;
   onCancel: () => void;
 }
@@ -100,6 +108,33 @@ const WEATHER = {
   wind: ["calm", "breezy", "windy", "strong winds", "gale"],
   sky: ["clear", "cloudy", "overcast", "fog", "rain", "heavy rain", "storm", "snow"],
 } as const;
+
+/** A journey's roles, and the check each makes by default. */
+const DEFAULT_ROLES: TravelRole[] = [
+  { role: "Leader", who: "", skill: "Persuasion" },
+  { role: "Outrider", who: "", skill: "Survival" },
+  { role: "Quartermaster", who: "", skill: "Survival" },
+  { role: "Sentry", who: "", skill: "Perception" },
+];
+
+/** The last journey's picks in a log, by role (browser storage: a convenience, empty when it fails). */
+function readRoles(key: string): Record<string, string> {
+  try {
+    const raw = window.localStorage.getItem(key);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeRoles(key: string, roles: TravelRole[]): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(Object.fromEntries(roles.map((r) => [r.role, r.who]))));
+  } catch {
+    // Storage refused: the picks are just not remembered.
+  }
+}
 
 const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -152,9 +187,11 @@ export function PartyPopover({
   sinceLongRest,
   clock,
   ground,
+  sourcePath = "",
   onCompose,
   onCancel,
 }: PartyPopoverProps) {
+  const shell = useCardShell(onCancel, "is-party");
   const items = useMemo(() => itemNotes?.() ?? [], [itemNotes]);
   const names = members.map((m) => m.name);
   const [picked, setPicked] = useState<Set<string>>(() => new Set(names));
@@ -214,12 +251,19 @@ export function PartyPopover({
     ground?.id ? TERRAIN_RULES[ground.id].navigationDC + (p === "fast" ? 5 : 0) : undefined;
   const [dc, setDc] = useState(() => String(kind === "travel" ? (navDc("normal") ?? 14) : 14));
   const [dcTyped, setDcTyped] = useState(false);
-  const [roles, setRoles] = useState<TravelRole[]>(() => [
-    { role: "Leader", who: names[0] ?? "", skill: "Persuasion" },
-    { role: "Outrider", who: names[1] ?? "", skill: "Survival" },
-    { role: "Quartermaster", who: names[2] ?? "", skill: "Survival" },
-    { role: "Sentry", who: names[3] ?? "", skill: "Perception" },
-  ]);
+  // No one is in a role until picked (the party's order guessed wrong); the last journey's picks in this log
+  // come back, for those still in the party.
+  const rolesKey = `rpg-ui:travel-roles:${sourcePath}`;
+  const [roles, setRoles] = useState<TravelRole[]>(() => {
+    const last = readRoles(rolesKey);
+    return DEFAULT_ROLES.map((r) => {
+      const who = last[r.role];
+      return { ...r, who: who && names.includes(who) ? who : "" };
+    });
+  });
+  useEffect(() => {
+    if (kind === "travel") writeRoles(rolesKey, roles);
+  }, [kind, rolesKey, roles]);
   const [encounterUnder, setEncounterUnder] = useState("25");
   // Weather.
   const [sky, setSky] = useState<Record<keyof typeof WEATHER, string>>({
@@ -284,7 +328,8 @@ export function PartyPopover({
     </>
   );
 
-  const compose = (): { text: string; summary?: string } | undefined => {
+  // What the card writes, and what the preview says of it (`notes`): the time a stage takes, the roles it skips.
+  const compose = (): { text: string; summary?: string; notes?: string[] } | undefined => {
     switch (kind) {
       case "short-rest":
         return {
@@ -323,21 +368,26 @@ export function PartyPopover({
           }),
         };
       }
-      case "travel":
-        return {
-          text: travel({
-            destination: destination || "the next stop",
-            ...(miles ? { miles: num(miles) } : {}),
-            ...(terrain ? { terrain } : {}),
-            pace,
-            dc: num(dc, 14),
-            ...(ground?.weather && WEATHER_EFFECTS[ground.weather].time
-              ? { timeFactor: WEATHER_EFFECTS[ground.weather].time! }
-              : {}),
-            roles,
-            ...(encounterUnder ? { encounterUnder: num(encounterUnder) } : {}),
-          }),
-        };
+      case "travel": {
+        const timeFactor = ground?.weather ? WEATHER_EFFECTS[ground.weather].time : undefined;
+        const plan = travelPlan({
+          destination: destination || "the next stop",
+          ...(miles ? { miles: num(miles) } : {}),
+          ...(terrain ? { terrain } : {}),
+          pace,
+          dc: num(dc, 14),
+          ...(timeFactor ? { timeFactor } : {}),
+          roles,
+          ...(encounterUnder ? { encounterUnder: num(encounterUnder) } : {}),
+        });
+        const notes = [
+          plan.hours
+            ? `[Time: +${plan.hours}h]: ${miles} miles at a ${pace} pace (${PACE_MILES_PER_DAY[pace]} a day)${timeFactor && timeFactor !== 1 ? `, ×${timeFactor} for the weather` : ""}.`
+            : "No miles: no time passes.",
+          plan.skipped.length > 0 ? `No check for ${plan.skipped.join(", ")}: no one in the role.` : "",
+        ].filter(Boolean);
+        return { text: plan.text, notes };
+      }
       case "weather":
         return { text: weather({ ...sky, note }) };
       case "group-check":
@@ -367,15 +417,32 @@ export function PartyPopover({
       onChange={(e) => set(e.target.value)}
     />
   );
-  const select = (value: string, options: readonly string[], set: (v: string) => void) => (
-    <select className="placeholder-select" value={value} onChange={(e) => set(e.target.value)}>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
-  );
+  // A dropdown; with one choice it is just that choice, as text, and with `none` a first option for no one.
+  const select = (
+    value: string,
+    options: readonly string[],
+    set: (v: string) => void,
+    opts: { none?: string; label?: string } = {}
+  ) =>
+    options.length === 1 && !opts.none ? (
+      <span className="placeholder-static" aria-label={opts.label}>
+        {options[0]}
+      </span>
+    ) : (
+      <select
+        className={`placeholder-select${opts.none && !value ? " is-unset" : ""}`}
+        value={value}
+        aria-label={opts.label}
+        onChange={(e) => set(e.target.value)}
+      >
+        {opts.none !== undefined && <option value="">{opts.none}</option>}
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
 
   const restWarnings: string[] = [];
   if (kind === "long-rest") {
@@ -385,405 +452,461 @@ export function PartyPopover({
       if (m.hp && m.hp.current <= 0) restWarnings.push(`${m.name} is at 0 HP — a long rest needs at least 1.`);
   }
 
-  return (
-    <div className="lonelog-placeholder-popover" role="dialog" aria-label={`Play ${card.name}`}>
+  const out = compose();
+  // The lines it will write, drawn as the Log draws them; `{{outcome?}}` is asked on the next step.
+  const previewText = out?.text.replace(/\{\{[^}]*\}\}/g, "…") ?? "";
+  const previewItems = useMemo(
+    () => (previewText ? buildSidebarItems(groupIntoProse(parseLonelog(previewText))) : []),
+    [previewText]
+  );
+
+  const popover = (
+    <div ref={shell.rootRef} {...shell.rootProps} aria-label={`Play ${card.name}`}>
+      {shell.handle}
       <form
         className="placeholder-form"
         onSubmit={(e) => {
           e.preventDefault();
-          const out = compose();
           if (out) onCompose(out.text, out.summary);
         }}
       >
         <header className="placeholder-head">
           <strong className="placeholder-title">{card.name}</strong>
+          <button type="button" className="placeholder-close" aria-label="Close" title="Close (Esc)" onClick={onCancel}>
+            ×
+          </button>
           {card.summary && <p className="placeholder-summary">{card.summary}</p>}
-          {clock && <p className="placeholder-hint">{clock}</p>}
+          {clock && <p className="placeholder-hint placeholder-clock">{clock}</p>}
         </header>
 
-        {(kind === "short-rest" ||
-          kind === "long-rest" ||
-          kind === "group-check" ||
-          kind === "luck" ||
-          kind === "end-session" ||
-          (kind === "loot" && split)) && <Members names={names} picked={picked} onChange={setPicked} />}
+        {/* The choices at the left; at the right, what they add to the log and the buttons (one column when narrow). */}
+        <div className="placeholder-fields">
+          {(kind === "short-rest" ||
+            kind === "long-rest" ||
+            kind === "group-check" ||
+            kind === "luck" ||
+            kind === "end-session" ||
+            (kind === "loot" && split)) && <Members names={names} picked={picked} onChange={setPicked} />}
 
-        {kind === "short-rest" && (
-          <fieldset className="placeholder-party-rows">
-            <legend className="placeholder-label">Hit dice to spend</legend>
-            {chosen.map((m) => (
-              <div key={m.name} className="placeholder-party-row">
-                <span className="placeholder-strike-name">{m.name}</span>
-                <small className="placeholder-hint">
-                  {m.hp ? `${m.hp.current}/${m.hp.max} HP` : ""}
-                  {m.con != null ? ` · CON ${m.con >= 0 ? "+" : ""}${m.con}` : ""}
-                </small>
-                {m.hitDice.map((d) => (
-                  <label key={d.die} className="placeholder-party-die">
+          {kind === "short-rest" && (
+            <fieldset className="placeholder-party-rows">
+              <legend className="placeholder-label">Hit dice to spend</legend>
+              {chosen.map((m) => (
+                <div key={m.name} className="placeholder-party-row">
+                  <span className="placeholder-strike-name">{m.name}</span>
+                  <small className="placeholder-hint">
+                    {m.hp ? `${m.hp.current}/${m.hp.max} HP` : ""}
+                    {m.con != null ? ` · CON ${m.con >= 0 ? "+" : ""}${m.con}` : ""}
+                  </small>
+                  {m.hitDice.map((d) => (
+                    <label key={d.die} className="placeholder-party-die">
+                      <input
+                        type="number"
+                        min={0}
+                        max={d.left}
+                        className="placeholder-input"
+                        value={dice[m.name]?.[d.die] ?? 0}
+                        onChange={(e) =>
+                          setDice((all) => ({
+                            ...all,
+                            [m.name]: {
+                              ...(all[m.name] ?? {}),
+                              [d.die]: Math.max(0, Math.min(d.left, num(e.target.value))),
+                            },
+                          }))
+                        }
+                      />
+                      <span>
+                        {d.die} · {d.left} of {d.max} left
+                      </span>
+                    </label>
+                  ))}
+                  {m.hitDice.length === 0 && <small className="placeholder-hint">no hit dice known</small>}
+                </div>
+              ))}
+              {field("hours", text(hours, setHours, "1", "number"))}
+            </fieldset>
+          )}
+
+          {kind === "long-rest" && (
+            <>
+              <label className="placeholder-rider">
+                <input type="checkbox" checked={fed} onChange={(e) => setFed(e.target.checked)} />
+                <span className="placeholder-rider-name">Had food and drink</span>
+                <small className="placeholder-hint">a level of exhaustion goes</small>
+              </label>
+              <label className="placeholder-rider">
+                <input type="checkbox" checked={interrupted} onChange={(e) => setInterrupted(e.target.checked)} />
+                <span className="placeholder-rider-name">Interrupted</span>
+                <small className="placeholder-hint">an hour of fighting or walking — no benefit</small>
+              </label>
+              {field("hours", text(hours, setHours, "8", "number"))}
+              {restWarnings.map((w) => (
+                <p key={w} className="placeholder-warn">
+                  {w}
+                </p>
+              ))}
+            </>
+          )}
+
+          {kind === "loot" && (
+            <>
+              <fieldset className="placeholder-party-rows">
+                <legend className="placeholder-label">Found</legend>
+                {lootRows
+                  .filter((r) => r.inside == null)
+                  .map((r) => {
+                    const inside = lootRows.filter((x) => x.inside === r.id);
+                    const holder = isHolder(r);
+                    return (
+                      <div key={r.id} className="placeholder-party-row placeholder-party-find">
+                        {findLine(r)}
+                        {/* Where it came from: the fallen it's taken off, whose ammunition. */}
+                        {r.from && <small className="placeholder-hint placeholder-party-from">{r.from}</small>}
+                        {/* A container found, and what's in it — stowed with it. */}
+                        {holder && (
+                          <div className="placeholder-party-inside">
+                            <small className="placeholder-hint">Holding</small>
+                            {inside.map((x) => (
+                              <div key={x.id} className="placeholder-party-row">
+                                {findLine(x)}
+                              </div>
+                            ))}
+                            <button type="button" className="placeholder-party-add" onClick={() => putInside(r.id)}>
+                              + put something in the {r.name}
+                            </button>
+                          </div>
+                        )}
+                        {!holder && r.name.trim() && (
+                          <button
+                            type="button"
+                            className="placeholder-party-flag"
+                            onClick={() => setRow(r.id, { holds: true })}
+                          >
+                            it holds things
+                          </button>
+                        )}
+                        {/* Where it goes: a member, or a container one carries — or nowhere. */}
+                        <label className="placeholder-party-to">
+                          <span>→</span>
+                          <select
+                            className={`placeholder-select${r.to ? "" : " is-left"}`}
+                            value={r.to ?? ""}
+                            aria-label={`Where ${r.name || "it"} goes`}
+                            onChange={(e) => setRow(r.id, { to: e.target.value || undefined })}
+                          >
+                            {[...new Set(destinations.map((d) => d.carrier))].map((carrier) => (
+                              <optgroup key={carrier} label={`Carried by ${carrier}`}>
+                                {destinations.map((d, k) =>
+                                  d.carrier === carrier ? (
+                                    <option key={k} value={`d:${k}`}>
+                                      {d.label}
+                                    </option>
+                                  ) : null
+                                )}
+                              </optgroup>
+                            ))}
+                            <option value="">Leave behind</option>
+                          </select>
+                        </label>
+                      </div>
+                    );
+                  })}
+                <button
+                  type="button"
+                  className="placeholder-party-add"
+                  onClick={() =>
+                    setLootRows((all) => [
+                      ...all,
+                      { id: newId(), name: "", qty: 1, link: true, ...(fallback ? { to: fallback } : {}) },
+                    ])
+                  }
+                >
+                  + something else
+                </button>
+              </fieldset>
+              <fieldset className="placeholder-party-coins">
+                <legend className="placeholder-label">Coins</legend>
+                {(["gp", "sp", "cp"] as const).map((c) => (
+                  <label key={c} className="placeholder-party-die">
                     <input
                       type="number"
                       min={0}
-                      max={d.left}
                       className="placeholder-input"
-                      value={dice[m.name]?.[d.die] ?? 0}
-                      onChange={(e) =>
-                        setDice((all) => ({
-                          ...all,
-                          [m.name]: {
-                            ...(all[m.name] ?? {}),
-                            [d.die]: Math.max(0, Math.min(d.left, num(e.target.value))),
-                          },
-                        }))
-                      }
+                      value={coins[c]}
+                      onChange={(e) => setCoins((all) => ({ ...all, [c]: e.target.value }))}
                     />
-                    <span>
-                      {d.die} · {d.left} of {d.max} left
-                    </span>
+                    <span>{c}</span>
                   </label>
                 ))}
-                {m.hitDice.length === 0 && <small className="placeholder-hint">no hit dice known</small>}
+                {/* Whose purse: one member's, or split evenly among those ticked. */}
+                <div className="placeholder-party-coins-to">
+                  {!split && (
+                    <label className="placeholder-party-die">
+                      <span>to</span>
+                      {select(coinsTo, names, setCoinsTo)}
+                    </label>
+                  )}
+                  <label className="placeholder-rider">
+                    <input type="checkbox" checked={split} onChange={(e) => setSplit(e.target.checked)} />
+                    <span className="placeholder-rider-name">Split evenly</span>
+                  </label>
+                </div>
+              </fieldset>
+            </>
+          )}
+
+          {kind === "travel" && (
+            <>
+              {field("to", text(destination, setDestination, "Wisdom's Path"))}
+              <div className="placeholder-party-inline">
+                {field("miles", text(miles, setMiles, "12", "number"))}
+                {field("terrain", text(terrain, setTerrain, "forest, hills"))}
+                {field(
+                  "pace",
+                  select(pace, ["fast", "normal", "slow"], (v) => {
+                    setPace(v as "fast" | "normal" | "slow");
+                    const auto = navDc(v);
+                    if (!dcTyped && auto !== undefined) setDc(String(auto));
+                  })
+                )}
+                {field(
+                  "DC",
+                  text(
+                    dc,
+                    (v: string) => {
+                      setDc(v);
+                      setDcTyped(true);
+                    },
+                    "14",
+                    "number"
+                  )
+                )}
               </div>
-            ))}
-            {field("hours", text(hours, setHours, "1", "number"))}
-          </fieldset>
-        )}
+              {ground && (ground.id || ground.weather) && (
+                <p className="placeholder-hint">
+                  {[
+                    ground.id
+                      ? `${TERRAIN_RULES[ground.id].name}: navigation DC ${TERRAIN_RULES[ground.id].navigationDC} (+5 fast)${TERRAIN_RULES[ground.id].difficult ? ", difficult (half speed off a road)" : ""}`
+                      : null,
+                    ground.weather && ground.weather !== "agreeable"
+                      ? `${WEATHER_EFFECTS[ground.weather].name} weather${WEATHER_EFFECTS[ground.weather].time === null ? ": no travel without magic" : WEATHER_EFFECTS[ground.weather].time !== 1 ? `: time ×${WEATHER_EFFECTS[ground.weather].time}` : ""}${WEATHER_EFFECTS[ground.weather].navDisadvantage ? ", disadvantage to navigate" : ""}${WEATHER_EFFECTS[ground.weather].exhaustionPerHex ? ", exhaustion" : ""}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              <fieldset className="placeholder-party-rows placeholder-party-roles">
+                <legend className="placeholder-label">Roles</legend>
+                <div className="placeholder-party-roles-head" aria-hidden="true">
+                  <span>Role</span>
+                  <span>Who</span>
+                  <span>Check</span>
+                </div>
+                {roles.map((r, i) => (
+                  <div key={i} className="placeholder-party-role">
+                    {/* The role's name is its label; it can be renamed in place. */}
+                    <input
+                      className="placeholder-party-role-name"
+                      value={r.role}
+                      aria-label={`Rename the ${r.role || "role"}`}
+                      title="Rename"
+                      onChange={(e) =>
+                        setRoles((all) => all.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))
+                      }
+                    />
+                    {select(
+                      r.who,
+                      names,
+                      (v) => setRoles((all) => all.map((x, j) => (j === i ? { ...x, who: v } : x))),
+                      {
+                        none: "— who —",
+                        label: `Who is ${r.role || "in the role"}`,
+                      }
+                    )}
+                    {select(
+                      r.skill,
+                      SKILLS,
+                      (v) => setRoles((all) => all.map((x, j) => (j === i ? { ...x, skill: v } : x))),
+                      { label: `${r.role || "The role"}'s check` }
+                    )}
+                  </div>
+                ))}
+              </fieldset>
+              {field(
+                "Encounter if the d100 is under",
+                text(encounterUnder, setEncounterUnder, "25", "number"),
+                "Leave empty for a quiet stage"
+              )}
+            </>
+          )}
 
-        {kind === "long-rest" && (
-          <>
-            <label className="placeholder-rider">
-              <input type="checkbox" checked={fed} onChange={(e) => setFed(e.target.checked)} />
-              <span className="placeholder-rider-name">Had food and drink</span>
-              <small className="placeholder-hint">a level of exhaustion goes</small>
-            </label>
-            <label className="placeholder-rider">
-              <input type="checkbox" checked={interrupted} onChange={(e) => setInterrupted(e.target.checked)} />
-              <span className="placeholder-rider-name">Interrupted</span>
-              <small className="placeholder-hint">an hour of fighting or walking — no benefit</small>
-            </label>
-            {field("hours", text(hours, setHours, "8", "number"))}
-            {restWarnings.map((w) => (
-              <p key={w} className="placeholder-warn">
-                {w}
-              </p>
-            ))}
-          </>
-        )}
-
-        {kind === "loot" && (
-          <>
-            <fieldset className="placeholder-party-rows">
-              <legend className="placeholder-label">Found</legend>
-              {lootRows
-                .filter((r) => r.inside == null)
-                .map((r) => {
-                  const inside = lootRows.filter((x) => x.inside === r.id);
-                  const holder = isHolder(r);
-                  return (
-                    <div key={r.id} className="placeholder-party-row placeholder-party-find">
-                      {findLine(r)}
-                      {/* Where it came from: the fallen it's taken off, whose ammunition. */}
-                      {r.from && <small className="placeholder-hint placeholder-party-from">{r.from}</small>}
-                      {/* A container found, and what's in it — stowed with it. */}
-                      {holder && (
-                        <div className="placeholder-party-inside">
-                          <small className="placeholder-hint">Holding</small>
-                          {inside.map((x) => (
-                            <div key={x.id} className="placeholder-party-row">
-                              {findLine(x)}
-                            </div>
-                          ))}
-                          <button type="button" className="placeholder-party-add" onClick={() => putInside(r.id)}>
-                            + put something in the {r.name}
-                          </button>
-                        </div>
-                      )}
-                      {!holder && r.name.trim() && (
-                        <button
-                          type="button"
-                          className="placeholder-party-flag"
-                          onClick={() => setRow(r.id, { holds: true })}
-                        >
-                          it holds things
-                        </button>
-                      )}
-                      {/* Where it goes: a member, or a container one carries — or nowhere. */}
-                      <label className="placeholder-party-to">
-                        <span>→</span>
-                        <select
-                          className={`placeholder-select${r.to ? "" : " is-left"}`}
-                          value={r.to ?? ""}
-                          aria-label={`Where ${r.name || "it"} goes`}
-                          onChange={(e) => setRow(r.id, { to: e.target.value || undefined })}
-                        >
-                          {[...new Set(destinations.map((d) => d.carrier))].map((carrier) => (
-                            <optgroup key={carrier} label={`Carried by ${carrier}`}>
-                              {destinations.map((d, k) =>
-                                d.carrier === carrier ? (
-                                  <option key={k} value={`d:${k}`}>
-                                    {d.label}
-                                  </option>
-                                ) : null
-                              )}
-                            </optgroup>
-                          ))}
-                          <option value="">Leave behind</option>
-                        </select>
-                      </label>
-                    </div>
-                  );
-                })}
+          {kind === "weather" && (
+            <>
+              <div className="placeholder-party-inline">
+                {(Object.keys(WEATHER) as Array<keyof typeof WEATHER>).map((k) => (
+                  <React.Fragment key={k}>
+                    {field(
+                      k,
+                      select(sky[k], WEATHER[k], (v) => setSky((all) => ({ ...all, [k]: v })))
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
               <button
                 type="button"
                 className="placeholder-party-add"
                 onClick={() =>
-                  setLootRows((all) => [
-                    ...all,
-                    { id: newId(), name: "", qty: 1, link: true, ...(fallback ? { to: fallback } : {}) },
-                  ])
+                  setSky({
+                    season: sky.season,
+                    temperature: pick(WEATHER.temperature),
+                    wind: pick(WEATHER.wind),
+                    sky: pick(WEATHER.sky),
+                  })
                 }
               >
-                + something else
+                🎲 roll the day's weather
               </button>
-            </fieldset>
-            <fieldset className="placeholder-party-coins">
-              <legend className="placeholder-label">Coins</legend>
-              {(["gp", "sp", "cp"] as const).map((c) => (
-                <label key={c} className="placeholder-party-die">
-                  <input
-                    type="number"
-                    min={0}
-                    className="placeholder-input"
-                    value={coins[c]}
-                    onChange={(e) => setCoins((all) => ({ ...all, [c]: e.target.value }))}
-                  />
-                  <span>{c}</span>
-                </label>
-              ))}
-              {/* Whose purse: one member's, or split evenly among those ticked. */}
-              <div className="placeholder-party-coins-to">
-                {!split && (
-                  <label className="placeholder-party-die">
-                    <span>to</span>
-                    {select(coinsTo, names, setCoinsTo)}
-                  </label>
-                )}
-                <label className="placeholder-rider">
-                  <input type="checkbox" checked={split} onChange={(e) => setSplit(e.target.checked)} />
-                  <span className="placeholder-rider-name">Split evenly</span>
-                </label>
+            </>
+          )}
+
+          {kind === "group-check" && (
+            <>
+              {field("what", text(what, setWhat, "Sneak past the camp"))}
+              <div className="placeholder-party-inline">
+                {field("skill", select(skill, SKILLS, setSkill))}
+                {field("DC", text(dc, setDc, "10", "number"))}
               </div>
-            </fieldset>
-          </>
-        )}
+              <small className="placeholder-hint">Half the group or more succeeding, the group does.</small>
+            </>
+          )}
 
-        {kind === "travel" && (
-          <>
-            {field("to", text(destination, setDestination, "Wisdom's Path"))}
-            <div className="placeholder-party-inline">
-              {field("miles", text(miles, setMiles, "12", "number"))}
-              {field("terrain", text(terrain, setTerrain, "forest, hills"))}
-              {field(
-                "pace",
-                select(pace, ["fast", "normal", "slow"], (v) => {
-                  setPace(v as "fast" | "normal" | "slow");
-                  const auto = navDc(v);
-                  if (!dcTyped && auto !== undefined) setDc(String(auto));
-                })
-              )}
-              {field(
-                "DC",
-                text(
-                  dc,
-                  (v: string) => {
-                    setDc(v);
-                    setDcTyped(true);
-                  },
-                  "14",
-                  "number"
-                )
-              )}
-            </div>
-            {ground && (ground.id || ground.weather) && (
-              <p className="placeholder-hint">
-                {[
-                  ground.id
-                    ? `${TERRAIN_RULES[ground.id].name}: navigation DC ${TERRAIN_RULES[ground.id].navigationDC} (+5 fast)${TERRAIN_RULES[ground.id].difficult ? ", difficult (half speed off a road)" : ""}`
-                    : null,
-                  ground.weather && ground.weather !== "agreeable"
-                    ? `${WEATHER_EFFECTS[ground.weather].name} weather${WEATHER_EFFECTS[ground.weather].time === null ? ": no travel without magic" : WEATHER_EFFECTS[ground.weather].time !== 1 ? `: time ×${WEATHER_EFFECTS[ground.weather].time}` : ""}${WEATHER_EFFECTS[ground.weather].navDisadvantage ? ", disadvantage to navigate" : ""}${WEATHER_EFFECTS[ground.weather].exhaustionPerHex ? ", exhaustion" : ""}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
-            <fieldset className="placeholder-party-rows">
-              <legend className="placeholder-label">Roles</legend>
-              {roles.map((r, i) => (
-                <div key={i} className="placeholder-party-row">
-                  <input
-                    className="placeholder-input"
-                    value={r.role}
-                    onChange={(e) =>
-                      setRoles((all) => all.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))
-                    }
-                  />
-                  {select(r.who, ["", ...names], (v) =>
-                    setRoles((all) => all.map((x, j) => (j === i ? { ...x, who: v } : x)))
-                  )}
-                  {select(r.skill, SKILLS, (v) =>
-                    setRoles((all) => all.map((x, j) => (j === i ? { ...x, skill: v } : x)))
-                  )}
-                </div>
-              ))}
-            </fieldset>
-            {field(
-              "encounter on a d100 under",
-              text(encounterUnder, setEncounterUnder, "25", "number"),
-              "blank: no encounter roll"
-            )}
-          </>
-        )}
+          {kind === "luck" && <>{field("each gets", text(amount, setAmount, "1", "number"))}</>}
 
-        {kind === "weather" && (
-          <>
-            <div className="placeholder-party-inline">
-              {(Object.keys(WEATHER) as Array<keyof typeof WEATHER>).map((k) => (
-                <React.Fragment key={k}>
-                  {field(
-                    k,
-                    select(sky[k], WEATHER[k], (v) => setSky((all) => ({ ...all, [k]: v })))
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="placeholder-party-add"
-              onClick={() =>
-                setSky({
-                  season: sky.season,
-                  temperature: pick(WEATHER.temperature),
-                  wind: pick(WEATHER.wind),
-                  sky: pick(WEATHER.sky),
-                })
-              }
-            >
-              🎲 roll the day's weather
-            </button>
-          </>
-        )}
-
-        {kind === "group-check" && (
-          <>
-            {field("what", text(what, setWhat, "Sneak past the camp"))}
-            <div className="placeholder-party-inline">
-              {field("skill", select(skill, SKILLS, setSkill))}
-              {field("DC", text(dc, setDc, "10", "number"))}
-            </div>
-            <small className="placeholder-hint">Half the group or more succeeding, the group does.</small>
-          </>
-        )}
-
-        {kind === "luck" && <>{field("each gets", text(amount, setAmount, "1", "number"))}</>}
-
-        {kind === "shop" && (
-          <>
-            <div className="placeholder-party-inline">
-              {field("who", select(buyer, names, setBuyer))}
-              {field("where", text(at, setAt, "the market"))}
-            </div>
-            <fieldset className="placeholder-party-rows">
-              <legend className="placeholder-label">Buys and sells</legend>
-              {shopRows.map((r, i) => (
-                <div key={i} className="placeholder-party-row">
-                  <NoteCombobox
-                    value={r.item}
-                    options={items}
-                    placeholder="Find an item…"
-                    onChange={(item, note) => {
-                      setShopRows((all) => all.map((x, j) => (j === i ? { ...x, item, link: !!note } : x)));
-                      // A note picked brings its price.
-                      if (note && itemCost)
-                        void itemCost(note.name).then((cost) => {
-                          if (cost == null) return;
-                          setShopRows((all) =>
-                            all.map((x, j) =>
-                              j === i && x.item === item
-                                ? {
-                                    ...x,
-                                    price: cost.price,
-                                    ...(cost.bundle ? { bundle: cost.bundle } : { bundle: undefined }),
-                                  }
-                                : x
-                            )
-                          );
-                        });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    className="placeholder-input placeholder-party-qty"
-                    value={r.qty}
-                    onChange={(e) =>
-                      setShopRows((all) => all.map((x, j) => (j === i ? { ...x, qty: num(e.target.value) } : x)))
-                    }
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    className="placeholder-input placeholder-party-qty"
-                    value={r.price}
-                    title={r.bundle ? `price of a bundle of ${r.bundle}, in gp` : "price each, in gp"}
-                    onChange={(e) =>
-                      setShopRows((all) => all.map((x, j) => (j === i ? { ...x, price: num(e.target.value) } : x)))
-                    }
-                  />
-                  <label className="placeholder-rider">
+          {kind === "shop" && (
+            <>
+              <div className="placeholder-party-inline">
+                {field("who", select(buyer, names, setBuyer))}
+                {field("where", text(at, setAt, "the market"))}
+              </div>
+              <fieldset className="placeholder-party-rows">
+                <legend className="placeholder-label">Buys and sells</legend>
+                {shopRows.map((r, i) => (
+                  <div key={i} className="placeholder-party-row">
+                    <NoteCombobox
+                      value={r.item}
+                      options={items}
+                      placeholder="Find an item…"
+                      onChange={(item, note) => {
+                        setShopRows((all) => all.map((x, j) => (j === i ? { ...x, item, link: !!note } : x)));
+                        // A note picked brings its price.
+                        if (note && itemCost)
+                          void itemCost(note.name).then((cost) => {
+                            if (cost == null) return;
+                            setShopRows((all) =>
+                              all.map((x, j) =>
+                                j === i && x.item === item
+                                  ? {
+                                      ...x,
+                                      price: cost.price,
+                                      ...(cost.bundle ? { bundle: cost.bundle } : { bundle: undefined }),
+                                    }
+                                  : x
+                              )
+                            );
+                          });
+                      }}
+                    />
                     <input
-                      type="checkbox"
-                      checked={!!r.sell}
+                      type="number"
+                      min={0}
+                      className="placeholder-input placeholder-party-qty"
+                      value={r.qty}
                       onChange={(e) =>
-                        setShopRows((all) => all.map((x, j) => (j === i ? { ...x, sell: e.target.checked } : x)))
+                        setShopRows((all) => all.map((x, j) => (j === i ? { ...x, qty: num(e.target.value) } : x)))
                       }
                     />
-                    <span>sells</span>
-                  </label>
-                  {r.bundle && (
-                    <small className="placeholder-hint placeholder-party-from">
-                      bundles of {r.bundle} — writes {r.qty * r.bundle} pieces
-                    </small>
-                  )}
-                </div>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="placeholder-input placeholder-party-qty"
+                      value={r.price}
+                      title={r.bundle ? `price of a bundle of ${r.bundle}, in gp` : "price each, in gp"}
+                      onChange={(e) =>
+                        setShopRows((all) => all.map((x, j) => (j === i ? { ...x, price: num(e.target.value) } : x)))
+                      }
+                    />
+                    <label className="placeholder-rider">
+                      <input
+                        type="checkbox"
+                        checked={!!r.sell}
+                        onChange={(e) =>
+                          setShopRows((all) => all.map((x, j) => (j === i ? { ...x, sell: e.target.checked } : x)))
+                        }
+                      />
+                      <span>sells</span>
+                    </label>
+                    {r.bundle && (
+                      <small className="placeholder-hint placeholder-party-from">
+                        bundles of {r.bundle} — writes {r.qty * r.bundle} pieces
+                      </small>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="placeholder-party-add"
+                  onClick={() => setShopRows((all) => [...all, { item: "", qty: 1, price: 0 }])}
+                >
+                  + another
+                </button>
+              </fieldset>
+            </>
+          )}
+
+          {kind === "end-session" && (
+            <>
+              {field("XP each", text(amount, setAmount, "0", "number"), "a milestone, a great moment — blank for none")}
+            </>
+          )}
+        </div>
+        <div className="placeholder-result">
+          {previewItems.length > 0 && (
+            <section className="placeholder-preview" aria-label="Preview" aria-live="polite">
+              <span className="placeholder-preview-label">
+                Adds to the log <span className="placeholder-preview-next">— the next entry</span>
+              </span>
+              <div className="lonelog-entries placeholder-preview-entries">
+                {previewItems.map((item) => (
+                  <SidebarEntry key={item.id} item={item} sourcePath={sourcePath} />
+                ))}
+              </div>
+              {out?.notes?.map((n) => (
+                <p key={n} className="placeholder-preview-hint">
+                  {n}
+                </p>
               ))}
-              <button
-                type="button"
-                className="placeholder-party-add"
-                onClick={() => setShopRows((all) => [...all, { item: "", qty: 1, price: 0 }])}
-              >
-                + another
-              </button>
-            </fieldset>
-          </>
-        )}
-
-        {kind === "end-session" && (
-          <>
-            {field("XP each", text(amount, setAmount, "0", "number"), "a milestone, a great moment — blank for none")}
-          </>
-        )}
-
-        <div className="placeholder-buttons">
-          <button type="submit" className="placeholder-submit">
-            Next
-          </button>
-          <button type="button" onClick={onCancel} className="placeholder-cancel">
-            Cancel
-          </button>
+              {out?.summary && <p className="placeholder-preview-hint">{out.summary}</p>}
+              <p className="placeholder-preview-hint">Next rolls its dice and asks how it went.</p>
+              <details className="placeholder-preview-raw">
+                <summary>Lonelog</summary>
+                <pre>{out?.text}</pre>
+              </details>
+            </section>
+          )}
+          <div className="placeholder-buttons">
+            <button type="submit" className="placeholder-submit">
+              Next
+            </button>
+            <button type="button" onClick={onCancel} className="placeholder-cancel">
+              Cancel
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
+  return shell.present(popover);
 }

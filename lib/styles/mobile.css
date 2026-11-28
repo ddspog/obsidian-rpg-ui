@@ -1178,6 +1178,23 @@ body.is-mobile {
     border-top-color: var(--log-rule);
   }
 
+  /* A party card's sheet keeps its head to the name (and the clock): the tile it came from said what it does,
+     and the fields get the room. */
+  .is-sheet.is-party .placeholder-head > .placeholder-summary {
+    display: none;
+  }
+
+  /* The result's box dissolves into the form: a sticky bar can't rise above its parent's top, so inside the
+     result it would stay below the fold of a long form instead of pinning to the sheet's foot. */
+  .is-sheet .placeholder-result {
+    display: contents;
+  }
+
+  /* One height for every field of a row, the one-choice text included. */
+  .is-sheet :is(.placeholder-input, .placeholder-select, .placeholder-static) {
+    min-height: 2.75rem;
+  }
+
   /* The phone's interface font has no small capitals: its labels are small uppercase instead. */
   .is-sheet .placeholder-label {
     font-size: 0.72rem;

@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { type Population, TERRAIN_RULES, type TerrainId, WEATHER, type WeatherId } from "../../domains/hexmap/terrain";
 import { LucideIcon } from "./lucide-icon";
+import { useCardShell } from "./card-shell";
 import { parseLonelog } from "../../domains/lonelog/parser";
 import { groupIntoProse } from "../../domains/session-log/prose-grouper";
 import {
@@ -133,96 +133,8 @@ export function PlaceholderPopover({
   onResolve,
   onCancel,
 }: PlaceholderPopoverProps) {
-  const sheet = useIsPhone();
-  const rootRef = useRef<HTMLDivElement>(null);
-  // In the drawer the card is as tall as the window leaves under the cards above it (measured, so the drawer
-  // still fits the pane and keeps to its foot), its fields scrolling inside past that.
-  useLayoutEffect(() => {
-    const el = rootRef.current;
-    if (sheet || !el) return;
-    const drawer = el.closest<HTMLElement>(".lonelog-bottom-drawer");
-    const view = el.closest<HTMLElement>(".markdown-preview-view, .cm-scroller");
-    // The drawer sticks to the pane's foot but can't rise above the log it belongs to.
-    const zone = el.closest<HTMLElement>(".lonelog-dock-zone");
-    if (!drawer) return;
-    const fit = () => {
-      const top = Math.max(view ? view.getBoundingClientRect().top : 0, zone ? zone.getBoundingClientRect().top : 0);
-      const above = el.getBoundingClientRect().top - drawer.getBoundingClientRect().top;
-      // the drawer's own foot and the status bar's corner, about 3rem
-      const room = window.innerHeight - top - above - 48;
-      el.style.setProperty("--card-room", `${Math.max(256, Math.round(room))}px`);
-    };
-    fit();
-    window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
-  }, [sheet]);
-  // Escape closes it, on a phone or not.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
-  // Focus goes in, to the first field (or Play card when there is none), and back to the card's tile after.
-  useEffect(() => {
-    const from = document.activeElement as HTMLElement | null;
-    const el = rootRef.current;
-    const first =
-      el?.querySelector<HTMLElement>(".placeholder-fields :is(input, select, textarea)") ??
-      el?.querySelector<HTMLElement>("button.placeholder-submit");
-    first?.focus({ preventScroll: true });
-    return () => {
-      if (from && from.isConnected && from !== document.body) from.focus({ preventScroll: true });
-    };
-  }, []);
-  // On a phone the page behind the sheet holds still.
-  useEffect(() => {
-    if (!sheet) return;
-    const scroller = document.querySelector<HTMLElement>(".workspace-leaf.mod-active .markdown-preview-view");
-    const was = scroller?.style.overflow ?? "";
-    if (scroller) scroller.style.overflow = "hidden";
-    return () => {
-      if (scroller) scroller.style.overflow = was;
-    };
-  }, [sheet]);
-  // Drag the sheet's handle down to close it.
-  const drag = useRef<{ y: number; t: number; dy: number } | null>(null);
-  const onDragStart = (e: React.PointerEvent) => {
-    drag.current = { y: e.clientY, t: e.timeStamp, dy: 0 };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  };
-  const onDragMove = (e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d || !rootRef.current) return;
-    d.dy = Math.max(0, e.clientY - d.y);
-    rootRef.current.style.setProperty("--drag", `${d.dy}px`);
-  };
-  const onDragEnd = (e: React.PointerEvent) => {
-    const d = drag.current;
-    drag.current = null;
-    if (!d || !rootRef.current) return;
-    rootRef.current.style.removeProperty("--drag");
-    if (d.dy > 60 || (d.dy > 12 && d.dy / Math.max(1, e.timeStamp - d.t) > 0.6)) onCancel();
-  };
-  // Tab stays inside the card while it is open.
-  const onTrapKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "Tab") return;
-    const stops = Array.from(
-      rootRef.current?.querySelectorAll<HTMLElement>(
-        "input, select, textarea, button, summary, [tabindex]:not([tabindex='-1'])"
-      ) ?? []
-    ).filter((x) => !x.hasAttribute("disabled") && x.getClientRects().length > 0);
-    if (stops.length === 0) return;
-    const i = stops.indexOf(document.activeElement as HTMLElement);
-    if (e.shiftKey && i <= 0) {
-      e.preventDefault();
-      stops[stops.length - 1].focus();
-    } else if (!e.shiftKey && i === stops.length - 1) {
-      e.preventDefault();
-      stops[0].focus();
-    }
-  };
+  const shell = useCardShell(onCancel);
+  const { rootRef } = shell;
   // The riders this attack can carry (Mystic Mark): on when picked — or, on a
   // target that already bears a rider's mark, on by itself, riding free.
   const [riderPicks, setRiderPicks] = useState<Record<string, boolean>>({});
@@ -521,24 +433,8 @@ export function PlaceholderPopover({
   };
 
   const popover = (
-    <div
-      ref={rootRef}
-      className={`lonelog-placeholder-popover${sheet ? " is-sheet" : ""}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Play ${card.name}`}
-      onKeyDown={onTrapKey}
-    >
-      {sheet && (
-        <div
-          className="placeholder-handle"
-          aria-hidden="true"
-          onPointerDown={onDragStart}
-          onPointerMove={onDragMove}
-          onPointerUp={onDragEnd}
-          onPointerCancel={onDragEnd}
-        />
-      )}
+    <div ref={rootRef} {...shell.rootProps} aria-label={`Play ${card.name}`}>
+      {shell.handle}
       <form onSubmit={handleSubmit} className="placeholder-form">
         <header className="placeholder-head">
           <strong className="placeholder-title">{card.name}</strong>
@@ -875,24 +771,7 @@ export function PlaceholderPopover({
       </form>
     </div>
   );
-  // On a phone the card is a sheet over the story, outside the drawer's own scrolling and clipping, over a
-  // dimmed page that a tap closes it from.
-  return sheet
-    ? createPortal(
-        <>
-          <div
-            className="placeholder-scrim"
-            aria-hidden="true"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onCancel();
-            }}
-          />
-          {popover}
-        </>,
-        document.body
-      )
-    : popover;
+  return shell.present(popover);
 }
 
 /** A summary that opens with the card's name (`Lunarbolt Waxing: attack at +6…`) says it once, in the title. */
@@ -905,19 +784,6 @@ function stripName(summary: string | undefined, name: string): string | undefine
     return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : summary;
   }
   return summary;
-}
-
-/** Whether the window is phone-width (the layout the sheet is for). */
-function useIsPhone(): boolean {
-  const query = "(max-width: 600px)";
-  const [phone, setPhone] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setPhone(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return phone;
 }
 
 /** Fields whose name doesn't read well as written. */
